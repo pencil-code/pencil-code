@@ -21,6 +21,7 @@
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
+! PENCILS PROVIDED etava, etaj, etaj2, etajrho
 ! PENCILS PROVIDED cosjb,jparallel;jperp 
 ! PENCILS PROVIDED cosub 
 !
@@ -100,6 +101,7 @@ module Magnetic
   real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
   real :: eta_shock=0.0
+  real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., etaj20=0.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
@@ -142,6 +144,10 @@ module Magnetic
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_perp=.false.
+  logical :: lresi_etava=.false.
+  logical :: lresi_etaj=.false.
+  logical :: lresi_etaj2=.false.
+  logical :: lresi_etajrho=.false.
   logical :: lresi_shell=.false.
   logical :: lresi_smagorinsky=.false.
   logical :: lresi_smagorinsky_cross=.false.
@@ -228,7 +234,8 @@ module Magnetic
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
       lweyl_gauge, lupw_aa, alphaSSm, alpha_rmax, alpha_width, eta_int, &
-      eta_ext, eta_shock, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
+      eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
+      wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
       lB_ext_pot, displacement_gun, pertaa, pertamplaa, D_smag, brms_target, &
       rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -532,6 +539,10 @@ module Magnetic
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
+  integer :: idiag_etavamax=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim v_A$
+  integer :: idiag_etajmax=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim J / \sqrt{\rho}$
+  integer :: idiag_etaj2max=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim J^2 / \rho$
+  integer :: idiag_etajrhomax=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim J / \rho$
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
   integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component 
                                 ! DIAG_DOC: of J parallel to B 
@@ -587,6 +598,7 @@ module Magnetic
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables
+      use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -658,6 +670,10 @@ module Magnetic
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
       lresi_eta_shock_perp=.false.
+      lresi_etava=.false.
+      lresi_etaj=.false.
+      lresi_etaj2=.false.
+      lresi_etajrho=.false.
       lresi_smagorinsky=.false.
       lresi_smagorinsky_cross=.false.
       lresi_anomalous=.false.
@@ -711,6 +727,19 @@ module Magnetic
           if (.not. lshock) &
               call fatal_error('initialize_magnetic', &
               'shock resistivity, but module setting SHOCK=noshock')
+        case ('eta_va')
+          if (lroot) print*, 'resistivity: eta_va'
+          lresi_etava=.true.
+        case ('eta_j')
+          if (lroot) print*, 'resistivity: eta_j'
+          lresi_etaj=.true.
+        case ('eta_j2')
+          if (lroot) print*, 'resistivity: eta_j2'
+          lresi_etaj2=.true.
+          etaj20 = eta_j2 * mu0**2 * dxmax**3 / cs0
+        case ('eta_jrho')
+          if (lroot) print*, 'resistivity: eta_jrho'
+          lresi_etajrho=.true.
         case ('smagorinsky')
           if (lroot) print*, 'resistivity: smagorinsky'
           lresi_smagorinsky=.true.
@@ -762,6 +791,10 @@ module Magnetic
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
+        if (lresi_etava .and. eta_va==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_va is zero!')
+        if (lresi_etaj .and. eta_j==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_j is zero!')
+        if (lresi_etaj2 .and. eta_j2==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_j2 is zero!')
+        if (lresi_etajrho .and. eta_jrho==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_jrho is zero!')
         if (lresi_anomalous.and.eta_anom==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_anom is zero!')
@@ -1160,6 +1193,22 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
+      if (lresi_etava) then
+        lpenc_requested(i_etava)=.true.
+        lpenc_requested(i_jj)=.true.
+      endif
+      if (lresi_etaj) then
+        lpenc_requested(i_etaj)=.true.
+        lpenc_requested(i_jj)=.true.
+      endif
+      if (lresi_etaj2) then
+        lpenc_requested(i_etaj2)=.true.
+        lpenc_requested(i_jj)=.true.
+      endif
+      if (lresi_etajrho) then
+        lpenc_requested(i_etajrho)=.true.
+        lpenc_requested(i_jj)=.true.
+      endif
       if (lresi_shell) then
         lpenc_requested(i_r_mn)=.true.
         lpenc_requested(i_evr)=.true.
@@ -1302,6 +1351,10 @@ module Magnetic
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 ) & 
           lpenc_diagnos(i_b2)=.true.
+      if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
+      if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
+      if (idiag_etaj2max/=0) lpenc_diagnos(i_etaj2)=.true.
+      if (idiag_etajrhomax/=0) lpenc_diagnos(i_etajrho)=.true.
 ! to calculate the angle between magnetic field and current.
       if (idiag_cosjbm/=0) then
         lpenc_diagnos(i_cosjb)=.true.
@@ -1360,6 +1413,11 @@ module Magnetic
       endif
       if (lpencil_in(i_va2)) then
         lpencil_in(i_b2)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
+      if (lpencil_in(i_etava)) lpencil_in(i_va2)=.true.
+      if (lpencil_in(i_etaj) .or. lpencil_in(i_etaj2) .or. lpencil_in(i_etajrho)) then
+        lpencil_in(i_j2)=.true.
         lpencil_in(i_rho1)=.true.
       endif
       if (lpencil_in(i_j2)) lpencil_in(i_jj)=.true.
@@ -1676,6 +1734,26 @@ module Magnetic
           p%va2=abs(p%va2)
         endif
       endif
+! eta_va
+      if (lpencil(i_etava)) then
+        p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
+        if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
+      endif
+! eta_j
+      if (lpencil(i_etaj)) then
+        p%etaj = mu0 * eta_j * dxmax**2 * sqrt(mu0 * p%j2 * p%rho1)
+        if (eta_min > 0.) where (p%etaj < eta_min) p%etaj = 0.
+      endif
+! eta_j2
+      if (lpencil(i_etaj2)) then
+        p%etaj2 = etaj20 * p%j2 * p%rho1
+        if (eta_min > 0.) where (p%etaj2 < eta_min) p%etaj2 = 0.
+      endif
+! eta_jrho
+      if (lpencil(i_etajrho)) then
+        p%etajrho = mu0 * eta_jrho * dxmax * sqrt(p%j2) * p%rho1
+        if (eta_min > 0.) where (p%etajrho < eta_min) p%etajrho = 0.
+      endif
 ! jxb
       if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
 ! jxbr
@@ -1944,7 +2022,7 @@ module Magnetic
 !
       use Deriv, only: der6
       use Diagnostics
-      use EquationOfState, only: eoscalc,gamma_m1
+      use EquationOfState, only: eoscalc,gamma_m1,cs0
       use Io, only: output_pencil
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
@@ -2130,6 +2208,30 @@ module Magnetic
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock_perp
         etatotal=etatotal+eta_shock*p%shock_perp
       endif
+!
+      if (lresi_etava) then
+        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
+        etatotal = etatotal + p%etava
+      end if
+!
+      if (lresi_etaj) then
+        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i)
+        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etaj
+        etatotal = etatotal + p%etaj
+      end if
+!
+      if (lresi_etaj2) then
+        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i)
+        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etaj2
+        etatotal = etatotal + p%etaj2
+      end if
+!
+      if (lresi_etajrho) then
+        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i)
+        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etajrho
+        etatotal = etatotal + p%etajrho
+      end if
 !
       if (lresi_smagorinsky) then
         eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
@@ -2582,6 +2684,10 @@ module Magnetic
         if (idiag_etasmagm/=0)   call sum_mn_name(eta_smag,idiag_etasmagm)
         if (idiag_etasmagmin/=0) call max_mn_name(-eta_smag,idiag_etasmagmin,lneg=.true.)
         if (idiag_etasmagmax/=0) call max_mn_name(eta_smag,idiag_etasmagmax)
+        if (idiag_etavamax/=0) call max_mn_name(p%etava,idiag_etavamax)
+        if (idiag_etajmax/=0) call max_mn_name(p%etaj,idiag_etajmax)
+        if (idiag_etaj2max/=0) call max_mn_name(p%etaj2,idiag_etaj2max)
+        if (idiag_etajrhomax/=0) call max_mn_name(p%etajrho,idiag_etajrhomax)
 !
 !  Not correct for hyperresistivity:
 !
@@ -5826,6 +5932,7 @@ module Magnetic
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0; idiag_bmxy_rms=0
         idiag_brsphmphi=0; idiag_bthmphi=0; idiag_brmsh=0; idiag_brmsn=0
         idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0
+        idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -5974,6 +6081,10 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'etasmagm',idiag_etasmagm)
         call parse_name(iname,cname(iname),cform(iname),'etasmagmin',idiag_etasmagmin)
         call parse_name(iname,cname(iname),cform(iname),'etasmagmax',idiag_etasmagmax)
+        call parse_name(iname,cname(iname),cform(iname),'etavamax',idiag_etavamax)
+        call parse_name(iname,cname(iname),cform(iname),'etajmax',idiag_etajmax)
+        call parse_name(iname,cname(iname),cform(iname),'etaj2max',idiag_etaj2max)
+        call parse_name(iname,cname(iname),cform(iname),'etajrhomax',idiag_etajrhomax)
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
         call parse_name(iname,cname(iname),cform(iname),'jparallelm',idiag_jparallelm)
         call parse_name(iname,cname(iname),cform(iname),'jperpm',idiag_jperpm)
@@ -6407,6 +6518,10 @@ module Magnetic
         write(3,*) 'ihypres=',ihypres
         write(3,*) 'idiag_bmxy_rms=',idiag_bmxy_rms
         write(3,*) 'idiag_cosjbm=',idiag_cosjbm
+        write(3,*) 'i_etavamax=', idiag_etavamax
+        write(3,*) 'i_etajmax=', idiag_etajmax
+        write(3,*) 'i_etaj2max=', idiag_etaj2max
+        write(3,*) 'i_etajrhomax=', idiag_etajrhomax
         write(3,*) 'idiag_jparallel=',idiag_jparallelm
         write(3,*) 'idiag_jperp=',idiag_jperpm
       endif
