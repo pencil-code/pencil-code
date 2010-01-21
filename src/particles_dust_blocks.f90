@@ -238,6 +238,13 @@ module Particles
             tausp1_species(1)=1/tausp_species(1)
       endif
 !
+!  Share friction time (but only if Epstein drag regime!).
+!
+      if (ldraglaw_epstein) then
+        call put_shared_variable( 'tausp_species', tausp_species)
+        call put_shared_variable('tausp1_species',tausp1_species)
+      endif
+!
 !  Global gas pressure gradient seen from the perspective of the dust.
 !
       if (beta_dPdr_dust/=0.0) then
@@ -476,22 +483,22 @@ module Particles
 !
             call random_number_wrapper(phi)
 !
-             if (lcartesian_coords) then
-               phi = 2*pi*phi
-               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
-               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
-             elseif (lcylindrical_coords) then
-               phi = xyz0_par(2)+phi*Lxyz_par(2)
-               if (nxgrid/=1) fp(k,ixp)=rad
-               if (nygrid/=1) fp(k,iyp)=phi
-             elseif (lspherical_coords) then
-               call fatal_error('init_particles','random-cylindrical '// &
-                   'not implemented for spherical coordinates') 
-             endif
+            if (lcartesian_coords) then
+              phi = 2*pi*phi
+              if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
+              if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
+            elseif (lcylindrical_coords) then
+              phi = xyz0_par(2)+phi*Lxyz_par(2)
+              if (nxgrid/=1) fp(k,ixp)=rad
+              if (nygrid/=1) fp(k,iyp)=phi
+            elseif (lspherical_coords) then
+              call fatal_error('init_particles','random-cylindrical '// &
+                  'not implemented for spherical coordinates') 
+            endif
 !
-             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-             if (nzgrid/=1) &
-                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nzgrid/=1) &
+                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
 
@@ -722,7 +729,7 @@ k_loop:   do while (.not. (k>npar_loc))
 
         endselect
 
-      enddo ! do j=1,ninit
+      enddo !  do j=1,ninit
 !
 !  Interface for user's own initial condition for position
 !
