@@ -12,19 +12,19 @@
 !***************************************************************
 !
 module Special
-
+!
   use Cdata
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-
+!
   real, parameter, dimension (37) :: intlnT = (/ &
           8.74982,  8.86495,  8.98008,  9.09521,  9.21034,  9.44060,  9.67086,  9.90112,  10.1314,  10.2465 &
        ,  10.3616,  10.5919,  10.8221,  11.0524,  11.2827,  11.5129,  11.7432,  11.9734,  12.2037,  12.4340 &
@@ -58,7 +58,7 @@ module Special
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -125,7 +125,7 @@ module Special
                           lpenc_diagnos(i_cv1) =.true.
                           lpenc_diagnos(i_cs2)=.true.
       endif
-
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -133,7 +133,6 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -145,7 +144,7 @@ module Special
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-      
+!      
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
@@ -158,16 +157,16 @@ module Special
       else
          read(unit,NML=special_run_pars,ERR=99)
       endif
-
+!
  99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
       integer, intent(in) :: unit
-
+!
       call keep_compiler_quiet(unit)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -206,7 +205,6 @@ module Special
         write(3,*) 'i_dtchi2=',idiag_dtchi2
       endif
 !
-
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -260,17 +258,17 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nxgrid,nygrid) :: kx,ky,k2
-
+!
       real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
       real, dimension(nxgrid,nygrid) :: Ax_i,Ay_i
       real, dimension(nxgrid,nygrid),save :: Ax_r,Ay_r
-      
+!
       real, dimension(nxgrid) :: kxp
       real, dimension(nygrid) :: kyp
-
+!
       real :: mu0_SI,u_b
       integer :: i,idx2,idy2
-
+!
       ! Auxiliary quantities:
       !
       ! idx2 and idy2 are essentially =2, but this makes compilers
@@ -326,9 +324,7 @@ module Special
       endif
 !
 !  Do somehow Newton cooling
-!  
-      
-      
+!       
       f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
            dt*bmdi * Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 
@@ -401,21 +397,20 @@ module Special
       !
       !  Get reference temperature
       !
-      !
       newton  = exp(blnTT(n)-p%lnTT)-1.
       newton  = newton  * tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
       !
       !  Add newton cooling term to entropy
-      !      
+      !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
       !
       if (lfirst.and.ldt) then
-         !
+!
          if (.not.(n==n1 .and. ipz==0)) then
             dt1_max=max(dt1_max*1D0 ,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
          endif
       endif
-      !
+!
     endsubroutine calc_heat_cool_newton
 !***********************************************************************
      subroutine calc_heatcond_tensor(df,p)
@@ -488,12 +483,17 @@ module Special
       enddo
 !
       gKp = 3.5 * p%glnTT
-      where (chi_1 .gt. chi_2)
-        gKp(:,1)  = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,tmpj**2.)
-        gKp(:,2)  = p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,tmpj**2.)
-        gKp(:,3)  = p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,tmpj**2.)
-        chi_1 =  chi_2
-      endwhere
+!
+!  Reduce heat flux if saturation heat flux (Ksat) is set 
+!
+      if (Ksat/=0.) then 
+        where (chi_1 .gt. chi_2)
+          gKp(:,1)  = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,tmpj**2.)
+          gKp(:,2)  = p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,tmpj**2.)
+          gKp(:,3)  = p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,tmpj**2.)
+          chi_1 =  chi_2
+        endwhere
+      endif
 !
       call dot(bunit,gKp,tmpj)
       call dot(bunit,p%glnTT,tmpk)
@@ -742,18 +742,18 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput
       type (pencil_case) :: p
-      
+!
       heatinput=heatamp*(+exp(-abs(z(n))/heatexp) & 
                          +exp(-abs(z(n))/heatexp*30)*1e4) & 
                          *exp(-p%lnrho-p%lntt)
       
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+heatinput
-
+!
       if (lfirst.and.ldt) then
          !
          dt1_max=max(dt1_max,heatinput/cdts)
       endif
-
+!
     endsubroutine calc_artif_heating
 !***********************************************************************
     
