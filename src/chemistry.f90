@@ -4487,7 +4487,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer, intent(in) :: index, dir
 !
       if (dir==1) then 
-        slice=cp_full(index,m1:m2,n1:n2)/cv_full(index,,m1:m2,n1:n2)
+        slice=cp_full(index,m1:m2,n1:n2)/cv_full(index,m1:m2,n1:n2)
       elseif (dir==2) then 
         slice=cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2)
       elseif (dir==3) then 
