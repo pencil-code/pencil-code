@@ -52,7 +52,7 @@ module Special
 !!
 !!   integer :: i_POSSIBLEDIAGNOSTIC=0
 !!
-    integer :: idiag_dtchi2=0      ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
+    integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
@@ -119,7 +119,7 @@ module Special
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-! 
+!
       if (idiag_dtchi2/=0) then
                           lpenc_diagnos(i_rho1)=.true.
                           lpenc_diagnos(i_cv1) =.true.
@@ -144,7 +144,7 @@ module Special
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-!      
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
@@ -231,7 +231,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-!           
+!
       if (Kgpara/=0) call calc_heatcond_tensor(df,p)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
@@ -262,7 +262,6 @@ module Special
       real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
       real, dimension(nxgrid,nygrid) :: Ax_i,Ay_i
       real, dimension(nxgrid,nygrid),save :: Ax_r,Ay_r
-!
       real, dimension(nxgrid) :: kxp
       real, dimension(nygrid) :: kyp
 !
@@ -324,16 +323,16 @@ module Special
       endif
 !
 !  Do somehow Newton cooling
-!       
+!
       f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
            dt*bmdi * Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 
       f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
            dt*bmdi * Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
-      
-      if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')      
+
+      if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')
       endif
-!      
+!
     endsubroutine special_before_boundary
 !***********************************************************************
     subroutine calc_heat_cool_newton(df,p)
@@ -356,12 +355,14 @@ module Special
 !
       if (it .eq. 1 .and. lfirstpoint) then
          inquire(IOLENGTH=lend) dummy
-         open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
+         open (10,file='driver/b_lnT.dat',form='unformatted', &
+             status='unknown',recl=lend*150)
          read (10) b_lnT
          read (10) b_z
          close (10)
          !
-         open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*150)
+         open (10,file='driver/b_lnrho.dat',form='unformatted', &
+             status='unknown',recl=lend*150)
          read (10) b_lnrho
          close (10)
          !
@@ -374,7 +375,7 @@ module Special
             b_z = b_z * 1.e8 / unit_length
          endif
          !
-         do j=n1,n2 
+         do j=n1,n2
             if (z(j) .lt. b_z(1) ) then
                blnTT(j) = b_lnT(1)
                blnrho(j)= b_lnrho(1)
@@ -385,9 +386,11 @@ module Special
                do i=1,149
                   if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1)) then
                      !
-                     ! linear interpol   y = m*(x-x1) + y1   
-                     blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (z(j)-b_z(i)) + b_lnT(i)
-                     blnrho(j) = (b_lnrho(i+1)-b_lnrho(i))/(b_z(i+1)-b_z(i)) * (z(j)-b_z(i)) + b_lnrho(i)
+                     ! linear interpol   y = m*(x-x1) + y1
+                    blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) *&
+                        (z(j)-b_z(i)) + b_lnT(i)
+                    blnrho(j) = (b_lnrho(i+1)-b_lnrho(i))/(b_z(i+1)-b_z(i)) *&
+                        (z(j)-b_z(i)) + b_lnrho(i)
                      exit
                   endif
                enddo
@@ -406,8 +409,9 @@ module Special
       !
       if (lfirst.and.ldt) then
 !
-         if (.not.(n==n1 .and. ipz==0)) then
-            dt1_max=max(dt1_max*1D0 ,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
+        if (.not.(n==n1 .and. ipz==0)) then
+            dt1_max=max(dt1_max*1D0 ,tdown*exp(-allp*(z(n)*&
+                unit_length*1e-6))/cdts)
          endif
       endif
 !
@@ -463,7 +467,7 @@ module Special
       call multsv(quenchfactor,tmpv,hhh)
 !
       call dot(hhh,p%glnTT,rhs)
-!      
+!
       Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
       call dot2(p%glnTT,tmpj,FAST_SQRT=.true.)
 !
@@ -483,10 +487,16 @@ module Special
       enddo
 !
       gKp = 3.5 * p%glnTT
+      where (chi_1 .gt. chi_2)
+        gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,tmpj**2.)
+        gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,tmpj**2.)
+        gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,tmpj**2.)
+        chi_1 =  chi_2
+      endwhere
 !
-!  Reduce heat flux if saturation heat flux (Ksat) is set 
+!  Reduce heat flux if saturation heat flux (Ksat) is set
 !
-      if (Ksat/=0.) then 
+      if (Ksat/=0.) then
         where (chi_1 .gt. chi_2)
           gKp(:,1)  = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,tmpj**2.)
           gKp(:,2)  = p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,tmpj**2.)
@@ -507,7 +517,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ rhs
 !
-!  for timestep extension multiply with the 
+!  for timestep extension multiply with the
 !  cosine between grad T and bunit
 !
       call dot(p%bb,p%glnTT,cosbgT)
@@ -558,9 +568,10 @@ module Special
 !
       call dot(p%glnrho,p%glnTT,g2)
 !
-      rhs = exp(p%lnTT)*(tmpi*(p%del2lnTT + 2.*tmpi + g2) +  tmpj)/max(tini,sqrt(tmpi))
+      rhs=exp(p%lnTT)*(tmpi*(p%del2lnTT+2.*tmpi + g2)+tmpj)/max(tini,sqrt(tmpi))
 !
-!      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
+!      if (itsub .eq. 3 .and. ip .eq. 118) &
+!          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ Kgpara2 * rhs
 !
@@ -570,12 +581,12 @@ module Special
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
-      endif      
+      endif
 !
     endsubroutine calc_heatcond_grad
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
- 
+!
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
       use EquationOfState, only : gamma
@@ -594,7 +605,7 @@ module Special
       if (headtt) print*,'special/calc_heatcond_chiconst',hcond1
 !
 !  Define chi= K_0/rho
-!      
+!
 !  calculate unit vector of bb
 !
       call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
@@ -647,9 +658,11 @@ module Special
 !
       rhs = gamma*chix*tmp
 !
-      if (.not.(ipz.eq.nprocz-1.and.n.ge.n2-3)) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
+      if (.not.(ipz.eq.nprocz-1.and.n.ge.n2-3)) &
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
-!      if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
+!      if (itsub .eq. 3 .and. ip .eq. 118) &
+!          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
@@ -676,8 +689,9 @@ module Special
       integer :: i
       real :: unit_lnQ
       type (pencil_case) :: p
-! 
-      unit_lnQ=3*alog(real(unit_velocity))+5*alog(real(unit_length))+alog(real(unit_density))
+!
+      unit_lnQ=3*alog(real(unit_velocity))+&
+          5*alog(real(unit_length))+alog(real(unit_density))
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
 !     calculate ln(ne*ni) :
@@ -688,10 +702,10 @@ module Special
 !
       lnQ=-1000.
       do i=1,36
-         where(lnTT_SI .ge. intlnT(i) .and. lnTT_SI .lt. intlnT(i+1))            
+         where(lnTT_SI .ge. intlnT(i) .and. lnTT_SI .lt. intlnT(i+1))
             slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-            ordinate = intlnQ(i) - slope*intlnT(i) 
-            lnQ = slope*lnTT_SI + ordinate            
+            ordinate = intlnQ(i) - slope*intlnT(i)
+            lnQ = slope*lnTT_SI + ordinate
          endwhere
       enddo
 !
@@ -699,40 +713,42 @@ module Special
          lnQ1=-1000.
          lnQ2=-1000.
          do i=1,36
-            where(lnTT_SI .ge. intlnT(i) .and. lnTT_SI .lt. intlnT(i+1) .and. lnTT_SI .ge. 11.513)
-               slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-               ordinate = intlnQ(i) - slope*intlnT(i) 
-               lnQ1 = slope*lnTT_SI + ordinate            
-            endwhere
-            where(lnTT_SI .ge. intlnT(i) .and. lnTT_SI .lt. intlnT(i+1) .and. lnTT_SI .lt. 11.513)
-               slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-               ordinate = intlnQ(i) - slope*intlnT(i) 
-               lnQ2 = slope*lnTT_SI + ordinate            
+           where(lnTT_SI.ge.intlnT(i).and.lnTT_SI.lt.intlnT(i+1).and.lnTT_SI.ge.11.513)
+             slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
+             ordinate = intlnQ(i) - slope*intlnT(i)
+             lnQ1 = slope*lnTT_SI + ordinate
+           endwhere
+           where(lnTT_SI.ge.intlnT(i).and.lnTT_SI.lt.intlnT(i+1).and.lnTT_SI.lt.11.513)
+              slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
+               ordinate = intlnQ(i) - slope*intlnT(i)
+               lnQ2 = slope*lnTT_SI + ordinate
             endwhere
          enddo
       endif
-!      
+!
       rtv_cool = gamma*p%cp1*exp(lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho)
 !
       rtv_cool = rtv_cool*cool_RTV
 !     for adjusting by setting cool_RTV in run.in
 !
-      rtv_cool = rtv_cool*(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      rtv_cool=rtv_cool*(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
 !
 !     add to temperature equation
 !
       if (ltemperature) then
          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-!         if (itsub .eq. 3 .and. ip .eq. 118) call output_pencil(trim(directory)//'/rtv.dat',rtv_cool,1)
+!         if (itsub .eq. 3 .and. ip .eq. 118) &
+!             call output_pencil(trim(directory)//'/rtv.dat',rtv_cool,1)
       else
-         if (lentropy) call stop_it('solar_corona:calc_heat_cool: lentropy=T not implented')
+         if (lentropy) &
+             call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
       endif
 !
       if (lfirst.and.ldt) then
          !
          dt1_max=max(dt1_max,rtv_cool/cdts)
       endif
-!           
+!
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
     subroutine calc_artif_heating(df,p)
@@ -743,10 +759,10 @@ module Special
       real, dimension (nx) :: heatinput
       type (pencil_case) :: p
 !
-      heatinput=heatamp*(+exp(-abs(z(n))/heatexp) & 
-                         +exp(-abs(z(n))/heatexp*30)*1e4) & 
+      heatinput=heatamp*(+exp(-abs(z(n))/heatexp) &
+                         +exp(-abs(z(n))/heatexp*30)*1e4) &
                          *exp(-p%lnrho-p%lntt)
-      
+!
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+heatinput
 !
       if (lfirst.and.ldt) then
@@ -756,7 +772,7 @@ module Special
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
-    
+
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -766,6 +782,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
 endmodule Special
-
