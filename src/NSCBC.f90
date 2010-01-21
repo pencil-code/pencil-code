@@ -343,35 +343,27 @@ include 'NSCBC.h'
       real, dimension(ny,nz) :: dlnrho_dx, TT, mu1, grad_mu1
       real, dimension(ny,nz) :: rho0, L_1, L_2, L_3, L_4, L_5,parallell_term_uz
       real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
-      real, dimension(ny,nz) :: parallell_term_ux,d2u1_dy2,d2u1_dz2
+      real, dimension(ny,nz) :: parallell_term_ux
       real, dimension(ny,nz) :: parallell_term_P
-      real, dimension(ny,nz) :: d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
       real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
       real, dimension(ny,nz) :: T_1,T_2,T_3,T_4,T_5,P0
       real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
       real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz) :: cs0_ar,cs20_ar, gamma,tmp1_T
-      real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (my,mz) :: tmp23,tmp32,dYk_dx,tmp11,tmp21,tmp31,tmp1_lnrho
-      real, dimension (ny) :: tmpy
-      real, dimension (nz) :: tmpz
-      real, dimension (3) :: jet_inner_diameter,jet_outer_diameter
-      real, dimension (2) :: jet_center, jet_velocity
-      real :: Mach,KK,nu,rad,coflow_inner_diameter, cs0_average
+      real, dimension (my,mz) :: cs0_ar,cs20_ar, gamma
+      real, dimension (my,mz) :: dYk_dx
+      real :: Mach,KK,nu,coflow_inner_diameter, cs0_average
       integer lll,i,jjj,kkk,j,k
-      integer sgn
-      real :: shift, grid_shift, weight, round
-      integer :: iround,lowergrid,uppergrid,ii
-      real, dimension(3) :: velo,tmp
-      real, dimension(2) :: radius,theta
-      real :: radius_mean, velocity_ratio,An,smooth
+      integer sgn,stat,direction
       logical :: non_zero_transveral_velo
-
-
-
+      real, allocatable, dimension(:,:,:) :: slice
+!
       intent(inout) :: f
       intent(inout) :: df
-
+!
+!  Define the direction of this boundary
+!
+      direction=1
+!
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
       if (llinlet.and..not.present(u_t)) call stop_it(&
@@ -389,20 +381,26 @@ include 'NSCBC.h'
         print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
       endselect
 !
+!  Define the slice of interest
+!
+      allocate(slice(ny,nz,mfarray),STAT=stat)
+      if (stat>0) call stop_it("Couldn't allocate memory for slice ")
+      slice=f(lll,m1:m2,n1:n2,:)
+!
 !  Find density
 !
       if (ldensity_nolog) then
-        rho0 = f(lll,m1:m2,n1:n2,irho)
+        rho0 = slice(:,:,irho)
       else
-        rho0 = exp(f(lll,m1:m2,n1:n2,ilnrho))
+        rho0 = exp(slice(:,:,ilnrho))
       endif
 !
 !  Find temperature
 !
       if (iTT>0) then
-        TT = f(lll,m1:m2,n1:n2,iTT)
+        TT = slice(:,:,iTT)
       elseif (ilnTT>0) then
-        TT = exp(f(lll,m1:m2,n1:n2,ilnTT))
+        TT = exp(slice(:,:,ilnTT))
       endif
 !
 !  Get viscoity
@@ -426,106 +424,26 @@ include 'NSCBC.h'
         print*,"chemistry. Boundary treatment skipped."
         return
       endif
-      prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
+     
+!
+!  Find derivatives at boundary
+!
+      call derivate_boundary(f,sgn,1,lll,dui_dxj,grad_T,grad_rho)
+!
+!  Get some thermodynamical variables
+!
+      call get_thermodynamics(mu1,grad_mu1,lll,sgn,gamma,direction)
+
+ prefac1 = -1./(2.*cs20_ar(m1:m2,n1:n2))
       prefac2 = -1./(2.*rho0*cs0_ar(m1:m2,n1:n2))
-!
-!  Calculate derivatives in the boundary normal direction
-!  For the inlet the divergence of the velocity might be found both by one-sided
-!  derivatives (default) and by central differencing.
-!  The central differencing is particularly interesting when turbulent
-!  inlet conditions from a pre-run data file is used.
-!
-      call der_onesided_4_slice(f,sgn,ilnrho,grad_rho(:,:,1),lll,1)
-      if (onesided_inlet .or. .not. llinlet) then
-        call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
-        call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
-        call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
-        if (ilnTT>0 .or. iTT>0) then
-          call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,1),lll,1)
-          call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
-          call get_gamma_slice(gamma,1,lll)
-        else
-          gamma=1.
-        endif
-      else
-        do k=n1,n2
-          call der_pencil(1,f(lll,:,k,iux),tmp11(:,k))
-          call der_pencil(1,f(lll,:,k,iuy),tmp21(:,k))
-          call der_pencil(1,f(lll,:,k,iuz),tmp31(:,k))
-          if (ilnTT>0 .or. iTT>0) then
-            call der_pencil(1,f(lll,:,k,ilnTT),tmp1_T(:,k))
-          endif
-        enddo
-        dui_dxj(:,:,1,1)=tmp11(m1:m2,n1:n2)
-        dui_dxj(:,:,2,1)=tmp21(m1:m2,n1:n2)
-        dui_dxj(:,:,3,1)=tmp31(m1:m2,n1:n2)
-        if (ilnTT>0 .or. iTT>0) then
-          grad_T(:,:,1)=tmp1_T(m1:m2,n1:n2)
-          call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
-          call get_gamma_slice(gamma,1,lll)
-        else
-          gamma=1.
-        endif
-      endif
-!
-!  Do central differencing in the directions parallell to the boundary 
-!  first in the y-direction......
-!
-      if (nygrid /= 1) then
-        do i=n1,n2
-          call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
-          call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
-          call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
-          call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
-          call der2_pencil(2,f(lll,:,i,iux),tmpy)
-          d2u1_dy2(:,i-n1+1)=tmpy(:)
-          call der2_pencil(2,f(lll,:,i,iuy),tmpy)
-          d2u2_dy2(:,i-n1+1)=tmpy(:)
-          call der2_pencil(2,f(lll,:,i,iuz),tmpy)
-          d2u3_dy2(:,i-n1+1)=tmpy(:)
-        enddo
-      else
-        tmp32=0
-        tmp22=0
-        tmp12=0
-        tmp2_lnrho=0
-        d2u1_dy2=0
-        d2u2_dy2=0
-        d2u3_dy2=0
-      endif
-      dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
-      dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
-      dui_dxj(:,:,3,2)=tmp32(m1:m2,n1:n2)
-      grad_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
-!
-!  .... then in the z-direction
-!
-      if (nzgrid /= 1) then
-        do i=m1,m2
-          call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
-          call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
-          call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
-          call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
-          call der2_pencil(3,f(lll,i,:,iux),tmpz)
-          d2u1_dz2(i-m1+1,:)=tmpz(:)
-          call der2_pencil(3,f(lll,i,:,iuy),tmpz)
-          d2u2_dz2(i-m1+1,:)=tmpz(:)
-          call der2_pencil(3,f(lll,i,:,iuz),tmpz)
-          d2u3_dz2(i-m1+1,:)=tmpz(:)
-        enddo
-      else
-        tmp33=0
-        tmp23=0
-        tmp13=0
-        tmp3_lnrho=0
-        d2u1_dz2=0
-        d2u2_dz2=0
-        d2u3_dz2=0
-      endif
-      dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
-      dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
-      dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
-      grad_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
+
+
+!!$      if (ilnTT>0 .or. iTT>0) then
+!!$        call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
+!!$        call get_gamma_slice(gamma,1,lll)
+!!$      else
+!!$        gamma=1.
+!!$      endif
 !
 !  Find gradient of rho and temperature
 !
@@ -583,94 +501,10 @@ include 'NSCBC.h'
 !
       if (llinlet) then
 !
-!  Find velocity at inlet.
-!  First we check if we are using a pre-run data file as inlet
-!  condition, if not the chosen inlet profile will be used.
+!  Find the velocity to be used at the inlet.
 !
-        if (inlet_from_file) then
-          non_zero_transveral_velo=.true.
-          if (Lx_in == 0) call fatal_error('bc_nscbc_prf_x',&
-              'Lx_in=0. Check that the precisions are the same.')
-          round=t*u_t/Lx_in
-          iround=int(round)
-          shift=round-iround
-          grid_shift=shift*nx_in
-          lowergrid=l1_in+int(grid_shift)
-          uppergrid=lowergrid+1
-          weight=grid_shift-int(grid_shift)
-!
-!  Do we want a smooth start
-!
-          if (smooth_time .gt. 0) then
-            smooth=min(t/smooth_time,1.)
-          else
-            smooth=1.
-          endif
-!
-!  Set the turbulent inlet velocity
-!
-          u_in(:,:,:)&
-              =(f_in(lowergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*(1-weight)&
-              +f_in(uppergrid,m1_in:m2_in,n1_in:n2_in,iux:iuz)*weight)*smooth
-!
-!  Add the mean inlet velocity to the turbulent one
-!
-          u_in(:,:,1)=u_in(:,:,1)+u_t
-        else
-!
-! Define velocity profile at inlet
-!
-          u_in=0
-          do j=1,ninit
-            select case (inlet_profile(j))
-!
-            case ('nothing')
-              if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
-                  print*,'inlet_profile: nothing'
-              non_zero_transveral_velo=.false.
-!
-            case ('uniform')
-              if (lroot .and. it==1 .and. lfirst) &
-                  print*,'inlet_profile: uniform'
-              non_zero_transveral_velo=.false.
-              u_in(:,:,1)=u_in(:,:,1)+u_t
-!
-            case ('coaxial_jet')
-              if (lroot .and. it==1 .and. lfirst) &
-                  print*,'inlet_profile: coaxial_jet'
-              non_zero_transveral_velo=.true.
-              velocity_ratio=3.3
-              velo(1)=u_t
-              velo(2)=velo(1)*velocity_ratio
-              velo(3)=0.04*velo(2)
-              radius(1)=0.0182
-              radius(2)=radius(1)*2.
-              radius_mean=(radius(1)+radius(2))/2.
-              theta(1)=radius(1)/13.
-              theta(2)=radius(2)/20.
-              jet_center(1)=0
-              jet_center(2)=0
-              do jjj=1,ny
-                do kkk=1,nz
-                  rad=sqrt(&
-                      (y(jjj+m1-1)-jet_center(1))**2+&
-                      (z(kkk+n1-1)-jet_center(2))**2)
-                  ! Add mean velocity profile
-                  if (rad < radius_mean) then
-                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)&
-                        +(velo(1)+velo(2))/2&
-                        +(velo(2)-velo(1))/2*tanh((rad-radius(1))/(2*theta(1)))
-                  else
-                    u_in(jjj,kkk,1)=u_in(jjj,kkk,1)&
-                        +(velo(2)+velo(3))/2&
-                        +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
-                  endif
-                enddo
-              enddo
-            end select
-!            
-          enddo
-        endif
+        call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+            Lx_in,nx_in,u_t,1,m1_in,m2_in,n1_in,n2_in)
 !
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
@@ -841,8 +675,7 @@ include 'NSCBC.h'
       real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
       real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
       real, dimension(nx,nz) :: parallell_term_rho
-      real, dimension(nx,nz) :: parallell_term_ux,d2u1_dx2,d2u1_dz2
-      real, dimension(nx,nz) :: d2u2_dx2,d2u2_dz2,d2u3_dx2,d2u3_dz2
+      real, dimension(nx,nz) :: parallell_term_ux
       real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
       real, dimension(nx,nz,3) :: grad_rho, u_in
       real, dimension(nx,nz,3,3) :: dui_dxj
@@ -923,21 +756,12 @@ include 'NSCBC.h'
           call der_pencil(1,f(:,lll,i,ilnrho),tmp1_lnrho(:,i))
           call der_pencil(1,f(:,lll,i,iux),tmp11(:,i))
           call der_pencil(1,f(:,lll,i,iuz),tmp31(:,i))
-          call der2_pencil(1,f(:,lll,i,iux),tmpx)
-          d2u1_dx2(:,i-n1+1)=tmpx
-          call der2_pencil(1,f(:,lll,i,iuy),tmpx)
-          d2u2_dx2(:,i-n1+1)=tmpx
-          call der2_pencil(1,f(:,lll,i,iuz),tmpx)
-          d2u3_dx2(:,i-n1+1)=tmpx
         enddo
       else
         tmp31=0
         tmp21=0
         tmp11=0
         tmp1_lnrho=0
-        d2u1_dx2=0
-        d2u2_dx2=0
-        d2u3_dx2=0
       endif
       dui_dxj(:,:,3,1)=tmp31(l1:l2,n1:n2)
       dui_dxj(:,:,2,1)=tmp21(l1:l2,n1:n2)
@@ -952,21 +776,12 @@ include 'NSCBC.h'
           call der_pencil(3,f(i,lll,:,ilnrho),tmp3_lnrho(i,:))
           call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
           call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
-          call der2_pencil(3,f(i,lll,:,iux),tmpz)
-          d2u1_dz2(i,:)=tmpz
-          call der2_pencil(3,f(i,lll,:,iuy),tmpz)
-          d2u2_dz2(i,:)=tmpz
-          call der2_pencil(3,f(i,lll,:,iuz),tmpz)
-          d2u3_dz2(i,:)=tmpz
         enddo
       else
         tmp33=0
         tmp23=0
         tmp13=0
         tmp3_lnrho=0
-        d2u1_dz2=0
-        d2u2_dz2=0
-        d2u3_dz2=0
       endif
       dui_dxj(:,:,3,3)=tmp33(l1:l2,n1:n2)
       dui_dxj(:,:,2,3)=tmp23(l1:l2,n1:n2)
@@ -1289,5 +1104,220 @@ include 'NSCBC.h'
       if (allocated(z_in)) deallocate(z_in)
 !
     endsubroutine NSCBC_clean_up
+!***********************************************************************
+    subroutine find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+        domain_length,grid_points,u_t,direction,imin,imax,jmin,jmax)
+!
+!  Find velocity at inlet.
+!
+!  2010.01.20/Nils Erland L. Haugen: coded
+!
+      logical, intent(out) :: non_zero_transveral_velo
+      real, dimension(:,:,:), intent(out) :: u_in
+      real, intent(in) :: domain_length,u_t
+      integer, intent(in) :: grid_points,direction
+      integer, intent(in) :: imin,imax,jmin,jmax
+!
+      real :: shift, grid_shift, weight, round
+      integer :: iround,lowergrid,uppergrid,ii
+      real, dimension(3) :: velo,tmp
+      real, dimension(2) :: radius,theta
+      real :: radius_mean, velocity_ratio,An,smooth,rad
+      real, dimension (3) :: jet_inner_diameter,jet_outer_diameter
+      real, dimension (2) :: jet_center, jet_velocity
+      integer :: j,kkk,jjj
+!
+!  First we check if we are using a pre-run data file as inlet
+!  condition, if not the chosen inlet profile will be used.
+!
+        if (inlet_from_file) then
+          non_zero_transveral_velo=.true.
+          if (domain_length == 0) call fatal_error('find_velocity_at_inlet',&
+              'domain_length=0. Check that the precisions are the same.')
+          round=t*u_t/domain_length
+          iround=int(round)
+          shift=round-iround
+          grid_shift=shift*grid_points
+          lowergrid=l1_in+int(grid_shift)
+          uppergrid=lowergrid+1
+          weight=grid_shift-int(grid_shift)
+!
+!  Do we want a smooth start
+!
+          if (smooth_time .gt. 0) then
+            smooth=min(t/smooth_time,1.)
+          else
+            smooth=1.
+          endif
+!
+!  Set the turbulent inlet velocity
+!
+          call turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+!
+!  Add the mean inlet velocity to the turbulent one
+!
+          u_in(:,:,direction)=u_in(:,:,direction)+u_t
+        else
+!
+! Define velocity profile at inlet
+!
+          u_in=0
+          do j=1,ninit
+            select case (inlet_profile(j))
+!
+            case ('nothing')
+              if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+                  print*,'inlet_profile: nothing'
+              non_zero_transveral_velo=.false.
+!
+            case ('uniform')
+              if (lroot .and. it==1 .and. lfirst) &
+                  print*,'inlet_profile: uniform'
+              non_zero_transveral_velo=.false.
+              u_in(:,:,direction)=u_in(:,:,direction)+u_t
+!
+            case ('coaxial_jet')
+              if (lroot .and. it==1 .and. lfirst) &
+                  print*,'inlet_profile: coaxial_jet'
+              non_zero_transveral_velo=.true.
+              velocity_ratio=3.3
+              velo(1)=u_t
+              velo(2)=velo(1)*velocity_ratio
+              velo(3)=0.04*velo(2)
+              radius(1)=0.0182
+              radius(2)=radius(1)*2.
+              radius_mean=(radius(1)+radius(2))/2.
+              theta(1)=radius(1)/13.
+              theta(2)=radius(2)/20.
+              jet_center(1)=0
+              jet_center(2)=0
+
+              do jjj=imin,imax
+                do kkk=jmin,jmax
+                  rad=sqrt(&
+                      (y(jjj)-jet_center(1))**2+&
+                      (z(kkk)-jet_center(2))**2)
+                  ! Add mean velocity profile
+                  if (rad < radius_mean) then
+                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)&
+                        +(velo(1)+velo(2))/2&
+                        +(velo(2)-velo(1))/2*tanh((rad-radius(1))/(2*theta(1)))
+                  else
+                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)&
+                        +(velo(2)+velo(3))/2&
+                        +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
+                  endif
+                enddo
+              enddo
+            end select
+!            
+          enddo
+        endif
+!
+      end subroutine find_velocity_at_inlet
+!***********************************************************************
+      subroutine turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+!
+!  Set the turbulent inlet velocity
+!
+!  2010.01.21/Nils Erland: coded
+!
+        real, dimension(ny,nz,3), intent(out) :: u_in
+        integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
+        real, intent(in) :: weight,smooth
+!
+        u_in(:,:,:)&
+            =(f_in(lowergrid,imin:imax,jmin:jmax,iux:iuz)*(1-weight)&
+            +f_in(lowergrid+1,imin:imax,jmin:jmax,iux:iuz)*weight)*smooth
+!
+      end subroutine turbulent_vel_x
+!***********************************************************************
+      subroutine get_thermodynamics(mu1,grad_mu1,lll,sgn,gamma,direction)
+!
+!  Find thermodynamical quantities, including density and temperature
+!
+! 2010.01.21/Nils Erland: coded
+!
+        Use Chemistry
+!
+        integer, intent(in) :: direction, sgn,lll
+        real, dimension (my,mz), intent(out) :: gamma
+        real, dimension(ny,nz), intent(out)  :: mu1, grad_mu1
+!        
+!  Find mu1, grad_mu1 and gamma
+!
+        if (ilnTT>0 .or. iTT>0) then
+          if (direction==1) call get_mu1_slicex(mu1,grad_mu1,lll,sgn)
+          if (direction==2) call get_mu1_slicey(mu1,grad_mu1,lll,sgn)
+          if (direction==3) call get_mu1_slicez(mu1,grad_mu1,lll,sgn)
+          call get_gamma_slice(gamma,direction,lll)
+        else
+          gamma=1.
+        endif
+!
+    end subroutine get_thermodynamics
+!***********************************************************************
+      subroutine derivate_boundary(f,sgn,dir,lll,dui_dxj,grad_T,grad_rho)
+!
+!  Find all derivatives at the boundary
+!
+!  2010.01.21/Nils Erland: coded
+!
+        use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+!
+        integer, intent(in) :: sgn,dir,lll
+        real, dimension(:,:,:,:), intent(out) :: dui_dxj
+        real, dimension(:,:,:)  , intent(out) :: grad_T,grad_rho
+        real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+        real, dimension (my,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
+        real, dimension (my,mz) :: tmp23,tmp32,dYk_dx,tmp11,tmp21,tmp31,tmp1_lnrho
+        integer :: i
+!
+!  Initialize arrays
+!    
+        dui_dxj =0
+        grad_rho=0  
+!
+!  Find the derivatives in the direction normal to the boudary
+!
+        call der_onesided_4_slice(f,sgn,ilnrho,grad_rho(:,:,dir),lll,dir)
+        call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,dir),lll,dir)
+        call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,dir),lll,dir)
+        call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,dir),lll,dir)
+        if (ilnTT>0 .or. iTT>0) then
+          call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,dir),lll,dir)
+        endif
+!
+!  Do central differencing in the directions parallell to the boundary 
+!
+        if (dir == 1) then
+          if (nygrid /= 1) then
+            do i=n1,n2
+              call der_pencil(2,f(lll,:,i,iuy),tmp22(:,i))
+              call der_pencil(2,f(lll,:,i,ilnrho),tmp2_lnrho(:,i))
+              call der_pencil(2,f(lll,:,i,iux),tmp12(:,i))
+              call der_pencil(2,f(lll,:,i,iuz),tmp32(:,i))
+            enddo
+            dui_dxj(:,:,1,2)=tmp12(m1:m2,n1:n2)
+            dui_dxj(:,:,2,2)=tmp22(m1:m2,n1:n2)
+            dui_dxj(:,:,3,2)=tmp32(m1:m2,n1:n2)
+            grad_rho(:,:,2)=tmp2_lnrho(m1:m2,n1:n2)
+          endif
+          if (nzgrid /= 1) then
+            do i=m1,m2
+              call der_pencil(3,f(lll,i,:,iuz),tmp33(i,:))
+              call der_pencil(3,f(lll,i,:,ilnrho),tmp3_lnrho(i,:))
+              call der_pencil(3,f(lll,i,:,iux),tmp13(i,:))
+              call der_pencil(3,f(lll,i,:,iuy),tmp23(i,:))
+            enddo
+            dui_dxj(:,:,1,3)=tmp13(m1:m2,n1:n2)
+            dui_dxj(:,:,2,3)=tmp23(m1:m2,n1:n2)
+            dui_dxj(:,:,3,3)=tmp33(m1:m2,n1:n2)
+            grad_rho(:,:,3)=tmp3_lnrho(m1:m2,n1:n2)
+          endif
+        endif
+!
+      end subroutine derivate_boundary
 !***********************************************************************
 endmodule NSCBC
