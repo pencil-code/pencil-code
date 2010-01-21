@@ -121,7 +121,7 @@ include 'NSCBC.h'
       character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
       character (len=60) :: turbfile
-      integer j,k,direction,ip_ok,ip_test
+      integer j,k,ip_ok,ip_test
       real, dimension(mcom) :: valx,valy,valz
       logical :: proc_at_inlet
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
@@ -248,48 +248,43 @@ include 'NSCBC.h'
           case ('part_ref_outlet')
 !   Partially reflecting outlet.
             if (j==1) then 
-              call bc_nscbc_prf_x(f,df,topbot,.false.)
+              call bc_nscbc_prf(f,df,j,topbot,.false.)
             elseif (j==2) then 
-              call bc_nscbc_prf_y(f,df,topbot,.false.)
+              call bc_nscbc_prf(f,df,j,topbot,.false.)
             elseif (j==3) then 
-              call fatal_error("nscbc_boundtreat_xyz",&
-                  'bc_nscbc_prf_z is not yet implemented')
+              call bc_nscbc_prf(f,df,j,topbot,.false.)
             endif
           case ('part_ref_inlet')
 !   Partially reflecting inlet, ie, impose a velocity u_t.
             T_t=0
             if (j==1) then 
-              direction = 1
               if (ilnTT > 0) T_t=valx(ilnTT)
-              call bc_nscbc_prf_x(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valx(direction),T_t=T_t)
+              call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,&
+                  u_t=valx(j),T_t=T_t)
             elseif (j==2) then 
-              direction = 2
               if (ilnTT > 0) T_t=valy(ilnTT)
-              call bc_nscbc_prf_y(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valy(direction),T_t=T_t)
+              call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,&
+                  u_t=valy(j),T_t=T_t)
             elseif (j==3) then 
-              direction = 3
-              call fatal_error("nscbc_boundtreat_xyz",&
-                  'bc_nscbc_prf_z is not yet implemented')
+              if (ilnTT > 0) T_t=valz(ilnTT)
+              call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,&
+                  u_t=valz(j),T_t=T_t)
             endif
           case ('ref_inlet')
 !   Partially reflecting inlet, ie, impose a velocity u_t.
             T_t=0
             if (j==1) then 
-              direction = 1
               if (ilnTT > 0) T_t=valx(ilnTT)
-              call bc_nscbc_prf_x(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valx(direction),T_t=T_t)
+              call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,&
+                  u_t=valx(j),T_t=T_t)
             elseif (j==2) then 
-              direction = 2
               if (ilnTT > 0) T_t=valy(ilnTT)
-              call bc_nscbc_prf_y(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valy(direction),T_t=T_t)
+              call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,&
+                  u_t=valy(j),T_t=T_t)
             elseif (j==3) then 
-              direction = 3
-              call fatal_error("nscbc_boundtreat_xyz",&
-                  'bc_nscbc_prf_z is not yet implemented')
+              if (ilnTT > 0) T_t=valz(ilnTT)
+              call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,&
+                  u_t=valz(j),T_t=T_t)
             endif
           case ('subsonic_inflow')
 ! Subsonic inflow 
@@ -319,7 +314,7 @@ include 'NSCBC.h'
 !
     endsubroutine
 !***********************************************************************
-    subroutine bc_nscbc_prf_x(f,df,topbot,non_reflecting_inlet,linlet,u_t,T_t)
+    subroutine bc_nscbc_prf(f,df,dir,topbot,non_reflecting_inlet,linlet,u_t,T_t)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
 !   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
@@ -350,7 +345,7 @@ include 'NSCBC.h'
       real, dimension (ny,nz) :: cs,cs2, gamma,dYk_dx
       real :: Mach,KK,nu,coflow_inner_diameter, cs0_average
       integer lll,i,jjj,kkk,j,k,ngridpoints
-      integer sgn,stat,dir,iused
+      integer sgn,stat,dir,iused,dir1,dir2,dir3
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:) :: fslice, dfslice
 !
@@ -359,14 +354,12 @@ include 'NSCBC.h'
 !
 !  Define the direction of this boundary
 !
-      dir=1
-!
       llinlet = .false.
       if (present(linlet)) llinlet = linlet
       if (llinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_prf_x: when using linlet=T, you must also specify u_t)')
+           'bc_nscbc_prf: when using linlet=T, you must also specify u_t)')
       if (llinlet.and.ilnTT>0.and..not.present(T_t)) call stop_it(&
-           'bc_nscbc_prf_x: when using linlet=T, you must also specify T_t)')
+           'bc_nscbc_prf: when using linlet=T, you must also specify T_t)')
       select case (topbot)
       case ('bot')
         if (dir == 1) lll = l1
@@ -379,8 +372,20 @@ include 'NSCBC.h'
         if (dir == 3) lll = n2
         sgn = -1
       case default
-        print*, "bc_nscbc_prf_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_nscbc_prf: ", topbot, " should be `top' or `bot'"
       endselect
+!
+!  Set some auxillary variables
+!
+      if (dir==1) then
+        dir1=1; dir2=2; dir3=3
+      elseif (dir==2) then
+        dir1=2; dir2=1; dir3=3
+      elseif (dir==3) then
+        dir1=3; dir2=1; dir3=2
+      else
+        call fatal_error('bc_nscbc_prf:','No such dir!')
+      endif
 !
 !  Set some direction dependent variables
 !
@@ -409,19 +414,19 @@ include 'NSCBC.h'
         dfslice=df(l1:l2,m1:m2,lll,:)     
         ngridpoints=nx*ny
       else
-        call fatal_error('bc_nscbc_prf_x','No such dir!')
+        call fatal_error('bc_nscbc_prf','No such dir!')
       endif
 !
 !  Find derivatives at boundary
 !
-      call derivate_boundary(f,sgn,1,lll,dui_dxj,grad_T,grad_rho)
+      call derivate_boundary(f,sgn,dir1,lll,dui_dxj,grad_T,grad_rho)
 !
 !  Get some thermodynamical variables
 !  This includes values and gradients of; density, temperature, pressure
 !  In addition also speed of sound, gamma and mu1 is found.
 !
       call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,dir,fslice)
+          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice)
 !
 !  Define some prefactors to be used later
 !
@@ -436,25 +441,33 @@ include 'NSCBC.h'
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
-      Mach=sum(fslice(:,:,dir)/cs)/ngridpoints
+      Mach=sum(fslice(:,:,dir1)/cs)/ngridpoints
 !
 !  We will need the transversal terms of the waves entering the domain
 !
       call transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,P0,gamma,&
-          fslice,grad_rho,grad_P,dui_dxj,dir)
+          fslice,grad_rho,grad_P,dui_dxj,dir1,dir2,dir3)
 !
       if (llinlet) then
 !
 !  Find the velocity to be used at the inlet.
 !
-        call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-            Lx_in,nx_in,u_t,1,m1_in,m2_in,n1_in,n2_in)
+        if (dir==1) then
+          call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in)
+        elseif(dir==2) then
+          call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+              Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in)
+        elseif(dir==3) then
+          call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+              Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in)
+        endif
 !
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
 !
-        L_1 = (fslice(:,:,dir) - sgn*cs)&
-            *(grad_P(:,:,dir) - sgn*rho0*cs*dui_dxj(:,:,dir,dir))
+        L_1 = (fslice(:,:,dir1) - sgn*cs)&
+            *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
             call fatal_error('NSCBC.f90',&
@@ -468,12 +481,12 @@ include 'NSCBC.h'
 !  away from the target velocity u_t. This problem should be overcome by 
 !  setting a small but non-zero nscbc_sigma_in.
 !
-          L_3=nscbc_sigma_in*(fslice(:,:,iuy)-u_in(:,:,2))&
-              *cs/Lxyz(1)-T_3
-          L_4=nscbc_sigma_in*(fslice(:,:,iuz)-u_in(:,:,3))&
-              *cs/Lxyz(1)-T_4
+          L_3=nscbc_sigma_in*(fslice(:,:,dir2)-u_in(:,:,dir2))&
+              *cs/Lxyz(dir1)-T_3
+          L_4=nscbc_sigma_in*(fslice(:,:,dir3)-u_in(:,:,dir3))&
+              *cs/Lxyz(dir1)-T_4
           L_5 = nscbc_sigma_in*cs2*rho0&
-              *sgn*(fslice(:,:,dir)-u_in(:,:,dir))*(1-Mach**2)/Lxyz(1)&
+              *sgn*(fslice(:,:,dir1)-u_in(:,:,dir1))*(1-Mach**2)/Lxyz(dir1)&
               -(T_5+sgn*rho0*cs*T_2)
         else
           L_3=0
@@ -486,21 +499,21 @@ include 'NSCBC.h'
 !  Find the parameter determining 
 !
         cs0_average=sum(cs)/ngridpoints
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir)
+        KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir1)
 !
 !  Find the L_i's. 
 !
         L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
         if (ilnTT > 0) then 
-          L_2=fslice(:,:,dir)*(cs2*grad_rho(:,:,dir)-grad_P(:,:,dir))
+          L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
         else
           L_2=0
         endif
-        L_3 = fslice(:,:,dir)*dui_dxj(:,:,2,dir)
-        L_4 = fslice(:,:,dir)*dui_dxj(:,:,3,dir)
-        L_5 = (fslice(:,:,dir) - sgn*cs)*&
-             (grad_P(:,:,dir)&
-             - sgn*rho0*cs*dui_dxj(:,:,dir,dir))
+        L_3 = fslice(:,:,dir1)*dui_dxj(:,:,dir2,dir1)
+        L_4 = fslice(:,:,dir1)*dui_dxj(:,:,dir3,dir1)
+        L_5 = (fslice(:,:,dir1) - sgn*cs)*&
+             (grad_P(:,:,dir1)&
+             - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
       endif
 !
 !  Find the evolution equation for the normal velocity at the boundary
@@ -509,15 +522,15 @@ include 'NSCBC.h'
       select case (topbot)
       case ('bot')
         if (llinlet) then
-          dfslice(:,:,dir) = prefac2*( L_5 - L_1)-T_2
+          dfslice(:,:,dir1) = prefac2*( L_5 - L_1)-T_2
         else
-          dfslice(:,:,dir) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)!-parallell_term_ux
         endif
       case ('top')
         if (llinlet) then
-          dfslice(:,:,dir) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)!-parallell_term_ux
         else
-          dfslice(:,:,dir) = prefac2*(-L_1 + L_5)-T_2
+          dfslice(:,:,dir1) = prefac2*(-L_1 + L_5)-T_2
         endif
       endselect
 !
@@ -527,8 +540,8 @@ include 'NSCBC.h'
       if (ilnTT>0) then
         dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1))*TT
       endif
-      dfslice(:,:,iuy) = -L_3-T_3
-      dfslice(:,:,iuz) = -L_4-T_4
+      dfslice(:,:,dir2) = -L_3-T_3
+      dfslice(:,:,dir3) = -L_4-T_4
 !
 !  Check if we are solving for logrho or rho
 !
@@ -546,13 +559,13 @@ include 'NSCBC.h'
 !
       if (llinlet) then
         if (.not. non_reflecting_inlet) then
-          fslice(:,:,dir) = u_in(:,:,dir)
+          fslice(:,:,dir1) = u_in(:,:,dir1)
           if (non_zero_transveral_velo) then
-            fslice(:,:,iuy) = u_in(:,:,2)
-            fslice(:,:,iuz) = u_in(:,:,3)
+            fslice(:,:,dir2) = u_in(:,:,dir2)
+            fslice(:,:,dir3) = u_in(:,:,dir3)
           else
-            fslice(:,:,iuy) = 0.
-            fslice(:,:,iuz) = 0.
+            fslice(:,:,dir2) = 0.
+            fslice(:,:,dir3) = 0.
           endif
           if (ilnTT>0) then
             fslice(:,:,ilnTT) = T_t
@@ -565,8 +578,8 @@ include 'NSCBC.h'
       iused=max(ilnTT,ilnrho)
       if (mvar>iused) then 
         do k=iused+1,mvar
-          call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,dir)
-          dfslice(:,:,k)=-fslice(:,:,dir)*dYk_dx
+          call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,dir1)
+          dfslice(:,:,k)=-fslice(:,:,dir1)*dYk_dx
         enddo
       endif
 !
@@ -575,18 +588,18 @@ include 'NSCBC.h'
 !
       if (dir == 1) then
         df(lll,m1:m2,n1:n2,:)=dfslice
-        f(lll,m1:m2,n1:n2,:) =fslice
+        f( lll,m1:m2,n1:n2,:)=fslice
       elseif (dir == 2) then
         df(l1:l2,lll,n1:n2,:)=dfslice
-        f(l1:l2,lll,n1:n2,:) =fslice
+        f( l1:l2,lll,n1:n2,:)=fslice
       elseif (dir == 3) then
         df(l1:l2,m1:m2,lll,:)=dfslice
-        f(l1:l2,m1:m2,lll,:) =fslice
+        f( l1:l2,m1:m2,lll,:)=fslice
       else
-        call fatal_error('bc_nscbc_prf_x','No such dir!')
-      endif   
+        call fatal_error('bc_nscbc_prf','No such dir!')
+      endif 
 !
-    endsubroutine bc_nscbc_prf_x
+    endsubroutine bc_nscbc_prf
 !***********************************************************************
     subroutine bc_nscbc_prf_y(f,df,topbot,non_reflecting_inlet,linlet,u_t,T_t)
 !
@@ -1088,7 +1101,13 @@ include 'NSCBC.h'
 !
 !  Set the turbulent inlet velocity
 !
-          call turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+          if (direction==1) then
+            call turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+          elseif(direction==2) then
+            call turbulent_vel_y(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+          elseif(direction==3) then
+            call turbulent_vel_z(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+          endif
 !
 !  Add the mean inlet velocity to the turbulent one
 !
@@ -1167,6 +1186,38 @@ include 'NSCBC.h'
             +f_in(lowergrid+1,imin:imax,jmin:jmax,iux:iuz)*weight)*smooth
 !
       end subroutine turbulent_vel_x
+!***********************************************************************
+      subroutine turbulent_vel_y(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+!
+!  Set the turbulent inlet velocity
+!
+!  2010.01.21/Nils Erland: coded
+!
+        real, dimension(nx,nz,3), intent(out) :: u_in
+        integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
+        real, intent(in) :: weight,smooth
+!
+        u_in(:,:,:)&
+            =(f_in(imin:imax,lowergrid,jmin:jmax,iux:iuz)*(1-weight)&
+            +f_in(imin:imax,lowergrid+1,jmin:jmax,iux:iuz)*weight)*smooth
+!
+      end subroutine turbulent_vel_y
+!***********************************************************************
+      subroutine turbulent_vel_z(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+!
+!  Set the turbulent inlet velocity
+!
+!  2010.01.21/Nils Erland: coded
+!
+        real, dimension(nx,ny,3), intent(out) :: u_in
+        integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
+        real, intent(in) :: weight,smooth
+!
+        u_in(:,:,:)&
+            =(f_in(imin:imax,jmin:jmax,lowergrid,iux:iuz)*(1-weight)&
+            +f_in(imin:imax,jmin:jmax,lowergrid+1,iux:iuz)*weight)*smooth
+!
+      end subroutine turbulent_vel_z
 !***********************************************************************
       subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
           grad_rho,grad_P,grad_T,lll,sgn,direction,fslice)
@@ -1413,32 +1464,18 @@ include 'NSCBC.h'
       end subroutine derivate_boundary
 !***********************************************************************
       subroutine transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,P0,gamma,&
-          fslice,grad_rho,grad_P,dui_dxj,dir)
+          fslice,grad_rho,grad_P,dui_dxj,dir1,dir2,dir3)
 !
 !  Find the transversal terms.
 !  This correspond to the T's in Lodato et al. JCP (2008)
 !
 !  2010.01.21/Nils Erland: coded
 !
-        integer,                  intent(in) :: dir
+        integer,                  intent(in) :: dir1,dir2,dir3
         real, dimension(:,:),     intent(out):: T_1, T_2, T_3, T_4, T_5
         real, dimension(:,:),     intent(in) :: rho0,P0,gamma
         real, dimension(:,:,:),   intent(in) :: fslice,grad_rho,grad_P
         real, dimension(:,:,:,:), intent(in) :: dui_dxj 
-!
-        integer :: dir1, dir2, dir3
-!
-!  Set some auxillary variables
-!
-        if (dir==1) then
-          dir1=1; dir2=2; dir3=3
-        elseif (dir==2) then
-          dir1=2; dir2=1; dir3=3
-        elseif (dir==3) then
-          dir1=3; dir2=1; dir3=2
-        else
-          call fatal_error('transversal_terms','No such dir!')
-        endif
 !
 !  Calculate the T's
 !
