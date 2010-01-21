@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
 
   use Cdata
@@ -43,7 +43,6 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat
-
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -58,10 +57,6 @@ module Special
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-
-
-
-
   contains
 
 !***********************************************************************
@@ -135,9 +130,6 @@ module Special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
-      use Mpicomm
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -184,7 +176,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
