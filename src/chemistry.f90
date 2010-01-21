@@ -6558,59 +6558,31 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       
     endsubroutine jacobn
 !***********************************************************************
-    subroutine get_mu1_slicex(slice,grad_slice,index,sgn)
+    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction)
 !
-! For the NSCBC boudary conditions the slice of mu1 at the boundary
-! is required.
-!
-! 2009.12.10: Nils Erland L. Haugen (coded)
-!
-      use Deriv, only: der_onesided_4_slice_other
-!
-      real, dimension(ny,nz), intent(out)   :: slice
-      real, dimension(ny,nz), intent(out) :: grad_slice
-      integer, intent(in) :: index, sgn
-!
-      slice=mu1_full(index,m1:m2,n1:n2)
-      call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,1)
-!
-    end subroutine get_mu1_slicex
-!***********************************************************************
-    subroutine get_mu1_slicey(slice,grad_slice,index,sgn)
-!
-! For the NSCBC boudary conditions the slice of mu1 at the boundary
-! is required.
+! For the NSCBC boudary conditions the slice of mu1 at the boundary, and 
+! its gradient, is required.
 !
 ! 2009.12.10: Nils Erland L. Haugen (coded)
 !
       use Deriv, only: der_onesided_4_slice_other
 !
-      real, dimension(nx,nz), intent(out)   :: slice
-      real, dimension(nx,nz), intent(out) :: grad_slice
-      integer, intent(in) :: index, sgn
+      real, dimension(:,:), intent(out)   :: slice
+      real, dimension(:,:), intent(out) :: grad_slice
+      integer, intent(in) :: index, sgn, direction
 !
-      slice=mu1_full(l1:l2,index,n1:n2)
-      call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,2)
+      if (direction==1) then
+        slice=mu1_full(index,m1:m2,n1:n2)
+        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
+      elseif (direction==2) then
+        slice=mu1_full(l1:l2,index,n1:n2)
+        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
+      else
+        slice=mu1_full(l1:l2,m1:m2,index)
+        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
+      end if
 !
-    end subroutine get_mu1_slicey
-!***********************************************************************
-    subroutine get_mu1_slicez(slice,grad_slice,index,sgn)
-!
-! For the NSCBC boudary conditions the slice of mu1 at the boundary
-! is required.
-!
-! 2009.12.10: Nils Erland L. Haugen (coded)
-!
-      use Deriv, only: der_onesided_4_slice_other
-!
-      real, dimension(nx,ny), intent(out)   :: slice
-      real, dimension(nx,ny), intent(out) :: grad_slice
-      integer, intent(in) :: index, sgn
-!
-      slice=mu1_full(l1:l2,m1:m2,index)
-      call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,3)
-!
-    end subroutine get_mu1_slicez
+    end subroutine get_mu1_slice
 !********************************************************************
   subroutine chemistry_clean_up()
 !
