@@ -664,22 +664,22 @@ module Particles
 !
             call random_number_wrapper(phi)
 !
-             if (lcartesian_coords) then
-               phi = 2*pi*phi
-               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
-               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
-             elseif (lcylindrical_coords) then
-               phi = xyz0_par(2)+phi*Lxyz_par(2)
-               if (nxgrid/=1) fp(k,ixp)=rad
-               if (nygrid/=1) fp(k,iyp)=phi
-             elseif (lspherical_coords) then
-               call fatal_error('init_particles','random-cylindrical '// &
-                   'not implemented for spherical coordinates') 
-             endif
+            if (lcartesian_coords) then
+              phi = 2*pi*phi
+              if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
+              if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
+            elseif (lcylindrical_coords) then
+              phi = xyz0_par(2)+phi*Lxyz_par(2)
+              if (nxgrid/=1) fp(k,ixp)=rad
+              if (nygrid/=1) fp(k,iyp)=phi
+            elseif (lspherical_coords) then
+              call fatal_error('init_particles','random-cylindrical '// &
+                  'not implemented for spherical coordinates') 
+            endif
 !
-             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-             if (nzgrid/=1) &
-                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nzgrid/=1) &
+                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
 
