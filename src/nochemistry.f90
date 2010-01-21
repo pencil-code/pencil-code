@@ -226,6 +226,38 @@ module Chemistry
       call keep_compiler_quiet(index,sgn)
 !
     end subroutine get_mu1_slicex
+!***********************************************************************
+    subroutine get_mu1_slicey(slice,grad_slice,index,sgn)
+!
+! For the NSCBC boudary conditions the slice of mu1 at the boundary
+! is required.
+!
+! 2009.12.10: Nils Erland L. Haugen (coded)
+!
+      real, dimension(nx,nz), intent(out) :: slice, grad_slice
+      integer, intent(in) :: index, sgn
+!
+      call keep_compiler_quiet(slice)
+      call keep_compiler_quiet(grad_slice)
+      call keep_compiler_quiet(index,sgn)
+!
+    end subroutine get_mu1_slicey
+!***********************************************************************
+    subroutine get_mu1_slicez(slice,grad_slice,index,sgn)
+!
+! For the NSCBC boudary conditions the slice of mu1 at the boundary
+! is required.
+!
+! 2009.12.10: Nils Erland L. Haugen (coded)
+!
+      real, dimension(nx,ny), intent(out) :: slice, grad_slice
+      integer, intent(in) :: index, sgn
+!
+      call keep_compiler_quiet(slice)
+      call keep_compiler_quiet(grad_slice)
+      call keep_compiler_quiet(index,sgn)
+!
+    end subroutine get_mu1_slicez
 !*************************************************************
     subroutine get_gamma_slice(slice,index,dir)
 !
