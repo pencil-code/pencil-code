@@ -227,7 +227,7 @@ module Particles_map
 !
 !  Calculate the number of particles in each grid cell.
 !
-      if (inp/=0 .and. (.not.lnocalc_np)) then
+      if (inp/=0 .and. (mod(it,it1_loadbalance)==0.or.(.not.lnocalc_np))) then
         f(:,:,:,inp)=0.0
         fb(:,:,:,inp,0:nblock_loc-1)=0.0
         do ib=0,nblock_loc-1
@@ -459,7 +459,7 @@ module Particles_map
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.
 !
-        if (inp/=0 .and. (.not.lnocalc_np)) &
+        if (inp/=0 .and. (mod(it,it1_loadbalance)==0.or.(.not.lnocalc_np))) &
             call fill_bricks_with_blocks(f,fb,mfarray,inp)
         if (irhop/=0 .and. (.not.lnocalc_rhop)) &
             call fill_bricks_with_blocks(f,fb,mfarray,irhop)
