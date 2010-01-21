@@ -637,7 +637,7 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: uxB,B0test=0,bbtest,B0_imposed
+      real, dimension (nx,3) :: uxB,B0test=0,bbtest,B0_imposed,uum,umxbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbtest,eetest
       real, dimension (nx,3) :: uxbtestK,uxbtestM,J0test=0
       real, dimension (nx,3,3,njtest) :: Mijpq
@@ -791,7 +791,20 @@ module Testfield
           case default
             call fatal_error('daatest_dt','undefined itestfield value')
           endselect
+!
+!  u x B^T + Ubar x b^T
+!
           call cross_mn(uufluct,B0test,uxB)
+          if (lcalc_uumean) then
+            do j=1,3
+              uum(:,j)=uumz(n-n1+1,j)
+            enddo
+            call cross_mn(uum,bbtest,umxbtest)
+            uxB=uxB+umxbtest
+          endif
+!
+!  jxB^T + J^Txb
+!
           call cross_mn(jjfluct,B0test,jxbtest1)
           call cross_mn(J0test,bbfluct,jxbtest2)
           !call multsv_mn(p%rho1,jxbtest1+jxbtest2,jxbrtest)
