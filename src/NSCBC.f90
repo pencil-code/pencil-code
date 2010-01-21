@@ -250,7 +250,7 @@ include 'NSCBC.h'
             if (j==1) then 
               call bc_nscbc_prf(f,df,j,topbot,.false.)
             elseif (j==2) then 
-              call bc_nscbc_prf(f,df,j,topbot,.false.)
+              call bc_nscbc_prf_y(f,df,topbot,.false.)
             elseif (j==3) then 
               call bc_nscbc_prf(f,df,j,topbot,.false.)
             endif
@@ -263,7 +263,7 @@ include 'NSCBC.h'
                   u_t=valx(j),T_t=T_t)
             elseif (j==2) then 
               if (ilnTT > 0) T_t=valy(ilnTT)
-              call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,&
+              call bc_nscbc_prf_y(f,df,topbot,.true.,linlet=.true.,&
                   u_t=valy(j),T_t=T_t)
             elseif (j==3) then 
               if (ilnTT > 0) T_t=valz(ilnTT)
@@ -279,7 +279,7 @@ include 'NSCBC.h'
                   u_t=valx(j),T_t=T_t)
             elseif (j==2) then 
               if (ilnTT > 0) T_t=valy(ilnTT)
-              call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,&
+              call bc_nscbc_prf_y(f,df,topbot,.false.,linlet=.true.,&
                   u_t=valy(j),T_t=T_t)
             elseif (j==3) then 
               if (ilnTT > 0) T_t=valz(ilnTT)
