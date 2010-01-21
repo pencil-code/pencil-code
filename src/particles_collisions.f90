@@ -78,12 +78,14 @@ module Particles_collisions
 !
 !  Get radial gravity from gravity module.
 !
-      call get_shared_variable('gravr',gravr)
+      if (lkeplerian_flat) call get_shared_variable('gravr',gravr)
 !
 !  Get friction time from dust particle module.
 !
-      call get_shared_variable( 'tausp_species', tausp_species)
-      call get_shared_variable('tausp1_species',tausp1_species)
+      if (ltauc_from_tauf) then
+        call get_shared_variable( 'tausp_species', tausp_species)
+        call get_shared_variable('tausp1_species',tausp1_species)
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
