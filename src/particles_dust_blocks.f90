@@ -1122,7 +1122,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -1186,24 +1185,6 @@ k_loop:   do while (.not. (k>npar_loc))
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
       if (lfirstcall) lfirstcall=.false.
-!
-!  Contribution of dust particles to time step.
-!
-      if (lparticles_blocks) then
-        if (lfirst.and.ldt) then
-          do k=1,npar_loc
-            dt1_advpx=abs(fp(k,ivpx))*dx_1(1)
-            if (lshear) then
-              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(1)
-            else
-              dt1_advpy=abs(fp(k,ivpy))*dy_1(1)
-            endif
-            dt1_advpz=abs(fp(k,ivpz))*dz_1(1)
-            dt1_max(1)=max(dt1_max(1), &
-                sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
-          enddo
-        endif
-      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
