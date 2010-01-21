@@ -227,7 +227,7 @@ module Particles_map
 !
 !  Calculate the number of particles in each grid cell.
 !
-      if (inp/=0) then
+      if (inp/=0 .and. (.not.lnocalc_np)) then
         f(:,:,:,inp)=0.0
         fb(:,:,:,inp,0:nblock_loc-1)=0.0
         do ib=0,nblock_loc-1
@@ -459,8 +459,10 @@ module Particles_map
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.
 !
-        call fill_bricks_with_blocks(f,fb,mfarray,inp)
-        call fill_bricks_with_blocks(f,fb,mfarray,irhop)
+        if (inp/=0 .and. (.not.lnocalc_np)) &
+            call fill_bricks_with_blocks(f,fb,mfarray,inp)
+        if (irhop/=0 .and. (.not.lnocalc_rhop)) &
+            call fill_bricks_with_blocks(f,fb,mfarray,irhop)
 !
 !  Fold first ghost zone of f.
 !
@@ -835,7 +837,7 @@ module Particles_map
         iproc_send=iproc_parent_block(iblock)
         iblock1=iblock
         iblock2=iblock
-        do while (iblock2<nblock_loc)
+        do while (iblock2<nblock_loc-1)
           if (iproc_parent_block(iblock2+1)==iproc_send) then
             iblock2=iblock2+1
             if (iproc_parent_block(iblock1)/=iproc .and. &
