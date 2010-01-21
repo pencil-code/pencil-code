@@ -1885,13 +1885,14 @@ module Entropy
          call tridag(az,bz,cz,rhsz,workz)
          valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo
-      ! Necessary to avoid x-direction discontinuities
-      ftmp(:,4,:,ilnTT)=valt
-      call initiate_isendrcv_bdry(ftmp)
-      call finalize_isendrcv_bdry(ftmp)
-      valt=ftmp(:,4,:,ilnTT)
 !
       call transp_mzmx(valt,val)
+
+! Necessary to avoid x-direction discontinuities
+      ftmp(:,4,:,ilnTT)=val
+      call initiate_isendrcv_bdry(ftmp)
+      call finalize_isendrcv_bdry(ftmp)
+      val=ftmp(:,4,:,ilnTT)
 !
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
