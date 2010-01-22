@@ -47,15 +47,18 @@ dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.01   ;(gives 26 vectors)
 dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
 ;dkz=1. & ex=1. & ey=1. & ez=2. & kmax=10 & k1=3.8 & k2=4.2    ;(gives 98 vectors)
 ;dkz=1./16. & ex=1. & ey=1. & ez=1. & kmax=2. & k1=dkz & k2=2.0   ;(gives 460 vectors)
+dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.5   ;(gives 20 vectors)
 ;
 kav=0.
+kmaxz=kmax
+kmaxz=0.
 ;
 if (kmax lt k2) then print, 'Warning: non-spherical region in k-space'
 ;
 i=0 ;(initialize counter)
 for kx=-kmax,kmax do begin
 for ky=-kmax,kmax do begin
-for kz=-kmax,kmax,dkz do begin
+for kz=-kmaxz,kmaxz,dkz do begin
   k=sqrt(float(kx^2+ky^2+kz^2))
   kref=sqrt(float((kx/ex)^2+(ky/ey)^2+(kz/ez)^2))
   if kref gt k1 and kref lt k2 then begin
