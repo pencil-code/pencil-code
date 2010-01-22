@@ -144,9 +144,8 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
       real, dimension (npar_stalk) :: bx, by, bz
       real, dimension (:,:), allocatable :: values
-      real, dimension (3) :: uu_loc
       integer, dimension (npar_stalk) :: k_stalk
-      integer :: i, k, ix0, iy0, iz0, npar_stalk_loc, ivalue
+      integer :: i, k, npar_stalk_loc, ivalue
 !
 !  Only stalk particles every dstalk.
 !
@@ -160,7 +159,7 @@ module Particles_stalker
         npar_stalk_loc=0
         do k=1,npar_loc
           if (ipar(k)<=npar_stalk) then
-            npar_stalk_loc=npar_stalk_loc+1 
+            npar_stalk_loc=npar_stalk_loc+1
             k_stalk(npar_stalk_loc)=k
           endif
         enddo
@@ -300,7 +299,7 @@ module Particles_stalker
           close(1)
         endif
       endif
-!    
+!
     endsubroutine particles_stalker_sub
 !***********************************************************************
     subroutine stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,ivar,value)
@@ -322,7 +321,7 @@ module Particles_stalker
 !
       real, dimension (1) :: value_loc
       integer :: i, k, ix0, iy0, iz0
-!      
+!
       do i=1,npar_stalk_loc
         k=k_stalk(i)
         ix0=ineargrid(k_stalk(i),1)
@@ -330,7 +329,7 @@ module Particles_stalker
         iz0=ineargrid(k_stalk(i),3)
 !
 !  Interpolation is either zeroth, first or second order spline interpolation.
-!        
+!
         if (lparticlemesh_cic) then
           call interpolate_linear( &
               f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),0,ipar(k))
@@ -342,7 +341,7 @@ module Particles_stalker
         endif
         value(i)=value_loc(1)
       enddo
-!   
+!
     endsubroutine stalk_variable
 !***********************************************************************
     subroutine stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ivar,ider,value)
@@ -368,7 +367,7 @@ module Particles_stalker
 !
 !  Calculate derivative of variable number ivar with respect to
 !  direction number ider.
-!      
+!
       do n=n1,n2; do m=m1,m2
         call der(f(:,:,:,ivar),der_pencil,ider)
         f(l1:l2,m,n,iscratch)=der_pencil
@@ -382,7 +381,7 @@ module Particles_stalker
 !  particles.
 !
       call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,value)
-!   
+!
     endsubroutine stalk_gradient
 !***********************************************************************
     subroutine stalk_magnetic(f,fp,k_stalk,npar_stalk_loc,ineargrid,bx,by,bz)
@@ -400,7 +399,6 @@ module Particles_stalker
       integer, dimension (npar_stalk) :: k_stalk
       integer :: npar_stalk_loc
       integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: ivar, ider
       real, dimension (npar_stalk) :: bx, by, bz
 !
       real, dimension (nx) :: der1_pencil, der2_pencil
@@ -434,7 +432,7 @@ module Particles_stalker
       call bc_per_y(f,'top',iscratch); call bc_per_y(f,'bot',iscratch)
       call bc_per_z(f,'top',iscratch); call bc_per_z(f,'bot',iscratch)
       call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iscratch,bz)
-!   
+!
     endsubroutine stalk_magnetic
 !***********************************************************************
     subroutine read_pstalker_init_pars(unit,iostat)
