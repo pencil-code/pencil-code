@@ -820,13 +820,14 @@ module Entropy
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss*sin(kx_ss*x(l1:l2)+pi)
             enddo; enddo
-          case ('Ferriere'); call ferriere(f)
-          case ('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
-          case ('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
-          case ('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
-          case ('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
-        case ('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
-          case ('hor-fluxtube')
+          case('Ferriere'); call ferriere(f)
+          case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
+          case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
+          case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
+          case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
+          case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
+        case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
+          case('hor-fluxtube')
             call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss,center1_x,center1_z)
           case ('hor-tube')
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
@@ -1684,8 +1685,73 @@ module Entropy
 !
     endsubroutine ferriere
 !***********************************************************************
+    subroutine ferriere_hs(f,rho0hs)
+!
+!   Density and isothermal entropy profile in hydrostatic equilibrium
+!   with the Ferriere profile set in gravity_simple.f90
+!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
+!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
+!   equilibrium. Constants g_A..D from gravz_profile
+!
+      use Mpicomm, only: mpibcast_real
+      use EquationOfState , only: eosperturb, getmu
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: rho,pp,lnrho,ss
+      real, dimension(1) :: fmpi1
+      real :: rho0hs,muhs
+      real :: g_A, g_C
+      real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      double precision :: g_B, g_D
+      double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_B = g_B_cgs/unit_length
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+      endif
+!
+!  uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!   at solar radius.  (for interstellar runs)
+!
+      call getmu(muhs)
+!
+      if (lroot) print*, &
+         'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
+      T0=cs20/gamma_m1
+      do n=n1,n2
+      do m=m1,m2
+        rho=rho0hs*exp(-m_u*muhs/k_B/T0*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
+        lnrho=log(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho
+        if (lentropy) then
+!  Isothermal 
+          pp=cs20/gamma*rho
+          call eosperturb(f,nx,pp=pp)
+          ss=f(l1:l2,m,n,ilnrho)
+          fmpi1=(/ cs2bot /)
+          call mpibcast_real(fmpi1,1,0)
+          cs2bot=fmpi1(1)
+          fmpi1=(/ cs2top /)
+          call mpibcast_real(fmpi1,1,ncpus-1)
+          cs2top=fmpi1(1)
+!
+         endif
+       enddo
+     enddo
+!
+      if (lroot) print*, 'Ferriere-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
+!
+    endsubroutine ferriere_hs
+!***********************************************************************
     subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
 !
+!   22-jan-10/fred
 !   Density and isothermal entropy profile in hydrostatic equilibrium
 !   with the galactic-hs-gravity profile set in gravity_simple.
 !   Parameters cs0hs and H0hs need to be set consistently

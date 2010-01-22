@@ -127,7 +127,8 @@ module Interstellar
 ! Minimum resulting central temperature of a SN explosion.
 ! If this is not reached then consider moving mass to achieve this.
 !
-  real, parameter :: TT_SN_min_cgs=1.e7
+  real, parameter :: TT_SN_min_cgs=0! 1.e7
+! 22-jan-10/fred with lSN_velocity=T for kinetic energy lower limit no longer required
   real :: uu_sedov_max=0.
   real :: TT_SN_min=impossible
   real :: TT_cutoff_cgs=100.
@@ -231,9 +232,12 @@ module Interstellar
   real, parameter :: GammaUV_cgs=0.0147
   real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
 !
+! 04-jan-10/fred amended cool dim to 8 from 7 to smooth cooling
+!          appended last term to all arrays RBr critical change
+!
   real :: GammaUV=impossible,T0UV=impossible,cUV=impossible
-  double precision, dimension(7) :: coolT_cgs, coolH_cgs
-  real, dimension(7) :: coolB, lncoolH, lncoolT
+  double precision, dimension(8) :: coolT_cgs, coolH_cgs
+  real, dimension(8) :: coolB, lncoolH, lncoolT
   integer :: ncool
 !
   real :: coolingfunction_scalefactor=1.
@@ -321,7 +325,7 @@ module Interstellar
       uniform_zdist_SNI, mass_movement, &
       width_SN, inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, lSN_mass, &
-      h_SNI, h_SNII, &
+      h_SNI, h_SNII, lSNII, lSNI, &
       thermal_profile,velocity_profile, mass_profile, &
       center_SN_x, center_SN_y, center_SN_z, &
       t_next_SNI, &
@@ -438,43 +442,52 @@ module Interstellar
 !
       if (cooling_select == 'RB') then
          if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, tiny(0D0) /)
-         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2
-         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
-         ncool=5
+         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 4.D7, 1.D9, tiny(0D0), tiny(0D0) /)
+         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0), tiny(0D0) /) / ( m_p_cgs )**2
+         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.), tiny(0.) /)
+         ncool=6
+!
+! 04-jan-10/fred corrected above to original RB parameters
+!           altered coolB(5) and coolT(5,6) in RBr to ensure continuity and 
+!           more inhibit high temperatures later in diffuse remnant cores 
+!           RBr: new lower terms to smoothly force cooling to zero below 300K
+!            + extended range to 1e13 from 1e10 in SSrr to stem spiking
+!
       else if (cooling_select == 'RBr') then
          if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, tiny(0D0) /)
-         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2
-         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
-         ncool=5
+         coolT_cgs=(/ 10.D0, 300.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, tiny(0D0) /)
+         coolH_cgs=(/ 2.76296D-42, 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, &
+                     2.240887D-25,        tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2
+         coolB=(/ 6., 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
+         ncool=6
       else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2
          ! to obtain same units as RB above
          if (lroot) print*,'initialize_interstellar: SS cooling function'
-         coolT_cgs=(/   10D0,   141D0,   313D0,  6102D0,      1D5,       1D9, tiny(0D0) /)
-         coolH_cgs=(/3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0), tiny(0D0) /)
-         coolB    =(/   2.12,     1.0,    0.56,    3.67,     -.65 , tiny(0.), tiny(0.) /)
-         ncool=4
+         coolT_cgs=(/ 10D0,   141D0,   313D0,  6102D0,      1D5,       1D9, tiny(0D0), tiny(0D0) /)
+         coolH_cgs=(/ 3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0), tiny(0D0), tiny(0D0) /)
+         coolB    =(/ 2.12,    1.0,    0.56,    3.67,     -.65 , tiny(0.), tiny(0.), tiny(0.) /)
+         ncool=5
       else if (cooling_select == 'SSr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       1D9, tiny(0D0) /)
-         coolH_cgs=(/3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0), tiny(0D0) /)
-         coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, tiny(0.) , tiny(0.) /)
+         coolT_cgs=(/ 10D0,   141D0,    313D0, 6102D0,     1D5,       1D9, tiny(0D0), tiny(0D0) /)
+         coolH_cgs=(/ 3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0), tiny(0D0), tiny(0D0) /)
+         coolB    =(/2.12,    1.0,     0.56,   3.67,   -0.65, tiny(0.) , tiny(0.), tiny(0.) /)
          ncool=5
       else if (cooling_select == 'SSrr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       4D7, 1D10 /)
+         coolT_cgs=(/10D0,   141D0,    313D0, 6102D0,     1D5,       4D7, 1D13, tiny(0d0)/)
          coolH_cgs=(/3.703109927416290D16, &
                      9.455658188464892D18, &
                      1.185035244783337D20, &
                      1.9994576479D8, &
                      7.96D29, &
                      1.440602814622207D21, &
+                     tiny(0D0), &
                      tiny(0D0) /)
-         coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, 0.5, tiny(0.)  /)
+         coolB    =(/2.12,     1.0,     0.56,   3.67,   -0.65, 0.5, tiny(0.), tiny(0.)  /)
          ncool=6
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
@@ -1053,7 +1066,10 @@ module Interstellar
 ! Prevent unresolved heating/cooling in shocks.
 !
       if (lheatcool_shock_cutoff) then
-        damp_profile=0.5*(1.+tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
+        damp_profile=0.5*(1.-tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
+!       30-dec-09/fred: changed sign to turn off cool for non-zero p%shock
+!                       other way round cooling in shock and off everywhere else
+!        damp_profile=0.5*(1.+tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
         cool=cool*damp_profile
         heatcool=heatcool*damp_profile
       endif
@@ -1233,7 +1249,7 @@ cool_loop: do i=1,ncool
       SNRs(iSNR)%t=t
       SNRs(iSNR)%SN_type=1
       SNRs(iSNR)%radius=width_SN
-      try_count=200
+      try_count=500
       do while (try_count>0)
         try_count=try_count-1
 
@@ -1256,6 +1272,7 @@ cool_loop: do i=1,ncool
 
         call explode_SN(f,SNRs(iSNR),ierr)
         if (ierr==iEXPLOSION_OK) then
+!          t_settle=t_next_SNI !fred update t_settle to separate SNII
           call set_next_SNI
           l_SNI=.true.
           exit
@@ -1263,8 +1280,9 @@ cool_loop: do i=1,ncool
       enddo
 
       if (try_count.eq.0) then
-        if (lroot) print*,"check_SNI: 200 RETRIES OCCURED - skipping SNI insertion"
+        if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
       endif
+      call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
     endif
 !
     endsubroutine check_SNI
@@ -1285,6 +1303,9 @@ cool_loop: do i=1,ncool
     subroutine check_SNII(f,l_SNI)
 !
 !  Check for SNII, via self-regulating scheme.
+!  
+!  22-jan-10 this routine needs to be debugged.
+!  Causes repeat explosions at the same site currently in consecutive steps
 !
     use General, only: random_number_wrapper
     use Mpicomm, only: mpireduce_sum, mpibcast_real
@@ -1295,7 +1316,7 @@ cool_loop: do i=1,ncool
     real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
     real, dimension(ncpus) :: cloud_mass_byproc
-    integer :: icpu, m, n, iSNR
+    integer :: icpu, m, n, iSNR, ierr
     logical :: l_SNI
     real :: dtsn
 !
@@ -1330,7 +1351,8 @@ cool_loop: do i=1,ncool
 !       print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
     call mpireduce_sum(fsum1_tmp,fsum1,1)
     call mpibcast_real(fsum1,1)
-    cloud_mass_dim=fsum1(1)*dv/solar_mass
+    cloud_mass_dim=fsum1(1)*dv !div by solar mass may be duplication with progenitor fred
+!    cloud_mass_dim=fsum1(1)*dv/solar_mass
     if (lroot .and. ip < 14) &
           print*,'check_SNII: cloud_mass_dim,fsum(1),dv,solar_mass:',cloud_mass_dim,fsum1(1),dv,solar_mass
     !if (franSN(1) <= prob_SNII) then
@@ -1340,13 +1362,15 @@ cool_loop: do i=1,ncool
     !if (lroot .and. ip < 14) &
     !     print*,'check_SNII: cloud_mass_dim:',cloud_mass_dim
     !
+!    if (lSNI.and.last_SN_t<=0.5*t_settle) last_SN_t=0.5*t_settle !fred to prevent SNII too close to SNI
     dtsn=t-last_SN_t
     freq_SNII= &
-      frac_heavy*frac_converted*cloud_mass_dim/mass_SN_progenitor/cloud_tau
+      frac_heavy*frac_converted*cloud_mass_dim/mass_SN_progenitor/cloud_tau &
+      *Lxyz(1)*Lxyz(2) !fred rate area specific
     prob_SNII=freq_SNII*dtsn
     call random_number_wrapper(franSN)
     !if (lroot .and. ip < 20) then
-    if (cloud_mass .gt. 0.) then
+    if (cloud_mass .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
       print*,'check_SNII: freq,prob,rnd,dtsn:',freq_SNII,prob_SNII,franSN(1),dtsn
       print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
               frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
@@ -1367,8 +1391,17 @@ cool_loop: do i=1,ncool
       SNRs(iSNR)%t=t
       SNRs(iSNR)%radius=width_SN
       SNRs(iSNR)%SN_type=2
-      call explode_SN(f,SNRs(iSNR))
-      last_SN_t=0.
+      call explode_SN(f,SNRs(iSNR),ierr)
+      if (ierr==iEXPLOSION_OK) last_SN_t=t
+!
+! 30-dec-09/fred: added ierr and if statement so time of SN can be 
+!                 updated if explosion successful else last_SN_t unchanged
+!
+    endif
+    !
+    if (ierr/=iEXPLOSION_OK) then
+    call free_SNR(iSNR) !If returned unexploded stops code running out of free slots fred
+!    last_SN_t=0
     endif
     !
     endsubroutine check_SNII
@@ -1567,9 +1600,10 @@ cool_loop: do i=1,ncool
 !  Construct cumulative distribution function, using cloud_mass_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] )
 !
+    cloud_mass=0.0
     cum_prob_byproc=0.0
     do icpu=1,ncpus
-      cloud_mass=cloud_mass_byproc(icpu)
+      cloud_mass=cloud_mass+cloud_mass_byproc(icpu) !fred added back cloud_mass else overwritten
       cum_prob_byproc(icpu)=cum_prob_byproc(icpu-1)+cloud_mass_byproc(icpu)
     enddo
     cum_prob_byproc(:)=cum_prob_byproc(:)/cum_prob_byproc(ncpus)
@@ -1601,6 +1635,7 @@ cool_loop: do i=1,ncool
     call random_number_wrapper(franSN)
     if (iproc == SNR%iproc) then
       cum_mass=0.0
+      cum_prob_onproc=0.0
 find_SN: do n=n1,n2
       do m=m1,m2
         lnrho=f(l,m,n,ilnrho)
@@ -1610,7 +1645,7 @@ find_SN: do n=n1,n2
         do l=1,nx
           if (rho(l) >= cloud_rho .and. TT(l) <= cloud_TT) then
             cum_mass=cum_mass+rho(l)
-            cum_prob_onproc=cum_mass/cloud_mass
+            cum_prob_onproc=cum_mass/cloud_mass_byproc(iproc)
             if (franSN(1) <= cum_prob_onproc) then
               SNR%l=l+l1-1; SNR%m=m; SNR%n=n
               if (lroot.and.ip<14) &
@@ -1899,7 +1934,7 @@ find_SN: do n=n1,n2
           c_SN=ampl_SN/( 4./3.*pi*(width_energy)**3 )
         endif
       endif
-
+      
       if (lroot) print*,'explode_SN: c_SN         =',c_SN
 !
 ! Mass insertion normalization
@@ -1952,30 +1987,38 @@ find_SN: do n=n1,n2
 ! Velocity insertion normalization
 !
       if (lSN_velocity) then
-        cvelocity_SN=uu_sedov*((width_SN-3*dxmax)*unit_length)**3&
-                   /xsi_sedov**5*SNR%rhom*unit_density*(3*dxmax*unit_length)**2&
-                      /((SNR%t_sedov*unit_time)**2*ampl_SN*unit_energy)
-!included cvelocity damping to compensate for initialization acceleration
-! 04-sep-09/fred
-! testing with grid separation of between 1.9 and 5.8 parsecs
-! produces good agreement with Sedov-Taylor without lSN_velocity
-! if width_SN=3*dxmax. **lSN_velocity may be redundant**
-! resolution greater than 1.9 requires width_SN > 3*dxmax
-! less than 5.8 resolution is inaccurate 
+        if (velocity_profile=="r15gaussian3") then
+          cvelocity_SN=sqrt(6.*ampl_SN/pi/SNR%rhom/width_velocity**6) !fred
+        elseif (velocity_profile=="r3gaussian3") then
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448) !fred 
+        elseif (velocity_profile=="r6gaussian3") then
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358) !fred 
+        else
+          cvelocity_SN=uu_sedov
+          if (lroot) print*, 'calculate cvelocity_SN: shell speed for velocity profile ',velocity_profile
+        endif
+!
+!     11-dec-09/fred 
+!     If using kinetic energy the thermal energy ampl_SN is halved
+!     E_t=E_k= 4*pi*int(0.5*rho*v^2*r^2 dr) where v = cvelocity_SN*velocity_profile
+!     to reasonable approximation rho assumed constant = SNR%rhom
+!     This enables larger width_SN without loss of velocity in snowplough
+!     Care needs to be taken to avoid reverse shock causing heat spike at origin late on
+!     A suitable cooling function allows these isolated diffuse spike of minute mass to be
+!     truncated with little global impact
 !
         if (lroot) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
       else
         cvelocity_SN=0.
       endif
-
       if (lroot.and.ip<32) print*, &
          'explode_SN: SNR%site%TT, TT_SN_new, TT_SN_min, SNR%site%ee =', &
                                 SNR%site%TT,TT_SN_new,TT_SN_min, SNR%site%ee
       if (lroot) print*,'explode_SN: yH_SN_new =',yH_SN_new
       if ((TT_SN_new < TT_SN_min).or.(mass_movement=='constant')) then
          if (lroot) print*,'explode_SN: SN will be too cold!'
-         lmove_mass=.not.(mass_movement == 'off')
-         ! lmove_mass=.false.  ! use to switch off for debug...
+!         lmove_mass=.not.(mass_movement == 'off')  
+!         lmove_mass=.false.  ! use to switch off for debug...
 
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation
@@ -2048,7 +2091,7 @@ find_SN: do n=n1,n2
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
           deltarho=0.
-
+          
           call eoscalc(f,nx,yH=yH,lnTT=lnTT,ee=ee_old)
           TT=exp(lnTT)
 
@@ -2087,6 +2130,11 @@ find_SN: do n=n1,n2
             call eoscalc(ilnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth) &
                                                   /exp(lnrho)), lnTT=lnTT)
             maxlnTT=maxval(lnTT)
+            call mpibcast_real(maxlnTT,1)
+!
+!30-dec-09/fred: mpibcast call necassary to broadcast maxlnTT to all processors
+!                otherwise lroot may fail and the rest pass leaving the code in limbo
+!
             if (maxlnTT>alog(2.*TT_SN_new)) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_UNEVEN
@@ -2101,7 +2149,8 @@ find_SN: do n=n1,n2
             endif
           endif
       enddo; enddo
-
+      
+ 
       SNR%EE=0.
       SNR%MM=0.
       !EE_SN2=0.
@@ -2180,7 +2229,7 @@ find_SN: do n=n1,n2
       enddo
 
       call get_properties(f,SNR,rhom_new,ekintot_new)
-      print*,"TOTAL KINETIC ENERGY CHANGE:",ekintot_new-ekintot
+      if (lroot) print*,"TOTAL KINETIC ENERGY CHANGE:",ekintot_new-ekintot
 !
 !  Sum and share diagnostics etc. amongst processors
 !
@@ -2509,13 +2558,14 @@ find_SN: do n=n1,n2
       ekintot=tmp2(3)*dv
       if (abs(tmp2(2)) < 1e-30) then
         write(0,*) 'tmp = ', tmp
-!       call fatal_error("interstellar.get_properties", &
-!           "Dividing by zero?")
+
+       call fatal_error("interstellar.get_properties", &
+           "Dividing by zero?")
         rhom=0.
       else
         rhom=tmp2(1)/tmp2(2)
       endif
-!
+!   
     endsubroutine get_properties
 !***********************************************************************
     subroutine get_lowest_rho(f,SNR,radius,rho_lowest)
@@ -2590,14 +2640,15 @@ find_SN: do n=n1,n2
 !
          if (lSN_velocity) then
            dr_SN=sqrt(dr2_SN)
-           dr_SN=max(dr_SN(1:nx),1.0D-30)
-!  04-sep-09/fred: amended dr_SN above to avoid div by zero below
+           dr_SN=max(dr_SN(1:nx),tiny(0.D0))
+!  04-sep-09/fred: amended dr_SN above to avoid div by zero below,
+!                  where unnecassary expense as profile(dr2_SN=0,:)=0
            outward_normal_SN(:,1)=dx_SN/dr_SN
-           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=1.D0
+!           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
            outward_normal_SN(:,2)=dy_SN/dr_SN
-           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=1.D0
+!           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
            outward_normal_SN(:,3)=dz_SN/dr_SN
-           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=1.D0
+!           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=0.0
          endif
 !
     endsubroutine proximity_SN
@@ -2868,6 +2919,15 @@ find_SN: do n=n1,n2
 !
       elseif (velocity_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
+!
+      elseif (velocity_profile=="r3gaussian3") then
+        profile_SN=(dr2_SN(1:nx))**1.5*exp(-(dr2_SN(1:nx)/width**2)**3)
+!
+      elseif (velocity_profile=="r6gaussian3") then
+        profile_SN=(dr2_SN(1:nx))**3*exp(-(dr2_SN(1:nx)/width**2)**3)
+!
+      elseif (velocity_profile=="r15gaussian3") then
+        profile_SN=(dr2_SN(1:nx))**0.75*exp(-(dr2_SN(1:nx)/width**2)**3)
 !
       elseif (velocity_profile=="cubictanh") then
         profile_SN=(sqrt(dr2_SN/width)**3) &

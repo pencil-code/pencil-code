@@ -1081,6 +1081,8 @@ module Magnetic
         case ('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case ('sine-bc'); call sine_avoid_boundary(amplaa(j),f,kx_aa(j),rm_int,rm_ext)
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
+        case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa) 
+        case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa) 
         case ('tony-nohel')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*z(n))

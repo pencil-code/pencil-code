@@ -58,6 +58,7 @@ module Initcond
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
+  public :: ferriere_uniform_x, ferriere_uniform_y 
 !
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -4440,5 +4441,118 @@ module Initcond
       enddo; enddo
 !
     endsubroutine const_lou
+!***********************************************************************
+    subroutine ferriere_uniform_x(ampl,f,i) 
+!
+!  Uniform B_x field propto rho (for vector potential)
+!  
+!  This routine sets up an initial magnetic field x-parallel with a 
+!  magnitude directly proportional to the density. In entropy.f90 we require
+!  Galactic-hs or Ferriere-hs to be set for init_ss, in density.f90
+!  Galactic-hs should be set for initlnrho and in gravity_simple.f90 use
+!  Ferriere for gravz_profile
+! 
+!  09-jan-10/fred: coded
+!
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+
+      integer :: i,icpu
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: rho,tmpsum
+      real :: ampl,tmp1
+      real, dimension(1)::tmp3
+      real, dimension(ncpus)::sumtmp,tmp2
+!      double precision :: g_B
+!      double precision, parameter :: g_B_cgs=6.172D20
+
+!
+      rho=exp(f(:,:,:,ilnrho))
+!      g_B=g_b_cgs/unit_length
+      tmp2(:)=0.0
+      sumtmp(:)=0.0
+          tmp1=sum(rho(l1:l2,m1,n1:n2))
+          do icpu=1,ncpus
+          tmp3=tmp1
+          call mpibcast_real(tmp3,1,icpu-1)
+          tmp2(icpu+nprocy)=tmp3(1)
+        enddo
+        if (ncpus.gt.nprocy) then
+          do icpu=nprocy+1,ncpus
+            sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
+          enddo
+        endif
+        if (lroot) print*,'sumtmp =',sumtmp
+        print*,'sumtmp on iproc =',sumtmp(iproc+1)
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'ferriere_uniform_x: set variable to zero; i=',i
+      else
+        print*,'ferriere_uniform_x: uniform x-field approx propto rho ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=-ampl*(sumtmp(iproc+1)+sum(rho(l1:l2,m,n1:n)))*dx*dz
+!          f(l1:l2,m,n,i+1)=-ampl*g_B*tanh(z(n)/g_B)
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
+      endif
+!
+    endsubroutine ferriere_uniform_x
+!***********************************************************************
+    subroutine ferriere_uniform_y(ampl,f,i)
+!
+!  Uniform B_y field (for vector potential)
+!  22-jan-10/fred 
+!
+!  This routine sets up an initial magnetic field y-parallel(azimuthal) with a 
+!  magnitude directly proportional to the density. In entropy.f90 we require
+!  Galactic-hs or Ferriere-hs to be set for init_ss, in density.f90
+!  Galactic-hs should be set for initlnrho and in gravity_simple.f90 use
+!  Ferriere for gravz_profile
+!
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+
+      integer :: i,icpu
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: rho,tmpsum
+      real :: ampl,tmp1
+      real, dimension(1)::tmp3
+      real, dimension(ncpus)::sumtmp,tmp2
+!      double precision :: g_B
+!      double precision, parameter :: g_B_cgs=6.172D20
+
+!
+      rho=exp(f(:,:,:,ilnrho))
+!      g_B=g_b_cgs/unit_length
+      tmp2(:)=0.0
+      sumtmp(:)=0.0
+          tmp1=sum(rho(l1:l2,m1,n1:n2))
+          do icpu=1,ncpus
+          tmp3=tmp1
+          call mpibcast_real(tmp3,1,icpu-1)
+          tmp2(icpu+nprocy)=tmp3(1)
+        enddo
+        if (ncpus.gt.nprocy) then
+          do icpu=nprocy+1,ncpus
+            sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
+          enddo
+        endif
+        if (lroot) print*,'sumtmp =',sumtmp
+        print*,'sumtmp on iproc =',sumtmp(iproc+1)
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'ferriere_uniform_y: set variable to zero; i=',i
+      else
+        print*,'ferriere_uniform_y: uniform y-field approx propto rho ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+sum(rho(l1:l2,m,n1:n)))*dx*dz
+!          f(l1:l2,m,n,i)=ampl*g_B*tanh(z(n)/g_B)
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
+      endif
+!
+    endsubroutine ferriere_uniform_y
 !***********************************************************************
 endmodule Initcond

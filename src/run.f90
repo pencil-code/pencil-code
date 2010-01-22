@@ -326,6 +326,7 @@ program run
 !
   call choose_pencils()
   call write_pencil_info()
+
 !
   if (mglobal/=0)  &
       call output_globals(trim(directory_snap)//'/global.dat', &
@@ -341,7 +342,7 @@ program run
   if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
-!
+! 
   if (lpencil_init) call initialize_pencils(p,0.0)
 !
 !  Perform pencil_case consistency check if requested.

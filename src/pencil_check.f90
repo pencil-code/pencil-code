@@ -442,6 +442,7 @@ f_lop:  do iv=1,mvar
       lpencil_check_at_work=.false.
 !
       if (lroot) print*, 'pencil_consistency_check: all tests passed'
+
 !
     endsubroutine pencil_consistency_check
 !***********************************************************************
