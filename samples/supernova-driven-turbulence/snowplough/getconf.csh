@@ -1,0 +1,1 @@
+/home/fred/pencil-code//bin/getconf.csh

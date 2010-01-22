@@ -1,0 +1,23 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM      =   mpicomm
+IO           =   io_dist
+
+HYDRO        =   hydro
+SHOCK        =   shock
+DENSITY      =   density
+ENTROPY      =   entropy
+MAGNETIC     = nomagnetic
+RADIATION    = noradiation
+PSCALAR      = nopscalar
+INTERSTELLAR =   interstellar
+EOS          =   eos_idealgas
+
+GRAVITY      = nogravity
+FORCING      = noforcing
+SHEAR        = noshear
+
+POWER        = nopower_spectrum

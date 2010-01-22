@@ -1,0 +1,1 @@
+/home/fred/pencil-code//src/solid_cells.h

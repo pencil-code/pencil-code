@@ -1,0 +1,71 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
+  nt=250001, it1=50, isave=85, itorder=3, tmax=.5
+  cdt=0.4, cdtv=0.3, dtmin=1e-10
+  dsnap=0.002, dvid=0.0001, slice_position='m'
+  ip=20
+  lpencil_check=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  !diffrho=1e-1, idiff='normal'
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-const','shock'
+  chi=2e-1,chi_shock=1.350
+  lupw_ss=T
+/
+&magnetic_run_pars
+!  llorentzforce=F
+  iresistivity='eta-const','eta-shock'
+  eta=7.95e-3,eta_shock=3.00
+/
+!&cosmicray_run_pars
+!  cosmicray_diff=.04
+!/
+&interstellar_run_pars
+  width_SN=0.03
+  frac_eth=1.0
+  frac_ecr=0.0
+  lSN_ecr=F
+  h_SNI=0.15
+!  lSNII=T
+!  h_SNII=0.106
+  TT_SN_max=1e2
+  rho_SN_min=7.5e-1
+  lSN_mass=T
+  mass_movement='off'
+  velocity_profile='r15gaussian3'
+  lSN_velocity=T
+!  ampl_SN=3.182093016 !without kinetic energy
+  ampl_SN=1.591046508 !with 50% kinetic energy
+  mass_SN=6.303127e-8
+  mass_width_ratio=1.
+  heatcool_shock_cutoff=0.4
+  heatcool_shock_cutoff_rate=0.25
+  cooling_select='SSrr'
+  heating_select='wolfire'
+  lcooltime_smooth=T
+  SNR_damping=0.5 !any non-zero value ldamping=T value not used
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  ivisc='nu-const','nu-shock'
+  nu=0.0275,nu_shock=1.650
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/

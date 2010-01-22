@@ -1,0 +1,1 @@
+/home/fred/pencil-code//src/power_spectrum.f90

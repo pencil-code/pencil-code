@@ -1,0 +1,7 @@
+This simulation uses the injection of kinetic and thermal energy into a realistic
+ galactic profile derived from Katia Ferriere's gravity scheme.
+An initial density(z) profile is chosen to approximate isothermal hydrostatic equilibrium.
+The weak azimuthal seed field (peak 1.7724e-8 Gauss) is directly proportional to the
+gas density.
+The model includes radiative cooling, uv heating and shock viscosity is included to smooth
+shock variables for numerical handling. This requires high resolution and MPI.
