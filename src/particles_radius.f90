@@ -329,7 +329,7 @@ module Particles_radius
       real, dimension (nx) :: ap_equi, vth, dt1_condensation, rhovap
       real, dimension (nx) :: total_surface_area, ppsat, supsatratio1
       real, dimension (nx) :: rhocond_tot, rhosat, np_total
-      real :: dapdt, drhocdt, alpha_cond_par, fdamp_evap
+      real :: dapdt, drhocdt, alpha_cond_par
       integer :: k, ix, ix0
 !
       intent (in) :: f, fp
