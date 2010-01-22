@@ -18,7 +18,6 @@
 module Viscosity
 !
   use Cdata
-  use Messages
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -33,8 +32,7 @@ module Viscosity
 !
 !  19-nov-02/tony: coded
 !
-      use Mpicomm
-      use Sub
+      use Messages, only: svn_id
 !
 !  Identify version number.
 !
@@ -177,7 +175,7 @@ module Viscosity
     endsubroutine calc_viscous_force
 !***********************************************************************
     subroutine calc_visc_heat_ppd(df,p)
-!    
+!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       intent (in) :: df,p
