@@ -223,7 +223,7 @@ module Particles
 !  Must have set tausp_species for drag force.
 !
         if (ldragforce_dust_par .or. ldragforce_gas_par) then
-          if (any(tausp_species==0)) then
+          if (any(tausp_species==0.0)) then
             if (lroot) print*, &
                 'initialize_particles: drag force must have tausp_species/=0 !'
                 call fatal_error('initialize_particles','')
