@@ -1,13 +1,13 @@
 ! $Id$
 !
 !  This module can replace the entropy module by using lnT or T (with
-!  ltemperature_nolog=.true.) as dependent variable. For a perfect gas 
+!  ltemperature_nolog=.true.) as dependent variable. For a perfect gas
 !  with constant coefficients (no ionization) we have:
 !  (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
 !
 !  Note that to use lnTT as thermal variable, you may rather want to use
 !  entropy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
-!  has way more options and features than temperature_idealgas.f90. 
+!  has way more options and features than temperature_idealgas.f90.
 !
 !  At a later point we may want to rename the module Entropy into Energy
 !
@@ -82,7 +82,7 @@ module Entropy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT, lpressuregradient_gas, ladvection_temperature, heat_uniform,& 
+      lupw_lnTT, lpressuregradient_gas, ladvection_temperature, heat_uniform,&
       chi, iheatcond, tau_heat_cor, tau_damp_cor, zcor, TT_cor, &
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
@@ -95,13 +95,13 @@ module Entropy
   integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
-  integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$ 
+  integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
                               ! DIAG_DOC: \quad(radiative flux at the top)
   integer :: idiag_yHmax=0, idiag_yHmin=0, idiag_yHm=0
-  integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> = 
+  integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
                               ! DIAG_DOC: \quad(mean thermal energy)
-  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> = 
+  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
   integer :: idiag_ssm=0, idiag_thcool=0
@@ -146,7 +146,7 @@ module Entropy
         endif
         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
-!                                       
+!
     endsubroutine register_entropy
 !***********************************************************************
     subroutine initialize_entropy(f,lstarting)
@@ -213,14 +213,14 @@ module Entropy
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
         case ('K-profile')
           lheatc_Kprof=.true.
-! 
+!
 !  11-Aug-2008/dintrans: better somewhere else?
 !
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           if (lroot) call information('initialize_entropy',' heat conduction: K=K(r)')
         case ('K-arctan')
-          lheatc_Karctan=.true.         
+          lheatc_Karctan=.true.
           if (.not. ltemperature_nolog) &
             call fatal_error('calc_heatcond_arctan','only valid for TT')
           if (lroot) call information('initialize_entropy',' heat conduction: arctan profile')
@@ -366,7 +366,7 @@ module Entropy
 !  13-dec-2002/axel+tobi: adapted from init_ss
 !
 !  initialise entropy; called from start.f90
-!  07-nov-2001/wolf: coded 
+!  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
       use General,  only: chn
@@ -559,8 +559,8 @@ module Entropy
 !
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 !
-      if (ladvection_temperature) then 
-        if (ltemperature_nolog) then 
+      if (ladvection_temperature) then
+        if (ltemperature_nolog) then
           lpenc_requested(i_ugTT)=.true.
         else
           lpenc_requested(i_uglnTT)=.true.
@@ -630,7 +630,7 @@ module Entropy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
-! 
+!
       use EquationOfState, only: gamma_inv
       use Sub, only: u_dot_grad
 
@@ -704,7 +704,7 @@ module Entropy
 !  Advection term and PdV-work.
 !
       if (ladvection_temperature) then
-        if (ltemperature_nolog) then 
+        if (ltemperature_nolog) then
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - p%ugTT
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
@@ -741,7 +741,7 @@ module Entropy
 !  Hyper diffusion.
 !
       if (lheatc_hyper3) then
-        if (ltemperature_nolog) then 
+        if (ltemperature_nolog) then
           thdiff=thdiff+chi_hyper3*p%del6TT
         else
           thdiff=thdiff+chi_hyper3*p%del6lnTT
@@ -845,10 +845,10 @@ module Entropy
 !
       if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
       if (ltemperature_nolog) then
-!  WL: can someone explain this equation?      
+!  WL: can someone explain this equation?
         thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
-      else 
-!  D(lnTT)/Dt = ... + 1/pp*grad(shock*pp*glnTT)      
+      else
+!  D(lnTT)/Dt = ... + 1/pp*grad(shock*pp*glnTT)
         thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
       endif
 !
@@ -865,7 +865,7 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-! 
+!
     endsubroutine calc_heatcond_shock
 !***********************************************************************
     subroutine rad_equil(f)
@@ -1101,7 +1101,7 @@ module Entropy
 !
       call heatcond_TT(p%TT, hcond, dhcond)
 !  must specify the new bottom value of hcond for the 'c1' BC
-      if (n == n1) hcond0=hcond(1) 
+      if (n == n1) hcond0=hcond(1)
 !  grad LnK=grad_T Ln K.grad(TT)
       dhcond=dhcond/hcond
       call multsv(dhcond, p%gTT, gLnhcond)
@@ -1125,7 +1125,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  calculate gamma*K/rho*cp*div(T*grad lnTT)= 
+!  calculate gamma*K/rho*cp*div(T*grad lnTT)=
 !              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
 !
 !  12-Mar-07/dintrans: coded
@@ -1185,7 +1185,7 @@ module Entropy
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines.
-!  
+!
 !  25-aug-09/bing: moved from dss_dt to here
 !
       use Diagnostics, only: max_mn_name
@@ -1197,7 +1197,7 @@ module Entropy
 !
       real, dimension (nx) :: cosbgT,gT2,b2
       real, dimension (nx) :: vKpara,vKperp,rhs
-!      
+!
       vKpara(:) = Kgpara
       vKperp(:) = Kgperp
 !
@@ -1211,7 +1211,7 @@ module Entropy
 !
       where ((gT2.le.tini).or.(b2.le.tini))
          cosbgT=0.
-      elsewhere 
+      elsewhere
          cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
@@ -1349,7 +1349,7 @@ module Entropy
 !
 !  Temperature.
 !
-        case ('TT') 
+        case ('TT')
           slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnTT))
           slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnTT))
           slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnTT))
@@ -1358,7 +1358,7 @@ module Entropy
           if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT))
           slices%ready=.true.
 !  lnTT
-        case ('lnTT') 
+        case ('lnTT')
           slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
           slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
           slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
@@ -1424,7 +1424,7 @@ module Entropy
       real :: lnrhotop, lnrho1, lnrho_0, ztop
       integer :: i
 !
-      call get_cp1(cp1) 
+      call get_cp1(cp1)
 !
 !  top boundary values
       Ttop=cs2top*cp1/gamma_m1
@@ -1453,9 +1453,9 @@ module Entropy
           f(:,:,i,ilnTT)=log(temp)
         endif
 !
-        if (z(i) >= z2) f(:,:,i,ilnrho)=lnrhotop+mpoly2*log(temp/Ttop)        
+        if (z(i) >= z2) f(:,:,i,ilnrho)=lnrhotop+mpoly2*log(temp/Ttop)
         if (z(i) < z2 .and. z(i) >= z1 ) f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)        
-        if (z(i) < z1) f(:,:,i,ilnrho)=lnrho_0+mpoly0*log(temp/T0)        
+        if (z(i) < z1) f(:,:,i,ilnrho)=lnrho_0+mpoly0*log(temp/T0)
       enddo
 !
     endsubroutine piecew_poly
@@ -1596,19 +1596,19 @@ module Entropy
         select case (bcz1(ilnTT))
           ! Constant temperature at the bottom
           case ('cT')
-            bz(1)=1.  ; cz(1)=0. 
+            bz(1)=1.  ; cz(1)=0.
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
           case ('c1')
 !           bz(1)=1.   ; cz(1)=-1
 !           rhsz(1)=dz*Fbot/hcond0
-! we can use here the second-order relation for the first derivative: 
-! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
+! we can use here the second-order relation for the first derivative:
+! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz
 ! and insert this expression in the difference relation to eliminate T_{j-1}:
 ! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
             cz(1)=cz(1)+az(1)
             rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
-          case default 
+          case default
            call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
         endselect
 !
@@ -1648,7 +1648,7 @@ module Entropy
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
-! BC important not for the x-direction (always periodic) but for 
+! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
       call heatcond_TT_2d(finit(:,4,:,ilnTT), hcond, dhcond)
@@ -1729,7 +1729,7 @@ module Entropy
          case ('c3')
           bz(1)=1. ; cz(1)=-1.
           rhsz(1)=0.
-         case default 
+         case default
           call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
        endselect
 !
@@ -1791,7 +1791,7 @@ module Entropy
       dx_2=1./dx**2
       dz_2=1./dz**2
 !
-! BC important not for the x-direction (always periodic) but for 
+! BC important not for the x-direction (always periodic) but for
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
 !
@@ -1884,7 +1884,7 @@ module Entropy
            case ('c3')
              bz(1)=1. ; cz(1)=-1.
              rhsz(1)=0.
-           case default 
+           case default
              call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
          endselect
 !
@@ -1945,7 +1945,7 @@ module Entropy
 !***********************************************************************
     subroutine heatcond_TT_0d(TT, hcond, dhcond)
 !
-! 07-Sep-07/gastine: computed the radiative conductivity hcond(T) 
+! 07-Sep-07/gastine: computed the radiative conductivity hcond(T)
 ! with its derivative dhcond=dhcond(T)/dT at a given temperature.
 !
       implicit none
@@ -1961,7 +1961,7 @@ module Entropy
 !***********************************************************************
     subroutine boundary_ADI(f_2d, hcond)
 
-! 13-Sep-07/gastine: computed two different types of boundary 
+! 13-Sep-07/gastine: computed two different types of boundary
 ! conditions for the implicit solver:
 !     - Always periodic in x-direction
 !     - Possibility to choose between 'cT' and 'c3' in z direction
@@ -1991,7 +1991,7 @@ module Entropy
         case ('c3') ! constant flux
           if (.not. present(hcond)) then
             f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond0
-          else 
+          else
             f_2d(:,n1-1)=f_2d(:,n1+1)+2.*dz*Fbot/hcond(:)
           endif
       endselect
@@ -2011,7 +2011,7 @@ module Entropy
 !
       integer :: i,n
       integer, parameter    :: NMAX=600
-      real    :: alpha, beta,gamma,fact      
+      real    :: alpha, beta,gamma,fact
       real, dimension(n)    :: a,b,c,r,x,bb,u,z
 !     real, dimension(NMAX) :: bb,u,z
 !
@@ -2041,7 +2041,7 @@ module Entropy
     subroutine ADI_Kconst_1d(finit,f)
 !
 ! 18-sep-07/dintrans: coded
-! Implicit Crank Nicolson scheme in 1-D for a constant K (not 
+! Implicit Crank Nicolson scheme in 1-D for a constant K (not
 ! really an ADI but keep the generic name for commodity).
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
@@ -2078,7 +2078,7 @@ module Entropy
       rhs(nz)=cs2top/gamma_m1
       if (bcz1(ilnTT)=='cT') then
 ! Constant temperature at the bottom
-        b(1)=1. ; c(1)=0. 
+        b(1)=1. ; c(1)=0.
         rhs(1)=cs2bot/gamma_m1
       else
 ! Constant flux at the bottom
@@ -2137,7 +2137,7 @@ module Entropy
         rhs(nz)=0.
         if (bcz1(ilnTT)=='cT') then
 ! Constant temperature at the bottom
-          b(1)=1. ; c(1)=0. 
+          b(1)=1. ; c(1)=0.
           rhs(1)=0.
         else
 ! Constant flux at the bottom: d/dz [T^(n+1)-T^n] = 0
@@ -2264,20 +2264,20 @@ module Entropy
         select case (bcz1(ilnTT))
           ! Constant temperature at the bottom
           case ('cT')
-            bz(1)=1.  ; cz(1)=0. 
+            bz(1)=1.  ; cz(1)=0.
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
           case ('c1')
 !           bz(1)=1.   ; cz(1)=-1
 !           rhsz(1)=dz*Fbot/hcond0
-! we can use here the second-order relation for the first derivative: 
-! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
+! we can use here the second-order relation for the first derivative:
+! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz
 ! and insert this expression in the difference relation to eliminate T_{j-1}:
 ! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
 !
             cz(1)=cz(1)+az(1)
             rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
-          case default 
+          case default
            call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
         endselect
 !
