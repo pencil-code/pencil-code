@@ -258,8 +258,11 @@ module Particles
 !  Multiple dust species. Friction time is given in the array tausp_species.
 !
       if (npar_species>1) then
-        if (lroot) print*, &
-            'initialize_particles: Number of particle species = ', npar_species
+        if (lroot) then
+          print*, 'initialize_particles: '// &
+              'Number of particle species = ', npar_species
+          print*, 'initialize_particles: tausp_species = ', tausp_species
+        endif
 !
 !  Must have set tausp_species for drag force.
 !
