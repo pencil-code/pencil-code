@@ -4145,7 +4145,7 @@ module Initcond
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
       if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
-!      
+!
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnT
@@ -4355,7 +4355,7 @@ module Initcond
       use Cdata
       use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
       use Gravity, only: gravz
-      
+
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
       real, dimension (150) :: b_lnT,b_z
@@ -4386,16 +4386,16 @@ module Initcond
          tmprho = lnrho0
          tmpT = b_lnT(1)
          tmpz = b_z(1)
-         !      
+         !
          ztop=xyz0(3)+Lxyz(3)
          zbot=xyz0(3)
          !
-         do while (tmpz .le. ztop)         
+         do while (tmpz .le. ztop)
             if (abs(tmpz-zbot) .lt. dz) cs2bot = (gamma-1.)*exp(tmpT)
             if (abs(tmpz-ztop) .lt. dz) cs2top = (gamma-1.)*exp(tmpT)
-            if (abs(tmpz-z(j)) .le. dz) then 
+            if (abs(tmpz-z(j)) .le. dz) then
                f(:,:,j,ilnrho) = tmprho
-               f(:,:,j,ilnTT)  = tmpT                            
+               f(:,:,j,ilnTT)  = tmpT
             endif
             ! new z coord
             tmpz = tmpz+dz
@@ -4410,7 +4410,7 @@ module Initcond
                   tmpT = tmpT + tmpdT
                   !exit
                elseif (tmpz .ge. b_z(150)) then
-                  tmpdT = b_lnT(150) - tmpT  
+                  tmpdT = b_lnT(150) - tmpT
                   tmpT = tmpT + tmpdT
                   !exit
                endif
@@ -4429,7 +4429,7 @@ module Initcond
 !
       use Cdata
       use General
-    
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
       integer::i
@@ -4442,35 +4442,31 @@ module Initcond
 !
     endsubroutine const_lou
 !***********************************************************************
-    subroutine ferriere_uniform_x(ampl,f,i) 
+    subroutine ferriere_uniform_x(ampl,f,i)
 !
 !  Uniform B_x field propto rho (for vector potential)
-!  
-!  This routine sets up an initial magnetic field x-parallel with a 
+!
+!  This routine sets up an initial magnetic field x-parallel with a
 !  magnitude directly proportional to the density. In entropy.f90 we require
 !  Galactic-hs or Ferriere-hs to be set for init_ss, in density.f90
 !  Galactic-hs should be set for initlnrho and in gravity_simple.f90 use
 !  Ferriere for gravz_profile
-! 
+!
 !  09-jan-10/fred: coded
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-
+!
       integer :: i,icpu
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: rho,tmpsum
       real :: ampl,tmp1
       real, dimension(1)::tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !      double precision :: g_B
 !      double precision, parameter :: g_B_cgs=6.172D20
-
-!
-      rho=exp(f(:,:,:,ilnrho))
 !      g_B=g_b_cgs/unit_length
       tmp2(:)=0.0
       sumtmp(:)=0.0
-          tmp1=sum(rho(l1:l2,m1,n1:n2))
+          tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
           do icpu=1,ncpus
           tmp3=tmp1
           call mpibcast_real(tmp3,1,icpu-1)
@@ -4491,7 +4487,8 @@ module Initcond
         if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,i  )=0.0
-          f(l1:l2,m,n,i+1)=-ampl*(sumtmp(iproc+1)+sum(rho(l1:l2,m,n1:n)))*dx*dz
+          f(l1:l2,m,n,i+1)=-ampl*(sumtmp(iproc+1)+&
+              sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
 !          f(l1:l2,m,n,i+1)=-ampl*g_B*tanh(z(n)/g_B)
           f(l1:l2,m,n,i+2)=0.0
         enddo; enddo
@@ -4502,31 +4499,27 @@ module Initcond
     subroutine ferriere_uniform_y(ampl,f,i)
 !
 !  Uniform B_y field (for vector potential)
-!  22-jan-10/fred 
+!  22-jan-10/fred
 !
-!  This routine sets up an initial magnetic field y-parallel(azimuthal) with a 
+!  This routine sets up an initial magnetic field y-parallel(azimuthal) with a
 !  magnitude directly proportional to the density. In entropy.f90 we require
 !  Galactic-hs or Ferriere-hs to be set for init_ss, in density.f90
 !  Galactic-hs should be set for initlnrho and in gravity_simple.f90 use
 !  Ferriere for gravz_profile
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-
+!
       integer :: i,icpu
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: rho,tmpsum
       real :: ampl,tmp1
       real, dimension(1)::tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !      double precision :: g_B
 !      double precision, parameter :: g_B_cgs=6.172D20
-
-!
-      rho=exp(f(:,:,:,ilnrho))
 !      g_B=g_b_cgs/unit_length
       tmp2(:)=0.0
       sumtmp(:)=0.0
-          tmp1=sum(rho(l1:l2,m1,n1:n2))
+          tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
           do icpu=1,ncpus
           tmp3=tmp1
           call mpibcast_real(tmp3,1,icpu-1)
@@ -4546,7 +4539,8 @@ module Initcond
         print*,'ferriere_uniform_y: uniform y-field approx propto rho ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
         do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+sum(rho(l1:l2,m,n1:n)))*dx*dz
+          f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+&
+              sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
 !          f(l1:l2,m,n,i)=ampl*g_B*tanh(z(n)/g_B)
           f(l1:l2,m,n,i+1)=0.0
           f(l1:l2,m,n,i+2)=0.0
