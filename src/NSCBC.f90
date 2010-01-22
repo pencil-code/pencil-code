@@ -502,13 +502,10 @@ include 'NSCBC.h'
         endif
       else
 !
-!  Find the parameter determining 
+!  Find the L_i's. 
 !
         cs0_average=sum(cs)/ngridpoints
         KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir1)
-!
-!  Find the L_i's. 
-!
         L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
         if (ilnTT > 0) then 
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
@@ -530,17 +527,17 @@ include 'NSCBC.h'
         if (llinlet) then
           dfslice(:,:,dir1) = prefac2*( L_5 - L_1)-T_2
         else
-          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)+T_2
         endif
       case ('top')
         if (llinlet) then
-          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)!-parallell_term_ux
+          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)+T_2
         else
           dfslice(:,:,dir1) = prefac2*(-L_1 + L_5)-T_2
         endif
       endselect
 !
-!  Find the evolution equation for the other equations at the boundary
+!  Find the evolution equation for the other variables at the boundary
 !
       dfslice(:,:,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
@@ -561,7 +558,7 @@ include 'NSCBC.h'
         dfslice(:,:,ilnTT)=dfslice(:,:,ilnTT)/TT
       endif
 !
-! Impose required variables at the boundary
+! Impose required variables at the boundary for reflecting inlets
 !
       if (llinlet) then
         if (.not. non_reflecting_inlet) then
