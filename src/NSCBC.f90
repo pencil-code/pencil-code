@@ -607,307 +607,6 @@ include 'NSCBC.h'
 !
     endsubroutine bc_nscbc_prf
 !***********************************************************************
-    subroutine bc_nscbc_prf_y(f,df,topbot,non_reflecting_inlet,linlet,u_t,T_t)
-!
-!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
-!   y-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
-!
-!   7-jul-08/arne: coded.
-!  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
-!                  i.e. not just the LODI equations.
-!
-      use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
-      use Chemistry
-      use Viscosity
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      character (len=3) :: topbot
-      logical, optional :: linlet
-      logical :: llinlet, non_reflecting_inlet
-      real, optional :: u_t,T_t
-      real, dimension(nx,nz) :: dlnrho_dx,dlnrho_dy,dlnrho_dz
-      real, dimension(nx,nz) :: rho0, L_1, L_3, L_4, L_5,parallell_term_uz
-      real, dimension(nx,nz) :: parallell_term_rho
-      real, dimension(nx,nz) :: parallell_term_ux
-      real, dimension(nx,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(nx,nz,3) :: grad_rho, u_in
-      real, dimension(nx,nz,3,3) :: dui_dxj
-      real, dimension (mx,mz) :: cs0_ar,cs20_ar
-      real, dimension (mx,mz) :: tmp22,tmp12,tmp2_lnrho,tmp33,tmp13,tmp3_lnrho
-      real, dimension (mx,mz) :: tmp23,tmp32,tmp21,tmp31,tmp11,tmp1_lnrho
-      real, dimension (nx) :: tmpx
-      real, dimension (nz) :: tmpz
-      real :: Mach,KK,nu
-      integer lll,i
-      integer sgn
-      real :: shift, grid_shift, weight, round
-      integer :: iround,lowergrid,uppergrid
-
-      intent(inout) :: f
-      intent(inout) :: df
-
-
-      llinlet = .false.
-      if (present(linlet)) llinlet = linlet
-      if (llinlet.and..not.present(u_t)) call stop_it(&
-           'bc_nscbc_prf_y: when using linlet=T, you must also specify u_t)')
-      select case (topbot)
-      case ('bot')
-        lll = m1
-        sgn = 1
-      case ('top')
-        lll = m2
-        sgn = -1
-      case default
-        print*, "bc_nscbc_prf_y: ", topbot, " should be `top' or `bot'"
-      endselect
-!
-!  Find density
-!
-      if (ldensity_nolog) then
-        rho0 = f(l1:l2,lll,n1:n2,irho)
-      else
-        rho0 = exp(f(l1:l2,lll,n1:n2,ilnrho))
-      endif
-!
-!  Get viscoity
-!
-      call getnu(nu)
-!
-!  Set arrays for the speed of sound and for the speed of sound squared (is it
-!  really necessarry to have both arrays?) 
-!  Set prefactors to be used later.
-!
-      if (leos_idealgas) then
-        cs20_ar(l1:l2,n1:n2)=cs20
-        cs0_ar(l1:l2,n1:n2)=cs0
-        prefac1 = -1./(2.*cs20)
-        prefac2 = -1./(2.*rho0*cs0)
-      elseif (leos_chemistry) then
-        call fatal_error('bc_nscbc_prf_x',&
-            'This sub routine is not yet adapted to work with leos_chemsitry!')
-      else
-        print*,"bc_nscbc_prf_y: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC boundary treatment only implemented for an ideal gas." 
-        print*,"Boundary treatment skipped."
-        return
-      endif
-!
-!  Calculate one-sided derivatives in the boundary normal direction
-!
-      call der_onesided_4_slice(f,sgn,ilnrho,grad_rho(:,:,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,2),lll,2)
-      call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,2),lll,2)
-!
-!  Do central differencing in the directions parallell to the boundary 
-!  first in the x-direction......
-!
-      if (nxgrid /= 1) then
-        do i=n1,n2
-          call der_pencil(1,f(:,lll,i,iuy),tmp21(:,i))
-          call der_pencil(1,f(:,lll,i,ilnrho),tmp1_lnrho(:,i))
-          call der_pencil(1,f(:,lll,i,iux),tmp11(:,i))
-          call der_pencil(1,f(:,lll,i,iuz),tmp31(:,i))
-        enddo
-      else
-        tmp31=0
-        tmp21=0
-        tmp11=0
-        tmp1_lnrho=0
-      endif
-      dui_dxj(:,:,3,1)=tmp31(l1:l2,n1:n2)
-      dui_dxj(:,:,2,1)=tmp21(l1:l2,n1:n2)
-      dui_dxj(:,:,1,1)=tmp11(l1:l2,n1:n2)
-      grad_rho(:,:,1)=tmp1_lnrho(l1:l2,n1:n2)
-!
-!  .... then in the z-direction
-!
-      if (nzgrid /= 1) then
-        do i=l1,l2
-          call der_pencil(3,f(i,lll,:,iuz),tmp33(i,:))
-          call der_pencil(3,f(i,lll,:,ilnrho),tmp3_lnrho(i,:))
-          call der_pencil(3,f(i,lll,:,iux),tmp13(i,:))
-          call der_pencil(3,f(i,lll,:,iuy),tmp23(i,:))
-        enddo
-      else
-        tmp33=0
-        tmp23=0
-        tmp13=0
-        tmp3_lnrho=0
-      endif
-      dui_dxj(:,:,3,3)=tmp33(l1:l2,n1:n2)
-      dui_dxj(:,:,2,3)=tmp23(l1:l2,n1:n2)
-      dui_dxj(:,:,1,3)=tmp13(l1:l2,n1:n2)
-      grad_rho(:,:,3)=tmp3_lnrho(l1:l2,n1:n2)
-!
-!  Find divergence of rho if we solve for logarithm of rho
-!
-      if (.not. ldensity_nolog) then
-        do i=1,3
-          grad_rho(:,:,i)=grad_rho(:,:,i)*rho0
-        enddo
-      endif
-!
-!  Find Mach number 
-!  (NILS: I do not think this is a good way to determine the Mach
-!  number since this is a local Mach number for this processor. Furthermore
-!  by determining the Mach number like this we will see the Mach number varying
-!  with the phase of an acoustic wave as the wave pass through the boundary.
-!  I think that what we really want is a Mach number averaged over the 
-!  timescale of several acoustic waves. How could this be done????)
-!
-      Mach=sum(f(l1:l2,lll,n1:n2,iuy)/cs0_ar(l1:l2,n1:n2))/(nx*nz)
-!
-!  Find the L_i's (which really are the Lodi equations)
-!
-      if (llinlet) then
-        L_1 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
-            (cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,2) &
-            - sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
-!
-!  Find velocity at inlet
-!
-        if (inlet_from_file) then
-          if (Ly_in == 0) call fatal_error('bc_nscbc_prf_y',&
-              'Ly_in=0. Check that the precisions are the same.')
-          round=t*u_t/Ly_in
-          iround=int(round)
-          shift=round-iround
-          grid_shift=shift*ny_in
-          lowergrid=m1_in+int(grid_shift)
-          uppergrid=lowergrid+1
-          weight=grid_shift-int(grid_shift)
-          u_in(:,:,:)&
-              =f_in(l1_in:l2_in,lowergrid,n1_in:n2_in,iux:iuz)*(1-weight)&
-              +f_in(l1_in:l2_in,uppergrid,n1_in:n2_in,iux:iuz)*weight
-          u_in(:,:,2)=u_in(:,:,2)+u_t
-        else
-          u_in(:,:,1)=0.
-          u_in(:,:,2)=u_t
-          u_in(:,:,3)=0.
-        endif
-        if (non_reflecting_inlet) then
-!
-!  The inlet is non-reflecting only when nscbc_sigma_in is set to 0, this 
-!  might however lead to problems as the inlet velocity will tend to drift 
-!  away from the target velocity u_t. This problem should be overcome by 
-!  setting a small but non-zero nscbc_sigma_in.
-!
-          L_3=nscbc_sigma_in*(f(l1:l2,lll,n1:n2,iux)-u_in(:,:,1))&
-              *cs0_ar(l1:l2,n1:n2)/Lxyz(2)
-          L_4=nscbc_sigma_in*(f(l1:l2,lll,n1:n2,iuz)-u_in(:,:,3))&
-              *cs0_ar(l1:l2,n1:n2)/Lxyz(2)
-          L_5 = nscbc_sigma_in*cs20_ar(l1:l2,n1:n2)*rho0&
-              *sgn*(f(l1:l2,lll,n1:n2,iuy)-u_in(:,:,2))*(1-Mach**2)/Lxyz(2)
-        else
-          L_3=0
-          L_4=0
-          L_5 = L_1
-        endif
-      else
-!
-!  Find the parameter determining 
-!
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0/Lxyz(2)
-!
-!  Find the L_i's
-!
-        L_1 = KK*(rho0*cs20-p_infty)
-        L_3 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,1,2)
-        L_4 = f(l1:l2,lll,n1:n2,iuy)*dui_dxj(:,:,3,2)
-        L_5 = (f(l1:l2,lll,n1:n2,iuy) - sgn*cs0_ar(l1:l2,n1:n2))*&
-             (cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,2)&
-             -sgn*rho0*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,2,2))
-      endif
-!
-!  Add terms due to derivatives parallell to the boundary
-!
-!!$      parallell_term_rho &
-!!$          =rho0*dui_dxj(:,:,1,1)+f(l1:l2,lll,n1:n2,iux)*grad_rho(:,:,1)&
-!!$          +rho0*dui_dxj(:,:,3,3)+f(l1:l2,lll,n1:n2,iuz)*grad_rho(:,:,3)
-!!$      parallell_term_ux &
-!!$           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,1,1)&
-!!$           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,1,3)&
-!!$           +cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,1)/rho0&
-!!$           +nu*(d2u1_dx2+d2u1_dz2)
-!!$      parallell_term_uy &
-!!$           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,2,1)&
-!!$           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,2,3)&
-!!$           +nu*(d2u2_dx2+d2u2_dz2)
-!!$      parallell_term_uz &
-!!$           =f(l1:l2,lll,n1:n2,iux)*dui_dxj(:,:,3,1)&
-!!$           +f(l1:l2,lll,n1:n2,iuz)*dui_dxj(:,:,3,3)&
-!!$           +cs20_ar(l1:l2,n1:n2)*grad_rho(:,:,3)/rho0&
-!!$           +nu*(d2u3_dx2+d2u3_dz2)
-
-!print*,'y----------------------------------------------------'
-!!$print*,'ux=',f(l1:l2,lll,n1:n2,iux)
-!!$print*,'uz=',f(l1:l2,lll,n1:n2,iuz)
-!!$print*,'dui_dxj(:,:,2,1)=',dui_dxj(:,:,2,1)
-!!$print*,'dui_dxj(:,:,2,3)=',dui_dxj(:,:,2,3)
-!!$print*,'parallell_term_uy=',parallell_term_uy
-!!$print*,maxval(f(l1:l2,lll,n1:n2,iux)),maxval(dui_dxj(:,:,2,1))
-!!$print*,maxval(f(l1:l2,lll,n1:n2,iuz)),maxval(dui_dxj(:,:,2,3))
-!!$print*,minval(f(l1:l2,lll,n1:n2,iux)),minval(dui_dxj(:,:,2,1))
-!!$print*,minval(f(l1:l2,lll,n1:n2,iuz)),minval(dui_dxj(:,:,2,3))
-!!$print*,minval(parallell_term_rho),maxval(parallell_term_rho)
-!!$print*,minval(parallell_term_ux),maxval(parallell_term_ux)
-!!$print*,minval(parallell_term_uy),maxval(parallell_term_uy)
-!!$print*,minval(parallell_term_uz),maxval(parallell_term_uz)
-
-!!$
-!!$
-!!$
-      parallell_term_rho=0
-      parallell_term_ux=0
-      parallell_term_uy=0
-      parallell_term_uz=0
-!
-!  Find the evolution equations at the boundary
-!
-      select case (topbot)
-      ! NB: For 'top' L_1 plays the role of L5 and L_5 the role of L1
-      case ('bot')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_5 + L_1)-parallell_term_rho
-        if (llinlet) then
-          df(l1:l2,lll,n1:n2,iuy) = prefac2*( L_5 - L_1)-parallell_term_uy
-        else
-          df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 + L_1)-parallell_term_uy
-        endif
-        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
-        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-      case ('top')
-        df(l1:l2,lll,n1:n2,ilnrho) = prefac1*(L_1 + L_5)-parallell_term_rho
-        if (llinlet) then
-          df(l1:l2,lll,n1:n2,iuy) = prefac2*(-L_5 + L_1)-parallell_term_uy
-        else
-          df(l1:l2,lll,n1:n2,iuy) = prefac2*( L_5 - L_1)-parallell_term_uy
-        endif
-        df(l1:l2,lll,n1:n2,iux) = -L_3-parallell_term_ux
-        df(l1:l2,lll,n1:n2,iuz) = -L_4-parallell_term_uz
-      endselect
-!
-!  Check if we are solving for logrho or rho
-!
-      if (.not. ldensity_nolog) then
-        df(l1:l2,lll,n1:n2,irho)=df(l1:l2,lll,n1:n2,irho)/rho0
-      endif
-!
-! Impose required variables at the boundary
-!
-      if (llinlet) then
-        if (.not. non_reflecting_inlet) then
-          f(l1:l2,lll,n1:n2,iux) = u_in(:,:,1)
-          f(l1:l2,lll,n1:n2,iuy) = u_in(:,:,2)
-          f(l1:l2,lll,n1:n2,iuz) = u_in(:,:,3)
-        endif
-      endif
-!
-    endsubroutine bc_nscbc_prf_y
-!***********************************************************************
     subroutine read_NSCBC_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1061,7 +760,7 @@ include 'NSCBC.h'
     endsubroutine NSCBC_clean_up
 !***********************************************************************
     subroutine find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-        domain_length,grid_points,u_t,direction,imin,imax,jmin,jmax)
+        domain_length,grid_points,u_t,dir,imin,imax,jmin,jmax)
 !
 !  Find velocity at inlet.
 !
@@ -1070,7 +769,7 @@ include 'NSCBC.h'
       logical, intent(out) :: non_zero_transveral_velo
       real, dimension(:,:,:), intent(out) :: u_in
       real, intent(in) :: domain_length,u_t
-      integer, intent(in) :: grid_points,direction
+      integer, intent(in) :: grid_points,dir
       integer, intent(in) :: imin,imax,jmin,jmax
 !
       real :: shift, grid_shift, weight, round
@@ -1107,17 +806,17 @@ include 'NSCBC.h'
 !
 !  Set the turbulent inlet velocity
 !
-          if (direction==1) then
+          if (dir==1) then
             call turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
-          elseif(direction==2) then
+          elseif(dir==2) then
             call turbulent_vel_y(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
-          elseif(direction==3) then
+          elseif(dir==3) then
             call turbulent_vel_z(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
           endif
 !
 !  Add the mean inlet velocity to the turbulent one
 !
-          u_in(:,:,direction)=u_in(:,:,direction)+u_t
+          u_in(:,:,dir)=u_in(:,:,dir)+u_t
         else
 !
 ! Define velocity profile at inlet
@@ -1135,7 +834,7 @@ include 'NSCBC.h'
               if (lroot .and. it==1 .and. lfirst) &
                   print*,'inlet_profile: uniform'
               non_zero_transveral_velo=.false.
-              u_in(:,:,direction)=u_in(:,:,direction)+u_t
+              u_in(:,:,dir)=u_in(:,:,dir)+u_t
 !
             case ('coaxial_jet')
               if (lroot .and. it==1 .and. lfirst) &
@@ -1155,16 +854,22 @@ include 'NSCBC.h'
 
               do jjj=imin,imax
                 do kkk=jmin,jmax
-                  rad=sqrt(&
-                      (y(jjj)-jet_center(1))**2+&
-                      (z(kkk)-jet_center(2))**2)
+                  if (dir==1) then
+                    rad=sqrt((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(2))**2)
+                  elseif (dir==2) then
+                    rad=sqrt((x(jjj)-jet_center(1))**2+(z(kkk)-jet_center(2))**2)
+                  elseif (dir==3) then
+                    rad=sqrt((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(2))**2)
+                  endif
                   ! Add mean velocity profile
                   if (rad < radius_mean) then
-                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)&
+                    u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                        =u_in(jjj-imin+1,kkk-jmin+1,dir)&
                         +(velo(1)+velo(2))/2&
                         +(velo(2)-velo(1))/2*tanh((rad-radius(1))/(2*theta(1)))
                   else
-                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)&
+                    u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                        =u_in(jjj-imin+1,kkk-jmin+1,dir)&
                         +(velo(2)+velo(3))/2&
                         +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
                   endif
