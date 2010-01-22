@@ -127,7 +127,7 @@ include 'NSCBC.h'
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
       character (len=120) :: directory_in
       character (len=5) :: chproc_in
-      real :: T_t
+      real :: T_t,u_t
 
       intent(inout) :: f
       intent(inout) :: df
@@ -210,14 +210,11 @@ include 'NSCBC.h'
 !  Read data only if required, i.e. if we are at a processor handling inlets
 !
             if (proc_at_inlet) then
-!             print*,'datadir=',datadir
               call chn(iproc_in,chproc_in)
               call safe_character_assign(directory_in,&
                   trim(turb_inlet_dir)//'/data/proc'//chproc_in)
-!              print*,'directory_in=',directory_in
               call safe_character_assign(turbfile,&
                   trim(directory_in)//'/var.dat')
-!              print*,'turbfile=',turbfile
               open(1,FILE=turbfile,FORM='unformatted')
               if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
                   mx_in,my_in,mz_in,nv_in
@@ -244,54 +241,40 @@ include 'NSCBC.h'
 !  Check if this is a physical boundary
 !
         if (ip_test==ip_ok) then
+!
+!  Set the values of T_t and u_t dependent on direction
+!
+          T_t=0
+          if (j==1) then 
+            if (ilnTT > 0) T_t=valx(ilnTT)
+            u_t=valx(j)
+          elseif (j==2) then 
+            if (ilnTT > 0) T_t=valy(ilnTT)
+            u_t=valy(j)
+          elseif (j==3) then 
+            if (ilnTT > 0) T_t=valz(ilnTT)
+            u_t=valz(j)
+          endif
+!
+!  Do the NSCBC boundary
+!
           select case (bc12(j))
+!
           case ('part_ref_outlet')
-!   Partially reflecting outlet.
-            if (j==1) then 
-              call bc_nscbc_prf(f,df,j,topbot,.false.)
-            elseif (j==2) then 
-              call bc_nscbc_prf_y(f,df,topbot,.false.)
-            elseif (j==3) then 
-              call bc_nscbc_prf(f,df,j,topbot,.false.)
-            endif
+            call bc_nscbc_prf(f,df,j,topbot,.false.)
+! 
           case ('part_ref_inlet')
-!   Partially reflecting inlet, ie, impose a velocity u_t.
-            T_t=0
-            if (j==1) then 
-              if (ilnTT > 0) T_t=valx(ilnTT)
-              call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,&
-                  u_t=valx(j),T_t=T_t)
-            elseif (j==2) then 
-              if (ilnTT > 0) T_t=valy(ilnTT)
-              call bc_nscbc_prf_y(f,df,topbot,.true.,linlet=.true.,&
-                  u_t=valy(j),T_t=T_t)
-            elseif (j==3) then 
-              if (ilnTT > 0) T_t=valz(ilnTT)
-              call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,&
-                  u_t=valz(j),T_t=T_t)
-            endif
+            call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,u_t=u_t,T_t=T_t)
+!
           case ('ref_inlet')
-!   Partially reflecting inlet, ie, impose a velocity u_t.
-            T_t=0
-            if (j==1) then 
-              if (ilnTT > 0) T_t=valx(ilnTT)
-              call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,&
-                  u_t=valx(j),T_t=T_t)
-            elseif (j==2) then 
-              if (ilnTT > 0) T_t=valy(ilnTT)
-              call bc_nscbc_prf_y(f,df,topbot,.false.,linlet=.true.,&
-                  u_t=valy(j),T_t=T_t)
-            elseif (j==3) then 
-              if (ilnTT > 0) T_t=valz(ilnTT)
-              call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,&
-                  u_t=valz(j),T_t=T_t)
-            endif
+            call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,u_t=u_t,T_t=T_t)
+!
           case ('subsonic_inflow')
-! Subsonic inflow 
             if (j==1) then
               call bc_nscbc_subin_x(f,df,topbot,valx)
             elseif (j==2) then
             endif
+!
           case ('subson_nref_outflow')
             if (j==1) then
               call bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
@@ -322,6 +305,9 @@ include 'NSCBC.h'
 !   7-jul-08/arne: coded.
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
+!  22-jan-10/nils: made general with respect to direction such that we do not
+!                  need three different routines for the three different 
+!                  directions.
 !
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
@@ -333,21 +319,18 @@ include 'NSCBC.h'
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t, T_t
-      real, dimension(ny,nz) :: dlnrho_dx, TT, mu1, grad_mu1
-      real, dimension(ny,nz) :: rho0, L_1, L_2, L_3, L_4, L_5,parallell_term_uz
-      real, dimension(ny,nz) :: parallell_term_rho,dlnrho_dy,dlnrho_dz
-      real, dimension(ny,nz) :: parallell_term_ux
-      real, dimension(ny,nz) :: parallell_term_P
-      real, dimension(ny,nz) :: prefac1, prefac2,parallell_term_uy
-      real, dimension(ny,nz) :: T_1,T_2,T_3,T_4,T_5,P0
-      real, dimension(ny,nz,3) :: grad_rho, u_in, grad_T, grad_P
-      real, dimension(ny,nz,3,3) :: dui_dxj
-      real, dimension (ny,nz) :: cs,cs2, gamma,dYk_dx
-      real :: Mach,KK,nu,coflow_inner_diameter, cs0_average
+      real :: Mach,KK,nu, cs0_average
+      integer, dimension(30) :: stat
       integer lll,i,jjj,kkk,j,k,ngridpoints
-      integer sgn,stat,dir,iused,dir1,dir2,dir3
+      integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
       logical :: non_zero_transveral_velo
-      real, allocatable, dimension(:,:,:) :: fslice, dfslice
+      real, allocatable, dimension(:,:,:,:) :: dui_dxj
+      real, allocatable, dimension(:,:,:) :: &
+          fslice, dfslice,grad_rho,u_in,grad_T,grad_P
+      real, allocatable, dimension(:,:) :: &
+          TT,mu1,grad_mu1,rho0,P0,L_1,L_2,L_3,L_4,L_5,&
+          prefac1,prefac2,T_1,T_2,T_3,T_4,T_5,cs,&
+          cs2,gamma,dYk_dx
 !
       intent(inout) :: f
       intent(inout) :: df
@@ -379,40 +362,62 @@ include 'NSCBC.h'
 !
       if (dir==1) then
         dir1=1; dir2=2; dir3=3
+        igrid=ny; jgrid=nz
       elseif (dir==2) then
         dir1=2; dir2=1; dir3=3
+        igrid=nx; jgrid=nz
       elseif (dir==3) then
         dir1=3; dir2=1; dir3=2
+        igrid=nx; jgrid=ny
       else
         call fatal_error('bc_nscbc_prf:','No such dir!')
       endif
 !
-!  Set some direction dependent variables
+!  Allocate all required arrays
+!
+      stat=0
+      allocate(  fslice(igrid,jgrid,mfarray),STAT=stat(1))
+      allocate( dfslice(igrid,jgrid,mvar   ),STAT=stat(2))
+      allocate(      TT(igrid,jgrid),        STAT=stat(3))
+      allocate(     mu1(igrid,jgrid),        STAT=stat(4))
+      allocate(grad_mu1(igrid,jgrid),        STAT=stat(5)) 
+      allocate(    rho0(igrid,jgrid),        STAT=stat(6))
+      allocate(      P0(igrid,jgrid),        STAT=stat(7))     
+      allocate(     L_1(igrid,jgrid),        STAT=stat(8))
+      allocate(     L_2(igrid,jgrid),        STAT=stat(9))
+      allocate(     L_3(igrid,jgrid),        STAT=stat(10))
+      allocate(     L_4(igrid,jgrid),        STAT=stat(11))
+      allocate(     L_5(igrid,jgrid),        STAT=stat(12))
+      allocate( prefac1(igrid,jgrid),        STAT=stat(13))
+      allocate( prefac2(igrid,jgrid),        STAT=stat(14))            
+      allocate(     T_1(igrid,jgrid),        STAT=stat(15))
+      allocate(     T_2(igrid,jgrid),        STAT=stat(16))
+      allocate(     T_3(igrid,jgrid),        STAT=stat(17))
+      allocate(     T_4(igrid,jgrid),        STAT=stat(18))
+      allocate(     T_5(igrid,jgrid),        STAT=stat(19))
+      allocate(      cs(igrid,jgrid),        STAT=stat(20))
+      allocate(     cs2(igrid,jgrid),        STAT=stat(21))
+      allocate(   gamma(igrid,jgrid),        STAT=stat(22))
+      allocate(  dYk_dx(igrid,jgrid),        STAT=stat(23))
+      allocate(grad_rho(igrid,jgrid,3),      STAT=stat(24))
+      allocate(    u_in(igrid,jgrid,3),      STAT=stat(25))
+      allocate(  grad_T(igrid,jgrid,3),      STAT=stat(26))
+      allocate(  grad_P(igrid,jgrid,3),      STAT=stat(27))
+      allocate( dui_dxj(igrid,jgrid,3,3),    STAT=stat(28))
+      if (maxval(stat) > 0) &
+          call stop_it("Couldn't allocate memory for all vars in bc_nscbc_prf")
+!
+!  Initialize fslice and dfslice
 !
       if (dir == 1) then
-        allocate(fslice(ny,nz,mfarray),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
-        allocate(dfslice(ny,nz,mvar),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
         fslice=f(lll,m1:m2,n1:n2,:)
         dfslice=df(lll,m1:m2,n1:n2,:)
-        ngridpoints=ny*nz
       elseif (dir == 2) then
-        allocate(fslice(nx,nz,mfarray),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
-        allocate(dfslice(nx,nz,mvar),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
         fslice=f(l1:l2,lll,n1:n2,:)
         dfslice=df(l1:l2,lll,n1:n2,:)
-        ngridpoints=nx*nz
       elseif (dir == 3) then
-        allocate(fslice(nx,ny,mfarray),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
-        allocate(dfslice(nx,ny,mvar),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for fslice ")        
         fslice=f(l1:l2,m1:m2,lll,:)     
         dfslice=df(l1:l2,m1:m2,lll,:)     
-        ngridpoints=nx*ny
       else
         call fatal_error('bc_nscbc_prf','No such dir!')
       endif
@@ -441,6 +446,7 @@ include 'NSCBC.h'
 !  I think that what we really want is a Mach number averaged over the 
 !  timescale of several acoustic waves. How could this be done????)
 !
+      ngridpoints=igrid*jgrid
       Mach=sum(fslice(:,:,dir1)/cs)/ngridpoints
 !
 !  We will need the transversal terms of the waves entering the domain
