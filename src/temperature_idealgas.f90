@@ -388,7 +388,7 @@ module Entropy
         if (initlnTT(j)/='nothing') then
 !
           lnothing=.false.
-
+!
           call chn(j,iinit_str)
 !
 !  Select between various initial conditions.
@@ -460,9 +460,9 @@ module Entropy
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
             call fatal_error('init_ss',errormsg)
-
+!
           endselect
-
+!
           if (lroot) print*,'init_ss: initss(' &
               //trim(iinit_str)//') = ',trim(initlnTT(j))
         endif
@@ -633,7 +633,7 @@ module Entropy
 !
       use EquationOfState, only: gamma_inv
       use Sub, only: u_dot_grad
-
+!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
       integer :: j
@@ -1075,7 +1075,7 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-
+!
     endsubroutine calc_heatcond_constK
 !***********************************************************************
     subroutine calc_heatcond_arctan(df,p)
@@ -1090,7 +1090,7 @@ module Entropy
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot,multsv
-
+!
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension (nx)   :: hcond, dhcond, g1, chix
       real, dimension (nx,3) :: gLnhcond=0.
@@ -1120,7 +1120,7 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-
+!
     endsubroutine calc_heatcond_arctan
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
@@ -1178,7 +1178,7 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-
+!
     endsubroutine calc_heatcond
 !***********************************************************************
     subroutine calc_heatcond_tensor(df,p)
@@ -1467,7 +1467,7 @@ module Entropy
 !  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
 !
       implicit none
-
+!
       real, dimension(mx,my,mz,mfarray) :: finit, f
 !
       if (hcond0 /= impossible) then
@@ -1509,9 +1509,9 @@ module Entropy
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
       use Gravity, only: gravz
-
+!
       implicit none
-
+!
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(nx,nz) :: finter, source, rho, TT
@@ -1633,9 +1633,9 @@ module Entropy
 !
       use EquationOfState, only: gamma,get_cp1
       use General, only: tridag
-
+!
       implicit none
-
+!
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit, f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, rho
@@ -1643,7 +1643,7 @@ module Entropy
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
       real    :: dx_2, dz_2, cp1
-
+!
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
@@ -1893,7 +1893,7 @@ module Entropy
       enddo
 !
       call transp_mzmx(valt,val)
-
+!
 ! Necessary to avoid x-direction discontinuities
       ftmp(:,4,:,ilnTT)=val
       call initiate_isendrcv_bdry(ftmp)
@@ -1916,7 +1916,7 @@ module Entropy
 ! its derivative dhcond=dhcond(T)/dT.
 !
       implicit none
-
+!
       real, dimension(mx,mz) :: TT, arg, hcond
       real, dimension(mx,mz), optional :: dhcond
 !
@@ -1932,7 +1932,7 @@ module Entropy
 ! hcond(T) with its derivative dhcond=dhcond(T)/dT.
 !
       implicit none
-
+!
       real, dimension(:)           :: TT, hcond
       real, dimension(:), optional :: dhcond
       real, dimension(size(TT,1))  :: arg
@@ -1949,7 +1949,7 @@ module Entropy
 ! with its derivative dhcond=dhcond(T)/dT at a given temperature.
 !
       implicit none
-
+!
       real :: TT, arg, hcond
       real, optional :: dhcond
 !
@@ -1960,7 +1960,7 @@ module Entropy
     endsubroutine heatcond_TT_0d
 !***********************************************************************
     subroutine boundary_ADI(f_2d, hcond)
-
+!
 ! 13-Sep-07/gastine: computed two different types of boundary
 ! conditions for the implicit solver:
 !     - Always periodic in x-direction
@@ -1968,10 +1968,10 @@ module Entropy
 ! Note: 'c3' means that the flux is constant at the *bottom only*
 !
       implicit none
-
+!
       real, dimension(mx,mz) :: f_2d
       real, dimension(mx), optional :: hcond
-
+!
 ! x-direction: periodic
       f_2d(1:l1-1,:)=f_2d(l2i:l2,:)
       f_2d(l2+1:mx,:)=f_2d(l1:l1i,:)
@@ -1996,7 +1996,7 @@ module Entropy
           endif
       endselect
       endif
-
+!
     endsubroutine boundary_ADI
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
@@ -2046,9 +2046,9 @@ module Entropy
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
       use General, only: tridag
-
+!
       implicit none
-
+!
       integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mz) :: rho, TT
@@ -2100,9 +2100,9 @@ module Entropy
 !
       use EquationOfState, only: gamma,get_cp1
       use General, only: tridag
-
+!
       implicit none
-
+!
       integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: finit,f
       real, dimension(mz) :: source, rho, TT, hcond, dhcond
