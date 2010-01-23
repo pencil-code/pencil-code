@@ -66,7 +66,7 @@ module Pscalar
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0., idiag_ccm=0
+  integer :: idiag_rhoccm=0, idiag_ccmax=0, idiag_ccmin=0, idiag_ccm=0
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
   integer :: idiag_gcc5m=0, idiag_gcc10m=0
   integer :: idiag_ucm=0, idiag_uudcm=0, idiag_Cz2m=0, idiag_Cz4m=0
