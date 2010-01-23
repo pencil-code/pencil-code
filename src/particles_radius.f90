@@ -420,10 +420,17 @@ module Particles_radius
             if (lparticles_number) np_swarm=fp(k,inpswarm)
             if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_swarm
             drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_swarm
-            if (lpscalar_nolog) then
-              df(ix0,m,n,icc)  =df(ix0,m,n,icc)   + p%rho1(ix)*drhocdt
+            if (ldensity_nolog) then
+              df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
             else
-              df(ix0,m,n,ilncc)=df(ix0,m,n,ilncc) + p%rho1(ix)*drhocdt*p%cc1(ix)
+              df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+            endif
+            if (lpscalar_nolog) then
+              df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
+                  (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
+            else
+              df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
+                  (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
             endif
 !
 !  Release latent heat to gas / remove heat from gas.
