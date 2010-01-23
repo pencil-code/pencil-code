@@ -510,26 +510,29 @@ module Particles_mpicomm
           if (lmigrate.and.(iproc/=iproc_parent_block(inearblock(k)))) then
             iproc_rec=iproc_parent_block(inearblock(k))
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
-                'migrate_particles_block_to_proc: Particle ', ipar(k), &
+                'migrate_particles_btop: Particle ', ipar(k), &
                 ' moves out of proc ', iproc, ' and into proc ', iproc_rec
             if (ip<=7) then  ! Quick reality check
               if (iproc_rec==iproc) then
                 print '(a,i8,a,i3,a,i4)', &
-                    'migrate_particles: Particle ', ipar(k), &
+                    'migrate_particles_btop: Particle ', ipar(k), &
                     ' moves out of proc ', iproc, ' and into proc ', iproc_rec
-                print*, 'migrate_particles: iproc_rec=iproc - this is ridiculous'
-                print*, 'migrate_particles: ibrick_rec, iproc_rec, inearblock=', &
-                    ibrick_rec, iproc_rec, inearblock(k)
-                print*, 'migrate_particles: ipx0, ipy0, ipz0=', ipx0, ipy0, ipz0
-                print*, 'migrate_particles: lmigrate, lmigrate_previous=', &
-                    lmigrate, lmigrate_previous
-                print*, 'migrate_particles: ibrick_rec, ibrick_global_rec=', &
+                print*, 'migrate_particles_btop: iproc_rec=iproc - '// &
+                    'this is ridiculous'
+                print*, 'migrate_particles_btop: ibrick_rec, iproc_rec, '// &
+                    'inearblock=', ibrick_rec, iproc_rec, inearblock(k)
+                print*, 'migrate_particles_btop: '// &
+                    'ipx0, ipy0, ipz0=', ipx0, ipy0, ipz0
+                print*, 'migrate_particles_btop: '// &
+                    'lmigrate, lmigrate_previous=', lmigrate, lmigrate_previous
+                print*, 'migrate_particles_btop: '// &
+                    'ibrick_rec, ibrick_global_rec=', &
                     ibrick_rec, ibrick_global_rec
-                print*, 'migrate_particles: iblockl, iblocku=', &
+                print*, 'migrate_particles_btop: iblockl, iblocku=', &
                     iblockl, iblocku
-                print*, 'migrate_particles: iproc_parent_block=', &
+                print*, 'migrate_particles_btop: iproc_parent_block=', &
                     iproc_parent_block(0:nblock_loc-1)
-                print*, 'migrate_particles: ibrick_parent_block=', &
+                print*, 'migrate_particles_btop: ibrick_parent_block=', &
                     ibrick_parent_block(0:nblock_loc-1)
               endif
             endif
@@ -541,25 +544,24 @@ module Particles_mpicomm
             if (sum(nmig_leave)>npar_mig) then
               if (.not. lstart) then
                 print '(a,i3,a,i3,a)', &
-                    'migrate_particles: too many particles migrating '// &
-                    'from proc ', iproc, ' to proc ', iproc_rec
-                print*, '                       (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
+                    'migrate_particles_btop: too many particles migrating '// &
+                    'from proc ', iproc
+                print*, '  (npar_mig,nmig,npar_loc,k=', &
+                    npar_mig, sum(nmig_leave), npar_loc, k, ')'
               endif
               if (lstart.or.lmigration_redo) then
                 if (.not. lstart) then
-                  print*, '                       Going to do one more '// &
-                      'migration iteration!'
-                  print*, '                       (this is time consuming - '//&
+                  print*, '  Going to do one more migration iteration!'
+                  print*, '  (this may be time consuming - '// &
                       'consider setting npar_mig'
-                  print*, '                        higher in cparam.local)'
+                  print*, '  higher in cparam.local)'
                 endif
                 nmig_leave(iproc_rec)=nmig_leave(iproc_rec)-1
                 nmig_leave_total     =nmig_leave_total     -1
-                npar_loc_start=k
                 lredo=.true.
                 exit
               else
-                call fatal_error('migrate_particles','')
+                call fatal_error('migrate_particles_btop','')
               endif
             endif
             fp_mig(nmig_leave_total,:)=fp(k,:)
@@ -579,10 +581,11 @@ module Particles_mpicomm
             npar_loc=npar_loc-1
           endif
         enddo
+        npar_loc_start=k
 !
 !  Print out information about number of migrating particles.
 !
-        if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
+        if (ip<=8) print*, 'migrate_particles_btop: iproc, nmigrate = ', &
             iproc, sum(nmig_leave)
 !
 !  Diagnostic about number of migrating particles.
@@ -612,10 +615,11 @@ module Particles_mpicomm
         nmig_enter_proc=sum(nmig_enter)
         nmig_enter_proc_tot=nmig_enter_proc_tot+nmig_enter_proc
         if (npar_loc+nmig_enter_proc>mpar_loc) then
-          print*, 'migrate_particles: Too many particles want to be at proc', iproc
-          print*, 'migrate_particles: npar_loc, mpar_loc, nmig=', &
+          print*, 'migrate_particles_btop: ', &
+              'too many particles want to be at proc', iproc
+          print*, 'migrate_particles_btop: npar_loc, mpar_loc, nmig=', &
               npar_loc, mpar_loc, nmig_enter_proc
-          call fatal_error_local('migrate_particles','')
+          call fatal_error_local('migrate_particles_btop','')
         endif
         call fatal_error_local_collect()
 !
@@ -659,22 +663,23 @@ module Particles_mpicomm
                 call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:), &
                 (/nmig_enter(i),mpvar/),i,itag_dfp)
             if (ip<=6) then
-              print*, 'migrate_particles: iproc, iproc_send=', iproc, i
-              print*, 'migrate_particles: received fp=', &
+              print*, 'migrate_particles_btop: iproc, iproc_send=', iproc, i
+              print*, 'migrate_particles_btop: received fp=', &
                   fp(npar_loc+1:npar_loc+nmig_enter(i),:)
-              print*, 'migrate_particles: received ipar=', &
+              print*, 'migrate_particles_btop: received ipar=', &
                   ipar(npar_loc+1:npar_loc+nmig_enter(i))
               if (present(dfp)) &
-                  print*, 'migrate_particles: received dfp=',&
+                  print*, 'migrate_particles_btop: received dfp=',&
                   dfp(npar_loc+1:npar_loc+nmig_enter(i),:)
             endif
 !
             npar_loc=npar_loc+nmig_enter(i)
             if (npar_loc>mpar_loc) then
-              print*, 'migrate_particles: Too many particles at proc', iproc
-              print*, 'migrate_particles: npar_loc, mpar_loc=', &
+              print*, 'migrate_particles_btop: '// &
+                  'too many particles at proc', iproc
+              print*, 'migrate_particles_btop: npar_loc, mpar_loc=', &
                   npar_loc, mpar_loc
-              call fatal_error('migrate_particles','')
+              call fatal_error('migrate_particles_btop','')
             endif
           endif
 !
@@ -691,13 +696,13 @@ module Particles_mpicomm
                     call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:), &
                     (/nmig_leave(j),mpvar/),j,itag_dfp)
                 if (ip<=6) then
-                  print*, 'migrate_particles: iproc, iproc_rec=', iproc, j
-                  print*, 'migrate_particles: sent fp=', &
+                  print*, 'migrate_particles_btop: iproc, iproc_rec=', iproc, j
+                  print*, 'migrate_particles_btop: sent fp=', &
                       fp_mig(ileave_low(j):ileave_high(j),:)
-                  print*, 'migrate_particles: sent ipar=', &
+                  print*, 'migrate_particles_btop: sent ipar=', &
                       ipar_mig(ileave_low(j):ileave_high(j))
                   if (present(dfp)) &
-                      print*, 'migrate_particles: sent dfp=', &
+                      print*, 'migrate_particles_btop: sent dfp=', &
                       dfp_mig(ileave_low(j):ileave_high(j),:)
                 endif
               endif
@@ -742,7 +747,7 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (26), save :: iproc_comm=-1
       integer, save :: nproc_comm=0
-      integer :: dipx, dipy, dipz, iblock, ibrick_rec
+      integer :: dipx, dipy, dipz, iblock, ibrick_rec, npar_loc_start
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
       integer :: nmig_leave_total, ileave_high_max
@@ -795,6 +800,8 @@ module Particles_mpicomm
 !  Possible to iterate until all particles have migrated.
 !
       lredo=.false.; lredo_all=.true.
+      npar_loc_start=npar_loc
+!
       do while (lredo_all)
         lredo=.false.
 !
@@ -808,7 +815,7 @@ module Particles_mpicomm
         nmig_leave_total=0
         nmig_enter=0
 !
-        do k=npar_loc,1,-1
+        do k=npar_loc_start,1,-1
 !
 !  Calculate processor and brick index of particle.
 !
@@ -865,37 +872,37 @@ module Particles_mpicomm
                 ' and into proc ', iproc_rec
             if (ip<=7) then  !  Quick reality check
               if (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) then
-                print*, 'migrate_particles: trying to migrate to processor '// &
-                    'that is not in comm list'
+                print*, 'migrate_particles_ptop: trying to migrate to '// &
+                    'processor that is not in comm list'
                 print '(a,i8,a,i4,a,i4)', &
-                  'migrate_particles: Particle ', ipar(k), &
+                  'migrate_particles_ptop: Particle ', ipar(k), &
                   ' moves out of proc ', iproc, &
                   ' and into proc ', iproc_rec
-                print*, 'migrate_particles: iproc, iproc_rec=', &
+                print*, 'migrate_particles_ptop: iproc, iproc_rec=', &
                     iproc, iproc_rec
-                print*, 'migrate_particles: ipx , ipy , ipz =', &
+                print*, 'migrate_particles_ptop: ipx , ipy , ipz =', &
                     ipx, ipy, ipz
-                print*, 'migrate_particles: ipx0, ipy0, ipz0=', &
+                print*, 'migrate_particles_ptop: ipx0, ipy0, ipz0=', &
                     ipx0, ipy0, ipz0
-                print*, 'migrate_particles: it, itsub, t, deltay=', &
+                print*, 'migrate_particles_ptop: it, itsub, t, deltay=', &
                     it, itsub, t, deltay
-                print*, 'migrate_particles: fp=', fp(k,:)
-                print*, 'migrate_particles: iproc_comm=', &
+                print*, 'migrate_particles_ptop: fp=', fp(k,:)
+                print*, 'migrate_particles_ptop: iproc_comm=', &
                     iproc_comm(1:nproc_comm)
               endif
             endif
             if (iproc_rec>=ncpus .or. iproc_rec<0) then
               call warning('migrate_particles','',iproc)
-              print*, 'migrate_particles: receiving proc does not exist'
-              print*, 'migrate_particles: iproc, iproc_rec=', &
+              print*, 'migrate_particles_ptop: receiving proc does not exist'
+              print*, 'migrate_particles_ptop: iproc, iproc_rec=', &
                   iproc, iproc_rec
-              print*, 'migrate_particles: ipar(k), xxp=', &
+              print*, 'migrate_particles_ptop: ipar(k), xxp=', &
                   ipar(k), fp(k,ixp:izp)
-              print*, 'migrate_particles: x0_mig, x1_mig=', &
+              print*, 'migrate_particles_ptop: x0_mig, x1_mig=', &
                   procx_bounds(ipx), procx_bounds(ipx+1)
-              print*, 'migrate_particles: y0_mig, y1_mig=', &
+              print*, 'migrate_particles_ptop: y0_mig, y1_mig=', &
                   procy_bounds(ipy), procy_bounds(ipy+1)
-              print*, 'migrate_particles: z0_mig, z1_mig=', &
+              print*, 'migrate_particles_ptop: z0_mig, z1_mig=', &
                   procz_bounds(ipz), procz_bounds(ipz+1)
               call fatal_error_local("","")
             endif
@@ -907,24 +914,24 @@ module Particles_mpicomm
             if (sum(nmig_leave)>npar_mig) then
               if (.not. lstart) then
                 print '(a,i3,a,i3,a)', &
-                    'migrate_particles: too many particles migrating '// &
-                    'from proc ', iproc, ' to proc ', iproc_rec
-                print*, '                       (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
+                    'migrate_particles_ptop: too many particles migrating '// &
+                    'from proc ', iproc
+                print*, '  (npar_mig,nmig,npar_loc,k=', &
+                    npar_mig, sum(nmig_leave), npar_loc, k, ')'
               endif
               if (lstart.or.lmigration_redo) then
                 if (.not. lstart) then
-                  print*, '                       Going to do one more '// &
-                      'migration iteration!'
-                  print*, '                       (this is time consuming - '//&
+                  print*, '  Going to do one more migration iteration!'
+                  print*, '  (this may be time consuming - '//&
                       'consider setting npar_mig'
-                  print*, '                        higher in cparam.local)'
+                  print*, '  higher in cparam.local)'
                 endif
                 nmig_leave(iproc_rec)=nmig_leave(iproc_rec)-1
                 nmig_leave_total     =nmig_leave_total     -1
                 lredo=.true.
                 exit
               else
-                call fatal_error('migrate_particles','')
+                call fatal_error('migrate_particles_ptop','')
               endif
             endif
             fp_mig(nmig_leave_total,:)=fp(k,:)
@@ -944,10 +951,11 @@ module Particles_mpicomm
             npar_loc=npar_loc-1
           endif
         enddo
+        npar_loc_start=k
 !
 !  Print out information about number of migrating particles.
 !
-        if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
+        if (ip<=8) print*, 'migrate_particles_ptop: iproc, nmigrate = ', &
             iproc, sum(nmig_leave)
 !
 !  Diagnostic about number of migrating particles.
@@ -984,10 +992,11 @@ module Particles_mpicomm
 !  Check that there is room for the new particles at each processor.
 !
         if (npar_loc+sum(nmig_enter)>mpar_loc) then
-          print*, 'migrate_particles: Too many particles want to be at proc', iproc
-          print*, 'migrate_particles: npar_loc, mpar_loc, nmig=', &
+          print*, 'migrate_particles_ptop: '// &
+              'too many particles want to be at proc', iproc
+          print*, 'migrate_particles_ptop: npar_loc, mpar_loc, nmig=', &
               npar_loc, mpar_loc, sum(nmig_enter)
-          call fatal_error_local('migrate_particles','')
+          call fatal_error_local('migrate_particles_ptop','')
         endif
         call fatal_error_local_collect()
 !
@@ -1031,13 +1040,13 @@ module Particles_mpicomm
                 call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:), &
                 (/nmig_enter(i),mpvar/),i,itag_dfp)
             if (ip<=6) then
-              print*, 'migrate_particles: iproc, iproc_send=', iproc, i
-              print*, 'migrate_particles: received fp=', &
+              print*, 'migrate_particles_ptop: iproc, iproc_send=', iproc, i
+              print*, 'migrate_particles_ptop: received fp=', &
                   fp(npar_loc+1:npar_loc+nmig_enter(i),:)
-              print*, 'migrate_particles: received ipar=', &
+              print*, 'migrate_particles_ptop: received ipar=', &
                   ipar(npar_loc+1:npar_loc+nmig_enter(i))
               if (present(dfp)) &
-                  print*, 'migrate_particles: received dfp=',&
+                  print*, 'migrate_particles_ptop: received dfp=',&
                   dfp(npar_loc+1:npar_loc+nmig_enter(i),:)
             endif
 !
@@ -1054,27 +1063,28 @@ module Particles_mpicomm
                     (nzgrid/=1.and.( &
                     fp(k,izp)< procz_bounds(ipz)     .or. &
                     fp(k,izp)>=procz_bounds(ipz+1)))) then
-                  print*, 'migrate_particles: received particle '// &
+                  print*, 'migrate_particles_ptop: received particle '// &
                       'closer to ghost point than to physical grid point!'
-                  print*, 'migrate_particles: iproc, iproc_rec, it, itsub=', &
-                      iproc, i, it, itsub
-                  print*, 'migrate_particles: ipar, xxp=', &
+                  print*, 'migrate_particles_ptop: '// &
+                      'iproc, iproc_rec, it, itsub=', iproc, i, it, itsub
+                  print*, 'migrate_particles_ptop: ipar, xxp=', &
                       ipar(k), fp(k,ixp:izp)
-                  print*, 'migrate_particles: x0_mig, x1_mig=', &
+                  print*, 'migrate_particles_ptop: x0_mig, x1_mig=', &
                       procx_bounds(ipx), procx_bounds(ipx+1)
-                  print*, 'migrate_particles: y0_mig, y1_mig=', &
+                  print*, 'migrate_particles_ptop: y0_mig, y1_mig=', &
                       procy_bounds(ipy), procy_bounds(ipy+1)
-                  print*, 'migrate_particles: z0_mig, z1_mig=', &
+                  print*, 'migrate_particles_ptop: z0_mig, z1_mig=', &
                       procz_bounds(ipz), procz_bounds(ipz+1)
                 endif
               enddo
             endif
             npar_loc=npar_loc+nmig_enter(i)
             if (npar_loc>mpar_loc) then
-              print*, 'migrate_particles: Too many particles at proc', iproc
-              print*, 'migrate_particles: npar_loc, mpar_loc=', &
+              print*, 'migrate_particles_ptop: '// &
+                  'too many particles at proc', iproc
+              print*, 'migrate_particles_ptop: npar_loc, mpar_loc=', &
                   npar_loc, mpar_loc
-              call fatal_error('migrate_particles','')
+              call fatal_error('migrate_particles_ptop','')
             endif
           endif
 !
@@ -1091,13 +1101,13 @@ module Particles_mpicomm
                     call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:), &
                     (/nmig_leave(j),mpvar/),j,itag_dfp)
                 if (ip<=6) then
-                  print*, 'migrate_particles: iproc, iproc_rec=', iproc, j
-                  print*, 'migrate_particles: sent fp=', &
+                  print*, 'migrate_particles_ptop: iproc, iproc_rec=', iproc, j
+                  print*, 'migrate_particles_ptop: sent fp=', &
                       fp_mig(ileave_low(j):ileave_high(j),:)
-                  print*, 'migrate_particles: sent ipar=', &
+                  print*, 'migrate_particles_ptop: sent ipar=', &
                       ipar_mig(ileave_low(j):ileave_high(j))
                   if (present(dfp)) &
-                      print*, 'migrate_particles: sent dfp=', &
+                      print*, 'migrate_particles_ptop: sent dfp=', &
                       dfp_mig(ileave_low(j):ileave_high(j),:)
                 endif
               endif
@@ -1143,7 +1153,7 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
-      integer :: ibrick_rec, iproc_rec, nmig_enter_proc
+      integer :: ibrick_rec, iproc_rec, nmig_enter_proc, npar_loc_start
       integer :: i, j, k, iblockl, iblocku, iblockm, ibrick_global_rec
       integer :: ibrick_global_rec_previous, nmig_leave_total, ileave_high_max
       integer :: itag_nmig=580, itag_ipar=590, itag_fp=600, itag_dfp=610
@@ -1167,6 +1177,8 @@ module Particles_mpicomm
 !  Possible to iterate until all particles have migrated.
 !
       lredo=.false.; lredo_all=.true.
+      npar_loc_start=npar_loc
+!
       do while (lredo_all)
         lredo=.false.
 !
@@ -1174,7 +1186,7 @@ module Particles_mpicomm
         nmig_leave_total=0
         nmig_enter=0
 !
-        do k=npar_loc,1,-1
+        do k=npar_loc_start,1,-1
 !
 !  Calculate processor and brick index of particle.
 !
@@ -1233,7 +1245,7 @@ module Particles_mpicomm
 !
           if (iproc_rec==iproc .and. iproc_foster_brick(ibrick_rec)==-1) then
             if (ip<=6) then
-              print'(A,i5,A,i5)', 'migrate_particles_proc_to_block: '// &
+              print'(A,i5,A,i5)', 'migrate_particles_ptob: '// &
                   'opened brick ', ibrick_rec, ' at processor ', iproc
             endif
             iproc_foster_brick(ibrick_rec)=iproc
@@ -1276,7 +1288,7 @@ module Particles_mpicomm
             iproc_rec=iproc_foster_brick(ibrick_rec)
             if (ip<=7) print '(a,i8,a,i4,a,i4)', &
                 'migrate_particles_proc_to_block: Particle ', ipar(k), &
-                ' moves out of proc ', iproc, ' and into proc ', iproc_rec
+                ' moves out of proc ', iproc
 !
 !  Copy migrating particle to the end of the fp array.
 !
@@ -1285,24 +1297,24 @@ module Particles_mpicomm
             if (sum(nmig_leave)>npar_mig) then
               if (.not. lstart) then
                 print '(a,i3,a,i3,a)', &
-                    'migrate_particles: too many particles migrating '// &
-                    'from proc ', iproc, ' to proc ', iproc_rec
-                print*, '               (npar_mig=', npar_mig, 'nmig=',sum(nmig_leave),')'
+                    'migrate_particles_ptob: too many particles migrating '// &
+                    'from proc ', iproc
+                print*, '  (npar_mig,nmig,npar_loc,k=', &
+                    npar_mig, sum(nmig_leave), npar_loc, k, ')'
               endif
               if (lstart.or.lmigration_redo) then
                 if (.not. lstart) then
-                  print*, '             Going to do one more '// &
-                      'migration iteration!'
-                  print*, '             (this is time consuming - '//&
+                  print*, '  Going to do one more migration iteration!'
+                  print*, '  (this may be time consuming - '// &
                       'consider setting npar_mig'
-                  print*, '             higher in cparam.local)'
+                  print*, '  higher in cparam.local)'
                 endif
                 nmig_leave(iproc_rec)=nmig_leave(iproc_rec)-1
                 nmig_leave_total     =nmig_leave_total     -1
                 lredo=.true.
                 exit
               else
-                call fatal_error('migrate_particles','')
+                call fatal_error('migrate_particles_ptob','')
               endif
             endif
             fp_mig(nmig_leave_total,:)=fp(k,:)
@@ -1322,10 +1334,11 @@ module Particles_mpicomm
             npar_loc=npar_loc-1
           endif
         enddo
+        npar_loc_start=k
 !
 !  Print out information about number of migrating particles.
 !
-        if (ip<=8) print*, 'migrate_particles: iproc, nmigrate = ', &
+        if (ip<=8) print*, 'migrate_particles_ptob: iproc, nmigrate = ', &
             iproc, sum(nmig_leave)
 !
 !  Diagnostic about number of migrating particles.
@@ -1358,10 +1371,11 @@ module Particles_mpicomm
 !
         nmig_enter_proc=sum(nmig_enter)
         if (npar_loc+nmig_enter_proc>mpar_loc) then
-          print*, 'migrate_particles: Too many particles want to be at proc', iproc
-          print*, 'migrate_particles: npar_loc, mpar_loc, nmig=', &
+          print*, 'migrate_particles_ptob: '// &
+              'too many particles want to be at proc', iproc
+          print*, 'migrate_particles_ptob: npar_loc, mpar_loc, nmig=', &
               npar_loc, mpar_loc, nmig_enter_proc
-          call fatal_error_local('migrate_particles','')
+          call fatal_error_local('migrate_particles_ptob','')
         endif
         call fatal_error_local_collect()
 !
@@ -1405,20 +1419,21 @@ module Particles_mpicomm
                 call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:), &
                 (/nmig_enter(i),mpvar/),i,itag_dfp)
             if (ip<=6) then
-              print*, 'migrate_particles: iproc, iproc_send=', iproc, i
-              print*, 'migrate_particles: received fp=', &
+              print*, 'migrate_particles_ptob: iproc, iproc_send=', iproc, i
+              print*, 'migrate_particles_ptob: received fp=', &
                   fp(npar_loc+1:npar_loc+nmig_enter(i),:)
-              print*, 'migrate_particles: received ipar=', &
+              print*, 'migrate_particles_ptob: received ipar=', &
                   ipar(npar_loc+1:npar_loc+nmig_enter(i))
               if (present(dfp)) &
-                  print*, 'migrate_particles: received dfp=',&
+                  print*, 'migrate_particles_ptob: received dfp=',&
                   dfp(npar_loc+1:npar_loc+nmig_enter(i),:)
             endif
 !
             npar_loc=npar_loc+nmig_enter(i)
             if (npar_loc>mpar_loc) then
-              print*, 'migrate_particles: Too many particles at proc', iproc
-              print*, 'migrate_particles: npar_loc, mpar_loc=', &
+              print*, 'migrate_particles_ptob: '// &
+                  'too many particles at proc', iproc
+              print*, 'migrate_particles_ptob: npar_loc, mpar_loc=', &
                   npar_loc, mpar_loc
               call fatal_error('migrate_particles','')
             endif
@@ -1437,13 +1452,13 @@ module Particles_mpicomm
                     call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:), &
                     (/nmig_leave(j),mpvar/),j,itag_dfp)
                 if (ip<=6) then
-                  print*, 'migrate_particles: iproc, iproc_rec=', iproc, j
-                  print*, 'migrate_particles: sent fp=', &
+                  print*, 'migrate_particles_ptob: iproc, iproc_rec=', iproc, j
+                  print*, 'migrate_particles_ptob: sent fp=', &
                       fp_mig(ileave_low(j):ileave_high(j),:)
-                  print*, 'migrate_particles: sent ipar=', &
+                  print*, 'migrate_particles_ptob: sent ipar=', &
                       ipar_mig(ileave_low(j):ileave_high(j))
                   if (present(dfp)) &
-                      print*, 'migrate_particles: sent dfp=', &
+                      print*, 'migrate_particles_ptob: sent dfp=', &
                       dfp_mig(ileave_low(j):ileave_high(j),:)
                 endif
               endif
