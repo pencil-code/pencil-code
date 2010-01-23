@@ -410,7 +410,7 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
-      integer :: ibrick_rec, iproc_rec, nmig_enter_proc
+      integer :: ibrick_rec, iproc_rec, nmig_enter_proc, npar_loc_start
       integer :: i, j, k, iblock, nmig_enter_proc_tot
       integer :: ibrick_global_rec, ibrick_global_rec_previous
       integer :: iblockl, iblocku, iblockm
@@ -437,6 +437,8 @@ module Particles_mpicomm
 !  Possible to iterate until all particles have migrated.
 !
       lredo=.false.; lredo_all=.true.
+      npar_loc_start=npar_loc
+!
       do while (lredo_all)
         lredo=.false.
 !
@@ -444,7 +446,7 @@ module Particles_mpicomm
         nmig_leave_total=0
         nmig_enter=0
 !
-        do k=npar_loc,1,-1
+        do k=npar_loc_start,1,-1
 !
 !  Calculate processor and brick index of particle.
 !
@@ -553,6 +555,7 @@ module Particles_mpicomm
                 endif
                 nmig_leave(iproc_rec)=nmig_leave(iproc_rec)-1
                 nmig_leave_total     =nmig_leave_total     -1
+                npar_loc_start=k
                 lredo=.true.
                 exit
               else
