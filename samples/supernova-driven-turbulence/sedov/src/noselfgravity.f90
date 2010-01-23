@@ -1,1 +1,0 @@
-/home/fred/pencil-code//src/noselfgravity.f90

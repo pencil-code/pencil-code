@@ -1,1 +1,0 @@
-/home/fred/pencil-code//src/noboundcond.f90
