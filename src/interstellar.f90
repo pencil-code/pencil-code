@@ -442,10 +442,32 @@ module Interstellar
 !
       if (cooling_select == 'RB') then
          if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 4.D7, 1.D9, tiny(0D0), tiny(0D0) /)
-         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0), tiny(0D0) /) / ( m_p_cgs )**2
-         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.), tiny(0.) /)
-         ncool=6
+         coolT_cgs = (/ 100.D0, &
+                        2000.D0, &
+                        8000.D0, &
+                        1.0D5, &
+                        4.0D7, &
+                        1.0D9, &
+                        tiny(0D0), &
+                        tiny(0D0) /)
+         coolH_cgs = (/ 2.2380D-32, &
+                        1.0012D-30, &
+                        4.6240D-36, &
+                        1.7800D-18, &
+                        3.2217D-27, &
+                        tiny(0.D0), &
+                        tiny(0.D0), &
+                        tiny(0D0) &
+                      /) / ( m_p_cgs )**2
+         coolB = (/ 2.0, &
+                    1.5, &
+                    2.867, &
+                   -0.65, &
+                    0.5, &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.) /)
+         ncool = 6
 !
 ! 04-jan-10/fred corrected above to original RB parameters
 !           altered coolB(5) and coolT(5,6) in RBr to ensure continuity and 
@@ -455,39 +477,116 @@ module Interstellar
 !
       else if (cooling_select == 'RBr') then
          if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-         coolT_cgs=(/ 10.D0, 300.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, tiny(0D0) /)
-         coolH_cgs=(/ 2.76296D-42, 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, &
-                     2.240887D-25,        tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2
-         coolB=(/ 6., 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
+         coolT_cgs = (/ 10.D0, &
+                        300.D0, &
+                        2000.D0, &
+                        8000.D0, &
+                        1.D5, &
+                        1.D6, &
+                        1.D9, &
+                        tiny(0D0) /)
+         coolH_cgs = (/ 2.76296D-42, &
+                        2.2380D-32, &
+                        1.0012D-30, &
+                        4.6240D-36, &
+                        1.7800D-18, &
+                        2.240887D-25, &
+                        tiny(0.D0), &
+                        tiny(0.D0) &
+                      /) / ( m_p_cgs )**2
+         coolB = (/ 6.0, &
+                    2.0, &
+                    1.5, &
+                    2.867, &
+                   -0.65, &
+                    0.5, &
+                    tiny(0.), &
+                    tiny(0.) /)
          ncool=6
       else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2
          ! to obtain same units as RB above
          if (lroot) print*,'initialize_interstellar: SS cooling function'
-         coolT_cgs=(/ 10D0,   141D0,   313D0,  6102D0,      1D5,       1D9, tiny(0D0), tiny(0D0) /)
-         coolH_cgs=(/ 3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0), tiny(0D0), tiny(0D0) /)
-         coolB    =(/ 2.12,    1.0,    0.56,    3.67,     -.65 , tiny(0.), tiny(0.), tiny(0.) /)
+         coolT_cgs = (/ 10.D0, &
+                        141.D0, &
+                        313.D0, &
+                        6102.D0, &
+                        1.0D5, &
+                        1.0D9, &
+                        tiny(0D0), &
+                        tiny(0D0) /)
+         coolH_cgs = (/ 3.42D16, &
+                        9.10D18, &
+                        1.11D20, &
+                        2.00D8, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0) /)
+         coolB = (/ 2.12, &
+                    1.0, &
+                    0.56, &
+                    3.67, &
+                    -0.65, &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.) /)
          ncool=5
       else if (cooling_select == 'SSr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs=(/ 10D0,   141D0,    313D0, 6102D0,     1D5,       1D9, tiny(0D0), tiny(0D0) /)
-         coolH_cgs=(/ 3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0), tiny(0D0), tiny(0D0) /)
-         coolB    =(/2.12,    1.0,     0.56,   3.67,   -0.65, tiny(0.) , tiny(0.), tiny(0.) /)
+         coolT_cgs = (/ 10.D0, &
+                        141.D0, &
+                        313.D0, &
+                        6102.D0, &
+                        1.D5, &
+                        1.D9, &
+                        tiny(0D0), &
+                        tiny(0D0) /)
+         coolH_cgs = (/ 3.70D16, &
+                        9.46D18, &
+                        1.185D20, &
+                        2.00D8, &
+                        7.96D29, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0) /)
+         coolB = (/ 2.12, &
+                    1.0, &
+                    0.56, &
+                    3.67, &
+                    -0.65, &
+                    tiny(0.) , &
+                    tiny(0.), &
+                    tiny(0.) /)
          ncool=5
       else if (cooling_select == 'SSrr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs=(/10D0,   141D0,    313D0, 6102D0,     1D5,       4D7, 1D13, tiny(0d0)/)
-         coolH_cgs=(/3.703109927416290D16, &
-                     9.455658188464892D18, &
-                     1.185035244783337D20, &
-                     1.9994576479D8, &
-                     7.96D29, &
-                     1.440602814622207D21, &
-                     tiny(0D0), &
-                     tiny(0D0) /)
-         coolB    =(/2.12,     1.0,     0.56,   3.67,   -0.65, 0.5, tiny(0.), tiny(0.)  /)
+         coolT_cgs = (/ 10.D0, &
+                        141.D0, &
+                        313.D0, &
+                        6102.D0, &
+                        1.D5, &
+                        4.D7, &
+                        1.D13, &
+                        tiny(0d0)/)
+         coolH_cgs = (/ 3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.9994576479D8, &
+                        7.96D29, &
+                        1.440602814622207D21, &
+                        tiny(0D0), &
+                        tiny(0D0) /)
+         coolB = (/ 2.12, &
+                    1.0, &
+                    0.56, &
+                    3.67, &
+                    -0.65, &
+                    0.5, &
+                    tiny(0.), &
+                    tiny(0.) /)
          ncool=6
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
@@ -562,7 +661,8 @@ module Interstellar
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
-      if (lroot) print*,'initialize_interstellar: t_interval_SNI =',t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+      if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
+          t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
 !
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -972,7 +1072,10 @@ module Interstellar
           if (SNRs(iSNR)%state==SNstate_damping) then
             call proximity_SN(SNRs(iSNR))
             minqty=0.5*(1.+tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-            damp_profile=damp_profile*((1.-minqty)*0.5*(1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.))+minqty)
+            damp_profile = damp_profile &
+                * ( (1.-minqty) * 0.5 &
+                    * (1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.)) &
+                    + minqty )
           endif
         enddo
         if (ltemperature) then
@@ -1057,7 +1160,10 @@ module Interstellar
         if (SNRs(iSNR)%state==SNstate_damping) then
           call proximity_SN(SNRs(iSNR))
           minqty=0.5*(1.+tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-          damp_profile=((1.-minqty)*0.5*(1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.))+minqty)
+          damp_profile = ( &
+              (1.-minqty) * 0.5 &
+              * (1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.)) &
+              + minqty)
           heatcool=heatcool*damp_profile
           cool=cool*damp_profile
         endif
@@ -1066,10 +1172,12 @@ module Interstellar
 ! Prevent unresolved heating/cooling in shocks.
 !
       if (lheatcool_shock_cutoff) then
-        damp_profile=0.5*(1.-tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
+        damp_profile = 0.5 &
+            * (1.-tanh((p%shock-heatcool_shock_cutoff) * heatcool_shock_cutoff_rate1))
 !       30-dec-09/fred: changed sign to turn off cool for non-zero p%shock
 !                       other way round cooling in shock and off everywhere else
-!        damp_profile=0.5*(1.+tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
+!        damp_profile = 0.5 &
+!            * (1.+tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
         cool=cool*damp_profile
         heatcool=heatcool*damp_profile
       endif
@@ -1354,7 +1462,8 @@ cool_loop: do i=1,ncool
     cloud_mass_dim=fsum1(1)*dv !div by solar mass may be duplication with progenitor fred
 !    cloud_mass_dim=fsum1(1)*dv/solar_mass
     if (lroot .and. ip < 14) &
-          print*,'check_SNII: cloud_mass_dim,fsum(1),dv,solar_mass:',cloud_mass_dim,fsum1(1),dv,solar_mass
+        print*, 'check_SNII: cloud_mass_dim,fsum(1),dv,solar_mass:', &
+            cloud_mass_dim,fsum1(1),dv,solar_mass
     !if (franSN(1) <= prob_SNII) then
     !  print*,'check_SNII: iproc,fsum1:',iproc,fsum1(1)
     ! need convert to dimensional units, for rate/probability calculation only.
@@ -1962,16 +2071,20 @@ find_SN: do n=n1,n2
       ! Calculate cross over point between mass addition and removal
       ! if mass movement is used
       !
-      r_cavity=width_energy*(dimensionality*log(outer_shell_proportion/inner_shell_proportion)   &
-                          /((1./inner_shell_proportion**6)      &
-                            - (1./outer_shell_proportion**6))                       &
-                        )**(1./6.)
+      r_cavity = &
+          width_energy &
+          * ( dimensionality &
+              * log(outer_shell_proportion/inner_shell_proportion)   &
+              / ((1./inner_shell_proportion**6) - (1./outer_shell_proportion**6)) &
+            )**(1./6.)
       if (lroot) print*,'explode_SN: dimensionality,r_cavity',dimensionality,r_cavity
-      if (lroot) print*,'explode_SN: shell_(inner, outer)_prop.=',inner_shell_proportion,outer_shell_proportion
+      if (lroot) print*, 'explode_SN: shell_(inner, outer)_prop.=', &
+          inner_shell_proportion,outer_shell_proportion
 !
 !
 
-      if (lroot.and.ip<14) print*,'explode_SN: width_energy,c_SN,SNR%site%rho=', width_energy,c_SN,SNR%site%rho
+      if (lroot.and.ip<14) print*, 'explode_SN: width_energy,c_SN,SNR%site%rho=', &
+          width_energy,c_SN,SNR%site%rho
 
       !
       !  Now deal with (if nec.) mass relocation
@@ -1995,7 +2108,9 @@ find_SN: do n=n1,n2
           cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358) !fred 
         else
           cvelocity_SN=uu_sedov
-          if (lroot) print*, 'calculate cvelocity_SN: shell speed for velocity profile ',velocity_profile
+          if (lroot) &
+              print*, 'calculate cvelocity_SN: shell speed for velocity profile ', &
+              velocity_profile
         endif
 !
 !     11-dec-09/fred 
@@ -2026,7 +2141,9 @@ find_SN: do n=n1,n2
          ! ASSUME: SN will fully ionize the gas at its centre
          if (lmove_mass) then
            if (lroot) print*,'explode_SN: moving mass to compensate.'
-           call getdensity(real((SNR%site%ee*SNR%site%rho)+frac_eth*c_SN),TT_SN_min,1.,rho_SN_new)
+           call getdensity( &
+               real((SNR%site%ee*SNR%site%rho)+frac_eth*c_SN), &
+               TT_SN_min,1.,rho_SN_new)
            if (mass_movement=='rho-cavity') then
              call get_lowest_rho(f,SNR,r_cavity,rho_SN_lowest)
              cavity_depth=SNR%site%rho-rho_SN_new
@@ -2205,7 +2322,7 @@ find_SN: do n=n1,n2
               f(l1:l2,m,n,iux:iuz)=uu+deltauu
             endif
 !  lnrho=log(rho_min)
-!    where (rho_old(1:nx)+deltarho(1:nx) .gt. rho_min) lnrho=log(rho_old(1:nx)+deltarho(1:nx))
+!    where (rho_old(1:nx)+deltarho(1:nx) > rho_min) lnrho=log(rho_old(1:nx)+deltarho(1:nx))
 
             TT=exp(lnTT)
 
@@ -2348,7 +2465,8 @@ find_SN: do n=n1,n2
         endif
 
 
-!        SNRs(iSNR)%damping_factor = SNR_damping * 0.5 * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
+!        SNRs(iSNR)%damping_factor = SNR_damping &
+!            * 0.5 * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
 
 
         fac=0.
@@ -2376,7 +2494,8 @@ find_SN: do n=n1,n2
         call mpiallreduce_max(fac,fac2)
 
 !       print*,"Choose damping factor of:",fac2*2E-4
-        SNRs(iSNR)%damping_factor = fac2 * 2E-4 * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
+        SNRs(iSNR)%damping_factor = fac2 * 2E-4 &
+            * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
       enddo
 !
 
@@ -2464,7 +2583,8 @@ find_SN: do n=n1,n2
       do i=1,nSNR
         iSNR=SNR_index(i)
         if (SNRs(iSNR)%state/=SNstate_damping) cycle
-        SNRs(iSNR)%heat_energy=SNRs(iSNR)%heat_energy+int_dt*SNRs(iSNR)%energy_loss*dv*int_dt
+        SNRs(iSNR)%heat_energy = SNRs(iSNR)%heat_energy &
+            + int_dt*SNRs(iSNR)%energy_loss*dv*int_dt
       enddo
 !
     endsubroutine calc_snr_damp_int
@@ -2490,7 +2610,8 @@ find_SN: do n=n1,n2
         call mpibcast_real(fmpi,1)
         SNRs(iSNR)%heat_energy=fmpi(1)
 
-        factor=SNRs(iSNR)%heat_energy/(cnorm_gaussian_SN(dimensionality)*SNRs(iSNR)%radius**dimensionality)
+        factor = SNRs(iSNR)%heat_energy &
+            / (cnorm_gaussian_SN(dimensionality)*SNRs(iSNR)%radius**dimensionality)
         do n=n1,n2; do m=m1,m2
           call proximity_SN(SNRs(iSNR))
           call eoscalc(f,nx,ee=ee_old)
@@ -2795,7 +2916,9 @@ find_SN: do n=n1,n2
       width_shell_outer=outer_shell_proportion*width
       width_shell_inner=inner_shell_proportion*width
 !
-      c_shell=mass_shell / (cnorm_dim * (width_shell_outer**dimensionality - width_shell_inner**dimensionality))
+      c_shell = mass_shell &
+          / (cnorm_dim &
+             * (width_shell_outer**dimensionality - width_shell_inner**dimensionality))
 !
       profile_shell_outer(1:nx)=exp(-(dr2_SN(1:nx)/width_shell_outer**2)**3)
       profile_shell_inner(1:nx)=exp(-(dr2_SN(1:nx)/width_shell_inner**2)**3)
