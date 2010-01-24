@@ -29,7 +29,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Options:
 #   -h, --help      This help.
 #       --clean     Run `make clean'
-#       --cleanall  Run `make cleanall'
+#       --cleanall  Run `pc_setupsrc; make cleanall'
 #   -f <files>,
 #       --config-files=<files>
 #                   Use the given <files> (a comma-separated list) as
@@ -133,6 +133,7 @@ if ($fast) {
 my @extra_make_args = @ARGV;
 
 if ($cleanall) {
+    system('pc_setupsrc');
     system('make', 'cleanall');
     exit 0;
 }
