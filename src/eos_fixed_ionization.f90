@@ -20,6 +20,7 @@ module EquationOfState
   use Cparam
   use Cdata
   use Messages
+  use Mpicomm, only: stop_it
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -82,8 +83,6 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_ionization
 !
-      use Cdata
-      use Mpicomm, only: stop_it
       use Sub
 !
       leos=.true.
@@ -110,8 +109,6 @@ module EquationOfState
 !   12-aug-03/tony: implemented
 !   30-mar-04/anders: Added molecular hydrogen to ionization_fixed
 !
-      use Mpicomm, only: stop_it
-
       real, intent(out) :: mu
 !
       mu = (1.+3.97153*xHe)/(1-xH2+xHe)
@@ -135,9 +132,6 @@ module EquationOfState
 !  parameters.
 !
 !   2-feb-03/axel: adapted from Interstellar module
-!
-      use Cdata
-      use Mpicomm, only: stop_it
 !
       real :: mu1yHxHe
 !
@@ -335,12 +329,11 @@ module EquationOfState
 !  14-jun-03/axel: adapted from rprint_radiation
 !  21-11-04/anders: moved diagnostics to entropy
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -474,9 +467,7 @@ module EquationOfState
     endsubroutine ioncalc
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-
-      use Mpicomm, only: stop_it
-
+!
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
       real :: lnrho
@@ -521,8 +512,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss,lnTT
@@ -544,8 +533,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
-!
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
       real :: lnTT
@@ -565,8 +552,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
@@ -575,6 +560,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       do j=1,3
         glnTT(:,j)=(2.0/3.0)*(glnrho(:,j)+gss(:,j)/ss_ion/(1+yH0+xHe-xH2))
       enddo
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine temperature_gradient
 !***********************************************************************
@@ -586,8 +573,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !   12-dec-05/tony: adapted from subroutine temperature_gradient
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type (pencil_case) :: p
 !
@@ -597,6 +582,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p%del2lnrho)
       call keep_compiler_quiet(p%del2ss)
+!
     endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
@@ -606,8 +592,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   hP/rho=cs2*(hlnrho+cp1tilde*hss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
@@ -620,6 +604,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       enddo
       enddo
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
@@ -629,7 +615,11 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(psize), intent(in), optional :: ee,pp,ss
 
       call not_implemented("eosperturb")
-
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(present(ee),present(pp),present(ss))
+      call keep_compiler_quiet(psize)
+!
     endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
@@ -641,10 +631,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
-!
-      use Cdata
-      use Sub
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
@@ -696,9 +682,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
-!
-      use Cdata
-      use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
@@ -768,9 +751,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
-!
-      use Cdata
-      use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
@@ -870,8 +850,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  20-Oct-03/tobi: coded
 !
-      use Mpicomm
-!
       real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
@@ -896,8 +874,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !                  to allow isothermal condition for arbitrary density
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
@@ -927,9 +903,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  11-feb-04/anders: Programmed more or less from scratch
 !
-      use Cdata
       use Gravity, only: gravz_profile
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
@@ -962,13 +936,15 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
+!
 !   01-dec-2009/piyali+dhrube: coded
-      use Cdata
-!      
+!
       real, intent(in):: average_density
       real, intent(out):: average_pressure
+!
       call keep_compiler_quiet(average_density)
       call keep_compiler_quiet(average_pressure)
+!
     endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot)
@@ -978,9 +954,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
-!
-      use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1015,9 +988,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   8-jul-2002/axel: split old bc_ss into two
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !
-      use Mpicomm, only: stop_it
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1033,9 +1003,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  boundary condition for entropy: constant temperature
 !
 !  3-aug-2002/wolf: coded
-!
-      use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1053,9 +1020,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      use Mpicomm, only: stop_it
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1072,13 +1036,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      use Mpicomm, only: stop_it
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp
-      integer :: i
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
@@ -1092,9 +1051,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  boundary condition for density: constant temperature
 !
 !  19-aug-2005/tobi: distributed across ionization modules
-!
-      use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1111,9 +1067,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  boundary condition for density: constant pressure
 !
 !  19-aug-2005/tobi: distributed across ionization modules
-!
-      use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1132,9 +1085,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1150,9 +1100,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  boundary condition for entropy: symmetric temperature
 !
 !  3-aug-2002/wolf: coded
-!
-      use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1170,9 +1117,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  3-aug-2002/wolf: coded
 !
-      use Mpicomm, only: stop_it
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1188,9 +1132,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  boundary condition for entropy: symmetric temperature
 !
 !  3-aug-2002/wolf: coded
-!
-      use Mpicomm, only: stop_it
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1209,13 +1150,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  may-2002/nils: coded
 !  11-jul-2002/nils: moved into the entropy module
 !
-      use Mpicomm, only: stop_it
-      use Cdata
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: cs2_2d
-      integer :: i
 !
 !  The 'ce' boundary condition for entropy makes the energy constant at
 !  the boundaries.
@@ -1229,8 +1165,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1242,8 +1176,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine bc_stellar_surface
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
-!
-      use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1257,8 +1189,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1270,8 +1200,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_liso(f,topbot)
-!
-      use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1285,8 +1213,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
-      use Mpicomm, only: stop_it
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1298,8 +1224,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
-!
-      use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
