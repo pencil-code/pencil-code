@@ -732,7 +732,7 @@ module Chemistry
       call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_chemistry
-!**************************************************************************
+!***********************************************************************
       subroutine flame_front(f)
 !
 ! 06.05.2009/Nils Erland L. Haugen: adapted from similar
@@ -1012,13 +1012,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 
           if (RR<del) then
-          f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)*(1.-((del-RR)/del)**2)
-	  f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O*(1.-((del-RR)/del)**2)
-         else
-          f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)
-	  f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O
-         endif
-	  
+            f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)*(1.-((del-RR)/del)**2)
+            f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O*(1.-((del-RR)/del)**2)
+          else
+            f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)
+            f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O
+          endif
+!
         endif
 !
 !  Initialize oxygen
@@ -1036,7 +1036,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        !  endif
           if (RR<del) then
             f(j1,j2,j3,i_O2)=(final_massfrac_O2-initial_massfractions(ichem_O2))*((del-RR)/del)**2  &
-	        +initial_massfractions(ichem_O2)
+                +initial_massfractions(ichem_O2)
           else
 
            f(j1,j2,j3,i_O2)=initial_massfractions(ichem_O2)
@@ -1238,12 +1238,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
     endsubroutine flame_blob
 !***********************************************************************
-!***********************************************************************
     subroutine flame_slab(f)
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: j1,j2,j3
+      integer :: j1
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
@@ -1781,7 +1780,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !
 
     endsubroutine calc_for_chem_mixture
-!**********************************************************************
+!***********************************************************************
     subroutine astrobiology_data(f)
 !
 !  Proceedure to read in stoichiometric matrices in explicit format for
@@ -2006,7 +2005,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       call keep_compiler_quiet(f)
 !
     endsubroutine astrobiology_data
-!**********************************************************************
+!***********************************************************************
     subroutine chemkin_data(f)
 !
 !  if the file with chemkin data exists
@@ -2126,7 +2125,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       call keep_compiler_quiet(f)
 !
     endsubroutine chemkin_data
-!**********************************************************************
+!***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -2895,7 +2894,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       close(file_id)
 !
     endsubroutine read_species
-!********************************************************************
+!***********************************************************************
     subroutine read_thermodyn(input_file)
 !
 !  This subroutine reads the thermodynamical data for all species
@@ -3341,7 +3340,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       close(file_id)
 !
     endsubroutine read_reactions
-!********************************************************************
+!***********************************************************************
     subroutine write_thermodyn()
 !
 !  This subroutine writes the thermodynamical data for every specie
@@ -3386,7 +3385,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
     endsubroutine write_thermodyn
-!***************************************************************
+!***********************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
 !
 !  DOCUMENT ME!
@@ -3418,7 +3417,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
     endsubroutine build_stoich_matrix
-!***************************************************************
+!***********************************************************************
     subroutine write_reactions()
 !
 !  DOCUMENT ME!!
@@ -3487,7 +3486,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       close(file_id)
 !
     endsubroutine write_reactions
-!***************************************************************
+!***********************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 !  This subroutine calculates forward and reverse reaction rates,
 !  if chem.inp file exists.
@@ -3760,7 +3759,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       enddo
 !
     endsubroutine get_reaction_rate
-!***************************************************************
+!***********************************************************************
     subroutine calc_reaction_term(f,p)
 !
 !  DOCUMENT ME!!
@@ -3875,7 +3874,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
     endsubroutine calc_reaction_term
-!***************************************************************
+!***********************************************************************
     subroutine read_transport_data
 !
 !  Reading of the chemkin transport data
@@ -3961,7 +3960,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       close(file_id)
 !
     endsubroutine read_transport_data
-!***************************************************************
+!***********************************************************************
     subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
 !
 !  Get coefficients for calculating of the collision integral
@@ -4006,7 +4005,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       Omega_kl=1./Omega_kl
 !
     endsubroutine  calc_collision_integral
-!***************************************************************
+!***********************************************************************
     subroutine calc_diff_visc_coef(f)
 !
 !  Calculation of the binary diffusion coefficients and the species viscosities.
@@ -4171,7 +4170,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      !
  
     endsubroutine calc_diff_visc_coef
-!***************************************************************
+!***********************************************************************
     subroutine calc_therm_diffus_coef(f)
 ! 
 !  Calculate the thermal diffusion coefficient based on equation 5-17 in
@@ -4279,7 +4278,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         call keep_compiler_quiet(f)
 !
     endsubroutine calc_therm_diffus_coef
-!***************************************************************
+!***********************************************************************
     subroutine calc_diffusion_term(f,p)
 !
 !  Calculate diffusion term, p%DYDt_diff
@@ -4361,7 +4360,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 
     endsubroutine calc_diffusion_term
-!***************************************************************
+!***********************************************************************
     subroutine calc_heatcond_chemistry(f,df,p)
 !
 !  Calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
@@ -4457,7 +4456,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
     endsubroutine get_cs2_slice
-!*************************************************************
+!***********************************************************************
     subroutine get_gamma_full(gamma_full)
 !
       real, dimension (mx,my,mz) :: gamma_full
@@ -4476,7 +4475,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       enddo
       enddo
     endsubroutine get_gamma_full
-!*************************************************************
+!***********************************************************************
     subroutine get_gamma_slice(slice,dir,index)
 !
 !  Get a 2D slice of gamma
@@ -4497,7 +4496,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
       !
     endsubroutine get_gamma_slice
-!*************************************************************
+!***********************************************************************
     subroutine air_field(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -4647,7 +4646,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       close(file_id)
 !
     endsubroutine air_field
-!********************************************************************
+!***********************************************************************
 !!!!!!!!!  NSCBC boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine bc_nscbc_subin_x_new(f,df,topbot,val)
@@ -4997,7 +4996,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
     endsubroutine bc_nscbc_subin_x_new
-!***********************************************************
+!***********************************************************************
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
 !   nscbc case
@@ -5146,8 +5145,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
    !     f(lll,m1:m2,n1:n2,ilnTT) = T_t
    !      df(lll,m1:m2,n1:n2,ilnTT)=0.
     endsubroutine bc_nscbc_subin_x
-!***********************************************************
-!***********************************************************
+!***********************************************************************
     subroutine bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
 
 !
@@ -5463,9 +5461,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
   
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
-
-!***********************************************************************************
- !***********************************************************
     subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
@@ -5903,10 +5898,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       endif
 !
     endsubroutine bc_nscbc_nref_subout_y
-!***********************************************************************************
-  
-!***********************************************************************************
-!***********************************************************************************
+!***********************************************************************
    subroutine bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
@@ -6330,8 +6322,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
     endsubroutine bc_nscbc_nref_subout_z
 !***********************************************************************
-!***********************************************************************
-  
     subroutine damp_zone_for_NSCBC(f,df)
 !
 !   16-jul-06/natalia: coded
@@ -6583,7 +6573,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       end if
 !
     end subroutine get_mu1_slice
-!********************************************************************
+!***********************************************************************
   subroutine chemistry_clean_up()
 !
   if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
@@ -6604,6 +6594,5 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
   if (allocated(Mplus_case))     deallocate(Mplus_case)
 !
   endsubroutine chemistry_clean_up
-!********************************************************************
+!***********************************************************************
 endmodule Chemistry
-
