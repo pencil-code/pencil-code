@@ -3,7 +3,7 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
+  cvsid='$Id$',
   nt=50, it1=5, isave=50, itorder=3
   cdt=0.4, cdtv=0.3, dtmin=1e-9, slice_position='m'
 !  dsnap=7.5e-6,  tmax=7.5e-5
