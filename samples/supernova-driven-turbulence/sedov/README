@@ -1,9 +1,17 @@
-This simulation  is designed to verify the code reproduces the Sedov-Taylor solution 
-for a single supernova remnant in a monotomic uniform ISM at rest. 
-We use an ambient density of 1 atom per cm cubed. 
-At this density the box needs to be over 170 parsecs in radius to permit the remnant 
-shell to grow without reaching the boundary. 
-Radiative cooling and uv-heating are neglected to produce purely adiabatic growth. 
-Using density below 0.5 atoms would require a box of larger dimensions to track later growth of the remnant.
-Injection of 10^51 ergs is achieved through 50% kinetic and 50% thermal energy.
-
+Directory:
+    ${PENCIL_HOME}/samples/supernova-driven-turbulence/sedov/
+SVN Id:
+    $Id: README 13067 2010-01-25 07:08:53Z f.a.gent@ncl.ac.uk $
+Maintainer:
+    Frederick Gent <F.A.Gent/ncl[dot]ac[dot]uk>
+Added:
+    22-Jan-2010
+Status:
+    has been working in this form since 22-Jan-2010
+Recommended resolution:
+    at least 40x40x40
+Comments:
+    designed to verify the code reproduces the Sedov-Taylor solution for a single
+    supernova remnant in a monotomic uniform ISM at rest.                
+    if using density < 0.5 atom per cc increase box to keep away from boundary
+    injection of 10^51 ergs => 50% kinetic and 50% thermal energy.

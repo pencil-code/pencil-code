@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
-  nt=30000, it1=50, isave=50, itorder=3
+  nt=50, it1=5, isave=50, itorder=3
   cdt=0.4, cdtv=0.3, dtmin=1e-9, slice_position='m'
 !  dsnap=7.5e-6,  tmax=7.5e-5
   dvid=1.0e-3
