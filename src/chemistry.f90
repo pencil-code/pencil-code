@@ -1,3 +1,4 @@
+
 ! $Id$
 !
 !  This modules addes chemical species and reactions.
@@ -770,7 +771,12 @@ module Chemistry
 !
       final_massfrac_O2&
           =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+          -initial_massfractions(ichem_H2)/(2.*mH2))*mO2
+
+     if (final_massfrac_O2<0.) final_massfrac_O2=0.
+
+!print*,initial_massfractions(ichem_O2),mO2,initial_massfractions(ichem_H2),mH2
+
 !
 !  Initialize temperature and species
 !
@@ -811,12 +817,25 @@ module Chemistry
 !
         else
           if (x(k)>init_x1) then
-            f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
-                *(exp(f(k,:,:,ilnTT))-init_TT1) &
-                /(init_TT2-init_TT1)
-            f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
+
+             f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
                 *(exp(f(k,:,:,ilnTT))-init_TT2) &
                 /(init_TT1-init_TT2)
+
+
+       !      if (final_massfrac_O2>0.) then
+       !       f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+       !          *(exp(f(k,:,:,ilnTT))-init_TT1) &
+       !          /(init_TT2-init_TT1)
+       !      else
+       !       if (x(k)>init_x2) then
+       !       f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)
+       !      else
+       !       f(k,:,:,i_H2O)=(x(k)-init_x2)/(init_x1-init_x2) &
+       !         *(0.-(1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)))
+       !      endif
+       !     endif
+
           endif
         endif
 !
@@ -839,6 +858,28 @@ module Chemistry
           endif
         endif
       enddo
+
+
+         do k=1,mx
+          if (x(k)>=init_x1) then
+
+           if (final_massfrac_O2>0.) then
+             f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+                *(exp(f(k,:,:,ilnTT))-init_TT1) &
+                /(init_TT2-init_TT1)
+           else
+             if (x(k)>=init_x2) then
+              f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)
+             else
+              f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
+                *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2))-0.)
+             endif
+           endif
+          endif
+         enddo
+
+
+
 !
     call calc_for_chem_mixture(f)
 
@@ -1287,11 +1328,21 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
        do j1=1,mx
          Rad=abs(x(j1))
-         if (Rad<0.2) then
-          f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
-         else
-          f(j1,:,:,ilnTT)=log(init_TT1)
-         endif
+!         if (Rad<0.2) then
+!          f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
+!         else
+!          f(j1,:,:,ilnTT)=log(init_TT1)
+!         endif
+          if ((x(j1)<=0) .and. (x(j1)>=-0.2)) then
+           f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
+          elseif (x(j1)>0) then
+           f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)
+          elseif (x(j1)<-0.2) then
+           f(j1,:,:,ilnTT)=log(init_TT1)
+          endif
+
+
+
           mu1(j1,:,:)=f(j1,:,:,i_H2)/(2.*mH2)+f(j1,:,:,i_O2)/(2.*mO2) &
               +f(j1,:,:,i_H2O)/(2.*mH2+mO2)+f(j1,:,:,i_N2)/(2.*mN2)
 
