@@ -1,1 +1,0 @@
-/home/fred/pencil-code//src/selfgravity.h
