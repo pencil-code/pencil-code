@@ -133,6 +133,7 @@ module Particles
       endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -239,7 +240,7 @@ module Particles
                if (nygrid/=1) fp(k,iyp)=phi
              elseif (lspherical_coords) then
                call stop_it("init_particles: random-cylindrical not implemented "//&
-                    "for spherical coordinates") 
+                    "for spherical coordinates")
              endif
 !
              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
@@ -344,7 +345,7 @@ module Particles
 !
       lpenc_diagnos(i_np)=.true.
 !
-      if (idiag_epsmin/=0.or.idiag_epsmax/=0) & 
+      if (idiag_epsmin/=0.or.idiag_epsmax/=0) &
            lpenc_diagnos(i_epsp)=.true.
 !
     endsubroutine pencil_criteria_particles
@@ -376,8 +377,8 @@ module Particles
 ! np
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
 ! rhop
-      if (lpencil(i_rhop)) then 
-        if (irhop/=0) then 
+      if (lpencil(i_rhop)) then
+        if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
           p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
@@ -710,13 +711,13 @@ module Particles
     subroutine insert_particles(f,fp,ineargrid)
 !
 ! Insert particles continuously (when linsert_particles_continuously == T),
-! i.e. in each timestep. If number of particles to be inserted are less 
+! i.e. in each timestep. If number of particles to be inserted are less
 ! than unity, accumulate number over several timesteps until the integer value
 ! is larger than one. Keep the remainder and accumulate this to the next insert.
 !
 ! Works only for particles_dust - add neccessary variable
 ! declarations in particles_tracers to make it work here.
-! 
+!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
@@ -732,7 +733,7 @@ module Particles
         call fatal_error('particles_tracers.f90',&
             'insert_particles not yet implemented')
       endif
-!      
+!
     endsubroutine insert_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
