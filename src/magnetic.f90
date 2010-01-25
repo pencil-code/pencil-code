@@ -1,4 +1,4 @@
-! $Id$ 
+! $Id$
 !
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -22,8 +22,8 @@
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
 ! PENCILS PROVIDED etava, etaj, etaj2, etajrho
-! PENCILS PROVIDED cosjb,jparallel;jperp 
-! PENCILS PROVIDED cosub 
+! PENCILS PROVIDED cosjb,jparallel;jperp
+! PENCILS PROVIDED cosub
 !
 !***************************************************************
 module Magnetic
@@ -533,21 +533,25 @@ module Magnetic
   integer :: idiag_mflux_x=0    ! DIAG_DOC:
   integer :: idiag_mflux_y=0    ! DIAG_DOC:
   integer :: idiag_mflux_z=0    ! DIAG_DOC:
-  integer :: idiag_bmxy_rms=0   ! DIAG_DOC: $\sqrt{[\left<b_x\right>_z(x,y)]^2 + 
+  integer :: idiag_bmxy_rms=0   ! DIAG_DOC: $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
                                 ! DIAG_DOC: [\left<b_y\right>_z(x,y)]^2 +
-                                ! DIAG_DOC: [\left<b_z\right>_z(x,y)]^2} $ 
+                                ! DIAG_DOC: [\left<b_z\right>_z(x,y)]^2} $
   integer :: idiag_etasmagm=0   ! DIAG_DOC: Mean of Smagorinsky resistivity
   integer :: idiag_etasmagmin=0 ! DIAG_DOC: Min of Smagorinsky resistivity
   integer :: idiag_etasmagmax=0 ! DIAG_DOC: Max of Smagorinsky resistivity
-  integer :: idiag_etavamax=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim v_A$
-  integer :: idiag_etajmax=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim J / \sqrt{\rho}$
-  integer :: idiag_etaj2max=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim J^2 / \rho$
-  integer :: idiag_etajrhomax=0	! DIAG_DOC: Max of artificial resistivity $\eta\sim J / \rho$
+  integer :: idiag_etavamax=0   ! DIAG_DOC: Max of artificial resistivity
+                                ! DIAG_DOC: $\eta\sim v_A$
+  integer :: idiag_etajmax=0    ! DIAG_DOC: Max of artificial resistivity
+                                ! DIAG_DOC: $\eta\sim J / \sqrt{\rho}$
+  integer :: idiag_etaj2max=0   ! DIAG_DOC: Max of artificial resistivity
+                                ! DIAG_DOC: $\eta\sim J^2 / \rho$
+  integer :: idiag_etajrhomax=0 ! DIAG_DOC: Max of artificial resistivity
+                                ! DIAG_DOC: $\eta\sim J / \rho$
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
-  integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component 
-                                ! DIAG_DOC: of J parallel to B 
-  integer :: idiag_jperpm=0     ! DIAG_DOC: Mean value of the component 
-                                ! DIAG_DOC: of J perpendicular to B 
+  integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component
+                                ! DIAG_DOC: of J parallel to B
+  integer :: idiag_jperpm=0     ! DIAG_DOC: Mean value of the component
+                                ! DIAG_DOC: of J perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
   integer :: idiag_Exmxz=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{y}$
   integer :: idiag_Eymxz=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{y}$
@@ -917,7 +921,7 @@ module Magnetic
         endif
       endif
 !
-      if (any(initaa=='Alfven-zconst')) then    
+      if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)
         if (ierr/=0) call fatal_error('initialize_magnetic',&
              'there was a problem when sharing zmode')
@@ -971,12 +975,12 @@ module Magnetic
       integer :: j
 !
       do j=1,ninit
-!        
+!
         select case (initaa(j))
         case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0
         case ('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
-        case ('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j)) 
+        case ('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j))
         case ('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('sph_constb'); call sph_constb(amplaa(j),f,iaa)
@@ -1024,7 +1028,7 @@ module Magnetic
         case ('uniform-Bz'); call uniform_z(amplaa(j),f,iaa)
         case ('uniform-Bphi'); call uniform_phi(amplaa(j),f,iaa)
         case ('phi_comp_over_r'); call phi_comp_over_r(amplaa(j),f,iaa)
-        case ('phi_comp_over_r_noise') 
+        case ('phi_comp_over_r_noise')
           call phi_comp_over_r(amplaa(j),f,iaa)
           call gaunoise(1.0e-5*amplaa(j),f,iax,iaz)
         case ('Bz(x)', '3'); call vfield(amplaa(j),f,iaa)
@@ -1081,8 +1085,8 @@ module Magnetic
         case ('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case ('sine-bc'); call sine_avoid_boundary(amplaa(j),f,kx_aa(j),rm_int,rm_ext)
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
-        case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa) 
-        case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa) 
+        case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
+        case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
         case ('tony-nohel')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*z(n))
@@ -1310,7 +1314,7 @@ module Magnetic
          ) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
-          .or. idiag_abmz/=0) & 
+          .or. idiag_abmz/=0) &
           lpenc_diagnos(i_ab)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 &
           .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
@@ -1377,12 +1381,12 @@ module Magnetic
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
 !
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
-! check whether right variables are set for half-box calculations. 
-      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 & 
+! check whether right variables are set for half-box calculations.
+      if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 &
           .or. idiag_jbmn/= 0 ) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
-        else  
+        else
           if (lequatory) write(*,*) 'pencil-criteria_magnetic: box divided along y dirn'
           if (lequatorz) write(*,*) 'pencil-criteria_magnetic: box divided along z dirn'
         endif
@@ -1403,7 +1407,7 @@ module Magnetic
         lpencil_in(i_cosjb)=.true.
         lpencil_in(i_jxb)=.true.
       endif
-      if (lpencil_in(i_cosjb)) then 
+      if (lpencil_in(i_cosjb)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_j2)=.true.
         lpencil_in(i_jb)=.true.
@@ -1527,7 +1531,7 @@ module Magnetic
         endif
       endif
       if (lpencil_in(i_del2A)) then
-        if (lspherical_coords) then 
+        if (lspherical_coords) then
 !WL: for the cylindrical case, lpencil_check says these pencils are not needed
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
@@ -1604,10 +1608,10 @@ module Magnetic
         if (B2_ext/=0.) then
           if (lbext_curvilinear.or.lcartesian_coords) then
 !
-!  luse_curvilinear_bext is default. The B_ext the user defines in 
+!  luse_curvilinear_bext is default. The B_ext the user defines in
 !  magnetic_init_pars respects the coordinate system of preference
 !  which means that B_ext=(0.,1.,0.) is an azimuthal field in cylindrical
-!  coordinates and a polar one in spherical. 
+!  coordinates and a polar one in spherical.
 !
             if (omega_Bz_ext==0.) then
               B_ext_tmp=B_ext
@@ -1629,7 +1633,7 @@ module Magnetic
             B_ext_tmp(1)=  B_ext(1)*cos(y(m)) + B_ext(2)*sin(y(m))
             B_ext_tmp(2)= -B_ext(1)*sin(y(m)) + B_ext(2)*cos(y(m))
             B_ext_tmp(3)=  B_ext(3)
-          else if (lspherical_coords) then 
+          else if (lspherical_coords) then
             if (omega_Bz_ext/=0.) &
                  call fatal_error("calc_pencils_magnetic",&
                   "precession of the external field not "//&
@@ -1703,7 +1707,7 @@ module Magnetic
           if (.not. lpencil(i_graddiva)) p%graddiva=0.0
 !          if (lpencil(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
 !DM curl in cartesian does not need p%bb, then it is better not
-! to give it. 
+! to give it.
           if (lpencil(i_jj)) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
@@ -1763,7 +1767,7 @@ module Magnetic
 ! cosjb
       if (lpencil(i_cosjb)) then
         do ix=1,nx
-          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then
             p%cosjb(ix)=0.
           else
             p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
@@ -1774,12 +1778,12 @@ module Magnetic
           p%cosjb = modulo(p%cosjb + 1.0, 2.0) - 1
         endif
       endif
-! jparallel and jperp 
+! jparallel and jperp
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
         call dot2_mn(p%jxb,jcrossb2)
         do ix=1,nx
-          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then 
+          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then
             p%jperp=0
           else
             p%jperp=sqrt(jcrossb2(ix))/sqrt(p%b2(ix))
@@ -1908,7 +1912,7 @@ module Magnetic
         case ('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
         case ('stepz'); alpha_tmp=-tanh((z(n)-zequator)/alpha_gap_step)
         case ('ystep-xcutoff')
-           alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)& 
+           alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)&
              *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
         case ('step-drop'); alpha_tmp=(1. &
                 -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
@@ -2115,7 +2119,7 @@ module Magnetic
         etatotal=etatotal+etaSS+eta
       endif
 !
-      if (lresi_xydep) then 
+      if (lresi_xydep) then
         do j=1,3
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
@@ -2127,7 +2131,7 @@ module Magnetic
         etatotal=etatotal+eta_xy(l1,m)
       endif
 !
-      if (lresi_zdep) then 
+      if (lresi_zdep) then
         do j=1,3
           fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
         enddo
@@ -2359,7 +2363,7 @@ module Magnetic
 !  Induction equation.
 !
       if (.not.lupw_aa) then
-        if (linduction) & 
+        if (linduction) &
              df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
       else
 !
@@ -2392,7 +2396,7 @@ module Magnetic
           endif
         enddo; enddo
 !  Full right hand side of the induction equation.
-        if (linduction) & 
+        if (linduction) &
              df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
 !
@@ -2458,11 +2462,11 @@ module Magnetic
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
-          if (lspherical_coords) then 
+          if (lspherical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                        (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
                        (p%bb(:,3)*dz_1(  n  )*r1_mn*sin1th(m))**2)*mu01*rho1_jxb
-          elseif (lcylindrical_coords) then 
+          elseif (lcylindrical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                        (p%bb(:,2)*dy_1(  m  )*rcyl_mn1)**2+ &
                        (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
@@ -2876,9 +2880,9 @@ module Magnetic
 !
         if (idiag_EMFdotBm/=0) call sum_mn_name(p%mf_EMFdotB,idiag_EMFdotBm)
       endif ! endif (ldiagnos)
-!                                                                               
+!
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
-!             
+!
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         if (idiag_bxmx/=0)   call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         if (idiag_bymx/=0)   call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
@@ -3037,7 +3041,7 @@ module Magnetic
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
 !  ldiagnos and idiag_bmx and/or idiag_bmy, so
 !
-!  We may need to calculate bxmxy without calculating bmx. The following 
+!  We may need to calculate bxmxy without calculating bmx. The following
 !  if condition was messing up calculation of bmxy_rms
 !
         if (ldiagnos) then
@@ -3136,7 +3140,7 @@ module Magnetic
 !
 !  10-oct-06/axel: coded
 !
-      use Diagnostics, only: sum_mn_name 
+      use Diagnostics, only: sum_mn_name
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3253,7 +3257,7 @@ module Magnetic
         do j=1,3
           ju=j+iaa-1
           call set_border_initcond(f,ju,f_target(:,j))
-        enddo    
+        enddo
 !
       case ('nothing')
         if (lroot.and.ip<=5) &
@@ -3498,17 +3502,17 @@ module Magnetic
     subroutine sine_avoid_boundary(ampl,f,kr,r0,rn)
 !
 ! Sine field in cylindrical coordinates, used in Armitage 1998
-!  
+!
 !   Bz=B0/r * sin(kr*(r-r0))
 !
 ! And 0 outside of the interval r0-rn
-! Code the field and find Aphi through solving the 
-! tridiagonal system for 
-! 
-!  Bz= d/dr Aphi + Aphi/r 
+! Code the field and find Aphi through solving the
+! tridiagonal system for
 !
-!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz 
-! 
+!  Bz= d/dr Aphi + Aphi/r
+!
+!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz
+!
 !  05-apr-08/wlad : coded
 !
       use General, only: tridag
@@ -3522,7 +3526,7 @@ module Magnetic
       if (.not.lcylindrical_coords) &
            call stop_it("this IC assumes cylindrical coordinates")
 !
-      do i=1,mx 
+      do i=1,mx
         if ((rcyl_mn(i).ge.r0).and.(rcyl_mn(i).le.rn)) then
           bz(i)=ampl/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-r0))
         else
@@ -3534,7 +3538,7 @@ module Magnetic
       b_tri=2*dx/x
       c_tri=1.
       rhs=bz*2*dx
-!      
+!
       a_tri(1) =0.;c_tri(1 )=0.
       a_tri(mx)=0.;c_tri(mx)=0.
 !
@@ -3836,7 +3840,7 @@ module Magnetic
             if (slices%index<=3) slices%ready=.true.
           endif
 !
-!  Magnetic field (derived variable)
+!  Current density (derived variable)
 !
         case ('jj')
           if (slices%index>=3) then
@@ -4419,12 +4423,12 @@ module Magnetic
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
 !
-! stop if this routine is called in cylindrical 
-      if (lcylindrical_coords) & 
+! stop if this routine is called in cylindrical
+      if (lcylindrical_coords) &
              call stop_it("bmxy_rms not yet implemented for cylindrical")
 ! The following calculation is done only for ipz=0
       bmxy_rms=0
-      if (ipz/=0) return 
+      if (ipz/=0) return
       if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
@@ -4433,15 +4437,15 @@ module Magnetic
         endif
         bmxy_rms=0.
       else
-!DM: we dont really need the following if, I am going to test  
+!DM: we dont really need the following if, I am going to test
 !        if (ipz==0) then
           b2mxy_local=0
           do l=1,nx
             do m=1,ny
               btemp=fnamexy(l,m,idiag_bxmxy)**2 +&
                     fnamexy(l,m,idiag_bymxy)**2 +&
-                    fnamexy(l,m,idiag_bzmxy)**2  
-              if (lspherical_coords) then 
+                    fnamexy(l,m,idiag_bzmxy)**2
+              if (lspherical_coords) then
                  btemp=btemp*r2_weight(l)*sinth_weight(m)
                  nvol2d_local=r2_weight(l)*sinth_weight(m)
               endif
@@ -4715,7 +4719,7 @@ module Magnetic
 !
 !  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
 !
-!  The smoothed case should be general, since it reduces 
+!  The smoothed case should be general, since it reduces
 !  to the non-smoothed for r0_pot=0.
 !
 !  B=C*(r2+r02)^-q ==> Aphi=C/(r*(2-q))*(r2+r02)^(1-q/2)
@@ -4733,7 +4737,7 @@ module Magnetic
       real :: B0,pblaw
       integer :: ierr
 !
-      if (lcartesian_coords) then 
+      if (lcartesian_coords) then
         B0=Lxyz(3)/(2*zmode*pi)
         do n=n1,n2; do m=m1,m2
           rr=sqrt(x(l1:l2)**2+y(m)**2)
@@ -4741,7 +4745,7 @@ module Magnetic
           f(l1:l2,m,n,iax) =  -Aphi*y(m)/rr
           f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
         enddo; enddo
-      elseif (lcylindrical_coords) then 
+      elseif (lcylindrical_coords) then
         call stop_it("alfven_zconst: "//&
             "not implemented for cylindrical coordinates")
       elseif (lspherical_coords) then
@@ -4801,7 +4805,7 @@ module Magnetic
            kr = 2*pi*mode/(r_ext-r_int)
            Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
                 B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
-        else   
+        else
            if (lroot .and. m==m1 .and. n==n1) print*,'Softened magnetic field in the center'
            if (mode .lt. 5) call stop_it("put more wavelengths in the field")
            kr = 2*pi*mode/r_ext
@@ -5044,7 +5048,7 @@ module Magnetic
 !
 !  Initial field concentrated along torus well inside the computational
 !  domain.
-!  Implements the same field for cartesian and spherical cordinates. 
+!  Implements the same field for cartesian and spherical cordinates.
 !  The field is of mixed parity (bb_pol symmetric, bb_tor antisymmetric)
 !  and the relative contributions of toroidal and poloidal field are
 !  determined by
@@ -5079,7 +5083,7 @@ module Magnetic
         do n=n1,n2; do m=m1,m2
           xxi2 = (sqrt(x(l1:l2)**2+y(m)**2) - r_cent)**2 + z(n)**2
           ee = ampl * exp(-0.5 * xxi2 / width**2)
-          aar = z(n) * ee 
+          aar = z(n) * ee
           aap = ee
           ss = sqrt(x(l1:l2)**2+y(m)**2)
           rr = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
@@ -5380,12 +5384,11 @@ module Magnetic
       real, dimension(mx,my) :: eta_xy,r2,gradr_eta_xy
       real, dimension(mx,my,3)  :: geta_xy
       character (len=labellen) :: eta_xy_profile
-      real :: rmax2,a,w      
+      real :: rmax2,a,w
       integer :: i,j
-
-     
+!
       intent(out) :: eta_xy,geta_xy
-
+!
       select case (eta_xy_profile)
       case ('schnack89')
       do i=1,mx
@@ -5394,20 +5397,20 @@ module Magnetic
         enddo
       enddo
 !
-!  define eta_xy: radial resistivity profile from Y.L. Ho, S.C. Prager & 
+!  define eta_xy: radial resistivity profile from Y.L. Ho, S.C. Prager &
 !              D.D. Schnack, Phys rev letters vol 62 nr 13 1989
 !  and define gradr_eta_xy: 1/r *d_r(eta_xy))
 !
-!  to prevent numerically impossible diffusivities the value outside rmax2 
+!  to prevent numerically impossible diffusivities the value outside rmax2
 !  the diffusivity is set to stay below an input value eta_xy_max (> 100*eta),
 !  keeping the transition continuous in the first derivative
-!  
+!
       rmax2=1.
       a=(eta_xy_max-100.*eta)/eta_xy_max
       w=(eta_xy_max-100.*eta)/(5400.*eta)
 
       do i=1,mx
-      do j=1,my 
+      do j=1,my
 !  inside
         if (r2(i,j) < rmax2) then
           eta_xy(i,j) = eta*(1.+9.*(r2(i,j)/rmax2)**15)**2
@@ -5440,7 +5443,7 @@ module Magnetic
       real, dimension(mz,3) :: geta_z
       character (len=labellen) :: zdep_profile
 !      integer :: i
-!     
+!
       intent(out) :: eta_z,geta_z
 !
       select case (zdep_profile)
@@ -5449,15 +5452,15 @@ module Magnetic
 !  resistivity profile from Fleming & Stone (ApJ 585:908-920)
           eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
 !
-! its gradient: 
+! its gradient:
           geta_z(:,1) = 0.
           geta_z(:,2) = 0.
           geta_z(:,3) = eta_z*(-z-sign(1.,z)*sigma_ratio*exp(-z2)/(2.*sqrt(pi)))
 !
         case ('tanh')
-!  default to spread gradient over ~5 grid cells.           
+!  default to spread gradient over ~5 grid cells.
            if (eta_width == 0.) eta_width = 5.*dz
-           eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) & 
+           eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) &
              - tanh((z - eta_z0)/eta_width))
 !
 ! its gradient:
@@ -5471,9 +5474,9 @@ module Magnetic
     endsubroutine eta_zdep
 !************************************************************************
     subroutine correct_lorentz_force(f,lfield,const,pblaw)
-! 
+!
 !  Correct for the magnetic term in the centrifugal force. The
-!  pressure gradient was already corrected in the density and temperature 
+!  pressure gradient was already corrected in the density and temperature
 !  modules
 !
 !  13-nov-08/wlad : coded
@@ -5496,7 +5499,7 @@ module Magnetic
       if (.not.lspherical_coords) then
         call fatal_error("correct_lorentz_force",&
             "only implemented for spherical coordinates")
-        if ((B_ext(1).ne.0).or.(B_ext(3).ne.0)) then 
+        if ((B_ext(1).ne.0).or.(B_ext(3).ne.0)) then
           call fatal_error("correct_lorentz_force",&
               "only implemented for polar fields")
         endif
@@ -5508,10 +5511,10 @@ module Magnetic
           call get_radial_distance(rr_sph,rr_cyl)
 !
           lheader=((m==1).and.(n==1).and.lroot)
-!         
+!
           if (present(lfield).and.&
               present(const).and.&
-              (present(pblaw))) then 
+              (present(pblaw))) then
             !this field also has a magnetic pressure gradient
             Btheta=const*rr_sph**pblaw/sin(y(m))
           else
@@ -5544,9 +5547,9 @@ module Magnetic
             tmp=uu2+va2r*(1+2*pblaw/rr_sph)
             !the polar pressure should be
             !-2*cot(theta)/rr * va2r, but I will ignore it
-            ! for now. It feedbacks on the density, 
-            ! so the initial condition for density and field 
-            ! should be solved iteratively. But as uu>>va, I 
+            ! for now. It feedbacks on the density,
+            ! so the initial condition for density and field
+            ! should be solved iteratively. But as uu>>va, I
             ! will just let the system relax to equilibrium in
             ! runtime.
           else
@@ -5558,7 +5561,7 @@ module Magnetic
           do i=1,nx
             if (tmp(i).lt.0.) then
               if (rr_sph(i) .lt. r_int) then
-                !it's inside the frozen zone, so 
+                !it's inside the frozen zone, so
                 !just set tmp to zero and emit a warning
                 tmp(i)=0.
                 if ((ip<=10).and.lheader) &
@@ -5590,14 +5593,14 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
 !
-      if (lremove_mean_emf) then 
-        if (lcartesian_coords) then 
+      if (lremove_mean_emf) then
+        if (lcartesian_coords) then
           print*,"You are using a cylinder carved in a Cartesian grid"//&
                "if you want to remove the mean emf generated by the "//&
                "uphi x Bz term from the induction equation, use the "//&
                "special/rtime_phiavg.f90 file instead."
           call fatal_error("remove_mean_emf","")
-        elseif (lcylindrical_coords) then 
+        elseif (lcylindrical_coords) then
           call remove_mean_emf_cylindrical(f,df)
         elseif (lspherical_coords) then
           call remove_mean_emf_spherical(f,df)
@@ -5608,13 +5611,13 @@ module Magnetic
 !************************************************************************
     subroutine remove_mean_emf_cylindrical(f,df)
 !
-!  Substract mean emf from the radial component of the induction 
-!  equation. Activated only when large Bz fields and are present 
-!  keplerian advection. Due to this u_phi x Bz term, the radial 
+!  Substract mean emf from the radial component of the induction
+!  equation. Activated only when large Bz fields and are present
+!  keplerian advection. Due to this u_phi x Bz term, the radial
 !  component of the magnetic potential
 !  develops a divergence that grows linearly in time. Since it is
-!  purely divergent, it is okay analytically. But numerically it leads to 
-!  problems if this divergent grows bigger than the curl, which it does 
+!  purely divergent, it is okay analytically. But numerically it leads to
+!  problems if this divergent grows bigger than the curl, which it does
 !  eventually.
 !
 !  This is a cylindrical version of the rtime_phiavg special file.
@@ -5634,7 +5637,7 @@ module Magnetic
       integer                 :: nnghost
 !
       fac = 1.0/nygrid
-!      
+!
 ! Average over phi - the result is a (nr,nz) array
 !
       fsum_tmp = 0.
@@ -5653,7 +5656,7 @@ module Magnetic
 !
       call mpiallreduce_sum(fsum_tmp,uxb,(/nx,nz/),idir=2)
 !
-      do m=m1,m2  
+      do m=m1,m2
         df(l1:l2,m,n1:n2,iax)=df(l1:l2,m,n1:n2,iax)-uxb
       enddo
 !
@@ -5661,13 +5664,13 @@ module Magnetic
 !************************************************************************
     subroutine remove_mean_emf_spherical(f,df)
 !
-!  Substract mean emf from the radial component of the induction 
-!  equation. Activated only when large Bz fields and keplerian 
-!  advection are present. Due to this u_phi x Bz term, the radial 
+!  Substract mean emf from the radial component of the induction
+!  equation. Activated only when large Bz fields and keplerian
+!  advection are present. Due to this u_phi x Bz term, the radial
 !  component of the magnetic potential
 !  develops a divergence that grows linearly in time. Since it is
-!  purely divergent, it is okay analytically. But numerically it leads to 
-!  problems if this divergent grows bigger than the curl, which it does 
+!  purely divergent, it is okay analytically. But numerically it leads to
+!  problems if this divergent grows bigger than the curl, which it does
 !  eventually.
 !
 !  This is a cylindrical version of the rtime_phiavg special file.
@@ -5687,7 +5690,7 @@ module Magnetic
       integer                 :: mmghost
 !
       fac = 1.0/nzgrid
-!      
+!
 ! Average over phi - the result is a (nr,ntht) array
 !
       fsum_tmp = 0.
@@ -5696,8 +5699,8 @@ module Magnetic
         mmghost=m-m1+1
         call curl(f,iaa,pbb)
 !
-! if lbext_curvilinear is true, then it respects the coordinate 
-! system defined by the user. B_ext(2) then is the polar field. 
+! if lbext_curvilinear is true, then it respects the coordinate
+! system defined by the user. B_ext(2) then is the polar field.
 !
         if (lbext_curvilinear) then
           bb=pbb(:,2)+B_ext(2)
@@ -5714,12 +5717,12 @@ module Magnetic
 !
 ! The sum has to be done processor-wise
 ! Sum over processors of same ipy, and different ipz
-!      
+!
       !call mpiallreduce_sum_column(fsum_tmp,uxb,(/nx,ny/))
       call mpiallreduce_sum(fsum_tmp,uxb,(/nx,ny/),idir=3)
 !
       do n=n1,n2
-      do m=m1,m2  
+      do m=m1,m2
         mmghost=m-m1+1
         if (lbext_curvilinear) then
           ! u\phi times b\theta = -ub \r
@@ -5815,10 +5818,10 @@ module Magnetic
     endsubroutine bb_unitvec_shock
 !***********************************************************************
     subroutine input_persistent_magnetic(id,lun,done)
-! 
+!
 !  Read in the stored phase and amplitude for the correction of the Beltrami
 !  wave forcing.
-! 
+!
 !   5-apr-08/axel: adapted from input_persistent_forcing
 !
       integer :: id,lun
