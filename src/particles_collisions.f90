@@ -54,8 +54,6 @@ module Particles_collisions
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
-      integer :: ierr
-!
       select case (icoll)
       case ('random-angle'); lcollision_random_angle=.true.
       case ('big-ball');     lcollision_big_ball=.true.
