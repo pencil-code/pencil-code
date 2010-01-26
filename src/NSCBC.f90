@@ -321,7 +321,7 @@ include 'NSCBC.h'
       real, optional :: u_t, T_t
       real :: Mach,KK,nu, cs0_average
       integer, dimension(30) :: stat
-      integer lll,i,jjj,kkk,j,k,ngridpoints
+      integer lll,i,jjj,kkk,j,k,ngridpoints,imin,imax,jmin,jmax
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:,:) :: dui_dxj
@@ -363,12 +363,18 @@ include 'NSCBC.h'
       if (dir==1) then
         dir1=1; dir2=2; dir3=3
         igrid=ny; jgrid=nz
+        imin=m1; imax=m2
+        jmin=n1; jmax=n2
       elseif (dir==2) then
         dir1=2; dir2=1; dir3=3
-        igrid=nx; jgrid=nz
-      elseif (dir==3) then
+        igrid=nx; jgrid=nz 
+        imin=l1; imax=l2
+        jmin=n1; jmax=n2
+     elseif (dir==3) then
         dir1=3; dir2=1; dir3=2
         igrid=nx; jgrid=ny
+        imin=l1; imax=l2
+        jmin=m1; jmax=m2
       else
         call fatal_error('bc_nscbc_prf:','No such dir!')
       endif
@@ -460,13 +466,13 @@ include 'NSCBC.h'
 !
         if (dir==1) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in)
+              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax)
         elseif(dir==2) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-              Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in)
+              Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in,imin,imax,jmin,jmax)
         elseif(dir==3) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-              Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in)
+              Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax)
         endif
 !
 !  Having found the velocity at the inlet we are now ready to start
@@ -757,7 +763,8 @@ include 'NSCBC.h'
     endsubroutine NSCBC_clean_up
 !***********************************************************************
     subroutine find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-        domain_length,grid_points,u_t,dir,imin,imax,jmin,jmax)
+        domain_length,grid_points,u_t,dir,imin_turb,imax_turb,&
+        jmin_turb,jmax_turb,imin,imax,jmin,jmax)
 !
 !  Find velocity at inlet.
 !
@@ -766,8 +773,8 @@ include 'NSCBC.h'
       logical, intent(out) :: non_zero_transveral_velo
       real, dimension(:,:,:), intent(out) :: u_in
       real, intent(in) :: domain_length,u_t
-      integer, intent(in) :: grid_points,dir
-      integer, intent(in) :: imin,imax,jmin,jmax
+      integer, intent(in) :: grid_points,dir,imin,imax,jmin,jmax
+      integer, intent(in) :: imin_turb,imax_turb,jmin_turb,jmax_turb
 !
       real :: shift, grid_shift, weight, round
       integer :: iround,lowergrid,uppergrid,ii
@@ -804,11 +811,14 @@ include 'NSCBC.h'
 !  Set the turbulent inlet velocity
 !
           if (dir==1) then
-            call turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+            call turbulent_vel_x(u_in,lowergrid,imin_turb,imax_turb,&
+                jmin_turb,jmax_turb,weight,smooth)
           elseif(dir==2) then
-            call turbulent_vel_y(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+            call turbulent_vel_y(u_in,lowergrid,imin_turb,imax_turb,&
+                jmin_turb,jmax_turb,weight,smooth)
           elseif(dir==3) then
-            call turbulent_vel_z(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+            call turbulent_vel_z(u_in,lowergrid,imin_turb,imax_turb,&
+                jmin_turb,jmax_turb,weight,smooth)
           endif
 !
 !  Add the mean inlet velocity to the turbulent one
@@ -848,7 +858,6 @@ include 'NSCBC.h'
               theta(2)=radius(2)/20.
               jet_center(1)=0
               jet_center(2)=0
-
               do jjj=imin,imax
                 do kkk=jmin,jmax
                   if (dir==1) then
