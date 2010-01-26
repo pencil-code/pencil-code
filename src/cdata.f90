@@ -15,9 +15,9 @@ module Cdata
 !
 !  Tiny and huge numbers.
 !
-  real, parameter :: one_dummy=1.0
-  real, parameter :: epsi=5*epsilon(one_dummy),tini=5*tiny(one_dummy)
-  real, parameter :: huge1=0.2*huge(one_dummy)
+  real, parameter :: one=1.0
+  real, parameter :: epsi=5*epsilon(one),tini=5*tiny(one)
+  real, parameter :: huge1=0.2*huge(one)
 !
 !  Default CVS Id.
 !
