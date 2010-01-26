@@ -37,6 +37,7 @@ include 'NSCBC.h'
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
+  logical :: notransveral_terms=.false.
 !
 !  Variables to be used when getting timevarying inlet from file
 !
@@ -66,7 +67,8 @@ include 'NSCBC.h'
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-      turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet
+      turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
+      notransveral_terms
 !
   contains
 !***********************************************************************
@@ -1196,19 +1198,28 @@ include 'NSCBC.h'
 !
 !  Calculate the T's
 !
-        T_1= rho0*dui_dxj(:,:,dir2,dir2)+fslice(:,:,dir2)*grad_rho(:,:,dir2)&
-            +rho0*dui_dxj(:,:,dir3,dir3)+fslice(:,:,dir3)*grad_rho(:,:,dir3)
-        T_2= fslice(:,:,dir2)*dui_dxj(:,:,dir1,dir2)&
-            +fslice(:,:,dir3)*dui_dxj(:,:,dir1,dir3)
-        T_3= fslice(:,:,dir2)*dui_dxj(:,:,dir2,dir2)&
-            +fslice(:,:,dir3)*dui_dxj(:,:,dir2,dir3)&
-            +grad_P(:,:,dir2)/rho0
-        T_4= fslice(:,:,dir2)*dui_dxj(:,:,dir3,dir2)&
-            +fslice(:,:,dir3)*dui_dxj(:,:,dir3,dir3)&
-            +grad_P(:,:,dir3)/rho0
-        T_5= fslice(:,:,dir2)*grad_P(:,:,dir2)&
-            +fslice(:,:,dir3)*grad_P(:,:,dir3)&
-            +gamma*P0*(dui_dxj(:,:,dir2,dir2)+dui_dxj(:,:,dir3,dir3))
+        if (.not. notransveral_terms) then
+          T_1= rho0*dui_dxj(:,:,dir2,dir2)+fslice(:,:,dir2)*grad_rho(:,:,dir2)&
+              +rho0*dui_dxj(:,:,dir3,dir3)+fslice(:,:,dir3)*grad_rho(:,:,dir3)
+          T_2= fslice(:,:,dir2)*dui_dxj(:,:,dir1,dir2)&
+              +fslice(:,:,dir3)*dui_dxj(:,:,dir1,dir3)
+          T_3= fslice(:,:,dir2)*dui_dxj(:,:,dir2,dir2)&
+              +fslice(:,:,dir3)*dui_dxj(:,:,dir2,dir3)&
+              +grad_P(:,:,dir2)/rho0
+          T_4= fslice(:,:,dir2)*dui_dxj(:,:,dir3,dir2)&
+              +fslice(:,:,dir3)*dui_dxj(:,:,dir3,dir3)&
+              +grad_P(:,:,dir3)/rho0
+          T_5= fslice(:,:,dir2)*grad_P(:,:,dir2)&
+              +fslice(:,:,dir3)*grad_P(:,:,dir3)&
+              +gamma*P0*(dui_dxj(:,:,dir2,dir2)+dui_dxj(:,:,dir3,dir3))
+        else
+          T_1=0
+          T_2=0
+          T_3=0
+          T_4=0          
+          T_5=0
+        endif
+          
 !
       end subroutine transversal_terms
 !***********************************************************************
