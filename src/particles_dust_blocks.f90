@@ -1706,7 +1706,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  is dependent on the relative mach number, hence the need to feed uup as 
 !  an optional argument to get_frictiontime.
 !
-                call get_frictiontime(f,fp,ineargrid,k,tausp1_par)
+                call get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock)
 !
 !  Calculate and add drag force.
 !
@@ -1818,7 +1818,7 @@ k_loop:   do while (.not. (k>npar_loc))
                       if (nygrid/=1) weight=weight*weight_y
                       if (nzgrid/=1) weight=weight*weight_z
                       if (ldensity_nolog) then
-                        rho1_point=1/fb(ixx,iyy,izz,ilnrho,ib)
+                        rho1_point=1/fb(ixx,iyy,izz,irho,ib)
                       else
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
@@ -1969,7 +1969,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine create_sink_particles
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_par,nochange_opt)
+    subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock,nochange_opt)
 !
 !  Calculate the friction time.
 !
@@ -1978,9 +1978,10 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
       real :: tausp1_par
+      integer :: iblock
       logical, optional :: nochange_opt
 !
-      real :: tmp
+      real :: tmp, epsp
       integer :: ix0, iy0, iz0, jspec
       logical :: nochange=.false.
 !
@@ -2010,18 +2011,23 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Change friction time artificially.
 !
-!      if (.not. nochange) then
+      if (.not. nochange) then
 !
 !  Increase friction time linearly with dust density where the dust-to-gas
 !  ratio is higher than a chosen value. Supposed to mimick decreased cooling
 !  when the gas follows the dust.
 !
-!        if (epsp_friction_increase/=0.0) then
-!          if (fb(ix0,iy0,iz0,irhop,iblock)>epsp_friction_increase) &
-!              tausp1_par=tausp1_par/(p%epsp(ix0-nghost)/epsp_friction_increase)
-!        endif
+        if (epsp_friction_increase/=0.0) then
+          if (ldensity_nolog) then
+            epsp=fb(ix0,iy0,iz0,irhop,iblock)/fb(ix0,iy0,iz0,irho,iblock)
+          else
+            epsp=fb(ix0,iy0,iz0,irhop,iblock)/exp(fb(ix0,iy0,iz0,ilnrho,iblock))
+          endif
+          if (epsp>epsp_friction_increase) &
+              tausp1_par=tausp1_par/(epsp/epsp_friction_increase)
+        endif
 !
-!      endif
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
