@@ -524,23 +524,23 @@ module Pscalar
 !  Passive scalar.
 !
         case ('cc')
-          slices%yz =exp(f(ix_loc,m1:m2,n1:n2,icc))
-          slices%xz =exp(f(l1:l2,iy_loc,n1:n2,icc))
-          slices%xy =exp(f(l1:l2,m1:m2,iz_loc,icc))
-          slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,icc))
-          if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,icc))
-          if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,icc))
+          slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilncc))
+          slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilncc))
+          slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilncc))
+          slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilncc))
+          if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilncc))
+          if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilncc))
           slices%ready=.true.
 !
 !  Logarithmic passive scalar.
 !
         case ('lncc')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,icc)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,icc)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,icc)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,icc)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,icc)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,icc)
+          slices%yz =f(ix_loc,m1:m2,n1:n2,ilncc)
+          slices%xz =f(l1:l2,iy_loc,n1:n2,ilncc)
+          slices%xy =f(l1:l2,m1:m2,iz_loc,ilncc)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilncc)
+          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilncc)
+          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilncc)
           slices%ready=.true.
 !
       endselect
