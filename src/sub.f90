@@ -2896,12 +2896,13 @@ module Sub
       real, parameter :: t1 = 1./26.
       real, parameter :: t2 = 0.70710678/26.
       real, parameter :: t3 = 0.57735027/26.
+      real, parameter :: t4 = 0.
       real, parameter, dimension (-1:1,-1:1,-1:1) :: interp3D = reshape(&
             (/ t3, t2, t3, &
                t2, t1, t2, &
                t3, t2, t3, &
                t2, t1, t2, &
-               t1, 0., t1, &
+               t1, t4, t1, &
                t2, t1, t2, &
                t3, t2, t3, &
                t2, t1, t2, &
