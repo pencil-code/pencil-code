@@ -55,6 +55,7 @@ endelse
 ;
 tt=xyaver.t
 nt=n_elements(tt)
+help,nt
 ;
 ;  prepare sine and cosine functions
 ;  Note that param.ktestfield is only correct if Lz=2*pi.
@@ -64,6 +65,7 @@ k=param.ktestfield
 kscaled=k*2.*!pi/Lz
 cz=cos(k*ztestfield)
 sz=sin(k*ztestfield)
+zz=ztestfield
 ;
 k1cz=cz/kscaled
 k1sz=sz/kscaled
@@ -75,18 +77,34 @@ etaij=fltarr(nz,nt,2,2)
 ;  They are also consistent with BRRK08 and BRS08, except
 ;  that there p and q are interchanged.
 ;
-help,nt
-for it=0L,nt-1L do begin
-  alpij(*,it,0,0)=cz*xyaver.E111z(*,it)+sz*xyaver.E121z(*,it)
-  alpij(*,it,0,1)=cz*xyaver.E112z(*,it)+sz*xyaver.E122z(*,it)
-  alpij(*,it,1,0)=cz*xyaver.E211z(*,it)+sz*xyaver.E221z(*,it)
-  alpij(*,it,1,1)=cz*xyaver.E212z(*,it)+sz*xyaver.E222z(*,it)
-;
-  etaij(*,it,0,0)=-(k1sz*xyaver.E112z(*,it)-k1cz*xyaver.E122z(*,it))
-  etaij(*,it,0,1)=+(k1sz*xyaver.E111z(*,it)-k1cz*xyaver.E121z(*,it))
-  etaij(*,it,1,0)=-(k1sz*xyaver.E212z(*,it)-k1cz*xyaver.E222z(*,it))
-  etaij(*,it,1,1)=+(k1sz*xyaver.E211z(*,it)-k1cz*xyaver.E221z(*,it))
-endfor
+default,sinusoidal,1
+if sinusoidal eq 1 then begin
+  print,'assuming sinusoidal test-fields'
+  for it=0L,nt-1L do begin
+    alpij(*,it,0,0)=cz*xyaver.E111z(*,it)+sz*xyaver.E121z(*,it)
+    alpij(*,it,0,1)=cz*xyaver.E112z(*,it)+sz*xyaver.E122z(*,it)
+    alpij(*,it,1,0)=cz*xyaver.E211z(*,it)+sz*xyaver.E221z(*,it)
+    alpij(*,it,1,1)=cz*xyaver.E212z(*,it)+sz*xyaver.E222z(*,it)
+  ;
+    etaij(*,it,0,0)=-(k1sz*xyaver.E112z(*,it)-k1cz*xyaver.E122z(*,it))
+    etaij(*,it,0,1)=+(k1sz*xyaver.E111z(*,it)-k1cz*xyaver.E121z(*,it))
+    etaij(*,it,1,0)=-(k1sz*xyaver.E212z(*,it)-k1cz*xyaver.E222z(*,it))
+    etaij(*,it,1,1)=+(k1sz*xyaver.E211z(*,it)-k1cz*xyaver.E221z(*,it))
+  endfor
+endif else begin
+  print,'assuming linear test-fields'
+  for it=0L,nt-1L do begin
+    alpij(*,it,0,0)=   xyaver.E111z(*,it)-zz*xyaver.E121z(*,it)
+    alpij(*,it,0,1)=   xyaver.E112z(*,it)-zz*xyaver.E122z(*,it)
+    alpij(*,it,1,0)=   xyaver.E211z(*,it)-zz*xyaver.E221z(*,it)
+    alpij(*,it,1,1)=   xyaver.E212z(*,it)-zz*xyaver.E222z(*,it)
+  ;
+    etaij(*,it,0,0)=+(                             xyaver.E122z(*,it))
+    etaij(*,it,0,1)=-(                             xyaver.E121z(*,it))
+    etaij(*,it,1,0)=+(                             xyaver.E222z(*,it))
+    etaij(*,it,1,1)=-(                             xyaver.E221z(*,it))
+  endfor
+endelse
 ;
 print,'tvscl,alpij(*,*,0,0)'
 print,'contour,transpose(alpij(*,*,1,1)),tt(1:*),zzz,nlev=20,/fil'
