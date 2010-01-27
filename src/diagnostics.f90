@@ -11,7 +11,6 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
-  use Sub
 !
   implicit none
 !
@@ -99,8 +98,7 @@ module Diagnostics
 !   3-may-02/axel: coded
 !
       use General, only: safe_character_append
-      use Mpicomm
-      use Sub
+      use Sub, only: noform
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
@@ -115,7 +113,7 @@ module Diagnostics
       if (lroot) then
         if (idiag_t/=0)   call save_name(tdiagnos,idiag_t)
         if (idiag_dt/=0)  call save_name(dt,idiag_dt)
-        if (idiag_it/=0)  call save_name(1.0*(it-1),idiag_it)
+        if (idiag_it/=0)  call save_name(one*(it-1),idiag_it)
       endif
 !
       if (lroot) then
