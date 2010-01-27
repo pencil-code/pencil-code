@@ -22,7 +22,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: acosy
-  public :: sph_constb 
+  public :: sph_constb
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
@@ -58,7 +58,7 @@ module Initcond
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
-  public :: ferriere_uniform_x, ferriere_uniform_y 
+  public :: ferriere_uniform_x, ferriere_uniform_y
 !
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -89,26 +89,26 @@ module Initcond
     subroutine phi_siny_over_r2(f,i)
 !
 !  A_phi ~ sin(y)/R^2 if R>=0.7 field (in terms of vector potential)
-!  
+!
 !  14-oct-09/irina: coded
 !
       integer :: i,j,k
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dmx,radius, dtheta,theta
-    
+!
      dmx=(l2-l1)/mx
-     dtheta=pi/my 
+     dtheta=pi/my
      f(:,:,:,i)=0.0
 
      do j=1,mx
        radius=l1+(j-1)*dmx
      if (radius>=0.7) then
-       do k=1,my  
+       do k=1,my
         theta=pi*(k-1)*dtheta
         f(j,k,:,i)=sin(theta)/radius**2
        enddo
-     endif 
-    enddo 
+     endif
+    enddo
 !
     endsubroutine phi_siny_over_r2
 !***********************************************************************
@@ -728,8 +728,6 @@ module Initcond
 !   21-aug-07/mgellert: made compatible with nprocx>1
 !   09-oct-07/mgellert: smoothing profile between neighboring rings added
 !
-      use Cdata, only: tini
-
       integer                           :: i, k, l, nr
       real, dimension (nr)               :: om_nr, xsteps
       real, dimension (nr+2)             :: om_all, om_diff
@@ -1605,8 +1603,6 @@ module Initcond
 !
 !  horizontal pattern with exponential decay (as initial condition)
 !
-      use Cdata, only: ipz
-!
 !  24-may-09/axel: coded
 !
       integer :: i,j
@@ -1730,7 +1726,7 @@ module Initcond
 !***********************************************************************
     subroutine sph_constb(ampl,f,izero)
 !
-!  Antisymmetric (about equator) toroidal B field and zero poloidal 
+!  Antisymmetric (about equator) toroidal B field and zero poloidal
 !  B field in spherical polar coordinate.
 !
 !  27-aug-09/dhruba: adapted from sinwave
@@ -1738,11 +1734,11 @@ module Initcond
       integer :: izero,l,m
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
-! 
+!
 ! set minimum and maximum values for r and theta
-! 
+!
 ! set A_{phi} = 0 (izero should be iaa)
-! 
+!
       f(:,:,:,izero+2)=0.
 ! set A_r and A_{\theta}
       do l=1,mx
@@ -1752,7 +1748,7 @@ module Initcond
         enddo
       enddo
 !
-    endsubroutine sph_constb 
+    endsubroutine sph_constb
 !***********************************************************************
     subroutine hatwave(ampl,f,i,width,kx,ky,kz)
 !
@@ -2456,7 +2452,7 @@ module Initcond
     subroutine baroclinic(f,gamma,dlnrhobdx,co1_ss,co2_ss,cs20)
 !
 !  Remark 4-dez-09 bing: this routine is nowhere called! Is it still in use?
-! 
+!
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
@@ -2478,7 +2474,7 @@ module Initcond
         elseif (lroot) then
           print*, 'baroclinic: no valid sz specified'
         endif
- 
+!
         f(l1:l2,m,n,iss) = sz
 !
 !  Solution to hydrostatic equlibrium in the z-direction
@@ -2542,7 +2538,7 @@ module Initcond
           f(ix,iy,:,i+1)=0.
           f(ix,iy,:,i+2)=0.
        enddo
-     enddo 
+     enddo
 !
     endsubroutine strange
 !***********************************************************************
@@ -2575,7 +2571,7 @@ module Initcond
 !
         do n=n1,n2; do m=m1,m2
           tube_radius_sqr=(x(l1:l2)-center1_x)**2+(z(n)-center1_z)**2
-!         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/& 
+!         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/&
 !                   (max((radius*modulate)**2-tube_radius_sqr,1e-6))
           tmp=1./(1.+tube_radius_sqr/radius**2)
 !
@@ -2679,14 +2675,14 @@ module Initcond
           print*,'htube: radius,eps=',radius,eps
         endif
 !
-! An integral of error function. 
+! An integral of error function.
 !
-        do n=n1,n2; do m=m1,m2;do l=l1,l2 
+        do n=n1,n2; do m=m1,m2;do l=l1,l2
           radius= sqrt((x(l)-center1_x)**2+(z(n)-center1_z)**2)
           a_minus_r= a - radius
           if (radius .gt. tini) then
              tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
-                  radius*(1+erfunc(width*a_minus_r))/4. + & 
+                  radius*(1+erfunc(width*a_minus_r))/4. + &
                   2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &
                   (1+2*(a**2)*(width**2))*(erfunc(a*width) - erfunc(width*a_minus_r))/(8.*radius*width**2))/radius
           else
@@ -2694,7 +2690,7 @@ module Initcond
              write(*,*) 'wrong place:radius,tini',radius,tini
           endif
           write(*,*) 'Dhruba:radius,tini,a,a_minus_r,width,tmp',radius,tini,a,a_minus_r,width,tmp
-!         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/& 
+!         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/&
 !                   (max((radius*modulate)**2-tube_radius_sqr,1e-6))
 !
 !  check whether vector or scalar
@@ -3656,7 +3652,7 @@ module Initcond
 !
 !   07-may-03/tarek: coded
 !
-      use Fourier
+      use Fourier, only: fourier_transform
 !
       real :: ampl,initpower,cutoff
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3739,10 +3735,10 @@ module Initcond
 !
 !   07-may-03/tarek: coded
 !   08-may-08/nils: adapted to work on multiple processors
-!   06-jul-08/nils+andre: Fixed problem when running on 
-!      mult. procs (thanks to Andre Kapelrud for finding the bug) 
+!   06-jul-08/nils+andre: Fixed problem when running on
+!      mult. procs (thanks to Andre Kapelrud for finding the bug)
 !
-      use Fourier
+      use Fourier, only: fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
       integer :: i,i1,i2,ikx,iky,ikz,stat
@@ -3800,7 +3796,7 @@ module Initcond
               k2(ikx,iky,ikz)=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
             enddo
           enddo
-        enddo        
+        enddo
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
@@ -3980,17 +3976,17 @@ module Initcond
     subroutine set_thermodynamical_quantities&
          (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
 !
-!  Subroutine that sets the thermodynamical quantities 
+!  Subroutine that sets the thermodynamical quantities
 !   - static sound speed, temperature or entropy -
-!  based on a sound speed which is given as input. 
-!  This routine is not general. For llocal_iso (locally 
-!  isothermal approximation, the temperature gradient is 
-!  stored as a static array, as the (analytical) derivative 
+!  based on a sound speed which is given as input.
+!  This routine is not general. For llocal_iso (locally
+!  isothermal approximation, the temperature gradient is
+!  stored as a static array, as the (analytical) derivative
 !  of an assumed power-law profile for the sound speed
-!  (hence the parameter ptlaw) 
-! 
+!  (hence the parameter ptlaw)
+!
 !  05-jul-07/wlad: coded
-!  16-dec-08/wlad: moved pressure gradient correction to 
+!  16-dec-08/wlad: moved pressure gradient correction to
 !                  the density module (correct_pressure_gradient)
 !                  Now this subroutine really only sets the thermo
 !                  variables.
@@ -4026,15 +4022,15 @@ module Initcond
 !
       if ((gamma==1.0).and.lenergy) then
         if (lroot) then
-          print*,"" 
-          print*,"set_thermodynamical_quantities: gamma=1.0 means "         
-          print*,"an isothermal disk. You don't need entropy or "           
-          print*,"temperature for that. Switch to noentropy instead, "      
-          print*,"which is a better way of having isothermality. "          
-          print*,"If you do not want isothermality but wants to keep a "    
-          print*,"static temperature gradient through the simulation, use " 
-          print*,"noentropy with the switch llocal_iso in init_pars "       
-          print*,"(start.in file) and add the following line "      
+          print*,""
+          print*,"set_thermodynamical_quantities: gamma=1.0 means "
+          print*,"an isothermal disk. You don't need entropy or "
+          print*,"temperature for that. Switch to noentropy instead, "
+          print*,"which is a better way of having isothermality. "
+          print*,"If you do not want isothermality but wants to keep a "
+          print*,"static temperature gradient through the simulation, use "
+          print*,"noentropy with the switch llocal_iso in init_pars "
+          print*,"(start.in file) and add the following line "
           print*,""
           print*,"! MGLOBAL CONTRIBUTION 4"
           print*,""
@@ -4126,14 +4122,13 @@ module Initcond
 !***********************************************************************
     subroutine corona_init(f)
 !
-!  Initialize the density for a given temperature profile 
-!  in the vertical (z) direction by solving for hydrostatic 
-!  equilibrium. 
+!  Initialize the density for a given temperature profile
+!  in the vertical (z) direction by solving for hydrostatic
+!  equilibrium.
 !  The temperature is hard coded as three polynomials.
 !
 !  07-dec-05/bing : coded.
 !
-      use Cdata
       use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4226,7 +4221,6 @@ module Initcond
 !
 !  13-dec-05/bing : coded.
 !
-      use Cdata
       use Fourier
       use Sub
 !
@@ -4352,7 +4346,6 @@ module Initcond
 !      z direction by solving hydrostatic equilibrium.
 !      dlnrho = - dlnTT + (cp-cv)/T g dz
 !
-      use Cdata
       use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
       use Gravity, only: gravz
 
@@ -4426,9 +4419,6 @@ module Initcond
 !  PLEASE ADD A DESCRIPTION
 !
 !  5-nov-05/weezy: coded
-!
-      use Cdata
-      use General
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl
