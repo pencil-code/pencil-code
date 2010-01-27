@@ -1,10 +1,10 @@
 ! $Id$
 !
-!  Module for NSCBC (Navier-Stokes Characteristic Boundary Conditions).  
-!  NSCBC is an alternative way of imposing (time-dependent) boundary 
+!  Module for NSCBC (Navier-Stokes Characteristic Boundary Conditions).
+!  NSCBC is an alternative way of imposing (time-dependent) boundary
 !  conditions through solving differential equations on the boundaries.
 !
-! 2009.09.09 (Nils Erland) : Moved all NSCBC stuff from boundcond.f90 to 
+! 2009.09.09 (Nils Erland) : Moved all NSCBC stuff from boundcond.f90 to
 !                            this module.
 !
 module NSCBC
@@ -51,7 +51,7 @@ include 'NSCBC.h'
   integer :: l1_in, nx_in, ny_in, nz_in
   integer :: mvar_in,maux_in,mglobal_in
   integer :: nghost_in,ipx_in, ipy_in, ipz_in
-  integer :: m1_in  
+  integer :: m1_in
   integer :: n1_in
   integer :: l2_in
   integer :: m2_in
@@ -74,12 +74,12 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine nscbc_boundtreat(f,df)
 !
-!  Boundary treatment of the df-array. 
+!  Boundary treatment of the df-array.
 !
 !  This is a way to impose (time-
 !  dependent) boundary conditions by solving a so-called characteristic
-!  form of the fluid equations on the boundaries, as opposed to setting 
-!  actual values of the variables in the f-array. The method is called 
+!  form of the fluid equations on the boundaries, as opposed to setting
+!  actual values of the variables in the f-array. The method is called
 !  Navier-Stokes characteristic boundary conditions (NSCBC).
 !  The current implementation only solves a simplified version of the
 !  equations, namely a set of so-called local one-dimensional inviscid
@@ -103,7 +103,7 @@ include 'NSCBC.h'
           call nscbc_boundtreat_xyz(f,df,2)
       if (nscbc_bc1(3) /= '' .or. nscbc_bc2(3) /= '') &
           call nscbc_boundtreat_xyz(f,df,3)
-     
+!
     endsubroutine nscbc_boundtreat
 !***********************************************************************
     subroutine nscbc_boundtreat_xyz(f,df,j)
@@ -164,14 +164,14 @@ include 'NSCBC.h'
 !
 ! Check which processor we want to read from.
 ! In the current implementation it is required that:
-!   1) The number of mesh points and processors at the interface between 
-!      the two computational domains are equal. The two comp. domains I 
+!   1) The number of mesh points and processors at the interface between
+!      the two computational domains are equal. The two comp. domains I
 !      am refering to here is the domain of the current simulation and the
 !      domain of the pre-run isotropic turbulence simulation defining the
 !      turbulence at the inlet.
 !   2) The pre-run simulaion can not have multiple processors in the flow
-!      direction of the current simulation.   
-!          
+!      direction of the current simulation.
+!
             if (lprocz_slowest) then
               ipx_in=ipx
               ipy_in=ipy
@@ -236,7 +236,7 @@ include 'NSCBC.h'
               Lz_in=z_in(n2_in+1)-z_in(n1_in)
               first_NSCBC=.false.
               close(1)
-            endif            
+            endif
           endif
         endif
 !
@@ -247,13 +247,13 @@ include 'NSCBC.h'
 !  Set the values of T_t and u_t dependent on direction
 !
           T_t=0
-          if (j==1) then 
+          if (j==1) then
             if (ilnTT > 0) T_t=valx(ilnTT)
             u_t=valx(j)
-          elseif (j==2) then 
+          elseif (j==2) then
             if (ilnTT > 0) T_t=valy(ilnTT)
             u_t=valy(j)
-          elseif (j==3) then 
+          elseif (j==3) then
             if (ilnTT > 0) T_t=valz(ilnTT)
             u_t=valz(j)
           endif
@@ -264,7 +264,7 @@ include 'NSCBC.h'
 !
           case ('part_ref_outlet')
             call bc_nscbc_prf(f,df,j,topbot,.false.)
-! 
+!
           case ('part_ref_inlet')
             call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,u_t=u_t,T_t=T_t)
 !
@@ -301,14 +301,14 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine bc_nscbc_prf(f,df,dir,topbot,non_reflecting_inlet,linlet,u_t,T_t)
 !
-!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to 
+!   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to
 !   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
 !
 !   7-jul-08/arne: coded.
 !  25-nov-08/nils: extended to work in multiple dimensions and with cross terms
 !                  i.e. not just the LODI equations.
 !  22-jan-10/nils: made general with respect to direction such that we do not
-!                  need three different routines for the three different 
+!                  need three different routines for the three different
 !                  directions.
 !
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
@@ -323,7 +323,7 @@ include 'NSCBC.h'
       real, optional :: u_t, T_t
       real :: Mach,KK,nu, cs0_average
       integer, dimension(30) :: stat
-      integer lll,i,jjj,kkk,j,k,ngridpoints,imin,imax,jmin,jmax
+      integer lll,k,ngridpoints,imin,imax,jmin,jmax
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:,:) :: dui_dxj
@@ -369,7 +369,7 @@ include 'NSCBC.h'
         jmin=n1; jmax=n2
       elseif (dir==2) then
         dir1=2; dir2=1; dir3=3
-        igrid=nx; jgrid=nz 
+        igrid=nx; jgrid=nz
         imin=l1; imax=l2
         jmin=n1; jmax=n2
      elseif (dir==3) then
@@ -388,16 +388,16 @@ include 'NSCBC.h'
       allocate( dfslice(igrid,jgrid,mvar   ),STAT=stat(2))
       allocate(      TT(igrid,jgrid),        STAT=stat(3))
       allocate(     mu1(igrid,jgrid),        STAT=stat(4))
-      allocate(grad_mu1(igrid,jgrid),        STAT=stat(5)) 
+      allocate(grad_mu1(igrid,jgrid),        STAT=stat(5))
       allocate(    rho0(igrid,jgrid),        STAT=stat(6))
-      allocate(      P0(igrid,jgrid),        STAT=stat(7))     
+      allocate(      P0(igrid,jgrid),        STAT=stat(7))
       allocate(     L_1(igrid,jgrid),        STAT=stat(8))
       allocate(     L_2(igrid,jgrid),        STAT=stat(9))
       allocate(     L_3(igrid,jgrid),        STAT=stat(10))
       allocate(     L_4(igrid,jgrid),        STAT=stat(11))
       allocate(     L_5(igrid,jgrid),        STAT=stat(12))
       allocate( prefac1(igrid,jgrid),        STAT=stat(13))
-      allocate( prefac2(igrid,jgrid),        STAT=stat(14))            
+      allocate( prefac2(igrid,jgrid),        STAT=stat(14))
       allocate(     T_1(igrid,jgrid),        STAT=stat(15))
       allocate(     T_2(igrid,jgrid),        STAT=stat(16))
       allocate(     T_3(igrid,jgrid),        STAT=stat(17))
@@ -424,8 +424,8 @@ include 'NSCBC.h'
         fslice=f(l1:l2,lll,n1:n2,:)
         dfslice=df(l1:l2,lll,n1:n2,:)
       elseif (dir == 3) then
-        fslice=f(l1:l2,m1:m2,lll,:)     
-        dfslice=df(l1:l2,m1:m2,lll,:)     
+        fslice=f(l1:l2,m1:m2,lll,:)
+        dfslice=df(l1:l2,m1:m2,lll,:)
       else
         call fatal_error('bc_nscbc_prf','No such dir!')
       endif
@@ -446,12 +446,12 @@ include 'NSCBC.h'
       prefac1 = -1./(2.*cs2)
       prefac2 = -1./(2.*rho0*cs)
 !
-!  Find Mach number 
+!  Find Mach number
 !  (NILS: I do not think this is a good way to determine the Mach
 !  number since this is a local Mach number for this processor. Furthermore
 !  by determining the Mach number like this we will see the Mach number varying
 !  with the phase of an acoustic wave as the wave pass through the boundary.
-!  I think that what we really want is a Mach number averaged over the 
+!  I think that what we really want is a Mach number averaged over the
 !  timescale of several acoustic waves. How could this be done????)
 !
       ngridpoints=igrid*jgrid
@@ -490,9 +490,9 @@ include 'NSCBC.h'
             L_2=0
           endif
 !
-!  The inlet is non-reflecting only when nscbc_sigma_in is set to 0, this 
-!  might however lead to problems as the inlet velocity will tend to drift 
-!  away from the target velocity u_t. This problem should be overcome by 
+!  The inlet is non-reflecting only when nscbc_sigma_in is set to 0, this
+!  might however lead to problems as the inlet velocity will tend to drift
+!  away from the target velocity u_t. This problem should be overcome by
 !  setting a small but non-zero nscbc_sigma_in.
 !
           L_3=nscbc_sigma_in*(fslice(:,:,dir2)-u_in(:,:,dir2))&
@@ -510,12 +510,12 @@ include 'NSCBC.h'
         endif
       else
 !
-!  Find the L_i's. 
+!  Find the L_i's.
 !
         cs0_average=sum(cs)/ngridpoints
         KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir1)
         L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
-        if (ilnTT > 0) then 
+        if (ilnTT > 0) then
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
         else
           L_2=0
@@ -582,12 +582,12 @@ include 'NSCBC.h'
             fslice(:,:,ilnTT) = T_t
           endif
         endif
-      endif 
+      endif
 !
 ! Treat all other variables as passive scalars
 !
       iused=max(ilnTT,ilnrho)
-      if (mvar>iused) then 
+      if (mvar>iused) then
         do k=iused+1,mvar
           call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,dir1)
           dfslice(:,:,k)=-fslice(:,:,dir1)*dYk_dx
@@ -608,14 +608,14 @@ include 'NSCBC.h'
         f( l1:l2,m1:m2,lll,:)=fslice
       else
         call fatal_error('bc_nscbc_prf','No such dir!')
-      endif 
+      endif
 !
     endsubroutine bc_nscbc_prf
 !***********************************************************************
     subroutine read_NSCBC_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      integer :: i 
+      integer :: i
 
       if (present(iostat)) then
         read(unit,NML=NSCBC_init_pars,ERR=99, IOSTAT=iostat)
@@ -639,7 +639,7 @@ include 'NSCBC.h'
 
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      integer :: i,stat 
+      integer :: i,stat
       logical :: exist
       character (len=130) :: file
 !
@@ -779,12 +779,11 @@ include 'NSCBC.h'
       integer, intent(in) :: imin_turb,imax_turb,jmin_turb,jmax_turb
 !
       real :: shift, grid_shift, weight, round
-      integer :: iround,lowergrid,uppergrid,ii
-      real, dimension(3) :: velo,tmp
+      integer :: iround, lowergrid, uppergrid
+      real, dimension(3) :: velo
       real, dimension(2) :: radius,theta
-      real :: radius_mean, velocity_ratio,An,smooth,rad
-      real, dimension (3) :: jet_inner_diameter,jet_outer_diameter
-      real, dimension (2) :: jet_center, jet_velocity
+      real :: radius_mean, velocity_ratio, smooth, rad
+      real, dimension (2) :: jet_center
       integer :: j,kkk,jjj
 !
 !  First we check if we are using a pre-run data file as inlet
@@ -884,7 +883,7 @@ include 'NSCBC.h'
                 enddo
               enddo
             end select
-!            
+!
           enddo
         endif
 !
@@ -947,7 +946,7 @@ include 'NSCBC.h'
 !
         Use Chemistry
         use Viscosity
-        use EquationOfState, only: cs0, cs20      
+        use EquationOfState, only: cs0, cs20
 !
         integer, intent(in) :: direction, sgn,lll
         real, dimension(:,:), intent(out)  :: mu1,cs2,cs,gamma, grad_mu1
@@ -977,7 +976,7 @@ include 'NSCBC.h'
 !  Get viscoity
 !
       call getnu(nu)
-!        
+!
 !  Find mu1, grad_mu1 and gamma
 !
         if (ilnTT>0 .or. iTT>0) then
@@ -988,7 +987,7 @@ include 'NSCBC.h'
         endif
 !
 !  Set arrays for the speed of sound and for the speed of sound squared (is it
-!  really necessarry to have both arrays?) 
+!  really necessarry to have both arrays?)
 !  Set prefactors to be used later.
 !
       if (leos_idealgas) then
@@ -1000,7 +999,7 @@ include 'NSCBC.h'
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
         print*,"bc_nscbc_prf_x: leos_chemistry=",leos_chemistry,"."
-        print*,"NSCBC boundary treatment only implemented for ideal gas or" 
+        print*,"NSCBC boundary treatment only implemented for ideal gas or"
         print*,"chemistry. Boundary treatment skipped."
         return
       endif
@@ -1021,7 +1020,7 @@ include 'NSCBC.h'
 !  Find pressure and the gradient of pressure
 !
       do i=1,3
-        if (ilnTT>0) then 
+        if (ilnTT>0) then
           grad_P(:,:,i)&
               =grad_rho(:,:,i)*TT*Rgas*mu1&
               +grad_T(:,:,i)*rho0*Rgas*mu1&
@@ -1056,41 +1055,41 @@ include 'NSCBC.h'
 !
       if (dir == 1) then
         allocate(tmp1(my,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")
         allocate(tmp2(my,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")
         allocate(tmp3(my,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")
         allocate(tmp_lnrho(my,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")   
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")
       elseif (dir == 2) then
         allocate(tmp1(mx,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")
         allocate(tmp2(mx,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")
         allocate(tmp3(mx,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")
         allocate(tmp_lnrho(mx,mz),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")    
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")
       elseif (dir == 3) then
         allocate(tmp1(mx,my),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")
         allocate(tmp2(mx,my),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp2 ")
         allocate(tmp3(mx,my),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")        
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")
         allocate(tmp_lnrho(mx,my),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")   
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")
       else
         call fatal_error('bc_nscbc_prf_x','No such dir!')
-      endif        
+      endif
 !
 !  Initialize arrays
-!    
-        dui_dxj =0
-        grad_rho=0  
 !
-!  Find the derivatives in the direction normal to the boudary by 
+        dui_dxj =0
+        grad_rho=0
+!
+!  Find the derivatives in the direction normal to the boudary by
 !  one-sided stencils
 !
         call der_onesided_4_slice(f,sgn,ilnrho,grad_rho(:,:,dir),lll,dir)
@@ -1101,7 +1100,7 @@ include 'NSCBC.h'
           call der_onesided_4_slice(f,sgn,ilnTT,grad_T(:,:,dir),lll,dir)
         endif
 !
-!  Do central differencing in the directions parallell to the boundary 
+!  Do central differencing in the directions parallell to the boundary
 !
         if (dir == 1) then
           if (nygrid /= 1) then
@@ -1194,7 +1193,7 @@ include 'NSCBC.h'
         real, dimension(:,:),     intent(out):: T_1, T_2, T_3, T_4, T_5
         real, dimension(:,:),     intent(in) :: rho0,P0,gamma
         real, dimension(:,:,:),   intent(in) :: fslice,grad_rho,grad_P
-        real, dimension(:,:,:,:), intent(in) :: dui_dxj 
+        real, dimension(:,:,:,:), intent(in) :: dui_dxj
 !
 !  Calculate the T's
 !
@@ -1216,10 +1215,9 @@ include 'NSCBC.h'
           T_1=0
           T_2=0
           T_3=0
-          T_4=0          
+          T_4=0
           T_5=0
         endif
-          
 !
       end subroutine transversal_terms
 !***********************************************************************
