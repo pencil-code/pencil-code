@@ -6462,7 +6462,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         lzone_right=.false.
        endif
       
-      elseif(dir==2) then       
+      elseif (dir==2) then       
 
        if (nygrid/=1) then
 

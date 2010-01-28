@@ -469,10 +469,10 @@ include 'NSCBC.h'
         if (dir==1) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax)
-        elseif(dir==2) then
+        elseif (dir==2) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in,imin,imax,jmin,jmax)
-        elseif(dir==3) then
+        elseif (dir==3) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax)
         endif
@@ -814,10 +814,10 @@ include 'NSCBC.h'
           if (dir==1) then
             call turbulent_vel_x(u_in,lowergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
-          elseif(dir==2) then
+          elseif (dir==2) then
             call turbulent_vel_y(u_in,lowergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
-          elseif(dir==3) then
+          elseif (dir==3) then
             call turbulent_vel_z(u_in,lowergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           endif

@@ -1933,7 +1933,7 @@ module Magnetic
 !  Possibility of dynamical alpha.
 !
         if (lalpm.and..not.lmeanfield_noalpm) then
-          if(lalpha_profile_total) then
+          if (lalpha_profile_total) then
              alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
            else
              alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
@@ -2430,7 +2430,7 @@ module Magnetic
 !
       if (height_eta/=0.0) then
         if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
-        if(lhalox) then
+        if (lhalox) then
           do ix=1,nx
             tmp=(x(ix)/height_eta)**2
             eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
