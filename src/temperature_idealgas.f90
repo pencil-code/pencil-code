@@ -421,6 +421,11 @@ module Entropy
             call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
             call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
 !
+          case ('blob')
+            if (lroot) print*, 'init_lnTT: blob ', &
+                radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
+            call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
+!
           case ('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
             if (ltemperature_nolog) then
