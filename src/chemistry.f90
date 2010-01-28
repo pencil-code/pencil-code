@@ -1288,7 +1288,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
-      real :: Rad
+      real :: Rad, log_inlet_density
 
      lflame_front=.true.
 !
@@ -1326,6 +1326,11 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
 
+      log_inlet_density=&
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+
+
+
        do j1=1,mx
          Rad=abs(x(j1))
 !         if (Rad<0.2) then
@@ -1334,9 +1339,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !          f(j1,:,:,ilnTT)=log(init_TT1)
 !         endif
           if ((x(j1)<=0) .and. (x(j1)>=-0.2)) then
-           f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
+           f(j1,:,:,ilnTT)=log(init_TT1)+2.1*((0.2-Rad)/0.2)**2
           elseif (x(j1)>0) then
-           f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)
+           f(j1,:,:,ilnTT)=log(init_TT1)+2.1
           elseif (x(j1)<-0.2) then
            f(j1,:,:,ilnTT)=log(init_TT1)
           endif
@@ -1353,7 +1358,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  Initialize velocity
 !
             f(j1,:,:,iux)=f(j1,:,:,iux)  &
-                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
+                +init_ux*exp(log_inlet_density)/exp(f(j1,:,:,ilnrho))
             f(j1,:,:,iuy)=f(j1,:,:,iuy)+ init_uy
             f(j1,:,:,iuz)=f(j1,:,:,iuz)+ init_uz
 
@@ -6390,7 +6395,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        dt1=1./dt
        del=0.1
 
-       ux_ref=0.
+       ux_ref=init_ux
        uy_ref=0.
        uz_ref=0.
      !  lnrho_ref=-7.73236
@@ -6424,6 +6429,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           endif
 
         if ((x(j1)<sz1_x) .or. (sz2_x<x(j1))) then
+  !         if (x(j1)<sz1_x) then
+
 
           df(j1,m,n,iux)=df(j1,m,n,iux)-func_x(j1)*(f(j1,m,n,iux)-ux_ref)*dt1
           df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_x(j1)*(f(j1,m,n,iuy)-uy_ref)*dt1
@@ -6438,7 +6445,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        endif
       
        
-       if (nygrid/=1) then
+       if (nygrid>1) then
 
       ! if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
       !            'you should increase nygrid!')
@@ -6474,7 +6481,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !       endif
        endif
 
-      if (nzgrid/=1) then
+      if (nzgrid>1) then
 
          sz1=(xyz0(3)+Lxyz(3)*del)
          sz2=(xyz0(3)+Lxyz(3)*(1.-del))
