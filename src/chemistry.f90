@@ -82,7 +82,9 @@ module Chemistry
   real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
   character (len=30),allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
-  logical :: ldamp_zone_NSCBC=.false.
+  logical :: ldamp_zone_NSCBCx=.false.
+  logical :: ldamp_zone_NSCBCy=.false.
+  logical :: ldamp_zone_NSCBCz=.false.
 ! 1step_test case
 
     logical :: l1step_test=.false., lflame_front=.false.
@@ -127,7 +129,7 @@ module Chemistry
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
-      lfix_Pr,lT_tanh,ldamp_zone_NSCBC, lT_const,lheatc_chemistry
+      lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz
 
 
 ! run parameters
@@ -135,7 +137,7 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
-      lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBC
+      lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -2349,7 +2351,9 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 ! this damping zone is needed in a case of NSCBC
 !
 
-      if (ldamp_zone_NSCBC) call damp_zone_for_NSCBC(f,df)
+      if (ldamp_zone_NSCBCx) call damp_zone_for_NSCBC(f,df,1)
+      if (ldamp_zone_NSCBCy) call damp_zone_for_NSCBC(f,df,2)
+      if (ldamp_zone_NSCBCz) call damp_zone_for_NSCBC(f,df,3)
 !
 !  For the timestep calculation, need maximum diffusion
 !
@@ -6378,7 +6382,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
     endsubroutine bc_nscbc_nref_subout_z
 !***********************************************************************
-    subroutine damp_zone_for_NSCBC(f,df)
+    subroutine damp_zone_for_NSCBC(f,df,dir)
 !
 !   16-jul-06/natalia: coded
 !    buffer zone to damp the acustic waves!!!!!!!!!!!
@@ -6387,7 +6391,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: func_x
-      integer :: j1
+      integer :: j1,dir
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
       real :: sz1,sz2, sz1_x,sz2_x, del
       logical :: lzone_y=.false.,lzone_z=.false.
@@ -6405,7 +6409,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1)) 
 
         do j1=l1,l2
-                 
+
+       if (dir==1) then                 
        if (nxgrid/=1) then
 
         
@@ -6444,7 +6449,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      
        endif
       
-       
+      elseif(dir==2) then       
+
        if (nygrid>1) then
 
       ! if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
@@ -6480,6 +6486,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      
 !       endif
        endif
+      elseif (dir==3) then
 
       if (nzgrid>1) then
 
@@ -6510,6 +6517,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
     
        endif
        endif
+      endif
 
        enddo
 
