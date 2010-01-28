@@ -94,15 +94,15 @@ if sinusoidal eq 1 then begin
 endif else begin
   print,'assuming linear test-fields'
   for it=0L,nt-1L do begin
-    alpij(*,it,0,0)=   xyaver.E111z(*,it)-zz*xyaver.E121z(*,it)
-    alpij(*,it,0,1)=   xyaver.E112z(*,it)-zz*xyaver.E122z(*,it)
-    alpij(*,it,1,0)=   xyaver.E211z(*,it)-zz*xyaver.E221z(*,it)
-    alpij(*,it,1,1)=   xyaver.E212z(*,it)-zz*xyaver.E222z(*,it)
+    alpij(*,it,0,0)=   xyaver.E111z(*,it)
+    alpij(*,it,0,1)=   xyaver.E112z(*,it)
+    alpij(*,it,1,0)=   xyaver.E211z(*,it)
+    alpij(*,it,1,1)=   xyaver.E212z(*,it)
   ;
-    etaij(*,it,0,0)=+(                             xyaver.E122z(*,it))
-    etaij(*,it,0,1)=-(                             xyaver.E121z(*,it))
-    etaij(*,it,1,0)=+(                             xyaver.E222z(*,it))
-    etaij(*,it,1,1)=-(                             xyaver.E221z(*,it))
+    etaij(*,it,0,0)=-zz*xyaver.E112z(*,it)+xyaver.E122z(*,it))
+    etaij(*,it,0,1)=-zz*xyaver.E111z(*,it)+xyaver.E121z(*,it))
+    etaij(*,it,1,0)=zz*xyaver.E212z(*,it)-xyaver.E222z(*,it))
+    etaij(*,it,1,1)=zz*xyaver.E211z(*,it)-xyaver.E221z(*,it))
   endfor
 endelse
 ;
