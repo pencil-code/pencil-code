@@ -17,8 +17,7 @@
 module NeutralVelocity
 !
   use Cparam
-  use Cdata 
-  use Viscosity
+  use Cdata
   use Messages
 !
   implicit none
@@ -94,8 +93,7 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Cdata
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde
 !
       if (.not.lcartesian_coords) call fatal_error('register_neutralvelocity','non cartesian '//&
            'not yet implemented in the neutrals module')
@@ -134,7 +132,6 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use BorderProfiles, only: request_border_driving
-      use Cdata
       use Mpicomm,        only: stop_it
 !
 ! Check any module dependencies
@@ -218,14 +215,11 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Cdata
       use EquationOfState, only: cs20, gamma
-      use General
       use Gravity, only: z1
       use Initcond
       use InitialCondition, only: initial_condition_uun
       use Mpicomm, only: stop_it
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
@@ -252,7 +246,7 @@ module NeutralVelocity
         case ('sinwave-z'); call sinwave(ampluun(j),f,iunz,kz=kz_uun)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampluun(j),f,iunx,iunz)
-        case ('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)  
+        case ('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)
         case default
           !
           !  Catch unknown values
@@ -278,8 +272,6 @@ module NeutralVelocity
 !  All pencils that the Neutralvelocity module depends on are specified here.
 !
 !  28-feb-07/wlad: adapted
-!
-      use Cdata
 !
       if (ladvection_velocity) lpenc_requested(i_ungun)=.true.
       if (ldt) lpenc_requested(i_uun)=.true.
@@ -308,7 +300,7 @@ module NeutralVelocity
         lpenc_requested(i_graddivun)=.true.
       endif
       !if ( lneutraldensity.and.                                    &
-      !     any((iviscn=='shock').or.(iviscn=='nun-shock'))) then 
+      !     any((iviscn=='shock').or.(iviscn=='nun-shock'))) then
       !  lpenc_requested(i_graddivun)=.true.
       !  lpenc_requested(i_shock)=.true.
       !  lpenc_requested(i_gshock)=.true.
@@ -344,7 +336,7 @@ module NeutralVelocity
 !***********************************************************************
     subroutine pencil_interdep_neutralvelocity(lpencil_in)
 !
-!  Interdependency among pencils from the Neutralvelocity module 
+!  Interdependency among pencils from the Neutralvelocity module
 !   is specified here.
 !
 !  28-feb-07/wlad: adapted
@@ -378,8 +370,6 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Cdata
-      use Deriv
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -445,11 +435,9 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Cdata
       use Diagnostics
-      use IO
       use Mpicomm, only: stop_it
-      use Sub
+      use Sub, only: identify_bcs
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -529,15 +517,15 @@ module NeutralVelocity
      do j=1,3
         jn=j+iuun-1
         ji=j+iuu -1
-!       
+!
 ! neutrals gain momentum by recombination
 !
         df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) + &
              cneut*p%rho *(p%uu(:,j)-p%uun(:,j))
 !
 ! ions gain momentum by ionization and electron pressure
-! 
-        if (lhydro) then 
+!
+        if (lhydro) then
           df(l1:l2,m,n,ji)=df(l1:l2,m,n,ji) - &
                cions*p%rhon*(p%uu(:,j)-p%uun(:,j))
 !
@@ -566,7 +554,7 @@ module NeutralVelocity
 !
 ! csn2/dx^2 for timestep
 ! have to include a selection of equation of state...
-!         
+!
       endif
 !
       if (lfirst.and.ldt) advec_csn2=csn20*dxyz_2
@@ -693,7 +681,6 @@ module NeutralVelocity
 !
 !  28-jul-06/wlad: coded
 !
-      use Cdata
       use BorderProfiles, only: border_driving
       use EquationOfState, only: cs0,cs20
 !
@@ -761,11 +748,10 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: coded
 !
-      use Cdata
       use Deriv, only: der6
       use Diagnostics
-      use Mpicomm
-      use Sub
+      use Mpicomm, only: stop_it
+      use Sub, only: der6, multmv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -783,7 +769,7 @@ module NeutralVelocity
       do j=1,ninit
          select case (iviscn(j))
 !
-         case ('rhon_nun-const') 
+         case ('rhon_nun-const')
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
@@ -808,7 +794,7 @@ module NeutralVelocity
             else
                fvisc=fvisc+nun*(p%del2un+1./3.*p%graddivun)
             endif
-        
+!
         !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
             if (lfirst.and.ldt) diffus_nun=diffus_nun+nun*dxyz_2
 !
@@ -826,7 +812,7 @@ module NeutralVelocity
 !
 !  Viscous force: anysotropic hyperviscosity
 !
-           do jj=1,3 
+           do jj=1,3
              ju=jj+iuun-1
              do i=1,3
                call der6(f,ju,tmp,i,IGNOREDX=.true.)
@@ -880,8 +866,7 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Cdata
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
       logical :: lreset,lwr
@@ -896,7 +881,7 @@ module NeutralVelocity
       if (lreset) then
         idiag_un2m=0; idiag_unm2=0
         idiag_unxpt=0; idiag_unypt=0; idiag_unzpt=0; idiag_dtun=0
-        idiag_dtnun=0; idiag_dtcn=0        
+        idiag_dtnun=0; idiag_dtcn=0
         idiag_unrms=0; idiag_unmax=0; idiag_unzrms=0; idiag_unzrmaxs=0
         idiag_unxmax=0; idiag_unymax=0; idiag_unzmax=0
         idiag_unxm=0; idiag_unym=0; idiag_unzm=0
