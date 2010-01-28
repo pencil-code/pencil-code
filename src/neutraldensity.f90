@@ -25,7 +25,7 @@ module NeutralDensity
   implicit none
 !
   include 'neutraldensity.h'
-!  
+!
   real :: kx_lnrhon=1.,ky_lnrhon=1.,kz_lnrhon=1.
   real :: ampllnrhon=0.,rhon_left=1.,rhon_right=1.
   real :: diffrhon=0.,diffrhon_hyper3=0.,diffrhon_shock=0.
@@ -84,14 +84,14 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted from density
 !
-      use Sub
       use FArrayManager
 !
-      if (.not.lcartesian_coords) call fatal_error('register_neutraldensity','non cartesian '//&
+      if (.not.lcartesian_coords) &
+          call fatal_error('register_neutraldensity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !
       call farray_register_pde('lnrhon',ilnrhon)
-!      
+!
       lneutraldensity=.true.
 !
 !  Identify version number (generated automatically by SVN).
@@ -113,7 +113,6 @@ module NeutralDensity
 !
 !
       use BorderProfiles, only: request_border_driving
-      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrhon
       use FArrayManager
 !
       integer :: i
@@ -276,13 +275,11 @@ module NeutralDensity
       use Selfgravity,only: rhs_poisson_const
       use Initcond
       use InitialCondition, only: initial_condition_lnrhon
-      use IO
-      use Mpicomm
-      use Sub
-      use EquationOfState
+      use Sub, only: notanumber
+      use EquationOfState, only: cs20, cs2bot,cs2top
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!      
+!
       real :: zbot, ztop
       logical :: lnothing
       integer :: j
@@ -318,11 +315,11 @@ module NeutralDensity
             case ('const_lnrhon'); f(:,:,:,ilnrhon)=lnrhon_const
             case ('const_rhon'); f(:,:,:,ilnrhon)=log(rhon_const)
             case ('constant'); f(:,:,:,ilnrhon)=log(rhon_left)
-            case ('scale-ions') 
-              if (ldensity_nolog) then 
-                f(:,:,:,ilnrhon)=log(rhon_const)+log(f(:,:,:,ilnrho)) 
+            case ('scale-ions')
+              if (ldensity_nolog) then
+                f(:,:,:,ilnrhon)=log(rhon_const)+log(f(:,:,:,ilnrho))
               else
-                f(:,:,:,ilnrhon)=log(rhon_const)+f(:,:,:,ilnrho) 
+                f(:,:,:,ilnrhon)=log(rhon_const)+f(:,:,:,ilnrho)
               endif
             case ('sinwave-z'); call sinwave(ampllnrhon,f,ilnrhon,kz=kz_lnrhon)
             case ('gaussian-noise')
@@ -339,14 +336,14 @@ module NeutralDensity
                write(unit=errormsg,fmt=*) 'No such value for initlnrhon(' &
                     //trim(iinit_str)//'): ',trim(initlnrhon(j))
                call fatal_error('init_lnrhon',errormsg)
-               
+!
             endselect
 
             if (lroot) print*,'init_lnrhon: initlnrhon(' &
                  //trim(iinit_str)//') = ',trim(initlnrhon(j))
 
          endif
-         
+
       enddo
 !
 !  Interface for user's own initial conditon
@@ -374,10 +371,8 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Cdata
-!
 !  always needed for ionization and recombination
-!      
+!
       lpenc_requested(i_rho)  =.true.
       lpenc_requested(i_rhon) =.true.
       lpenc_requested(i_alpha)=.true.
@@ -388,7 +383,7 @@ module NeutralDensity
         lpenc_requested(i_rhon1)=.true.
       endif
 !
-      if (lpretend_star) then 
+      if (lpretend_star) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_rcyl_mn1)=.true.
@@ -447,7 +442,7 @@ module NeutralDensity
 !***********************************************************************
     subroutine pencil_interdep_neutraldensity(lpencil_in)
 !
-!  Interdependency among pencils from the NeutralDensity module is 
+!  Interdependency among pencils from the NeutralDensity module is
 !    specified here.
 !
 !  28-feb-07/wlad: adapted
@@ -617,7 +612,7 @@ module NeutralDensity
              call fatal_error("lpretend_star",&
              "not implemented for other than cylindrical coordinates")
         !smooth transition over a ramping period of 5 orbits
-        if (lramp_up) then 
+        if (lramp_up) then
           ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
           if (t .le. ramping_period) then
             alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
@@ -627,22 +622,22 @@ module NeutralDensity
         else
           alpha_time=alpha
         endif
-!          
-! Star formation rate 
+!
+! Star formation rate
 ! These lines below recover d/dt(rho_star)=sfr_const*omega*rho_gas**1.5
 !
 ! There is threshold that has to be smoothed. The star formation
 ! rate falls drastically after the threshold of 5-10 solar masses
-! per cubic parsec. A arctangent smoothing over a tenth of this value 
-! is okay to avoid numerical disasters. 
-! 
+! per cubic parsec. A arctangent smoothing over a tenth of this value
+! is okay to avoid numerical disasters.
+!
         tmp=(p%rho-star_form_threshold)/(.1*star_form_threshold)
         smooth_step_threshold=.5*(1+atan(tmp)*2*pi_1)
 
         !OO=p%uu(*,2)*p%rcyl_mn1
         p%alpha=(alpha_time*smooth_step_threshold)*&
              (p%uu(:,2)*p%rcyl_mn1)*p%rho1**(2-star_form_exponent)
-      
+!
       else
         p%alpha=alpha
       endif
@@ -659,7 +654,7 @@ module NeutralDensity
       use Deriv, only: der6
       use Diagnostics
       use Mpicomm, only: stop_it
-      use Sub
+      use Sub, only: identify_bcs, del6fj, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -877,7 +872,7 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -895,7 +890,7 @@ module NeutralDensity
         idiag_rhonm=0; idiag_rhon2m=0; idiag_lnrhon2m=0; idiag_unglnrhonm=0
         idiag_rhonmin=0; idiag_rhonmax=0; idiag_dtnd=0
         idiag_lnrhonmphi=0; idiag_rhonmphi=0
-        idiag_rhonmz=0; idiag_rhonmy=0; idiag_rhonmx=0 
+        idiag_rhonmz=0; idiag_rhonmy=0; idiag_rhonmx=0
         idiag_rhonmxy=0; idiag_rhonmr=0; idiag_neutralmass=0
         diffrhon=0.
       endif
