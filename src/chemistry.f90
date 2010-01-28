@@ -85,6 +85,7 @@ module Chemistry
   logical :: ldamp_zone_NSCBCx=.false.
   logical :: ldamp_zone_NSCBCy=.false.
   logical :: ldamp_zone_NSCBCz=.false.
+  logical :: ldamp_left=.false.,ldamp_right=.false.
 ! 1step_test case
 
     logical :: l1step_test=.false., lflame_front=.false.
@@ -129,7 +130,8 @@ module Chemistry
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
-      lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz
+      lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
+      ldamp_left,ldamp_right
 
 
 ! run parameters
@@ -137,7 +139,8 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
-      lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz
+      lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
+      ldamp_left, ldamp_right
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -6395,6 +6398,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
       real :: sz1,sz2, sz1_x,sz2_x, del
       logical :: lzone_y=.false.,lzone_z=.false.
+      logical :: lzone_left=.false., lzone_right=.false.
 
        dt1=1./dt
        del=0.1
@@ -6412,11 +6416,18 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
        if (dir==1) then                 
        if (nxgrid/=1) then
-
-        
+ 
           
          sz1_x=(xyz0(1)+Lxyz(1)*del)
          sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
+
+         if (ldamp_left .and. (x(j1)<sz1_x)) then
+          lzone_left=.true.
+         endif
+         if (ldamp_right .and. (sz2_x<x(j1))) then
+          lzone_right=.true.
+         endif
+
         
 !         sz1=(xyz0(2)+Lxyz(2)*del)
 !         sz2=(xyz0(2)+Lxyz(2)*(1.-del))
@@ -6433,7 +6444,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
      
           endif
 
-        if ((x(j1)<sz1_x) .or. (sz2_x<x(j1))) then
+        if (lzone_left .or. lzone_right) then
   !         if (x(j1)<sz1_x) then
 
 
@@ -6447,25 +6458,31 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
         endif
      
+        lzone_left=.false.
+        lzone_right=.false.
        endif
       
       elseif(dir==2) then       
 
-       if (nygrid>1) then
+       if (nygrid/=1) then
 
       ! if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
       !            'you should increase nygrid!')
-
-          
-
+        
          sz1=(xyz0(2)+Lxyz(2)*del)
          sz2=(xyz0(2)+Lxyz(2)*(1.-del))
-
          
-       if ((y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
+         if (ldamp_left .and. (y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
+          lzone_left=.true.
+         endif
+         if (ldamp_right .and. (y(m)>=sz2) .and. (y(m)<=xyz0(2)+Lxyz(2))) then
+          lzone_right=.true.
+         endif
+         
+       if (lzone_left) then
         func_y=(sz1-y(m))**3/(Lxyz(2)*del)**3 
         lzone_y=.true.
-       elseif ((y(m)>=sz2) .and. (y(m)<=xyz0(2)+Lxyz(2))) then 
+       elseif (lzone_right) then 
         func_y= (y(m)-sz2)**3/(Lxyz(2)*del)**3 
         lzone_y=.true.
        endif     
@@ -6483,9 +6500,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         endif
   
         lzone_y=.false.
-     
+        lzone_left=.false.
+        lzone_right=.false.
 !       endif
-       endif
+        endif
       elseif (dir==3) then
 
       if (nzgrid>1) then
@@ -6493,11 +6511,17 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          sz1=(xyz0(3)+Lxyz(3)*del)
          sz2=(xyz0(3)+Lxyz(3)*(1.-del))
 
+         if (ldamp_left .and. (z(n)<=sz1) .and. (z(n)>=xyz0(3))) then
+          lzone_left=.true.
+         endif
+         if (ldamp_right .and. (z(n)>=sz2) .and. (z(n)<=xyz0(3)+Lxyz(3))) then
+          lzone_right=.true.
+         endif
          
-       if ((z(n)<=sz1) .and. (z(n)>=xyz0(3))) then
+       if (ldamp_left) then
         func_z=(sz1-z(n))**3/(Lxyz(3)*del)**3 
         lzone_z=.true.
-       elseif ((z(n)>=sz2) .and. (z(n)<=xyz0(3)+Lxyz(3))) then 
+       elseif (ldamp_right) then 
         func_z= (z(n)-sz2)**3/(Lxyz(3)*del)**3 
         lzone_z=.true.
        endif  
@@ -6513,6 +6537,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)  &
                 -func_z*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
         lzone_z=.false.
+        lzone_right=.false.
+        lzone_left=.false.
 !        endif
     
        endif
