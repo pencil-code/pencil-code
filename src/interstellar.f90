@@ -236,8 +236,8 @@ module Interstellar
 !          appended last term to all arrays RBr critical change
 !
   real :: GammaUV=impossible,T0UV=impossible,cUV=impossible
-  double precision, dimension(8) :: coolT_cgs, coolH_cgs
-  real, dimension(8) :: coolB, lncoolH, lncoolT
+  double precision, dimension(11) :: coolT_cgs, coolH_cgs
+  real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
 !
   real :: coolingfunction_scalefactor=1.
@@ -449,6 +449,9 @@ module Interstellar
                         4.0D7, &
                         1.0D9, &
                         tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0) /)
          coolH_cgs = (/ 2.2380D-32, &
                         1.0012D-30, &
@@ -456,6 +459,9 @@ module Interstellar
                         1.7800D-18, &
                         3.2217D-27, &
                         tiny(0.D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0.D0), &
                         tiny(0D0) &
                       /) / ( m_p_cgs )**2
@@ -464,6 +470,9 @@ module Interstellar
                     2.867, &
                    -0.65, &
                     0.5, &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
                     tiny(0.), &
                     tiny(0.), &
                     tiny(0.) /)
@@ -484,6 +493,9 @@ module Interstellar
                         1.D5, &
                         1.D6, &
                         1.D9, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0) /)
          coolH_cgs = (/ 2.76296D-42, &
                         2.2380D-32, &
@@ -492,6 +504,9 @@ module Interstellar
                         1.7800D-18, &
                         2.240887D-25, &
                         tiny(0.D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0.D0) &
                       /) / ( m_p_cgs )**2
          coolB = (/ 6.0, &
@@ -501,18 +516,24 @@ module Interstellar
                    -0.65, &
                     0.5, &
                     tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
                     tiny(0.) /)
          ncool=6
       else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2
-         ! to obtain same units as RB above
-         if (lroot) print*,'initialize_interstellar: SS cooling function'
+
+
          coolT_cgs = (/ 10.D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
                         1.0D5, &
                         1.0D9, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
          coolH_cgs = (/ 3.42D16, &
@@ -522,6 +543,9 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0) /)
          coolB = (/ 2.12, &
                     1.0, &
@@ -530,10 +554,13 @@ module Interstellar
                     -0.65, &
                     tiny(0.), &
                     tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
                     tiny(0.) /)
          ncool=5
       else if (cooling_select == 'SSr') then
-         ! revised to make continuous
+
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
          coolT_cgs = (/ 10.D0, &
                         141.D0, &
@@ -541,6 +568,9 @@ module Interstellar
                         6102.D0, &
                         1.D5, &
                         1.D9, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
          coolH_cgs = (/ 3.70D16, &
@@ -550,12 +580,18 @@ module Interstellar
                         7.96D29, &
                         tiny(0D0), &
                         tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0) /)
          coolB = (/ 2.12, &
                     1.0, &
                     0.56, &
                     3.67, &
                     -0.65, &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
                     tiny(0.) , &
                     tiny(0.), &
                     tiny(0.) /)
@@ -570,6 +606,9 @@ module Interstellar
                         1.D5, &
                         4.D7, &
                         1.D13, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0d0)/)
          coolH_cgs = (/ 3.703109927416290D16, &
                         9.455658188464892D18, &
@@ -577,6 +616,9 @@ module Interstellar
                         1.9994576479D8, &
                         7.96D29, &
                         1.440602814622207D21, &
+                        tiny(0D0), &
+                        tiny(0D0), &
+                        tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
          coolB = (/ 2.12, &
@@ -586,8 +628,53 @@ module Interstellar
                     -0.65, &
                     0.5, &
                     tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
+                    tiny(0.), &
                     tiny(0.) /)
          ncool=6
+      else if (cooling_select == 'SS-Slyz') then
+!
+! 26-Jan-10/fred
+!         
+! combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
+! as Gressel simulation (2008) constants revised for continuity
+!
+         if (lroot) print*,'initialize_interstellar: SS-Slyz cooling fct'
+         coolT_cgs = (/ 10.D0, &
+                        141.D0, &
+                        313.D0, &
+                        6102.D0, &
+                        1.D5, &
+                        2.88D5, &
+                        4.73D5, &
+                        2.11D6, &
+                        3.98D6,  &
+                        2.0D7,  &
+                        huge(0D0)/)
+         coolH_cgs = (/ 3.420D16, &
+                        8.73275974868D18, &
+                        1.0944376395513D20, &
+                        1.0178638302185D10, &
+                        1.1420600147164D27, &
+                        2.2079470147055, &
+                        3.697214745591D26, &
+                        1.4105221231863D22, &
+                        1.48514641828986D22, &
+                        8.523033057875D20, &
+                        tiny(0D0) /)
+         coolB = (/ 2.12, &
+                    1.0, &
+                    0.56, &
+                    3.21, &
+                    -0.20, &
+                    -3.0, &
+                    -0.22, &
+                    -3.00, &
+                    0.33, &
+                    0.5, &
+                    tiny(0.) /)
+         ncool=10
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=tiny(0.D0)
