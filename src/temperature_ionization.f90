@@ -743,13 +743,4 @@ module Entropy
 !
     endsubroutine get_slices_entropy
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
-!
-      real, dimension(mx,my,mz,mfarray) :: finit,f
-!
-      call keep_compiler_quiet(finit)
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_heatcond_ADI
-!***********************************************************************
 endmodule Entropy

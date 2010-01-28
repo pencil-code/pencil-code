@@ -51,7 +51,7 @@ program run
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
-  use Entropy,         only: calc_heatcond_ADI
+  use ImplicitPhysics, only: calc_heatcond_ADI
   use Equ,             only: debug_imn_arrays,initialize_pencils
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up

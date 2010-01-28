@@ -4444,17 +4444,6 @@ module Entropy
 !
     endsubroutine single_polytrope
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
-!
-      implicit none
-!
-      real, dimension(mx,my,mz,mfarray) :: finit,f
-!
-      call keep_compiler_quiet(finit)
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_heatcond_ADI
-!***********************************************************************
     subroutine read_hcond(hcond,glhc)
 !
 !  read radial profiles of hcond and glhc from an ascii-file.

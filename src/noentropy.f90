@@ -275,15 +275,6 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
-!
-      real, dimension (mx,my,mz,mfarray) :: finit,f
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(finit)
-!
-    endsubroutine calc_heatcond_ADI
-!***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit

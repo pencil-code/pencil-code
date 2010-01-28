@@ -10,5 +10,6 @@ DENSITY   =   density
 ENTROPY   =   temperature_idealgas
 MAGNETIC  = nomagnetic
 GRAVITY   =   gravity_simple
+IMPLICIT_PHYSICS = implicit_physics
 
 REAL_PRECISION = double
