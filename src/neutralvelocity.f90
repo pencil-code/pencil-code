@@ -62,7 +62,8 @@ module NeutralVelocity
 !
   integer :: idiag_un2m=0,idiag_unm2=0
   integer :: idiag_unxpt=0,idiag_unypt=0,idiag_unzpt=0,idiag_dtcn=0
-  integer :: idiag_dtun=0,idiag_unrms=0,idiag_unmax=0,idiag_unzrms=0,idiag_unzrmaxs=0
+  integer :: idiag_dtun=0,idiag_unrms=0,idiag_unmax=0,idiag_unzrms=0
+  integer :: idiag_unzrmaxs=0
   integer :: idiag_unxmax=0,idiag_unymax=0,idiag_unzmax=0
   integer :: idiag_unxm=0,idiag_unym=0,idiag_unzm=0
   integer :: idiag_unx2m=0,idiag_uny2m=0,idiag_unz2m=0
@@ -227,8 +228,7 @@ module NeutralVelocity
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: kabs,crit
-      integer :: j,i,l
+      integer :: j,i
 !
 !  inituun corresponds to different initializations of uun (called from start).
 !
@@ -385,8 +385,7 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp, tmp2
-      integer :: i, j, ju
+      integer :: i, j
 !
       intent(in) :: f
       intent(inout) :: p
@@ -456,7 +455,6 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: pdamp
       real, dimension (nx) :: ionization,recombination,cions,cneut
       real :: c2,s2
       integer :: j,jn,ji
@@ -704,7 +702,7 @@ module NeutralVelocity
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: OO,tmp
-      real :: g0=1.,plaw=0.0,ptlaw=1.
+      real :: g0=1.,ptlaw=1.
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots

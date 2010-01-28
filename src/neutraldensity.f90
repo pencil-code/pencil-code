@@ -87,8 +87,6 @@ module NeutralDensity
       use Sub
       use FArrayManager
 !
-      logical, save :: first=.true.
-!
       if (.not.lcartesian_coords) call fatal_error('register_neutraldensity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !
@@ -285,13 +283,9 @@ module NeutralDensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !      
-      real :: lnrhonint,cs2int,pot0
-      real :: pot_ext,cs2_ext,tmp1,k_j2
-      real :: zbot,ztop,haut,TT
-      real, dimension (nx) :: r_mn,lnrhon,lnTT,ss
+      real :: zbot, ztop
       logical :: lnothing
       integer :: j
-      complex :: omega_jeans
 !
 !  define bottom and top height
 !
@@ -504,7 +498,6 @@ module NeutralDensity
       type (pencil_case) :: p
 !
       integer :: i, mm, nn
-      real :: OO
 !
       intent(inout) :: f,p
 ! lnrhon
@@ -845,9 +838,8 @@ module NeutralDensity
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target,OO_sph,OO_cyl,cs,theta
-      real :: r0_pot=0.1
-      integer :: i
+      real, dimension(nx) :: f_target !,OO_sph,OO_cyl,cs,theta
+!      real :: r0_pot=0.1
 !
       select case (borderlnrhon)
 !
