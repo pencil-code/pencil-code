@@ -615,35 +615,35 @@ module Magnetic
 !
 !  Precalculate eta if 1/eta (==eta1) is given instead
 !
-      if (eta1/=0.) then
+      if (eta1/=0.0) then
         eta=1./eta1
       endif
 !
 !  Precalculate 1/inertial_length^2
 !
-      if (inertial_length /= 0.) then
+      if (inertial_length/=0.0) then
         linertial_2 = inertial_length**(-2)
       else
-        linertial_2 = 0.
+        linertial_2 = 0.0
         ! make sure not to use this value by checking that
         ! (inertial_length /= 0.)...
       endif
 !
 !  Precalculate 1/nu_ni
 !
-      if (nu_ni /= 0.) then
+      if (nu_ni/=0.0) then
         nu_ni1=1./nu_ni
       else
-        nu_ni1=0.
+        nu_ni1=0.0
       endif
 !
 !  calculate B_ext21 = 1/B_ext**2 and the unit vector B1_ext = B_ext/|B_ext|
 !
       B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
-      if (B_ext21/=0.) then
-        B_ext21=1./B_ext21
+      if (B_ext21/=0.0) then
+        B_ext21=1/B_ext21
       else
-        B_ext21=1.
+        B_ext21=1.0
       endif
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
@@ -784,9 +784,9 @@ module Magnetic
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if ( (lresi_hyper3_aniso) .and.  &
-             ((eta_aniso_hyper3(1)==0. .and. nxgrid/=1 ).or. &
-              (eta_aniso_hyper3(2)==0. .and. nygrid/=1 ).or. &
-              (eta_aniso_hyper3(3)==0. .and. nzgrid/=1 )) ) &
+             ((eta_aniso_hyper3(1)==0.0 .and. nxgrid/=1 ).or. &
+              (eta_aniso_hyper3(2)==0.0 .and. nygrid/=1 ).or. &
+              (eta_aniso_hyper3(3)==0.0 .and. nzgrid/=1 )) ) &
             call fatal_error('initialize_magnetic', &
             'A resistivity coefficient of eta_aniso_hyper3 is zero!')
         if (lresi_eta_shock.and.eta_shock==0.0) &
@@ -795,10 +795,18 @@ module Magnetic
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
-        if (lresi_etava .and. eta_va==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_va is zero!')
-        if (lresi_etaj .and. eta_j==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_j is zero!')
-        if (lresi_etaj2 .and. eta_j2==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_j2 is zero!')
-        if (lresi_etajrho .and. eta_jrho==0.) call fatal_error('initialize_magnetic', 'Resistivity coefficient eta_jrho is zero!')
+        if (lresi_etava .and. eta_va==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_va is zero!')
+        if (lresi_etaj .and. eta_j==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_j is zero!')
+        if (lresi_etaj2 .and. eta_j2==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_j2 is zero!')
+        if (lresi_etajrho .and. eta_jrho==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_jrho is zero!')
         if (lresi_anomalous.and.eta_anom==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_anom is zero!')
@@ -1149,11 +1157,11 @@ module Magnetic
         do m=m1,m2
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
-          if (gamma==1.) then
+          if (gamma==1.0) then
             f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
           else
             beq2=2.*rho0*cs0**2
-            fact=max(1e-6,1.-b2/beq2)
+            fact=max(1.0e-6,1.0-b2/beq2)
             if (lentropy.and.lpress_equil_via_ss) then
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
             else
@@ -1262,12 +1270,12 @@ module Magnetic
         lpenc_requested(i_jxbrxb)=.true.
         lpenc_requested(i_jxbr2)=.true.
       endif
-      if (hall_term/=0.) lpenc_requested(i_jxb)=.true.
+      if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
       if ((lhydro .and. llorentzforce) .or. nu_ni/=0.0) &
           lpenc_requested(i_jxbr)=.true.
       if (lresi_smagorinsky_cross .or. delta_effect/=0.0) &
           lpenc_requested(i_oo)=.true.
-      if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
+      if (nu_ni/=0.0) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
         if (meanfield_etat/=0.0 .or. ietat/=0 .or. &
             alpha_effect/=0.0 .or. delta_effect/=0.0) &
@@ -1282,8 +1290,6 @@ module Magnetic
           idiag_jxbrxmy/=0 .or. idiag_jxbrymy/=0 .or. idiag_jxbrzmy/=0 .or. &
           idiag_jxbrxmz/=0 .or. idiag_jxbrymz/=0 .or. idiag_jxbrzmz/=0) &
           lpenc_diagnos(i_jxbr)=.true.
-!
-!  diagnostics involving density
 !
       if (idiag_b2ruzm/=0) &
           lpenc_diagnos(i_rho)=.true.
@@ -1361,10 +1367,7 @@ module Magnetic
       if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
       if (idiag_etaj2max/=0) lpenc_diagnos(i_etaj2)=.true.
       if (idiag_etajrhomax/=0) lpenc_diagnos(i_etajrho)=.true.
-! to calculate the angle between magnetic field and current.
-      if (idiag_cosjbm/=0) then
-        lpenc_diagnos(i_cosjb)=.true.
-      endif
+      if (idiag_cosjbm/=0) lpenc_diagnos(i_cosjb)=.true.
       if (idiag_cosubm/=0) then
         lpenc_diagnos(i_cosub)=.true.
       endif
@@ -1376,12 +1379,11 @@ module Magnetic
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
       if (idiag_bthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
-!  pencils for meanfield dynamo diagnostics
-!
       if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
-!
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
-! check whether right variables are set for half-box calculations.
+!
+!  Check whether right variables are set for half-box calculations.
+!
       if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 &
           .or. idiag_jbmn/= 0 ) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
@@ -1521,8 +1523,8 @@ module Magnetic
         endif
         lpencil_in(i_b2)=.true.
         lpencil_in(i_bb)=.true.
-        if (delta_effect/=0.) lpencil_in(i_oxJ)=.true.
-        if (meanfield_etat/=0. .or. ietat/=0) then
+        if (delta_effect/=0.0) lpencil_in(i_oxJ)=.true.
+        if (meanfield_etat/=0.0 .or. ietat/=0) then
           if (lweyl_gauge) then
             lpencil_in(i_jj)=.true.
           else
@@ -1597,25 +1599,24 @@ module Magnetic
       if (lpencil(i_bb)) then
         call curl_mn(p%aij,p%bb,p%aa)
 !
-!  save field before adding imposed field (for diagnostics)
+!  Save field before adding imposed field (for diagnostics).
 !
         p%bbb=p%bb
         B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
-!  allow external field to precess about z-axis
-!  with frequency omega_Bz_ext
+!  Allow external field to precess about z-axis with frequency omega_Bz_ext.
 !
-        if (B2_ext/=0.) then
+        if (B2_ext/=0.0) then
           if (lbext_curvilinear.or.lcartesian_coords) then
 !
 !  luse_curvilinear_bext is default. The B_ext the user defines in
 !  magnetic_init_pars respects the coordinate system of preference
-!  which means that B_ext=(0.,1.,0.) is an azimuthal field in cylindrical
+!  which means that B_ext=(0.0,1.0,0.0) is an azimuthal field in cylindrical
 !  coordinates and a polar one in spherical.
 !
-            if (omega_Bz_ext==0.) then
+            if (omega_Bz_ext==0.0) then
               B_ext_tmp=B_ext
-            elseif (omega_Bz_ext/=0.) then
+            elseif (omega_Bz_ext/=0.0) then
               c=cos(omega_Bz_ext*t)
               s=sin(omega_Bz_ext*t)
               B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
@@ -1623,43 +1624,43 @@ module Magnetic
               B_ext_tmp(3)=B_ext(3)
             endif
           else if (lcylindrical_coords) then
-            if (omega_Bz_ext/=0.) &
-                 call fatal_error("calc_pencils_magnetic",&
-                  "precession of the external field not "//&
-                  "implemented for cylindrical coordinates")
+            if (omega_Bz_ext/=0.0) &
+                call fatal_error('calc_pencils_magnetic', &
+                'precession of the external field not '// &
+                'implemented for cylindrical coordinates')
 !
-!  transform b_ext to other coordinate systems
+!  Transform b_ext to other coordinate systems.
 !
             B_ext_tmp(1)=  B_ext(1)*cos(y(m)) + B_ext(2)*sin(y(m))
             B_ext_tmp(2)= -B_ext(1)*sin(y(m)) + B_ext(2)*cos(y(m))
             B_ext_tmp(3)=  B_ext(3)
           else if (lspherical_coords) then
-            if (omega_Bz_ext/=0.) &
-                 call fatal_error("calc_pencils_magnetic",&
-                  "precession of the external field not "//&
-                  "implemented for spherical coordinates")
+            if (omega_Bz_ext/=0.0) &
+                call fatal_error('calc_pencils_magnetic', &
+                'precession of the external field not '//&
+                'implemented for spherical coordinates')
             B_ext_tmp(1)= B_ext(1)*sinth(m)*cos(z(n)) + B_ext(2)*sinth(m)*sin(z(n)) + B_ext(3)*costh(m)
             B_ext_tmp(2)= B_ext(1)*costh(m)*cos(z(n)) + B_ext(2)*costh(m)*sin(z(n)) - B_ext(3)*sinth(m)
             B_ext_tmp(3)=-B_ext(1)         *sin(z(n)) + B_ext(2)         *cos(z(n))
           endif
 !
-!  add the external field
+!  Add the external field.
 !
-          if (B_ext_tmp(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
-          if (B_ext_tmp(2)/=0.) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
-          if (B_ext_tmp(3)/=0.) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
+          if (B_ext_tmp(1)/=0.0) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
+          if (B_ext_tmp(2)/=0.0) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
+          if (B_ext_tmp(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
           if (headtt) print*,'calc_pencils_magnetic: B_ext=',B_ext
           if (headtt) print*,'calc_pencils_magnetic: B_ext_tmp=',B_ext_tmp
         endif
 !
-!  add the external potential field
+!  Add the external potential field.
 !
         if (lB_ext_pot) then
 !          call get_global(bb_ext_pot,m,n,'B_ext_pot')
 !          p%bb=p%bb+bb_ext_pot
         endif
 !
-!  add external B-field.
+!  Add external B-field.
 !
         if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
         if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
@@ -1720,7 +1721,7 @@ module Magnetic
       if (lpencil(i_jj)) then
         p%jj=mu01*p%jj
 !
-!  add external j-field.
+!  Add external j-field.
 !
         if (iglobal_jx_ext/=0) p%jj(:,1)=p%jj(:,1)+f(l1:l2,m,n,iglobal_jx_ext)
         if (iglobal_jy_ext/=0) p%jj(:,2)=p%jj(:,2)+f(l1:l2,m,n,iglobal_jy_ext)
@@ -1929,7 +1930,7 @@ module Magnetic
             'alpha_profile no such alpha profile')
         endselect
 !
-!  possibility of dynamical alpha
+!  Possibility of dynamical alpha.
 !
         if (lalpm.and..not.lmeanfield_noalpm) then
           if(lalpha_profile_total) then
@@ -1941,18 +1942,19 @@ module Magnetic
           alpha_total=alpha_effect*alpha_tmp
         endif
 !
-!  possibility of conventional alpha quenching (rescales alpha_total)
-!  initialize EMF with alpha_total*bb
+!  Possibility of conventional alpha quenching (rescales alpha_total).
+!  Initialize EMF with alpha_total*bb.
 !
-        if (alpha_quenching/=0.) alpha_total=alpha_total/(1.+alpha_quenching*p%b2)
+        if (alpha_quenching/=0.0) &
+            alpha_total=alpha_total/(1.+alpha_quenching*p%b2)
         call multsv_mn(alpha_total,p%bb,p%mf_EMF)
 !
-!  add possible delta x J effect and turbulent diffusion to EMF
+!  Add possible delta x J effect and turbulent diffusion to EMF.
 !
-        if (delta_effect/=0.) p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
-        if (meanfield_etat/=0.) then
+        if (delta_effect/=0.0) p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
+        if (meanfield_etat/=0.0) then
           if (lweyl_gauge) then
-            if (meanfield_etaB/=0.) then
+            if (meanfield_etaB/=0.0) then
               meanfield_etaB2=meanfield_etaB**2
               call multsv_mn_add(meanfield_etat/sqrt(1.+p%b2/meanfield_etaB2),p%jj,p%mf_EMF)
             else
@@ -1962,20 +1964,20 @@ module Magnetic
             p%mf_EMF=p%mf_EMF+meanfield_etat*p%del2a
           endif
 !
-!  allow for possibility of variable etat
+!  Allow for possibility of variable etat.
 !
           if (ietat/=0) then
             call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
           endif
         endif
 !
-! possibility of adding contribution from large-scale-velocity
+!  Possibility of adding contribution from large-scale-velocity.
 !
-        if(llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
+        if (llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
 !
-! possibility of turning EMF to zero in a certain region.
+!  Possibility of turning EMF to zero in a certain region.
 !
-        if(lEMF_profile) then
+        if (lEMF_profile) then
           select case (EMF_profile)
           case ('xcutoff');
             EMF_prof= 1+stepdown(x(l1:l2),alpha_rmax,alpha_width)
@@ -2000,7 +2002,7 @@ module Magnetic
      if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
      if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
 !
-!  calculate diagnostics
+!  Calculate diagnostics.
 !
       if (ldiagnos) then
         if (idiag_Qsm/=0) call sum_mn_name(meanfield_Qs_func,idiag_Qsm)
@@ -2051,7 +2053,7 @@ module Magnetic
       real, dimension (nx) :: fres2,etaSS,penc
       real, dimension (nx) :: vdrift
       real :: tmp,eta_out1
-      real, parameter :: OmegaSS=1.
+      real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
       integer, parameter :: nxy=nxgrid*nygrid
 !
@@ -2126,7 +2128,6 @@ module Magnetic
 !
 !  Time step check for eta_xy part.
 !
-        !if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy(l1,m)
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy_max
         etatotal=etatotal+eta_xy(l1,m)
       endif
@@ -2281,7 +2282,7 @@ module Magnetic
 !
 !  Ambipolar diffusion in the strong coupling approximation.
 !
-      if (nu_ni/=0.) then
+      if (nu_ni/=0.0) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
         if (lentropy .and. lneutralion_heat) then
           if (pretend_lnTT) then
@@ -2402,7 +2403,7 @@ module Magnetic
 !
 !  Add Hall term.
 !
-      if (hall_term/=0.) then
+      if (hall_term/=0.0) then
         if (headtt) print*,'daa_dt: hall_term=',hall_term
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*p%jxb
         if (lfirst.and.ldt) then
@@ -2418,8 +2419,8 @@ module Magnetic
 !  Additional terms if Mean Field Theory is included.
 !
       if (lmeanfield_theory.and. &
-        (meanfield_etat/=0. .or. ietat/=0 .or. &
-        alpha_effect/=0..or.delta_effect/=0.)) then
+        (meanfield_etat/=0.0 .or. ietat/=0 .or. &
+        alpha_effect/=0.0.or.delta_effect/=0.0)) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         if (lOmega_effect) call Omega_effect(f,df)
       endif
@@ -2427,29 +2428,28 @@ module Magnetic
 !  Possibility of adding extra diffusivity in some halo of given geometry.
 !  Note that eta_out is total eta in halo (not eta_out+eta).
 !
-      if (height_eta/=0.) then
+      if (height_eta/=0.0) then
         if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
         if(lhalox) then
           do ix=1,nx
             tmp=(x(ix)/height_eta)**2
-            eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
+            eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
           enddo
         else
           tmp=(z(n)/height_eta)**2
-          eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
+          eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
         endif
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_aa) &
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
-            ampl_fcont_aa*p%fcont
+      if (lforcing_cont_aa) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
+          ampl_fcont_aa*p%fcont
 !
 !  Possibility of relaxation of A in exterior region.
 !
-      if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
+      if (tau_aa_exterior/=0.0) call calc_tau_aa_exterior(f,df)
 !
 !  Add ``va^2/dx^2'' contribution to timestep.
 !  Consider advective timestep only when lhydro=T.
