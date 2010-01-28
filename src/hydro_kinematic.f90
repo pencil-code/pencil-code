@@ -593,8 +593,8 @@ kky_aa=2.*pi
 !  assume kkx_aa=kky_aa=kkz_aa
 !
       elseif (kinflow=='potential') then
-        if (headtt) print*,'potential; kx_aa=',kkx_aa,kky_aa,kkz_aa
         fac=ampl_kinflow*kkx_aa
+        if (headtt) print*,'potential; kx_aa=',kkx_aa,ampl_kinflow
         p%uu(:,1)=fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sin(kkz_aa*z(n))
         p%uu(:,2)=fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sin(kkz_aa*z(n))
         p%uu(:,3)=fac*sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*cos(kkz_aa*z(n))

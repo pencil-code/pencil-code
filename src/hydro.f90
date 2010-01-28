@@ -1522,7 +1522,7 @@ module Hydro
           call coriolis_cylindrical(df,p)
         elseif (lspherical_coords) then
           call coriolis_spherical(df,p)
-       elseif (lprecession) then
+        elseif (lprecession) then
           call precession(df,p)
         else
           call coriolis_cartesian(df,p%uu,iux)
