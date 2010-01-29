@@ -5555,7 +5555,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          endif
          if (lcorner_y)  then
 
-          df(lll,mm,n1:n2,irho_tmp) = T_1_z(:,mmm)&
+          df(lll,mm,n1:n2,irho_tmp) = T_1_z(mmm,:)&
           + drho_prefac(mmm,:)*(M_2(mmm,:)+0.5*(M_5(mmm,:) + M_1(mmm,:))) &
           + drho_prefac(mmm,:)*(L_2(mmm,:)+0.5*(L_5(mmm,:) + L_1(mmm,:)))
 
@@ -5566,7 +5566,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
            (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(M_5(mmm,:) - M_1(mmm,:))-L_3(mmm,:)
          df(lll,mm,n1:n2,iuz) = T_4_z(mmm,:)- M_4(mmm,:) -L_4(mmm,:)
          df(lll,mm,n1:n2,ilnTT) =T_5_z(mmm,:) &
-           +drho_prefac(:,mmm)*(-M_2(mmm,:) &
+           +drho_prefac(mmm,:)*(-M_2(mmm,:) &
            +0.5*(gamma0(lll,mm)-1.)*(M_5(mmm,:)+M_1(mmm,:))) &
            +drho_prefac(mmm,:)*(-L_2(mmm,:) &
            +0.5*(gamma0(lll,mm)-1.)*(L_5(mmm,:)+L_1(mmm,:)))
