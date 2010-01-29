@@ -179,7 +179,7 @@ module Particles_radius
         lpenc_requested(i_cc)=.true.
       endif
       if (lcondensation_par) then
-        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_csvap2)=.true.
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_ppvap)=.true.
         lpenc_requested(i_rho)=.true.
@@ -349,9 +349,8 @@ module Particles_radius
         if (npar_imn(imn)/=0) then
           rhovap=p%cc*p%rho
           ppsat=6.035e11*exp(-5938*p%TT1)  ! Valid for water
-          vth2=gamma*p%ppvap/rhovap
-          vth=sqrt(vth2)
-          rhosat=gamma*ppsat/vth2
+          vth=sqrt(p%csvap2)
+          rhosat=gamma*ppsat/p%csvap2
           rhocond_tot=p%rhop+rhovap
           if (lfirst.and.ldt) then
             np_total=0.0
