@@ -1170,7 +1170,7 @@ include 'NSCBC.h'
               call der_pencil(2,f(i,:,lll,iux),tmp1(i,:))
               call der_pencil(2,f(i,:,lll,iuy),tmp2(i,:))
               call der_pencil(2,f(i,:,lll,iuz),tmp3(i,:))
-              call der_pencil(2,f(i,:,lll,ilnrho),tmp_lnrho(:,i))
+              call der_pencil(2,f(i,:,lll,ilnrho),tmp_lnrho(i,:))
             enddo
             dui_dxj(:,:,1,2)=tmp1(l1:l2,m1:m2)
             dui_dxj(:,:,2,2)=tmp2(l1:l2,m1:m2)
