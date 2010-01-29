@@ -99,11 +99,11 @@ end
 if (! -e NOERASE) then
   if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) \
       mv $datadir/time_series.dat $datadir/time_series.`timestr`
-  rm -f $datadir/*.dat 
-  rm -f $datadir/*.nml
-  rm -f $datadir/param*.pro
-  rm -f $datadir/index*.pro 
-  rm -f $datadir/averages/* 
+  rm -f $datadir/*.dat  >& /dev/null
+  rm -f $datadir/*.nml >& /dev/null
+  rm -f $datadir/param*.pro >& /dev/null
+  rm -f $datadir/index*.pro  >& /dev/null
+  rm -f $datadir/averages/*  >& /dev/null
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
 endif
 
