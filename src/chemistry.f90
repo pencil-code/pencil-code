@@ -5241,6 +5241,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (ny,nz) :: drho_prefac, KK
       
       real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
+      real, dimension (ny,nz) :: M_1, M_2, M_3, M_4, M_5
+      real, dimension (ny,nz)  :: N_1, N_2, N_3, N_4, N_5
   !    
       real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
@@ -5258,13 +5260,14 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
       real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
 !
-      integer :: lll, sgn,i,j,k,irho_tmp
+      integer :: lll, sgn,i,j,k,irho_tmp, nn, nnn, mm, mmm
       real :: Mach_num, nscbc_sigma_out
 !
       intent(inout) :: f
       intent(out) :: df
       intent(in) :: nscbc_sigma_out
-!
+       logical :: lcorner_y=.false.,lcorner_z=.false.
+
   
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
@@ -5487,11 +5490,161 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 
        endif
+!NATALIA
+
+      if (nygrid /= 1) then 
+           M_1(:,:)=(f(lll,m1:m2,n1:n2,iuy) - cs0_ar(m1:m2,n1:n2))&
+             *(grad_pp(:,:,2)-rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,2,2))
+           M_2(:,:)=f(lll,m1:m2,n1:n2,iuy)*(cs20_ar(m1:m2,n1:n2) &
+                  *grad_rho(:,:,2)-grad_pp(:,:,2))
+           M_3(:,:)=f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)
+           M_4(:,:)=f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)
+           M_5(:,:)=(f(lll,m1:m2,n1:n2,iuy) + cs0_ar(m1:m2,n1:n2))&
+            *(grad_pp(:,:,2)+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,2,2))
 
 
+           if (y(m2)==Lxyz(2)) then
+            M_1(ny,:)=KK(ny,:)*(cs20_ar(m2,n1:n2)/gamma0(m2,n1:n2) &
+               *rho0(m2,n1:n2)-p_inf(lll-3,ny,:)) 
+           endif
+           if  (y(m2)==xyz0(2)) then
+            M_5(1,:)=KK(1,:)*(cs20_ar(m1,n1:n2)/gamma0(m1,n1:n2)*&
+             rho0(m1,n1:n2)-p_inf(lll-3,1,:))
+           endif
+
+        else
+        M_1=0; M_2=0; M_3=0; M_4=0; M_5=0 
+       endif
+!
+       if (nzgrid /= 1)  then
+         N_1(:,:)=(f(lll,m1:m2,n1:n2,iuz) - cs0_ar(m1:m2,n1:n2))&
+          *(grad_pp(:,:,3)-rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,3,3))
+
+         N_2(:,:)=f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3)
+
+         N_3(:,:)=f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)
+
+         N_4(:,:)=f(lll,m1:m2,n1:n2,iuz) &
+            *(cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,3)-grad_pp(:,:,3))
+
+         N_5(:,:)=(f(lll,m1:m2,n1:n2,iuz) + cs0_ar(m1:m2,n1:n2))&
+            *(grad_pp(:,:,3)+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,3,3))
+
+         if (z(n2)==Lxyz(3)) then
+          N_1(:,nz)=KK(:,nz)*(cs20_ar(m1:m2,n2)/gamma0(m1:m2,n2)*&
+            rho0(m1:m2,n2)-p_inf(lll-3,:,nz))
+         endif
+         if (z(n1)==xyz0(3)) then
+          N_5(:,1)=KK(:,1)*(cs20_ar(m1:m2,n1)/gamma0(m1:m2,n1)*&
+             rho0(m1:m2,n1)-p_inf(lll-3,:,1))
+         endif
 
 
+       else
+        N_1=0; N_2=0; N_3=0; N_4=0; N_5=0
+       endif
 
+
+         do i=1,2
+         if (i==1) then
+            mm=m1; mmm=1
+            if (y(m1)==xyz0(2)) lcorner_y=.true.
+         elseif (i==2) then
+            mm=m2; mmm=ny
+            if (y(m2)==Lxyz(2)) lcorner_y=.true.
+         endif
+         if (lcorner_y)  then
+
+          df(lll,mm,n1:n2,irho_tmp) = T_1_z(:,mmm)&
+          + drho_prefac(mmm,:)*(M_2(mmm,:)+0.5*(M_5(mmm,:) + M_1(mmm,:))) &
+          + drho_prefac(mmm,:)*(L_2(mmm,:)+0.5*(L_5(mmm,:) + L_1(mmm,:)))
+
+         df(lll,mm,n1:n2,iux) =  T_2_z(mmm,:) -M_3(mmm,:)- 1./&
+             (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(L_5(mmm,:) - L_1(mmm,:))
+
+         df(lll,mm,n1:n2,iuy) =  T_3_z(mmm,:) - 1./&
+           (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(M_5(mmm,:) - M_1(mmm,:))-L_3(mmm,:)
+         df(lll,mm,n1:n2,iuz) = T_4_z(mmm,:)- M_4(mmm,:) -L_4(mmm,:)
+         df(lll,mm,n1:n2,ilnTT) =T_5_z(mmm,:) &
+           +drho_prefac(:,mmm)*(-M_2(mmm,:) &
+           +0.5*(gamma0(lll,mm)-1.)*(M_5(mmm,:)+M_1(mmm,:))) &
+           +drho_prefac(mmm,:)*(-L_2(mmm,:) &
+           +0.5*(gamma0(lll,mm)-1.)*(L_5(mmm,:)+L_1(mmm,:)))
+          lcorner_y=.false.
+
+
+        endif
+        enddo
+
+        do i=1,2 
+         if (i==1) then
+          nn=n1; nnn=1
+          if (z(n1)==xyz0(3)) lcorner_z=.true.
+         elseif (i==2) then
+          nn=n2; nnn=nz
+          if (z(n2)==Lxyz(3))  lcorner_z=.true.
+         endif
+
+         if  (lcorner_z) then
+          df(lll,m1:m2,nn,irho_tmp) = T_1_y(:,nnn) &
+          + drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) &
+          + drho_prefac(:,nnn)*(N_4(:,nnn)+0.5*(N_5(:,nnn) + N_1(:,nnn)))
+          df(lll,m1:m2,nn,iuy) = T_3_y(:,nnn) -L_3(:,nnn)-N_3(:,nnn)
+          df(lll,m1:m2,nn,iux) = T_2_y(:,nnn) - 1./&
+           (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) &
+                - L_1(:,nnn))-N_2(:,nnn)
+          df(lll,m1:m2,nn,iuz) =  T_4_y(:,nnn) - L_4(:,nnn)  - N_4(:,nnn)
+          df(lll,m1:m2,nn,ilnTT) = T_5_y(:,nnn) &
+           +drho_prefac(:,nnn)*(-L_2(:,nnn) &
+           +0.5*(gamma0(lll,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
+           +drho_prefac(:,nnn)*(-N_4(:,nnn) &
+           +0.5*(gamma0(lll,nn)-1.)*(N_5(:,nnn)+N_1(:,nnn)))
+           lcorner_z=.false.
+         endif
+        enddo
+
+
+        do i=1,2 
+         if (i==1) then
+          nn=n1; nnn=1
+          if (z(n1)==xyz0(3)) lcorner_z=.true.
+         elseif (i==2) then
+          nn=n2; nnn=nz
+          if (z(n2)==Lxyz(3))  lcorner_z=.true.
+         endif
+
+        do j=1,2
+         if (j==1) then
+           mm=m1; mmm=1
+           if (y(m1)==xyz0(2)) lcorner_y=.true.
+         elseif (j==2) then
+           mm=m2; mmm=ny
+           if (y(m2)==Lxyz(2)) lcorner_y=.true.
+         endif
+
+       if ((lcorner_y)  .and. (lcorner_z)) then
+        df(lll,mm,nn,irho_tmp) = &
+            drho_prefac(mmm,nnn)*(L_2(mmm,nnn)+0.5*(L_5(mmm,nnn) + L_1(mmm,nnn))) &
+          + drho_prefac(mmm,nnn)*(M_2(mmm,nnn)+0.5*(M_5(mmm,nnn) + M_1(mmm,nnn))) &
+          + drho_prefac(mmm,nnn)*(N_4(mmm,nnn)+0.5*(N_5(mmm,nnn) + N_1(mmm,nnn)))
+        df(lll,mm,nn,iux) =  -1./&
+          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(L_5(mmm,nnn) - L_1(mmm,nnn)) &
+          -M_2(mmm,nnn)-N_2(mmm,nnn)
+        df(lll,mm,nn,iuy) =  - L_3(mmm,nnn) - 1./&
+          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(M_5(mmm,nnn) - M_1(mmm,nnn))-N_3(mmm,nnn)
+        df(lll,mm,nn,iuz) =  - L_4(mmm,nnn) - M_4(mmm,nnn)  - 1./&
+          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(N_5(mmm,nnn) - N_1(mmm,nnn))
+        df(lll,mm,nn,ilnTT) = drho_prefac(mmm,nnn)*(-L_2(mmm,nnn) &
+          +0.5*(gamma0(mm,nn)-1.)*(L_5(mmm,nnn)+L_1(mmm,nnn)))  &
+          +drho_prefac(mmm,nnn)*(-M_2(mmm,nnn) &
+          +0.5*(gamma0(mm,nn)-1.)*(M_5(mmm,nnn)+M_1(mmm,nnn))) &
+           +drho_prefac(mmm,nnn)*(-N_4(mmm,nnn) &
+          +0.5*(gamma0(mm,nn)-1.)*(N_5(mmm,nnn)+N_1(mmm,nnn)))
+           lcorner_y=.false.
+           lcorner_z=.false.
+       endif
+      enddo
+      enddo
 
 
 !!!
