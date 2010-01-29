@@ -324,6 +324,7 @@ module Particles_radius
 !
 !  15-jan-10/anders: coded
 !
+      use EquationOfState, only: gamma
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -332,8 +333,8 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: ap_equi, vth, dt1_condensation, rhovap
-      real, dimension (nx) :: total_surface_area, ppsat, supsatratio1
+      real, dimension (nx) :: ap_equi, vth, vth2, dt1_condensation, rhovap
+      real, dimension (nx) :: total_surface_area, ppsat
       real, dimension (nx) :: rhocond_tot, rhosat, np_total
       real :: dapdt, drhocdt, alpha_cond_par
       integer :: k, ix, ix0
@@ -347,10 +348,10 @@ module Particles_radius
 !
         if (npar_imn(imn)/=0) then
           rhovap=p%cc*p%rho
-          vth=sqrt(p%cs2)   ! Should actually be thermal speed of vapor
           ppsat=6.035e11*exp(-5938*p%TT1)  ! Valid for water
-          supsatratio1=ppsat/p%ppvap
-          rhosat=supsatratio1*rhovap
+          vth2=gamma*p%ppvap/rhovap
+          vth=sqrt(vth2)
+          rhosat=gamma*ppsat/vth2
           rhocond_tot=p%rhop+rhovap
           if (lfirst.and.ldt) then
             np_total=0.0
@@ -399,8 +400,7 @@ module Particles_radius
                 dt1_condensation(ix)=max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
-              dapdt=0.25*vth(ix)*rhops1*rhovap(ix)*(1.0-supsatratio1(ix))* &
-                  alpha_cond_par
+              dapdt=0.25*vth(ix)*rhops1*(rhovap(ix)-rhosat(ix))*alpha_cond_par
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
 !  the limit of small particles; therefore we need to damp the evaporation to
@@ -462,7 +462,7 @@ module Particles_radius
 !  Time-step contribution of condensation.
 !
           if (lfirst.and.ldt) then
-            ap_equi=((p%rhop+(1.0-supsatratio1)*rhovap)/ &
+            ap_equi=((p%rhop+(rhovap-rhosat))/ &
                 (4.0/3.0*pi*rhops*np_swarm*p%np))**(1.0/3.0)
             do ix=1,nx
               if (rhocond_tot(ix)>rhosat(ix)) then
