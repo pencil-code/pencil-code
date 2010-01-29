@@ -30,8 +30,10 @@ module Particles_radius
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
   real :: diffusion_coefficient=1.0, diffusion_coefficient1=1.0
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
+  real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
+  real :: ztop_ocean=0.0
   logical :: lsweepup_par=.true., lcondensation_par=.false.
-  logical :: llatent_heat=.true.
+  logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -39,13 +41,15 @@ module Particles_radius
       initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap, llatent_heat, cdtpc
+      tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
+      lborder_driving_ocean, ztop_ocean
 !
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap, llatent_heat, cdtpc
+      tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
+      lborder_driving_ocean, ztop_ocean
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0
@@ -100,6 +104,11 @@ module Particles_radius
             'mass per dust grain mp_swarm=', mp_swarm
       endif
 !
+      if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar) then
+        call fatal_error('initialize_particles_radius', &
+            'must have passive scalar module for sweep-up and condensation')
+      endif
+!
 !  Short hand for spherical particle prefactor.
 !
       four_pi_rhops_over_three=4*pi*rhops/3.0
@@ -109,6 +118,7 @@ module Particles_radius
       alpha_cond1=1/alpha_cond
       diffusion_coefficient1=1/diffusion_coefficient
       if (tau_damp_evap/=0.0) tau_damp_evap1=1/tau_damp_evap
+      if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -263,10 +273,6 @@ module Particles_radius
                 deltavp=sqrt(deltavp**2+deltavp12_floor**2)
 !  Allow boulders to sweep up small grains if relative velocity not too high.
             if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
-              if (.not. lpscalar) then
-                call fatal_error('dap_dt', &
-                    'must have passive scalar module for sweep-up')
-              endif
 !  Radius increase due to sweep-up.
               dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*p%cc(ix)*p%rho(ix)*rhops1
 !
@@ -354,10 +360,6 @@ module Particles_radius
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ix=ix0-nghost
-            if (.not. lpscalar) then
-              call fatal_error('dap_dt', &
-                  'must have passive scalar module for condensation')
-            endif
 !
 !  The condensation/evaporation mass flux is
 !
@@ -397,7 +399,7 @@ module Particles_radius
                 dt1_condensation(ix)=max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
-              dapdt=0.25*vth(ix)*rhovap(ix)*rhops1*(1.0-supsatratio1(ix))* &
+              dapdt=0.25*vth(ix)*rhops1*rhovap(ix)*(1.0-supsatratio1(ix))* &
                   alpha_cond_par
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
@@ -418,13 +420,23 @@ module Particles_radius
 !  Vapor monomers are added to the gas or removed from the gas.
 !
             if (lparticles_number) np_swarm=fp(k,inpswarm)
-            if (lfirst.and.ldt) np_total(ix)=np_total(ix)+np_swarm
             drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_swarm
+!
+!  Drive the vapor pressure towards the saturated pressure due to contact
+!  with "ocean" at the box bottom.
+!
+            if (lborder_driving_ocean) then
+              if (fp(k,izp)<ztop_ocean) then
+                drhocdt = drhocdt + tau_ocean_driving1*(rhosat(ix)-rhovap(ix))
+              endif
+            endif
+!
             if (ldensity_nolog) then
               df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
             else
               df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
             endif
+!
             if (lpscalar_nolog) then
               df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
                   (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
@@ -440,8 +452,11 @@ module Particles_radius
                   latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
             endif
 !
-            if (lfirst.and.ldt) total_surface_area(ix)=total_surface_area(ix)+ &
-                4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
+            if (lfirst.and.ldt) then
+              total_surface_area(ix)=total_surface_area(ix)+ &
+                  4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
+              np_total(ix)=np_total(ix)+np_swarm
+            endif
           enddo
 !
 !  Time-step contribution of condensation.
