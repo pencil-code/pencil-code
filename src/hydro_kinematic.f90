@@ -50,10 +50,12 @@ module Hydro
   character (len=labellen) :: kinematic_flow='none'
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
+  real :: kkx_aa=0., kky_aa=0., kkz_aa=0.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
-    kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width,&
-    circ_rmax,circ_step_width,circ_amp
+    kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
+    circ_rmax,circ_step_width,circ_amp, &
+    kkx_aa, kky_aa, kkz_aa
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -251,7 +253,7 @@ module Hydro
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone
-      real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
+      real :: fac, fac2
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       integer :: modeN,l
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
@@ -261,12 +263,6 @@ module Hydro
 !
       intent(in) :: f
       intent(inout) :: p
-!
-!  introduce new symbol for the first argument of kx_aa, etc, arrays
-!
-      kkx_aa=kx_aa(1)
-      kky_aa=ky_aa(1)
-      kkz_aa=kz_aa(1)
 !
 !  choose from a list of different flow profiles.
 !  Begin with a constant flow in the x direction.
@@ -589,15 +585,16 @@ kky_aa=2.*pi
         p%uu(:,3)=-fac*(cos(kkx_aa*x(l1:l2)+ecost)+sin(kky_aa*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
-!  potential flow, u=gradphi, with phi=sinx*siny*sinz
+!  potential flow, u=gradphi, with phi=cosx*cosy*cosz
 !  assume kkx_aa=kky_aa=kkz_aa
 !
       elseif (kinflow=='potential') then
-        fac=ampl_kinflow*kkx_aa
-        if (headtt) print*,'potential; kx_aa=',kkx_aa,ampl_kinflow
-        p%uu(:,1)=fac*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sin(kkz_aa*z(n))
-        p%uu(:,2)=fac*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sin(kkz_aa*z(n))
-        p%uu(:,3)=fac*sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*cos(kkz_aa*z(n))
+        fac=ampl_kinflow
+        if (headtt) print*,'potential; kx_aa,ampl_kinflow=',ampl_kinflow
+        if (headtt) print*,'potential; kx_aa=',kkx_aa,kky_aa,kkz_aa
+        p%uu(:,1)=-fac*kkx_aa*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*cos(kkz_aa*z(n))
+        p%uu(:,2)=-fac*kky_aa*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*cos(kkz_aa*z(n))
+        p%uu(:,3)=-fac*kkz_aa*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sin(kkz_aa*z(n))
         if (lpencil(i_divu)) p%divu=fac
 !
 !  Convection rolls
