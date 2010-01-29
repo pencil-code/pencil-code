@@ -12,9 +12,9 @@
 ! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma_inv; mu1
-! PENCILS PROVIDED hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
-! PENCILS PROVIDED ppvap
+! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma_inv
+! PENCILS PROVIDED mu1; hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
+! PENCILS PROVIDED ppvap; csvap2
 !
 !***************************************************************
 module EquationOfState
