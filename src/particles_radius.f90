@@ -333,7 +333,7 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: ap_equi, vth, vth2, dt1_condensation, rhovap
+      real, dimension (nx) :: ap_equi, vth, dt1_condensation, rhovap
       real, dimension (nx) :: total_surface_area, ppsat
       real, dimension (nx) :: rhocond_tot, rhosat, np_total
       real :: dapdt, drhocdt, alpha_cond_par
