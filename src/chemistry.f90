@@ -85,7 +85,7 @@ module Chemistry
   logical :: ldamp_zone_NSCBCx=.false.
   logical :: ldamp_zone_NSCBCy=.false.
   logical :: ldamp_zone_NSCBCz=.false.
-  logical :: ldamp_left=.false.,ldamp_right=.false.
+  logical :: ldamp_left=.true.,ldamp_right=.true.
 ! 1step_test case
 
     logical :: l1step_test=.false., lflame_front=.false.
@@ -1291,7 +1291,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
       integer :: j1
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: initial_mu1, final_massfrac_O2
+      real :: initial_mu1, final_massfrac_O2, del=0.
       logical :: found_specie
       real :: Rad, log_inlet_density
 
@@ -1343,6 +1343,13 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !         else
 !          f(j1,:,:,ilnTT)=log(init_TT1)
 !         endif
+
+        if (lT_tanh) then
+          del=init_x2-init_x1
+          f(j1,:,:,ilnTT)=f(j1,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
+              +((init_TT2-init_TT1)*0.5)  &
+          *(exp(x(j1)/del)-exp(-x(j1)/del))/(exp(x(j1)/del)+exp(-x(j1)/del)))
+        else
           if ((x(j1)<=0) .and. (x(j1)>=-0.2)) then
            f(j1,:,:,ilnTT)=log(init_TT1)+2.1*((0.2-Rad)/0.2)**2
           elseif (x(j1)>0) then
@@ -1350,7 +1357,7 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           elseif (x(j1)<-0.2) then
            f(j1,:,:,ilnTT)=log(init_TT1)
           endif
-
+        endif
 
 
           mu1(j1,:,:)=f(j1,:,:,i_H2)/(2.*mH2)+f(j1,:,:,i_O2)/(2.*mO2) &
@@ -6458,8 +6465,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
         endif
      
-        lzone_left=.false.
-        lzone_right=.false.
+!        lzone_left=.false.
+!        lzone_right=.false.
        endif
       
       elseif (dir==2) then       
@@ -6472,10 +6479,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          sz1=(xyz0(2)+Lxyz(2)*del)
          sz2=(xyz0(2)+Lxyz(2)*(1.-del))
          
-         if (ldamp_left .and. (y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
+!         if (ldamp_left .and. (y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
+           if (ldamp_left .and. (y(m)<=sz1)) then
           lzone_left=.true.
          endif
-         if (ldamp_right .and. (y(m)>=sz2) .and. (y(m)<=xyz0(2)+Lxyz(2))) then
+!         if (ldamp_right .and. (y(m)>=sz2) .and. (y(m)<=xyz0(2)+Lxyz(2))) then
+           if (ldamp_right .and. (y(m)>=sz2)) then
           lzone_right=.true.
          endif
          
@@ -6490,18 +6499,18 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        if (lzone_y) then
     
 !        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
-        df(j1,m,n,iux)=df(j1,m,n,iux)-func_y*(f(j1,m,n,iux)-ux_ref)*dt1
+!        df(j1,m,n,iux)=df(j1,m,n,iux)-func_y*(f(j1,m,n,iux)-ux_ref)*dt1
         df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_y*(f(j1,m,n,iuy)-uy_ref)*dt1
         df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_y*(f(j1,m,n,iuz)-uz_ref)*dt1
-        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)&  
-           -func_y*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&  
-           -func_y*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
+!        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)&  
+!           -func_y*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
+!        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&  
+!           -func_y*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
         endif
   
         lzone_y=.false.
-        lzone_left=.false.
-        lzone_right=.false.
+!        lzone_left=.false.
+!        lzone_right=.false.
 !       endif
         endif
       elseif (dir==3) then
@@ -6511,10 +6520,12 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          sz1=(xyz0(3)+Lxyz(3)*del)
          sz2=(xyz0(3)+Lxyz(3)*(1.-del))
 
-         if (ldamp_left .and. (z(n)<=sz1) .and. (z(n)>=xyz0(3))) then
+!         if (ldamp_left .and. (z(n)<=sz1) .and. (z(n)>=xyz0(3))) then
+       if (ldamp_left .and. (z(n)<=sz1)) then
           lzone_left=.true.
          endif
-         if (ldamp_right .and. (z(n)>=sz2) .and. (z(n)<=xyz0(3)+Lxyz(3))) then
+!         if (ldamp_right .and. (z(n)>=sz2) .and. (z(n)<=xyz0(3)+Lxyz(3))) then
+         if (ldamp_right .and. (z(n)>=sz2)) then
           lzone_right=.true.
          endif
          
@@ -6529,16 +6540,16 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
        if (lzone_z) then
 !        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
          
-        df(j1,m,n,iux)=df(j1,m,n,iux)-func_z*(f(j1,m,n,iux)-ux_ref)*dt1
+!        df(j1,m,n,iux)=df(j1,m,n,iux)-func_z*(f(j1,m,n,iux)-ux_ref)*dt1
         df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_z*(f(j1,m,n,iuy)-uy_ref)*dt1
         df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_z*(f(j1,m,n,iuz)-uz_ref)*dt1
-        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho) &
-                -func_z*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)  &
-                -func_z*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
+!        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho) &
+!                -func_z*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
+!        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)  &
+!                -func_z*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
         lzone_z=.false.
-        lzone_right=.false.
-        lzone_left=.false.
+!        lzone_right=.false.
+!        lzone_left=.false.
 !        endif
     
        endif
