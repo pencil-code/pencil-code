@@ -212,7 +212,6 @@ module Entropy
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
