@@ -1723,15 +1723,15 @@ module Entropy
 !
       if (lroot) print*, &
          'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
-      T0=cs20/gamma_m1
+      T0=0.8!cs20/gamma_m1
       do n=n1,n2
       do m=m1,m2
-        rho=rho0hs*exp(-m_u*muhs/k_B/T0*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
+        rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
         if (lentropy) then
 !  Isothermal 
-          pp=cs20/gamma*rho
+          pp=rho*gamma_m1/gamma*T0
           call eosperturb(f,nx,pp=pp)
           ss=f(l1:l2,m,n,ilnrho)
           fmpi1=(/ cs2bot /)
