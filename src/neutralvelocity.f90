@@ -751,7 +751,7 @@ module NeutralVelocity
       use Deriv, only: der6
       use Diagnostics
       use Mpicomm, only: stop_it
-      use Sub, only: der6, multmv
+      use Sub, only: multmv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
