@@ -168,10 +168,6 @@ program start
 !
   if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
 !
-!  Postprocess input parameters.
-!
-  gamma_m1=gamma-1.0
-!
 !  Set up directory names and check whether the directories exist.
 !
   call directory_names()
