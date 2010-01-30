@@ -93,19 +93,12 @@ program start
 !
   implicit none
 !
-!  Define parameters.
-!  The f-array includes auxiliary variables.
-!  Although they are not necessary for start.f90, idl may want to read them,
-!  so we define therefore the full array and write it out.
-!
-  integer :: i,ifilter,stat
+  real, allocatable, dimension (:,:,:,:) :: f, df
+  real :: x00, y00, z00
+  integer :: i, ifilter, stat
   logical :: lnoerase=.false.
-  real :: x00,y00,z00
-!        real, dimension (mx,my,mz,mfarray) :: f
-!        real, dimension (mx,my,mz,mvar) :: df
-  real, allocatable, dimension (:,:,:,:) :: f,df
 !
-  lstart = .true.
+  lstart=.true.
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
@@ -141,16 +134,16 @@ program start
 !  Identify version.
 !
   if (lroot) call svn_id( &
-       "$Id$")
+      '$Id$')
 !
 !  Set default values: box of size (2pi)^3.
 !
-  xyz0 = (/       -pi,        -pi,       -pi /) ! first corner
-  xyz1 = (/impossible, impossible, impossible/) ! last corner
-  Lxyz = (/impossible, impossible, impossible/) ! box lengths
-  lperi =(/.true.,.true.,.true. /) ! all directions periodic
-  lequidist=(/.true.,.true.,.true. /) ! all directions equidistant grid
-  lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
+  xyz0=(/       -pi,        -pi,       -pi /) ! first corner
+  xyz1=(/impossible, impossible, impossible/) ! last corner
+  Lxyz=(/impossible, impossible, impossible/) ! box lengths
+  lperi        =(/.true. ,.true. ,.true. /)   ! all directions periodic
+  lequidist    =(/.true. ,.true. ,.true. /)   ! all directions equidistant grid
+  lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
 !
 !  Read parameters from start.in.
 !  Call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
@@ -166,18 +159,18 @@ program start
 !  Will we write all slots of f?
 !
   if (lwrite_aux) then
-    mvar_io = mvar+maux
+    mvar_io=mvar+maux
   else
-    mvar_io = mvar
+    mvar_io=mvar
   endif
 !
 !  Print resolution.
 !
-  if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
+  if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
 !
 !  Postprocess input parameters.
 !
-  gamma_m1 = gamma-1.
+  gamma_m1=gamma-1.0
 !
 !  Set up directory names and check whether the directories exist.
 !
@@ -204,11 +197,11 @@ program start
           Lxyz(i)=2*pi    ! default value
         endif
       else
-        Lxyz(i) = xyz1(i)-xyz0(i)
+        Lxyz(i)=xyz1(i)-xyz0(i)
       endif
     else                  ! Lxyz was set
-      if (xyz1(i) /= impossible) then ! both Lxyz and xyz1 are set
-        call stop_it('Cannot set Lxyz and xyz1 at the same time')
+      if (xyz1(i)/=impossible) then ! both Lxyz and xyz1 are set
+        call fatal_error('start','Cannot set Lxyz and xyz1 at the same time')
       endif
     endif
   enddo
@@ -219,16 +212,16 @@ program start
   x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
   Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
 !
-!  position of equator (if any)
+!  Position of equator (if any).
 !
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-! set up limits of averaging if needed.
+!  Set up limits of averaging if needed.
 !
   if (lav_smallx) call init_xaver
 !
-!  Size of box at local processor
+!  Size of box at local processor.
 !
   Lxyz_loc(1)=Lxyz(1)/nprocx
   Lxyz_loc(2)=Lxyz(2)/nprocy
@@ -247,11 +240,11 @@ program start
 !  Check consistency.
 !
   if (.not.lperi(1).and.nxgrid<2) &
-      call stop_it('for lperi(1)=F: must have nxgrid>1')
+      call fatal_error('start','for lperi(1)=F: must have nxgrid>1')
   if (.not.lperi(2).and.nygrid<2) &
-      call stop_it('for lperi(2)=F: must have nygrid>1')
+      call fatal_error('start','for lperi(2)=F: must have nygrid>1')
   if (.not.lperi(3).and.nzgrid<2) &
-      call stop_it('for lperi(3)=F: must have nzgrid>1')
+      call fatal_error('start','for lperi(3)=F: must have nzgrid>1')
 !
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
@@ -261,7 +254,7 @@ program start
 !
   call get_nseed(nseed)   ! get state length of random number generator
   call random_seed_wrapper(GET=seed)
-  seed(1) = -(10+iproc)    ! different random numbers on different CPUs
+  seed(1)=-(10+iproc)     ! different random numbers on different CPUs
   call random_seed_wrapper(PUT=seed)
 !
 !  Generate grid.
@@ -276,34 +269,33 @@ program start
 !
 !  Write .general file for data explorer.
 !
-  if (lroot) call write_dx_general( &
-                    trim(datadir)//'/var.general', &
-                    x0-nghost*dx, y0-nghost*dy, z0-nghost*dz)
+  if (lroot) call write_dx_general(trim(datadir)//'/var.general', &
+      x0-nghost*dx,y0-nghost*dy,z0-nghost*dz)
 !
 !  Populate wavenumber arrays for fft and calculate nyquist wavenumber.
 !
   if (nxgrid/=1) then
     kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-    kx_ny = nxgrid/2 * 2*pi/Lx
+    kx_ny =nxgrid/2 * 2*pi/Lx
   else
     kx_fft=0.0
-    kx_ny = 0.0
+    kx_ny =0.0
   endif
 !
   if (nygrid/=1) then
     ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-    ky_ny = nygrid/2 * 2*pi/Ly
+    ky_ny =nygrid/2 * 2*pi/Ly
   else
     ky_fft=0.0
-    ky_ny = 0.0
+    ky_ny =0.0
   endif
 !
   if (nzgrid/=1) then
     kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
-    ky_ny = nzgrid/2 * 2*pi/Lz
+    ky_ny =nzgrid/2 * 2*pi/Lz
   else
     kz_fft=0.0
-    kz_ny = 0.0
+    kz_ny =0.0
   endif
 !
 !  Set random seed independent of processor prior to initial conditions.
@@ -326,24 +318,15 @@ program start
 !  by the various procedures below.
 !
   if (lread_oldsnap) then
-    call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
+    call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
   else
-!
-! We used to have just f=0. here, but with GRAVITY=gravity_r,
-! the gravitational acceleration (which is computed in
-! initialize_gravity and stored in the f-array), is set to zero
-! by the statement f=0. After running start.csh, this can lead
-! to some confusion as to whether the gravity module actually
-! does anything or not.
-!
-!   So now we are more specific:
-    f(:,:,:,1:mvar)=0.
+    f(:,:,:,1:mvar)=0.0
   endif
 !
-!  The following init routines do then only need to add to f.
+!  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??
 !
-  if (lroot) print* !(empty line)
+  if (lroot) print*
   do i=1,init_loops
     if (lroot .and. init_loops/=1) &
         print '(A33,i3,A25)', 'start: -- performing loop number', i, &
@@ -432,7 +415,7 @@ program start
     call random_seed_wrapper(PUT=seed)
   endif
 !
-!  Write to disk.
+!  Write initial condition to disk.
 !
   if (lwrite_ic) then
     if (lparticles) &
@@ -457,8 +440,8 @@ program start
         call particles_write_snapshot(trim(directory_snap)//'/pvar.dat',f, &
         ENUM=.false.)
     if (lparticles_nbody.and.lroot) &
-         call particles_nbody_write_snapshot(&
-         trim(datadir)//'/proc0/spvar.dat', ENUM=.false.)
+        call particles_nbody_write_snapshot(&
+        trim(datadir)//'/proc0/spvar.dat', ENUM=.false.)
     call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
     call wtime(trim(directory)//'/time.dat',t)
   endif
