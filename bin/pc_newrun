@@ -144,16 +144,20 @@ cp *.in $targetdir
 
 #
 #  if same_source, then link all *.x files from the original directory.
-#  (We don't want to use a link to the entire secr directory, because
+#  (We don't want to use a link to the entire src directory, because
 #  then a run directory that is checked in would not possess a record
-#  of it's own src/*.local files.
+#  of it's own src/*.local files.)
 #
 if [ $same_source ]; then
   cd $targetdir/src
   pwd
 
-  if [ -h $olddir/src ]; then
-    ln -s `readlink $olddir/src/*.x .`
+  if [ -h $olddir/src/run.x ]; then
+    ln -s `readlink $olddir/src/combine_videofiles.x` .
+    ln -s `readlink $olddir/src/read_vectorfiles.x` .
+    ln -s `readlink $olddir/src/read_videofiles.x` .
+    ln -s `readlink $olddir/src/start.x` .
+    ln -s `readlink $olddir/src/run.x` .
   else
     ln -s $olddir/src/*.x .
     cp $olddir/src/*.inc .
