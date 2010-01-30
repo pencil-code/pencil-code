@@ -559,12 +559,12 @@ module Gravity
         pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
       endif
 !
-!     call keep_compiler_quiet(xmn)
-!     call keep_compiler_quiet(ymn)
-!     call keep_compiler_quiet(zmn)
-!     call keep_compiler_quiet(pot0)
-!     call keep_compiler_quiet(grav)
-!     call keep_compiler_quiet(rmn)
+      call keep_compiler_quiet(present(xmn))
+      call keep_compiler_quiet(present(ymn))
+      call keep_compiler_quiet(present(zmn))
+      call keep_compiler_quiet(present(pot0))
+      call keep_compiler_quiet(present(grav))
+      call keep_compiler_quiet(present(rmn))
 !
     endsubroutine potential_penc
 !***********************************************************************
