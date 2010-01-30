@@ -210,12 +210,6 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos()
 !
-      use Mpicomm, only: stop_it
-      integer, save :: ifirst1=0
-      integer, save :: ifirst2=0
-      integer :: k
-      logical ::  ex
-!
 ! Initialize variable selection code (needed for RELOADing)
 !
       ieosvars=-1
@@ -474,12 +468,9 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: k
-
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -545,7 +536,8 @@ module EquationOfState
 !  12-jul-03/tobi: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: lnrho,ss,yH,lnTT
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -557,7 +549,8 @@ module EquationOfState
 !   13-jun-03/tobi: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: lnrho,ss,yH,lnTT
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine ioncalc
 !***********************************************************************
@@ -620,10 +613,11 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
-      real, dimension(nx) :: lnrho,ss
 !
       cs2=impossible
       cp1tilde=impossible
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -642,7 +636,8 @@ module EquationOfState
 !
       call stop_it(' pressure_gradient_point should never be called')
 !
-      call keep_compiler_quiet(cs2,cp1tilde)
+      call keep_compiler_quiet(cs2,cp1tilde,ss,lnrho)
+!
     endsubroutine pressure_gradient_point
 !***********************************************************************
     subroutine temperature_gradient(f,glnrho,gss,glnTT)
@@ -658,9 +653,6 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
-  !    type (pencil_case) :: p
-
-      integer :: i
 !
       call stop_it('temperature_gradient should never be called')
 !
@@ -669,6 +661,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(glnrho,gss,glnTT)
+!
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
@@ -710,6 +703,9 @@ module EquationOfState
       hlnTT(:,:,:)=0
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(hss)
+      call keep_compiler_quiet(hlnrho)
+!
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
@@ -729,6 +725,11 @@ module EquationOfState
       else
         call not_implemented("eosperturb")
       endif
+!
+      call keep_compiler_quiet(present(ee))
+      call keep_compiler_quiet(present(pp))
+      call keep_compiler_quiet(present(ss))
+!
     endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
@@ -2210,7 +2211,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       real, dimension (my,mz) :: cs2,gravterm,centterm,uphi
-      real :: dlnrhodz, dssdz
       real :: potp,potm,rad,step
       integer :: i
 
@@ -2439,7 +2439,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my,nghost) :: ghost_zones
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real :: pot
@@ -2569,11 +2568,10 @@ module EquationOfState
 !
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
       use Gravity, only: potential
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
-      real, dimension (mx,my,nghost) :: ghost_zones
+!
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real, dimension (nx) :: pot,rr_cyl,rr_sph,cs2,tmp1,tmp2
@@ -2758,7 +2756,6 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (nx) :: potm,potp,tmp1,tmp2,rr_cyl,rr_sph,cs2
       character (len=3), intent (in) :: topbot
-      real :: dlnrhodz, dssdz
       integer :: i
  
 
