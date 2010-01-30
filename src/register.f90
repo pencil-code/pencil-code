@@ -769,7 +769,7 @@ module Register
       if (lroot) print*, 'choose_pencils: finding out which pencils '// &
           'are needed for the pencil case'
 !
-!  Must set all pencil arrays to false in case of reload or reinit
+!  Must set all pencil arrays to false in case of reload.
 !
       lpenc_requested=.false.
       lpenc_diagnos=.false.

@@ -96,7 +96,6 @@ program run
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
-  logical :: lreinit_file=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
 !
   lrun=.true.
@@ -448,55 +447,6 @@ program run
         lreload_file        = .false.
         lreload_always_file = .false.
         lreloading          = .false.
-      endif
-!
-!  Reinit variables found in `REINIT' file; then remove the file.
-!
-      lreinit_file = control_file_exists('REINIT')
-      if (lroot .and. lreinit_file) then
-        if (lroot) print*, 'Found REINIT file'
-        open(1,file='REINIT',action='read',form='formatted')
-        nreinit=1
-!
-!  Read variable names from REINIT file.
-!
-        ierr=0
-        do while (ierr==0)
-          read(1,'(A5)',IOSTAT=ierr) reinit_vars(nreinit)
-          if (reinit_vars(nreinit)/='') nreinit=nreinit+1
-        enddo
-        close(1)
-        nreinit=nreinit-1
-        lreinit=.true.
-        if (lroot) call remove_file('REINIT')
-      endif
-      call mpibcast_logical(lreinit, 1)
-      if (lreinit) then
-        if (lroot) print*, 'Reiniting variables: ', reinit_vars(1:nreinit)
-        call mpibcast_int(nreinit, 1)
-        call mpibcast_char(reinit_vars, 10)
-!
-!  Reinit all variables present in reinit_vars array.
-!
-        do ivar=1,nreinit
-          select case (reinit_vars(ivar))
-            case ('uud')
-              f(:,:,:,iudx(1):iudz(ndustspec))=0.0
-              call init_uud(f)
-            case ('nd')
-              f(:,:,:,ind)=0.0
-              call init_nd(f)
-            case ('particles')
-              call particles_init(f)
-            case default
-              if (lroot) print*, 'Skipping unknown variable ', &
-                  reinit_vars(ivar)
-          endselect
-        enddo
-        call choose_pencils()
-        lreinit=.false.
-        lreinit_file=.false.
-        reinit_vars=''
       endif
     endif
 !

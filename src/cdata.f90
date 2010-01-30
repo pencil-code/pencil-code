@@ -120,7 +120,6 @@ module Cdata
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
-  logical :: lreinit=.false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
@@ -461,11 +460,6 @@ module Cdata
 !  Initial conditions.
 !
   integer :: init_loops=1
-!
-!  Reset initial condition.
-!
-  integer :: nreinit=0
-  character (len=5), dimension(10) :: reinit_vars=''
 !
 !  Implicit advance of the radiative diffusion in the temperature equation.
 !
