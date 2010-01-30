@@ -92,7 +92,7 @@ program run
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
-  integer :: icount, i,  mvar_in
+  integer :: icount, i, mvar_in
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
