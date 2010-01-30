@@ -87,7 +87,7 @@ module Interstellar
 !
 !  Save space for last SNI time
 !
-  real :: t_next_SNI=0.0
+  real :: t_next_SNI=0.0, t_next_SNII=0.0
   real :: t_interval_SNI=impossible
 !
 ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
@@ -127,6 +127,7 @@ module Interstellar
 ! Minimum resulting central temperature of a SN explosion.
 ! If this is not reached then consider moving mass to achieve this.
 !
+  real :: cluster_factor=1.25!fred testing clustering
   real, parameter :: TT_SN_min_cgs=0! 1.e7
 ! 22-jan-10/fred with lSN_velocity=T for kinetic energy lower limit no longer required
   real :: uu_sedov_max=0.
@@ -354,7 +355,7 @@ module Interstellar
       rho_SN_min, TT_SN_max, &
       lheating_UV, cdt_tauc,  &
       cooling_select, heating_select, heating_rate, &
-      t_settle, &
+      t_settle, cluster_factor,  &
       lforce_locate_SNI, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate
@@ -746,10 +747,13 @@ module Interstellar
       sigma_SN1=1./sigma_SN
 !
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNII = 1./(6*SNI_area_rate * Lxyz(1) * Lxyz(2))!fredSNII test
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
           t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+      if (lroot) print*,'initialize_interstellar: t_interval_SNII =', &
+           t_interval_SNII,Lxyz(1),Lxyz(2),SNI_area_rate!fredSNII test
 !
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -1418,6 +1422,7 @@ cool_loop: do i=1,ncool
     call tidy_SNRs
     if (lSNI) call check_SNI (f,l_SNI)
     if (lSNII) call check_SNII(f,l_SNI)
+!    if (lSNII) call check_SNIIb(f,l_SNI)!fred test new scheme
     call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
@@ -1543,22 +1548,15 @@ cool_loop: do i=1,ncool
       enddo
     enddo
     fsum1_tmp=(/ cloud_mass /)
-!       print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
+!
     call mpireduce_sum(fsum1_tmp,fsum1,1)
     call mpibcast_real(fsum1,1)
-    cloud_mass_dim=fsum1(1)*dv !div by solar mass may be duplication with progenitor fred
-!    cloud_mass_dim=fsum1(1)*dv/solar_mass
+    cloud_mass_dim=fsum1(1)*dv/solar_mass
+!
     if (lroot .and. ip < 14) &
         print*, 'check_SNII: cloud_mass_dim,fsum(1),dv,solar_mass:', &
             cloud_mass_dim,fsum1(1),dv,solar_mass
-    !if (franSN(1) <= prob_SNII) then
-    !  print*,'check_SNII: iproc,fsum1:',iproc,fsum1(1)
-    ! need convert to dimensional units, for rate/probability calculation only.
-    ! don't overwrite cloud_mass (on individual processors), as it's re-used.
-    !if (lroot .and. ip < 14) &
-    !     print*,'check_SNII: cloud_mass_dim:',cloud_mass_dim
-    !
-!    if (lSNI.and.last_SN_t<=0.5*t_settle) last_SN_t=0.5*t_settle !fred to prevent SNII too close to SNI
+!
     dtsn=t-last_SN_t
     freq_SNII= &
       frac_heavy*frac_converted*cloud_mass_dim/mass_SN_progenitor/cloud_tau &
@@ -1601,6 +1599,71 @@ cool_loop: do i=1,ncool
     endif
     !
     endsubroutine check_SNII
+!***********************************************************************
+    subroutine check_SNIIb(f,l_SNI) !fred test new SNII scheme
+!
+!  If time for next SNI, then implement, and calculate time of subsequent SNI
+!
+    use General, only: random_number_wrapper
+!
+    real, dimension(mx,my,mz,mfarray) :: f
+    logical :: l_SNI
+    integer :: try_count, iSNR, ierr
+    real :: dtsn
+    real, dimension(1) :: franSN
+!
+    intent(inout) :: f,l_SNI
+!
+!  identifier 
+!
+    if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
+!
+    if (l_SNI) return         ! only do if no SNI this step
+!
+    dtsn=t-last_SN_t
+    if (dtsn >= t_next_SNII) then
+      iSNR=get_free_SNR()
+      SNRs(iSNR)%site%TT=1E20
+      SNRs(iSNR)%site%rho=0.
+      SNRs(iSNR)%t=t
+      SNRs(iSNR)%SN_type=2
+      SNRs(iSNR)%radius=width_SN
+      try_count=500
+      do while (try_count>0)
+        try_count=try_count-1
+!
+        if (uniform_zdist_SNI) then
+          call position_SN_uniformz(f,SNRs(iSNR))
+        else
+          call position_SN_gaussianz(f,h_SNII,SNRs(iSNR))
+        endif
+!
+        if ((SNRs(iSNR)%site%rho .lt. rho_SN_min) .or. &
+            (SNRs(iSNR)%site%TT .gt. TT_SN_max)) then
+          cycle
+        endif
+!
+        call explode_SN(f,SNRs(iSNR),ierr)
+        if (ierr==iEXPLOSION_OK) then
+          call random_number_wrapper(franSN)
+          if (lroot) print*,'franSN = ',franSN(1)
+!          t_next_SNII=1./sqrt(2.*pi)*exp(-(0.47729*franSN(1)*&
+!                      6.*SNI_area_rate*Lxyz(1)*Lxyz(2))**2)
+          t_next_SNII=2.*franSN(1)/(6.*SNI_area_rate*Lxyz(1)*Lxyz(2))
+          last_SN_t=t
+          if (lroot.and.ip<14) print*,'t_next_SNII,franSN,last_SN_t =',&
+                                       t_next_SNII,franSN(1),last_SN_t
+          exit
+        endif
+      enddo
+!
+      if (try_count.eq.0) then
+        if (lroot) print*,"check_SNIIb: 500 RETRIES OCCURED - skipping SNI insertion"
+      endif
+      call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
+    endif
+!
+    endsubroutine check_SNIIb
 !***********************************************************************
     subroutine position_SN_testposition(f,SNR)
 !
@@ -1765,6 +1828,98 @@ cool_loop: do i=1,ncool
     call share_SN_parameters(f,SNR)
 !
     endsubroutine position_SN_uniformz
+!***********************************************************************
+    subroutine position_SN_gaussianz_cluster(f,h_SN,SNR)
+!
+!   determine position for next SN (w/ fixed scale-height)
+!
+    use General, only: random_number_wrapper
+    use Mpicomm, only: mpireduce_sum, mpibcast_real
+!
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
+    real, intent(in) :: h_SN
+    type (SNRemnant), intent(inout) :: SNR
+!
+    real, dimension(nzgrid) :: cum_prob_SN
+    real :: zn, z00, x00, y00, zrhom
+    real, dimension(1) :: proc_zrhom,tempi
+    real, dimension(3) :: fran3
+    integer :: trypsn_count, i, nzskip=10   !prevent SN from being too close to boundaries
+!
+!
+!
+    if (headtt) print*,'position_SN_gaussianz: ENTER'
+!
+!  Calculate the global (nzgrid) lower z-coordinate
+!
+    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
+    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
+    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
+!
+!  Pick SN position (SNR%l,SNR%m,SNR%n)
+!
+    trypsn_count=50
+    do while (trypsn_count>0)
+      trypsn_count=trypsn_count-1
+      call random_number_wrapper(fran3)    ! get 3 random numbers
+!                                          ! on all processors to keep
+!                                          ! rnd. generators in sync
+      if (lroot) then
+        i=int(fran3(1)*nxgrid)+1
+        SNR%l=i+nghost
+!  
+        i=int(fran3(2)*nygrid)+1
+        SNR%ipy=(i-1)/ny  ! uses integer division
+        SNR%m=i-(SNR%ipy*ny)+nghost
+!  
+!    Cumulative probability function in z currently calculated each time.
+!    It's constant, and could be stored (and calculated in init)
+!  
+        cum_prob_SN=0.0
+        do i=nzskip+1,nzgrid-nzskip
+          zn=z00+(i-1)*dz
+          cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-(zn/h_SN)**2)
+        enddo
+        cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
+!  
+!    The following should never be needed, but just in case floating point
+!    errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
+!  
+        cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
+
+        do i=nzskip+1,nzgrid-nzskip
+          if (cum_prob_SN(i-1) <= fran3(3) .and. fran3(3) < cum_prob_SN(i)) &
+             then
+            SNR%ipz=(i-1)/nz  ! uses integer division
+            SNR%n=i-(SNR%ipz*nz)+nghost
+            exit
+          endif
+        enddo
+        SNR%iproc=SNR%ipz*nprocy + SNR%ipy
+      endif
+!  
+      call share_SN_parameters(f,SNR)
+!  
+      do i=n1,n2
+        if (z(i) == SNR%z) then
+          zrhom=sum(exp(f(l1:l2,m1:m2,i,ilnrho)))/(l2-l1)/(m2-m1)
+        endif
+      enddo
+!  
+      proc_zrhom=(/zrhom/)
+      call mpireduce_sum(proc_zrhom,tempi,1)
+      call mpibcast_real(tempi,1)
+      zrhom=tempi(1)
+      if (SNR%site%rho<=cluster_factor*zrhom) then
+        cycle
+      endif
+    enddo
+!
+    if (trypsn_count.eq.0) then
+      if (lroot) print*,"check_SNIIb: 50 RETRIES OCCURED - skipping SNIIb insertion"
+    endif
+!                                                       
+    endsubroutine position_SN_gaussianz_cluster
 !***********************************************************************
     subroutine position_SN_bycloudmass(f,cloud_mass_byproc,SNR)
 !
