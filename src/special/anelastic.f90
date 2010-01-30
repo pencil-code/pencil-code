@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); gpp(3); 
 ! PENCILS PROVIDED uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
-! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3)
+! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
 ! PENCILS PROVIDED transprho
 !
 !***************************************************************
@@ -909,7 +909,7 @@ module Density
           m=mm(imn)
           lfirstpoint=(imn==1)      ! true for very first m-n loop
           llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-          f(l1:l2,m,n,ilnrho)=-0.1*z(n)/cs20
+          f(l1:l2,m,n,ilnrho)=-0.0*z(n)/cs20
           call sum_mn(exp(f(l1:l2,m,n,ilnrho)),pres_per_proc(1))
         enddo
           call get_average_density(pres_per_proc(1),average_density)
