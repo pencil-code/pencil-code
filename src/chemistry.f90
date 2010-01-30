@@ -483,8 +483,6 @@ module Chemistry
 !        if (lroot) print*, 'initchem: this is one specie case'
 !      endif
 !
-      call keep_compiler_quiet(f)
-!
     endsubroutine init_chemistry
 !***********************************************************************
     subroutine pencil_criteria_chemistry()
@@ -730,9 +728,6 @@ module Chemistry
     !    call dot_mn(p%ghYrho,p%uu,p%ghYrho_uu)
     !  endif
 
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_chemistry
 !***********************************************************************
@@ -2496,11 +2491,6 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         if (idiag_Y8mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8mz)
         if (idiag_Y9mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9mz)
       endif
-!
-!  Keep compiler quiet by ensuring every parameter is used
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
 !
     endsubroutine dchemistry_dt
 !***********************************************************************
