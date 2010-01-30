@@ -190,7 +190,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
 !
-      use Sub
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
