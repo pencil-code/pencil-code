@@ -559,12 +559,12 @@ module Gravity
         pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
       endif
 !
-      call keep_compiler_quiet(xmn)
-      call keep_compiler_quiet(ymn)
-      call keep_compiler_quiet(zmn)
-      call keep_compiler_quiet(pot0)
-      call keep_compiler_quiet(grav)
-      call keep_compiler_quiet(rmn)
+!     call keep_compiler_quiet(xmn)
+!     call keep_compiler_quiet(ymn)
+!     call keep_compiler_quiet(zmn)
+!     call keep_compiler_quiet(pot0)
+!     call keep_compiler_quiet(grav)
+!     call keep_compiler_quiet(rmn)
 !
     endsubroutine potential_penc
 !***********************************************************************
@@ -573,7 +573,7 @@ module Gravity
 !  Calculates gravity potential in one point
 !
 !  13-nov-04/anders: coded
-!  24-oct-06bing: added constant gravity profiles
+!  24-oct-06/bing: added constant gravity profiles
 !
       real :: pot
       real, optional :: x,y,z,r
