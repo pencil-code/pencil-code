@@ -421,8 +421,6 @@ module Viscosity
         endif
       endif
 !
-      call keep_compiler_quiet(lreset)
-!
     endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine pencil_criteria_viscosity()
@@ -1094,8 +1092,6 @@ module Viscosity
        if (idiag_nusmagmin/=0) call max_mn_name(-nu_smag,idiag_nusmagmin,lneg=.true.)
        if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
      endif
-!
-     call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
