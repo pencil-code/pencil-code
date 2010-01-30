@@ -51,13 +51,13 @@ program run
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
-  use ImplicitPhysics, only: calc_heatcond_ADI
   use Equ,             only: debug_imn_arrays,initialize_pencils
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
   use Filter
   use Forcing,         only: forcing_clean_up,addforce
   use Hydro,           only: hydro_clean_up 
+  use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN
   use IO
   use Magnetic,        only: rescaling_magnetic
@@ -87,20 +87,19 @@ program run
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
+  real, allocatable, dimension (:,:,:,:) :: finit
   type (pencil_case) :: p
-  double precision :: time1,time2
-  integer :: count, ierr
-  logical :: stop=.false.,timeover=.false.,resubmit=.false.
+  double precision :: time1, time2
+  double precision :: time_last_diagnostic, time_this_diagnostic
+  real :: wall_clock_time=0.0, time_per_step=0.0
+  integer :: icount, ierr, i, ivar, mvar_in
+  integer :: it_last_diagnostic, it_this_diagnostic
+  logical :: lstop=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreinit_file=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
-  real :: wall_clock_time=0.0, time_per_step=0.0
-  double precision :: time_last_diagnostic, time_this_diagnostic
-  integer :: it_last_diagnostic,it_this_diagnostic
-  integer :: i,ivar,mvar_in
-  real, allocatable, dimension (:,:,:,:) :: finit
 !
-  lrun = .true.
+  lrun=.true.
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
@@ -115,7 +114,7 @@ program run
 !  Identify version.
 !
   if (lroot) call svn_id( &
-       "$Id$")
+      '$Id$')
 !
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
@@ -145,26 +144,26 @@ program run
 !
   if (nxgrid/=1) then
     kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-    kx_ny = nxgrid/2 * 2*pi/Lx
+    kx_ny =nxgrid/2 * 2*pi/Lx
   else
     kx_fft=0.0
-    kx_ny = 0.0
+    kx_ny =0.0
   endif
 !
   if (nygrid/=1) then
     ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-    ky_ny = nygrid/2 * 2*pi/Ly
+    ky_ny =nygrid/2 * 2*pi/Ly
   else
     ky_fft=0.0
-    ky_ny = 0.0
+    ky_ny =0.0
   endif
 !
   if (nzgrid/=1) then
     kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
-    ky_ny = nzgrid/2 * 2*pi/Lz
+    ky_ny =nzgrid/2 * 2*pi/Lz
   else
     kz_fft=0.0
-    kz_ny = 0.0
+    kz_ny =0.0
   endif
 !
 !  Read parameters and output parameter list.
@@ -187,30 +186,29 @@ program run
 !  you want rdampint to be overridden, then don't specify it in the first
 !  place).
 !
-  if (rfreeze_int == -impossible .and. r_int > epsi) &
-       rfreeze_int = r_int
-  if (rfreeze_ext == -impossible) rfreeze_ext = r_ext
+  if (rfreeze_int==-impossible .and. r_int>epsi) rfreeze_int=r_int
+  if (rfreeze_ext==-impossible) rfreeze_ext=r_ext
 !
 !  Will we write all slots of f?
 !
   if (lwrite_aux) then
-    mvar_io = mvar+maux
+    mvar_io=mvar+maux
   else
-    mvar_io = mvar
+    mvar_io=mvar
   endif
 !
 ! Shall we read also auxilary variables?
 !
   if (lread_aux) then
-    mvar_in = mvar+maux
+    mvar_in=mvar+maux
   else
-    mvar_in = mvar
+    mvar_in=mvar
   endif
 !
 !  Print resolution and dimension of the simulation.
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
-  if (lroot) write(*,'(a,i1,a)') ' This is a ',dimensionality,'-D run'
+  if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
   if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
@@ -241,10 +239,10 @@ program run
 !
   call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
   if (lparticles) &
-     call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
+      call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
   if (lparticles_nbody) &
-       call particles_nbody_read_snapshot(&
-       trim(datadir)//'/proc0/spvar.dat')
+      call particles_nbody_read_snapshot(&
+      trim(datadir)//'/proc0/spvar.dat')
 !
 !  Read time and global variables (if any).
 !
@@ -255,7 +253,7 @@ program run
 !
 !  Set initial time to zero if requested.
 !
-  if (lini_t_eq_zero) t=0
+  if (lini_t_eq_zero) t=0.0
 !
 !  Read coordinates.
 !
@@ -274,9 +272,9 @@ program run
 !  Do this even for uniform meshes, in which case xprim=dx, etc.
 !  Remember that dx_1=0 for runs without extent in that direction.
 !
-  if (nxgrid==1) then; xprim=1.; else; xprim=1./dx_1; endif
-  if (nygrid==1) then; yprim=1.; else; yprim=1./dy_1; endif
-  if (nzgrid==1) then; zprim=1.; else; zprim=1./dz_1; endif
+  if (nxgrid==1) then; xprim=1.0; else; xprim=1/dx_1; endif
+  if (nygrid==1) then; yprim=1.0; else; yprim=1/dy_1; endif
+  if (nzgrid==1) then; zprim=1.0; else; zprim=1/dz_1; endif
 !
 !  Determine slice positions and whether slices are to be written on this
 !  processor. This can only be done after the grid has been established.
@@ -286,8 +284,7 @@ program run
 !  Write parameters to log file (done after reading var.dat, since we
 !  want to output time t.
 !
-  call print_runpars(FILE=trim(datadir)//'/params.log', &
-                     ANNOTATION='Running')
+  call print_runpars(FILE=trim(datadir)//'/params.log',ANNOTATION='Running')
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -304,7 +301,7 @@ program run
 !
   if (lparticles) then
     call particles_rprint_list(.false.)
-    call particles_initialize_modules(f, lstarting=.false.)
+    call particles_initialize_modules(f,lstarting=.false.)
   endif
 !
 !  Allocate the finit array if lADI=.true.
@@ -326,7 +323,6 @@ program run
 !
   call choose_pencils()
   call write_pencil_info()
-
 !
   if (mglobal/=0)  &
       call output_globals(trim(directory_snap)//'/global.dat', &
@@ -361,15 +357,15 @@ program run
   if (lroot) then
     time1=mpiwtime()
     time_last_diagnostic=time1
-    count=0
-    it_last_diagnostic=count
+    icount=0
+    it_last_diagnostic=icount
   endif
 !        
   if (it1d==impossible_int) then 
     it1d=it1 
   else
-    if (it1d < it1) then
-      if (lroot) call stop_it("it1d smaller than it1")
+    if (it1d<it1) then
+      if (lroot) call fatal_error('run','it1d smaller than it1')
     endif
   endif
 !
@@ -380,36 +376,28 @@ program run
 !  Do loop in time.
 !
   Time_loop: do while (it<=nt)
-    lout  =mod(it-1,it1) .eq.0
-    l1davg=mod(it-1,it1d).eq.0
+!
+    lout  =mod(it-1,it1) ==0
+    l1davg=mod(it-1,it1d)==0
+!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
 !
-      stop = control_file_exists("STOP", DELETE=.true.)
-      call mpibcast_logical(stop, 1)
-      if (stop .or. t>tmax .or. emergency_stop) then
+      lstop=control_file_exists('STOP',DELETE=.true.)
+      call mpibcast_logical(lstop,1)
+      if (lstop .or. t>tmax .or. emergency_stop) then
         if (lroot) then
-          if (emergency_stop) print*, "done: Emergency stop requested"
-          if (stop) print*, "done: found STOP file"
-          if (t>tmax) print*, "done: t > tmax"
-          resubmit = control_file_exists("RESUBMIT", DELETE=.true.)
+          print*
+          if (emergency_stop) print*, 'Emergency stop requested'
+          if (lstop) print*, 'Found STOP file'
+          if (t>tmax) print*, 'Maximum simulation time exceeded'
+          resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
           if (resubmit) then 
-            print*, "Cannot be resubmitted"
+            print*, 'Cannot be resubmitted'
           else
           endif
         endif
-        exit Time_loop
-      endif
-!
-!  Exit do loop if wall_clock_time has exceeded max_walltime.
-!
-      if (lroot.and.max_walltime > 0.0) then
-        if (wall_clock_time > max_walltime) timeover=.true.
-      endif
-      call mpibcast_logical(timeover, 1)
-      if (timeover) then
-        if (lroot) print*, "done: max_walltime exceeded"
         exit Time_loop
       endif
 !
@@ -418,9 +406,9 @@ program run
 !  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
 !  (only useful for debugging RELOAD issues).
 !
-      lreload_file = control_file_exists("RELOAD", DELETE=.true.)
-      lreload_always_file = control_file_exists("RELOAD_ALWAYS")
-      lreloading = lreload_file .or. lreload_always_file
+      lreload_file       =control_file_exists('RELOAD', DELETE=.true.)
+      lreload_always_file=control_file_exists('RELOAD_ALWAYS')
+      lreloading         =lreload_file .or. lreload_always_file
 !
 !  In some compilers (particularly pathf90) the file reload is being give
 !  unit = 1 hence there is conflict during re-reading of parameters. 
@@ -433,7 +421,7 @@ program run
       if (lreloading) then
         if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
-        dt=0.
+        dt=0.0
         call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
@@ -456,7 +444,7 @@ program run
         endif
         call choose_pencils()
         call wparam2()
-        if (lroot .and. lreload_file) call remove_file("RELOAD")
+        if (lroot .and. lreload_file) call remove_file('RELOAD')
         lreload_file        = .false.
         lreload_always_file = .false.
         lreloading          = .false.
@@ -464,7 +452,7 @@ program run
 !
 !  Reinit variables found in `REINIT' file; then remove the file.
 !
-      lreinit_file = control_file_exists("REINIT")
+      lreinit_file = control_file_exists('REINIT')
       if (lroot .and. lreinit_file) then
         if (lroot) print*, 'Found REINIT file'
         open(1,file='REINIT',action='read',form='formatted')
@@ -473,14 +461,14 @@ program run
 !  Read variable names from REINIT file.
 !
         ierr=0
-        do while (ierr == 0)
+        do while (ierr==0)
           read(1,'(A5)',IOSTAT=ierr) reinit_vars(nreinit)
-          if (reinit_vars(nreinit) /= '') nreinit=nreinit+1
+          if (reinit_vars(nreinit)/='') nreinit=nreinit+1
         enddo
         close(1)
         nreinit=nreinit-1
         lreinit=.true.
-        if (lroot) call remove_file("REINIT")
+        if (lroot) call remove_file('REINIT')
       endif
       call mpibcast_logical(lreinit, 1)
       if (lreinit) then
@@ -493,16 +481,15 @@ program run
         do ivar=1,nreinit
           select case (reinit_vars(ivar))
             case ('uud')
-              f(:,:,:,iudx(1):iudz(ndustspec))=0.
+              f(:,:,:,iudx(1):iudz(ndustspec))=0.0
               call init_uud(f)
             case ('nd')
-              f(:,:,:,ind)=0.
+              f(:,:,:,ind)=0.0
               call init_nd(f)
             case ('particles')
               call particles_init(f)
             case default
-              if (lroot) print*, &
-                  'reinit: Skipping unknown variable ', &
+              if (lroot) print*, 'Skipping unknown variable ', &
                   reinit_vars(ivar)
           endselect
         enddo
@@ -577,7 +564,7 @@ program run
     if (lADI) call calc_heatcond_ADI(finit,f)
     if (ltestperturb) call testperturb_finalize(f)
 !
-    if (lroot) count=count+1     !  reliable loop count even for premature exit
+    if (lroot) icount=icount+1  !  reliable loop count even for premature exit
 !
 !  Update time averages and time integrals.
 !
@@ -594,19 +581,22 @@ program run
 !
     if (linterstellar) call check_SN(f)
 !
-    if (lout.and.lroot.and.(idiag_walltime/=0 .or. max_walltime/=0.)) then
+!  Check wall clock time, for diagnostics and for user supplied simulation time
+!  limit.
+!
+    if (lroot.and.(idiag_walltime/=0.or.max_walltime/=0.0)) then
       time2=mpiwtime()
-      wall_clock_time = (time2-time1)
-      if (idiag_walltime/=0) &
+      wall_clock_time=(time2-time1)
+      if (lout.and.idiag_walltime/=0) &
           call save_name(wall_clock_time,idiag_walltime)
     endif
 !
     if (lout.and.lroot.and.idiag_timeperstep/=0) then
-        it_this_diagnostic = it
+      it_this_diagnostic   = it
       time_this_diagnostic = mpiwtime()
       time_per_step = (time_this_diagnostic - time_last_diagnostic) &
                      /(  it_this_diagnostic -   it_last_diagnostic)
-        it_last_diagnostic =   it_this_diagnostic
+      it_last_diagnostic   =   it_this_diagnostic
       time_last_diagnostic = time_this_diagnostic
       call save_name(time_per_step,idiag_timeperstep)
     endif
@@ -617,8 +607,8 @@ program run
 !
     if (ialive /= 0) then
       if (mod(it,ialive)==0) &
-           call outpui(trim(directory)//'/alive.info', &
-           spread(it,1,1) ,1) !(all procs alive?)
+          call outpui(trim(directory)//'/alive.info', &
+          spread(it,1,1) ,1) ! (all procs alive?)
     endif
     if (lparticles) &
         call particles_write_snapshot(trim(directory_snap)//'/PVAR',f, &
@@ -674,11 +664,25 @@ program run
 !  This may indicate an MPI communication problem, so the data are useless
 !  and won't be saved!
 !
-    if ((it < nt) .and. (dt < dtmin)) then
+    if ((it<nt) .and. (dt<dtmin)) then
       if (lroot) &
-          write(0,*) 'run: Time step has become too short: dt = ', dt
+          write(0,*) ' Time step has become too short: dt = ', dt
       save_lastsnap=.false.
       exit Time_loop
+    endif
+!
+!  Exit do loop if wall_clock_time has exceeded max_walltime.
+!
+    if (max_walltime>0.0) then
+      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
+      call mpibcast_logical(timeover,1)
+      if (timeover) then
+        if (lroot) then
+          print*
+          print*, 'Maximum walltime exceeded'
+        endif
+        exit Time_loop
+      endif
     endif
 !
 !  Fatal errors sometimes occur only on a specific processor. In that case all
@@ -689,25 +693,35 @@ program run
     it=it+1
     headt=.false.
   enddo Time_loop
+!
+  if (lroot) then
+    print*
+    print*, 'Simulation finished after ', icount, ' time-steps'
+  endif
+!
   if (lroot) time2=mpiwtime()
 !
 !  Write data at end of run for restart.
-!  dvar is written for analysis purposes only.
 !
-  if (lroot) print*, 'Writing final snapshot for t=', t
+  if (lroot) then
+    print*
+    print*, 'Writing final snapshot at time t=', t
+  endif
   call wtime(trim(directory)//'/time.dat',t)
   if (save_lastsnap.and..not.lnowrite) then
     if (lparticles) call particles_write_snapshot( &
         trim(directory_snap)//'/pvar.dat',f,ENUM=.false.)
     if (lparticles_nbody.and.lroot) &
-         call particles_nbody_write_snapshot( &
-         trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
+        call particles_nbody_write_snapshot( &
+        trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
     call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
-    call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
-                            ENUM=.false.)
+    call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
+!
+!  dvar is written for analysis and debugging purposes only.
+!
     if (ip<=11 .or. lwrite_dvar) then
-      call wsnap(trim(directory)//'/dvar.dat',df,mvar, &
-                 enum=.false.,noghost=.true.)
+      call wsnap(trim(directory)//'/dvar.dat',df,mvar,enum=.false., &
+          noghost=.true.)
       call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
     endif
 !
@@ -715,34 +729,33 @@ program run
 !
   else if (save_lastsnap) then
     call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
-    if (ip<=11) &
-         call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
+    if (ip<=11) call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
   endif
 !
 !  Save spectrum snapshot.
 !
   if (save_lastsnap) then
-    if (dspec /= impossible) call powersnap(f,.true.)
+    if (dspec/=impossible) call powersnap(f,.true.)
   endif
 !
 !  Print wall clock time and time per step and processor for diagnostic
 !  purposes.
 !
   if (lroot) then
-    wall_clock_time = time2-time1
+    wall_clock_time=time2-time1
     print*
     write(*,'(A,1pG10.3,A,1pG8.2,A)') &
-         ' Wall clock time [hours] = ', wall_clock_time/3600., &
-         ' (+/- ', real(mpiwtick())/3600.,')'
+        ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
+        ' (+/- ', real(mpiwtick())/3600.0,')'
     if (it>1) then
       if (lparticles) then
         write(*,'(A,1pG10.3)') &
-           ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
-           wall_clock_time/count/(nw+npar/ncpus)/ncpus/1e-6
+            ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
+            wall_clock_time/icount/(nw+npar/ncpus)/ncpus/1.0e-6
       else
         write(*,'(A,1pG10.3)') &
-           ' Wall clock time/timestep/meshpoint [microsec] =', &
-           wall_clock_time/count/nw/ncpus/1e-6
+            ' Wall clock time/timestep/meshpoint [microsec] =', &
+            wall_clock_time/icount/nw/ncpus/1.0e-6
       endif
     endif
     print*
