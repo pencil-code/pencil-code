@@ -531,7 +531,7 @@ module Gravity
           'deprecated for gravity_simple')
 !
       call keep_compiler_quiet(pot)
-      call keep_compiler_quiet(pot0)
+      if (present(pot0)) call keep_compiler_quiet(pot0)
 !
     endsubroutine potential_global
 !***********************************************************************
@@ -559,12 +559,12 @@ module Gravity
         pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
       endif
 !
-      call keep_compiler_quiet(present(xmn))
-      call keep_compiler_quiet(present(ymn))
-      call keep_compiler_quiet(present(zmn))
-      call keep_compiler_quiet(present(pot0))
-      call keep_compiler_quiet(present(grav))
-      call keep_compiler_quiet(present(rmn))
+      if (present(xmn)) call keep_compiler_quiet(xmn)
+      if (present(ymn)) call keep_compiler_quiet(ymn)
+      if (present(zmn)) call keep_compiler_quiet(zmn)
+      if (present(pot0)) call keep_compiler_quiet(pot0)
+      if (present(grav)) call keep_compiler_quiet(grav)
+      if (present(rmn)) call keep_compiler_quiet(rmn)
 !
     endsubroutine potential_penc
 !***********************************************************************
@@ -710,15 +710,14 @@ module Gravity
       intent(in)  :: x,y,z,r
       intent(out) :: g_r
 !
-      call stop_it("gravity_simple: acceleration_point not implemented")
+      call fatal_error('gravity_simple','acceleration_point not implemented')
 !
-      g_r = 0.
+      g_r=0.0
 !
-      call keep_compiler_quiet(x)
-      call keep_compiler_quiet(y)
-      call keep_compiler_quiet(z)
-      call keep_compiler_quiet(r)
-      call keep_compiler_quiet(g_r)
+      if (present(x)) call keep_compiler_quiet(x)
+      if (present(y)) call keep_compiler_quiet(y)
+      if (present(z)) call keep_compiler_quiet(z)
+      if (present(r)) call keep_compiler_quiet(r)
 !
     endsubroutine acceleration_point
 !***********************************************************************
@@ -736,6 +735,7 @@ module Gravity
       endif
 !
 99    return
+!
     endsubroutine read_gravity_init_pars
 !***********************************************************************
     subroutine write_gravity_init_pars(unit)
@@ -762,6 +762,7 @@ module Gravity
       endif
 !
 99    return
+!
     endsubroutine read_gravity_run_pars
 !***********************************************************************
     subroutine write_gravity_run_pars(unit)
