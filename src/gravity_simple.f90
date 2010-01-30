@@ -326,10 +326,10 @@ module Gravity
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-          g_A = g_A_cgs/unit_velocity*unit_time
-          g_B = g_B_cgs/unit_length
-          g_C = g_C_cgs/unit_velocity*unit_time
-          g_D = g_D_cgs/unit_length
+        g_A = g_A_cgs/unit_velocity*unit_time
+        g_B = g_B_cgs/unit_length
+        g_C = g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_cgs/unit_length
       else if (unit_system=='SI') then
         call fatal_error('initialize_gravity','SI unit conversions not inplemented')
       endif
