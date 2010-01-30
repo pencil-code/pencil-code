@@ -15,6 +15,10 @@ Comments:
     Different test fields can be used. Note however that the result is
     in general wavenumber dependent. The present example is for the
     homogeneous helical turbulence with large-scale uniform shear.
+    By setting itestfield='B11-B22_lin', we can use constant and linear
+    test fields. Their profiles can be analysed with
+    IDL> .r pc_read_alpha_xyaver . Further examples can be found in
+    http://www.nordita.org/~brandenb/teach/PencilCode/material/RobertsTestfield
 References:
     Brandenburg, A.: 2005, ``Turbulence and its parametrization in
        accretion discs,'' Astron. Nachr. 326, 787-797
