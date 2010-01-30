@@ -371,9 +371,6 @@ module Chemistry
       endif
 
      endif
-     
-
-      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_chemistry
 !***********************************************************************
