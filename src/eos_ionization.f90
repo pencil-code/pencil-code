@@ -672,8 +672,6 @@ module EquationOfState
 !
       p%del2lnTT=0.0
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p%del2lnrho)
-      call keep_compiler_quiet(p%del2ss)
 !
     endsubroutine temperature_laplacian
 !***********************************************************************
