@@ -8,7 +8,7 @@ module Solid_Cells
   use Cparam
   use Cdata
   use Messages
-  
+  use Sub, only: keep_compiler_quiet
   implicit none
   
   include 'solid_cells.h'
@@ -113,8 +113,7 @@ module Solid_Cells
       use InitialCondition, only: initial_condition_solid_cells
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer, pointer :: iglobal_cs2,iglobal_glnTT
-      real :: a2,rr2,pphi,wall_smoothing,rr2_low,rr2_high,shiftx,shifty
+      real :: a2,rr2, wall_smoothing,rr2_low,rr2_high,shiftx,shifty
       real :: wall_smoothing_temp,xr,yr
       integer i,j,k,cyl,jj,icyl
 !
@@ -477,7 +476,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     real    :: fp_pressure
     real    :: fp_stress(3,3)
     integer :: icyl,ifp,ix0,iy0,iz0, i
-    real    :: nu, twonu, xr, yr, rr2, a2
+    real    :: nu, twonu
     real    :: force_x, force_y
     real    :: twopi, nvec(3)
 !
@@ -553,6 +552,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       endif
     endif
 !
+    call keep_compiler_quiet(df,f)
+!
   endsubroutine dsolid_dt
 !***********************************************************************  
   subroutine dsolid_dt_integrate
@@ -567,7 +568,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     use general
 
     real    :: rhosum_all, c_dragx_all(ncylinders), c_dragy_all(ncylinders)
-    real    :: cpx,ctx,cpy,cty
     integer :: irhocount_all,icyl
     real    :: norm, refrho0
     character*50  :: numberstring
@@ -844,7 +844,6 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       integer :: lower_i,upper_i,lower_j,upper_j,k,ivar
       real :: xmirror,ymirror,phi, hx1, hy1,hy2,hx2
       real, dimension(3) :: xxp
-      real :: phi_tmp
 !
       hx1=xmirror-x(lower_i)
       hx2=x(upper_i)-xmirror
@@ -907,7 +906,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
       real, dimension(2) :: xyint, p_cylinder
       real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
-      real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx,gp
+      real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx
       logical, intent(in) :: fluid_point
       real :: fintx, finty,fint_ur,fint_ut,drp,dri,f2x,f2y,f1x,f1y
       real, save :: urp,utp
@@ -1253,7 +1252,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  19-nov-2008/nils: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
-      integer :: i,j,k
+      integer :: i
 !
       do i=l1,l2
         if (&
@@ -1634,7 +1633,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  28-nov-2008/nils: coded
 !
       integer :: i,j,k,cw,icyl
-      real :: xval_p,xval_m,yval_p,yval_m,maxval,x2,y2,minval,dist
+      real :: xval_p,xval_m,yval_p,yval_m,x2,y2,minval,dist
 !
       x2=cylinder(icyl,1)**2-(y(j)-cylinder(icyl,3))**2
       y2=cylinder(icyl,1)**2-(x(i)-cylinder(icyl,2))**2
@@ -1669,6 +1668,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         minval=dist
         cw=-2
       endif
+!
+      call keep_compiler_quiet(k)
 !
     endsubroutine find_closest_wall
 !***********************************************************************  
