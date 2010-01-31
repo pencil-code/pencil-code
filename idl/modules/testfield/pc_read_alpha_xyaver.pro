@@ -107,7 +107,8 @@ endif else begin
 endelse
 ;
 print,'tvscl,alpij(*,*,0,0)'
-print,'contour,transpose(alpij(*,*,1,1)),tt(1:*),zzz,nlev=20,/fil'
+print,'contour,transpose(alpij(*,*,1,1)),tt(0:*),zzz,nlev=20,/fil'
+print,'contour,transpose(alpijc(*,*,1,1)),ttt,zzz,nlev=20,/fil'
 ;
 ;tarray=spread(xyaver.t,[0,2,3],[nz,2,2])
 ;default,good,where(tarray gt 0.)
