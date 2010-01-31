@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90 11877 2009-10-11 13:20:36Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  This module deals with communication of particles between processors.
 !
