@@ -75,6 +75,7 @@ module Testfield
 
   ! run parameters
   real :: etatest=0.,etatest1=0.
+  real :: tau_aatest=0.,tau1_aatest=0.
   real :: ampl_fcont_aatest=1.
   real, dimension(njtest) :: rescale_aatest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
@@ -82,6 +83,7 @@ module Testfield
   logical :: ltestfield_linear=.false.
   logical :: llorentzforce_testfield=.false.
   logical :: lforcing_cont_aatest=.false.
+  logical :: ltestfield_artifric=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
@@ -91,7 +93,7 @@ module Testfield
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest
+       rescale_aatest,tau_aatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -324,7 +326,7 @@ module Testfield
         bamp12=1./bamp**2
       endif
 !
-!  calculate iE0
+!  calculate iE0; set ltestfield_linear in specific cases
 !
       ltestfield_linear=.false.
       if (.not.lstarting) then
@@ -360,6 +362,14 @@ module Testfield
         lrescaling_testfield=.true.
       endif
 !
+!  check for possibility of artificial friction force
+!
+      if (tau_aatest/=0.) then
+        ltestfield_artifric=.true.
+        tau1_aatest=1./tau_aatest
+        if (lroot) print*,'initialize_testfield: tau1_aatest=',tau1_aatest
+      endif
+
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
@@ -694,6 +704,12 @@ module Testfield
       if (lforcing_cont_aatest) &
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +ampl_fcont_aatest*p%fcont
+!
+!  add possibility of artificial friction
+!
+      if (ltestfield_artifric) &
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+            -tau1_aatest*f(l1:l2,m,n,iaxtest:iaztest)
 !
 !  Calculate Lorentz force for sinlge B11 testfield and add to duu
 !
