@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 !-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
@@ -456,6 +456,8 @@ module Special
         endif
       enddo
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine calc_lspecial_pars(f)
@@ -477,7 +479,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
@@ -524,8 +526,7 @@ module Special
              call phizsum_mn_name_r(p%rho*urad*2*pi*p%rcyl_mn*fac,idiag_mdotmr)
       endif
 !
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -539,9 +540,8 @@ module Special
      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
      real, dimension (mx,my,mz,mvar), intent(inout) :: df
      type (pencil_case), intent(in) :: p
-     real, dimension (nx) :: br,bp,bz,bcalc
+     real, dimension (nx) :: br,bp,bz
      real, dimension(nx,3) :: puxb
-     real:: constkr
      integer :: i
 !
 ! Remove mean electromotive force from induction equation.
@@ -574,10 +574,7 @@ module Special
        df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - puxb(:,1)
        df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - puxb(:,2)
      endif
-! Keep compiler quiet by ensuring every parameter is used
-     call keep_compiler_quiet(df)
-     call keep_compiler_quiet(p)
-
+!
      br=p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy - bavg(:,1)
      bp=p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy - bavg(:,2)
      bz=p%bb(:,3)                         - bavg(:,3)
@@ -597,6 +594,8 @@ module Special
      if (l1davgfirst.and.idiag_brbpmr/=0) &
           call phizsum_mn_name_r(br*bp,idiag_brbpmr)
 !
+     call keep_compiler_quiet(f,df)
+!
     endsubroutine special_calc_magnetic
 !***********************************************************************
     subroutine special_calc_entropy(f,df,p)
@@ -605,6 +604,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
@@ -673,12 +673,8 @@ module Special
       real, dimension(nx) :: prcyl_mn,prcyl_mn1,sin,cos,puu1,puu2,puu3,prho
       real, dimension(nx) :: pbb1,pbb2,pbb3
       integer :: i,j,ir
-      logical :: err,lfp,llp
-      real :: rloop_int,rloop_ext,ur,up,rr1
-      real,dimension(mvar) :: a,b,c
-!
-      integer :: i0,ll
-      real, dimension(nx) :: rr
+      logical :: lfp,llp
+      real :: rloop_int,rloop_ext
 !
       if (lmagnetic)             bavg_coarse=0.
       if (lhydro)                uavg_coarse=0
