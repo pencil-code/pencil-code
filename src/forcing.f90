@@ -3037,7 +3037,7 @@ module Forcing
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_forcing_init_pars
 !***********************************************************************
