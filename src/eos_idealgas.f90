@@ -391,7 +391,7 @@ module EquationOfState
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_eos
 !***********************************************************************
