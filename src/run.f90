@@ -231,6 +231,13 @@ program run
 !
   call get_nseed(nseed)
 !
+!  Write particle block dimensions to file (may have been changed for better
+!  load balancing).
+!
+  if (lroot) then
+    if (lparticles) call particles_write_block(trim(datadir)//'/bdim.dat')
+  endif
+!
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
@@ -256,13 +263,13 @@ program run
 !
 !  Read coordinates.
 !
-  if (ip<=6.and.lroot) print*,'reading grid coordinates'
+  if (ip<=6.and.lroot) print*, 'reading grid coordinates'
   call rgrid(trim(directory)//'/grid.dat')
 !
 !  Read processor boundaries.
 !
   if (lparticles) then
-    if (ip<=6.and.lroot) print*,'reading processor boundaries'
+    if (ip<=6.and.lroot) print*, 'reading processor boundaries'
     call rproc_bounds(trim(directory)//'/proc_bounds.dat')
   endif
 !
@@ -655,7 +662,7 @@ program run
 !
   if (lroot) then
     print*
-    print*, 'Writing final snapshot at time t=', t
+    print*, 'Writing final snapshot at time t =', t
   endif
   call wtime(trim(directory)//'/time.dat',t)
   if (save_lastsnap.and..not.lnowrite) then
