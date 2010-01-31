@@ -563,8 +563,8 @@ module EquationOfState
     if (.not. l_cp) then
       cp1_=cp1
     else
-      call stop_it('chem.inp is found: pressure_gradient_point &
-          can not be used for this moment')
+      call fatal_error('get_cp1','chem.inp is found: '// &
+          'pressure_gradient_point can not be used for this moment')
     endif
 !
     endsubroutine get_cp1
