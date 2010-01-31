@@ -1,7 +1,4 @@
-# Makefile
-
-## $Revision$
-## $Date$
+## $Id$
 
 TARGET=anelastic_hurdle
 MAY_HAVE_CHANGED='Rerun to get .* \(right\|correct\)'
@@ -32,10 +29,10 @@ $(TARGET).dvi: *.tex
 $(TARGET).ps: $(TARGET).dvi
 
 clean:
-	rm -f *.{aux,log,out,toc,ilg} comment.cut
+	bash -c "rm -f *.{aux,log,out,toc,ilg,pdf} comment.cut"
 
 cleann: clean
-	bash -c "rm -f  $(TARGET).{idx,blg,bbl,dvi,pdf,ps,ind,ilg,aux,toc,out,idx,log}"
+	bash -c "rm -f $(TARGET).{idx,blg,bbl,dvi,pdf,ps,ind,ilg,aux,toc,out,idx,log}"
 
 cleanall: cleann
 

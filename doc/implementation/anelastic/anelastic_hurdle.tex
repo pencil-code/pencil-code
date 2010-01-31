@@ -10,12 +10,18 @@
 {\mbox{\boldmath$\textstyle#1$}}
 {\mbox{\boldmath$\scriptstyle#1$}}
 {\mbox{\boldmath$\scriptscriptstyle#1$}}}}
+\newcommand{\dnz}[1]{\frac{d  #1}{dz}}
+\newcommand{\ddnz}[1]{\frac{d^2  #1}{dz^2}}
+\newcommand{\ltex}[1]{\quad \hbox{#1} \quad}
 
-\title{Anelastic Approximation without linearization.}
+\title{Anelastic Approximation without linearization}
 \author{}
+\date{\today,~ $Revision$}
+
 \maketitle
 
-\section{Notes}
+\section{The anelastic scheme}
+
 We started with the definition of anelastic approximation given by,
 \label{sec:intro}
 \begin{eqnarray}
@@ -116,4 +122,61 @@ $(\nabla^2 - \vec{R^u}.\vec{\nabla} -\vec{\nabla}.\vec{R^u})p = 0$
 \item Go to step~1
 \end{enumerate}
 \end{itemize}
+
+\section{Poisson's solver and boundary conditions}
+
+We want to solve 
+
+\[
+\Delta \Psi(x,y,z) = RHS (x,y,z),
+\]
+We Fourier decompose $\Psi$ in the $(x,y)$ plane then
+
+\[
+\ddnz{\Psi_k} - k^2 \Psi_k = RHS_k \Rightarrow
+\frac{\Psi_k^{i+1}-2\Psi_k^{i}+\Psi_k^{i-1}}{\delta z^2} - k^2 \Psi_k^{i}
+= RHS^i_k,
+\]
+leading to the following tridiagonal system to solve
+
+\[
+{1\over \delta z^2} \ltex{;} {-2\over \delta z^2} - k^2 \ltex{;} 
+{1\over \delta z^2}
+\]
+
+Now comes the problem of the boundary conditions. For the self-gravity
+problem, we assume that the density is zero outside the domain that
+reduces to $\Delta \Psi = 0$ or
+
+\[
+\ddnz{\Psi_k} - k^2 \Psi_k = 0 \Rightarrow \Psi \propto e^{+kz} +
+e^{-kz},
+\]
+and the solution $+kz$ must be eliminated as we have $\Psi \rightarrow 0$
+as $z\rightarrow \infty$. Then $\Psi \propto e^{-kz}$ outside or
+
+\[
+\Psi e^{kz} = cte \Rightarrow \dnz{\Psi e^{kz}} = 0 \Rightarrow
+\dnz{\Psi} + k \Psi = 0.
+\]
+We therefore have the two following conditions on the boundary points:
+
+\begin{equation}\left\{ \begin{array}{l}
+\displaystyle \Delta \Psi = 0 \Rightarrow =
+\frac{\Psi_k^{i+1}-2\Psi_k^{i}+\Psi_k^{i-1}}{\delta z^2}  = 0 
+\Rightarrow \Psi_k^{i+1}-2\Psi_k^{i}+\Psi_k^{i-1} = 0\\ \\
+\displaystyle \dnz{\Psi} + k \Psi = 0 \Rightarrow
+\frac{\Psi_k^{i+1}-\Psi_k^{i-1}}{2\delta z} + k \Psi_k^i = 0
+\Rightarrow \Psi_k^{i+1}-\Psi_k^{i-1} + 2\delta z k \Psi_k^i = 0
+\end{array}\right.
+\end{equation}
+Elimination of $\Psi_k^{i-1}$ leads to a single equation for $\Psi_k^i$
+and $\Psi_k^{i+1}$ only on the first gridpoints of the tridiagonal matrix:
+
+\[
+2\Psi_k^{i+1} + 2(k\delta z -1) \Psi_k^i = 0
+\]
+The same demonstration can be applied to the last gridpoint where we want
+to eliminate $\Psi_k^{i+1}$ in that case.
+
 \end{document}
