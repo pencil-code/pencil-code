@@ -108,7 +108,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       integer :: ierr
-
+!
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
 !
@@ -152,13 +152,10 @@ module Entropy
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lviscosity_heat")
 !
-!
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !
       if (ltemperature_nolog) iTT=ilnTT
-
-
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -167,13 +164,13 @@ module Entropy
     subroutine read_entropy_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_entropy_init_pars
 !***********************************************************************
@@ -186,19 +183,19 @@ module Entropy
     subroutine read_entropy_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=entropy_run_pars)
     endsubroutine write_entropy_run_pars
 !!**********************************************************************
@@ -223,13 +220,13 @@ module Entropy
         if (initlnTT(j)/='nothing') then
 !
           lnothing=.false.
-
+!
           call chn(j,iinit_str)
 !
 !  select different initial conditions
 !
           select case (initlnTT(j))
-
+!
           case ('zero', '0'); f(:,:,:,ilnTT) = 0.
           case ('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
           case ('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
@@ -258,27 +255,24 @@ module Entropy
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                 //trim(iinit_str)//'): ',trim(initlnTT(j))
             call fatal_error('init_ss',errormsg)
-
+!
           endselect
-
+!
           if (lroot) print*,'init_ss: initss(' &
               //trim(iinit_str)//') = ',trim(initlnTT(j))
-
+!
         endif
-
+!
       enddo
 !
 !  Interface for user's own initial condition
 !
       if (linitial_condition) call initial_condition_ss(f)
-
-
 !
 !  If unlogarithmic temperature considered, take exp of lnTT resulting from
 !  initlnTT
 !
       if (ltemperature_nolog) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
-
 !
       if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
@@ -290,38 +284,37 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-
       if (ldt) lpenc_requested(i_cs2)=.true.
-
+!
       if (ldensity) then
         lpenc_requested(i_gamma_m1)=.true.
         lpenc_requested(i_delta)=.true.
         lpenc_requested(i_divu)=.true.
       endif
-
+!
       if (linterstellar) then
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_ee)=.true.
       endif
-
+!
       if (lpressuregradient_gas) then
         lpenc_requested(i_rho1gpp)=.true.
       endif
-
+!
       if (lviscosity) then
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_TT1)=.true.
         if (lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
       endif
-
+!
       if (lcalc_heat_cool) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_TT1)=.true.
         if (tau_heat_cor>0) lpenc_requested(i_TT)=.true.
       endif
-
+!
       if (ladvection_temperature) then
        if (ltemperature_nolog) then
          lpenc_requested(i_ugTT)=.true.
@@ -329,7 +322,7 @@ module Entropy
          lpenc_requested(i_uglnTT)=.true.
        endif
       endif
-
+!
       if (lheatc_chiconst) then
         lpenc_requested(i_del2lnTT)=.true.
         if (lheatc_chiconst_accurate) then
@@ -338,13 +331,10 @@ module Entropy
           lpenc_requested(i_gamma)=.true.
         endif
       endif
-
+!
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
-
-    
+!
       if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
-     
-
 !
 !  Diagnostics
 !
@@ -370,7 +360,7 @@ module Entropy
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_mum/=0) lpenc_diagnos(i_mu1)=.true.
-
+!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -403,7 +393,7 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Sub, only: u_dot_grad
-
+!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
 !
@@ -454,18 +444,15 @@ module Entropy
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('lnTT',ilnTT)
-
 !
 !  Calculate cs2 in a separate routine
 !
       if (headtt) print*,'dss_dt: cs2 =', p%cs2(1)
-
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
-
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
@@ -491,27 +478,23 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
        endif
       endif
-
 !
 !  Calculate viscous contribution to temperature
 !
       if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
-
 !
 !  Various heating/cooling mechanisms
 !
       if (lcalc_heat_cool) call calc_heat_cool(df,p)
-
 !
 !  Thermal conduction
 !
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_hyper3) call calc_heatcond_hyper3(df,p)
-
+!
 ! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
-
+!
     !  if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
-
 !
 !  Interstellar radiative cooling and UV heating
 !
@@ -523,13 +506,14 @@ module Entropy
       if (ldensity) then
        if (.not. lchemistry) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma_m1*p%divu/p%delta
-       else 
-    !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma_m1*p%divu
-    !      sum_DYDt=0.
-    !       do k=1,nchemspec
-    !         sum_DYDt=sum_DYDt+p%cvspec(:,k)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
-    !       enddo
-    !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
+       else
+   !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma_m1*p%divu
+   !      sum_DYDt=0.
+   !       do k=1,nchemspec
+   !         sum_DYDt=sum_DYDt+p%cvspec(:,k)*(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
+   !       enddo
+   !    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)- &
+   !      f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
        endif
       endif
 !
@@ -565,10 +549,10 @@ module Entropy
 !
       use Diagnostics, only: max_mn_name
       use Sub, only: dot,multsv
-
+!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
       real, dimension (nx) :: g2,gamma
       real, dimension (nx,3) :: gradlncp
 !
@@ -582,7 +566,6 @@ module Entropy
         call dot(p%glnTT+p%glnrho,p%glnTT,g2)
         gamma = 5.0/3.0
       endif
-
 !
 !  Add heat conduction to RHS of temperature equation
 !
@@ -596,18 +579,15 @@ module Entropy
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
-
+!
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_hyper3(df,p)
-!
-!
 !
       use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
 !
 !  Add heat conduction to RHS of temperature equation
 !
@@ -655,7 +635,7 @@ module Entropy
 !  Add to RHS of temperature equation
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%rho1*p%cv1*p%TT1*heat
-
+!
     endsubroutine calc_heat_cool
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
