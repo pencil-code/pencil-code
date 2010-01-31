@@ -681,8 +681,8 @@ module EquationOfState
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
 !
-      call fatal_error('temperature_hessian','This routine is not coded &
-          for eos_chemistry')
+      call fatal_error('temperature_hessian', &
+        'This routine is not coded for eos_chemistry')
 !
       hlnTT(:,:,:)=0
 !
