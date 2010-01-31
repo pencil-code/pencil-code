@@ -89,6 +89,7 @@ module Interstellar
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0
   real :: t_interval_SNI=impossible
+  real :: t_interval_SNII=impossible
 !
 ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
