@@ -46,6 +46,7 @@ module Particles_mpicomm
   integer :: it1_loadbalance=100
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.
+  logical :: lreblock_particles_run=.false.
 !
   include 'mpif.h'
 !
@@ -127,7 +128,7 @@ module Particles_mpicomm
         zbrick(:,ibrick)=z(n1+ibz*nzb-1:n1+(ibz+1)*nzb)
       enddo
 !
-      if (lstarting) then
+      if (lstarting.or.(lreblock_particles_run)) then
 !
 !  Initially the blocks are set to be all the local processor's bricks.
 !
