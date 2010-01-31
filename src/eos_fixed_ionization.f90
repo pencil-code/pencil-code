@@ -580,8 +580,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       p%del2lnTT=0.
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p%del2lnrho)
-      call keep_compiler_quiet(p%del2ss)
 !
     endsubroutine temperature_laplacian
 !***********************************************************************
