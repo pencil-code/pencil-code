@@ -170,7 +170,8 @@ module Entropy
       if (ltemperature_nolog) iTT=ilnTT
 !
       if (.not. leos) then
-         call fatal_error('initialize_entropy','EOS=noeos but temperature_idealgas requires an EQUATION OF STATE for the fluid')
+         call fatal_error('initialize_entropy', &
+             'EOS=noeos but temperature_idealgas requires an EQUATION OF STATE')
       endif
 !
       if (ltemperature_nolog) then
@@ -213,21 +214,25 @@ module Entropy
 !
           hcond1=(mpoly1+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
-          if (lroot) call information('initialize_entropy',' heat conduction: K=K(r)')
+          if (lroot) &
+              call information('initialize_entropy',' heat conduction: K=K(r)')
         case ('K-arctan')
           lheatc_Karctan=.true.
           if (.not. ltemperature_nolog) &
             call fatal_error('calc_heatcond_arctan','only valid for TT')
-          if (lroot) call information('initialize_entropy',' heat conduction: arctan profile')
+          if (lroot) call information('initialize_entropy', &
+              'heat conduction:arctan profile')
         case ('chi-const')
           lheatc_chiconst=.true.
-          if (lroot) call information('initialize_entropy',' heat conduction: constant chi')
+          if (lroot) call information('initialize_entropy', &
+              ' heat conduction: constant chi')
         case ('chi-hyper3')
           lheatc_hyper3=.true.
           if (lroot) call information('initialize_entropy','hyper conductivity')
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           lheatc_hyper3_polar=.true.
-          if (lroot) call information('initialize_entropy','hyper conductivity: polar coords')
+          if (lroot) call information('initialize_entropy', &
+              'hyper conductivity: polar coords')
         case ('shock','chi-shock')
           lheatc_shock=.true.
           if (lroot) call information('initialize_entropy','shock conductivity')
@@ -311,7 +316,7 @@ module Entropy
       call put_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting Fbot")
-
+!
       call put_shared_variable('Tbump', Tbump, ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
          "there was a problem when putting Tbump")
@@ -360,8 +365,10 @@ module Entropy
       endif
 !
       if (iheatcond(1)=='nothing') then
-        if (hcond0/=impossible) call warning('initialize_entropy', 'No heat conduction, but hcond0/=0')
-        if (chi/=impossible) call warning('initialize_entropy', 'No heat conduction, but chi/=0')
+        if (hcond0/=impossible) call warning('initialize_entropy', &
+            'No heat conduction, but hcond0/=0')
+        if (chi/=impossible) call warning('initialize_entropy', &
+            'No heat conduction, but chi/=0')
       endif
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
@@ -431,13 +438,16 @@ module Entropy
           case ('blob_hs')
             if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
                 radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
-            call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
-            call blob(-ampl_lnTT,f,ilnrho,radius_lnTT,center1_x,center1_y,center1_z)
+            call blob(ampl_lnTT,f,ilnTT,radius_lnTT, &
+                center1_x, center1_y,center1_z)
+            call blob(-ampl_lnTT,f,ilnrho,radius_lnTT, &
+                center1_x,center1_y,center1_z)
 !
           case ('blob')
             if (lroot) print*, 'init_lnTT: blob ', &
                 radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
-            call blob(ampl_lnTT,f,ilnTT,radius_lnTT,center1_x,center1_y,center1_z)
+            call blob(ampl_lnTT,f,ilnTT,radius_lnTT, &
+                center1_x,center1_y,center1_z)
 !
           case ('isothermal')
             if (lroot) print*, 'init_lnTT: isothermal atmosphere'
@@ -1222,7 +1232,8 @@ module Entropy
       vKpara(:) = Kgpara
       vKperp(:) = Kgperp
 !
-      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
+      call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb, &
+          vKperp,vKpara,rhs,llog=.true.)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs*p%rho1*gamma*p%cp1
 !
@@ -1475,7 +1486,8 @@ module Entropy
         endif
 !
         if (z(i) >= z2) f(:,:,i,ilnrho)=lnrhotop+mpoly2*log(temp/Ttop)
-        if (z(i) < z2 .and. z(i) >= z1 ) f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)        
+        if (z(i) < z2 .and. z(i) >= z1 ) &
+            f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)
         if (z(i) < z1) f(:,:,i,ilnrho)=lnrho_0+mpoly0*log(temp/T0)
       enddo
 !
