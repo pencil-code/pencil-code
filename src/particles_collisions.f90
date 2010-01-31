@@ -64,14 +64,26 @@ module Particles_collisions
 !
       allocate(kneighbour(mpar_loc))
 !
-      if (npart_max_par/=-1 .and. (.not.lrandom_particle_pencils)) then
-        if (lroot) then
-          print*, 'initialize_particles_collisions: '// &
-              'with npart_max_par/=-1 one should set'
-          print*, '    lrandom_particle_pencils=T in particles_run_pars'
-          print*, '    to avoid artificial sub domains in the collisions'
+      if (lparticles_blocks) then
+        if (npart_max_par/=-1 .and. (.not.lrandom_particle_blocks)) then
+          if (lroot) then
+            print*, 'initialize_particles_collisions: '// &
+                'with npart_max_par/=-1 one should set'
+            print*, '    lrandom_particle_blocks=T in particles_run_pars'
+            print*, '    to avoid artificial sub domains in the collisions'
+          endif
+          call fatal_error('initialize_particles_collisions','')
         endif
-        call fatal_error('initialize_particles_collisions','')
+      else
+        if (npart_max_par/=-1 .and. (.not.lrandom_particle_pencils)) then
+          if (lroot) then
+            print*, 'initialize_particles_collisions: '// &
+                'with npart_max_par/=-1 one should set'
+            print*, '    lrandom_particle_pencils=T in particles_run_pars'
+            print*, '    to avoid artificial sub domains in the collisions'
+          endif
+          call fatal_error('initialize_particles_collisions','')
+        endif
       endif
 !
 !  Get radial gravity from gravity module.

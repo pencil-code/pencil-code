@@ -539,7 +539,69 @@ module Particles_map
         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
       endif
 !
+!  Possible to randomize particles inside each block. This screws with the
+!  pencil consistency check, so we turn it off when the test is running.
+!
+      if (lrandom_particle_blocks .and. (.not.lpencil_check_at_work)) then
+        if (present(dfp)) then
+          call random_particle_blocks(fp,ineargrid,inearblock,ipar,dfp)
+        else
+          call random_particle_blocks(fp,ineargrid,inearblock,ipar)
+        endif
+      endif
+!
     endsubroutine sort_particles_iblock
+!***********************************************************************
+    subroutine random_particle_blocks(fp,ineargrid,inearblock,ipar,dfp)
+!
+!  Randomize particles within each block to avoid low index particles
+!  always being considered first.
+!
+!  Slows down simulation by around 10%.
+!
+!  31-jan-10/anders: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: inearblock, ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      real, dimension (mpvar) :: fp_swap, dfp_swap
+      real :: r
+      integer, dimension (3) :: ineargrid_swap
+      integer :: inearblock_swap, ipar_swap, imn, k, kswap
+!
+      intent (out) :: fp, ineargrid, ipar, dfp
+!
+      do imn=1,ny*nz
+        if (npar_imn(imn)>=2) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call random_number_wrapper(r)
+            kswap=k1_imn(imn)+floor(r*npar_imn(imn))
+            if (kswap/=k) then
+              fp_swap=fp(kswap,:)
+              ineargrid_swap=ineargrid(kswap,:)
+              inearblock_swap=inearblock(kswap)
+              ipar_swap=ipar(kswap)
+              if (present(dfp)) dfp_swap=dfp(kswap,:)
+              fp(kswap,:)=fp(k,:)
+              ineargrid(kswap,:)=ineargrid(k,:)
+              inearblock(kswap)=inearblock(k)
+              ipar(kswap)=ipar(k)
+              if (present(dfp)) dfp(kswap,:)=dfp(k,:)
+              fp(k,:)=fp_swap
+              ineargrid(k,:)=ineargrid_swap
+              inearblock(k)=inearblock_swap
+              ipar(k)=ipar_swap
+              if (present(dfp)) dfp(k,:)=dfp_swap
+            endif
+          enddo
+        endif
+      enddo
+!
+    endsubroutine random_particle_blocks
 !***********************************************************************
     subroutine particle_block_index()
 !
