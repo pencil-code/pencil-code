@@ -714,7 +714,6 @@ module Entropy
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lviscosity_heat")
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_entropy
