@@ -361,7 +361,7 @@ module Forcing
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
       real, dimension(mk), save :: kkx,kky,kkz
-      integer, save :: ifirst,nk
+      integer, save :: ifirst=0,nk
       integer :: ik,j,jf
 !
       if (ifirst==0) then
@@ -386,14 +386,14 @@ module Forcing
 !
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
-      ik=nk*.9999*fran(2)+1
+      ik=nk*(.9999*fran(2))+1
       if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      ffnorm=force_ampl*sqrt(kav/dt)*dt
+      ffnorm=force*sqrt(kav/dt)*dt
       fx=exp(cmplx(0.,kkx(ik)*x+phase))*ffnorm
       fy=exp(cmplx(0.,kky(ik)*y))
       fz=exp(cmplx(0.,kkz(ik)*z))
