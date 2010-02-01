@@ -35,6 +35,7 @@ include 'NSCBC.h'
   character (len=labellen), dimension(ninit) :: inlet_profile='nothing'
   character(len=40) :: turb_inlet_dir=''
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
+  real :: transversal_damping=0.2
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
   logical :: notransveral_terms=.false.
@@ -68,7 +69,7 @@ include 'NSCBC.h'
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
-      notransveral_terms
+      notransveral_terms, transversal_damping
 !
   contains
 !***********************************************************************
@@ -484,8 +485,8 @@ include 'NSCBC.h'
             *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
-            call fatal_error('NSCBC.f90',&
-                'non reflecting inlet is not implemented for ilnTT>0')
+            L_2=nscbc_sigma_in*(fslice(:,:,ilnTT)-T_t)&
+              *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
           else
             L_2=0
           endif
@@ -514,7 +515,7 @@ include 'NSCBC.h'
 !
         cs0_average=sum(cs)/ngridpoints
         KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir1)
-        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)
+        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)
         if (ilnTT > 0) then
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
         else
