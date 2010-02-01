@@ -12,12 +12,13 @@
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 13.07.2007
 ;;
 pro pc_read_pstalk, object=object, datadir=datadir, it0=it0, it1=it1, $
-    quiet=quiet, noutmax=noutmax
+    swap_endian=swap_endian, quiet=quiet, noutmax=noutmax
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
 ; Default values.
 ;
+default, swap_endian, 0
 default, quiet, 0
 default, it1, -1
 default, it0, 0
@@ -86,7 +87,8 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
   npar_stalk_loc=0L
   ipar=0L
 ;
-  openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77
+  openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, $
+      swap_endian=swap_endian
   while (ntread lt nout and not eof(1)) do begin
     readu, 1, t_loc, npar_stalk_loc
 ;
