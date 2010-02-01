@@ -440,7 +440,7 @@ include 'NSCBC.h'
 !  In addition also speed of sound, gamma and mu1 is found.
 !
       call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice)
+          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t)
 !
 !  Define some prefactors to be used later
 !
@@ -485,7 +485,7 @@ include 'NSCBC.h'
             *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (non_reflecting_inlet) then
           if (ilnTT>0) then
-            L_2=nscbc_sigma_in*(fslice(:,:,ilnTT)-T_t)&
+            L_2=nscbc_sigma_in*(TT-T_t)&
               *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
           else
             L_2=0
@@ -579,8 +579,10 @@ include 'NSCBC.h'
             fslice(:,:,dir2) = 0.
             fslice(:,:,dir3) = 0.
           endif
-          if (ilnTT>0) then
-            fslice(:,:,ilnTT) = T_t
+          if (lTT>0) then
+            fslice(:,:,iTT) = T_t
+          elseif (ilnTT>0) then
+            fslice(:,:,ilnTT) = log(T_t)
           endif
         endif
       endif
@@ -939,7 +941,7 @@ include 'NSCBC.h'
       end subroutine turbulent_vel_z
 !***********************************************************************
       subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice)
+          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t)
 !
 !  Find thermodynamical quantities, including density and temperature
 !
@@ -955,6 +957,7 @@ include 'NSCBC.h'
         real, dimension(:,:,:), intent(inout)  :: grad_rho,grad_T,grad_P
         real, dimension(:,:,:), intent(in) :: fslice
         real, intent(out) :: nu
+        real, intent(inout) :: T_t
 !
         integer :: i
 !
@@ -972,6 +975,7 @@ include 'NSCBC.h'
         TT = fslice(:,:,iTT)
       elseif (ilnTT>0) then
         TT = exp(fslice(:,:,ilnTT))
+        T_t=exp(T_t)
       endif
 !
 !  Get viscoity
