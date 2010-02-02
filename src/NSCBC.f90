@@ -579,7 +579,7 @@ include 'NSCBC.h'
             fslice(:,:,dir2) = 0.
             fslice(:,:,dir3) = 0.
           endif
-          if (ilnTT>0) then
+          if (iTT>0) then
             fslice(:,:,iTT) = T_t
           elseif (ilnTT>0) then
             fslice(:,:,ilnTT) = log(T_t)
