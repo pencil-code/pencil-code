@@ -5542,22 +5542,22 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          endif
          if (lcorner_y)  then
 
-          df(lll,mm,n1:n2,irho_tmp) = T_1_z(mmm,:)&
-          + drho_prefac(mmm,:)*(M_2(mmm,:)+0.5*(M_5(mmm,:) + M_1(mmm,:))) &
-          + drho_prefac(mmm,:)*(L_2(mmm,:)+0.5*(L_5(mmm,:) + L_1(mmm,:)))
+!          df(lll,mm,n1:n2,irho_tmp) = T_1_z(mmm,:)&
+!          + drho_prefac(mmm,:)*(M_2(mmm,:)+0.5*(M_5(mmm,:) + M_1(mmm,:))) &
+!          + drho_prefac(mmm,:)*(L_2(mmm,:)+0.5*(L_5(mmm,:) + L_1(mmm,:)))
 
-         df(lll,mm,n1:n2,iux) =  T_2_z(mmm,:) -M_3(mmm,:)- 1./&
-             (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(L_5(mmm,:) - L_1(mmm,:))
+!         df(lll,mm,n1:n2,iux) =  T_2_z(mmm,:) -M_3(mmm,:)- 1./&
+!             (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(L_5(mmm,:) - L_1(mmm,:))
 
-         df(lll,mm,n1:n2,iuy) =  T_3_z(mmm,:) - 1./&
-           (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(M_5(mmm,:) - M_1(mmm,:))-L_3(mmm,:)
-         df(lll,mm,n1:n2,iuz) = T_4_z(mmm,:)- M_4(mmm,:) -L_4(mmm,:)
-         df(lll,mm,n1:n2,ilnTT) =T_5_z(mmm,:) &
-           +drho_prefac(mmm,:)*(-M_2(mmm,:) &
-           +0.5*(gamma0(lll,mm)-1.)*(M_5(mmm,:)+M_1(mmm,:))) &
-           +drho_prefac(mmm,:)*(-L_2(mmm,:) &
-           +0.5*(gamma0(lll,mm)-1.)*(L_5(mmm,:)+L_1(mmm,:)))
-          lcorner_y=.false.
+!         df(lll,mm,n1:n2,iuy) =  T_3_z(mmm,:) - 1./&
+!           (2.*rho0(lll,mm)*cs0_ar(lll,mm))*(M_5(mmm,:) - M_1(mmm,:))-L_3(mmm,:)
+!         df(lll,mm,n1:n2,iuz) = T_4_z(mmm,:)- M_4(mmm,:) -L_4(mmm,:)
+!         df(lll,mm,n1:n2,ilnTT) =T_5_z(mmm,:) &
+!           +drho_prefac(mmm,:)*(-M_2(mmm,:) &
+!           +0.5*(gamma0(lll,mm)-1.)*(M_5(mmm,:)+M_1(mmm,:))) &
+!           +drho_prefac(mmm,:)*(-L_2(mmm,:) &
+!           +0.5*(gamma0(lll,mm)-1.)*(L_5(mmm,:)+L_1(mmm,:)))
+!          lcorner_y=.false.
 
 
         endif
@@ -5573,20 +5573,20 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          endif
 
          if  (lcorner_z) then
-          df(lll,m1:m2,nn,irho_tmp) = T_1_y(:,nnn) &
-          + drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) &
-          + drho_prefac(:,nnn)*(N_4(:,nnn)+0.5*(N_5(:,nnn) + N_1(:,nnn)))
-          df(lll,m1:m2,nn,iuy) = T_3_y(:,nnn) -L_3(:,nnn)-N_3(:,nnn)
-          df(lll,m1:m2,nn,iux) = T_2_y(:,nnn) - 1./&
-           (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) &
-                - L_1(:,nnn))-N_2(:,nnn)
-          df(lll,m1:m2,nn,iuz) =  T_4_y(:,nnn) - L_4(:,nnn)  - N_4(:,nnn)
-          df(lll,m1:m2,nn,ilnTT) = T_5_y(:,nnn) &
-           +drho_prefac(:,nnn)*(-L_2(:,nnn) &
-           +0.5*(gamma0(lll,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
-           +drho_prefac(:,nnn)*(-N_4(:,nnn) &
-           +0.5*(gamma0(lll,nn)-1.)*(N_5(:,nnn)+N_1(:,nnn)))
-           lcorner_z=.false.
+!          df(lll,m1:m2,nn,irho_tmp) = T_1_y(:,nnn) &
+!          + drho_prefac(:,nnn)*(L_2(:,nnn)+0.5*(L_5(:,nnn) + L_1(:,nnn))) &
+!          + drho_prefac(:,nnn)*(N_4(:,nnn)+0.5*(N_5(:,nnn) + N_1(:,nnn)))
+!          df(lll,m1:m2,nn,iuy) = T_3_y(:,nnn) -L_3(:,nnn)-N_3(:,nnn)
+!          df(lll,m1:m2,nn,iux) = T_2_y(:,nnn) - 1./&
+!           (2.*rho0(m1:m2,nn)*cs0_ar(m1:m2,nn))*(L_5(:,nnn) &
+!                - L_1(:,nnn))-N_2(:,nnn)
+!          df(lll,m1:m2,nn,iuz) =  T_4_y(:,nnn) - L_4(:,nnn)  - N_4(:,nnn)
+!          df(lll,m1:m2,nn,ilnTT) = T_5_y(:,nnn) &
+!           +drho_prefac(:,nnn)*(-L_2(:,nnn) &
+!           +0.5*(gamma0(lll,nn)-1.)*(L_5(:,nnn)+L_1(:,nnn))) &
+!           +drho_prefac(:,nnn)*(-N_4(:,nnn) &
+!           +0.5*(gamma0(lll,nn)-1.)*(N_5(:,nnn)+N_1(:,nnn)))
+!           lcorner_z=.false.
          endif
         enddo
 
@@ -5610,25 +5610,25 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
          endif
 
        if ((lcorner_y)  .and. (lcorner_z)) then
-        df(lll,mm,nn,irho_tmp) = &
-            drho_prefac(mmm,nnn)*(L_2(mmm,nnn)+0.5*(L_5(mmm,nnn) + L_1(mmm,nnn))) &
-          + drho_prefac(mmm,nnn)*(M_2(mmm,nnn)+0.5*(M_5(mmm,nnn) + M_1(mmm,nnn))) &
-          + drho_prefac(mmm,nnn)*(N_4(mmm,nnn)+0.5*(N_5(mmm,nnn) + N_1(mmm,nnn)))
-        df(lll,mm,nn,iux) =  -1./&
-          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(L_5(mmm,nnn) - L_1(mmm,nnn)) &
-          -M_2(mmm,nnn)-N_2(mmm,nnn)
-        df(lll,mm,nn,iuy) =  - L_3(mmm,nnn) - 1./&
-          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(M_5(mmm,nnn) - M_1(mmm,nnn))-N_3(mmm,nnn)
-        df(lll,mm,nn,iuz) =  - L_4(mmm,nnn) - M_4(mmm,nnn)  - 1./&
-          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(N_5(mmm,nnn) - N_1(mmm,nnn))
-        df(lll,mm,nn,ilnTT) = drho_prefac(mmm,nnn)*(-L_2(mmm,nnn) &
-          +0.5*(gamma0(mm,nn)-1.)*(L_5(mmm,nnn)+L_1(mmm,nnn)))  &
-          +drho_prefac(mmm,nnn)*(-M_2(mmm,nnn) &
-          +0.5*(gamma0(mm,nn)-1.)*(M_5(mmm,nnn)+M_1(mmm,nnn))) &
-           +drho_prefac(mmm,nnn)*(-N_4(mmm,nnn) &
-          +0.5*(gamma0(mm,nn)-1.)*(N_5(mmm,nnn)+N_1(mmm,nnn)))
-           lcorner_y=.false.
-           lcorner_z=.false.
+!        df(lll,mm,nn,irho_tmp) = &
+!            drho_prefac(mmm,nnn)*(L_2(mmm,nnn)+0.5*(L_5(mmm,nnn) + L_1(mmm,nnn))) &
+!          + drho_prefac(mmm,nnn)*(M_2(mmm,nnn)+0.5*(M_5(mmm,nnn) + M_1(mmm,nnn))) &
+!          + drho_prefac(mmm,nnn)*(N_4(mmm,nnn)+0.5*(N_5(mmm,nnn) + N_1(mmm,nnn)))
+!        df(lll,mm,nn,iux) =  -1./&
+!          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(L_5(mmm,nnn) - L_1(mmm,nnn)) &
+!          -M_2(mmm,nnn)-N_2(mmm,nnn)
+!        df(lll,mm,nn,iuy) =  - L_3(mmm,nnn) - 1./&
+!          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(M_5(mmm,nnn) - M_1(mmm,nnn))-N_3(mmm,nnn)
+!        df(lll,mm,nn,iuz) =  - L_4(mmm,nnn) - M_4(mmm,nnn)  - 1./&
+!          (2.*rho0(mm,nn)*cs0_ar(mm,nn))*(N_5(mmm,nnn) - N_1(mmm,nnn))
+!        df(lll,mm,nn,ilnTT) = drho_prefac(mmm,nnn)*(-L_2(mmm,nnn) &
+!          +0.5*(gamma0(mm,nn)-1.)*(L_5(mmm,nnn)+L_1(mmm,nnn)))  &
+!          +drho_prefac(mmm,nnn)*(-M_2(mmm,nnn) &
+!          +0.5*(gamma0(mm,nn)-1.)*(M_5(mmm,nnn)+M_1(mmm,nnn))) &
+!           +drho_prefac(mmm,nnn)*(-N_4(mmm,nnn) &
+!          +0.5*(gamma0(mm,nn)-1.)*(N_5(mmm,nnn)+N_1(mmm,nnn)))
+!           lcorner_y=.false.
+!           lcorner_z=.false.
        endif
       enddo
       enddo
