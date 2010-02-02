@@ -1935,7 +1935,7 @@ module Initcond
 !***********************************************************************
     subroutine stratification(f,strati_type)
 !
-!  read mean stratification from "stratification.dat"
+!  Read mean stratification from "stratification.dat".
 !
 !   8-apr-03/axel: coded
 !  23-may-04/anders: made structure for other input variables
@@ -1951,8 +1951,8 @@ module Initcond
       integer :: stat
       character (len=labellen) :: strati_type
 !
-!  read mean stratification and write into array
-!  if file is not found in run directory, search under trim(directory)
+!  Read mean stratification and write into array.
+!  If file is not found in run directory, search under trim(directory).
 !
       inquire(file='stratification.dat',exist=exist)
       if (exist) then
@@ -1966,15 +1966,14 @@ module Initcond
         endif
       endif
 !
-!  read data
-!  first the entire stratification file
+!  Read data - first the entire stratification file.
 !
       select case (strati_type)
       case ('lnrho_ss')
         do n=1,mtotal
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
-            if (ip<5) print*,"stratification: ",tmp,var1,var2
+            if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
             if (ldensity) lnrho0(n)=var1
             if (lentropy) ss0(n)=var2
           else
@@ -1986,7 +1985,7 @@ module Initcond
         do n=1,mtotal
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
-            if (ip<5) print*,"stratification: ",tmp,var1,var2
+            if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
             if (ldensity) lnrho0(n)=var1
             if (ltemperature) lnTT0(n)=var2
             if (lentropy) then
@@ -1999,12 +1998,12 @@ module Initcond
         enddo
       endselect
 !
-!  select the right region for the processor afterwards
+!  Select the right region for the processor afterwards.
 !
       select case (n)
-  !
-  !  without ghost zones
-  !
+!
+!  Without ghost zones.
+!
       case (ntotal+1)
         if (lentropy) then
           do n=n1,n2
@@ -2018,9 +2017,9 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+n-nghost)
           enddo
         endif
-  !
-  !  with ghost zones
-  !
+!
+!  With ghost zones.
+!
       case (mtotal+1)
         if (lentropy) then
           do n=1,mz
