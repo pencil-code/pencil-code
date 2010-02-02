@@ -579,7 +579,7 @@ include 'NSCBC.h'
             fslice(:,:,dir2) = 0.
             fslice(:,:,dir3) = 0.
           endif
-          if (lTT>0) then
+          if (ilnTT>0) then
             fslice(:,:,iTT) = T_t
           elseif (ilnTT>0) then
             fslice(:,:,ilnTT) = log(T_t)
@@ -644,7 +644,7 @@ include 'NSCBC.h'
       integer, intent(inout), optional :: iostat
       integer :: i,stat
       logical :: exist
-      character (len=130) :: file
+      character (len=500) :: file
 !
 ! Define default for the inlet_profile for backward compatibility
 !
