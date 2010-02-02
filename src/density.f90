@@ -24,7 +24,6 @@ module Density
   use Messages
   use EquationOfState
   use Sub, only : keep_compiler_quiet
-!
   use Special
 !
   implicit none
@@ -36,26 +35,25 @@ module Density
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
+  real, dimension (nz,3) :: glnrhomz
+  real, dimension (mz) :: lnrho_init_z=0.0, del2lnrho_init_z=0.0
+  real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
+  real, dimension (3) :: diffrho_hyper3_aniso=0.0
   real :: lnrho_const=0.0, rho_const=1.0
   real :: cdiffrho=0.0, diffrho=0.0, diffrho_hyper3=0.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
-  real :: xblob=0., yblob=0., zblob=0.
-  real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
-  real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,density_floor=-1.0
-  real :: mass_source_Mdot=0.,mass_source_sigma=0.
-  real :: radial_percent_smooth=10.,rshift=0.0
-  real, dimension (3) :: diffrho_hyper3_aniso=0.
-  real, dimension (mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
-  real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
+  real :: xblob=0.0, yblob=0.0, zblob=0.0
+  real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
+  real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
+  real :: wdamp=0.0, density_floor=-1.0
+  real :: mass_source_Mdot=0.0, mass_source_sigma=0.0
+  real :: radial_percent_smooth=10.0, rshift=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
-
-  real, dimension (nz,3) :: glnrhomz
-
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
-
+  complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
+  integer :: iglobal_gg=0
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
@@ -67,42 +65,36 @@ module Density
   logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
-!
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
   character (len=labellen) :: mass_source_profile='cylindric'
   character (len=5) :: iinit_str
-  complex :: coeflnrho=0.
-!
-  integer :: iglobal_gg=0
 !
   namelist /density_init_pars/ &
-      ampllnrho,initlnrho,widthlnrho,                    &
-      rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top,       &
-      radius_lnrho,eps_planet,xblob,yblob,zblob,                    &
-      b_ell,q_ell,hh0,rbound,lwrite_stratification,                 &
-      mpoly,strati_type,beta_glnrho_global,radial_percent_smooth,   &
-      kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho,     &
-      kxx_lnrho, kyy_lnrho, kzz_lnrho,                              &
-      co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,lexponential_smooth,&
-      wdamp,plaw,lcontinuity_gas,density_floor,lanti_shockdiffusion,&
-      rshift,lrho_as_aux,ldiffusion_nolog,lnrho_z_shift,            &
-      lshare_plaw, powerlr, zoverh, hoverr
+      ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
+      rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, yblob, &
+      zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
+      strati_type, beta_glnrho_global, radial_percent_smooth, kx_lnrho, &
+      ky_lnrho, kz_lnrho, amplrho, phase_lnrho, coeflnrho, kxx_lnrho, &
+      kyy_lnrho,  kzz_lnrho, co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, &
+      lexponential_smooth, wdamp, plaw, lcontinuity_gas, density_floor, &
+      lanti_shockdiffusion, rshift, lrho_as_aux, ldiffusion_nolog, &
+      lnrho_z_shift, lshare_plaw, powerlr,  zoverh,  hoverr
 !
   namelist /density_run_pars/ &
-      cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
-      cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,         &
-      mass_source_profile, mass_source_Mdot, mass_source_sigma,     &
-      lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
-      wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
-      lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
-      diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
-      lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
-      lcheck_negative_density,lmassdiff_fix,lcalc_glnrhomean
-
-! diagnostic variables (need to be consistent with reset list below)
+      cdiffrho, diffrho, diffrho_hyper3, diffrho_shock, cs2bot, cs2top, &
+      lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
+      mass_source_Mdot,  mass_source_sigma, lnrho_int, lnrho_ext, &
+      damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
+      lnrho_const, plaw, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
+      lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
+      ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
+      lcalc_glnrhomean
+!
+!  Diagnostic variables (need to be consistent with reset list below).
+!
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
   integer :: idiag_rho2m=0      ! DIAG_DOC:
@@ -2628,7 +2620,7 @@ module Density
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for compressible part
+!  Reads and registers print parameters relevant for continuity equation.
 !
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
@@ -2644,8 +2636,8 @@ module Density
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
+!  Reset everything in case of reset.
+!  (This needs to be consistent with what is defined above!)
 !
       if (lreset) then
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
@@ -2658,7 +2650,7 @@ module Density
         idiag_rhomxz=0
       endif
 !
-!  iname runs through all possible names that may be listed in print.in
+!  iname runs through all possible names that may be listed in print.in.
 !
       if (lroot.and.ip<14) print*,'rprint_density: run through parse list'
       do iname=1,nname
@@ -2670,57 +2662,64 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
         call parse_name(iname,cname(iname),cform(iname),'ugrhom',idiag_ugrhom)
-        call parse_name(iname,cname(iname),cform(iname),'uglnrhom',idiag_uglnrhom)
+        call parse_name(iname,cname(iname),cform(iname),'uglnrhom', &
+            idiag_uglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz', &
+            idiag_rhomz)
       enddo
 !
-!  check for those quantities for which we want xz-averages
+!  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhomy',idiag_rhomy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhomy', &
+            idiag_rhomy)
       enddo
 !
-!  check for those quantities for which we want yz-averages
+!  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhomx',idiag_rhomx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhomx', &
+            idiag_rhomx)
       enddo
 !
-!  check for those quantities for which we want phiz-averages
+!  Check for those quantities for which we want phiz-averages.
 !
       do inamer=1,nnamer
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomr',idiag_rhomr)
+        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhomr', &
+            idiag_rhomr)
       enddo
 !
-!  check for those quantities for which we want z-averages
+!  Check for those quantities for which we want z-averages.
 !
       do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhomxz',idiag_rhomxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhomxz', &
+            idiag_rhomxz)
       enddo
 !
-!  check for those quantities for which we want z-averages
+!  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy',idiag_rhomxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy', &
+            idiag_rhomxy)
       enddo
 !
-!  check for those quantities for which we want phi-averages
+!  Check for those quantities for which we want phi-averages.
 !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),&
-            'lnrhomphi',idiag_lnrhomphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'lnrhomphi', &
+            idiag_lnrhomphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
       enddo
 !
-!  write column where which density variable is stored
+!  Write column where which density variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_rhom=',idiag_rhom
@@ -2820,8 +2819,8 @@ module Density
     endsubroutine get_slices_pressure
 !***********************************************************************
     subroutine get_init_average_density(f,init_average_density)
+!
 !  10-dec-09/piyali: added to pass initial average density 
-!  equ.f90 
 !
     real, dimension (mx,my,mz,mfarray):: f
     real:: init_average_density
