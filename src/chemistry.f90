@@ -2125,13 +2125,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
         if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
         allocate(Sijp(nchemspec,mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
-        allocate(kreactions_p(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_p")
-        allocate(kreactions_m(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for kreactions_m")
         allocate(reaction_name(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
-
         allocate(B_n(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for B_n")
         allocate(alpha_n(mreactions),STAT=stat)
@@ -2173,8 +2168,8 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 !  print input data for verification
 !
       if (lroot .and. nreactions>0) then
-        print*,'kreactions_m=',kreactions_m(1:nreactions)
-        print*,'kreactions_p=',kreactions_p(1:nreactions)
+       ! print*,'kreactions_m=',kreactions_m(1:nreactions)
+       ! print*,'kreactions_p=',kreactions_p(1:nreactions)
         print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
         print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
         print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
