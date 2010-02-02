@@ -743,6 +743,7 @@ module Chemistry
       real :: mO2, mH2, mN2, mH2O
       real :: log_inlet_density, del
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      integer :: j2,j3
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
 ! 
@@ -874,11 +875,14 @@ module Chemistry
            endif
           endif
          enddo
-
-
-
 !
-    call calc_for_chem_mixture(f)
+  !  call calc_for_chem_mixture(f)
+
+   if (unit_system == 'cgs') then
+!
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+   endif
 
 !
 !  Find logaritm of density at inlet
@@ -889,8 +893,19 @@ module Chemistry
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
       log_inlet_density=&
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)           
+       print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
+
+
+       mu1_full=0.
+          do k=1,nchemspec
+           do j2=mm1,mm2
+           do j3=nn1,nn2
+            mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                /species_constants(k,imass)
+           enddo
+           enddo
+          enddo
 
 !
 !
@@ -905,7 +920,10 @@ print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
           +init_ux*exp(log_inlet_density)/exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
 
-     call calc_for_chem_mixture(f)
+  !   call calc_for_chem_mixture(f)
+
+     !
+!
 !
 !  Check if we want nolog of density or nolog of temperature
 !
