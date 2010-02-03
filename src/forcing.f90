@@ -278,6 +278,7 @@ module Forcing
 !  This can be useful for producing good initial conditions
 !  for turbulent decay experiments.
 !
+      call timing('addforce','entered')
       if ( (t>tforce_stop) .or. (t<tforce_start) ) then
         if ( (t>tforce_stop) .and. llastforce .and. lroot) &
             print*, 'addforce: t>tforce_stop; no forcing'
@@ -335,6 +336,7 @@ module Forcing
 !
         if (headtt.or.ldebug) print*,'addforce: done addforce'
       endif
+      call timing('addforce','finished')
 !
     endsubroutine addforce
 !***********************************************************************

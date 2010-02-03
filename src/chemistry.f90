@@ -1230,11 +1230,12 @@ module Chemistry
 !
 ! Density and temperature
 !
-     if (ldensity_nolog) then
-      rho_full=f(:,:,:,ilnrho)
-     else
-      rho_full=exp(f(:,:,:,ilnrho))
-     endif
+      call timing('calc_for_chem_mixture','entered')
+      if (ldensity_nolog) then
+        rho_full=f(:,:,:,ilnrho)
+      else
+        rho_full=exp(f(:,:,:,ilnrho))
+      endif
 
 
      if (ltemperature_nolog) then
@@ -1667,6 +1668,7 @@ module Chemistry
 !!$        lwrite=.false.
 !!$      endif
 !
+      call timing('calc_for_chem_mixture','finished')
 
     endsubroutine calc_for_chem_mixture
 !***********************************************************************
@@ -2050,6 +2052,7 @@ module Chemistry
 !
 !  identify module and boundary conditions
 !
+      call timing('dchemistry_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
 !     !if (headtt) call identify_bcs('ss',iss)
 !
@@ -2235,6 +2238,7 @@ module Chemistry
 !
 !  Calculate diagnostic quantities
 !
+      call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
       if (ldiagnos) then
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
@@ -2315,6 +2319,7 @@ module Chemistry
         if (idiag_Y8mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8mz)
         if (idiag_Y9mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9mz)
       endif
+      call timing('dchemistry_dt','finished',mnloop=.true.)
 !
     endsubroutine dchemistry_dt
 !***********************************************************************

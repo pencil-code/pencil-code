@@ -1490,6 +1490,7 @@ module Hydro
 !
 !  Identify module and boundary conditions.
 !
+      call timing('duu_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'duu_dt: SOLVE'
       if (headtt) then
         call identify_bcs('ux',iux)
@@ -1659,6 +1660,7 @@ module Hydro
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
+      call timing('duu_dt','just before ldiagnos',mnloop=.true.)
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
@@ -2035,6 +2037,7 @@ module Hydro
           if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
         endif
       endif
+      call timing('duu_dt','finished',mnloop=.true.)
 !
     endsubroutine duu_dt
 !***********************************************************************

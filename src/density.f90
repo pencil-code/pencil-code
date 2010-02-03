@@ -1555,6 +1555,7 @@ module Density
 !
 !  Identify module and boundary conditions.
 !
+      call timing('dlnrho_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE dlnrho_dt'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
@@ -1738,6 +1739,7 @@ module Density
 !  2d-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
+      call timing('dlnrho_dt','before l2davgfirst',mnloop=.true.)
       if (l2davgfirst) then
         if (idiag_lnrhomphi/=0) call phisum_mn_name_rz(p%lnrho,idiag_lnrhomphi)
         if (idiag_rhomphi/=0)   call phisum_mn_name_rz(p%rho,idiag_rhomphi)
@@ -1772,6 +1774,7 @@ module Density
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
+      call timing('dlnrho_dt','finished',mnloop=.true.)
 !
     endsubroutine dlnrho_dt
 !***********************************************************************

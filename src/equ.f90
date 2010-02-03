@@ -306,6 +306,7 @@ module Equ
 !  Store the velocity part of df array in a temporary array 
 !  while solving the anelastic case.
 !
+        call timing('pde','before ldensity_anelastic',mnloop=.true.)
         if (ldensity_anelastic) then 
           df_iuu_pencil(1:nx,1:3) = df(l1:l2,m,n,iuu:iuu+2)
           df(l1:l2,m,n,iuu:iuu+2)=0.0
@@ -320,6 +321,7 @@ module Equ
           call boundconds_y(f)
           call boundconds_z(f)
         endif
+        call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
@@ -741,16 +743,16 @@ module Equ
 !  Fill in the rhs of the poisson equation and restore the df(:,:,:,iuu) array
 !  for anelastic case 
 !
-         if (ldensity_anelastic) then
-           f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
-           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
-           f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
-           df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
+        if (ldensity_anelastic) then
+          f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
+          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
+          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
+          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
                                     df(l1:l2,m,n,iuu:iuu+2)
-           call sum_mn(p%rho,mass_per_proc(1))
-         endif
-
-
+          call sum_mn(p%rho,mass_per_proc(1))
+        endif
+        call timing('pde','end of mn loop',mnloop=.true.)
+!
 !  End of loops over m and n.
 !
         headtt=.false.

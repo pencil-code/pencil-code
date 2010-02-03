@@ -545,6 +545,7 @@ module Particles_main
 !
 !  Create shepherd/neighbour list of required.
 !
+      call timing('particles_pde_pencil','entered',mnloop=.true.)
       if (lshepherd_neighbour) &
           call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
@@ -569,6 +570,7 @@ module Particles_main
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !
       call cleanup_interpolated_quantities()
+      call timing('particles_pde_pencil','finished',mnloop=.true.)
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************

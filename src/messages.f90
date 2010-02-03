@@ -390,7 +390,7 @@ module Messages
               else
                 mul_fac=1
               endif
-              write (lun,*) time,trim(location) // ": " // trim(message), mul_fac
+              write (lun,*) time,mul_fac,trim(location)//": "//trim(message)
             endif
           endif
 !

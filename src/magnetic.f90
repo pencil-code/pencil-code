@@ -30,7 +30,7 @@ module Magnetic
 !
   use Cdata
   use Cparam
-  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id
+  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -2062,6 +2062,7 @@ module Magnetic
 !
 !  Identify module and boundary conditions.
 !
+      call timing('daa_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'daa_dt: SOLVE'
       if (headtt) then
         call identify_bcs('Ax',iax)
@@ -3107,6 +3108,7 @@ module Magnetic
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
       endif
+      call timing('daa_dt','finished',mnloop=.true.)
 !
     endsubroutine daa_dt
 !***********************************************************************
