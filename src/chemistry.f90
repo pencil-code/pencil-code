@@ -32,98 +32,100 @@ module Chemistry
 
   include 'chemistry.h'
 
-  real :: Rgas, Rgas_unit_sys=1.
-  real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
-  real, dimension (mx,my,mz) :: lambda_full, rho_full!, nu_art_full=0.
-  real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full
-  real, dimension (mx,my,mz,nchemspec) ::  cp_R_spec, hhk_full
-  real, dimension (mx,my,mz) ::  TT_full
-  real, dimension (mx,my,mz) ::  e_int_full
+     real :: Rgas, Rgas_unit_sys=1.
+     real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
+     real, dimension (mx,my,mz) :: lambda_full, rho_full, TT_full
+     real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full,  hhk_full
+ !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
 
-  real :: lambda_const=impossible
-  real :: visc_const=impossible
-  real :: diffus_const=impossible
-  real :: Sc_number=0.7, Pr_number=0.7
-  real :: Cp_const=impossible
-  real :: Cv_const=impossible
-  real :: init_x1=-0.2,init_x2=0.2
-  real :: init_y1=-0.2,init_y2=0.2
-  real :: init_z1=-0.2,init_z2=0.2
-  real :: init_TT1=400, init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
-  real :: str_thick=0.02
-  real :: init_pressure=10.13e5
-!
-  logical :: lone_spec=.false.
-  logical :: lfix_Sc=.false., lfix_Pr=.false.
+ ! parameters for simiplifyed cases
 
+     real :: lambda_const=impossible
+     real :: visc_const=impossible
+     real :: diffus_const=impossible
+     real :: Sc_number=0.7, Pr_number=0.7
+     real :: Cp_const=impossible
+     real :: Cv_const=impossible
+     logical :: lfix_Sc=.false., lfix_Pr=.false.
+
+! parameters for initial conditions
+     real :: init_x1=-0.2,init_x2=0.2
+     real :: init_y1=-0.2,init_y2=0.2
+     real :: init_z1=-0.2,init_z2=0.2
+     real :: init_TT1=400, init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+     real :: str_thick=0.02
+     real :: init_pressure=10.13e5
 !
-!  parameters related to chemical reactions
+     logical :: lone_spec=.false.
 !
-  logical :: lreactions=.true.
-  logical :: ladvection=.true.
-  logical :: ldiffusion=.true.
+!  parameters related to chemical reactions, diffusion and advection
+!
+     logical :: lreactions=.true.
+     logical :: ladvection=.true.
+     logical :: ldiffusion=.true.
 !  logical :: lnospec_eqns=.true.
 
-  logical :: lheatc_chemistry=.true.
+     logical :: lheatc_chemistry=.true.
 
-  logical :: BinDif_simple=.false.
-  logical :: Dif_simple=.false.
-  logical :: visc_simple=.false.
-  logical :: lambda_simple=.false.
-  logical :: lT_const=.false.
+     logical :: BinDif_simple=.false.
+     logical :: Dif_simple=.false.
+     logical :: visc_simple=.false.
+     logical :: lambda_simple=.false.
+     logical :: lT_const=.false.
 
-  logical :: lfilter=.false.
-  logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
-  integer :: nreactions=0,nreactions1=0,nreactions2=0
-  integer :: ll1,ll2,mm1,mm2,nn1,nn2
-  real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
+     logical :: lfilter=.false.
+     logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
+     integer :: nreactions=0,nreactions1=0,nreactions2=0
+     integer :: ll1,ll2,mm1,mm2,nn1,nn2
+     real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
 
-  integer :: mreactions
-  integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
-  real,    allocatable, dimension(:,:) :: kreactions_z
-  real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
-  character (len=30),allocatable, dimension(:) :: reaction_name
-  logical :: lT_tanh=.false.
-  logical :: ldamp_zone_NSCBCx=.false.
-  logical :: ldamp_zone_NSCBCy=.false.
-  logical :: ldamp_zone_NSCBCz=.false.
-  logical :: ldamp_left=.true.,ldamp_right=.true.
+     integer :: mreactions
+     integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
+     real,    allocatable, dimension(:,:) :: kreactions_z
+     real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
+     character (len=30),allocatable, dimension(:) :: reaction_name
+     logical :: lT_tanh=.false.
+     logical :: ldamp_zone_NSCBCx=.false.
+     logical :: ldamp_zone_NSCBCy=.false.
+     logical :: ldamp_zone_NSCBCz=.false.
+     logical :: ldamp_left=.true.,ldamp_right=.true.
 ! 1step_test case
 
-    logical :: l1step_test=.false., lflame_front=.false.
-    integer :: ipr=2
-    real :: Tc=440., Tinf=2000., beta=1.09
+     logical :: l1step_test=.false., lflame_front=.false.
+     integer :: ipr=2
+     real :: Tc=440., Tinf=2000., beta=1.09
 
 !
 !  hydro-related parameters
 !
-  real, dimension(nchemspec) :: amplchemk=0.,amplchemk2=0.
-  real, dimension(nchemspec) :: chem_diff_prefactor=1.,initial_massfractions
-  real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
-  real :: chem_diff=0.
-  character (len=labellen), dimension (ninit) :: initchem='nothing'
-  character (len=labellen), allocatable, dimension (:) :: kreactions_profile
+     real, dimension(nchemspec) :: amplchemk=0.,amplchemk2=0.
+     real, dimension(nchemspec) :: chem_diff_prefactor=1.,initial_massfractions
+     real :: amplchem=1.,kx_chem=1.,ky_chem=1.,kz_chem=1.,widthchem=1.
+     real :: chem_diff=0.
+     character (len=labellen), dimension (ninit) :: initchem='nothing'
+     character (len=labellen), allocatable, dimension (:) :: kreactions_profile
 
-  real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
-  real, dimension (mx,my,mz,nchemspec) :: Diff_full, Diff_full_add, XX_full
-  real, dimension (mx,my,mz,nchemspec) :: species_viscosity
-  real, dimension(nchemspec) :: nu_spec=0., mobility=1.
+     real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
+     real, dimension (mx,my,mz,nchemspec) :: Diff_full, Diff_full_add, XX_full
+     real, dimension (mx,my,mz,nchemspec) :: species_viscosity
+     real, dimension (mx,my,mz,nchemspec), save :: RHS_Y_full
+     real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
 !  Chemkin related parameters
 !
-  logical :: lcheminp=.false., lchem_cdtc=.false.
-  logical :: lmobility=.false.
-  real, dimension(nchemspec,18) :: species_constants
-  integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
-  integer, dimension(7) :: iaa1,iaa2
-  real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
-  real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
-  logical, allocatable, dimension(:) :: Mplus_case
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension (nx,nchemspec), save  :: S0_R
-  real, dimension (mx,my,mz,nchemspec), save :: H0_RT
-  real, dimension (mx,my,mz,nchemspec), save :: RHS_Y_full
-  real, dimension (mx,my,mz), save :: RHS_T_full
+     logical :: lcheminp=.false., lchem_cdtc=.false.
+     logical :: lmobility=.false.
+     real, dimension(nchemspec,18) :: species_constants
+     integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
+     integer, dimension(7) :: iaa1,iaa2
+     real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
+     real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
+     logical, allocatable, dimension(:) :: Mplus_case
+     real, dimension(nchemspec,7)     :: tran_data
+     real, dimension (nx,nchemspec), save  :: S0_R
+     real, dimension (mx,my,mz,nchemspec), save :: H0_RT
+ 
+ ! real, dimension (mx,my,mz), save :: RHS_T_full
 
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -1220,7 +1222,7 @@ module Chemistry
 !
       intent(in) :: f
       integer :: k,j, j1,j2,j3
-      real :: T_up, T_mid, T_low, T_loc, tmp
+      real :: T_up, T_mid, T_low, T_loc, tmp, cp_R_spec
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
@@ -1351,16 +1353,16 @@ module Chemistry
                     do j=1,5
                       tmp=tmp+species_constants(k,iaa2(j))*T_loc**(j-1)
                     enddo
-                    cp_R_spec(j1,j2,j3,k)=tmp
-                    cv_R_spec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
+                    cp_R_spec=tmp
+                    cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   elseif (T_loc >=T_mid .and. T_loc<= T_up) then
                 !  elseif (TT_full(j1,j2,j3) >=T_mid ) then
                     tmp=0.
                     do j=1,5
                       tmp=tmp+species_constants(k,iaa1(j))*T_loc**(j-1)
                     enddo
-                    cp_R_spec(j1,j2,j3,k)=tmp
-                    cv_R_spec_full(j1,j2,j3,k)=cp_R_spec(j1,j2,j3,k)-1.
+                    cp_R_spec=tmp
+                    cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   else
                     print*,'TT_full(j1,j2,j3)=',T_loc
                     print*,'j1,j2,j3=',j1,j2,j3
@@ -1368,7 +1370,7 @@ module Chemistry
                         'TT_full(j1,j2,j3) is outside range')
                   endif
                  cp_full(j1,j2,j3)=cp_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
-                  *cp_R_spec(j1,j2,j3,k)/species_constants(k,imass)*Rgas
+                  *cp_R_spec/species_constants(k,imass)*Rgas
                  cv_full(j1,j2,j3)=cv_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
                   *cv_R_spec_full(j1,j2,j3,k)/species_constants(k,imass)*Rgas
                 enddo
@@ -2037,6 +2039,7 @@ module Chemistry
       real, dimension (nx) :: ugchemspec, sum_DYDT
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
+      real, dimension (nx) :: RHS_T_full
 !
 !  indices
 !
@@ -2147,35 +2150,26 @@ module Chemistry
         enddo
        endif
 !
-   
-
-
         if (l1step_test) then
-          RHS_T_full(l1:l2,m,n)=sum_DYDt(:)
+          RHS_T_full=sum_DYDt(:)
         else
           if (ltemperature_nolog) then
         !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:)! &
            ! -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
+           call stop_it('ltemperature_nolog case does not work now!')
           else
-            RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
-        
-           +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
-           
+            RHS_T_full=(sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
+             +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
           endif
         endif
 
         if (.not. lT_const) then
-         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full(l1:l2,m,n)
+         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full
         endif     
-
 !
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
       endif
-
-
-
-
 !
 ! this damping zone is needed in a case of NSCBC
 !
@@ -2260,27 +2254,6 @@ module Chemistry
         if (idiag_cpfull/=0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         if (idiag_cvfull/=0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
-        if (idiag_cp1m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i1)*&
-                             Rgas/species_constants(i1,imass),idiag_cp1m)
-        if (idiag_cp2m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i2)*&
-                             Rgas/species_constants(i2,imass),idiag_cp2m)
-        if (idiag_cp3m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i3)*&
-                             Rgas/species_constants(i3,imass),idiag_cp3m)
-        if (idiag_cp4m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i4)*&
-                             Rgas/species_constants(i4,imass),idiag_cp4m)
-        if (idiag_cp5m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i5)*&
-                             Rgas/species_constants(i5,imass),idiag_cp5m)
-        if (idiag_cp6m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i6)*&
-                             Rgas/species_constants(i6,imass),idiag_cp6m)
-        if (idiag_cp7m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i7)*&
-                             Rgas/species_constants(i7,imass),idiag_cp7m)
-        if (idiag_cp8m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i8)*&
-                             Rgas/species_constants(i8,imass),idiag_cp8m)
-        if (idiag_cp9m/=0) call sum_mn_name(cp_R_spec(l1:l2,m,n,i9)*&
-                             Rgas/species_constants(i9,imass),idiag_cp9m)
-        if (idiag_e_intm/=0) call sum_mn_name(e_int_full(l1:l2,m,n),&
-                             idiag_e_intm)
-
         if (idiag_lambdam/=0) call sum_mn_name(lambda_full(l1:l2,m,n),&
                              idiag_lambdam)
         if (idiag_num/=0) call sum_mn_name(nu_full(l1:l2,m,n),&
@@ -4220,15 +4193,11 @@ module Chemistry
 !
           if (ldiffusion) then
 !
-          
             call del2(XX_full(:,:,:,k),del2XX)
-         
             call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
             call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
             call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
 !
-
-       
             call del2(pp_full(:,:,:),del2pp)
             call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
 
@@ -4236,11 +4205,9 @@ module Chemistry
 
             Xk_Yk=XX_full(:,:,:,k)-f(:,:,:,ichemspec(k))
             call grad(Xk_Yk,gXk_Yk)
-
             call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
             call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
             call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
-
           endif
           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
@@ -4298,7 +4265,7 @@ module Chemistry
 
     !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
 !
-      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1
+!      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1
 !
       call keep_compiler_quiet(f)
 !
@@ -4850,10 +4817,6 @@ module Chemistry
           -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
           +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
        endif
-
-
-
-!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (nchemspec>1) then
