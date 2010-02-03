@@ -4063,120 +4063,111 @@ module Chemistry
 !     
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,nchemspec) :: species_cond
-      real, dimension (mx,my,mz) :: tmp_sum, tmp_sum2, tmp_val,ZZ,FF
-      real, dimension (mx,my,mz) :: AA,BB, Cv_vib_R, f_tran, f_rot, f_vib
+      real :: tmp_val,ZZ,FF,tmp_sum, tmp_sum2
+      real :: AA,BB, Cv_vib_R, f_tran, f_rot, f_vib
       intent(in) :: f
       integer :: j1,j2,j3,k
       real :: Cv_rot_R, Cv_tran_R,T_st, pi_1_5, pi_2
 
 
       if (lambda_const<impossible) then
-         do j3=nn1,nn2
-         do j2=mm1,mm2
-         do j1=1,mx
-           if (lambda_simple) then
+        do j3=nn1,nn2
+        do j2=mm1,mm2
+        do j1=1,mx
+          if (lambda_simple) then
             lambda_full(j1,j2,j3)=lambda_const &
-               *(TT_full(j1,j2,j3)/TT_full(1,j2,j3))**0.7 &
-               *(rho_full(1,j2,j3)/rho_full(j1,j2,j3))
-           else
+                *(TT_full(j1,j2,j3)/TT_full(1,j2,j3))**0.7 &
+                *(rho_full(1,j2,j3)/rho_full(j1,j2,j3))
+          else
             lambda_full(j1,j2,j3)=lambda_const
-           endif
-         enddo
-         enddo
-         enddo
+          endif
+        enddo
+        enddo
+        enddo
       else
-
-      pi_1_5=pi**1.5
-      pi_2=pi**2.
+        pi_1_5=pi**1.5
+        pi_2=pi**2.
 !
-      do j3=nn1,nn2
-      do j2=mm1,mm2
-      do j1=1,mx
-        tmp_sum(j1,j2,j3)=0.
-        tmp_sum2(j1,j2,j3)=0.
-        do k=1,nchemspec
+        do j3=nn1,nn2
+        do j2=mm1,mm2
+        do j1=1,mx
+          tmp_sum=0.
+          tmp_sum2=0.
+          do k=1,nchemspec
 !
 ! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
 !
-          if (tran_data(k,1)==0.) then
-            Cv_tran_R=1.5
-            Cv_rot_R=0.
-            Cv_vib_R=0.
-          elseif (tran_data(k,1)==1.) then
-            Cv_tran_R=1.5
-            Cv_rot_R=1.
-            Cv_vib_R(j1,j2,j3)=cv_R_spec_full(j1,j2,j3,k)-2.5
-          elseif (tran_data(k,1)==2.) then
-            Cv_tran_R=1.5
-            Cv_rot_R=1.5
-            Cv_vib_R(j1,j2,j3)=cv_R_spec_full(j1,j2,j3,k)-3.
-          endif
+            if (tran_data(k,1)==0.) then
+              Cv_tran_R=1.5
+              Cv_rot_R=0.
+              Cv_vib_R=0.
+            elseif (tran_data(k,1)==1.) then
+              Cv_tran_R=1.5
+              Cv_rot_R=1.
+              Cv_vib_R=cv_R_spec_full(j1,j2,j3,k)-2.5
+            elseif (tran_data(k,1)==2.) then
+              Cv_tran_R=1.5
+              Cv_rot_R=1.5
+              Cv_vib_R=cv_R_spec_full(j1,j2,j3,k)-3.
+            endif
 !
 ! The rotational and vibrational contributions are zero for the single
 ! atom molecules but not for the linear or non-linear molecules 
 !
 
-          if (tran_data(k,1)>0.) then
-            tmp_val(j1,j2,j3)=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3)&
-                /species_viscosity(j1,j2,j3,k)
-            AA(j1,j2,j3)=2.5-tmp_val(j1,j2,j3)
-            T_st=tran_data(k,2)/298.
-            FF(j1,j2,j3)=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
-             *(T_st)+pi_1_5*(T_st)**1.5
-            ZZ(j1,j2,j3)=tran_data(k,6)*FF(j1,j2,j3)
-            T_st=tran_data(k,2)/TT_full(j1,j2,j3)
-            FF(j1,j2,j3)=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
-             *(T_st)+pi_1_5*(T_st)**1.5
-             ZZ(j1,j2,j3)=ZZ(j1,j2,j3)/FF(j1,j2,j3)
-            BB(j1,j2,j3)=ZZ(j1,j2,j3)+2./pi*(5./3.*Cv_rot_R&
-                +tmp_val(j1,j2,j3))
-            f_tran(j1,j2,j3)=2.5*(1.- 2./pi*Cv_rot_R/&
-                Cv_tran_R*AA(j1,j2,j3)/BB(j1,j2,j3))
-            f_rot(j1,j2,j3)=tmp_val(j1,j2,j3)&
-                *(1+2./pi*AA(j1,j2,j3)/BB(j1,j2,j3))
-            f_vib(j1,j2,j3)=tmp_val(j1,j2,j3)
-          else
-            f_tran(j1,j2,j3)=2.5     
-            f_rot(j1,j2,j3) =0.0   
-            f_vib(j1,j2,j3) =0.0   
-          endif
-          species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
-              /(species_constants(k,imass)/unit_mass)*Rgas* &
-                (f_tran(j1,j2,j3)*Cv_tran_R+f_rot(j1,j2,j3)*Cv_rot_R  &
-                +f_vib(j1,j2,j3)*Cv_vib_R(j1,j2,j3))
- 
+            if (tran_data(k,1)>0.) then
+              tmp_val=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3)&
+                  /species_viscosity(j1,j2,j3,k)
+              AA=2.5-tmp_val
+              T_st=tran_data(k,2)/298.
+              FF=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
+                  *(T_st)+pi_1_5*(T_st)**1.5
+              ZZ=tran_data(k,6)*FF
+              T_st=tran_data(k,2)/TT_full(j1,j2,j3)
+              FF=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
+                  *(T_st)+pi_1_5*(T_st)**1.5
+              ZZ=ZZ/FF
+              BB=ZZ+2./pi*(5./3.*Cv_rot_R&
+                  +tmp_val)
+              f_tran=2.5*(1.- 2./pi*Cv_rot_R/&
+                  Cv_tran_R*AA/BB)
+              f_rot=tmp_val&
+                  *(1+2./pi*AA/BB)
+              f_vib=tmp_val
+            else
+              f_tran=2.5     
+              f_rot =0.0   
+              f_vib =0.0   
+            endif
+            species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
+                /(species_constants(k,imass)/unit_mass)*Rgas* &
+                (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
+                +f_vib*Cv_vib_R) 
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
 !
-          tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3)  &
-              +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
-          tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
-              +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
+            tmp_sum=tmp_sum  &
+                +XX_full(j1,j2,j3,k)*species_cond(j1,j2,j3,k)
+            tmp_sum2=tmp_sum2 &
+                +XX_full(j1,j2,j3,k)/species_cond(j1,j2,j3,k)
           enddo
-        enddo
-        enddo
-        enddo
 !
 ! Find the mixture averaged conductivity
 !
-        do j1=1,mx
-        do j2=mm1,mm2
-        do j3=nn1,nn2
-          if ((tmp_sum2(j1,j2,j3))<=0.) then
+          if ((tmp_sum2)<=0.) then
             lambda_full(j1,j2,j3)=0.
           else
-            lambda_full(j1,j2,j3)=0.5*(tmp_sum(j1,j2,j3)+1.&
-                /tmp_sum2(j1,j2,j3))
-         !   lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
+            lambda_full(j1,j2,j3)=0.5*(tmp_sum+1.&
+                /tmp_sum2)
           endif
         enddo
         enddo
         enddo
 !
-       endif
-
-        call keep_compiler_quiet(f)
+      endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_therm_diffus_coef
 !***********************************************************************
