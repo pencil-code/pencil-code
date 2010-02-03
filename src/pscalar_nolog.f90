@@ -36,8 +36,8 @@ module Pscalar
   real :: kxx_cc=0.0, kyy_cc=0.0, kzz_cc=0.0
   real :: epsilon_cc=0.0, cc_const=1.0
   real :: zoverh=1.0, hoverr=0.05, powerlr=3.0
-  logical :: nopscalar=.false., reinitalize_cc=.false.
-  logical :: reinitalize_lncc=.false.
+  logical :: nopscalar=.false., reinitialize_cc=.false.
+  logical :: reinitialize_lncc=.false.
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
   character (len=labellen) :: initcc='zero', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
@@ -60,7 +60,7 @@ module Pscalar
 !
   namelist /pscalar_run_pars/ &
       pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
-      pscalar_diff_hyper3, reinitalize_lncc, reinitalize_cc, lpscalar_sink, &
+      pscalar_diff_hyper3, reinitialize_lncc, reinitialize_cc, lpscalar_sink, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
       om_gradC, lgradC_profile, lnotpassive, lupw_cc
 !
@@ -109,96 +109,20 @@ module Pscalar
 !  one may want to reinitialize it to its initial distribution.
 !
 !  24-nov-02/tony: coded
-!  20-may-03/axel: reinitalize_cc added
+!  20-may-03/axel: reinitialize_cc added
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (reinitalize_cc) then
+      if (reinitialize_cc) then
         f(:,:,:,icc)=0.
-        call init_lncc_simple(f)
+        call init_lncc(f)
       endif
 !
       if (lnotpassive) scalaracc=3./5./hoverr**2
     endsubroutine initialize_pscalar
-!***********************************************************************
-    subroutine init_lncc_simple(f)
-!
-!  initialise passive scalar field; called from start.f90
-!
-!   6-jul-2001/axel: coded
-!
-      use Mpicomm
-      use Sub
-      use Initcond
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-!  identify module
-!
-      if (lroot) print*,'init_lncc_simple; initcc=',initcc
-!
-      ! for the time being, keep old name for backward compatibility
-      if (initlncc/='impossible') initcc=initlncc
-      if (initlncc2/='impossible') initcc2=initlncc2
-      if (ampllncc/=impossible) amplcc=ampllncc
-      if (ampllncc2/=impossible) amplcc2=ampllncc2
-      if (kx_lncc/=impossible) kx_cc=kx_lncc
-      if (ky_lncc/=impossible) ky_cc=ky_lncc
-      if (kz_lncc/=impossible) kz_cc=kz_lncc
-      if (radius_lncc/=impossible) radius_cc=radius_lncc
-      if (epsilon_lncc/=impossible) epsilon_cc=epsilon_lncc
-      if (widthlncc/=impossible) widthcc=widthlncc
-!
-      select case (initcc)
-        case ('nothing')
-        case ('zero'); f(:,:,:,icc)=0.0
-        case ('constant'); f(:,:,:,icc)=cc_const
-        case ('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
-        case ('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
-        case ('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
-        case ('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
-        case ('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
-        case ('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
-        case ('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
-        case ('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
-        case ('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
-        case ('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
-        case ('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
-        case ('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
-        case ('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
-        case ('linprof-x'); call linprof(amplcc,f,icc,kx=kx_cc)
-        case ('linprof-y'); call linprof(amplcc,f,icc,ky=ky_cc)
-        case ('linprof-z'); call linprof(amplcc,f,icc,kz=kz_cc)
-        case ('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
-        case ('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
-        case ('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
-        case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
-        case ('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc, &
-            kxx_cc, kyy_cc,kzz_cc)
-        case ('semiangmom'); f(:,:,:,icc)=(1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2) &
-            *spread(spread(x,2,my),3,mz) &
-            +3*zoverh*hoverr*spread(spread(z,1,mx),2,my)
-        case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
-      endselect
-!
-!  superimpose something else
-!
-      select case (initcc2)
-        case ('wave-x'); call wave(amplcc2,f,icc,ky=5.)
-        case ('constant'); f(:,:,:,icc)=f(:,:,:,icc)+amplcc2
-      endselect
-!
-!  add floor value if cc_min is set
-!
-      if (cc_min/=0.) then
-        if (lroot) print*,'set floor value for cc; cc_min=',cc_min
-        f(:,:,:,icc)=max(cc_min,f(:,:,:,icc))
-      endif
-!
-    endsubroutine init_lncc_simple
 !***********************************************************************
     subroutine init_lncc(f)
 !
