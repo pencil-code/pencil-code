@@ -571,15 +571,15 @@ module Particles_map
       real, dimension (mpvar) :: fp_swap, dfp_swap
       real :: r
       integer, dimension (3) :: ineargrid_swap
-      integer :: inearblock_swap, ipar_swap, imn, k, kswap
+      integer :: inearblock_swap, ipar_swap, iblock, k, kswap
 !
       intent (out) :: fp, ineargrid, ipar, dfp
 !
-      do imn=1,ny*nz
-        if (npar_imn(imn)>=2) then
-          do k=k1_imn(imn),k2_imn(imn)
+      do iblock=0,nblock_loc-1
+        if (npar_iblock(iblock)>=2) then
+          do k=k1_iblock(iblock),k2_iblock(iblock)
             call random_number_wrapper(r)
-            kswap=k1_imn(imn)+floor(r*npar_imn(imn))
+            kswap=k1_iblock(iblock)+floor(r*npar_iblock(iblock))
             if (kswap/=k) then
               fp_swap=fp(kswap,:)
               ineargrid_swap=ineargrid(kswap,:)
