@@ -648,6 +648,7 @@ module Entropy
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_glnTT)=.true.
+        lpencil_in(i_glnmumol)=.true.
       endif
 !
     endsubroutine pencil_interdep_entropy
@@ -665,18 +666,19 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
       integer :: j
-!  Ma2
+! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-!  uglnTT
+! uglnTT
       if (lpencil(i_uglnTT)) &
           call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
-!  ugTT
+! ugTT
       if (lpencil(i_ugTT)) &
           call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
 ! fpres
       if (lpencil(i_fpres)) then
         do j=1,3
-          p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
+          p%fpres(:,j)=-gamma_inv*p%cs2* &
+              (p%glnrho(:,j)+p%glnTT(:,j)-p%glnmumol(:,j))
         enddo
       endif
 !
