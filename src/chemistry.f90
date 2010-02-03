@@ -67,7 +67,9 @@ module Chemistry
   logical :: lheatc_chemistry=.true.
 
   logical :: BinDif_simple=.false.
+  logical :: Dif_simple=.false.
   logical :: visc_simple=.false.
+  logical :: lambda_simple=.false.
   logical :: lT_const=.false.
 
   logical :: lfilter=.false.
@@ -126,7 +128,8 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple, visc_simple, &
+      amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple,Dif_simple,visc_simple, &
+      lambda_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
@@ -454,8 +457,6 @@ module Chemistry
            endif
         case ('flame_front')
           call flame_front(f)
-        case ('flame_front_3D')
-          call flame_front_3D(f)
         case ('flame_blob')
           call flame_blob(f)
         case ('flame_slab')
@@ -892,7 +893,7 @@ module Chemistry
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-      log_inlet_density=&
+        log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)           
        print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
@@ -932,225 +933,12 @@ module Chemistry
 !
     endsubroutine flame_front
 !***********************************************************************
-   subroutine flame_front_3D(f)
-!
-! 06.05.2009/Nils Erland L. Haugen: adapted from similar
-!                                   routine in special/chem_stream.f90
-! This routine set up the initial profiles used in 1D flame speed measurments
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j1,j2,j3
-
-      real :: mO2, mH2, mN2, mH2O
-      real :: log_inlet_density, del
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: initial_mu1, final_massfrac_O2,RR,RR1,RR2
-      logical :: found_specie
-! 
-      lflame_front=.true.
-!
-      call air_field(f)
-!
-! Initialize some indexes
-!
-      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
-      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
-      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
-      mO2 =species_constants(ichem_O2 ,imass)
-      mH2 =species_constants(ichem_H2 ,imass)
-      mH2O=species_constants(ichem_H2O,imass)
-      mN2 =species_constants(ichem_N2 ,imass)
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2&
-          =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
-!
-!  Initialize temperature and species
-!
-     ! do k=1,mx
-       
-        do j3=nn1,nn2
-        do j2=mm1,mm2
-        do j1=ll1,ll2
-
-       RR=0.
-       RR1=0.
-       Rr2=0.
-       del=0.
-       if (nxgrid >1) then
-
-       RR=x(j1)**2
-       RR1=(init_x1)**2+(init_y1)**2+(init_z1)**2
-       RR2=(init_x2)**2+(init_y2)**2+(init_z2)**2
-     !  del=((init_x2-init_x1)**2)
-        del=init_x2-init_x1
-
-!        Rad=x(j1)**2
-       endif
-       if (nygrid>1) then
-       ! Rad=Rad+y(j2)**2
-
-       RR=RR+y(j2)**2
-       RR1=RR1+(init_y1)**2
-       RR2=RR2+(init_y2)**2
-     !    del=(del+(init_y2-init_y1)**2)
-       endif
-       if (nzgrid>1) then
-      ! Rad=Rad+z(j3)**2
-       RR=RR+z(j3)**2
-       RR1=RR1+(init_z1)**2
-       RR2=RR2+(init_z2)**2
-     !     del=(del+(init_z2-init_z1)**2)
-       endif
-
-
-       RR=sqrt(RR)
-       RR1=sqrt(RR1)
-       RR2=sqrt(RR2)
-     !  del=sqrt(del)
-
-!
-!  Initialize temperature
-!
-        if (lT_tanh) then
-        !  del=init_x2-init_x1
-          f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-              +((init_TT2-init_TT1)*0.5)  &
-              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del)))
-        else
-
-
-      !    if (RR>del) then
-      !      f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT1)
-
-      !    else
-!            f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+&
-!                log((RR-RR1)/(RR2-RR1) &
- !               *(init_TT2-init_TT1)+init_TT1)
-     !      f(j1,j2,j3,ilnTT)=f(j1,j2,j3,ilnTT)+log(init_TT2)
-
-     !     endif
-     
-     
-      
-        if (RR<del) then
-          f(j1,j2,j3,ilnTT)=log(init_TT1)+log(4.)*((del-RR)/del)**2
-         else
-          f(j1,j2,j3,ilnTT)=log(init_TT1)
-         endif
-
-        endif
-
-
-
-!
-!  Initialize steam and hydrogen
-!
-        if (lT_tanh) then
-     !     del=(init_x2-init_x1)/3.
-             del=(RR2-RR1)/3.
-          f(j1,j2,j3,i_H2)=(0.+f(l1,m1,n1,i_H2))*0.5  &
-              +(0.-f(l1,m1,n1,i_H2))*0.5  &
-              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
-!
-          f(j1,j2,j3,i_H2O)=(f(l1,m1,n1,i_H2)/2.*18.+f(l1,m1,n1,i_H2O))*0.5  &
-              +((f(l1,m1,n1,i_H2)/2.*18.-f(l1,m1,n1,i_H2O))*0.5)  &
-              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
-!
-        else
-       !   if (RR<del) then
-       !     f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O 
-       !     f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)
-       !  endif
-
-
-          if (RR<del) then
-            f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)*(1.-((del-RR)/del)**2)
-            f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O*(1.-((del-RR)/del)**2)
-          else
-            f(j1,j2,j3,i_H2)=initial_massfractions(ichem_H2)
-            f(j1,j2,j3,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O
-          endif
-!
-        endif
-!
-!  Initialize oxygen
-!
-        if (lT_tanh) then
-        !  del=(init_x2-init_x1)
-            del=(RR2-RR1)/3.
-          f(j1,j2,j3,i_O2)=(f(l2,m2,n2,i_O2)+f(l1,m1,n1,i_O2))*0.5  &
-              +((f(l2,m2,n2,i_O2)-f(l1,m1,n1,i_O2))*0.5)  &
-              *(exp(RR/del)-exp(-RR/del))/(exp(RR/del)+exp(-RR/del))
-        else
-
-       !   if (RR<del) then
-       !     f(j1,j2,j3,i_O2)=final_massfrac_O2
-       !  endif
-          if (RR<del) then
-            f(j1,j2,j3,i_O2)=(final_massfrac_O2-initial_massfractions(ichem_O2))*((del-RR)/del)**2  &
-                +initial_massfractions(ichem_O2)
-          else
-
-           f(j1,j2,j3,i_O2)=initial_massfractions(ichem_O2)
-
- !                 (RR-RR2)/(RR1-RR2) &
- !               *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
- !              +final_massfrac_O2
-          endif
-        endif
-      enddo
-      enddo
-      enddo
-!
-      call calc_for_chem_mixture(f)
-!
-!  Find logaritm of density at inlet
-!
-      initial_mu1&
-          =initial_massfractions(ichem_H2)/(mH2)&
-          +initial_massfractions(ichem_O2)/(mO2)&
-          +initial_massfractions(ichem_H2O)/(mH2O)&
-          +initial_massfractions(ichem_N2)/(mN2)
-      log_inlet_density=&
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-!
-      do j3=nn1,nn2
-        do j2=mm1,mm2
-          do j1=ll1,ll2
-!
-!  Initialize density
-!
-            f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
-                -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
-!
-!  Initialize velocity
-!
-            f(j1,j2,j3,iux)=f(j1,j2,j3,iux)  &
-                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-            f(j1,j2,j3,iuy)=f(j1,j2,j3,iuy)  &
-                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-            f(j1,j2,j3,iuz)=f(j1,j2,j3,iuz)  &
-                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-!
-          enddo
-        enddo
-      enddo
-!
-!  Check if we want nolog of density
-!
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
-!
-    endsubroutine flame_front_3D
-!***********************************************************************
+! !***********************************************************************
     subroutine flame_blob(f)
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: j1,j2,j3
+      integer :: j1,j2,j3,k 
 
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
@@ -1185,7 +973,14 @@ module Chemistry
 !  it is in air_field(f)
 !___________________________________________
 
-      call calc_for_chem_mixture(f)
+     ! call calc_for_chem_mixture(f)
+
+
+      if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+      endif
+
 !
 !  Find logaritm of density at inlet
 !
@@ -1194,15 +989,17 @@ module Chemistry
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-
+      
+       mu1_full=0.
+          do k=1,nchemspec
+          do j2=mm1,mm2
+          do j3=nn1,nn2
+           mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                /species_constants(k,imass)
+          enddo
+          enddo
+          enddo
  
-!  
-!   log_inlet_density=&
-!      log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-    !  do j3=nn1,nn2
-    !    do j2=mm1,mm2
-    !      do j1=ll1,ll2
-
       
         do j3=1,mz
       
@@ -1226,9 +1023,7 @@ module Chemistry
 
        Rad=(Rad)**0.5
 
-   !  if (j3==4)    print*,Rad,Rad**0.5,x(j1),y(j2),'  ',j1,j2   
-
-  !      Rad=abs(x(j1))
+    !      Rad=abs(x(j1))
          if (Rad<0.2) then
           f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
          else
@@ -1298,7 +1093,7 @@ module Chemistry
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: j1
+      integer :: j1,j2,j3,k
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2, del=0.
@@ -1331,7 +1126,13 @@ module Chemistry
 !  it is in air_field(f)
 !___________________________________________
 
-      call calc_for_chem_mixture(f)
+      
+      if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+      endif
+
+ !     call calc_for_chem_mixture(f)
 !
 !  Find logaritm of density at inlet
 !
@@ -1340,6 +1141,17 @@ module Chemistry
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
+
+         mu1_full=0.
+          do k=1,nchemspec
+          do j2=mm1,mm2
+          do j3=nn1,nn2
+           mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                /species_constants(k,imass)
+          enddo
+          enddo
+          enddo
+      
 
       log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
@@ -1592,12 +1404,7 @@ module Chemistry
           if  (lone_spec) then
             nu_full(j1,j2,j3)=species_viscosity(j1,j2,j3,1)/rho_full(j1,j2,j3)
           elseif (visc_simple) then
-            nu_dyn(j1,j2,j3)=0.
-            do k=1,nchemspec
-              nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k) &
-                              *species_viscosity(j1,j2,j3,k)
-            enddo
-            nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
+            nu_full(j1,j2,j3)=visc_const
           else
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
@@ -1615,7 +1422,6 @@ module Chemistry
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
                   species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
              enddo
-
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
           endif
 
@@ -1641,6 +1447,15 @@ module Chemistry
                                     /rho_full(j1,j2,j3)/Sc_number
               enddo
              elseif (ldiffusion) then
+              if (Dif_simple) then
+                 if (diffus_const<impossible) then
+                  Diff_full(j1,j2,j3,:)=diffus_const
+                 else
+                  Diff_full(j1,j2,j3,:)=diffus_const &
+                    *(TT_full(j1,j2,j3)/TT_full(1,j2,j3))**0.7 &
+                    *(rho_full(1,j2,j3)/rho_full(j1,j2,j3))
+                 endif
+              else
 !
 ! The mixture diffusion coefficient as described in eq. 5-45 of the Chemkin
 ! manual. Previously eq. 5-44 was used, but due to problems in the limit
@@ -1662,14 +1477,15 @@ module Chemistry
                      /tmp_sum(j1,j2,j3)
               enddo
              
+             endif
             endif
             endif
-
              do k=1,nchemspec
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
                   species_constants(k,imass)/unit_mass &
-                  *mu1_full(j1,j2,j3)!*0.8
+                  *mu1_full(j1,j2,j3)
              enddo
+           
            
          enddo
          enddo
@@ -4118,7 +3934,7 @@ module Chemistry
 !
         if (BinDif_simple) then
           call stop_it('BinDif_simple case does not work now!')
-        elseif (ldiffusion) then
+        elseif (ldiffusion .and. (.not. Dif_simple)) then
 !
 !  Do non-simplified binary diffusion coefficient
 !
@@ -4168,8 +3984,6 @@ module Chemistry
                if (j/=k) then
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)/mu1_full(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))
-
-
                else
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))*species_constants(k,imass)
@@ -4201,16 +4015,15 @@ module Chemistry
 !
 !  Calculate viscosity
 !
+     if (visc_const==impossible) then
+    
       omega="Omega22"
-
       tmp_local=5./16.*(k_B_cgs/(Na*pi))**0.5
 
       do k=1,nchemspec
         tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3)*1e-8)**2 &
             *tmp_local
-        if (visc_simple) then
-          call stop_it('visc_simple case does not work now!')
-        elseif (visc_const==impossible) then
+      
 !
 ! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
 !
@@ -4235,8 +4048,10 @@ module Chemistry
           enddo
           enddo
           enddo
-        endif
+      
       enddo
+      endif
+  
      !
  
     endsubroutine calc_diff_visc_coef
@@ -4253,6 +4068,23 @@ module Chemistry
       intent(in) :: f
       integer :: j1,j2,j3,k
       real :: Cv_rot_R, Cv_tran_R,T_st, pi_1_5, pi_2
+
+
+      if (lambda_const<impossible) then
+         do j3=nn1,nn2
+         do j2=mm1,mm2
+         do j1=1,mx
+           if (lambda_simple) then
+            lambda_full(j1,j2,j3)=lambda_const &
+               *(TT_full(j1,j2,j3)/TT_full(1,j2,j3))**0.7 &
+               *(rho_full(1,j2,j3)/rho_full(j1,j2,j3))
+           else
+            lambda_full(j1,j2,j3)=lambda_const
+           endif
+         enddo
+         enddo
+         enddo
+      else
 
       pi_1_5=pi**1.5
       pi_2=pi**2.
@@ -4338,13 +4170,12 @@ module Chemistry
                 /tmp_sum2(j1,j2,j3))
          !   lambda_full(j1,j2,j3)=(tmp_sum(j1,j2,j3))
           endif
-          if (lambda_const<impossible) then
-            lambda_full(j1,j2,j3)=lambda_const
-          endif
         enddo
         enddo
         enddo
 !
+       endif
+
         call keep_compiler_quiet(f)
 !
     endsubroutine calc_therm_diffus_coef
@@ -4411,13 +4242,10 @@ module Chemistry
 
             Xk_Yk=XX_full(:,:,:,k)-f(:,:,:,ichemspec(k))
             call grad(Xk_Yk,gXk_Yk)
-            
-           
 
             call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
             call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
             call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
-
 
           endif
           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
