@@ -11,7 +11,7 @@ module Messages
 !
   private
 !
-  public :: svn_id
+  public :: svn_id, timing
   public :: initialize_messages
   public :: information, warning, error
   public :: fatal_error, inevitably_fatal_error, not_implemented
@@ -351,6 +351,50 @@ module Messages
       close(1)
 !
     endsubroutine svn_id
+!***********************************************************************
+    subroutine timing(location,message,instruct)
+!
+!  Timer: write the current systems time to standart output
+!  provided it=it_timing.
+!
+      integer :: lun=9
+      character(len=*) :: location
+      character(len=*) :: message
+      double precision :: time
+      double precision, save :: time_initial
+      character(len=*), optional :: instruct
+!
+!  work on the timing only when it==it_timing
+!
+      if (it==it_timing) then
+        if (lroot) then
+!
+!  initialize
+!
+          if (present(instruct)) then
+            if (trim(instruct)=='initialize') then
+              open(lun,file=trim(datadir)//'/timing.dat', status='replace')
+              time_initial=mpiwtime()
+            endif
+          endif
+!
+!  write current timing to the timing file
+!
+          if (lfirst) then
+            time=mpiwtime()-time_initial
+            write (lun,*) time,trim(location) // ": " // trim(message)
+          endif
+!
+!  finalize
+!
+          if (present(instruct)) then
+            if (trim(instruct)=='finalize') close(lun)
+          endif
+!
+        endif
+      endif
+!
+    endsubroutine timing
 !***********************************************************************
     subroutine extract_substring(string, idx0, idx1, substring)
 !

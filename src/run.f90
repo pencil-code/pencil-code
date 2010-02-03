@@ -407,6 +407,10 @@ program run
         exit Time_loop
       endif
 !
+!  initialize timer
+!
+    call timing('run','entered Time_loop',INSTRUCT='initialize')
+!
 !  Re-read parameters if file `RELOAD' exists; then remove the file
 !  (this allows us to change parameters on the fly).
 !  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
@@ -646,6 +650,7 @@ program run
 !  processors must be informed about the problem before the code can stop.
 !
     call fatal_error_local_collect()
+    call timing('run','at the end of Time_loop',INSTRUCT='finalize')
 !
     it=it+1
     headt=.false.

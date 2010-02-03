@@ -1210,7 +1210,7 @@ module Chemistry
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
-!  DOCUMENT ME!!!
+!  Calculate quantities for a mixture
 !
       use Sub
       use EquationOfState
@@ -1230,7 +1230,6 @@ module Chemistry
 !
 ! Density and temperature
 !
-
      if (ldensity_nolog) then
       rho_full=f(:,:,:,ilnrho)
      else
@@ -1490,17 +1489,13 @@ module Chemistry
          enddo
          enddo
          enddo
-
 !
 !  Thermal diffusivity
 !
         if (lheatc_chemistry) call calc_therm_diffus_coef(f)
-
-
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
-
          if (.not. lT_const) then
           do k=1,nchemspec
             T_low=species_constants(k,iTemp1)
@@ -4069,7 +4064,7 @@ module Chemistry
       integer :: j1,j2,j3,k
       real :: Cv_rot_R, Cv_tran_R,T_st, pi_1_5, pi_2
 
-
+      call timing('calc_therm_diffus_coef','just entered')
       if (lambda_const<impossible) then
         do j3=nn1,nn2
         do j2=mm1,mm2
@@ -4166,6 +4161,9 @@ module Chemistry
         enddo
 !
       endif
+
+      call keep_compiler_quiet(f)
+      call timing('calc_therm_diffus_coef','just finished')
 !
       call keep_compiler_quiet(f)
 !

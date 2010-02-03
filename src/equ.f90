@@ -280,7 +280,7 @@ module Equ
 !  Calculate averages, currently only required for certain settings
 !  in hydro of the testfield procedure (only when lsoca=.false.)
 !
-
+      call timing('pde','before calc_lhydro_pars')
       if (lhydro.and.ldensity)    call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
@@ -293,6 +293,7 @@ module Equ
 !  Calculate quantities for a chemical mixture
 !
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
+      call timing('pde','after calc_for_chem_mixture')
 !
 !  Do loop over m and n.
 !
@@ -754,6 +755,7 @@ module Equ
 !
         headtt=.false.
       enddo mn_loop
+      call timing('pde','at the end of the mn_loop')
 !
 !  Finish the job for the anelastic approximation
 !
