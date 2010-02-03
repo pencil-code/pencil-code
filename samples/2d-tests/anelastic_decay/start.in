@@ -1,0 +1,25 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for the anelastic decay problem
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.2 2010-01-08 17:34:56 piyali Exp $'
+  lwrite_aux=T,
+! lperi = T, T, F,
+! bcz   = 's','s','a','a2','a'
+/
+&eos_init_pars
+gamma=1.
+/
+&hydro_init_pars
+  inituu='anelastic-2dxz', ampl_uy=-1.0e-1,kx_uu=1.0,kz_uu=1.0
+/
+&density_init_pars
+  initlnrho='anelastic'
+/
+&grav_init_pars
+  gravz_profile='const',gravz=0.0
+/
+
+&poisson_init_pars
+/
