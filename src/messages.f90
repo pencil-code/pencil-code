@@ -352,7 +352,7 @@ module Messages
 !
     endsubroutine svn_id
 !***********************************************************************
-    subroutine timing(location,message,instruct)
+    subroutine timing(location,message,instruct,mnloop)
 !
 !  Timer: write the current systems time to standart output
 !  provided it=it_timing.
@@ -363,6 +363,8 @@ module Messages
       double precision :: time
       double precision, save :: time_initial
       character(len=*), optional :: instruct
+      logical, optional :: mnloop
+      integer :: mul_fac
 !
 !  work on the timing only when it==it_timing
 !
@@ -381,8 +383,15 @@ module Messages
 !  write current timing to the timing file
 !
           if (lfirst) then
-            time=mpiwtime()-time_initial
-            write (lun,*) time,trim(location) // ": " // trim(message)
+            if ((present(mnloop).and.lfirstpoint).or. .not.present(mnloop)) then
+              time=mpiwtime()-time_initial
+              if (present(mnloop)) then
+                mul_fac=ny*nz
+              else
+                mul_fac=1
+              endif
+              write (lun,*) time,trim(location) // ": " // trim(message), mul_fac
+            endif
           endif
 !
 !  finalize
