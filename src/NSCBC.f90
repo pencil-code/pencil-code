@@ -550,7 +550,8 @@ include 'NSCBC.h'
 !
       dfslice(:,:,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
-        dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1))*TT
+        dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1))*TT&
+            +TT*(T_1/rho0-T_5/P0)
       endif
       dfslice(:,:,dir2) = -L_3-T_3
       dfslice(:,:,dir3) = -L_4-T_4
@@ -584,6 +585,14 @@ include 'NSCBC.h'
           elseif (ilnTT>0) then
             fslice(:,:,ilnTT) = log(T_t)
           endif
+!
+! Set the derivatives of these variables to zero
+! NILS: Is this really required?
+!
+          dfslice(:,:,dir1)=0
+          dfslice(:,:,dir2)=0
+          dfslice(:,:,dir3)=0
+          if (ilnTT>0) dfslice(:,:,ilnTT)=0
         endif
       endif
 !
