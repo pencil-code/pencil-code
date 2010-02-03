@@ -154,9 +154,12 @@ module Particles_collisions
 !
         if (npart_max_par/=-1) then
           np_pencil=0
-          do k=k1_imn(imn),k2_imn(imn)
-            np_pencil(ineargrid(k,1)-nghost)=np_pencil(ineargrid(k,1)-nghost)+1
-          enddo
+          if (npar_imn(imn)/=0) then
+            do k=k1_imn(imn),k2_imn(imn)
+              np_pencil(ineargrid(k,1)-nghost)= &
+                  np_pencil(ineargrid(k,1)-nghost)+1
+            enddo
+          endif
         endif
 !
         do l=l1,l2
@@ -379,11 +382,13 @@ module Particles_collisions
 !
         if (npart_max_par/=-1) then
           np_block=0
-          do k=k1_iblock(iblock),k2_iblock(iblock)
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            np_block(ix0-nghostb,iy0-nghostb,iz0-nghostb)= &
-                np_block(ix0-nghostb,iy0-nghostb,iz0-nghostb)+1
-          enddo
+          if (npar_iblock(iblock)/=0) then
+            do k=k1_iblock(iblock),k2_iblock(iblock)
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              np_block(ix0-nghostb,iy0-nghostb,iz0-nghostb)= &
+                  np_block(ix0-nghostb,iy0-nghostb,iz0-nghostb)+1
+            enddo
+          endif
         endif
 !
         do iz=n1b,n2b; do iy=m1b,m2b; do ix=l1b,l2b
