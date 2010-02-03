@@ -11,7 +11,7 @@
 !
 ! PENCILS PROVIDED lnTT; cp1tilde; glnTT(3); TT; TT1; gTT(3)
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT; del6lnTT
-! PENCILS PROVIDED yH; ee; ss; pp; delta; ppvap; csvap2
+! PENCILS PROVIDED yH; ee; ss; pp; delta; glnmumol(3); ppvap; csvap2
 !
 !***************************************************************
 module EquationOfState
