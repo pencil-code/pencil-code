@@ -1508,8 +1508,8 @@ cool_loop: do i=1,ncool
 !
 !  Check for SNII, via self-regulating scheme.
 !  
-!  22-jan-10 this routine needs to be debugged.
-!  Causes repeat explosions at the same site currently in consecutive steps
+!  03-feb-10/fred: tested and working correctly
+!                  
 !
     use General, only: random_number_wrapper
     use Mpicomm, only: mpireduce_sum, mpibcast_real
@@ -1534,6 +1534,9 @@ cool_loop: do i=1,ncool
     if (l_SNI) return         ! only do if no SNI this step
 !
     iSNR=get_free_SNR()
+!
+!  determine and sum all cells comprising dense cooler clouds
+!  where type 2 SNe are likely
 !
     cloud_mass=0.0
     do n=n1,n2
@@ -1563,6 +1566,11 @@ cool_loop: do i=1,ncool
     if (lroot .and. ip < 14) &
         print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
             cloud_mass_dim,fsum1(1),dv
+!
+!  dtsn: elapsed time since last SNII injected
+!  prob of next increases with time
+!  last_SN_t updated afte each SNII
+!  SNI independent distribution
 !
     dtsn=t-last_SN_t
     freq_SNII= &
@@ -1594,8 +1602,6 @@ cool_loop: do i=1,ncool
 !        endif
       enddo
 !
-!      iSNR=get_free_SNR()
-!
       if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
                                               ,cloud_mass_byproc
       call position_SN_bycloudmass&
@@ -1618,7 +1624,8 @@ cool_loop: do i=1,ncool
       endif
 !
     endif
-    call free_SNR(iSNR) !If returned unexploded stops code running out of free slots fred
+    call free_SNR(iSNR)
+!If returned unexploded stops code running out of free slots
 !
     endsubroutine check_SNII
 !***********************************************************************
@@ -2034,6 +2041,11 @@ find_SN: do n=n1,n2
               if (ip<14) &
               print*,'position_SN_bycloudmass: tmpsite,iproc,it ='&
                                               ,tmpsite,iproc,it
+!
+!  03-feb-10\fred: check that same site is not being used repeatedly
+!                  if used recently skip and get new random number
+!                  next time step. 
+!
               do ipsn=1,npreSN
                 if (lroot .and. ip<14) & 
                 print*,'position_by_cloudmass: preSN,iproc,it ='&
