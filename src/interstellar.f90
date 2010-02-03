@@ -76,6 +76,8 @@ module Interstellar
   integer :: nSNR = 0
   type (SNRemnant), dimension(mSNR) :: SNRs
   integer, dimension(mSNR) :: SNR_index
+  integer, parameter :: npreSN = 5
+  integer, dimension(4,npreSN) :: preSN
 !
   integer :: icooling=0
   integer :: icooling2=0
@@ -89,7 +91,6 @@ module Interstellar
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0
   real :: t_interval_SNI=impossible
-  real :: t_interval_SNII=impossible
 !
 ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
@@ -161,7 +162,7 @@ module Interstellar
 !
 ! Self regulating SNII explosion coefficients
 !
-  real, parameter :: cloud_rho_cgs=1.e-24,cloud_TT_cgs=4000.
+  real, parameter :: cloud_rho_cgs=1.67262158e-24,cloud_TT_cgs=4000.
   real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs
   double precision, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
   real, parameter :: frac_converted=0.02,frac_heavy=0.10
@@ -747,14 +748,13 @@ module Interstellar
       sigma_SN=dxmax*3
       sigma_SN1=1./sigma_SN
 !
+        preSN(:,:)=0
+!
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
-      t_interval_SNII = 1./(6*SNI_area_rate * Lxyz(1) * Lxyz(2))!fredSNII test
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
           t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
-      if (lroot) print*,'initialize_interstellar: t_interval_SNII =', &
-           t_interval_SNII,Lxyz(1),Lxyz(2),SNI_area_rate!fredSNII test
 !
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -1471,9 +1471,8 @@ cool_loop: do i=1,ncool
           cycle
         endif
 
-        call explode_SN(f,SNRs(iSNR),ierr)
+        call explode_SN(f,SNRs(iSNR),ierr,preSN)
         if (ierr==iEXPLOSION_OK) then
-!          t_settle=t_next_SNI !fred update t_settle to separate SNII
           call set_next_SNI
           l_SNI=.true.
           exit
@@ -1481,9 +1480,11 @@ cool_loop: do i=1,ncool
       enddo
 
       if (try_count.eq.0) then
-        if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
+        if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - &
+                           skipping SNI insertion"
       endif
       call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
+      ierr=iEXPLOSION_OK
     endif
 !
     endsubroutine check_SNI
@@ -1495,10 +1496,12 @@ cool_loop: do i=1,ncool
       real, dimension(1) :: franSN
 !
        !  pre-determine time for next SNI
-          if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
+          if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",&
+                                       t_next_SNI
           call random_number_wrapper(franSN)
           t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-          if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = ',t_next_SNI
+          if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = '&
+                                                  ,t_next_SNI
     endsubroutine set_next_SNI
 !***********************************************************************
     subroutine check_SNII(f,l_SNI)
@@ -1510,13 +1513,13 @@ cool_loop: do i=1,ncool
 !
     use General, only: random_number_wrapper
     use Mpicomm, only: mpireduce_sum, mpibcast_real
-    use EquationOfState, only: eoscalc
+    use EquationOfState, only: eoscalc, ilnrho_ss
 !
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(nx) :: rho,rho_cloud,lnTT,TT,yH
     real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
-    real, dimension(ncpus) :: cloud_mass_byproc
+    real, dimension(ncpus) :: cloud_mass_byproc,fmpi2
     integer :: icpu, m, n, iSNR, ierr
     logical :: l_SNI
     real :: dtsn
@@ -1536,41 +1539,48 @@ cool_loop: do i=1,ncool
     do n=n1,n2
       do m=m1,m2
         rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-        call eoscalc(f,nx,yH=yH,lnTT=lnTT)
-        TT=exp(lnTT)
-
-        rho_cloud(1:nx)=0.0
-        !print*,'min,max TT:  ', minval(TT), maxval(TT)
-        !print*,'min,max rho: ', minval(rho), maxval(rho)
-
-        where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT)   &
-          rho_cloud(1:nx)=rho(1:nx)
-        cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
+                    ,yH=yH,lnTT=lnTT)
+        TT(1:nx)=exp(lnTT(1:nx))
+          if(ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,&
+              it,iproc',minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
+        rho_cloud(1:nx)=0.
+        where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
+          rho_cloud(1:nx) = rho(1:nx)
+          if(ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,&
+              it,iproc',sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
+          cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
       enddo
     enddo
     fsum1_tmp=(/ cloud_mass /)
-!
+! 
     call mpireduce_sum(fsum1_tmp,fsum1,1)
     call mpibcast_real(fsum1,1)
-    cloud_mass_dim=fsum1(1)*dv/solar_mass
+    cloud_mass_dim=fsum1(1)*dv
+    if (ip<14) &
+    print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !
     if (lroot .and. ip < 14) &
-        print*, 'check_SNII: cloud_mass_dim,fsum(1),dv,solar_mass:', &
-            cloud_mass_dim,fsum1(1),dv,solar_mass
+        print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
+            cloud_mass_dim,fsum1(1),dv
 !
     dtsn=t-last_SN_t
     freq_SNII= &
-      frac_heavy*frac_converted*cloud_mass_dim/mass_SN_progenitor/cloud_tau &
-      *Lxyz(1)*Lxyz(2) !fred rate area specific
+      frac_heavy*frac_converted*cloud_mass_dim/&
+                 mass_SN_progenitor/cloud_tau
     prob_SNII=freq_SNII*dtsn
     call random_number_wrapper(franSN)
-    !if (lroot .and. ip < 20) then
-    if (cloud_mass .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
-      print*,'check_SNII: freq,prob,rnd,dtsn:',freq_SNII,prob_SNII,franSN(1),dtsn
-      print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
+!
+    if (lroot.and.ip<20) then
+      if (cloud_mass_dim .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
+        print*,'check_SNII: freq,prob,rnd,dtsn:',&
+                freq_SNII,prob_SNII,franSN(1),dtsn
+        print*,'check_SNII: frac_heavy,frac_converted,&
+                    cloud_mass_dim,mass_SN,cloud_tau',&
               frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+      endif
     endif
-    !endif
+!
     if (franSN(1) <= prob_SNII) then
       !  position_SN_bycloudmass needs the cloud_masses for each processor;
       !   communicate and store them here, to avoid recalculation.
@@ -1578,27 +1588,38 @@ cool_loop: do i=1,ncool
       ! use non-root broadcasts for the communication...
       do icpu=1,ncpus
         fmpi1=cloud_mass
+!        if (icpu==iproc+1) then
         call mpibcast_real(fmpi1,1,icpu-1)
         cloud_mass_byproc(icpu)=fmpi1(1)
+!        endif
       enddo
-      ! if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:',cloud_mass_byproc
-      call position_SN_bycloudmass(f,cloud_mass_byproc,SNRs(iSNR))
+!
+!      iSNR=get_free_SNR()
+!
+      if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
+                                              ,cloud_mass_byproc
+      call position_SN_bycloudmass&
+                      (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
+      if (ierr == iEXPLOSION_TOO_HOT) then
+        call free_SNR(iSNR)
+        ierr=iEXPLOSION_OK
+    return
+      endif 
       SNRs(iSNR)%t=t
       SNRs(iSNR)%radius=width_SN
       SNRs(iSNR)%SN_type=2
-      call explode_SN(f,SNRs(iSNR),ierr)
-      if (ierr==iEXPLOSION_OK) last_SN_t=t
+      call explode_SN(f,SNRs(iSNR),ierr,preSN)
+      if (ierr==iEXPLOSION_OK) then
+        last_SN_t=t
 !
 ! 30-dec-09/fred: added ierr and if statement so time of SN can be 
 !                 updated if explosion successful else last_SN_t unchanged
 !
+      endif
+!
     endif
-    !
-    if (ierr/=iEXPLOSION_OK) then
     call free_SNR(iSNR) !If returned unexploded stops code running out of free slots fred
-!    last_SN_t=0
-    endif
-    !
+!
     endsubroutine check_SNII
 !***********************************************************************
     subroutine check_SNIIb(f,l_SNI) !fred test new SNII scheme
@@ -1662,6 +1683,7 @@ cool_loop: do i=1,ncool
         if (lroot) print*,"check_SNIIb: 500 RETRIES OCCURED - skipping SNI insertion"
       endif
       call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
+      ierr=iEXPLOSION_OK
     endif
 !
     endsubroutine check_SNIIb
@@ -1922,7 +1944,7 @@ cool_loop: do i=1,ncool
 !                                                       
     endsubroutine position_SN_gaussianz_cluster
 !***********************************************************************
-    subroutine position_SN_bycloudmass(f,cloud_mass_byproc,SNR)
+    subroutine position_SN_bycloudmass(f,cloud_mass_byproc,SNR,preSN,ierr)
 !
 !  Determine position for next SNII (using Boris' scheme)
 !  It seems impractical to sort all high density points across all processors;
@@ -1932,17 +1954,20 @@ cool_loop: do i=1,ncool
 !  and nprocz).  (It is repeatable given fixed nprocy/z though.)
 !
     use General, only: random_number_wrapper
-    use EquationOfState, only: eoscalc
+    use EquationOfState, only: eoscalc,ilnrho_ss
+    use Mpicomm, only: mpibcast_int, mpibcast_real
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
     type (SNRemnant), intent(inout) :: SNR
-!
+    integer :: ierr
     real, dimension(0:ncpus) :: cum_prob_byproc
     real, dimension(1) :: franSN
-    real :: cloud_mass,cum_mass,cum_prob_onproc
+    integer, dimension(4) :: tmpsite
+    real :: cloud_mass,cum_mass,cum_prob_onproc,check_cum
     real, dimension(nx) :: lnrho,rho,lnTT,TT,yH
-    integer :: icpu,l,m,n
+    integer :: icpu,l,m,n, ipsn
+    integer, intent(in), dimension(4,npreSN)::preSN
 !
 !
 !  identifier
@@ -1955,13 +1980,16 @@ cool_loop: do i=1,ncool
     cloud_mass=0.0
     cum_prob_byproc=0.0
     do icpu=1,ncpus
-      cloud_mass=cloud_mass+cloud_mass_byproc(icpu) !fred added back cloud_mass else overwritten
-      cum_prob_byproc(icpu)=cum_prob_byproc(icpu-1)+cloud_mass_byproc(icpu)
+      cloud_mass=cloud_mass+cloud_mass_byproc(icpu)
+      cum_prob_byproc(icpu)=cum_prob_byproc(icpu-1)+&
+                            cloud_mass_byproc(icpu)
     enddo
     cum_prob_byproc(:)=cum_prob_byproc(:)/cum_prob_byproc(ncpus)
     if (lroot.and.ip<14) then
-      print*,'position_SN_bycloudmass: cloud_mass_byproc=',cloud_mass_byproc
-      print*,'position_SN_bycloudmass: cum_prob_byproc=',cum_prob_byproc
+      print*,'position_SN_bycloudmass: cloud_mass_byproc=',&
+                                         cloud_mass_byproc
+      print*,'position_SN_bycloudmass: cum_prob_byproc=',&
+                                           cum_prob_byproc
       print*,'position_SN_bycloudmass: cloud_mass=',cloud_mass
     endif
 !
@@ -1970,14 +1998,15 @@ cool_loop: do i=1,ncool
 !
     call random_number_wrapper(franSN)
     do icpu=1,ncpus
-      if (cum_prob_byproc(icpu-1) <= franSN(1) .and.                      &
+      if (cum_prob_byproc(icpu-1) <= franSN(1) .and.    &
            franSN(1) < cum_prob_byproc(icpu)) then
         SNR%iproc=icpu-1
         exit
       endif
     enddo
     if (lroot.and.ip<14) &
-          print*, 'position_SN_bycloudmass: franSN(1),SNR%iproc=',franSN(1),SNR%iproc
+          print*, 'position_SN_bycloudmass: franSN(1),SNR%iproc=',&
+                                            franSN(1),SNR%iproc
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
@@ -1990,19 +2019,40 @@ cool_loop: do i=1,ncool
       cum_prob_onproc=0.0
 find_SN: do n=n1,n2
       do m=m1,m2
-        lnrho=f(l,m,n,ilnrho)
-        rho=exp(lnrho)
-        call eoscalc(f,nx,yH=yH,lnTT=lnTT)
-        TT=exp(lnTT)
+        lnrho(1:nx)=f(l1:l2,m,n,ilnrho)
+        rho(1:nx)=exp(lnrho(1:nx))
+        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),&
+                               f(l1:l2,m,n,iss),yH=yH,lnTT=lnTT)
+        TT(1:nx)=exp(lnTT(1:nx))
         do l=1,nx
           if (rho(l) >= cloud_rho .and. TT(l) <= cloud_TT) then
             cum_mass=cum_mass+rho(l)
-            cum_prob_onproc=cum_mass/cloud_mass_byproc(iproc)
+            cum_prob_onproc=cum_mass/cloud_mass_byproc(SNR%iproc+1)
             if (franSN(1) <= cum_prob_onproc) then
               SNR%l=l+l1-1; SNR%m=m; SNR%n=n
-              if (lroot.and.ip<14) &
-                print*,'position_SN_bycloudmass: cum_mass,cum_prob_onproc,franSN(1)=', &
-                                 cum_mass,cum_prob_onproc,franSN(1)
+              tmpsite=(/SNR%l,SNR%m,SNR%n,SNR%iproc/)
+              if (ip<14) &
+              print*,'position_SN_bycloudmass: tmpsite,iproc,it ='&
+                                              ,tmpsite,iproc,it
+              do ipsn=1,npreSN
+                if (lroot .and. ip<14) & 
+                print*,'position_by_cloudmass: preSN,iproc,it ='&
+                                              ,preSN,iproc,it 
+                if ((SNR%l==preSN(1,ipsn)) .and. &
+                    (SNR%m==preSN(2,ipsn)) .and. &
+                    (SNR%n==preSN(3,ipsn)) .and. &
+                    (SNR%iproc==preSN(4,ipsn))) then
+                    ierr=iEXPLOSION_TOO_HOT
+!                  call mpibcast_int(ierr,1,SNR%iproc)
+                if (ip<14) &
+                print*,'position_by_cloudmass: iEXPLOSION_TOO_HOT ='&
+                                              ,preSN,iproc,it 
+                endif
+              enddo
+              if (lroot.and.(ip<14)) &
+                 print*,'position_SN_bycloudmass: &
+                         cum_mass,cum_prob_onproc,franSN(1),l,m,n=', &
+                             cum_mass,cum_prob_onproc,franSN(1),l,m,n
               exit find_SN
             endif
           endif
@@ -2011,7 +2061,26 @@ find_SN: do n=n1,n2
       enddo find_SN
     endif
 !
+    call mpibcast_int(ierr,1,SNR%iproc)
+    if (ierr==iEXPLOSION_TOO_HOT) then
+    if(ip<18) &
+    print*,'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
+      return
+    endif 
+!
+    call mpibcast_int(tmpsite,4,SNR%iproc)
+    SNR%l=tmpsite(1);SNR%m=tmpsite(2)
+    SNR%n=tmpsite(3);SNR%iproc=tmpsite(4)
+    if (ip<14) &            
+    print*,'position_SN_bycloudmass: MPI tmpsite,iproc,it ='&
+                    ,tmpsite,iproc,it
     call share_SN_parameters(f,SNR)
+    if (ip<14) &
+    print*,'position_SN_bycloudmass: SN_param,iproc,it ='&
+                    ,SNR%l,SNR%m,SNR%n,SNR%iproc,iproc,it
+!
+    if (ip<14) &
+    ierr=iEXPLOSION_OK
 !
     endsubroutine position_SN_bycloudmass
 !***********************************************************************
@@ -2146,7 +2215,7 @@ find_SN: do n=n1,n2
       if (nxgrid/=1) SNR%x=x(SNR%l) !+dx/2.
       if (nygrid/=1) SNR%y=y(SNR%m) !+dy/2.
       if (nzgrid/=1) SNR%z=z(SNR%n) !+dz/2.
-    print*, &
+    if (lroot.and.ip<18) print*, &
  'share_SN_parameters: (MY SNe) SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT = ' &
           ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT
     else
@@ -2178,7 +2247,7 @@ find_SN: do n=n1,n2
 !
     endsubroutine share_SN_parameters
 !***********************************************************************
-    subroutine explode_SN(f,SNR,ierr)
+    subroutine explode_SN(f,SNR,ierr,preSN)
       !
       !  Implement SN (of either type), at pre-calculated position
       !  (This can all be made more efficient, after debugging.)
@@ -2187,11 +2256,13 @@ find_SN: do n=n1,n2
       !  20-may-03/tony: pencil formulation and broken into subroutines
       !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb
-      use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double, mpireduce_sum_double
+      use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double,&
+                         mpireduce_sum_double, mpibcast_int
       use Sub, only: keep_compiler_quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR
+      integer, intent(inout), optional, dimension(4,npreSN) :: preSN
       integer, optional :: ierr
 
       double precision :: c_SN,cmass_SN,cvelocity_SN
@@ -2206,6 +2277,8 @@ find_SN: do n=n1,n2
       double precision, dimension(nx) :: deltarho, deltaEE
       double precision, dimension(nx,3) :: deltauu
       double precision, dimension(2) :: dmpi2, dmpi2_tmp
+      integer,dimension(1) :: temperr
+      real, dimension(1) :: tmpi1
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old
       real, dimension(nx,3) :: uu
       real :: maxlnTT
@@ -2256,7 +2329,7 @@ find_SN: do n=n1,n2
           endif
           return
         endif
-        if (lroot) print*,"explode_SN: Tweaked width ",SNR%radius
+        if (lroot.and.ip<14) print*,"explode_SN: Tweaked width ",SNR%radius
       endif
 !
 !
@@ -2287,7 +2360,7 @@ find_SN: do n=n1,n2
         endif
       endif
       
-      if (lroot) print*,'explode_SN: c_SN         =',c_SN
+      if (lroot.and.ip<14) print*,'explode_SN: c_SN         =',c_SN
 !
 ! Mass insertion normalization
 !
@@ -2305,7 +2378,7 @@ find_SN: do n=n1,n2
             cmass_SN=mass_SN/( 4./3.*pi*(width_mass)**3 )
           endif
         endif
-        if (lroot) print*,'explode_SN: cmass_SN     =',cmass_SN
+        if (lroot.and.ip<14) print*,'explode_SN: cmass_SN     =',cmass_SN
       else
         cmass_SN=0.
       endif
@@ -2320,8 +2393,8 @@ find_SN: do n=n1,n2
               * log(outer_shell_proportion/inner_shell_proportion)   &
               / ((1./inner_shell_proportion**6) - (1./outer_shell_proportion**6)) &
             )**(1./6.)
-      if (lroot) print*,'explode_SN: dimensionality,r_cavity',dimensionality,r_cavity
-      if (lroot) print*, 'explode_SN: shell_(inner, outer)_prop.=', &
+      if (lroot.and.ip<14) print*,'explode_SN: dimensionality,r_cavity',dimensionality,r_cavity
+      if (lroot.and.ip<14) print*, 'explode_SN: shell_(inner, outer)_prop.=', &
           inner_shell_proportion,outer_shell_proportion
 !
 !
@@ -2333,9 +2406,9 @@ find_SN: do n=n1,n2
       !  Now deal with (if nec.) mass relocation
       !
 
-      if (lroot) print*,'explode_SN: rho_new,SNR%site%ee=',SNR%site%rho,SNR%site%ee
+      if (lroot.and.ip<14) print*,'explode_SN: rho_new,SNR%site%ee=',SNR%site%rho,SNR%site%ee
       ee_SN_new = (SNR%site%ee+frac_eth*c_SN/(SNR%site%rho+cmass_SN))
-      if (lroot) print*,'explode_SN: rho_SN_new,ee_SN_new=',SNR%site%rho+cmass_SN,ee_SN_new
+      if (lroot.and.ip<14) print*,'explode_SN: rho_SN_new,ee_SN_new=',SNR%site%rho+cmass_SN,ee_SN_new
       call eoscalc(ilnrho_ee,real(log(SNR%site%rho+cmass_SN)),ee_SN_new, &
                               lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
@@ -2365,25 +2438,25 @@ find_SN: do n=n1,n2
 !     A suitable cooling function allows these isolated diffuse spike of minute mass to be
 !     truncated with little global impact
 !
-        if (lroot) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
+        if (lroot.and.ip<14) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
       else
         cvelocity_SN=0.
       endif
-      if (lroot.and.ip<32) print*, &
+      if (lroot.and.ip<14) print*, &
          'explode_SN: SNR%site%TT, TT_SN_new, TT_SN_min, SNR%site%ee =', &
                                 SNR%site%TT,TT_SN_new,TT_SN_min, SNR%site%ee
-      if (lroot) print*,'explode_SN: yH_SN_new =',yH_SN_new
+      if (lroot.and.ip<14) print*,'explode_SN: yH_SN_new =',yH_SN_new
       if ((TT_SN_new < TT_SN_min).or.(mass_movement=='constant')) then
-         if (lroot) print*,'explode_SN: SN will be too cold!'
+         if (lroot.and.ip<20) print*,'explode_SN: SN will be too cold!'
 !         lmove_mass=.not.(mass_movement == 'off')  
 !         lmove_mass=.false.  ! use to switch off for debug...
-
+!
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation
-
+!
          ! ASSUME: SN will fully ionize the gas at its centre
          if (lmove_mass) then
-           if (lroot) print*,'explode_SN: moving mass to compensate.'
+           if (lroot.and.ip<16) print*,'explode_SN: moving mass to compensate.'
            call getdensity( &
                real((SNR%site%ee*SNR%site%rho)+frac_eth*c_SN), &
                TT_SN_min,1.,rho_SN_new)
@@ -2396,7 +2469,7 @@ find_SN: do n=n1,n2
                  cavity_depth=0.
                  lmove_mass=.false.
                endif
-               if (lroot) print*,"Reduced cavity from:,", &
+               if (lroot.and.ip<16) print*,"Reduced cavity from:,", &
                                   SNR%site%rho-rho_SN_new," to: ", &
                                   cavity_depth
                rho_SN_new=SNR%site%rho-cavity_depth
@@ -2420,7 +2493,7 @@ find_SN: do n=n1,n2
                                  lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
-           if (lroot.and.ip<32) print*, &
+           if (lroot.and.ip<16) print*, &
               'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 
@@ -2428,11 +2501,11 @@ find_SN: do n=n1,n2
              ! Do nowt.
            elseif (mass_movement=='Galaxycode') then
              call calc_cavity_mass_lnrho(f,SNR,width_energy,cavity_depth,mass_shell)
-             if (lroot.and.ip<32) &
+             if (lroot.and.ip<16) &
                print*, 'explode_SN: mass_shell=',mass_shell
            elseif (mass_movement=='constant') then
              call calc_cavity_mass_lnrho(f,SNR,width_energy,cavity_depth,mass_shell)
-             if (lroot.and.ip<32) &
+             if (lroot.and.ip<16) &
                print*, 'explode_SN: mass_shell=',mass_shell
            endif
          endif
@@ -2490,7 +2563,8 @@ find_SN: do n=n1,n2
             call eoscalc(ilnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth) &
                                                   /exp(lnrho)), lnTT=lnTT)
             maxlnTT=maxval(lnTT)
-            call mpibcast_real(maxlnTT,1)
+            call mpibcast_real(maxlnTT,1,SNR%iproc)
+            
 !
 !30-dec-09/fred: mpibcast call necassary to broadcast maxlnTT to all processors
 !                otherwise lroot may fail and the rest pass leaving the code in limbo
@@ -2498,19 +2572,24 @@ find_SN: do n=n1,n2
             if (maxlnTT>alog(2.*TT_SN_new)) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_UNEVEN
+                call mpibcast_int(ierr,1,SNR%iproc)
               endif
               return
             endif
-            if (maxlnTT>alog(TT_SN_max)) then
+            if (maxlnTT>alog(TT_SN_max))then!.or.sqrt(TT_SN_new)>TT_SN_max) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_HOT
+                call mpibcast_int(ierr,1,SNR%iproc)
               endif
               return
             endif
           endif
       enddo; enddo
-      
- 
+
+      if (present(ierr)) then
+        if (ierr==iEXPLOSION_TOO_UNEVEN.or.ierr==iEXPLOSION_TOO_HOT) return
+      endif
+
       SNR%EE=0.
       SNR%MM=0.
       !EE_SN2=0.
@@ -2627,7 +2706,17 @@ find_SN: do n=n1,n2
           SNR%site%rho,SNR%site%TT,SNR%EE, SNR%t_sedov
         close(1)
       endif
-
+!
+      if (present(preSN)) then
+      do i=2,npreSN 
+        preSN(:,i-1)= preSN(:,i)
+      enddo
+      preSN(1,npreSN)= SNR%l
+      preSN(2,npreSN)= SNR%m
+      preSN(3,npreSN)= SNR%n
+      preSN(4,npreSN)= SNR%iproc
+      endif
+!
       if (lSNR_damping) then
         SNR%state=SNstate_damping
         SNR%t_damping=SNR_damping_time-SNR%t_sedov+t
@@ -2702,7 +2791,7 @@ find_SN: do n=n1,n2
         if (SNRs(iSNR)%state/=SNstate_damping) cycle
 
         if ((t-SNRs(iSNR)%t_damping)/SNR_damping_rate >= 2.5) then
-          print*,"No more damping!!"
+          if (lroot) print*,"No more damping!!"
           SNRs(iSNR)%state=SNstate_finished
           return
         endif
