@@ -25,7 +25,7 @@ module EquationOfState
 !
   implicit none
 !
-  include 'eos.h'
+  include '../eos.h'
 !
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
