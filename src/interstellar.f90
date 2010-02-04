@@ -2584,24 +2584,23 @@ find_SN: do n=n1,n2
             if (maxlnTT>alog(2.*TT_SN_new)) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_UNEVEN
-                call mpibcast_int(ierr,1,SNR%iproc)
               endif
               return
             endif
             if (maxlnTT>alog(TT_SN_max))then!.or.sqrt(TT_SN_new)>TT_SN_max) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_HOT
-                call mpibcast_int(ierr,1,SNR%iproc)
               endif
               return
             endif
           endif
       enddo; enddo
-
+!
+      call mpibcast_int(ierr,1,SNR%iproc)
       if (present(ierr)) then
         if (ierr==iEXPLOSION_TOO_UNEVEN.or.ierr==iEXPLOSION_TOO_HOT) return
       endif
-
+!
       SNR%EE=0.
       SNR%MM=0.
       !EE_SN2=0.
