@@ -85,6 +85,7 @@ module Radiation
   integer :: ipzstart, ipzstop, ipystart, ipystop
   integer :: nIsurf
   logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
+  logical :: lfix_radweight_1d=.true.
   character (len=labellen) :: source_function_type='LTE', opacity_type='Hminus'
   character (len=labellen) :: angle_weight='constant'
   real :: tau_top=0.0, TT_top=0.0
@@ -123,24 +124,24 @@ module Radiation
   integer :: idiag_dtchi=0, idiag_dtrad=0
 !
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst,kapparho_cst, &
-       TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       nnu,lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
-       kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lradflux, &
-       Frad_boundary_ref,lrad_cool_diffus, lrad_pres_diffus, &
-       scalefactor_Srad,angle_weight,lcheck_tau_division
+      radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
+      TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
+      nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, &
+      kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
+      lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
+      lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
+      lfix_radweight_1d
 !
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
-       TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       nnu,lsingle_ray,single_ray,Srad_const,amplSrad,radius_Srad, &
-       kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
-       kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
-       Frad_boundary_ref,lrad_cool_diffus,lrad_pres_diffus, &
-       cdtrad_thin,cdtrad_thick, &
-       scalefactor_Srad,angle_weight,lcheck_tau_division
+      radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, TT_top, &
+      TT_bot, tau_top, tau_bot, source_function_type, opacity_type, nnu, &
+      lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, kx_Srad, &
+      ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
+      kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
+      lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
+      Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, cdtrad_thin, &
+      cdtrad_thick, scalefactor_Srad, angle_weight, lcheck_tau_division, &
+      lfix_radweight_1d
 !
   contains
 !***********************************************************************
@@ -328,8 +329,6 @@ module Radiation
 !
 !  18-may-07/wlad: coded
 !
-      use Mpicomm, only: stop_it
-!
       real :: xyplane,yzplane,xzplane,room,xaxis
       real :: yaxis,zaxis,aspect_ratio,mu2
 !
@@ -339,9 +338,10 @@ module Radiation
         if (ndir>0) weight=4*pi/ndir
         weightn=weight
 !
-!  Calculate weights for weighed integrals involving one unit vector nhat.
+!  Calculate weights for weighed integrals involving one unit vector nhat
+!  (note that this fix is activated by default).
 !
-        if (ndir==2) weightn=weightn/3
+        if (lfix_radweight_1d.and.ndir==2) weightn=weightn/3
 !
       case ('spherical-harmonics')
 !
@@ -349,11 +349,13 @@ module Radiation
 !
         if (dx/=dy) then
           print*,'dx,dy=',dx,dy
-          call stop_it("initialize_radiation: weights not calculated for dx/dy != 1")
+          call fatal_error('initialize_radiation', &
+              'weights not calculated for dx/dy != 1')
         endif
         aspect_ratio=dx/dz
-        if (aspect_ratio.lt.0.69.or.aspect_ratio.gt.sqrt(3.)) &
-             call stop_it("initialize_radiation: weights go negative for this dx/dz ratio")
+        if (aspect_ratio<0.69.or.aspect_ratio>sqrt(3.0)) &
+            call fatal_error('initialize_radiation', &
+                'weights go negative for this dx/dz ratio')
 !
 !  Calculate the weights.
 !
@@ -378,8 +380,8 @@ module Radiation
           !room diagonal
           if (dir(idir,1)/=0.and.dir(idir,2)/=0.and.dir(idir,3)/=0) weight(idir)=room
           if (lroot.and.ip<11) &
-               print*,'initialize_radiation: dir(idir,1:3),weight(idir) =',&
-               dir(idir,1:3),weight(idir)
+              print*,'initialize_radiation: dir(idir,1:3),weight(idir) =',&
+              dir(idir,1:3),weight(idir)
         enddo
         weightn=weight
 !
