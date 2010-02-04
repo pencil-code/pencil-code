@@ -748,19 +748,49 @@ module EquationOfState
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: psize
-      real, dimension(psize), optional :: lnrho, yH, lnTT, ee, pp, kapparho
+      real, dimension (psize), optional :: lnrho, yH, lnTT, ee, pp, kapparho
 !
-      call fatal_error('eoscalc_farray','not implemented')
+      real, dimension (psize) :: lnrho_, lnTT_
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(psize)
-      call keep_compiler_quiet(present(lnrho))
+      intent (in) :: f, psize
+      intent (out) :: lnrho, yH, lnTT, ee, pp, kapparho
+!
+      select case (ieosvars)
+!
+!  Log rho and entropy
+!
+      case (ilnrho_ss,irho_ss)
+        call fatal_error('eoscalc_farray','ilnrho_ss not implemented')
+!
+!  Log rho and Log T
+!
+      case (ilnrho_lnTT,irho_lnTT)
+        select case (psize)
+        case (nx)
+          lnrho_=f(l1:l2,m,n,ieosvar1)
+          lnTT_ =f(l1:l2,m,n,ieosvar2)
+        case (mx)
+          lnrho_=f(:,m,n,ieosvar1)
+          lnTT_ =f(:,m,n,ieosvar2)
+        case default
+          call fatal_error('eoscalc_farray','no such pencil size')
+        end select
+!
+        if (present(lnrho)) lnrho=lnrho_
+        if (present(lnTT)) lnTT=lnTT_
+        if (present(ee)) call fatal_error('eoscalc_farray', &
+            'ee not implemented for ilnrho_lnTT')
+        if (present(pp)) call fatal_error('eoscalc_farray', &
+            'pp not implemented for ilnrho_lnTT')
+!
+      case default
+        call fatal_error('eoscalc_farray', &
+            'Thermodynamic variable combination  not implemented!')
+      endselect
+!
       call keep_compiler_quiet(present(yH))
-      call keep_compiler_quiet(present(lnTT))
-      call keep_compiler_quiet(present(ee))
-      call keep_compiler_quiet(present(pp))
       call keep_compiler_quiet(present(kapparho))
 !
     endsubroutine eoscalc_farray
