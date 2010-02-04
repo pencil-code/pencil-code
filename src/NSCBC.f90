@@ -298,7 +298,7 @@ include 'NSCBC.h'
         endif
       enddo
 !
-    endsubroutine
+    endsubroutine nscbc_boundtreat_xyz
 !***********************************************************************
     subroutine bc_nscbc_prf(f,df,dir,topbot,non_reflecting_inlet,linlet,u_t,T_t)
 !
@@ -440,7 +440,7 @@ include 'NSCBC.h'
 !  In addition also speed of sound, gamma and mu1 is found.
 !
       call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t)
+          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t,llinlet)
 !
 !  Define some prefactors to be used later
 !
@@ -477,6 +477,10 @@ include 'NSCBC.h'
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax)
         endif
+        if (lroot .and. ip<5) then
+          print*,'bc_nscbc_prf: Finalized reading velocity profiles at the inlet.'
+        endif
+
 !
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
@@ -527,6 +531,9 @@ include 'NSCBC.h'
              (grad_P(:,:,dir1)&
              - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
       endif
+      if (lroot .and. ip<5) then
+        print*,'bc_nscbc_prf: Finalized setting up the Ls.'
+      endif
 !
 !  Find the evolution equation for the normal velocity at the boundary
 !  For 'top' L_1 plays the role of L5 and L_5 the role of L1
@@ -561,11 +568,15 @@ include 'NSCBC.h'
       if (.not. ldensity_nolog) then
         dfslice(:,:,ilnrho)=dfslice(:,:,ilnrho)/rho0
       endif
+
 !
 !  Check if we are solving for logT or T
 !
       if (.not. ltemperature_nolog .and. ilnTT>0) then
         dfslice(:,:,ilnTT)=dfslice(:,:,ilnTT)/TT
+      endif
+      if (lroot .and. ip<5) then
+        print*,'bc_nscbc_prf: Finalized setting up the dfslice array.'
       endif
 !
 ! Impose required variables at the boundary for reflecting inlets
@@ -620,6 +631,10 @@ include 'NSCBC.h'
         f( l1:l2,m1:m2,lll,:)=fslice
       else
         call fatal_error('bc_nscbc_prf','No such dir!')
+      endif
+!
+      if (lroot .and. ip<5) then
+        print*,'bc_nscbc_prf: Finalized bc_nscbc_prf.'
       endif
 !
     endsubroutine bc_nscbc_prf
@@ -950,7 +965,7 @@ include 'NSCBC.h'
       end subroutine turbulent_vel_z
 !***********************************************************************
       subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t)
+          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t,llinlet)
 !
 !  Find thermodynamical quantities, including density and temperature
 !
@@ -967,6 +982,7 @@ include 'NSCBC.h'
         real, dimension(:,:,:), intent(in) :: fslice
         real, intent(out) :: nu
         real, intent(inout) :: T_t
+        logical :: llinlet
 !
         integer :: i
 !
@@ -984,7 +1000,7 @@ include 'NSCBC.h'
         TT = fslice(:,:,iTT)
       elseif (ilnTT>0) then
         TT = exp(fslice(:,:,ilnTT))
-        T_t=exp(T_t)
+        if (llinlet) T_t=exp(T_t)
       endif
 !
 !  Get viscoity
@@ -1035,11 +1051,16 @@ include 'NSCBC.h'
 !
       do i=1,3
         if (ilnTT>0) then
-          grad_P(:,:,i)&
-              =grad_rho(:,:,i)*TT*Rgas*mu1&
-              +grad_T(:,:,i)*rho0*Rgas*mu1&
-              +Rgas*grad_mu1*TT*rho0
-          P0=rho0*Rgas*mu1*TT
+          if (lchemistry) then
+            grad_P(:,:,i)&
+                =grad_rho(:,:,i)*TT*Rgas*mu1&
+                +grad_T(:,:,i)*rho0*Rgas*mu1&
+                +Rgas*grad_mu1*TT*rho0
+            P0=rho0*Rgas*mu1*TT
+          else
+            call fatal_error('get_thermodynamics',&
+                'Temperature without chemistry does not yet work with NSCBC!')
+          endif
         else
           grad_P(:,:,i)=grad_rho(:,:,i)*cs2
           P0=rho0*cs2
