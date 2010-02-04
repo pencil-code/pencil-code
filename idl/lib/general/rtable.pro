@@ -1,13 +1,15 @@
-function rtable,file,ncolumn,form=form,head=head,lines=lines,debug=debug
+function rtable,file,ncolumn,form=form,head=head,lines=lines,debug=debug,lun=lun,noclose=noclose
 ;
 if n_params(0) eq 0 then begin
-  print,'function table,file,ncolumn,form=form,head=head,lines=lines,debug=debug'
+  print,'function table,file,ncolumn,form=form,head=head,lines=lines,debug=debug,lun=lun,noclose=noclose'
   return,0
 end
 ;
 ;  read header
 ; 
-openr,lun,/get_lun,file
+if not keyword_set(lun) or lun lt 0 then $
+  openr,lun,/get_lun,file
+
 if (n_elements(head) ne 0) then begin
   card=''
   for i=0,abs(head)-1 do begin
@@ -58,7 +60,10 @@ if n_elements(form) ne 0 then begin
   endelse
 endif
 ;
-close,lun
-free_lun,lun
+if not keyword_set(noclose) then begin
+  close,lun
+  free_lun,lun
+endif
+
 return,reform(a,ncolumn,n)
 end
