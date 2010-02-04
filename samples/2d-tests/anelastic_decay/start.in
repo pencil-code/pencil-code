@@ -9,7 +9,7 @@
 ! bcz   = 's','s','a','a2','a'
 /
 &eos_init_pars
-gamma=1.
+  gamma=1.
 /
 &hydro_init_pars
   inituu='anelastic-2dxz', ampl_uy=-1.0e-1,kx_uu=1.0,kz_uu=1.0
@@ -20,6 +20,5 @@ gamma=1.
 &grav_init_pars
   gravz_profile='const',gravz=0.0
 /
-
 &poisson_init_pars
 /

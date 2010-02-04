@@ -4,12 +4,12 @@
 ###
 
 MPICOMM  = nompicomm
-GRAVITY  = gravity_simple
-FORCING  = noforcing
-ENTROPY  = noentropy
-MAGNETIC = nomagnetic
+
 HYDRO    =   hydro
 DENSITY  =   special/anelastic
-EOS      = eos_idealgas
+ENTROPY  = noentropy
+MAGNETIC = nomagnetic
+GRAVITY  =   gravity_simple
+EOS      =   eos_idealgas
 FOURIER  =   fourier_fftpack
 POISSON  =   poisson
