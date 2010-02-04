@@ -31,6 +31,7 @@ cvs add src
 cvs add src/*.local
 
 if (-e k.dat) cvs add k.dat
+if (-e stratification.dat) cvs add stratification.dat
 
 if ($commit) then
   cvs commit
