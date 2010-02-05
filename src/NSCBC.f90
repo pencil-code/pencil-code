@@ -62,14 +62,23 @@ include 'NSCBC.h'
   real :: Lz_in
   real :: smooth_time=0.
 !
+!  Variables for inlet profiles
+!
+  real, dimension(2) :: radius_profile=(/0.0182,0.0364/)
+  real, dimension(2) :: momentum_thickness=(/0.014,0.0182/)
+  real, dimension(2) :: jet_center=(/0.,0./)
+  real :: velocity_ratio=3.3
+!
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
-      turb_inlet_dir, jet_inlet
+      turb_inlet_dir, jet_inlet,radius_profile,momentum_thickness,jet_center,&
+      velocity_ratio
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
-      notransveral_terms, transversal_damping
+      notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
+      jet_center,velocity_ratio
 !
   contains
 !***********************************************************************
@@ -469,13 +478,16 @@ include 'NSCBC.h'
 !
         if (dir==1) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax)
+              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
+              igrid,jgrid)
         elseif (dir==2) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-              Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in,imin,imax,jmin,jmax)
+              Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
+              igrid,jgrid)
         elseif (dir==3) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
-              Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax)
+              Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax,&
+              igrid,jgrid)
         endif
         if (lroot .and. ip<5) then
           print*,'bc_nscbc_prf: Finalized reading velocity profiles at the inlet.'
@@ -683,6 +695,10 @@ include 'NSCBC.h'
       do i=1,3
         if (nscbc_bc(i) /= '') lnscbc = .true.
       enddo
+
+
+print*,'inlet_profile=',inlet_profile
+
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
@@ -793,7 +809,7 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
         domain_length,grid_points,u_t,dir,imin_turb,imax_turb,&
-        jmin_turb,jmax_turb,imin,imax,jmin,jmax)
+        jmin_turb,jmax_turb,imin,imax,jmin,jmax,igrid,jgrid)
 !
 !  Find velocity at inlet.
 !
@@ -802,18 +818,107 @@ include 'NSCBC.h'
       logical, intent(out) :: non_zero_transveral_velo
       real, dimension(:,:,:), intent(out) :: u_in
       real, intent(in) :: domain_length,u_t
-      integer, intent(in) :: grid_points,dir,imin,imax,jmin,jmax
+      integer, intent(in) :: grid_points,dir,imin,imax,jmin,jmax,igrid,jgrid
       integer, intent(in) :: imin_turb,imax_turb,jmin_turb,jmax_turb
 !
       real :: shift, grid_shift, weight, round
       integer :: iround, lowergrid, uppergrid
+      real, allocatable, dimension(:,:)   :: u_profile
+      real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
-      real, dimension(2) :: radius,theta
-      real :: radius_mean, velocity_ratio, smooth, rad
-      real, dimension (2) :: jet_center
-      integer :: j,kkk,jjj
+      real :: radius_mean, smooth, rad
+      integer :: i,j,kkk,jjj
+      integer, dimension(10) :: stat
 !
-!  First we check if we are using a pre-run data file as inlet
+!  Allocate allocatables
+!
+      allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
+      allocate(u_turb   (igrid,jgrid,3),STAT=stat(2))
+      if (maxval(stat)>0) &
+          call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")  
+!
+! Define velocity profile at inlet
+!
+        u_in=0
+        do j=1,ninit
+          select case (inlet_profile(j))
+!
+          case ('nothing')
+            if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+                print*,'inlet_profile: nothing'
+            non_zero_transveral_velo=.false.
+            u_profile=1.
+!
+          case ('uniform')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'inlet_profile: uniform'
+            non_zero_transveral_velo=.false.
+            u_in(:,:,dir)=u_in(:,:,dir)+u_t
+            u_profile=1.               
+!
+          case ('coaxial_jet')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'inlet_profile: coaxial_jet'
+            non_zero_transveral_velo=.true.
+            velo(1)=u_t
+            velo(2)=velo(1)*velocity_ratio
+            velo(3)=0.04*velo(2)
+            radius_mean=(radius_profile(1)+radius_profile(2))/2.
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                  rad=sqrt((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(2))**2)
+                elseif (dir==2) then
+                  rad=sqrt((x(jjj)-jet_center(1))**2+(z(kkk)-jet_center(2))**2)
+                elseif (dir==3) then
+                  rad=sqrt((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(2))**2)
+                endif
+                  ! Add mean velocity profile
+                if (rad < radius_mean) then
+                  u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                      =u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                      +(velo(1)+velo(2))/2&
+                      +(velo(2)-velo(1))/2*tanh((rad-radius_profile(1))/&
+                      (2*momentum_thickness(1)))
+                else
+                  u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                      =u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                      +(velo(2)+velo(3))/2&
+                      +(velo(3)-velo(2))/2*tanh((rad-radius_profile(2))/&
+                      (2*momentum_thickness(2)))
+                endif
+              enddo
+            enddo
+            u_profile=u_in(:,:,dir)               
+!
+          case ('single_jet')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'inlet_profile: single_jet'
+            non_zero_transveral_velo=.true.
+            velo(1)=u_t
+            velo(2)=velo(1)/velocity_ratio
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                  rad=sqrt((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+                elseif (dir==2) then
+                  rad=sqrt((x(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+                elseif (dir==3) then
+                  rad=sqrt((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(1))**2)
+                endif
+                  ! Add mean velocity profile
+                u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                    =u_in(jjj-imin+1,kkk-jmin+1,dir)&
+                    +velo(1)*(1-tanh((rad-radius_profile(1))/&
+                    momentum_thickness(1)))*0.5+velo(2)
+              enddo
+            enddo            
+            u_profile=u_in(:,:,dir)               
+          end select
+!
+        enddo
+!
+!  Check if we are using a pre-run data file as inlet
 !  condition, if not the chosen inlet profile will be used.
 !
         if (inlet_from_file) then
@@ -839,126 +944,73 @@ include 'NSCBC.h'
 !  Set the turbulent inlet velocity
 !
           if (dir==1) then
-            call turbulent_vel_x(u_in,lowergrid,imin_turb,imax_turb,&
+            call turbulent_vel_x(u_turb,lowergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           elseif (dir==2) then
-            call turbulent_vel_y(u_in,lowergrid,imin_turb,imax_turb,&
+            call turbulent_vel_y(u_turb,lowergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           elseif (dir==3) then
-            call turbulent_vel_z(u_in,lowergrid,imin_turb,imax_turb,&
+            call turbulent_vel_z(u_turb,lowergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           endif
 !
 !  Add the mean inlet velocity to the turbulent one
 !
-          u_in(:,:,dir)=u_in(:,:,dir)+u_t
-        else
-!
-! Define velocity profile at inlet
-!
-          u_in=0
-          do j=1,ninit
-            select case (inlet_profile(j))
-!
-            case ('nothing')
-              if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
-                  print*,'inlet_profile: nothing'
-              non_zero_transveral_velo=.false.
-!
-            case ('uniform')
-              if (lroot .and. it==1 .and. lfirst) &
-                  print*,'inlet_profile: uniform'
-              non_zero_transveral_velo=.false.
-              u_in(:,:,dir)=u_in(:,:,dir)+u_t
-!
-            case ('coaxial_jet')
-              if (lroot .and. it==1 .and. lfirst) &
-                  print*,'inlet_profile: coaxial_jet'
-              non_zero_transveral_velo=.true.
-              velocity_ratio=3.3
-              velo(1)=u_t
-              velo(2)=velo(1)*velocity_ratio
-              velo(3)=0.04*velo(2)
-              radius(1)=0.0182
-              radius(2)=radius(1)*2.
-              radius_mean=(radius(1)+radius(2))/2.
-              theta(1)=radius(1)/13.
-              theta(2)=radius(2)/20.
-              jet_center(1)=0
-              jet_center(2)=0
-              do jjj=imin,imax
-                do kkk=jmin,jmax
-                  if (dir==1) then
-                    rad=sqrt((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(2))**2)
-                  elseif (dir==2) then
-                    rad=sqrt((x(jjj)-jet_center(1))**2+(z(kkk)-jet_center(2))**2)
-                  elseif (dir==3) then
-                    rad=sqrt((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(2))**2)
-                  endif
-                  ! Add mean velocity profile
-                  if (rad < radius_mean) then
-                    u_in(jjj-imin+1,kkk-jmin+1,dir)&
-                        =u_in(jjj-imin+1,kkk-jmin+1,dir)&
-                        +(velo(1)+velo(2))/2&
-                        +(velo(2)-velo(1))/2*tanh((rad-radius(1))/(2*theta(1)))
-                  else
-                    u_in(jjj-imin+1,kkk-jmin+1,dir)&
-                        =u_in(jjj-imin+1,kkk-jmin+1,dir)&
-                        +(velo(2)+velo(3))/2&
-                        +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
-                  endif
-                enddo
-              enddo
-            end select
-!
+          do i=1,3
+            u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile
           enddo
         endif
 !
+!  Deallocate
+!
+        deallocate(u_profile)
+        deallocate(u_turb)
+!
       end subroutine find_velocity_at_inlet
 !***********************************************************************
-      subroutine turbulent_vel_x(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_x(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
-        real, dimension(ny,nz,3), intent(out) :: u_in
+        real, dimension(ny,nz,3), intent(out) :: u_turb
         integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
         real, intent(in) :: weight,smooth
 !
-        u_in(:,:,:)&
+        u_turb(:,:,:)&
             =(f_in(lowergrid,imin:imax,jmin:jmax,iux:iuz)*(1-weight)&
             +f_in(lowergrid+1,imin:imax,jmin:jmax,iux:iuz)*weight)*smooth
 !
       end subroutine turbulent_vel_x
 !***********************************************************************
-      subroutine turbulent_vel_y(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_y(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
-        real, dimension(nx,nz,3), intent(out) :: u_in
+        real, dimension(nx,nz,3), intent(out) :: u_turb
         integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
         real, intent(in) :: weight,smooth
 !
-        u_in(:,:,:)&
+        u_turb(:,:,:)&
             =(f_in(imin:imax,lowergrid,jmin:jmax,iux:iuz)*(1-weight)&
             +f_in(imin:imax,lowergrid+1,jmin:jmax,iux:iuz)*weight)*smooth
 !
       end subroutine turbulent_vel_y
 !***********************************************************************
-      subroutine turbulent_vel_z(u_in,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_z(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
-        real, dimension(nx,ny,3), intent(out) :: u_in
+        real, dimension(nx,ny,3), intent(out) :: u_turb
         integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
         real, intent(in) :: weight,smooth
 !
-        u_in(:,:,:)&
+        u_turb(:,:,:)&
             =(f_in(imin:imax,jmin:jmax,lowergrid,iux:iuz)*(1-weight)&
             +f_in(imin:imax,jmin:jmax,lowergrid+1,iux:iuz)*weight)*smooth
 !
