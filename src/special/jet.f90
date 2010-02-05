@@ -56,6 +56,10 @@ module Special
   integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
   character (len=120) :: directory_in
   character (len=5) :: chproc_in
+  real, dimension(2) :: radius=(/0.182,0.364/)
+  real, dimension(2) :: theta=(/0.014,0.0182/)
+  real, dimension(2) :: jet_center=(/0.,0./)
+  real :: u_t=5.,velocity_ratio=3.3
 
 
 
@@ -63,7 +67,7 @@ module Special
 
 ! input parameters
   namelist /jet_init_pars/ &
-      initspecial,turb_inlet_dir
+      initspecial,turb_inlet_dir, u_t,velocity_ratio,radius,theta,jet_center
   ! run parameters
   namelist /jet_run_pars/  &
        turb_inlet_dir
@@ -118,18 +122,10 @@ module Special
       select case (initspecial)
       case ('nothing'); if (lroot) print*,'init_special: nothing'
       case ('coaxial_jet')      
-        u_t=5.
-        velocity_ratio=3.3
         velo(1)=u_t
         velo(2)=velo(1)*velocity_ratio
         velo(3)=0.04*velo(2)
-        radius(1)=0.0182
-        radius(2)=radius(1)*2.
         radius_mean=(radius(1)+radius(2))/2.
-        theta(1)=radius(1)/13.
-        theta(2)=radius(2)/20.
-        jet_center(1)=0
-        jet_center(2)=0
 !
 ! Set velocity profiles
 !          
@@ -150,7 +146,26 @@ module Special
             endif
           enddo
         enddo
-        f(:,:,:,iuy:iuz)=0        
+        f(:,:,:,iuy:iuz)=0   
+
+        case ('single_jet')
+          velo(1)=u_t
+          velo(2)=velo(1)/velocity_ratio
+!
+! Set velocity profiles
+!
+          do jjj=1,ny 
+            do kkk=1,nz
+              rad=sqrt(&
+                  (y(jjj+m1-1)-jet_center(1))**2+&
+                  (z(kkk+n1-1)-jet_center(1))**2)
+              !Add velocity profile
+              f(:,jjj+m1-1,kkk+n1-1,1)&
+                  =velo(1)*(1-tanh((rad-radius(1))/theta(1)))*0.5+velo(2)
+            enddo
+          enddo
+          f(:,:,:,iuy:iuz)=0
+     
       case default
         !
         !  Catch unknown values
