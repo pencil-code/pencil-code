@@ -131,12 +131,11 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple,visc_simple, &
-      lThCond_simple, &
-      lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
-      init_y1,init_y2,init_z1,init_z2,&
-      init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
-      lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
-      ldamp_left,ldamp_right
+      lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,diffus_const,&
+      init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
+      init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
+      str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
+      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right
 
 
 ! run parameters
@@ -2062,8 +2061,6 @@ module Chemistry
         if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) df(i,m,n,ichemspec(k))=1.*dt
        enddo
       endif
-
-
      enddo
 !
       if (ldensity .and. lcheminp) then
