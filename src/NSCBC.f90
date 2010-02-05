@@ -695,10 +695,6 @@ include 'NSCBC.h'
       do i=1,3
         if (nscbc_bc(i) /= '') lnscbc = .true.
       enddo
-
-
-print*,'inlet_profile=',inlet_profile
-
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
@@ -709,7 +705,6 @@ print*,'inlet_profile=',inlet_profile
 !
 ! Read the size of the data to be found on the file.
 !
-!print*,'turb_inlet_dir=',turb_inlet_dir
         file=trim(turb_inlet_dir)//'/data/proc0/dim.dat'
         inquire(FILE=trim(file),EXIST=exist)
         if (exist) then
@@ -832,6 +827,7 @@ print*,'inlet_profile=',inlet_profile
 !
 !  Allocate allocatables
 !
+      stat=0
       allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
       allocate(u_turb   (igrid,jgrid,3),STAT=stat(2))
       if (maxval(stat)>0) &
