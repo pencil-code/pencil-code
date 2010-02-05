@@ -19,8 +19,11 @@ z1=param1.xyz1(2)
 Lz=z1-z0
 ;
 default,use_grid,1
+@data/testfield_info.dat
 spawn,'touch parameters.pro'
 @parameters
+;
+;  read 
 ;
 if use_grid eq 1 then begin
   pc_read_grid,o=grid
@@ -41,6 +44,10 @@ endif else begin
   print,'assume non-periodic domain with dz=',dz
   zzz=z0+dz*findgen(nz)
 endelse
+;
+;  check whether or not we have sinusoidal test fields
+;
+if param.itestfield eq 'B11-B22_lin' then sinusoidal=0
 ;
 ;  prepare relevant array for testfield sine and cosine functions
 ;
