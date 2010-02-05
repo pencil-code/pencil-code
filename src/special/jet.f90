@@ -56,10 +56,11 @@ module Special
   integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
   character (len=120) :: directory_in
   character (len=5) :: chproc_in
-  real, dimension(2) :: radius=(/0.182,0.364/)
-  real, dimension(2) :: theta=(/0.014,0.0182/)
+  real, dimension(2) :: radius=(/0.0182,0.0364/)
+  real, dimension(2) :: momentum_thickness=(/0.014,0.0182/)
   real, dimension(2) :: jet_center=(/0.,0./)
   real :: u_t=5.,velocity_ratio=3.3
+
 
 
 
@@ -67,7 +68,8 @@ module Special
 
 ! input parameters
   namelist /jet_init_pars/ &
-      initspecial,turb_inlet_dir, u_t,velocity_ratio,radius,theta,jet_center
+      initspecial,turb_inlet_dir,u_t,velocity_ratio,radius,momentum_thickness,&
+      jet_center
   ! run parameters
   namelist /jet_run_pars/  &
        turb_inlet_dir
@@ -111,8 +113,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,jjj,kkk
       real, dimension(3) :: velo,tmp
-      real, dimension(2) :: radius,theta,jet_center
-      real :: radius_mean, velocity_ratio,An,u_t,rad
+      real :: radius_mean,An,rad
       logical :: non_zero_transveral_velo
 !
       intent(inout) :: f
@@ -138,11 +139,13 @@ module Special
             if (rad < radius_mean) then
               f(:,jjj+m1-1,kkk+n1-1,1)&
                   =(velo(1)+velo(2))/2&
-                  +(velo(2)-velo(1))/2*tanh((rad-radius(1))/(2*theta(1)))
+                  +(velo(2)-velo(1))/2*tanh((rad-radius(1))/&
+                  (2*momentum_thickness(1)))
             else
               f(:,jjj+m1-1,kkk+n1-1,1)&
                   =(velo(2)+velo(3))/2&
-                  +(velo(3)-velo(2))/2*tanh((rad-radius(2))/(2*theta(2)))
+                  +(velo(3)-velo(2))/2*tanh((rad-radius(2))/&
+                  (2*momentum_thickness(2)))
             endif
           enddo
         enddo
@@ -161,7 +164,8 @@ module Special
                   (z(kkk+n1-1)-jet_center(1))**2)
               !Add velocity profile
               f(:,jjj+m1-1,kkk+n1-1,1)&
-                  =velo(1)*(1-tanh((rad-radius(1))/theta(1)))*0.5+velo(2)
+                  =velo(1)*(1-tanh((rad-radius(1))/&
+                  momentum_thickness(1)))*0.5+velo(2)
             enddo
           enddo
           f(:,:,:,iuy:iuz)=0
