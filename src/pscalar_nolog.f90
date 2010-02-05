@@ -193,6 +193,8 @@ module Pscalar
         case ('hor-tube'); call htube2(amplcc,f,icc,icc,radius_cc,epsilon_cc)
         case ('jump-x'); call jump(f,icc,cc_const,0.,widthcc,'x')
         case ('jump-x-neg'); call jump(f,icc,0.,cc_const,widthcc,'x')
+        case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,'y')
+        case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,'z')
         case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
