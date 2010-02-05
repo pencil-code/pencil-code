@@ -18,6 +18,7 @@
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
+! PENCILS PROVIDED Diff_penc_add(nchemspec), gmu1(3)
 !
 !***************************************************************
 module Chemistry
@@ -67,10 +68,9 @@ module Chemistry
 
      logical :: lheatc_chemistry=.true.
 
-     logical :: BinDif_simple=.false.
-     logical :: Dif_simple=.false.
+     logical :: lDiff_simple=.false.
+     logical :: lThCond_simple=.false.
      logical :: visc_simple=.false.
-     logical :: lambda_simple=.false.
      logical :: lT_const=.false.
 
      logical :: lfilter=.false.
@@ -130,8 +130,8 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec, BinDif_simple,Dif_simple,visc_simple, &
-      lambda_simple, &
+      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple,visc_simple, &
+      lThCond_simple, &
       lambda_const, visc_const,Cp_const,Cv_const,diffus_const,init_x1,init_x2, & 
       init_y1,init_y2,init_z1,init_z2,&
       init_TT1,init_TT2,init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, str_thick, &
@@ -143,7 +143,7 @@ module Chemistry
   namelist /chemistry_run_pars/ &
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry, BinDif_simple, visc_simple, &
+      lreactions,lchem_cdtc,lheatc_chemistry,  visc_simple, &
       lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
       ldamp_left, ldamp_right
 !
@@ -498,16 +498,22 @@ module Chemistry
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_ghhk)=.true.
       lpenc_requested(i_cs2)=.true.
+      
 !
       lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
+      
+      if (ldiffusion .and. lDiff_simple) then
+        lpenc_requested(i_Diff_penc_add)=.true.
+      endif
+     
 !
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
          lpenc_requested(i_lnrho)=.true.
          lpenc_requested(i_glnpp)=.true.
          lpenc_requested(i_mu1)=.true.
-       !  lpenc_requested(i_gmu1)=.true.
+         lpenc_requested(i_gmu1)=.true.
          lpenc_requested(i_pp)=.true.
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cp1)=.true.
@@ -517,8 +523,6 @@ module Chemistry
     
             
 !
-         lpenc_requested(i_DYDt_reac)=.true.
-         lpenc_requested(i_DYDt_diff)=.true.
          if (lheatc_chemistry) then
            lpenc_requested(i_lambda)=.true.
            lpenc_requested(i_glambda)=.true.
@@ -585,8 +589,8 @@ module Chemistry
         if (lpencil(i_mu1)) then
           p%mu1=mu1_full(l1:l2,m,n)
         endif
-!
-!        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
+
+        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !  Mole fraction XX
 !
@@ -711,14 +715,33 @@ module Chemistry
       else
         p%DYDt_diff=0.
       endif
+
+      if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
+       do k=1,nchemspec
+        p%Diff_penc_add(:,k)=diffus_const*(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7*&
+          species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
+       enddo
+      endif    
+
+     
 !
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
 !
 ! Calculate chethermal diffusivity
 !
       if (lpenc_requested(i_lambda) .and. lheatc_chemistry) then
+        if (lThCond_simple) then
+         p%lambda=lambda_const &
+             *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7
+         if (lpenc_requested(i_glambda))  then
+          do i=1,3
+           p%glambda(:,i)=p%lambda(:)*(0.7-1.)*(p%glnTT(:,i)+p%glnrho(:,i))
+          enddo
+         endif
+         else
          p%lambda=lambda_full(l1:l2,m,n)
          if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
+        endif
       endif
 !
 !  Calculate grad(enthalpy)
@@ -1434,6 +1457,8 @@ module Chemistry
 !
 !  Diffusion coeffisient of a mixture
 !
+       if (.not. lDiff_simple) then
+
          do j3=nn1,nn2
          do j2=mm1,mm2
          do j1=1,mx
@@ -1449,7 +1474,7 @@ module Chemistry
                                     /rho_full(j1,j2,j3)/Sc_number
               enddo
              elseif (ldiffusion) then
-              if (Dif_simple) then
+              if (lDiff_simple) then
                  if (diffus_const<impossible) then
                   Diff_full(j1,j2,j3,:)=diffus_const
                  else
@@ -1492,10 +1517,13 @@ module Chemistry
          enddo
          enddo
          enddo
+       endif
 !
 !  Thermal diffusivity
 !
-        if (lheatc_chemistry) call calc_therm_diffus_coef(f)
+        if (lheatc_chemistry .and. (.not. lThCond_simple)) then
+          call calc_therm_diffus_coef(f)
+        endif
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -2138,11 +2166,19 @@ module Chemistry
           endif
 
          if (ldiffusion) then
-          do i=1,3
-           dk_D(:,i)=(p%gXXk(:,i,k) &
-            +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
-            *Diff_full_add(l1:l2,m,n,k)
-          enddo
+          if (lDiff_simple) then
+           do i=1,3
+            dk_D(:,i)=(p%gXXk(:,i,k) &
+             +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
+             *p%Diff_penc_add(:,k)
+           enddo
+          else
+           do i=1,3
+            dk_D(:,i)=(p%gXXk(:,i,k) &
+             +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
+             *Diff_full_add(l1:l2,m,n,k)
+           enddo
+          endif
            call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
            sum_dk_ghk=sum_dk_ghk+dk_dhhk
          endif
@@ -3905,9 +3941,7 @@ module Chemistry
 !
 ! Check if we use simplified version of the binary diffusion calculation
 !
-        if (BinDif_simple) then
-          call stop_it('BinDif_simple case does not work now!')
-        elseif (ldiffusion .and. (.not. Dif_simple)) then
+        if (ldiffusion .and. (.not. lDiff_simple)) then
 !
 !  Do non-simplified binary diffusion coefficient
 !
@@ -4043,21 +4077,7 @@ module Chemistry
       real :: Cv_rot_R, Cv_tran_R,T_st, pi_1_5, pi_2
 
       call timing('calc_therm_diffus_coef','just entered')
-      if (lambda_const<impossible) then
-        do j3=nn1,nn2
-        do j2=mm1,mm2
-        do j1=1,mx
-          if (lambda_simple) then
-            lambda_full(j1,j2,j3)=lambda_const &
-                *(TT_full(j1,j2,j3)/TT_full(1,j2,j3))**0.7 &
-                *(rho_full(1,j2,j3)/rho_full(j1,j2,j3))
-          else
-            lambda_full(j1,j2,j3)=lambda_const
-          endif
-        enddo
-        enddo
-        enddo
-      else
+
         pi_1_5=pi**1.5
         pi_2=pi**2.
 !
@@ -4138,7 +4158,6 @@ module Chemistry
         enddo
         enddo
 !
-      endif
 
       call keep_compiler_quiet(f)
       call timing('calc_therm_diffus_coef','just finished')
@@ -4161,7 +4180,7 @@ module Chemistry
       real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX, del2pp, del2lnpp
       real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
       real :: diff_k
-      integer :: k
+      integer :: k,i
 !
       intent(in) :: f
 !
@@ -4195,7 +4214,17 @@ module Chemistry
 !
             call del2(XX_full(:,:,:,k),del2XX)
             call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
+         
+           if (lDiff_simple) then
+            do i=1,3
+             gDiff_full_add(:,i)=species_constants(k,imass)/unit_mass* &
+               p%Diff_penc_add(:,k) &
+               *((p%glnTT(:,i)+p%glnrho(:,i))*(0.7-1.) &
+               *mu1_full(l1:l2,m,n)+p%gmu1(:,i))
+            enddo
+           else
             call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
+           endif
             call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
 !
             call del2(pp_full(:,:,:),del2pp)
@@ -4209,10 +4238,18 @@ module Chemistry
             call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
             call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
           endif
-          p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
-          +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
-          +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*glnrho_glnpp &
-          +Xk_Yk(l1:l2,m,n)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
+
+          if (lDiff_simple) then
+           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2 &
+           +p%Diff_penc_add(:,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
+           +p%Diff_penc_add(:,k)*Xk_Yk(l1:l2,m,n)*glnrho_glnpp &
+           +Xk_Yk(l1:l2,m,n)*gD_glnpp+p%Diff_penc_add(:,k)*glnpp_gXkYk
+          else
+           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
+           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
+           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*glnrho_glnpp &
+           +Xk_Yk(l1:l2,m,n)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
+          endif
         endif
       enddo
 !
@@ -4508,349 +4545,6 @@ module Chemistry
 !***********************************************************************
 !!!!!!!!!  NSCBC boundary conditions
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine bc_nscbc_subin_x_new(f,df,topbot,val)
-!
-!   nscbc case
-!   subsonic inflow boundary conditions
-!   now it is 2D case (should be corrected for 3D case)
-!    ux,uy,T are fixed, drho  is calculated
-!
-!   16-nov-09/natalia: coded.
-!
-!
-      use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      character (len=3) :: topbot
-      real, dimension (my,mz) :: rho0,TT0,gamma0
-      real, dimension (mx,my,mz) :: mom2,mom3!, rho_ux2, rho_uy2
-      real, dimension (mx,my,mz) :: rhoE_p
-      real, dimension (mx,my,mz,2) ::  rhoE_pU
-      real, dimension (my,mz) ::  dYk_dx,dYk_dy,dYk_dz
-      real, dimension (ny,nz) :: drho_prefac, KK
-      
-      real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
-      real, dimension (ny,nz)  :: M_1, M_2, M_3, M_4, M_5
-  !    
-      real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
-      real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
-   !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
-    !  real, dim(:,nnn)ension (ny,nz) :: bound_rhs_T
-      real, dimension (mx,my,mz) :: cs2_full, gamma_full
-      real, dimension (nx,ny,nz) :: p_inf
-      
-      real, dimension (ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz)     :: tmp1,tmp2,tmp3, tmp_rho,tmp_pp       
-      real, dimension (ny,nz,3)   :: grad_rho, grad_pp
-     ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
-     ! real, dimension(ny,nz) ::     d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
-     ! real, dimension (ny,nz,3) :: dlnT_dxj
-      real, dimension (ny,nz) :: T_1_y, T_2_y, T_3_y, T_4_y, T_5_y
-      real, dimension (ny,nz) :: T_1_z, T_2_z, T_3_z, T_4_z, T_5_z
-      real, dimension (mcom), optional :: val
-!
-      integer :: lll, sgn,i,j,k, mm, mmm, irho_tmp
-      real :: Mach_num
-      real :: U0_x,U0_y,U0_z,T0
-!
-     
-      intent(inout) :: f
-      intent(out) :: df
-      real :: nscbc_sigma=0.5,ita
-!
-  
-      if (present(val)) call keep_compiler_quiet(val)
-
-       U0_x=init_ux;U0_y=init_uy;U0_z=init_uz;T0=init_TT1
-
-      if (leos_chemistry) then
-        call get_cs2_full(cs2_full)
-        call get_gamma_full(gamma_full)
-      endif
-!
-      select case (topbot)
-      case ('bot')
-        lll = l1; sgn = 1
-        if (leos_chemistry) then
-          p_inf(1,:,:)=pp_full(l1,m1:m2,n1:n2)
-        endif
-      case ('top')
-        lll = l2; sgn = -1
-        if (leos_chemistry) then
-          p_inf(nx,:,:)=pp_full(l2,m1:m2,n1:n2)
-        endif
-      case default
-        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
-      endselect
- 
-
-      if (leos_chemistry) then
-         cs20_ar=cs2_full(lll,:,:)
-         cs0_ar=cs2_full(lll,:,:)**0.5
-         gamma0=gamma_full(lll,:,:)
-
-        if (ldensity_nolog) then
-         rho_full = f(:,:,:,irho)
-          rho0(:,:) = f(lll,:,:,irho)
-          drho_prefac=-1./cs20_ar(m1:m2,n1:n2)
-          irho_tmp=irho
-          call stop_it('bc_nscbc_nref_subout_x: NSCBC works now only for lnrho')
-        else
-          rho_full = exp(f(:,:,:,ilnrho))
-          rho0(:,:) = rho_full(lll,:,:)
-          drho_prefac=-1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2)
-          irho_tmp=ilnrho
-        endif
-
-        if (ltemperature_nolog) then
-         TT0(:,:) = f(lll,:,:,iTT)
-        else
-         TT0(:,:) = exp(f(lll,:,:,ilnTT))
-        endif
-         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
-         mom3(lll,:,:)=rho0(:,:)*f(lll,:,:,iuz)
-         rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
-            *(f(lll,:,:,iux)**2+f(lll,:,:,iuy)**2+f(lll,:,:,iuz)**2) &
-             +gamma_full(lll,:,:)/(gamma_full(lll,:,:)-1)*pp_full(lll,:,:)
-         rhoE_pU(lll,:,:,1)=rhoE_p(lll,:,:)*f(lll,:,:,iuy) 
-         rhoE_pU(lll,:,:,2)=rhoE_p(lll,:,:)*f(lll,:,:,iuz)
-
-
-         Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
-         KK=nscbc_sigma*(1.-Mach_num*Mach_num)/Lxyz(1)
-
-      else
-        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
-        print*,"NSCBC subsonic inflos is only implemented "//&
-            "for the chemistry case."
-        print*,"Boundary treatment skipped."
-        return
-      endif
-
-        call der_onesided_4_slice(rho_full,sgn,grad_rho(:,:,1),lll,1)
-        call der_onesided_4_slice(pp_full,sgn,grad_pp(:,:,1),lll,1)
-        call der_onesided_4_slice(f,sgn,iux,dui_dxj(:,:,1,1),lll,1)
-        call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,1),lll,1)
-        call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,1),lll,1)
-       ! call der_onesided_4_slice(f,sgn,ilnTT,dlnT_dxj(:,:,1),lll,1)
-
-
-       if (nygrid /= 1) then
-    
-         do i=n1,n2
-          call der_pencil(2,f(lll,:,i,iux),tmp1(:,i))
-          call der_pencil(2,f(lll,:,i,iuy),tmp2(:,i))
-          call der_pencil(2,f(lll,:,i,iuz),tmp3(:,i))
-          call der_pencil(2,rho_full(lll,:,i),tmp_rho(:,i))
-          call der_pencil(2,pp_full(lll,:,i),tmp_pp(:,i))
-          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
-          call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
-         enddo
-
-      else
-        tmp3=0
-        tmp2=0
-        tmp1=0
-        tmp_rho=0
-        tmp_pp=0
-        dmom2_dy=0
-        drhoE_pU(:,:,1)=0
-
-      endif
-        dui_dxj(:,:,1,2)=tmp1(m1:m2,n1:n2)
-        dui_dxj(:,:,2,2)=tmp2(m1:m2,n1:n2)
-        dui_dxj(:,:,3,2)=tmp3(m1:m2,n1:n2)
-        grad_rho(:,:,2)=tmp_rho(m1:m2,n1:n2)
-        grad_pp(:,:,2)=tmp_pp(m1:m2,n1:n2)
-
-      if (nzgrid /= 1) then
-         do j=m1,m2
-          call der_pencil(3,f(lll,j,:,iux),tmp1(j,:))
-          call der_pencil(3,f(lll,j,:,iuy),tmp2(j,:))
-          call der_pencil(3,f(lll,j,:,iuz),tmp3(j,:))
-          call der_pencil(3,rho_full(lll,j,:),tmp_rho(j,:))
-          call der_pencil(3,pp_full(lll,j,:),tmp_pp(j,:))
-          call der_pencil(3,mom3(lll,j,:),dmom3_dz(j,:))
-          call der_pencil(3,rhoE_pU(lll,j,:,2),drhoE_pU(j,:,2))
-         enddo
-      else
-        tmp3=0
-        tmp2=0
-        tmp1=0
-        tmp_rho=0
-        tmp_pp=0
-        dmom3_dz=0
-        drhoE_pU(:,:,2)=0
-      endif
-        dui_dxj(:,:,1,3)=tmp1(m1:m2,n1:n2)
-        dui_dxj(:,:,2,3)=tmp2(m1:m2,n1:n2)
-        dui_dxj(:,:,3,3)=tmp3(m1:m2,n1:n2)
-        grad_rho(:,:,3)=tmp_rho(m1:m2,n1:n2)
-        grad_pp(:,:,3)=tmp_pp(m1:m2,n1:n2)
-
-!
-
-
-       if ((nygrid /= 1) .or.(nzgrid /= 1))  then
-
-          T_1_y(:,:)=-dmom2_dy(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
-          T_1_z(:,:)=-dmom3_dz(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
-          T_2_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2) 
-          T_2_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3) !&
-                !   -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
-          T_3_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) &
-                     -grad_pp(:,:,2)/rho0(m1:m2,n1:n2) 
-         T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3) 
-                !   -nu_full(lll,m1:m2,n1:n2)*(d2u2_dy2+d2u2_dz2)
-          T_4_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2) 
-         T_4_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3) &
-                     -grad_pp(:,:,3)/rho0(m1:m2,n1:n2)
-          T_5_y(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.) &
-                      *gamma0(m1:m2,n1:n2)*drhoE_pU(m1:m2,n1:n2,1)
-          T_5_z(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.) &
-                      *gamma0(m1:m2,n1:n2)*(drhoE_pU(m1:m2,n1:n2,2))
-
-       endif
-
-
-      ita=1.
-
-      select case (topbot)
-      case ('bot')
-        L_5=ita*(1.-Mach_num*Mach_num)/Lxyz(1)*cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)&
-           *(f(lll,m1:m2,n1:n2,iux)-U0_x) &
-           +(T_5_y +T_5_z) &
-           +rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*(T_2_y +T_2_z)
-      case ('top')
-        L_1=ita*(1.-Mach_num*Mach_num)/Lxyz(1)*cs20_ar(m1:m2,n1:n2)*rho0(m1:m2,n1:n2)&
-           *(f(lll,m1:m2,n1:n2,iux)-U0_x)&
-           +(T_5_y +T_5_z) &
-           -rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*(T_2_y +T_2_z)
-     endselect
-!
-     
-
-       L_2 =ita*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*Rgas/Lxyz(1) &
-           *(TT0(m1:m2,n1:n2)-T0)+cs20_ar(m1:m2,n1:n2)*(T_1_y +T_1_z)-(T_5_y +T_5_z)
-       L_3 = ita*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iuy)-U0_y) &
-             +(T_3_y +T_3_z)
-       L_4 = ita*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iuz)-U0_z) &
-             +(T_4_y +T_4_z)
-
-
-        if ((nygrid /= 1) .or.(nzgrid /= 1))  then
-
-        M_1 = (f(lll,m1:m2,n1:n2,iuy) - cs0_ar(m1:m2,n1:n2))*&
-            (grad_pp(:,:,2)- rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,2,2))
-
-        M_2 = f(lll,m1:m2,n1:n2,iuy)*(cs20_ar(m1:m2,n1:n2)*grad_rho(:,:,2)-grad_pp(:,:,2))
-        M_3 = f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)
-        M_4 = f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)
-
-        M_5 = (f(lll,m1:m2,n1:n2,iuy) + cs0_ar(m1:m2,n1:n2))*&
-            (grad_pp(:,:,2)+ rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,2,2))
-
-
-       do i=1,2
-
-       if (i==1) then
-         mm=m1
-         mmm=1
-
-       select case (topbot)
-         case ('bot')
-           M_5(mmm,:)=0.
-           L_5(mmm,:)=L_5(mmm,:)-M_1(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
-           L_3(mmm,:)=L_3(mmm,:)+M_1(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
-         case ('top')
-           M_1(mmm,:)=0.
-           L_1(mmm,:)=L_1(mmm,:)-M_5(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
-           L_3(mmm,:)=L_3(mmm,:)-M_5(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
-       endselect
-       elseif (i==2) then
-         mm=m2
-         mmm=ny
-        select case (topbot)
-         case ('bot')
-           M_5(mmm,:)=0.
-           L_5(mmm,:)=L_5(mmm,:)-M_1(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
-           L_3(mmm,:)=L_3(mmm,:)+M_1(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
-          case ('top')
-           M_1(mmm,:)=0.
-           L_1(mmm,:)=L_1(mmm,:)-M_5(mmm,:)/2.-rho0(mm,n1:n2)*cs0_ar(mm,n1:n2)*M_2(mmm,:)
-           L_3(mmm,:)=L_3(mmm,:)-M_5(mmm,:)/(2.*rho0(mm,n1:n2)*cs0_ar(mm,n1:n2))
-         endselect
-       endif
-
-
-
-       L_2(mmm,:) = L_2(mmm,:)-M_3(mmm,:)
-       L_4(mmm,:) = L_4(mmm,:)-M_4(mmm,:)
-
-
-       !  df(lll,m1:m2,n1:n2,irho_tmp) = df(lll,m1:m2,n1:n2,irho_tmp) + T_1_y + T_1_z
-       !  df(lll,m1:m2,n1:n2,iux)      = df(lll,m1:m2,n1:n2,iux)      + T_2_y + T_2_z
-       !  df(lll,m1:m2,n1:n2,iuy)      = df(lll,m1:m2,n1:n2,iuy)      + T_3_y + T_3_z
-       !  df(lll,m1:m2,n1:n2,iuz)      = df(lll,m1:m2,n1:n2,iuz)      + T_4_y + T_4_z
-       !  df(lll,m1:m2,n1:n2,ilnTT)    = df(lll,m1:m2,n1:n2,ilnTT)    + T_5_y + T_5_z
-
-       enddo
-
-       endif
-
-
-!
-       df(lll,m1:m2,n1:n2,irho_tmp) = &
-         drho_prefac*(L_2+0.5*(L_5 + L_1)) 
-       df(lll,m1:m2,n1:n2,iux) =  &
-         -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
-       df(lll,m1:m2,n1:n2,iuy) = -L_3
-       df(lll,m1:m2,n1:n2,iuz) = -L_4
-
-       if (ltemperature_nolog) then
-        df(lll,m1:m2,n1:n2,iTT) = &
-          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))*TT0(m1:m2,n1:n2)
-       else 
-        df(lll,m1:m2,n1:n2,ilnTT) = &
-          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
-          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1)) 
-       endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      if (nchemspec>1) then
-       do k=1,nchemspec
-          call der_onesided_4_slice(f,sgn,ichemspec(k),dYk_dx(m1:m2,n1:n2),lll,1)
-         do i=n1,n2
-          call der_pencil(2,f(lll,:,i,ichemspec(k)),dYk_dy(:,i))
-         enddo
-         do i=m1,m2
-           call der_pencil(3,f(lll,i,:,ichemspec(k)),dYk_dz(i,:))
-         enddo
-!NMNMNMN
-           df(lll,m1:m2,n1:n2,ichemspec(k))=&
-              -f(lll,m1:m2,n1:n2,iux)*dYk_dx(m1:m2,n1:n2) &
-              -f(lll,m1:m2,n1:n2,iuy)*dYk_dy(m1:m2,n1:n2) &
-              -f(lll,m1:m2,n1:n2,iuz)*dYk_dz(m1:m2,n1:n2) &
-              + RHS_Y_full(lll,m1:m2,n1:n2,k)
-
-       ! if (lfilter) then
-         do i=m1,m2
-         do j=n1,n2
-           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)<-1e-25 ) then
-             df(lll,i,j,ichemspec(k))=-1e-25*dt
-           endif
-           if ((f(lll,i,j,ichemspec(k))+df(lll,i,j,ichemspec(k))*dt)>1.) then
-             f(lll,i,j,ichemspec(k))=1.*dt
-           endif
-         enddo
-         enddo
-       ! endif
-       enddo
-      endif
-!
-    endsubroutine bc_nscbc_subin_x_new
 !***********************************************************************
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
@@ -5063,12 +4757,12 @@ module Chemistry
       case ('bot')
         lll = l1; sgn = 1
         if (leos_chemistry) then
-          p_inf(1,:,:)=pp_full(l1,m1:m2,n1:n2)
+          p_inf(1,:,:)=init_pressure
         endif
       case ('top')
         lll = l2; sgn = -1
         if (leos_chemistry) then
-          p_inf(nx,:,:)=pp_full(l2,m1:m2,n1:n2)
+          p_inf(nx,:,:)=init_pressure
         endif
       case default
         print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
@@ -5524,12 +5218,12 @@ module Chemistry
       case ('bot')
         mmm = m1; sgn = 1
         if (leos_chemistry) then
-          p_inf(:,1,:)=pp_full(l1:l2,m1,n1:n2)
+          p_inf(:,1,:)=init_pressure
         endif
       case ('top')
         mmm = m2; sgn = -1
         if (leos_chemistry) then
-          p_inf(:,ny,:)=pp_full(l1:l2,m2,n1:n2)
+          p_inf(:,ny,:)=init_pressure
         endif
       case default
         print*, "bc_nscbc_subout_y: ", topbot, " should be `top' or `bot'"
@@ -5569,7 +5263,7 @@ module Chemistry
 
          rhoE_p(:,mmm,:)=0.5*rho_full(:,mmm,:) &
             *(f(:,mmm,:,iux)**2+f(:,mmm,:,iuy)**2+f(:,mmm,:,iuz)**2) &
-             +gamma_full(:,mmm,:)/(gamma_full(:,mmm,:)-1)*pp_full(:,mmm,:)
+             +gamma_full(:,mmm,:)/(gamma_full(:,mmm,:)-1)*pp(:,mmm,:)
          rhoE_pU(:,mmm,:,1)=rhoE_p(:,mmm,:)*f(:,mmm,:,iux) 
          rhoE_pU(:,mmm,:,2)=rhoE_p(:,mmm,:)*f(:,mmm,:,iuz)
          mom1(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iux)
@@ -5958,12 +5652,12 @@ module Chemistry
       case ('bot')
         nnn = n1; sgn = 1
         if (leos_chemistry) then
-          p_inf(:,:,1)=pp_full(l1:l2,m1:m2,n1)
+          p_inf(:,:,1)=init_pressure
         endif
       case ('top')
         nnn = n2; sgn = -1
         if (leos_chemistry) then
-          p_inf(:,:,nz)=pp_full(l1:l2,m1:m2,n2)
+          p_inf(:,:,nz)=init_pressure
         endif
       case default
         print*, "bc_nscbc_subout_z: ", topbot, " should be `top' or `bot'"
