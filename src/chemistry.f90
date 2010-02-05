@@ -13,13 +13,14 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT(3); mu1; gamma
-! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec); gXXk(3,nchemspec); ghhk(3,nchemspec)
+! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec); gXXk(3,nchemspec); gYYk(3,nchemspec)
 ! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3);  nu; gradnu(3),gamma_m1, gradcp(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED Diff_penc_add(nchemspec), gmu1(3)
-!
+! PENCILS PROVIDED Diff_penc_add(nchemspec), gmu1(3), H0_RT(nchemspec), hhk_full(nchemspec)
+! PENCILS PROVIDED ghhk(3,nchemspec)
+! 
 !***************************************************************
 module Chemistry
 !
@@ -36,7 +37,7 @@ module Chemistry
      real :: Rgas, Rgas_unit_sys=1.
      real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
      real, dimension (mx,my,mz) :: lambda_full, rho_full, TT_full
-     real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full,  hhk_full
+     real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full
  !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
 
  ! parameters for simiplifyed cases
@@ -123,7 +124,6 @@ module Chemistry
      logical, allocatable, dimension(:) :: Mplus_case
      real, dimension(nchemspec,7)     :: tran_data
      real, dimension (nx,nchemspec), save  :: S0_R
-     real, dimension (mx,my,mz,nchemspec), save :: H0_RT
  
  ! real, dimension (mx,my,mz), save :: RHS_T_full
 
@@ -496,6 +496,7 @@ module Chemistry
 !
       lpenc_requested(i_YY)=.true.
       lpenc_requested(i_gXXk)=.true.
+      lpenc_requested(i_gYYk)=.true.
       lpenc_requested(i_ghhk)=.true.
       lpenc_requested(i_cs2)=.true.
       
@@ -520,7 +521,8 @@ module Chemistry
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
-    
+         lpenc_requested(i_H0_RT)=.true.
+         if (lreactions) lpenc_requested(i_hhk_full)=.true.
             
 !
          if (lheatc_chemistry) then
@@ -560,7 +562,8 @@ module Chemistry
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: k,i
+      integer :: k,i,j1,j
+      real :: T_low,T_up, T_mid, tmp
 !
 !  Mass fraction YY
 !
@@ -568,6 +571,13 @@ module Chemistry
         do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
       endif
       
+      if (lpencil(i_gYYk) .and. ldiffusion) then
+       do k=1,nchemspec 
+         call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
+         do i=1,3; p%gYYk(:,i,k)=gXX_tmp(:,i); enddo
+       enddo
+      endif
+
       if (lpencil(i_gXXk) .and. ldiffusion) then
        do k=1,nchemspec 
          call grad(XX_full(:,:,:,k),gXX_tmp)
@@ -575,12 +585,6 @@ module Chemistry
        enddo
       endif
 
-     if (lpencil(i_ghhk) .and. lreactions) then
-       do k=1,nchemspec 
-         call grad(hhk_full(:,:,:,k),ghhk_tmp)
-         do i=1,3; p%ghhk(:,i,k)=ghhk_tmp(:,i); enddo
-       enddo
-      endif
 !
       if (lcheminp) then
 !
@@ -629,20 +633,10 @@ module Chemistry
 !
         if (lpencil(i_rho1gpp)) then
 !
-! NILS: rho1gpp should be calculated from gradT, gradlnrho and gradmu
-! NILS: instead. When this is implemented one should remove the
-! NILS: calculation of pp_full
-!
-          call grad(pp_full,p%rho1gpp)
-!
           do i=1,3
-            p%rho1gpp(:,i)=p%rho1gpp(:,i)/p%rho(:)
+            p%rho1gpp(:,i) = p%pp/p%rho(:) &
+               *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
           enddo
-!
-          !do i=1,3
-          !  p%rho1gpp(:,i) = p%gamma_inv*p%cs2*&
-          !      (p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-          !enddo
         endif
 !
 ! Gradient of the lnpp
@@ -699,6 +693,58 @@ module Chemistry
         endif
 !
       endif
+
+ 
+!
+!  Dimensionless Standard-state molar enthalpy H0/RT
+!
+        if (lpenc_requested(i_H0_RT)) then
+        if (.not. lT_const) then
+          do k=1,nchemspec
+            T_low=species_constants(k,iTemp1)
+            T_mid=species_constants(k,iTemp2)
+            T_up= species_constants(k,iTemp3)
+              do j1=1,nx
+               if (p%TT(j1) <= T_mid) then
+                tmp=0.
+                 do j=1,5
+                  tmp=tmp+species_constants(k,iaa2(j))*p%TT(j1)**(j-1)/j
+                 enddo
+                  p%H0_RT(j1,k)=tmp+species_constants(k,iaa2(6))/p%TT(j1)
+               else
+                tmp=0.
+                 do j=1,5
+                  tmp=tmp+species_constants(k,iaa1(j))*p%TT(j1)**(j-1)/j
+                 enddo
+                  p%H0_RT(j1,k)=tmp+species_constants(k,iaa1(6))/p%TT(j1)
+               endif
+              enddo
+          enddo
+        endif
+        endif
+
+!
+!  Enthalpy flux
+!
+        if (lreactions) then
+        do j1=1,nx
+          do k=1,nchemspec
+            p%hhk_full(j1,k)=p%H0_RT(j1,k)*Rgas*p%TT(j1)&
+               /species_constants(k,imass)
+          enddo
+        enddo
+        endif
+
+
+      if (lpencil(i_ghhk) .and. lreactions) then
+       do k=1,nchemspec 
+       !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
+         do i=1,3
+          p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1)*Rgas*p%glnTT(:,i)
+         enddo
+       enddo
+      endif
+
 !
 ! Calculate the reaction term and the corresponding pencil
 !
@@ -710,19 +756,19 @@ module Chemistry
 !
 ! Calculate the diffusion term and the corresponding pencil
 !
-      if (ldiffusion .and. lpencil(i_DYDt_diff)) then
-        call calc_diffusion_term(f,p)
-      else
-        p%DYDt_diff=0.
-      endif
 
-      if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
+       if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
        do k=1,nchemspec
         p%Diff_penc_add(:,k)=diffus_const*(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7*&
           species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
        enddo
       endif    
 
+      if (ldiffusion .and. lpencil(i_DYDt_diff)) then
+        call calc_diffusion_term(f,p)
+      else
+        p%DYDt_diff=0.
+      endif
      
 !
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
@@ -743,6 +789,11 @@ module Chemistry
          if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
         endif
       endif
+
+
+ 
+
+
 !
 !  Calculate grad(enthalpy)
 !
@@ -1245,7 +1296,8 @@ module Chemistry
 !
       intent(in) :: f
       integer :: k,j, j1,j2,j3
-      real :: T_up, T_mid, T_low, T_loc, tmp, cp_R_spec
+      real :: T_up, T_mid, T_low, T_loc, T_loc_2,T_loc_3,T_loc_4
+      real :: tmp, cp_R_spec
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
@@ -1309,20 +1361,15 @@ module Chemistry
             enddo
            enddo
           enddo
-
-
-
 !
 ! NILS: Is this really necesarry?
 !
-        !  if (lpencil(i_rho1gpp)) then
            do j2=mm1,mm2
            do j3=nn1,nn2
             pp_full(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
                             *rho_full(:,j2,j3)*TT_full(:,j2,j3)
            enddo
            enddo
-        !  endif
 
 !
 !  Specific heat at constant pressure
@@ -1338,22 +1385,20 @@ module Chemistry
           if (Cv_const<impossible) then
             cv_full=Cv_const*mu1_full
           endif
-
-         else
+          else
           cp_full=0.
           cv_full=0.
-
-          do k=1,nchemspec
-            T_low=species_constants(k,iTemp1)
-            T_mid=species_constants(k,iTemp2)
-            T_up= species_constants(k,iTemp3)
-
-!
             do j3=nn1,nn2
-              do j2=mm1,mm2
-                do j1=1,mx
-
-                 T_loc=TT_full(j1,j2,j3)
+            do j2=mm1,mm2
+            do j1=1,mx
+              T_loc=TT_full(j1,j2,j3)
+              T_loc_2=T_loc*T_loc
+              T_loc_3=T_loc_2*T_loc
+              T_loc_4=T_loc_3*T_loc
+              do k=1,nchemspec
+               T_low=species_constants(k,iTemp1)-1.
+               T_mid=species_constants(k,iTemp2)
+               T_up= species_constants(k,iTemp3)
 !
                   if (j1<=l1 .or. j2>=l2) then
                     T_low=0.
@@ -1369,22 +1414,19 @@ module Chemistry
                     T_low=0.
                     T_up=1e10
                   endif
-!
-
                   if (T_loc >=T_low .and. T_loc <= T_mid) then
-                    tmp=0.
-                    do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*T_loc**(j-1)
-                    enddo
-                    cp_R_spec=tmp
-                    cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
+                   cp_R_spec=species_constants(k,iaa2(1)) &
+                          +species_constants(k,iaa2(2))*T_loc &
+                          +species_constants(k,iaa2(3))*T_loc_2 &
+                          +species_constants(k,iaa2(4))*T_loc_3 &
+                          +species_constants(k,iaa2(5))*T_loc_4
+                   cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   elseif (T_loc >=T_mid .and. T_loc<= T_up) then
-                !  elseif (TT_full(j1,j2,j3) >=T_mid ) then
-                    tmp=0.
-                    do j=1,5
-                      tmp=tmp+species_constants(k,iaa1(j))*T_loc**(j-1)
-                    enddo
-                    cp_R_spec=tmp
+                   cp_R_spec=species_constants(k,iaa1(1)) &
+                          +species_constants(k,iaa1(2))*T_loc &
+                          +species_constants(k,iaa1(3))*T_loc_2 &
+                          +species_constants(k,iaa1(4))*T_loc_3 &
+                          +species_constants(k,iaa1(5))*T_loc_4
                     cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   else
                     print*,'TT_full(j1,j2,j3)=',T_loc
@@ -1396,9 +1438,9 @@ module Chemistry
                   *cp_R_spec/species_constants(k,imass)*Rgas
                  cv_full(j1,j2,j3)=cv_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
                   *cv_R_spec_full(j1,j2,j3,k)/species_constants(k,imass)*Rgas
-                enddo
               enddo
-            enddo
+              enddo
+              enddo
 !
           enddo
         endif
@@ -1524,54 +1566,6 @@ module Chemistry
         if (lheatc_chemistry .and. (.not. lThCond_simple)) then
           call calc_therm_diffus_coef(f)
         endif
-!
-!  Dimensionless Standard-state molar enthalpy H0/RT
-!
-         if (.not. lT_const) then
-          do k=1,nchemspec
-            T_low=species_constants(k,iTemp1)
-            T_mid=species_constants(k,iTemp2)
-            T_up= species_constants(k,iTemp3)
-            do j3=nn1,nn2
-              do j2=mm1,mm2
-                do j1=1,mx
-                  if (TT_full(j1,j2,j3) <= T_mid) then
-                    tmp=0.
-                    do j=1,5
-                      tmp=tmp+species_constants(k,iaa2(j))*TT_full(j1,j2,j3)**(j-1)/j
-                    enddo
-                    H0_RT(j1,j2,j3,k)=tmp+species_constants(k,iaa2(6))/TT_full(j1,j2,j3)
-                  else
-                    tmp=0.
-                    do j=1,5
-                      tmp=tmp+species_constants(k,iaa1(j))*TT_full(j1,j2,j3)**(j-1)/j
-                    enddo
-                    H0_RT(j1,j2,j3,k)=tmp+species_constants(k,iaa1(6))/TT_full(j1,j2,j3)
-                  endif
-                enddo
-              enddo
-            enddo
-          enddo
-
-!................................................
-!
-!  Enthalpy flux
-!
-        if (lreactions) then
-        do j3=nn1,nn2
-        do j2=mm1,mm2
-        do j1=1,mx
-          do k=1,nchemspec
-            hhk_full(j1,j2,j3,k)=H0_RT(j1,j2,j3,k)*Rgas*TT_full(j1,j2,j3)&
-               /species_constants(k,imass)
-          enddo
-        enddo
-        enddo
-        enddo
-        endif
-       endif
-
-
         else
           call stop_it('This case works only for cgs units system!')
         endif
@@ -1637,66 +1631,7 @@ module Chemistry
         close(file_id)
         lwrite=.false.
       endif
-!!$      if (lwrite) then
-!!$        open(file_id,file=output_file)
-!!$        write(file_id,*) 'Mixture quantities'
-!!$        write(file_id,*) '*******************'
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Mass, g/mole'
-!!$        write(file_id,'(7E12.4)') 1./maxval(mu1_full/unit_mass)
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Density, g/cm^3'
-!!$        write(file_id,'(7E12.4)') minval(rho_full(l1:l2,m1:m2,n1:n2))*unit_mass/unit_length**3, &
-!!$                                  maxval(rho_full(l1:l2,m1:m2,n1:n2))*unit_mass/unit_length**3
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Themperature, K'
-!!$         ! Commented the next line out because
-!!$         ! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
-!!$        if (ilnTT>0) write(file_id,'(7E12.4)')  &
-!!$        exp(minval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature, &
-!!$        exp(maxval(f(l1:l2,m1:m2,n1:n2,ilnTT)))*unit_temperature
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Cp,  erg/mole/K'
-!!$        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*&
-!!$            Rgas_unit_sys/maxval(mu1_full(l1:l2,m1:m2,n1:n2)/unit_mass)
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'cp, erg/g/K'
-!!$        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2))/Rgas*Rgas_unit_sys
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'gamma,max,min'
-!!$        write(file_id,'(7E12.4)') maxval(cp_full(l1:l2,m1:m2,n1:n2)) &
-!!$                                 /maxval(cv_full(l1:l2,m1:m2,n1:n2)),&
-!!$          minval(cp_full(l1:l2,m1:m2,n1:n2))/minval(cv_full(l1:l2,m1:m2,n1:n2))
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Viscosity, g/cm/s,'
-!!$        write(file_id,'(7E12.4)') minval(nu_dyn(l1:l2,m1:m2,n1:n2))*&
-!!$            (unit_mass/unit_length/unit_time),maxval(nu_dyn(l1:l2,m1:m2,n1:n2))*&
-!!$            (unit_mass/unit_length/unit_time)
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Species viscosity, g/cm/s,'
-!!$        do k=1,nchemspec
-!!$        write(file_id,'(7E12.4)') minval(species_viscosity(l1:l2,m1:m2,n1:n2,k)),  &
-!!$                                  maxval(species_viscosity(l1:l2,m1:m2,n1:n2,k))
-!!$        enddo
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Thermal cond, erg/(cm K s),'
-!!$        write(file_id,'(7E12.4)') (minval(lambda_full(l1:l2,m1:m2,n1:n2))*&
-!!$            unit_energy/unit_time/unit_length/unit_temperature), &
-!!$                        (maxval(lambda_full(l1:l2,m1:m2,n1:n2))*&
-!!$            unit_energy/unit_time/unit_length/unit_temperature)
-!!$        write(file_id,*) ''
-!!$        write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-!!$        do k=1,nchemspec
-!!$        write(file_id,'(7E12.4)')minval(Diff_full(l1:l2,m1:m2,n1:n2,k))*unit_length**2/unit_time, &
-!!$                                 maxval(Diff_full(l1:l2,m1:m2,n1:n2,k))*unit_length**2/unit_time
-!!$        enddo
-!!$        write(file_id,*) ''
-!!$
-!!$
-!!$        if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
-!!$        close(file_id)
-!!$        lwrite=.false.
-!!$      endif
+
 !
       call timing('calc_for_chem_mixture','finished')
 
@@ -2162,7 +2097,7 @@ module Chemistry
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)&
               *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
           if (lreactions) then
-           sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-hhk_full(l1:l2,m,n,k)*p%DYDt_reac(:,k)
+           sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
           endif
 
          if (ldiffusion) then
@@ -3512,7 +3447,7 @@ module Chemistry
         sum_tmp=0.
         do k=1,nchemspec
           dSR(i) =dSR(i)+(Sijm(k,reac) -Sijp(k,reac))*S0_R(i,k)
-          dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*H0_RT(l1+i-1,m,n,k)
+          dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
           sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
      
@@ -3748,23 +3683,23 @@ module Chemistry
         if (idiag_dY7m/=0) call sum_mn_name(p%DYDt_reac(:,i7),idiag_dY7m)
         if (idiag_dY8m/=0) call sum_mn_name(p%DYDt_reac(:,i8),idiag_dY8m)
         if (idiag_dY9m/=0) call sum_mn_name(p%DYDt_reac(:,i9),idiag_dY9m)
-        if (idiag_h1m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i1)*Rgas*&
+        if (idiag_h1m/=0) call sum_mn_name(p%H0_RT(:,i1)*Rgas*&
             p%TT(:)/species_constants(i1,imass),idiag_h1m)
-        if (idiag_h2m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i2)*Rgas*&
+        if (idiag_h2m/=0) call sum_mn_name(p%H0_RT(:,i2)*Rgas*&
             p%TT(:)/species_constants(i2,imass),idiag_h2m)
-        if (idiag_h3m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i3)*Rgas*&
+        if (idiag_h3m/=0) call sum_mn_name(p%H0_RT(:,i3)*Rgas*&
             p%TT(:)/species_constants(i3,imass),idiag_h3m)
-        if (idiag_h4m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i4)*Rgas*&
+        if (idiag_h4m/=0) call sum_mn_name(p%H0_RT(:,i4)*Rgas*&
             p%TT(:)/species_constants(i4,imass),idiag_h4m)
-        if (idiag_h5m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i5)*Rgas*&
+        if (idiag_h5m/=0) call sum_mn_name(p%H0_RT(:,i5)*Rgas*&
             p%TT(:)/species_constants(i5,imass),idiag_h5m)
-        if (idiag_h6m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i6)*Rgas*&
+        if (idiag_h6m/=0) call sum_mn_name(p%H0_RT(:,i6)*Rgas*&
             p%TT(:)/species_constants(i6,imass),idiag_h6m)
-        if (idiag_h7m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i7)*Rgas*&
+        if (idiag_h7m/=0) call sum_mn_name(p%H0_RT(:,i7)*Rgas*&
             p%TT(:)/species_constants(i7,imass),idiag_h7m)
-        if (idiag_h8m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i8)*Rgas*&
+        if (idiag_h8m/=0) call sum_mn_name(p%H0_RT(:,i8)*Rgas*&
             p%TT(:)/species_constants(i8,imass),idiag_h8m)
-        if (idiag_h9m/=0) call sum_mn_name(H0_RT(l1:l2,m,n,i9)*Rgas*&
+        if (idiag_h9m/=0) call sum_mn_name(p%H0_RT(:,i9)*Rgas*&
             p%TT(:)/species_constants(i9,imass),idiag_h9m)
       endif
 !
@@ -4044,7 +3979,6 @@ module Chemistry
           endif
           call calc_collision_integral(omega,lnTk_array,Omega_kl)
 
-
           do j3=nn1,nn2
           do j2=mm1,mm2
           do j1=ll1,ll2
@@ -4058,7 +3992,6 @@ module Chemistry
       
       enddo
       endif
-  
      !
  
     endsubroutine calc_diff_visc_coef
@@ -4174,7 +4107,7 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (mx,my,mz) :: Xk_Yk
+      real, dimension (nx) :: Xk_Yk
       real, dimension (nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
       real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX, del2pp, del2lnpp
@@ -4232,8 +4165,10 @@ module Chemistry
 
             del2lnpp=del2pp/p%pp-glnpp_glnpp
 
-            Xk_Yk=XX_full(:,:,:,k)-f(:,:,:,ichemspec(k))
-            call grad(Xk_Yk,gXk_Yk)
+            do i=1,3
+             gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
+            enddo
+             Xk_Yk=XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
             call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
             call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
             call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
@@ -4241,20 +4176,18 @@ module Chemistry
 
           if (lDiff_simple) then
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2 &
-           +p%Diff_penc_add(:,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
-           +p%Diff_penc_add(:,k)*Xk_Yk(l1:l2,m,n)*glnrho_glnpp &
-           +Xk_Yk(l1:l2,m,n)*gD_glnpp+p%Diff_penc_add(:,k)*glnpp_gXkYk
+           +p%Diff_penc_add(:,k)*Xk_Yk(:)*del2lnpp &
+           +p%Diff_penc_add(:,k)*Xk_Yk(:)*glnrho_glnpp &
+           +Xk_Yk(:)*gD_glnpp+p%Diff_penc_add(:,k)*glnpp_gXkYk
           else
            p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
-           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*del2lnpp &
-           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(l1:l2,m,n)*glnrho_glnpp &
-           +Xk_Yk(l1:l2,m,n)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
+           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*del2lnpp &
+           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*glnrho_glnpp &
+           +Xk_Yk(:)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
           endif
         endif
       enddo
 !
-
-
     endsubroutine calc_diffusion_term
 !***********************************************************************
     subroutine calc_heatcond_chemistry(f,df,p)
