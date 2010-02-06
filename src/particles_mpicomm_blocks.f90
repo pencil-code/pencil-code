@@ -418,6 +418,7 @@ module Particles_mpicomm
       integer :: nmig_leave_total, ileave_high_max
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
       logical :: lredo, lredo_all, lmigrate, lmigrate_previous
+      logical :: lreblocking
       logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
@@ -426,6 +427,8 @@ module Particles_mpicomm
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
+!
+      lreblocking=lreblock_particles_run.and.it==1.and.itsub==1
 !
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
@@ -543,7 +546,7 @@ module Particles_mpicomm
             nmig_leave(iproc_rec)=nmig_leave(iproc_rec)+1
             nmig_leave_total     =nmig_leave_total     +1
             if (sum(nmig_leave)>npar_mig) then
-              if (.not. lstart) then
+              if (.not.(lstart.or.lreblocking)) then
                 print '(a,i3,a,i3,a)', &
                     'migrate_particles_btop: too many particles migrating '// &
                     'from proc ', iproc
@@ -551,7 +554,7 @@ module Particles_mpicomm
                     npar_mig, sum(nmig_leave), npar_loc, k, ')'
               endif
               if (lstart.or.lmigration_redo) then
-                if (.not. lstart) then
+                if (.not.(lstart.or.lreblocking)) then
                   print*, '  Going to do one more migration iteration!'
                   print*, '  (this may be time consuming - '// &
                       'consider setting npar_mig'
@@ -754,7 +757,7 @@ module Particles_mpicomm
       integer :: nmig_leave_total, ileave_high_max
       logical :: lredo, lredo_all
       integer :: itag_nmig=540, itag_ipar=550, itag_fp=560, itag_dfp=570
-      logical :: lmigrate
+      logical :: lmigrate, lreblocking
       logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
@@ -763,6 +766,8 @@ module Particles_mpicomm
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
+!
+      lreblocking=lreblock_particles_run.and.it==1.and.itsub==1
 !
 !  Create list of processors that we allow migration to and from.
 !
@@ -913,7 +918,7 @@ module Particles_mpicomm
             nmig_leave(iproc_rec)=nmig_leave(iproc_rec)+1
             nmig_leave_total     =nmig_leave_total     +1
             if (sum(nmig_leave)>npar_mig) then
-              if (.not. lstart) then
+              if (.not.(lstart.or.lreblocking)) then
                 print '(a,i3,a,i3,a)', &
                     'migrate_particles_ptop: too many particles migrating '// &
                     'from proc ', iproc
@@ -921,7 +926,7 @@ module Particles_mpicomm
                     npar_mig, sum(nmig_leave), npar_loc, k, ')'
               endif
               if (lstart.or.lmigration_redo) then
-                if (.not. lstart) then
+                if (.not.(lstart.or.lreblocking)) then
                   print*, '  Going to do one more migration iteration!'
                   print*, '  (this may be time consuming - '//&
                       'consider setting npar_mig'
@@ -971,7 +976,7 @@ module Particles_mpicomm
 !  is extremely slow when the processor number is high (>>100). Thus we only
 !  allow communication with surrounding processors during the run.
 !
-        if (lstart) then
+        if (lstart.or.lreblocking) then
           do i=0,ncpus-1
             if (iproc/=i) then
               call mpirecv_int(nmig_enter(i),1,i,itag_nmig)
@@ -1158,7 +1163,7 @@ module Particles_mpicomm
       integer :: i, j, k, iblockl, iblocku, iblockm, ibrick_global_rec
       integer :: ibrick_global_rec_previous, nmig_leave_total, ileave_high_max
       integer :: itag_nmig=580, itag_ipar=590, itag_fp=600, itag_dfp=610
-      logical :: lredo, lredo_all, lmigrate, lmigrate_previous
+      logical :: lredo, lredo_all, lmigrate, lmigrate_previous, lreblocking
       logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
@@ -1167,6 +1172,8 @@ module Particles_mpicomm
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
+!
+      lreblocking=lreblock_particles_run.and.it==1.and.itsub==1
 !
 !  Create global brick array.
 !
