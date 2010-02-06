@@ -14,7 +14,7 @@
 ;       Pencil Code, File I/O
 ;
 ; CALLING SEQUENCE:
-;       pc_read_var, object=object, t=t,                          $
+;       pc_read_var, object=object,                               $
 ;                    varfile=varfile, datadir=datadir, proc=proc, $
 ;                    /nostats, /quiet, /help
 ; KEYWORD PARAMETERS:
@@ -24,14 +24,13 @@
 ;       ivar: a number to optionally append to the end of the        [integer]
 ;             varfile name.
 ;
-;          t: returns the time of the snapshot
-;
 ;     object: optional structure in which to return all the above    [structure]
 ;             (or those vars specified in 'variables')
 ;  variables: array of variable name to return                       [string(*)]
 ;  exit_status: suppress fatal errors in favour of reporting the
 ;               error through exit_status/=0.
 ;
+;  /allprocs: Load data from allprocs directory
 ;  /additional: Load all variables stored in the files, PLUS any additional
 ;               variables specified with the variables=[] option.
 ;     /magic: call pc_magic_var to replace special variable names with their
@@ -71,10 +70,11 @@
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
-pro pc_read_var, t=t,                                             $
+pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $ 
     bbtoo=bbtoo, ootoo=ootoo,                                     $
+    allprocs=allprocs,                                            $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
     dim=dim, param=param, par2=par2, ivar=ivar,                   $
@@ -108,6 +108,14 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcz, 'none'
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
+;
+; Check if allprocs keyword is set.
+;
+  if (keyword_set(allprocs)) then begin
+    if (n_elements(proc) ne 0) then message, 'pc_read_var: /allproc and proc cannot be both set.'
+  endif else begin
+    allprocs = 0
+  endelse
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -169,7 +177,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Read problem dimensions (global)...
 ;
-  if (n_elements(proc) eq 1) then begin
+  if (n_elements(proc) eq 1 or allprocs) then begin
     procdim=dim
   endif else begin
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
@@ -200,7 +208,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Number of processors over which to loop.
 ;
-  if (n_elements(proc) eq 1) then begin
+  if (n_elements(proc) eq 1 or allprocs) then begin
     nprocs=1
   endif else begin
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
@@ -212,7 +220,7 @@ COMPILE_OPT IDL2,HIDDEN
   x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
   dx=zero & dy=zero & dz=zero & deltay=zero
 ;
-  if (n_elements(proc) ne 1) then begin
+  if (nprocs gt 1) then begin
     xloc=fltarr(procdim.mx)*one
     yloc=fltarr(procdim.my)*one
     zloc=fltarr(procdim.mz)*one
@@ -291,7 +299,7 @@ COMPILE_OPT IDL2,HIDDEN
   res=''
   content=''
   for iv=1L,totalvars do begin
-    if (n_elements(proc) eq 1) then begin
+    if (nprocs eq 1) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
       res=res+','+varcontent[iv].idlvarloc
@@ -306,7 +314,7 @@ COMPILE_OPT IDL2,HIDDEN
     if (execute(varcontent[iv].idlvar+'='+varcontent[iv].idlinit,0) ne 1) then $
         message, 'Error initialising ' + varcontent[iv].variable $
         +' - '+ varcontent[iv].idlvar, /info
-    if (n_elements(proc) ne 1) then begin
+    if (nprocs gt 1) then begin
       if (execute(varcontent[iv].idlvarloc+'='+varcontent[iv].idlinitloc,0) ne 1) then $
           message, 'Error initialising ' + varcontent[iv].variable $
           +' - '+ varcontent[iv].idlvarloc, /info
@@ -326,10 +334,10 @@ COMPILE_OPT IDL2,HIDDEN
 ; Loop over processors
 ;
   for i=0,nprocs-1 do begin
-    if (n_elements(proc) eq 1) then begin
-      ; Build the full path and filename
-      filename=datadir+'/proc'+str(proc)+'/'+varfile
-    endif else begin
+    ; Build the full path and filename
+    if (allprocs) then filename=datadir+'/allprocs/'+varfile else $
+    if (n_elements(proc) eq 1) then filename=datadir+'/proc'+str(proc)+'/'+varfile $
+    else begin
       filename=datadir+'/proc'+str(i)+'/'+varfile
       if (not keyword_set(quiet)) then $
           print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
@@ -355,8 +363,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Setup the coordinates mappings from the processor
 ; to the full domain.
 ;
-    if (n_elements(proc) eq 1) then begin
-    endif else begin
+    if (nprocs gt 1) then begin
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
@@ -411,7 +418,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;       if (n_elements(nzrange)==2) then begin
 ;         if ((i0z gt nzrange[1]+procdim.nghostz) or (i1z lt nzrange[0]+procdim.nghostz)) then continue
 ;       endif
-    endelse
+    endif
 ;
 ; Open a varfile and read some data!
 ;
@@ -424,7 +431,7 @@ COMPILE_OPT IDL2,HIDDEN
       message, 'Associate behaviour not implemented here yet'
     endelse
 ;
-    if (n_elements(proc) eq 1) then begin
+    if (nprocs eq 1) then begin
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay
       endif else begin
@@ -495,7 +502,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Tidy memory a little
 ;
-  if (n_elements(proc) ne 1) then begin
+  if (nprocs gt 1) then begin
     undefine,xloc
     undefine,yloc
     undefine,zloc
