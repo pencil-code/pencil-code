@@ -34,6 +34,7 @@ include 'NSCBC.h'
   character(len=nscbc_len), dimension(3) :: nscbc_bc1,nscbc_bc2
   character (len=labellen), dimension(ninit) :: inlet_profile='nothing'
   character(len=40) :: turb_inlet_dir=''
+  character(len=40) :: turb_inlet_file='var.dat'
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   real :: transversal_damping=0.2
   logical :: inlet_from_file=.false., jet_inlet=.false.
@@ -72,13 +73,13 @@ include 'NSCBC.h'
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir, jet_inlet,radius_profile,momentum_thickness,jet_center,&
-      velocity_ratio
+      velocity_ratio,turb_inlet_file
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
       notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
-      jet_center,velocity_ratio
+      jet_center,velocity_ratio,turb_inlet_file
 !
   contains
 !***********************************************************************
@@ -226,7 +227,7 @@ include 'NSCBC.h'
               call safe_character_assign(directory_in,&
                   trim(turb_inlet_dir)//'/data/proc'//chproc_in)
               call safe_character_assign(turbfile,&
-                  trim(directory_in)//'/var.dat')
+                  trim(directory_in)//trim(turb_inlet_file))
               open(1,FILE=turbfile,FORM='unformatted')
               if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
                   mx_in,my_in,mz_in,nv_in
