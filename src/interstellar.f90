@@ -1150,6 +1150,7 @@ module Interstellar
       call calc_heat(heat,lnTT)
 !
       if (nSNR==0) then
+
         if (ltemperature) then
           f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*gamma
         elseif (pretend_lnTT) then
@@ -1480,8 +1481,7 @@ cool_loop: do i=1,ncool
       enddo
 
       if (try_count.eq.0) then
-        if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - &
-                           skipping SNI insertion"
+        if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
       endif
       call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
       ierr=iEXPLOSION_OK
@@ -1545,13 +1545,13 @@ cool_loop: do i=1,ncool
         call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
                     ,yH=yH,lnTT=lnTT)
         TT(1:nx)=exp(lnTT(1:nx))
-          if(ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,&
-              it,iproc',minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
+!          if(ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
+!                             minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
         rho_cloud(1:nx)=0.
         where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
           rho_cloud(1:nx) = rho(1:nx)
-          if(ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,&
-              it,iproc',sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
+!          if(ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
+!                           ,sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
           cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
       enddo
     enddo
@@ -1583,8 +1583,7 @@ cool_loop: do i=1,ncool
       if (cloud_mass_dim .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
         print*,'check_SNII: freq,prob,rnd,dtsn:',&
                 freq_SNII,prob_SNII,franSN(1),dtsn
-        print*,'check_SNII: frac_heavy,frac_converted,&
-                    cloud_mass_dim,mass_SN,cloud_tau',&
+        print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
               frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
       endif
     endif
@@ -2062,8 +2061,7 @@ find_SN: do n=n1,n2
                 endif
               enddo
               if (lroot.and.(ip<14)) &
-                 print*,'position_SN_bycloudmass: &
-                         cum_mass,cum_prob_onproc,franSN(1),l,m,n=', &
+                 print*,'position_SN_bycloudmass:cum_mass,cum_prob_onproc,franSN(1),l,m,n=', &
                              cum_mass,cum_prob_onproc,franSN(1),l,m,n
               exit find_SN
             endif
@@ -2539,7 +2537,7 @@ find_SN: do n=n1,n2
           
           call eoscalc(f,nx,yH=yH,lnTT=lnTT,ee=ee_old)
           TT=exp(lnTT)
-
+             
           ! Apply perturbations
           call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%EE)
           if (lmove_mass) then
