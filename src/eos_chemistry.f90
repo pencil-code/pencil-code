@@ -10,6 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT; cp1tilde; glnTT(3); TT; TT1; gTT(3)
+! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT; del6lnTT
 ! PENCILS PROVIDED yH; ee; ss; pp; delta; glnmumol(3); ppvap; csvap2
 !
@@ -426,6 +427,9 @@ module EquationOfState
 !
     lpenc_requested(i_lnTT)=.true.
     lpenc_requested(i_TT)=.true.
+    lpenc_requested(i_TT_2)=.true.
+    lpenc_requested(i_TT_3)=.true.
+    lpenc_requested(i_TT_4)=.true.
     lpenc_requested(i_TT1)=.true.
     lpenc_requested(i_glnTT)=.true.
     lpenc_requested(i_del2lnTT)=.true.
@@ -442,8 +446,11 @@ module EquationOfState
 !
    logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-      if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
+      if (lpencil_in(i_lnTT))   lpencil_in(i_TT)=.true.
+      if (lpencil_in(i_TT))     lpencil_in(i_TT_2)=.true.
+      if (lpencil_in(i_TT_2))   lpencil_in(i_TT_3)=.true.
+      if (lpencil_in(i_TT_3))   lpencil_in(i_TT_4)=.true.
+      if (lpencil_in(i_TT))     lpencil_in(i_TT1)=.true.
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -488,7 +495,16 @@ module EquationOfState
            p%TT=exp(p%lnTT)
          endif
        endif
+       
+       if (lpencil(i_TT_2)) p%TT_2=p%TT*p%TT
+       if (lpencil(i_TT_3)) p%TT_3=p%TT_2*p%TT
+       if (lpencil(i_TT_4)) p%TT_4=p%TT_3*p%TT
+
        if (lpencil(i_TT1)) p%TT1=1./p%TT!
+
+        if (minval(p%TT)==0.) then
+          call fatal_error('calc_pencils_eos','p%TT=0!')
+        endif
 !
 !  Temperature laplacian and gradient
 !

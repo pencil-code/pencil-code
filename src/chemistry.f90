@@ -19,7 +19,7 @@
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), gmu1(3), H0_RT(nchemspec), hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec)
+! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec)
 ! 
 !***************************************************************
 module Chemistry
@@ -123,9 +123,8 @@ module Chemistry
      real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
      logical, allocatable, dimension(:) :: Mplus_case
      real, dimension(nchemspec,7)     :: tran_data
-     real, dimension (nx,nchemspec), save  :: S0_R
+
  
- ! real, dimension (mx,my,mz), save :: RHS_T_full
 
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -521,8 +520,9 @@ module Chemistry
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
          lpenc_requested(i_H0_RT)=.true.
+         
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
-            
+         if (lreactions) lpenc_requested(i_S0_R)=.true.
 !
          if (lheatc_chemistry) then
            lpenc_requested(i_lambda)=.true.
@@ -557,12 +557,12 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,3) :: gXX_tmp, ghhk_tmp
+      real, dimension (nx,3) :: gXX_tmp!, ghhk_tmp
 !
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i,j1,j
-      real :: T_low,T_up, T_mid, tmp
+      real :: T_low,T_up, T_mid, T_loc
 !
 !  Mass fraction YY
 !
@@ -602,20 +602,7 @@ module Chemistry
         !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
         !  enddo
         !endif
-!_--------------------------------------------------------------
-!   moved to eos_chemistry.f90 
 !
-!  Temperature
-!
-   !     if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-   !     if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-   !     if (lpencil(i_TT1)) p%TT1=1./p%TT!
-!
-!  Temperature laplacian and gradient
-!
-    !    if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-    !    if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
-
 !-----------------------------------------------------------------
 !
 !  Density
@@ -692,30 +679,32 @@ module Chemistry
         endif
 !
       endif
-
  
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
         if (lpenc_requested(i_H0_RT)) then
         if (.not. lT_const) then
-          do k=1,nchemspec
+          do j1=1,nx
+           do k=1,nchemspec
             T_low=species_constants(k,iTemp1)
             T_mid=species_constants(k,iTemp2)
             T_up= species_constants(k,iTemp3)
-              do j1=1,nx
-               if (p%TT(j1) <= T_mid) then
-                tmp=0.
-                 do j=1,5
-                  tmp=tmp+species_constants(k,iaa2(j))*p%TT(j1)**(j-1)/j
-                 enddo
-                  p%H0_RT(j1,k)=tmp+species_constants(k,iaa2(6))/p%TT(j1)
+              T_loc= p%TT(j1)
+               if (T_loc <= T_mid) then
+                 p%H0_RT(j1,k)=species_constants(k,iaa2(1)) &
+                              +species_constants(k,iaa2(2))*T_loc/2 &
+                              +species_constants(k,iaa2(3))*p%TT_2(j1)/3 &
+                              +species_constants(k,iaa2(4))*p%TT_3(j1)/4 &
+                              +species_constants(k,iaa2(5))*p%TT_4(j1)/5 &  
+                              +species_constants(k,iaa2(6))/T_loc
                else
-                tmp=0.
-                 do j=1,5
-                  tmp=tmp+species_constants(k,iaa1(j))*p%TT(j1)**(j-1)/j
-                 enddo
-                  p%H0_RT(j1,k)=tmp+species_constants(k,iaa1(6))/p%TT(j1)
+                 p%H0_RT(j1,k)=species_constants(k,iaa1(1)) &
+                              +species_constants(k,iaa1(2))*T_loc/2 &
+                              +species_constants(k,iaa1(3))*p%TT_2(j1)/3 &
+                              +species_constants(k,iaa1(4))*p%TT_3(j1)/4 &
+                              +species_constants(k,iaa1(5))*p%TT_4(j1)/5 &  
+                              +species_constants(k,iaa1(6))/T_loc
                endif
               enddo
           enddo
@@ -740,7 +729,7 @@ module Chemistry
        !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
          do i=1,3
           p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
-             /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
+            /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
          enddo
        enddo
       endif
@@ -789,22 +778,6 @@ module Chemistry
          if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
         endif
       endif
-
-
- 
-
-
-!
-!  Calculate grad(enthalpy)
-!
-    !  if (lpenc_requested(i_ghYrho)) then
-    !   call grad(hYrho_full,p%ghYrho)
-    !  endif
-
-    !   if (lpenc_requested(i_ghYrho_uu)) then
-    !    call dot_mn(p%ghYrho,p%uu,p%ghYrho_uu)
-    !  endif
-
 !
     endsubroutine calc_pencils_chemistry
 !***********************************************************************
@@ -2088,8 +2061,6 @@ module Chemistry
         
         sum_hhk_DYDt_reac=0.
         sum_dk_ghk=0.
-        
-!NANANAN
 
         do k=1,nchemspec
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)&
@@ -3332,7 +3303,7 @@ module Chemistry
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
       integer :: k , reac, j, i
-      real  :: sum_tmp=0., T_low, T_mid, T_up, tmp, ddd, T_loc
+      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd, T_loc
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
@@ -3356,35 +3327,31 @@ module Chemistry
       if (lwrite) write(file_id,*)'S0_R'
       if (lwrite)  write(file_id,*)'**************************'
 !
-
-        do k=1,nchemspec
-        T_low=species_constants(k,iTemp1)-10.
-        T_mid=species_constants(k,iTemp2)
-        T_up= species_constants(k,iTemp3)
-         do i=1,nx
+       
+        do i=1,nx
           T_loc=p%TT(i)
-
-         ! if (T_loc<T_low) T_loc=T_low
-         ! if (T_loc>T_up) T_loc=T_up
+        do k=1,nchemspec
+         T_low=species_constants(k,iTemp1)-10.
+         T_mid=species_constants(k,iTemp2)
+         T_up= species_constants(k,iTemp3)
 
           if (T_loc <= T_mid .and. T_low <= T_loc) then
-            tmp=0.
-            do j=2,5
-              tmp=tmp+species_constants(k,iaa2(j))*p%TT(i)**(j-1)/(j-1)
-            enddo
-            S0_R(i,k)=species_constants(k,iaa2(1))*p%lnTT(i)+tmp&
-                +species_constants(k,iaa2(7))
+            p%S0_R(i,k)=species_constants(k,iaa2(1))*p%lnTT(i) &
+                 +species_constants(k,iaa2(2))*T_loc &
+                 +species_constants(k,iaa2(3))*p%TT_2(i)/2 &
+                 +species_constants(k,iaa2(4))*p%TT_3(i)/3 &
+                 +species_constants(k,iaa2(5))*p%TT_4(i)/4 &
+                 +species_constants(k,iaa2(7)) 
           elseif (T_mid <= T_loc .and. T_loc <= T_up) then
-            tmp=0.
-            do j=2,5
-              tmp=tmp+species_constants(k,iaa1(j))*p%TT(i)**(j-1)/(j-1)
-            enddo
-            S0_R(i,k)=species_constants(k,iaa1(1))*p%lnTT(i)+tmp&
-                +species_constants(k,iaa1(7))
+            p%S0_R(i,k)=species_constants(k,iaa1(1))*p%lnTT(i) &
+                 +species_constants(k,iaa1(2))*T_loc &
+                 +species_constants(k,iaa1(3))*p%TT_2(i)/2 &
+                 +species_constants(k,iaa1(4))*p%TT_3(i)/3 & 
+                 +species_constants(k,iaa1(5))*p%TT_4(i)/4 &
+                 +species_constants(k,iaa1(7))
           else
-                  if (i==50)  print*,'p%TT(i)=',p%TT(i)
-                  !  print*,'i=',i
-                    call fatal_error('get_reaction_rate',&
+                  print*,'p%TT(i)=',p%TT(i)
+                   call fatal_error('get_reaction_rate',&
                         'p%TT(i) is outside range')
                     
           endif
@@ -3394,8 +3361,8 @@ module Chemistry
         if (lwrite)  then
           write(file_id,*)&
               varname(ichemspec(k)),&
-              maxval(S0_R(:,k)), &
-              minval(S0_R(:,k))
+              maxval(p%S0_R(:,k)), &
+              minval(p%S0_R(:,k))
         endif
       enddo
 !
@@ -3444,7 +3411,7 @@ module Chemistry
         dHRT(i)=0.
         sum_tmp=0.
         do k=1,nchemspec
-          dSR(i) =dSR(i)+(Sijm(k,reac) -Sijp(k,reac))*S0_R(i,k)
+          dSR(i) =dSR(i)+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(i,k)
           dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
           sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
@@ -3453,7 +3420,7 @@ module Chemistry
         if (sum_tmp==0.) then
           Kc(i)=Kp(i)
         else
-          Kc(i)=Kp(i)*(p_atm(i)/(p%TT(i)*Rgas))**sum_tmp
+          Kc(i)=Kp(i)*(p_atm(i)*p%TT1(i)/Rgas)**sum_tmp
         endif
         if (Kc(i)==0.) then 
           print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
