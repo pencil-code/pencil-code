@@ -446,6 +446,8 @@ module EquationOfState
         call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
       endif
 !
+      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+!
     endsubroutine calc_pencils_eos
 !*******************************************************************
     subroutine getmu(mu)

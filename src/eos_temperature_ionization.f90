@@ -402,7 +402,9 @@ module EquationOfState
         endif
         p%ss = Rgas*mu1_0*p%ss
       endif
-
+!
+      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+!
     endsubroutine calc_pencils_eos
 !***********************************************************************
     subroutine getmu(mu)

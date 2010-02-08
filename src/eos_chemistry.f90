@@ -509,6 +509,8 @@ module EquationOfState
         else
          if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
+!        
+        if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
 !
 !  Natalia: 26.02.2008: calculation of additional penciles
 !
