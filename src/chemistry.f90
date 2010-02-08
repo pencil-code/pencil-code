@@ -739,7 +739,8 @@ module Chemistry
        do k=1,nchemspec 
        !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
          do i=1,3
-          p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1)*Rgas*p%glnTT(:,i)
+          p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
+             /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
          enddo
        enddo
       endif
