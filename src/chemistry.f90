@@ -44,7 +44,7 @@ module Chemistry
 
      real :: lambda_const=impossible
      real :: visc_const=impossible
-     real :: diffus_const=impossible
+     real :: Diff_coef_const=impossible
      real :: Sc_number=0.7, Pr_number=0.7
      real :: Cp_const=impossible
      real :: Cv_const=impossible
@@ -71,7 +71,6 @@ module Chemistry
 
      logical :: lDiff_simple=.false.
      logical :: lThCond_simple=.false.
-     logical :: visc_simple=.false.
      logical :: lT_const=.false.
 
      logical :: lfilter=.false.
@@ -129,8 +128,8 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple,visc_simple, &
-      lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,diffus_const,&
+      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, &
+      lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
@@ -141,7 +140,7 @@ module Chemistry
   namelist /chemistry_run_pars/ &
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry,  visc_simple, &
+      lreactions,lchem_cdtc,lheatc_chemistry,  &
       lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
       ldamp_left, ldamp_right
 !
@@ -672,10 +671,18 @@ module Chemistry
 !  Viscosity of a mixture
 !
         if (lpencil(i_nu)) then
-          p%nu=nu_full(l1:l2,m,n)
-          if (lpencil(i_gradnu)) then
-            call grad(nu_full,p%gradnu)
+          if (visc_const<impossible) then
+           p%nu=visc_const
+          else
+           p%nu=nu_full(l1:l2,m,n)
           endif
+           if (lpencil(i_gradnu)) then
+             if (visc_const<impossible) then
+               p%gradnu=0.
+             else
+               call grad(nu_full,p%gradnu)
+             endif
+           endif
         endif
 !
       endif
@@ -745,12 +752,23 @@ module Chemistry
 !
 ! Calculate the diffusion term and the corresponding pencil
 !
-
+! There are 2 cases:
+! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
+! 2) the case of the constant diffusion coefficient
+!
        if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
-       do k=1,nchemspec
-        p%Diff_penc_add(:,k)=diffus_const*(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7*&
-          species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
-       enddo
+       if  ((Diff_coef_const<impossible) .or. (lDiff_simple) ) then
+         if (lDiff_simple) then 
+           if (Diff_coef_const==impossible)  Diff_coef_const=10.     
+           do k=1,nchemspec
+             p%Diff_penc_add(:,k)=Diff_coef_const &
+               *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7  &
+               *species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
+           enddo
+         elseif ((.not. lDiff_simple) .and. (Diff_coef_const<impossible)) then
+           p%Diff_penc_add(:,k)=Diff_coef_const
+         endif
+      endif
       endif    
 
       if (ldiffusion .and. lpencil(i_DYDt_diff)) then
@@ -758,25 +776,30 @@ module Chemistry
       else
         p%DYDt_diff=0.
       endif
-     
 !
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
 !
 ! Calculate chethermal diffusivity
 !
       if (lpenc_requested(i_lambda) .and. lheatc_chemistry) then
+      if ((lThCond_simple) .or. (lambda_const<impossible))then
         if (lThCond_simple) then
-         p%lambda=lambda_const &
+          if (lambda_const==impossible) lambda_const=1e4
+          p%lambda=lambda_const &
              *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7
-         if (lpenc_requested(i_glambda))  then
-          do i=1,3
-           p%glambda(:,i)=p%lambda(:)*(0.7-1.)*(p%glnTT(:,i)+p%glnrho(:,i))
-          enddo
-         endif
-         else
-         p%lambda=lambda_full(l1:l2,m,n)
-         if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
+          if (lpenc_requested(i_glambda))  then
+           do i=1,3
+            p%glambda(:,i)=p%lambda(:)*(0.7-1.)*(p%glnTT(:,i)+p%glnrho(:,i))
+           enddo
+          endif
+        elseif ((.not. lThCond_simple) .and. (lambda_const<impossible)) then
+          p%lambda=lambda_const
+          if (lpenc_requested(i_glambda)) p%glambda=0.
         endif
+      else
+       p%lambda=lambda_full(l1:l2,m,n)
+       if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
+      endif
       endif
 !
     endsubroutine calc_pencils_chemistry
@@ -1433,9 +1456,7 @@ module Chemistry
 !  Viscosity of a mixture
 !
       
-       if (visc_const<impossible) then
-                nu_full=visc_const
-       else
+       if (visc_const==impossible) then
 
         do j3=nn1,nn2
         do j2=mm1,mm2
@@ -1443,8 +1464,6 @@ module Chemistry
 
           if  (lone_spec) then
             nu_full(j1,j2,j3)=species_viscosity(j1,j2,j3,1)/rho_full(j1,j2,j3)
-          elseif (visc_simple) then
-            nu_full(j1,j2,j3)=visc_const
           else
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
@@ -1481,23 +1500,12 @@ module Chemistry
             Diff_full(j1,j2,j3,:)=0.
             if (.not. lone_spec) then
 
-             if (diffus_const<impossible) then
-                Diff_full(j1,j2,j3,:)=diffus_const
-             elseif (lfix_Sc) then
+             if (lfix_Sc) then
               do k=1,nchemspec
                Diff_full(j1,j2,j3,k)=species_viscosity(j1,j2,j3,k) &
                                     /rho_full(j1,j2,j3)/Sc_number
               enddo
              elseif (ldiffusion) then
-              if (lDiff_simple) then
-                 if (diffus_const<impossible) then
-                  Diff_full(j1,j2,j3,:)=diffus_const
-                 else
-                  Diff_full(j1,j2,j3,:)=diffus_const &
-                    *(TT_full(j1,j2,j3)/TT_full(1,j2,j3))**0.7 &
-                    *(rho_full(1,j2,j3)/rho_full(j1,j2,j3))
-                 endif
-              else
 !
 ! The mixture diffusion coefficient as described in eq. 5-45 of the Chemkin
 ! manual. Previously eq. 5-44 was used, but due to problems in the limit
@@ -1518,17 +1526,13 @@ module Chemistry
                  Diff_full(j1,j2,j3,k)=mu1_full(j1,j2,j3)*tmp_sum2(j1,j2,j3)&
                      /tmp_sum(j1,j2,j3)
               enddo
-             
              endif
-            endif
             endif
              do k=1,nchemspec
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
                   species_constants(k,imass)/unit_mass &
                   *mu1_full(j1,j2,j3)
              enddo
-           
-           
          enddo
          enddo
          enddo
