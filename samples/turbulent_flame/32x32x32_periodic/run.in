@@ -1,0 +1,21 @@
+!
+!  forced turbulence run, no magnetic fields
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2009-12-15 14:33:17 nilshau Exp $'
+  nt=20000, it1=10, cdt=0.4, cdtv=0.80, isave=500, itorder=3,
+  dsnap=0.01, dvid=0.0001, ialive=1,dtmin=1e-8
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  iforce='helical', force=0.006, relhel=0.
+  lscale_kvector_tobox=T
+/
+&viscosity_run_pars
+  nu=1e-2, ivisc='nu-const'
+/
