@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gTT(3); mu1; gamma
-! PENCILS PROVIDED cv; cv1; cp; cp1; YY(nchemspec); gXXk(3,nchemspec); gYYk(3,nchemspec)
+! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3); YY(nchemspec); gXXk(3,nchemspec); gYYk(3,nchemspec)
 ! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3);  nu; gradnu(3),gamma_m1, gradcp(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
@@ -522,6 +522,7 @@ module Chemistry
          
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
          if (lreactions) lpenc_requested(i_S0_R)=.true.
+         if (lThCond_simple) lpenc_requested(i_glncp)=.true.
 !
          if (lheatc_chemistry) then
            lpenc_requested(i_lambda)=.true.
@@ -540,6 +541,10 @@ module Chemistry
 !
       logical, dimension(npencils) :: lpencil_in
 !
+        if (lpencil_in(i_cp))  lpencil_in(i_glncp)=.true.
+        if (lpencil_in(i_cp))  lpencil_in(i_cp1)=.true.
+      
+
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_chemistry
@@ -556,7 +561,7 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,3) :: gXX_tmp!, ghhk_tmp
+      real, dimension (nx,3) :: gXX_tmp, glncp_tmp!, ghhk_tmp
 !
       intent(in) :: f
       intent(inout) :: p
@@ -639,6 +644,14 @@ module Chemistry
         endif
 !
         if (lpencil(i_cp1) .and. maxval(p%cp)>0)   p%cp1 = 1./p%cp
+
+        if ((lpencil(i_glncp)) .and. (lThCond_simple)) then
+          call grad(cp_full,glncp_tmp)
+          do i=1,3
+           p%glncp(:,i)=glncp_tmp(:,i)*p%cp1(:)
+          enddo
+        endif
+
 !
 !  Gradient of the above
 !
@@ -786,10 +799,10 @@ module Chemistry
         if (lThCond_simple) then
           if (lambda_const==impossible) lambda_const=1e4
           p%lambda=lambda_const &
-             *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7
+             *(p%TT(:)/p%TT(1))**0.7*p%cp(:)/p%cp(1)
           if (lpenc_requested(i_glambda))  then
            do i=1,3
-            p%glambda(:,i)=p%lambda(:)*(0.7-1.)*(p%glnTT(:,i)+p%glnrho(:,i))
+            p%glambda(:,i)=p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
            enddo
           endif
         elseif ((.not. lThCond_simple) .and. (lambda_const<impossible)) then
