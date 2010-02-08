@@ -227,7 +227,7 @@ include 'NSCBC.h'
               call safe_character_assign(directory_in,&
                   trim(turb_inlet_dir)//'/data/proc'//chproc_in)
               call safe_character_assign(turbfile,&
-                  trim(directory_in)//trim(turb_inlet_file))
+                  trim(directory_in)//'/'//trim(turb_inlet_file))
               open(1,FILE=turbfile,FORM='unformatted')
               if (ip<=8) print*,'input: open, mx_in,my_in,mz_in,nv_in=',&
                   mx_in,my_in,mz_in,nv_in
@@ -504,6 +504,12 @@ include 'NSCBC.h'
           if (ilnTT>0) then
             L_2=nscbc_sigma_in*(TT-T_t)&
               *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
+!
+!  NILS: There seems to be something wrong with the calculation of L_2, as the
+!  NILS: coded crashes with the version above. For now L_2 is therefore 
+!  NILS: set to zero. This must be fixed!!!!!!!
+!
+            L_2=0
           else
             L_2=0
           endif
