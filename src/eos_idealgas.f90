@@ -841,6 +841,8 @@ module EquationOfState
       if (lpencil(i_cp))  p%cp=1/p%cp1
       if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
 !
+      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0. 
+!
     endsubroutine calc_pencils_eos
 !***********************************************************************
     subroutine ioninit(f)
