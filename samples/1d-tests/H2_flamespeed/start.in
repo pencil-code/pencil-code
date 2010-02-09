@@ -25,7 +25,7 @@ ldensity_nolog=F
 &chemistry_init_pars
   initchem='flame_front'
 !  initchem='air','flame_front'
-  visc_simple=F
+! visc_simple=F
   init_pressure=1.013e6
   init_TT1=750.
   init_TT2=2500.
