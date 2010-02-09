@@ -7,8 +7,10 @@ end
 ;
 ;  read header
 ; 
-if not keyword_set(lun) or lun lt 0 then $
+if not keyword_set(lun) or lun lt 0 then begin
+  lun=0
   openr,lun,/get_lun,file
+endif
 
 if (n_elements(head) ne 0) then begin
   card=''
