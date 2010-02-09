@@ -33,7 +33,7 @@ module Entropy
   include 'entropy.h'
 !
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
-  real :: luminosity=0.,wheat=0.1,cool=0.,rcool=0.,wcool=0.1
+  real :: luminosity=0.,wheat=0.1,cool=0.,zcool=0.,rcool=0.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real,target :: chi=0.
   real :: chi_t=0.,chi_shock=0.,chi_hyper3=0.
@@ -74,6 +74,7 @@ module Entropy
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false.,lheatc_hyper3ss_aniso=.false.
+  logical :: lcooling_general=.false.
   logical :: lupw_ss=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
@@ -135,6 +136,7 @@ module Entropy
 !AB: They are used to re-calculate the radiative conductivity profile.
       mpoly0,mpoly1,mpoly2, &
       luminosity,wheat,cooling_profile,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
+      lcooling_general, &
       chi_t,chit_prof1,chit_prof2,chi_shock,chi,iheatcond, &
       Kgperp,Kgpara, cool_RTV, &
       tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
@@ -3181,6 +3183,16 @@ module Entropy
 !  Initialize heating/cooling term.
 !
       heat=0.
+!
+!  General spatially distributed cooling profiles (independent of gravity)
+!
+      if (lcooling_general) then
+        select case (cooling_profile)
+        case ('gaussian-z')
+          prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
+        endselect
+        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+      endif
 !
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
