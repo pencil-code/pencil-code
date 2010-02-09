@@ -129,6 +129,12 @@ ntgood=n_elements(xyaver.t(it1:*))
 alpijmt=total(alpij(*,*,*,*),1)/nz
 etaijmt=total(etaij(*,*,*,*),1)/nz
 ;
+bxmz=total(xyaver.bxmz,2)/ntgood
+bymz=total(xyaver.bymz,2)/ntgood
+;
+jxmz=total(xyaver.jxmz,2)/ntgood
+jymz=total(xyaver.jymz,2)/ntgood
+;
 alpijm=total(alpij(*,it1:*,*,*),2)/ntgood
 etaijm=total(etaij(*,it1:*,*,*),2)/ntgood
 ;
@@ -151,5 +157,6 @@ it1=nt-nevery*ntout
 pc_coarsegrain,tt,alpij,nevery,ttt,alpijc,/aver
 pc_coarsegrain,tt,etaij,nevery,ttt,etaijc,/aver
 save,file='alpetaijc.sav',zzz,alpijc,etaijc,alpij_end,etaij_end,tt,ttt
+save,file='alpetaijm.sav',zzz,alpijm,etaijm,bxmz,bymz,jxmz,jymz,tt,ttt
 ;
 END
