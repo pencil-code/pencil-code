@@ -566,6 +566,7 @@ module Chemistry
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i,j1,j
+      integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6
       real :: T_low,T_up, T_mid, T_loc
 !
 !  Mass fraction YY
@@ -712,19 +713,19 @@ module Chemistry
             T_up= species_constants(k,iTemp3)
               T_loc= p%TT(j1)
                if (T_loc <= T_mid) then
-                 p%H0_RT(j1,k)=species_constants(k,iaa2(1)) &
-                              +species_constants(k,iaa2(2))*T_loc/2 &
-                              +species_constants(k,iaa2(3))*p%TT_2(j1)/3 &
-                              +species_constants(k,iaa2(4))*p%TT_3(j1)/4 &
-                              +species_constants(k,iaa2(5))*p%TT_4(j1)/5 &  
-                              +species_constants(k,iaa2(6))/T_loc
+                 p%H0_RT(j1,k)=species_constants(k,iaa2(ii1)) &
+                              +species_constants(k,iaa2(ii2))*T_loc/2 &
+                              +species_constants(k,iaa2(ii3))*p%TT_2(j1)/3 &
+                              +species_constants(k,iaa2(ii4))*p%TT_3(j1)/4 &
+                              +species_constants(k,iaa2(ii5))*p%TT_4(j1)/5 &  
+                              +species_constants(k,iaa2(ii6))/T_loc
                else
-                 p%H0_RT(j1,k)=species_constants(k,iaa1(1)) &
-                              +species_constants(k,iaa1(2))*T_loc/2 &
-                              +species_constants(k,iaa1(3))*p%TT_2(j1)/3 &
-                              +species_constants(k,iaa1(4))*p%TT_3(j1)/4 &
-                              +species_constants(k,iaa1(5))*p%TT_4(j1)/5 &  
-                              +species_constants(k,iaa1(6))/T_loc
+                 p%H0_RT(j1,k)=species_constants(k,iaa1(ii1)) &
+                              +species_constants(k,iaa1(ii2))*T_loc/2 &
+                              +species_constants(k,iaa1(ii3))*p%TT_2(j1)/3 &
+                              +species_constants(k,iaa1(ii4))*p%TT_3(j1)/4 &
+                              +species_constants(k,iaa1(ii5))*p%TT_4(j1)/5 &  
+                              +species_constants(k,iaa1(ii6))/T_loc
                endif
               enddo
           enddo
@@ -1313,6 +1314,7 @@ module Chemistry
 !
       character (len=20) :: output_file="./data/mix_quant.out"
       integer :: file_id=123
+      integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5
 !
 ! Density and temperature
 !
@@ -1424,18 +1426,18 @@ module Chemistry
                     T_up=1e10
                   endif
                   if (T_loc >=T_low .and. T_loc <= T_mid) then
-                   cp_R_spec=species_constants(k,iaa2(1)) &
-                          +species_constants(k,iaa2(2))*T_loc &
-                          +species_constants(k,iaa2(3))*T_loc_2 &
-                          +species_constants(k,iaa2(4))*T_loc_3 &
-                          +species_constants(k,iaa2(5))*T_loc_4
+                   cp_R_spec=species_constants(k,iaa2(ii1)) &
+                          +species_constants(k,iaa2(ii2))*T_loc &
+                          +species_constants(k,iaa2(ii3))*T_loc_2 &
+                          +species_constants(k,iaa2(ii4))*T_loc_3 &
+                          +species_constants(k,iaa2(ii5))*T_loc_4
                    cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   elseif (T_loc >=T_mid .and. T_loc<= T_up) then
-                   cp_R_spec=species_constants(k,iaa1(1)) &
-                          +species_constants(k,iaa1(2))*T_loc &
-                          +species_constants(k,iaa1(3))*T_loc_2 &
-                          +species_constants(k,iaa1(4))*T_loc_3 &
-                          +species_constants(k,iaa1(5))*T_loc_4
+                   cp_R_spec=species_constants(k,iaa1(ii1)) &
+                          +species_constants(k,iaa1(ii2))*T_loc &
+                          +species_constants(k,iaa1(ii3))*T_loc_2 &
+                          +species_constants(k,iaa1(ii4))*T_loc_3 &
+                          +species_constants(k,iaa1(ii5))*T_loc_4
                     cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   else
                     print*,'TT_full(j1,j2,j3)=',T_loc
@@ -3324,6 +3326,7 @@ module Chemistry
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
+      integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii7=7
       real :: B_n_0,alpha_n_0,E_an_0
       real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
@@ -3353,19 +3356,19 @@ module Chemistry
          T_up= species_constants(k,iTemp3)
 
           if (T_loc <= T_mid .and. T_low <= T_loc) then
-            p%S0_R(i,k)=species_constants(k,iaa2(1))*p%lnTT(i) &
-                 +species_constants(k,iaa2(2))*T_loc &
-                 +species_constants(k,iaa2(3))*p%TT_2(i)/2 &
-                 +species_constants(k,iaa2(4))*p%TT_3(i)/3 &
-                 +species_constants(k,iaa2(5))*p%TT_4(i)/4 &
-                 +species_constants(k,iaa2(7)) 
+            p%S0_R(i,k)=species_constants(k,iaa2(ii1))*p%lnTT(i) &
+                 +species_constants(k,iaa2(ii2))*T_loc &
+                 +species_constants(k,iaa2(ii3))*p%TT_2(i)/2 &
+                 +species_constants(k,iaa2(ii4))*p%TT_3(i)/3 &
+                 +species_constants(k,iaa2(ii5))*p%TT_4(i)/4 &
+                 +species_constants(k,iaa2(ii7)) 
           elseif (T_mid <= T_loc .and. T_loc <= T_up) then
-            p%S0_R(i,k)=species_constants(k,iaa1(1))*p%lnTT(i) &
-                 +species_constants(k,iaa1(2))*T_loc &
-                 +species_constants(k,iaa1(3))*p%TT_2(i)/2 &
-                 +species_constants(k,iaa1(4))*p%TT_3(i)/3 & 
-                 +species_constants(k,iaa1(5))*p%TT_4(i)/4 &
-                 +species_constants(k,iaa1(7))
+            p%S0_R(i,k)=species_constants(k,iaa1(ii1))*p%lnTT(i) &
+                 +species_constants(k,iaa1(ii2))*T_loc &
+                 +species_constants(k,iaa1(ii3))*p%TT_2(i)/2 &
+                 +species_constants(k,iaa1(ii4))*p%TT_3(i)/3 & 
+                 +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
+                 +species_constants(k,iaa1(ii7))
           else
                   print*,'p%TT(i)=',p%TT(i)
                    call fatal_error('get_reaction_rate',&
