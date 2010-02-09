@@ -56,11 +56,13 @@ module Pscalar
   real :: lam_gradC=0.0, om_gradC=0.0, lambda_cc=0.0
   real :: scalaracc=0.0
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
+  logical :: lpscalar_per_unitvolume=.false.
   logical :: lnotpassive=.false., lupw_cc=.false.
 !
   namelist /pscalar_run_pars/ &
       pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
       pscalar_diff_hyper3, reinitialize_lncc, reinitialize_cc, lpscalar_sink, &
+      lpscalar_per_unitvolume, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
       om_gradC, lgradC_profile, lnotpassive, lupw_cc
 !
@@ -198,7 +200,6 @@ module Pscalar
         case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
-
 !
 !  superimpose something else
 !
@@ -229,6 +230,10 @@ module Pscalar
       integer :: i
 !
       if (.not. nopscalar) lpenc_requested(i_ugcc)=.true.
+      if (lpscalar_per_unitvolume) then
+        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_cc)=.true.
+      endif
       if (lnotpassive) lpenc_requested(i_cc)=.true.
       if (lpscalar_sink) lpenc_requested(i_rho1)=.true.
       if (pscalar_diff/=0.) then
@@ -376,7 +381,13 @@ module Pscalar
 !
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) - p%ugcc
+        df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc) - p%ugcc
+!
+!  lpscalar_per_unitvolume
+!
+        if (lpscalar_per_unitvolume) then
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%cc*p%divu
+        endif
 !
 !  Reaction term. Simple Fisher term for now.
 !
@@ -396,8 +407,12 @@ module Pscalar
 !
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
-          call dot_mn(p%glnrho,p%gcc,diff_op)
-          diff_op=diff_op+p%del2cc
+          if (lpscalar_per_unitvolume) then
+            diff_op=p%del2cc
+          else
+            call dot_mn(p%glnrho,p%gcc,diff_op)
+            diff_op=diff_op+p%del2cc
+          endif
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + pscalar_diff*diff_op
         endif
 !

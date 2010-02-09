@@ -50,9 +50,9 @@ module Gravity
   real :: gravx=0.0, gravy=0.0, gravz=0.0
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
-  real :: xinfty=0.0, yinfty=0.0, zinfty=0.0
+  real :: xinfty=0.0, yinfty=0.0, zinfty=impossible
   real :: dgravx=0.0, pot_ratio=1.0
-  real :: z1=0.0, z2=1.0, zref=0.0, qgshear=1.5
+  real :: z1=0.0, z2=1.0, zref=impossible, qgshear=1.5
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
   real :: r0_pot=0.0
@@ -66,6 +66,7 @@ module Gravity
 !
   logical :: lnumerical_equilibrium=.false.
   logical :: lxyzdependence=.false.
+  logical :: lcalc_zinfty=.false.
   logical :: lboussinesq=.false.
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
@@ -79,6 +80,7 @@ module Gravity
       nux_epicycle, nu_epicycle, z1, z2, zref, lnrho_bot, lnrho_top, ss_bot, &
       ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, lgravz_gas, &
       lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, kappa_x1, &
+      lcalc_zinfty, &
       kappa_x2, kappa_z1, kappa_z2, reduced_top, lboussinesq, grav_profile, &
       n_pot, cs0hs, H0hs, grav_tilt
 !
@@ -87,6 +89,7 @@ module Gravity
       xgrav, ygrav, zgrav, kx_gg, ky_gg, kz_gg, dgravx, pot_ratio, &
       nux_epicycle, nu_epicycle, lgravx_gas, lgravx_dust, lgravy_gas, &
       lgravy_dust, lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, &
+      lcalc_zinfty, &
       lxyzdependence, kappa_x1, kappa_x2, kappa_z1, kappa_z2, zref, &
       reduced_top, lboussinesq, grav_profile, n_pot, grav_tilt
 !
@@ -121,12 +124,13 @@ module Gravity
 !
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: notanumber, cubic_step
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+      real, pointer :: cs20,mpoly,gamma
       real, dimension (mz) :: prof
       real :: ztop
       integer :: ierr
@@ -140,6 +144,32 @@ module Gravity
           call fatal_error('initialize_gravity', &
               "You don't need gravity_simple for zero gravity...")
         endif
+      endif
+!
+!  Possibility of specifying zref (if zinfty is not given).
+!  In that case we need to know cs20 and mpoly from the EOS module.
+!  We do this using shared variables.
+!
+      if (lcalc_zinfty) then
+        if (zinfty==impossible) then
+          if (zref==impossible) then
+            call fatal_error('initialize_gravity','zref=impossible')
+          else
+            call get_shared_variable('cs20',cs20,ierr)
+            if (ierr/=0) call fatal_error('initialize_gravity','getting cs20')
+!
+            call get_shared_variable('mpoly',mpoly,ierr)
+            if (ierr/=0) call fatal_error('initialize_gravity','getting mpoly')
+!
+            call get_shared_variable('gamma',gamma,ierr)
+            if (ierr/=0) call fatal_error('initialize_gravity','getting gamma')
+!
+            zinfty=zref+cs20*(mpoly+1)/gamma
+            if (lroot) print*,'initialize_gravity: computed zinfty=',zinfty
+          endif
+        endif
+      else
+        zinfty=0.
       endif
 !
 !  Different x-gravity profiles

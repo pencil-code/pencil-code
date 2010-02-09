@@ -112,10 +112,12 @@ module EquationOfState
 !  22-jun-06/axel: adapted from initialize_eos
 !   4-aug-09/axel: added possibility of vertical profile function
 !
+      use SharedVariables, only: put_shared_variable
       use Mpicomm, only: stop_it
       use Sub, only: erfunc
 !
       real :: Rgas_unit_sys, cp_reference
+      integer :: ierr
 !
 !  Set gamma_m1, cs20, and lnrho0.
 !  (used currently for non-dimensional equation of state)
@@ -192,6 +194,17 @@ module EquationOfState
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
       pp0=Rgas*exp(lnTT0)*rho0
+!
+! Shared variables
+!
+      call put_shared_variable('cs20',cs20,ierr)
+      if (ierr/=0) call fatal_error('units_eos','problem when putting cs20')
+!
+      call put_shared_variable('mpoly',mpoly,ierr)
+      if (ierr/=0) call fatal_error('units_eos','problem when putting mpoly')
+!
+      call put_shared_variable('gamma',gamma,ierr)
+      if (ierr/=0) call fatal_error('units_eos','problem when putting gamma')
 !
 !  Check that everything is OK.
 !

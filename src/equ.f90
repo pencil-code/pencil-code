@@ -346,6 +346,9 @@ module Equ
             advec_va2=0.0; advec_hall=0.0
             diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
           endif
+          if (ltestscalar) then
+            diffus_eta=0.0
+          endif
           if (ldustvelocity) then
             advec_uud=0.0; diffus_nud=0.0; diffus_nud3=0.0
           endif
@@ -633,6 +636,7 @@ module Equ
           if (ltemperature) maxdiffus=max(diffus_chi,maxdiffus)
           if (lmagnetic) maxdiffus=max(diffus_eta,maxdiffus)
           if (ltestfield) maxdiffus=max(diffus_eta,maxdiffus)
+          if (ltestscalar) maxdiffus=max(diffus_eta,maxdiffus)
           if (lpscalar) maxdiffus=max(diffus_pscalar,maxdiffus)
           if (lcosmicray) maxdiffus=max(diffus_cr,maxdiffus)
           if (ldustvelocity) maxdiffus=max(diffus_nud,maxdiffus)

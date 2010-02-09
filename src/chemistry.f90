@@ -551,7 +551,7 @@ module Chemistry
 !***********************************************************************
     subroutine calc_pencils_chemistry(f,p)
 !
-!  Calculate Hydro pencils.
+!  Calculate chemistry pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   13-aug-07/steveb: coded
