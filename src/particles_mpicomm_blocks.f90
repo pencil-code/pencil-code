@@ -1634,6 +1634,16 @@ module Particles_mpicomm
         call MPI_RECV(npar_recv, 1, MPI_INTEGER, &
             iproc_right, tag_id, MPI_COMM_WORLD, stat, ierr)
 !
+!  Stop the code if too many blocks at any processor.
+!
+        if (nblock_loc+nbrick_recv-1>nblockmax-1) then
+          print*, 'load_balance_particles: too many blocks at processor ', iproc
+          print*, 'load_balance_particles: nblock_loc, nblockmax=', &
+              nblock_loc+nbrick_recv, nblockmax
+          call fatal_error_local('load_balance_particles','')
+        endif
+        call fatal_error_local_collect()
+!
 !  Inform the left processor of the particle contents of each adopted brick.  
 !
         if (npar_give>0) call MPI_SEND(npbrick(ibrick_give(0:nbrick_give-1)), &
