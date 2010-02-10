@@ -1634,9 +1634,9 @@ module Particles_mpicomm
         call MPI_RECV(npar_recv, 1, MPI_INTEGER, &
             iproc_right, tag_id, MPI_COMM_WORLD, stat, ierr)
 !
-!  Stop the code if too many blocks at any processor.
+!  Stop the code if load balancing puts too many blocks at any processor.
 !
-        if (nblock_loc+nbrick_recv-1>nblockmax-1) then
+        if (nblock_loc+nbrick_recv>nblockmax) then
           print*, 'load_balance_particles: too many blocks at processor ', iproc
           print*, 'load_balance_particles: nblock_loc, nblockmax=', &
               nblock_loc+nbrick_recv, nblockmax
@@ -1661,10 +1661,6 @@ module Particles_mpicomm
 !  Register the bricks received from the right processor.
 !
         if (npar_recv>0) then
-          if (nblock_loc+nbrick_recv>nblockmax) then
-            print*, 'Error - too many blocks at processor ', iproc
-            call fatal_error('load_balance_particles','')
-          endif
           do iblock=0,nbrick_recv-1
             iproc_parent_block(nblock_loc+iblock)=iproc_right
             ibrick_parent_block(nblock_loc+iblock)=ibrick_recv(iblock)
