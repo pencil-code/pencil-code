@@ -428,7 +428,7 @@ module Particles_mpicomm
         lfirstcall=.false.
       endif
 !
-      lreblocking=lreblock_particles_run.and.it==1.and.itsub==1
+      lreblocking=lreblock_particles_run.and.it==1.and.itsub==0
 !
       ibrick_global_arr(0:nblock_loc-1)= &
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
@@ -767,7 +767,7 @@ module Particles_mpicomm
         lfirstcall=.false.
       endif
 !
-      lreblocking=lreblock_particles_run.and.it==1.and.itsub==1
+      lreblocking=lreblock_particles_run.and.it==1.and.itsub==0
 !
 !  Create list of processors that we allow migration to and from.
 !
@@ -1173,7 +1173,7 @@ module Particles_mpicomm
         lfirstcall=.false.
       endif
 !
-      lreblocking=lreblock_particles_run.and.it==1.and.itsub==1
+      lreblocking=lreblock_particles_run.and.it==1.and.itsub==0
 !
 !  Create global brick array.
 !
