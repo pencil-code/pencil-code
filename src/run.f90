@@ -708,7 +708,7 @@ program run
     print*
     write(*,'(A,1pG10.3,A,1pG8.2,A)') &
         ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
-        ' (+/- ', real(mpiwtick())/3600.0,')'
+        ' (+/- ', real(mpiwtick())/3600.0, ')'
     if (it>1) then
       if (lparticles) then
         write(*,'(A,1pG10.3)') &
