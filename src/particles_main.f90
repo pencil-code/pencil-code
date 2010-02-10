@@ -153,6 +153,16 @@ module Particles_main
       call initialize_particles_collisions(f,lstarting)
       call initialize_particles_stalker   (f,lstarting)
 !
+      if (lparticles_blocks.and.(.not.lstarting)) then
+        if (lparticles_blocks) print*, 'particles_initialize_modules: '// &
+            'reblocking particles'
+        call boundconds_particles(fp,ipar)
+        call map_nearest_grid(fp,ineargrid)
+        call sort_particles_iblock(fp,ineargrid,ipar)
+        call map_xxp_grid(f,fp,ineargrid)
+        call load_balance_particles(f,fp,ipar)
+      endif
+!
 !  Stop if rhop_swarm is zero.
 !
       if (irhop/=0 .and. rhop_swarm==0.0) then
@@ -327,9 +337,6 @@ module Particles_main
       if (lparticles_blocks .and. mod(it,it1_loadbalance)==0) then
         call particles_boundconds(f)
         call load_balance_particles(f,fp,ipar)
-!        call map_nearest_grid(fp,ineargrid)
-!        call sort_particles_iblock(fp,ineargrid,ipar,dfp=dfp)
-!        call map_xxp_grid(f,fp,ineargrid)
       endif
 !
     endsubroutine particles_load_balance
