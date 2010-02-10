@@ -996,7 +996,6 @@ k_loop:   do while (.not. (k>npar_loc))
            fp(k,ivpz) = delta_vp0*fp(k,izp)/rp_ext
          enddo
 !
-!
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initvvp: ', &
