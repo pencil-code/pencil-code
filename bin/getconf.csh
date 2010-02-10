@@ -1152,6 +1152,34 @@ else if (($hn =~ n[0-9]*) && ($USER =~ x_axebr)) then
   set npops = ""
   #
   set one_local_disc = 0
+#----------------------------------------------------
+else if ($hn =~ nid*) then
+  echo "Hexagon cluster in Bergen"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------------
+#else if (($hn =~ nid*)) then
+#  echo "Hexagon cluster in Bergen"
+#  if ($mpi) echo "Use mpprun"
+#  set mpirun = aprun
+#  echo "uname -n"
+#  uname -n
+#  #
+#  echo "nprocpernode = $nprocpernode"
+#  set mpirunops = ""
+#  set npops = "-n $ncpus"
+#  #
+#  set one_local_disc = 0
 #---------------------------------------------
 else if ($hn =~ sans*) then
   echo "Sanssouci cluster in Potsdam (AIP)"
