@@ -3191,7 +3191,9 @@ module Entropy
         case ('gaussian-z')
           prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
         endselect
-        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+        !heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+        if (headtt) print*,'calc_heat_cool: cs20,cs2cool=',cs20,cs2cool
+        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
       endif
 !
 !  Vertical gravity case: Heat at bottom, cool top layers
