@@ -6,13 +6,13 @@
 !  testscalar relevant subroutines listed in here.
 
 !  Note: this routine requires that MVAR and MAUX contributions
-!  together with njtest are set correctly in the cparam.local file.
-!  njtest must be set at the end of the file such that njtest=MVAR.
+!  together with njtestscalar are set correctly in the cparam.local file.
+!  njtestscalar must be set at the end of the file such that njtestscalar=MVAR.
 !
 !  Example:
 !  ! MVAR CONTRIBUTION 2
 !  ! MAUX CONTRIBUTION 2
-!  integer, parameter :: njtest=2
+!  integer, parameter :: njtestscalar=2
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -63,7 +63,7 @@ module Testscalar
   real :: ktestscalar=1., ktestscalar1=1.
   real :: lam_testscalar=0.,om_testscalar=0.,delta_testscalar=0.
   real :: delta_testscalar_next=0.
-  integer, parameter :: mtestscalar=njtest
+  integer, parameter :: mtestscalar=njtestscalar
   integer :: jtestz1=1,jtestz2=2,jtestx1=3,jtestx2=4,jtesty1=5,jtesty2=6
   integer :: nccinit
   real :: camp=1.,camp1=1.
@@ -75,7 +75,7 @@ module Testscalar
 
   ! run parameters
   real :: kappatest=0.,kappatest1=0.
-  real, dimension(njtest) :: rescale_cctest=0.
+  real, dimension(njtestscalar) :: rescale_cctest=0.
   logical :: ltestscalar_newz=.true.,leta_rank2=.false.
   logical :: ltestscalar_newx=.false.
   logical :: ltestscalar_newy=.false.
@@ -154,7 +154,7 @@ module Testscalar
 !  These values are used in this form in start, but later overwritten.
 !
       icctest=nvar+1
-      icctestpq=icctest+(njtest-1)
+      icctestpq=icctest+(njtestscalar-1)
       ntestscalar=mtestscalar
       nvar=nvar+ntestscalar
 !
@@ -287,7 +287,7 @@ module Testscalar
 !  (in future, could call something like init_cc_simple)
 !
       if (reinitialize_cctest) then
-        do jtest=1,njtest
+        do jtest=1,njtestscalar
           jcctest=icctest+(jtest-1)
           f(:,:,:,jcctest)=rescale_cctest(jtest)*f(:,:,:,jcctest)
         enddo
@@ -311,7 +311,7 @@ module Testscalar
 !
       if (lug_as_aux) then
         if (iug==0) then
-          call farray_register_auxiliary('ug',iug,vector=njtest)
+          call farray_register_auxiliary('ug',iug,vector=njtestscalar)
         endif
         if (iug/=0.and.lroot) then
           print*, 'initialize_magnetic: iug = ', iug
@@ -466,8 +466,8 @@ module Testscalar
       real, dimension (nx) :: cc,cctest,del2ctest,ug
       real, dimension (nx,3) :: ggtest, G0test=0.,uctest
       real, dimension (nx) :: ugtest,dugtest
-      real, dimension (nx,3,njtest) :: Fipq
-      real, dimension (nx,njtest) :: cpq
+      real, dimension (nx,3,njtestscalar) :: Fipq
+      real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
       integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
       logical,save :: ltest_ug=.false.
@@ -520,7 +520,7 @@ module Testscalar
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
-      do jtest=1,njtest
+      do jtest=1,njtestscalar
         jcctest=icctest+(jtest-1)
         call del2(f,jcctest,del2ctest)
         call grad(f,jcctest,ggtest)
@@ -603,16 +603,16 @@ module Testscalar
         if (idiag_F22z/=0) call xysum_mn_name_z(Fipq(:,2,i2),idiag_F22z)
         if (idiag_F32z/=0) call xysum_mn_name_z(Fipq(:,3,i2),idiag_F32z)
 !
-!  check whether njtest is large enough
+!  check whether njtestscalar is large enough
 !
         if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0) then
-          if (njtest<2) call stop_it('dcctest_dt: njtest < 2 is insufficient')
+          if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
         endif
         if (idiag_kap12/=0.or.idiag_kap22/=0.or.idiag_kap32/=0) then
-          if (njtest<6) call stop_it('dcctest_dt: njtest < 6 is insufficient')
+          if (njtestscalar<6) call stop_it('dcctest_dt: njtestscalar < 6 is insufficient')
         endif
         if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0) then
-          if (njtest<4) call stop_it('dcctest_dt: njtest < 4 is insufficient')
+          if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
         endif
 !
 !  averages of kappa
@@ -720,9 +720,9 @@ module Testscalar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c,s
 !
-      real, dimension (nx,nprocy,nprocz,njtest) :: ugtestmx1=0.,ugtestmx1_tmp=0.
-      real, dimension (ny,nprocy,njtest) :: ugtestmy1=0.,ugtestmy1_tmp=0.
-      real, dimension (nz,nprocz,njtest) :: ugtestm1=0.,ugtestm1_tmp=0.
+      real, dimension (nx,nprocy,nprocz,njtestscalar) :: ugtestmx1=0.,ugtestmx1_tmp=0.
+      real, dimension (ny,nprocy,njtestscalar) :: ugtestmy1=0.,ugtestmy1_tmp=0.
+      real, dimension (nz,nprocz,njtestscalar) :: ugtestm1=0.,ugtestm1_tmp=0.
 !
       real, dimension (nx) :: cctest,ugtest
       real, dimension (nx,3) :: ggtest
@@ -817,13 +817,13 @@ module Testscalar
         endif
       enddo
 !
-!  do communication for array of size nz*nprocz*3*njtest
+!  do communication for array of size nz*nprocz*3*njtestscalar
 !  Do this first for z-dependent mean fields
 !
       if (nprocy>1) then
-        call mpireduce_sum(ugtestm1,ugtestm1_tmp,(/nz,nprocz,njtest/))
-        call mpibcast_real_arr(ugtestm1_tmp,nz*nprocz*njtest)
-        do jtest=1,njtest
+        call mpireduce_sum(ugtestm1,ugtestm1_tmp,(/nz,nprocz,njtestscalar/))
+        call mpibcast_real_arr(ugtestm1_tmp,nz*nprocz*njtestscalar)
+        do jtest=1,njtestscalar
           do n=n1,n2
             ugtestm(n,jtest)=ugtestm1_tmp(n-n1+1,ipz+1,jtest)
           enddo
@@ -833,9 +833,9 @@ module Testscalar
 !  Next, do this for x-dependent mean fields
 !
       if (ncpus>1) then
-        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,(/nx,nprocy,nprocz,njtest/))
-        call mpibcast_real_arr(ugtestmx1_tmp,nx*nprocy*nprocz*njtest)
-        do jtest=1,njtest
+        call mpireduce_sum(ugtestmx1,ugtestmx1_tmp,(/nx,nprocy,nprocz,njtestscalar/))
+        call mpibcast_real_arr(ugtestmx1_tmp,nx*nprocy*nprocz*njtestscalar)
+        do jtest=1,njtestscalar
           ugtestmx(:,jtest)=0.
           do jpz=1,nprocz
             do jpy=1,nprocy
@@ -848,9 +848,9 @@ module Testscalar
 !  Finally, do this for y-dependent mean fields
 !
       if (nprocz>1) then
-        call mpireduce_sum(ugtestmy1,ugtestmy1_tmp,(/ny,nprocy,njtest/))
-        call mpibcast_real_arr(ugtestmy1_tmp,ny*nprocy*njtest)
-        do jtest=1,njtest
+        call mpireduce_sum(ugtestmy1,ugtestmy1_tmp,(/ny,nprocy,njtestscalar/))
+        call mpibcast_real_arr(ugtestmy1_tmp,ny*nprocy*njtestscalar)
+        do jtest=1,njtestscalar
           do m=m1,m2
             ugtestmy(m,jtest)=ugtestmy1_tmp(m-m1+1,ipy+1,jtest)
           enddo
@@ -897,7 +897,7 @@ module Testscalar
 !  Do only one xy plane at a time (for cache efficiency)
 !
         if (t >= tccinit) then
-          do jtest=1,njtest
+          do jtest=1,njtestscalar
             j=icctest+(jtest-1)
             do n=n1,n2
               f(l1:l2,m1:m2,n,j)=rescale_cctest(jtest)*f(l1:l2,m1:m2,n,j)
