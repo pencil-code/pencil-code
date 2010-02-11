@@ -89,6 +89,15 @@ module Testscalar
        rescale_cctest
 
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_gam11=0      ! DIAG_DOC: $\gamma_{1}^{(1)}$
+  integer :: idiag_gam12=0      ! DIAG_DOC: $\gamma_{2}^{(1)}$
+  integer :: idiag_gam13=0      ! DIAG_DOC: $\gamma_{3}^{(1)}$
+  integer :: idiag_gam21=0      ! DIAG_DOC: $\gamma_{1}^{(2)}$
+  integer :: idiag_gam22=0      ! DIAG_DOC: $\gamma_{2}^{(2)}$
+  integer :: idiag_gam23=0      ! DIAG_DOC: $\gamma_{3}^{(2)}$
+  integer :: idiag_gam31=0      ! DIAG_DOC: $\gamma_{1}^{(3)}$
+  integer :: idiag_gam32=0      ! DIAG_DOC: $\gamma_{2}^{(3)}$
+  integer :: idiag_gam33=0      ! DIAG_DOC: $\gamma_{3}^{(3)}$
   integer :: idiag_kap11=0      ! DIAG_DOC: $\kappa_{11}$
   integer :: idiag_kap21=0      ! DIAG_DOC: $\kappa_{21}$
   integer :: idiag_kap31=0      ! DIAG_DOC: $\kappa_{31}$
@@ -618,6 +627,20 @@ module Testscalar
         if (idiag_kap23/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2),idiag_kap23)
         if (idiag_kap33/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2),idiag_kap33)
 !
+!  pumping effect
+!
+        if (idiag_gam11/=0) call sum_mn_name(-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4),idiag_gam11)
+        if (idiag_gam21/=0) call sum_mn_name(-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4),idiag_gam21)
+        if (idiag_gam31/=0) call sum_mn_name(-sz(n)*Fipq(:,3,i3)+cz(n)*Fipq(:,3,i4),idiag_gam31)
+        if (idiag_gam12/=0) call sum_mn_name(-sz(n)*Fipq(:,1,i5)+cz(n)*Fipq(:,1,i6),idiag_gam12)
+        if (idiag_gam22/=0) call sum_mn_name(-sz(n)*Fipq(:,2,i5)+cz(n)*Fipq(:,2,i6),idiag_gam22)
+        if (idiag_gam32/=0) call sum_mn_name(-sz(n)*Fipq(:,3,i5)+cz(n)*Fipq(:,3,i6),idiag_gam32)
+        if (idiag_gam13/=0) call sum_mn_name(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2),idiag_gam13)
+        if (idiag_gam23/=0) call sum_mn_name(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2),idiag_gam23)
+        if (idiag_gam33/=0) call sum_mn_name(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2),idiag_gam33)
+!
+!  values at one point
+!
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_c1pt/=0) call save_name(cpq(lpoint-nghost,i1),idiag_c1pt)
           if (idiag_c2pt/=0) call save_name(cpq(lpoint-nghost,i2),idiag_c2pt)
@@ -942,6 +965,9 @@ module Testscalar
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
         idiag_kap12=0; idiag_kap22=0; idiag_kap32=0
         idiag_kap13=0; idiag_kap23=0; idiag_kap33=0
+        idiag_gam11=0; idiag_gam21=0; idiag_gam31=0
+        idiag_gam12=0; idiag_gam22=0; idiag_gam32=0
+        idiag_gam13=0; idiag_gam23=0; idiag_gam33=0
         idiag_c1rms=0; idiag_c2rms=0
         idiag_c1pt=0; idiag_c2pt=0
       endif
@@ -958,6 +984,15 @@ module Testscalar
         call parse_name(iname,cname(iname),cform(iname),'kap13',idiag_kap13)
         call parse_name(iname,cname(iname),cform(iname),'kap23',idiag_kap23)
         call parse_name(iname,cname(iname),cform(iname),'kap33',idiag_kap33)
+        call parse_name(iname,cname(iname),cform(iname),'gam11',idiag_gam11)
+        call parse_name(iname,cname(iname),cform(iname),'gam21',idiag_gam21)
+        call parse_name(iname,cname(iname),cform(iname),'gam31',idiag_gam31)
+        call parse_name(iname,cname(iname),cform(iname),'gam12',idiag_gam12)
+        call parse_name(iname,cname(iname),cform(iname),'gam22',idiag_gam22)
+        call parse_name(iname,cname(iname),cform(iname),'gam32',idiag_gam32)
+        call parse_name(iname,cname(iname),cform(iname),'gam13',idiag_gam13)
+        call parse_name(iname,cname(iname),cform(iname),'gam23',idiag_gam23)
+        call parse_name(iname,cname(iname),cform(iname),'gam33',idiag_gam33)
         call parse_name(iname,cname(iname),cform(iname),'c1rms',idiag_c1rms)
         call parse_name(iname,cname(iname),cform(iname),'c2rms',idiag_c2rms)
         call parse_name(iname,cname(iname),cform(iname),'c3rms',idiag_c3rms)
@@ -995,6 +1030,15 @@ module Testscalar
         write(3,*) 'idiag_kap13=',idiag_kap13
         write(3,*) 'idiag_kap23=',idiag_kap23
         write(3,*) 'idiag_kap33=',idiag_kap33
+        write(3,*) 'idiag_gam11=',idiag_gam11
+        write(3,*) 'idiag_gam21=',idiag_gam21
+        write(3,*) 'idiag_gam31=',idiag_gam31
+        write(3,*) 'idiag_gam12=',idiag_gam12
+        write(3,*) 'idiag_gam22=',idiag_gam22
+        write(3,*) 'idiag_gam32=',idiag_gam32
+        write(3,*) 'idiag_gam13=',idiag_gam13
+        write(3,*) 'idiag_gam23=',idiag_gam23
+        write(3,*) 'idiag_gam33=',idiag_gam33
         write(3,*) 'idiag_c1rms=',idiag_c1rms
         write(3,*) 'idiag_c2rms=',idiag_c2rms
         write(3,*) 'idiag_c3rms=',idiag_c3rms
