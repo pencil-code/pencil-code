@@ -585,7 +585,8 @@ ky_uukin=2.*pi
         p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+sin(ky_uukin*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
-!  potential flow, u=gradphi, with phi=cosx*cosy*cosz
+!  
+!potential flow, u=gradphi, with phi=cosx*cosy*cosz
 !  assume kx_uukin=ky_uukin=kz_uukin
 !
       elseif (kinflow=='potential') then
@@ -596,6 +597,22 @@ ky_uukin=2.*pi
         p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
         p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
         if (lpencil(i_divu)) p%divu=fac
+
+!potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz
+!  assume kx_uukin=ky_uukin=kz_uukin
+!
+
+      elseif (kinflow=='potential_random') then
+        fac=ampl_kinflow
+        x0=2
+        if (headtt) print*,'potential_random; kx_aa,ampl_kinflow=',ampl_kinflow
+        if (headtt) print*,'potential_random; kx_aa=',kx_uukin,ky_uukin,kz_uukin
+        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-x0))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-x0))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-x0))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+        if (lpencil(i_divu)) p%divu=fac
+
+
 !
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
