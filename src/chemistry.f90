@@ -1830,6 +1830,13 @@ module Chemistry
                 kreactions_z(n,j)=0.
               endif
             enddo
+          elseif (kreactions_profile(j)=='saw') then
+            do n=1,mz
+              kreactions_z(n,j)=0.51+(sin(pi*z(n)/kreactions_profile_width(j))&
+                  +sin(2*pi*z(n)/kreactions_profile_width(j))/2&
+                  +sin(3*pi*z(n)/kreactions_profile_width(j))/3&
+                  +sin(4*pi*z(n)/kreactions_profile_width(j))/4)/3
+            enddo
           elseif (kreactions_profile(j)=='sin') then
             do n=1,mz
               kreactions_z(n,j)=0.5*(1+cos(pi*z(n)/kreactions_profile_width(j)))
