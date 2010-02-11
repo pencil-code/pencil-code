@@ -1033,6 +1033,19 @@ else if ($hn =~ rio* || $hn =~ pia*) then
   setenv SCP scp
   setenv SCRATCH_DIR /var/tmp/$USER
 #---------------------------------------------------
+else if ($hn =~ aims* ) then
+  echo "AIMS cluster at RZG"
+  module load impi
+  set nprocpernode = 1
+  set local_disc = 0
+  set one_local_disc = 1
+  set mpirun = /afs/@cell/common/soft/intel/impi/3.2.2/bin64/mpiexec
+  set nodelist=`cat $TMPDIR/machines`
+  echo $nodelist
+  setenv SSH 'ssh -x'
+  setenv SCP scp
+  setenv SCRATCH_DIR /var/tmp/$USER
+#---------------------------------------------------
 else if ($hostname =~ *huygens.sara.nl*) then
   echo "huygens cluster in Amsterdam"
 #  set local_disc = 1
