@@ -15,12 +15,13 @@
 !!!    2. t(1)
 !!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 !!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
-
+!
 module Io
-
+!
   use Cdata
   use Messages
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
 
   include 'io.h'
@@ -97,8 +98,7 @@ contains
 !  25-oct-02/axel: removed assignment of datadir; now set in cdata.f90
 !
       use Cdata, only: datadir,directory_snap
-      use Sub
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 !
       integer, dimension(3) :: globalsize=(/nxgrid,nygrid,nzgrid/)
       integer, dimension(3) :: localsize =(/nx    ,ny    ,nz    /)
@@ -160,8 +160,7 @@ contains
 !  02-oct-2002/wolf: coded
 !
       use Cdata, only: datadir,directory,datadir_snap,directory_snap
-      use General
-      use Mpicomm, only: iproc
+      use General, only: safe_character_assign
 !
       if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
         datadir_snap = datadir
@@ -177,8 +176,6 @@ contains
 !  For a new value of nv, commit MPI types needed for output_vect(). If
 !  called with the same value of nv as the previous time, do nothing.
 !  20-sep-02/wolf: coded
-!
-!      use Cdata
 !
       integer, dimension(4) :: globalsize_v,localsize_v,memsize_v
       integer, dimension(4) :: start_index_v,mem_start_index_v
@@ -231,8 +228,6 @@ contains
 !  called with the same value of nv as the previous time, do nothing.
 !  20-sep-02/wolf: coded
 !
-!      use Cdata
-!
       integer :: nr,nv
       integer, dimension(2) :: globalsize_v,localsize_v,memsize_v
       integer, dimension(2) :: start_index_v,mem_start_index_v
@@ -279,11 +274,10 @@ contains
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  11-apr-97/axel: coded
 !
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      integer :: nv,mode,i
+      integer :: nv,mode
       real, dimension (mx,my,mz,nv) :: a
 !
       if (ip<=8) print*,'input: mx,my,mz,nv=',mx,my,mz,nv
@@ -305,6 +299,8 @@ contains
       call MPI_FILE_READ_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
       call MPI_FILE_CLOSE(fhandle, ierr)
 !
+      call keep_compiler_quiet(mode)
+!
     endsubroutine input
 !***********************************************************************
     subroutine output_vect(file,a,nv)
@@ -315,8 +311,7 @@ contains
 !
 !  20-sep-02/wolf: coded
 !
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 !
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
@@ -354,8 +349,7 @@ contains
 !
 !  20-sep-02/wolf: coded
 !
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: a
       integer :: nv
@@ -393,8 +387,6 @@ contains
 !
 !  15-feb-02/wolf: coded
 !
-      use Cdata
-!
       integer :: ndim
       real, dimension (nx,ndim) :: a
       character (len=*) :: file
@@ -421,8 +413,7 @@ contains
 !
 !  15-feb-02/wolf: coded
 !
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 
 !
       integer :: ndim
@@ -452,8 +443,7 @@ contains
 !  write snapshot file, always write mesh and time, could add other things
 !  11-oct-98/axel: adapted
 !
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 !
       integer :: nv
       character (len=*) :: file
@@ -476,8 +466,7 @@ contains
 !  don't handle writing the grid, but that does not seem to be used
 !  anyway.
 !
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 !
       integer :: nv,reclen
       integer(kind=MPI_OFFSET_KIND) :: fpos
@@ -628,7 +617,6 @@ contains
       use Cdata, only: lroot,lcopysnapshots_exp,datadir
       use Cparam, only: fnlen
       use General, only: parse_filename
-      use Mpicomm, only: mpibarrier
 !
       character (len=*) :: filename,flist
       character (len=fnlen) :: dir,fpart
@@ -663,6 +651,8 @@ contains
         close(1)
       endif
 !
+      call keep_compiler_quiet(file)
+!
     endsubroutine wgrid
 !***********************************************************************
     subroutine rgrid(file)
@@ -672,7 +662,6 @@ contains
 !
       use Cdata, only: directory,dx,dy,dz
 !
-      real :: tdummy
       integer :: i
       character (len=*) :: file ! not used
 !
@@ -718,6 +707,8 @@ contains
       Lz=dz*nz*nprocz
 !
       if (ip<=4) print*,'rgrid: dt,dx,dy,dz=',dt,dx,dy,dz
+!
+      call keep_compiler_quiet(file)
 !
     endsubroutine rgrid
 !***********************************************************************
@@ -770,8 +761,6 @@ contains
 !  Write t to file
 !  21-sep-02/wolf: coded
 !
-      use Mpicomm, only: lroot
-!
       double precision :: tau
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -789,8 +778,6 @@ contains
 !
 !  Read t from file
 !  21-sep-02/wolf: coded
-!
-      use Mpicomm, only: lroot
 !
       double precision :: tau
       character (len=*) :: file
