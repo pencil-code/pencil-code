@@ -604,22 +604,24 @@ ky_uukin=2.*pi
 
       elseif (kinflow=='potential_random') then
         fac=ampl_kinflow
-        x0=2
         if (headtt) print*,'potential_random; kx_aa,ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'potential_random; kx_aa=',kx_uukin,ky_uukin,kz_uukin
-        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-x0))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-x0))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
-        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-x0))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          call random_number_wrapper(fran1)
+          phase1=2*pi*fran1(1)
+        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
         if (lpencil(i_divu)) p%divu=fac
 
 
-!
+        
+           
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
 !
       elseif (kinflow=='rolls') then
         if (headtt) print*,'Convection rolls; kx_kinflow,kz_aa=',kx_kinflow,kz_kinflow
-        p%uu(:,1)=ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l1:l2))*sin(kz_kinflow*z(n))
+        p%uu(:,1)=ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l:l2))*sin(kz_kinflow*z(n))
         p%uu(:,2)=+0.
         p%uu(:,3)=ampl_kinflow*kx_kinflow*sin(kx_kinflow*x(l1:l2))*cos(kz_kinflow*z(n))
 ! divu
