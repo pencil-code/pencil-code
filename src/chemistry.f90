@@ -1,4 +1,3 @@
-
 ! $Id$
 !
 !  This modules addes chemical species and reactions.
@@ -20,7 +19,7 @@
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), gmu1(3), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec)
-! 
+!
 !***************************************************************
 module Chemistry
 !
@@ -122,9 +121,7 @@ module Chemistry
      real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
      logical, allocatable, dimension(:) :: Mplus_case
      real, dimension(nchemspec,7)     :: tran_data
-
- 
-
+!
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
@@ -208,7 +205,7 @@ module Chemistry
   integer :: idiag_diff5m=0
   integer :: idiag_diff6m=0
   integer :: idiag_diff7m=0
-  integer :: idiag_diff8m=0  
+  integer :: idiag_diff8m=0
   integer :: idiag_diff9m=0
 !
   contains
@@ -301,10 +298,10 @@ module Chemistry
         ldiffusion=.false.
       endif
 
-!     if (lreactions==.false.) 
+!     if (lreactions==.false.)
 !     if (ladvection==.false.)
 !     if (ldiffusion==.false.) then
-!      lnospec_eqns=.true.   
+!      lnospec_eqns=.true.
 !     endif
 !
 !  check for the existence of chemistry input files
@@ -475,8 +472,8 @@ module Chemistry
 !
 !AB:  if (linitial_condition) call initial_condition_chemistry(f)
 !
-!RP:  I comment the following ... why should one specie case uniformly 
-!     initialized to 1 and override the manually entered conditions ????  
+!RP:  I comment the following ... why should one specie case uniformly
+!     initialized to 1 and override the manually entered conditions ????
 !
 !      if (lone_spec) then
 !        f(:,:,:,ichemspec(1))=1.
@@ -496,15 +493,13 @@ module Chemistry
       lpenc_requested(i_gYYk)=.true.
       lpenc_requested(i_ghhk)=.true.
       lpenc_requested(i_cs2)=.true.
-      
 !
       lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
-      
+!
       if (ldiffusion .and. lDiff_simple) then
         lpenc_requested(i_Diff_penc_add)=.true.
       endif
-     
 !
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
@@ -519,7 +514,7 @@ module Chemistry
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
          lpenc_requested(i_H0_RT)=.true.
-         
+!
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
          if (lreactions) lpenc_requested(i_S0_R)=.true.
          if (lThCond_simple) lpenc_requested(i_glncp)=.true.
@@ -543,8 +538,7 @@ module Chemistry
 !
         if (lpencil_in(i_cp))  lpencil_in(i_glncp)=.true.
         if (lpencil_in(i_cp))  lpencil_in(i_cp1)=.true.
-      
-
+!
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_chemistry
@@ -565,7 +559,7 @@ module Chemistry
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: k,i,j1,j
+      integer :: k,i,j1
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6
       real :: T_low,T_up, T_mid, T_loc
 !
@@ -574,16 +568,16 @@ module Chemistry
       if (lpencil(i_YY)) then
         do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
       endif
-      
+!
       if (lpencil(i_gYYk) .and. ldiffusion) then
-       do k=1,nchemspec 
+       do k=1,nchemspec
          call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
          do i=1,3; p%gYYk(:,i,k)=gXX_tmp(:,i); enddo
        enddo
       endif
 
       if (lpencil(i_gXXk) .and. ldiffusion) then
-       do k=1,nchemspec 
+       do k=1,nchemspec
          call grad(XX_full(:,:,:,k),gXX_tmp)
          do i=1,3; p%gXXk(:,i,k)=gXX_tmp(:,i); enddo
        enddo
@@ -700,7 +694,6 @@ module Chemistry
         endif
 !
       endif
- 
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -717,14 +710,14 @@ module Chemistry
                               +species_constants(k,iaa2(ii2))*T_loc/2 &
                               +species_constants(k,iaa2(ii3))*p%TT_2(j1)/3 &
                               +species_constants(k,iaa2(ii4))*p%TT_3(j1)/4 &
-                              +species_constants(k,iaa2(ii5))*p%TT_4(j1)/5 &  
+                              +species_constants(k,iaa2(ii5))*p%TT_4(j1)/5 &
                               +species_constants(k,iaa2(ii6))/T_loc
                else
                  p%H0_RT(j1,k)=species_constants(k,iaa1(ii1)) &
                               +species_constants(k,iaa1(ii2))*T_loc/2 &
                               +species_constants(k,iaa1(ii3))*p%TT_2(j1)/3 &
                               +species_constants(k,iaa1(ii4))*p%TT_3(j1)/4 &
-                              +species_constants(k,iaa1(ii5))*p%TT_4(j1)/5 &  
+                              +species_constants(k,iaa1(ii5))*p%TT_4(j1)/5 &
                               +species_constants(k,iaa1(ii6))/T_loc
                endif
               enddo
@@ -746,7 +739,7 @@ module Chemistry
 
 
       if (lpencil(i_ghhk) .and. lreactions) then
-       do k=1,nchemspec 
+       do k=1,nchemspec
        !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
          do i=1,3
           p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
@@ -772,8 +765,8 @@ module Chemistry
 !
        if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
        if  ((Diff_coef_const<impossible) .or. (lDiff_simple) ) then
-         if (lDiff_simple) then 
-           if (Diff_coef_const==impossible)  Diff_coef_const=10.     
+         if (lDiff_simple) then
+           if (Diff_coef_const==impossible)  Diff_coef_const=10.
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=Diff_coef_const &
                *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7  &
@@ -783,7 +776,7 @@ module Chemistry
            p%Diff_penc_add(:,k)=Diff_coef_const
          endif
       endif
-      endif    
+      endif
 
       if (ldiffusion .and. lpencil(i_DYDt_diff)) then
         call calc_diffusion_term(f,p)
@@ -833,7 +826,7 @@ module Chemistry
       integer :: j2,j3
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
-! 
+!
       lflame_front=.true.
 !
       call air_field(f)
@@ -980,7 +973,7 @@ module Chemistry
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
         log_inlet_density=&
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)           
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
        print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
 
@@ -1024,7 +1017,7 @@ module Chemistry
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: j1,j2,j3,k 
+      integer :: j1,j2,j3,k
 
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
@@ -1032,7 +1025,7 @@ module Chemistry
       logical :: found_specie
 
       real :: Rad, sz1,sz2
- 
+
      lflame_front=.true.
 !
       call air_field(f)
@@ -1075,7 +1068,6 @@ module Chemistry
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-      
        mu1_full=0.
           do k=1,nchemspec
           do j2=mm1,mm2
@@ -1085,17 +1077,15 @@ module Chemistry
           enddo
           enddo
           enddo
- 
-      
+!
         do j3=1,mz
-      
        do j2=1,my
       do j1=1,mx
 
   !     do j3=1,nxgrid+8
   !    do j2=1,nygrid+8
   !    do j1=1,nzgrid+8
-      
+!
         Rad=0.
        if (nxgrid >1) then
         Rad=x(j1)**2
@@ -1137,16 +1127,16 @@ module Chemistry
             f(j1,j2,j3,iuy)=f(j1,j2,j3,iuy)+ init_uy
             f(j1,j2,j3,iuz)=f(j1,j2,j3,iuz)+ init_uz
 
-           if (nxgrid==1) f(j1,j2,j3,iux)=0. 
-           if (nygrid==1) f(j1,j2,j3,iuy)=0. 
-           if (nzgrid==1) f(j1,j2,j3,iuz)=0. 
+           if (nxgrid==1) f(j1,j2,j3,iux)=0.
+           if (nygrid==1) f(j1,j2,j3,iuy)=0.
+           if (nzgrid==1) f(j1,j2,j3,iuz)=0.
 
            if (nxgrid/=1) then
             sz1=(xyz0(1)+Lxyz(1)*0.15)
             sz2=(xyz0(1)+Lxyz(1)*(1.-0.15))
             if ((x(j1)<sz1) .or. (sz2<x(j1))) then
          !     f(j1,j2,j3,iux)=0.
-            endif   
+            endif
            endif
 
           if (nygrid/=1)   then
@@ -1162,7 +1152,7 @@ module Chemistry
            sz2=(xyz0(3)+Lxyz(3)*(1.-0.15))
            if ((z(j3)<sz1) .or. (z(j3)>sz2)) then
            !   f(j1,j2,j3,iuz)=0.
-           endif 
+           endif
           endif
 
           enddo
@@ -1212,7 +1202,7 @@ module Chemistry
 !  it is in air_field(f)
 !___________________________________________
 
-      
+
       if (unit_system == 'cgs') then
           Rgas_unit_sys = k_B_cgs/m_u_cgs
           Rgas=Rgas_unit_sys/unit_energy
@@ -1237,7 +1227,7 @@ module Chemistry
           enddo
           enddo
           enddo
-      
+
 
       log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
@@ -1282,9 +1272,9 @@ module Chemistry
             f(j1,:,:,iuy)=f(j1,:,:,iuy)+ init_uy
             f(j1,:,:,iuz)=f(j1,:,:,iuz)+ init_uz
 
-           if (nxgrid==1) f(j1,:,:,iux)=0. 
-           if (nygrid==1) f(j1,:,:,iuy)=0. 
-           if (nzgrid==1) f(j1,:,:,iuz)=0. 
+           if (nxgrid==1) f(j1,:,:,iux)=0.
+           if (nygrid==1) f(j1,:,:,iuy)=0.
+           if (nzgrid==1) f(j1,:,:,iuz)=0.
 
       enddo
 !
@@ -1307,7 +1297,7 @@ module Chemistry
       intent(in) :: f
       integer :: k,j, j1,j2,j3
       real :: T_up, T_mid, T_low, T_loc, T_loc_2,T_loc_3,T_loc_4
-      real :: tmp, cp_R_spec
+      real :: cp_R_spec
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
@@ -1455,8 +1445,6 @@ module Chemistry
 !
           enddo
         endif
-
-      
 !
 !  Binary diffusion coefficients
 !
@@ -1465,12 +1453,9 @@ module Chemistry
           if (tran_exist) then
             call calc_diff_visc_coef(f)
           endif
-
-   
 !
 !  Viscosity of a mixture
 !
-      
        if (visc_const==impossible) then
 
         do j3=nn1,nn2
@@ -1639,7 +1624,7 @@ module Chemistry
 !
       use General, only: chn
 !
-      character (len=80) :: chemicals='' 
+      character (len=80) :: chemicals=''
       ! Careful, limits the absolut size of the input matrix !!!
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
 !      character (len=20) :: input_file='chem.inp'
@@ -2084,7 +2069,6 @@ module Chemistry
         enddo
        else
         sum_DYDt=0.
-        
         sum_hhk_DYDt_reac=0.
         sum_dk_ghk=0.
 
@@ -2131,7 +2115,7 @@ module Chemistry
 
         if (.not. lT_const) then
          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full
-        endif     
+        endif
 !
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
 !
@@ -2345,7 +2329,7 @@ module Chemistry
         idiag_Y9mz=0
 
         idiag_diff1m=0; idiag_diff2m=0; idiag_diff3m=0; idiag_diff4m=0;
-        idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0; 
+        idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0;
         idiag_diff9m=0; idiag_lambdam=0; idiag_num=0
 
       endif
@@ -3328,7 +3312,7 @@ module Chemistry
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
-      integer :: k , reac, j, i
+      integer :: k , reac, i
       real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd, T_loc
       logical,save :: lwrite=.true.
       character (len=20) :: input_file="./data/react.out"
@@ -3354,7 +3338,6 @@ module Chemistry
       if (lwrite) write(file_id,*)'S0_R'
       if (lwrite)  write(file_id,*)'**************************'
 !
-       
         do i=1,nx
           T_loc=p%TT(i)
         do k=1,nchemspec
@@ -3368,22 +3351,21 @@ module Chemistry
                  +species_constants(k,iaa2(ii3))*p%TT_2(i)/2 &
                  +species_constants(k,iaa2(ii4))*p%TT_3(i)/3 &
                  +species_constants(k,iaa2(ii5))*p%TT_4(i)/4 &
-                 +species_constants(k,iaa2(ii7)) 
+                 +species_constants(k,iaa2(ii7))
           elseif (T_mid <= T_loc .and. T_loc <= T_up) then
             p%S0_R(i,k)=species_constants(k,iaa1(ii1))*p%lnTT(i) &
                  +species_constants(k,iaa1(ii2))*T_loc &
                  +species_constants(k,iaa1(ii3))*p%TT_2(i)/2 &
-                 +species_constants(k,iaa1(ii4))*p%TT_3(i)/3 & 
+                 +species_constants(k,iaa1(ii4))*p%TT_3(i)/3 &
                  +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
                  +species_constants(k,iaa1(ii7))
           else
                   print*,'p%TT(i)=',p%TT(i)
                    call fatal_error('get_reaction_rate',&
                         'p%TT(i) is outside range')
-                    
+
           endif
           enddo
-      
 !
         if (lwrite)  then
           write(file_id,*)&
@@ -3429,7 +3411,7 @@ module Chemistry
     !    else
          kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
     !    endif
-!  
+!
 !  Find backward rate constant for reaction 'reac'
 !
 
@@ -3442,14 +3424,13 @@ module Chemistry
           dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
           sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
-     
         Kp(i)=exp(dSR(i)-dHRT(i))
         if (sum_tmp==0.) then
           Kc(i)=Kp(i)
         else
           Kc(i)=Kp(i)*(p_atm(i)*p%TT1(i)/Rgas)**sum_tmp
         endif
-        if (Kc(i)==0.) then 
+        if (Kc(i)==0.) then
           print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
           call fatal_error('get_reaction_rate',&
                         'Kc(i)=0')
@@ -3458,8 +3439,7 @@ module Chemistry
         endif
        endif
       enddo
-     
- 
+
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
         if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
         if (lwrite) write(file_id,*)  'Nreact= ',reac,  'kf= ', maxval(kf)
@@ -3534,7 +3514,7 @@ module Chemistry
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-       do i=1,nx  
+       do i=1,nx
        if (prod1(i)>0) then
         if (Mplus_case (reac)) then
           vreact_p(i,reac)=prod1(i)*kf(i)
@@ -3834,8 +3814,8 @@ module Chemistry
 !  This routind is called from calc_for_chem_mixture,
 !  which is why we work on full chunks of arrays here.
 !
-!  28.08.2009: Nils Erland L. Haugen (Corrected the calculation of the 
-!              prefactor.) 
+!  28.08.2009: Nils Erland L. Haugen (Corrected the calculation of the
+!              prefactor.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -3874,9 +3854,8 @@ module Chemistry
 !
           do k=1,nchemspec
             do j=k,nchemspec
-       
 !  Account for the difference between eq. 5-4 and 5-31 in the Chemkin theory
-!  manual 
+!  manual
 !
             if (j/=k) then
                 eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
@@ -3890,7 +3869,6 @@ module Chemistry
                 m_jk=species_constants(j,imass)/(2*Na)
                 delta_jk=0.5*(tran_data(j,4)*1e-18)**2
               endif
-  
 !
 ! Loop over all grid points
 !
@@ -3912,7 +3890,7 @@ module Chemistry
                     -3.27101257E-4*lnTjk(j1,j2,j3)**6 &
                     +2.51567029E-5*lnTjk(j1,j2,j3)**7)
                 delta_jk_star=delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
-                
+!
                 Omega_kl(j1,j2,j3)=Omega_kl(j1,j2,j3)&
                     +0.19*delta_jk_star*delta_jk_star/(TT_full(j1,j2,j3)/eps_jk)
                if (j/=k) then
@@ -3921,7 +3899,7 @@ module Chemistry
                else
                 Bin_Diff_coef(j1,j2,j3,k,j)=prefactor(j1,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk**2*Omega_kl(j1,j2,j3))*species_constants(k,imass)
- 
+
                endif
               enddo
               enddo
@@ -3939,8 +3917,8 @@ module Chemistry
             enddo
           enddo
           enddo
-          enddo       
-          
+          enddo
+!
       else
        Bin_Diff_coef=0.
       endif
@@ -3950,14 +3928,13 @@ module Chemistry
 !  Calculate viscosity
 !
      if (visc_const==impossible) then
-    
+
       omega="Omega22"
       tmp_local=5./16.*(k_B_cgs/(Na*pi))**0.5
 
       do k=1,nchemspec
         tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3)*1e-8)**2 &
             *tmp_local
-      
 !
 ! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
 !
@@ -3981,18 +3958,18 @@ module Chemistry
           enddo
           enddo
           enddo
-      
+
       enddo
       endif
      !
- 
+
     endsubroutine calc_diff_visc_coef
 !***********************************************************************
     subroutine calc_therm_diffus_coef(f)
-! 
+!
 !  Calculate the thermal diffusion coefficient based on equation 5-17 in
 !  the Chemkin theory manual
-!     
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,nchemspec) :: species_cond
       real :: tmp_val,ZZ,FF,tmp_sum, tmp_sum2
@@ -4030,7 +4007,7 @@ module Chemistry
             endif
 !
 ! The rotational and vibrational contributions are zero for the single
-! atom molecules but not for the linear or non-linear molecules 
+! atom molecules but not for the linear or non-linear molecules
 !
 
             if (tran_data(k,1)>0.) then
@@ -4053,14 +4030,14 @@ module Chemistry
                   *(1+2./pi*AA/BB)
               f_vib=tmp_val
             else
-              f_tran=2.5     
-              f_rot =0.0   
-              f_vib =0.0   
+              f_tran=2.5
+              f_rot =0.0
+              f_vib =0.0
             endif
             species_cond(j1,j2,j3,k)=(species_viscosity(j1,j2,j3,k)) &
                 /(species_constants(k,imass)/unit_mass)*Rgas* &
                 (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
-                +f_vib*Cv_vib_R) 
+                +f_vib*Cv_vib_R)
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
@@ -4139,7 +4116,7 @@ module Chemistry
 !
             call del2(XX_full(:,:,:,k),del2XX)
             call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-         
+
            if (lDiff_simple) then
             do i=1,3
              gDiff_full_add(:,i)=species_constants(k,imass)/unit_mass* &
@@ -4223,7 +4200,7 @@ module Chemistry
        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
       endif
       endif
-       
+
 
     !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
 !
@@ -4263,13 +4240,13 @@ module Chemistry
       real, dimension (:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
 !
-      if (dir==1) then 
+      if (dir==1) then
         slice=cp_full(index,m1:m2,n1:n2)/cv_full(index,m1:m2,n1:n2)&
             *mu1_full(index,m1:m2,n1:n2)*TT_full(index,m1:m2,n1:n2)*Rgas
-      elseif (dir==2) then 
+      elseif (dir==2) then
         slice=cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2)&
             *mu1_full(l1:l2,index,n1:n2)*TT_full(l1:l2,index,n1:n2)*Rgas
-      elseif (dir==3) then 
+      elseif (dir==3) then
         slice=cp_full(l1:l2,m1:m2,index)/cv_full(l1:l2,m1:m2,index)&
             *mu1_full(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2,index)*Rgas
       else
@@ -4306,11 +4283,11 @@ module Chemistry
       real, dimension (:,:), intent(out)  :: slice
       integer, intent(in) :: index, dir
 !
-      if (dir==1) then 
+      if (dir==1) then
         slice=cp_full(index,m1:m2,n1:n2)/cv_full(index,m1:m2,n1:n2)
-      elseif (dir==2) then 
+      elseif (dir==2) then
         slice=cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2)
-      elseif (dir==3) then 
+      elseif (dir==3) then
         slice=cp_full(l1:l2,m1:m2,index)/cv_full(l1:l2,m1:m2,index)
       else
         call fatal_error('get_gamma_slice','No such dir!')
@@ -4434,7 +4411,6 @@ module Chemistry
       endif
 
 
-     
         if (.not. lflame_front) then
 
       if (ltemperature_nolog) then
@@ -4536,7 +4512,7 @@ module Chemistry
          else
           TT0=exp(f(lll,:,:,ilnTT))
          endif
-         
+
          if (ldensity_nolog) then
           rho_full=f(:,:,:,irho)
          else
@@ -4643,20 +4619,20 @@ module Chemistry
       real, dimension (mx,my,mz,2) ::  rhoE_pU
       real, dimension (my,mz) ::  dYk_dx,dYk_dy,dYk_dz
       real, dimension (ny,nz) :: drho_prefac, KK
-      
+
       real, dimension (ny,nz) :: L_1, L_2, L_3, L_4, L_5
       real, dimension (ny,nz) :: M_1, M_2, M_3, M_4, M_5
       real, dimension (ny,nz)  :: N_1, N_2, N_3, N_4, N_5
-  !    
+  !
       real, dimension (my,mz) :: cs0_ar,cs20_ar,dmom2_dy,dmom3_dz
       real, dimension (my,mz,2) :: drhoE_pU!,dYk_dy
    !   real, dimension (mx,my,mz,nchemspec) :: bound_rhs_Y
     !  real, dim(:,nnn)ension (ny,nz) :: bound_rhs_T
       real, dimension (mx,my,mz) :: cs2_full, gamma_full,pp
       real, dimension (nx,ny,nz) :: p_inf
-      
+
       real, dimension (ny,nz,3,3) :: dui_dxj
-      real, dimension (my,mz)     :: tmp1,tmp2,tmp3, tmp_rho,tmp_pp       
+      real, dimension (my,mz)     :: tmp1,tmp2,tmp3, tmp_rho,tmp_pp
       real, dimension (ny,nz,3)   :: grad_rho, grad_pp
      ! real, dimension(ny,nz) ::     d2u1_dy2,d2u1_dz2
      ! real, dimension(ny,nz) ::     d2u2_dy2,d2u2_dz2,d2u3_dy2,d2u3_dz2
@@ -4672,7 +4648,6 @@ module Chemistry
       intent(in) :: nscbc_sigma_out
        logical :: lcorner_y=.false.,lcorner_z=.false.
 
-  
       if (leos_chemistry) then
         call get_cs2_full(cs2_full)
         call get_gamma_full(gamma_full)
@@ -4692,7 +4667,6 @@ module Chemistry
       case default
         print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
       endselect
- 
 
       if (leos_chemistry) then
          cs20_ar=cs2_full(lll,:,:)
@@ -4734,7 +4708,7 @@ module Chemistry
          rhoE_p(lll,:,:)=0.5*rho_full(lll,:,:) &
             *(f(lll,:,:,iux)**2+f(lll,:,:,iuy)**2+f(lll,:,:,iuz)**2) &
              +gamma_full(lll,:,:)/(gamma_full(lll,:,:)-1)*pp(lll,:,:)
-         rhoE_pU(lll,:,:,1)=rhoE_p(lll,:,:)*f(lll,:,:,iuy) 
+         rhoE_pU(lll,:,:,1)=rhoE_p(lll,:,:)*f(lll,:,:,iuy)
          rhoE_pU(lll,:,:,2)=rhoE_p(lll,:,:)*f(lll,:,:,iuz)
 
 
@@ -4757,7 +4731,6 @@ module Chemistry
 
 
        if (nygrid /= 1) then
-    
          do i=n1,n2
           call der_pencil(2,f(lll,:,i,iux),tmp1(:,i))
           call der_pencil(2,f(lll,:,i,iuy),tmp2(:,i))
@@ -4767,7 +4740,6 @@ module Chemistry
           call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
           call der_pencil(2,rhoE_pU(lll,:,i,1),drhoE_pU(:,i,1))
          enddo
-  
       !  do i=n1,n2
       !    call der2_pencil(2,f(lll,:,i,iux),tmpy)
       !    d2u1_dy2(:,i-n1+1)=tmpy(:)
@@ -4787,7 +4759,6 @@ module Chemistry
      !   d2u1_dy2=0
      !   d2u2_dy2=0
      !   d2u3_dy2=0
-      
       endif
         dui_dxj(:,:,1,2)=tmp1(m1:m2,n1:n2)
         dui_dxj(:,:,2,2)=tmp2(m1:m2,n1:n2)
@@ -4825,7 +4796,7 @@ module Chemistry
       select case (topbot)
       case ('bot')
         L_5=KK*(cs20_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*&
-            rho0(m1:m2,n1:n2)-p_inf(1,1:ny,1:nz)) 
+            rho0(m1:m2,n1:n2)-p_inf(1,1:ny,1:nz))
         L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
            (grad_pp(:,:,1)-rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,1,1))
       case ('top')
@@ -4840,7 +4811,7 @@ module Chemistry
        L_4 = f(lll,m1:m2,n1:n2,iux)*dui_dxj(:,:,3,1)
 !
        df(lll,m1:m2,n1:n2,irho_tmp) = &
-         drho_prefac*(L_2+0.5*(L_5 + L_1)) 
+         drho_prefac*(L_2+0.5*(L_5 + L_1))
        df(lll,m1:m2,n1:n2,iux) =  &
          -1./(2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2))*(L_5 - L_1)
        df(lll,m1:m2,n1:n2,iuy) = -L_3
@@ -4859,24 +4830,23 @@ module Chemistry
 
         if ((nygrid /= 1) .or.(nzgrid /= 1))  then
 
-        
           T_1_y(:,:)=-dmom2_dy(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
           T_1_z(:,:)=-dmom3_dz(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
-          T_2_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2) 
+          T_2_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)
           T_2_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3) !&
                 !   -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
           T_3_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) &
-                     -grad_pp(:,:,2)/rho0(m1:m2,n1:n2) 
-         T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3) 
+                     -grad_pp(:,:,2)/rho0(m1:m2,n1:n2)
+         T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)
                 !   -nu_full(lll,m1:m2,n1:n2)*(d2u2_dy2+d2u2_dz2)
-          T_4_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2) 
+          T_4_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,3,2)
          T_4_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,3,3) &
                      -grad_pp(:,:,3)/rho0(m1:m2,n1:n2)
           T_5_y(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.) &
                       *gamma0(m1:m2,n1:n2)*drhoE_pU(m1:m2,n1:n2,1)
           T_5_z(:,:)= drho_prefac(:,:)*(gamma0(m1:m2,n1:n2)-1.) &
                       *gamma0(m1:m2,n1:n2)*(drhoE_pU(m1:m2,n1:n2,2))
- 
+
          df(lll,m1:m2,n1:n2,irho_tmp) = df(lll,m1:m2,n1:n2,irho_tmp) + T_1_y + T_1_z
          df(lll,m1:m2,n1:n2,iux)      = df(lll,m1:m2,n1:n2,iux)      + T_2_y + T_2_z
          df(lll,m1:m2,n1:n2,iuy)      = df(lll,m1:m2,n1:n2,iuy)      + T_3_y + T_3_z
@@ -4896,7 +4866,7 @@ module Chemistry
        endif
 !NATALIA
 
-      if (nygrid /= 1) then 
+      if (nygrid /= 1) then
            M_1(:,:)=(f(lll,m1:m2,n1:n2,iuy) - cs0_ar(m1:m2,n1:n2))&
              *(grad_pp(:,:,2)-rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dui_dxj(:,:,2,2))
            M_2(:,:)=f(lll,m1:m2,n1:n2,iuy)*(cs20_ar(m1:m2,n1:n2) &
@@ -4909,7 +4879,7 @@ module Chemistry
 
            if (y(m2)==Lxyz(2)) then
             M_1(ny,:)=KK(ny,:)*(cs20_ar(m2,n1:n2)/gamma0(m2,n1:n2) &
-               *rho0(m2,n1:n2)-p_inf(lll-3,ny,:)) 
+               *rho0(m2,n1:n2)-p_inf(lll-3,ny,:))
            endif
            if  (y(m2)==xyz0(2)) then
             M_5(1,:)=KK(1,:)*(cs20_ar(m1,n1:n2)/gamma0(m1,n1:n2)*&
@@ -4917,7 +4887,7 @@ module Chemistry
            endif
 
         else
-        M_1=0; M_2=0; M_3=0; M_4=0; M_5=0 
+        M_1=0; M_2=0; M_3=0; M_4=0; M_5=0
        endif
 !
        if (nzgrid /= 1)  then
@@ -4980,7 +4950,7 @@ module Chemistry
         endif
         enddo
 
-        do i=1,2 
+        do i=1,2
          if (i==1) then
           nn=n1; nnn=1
           if (z(n1)==xyz0(3)) lcorner_z=.true.
@@ -5008,7 +4978,7 @@ module Chemistry
         enddo
 
 
-        do i=1,2 
+        do i=1,2
          if (i==1) then
           nn=n1; nnn=1
           if (z(n1)==xyz0(3)) lcorner_z=.true.
@@ -5085,7 +5055,6 @@ module Chemistry
        enddo
       endif
 !
-  
     endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
     subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
@@ -5184,12 +5153,11 @@ module Chemistry
           endif
          enddo
          enddo
-        
 
          rhoE_p(:,mmm,:)=0.5*rho_full(:,mmm,:) &
             *(f(:,mmm,:,iux)**2+f(:,mmm,:,iuy)**2+f(:,mmm,:,iuz)**2) &
              +gamma_full(:,mmm,:)/(gamma_full(:,mmm,:)-1)*pp(:,mmm,:)
-         rhoE_pU(:,mmm,:,1)=rhoE_p(:,mmm,:)*f(:,mmm,:,iux) 
+         rhoE_pU(:,mmm,:,1)=rhoE_p(:,mmm,:)*f(:,mmm,:,iux)
          rhoE_pU(:,mmm,:,2)=rhoE_p(:,mmm,:)*f(:,mmm,:,iuz)
          mom1(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iux)
          mom3(:,mmm,:)=rho0(:,:)*f(:,mmm,:,iuz)
@@ -5239,7 +5207,6 @@ module Chemistry
         grad_pp(:,:,1)=tmp1_pp(l1:l2,n1:n2)
 
       if (nzgrid /= 1) then
-        
          do j=l1,l2
           call der_pencil(3,f(j,mmm,:,iux),tmp13(j,:))
           call der_pencil(3,f(j,mmm,:,iuy),tmp23(j,:))
@@ -5285,8 +5252,8 @@ module Chemistry
       M_3 = f(l1:l2,mmm,n1:n2,iuy)*dui_dxj(:,:,1,2)
       M_4 = f(l1:l2,mmm,n1:n2,iuy)*dui_dxj(:,:,3,2)
 
-      df(l1:l2,mmm,n1:n2,irho_tmp) = drho_prefac*(M_2+0.5*(M_5 + M_1)) 
-      df(l1:l2,mmm,n1:n2,iux) = -M_3 
+      df(l1:l2,mmm,n1:n2,irho_tmp) = drho_prefac*(M_2+0.5*(M_5 + M_1))
+      df(l1:l2,mmm,n1:n2,iux) = -M_3
       df(l1:l2,mmm,n1:n2,iuy) = -1./&
           (2.*rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2))*(M_5 - M_1) !&
       df(l1:l2,mmm,n1:n2,iuz) = -M_4
@@ -5299,12 +5266,12 @@ module Chemistry
 
           T_1_x(:,:)=-dmom1_dx(l1:l2,n1:n2)/rho0(l1:l2,n1:n2)
           T_1_z(:,:)=-dmom3_dz(l1:l2,n1:n2)/rho0(l1:l2,n1:n2)
-          T_3_x(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,2,1) 
+          T_3_x(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,2,1)
           T_3_z(:,:)=-f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,2,3)
           T_2_x(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,1,1) &
                     -grad_pp(:,:,1)/rho0(l1:l2,n1:n2)
-          T_2_z(:,:)=-f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,1,3) 
-          T_4_x(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,3,1) 
+          T_2_z(:,:)=-f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,1,3)
+          T_4_x(:,:)=-f(l1:l2,mmm,n1:n2,iux)*dui_dxj(:,:,3,1)
           T_4_z(:,:)=-f(l1:l2,mmm,n1:n2,iuz)*dui_dxj(:,:,3,3) &
                    -grad_pp(:,:,3)/rho0(l1:l2,n1:n2)
           T_5_x(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,n1:n2)-1.)*gamma0(l1:l2,n1:n2) &
@@ -5312,7 +5279,7 @@ module Chemistry
           T_5_z(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,n1:n2)-1.)*gamma0(l1:l2,n1:n2) &
                    *(drhoE_pU(l1:l2,n1:n2,2))
 
-  
+
         df(l1:l2,mmm,n1:n2,irho_tmp) = df(l1:l2,mmm,n1:n2,irho_tmp) + T_1_x+T_1_z
         df(l1:l2,mmm,n1:n2,iux) =      df(l1:l2,mmm,n1:n2,iux)      + T_2_x+T_2_z
         df(l1:l2,mmm,n1:n2,iuy) =      df(l1:l2,mmm,n1:n2,iuy)      + T_3_x+T_3_z
@@ -5321,14 +5288,12 @@ module Chemistry
 
    !    if ((nxgrid /= 1) .and. (nzgrid /= 1)) then
     ! if ((nxgrid /= 1) .and. (nzgrid == 1)) then
-   
 !!!
 !!! Corner points
 !!!
 !!!
 
-   
-        if (nxgrid /= 1) then 
+        if (nxgrid /= 1) then
            L_1(:,:)=(f(l1:l2,mmm,n1:n2,iux) - cs0_ar(l1:l2,n1:n2))&
              *(grad_pp(:,:,1)-rho0(l1:l2,n1:n2)*cs0_ar(l1:l2,n1:n2)*dui_dxj(:,:,1,1))
            L_2(:,:)=f(l1:l2,mmm,n1:n2,iux)*(cs20_ar(l1:l2,n1:n2) &
@@ -5341,7 +5306,7 @@ module Chemistry
 
            if (x(l2)==Lxyz(1)) then
             L_1(nx,:)=KK(nx,:)*(cs20_ar(l2,n1:n2)/gamma0(l2,n1:n2) &
-               *rho0(l2,n1:n2)-p_inf(nx,mmm-3,:)) 
+               *rho0(l2,n1:n2)-p_inf(nx,mmm-3,:))
            endif
            if  (x(l1)==xyz0(1)) then
             L_5(1,:)=KK(1,:)*(cs20_ar(l1,n1:n2)/gamma0(l1,n1:n2)*&
@@ -5349,7 +5314,7 @@ module Chemistry
            endif
 
         else
-        L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
+        L_1=0; L_2=0; L_3=0; L_4=0; L_5=0
        endif
 !
        if (nzgrid /= 1)  then
@@ -5411,7 +5376,7 @@ module Chemistry
         endif
         enddo
 
-        do i=1,2 
+        do i=1,2
          if (i==1) then
           nn=n1; nnn=1
           if (z(n1)==xyz0(3)) lcorner_z=.true.
@@ -5440,7 +5405,7 @@ module Chemistry
         enddo
 
 
-        do i=1,2 
+        do i=1,2
          if (i==1) then
           nn=n1; nnn=1
           if (z(n1)==xyz0(3)) lcorner_z=.true.
@@ -5539,7 +5504,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension (mx,my) :: rho0,gamma0  
+      real, dimension (mx,my) :: rho0,gamma0
        real, dimension (mx,my,mz) :: mom1,mom2,pp
          real, dimension (mx,my,mz) :: rhoE_p
       real, dimension (mx,my,mz,2) ::   rhoE_pU=0.
@@ -5620,7 +5585,7 @@ module Chemistry
          rhoE_p(:,:,nnn)=0.5*rho_full(:,:,nnn) &
             *(f(:,:,nnn,iux)**2+f(:,:,nnn,iuy)**2+f(:,:,nnn,iuz)**2) &
              +gamma_full(:,:,nnn)/(gamma_full(:,:,nnn)-1)*pp(:,:,nnn)
-         rhoE_pU(:,:,nnn,1)=rhoE_p(:,:,nnn)*f(:,:,nnn,iux) 
+         rhoE_pU(:,:,nnn,1)=rhoE_p(:,:,nnn)*f(:,:,nnn,iux)
          rhoE_pU(:,:,nnn,2)=rhoE_p(:,:,nnn)*f(:,:,nnn,iuy)
 
         Mach_num=maxval(f(l1:l2,m1:m2,nnn,iuz)/cs0_ar(l1:l2,m1:m2))
@@ -5640,7 +5605,7 @@ module Chemistry
       call der_onesided_4_slice(f,sgn,iuy,dui_dxj(:,:,2,3),nnn,3)
       call der_onesided_4_slice(f,sgn,iuz,dui_dxj(:,:,3,3),nnn,3)
 
-      if (nxgrid /= 1) then  
+      if (nxgrid /= 1) then
 
           do i=m1,m2
           call der_pencil(1,f(:,i,nnn,iux),tmp11(:,i))
@@ -5717,7 +5682,7 @@ module Chemistry
         df(l1:l2,m1:m2,nnn,irho_tmp) = &
             drho_prefac*(N_2+0.5*(N_5 + N_1))
         df(l1:l2,m1:m2,nnn,iuz) = -1./&
-          (2.*rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2))*(N_5 - N_1) 
+          (2.*rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2))*(N_5 - N_1)
         df(l1:l2,m1:m2,nnn,iux) = -N_3
         df(l1:l2,m1:m2,nnn,iuy) = -N_4
         df(l1:l2,m1:m2,nnn,ilnTT) = -1./&
@@ -5736,28 +5701,26 @@ module Chemistry
          T_3_x(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,2,1)
          T_3_y(:,:)=-f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,2,2)  &
                    -grad_pp(:,:,2)/rho0(l1:l2,m1:m2)
-         T_4_x(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,3,1) 
+         T_4_x(:,:)=-f(l1:l2,m1:m2,nnn,iux)*dui_dxj(:,:,3,1)
          T_4_y(:,:)=-f(l1:l2,m1:m2,nnn,iuy)*dui_dxj(:,:,3,2)
          T_5_x(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,m1:m2)-1.)*gamma0(l1:l2,m1:m2) &
                    *(drhoE_pU(l1:l2,m1:m2,1))
          T_5_y(:,:)=+drho_prefac(:,:)*(gamma0(l1:l2,m1:m2)-1.)*gamma0(l1:l2,m1:m2) &
                    *(drhoE_pU(l1:l2,m1:m2,2))
-   
+
          df(l1:l2,m1:m2,nnn,irho_tmp) = df(l1:l2,m1:m2,nnn,irho_tmp) + T_1_x+T_1_y
          df(l1:l2,m1:m2,nnn,iux) =      df(l1:l2,m1:m2,nnn,iux)      + T_2_x+T_2_y
          df(l1:l2,m1:m2,nnn,iuy) =      df(l1:l2,m1:m2,nnn,iuy)      + T_3_x+T_3_y
          df(l1:l2,m1:m2,nnn,iuz) =      df(l1:l2,m1:m2,nnn,iuz)      + T_4_x+T_4_y
          df(l1:l2,m1:m2,nnn,ilnTT) =    df(l1:l2,m1:m2,nnn,ilnTT)    + T_5_x+T_5_y
-  
 ! if ((nxgrid /= 1) .and. (nygrid /= 1)) then
  ! if ((nxgrid /= 1) .and. (nygrid == 1)) then
 
 !
 ! Corner points
 !
-     
 
-       if (nxgrid /= 1) then 
+       if (nxgrid /= 1) then
          L_1=(f(l1:l2,m1:m2,nnn,iux) - cs0_ar(l1:l2,m1:m2))&
             *(grad_pp(:,:,1)-rho0(l1:l2,m1:m2)*cs0_ar(l1:l2,m1:m2)*dui_dxj(:,:,1,1))
           L_2=f(l1:l2,m1:m2,nnn,iux)*(cs20_ar(l1:l2,m1:m2) &
@@ -5777,7 +5740,7 @@ module Chemistry
          endif
 
        else
-        L_1=0; L_2=0; L_3=0; L_4=0; L_5=0 
+        L_1=0; L_2=0; L_3=0; L_4=0; L_5=0
        endif
 
        if (nygrid /= 1)  then
@@ -5795,7 +5758,7 @@ module Chemistry
             rho0(l1:l2,m2)-p_inf(:,ny,nnn-3))
          endif
 
-         if (y(m1)==xyz0(2)) then 
+         if (y(m1)==xyz0(2)) then
           M_5(:,1)=KK(:,1)*(cs20_ar(l1:l2,m1)/gamma0(l1:l2,m1)*&
             rho0(l1:l2,m1)-p_inf(:,1,nnn-3))
          endif
@@ -5835,7 +5798,7 @@ module Chemistry
 
 
 
-        do i=1,2 
+        do i=1,2
          if (i==1) then
           mm=m1; mmm=1
           if (y(m1)==xyz0(2))   lcorner_y=.true.
@@ -5864,7 +5827,7 @@ module Chemistry
        enddo
 
 
-         do i=1,2 
+         do i=1,2
          if (i==1) then
           mm=m1; mmm=1
           if (y(m1)==xyz0(2))   lcorner_y=.true.
@@ -5904,11 +5867,11 @@ module Chemistry
            +0.5*(gamma0(ll,mm)-1.)*(M_5(lll,mmm)+M_1(lll,mmm))) &
            +drho_prefac(lll,mmm)*(-N_2(lll,mmm) &
            +0.5*(gamma0(ll,mm)-1.)*(N_5(lll,mmm)+N_1(lll,mmm)))
-          lcorner_x=.false. 
+          lcorner_x=.false.
           lcorner_y=.false.
        endif
        enddo
-       enddo 
+       enddo
 
      endif
 
@@ -5953,7 +5916,7 @@ module Chemistry
 !
 !   16-jul-06/natalia: coded
 !    buffer zone to damp the acustic waves!!!!!!!!!!!
-!    important for NSCBC  
+!    important for NSCBC
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -5974,14 +5937,12 @@ module Chemistry
        lnTT_ref=log(init_TT1)
 
       lnrho_ref=&
-         log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1)) 
+         log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1))
 
         do j1=l1,l2
 
-       if (dir==1) then                 
+       if (dir==1) then
        if (nxgrid/=1) then
- 
-          
          sz1_x=(xyz0(1)+Lxyz(1)*del)
          sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
 
@@ -5992,7 +5953,6 @@ module Chemistry
           lzone_right=.true.
          endif
 
-        
 !         sz1=(xyz0(2)+Lxyz(2)*del)
 !         sz2=(xyz0(2)+Lxyz(2)*(1.-del))
 
@@ -6002,10 +5962,10 @@ module Chemistry
 
           if (x(j1)<sz1_x) then
            func_x(j1)=(sz1_x-x(j1))**3/(del*Lxyz(1))**3
-    
+
           elseif (sz2_x<x(j1)) then
            func_x(j1)=(x(j1)-sz2_x)**3/(del*Lxyz(1))**3
-     
+
           endif
 
         if (lzone_left .or. lzone_right) then
@@ -6017,25 +5977,25 @@ module Chemistry
           df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_x(j1)*(f(j1,m,n,iuz)-uz_ref)*dt1
           df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)  &
             -func_x(j1)*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-          df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&  
-            -func_x(j1)*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1  
+          df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&
+            -func_x(j1)*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
 
         endif
-     
+
 !        lzone_left=.false.
 !        lzone_right=.false.
        endif
-      
-      elseif (dir==2) then       
+
+      elseif (dir==2) then
 
        if (nygrid/=1) then
 
       ! if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
       !            'you should increase nygrid!')
-        
+
          sz1=(xyz0(2)+Lxyz(2)*del)
          sz2=(xyz0(2)+Lxyz(2)*(1.-del))
-         
+
 !         if (ldamp_left .and. (y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
            if (ldamp_left .and. (y(m)<=sz1)) then
           lzone_left=.true.
@@ -6044,27 +6004,27 @@ module Chemistry
            if (ldamp_right .and. (y(m)>=sz2)) then
           lzone_right=.true.
          endif
-         
+
        if (lzone_left) then
-        func_y=(sz1-y(m))**3/(Lxyz(2)*del)**3 
+        func_y=(sz1-y(m))**3/(Lxyz(2)*del)**3
         lzone_y=.true.
-       elseif (lzone_right) then 
-        func_y= (y(m)-sz2)**3/(Lxyz(2)*del)**3 
+       elseif (lzone_right) then
+        func_y= (y(m)-sz2)**3/(Lxyz(2)*del)**3
         lzone_y=.true.
-       endif     
+       endif
 
        if (lzone_y) then
-    
+
 !        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
 !        df(j1,m,n,iux)=df(j1,m,n,iux)-func_y*(f(j1,m,n,iux)-ux_ref)*dt1
         df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_y*(f(j1,m,n,iuy)-uy_ref)*dt1
         df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_y*(f(j1,m,n,iuz)-uz_ref)*dt1
-!        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)&  
+!        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)&
 !           -func_y*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-!        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&  
+!        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&
 !           -func_y*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
         endif
-  
+
         lzone_y=.false.
 !        lzone_left=.false.
 !        lzone_right=.false.
@@ -6085,18 +6045,18 @@ module Chemistry
          if (ldamp_right .and. (z(n)>=sz2)) then
           lzone_right=.true.
          endif
-         
+
        if (ldamp_left) then
-        func_z=(sz1-z(n))**3/(Lxyz(3)*del)**3 
+        func_z=(sz1-z(n))**3/(Lxyz(3)*del)**3
         lzone_z=.true.
-       elseif (ldamp_right) then 
-        func_z= (z(n)-sz2)**3/(Lxyz(3)*del)**3 
+       elseif (ldamp_right) then
+        func_z= (z(n)-sz2)**3/(Lxyz(3)*del)**3
         lzone_z=.true.
-       endif  
-    
+       endif
+
        if (lzone_z) then
 !        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
-         
+
 !        df(j1,m,n,iux)=df(j1,m,n,iux)-func_z*(f(j1,m,n,iux)-ux_ref)*dt1
         df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_z*(f(j1,m,n,iuy)-uy_ref)*dt1
         df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_z*(f(j1,m,n,iuz)-uz_ref)*dt1
@@ -6108,7 +6068,7 @@ module Chemistry
 !        lzone_right=.false.
 !        lzone_left=.false.
 !        endif
-    
+
        endif
        endif
       endif
@@ -6135,7 +6095,7 @@ module Chemistry
 !   exchange data
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
-      
+
       intent(in) :: f
       intent(out) :: jacob
 !   internal data
@@ -6143,21 +6103,21 @@ module Chemistry
 !   indices
       integer :: i,j,k,l,ii
 !
-!   temporary 
+!   temporary
       real :: tmp_p,tmp_m
 !   Code
 
       jacob=0.
-      
-!  identify module 
+
+!  identify module
 !
       if (headtt.or.ldebug) print*,'jacobn: compute the jacobian matrix'
 !
       if (lreactions) then
         do n=n1,n2; do m=m1,m2;do l=l1,l2
-          do i=1,nchemspec 
+          do i=1,nchemspec
             do j=1,nchemspec
-              ! Compute dv_i/dc_j 
+              ! Compute dv_i/dc_j
 !              print*,"dv_",i,"/dc_",j,"="
               do k=1,nreactions
                 ! Check if compound i participate in reaction k
@@ -6174,7 +6134,7 @@ module Chemistry
                       tmp_p=tmp_p*f(l,m,n,ichemspec(ii))**Sijm(ii,k)
                       tmp_m=tmp_m*f(l,m,n,ichemspec(ii))**Sijp(ii,k)
                     else
-                      if (Sijm(ii,k)==0) then 
+                      if (Sijm(ii,k)==0) then
 !                        print*,"0*c_",ii
                         tmp_p=0.
                       elseif (Sijm(ii,k)>1) then
@@ -6205,12 +6165,12 @@ module Chemistry
           enddo
         enddo; enddo; enddo
       endif
-      
+
     endsubroutine jacobn
 !***********************************************************************
     subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction)
 !
-! For the NSCBC boudary conditions the slice of mu1 at the boundary, and 
+! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
 !
 ! 2009.12.10: Nils Erland L. Haugen (coded)
