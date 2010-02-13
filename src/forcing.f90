@@ -85,7 +85,7 @@ module Forcing
 !
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
-
+!
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,width_ff, &
@@ -108,9 +108,9 @@ module Forcing
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_forcing()
 !
@@ -347,7 +347,7 @@ module Forcing
 !
 !  10-sep-01/axel: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpifinalize
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl
@@ -426,6 +426,8 @@ module Forcing
           enddo
         endif
       enddo
+!
+      call keep_compiler_quiet(force_ampl)
 !
     endsubroutine forcing_irro
 !***********************************************************************
@@ -665,7 +667,7 @@ module Forcing
 ! direction of forcing. The expression for the forcing amplitude used
 ! at the moment is:
 !
-!  f(i)=f0*[1+epsilon(delta_ij*(k(i)*fd(j))/(|k||fd|))^2*fd(i)/|fd|] 
+!  f(i)=f0*[1+epsilon(delta_ij*(k(i)*fd(j))/(|k||fd|))^2*fd(i)/|fd|]
 !
 ! here f0 and fd are shorthand for force and forcing_direction,
 ! respectively, and epsilon=force_strength/force.
@@ -712,20 +714,20 @@ module Forcing
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
               if (extent(j)) then
-                
+!
                 forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
-
+!
                 forcing_rhs2(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
                   *real(cmplx(0.,coef3(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
-
+!
                 if (ifff/=0) then
-
+!
                   jf=j+ifff-1
                   j2f=j+i2fff-1
-
+!
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
@@ -738,7 +740,7 @@ module Forcing
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
                     endif
                   endif
-                
+!
                 endif
 !
 !  If one of the testfield methods is used, we need to add a forcing term
@@ -831,11 +833,11 @@ module Forcing
 !  This adds positive helical forcing to the "northern hemisphere" (y above the
 !  midplane and negative helical forcing to the "southern hemisphere". The
 !  two forcing are merged at the "equator" (midplane) where both are smoothly
-!  set to zero. 
+!  set to zero.
 !
 !  22-sep-08/dhruba: adapted from forcing_hel
 !   6-oct-09/MR: according to Axel, this routine is now superseded by forcing_hel and should be deleted
-
+!
       use Mpicomm
       use General
       use Sub
@@ -1001,8 +1003,6 @@ module Forcing
 ! only sines, to make sure that the force goes to zero at the equator
       fy=cmplx(0.,sin(ky*k1_ff*y))
       fz=exp(cmplx(0.,kz*k1_ff*z))
-
-
 !
       if (ip.le.5) print*,'forcing_hel: fx=',fx
       if (ip.le.5) print*,'forcing_hel: fy=',fy
@@ -1016,8 +1016,6 @@ module Forcing
       coef1(3)=k*kez; coef2(3)=relhel*kkez
       if (ip.le.5) print*,'forcing_hel: coef=',coef1,coef2
 !
-
-
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
@@ -1063,7 +1061,7 @@ module Forcing
 !***********************************************************************
     subroutine forcing_chandra_kendall(f)
 !
-!  Add helical forcing function in spherical polar coordinate system. 
+!  Add helical forcing function in spherical polar coordinate system.
 !  25-jul-07/dhruba: adapted from forcing_hel
 !
       use Mpicomm
@@ -1079,18 +1077,18 @@ module Forcing
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
                  aindex,ckno,ilist,inx
-      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
+      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,&
               psilm,RYlm,IYlm
-      real :: rz,rindex,ralpha,& 
+      real :: rz,rindex,ralpha,&
               rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
-
+!
 !========================================================
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
       if (ifirst==0) then
 ! If this is the first time this function is being called allocate \psi.
 ! Next read from file "alpha_in.dat" the two values of \ell. If this two
-! matches Legendrel_min and Legendrel_max proceed.  
+! matches Legendrel_min and Legendrel_max proceed.
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
@@ -1104,11 +1102,11 @@ module Forcing
         else
         endif
         if (lroot) then
-          if (.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
+          if (.not.((helsign.eq.1).or.(helsign.eq.-1))) &
             call stop_it("CK forcing: helsign must be +1 or -1, aborting")
         else
         endif
-! ---------- 
+! ----------
         do ilread=1,nlist_ck
           read(76,*) (cklist(ilread,ilm),ilm=1,5)
         enddo
@@ -1156,7 +1154,7 @@ module Forcing
    Balpha = cklist(lmindex,3+aindex)
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
-! Now construct the Z_psi(r) 
+! Now construct the Z_psi(r)
    call random_number_wrapper(rphase1)
    rphase1=rphase1*2*pi
    if (lfastCK) then
@@ -1186,7 +1184,7 @@ module Forcing
      do n=n1-nghost,n2+nghost
        do m=m1-nghost,m2+nghost
          psilm=0.
-         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
+         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
          call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
          psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
          psif(:,m,n) = Z_psi*psilm
@@ -1199,8 +1197,8 @@ module Forcing
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
-! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
-! get random psi. 
+! psi at present is just Z_{ell}^m. We next do a sum over random coefficients
+! get random psi.
 !      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
    call random_number_wrapper(rz)
@@ -1233,7 +1231,7 @@ module Forcing
             if (x(inx) .gt. r_ff) capitalH(inx,j) = 0
          enddo
          else
-         endif 
+         endif
          if (lhelical_test) then
            if (lwrite_psi) then
              f(l1:l2,m,n,jf) = psif(l1:l2,m,n)
@@ -1241,13 +1239,13 @@ module Forcing
              f(l1:l2,m,n,jf) = fnorm*capitalH(:,j)
            endif
        else
-! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm] 
+! stochastic euler scheme of integration[sqrt(dt) is already included in fnorm]
            f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf)+ fnorm*capitalH(:,j)
          endif
        enddo
      enddo
    enddo
- !! -------------     
+!
     endsubroutine forcing_chandra_kendall
 !***********************************************************************
     subroutine forcing_cktest(f)
@@ -1268,18 +1266,18 @@ module Forcing
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
                  aindex,ckno,ilist
-      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,& 
+      real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,&
               psilm,RYlm,IYlm
-      real :: rz,ralpha,& 
+      real :: rz,ralpha,&
               rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
-
+!
 !========================================================
       if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
       if (ifirst==0) then
 ! If this is the first time this function is being called allocate \psi.
 ! Next read from file "alpha_in.dat" the two values of \ell. If this two
-! matches Legendrel_min and Legendrel_max proceed.  
+! matches Legendrel_min and Legendrel_max proceed.
         if (lroot) print*,'Testing helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
@@ -1293,11 +1291,11 @@ module Forcing
         else
         endif
         if (lroot) then
-          if (.not.((helsign.eq.1).or.(helsign.eq.-1))) & 
+          if (.not.((helsign.eq.1).or.(helsign.eq.-1))) &
             call stop_it("CK forcing: helsign must be +1 or -1, aborting")
         else
         endif
-! ---------- 
+! ----------
         do ilread=1,nlist_ck
           read(76,*) (cklist(ilread,ilm),ilm=1,5)
         enddo
@@ -1338,7 +1336,7 @@ module Forcing
       endif
 ! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
    icklist=icklist+1
-   if (icklist.eq.(nlist_ck+1)) & 
+   if (icklist.eq.(nlist_ck+1)) &
             call stop_it("CK testing: no more value in list; ending")
    lmindex=icklist
    emm = cklist(lmindex,1)
@@ -1348,7 +1346,7 @@ module Forcing
    Balpha = cklist(lmindex,3)
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
-! Now construct the Z_psi(r) 
+! Now construct the Z_psi(r)
    call random_number_wrapper(rphase1)
    rphase1=rphase1*2*pi
    if (lfastCK) then
@@ -1375,7 +1373,7 @@ module Forcing
      do n=n1-nghost,n2+nghost
        do m=m1-nghost,m2+nghost
          psilm=0.
-         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n)) 
+         call sp_harm_real(RYlm,Legendrel,emm,y(m),z(n))
          call sp_harm_imag(IYlm,Legendrel,emm,y(m),z(n))
          psilm= RYlm*cos(rphase1)-IYlm*sin(rphase1)
          psif(:,m,n) = Z_psi*psilm
@@ -1385,8 +1383,8 @@ module Forcing
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
-! psi at present is just Z_{ell}^m. We next do a sum over random coefficients 
-! get random psi. 
+! psi at present is just Z_{ell}^m. We next do a sum over random coefficients
+! get random psi.
 !      write(*,*) 'mmin=',mmin
 !! ----------now generate and add the force ------------
    call random_number_wrapper(rz)
@@ -1414,7 +1412,7 @@ module Forcing
        enddo
      enddo
    enddo
- !! -------------     
+!
     endsubroutine forcing_cktest
 !***********************************************************************
     subroutine forcing_GP(f)
@@ -1986,9 +1984,9 @@ module Forcing
 !  scale forcing function
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
-
+!
 !print*,fname(idiag_urms)
-
+!
         if (headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
         !      force_ampl=work_ff/(.1+max(0.,rho_uu_ff))
         force_ampl=work_ff/rho_uu_ff
@@ -2591,7 +2589,7 @@ module Forcing
       kx02=kkx(ik2)
       ky2=kky(ik2)
       kz2=kkz(ik2)
-
+!
 !
 !  Calculate forcing function
 !
@@ -2626,7 +2624,7 @@ module Forcing
 ! If we want to make energy input constant
 !
       if (lwork_ff) then
-
+!
 !
 !  on different processors, irufm needs to be communicated
 !  to other processors
@@ -2644,7 +2642,7 @@ module Forcing
       else
         mulforce_vec = 1.0
       endif
-
+!
 !
 !  Add forcing
 !
