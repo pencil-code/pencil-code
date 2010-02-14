@@ -670,17 +670,19 @@ module Testfield
 !  test fields linear in z
 !
         case ('linear')
-          if (idiag_gam    /=0) call sum_mn_name(-.5*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
+          if (idiag_gam    /=0) call sum_mn_name(+.5*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
           if (idiag_alpPERP/=0) call sum_mn_name(-.5*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERP)
-          if (idiag_alpPARA/=0) call sum_mn_name(     Eipq(:,3,1)             ,idiag_alpPARA)
-          if (idiag_del    /=0) call sum_mn_name(+sy(m)*Eipq(:,1,2)-kyBz1(n)*cy(m)*Eipq(:,2,3),idiag_del    )
-          if (idiag_betPERP/=0) call sum_mn_name(-sy(m)*Eipq(:,2,2)-kyBz1(n)*cy(m)*Eipq(:,1,3),idiag_betPERP)
-          if (idiag_betPARA/=0) call sum_mn_name(                2.*kyBx1(n)*cy(m)*Eipq(:,3,3),idiag_betPARA)
+          if (idiag_alpPARA/=0) call sum_mn_name(-    Eipq(:,3,1)             ,idiag_alpPARA)
+!
           if (idiag_mu     /=0) call sum_mn_name(-2.*(sy(m)*Eipq(:,2,2)+kyBz1(n)*cy(m)*Eipq(:,1,3)),idiag_mu     )
-          if (idiag_kapPERP/=0) call sum_mn_name(-2.*(sy(m)*Eipq(:,1,2)-kyBz1(n)*cy(m)*Eipq(:,2,3)),idiag_kapPERP)
+          if (idiag_betPERP/=0) call sum_mn_name(-    sy(m)*Eipq(:,2,2)-kyBz1(n)*cy(m)*Eipq(:,1,3),idiag_betPERP)
+          if (idiag_betPARA/=0) call sum_mn_name(+2.*                   kyBx1(n)*cy(m)*Eipq(:,3,3),idiag_betPARA)
+!
+          if (idiag_del    /=0) call sum_mn_name(+    sy(m)*Eipq(:,1,2)-kyBz1(n)*cy(m)*Eipq(:,2,3),idiag_del    )
+          if (idiag_kapPERP/=0) call sum_mn_name(-2.*(sy(m)*Eipq(:,1,2)+kyBz1(n)*cy(m)*Eipq(:,2,3)),idiag_kapPERP)
           if (idiag_kapPARA/=0) call sum_mn_name(-2.* sy(m)*Eipq(:,3,3)                            ,idiag_kapPARA)
 !
-!  test fields sinusoidal in z
+!  test fields sinusoidal also in the z direction
 !
         case ('sinkz')
           if (idiag_gam    /=0) call sum_mn_name(+2*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
@@ -689,13 +691,13 @@ module Testfield
 !
           if (idiag_mu     /=0) call sum_mn_name(-4*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_mu     )
           if (idiag_betPERP/=0) call sum_mn_name(-2*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_betPERP)
-          if (idiag_betPARA/=0) call sum_mn_name(+4*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) ,idiag_betPARA)
+          if (idiag_betPARA/=0) call sum_mn_name(+4*                             ky1*cy(m)*sz(n)*Eipq(:,3,3) ,idiag_betPARA)
 !
           if (idiag_del    /=0) call sum_mn_name(+2*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_del    )
           if (idiag_kapPERP/=0) call sum_mn_name(-2*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
           if (idiag_kapPARA/=0) call sum_mn_name(-2* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARA)
 !
-!  test fields sinusoidal in z
+!  test fields sinusoidal in all three directions
 !
         case ('sxsysz')
           if (idiag_gam    /=0) call sum_mn_name(+4*sx*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
@@ -704,7 +706,7 @@ module Testfield
 !
           if (idiag_mu     /=0) call sum_mn_name(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_mu     )
           if (idiag_betPERP/=0) call sum_mn_name(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_betPERP)
-          if (idiag_betPARA/=0) call sum_mn_name(+8*                                ky1*cy(m)*sz(n)*Eipq(:,3,2) ,idiag_betPARA)
+          if (idiag_betPARA/=0) call sum_mn_name(+8*                                ky1*cy(m)*sz(n)*Eipq(:,3,3) ,idiag_betPARA)
 !
           if (idiag_del    /=0) call sum_mn_name(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_del    )
           if (idiag_kapPERP/=0) call sum_mn_name(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
