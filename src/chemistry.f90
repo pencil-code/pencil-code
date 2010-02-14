@@ -380,7 +380,6 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       use Initcond
-!AB:  use InitialCondition, only: initial_condition_chemistry
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -723,7 +722,8 @@ module Chemistry
               enddo
           enddo
         endif
-        endif
+!AB: removed the endif from here
+        !endif
 
 !
 !  Enthalpy flux
@@ -737,7 +737,6 @@ module Chemistry
         enddo
         endif
 
-
       if (lpencil(i_ghhk) .and. lreactions) then
        do k=1,nchemspec
        !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
@@ -747,6 +746,9 @@ module Chemistry
          enddo
        enddo
       endif
+
+!AB: moved endif to here
+        endif
 
 !
 ! Calculate the reaction term and the corresponding pencil
@@ -1671,7 +1673,7 @@ module Chemistry
       close(19)
       if (lroot) print*,'Number of compounds=',nchemspectemp
       if (nchemspectemp>nchemspec) call &
-          stop_it("Too much chemicals! Change NCHEMSPEC in src/cparam.local")
+          stop_it("Too many chemicals! Change NCHEMSPEC in src/cparam.local")
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
@@ -3368,6 +3370,11 @@ module Chemistry
           enddo
 !
         if (lwrite)  then
+!AB: this and the following 4 lines should be removed when this is clarified
+          if (k>nchemspec) then
+            print*,'k>nchemspec: k,nchemspec=',k,nchemspec
+            stop
+          endif
           write(file_id,*)&
               varname(ichemspec(k)),&
               maxval(p%S0_R(:,k)), &
