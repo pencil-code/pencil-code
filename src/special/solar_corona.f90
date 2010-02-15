@@ -26,15 +26,20 @@ module Special
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
 !
   real, parameter, dimension (37) :: intlnT = (/ &
-          8.74982,  8.86495,  8.98008,  9.09521,  9.21034,  9.44060,  9.67086,  9.90112,  10.1314,  10.2465 &
-       ,  10.3616,  10.5919,  10.8221,  11.0524,  11.2827,  11.5129,  11.7432,  11.9734,  12.2037,  12.4340 &
-       ,  12.6642,  12.8945,  13.1247,  13.3550,  13.5853,  13.8155,  14.0458,  14.2760,  14.5063,  14.6214 &
-       ,  14.7365,  14.8517,  14.9668,  15.1971,  15.4273,  15.6576,  69.0776 /), &
+       8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
+       , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
+       , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
+       , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
+       , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
+       ,  15.6576,  69.0776 /), &
        intlnQ = (/ &
-         -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, -80.5905, -80.0532, -80.1837, -80.2067 &
-       , -80.1837, -79.9765, -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, -79.3471, -79.2934 &
-       , -79.5159, -79.6618, -79.4776, -79.3778, -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
-       , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, -0.66650 /)
+       -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
+       , -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765 &
+       , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
+       , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
+       , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
+       , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
+       , -0.66650 /)
 !
 ! input parameters
 !  namelist /special_init_pars/ dumy
@@ -151,7 +156,7 @@ module Special
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
       else
@@ -705,12 +710,16 @@ module Special
         lnQ1=-1000.
         lnQ2=-1000.
         do i=1,36
-          where(lnTT_SI.ge.intlnT(i).and.lnTT_SI.lt.intlnT(i+1).and.lnTT_SI.ge.11.513)
+          where(lnTT_SI.ge.intlnT(i) &
+              .and.lnTT_SI.lt.intlnT(i+1) &
+              .and.lnTT_SI.ge.11.513)
             slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
             ordinate = intlnQ(i) - slope*intlnT(i)
             lnQ1 = slope*lnTT_SI + ordinate
           endwhere
-          where(lnTT_SI.ge.intlnT(i).and.lnTT_SI.lt.intlnT(i+1).and.lnTT_SI.lt.11.513)
+          where(lnTT_SI.ge.intlnT(i) &
+              .and.lnTT_SI.lt.intlnT(i+1) &
+              .and.lnTT_SI.lt.11.513)
             slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
             ordinate = intlnQ(i) - slope*intlnT(i)
             lnQ2 = slope*lnTT_SI + ordinate
@@ -723,7 +732,8 @@ module Special
       rtv_cool = rtv_cool*cool_RTV
 !     for adjusting by setting cool_RTV in run.in
 !
-      rtv_cool=rtv_cool*(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      rtv_cool=rtv_cool &
+          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
 !
 !     add to temperature equation
 !
@@ -763,7 +773,7 @@ module Special
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
-
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
