@@ -350,7 +350,8 @@ module Special
       real, dimension (nx) :: newton=0.
       real, dimension (150) :: b_lnT,b_z,b_lnrho
       real, dimension (mz), save :: blnTT,blnrho
-      real :: dummy
+      real :: dummy,var1,var2
+      logical :: exist,stat
       integer :: i,lend,j
 !
       if (headtt) print*,'special_calc_entropy: newton cooling',tdown
@@ -359,48 +360,65 @@ module Special
 !  It will be read at the beginning and then kept in memory
 !
       if (it .eq. 1 .and. lfirstpoint) then
-        inquire(IOLENGTH=lend) dummy
-        open (10,file='driver/b_lnT.dat',form='unformatted', &
-            status='unknown',recl=lend*150)
-        read (10) b_lnT
-        read (10) b_z
-        close (10)
-        !
-        open (10,file='driver/b_lnrho.dat',form='unformatted', &
-            status='unknown',recl=lend*150)
-        read (10) b_lnrho
-        close (10)
-        !
-        b_lnT = b_lnT - alog(real(unit_temperature))
-        b_lnrho = b_lnrho - alog(real(unit_density))
-        !
-        if (unit_system == 'SI') then
-          b_z = b_z * 1.e6 / unit_length
-        elseif (unit_system == 'cgs') then
-          b_z = b_z * 1.e8 / unit_length
-        endif
-        !
-        do j=n1,n2
-          if (z(j) .lt. b_z(1) ) then
-            blnTT(j) = b_lnT(1)
-            blnrho(j)= b_lnrho(1)
-          elseif (z(j) .ge. b_z(150)) then
-            blnTT(j) = b_lnT(150)
-            blnrho(j) = b_lnrho(150)
-          else
-            do i=1,149
-              if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1)) then
-                !
-                ! linear interpol   y = m*(x-x1) + y1
-                blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) *&
-                    (z(j)-b_z(i)) + b_lnT(i)
-                blnrho(j) = (b_lnrho(i+1)-b_lnrho(i))/(b_z(i+1)-b_z(i)) *&
-                    (z(j)-b_z(i)) + b_lnrho(i)
-                exit
-              endif
-            enddo
+!
+!   check wether stratification.dat or b_ln*.dat should be used
+!
+        inquire(file='stratification.dat',exist=exist)
+        if (exist) then
+          open(10+ipz,file='stratification.dat')
+          do i=1,nzgrid
+            read(10+ipz,*,iostat=stat) dummy,var1,var2
+            if (i.gt.ipz*nz.and.i.le.(ipz+1)*nz) then
+              j = i - ipz*nz
+              blnrho(j+nghost)=var1
+              blnTT(j+nghost) =var2
+            endif
+          enddo
+          close(10+ipz)
+        else
+          inquire(IOLENGTH=lend) dummy
+          open (10,file='driver/b_lnT.dat',form='unformatted', &
+              status='unknown',recl=lend*150)
+          read (10) b_lnT
+          read (10) b_z
+          close (10)
+          !
+          open (10,file='driver/b_lnrho.dat',form='unformatted', &
+              status='unknown',recl=lend*150)
+          read (10) b_lnrho
+          close (10)
+          !
+          b_lnT = b_lnT - alog(real(unit_temperature))
+          b_lnrho = b_lnrho - alog(real(unit_density))
+          !
+          if (unit_system == 'SI') then
+            b_z = b_z * 1.e6 / unit_length
+          elseif (unit_system == 'cgs') then
+            b_z = b_z * 1.e8 / unit_length
           endif
-        enddo
+          !
+          do j=n1,n2
+            if (z(j) .lt. b_z(1) ) then
+              blnTT(j) = b_lnT(1)
+              blnrho(j)= b_lnrho(1)
+            elseif (z(j) .ge. b_z(150)) then
+              blnTT(j) = b_lnT(150)
+              blnrho(j) = b_lnrho(150)
+            else
+              do i=1,149
+                if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1)) then
+                  !
+                  ! linear interpol   y = m*(x-x1) + y1
+                  blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) *&
+                      (z(j)-b_z(i)) + b_lnT(i)
+                  blnrho(j) = (b_lnrho(i+1)-b_lnrho(i))/(b_z(i+1)-b_z(i)) *&
+                      (z(j)-b_z(i)) + b_lnrho(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        endif
       endif
       !
       !  Get reference temperature
