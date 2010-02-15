@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
-! PENCILS PROVIDED der6u(3) 
+! PENCILS PROVIDED der6u(3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
 !************************************************************************
 module Hydro
@@ -165,8 +165,6 @@ module Hydro
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -183,7 +181,7 @@ module Hydro
 !  pencils for kinflow
 ! DM
 ! The following line can be later removed and the variable kinematic_flow replaced
-! by kinflow. 
+! by kinflow.
       kinflow=kinematic_flow
       if (kinflow/='') then
         lpenc_requested(i_uu)=.true.
@@ -336,7 +334,7 @@ module Hydro
         if (lpencil(i_uu)) then
           if (headtt) print*,'Chandrasekhar-Kendall flow'
           p%uu(:,1)=ampl_kinflow*(ell*(ell+1)/Balpha*x(l1:l2))*Zl(l1:l2)*Pl(m)
-          p%uu(:,2)=ampl_kinflow*(1./Balpha*x(l1:l2))*(2*x(l1:l2)*Zl(l1:l2)+& 
+          p%uu(:,2)=ampl_kinflow*(1./Balpha*x(l1:l2))*(2*x(l1:l2)*Zl(l1:l2)+&
                          dZldr(l1:l2)*Balpha*x(l1:l2)**2)*dPldtheta(m)
           p%uu(:,3)=-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
         endif
@@ -612,10 +610,7 @@ ky_uukin=2.*pi
         p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
         p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
         if (lpencil(i_divu)) p%divu=fac
-
-
-        
-           
+!
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
 !
@@ -675,7 +670,7 @@ ky_uukin=2.*pi
         p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
         if (lpencil(i_divu)) p%divu=0.
 !
-! step function along z 
+! step function along z
 !
       elseif (kinflow=='zstep') then
         if (lpencil(i_uu)) then
@@ -691,8 +686,8 @@ ky_uukin=2.*pi
         select case (wind_profile)
         case ('none'); wind_prof=0.;div_uprof=0.
         case ('constant'); wind_prof=1.;div_uprof=0.
-                        
-        case ('radial-step') 
+!
+        case ('radial-step')
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
@@ -707,8 +702,8 @@ ky_uukin=2.*pi
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
-        p%divu=wind_amp*div_uprof 
-        p%der6u(:,1)=wind_amp*der6_uprof 
+        p%divu=wind_amp*div_uprof
+        p%der6u(:,1)=wind_amp*der6_uprof
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
@@ -718,8 +713,8 @@ ky_uukin=2.*pi
         select case (wind_profile)
         case ('none'); wind_prof=0.;div_uprof=0.
         case ('constant'); wind_prof=1.;div_uprof=0.
-                        
-        case ('radial-step') 
+!
+        case ('radial-step')
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
@@ -739,7 +734,7 @@ ky_uukin=2.*pi
           p%uu(:,1)=vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 + & 
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 + &
            wind_amp*wind_prof
           p%uu(:,2)=-vel_prof*r1_mn*sin1th(m)*(&
             cos(theta)*sin(theta-theta1)**2)*&
@@ -750,8 +745,8 @@ ky_uukin=2.*pi
           div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 
-        p%der6u(:,1)=wind_amp*der6_uprof 
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
+        p%der6u(:,1)=wind_amp*der6_uprof
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
@@ -859,7 +854,7 @@ ky_uukin=2.*pi
         endif
       endif
 !
-      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(df)
 !
     endsubroutine duu_dt
 !***********************************************************************
@@ -891,10 +886,9 @@ ky_uukin=2.*pi
 !
     intent(in) :: uij, divu, sij
 !
-    call keep_compiler_quiet(uij)
-    call keep_compiler_quiet(sij)
+    call keep_compiler_quiet(uij,sij)
     call keep_compiler_quiet(divu)
-    if (present(uu)) call keep_compiler_quiet(uu)
+    call keep_compiler_quiet(present(uu))
 !
     endsubroutine traceless_strain
 !***********************************************************************
@@ -910,6 +904,8 @@ ky_uukin=2.*pi
       integer,                         intent(in)  :: velind
 !
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(uu)
+      call keep_compiler_quiet(velind)
 !
    endsubroutine coriolis_cartesian
 !***********************************************************************
@@ -1315,7 +1311,7 @@ ky_uukin=2.*pi
    ! subroutine random_isotropic_KS_setup_abag
 !
 !  ! produces random, isotropic field from energy spectrum following the
-!  ! KS method, however this setup produces periodic velocity field 
+!  ! KS method, however this setup produces periodic velocity field
 !  ! (assuming box (-pi,pi))
 !
 !  ! 28-mar-08/abag coded
@@ -1347,14 +1343,14 @@ ky_uukin=2.*pi
    ! allocate(omega(KS_modes))
    ! allocate(klengths(KS_modes))
    ! num=1
-   ! do i=1,10000   
-   !  call random_number(angle)  
+   ! do i=1,10000
+   !  call random_number(angle)
    !  if ((angle(1)-0.0 < epsilon(0.0)) .or. &
    !     (angle(2)-0.0 < epsilon(0.0)) .or. &
    !     (angle(3)-0.0 < epsilon(0.0))) then
    !     call random_number(angle)
    !  endif
-   !  angle=floor(9.*angle) 
+   !  angle=floor(9.*angle)
    !  call random_number(dir_in)
    !  direction=nint(dir_in)
    !  direction=2*direction -1  !positive or negative directions
@@ -1366,7 +1362,7 @@ ky_uukin=2.*pi
    !  !find the length of the current k_option vector
    !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 
-   !  if (i==1.and.mkunit(i).gt.0.)then 
+   !  if (i==1.and.mkunit(i).gt.0.)then
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
    !  endif
@@ -1402,9 +1398,9 @@ ky_uukin=2.*pi
    ! enddo
    ! do i=1,N
    ! !now we find delk as defined in Malik & Vassilicos' paper
-   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
-   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
-   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
+   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0
+   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0
+   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0
    ! enddo
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
@@ -1461,7 +1457,7 @@ ky_uukin=2.*pi
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_hydro_init_pars
 !***********************************************************************
@@ -1527,7 +1523,7 @@ ky_uukin=2.*pi
         idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0; idiag_epsK=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_ekin=0; idiag_ekintot=0
-        idiag_divum=0 
+        idiag_divum=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1678,7 +1674,7 @@ ky_uukin=2.*pi
     subroutine init_ck
 !
 !  8-sep-2009/dhruba: coded
-!     
+!
       integer :: l,m
       real :: Balpha,jl,jlp1,jlm1,LPl,LPlm1
       integer :: ell
