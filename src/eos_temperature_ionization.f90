@@ -461,13 +461,10 @@ module EquationOfState
 
           rho1 = exp(-f(:,m,n,ilnrho))
           TT1 = exp(-f(:,m,n,ilnTT))
-          where (TT_ion*TT1 < -log(tiny(TT_ion)))
-            rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
-            sqrtrhs = sqrt(rhs)
-            yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-          elsewhere
-            yH = 0
-          endwhere
+
+          rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+          sqrtrhs = sqrt(rhs)
+          yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
           f(:,m,n,iyH) = yH
 
@@ -716,8 +713,8 @@ module EquationOfState
 
       if (present(kapparho)) then
         TT1 = exp(-lnTT_)
-        kapparho = min(sqrt(0.9*huge(1.0)),(yH_+yMetals)*(1-yH_)*kappa0* &
-                   exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1))
+        tmp = 2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1
+        kapparho = (yH_+yMetals)*(1-yH_)*kappa0*exp(min(tmp,log(huge1)))
       endif
 
     endsubroutine eoscalc_farray

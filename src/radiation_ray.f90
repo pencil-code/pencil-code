@@ -583,7 +583,6 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
-      real :: dtau_mm,dtau_pp
 !
 !  Identifier.
 !
@@ -611,17 +610,13 @@ module Radiation
 !
 !  Avoid divisions by zero when the optical depth is such.
 !
-        dtau_mm=dtau_m 
-        dtau_pp=dtau_p 
-        if (lcheck_tau_division) then
-          if (dtau_m==0.0) dtau_mm=epsi
-          if (dtau_p==0.0) dtau_pp=epsi
-        endif
+        dtau_m = max(dtau_m,epsi)
+        dtau_p = max(dtau_p,epsi)
 !
-        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_mm
-        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_pp
-        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_mm+dtau_pp)
-        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_mm+dtau_pp)
+        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
+        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
+        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
+        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
         if (dtau_m>dtau_thresh_max) then
           emdtau=0.0
           emdtau1=1.0
