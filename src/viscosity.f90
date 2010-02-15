@@ -1061,8 +1061,7 @@ module Viscosity
      if (llambda_effect) then
       p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
                    -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
-                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1)) &
-                     +Lambda_Omega*x(l1:l2)*sinth(m)
+                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
 !                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
 !                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
 !                  +p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 

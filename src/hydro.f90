@@ -1760,7 +1760,7 @@ module Hydro
 !
 !  Total angular momentum in spherical coordinates
 ! 
-        if (idiag_tot_ang_mom/=0) call sum_mn_name( &
+        if (idiag_tot_ang_mom/=0) call integrate_mn_name( &
             p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
 
 !

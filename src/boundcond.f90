@@ -1754,17 +1754,9 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
-      real, dimension (:,:), allocatable :: boundary_value
       real, pointer :: Lambda_V0,Lambda_Omega
       logical, pointer :: llambda_effect
       integer :: ierr,k,stat
-!
-!  Allocate memory for large array.
-!
-      allocate(boundary_value(my,mz),stat=stat)
-      if (stat>0) call fatal_error('bc_set_sfree_x', &
-          'Could not allocate memory for bc_set_sfree_x')
-!
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('llambda_effect',llambda_effect,ierr)
@@ -1786,7 +1778,7 @@ module Boundcond
 !
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
-            f(l1-k,:,:,j)= f(l1+k,:,:,j)*((x(l1-k)/x(l1+k))**(1-Lambda_V0))
+             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(Lambda_V0-1)
           enddo
         else
           do k=1,nghost
@@ -1809,9 +1801,7 @@ module Boundcond
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
 !
       endselect
-!
-      if (allocated(boundary_value)) deallocate(boundary_value)
-!
+
     endsubroutine bc_set_sfree_x
 ! **********************************************************************
     subroutine bc_set_jethat_x(f,jj,topbot,fracall,uzeroall)
