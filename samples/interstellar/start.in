@@ -44,7 +44,7 @@
   mass_SN=0.
   mass_movement='Galaxycode'
   SNR_damping=.5
-  cooling_select='RBr'
+  cooling_select='SS-Slyz'
   heating_select='wolfire'
 
 /
