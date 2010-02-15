@@ -1754,11 +1754,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
-      real, pointer :: Lambda_V0,Lambda_Omega
+      real, pointer :: Lambda_V0,Lambda_Omega,nu
       logical, pointer :: llambda_effect
       integer :: ierr,k,stat
 ! -------- Either case get the lambda variables first -----------
 !
+      call get_shared_variable('nu',nu,ierr)
+      if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
+          "there was a problem when getting nu")      
       call get_shared_variable('llambda_effect',llambda_effect,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
           "there was a problem when getting llambda_effect")      
@@ -1775,10 +1778,10 @@ module Boundcond
       select case (topbot)
 ! bottom boundary
       case ('bot')
-!
+
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
-             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(Lambda_V0-1)
+             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(1+(Lambda_V0/nu))
           enddo
         else
           do k=1,nghost
@@ -1789,14 +1792,14 @@ module Boundcond
       case ('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
-            f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1-Lambda_V0))
+            f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1+(Lambda_V0/nu)))
           enddo
         else
           do k=1,nghost
             f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2+k)/x(l2-k))
           enddo
         endif
-!
+
       case default
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
 !

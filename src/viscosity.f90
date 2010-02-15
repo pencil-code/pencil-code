@@ -306,6 +306,7 @@ module Viscosity
 !  Shared variables.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
+     call put_shared_variable('nu',nu,ierr)
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
       call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
       call put_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
@@ -1059,7 +1060,7 @@ module Viscosity
 !  Calculate Lambda effect
 !
      if (llambda_effect) then
-      p%fvisc(:,iuz)=p%fvisc(:,iuz)+Lambda_V0*( &
+      p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
                    -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
 !                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
