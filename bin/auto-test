@@ -87,7 +87,7 @@ my %tests = (
                          helical-MHDturb
                          testfield_z
                          random_uu_particles
-                         1d-tests/solar-atmosphere
+                         1d-tests/solar-atmosphere-temperature
                          kin-dynamo
                          meissner
                          conv-slab-noequi
@@ -164,7 +164,7 @@ my %tests = (
                           solar-atmosphere-magnetic
                           MRI-turbulence_hyper_strict
                           0d-tests/heating_ionize_temp
-                          1d-tests/solar-atmosphere-temperature
+                          1d-tests/solar-atmosphere
                      )],
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
