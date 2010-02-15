@@ -53,7 +53,7 @@ module Chemistry
      real :: init_x1=-0.2,init_x2=0.2
      real :: init_y1=-0.2,init_y2=0.2
      real :: init_z1=-0.2,init_z2=0.2
-     real :: init_TT1=400, init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+     real :: init_TT1=400., init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
      real :: str_thick=0.02
      real :: init_pressure=10.13e5
 !
@@ -471,9 +471,8 @@ module Chemistry
 !
 !AB:  if (linitial_condition) call initial_condition_chemistry(f)
 !
-!RP:  I comment the following ... why should one specie case uniformly
-!     initialized to 1 and override the manually entered conditions ????
-!
+!   The following lines are kept temporally 
+! 
 !      if (lone_spec) then
 !        f(:,:,:,ichemspec(1))=1.
 !        if (lroot) print*, 'initchem: this is one specie case'
@@ -697,7 +696,7 @@ module Chemistry
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
         if (lpenc_requested(i_H0_RT)) then
-        if (.not. lT_const) then
+         if (.not. lT_const) then
           do j1=1,nx
            do k=1,nchemspec
             T_low=species_constants(k,iTemp1)
@@ -720,34 +719,32 @@ module Chemistry
                               +species_constants(k,iaa1(ii6))/T_loc
                endif
               enddo
-          enddo
-        endif
-!AB: removed the endif from here
-        !endif
+           enddo
+          endif
+
 
 !
 !  Enthalpy flux
 !
-        if (lreactions) then
-        do j1=1,nx
+         if (lreactions) then
+         do j1=1,nx
           do k=1,nchemspec
             p%hhk_full(j1,k)=p%H0_RT(j1,k)*Rgas*p%TT(j1)&
                /species_constants(k,imass)
           enddo
-        enddo
-        endif
-
-      if (lpencil(i_ghhk) .and. lreactions) then
-       do k=1,nchemspec
-       !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
-         do i=1,3
-          p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
-            /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
          enddo
-       enddo
-      endif
+         endif
 
-!AB: moved endif to here
+         if (lpencil(i_ghhk) .and. lreactions) then
+         do k=1,nchemspec
+         !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
+          do i=1,3
+           p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
+             /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
+          enddo
+         enddo
+         endif
+
         endif
 
 !
@@ -2607,12 +2604,18 @@ module Chemistry
           ind_chem=k
           exit
         endif
+!print*, varname(ichemspec(k))
       enddo
 !
 !  Check if the species was really found
 !
-      if (ind_glob==0) then
+
+
+      if ((ind_glob==0)) then
         found_specie=.false.
+      ! if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem
+      !  call fatal_error('find_species_index',&
+      !                  'no species has been found')
       else
         found_specie=.true.
         if (lroot) print*,species_name,'   species index= ',ind_chem
@@ -2747,8 +2750,8 @@ module Chemistry
             call find_species_index(specie_string,ind_glob,ind_chem,&
                 found_specie)
 !
-
-!AB: the following causes an error if ind_chem=0
+! What problems are in the case of  ind_chem=0?
+!
             if (ind_chem>0 .and. ind_chem<=nchemspec) then
 
             if (found_specie) then
@@ -3367,20 +3370,14 @@ module Chemistry
                         'p%TT(i) is outside range')
 
           endif
-          enddo
 !
         if (lwrite)  then
-!AB: this and the following 4 lines should be removed when this is clarified
-          if (k>nchemspec) then
-            print*,'k>nchemspec: k,nchemspec=',k,nchemspec
-            stop
-          endif
           write(file_id,*)&
-              varname(ichemspec(k)),&
-              maxval(p%S0_R(:,k)), &
+          varname(ichemspec(k)), maxval(p%S0_R(:,k)), &
               minval(p%S0_R(:,k))
         endif
-      enddo
+        enddo
+        enddo
 !
 !  calculation of the reaction rate
 !
