@@ -8403,7 +8403,7 @@ but before \name{shear_run_pars} and \name{viscosity_run_pars}.
 \begin{alltt}
 &testfield_run_pars
   !linit_aatest=T, daainit=100.
-  itestfield='B11-B22', leta_rank2=T
+  itestfield='B11-B22'
   etatest=1e-4
   lsoca=F
 /
@@ -8446,6 +8446,14 @@ because otherwise you won't read in your precious test field data next
 time you restart the code!
 
 \end{enumerate}
+
+Comments:
+For large magnetic Reynolds numbers the solutions to the test-field equations
+can show a linear instability, which can introduce large fluctuations.
+In that case it is best to reset the dependent test-field variable to zero
+in regular intervals.
+This is done by setting linit\_aatest=T. Note that daainit=100 sets the
+reset interval to 100.
 
 % ====================================================================== %
 

@@ -9,18 +9,20 @@
 %%   entropy.f90
 %%   magnetic.f90
 %%   pscalar.f90
+%%   testfield_compress_z.f90
 %%   temperature_idealgas.f90
 %%   testfield_x.f90
 %%   testflow_z.f90
 %%   viscosity.f90
-%%   testfield_xz.f90
 %%   shear.f90
+%%   testfield_axisym.f90
 %%   lorenz_gauge.f90
 %%   testfield_z.f90
 %%   nosolid_cells.f90
 %%   chemistry.f90
 %%   noentropy.f90
 %%   solid_cells.f90
+%%   testfield_nonlin_z.f90
 %%   nolorenz_gauge.f90
 %%   magnetic_axisym.f90
 %%   testscalar.f90
@@ -73,7 +75,16 @@
   \var{ux2mx}     & $\left<u_x^2\right>_{yz}$ \\
   \var{uy2mx}     & $\left<u_y^2\right>_{yz}$ \\
   \var{uz2mx}     & $\left<u_z^2\right>_{yz}$ \\
+  \var{ox2mx}     & $\left<\omega_x^2\right>_{yz}$ \\
+  \var{oy2mx}     & $\left<\omega_y^2\right>_{yz}$ \\
+  \var{oz2mx}     & $\left<\omega_z^2\right>_{yz}$ \\
   \var{uxuycsm}   & $\left<u_xu_y\cos kz\sin kz\right>$ \\
+  \var{ux2mz}     & $\left<u_x^2\right>_{xy}$ \\
+  \var{uy2mz}     & $\left<u_y^2\right>_{xy}$ \\
+  \var{uz2mz}     & $\left<u_z^2\right>_{xy}$ \\
+  \var{rux2mz}    & $\left<\varrho u_x^2\right>_{xy}$ \\
+  \var{ruy2mz}    & $\left<\varrho u_y^2\right>_{xy}$ \\
+  \var{ruz2mz}    & $\left<\varrho u_z^2\right>_{xy}$ \\
   \var{uxuym}     & $\left<u_x u_y\right>$ \\
   \var{uxuzm}     & $\left<u_x u_z\right>$ \\
   \var{uyuzm}     & $\left<u_y u_z\right>$ \\
@@ -312,6 +323,7 @@
                     see \S~\ref{time-step}) \\
   \var{Qsm}       & $\left<Q_p(\overline{B})\right>$ \\
   \var{Qpm}       & $\left<Q_p(\overline{B})\right>$ \\
+  \var{qem}       & $\left<q_e(\overline{B})\right>$ \\
   \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
                     \quad(mean inverse plasma beta) \\
   \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
@@ -393,6 +405,9 @@
   \var{bx2mz}     & $\left< B_x^2 \right>_{xy}$ \\
   \var{by2mz}     & $\left< B_y^2 \right>_{xy}$ \\
   \var{bz2mz}     & $\left< B_z^2 \right>_{xy}$ \\
+  \var{bx2rmz}    & $\left< B_x^2/\varrho \right>_{xy}$ \\
+  \var{by2rmz}    & $\left< B_y^2/\varrho \right>_{xy}$ \\
+  \var{bz2rmz}    & $\left< B_z^2/\varrho \right>_{xy}$ \\
   \var{jbmz}      & $\left<\Jv\cdot\Bv\right>|_{xy}$ \\
   \var{abmz}      & $\left<\Av\cdot\Bv\right>|_{xy}$ \\
   \var{examz1}    & $\left<\Ev\times\Av\right>_{xy}|_x$ \\
@@ -422,9 +437,14 @@
   \var{bxbymxz}   & $\left< B_x B_y \right>_{y}$ \\
   \var{bxbzmxz}   & $\left< B_x B_z \right>_{y}$ \\
   \var{bybzmxz}   & $\left< B_y B_z \right>_{y}$ \\
+  \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
+  \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
   \var{b1b32m}    & $\left<B_1 B_{3,2} \right>$ \\
   \var{b2b13m}    & $\left<B_2 B_{1,3} \right>$ \\
+  \var{uxbmx}     & $\left<(\uv\times\Bv)_x\right>$ \\
+  \var{uxbmy}     & $\left<(\uv\times\Bv)_y\right>$ \\
+  \var{uxbmz}     & $\left<(\uv\times\Bv)_z\right>$ \\
   \var{examx}     & $\left<\Ev\times\Av\right>|_x$ \\
   \var{examy}     & $\left<\Ev\times\Av\right>|_y$ \\
   \var{examz}     & $\left<\Ev\times\Av\right>|_z$ \\
@@ -446,6 +466,14 @@
   \var{etasmagm}  & Mean of Smagorinsky resistivity \\
   \var{etasmagmin} & Min of Smagorinsky resistivity \\
   \var{etasmagmax} & Max of Smagorinsky resistivity \\
+  \var{etavamax}  & Max of artificial resistivity
+                    $\eta\sim v_A$ \\
+  \var{etajmax}   & Max of artificial resistivity
+                    $\eta\sim J / \sqrt{\rho}$ \\
+  \var{etaj2max}  & Max of artificial resistivity
+                    $\eta\sim J^2 / \rho$ \\
+  \var{etajrhomax} & Max of artificial resistivity
+                    $\eta\sim J / \rho$ \\
   \var{cosjbm}    & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
   \var{jparallelm} & Mean value of the component
                     of J parallel to B \\
@@ -463,14 +491,156 @@
   \var{ccmax}     & $\max(c)$ \\
   \var{ccglnrm}   & $\left<c\nabla_z\varrho\right>$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{testfield_compress_z.f90}} \\
+\midrule
+  \var{alp11}     & $\alpha_{11}$ \\
+  \var{alp21}     & $\alpha_{21}$ \\
+  \var{alp31}     & $\alpha_{31}$ \\
+  \var{alp12}     & $\alpha_{12}$ \\
+  \var{alp22}     & $\alpha_{22}$ \\
+  \var{alp32}     & $\alpha_{32}$ \\
+  \var{eta11}     & $\eta_{11}k$ \\
+  \var{eta21}     & $\eta_{21}k$ \\
+  \var{eta12}     & $\eta_{12}k$ \\
+  \var{eta22}     & $\eta_{22}k$ \\
+  \var{alpK11}    & $\alpha_{11}^K$ \\
+  \var{alpK21}    & $\alpha_{21}^K$ \\
+  \var{alpK31}    & $\alpha_{31}^K$ \\
+  \var{alpK12}    & $\alpha_{12}^K$ \\
+  \var{alpK22}    & $\alpha_{22}^K$ \\
+  \var{alpK32}    & $\alpha_{32}^K$ \\
+  \var{etaK11}    & $\eta_{11}^Kk$ \\
+  \var{etaK21}    & $\eta_{21}^Kk$ \\
+  \var{etaK12}    & $\eta_{12}^Kk$ \\
+  \var{etaK22}    & $\eta_{22}^Kk$ \\
+  \var{alpM11}    & $\alpha_{11}^M$ \\
+  \var{alpM21}    & $\alpha_{21}^M$ \\
+  \var{alpM31}    & $\alpha_{31}^M$ \\
+  \var{alpM12}    & $\alpha_{12}^M$ \\
+  \var{alpM22}    & $\alpha_{22}^M$ \\
+  \var{alpM32}    & $\alpha_{32}^M$ \\
+  \var{etaM11}    & $\eta_{11}^Mk$ \\
+  \var{etaM21}    & $\eta_{21}^Mk$ \\
+  \var{etaM12}    & $\eta_{12}^Mk$ \\
+  \var{etaM22}    & $\eta_{22}^Mk$ \\
+  \var{phi11}     & $\phi_{11}$ \\
+  \var{phi21}     & $\phi_{21}$ \\
+  \var{phi12}     & $\phi_{12}$ \\
+  \var{phi22}     & $\phi_{22}$ \\
+  \var{phi32}     & $\phi_{32}$ \\
+  \var{psi11}     & $\psi_{11}k$ \\
+  \var{psi21}     & $\psi_{21}k$ \\
+  \var{psi12}     & $\psi_{12}k$ \\
+  \var{psi22}     & $\psi_{22}k$ \\
+  \var{alp11cc}   & $\alpha_{11}\cos^2 kz$ \\
+  \var{alp21sc}   & $\alpha_{21}\sin kz\cos kz$ \\
+  \var{alp12cs}   & $\alpha_{12}\cos kz\sin kz$ \\
+  \var{alp22ss}   & $\alpha_{22}\sin^2 kz$ \\
+  \var{eta11cc}   & $\eta_{11}\cos^2 kz$ \\
+  \var{eta21sc}   & $\eta_{21}\sin kz\cos kz$ \\
+  \var{eta12cs}   & $\eta_{12}\cos kz\sin kz$ \\
+  \var{eta22ss}   & $\eta_{22}\sin^2 kz$ \\
+  \var{alpK11cc}  & $\alpha_{11}^{\rm K}\cos^2 kz$ \\
+  \var{alpK21sc}  & $\alpha_{21}^{\rm K}\sin kz\cos kz$ \\
+  \var{alpK12cs}  & $\alpha_{12}^{\rm K}\cos kz\sin kz$ \\
+  \var{alpK22ss}  & $\alpha_{22}^{\rm K}\sin^2 kz$ \\
+  \var{etaK11cc}  & $\eta_{11}^{\rm K}\cos^2 kz$ \\
+  \var{etaK21sc}  & $\eta_{21}^{\rm K}\sin kz\cos kz$ \\
+  \var{etaK12cs}  & $\eta_{12}^{\rm K}\cos kz\sin kz$ \\
+  \var{etaK22ss}  & $\eta_{22}^{\rm K}\sin^2 kz$ \\
+  \var{alpM11cc}  & $\alpha_{11}^{\rm M}\cos^2 kz$ \\
+  \var{alpM21sc}  & $\alpha_{21}^{\rm M}\sin kz\cos kz$ \\
+  \var{alpM12cs}  & $\alpha_{12}^{\rm M}\cos kz\sin kz$ \\
+  \var{alpM22ss}  & $\alpha_{22}^{\rm M}\sin^2 kz$ \\
+  \var{etaM11cc}  & $\eta_{11}^{\rm M}\cos^2 kz$ \\
+  \var{etaM21sc}  & $\eta_{21}^{\rm M}\sin kz\cos kz$ \\
+  \var{etaM12cs}  & $\eta_{12}^{\rm M}\cos kz\sin kz$ \\
+  \var{etaM22ss}  & $\eta_{22}^{\rm M}\sin^2 kz$ \\
+  \var{s2kzDFm}   & $\left<\sin2kz\nabla\cdot F\right>$ \\
+  \var{M11}       & ${\cal M}_{11}$ \\
+  \var{M22}       & ${\cal M}_{22}$ \\
+  \var{M33}       & ${\cal M}_{33}$ \\
+  \var{M11cc}     & ${\cal M}_{11}\cos^2 kz$ \\
+  \var{M11ss}     & ${\cal M}_{11}\sin^2 kz$ \\
+  \var{M22cc}     & ${\cal M}_{22}\cos^2 kz$ \\
+  \var{M22ss}     & ${\cal M}_{22}\sin^2 kz$ \\
+  \var{M12cs}     & ${\cal M}_{12}\cos kz\sin kz$ \\
+  \var{bx11pt}    & $b_x^{11}$ \\
+  \var{bx21pt}    & $b_x^{21}$ \\
+  \var{bx12pt}    & $b_x^{12}$ \\
+  \var{bx22pt}    & $b_x^{22}$ \\
+  \var{bx0pt}     & $b_x^{0}$ \\
+  \var{by11pt}    & $b_y^{11}$ \\
+  \var{by21pt}    & $b_y^{21}$ \\
+  \var{by12pt}    & $b_y^{12}$ \\
+  \var{by22pt}    & $b_y^{22}$ \\
+  \var{by0pt}     & $b_y^{0}$ \\
+  \var{u11rms}    & $\left<u_{11}^2\right>^{1/2}$ \\
+  \var{u21rms}    & $\left<u_{21}^2\right>^{1/2}$ \\
+  \var{u12rms}    & $\left<u_{12}^2\right>^{1/2}$ \\
+  \var{u22rms}    & $\left<u_{22}^2\right>^{1/2}$ \\
+  \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
+  \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
+  \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
+  \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
+  \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
+  \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
+  \var{jb0m}      & $\left<jb_{0}\right>$ \\
+  \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
+  \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
+  \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
+  \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
+  \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
+  \var{Ex11pt}    & ${\cal E}_x^{11}$ \\
+  \var{Ex21pt}    & ${\cal E}_x^{21}$ \\
+  \var{Ex12pt}    & ${\cal E}_x^{12}$ \\
+  \var{Ex22pt}    & ${\cal E}_x^{22}$ \\
+  \var{Ex0pt}     & ${\cal E}_x^{0}$ \\
+  \var{Ey11pt}    & ${\cal E}_y^{11}$ \\
+  \var{Ey21pt}    & ${\cal E}_y^{21}$ \\
+  \var{Ey12pt}    & ${\cal E}_y^{12}$ \\
+  \var{Ey22pt}    & ${\cal E}_y^{22}$ \\
+  \var{Ey0pt}     & ${\cal E}_y^{0}$ \\
+  \var{bamp}      & bamp \\
+  \var{E111z}     & ${\cal E}_1^{11}$ \\
+  \var{E211z}     & ${\cal E}_2^{11}$ \\
+  \var{E311z}     & ${\cal E}_3^{11}$ \\
+  \var{E121z}     & ${\cal E}_1^{21}$ \\
+  \var{E221z}     & ${\cal E}_2^{21}$ \\
+  \var{E321z}     & ${\cal E}_3^{21}$ \\
+  \var{E112z}     & ${\cal E}_1^{12}$ \\
+  \var{E212z}     & ${\cal E}_2^{12}$ \\
+  \var{E312z}     & ${\cal E}_3^{12}$ \\
+  \var{E122z}     & ${\cal E}_1^{22}$ \\
+  \var{E222z}     & ${\cal E}_2^{22}$ \\
+  \var{E322z}     & ${\cal E}_3^{22}$ \\
+  \var{E10z}      & ${\cal E}_1^{0}$ \\
+  \var{E20z}      & ${\cal E}_2^{0}$ \\
+  \var{E30z}      & ${\cal E}_3^{0}$ \\
+  \var{EBpq}      & ${\cal E}\cdot\Bv^{pq}$ \\
+  \var{E0Um}      & ${\cal E}^0\cdot\Uv$ \\
+  \var{E0Wm}      & ${\cal E}^0\cdot\Wv$ \\
+  \var{bx0mz}     & $\left<b_{x}\right>_{xy}$ \\
+  \var{by0mz}     & $\left<b_{y}\right>_{xy}$ \\
+  \var{bz0mz}     & $\left<b_{z}\right>_{xy}$ \\
+  \var{M11z}      & $\left<{\cal M}_{11}\right>_{xy}$ \\
+  \var{M22z}      & $\left<{\cal M}_{22}\right>_{xy}$ \\
+  \var{M33z}      & $\left<{\cal M}_{33}\right>_{xy}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule
   \var{TTmax}     & $\max (T)$ \\
-  \var{gTmax}     & $\max (|grad T|)$ \\
+  \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{TTmin}     & $\min (T)$ \\
   \var{TTm}       & $\left< T \right>$ \\
   \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
                     \quad(radiative flux at the top) \\
+  \var{ethm}      & $\left< e_{\text{th}}\right> =
+                    \left< c_v \rho T \right> $
+                    \quad(mean thermal energy) \\
+  \var{eem}       & $\left< e \right> =
+                    \left< c_v T \right>$
+                    \quad(mean internal energy) \\
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
                     /\max c_{\rm s}]$
                     \quad(time step relative to
@@ -586,25 +756,28 @@
                     viscous time step;
                     see \S~\ref{time-step}) \\
 \midrule
-  \multicolumn{2}{c}{Module \file{testfield_xz.f90}} \\
-\midrule
-  \var{E111z}     & ${\cal E}_1^{11}$ \\
-  \var{E211z}     & ${\cal E}_2^{11}$ \\
-  \var{E311z}     & ${\cal E}_3^{11}$ \\
-  \var{E121z}     & ${\cal E}_1^{21}$ \\
-  \var{E221z}     & ${\cal E}_2^{21}$ \\
-  \var{E321z}     & ${\cal E}_3^{21}$ \\
-  \var{alp11}     & $\alpha_{11}$ \\
-  \var{alp21}     & $\alpha_{21}$ \\
-  \var{eta11}     & $\eta_{113}k$ \\
-  \var{eta21}     & $\eta_{213}k$ \\
-  \var{b11rms}    & $\left<b_{11}^2\right>$ \\
-  \var{b21rms}    & $\left<b_{21}^2\right>$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
   \var{dtshear}   & advec\_shear/cdt \\
   \var{deltay}    & deltay \\
+\midrule
+  \multicolumn{2}{c}{Module \file{testfield_axisym.f90}} \\
+\midrule
+  \var{alpPERP}   & $\alpha_\perp$ \\
+  \var{alpPARA}   & $\alpha_\perp$ \\
+  \var{gam}       & $\gamma$ \\
+  \var{betPERP}   & $\beta_\perp$ \\
+  \var{betPARA}   & $\beta_\perp$ \\
+  \var{del}       & $\delta$ \\
+  \var{kapPERP}   & $\kappa_\perp$ \\
+  \var{kapPARA}   & $\kappa_\perp$ \\
+  \var{mu}        & $\mu$ \\
+  \var{bx1pt}     & $b_x^{1}$ \\
+  \var{bx2pt}     & $b_x^{2}$ \\
+  \var{bx3pt}     & $b_x^{3}$ \\
+  \var{b1rms}     & $\left<b_{1}^2\right>^{1/2}$ \\
+  \var{b2rms}     & $\left<b_{2}^2\right>^{1/2}$ \\
+  \var{b3rms}     & $\left<b_{3}^2\right>^{1/2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
@@ -749,6 +922,142 @@
   \multicolumn{2}{c}{Module \file{solid_cells.f90}} \\
 \midrule
 \midrule
+  \multicolumn{2}{c}{Module \file{testfield_nonlin_z.f90}} \\
+\midrule
+  \var{alp11}     & $\alpha_{11}$ \\
+  \var{alp21}     & $\alpha_{21}$ \\
+  \var{alp31}     & $\alpha_{31}$ \\
+  \var{alp12}     & $\alpha_{12}$ \\
+  \var{alp22}     & $\alpha_{22}$ \\
+  \var{alp32}     & $\alpha_{32}$ \\
+  \var{eta11}     & $\eta_{11}k$ \\
+  \var{eta21}     & $\eta_{21}k$ \\
+  \var{eta12}     & $\eta_{12}k$ \\
+  \var{eta22}     & $\eta_{22}k$ \\
+  \var{alpK11}    & $\alpha_{11}^K$ \\
+  \var{alpK21}    & $\alpha_{21}^K$ \\
+  \var{alpK31}    & $\alpha_{31}^K$ \\
+  \var{alpK12}    & $\alpha_{12}^K$ \\
+  \var{alpK22}    & $\alpha_{22}^K$ \\
+  \var{alpK32}    & $\alpha_{32}^K$ \\
+  \var{etaK11}    & $\eta_{11}^Kk$ \\
+  \var{etaK21}    & $\eta_{21}^Kk$ \\
+  \var{etaK12}    & $\eta_{12}^Kk$ \\
+  \var{etaK22}    & $\eta_{22}^Kk$ \\
+  \var{alpM11}    & $\alpha_{11}^M$ \\
+  \var{alpM21}    & $\alpha_{21}^M$ \\
+  \var{alpM31}    & $\alpha_{31}^M$ \\
+  \var{alpM12}    & $\alpha_{12}^M$ \\
+  \var{alpM22}    & $\alpha_{22}^M$ \\
+  \var{alpM32}    & $\alpha_{32}^M$ \\
+  \var{etaM11}    & $\eta_{11}^Mk$ \\
+  \var{etaM21}    & $\eta_{21}^Mk$ \\
+  \var{etaM12}    & $\eta_{12}^Mk$ \\
+  \var{etaM22}    & $\eta_{22}^Mk$ \\
+  \var{phi11}     & $\phi_{11}$ \\
+  \var{phi21}     & $\phi_{21}$ \\
+  \var{phi12}     & $\phi_{12}$ \\
+  \var{phi22}     & $\phi_{22}$ \\
+  \var{phi32}     & $\phi_{32}$ \\
+  \var{psi11}     & $\psi_{11}k$ \\
+  \var{psi21}     & $\psi_{21}k$ \\
+  \var{psi12}     & $\psi_{12}k$ \\
+  \var{psi22}     & $\psi_{22}k$ \\
+  \var{alp11cc}   & $\alpha_{11}\cos^2 kz$ \\
+  \var{alp21sc}   & $\alpha_{21}\sin kz\cos kz$ \\
+  \var{alp12cs}   & $\alpha_{12}\cos kz\sin kz$ \\
+  \var{alp22ss}   & $\alpha_{22}\sin^2 kz$ \\
+  \var{eta11cc}   & $\eta_{11}\cos^2 kz$ \\
+  \var{eta21sc}   & $\eta_{21}\sin kz\cos kz$ \\
+  \var{eta12cs}   & $\eta_{12}\cos kz\sin kz$ \\
+  \var{eta22ss}   & $\eta_{22}\sin^2 kz$ \\
+  \var{alpK11cc}  & $\alpha_{11}^{\rm K}\cos^2 kz$ \\
+  \var{alpK21sc}  & $\alpha_{21}^{\rm K}\sin kz\cos kz$ \\
+  \var{alpK12cs}  & $\alpha_{12}^{\rm K}\cos kz\sin kz$ \\
+  \var{alpK22ss}  & $\alpha_{22}^{\rm K}\sin^2 kz$ \\
+  \var{etaK11cc}  & $\eta_{11}^{\rm K}\cos^2 kz$ \\
+  \var{etaK21sc}  & $\eta_{21}^{\rm K}\sin kz\cos kz$ \\
+  \var{etaK12cs}  & $\eta_{12}^{\rm K}\cos kz\sin kz$ \\
+  \var{etaK22ss}  & $\eta_{22}^{\rm K}\sin^2 kz$ \\
+  \var{alpM11cc}  & $\alpha_{11}^{\rm M}\cos^2 kz$ \\
+  \var{alpM21sc}  & $\alpha_{21}^{\rm M}\sin kz\cos kz$ \\
+  \var{alpM12cs}  & $\alpha_{12}^{\rm M}\cos kz\sin kz$ \\
+  \var{alpM22ss}  & $\alpha_{22}^{\rm M}\sin^2 kz$ \\
+  \var{etaM11cc}  & $\eta_{11}^{\rm M}\cos^2 kz$ \\
+  \var{etaM21sc}  & $\eta_{21}^{\rm M}\sin kz\cos kz$ \\
+  \var{etaM12cs}  & $\eta_{12}^{\rm M}\cos kz\sin kz$ \\
+  \var{etaM22ss}  & $\eta_{22}^{\rm M}\sin^2 kz$ \\
+  \var{s2kzDFm}   & $\left<\sin2kz\nabla\cdot F\right>$ \\
+  \var{M11}       & ${\cal M}_{11}$ \\
+  \var{M22}       & ${\cal M}_{22}$ \\
+  \var{M33}       & ${\cal M}_{33}$ \\
+  \var{M11cc}     & ${\cal M}_{11}\cos^2 kz$ \\
+  \var{M11ss}     & ${\cal M}_{11}\sin^2 kz$ \\
+  \var{M22cc}     & ${\cal M}_{22}\cos^2 kz$ \\
+  \var{M22ss}     & ${\cal M}_{22}\sin^2 kz$ \\
+  \var{M12cs}     & ${\cal M}_{12}\cos kz\sin kz$ \\
+  \var{bx11pt}    & $b_x^{11}$ \\
+  \var{bx21pt}    & $b_x^{21}$ \\
+  \var{bx12pt}    & $b_x^{12}$ \\
+  \var{bx22pt}    & $b_x^{22}$ \\
+  \var{bx0pt}     & $b_x^{0}$ \\
+  \var{by11pt}    & $b_y^{11}$ \\
+  \var{by21pt}    & $b_y^{21}$ \\
+  \var{by12pt}    & $b_y^{12}$ \\
+  \var{by22pt}    & $b_y^{22}$ \\
+  \var{by0pt}     & $b_y^{0}$ \\
+  \var{u11rms}    & $\left<u_{11}^2\right>^{1/2}$ \\
+  \var{u21rms}    & $\left<u_{21}^2\right>^{1/2}$ \\
+  \var{u12rms}    & $\left<u_{12}^2\right>^{1/2}$ \\
+  \var{u22rms}    & $\left<u_{22}^2\right>^{1/2}$ \\
+  \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
+  \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
+  \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
+  \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
+  \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
+  \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
+  \var{jb0m}      & $\left<jb_{0}\right>$ \\
+  \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
+  \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
+  \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
+  \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
+  \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
+  \var{Ex11pt}    & ${\cal E}_x^{11}$ \\
+  \var{Ex21pt}    & ${\cal E}_x^{21}$ \\
+  \var{Ex12pt}    & ${\cal E}_x^{12}$ \\
+  \var{Ex22pt}    & ${\cal E}_x^{22}$ \\
+  \var{Ex0pt}     & ${\cal E}_x^{0}$ \\
+  \var{Ey11pt}    & ${\cal E}_y^{11}$ \\
+  \var{Ey21pt}    & ${\cal E}_y^{21}$ \\
+  \var{Ey12pt}    & ${\cal E}_y^{12}$ \\
+  \var{Ey22pt}    & ${\cal E}_y^{22}$ \\
+  \var{Ey0pt}     & ${\cal E}_y^{0}$ \\
+  \var{bamp}      & bamp \\
+  \var{E111z}     & ${\cal E}_1^{11}$ \\
+  \var{E211z}     & ${\cal E}_2^{11}$ \\
+  \var{E311z}     & ${\cal E}_3^{11}$ \\
+  \var{E121z}     & ${\cal E}_1^{21}$ \\
+  \var{E221z}     & ${\cal E}_2^{21}$ \\
+  \var{E321z}     & ${\cal E}_3^{21}$ \\
+  \var{E112z}     & ${\cal E}_1^{12}$ \\
+  \var{E212z}     & ${\cal E}_2^{12}$ \\
+  \var{E312z}     & ${\cal E}_3^{12}$ \\
+  \var{E122z}     & ${\cal E}_1^{22}$ \\
+  \var{E222z}     & ${\cal E}_2^{22}$ \\
+  \var{E322z}     & ${\cal E}_3^{22}$ \\
+  \var{E10z}      & ${\cal E}_1^{0}$ \\
+  \var{E20z}      & ${\cal E}_2^{0}$ \\
+  \var{E30z}      & ${\cal E}_3^{0}$ \\
+  \var{EBpq}      & ${\cal E}\cdot\Bv^{pq}$ \\
+  \var{E0Um}      & ${\cal E}^0\cdot\Uv$ \\
+  \var{E0Wm}      & ${\cal E}^0\cdot\Wv$ \\
+  \var{bx0mz}     & $\left<b_{x}\right>_{xy}$ \\
+  \var{by0mz}     & $\left<b_{y}\right>_{xy}$ \\
+  \var{bz0mz}     & $\left<b_{z}\right>_{xy}$ \\
+  \var{M11z}      & $\left<{\cal M}_{11}\right>_{xy}$ \\
+  \var{M22z}      & $\left<{\cal M}_{22}\right>_{xy}$ \\
+  \var{M33z}      & $\left<{\cal M}_{33}\right>_{xy}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{nolorenz_gauge.f90}} \\
 \midrule
   \var{phim}      & $\left<\phi\right>$ \\
@@ -765,6 +1074,15 @@
 \midrule
   \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
 \midrule
+  \var{gam11}     & $\gamma_{1}^{(1)}$ \\
+  \var{gam12}     & $\gamma_{2}^{(1)}$ \\
+  \var{gam13}     & $\gamma_{3}^{(1)}$ \\
+  \var{gam21}     & $\gamma_{1}^{(2)}$ \\
+  \var{gam22}     & $\gamma_{2}^{(2)}$ \\
+  \var{gam23}     & $\gamma_{3}^{(2)}$ \\
+  \var{gam31}     & $\gamma_{1}^{(3)}$ \\
+  \var{gam32}     & $\gamma_{2}^{(3)}$ \\
+  \var{gam33}     & $\gamma_{3}^{(3)}$ \\
   \var{kap11}     & $\kappa_{11}$ \\
   \var{kap21}     & $\kappa_{21}$ \\
   \var{kap31}     & $\kappa_{31}$ \\
