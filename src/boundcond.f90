@@ -1781,7 +1781,7 @@ module Boundcond
 
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
-             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(1+(Lambda_V0/nu))
+             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(1-(Lambda_V0/nu))
           enddo
         else
           do k=1,nghost
@@ -1792,7 +1792,7 @@ module Boundcond
       case ('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
-            f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1+(Lambda_V0/nu)))
+            f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1-(Lambda_V0/nu)))
           enddo
         else
           do k=1,nghost
