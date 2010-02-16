@@ -1588,4 +1588,14 @@ kky_aa=2.*pi
 !
     endsubroutine hydro_clean_up
 !***********************************************************************
+    subroutine kinematic_random_phase
+!
+!  dummy routine due to dhruba commit 13286
+!
+!  16-feb-2010/bing: 
+!
+      print*, 'I should not be called. '
+!
+    endsubroutine kinematic_random_phase
+!*******************************************************************
 endmodule Hydro
