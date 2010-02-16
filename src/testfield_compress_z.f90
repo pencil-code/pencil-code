@@ -10,9 +10,9 @@
 !  njtest must be set at the end of the file such that 6*njtest=MVAR.
 !
 !  Example:
-!  ! MVAR CONTRIBUTION 24
-!  ! MAUX CONTRIBUTION 24
-!  integer, parameter :: njtest=4
+!  ! MVAR CONTRIBUTION 35
+!  ! MAUX CONTRIBUTION 35
+!  integer, parameter :: njtest=5
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -50,8 +50,8 @@ module Testfield
   real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.
-  integer :: iuxtest=0,iuytest=0,iuztest=0,iuxtestpq=0,iuztestpq=0
-  integer :: iu0xtest=0,iu0ztest=0
+  integer :: iuxtest=0,iuytest=0,iuztest=0
+  integer :: iu0xtest=0,iu0ztest=0,ih0test=0,ihhtest=0
   integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
 
@@ -61,7 +61,9 @@ module Testfield
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
-  logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
+  logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.
+  logical :: lugu_as_aux=.false.,lugh_as_aux=.false.
+  logical :: linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
@@ -79,7 +81,7 @@ module Testfield
   ! run parameters
   real :: etatest=0.,etatest1=0.,nutest=0.,nutest1=0.
   real :: ampl_fcont_aatest=1.,ampl_fcont_uutest=1.
-  real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.
+  real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.,rescale_hhtest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
@@ -232,7 +234,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (mz,3,mtestfield/6) :: uxbtestmz,jxbtestmz
+  real, dimension (mz,3,mtestfield/7) :: uxbtestmz,jxbtestmz
 
   contains
 
@@ -258,18 +260,18 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaxtestpq=iaatest+3*(njtest-1)
-      iaztestpq=iaxtestpq+2
 !
 !  Allocate mtestfield slots; the first half is used for aatest
 !  and the second for uutest.
 !
-      iuutest=nvar+1+mtestfield/2
+      iuutest=iaatest+3
       iuxtest=iuutest
       iuytest=iuutest+1
       iuztest=iuutest+2
-      iuxtestpq=iuutest+3*(njtest-1)
-      iuztestpq=iuxtestpq+2
+!
+!  Allocate the 7th slot for pseudo-enthalpy
+!
+      ih0test=iuutest+3
 !
 !  set ntestfield and nvar
 !
@@ -414,6 +416,7 @@ module Testfield
         iE0=5
         rescale_aatest(iE0)=1.
         rescale_uutest(iE0)=1.
+        rescale_hhtest(iE0)=1.
       endif
 !
 !  set to zero and then rescale the testfield
@@ -423,8 +426,10 @@ module Testfield
         do jtest=1,njtest
           iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
           iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
+          ihhtest=ih0test+(jtest-1)
           f(:,:,:,iaxtest:iaztest)=rescale_aatest(jtest)*f(:,:,:,iaxtest:iaztest)
           f(:,:,:,iuxtest:iuztest)=rescale_uutest(jtest)*f(:,:,:,iuxtest:iuztest)
+          f(:,:,:,ihhtest        )=rescale_hhtest(jtest)*f(:,:,:,ihhtest)
         enddo
       endif
 !
@@ -456,8 +461,7 @@ module Testfield
         endif
       endif
 !
-!  possibility of using jxb as auxiliary array (is intended to be
-!  used in connection with testflow method)
+!  possibility of using jxb as auxiliary array
 !
       if (ljxb_as_aux) then
         if (ijxb==0) then
@@ -467,6 +471,34 @@ module Testfield
           print*, 'initialize_magnetic: ijxb = ', ijxb
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ijxb=',ijxb
+          close(3)
+        endif
+      endif
+!
+!  possibility of using ugu as auxiliary array
+!
+      if (lugu_as_aux) then
+        if (iugu==0) then
+          call farray_register_auxiliary('ugu',iugu,vector=3*njtest)
+        endif
+        if (iugu/=0.and.lroot) then
+          print*, 'initialize_magnetic: iugu = ', iugu
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'iugu=',iugu
+          close(3)
+        endif
+      endif
+!
+!  possibility of using ugh as auxiliary array
+!
+      if (lugh_as_aux) then
+        if (iugh==0) then
+          call farray_register_auxiliary('ugh',iugh,vector=njtest)
+        endif
+        if (iugh/=0.and.lroot) then
+          print*, 'initialize_magnetic: iugh = ', iugh
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'iugh=',iugh
           close(3)
         endif
       endif
@@ -624,8 +656,9 @@ module Testfield
 !
 !   3-jun-05/axel: coded
 !  16-mar-08/axel: Lorentz force added for testfield method
-!  27-nov-09/axel: adapted from testfield_z, and added velocity equation
 !  25-jan-09/axel: added Maxwell stress tensor calculation
+!  27-nov-09/axel: adapted from testfield_z, and added velocity equation
+!  15-feb-10/axel: adapted from testfield_nonlinear_z, and added enthalpy
 !
       use Cdata
       use Diagnostics
@@ -648,7 +681,7 @@ module Testfield
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
       real, dimension (nx,3) :: del2Utest,uutest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
+      real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.,hhtest
       integer :: jtest,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -669,11 +702,13 @@ module Testfield
       do jtest=1,njtest
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
         iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
+        ihhtest=ih0test+(jtest-1)
 !
 !  compute uutest, bbtest, etc
 !
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         uutest=f(l1:l2,m,n,iuxtest:iuztest)
+        hhtest=f(l1:l2,m,n,ihhtest)
 !       call del2v(f,iaxtest,del2Atest)
         call del2v(f,iuxtest,del2Utest)
         call gij(f,iaxtest,aijtest,1)

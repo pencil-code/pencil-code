@@ -344,9 +344,9 @@ module Hydro
 !  Glen-Roberts flow (positive helicity)
 !
       elseif (kinflow=='poshel-roberts') then
-        if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kx_uukin,ky_uukin
         fac=ampl_kinflow
         eps1=1.-eps_kinflow
+        if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
         p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
         p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
         p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)

@@ -117,8 +117,8 @@ module Magnetic
   real :: alpha_eps=0.0
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
-  real :: meanfield_Qs=1.0, meanfield_Qp=1.0
-  real :: meanfield_Bs=1.0, meanfield_Bp=1.0
+  real :: meanfield_Qs=1.0, meanfield_Qp=1.0, meanfield_qe=1.0
+  real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
   real :: displacement_gun=0.0
   real :: pertamplaa=0.0
@@ -224,7 +224,8 @@ module Magnetic
       hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
       delta_effect, alpha_eps, lmeanfield_noalpm, alpha_profile, &
       meanfield_etat, lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      meanfield_Qs, meanfield_Qp, meanfield_Bs, meanfield_Bp, meanfield_kf, &
+      meanfield_Qs, meanfield_Qp, meanfield_qe, &
+      meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
@@ -320,6 +321,7 @@ module Magnetic
   integer :: idiag_amax=0       ! DIAG_DOC:
   integer :: idiag_Qsm=0        ! DIAG_DOC: $\left<Q_p(\overline{B})\right>$
   integer :: idiag_Qpm=0        ! DIAG_DOC: $\left<Q_p(\overline{B})\right>$
+  integer :: idiag_qem=0        ! DIAG_DOC: $\left<q_e(\overline{B})\right>$
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
@@ -1578,9 +1580,9 @@ module Magnetic
       real, dimension (nx) :: alpha_tmp
       real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: jcrossb2 
-      real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func
-      real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, BiBk_Bki
-      real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21
+      real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func, meanfield_qe_func
+      real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
+      real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
       real, dimension (nx,3) :: Bk_Bki
       real :: B2_ext,c,s,kx
@@ -1810,9 +1812,12 @@ module Magnetic
             meanfield_urms21=1./(3.*meanfield_kf*meanfield_etat)**2
             meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
             meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
+            meanfield_qe_func=    meanfield_qe    *(1.-2*pi_1*atan(p%b2*meanfield_Be21))
             meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)/(1.+(p%vA2*meanfield_urms21)**2)
             meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)/(1.+(p%vA2*meanfield_urms21)**2)
+            meanfield_qe_der=-2*pi_1* meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
             call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
+!
 !           call multmv_transp(p%bij,p%bb,Bk_Bki)
             !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
             !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%vA2*meanfield_urms21/meanfield_Bp2*meanfield_Qp_der,Bk_Bki,p%jxb)
@@ -1822,16 +1827,30 @@ module Magnetic
           else
             meanfield_Bs21=1./meanfield_Bs**2
             meanfield_Bp21=1./meanfield_Bp**2
+            meanfield_Be21=1./meanfield_Be**2
             meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
             meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
+            meanfield_qe_func=    meanfield_qe    *(1.-2*pi_1*atan(p%b2*meanfield_Be21))
             meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
             meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
+            meanfield_qe_der=-2*pi_1* meanfield_qe    *meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
+!print*,'meanfield_qe_func=',meanfield_qe_func
+!
+!  add -(1/2)*grad[(1-qp)B^2]
+!
             call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
             call multmv_transp(p%bij,p%bb,Bk_Bki)
             !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
             call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
+!
+!  add B.grad[(1-qs)*B_i]
+!
             call dot(Bk_Bki,p%bb,BiBk_Bki)
             call multsv_mn_add(2*meanfield_Qs_der*BiBk_Bki,p%bb,p%jxb)
+!
+!  add e_z*grad(qe*B^2)
+!
+            p%jxb(:,3)=p%jxb(:,3)+2*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
           endif
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
@@ -2007,6 +2026,7 @@ module Magnetic
       if (ldiagnos) then
         if (idiag_Qsm/=0) call sum_mn_name(meanfield_Qs_func,idiag_Qsm)
         if (idiag_Qpm/=0) call sum_mn_name(meanfield_Qp_func,idiag_Qpm)
+        if (idiag_qem/=0) call sum_mn_name(meanfield_qe_func,idiag_qem)
       endif
 !
     endsubroutine calc_pencils_magnetic
@@ -5895,7 +5915,7 @@ module Magnetic
         idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
-        idiag_arms=0; idiag_amax=0; idiag_Qsm=0; idiag_Qpm=0; idiag_beta1m=0
+        idiag_arms=0; idiag_amax=0; idiag_Qsm=0; idiag_Qpm=0; idiag_qem=0; idiag_beta1m=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
@@ -6001,6 +6021,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
         call parse_name(iname,cname(iname),cform(iname),'Qsm',idiag_Qsm)
         call parse_name(iname,cname(iname),cform(iname),'Qpm',idiag_Qpm)
+        call parse_name(iname,cname(iname),cform(iname),'qem',idiag_qem)
         call parse_name(iname,cname(iname),cform(iname),&
             'beta1m',idiag_beta1m)
         call parse_name(iname,cname(iname),cform(iname),&
@@ -6363,6 +6384,7 @@ module Magnetic
         write(3,*) 'i_vA2m=',idiag_vA2m
         write(3,*) 'i_Qsm=',idiag_Qsm
         write(3,*) 'i_Qpm=',idiag_Qpm
+        write(3,*) 'i_qem=',idiag_qem
         write(3,*) 'i_beta1m=',idiag_beta1m
         write(3,*) 'i_beta1max=',idiag_beta1max
         write(3,*) 'i_dtb=',idiag_dtb
