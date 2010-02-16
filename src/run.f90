@@ -506,7 +506,6 @@ program run
 !  A random phase for the hydro_kinematic module
 !
     if(lhydro_kinematic) call kinematic_random_phase()
-    write(*,*) 'DM',kinematic_phase
 !
 !  Time advance.
 !
