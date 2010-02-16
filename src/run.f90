@@ -56,7 +56,7 @@ program run
   use FArrayManager,   only: farray_clean_up
   use Filter
   use Forcing,         only: forcing_clean_up,addforce
-  use Hydro,           only: hydro_clean_up,kinematic_random_phase 
+  use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN
   use IO
@@ -73,13 +73,13 @@ program run
   use Pencil_check,    only: pencil_consistency_check
   use Register
   use SharedVariables, only: sharedvars_clean_up
+  use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
   use Snapshot
   use Sub
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
-  use Signal_handling, only: signal_prepare, emergency_stop
   use Timeavg
   use Timestep,        only: rk_2n
 !
@@ -169,14 +169,14 @@ program run
 !
   call read_runpars()
   call rprint_list(LRESET=.false.)
-
+!
 !  Position of equator (if any).
 !
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
 ! and limits to xaveraging.
-! 
+!
   if (lav_smallx) call init_xaver
 !
 !  Inner radius for freezing variables defaults to r_min.
@@ -255,7 +255,7 @@ program run
   call rtime(trim(directory)//'/time.dat',t)
   if (mglobal/=0)  &
       call input_globals(trim(directory_snap)//'/global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal) 
+      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Set initial time to zero if requested.
 !
@@ -344,7 +344,7 @@ program run
   if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
-! 
+!
   if (lpencil_init) call initialize_pencils(p,0.0)
 !
 !  Perform pencil_case consistency check if requested.
@@ -366,9 +366,9 @@ program run
     icount=0
     it_last_diagnostic=icount
   endif
-!        
-  if (it1d==impossible_int) then 
-    it1d=it1 
+!
+  if (it1d==impossible_int) then
+    it1d=it1
   else
     if (it1d<it1) then
       if (lroot) call fatal_error('run','it1d smaller than it1')
@@ -399,7 +399,7 @@ program run
           if (lstop) print*, 'Found STOP file'
           if (t>tmax) print*, 'Maximum simulation time exceeded'
           resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
-          if (resubmit) then 
+          if (resubmit) then
             print*, 'Cannot be resubmitted'
           else
           endif
@@ -421,10 +421,10 @@ program run
       lreloading         =lreload_file .or. lreload_always_file
 !
 !  In some compilers (particularly pathf90) the file reload is being give
-!  unit = 1 hence there is conflict during re-reading of parameters. 
+!  unit = 1 hence there is conflict during re-reading of parameters.
 !  In this temporary fix, the RELOAD file is being removed just after it
 !  has been seen, not after RELOAD-ing has been completed. There must
-!  be a better solution. 
+!  be a better solution.
 !
       call mpibcast_logical(lreloading, 1)
 !
@@ -437,13 +437,13 @@ program run
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-                                 call xyaverages_clean_up() 
-                                 call xzaverages_clean_up() 
-                                 call yzaverages_clean_up() 
-        if (lwrite_phizaverages) call phizaverages_clean_up() 
-        if (lwrite_yaverages)    call yaverages_clean_up() 
-        if (lwrite_zaverages)    call zaverages_clean_up() 
-        if (lwrite_phiaverages)  call phiaverages_clean_up() 
+                                 call xyaverages_clean_up()
+                                 call xzaverages_clean_up()
+                                 call yzaverages_clean_up()
+        if (lwrite_phizaverages) call phizaverages_clean_up()
+        if (lwrite_yaverages)    call yaverages_clean_up()
+        if (lwrite_zaverages)    call zaverages_clean_up()
+        if (lwrite_phiaverages)  call phiaverages_clean_up()
         if (lforcing)            call forcing_clean_up()
         if (.not.lhydro)         call hydro_clean_up()
         call rprint_list(LRESET=.true.) !(Re-read output list)
@@ -505,7 +505,7 @@ program run
 !
 !  A random phase for the hydro_kinematic module
 !
-    if(lhydro_kinematic) call kinematic_random_phase()
+    if (lhydro_kinematic) call kinematic_random_phase()
 !
 !  Time advance.
 !
@@ -520,7 +520,7 @@ program run
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
 !  particles is activated.
-!      
+!
     if (lparticles) call particles_load_balance(f)
 !
 !  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
@@ -578,7 +578,8 @@ program run
     if (lparticles) &
         call particles_write_snapshot(trim(directory_snap)//'/PVAR',f, &
         ENUM=.true.,FLIST='pvarN.list')
-!  This is weird... if I write only to the root, the other processors complain...
+!  This is weird... if I write only to the root,
+!  the other processors complain...
     if (lparticles_nbody) &
         call particles_nbody_write_snapshot(&
         trim(directory_snap)//'/SPVAR',&
@@ -738,12 +739,12 @@ program run
   call chemistry_clean_up()
   call NSCBC_clean_up()
   if (lADI) deallocate(finit)
-  call xyaverages_clean_up() 
-  call xzaverages_clean_up() 
-  call yzaverages_clean_up() 
-  if (lwrite_phizaverages) call phizaverages_clean_up() 
-  if (lwrite_yaverages)    call yaverages_clean_up() 
-  if (lwrite_zaverages)    call zaverages_clean_up() 
-  if (lwrite_phiaverages)  call phiaverages_clean_up() 
+  call xyaverages_clean_up()
+  call xzaverages_clean_up()
+  call yzaverages_clean_up()
+  if (lwrite_phizaverages) call phizaverages_clean_up()
+  if (lwrite_yaverages)    call yaverages_clean_up()
+  if (lwrite_zaverages)    call zaverages_clean_up()
+  if (lwrite_phiaverages)  call phiaverages_clean_up()
 !
 endprogram run
