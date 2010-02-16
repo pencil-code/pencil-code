@@ -4228,6 +4228,7 @@ module Initcond
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       real, dimension (:), allocatable :: kxp, kyp
       real :: mu0_SI,u_b
+      logical :: exist
       integer :: i,idx2,idy2,stat
 !
 !  Allocate memory for arrays.
@@ -4282,9 +4283,16 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
-      open (11,file='driver/magnetogram_k.dat',form='unformatted')
-      read (11) Bz0_r
-      close (11)
+      inquire(file='driver/magnetogram_k.txt',exist=exist)
+      if (exist) then
+        open (11,file='driver/magnetogram_k.txt')
+        read (11,*) Bz0_r
+        close (11)
+      else
+        open (11,file='driver/magnetogram_k.dat',form='unformatted')
+        read (11) Bz0_r
+        close (11)
+      endif
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
@@ -4297,31 +4305,31 @@ module Initcond
 !
 !  Calculate transformed vector potential at "each height"
 !
-         where (k2 .ne. 0 )
-            A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) )
-            A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
-         elsewhere
-            A_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
-            A_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
-         endwhere
+        where (k2 .ne. 0 )
+          A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) )
+          A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
+        elsewhere
+          A_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
+          A_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
+        endwhere
 !
-         call fourier_transform_other(A_r,A_i,linv=.true.)
+        call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-         f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+        f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 !
-         where (k2 .ne. 0 )
-            A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
-            A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
-         elsewhere
-            A_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
-            A_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
-         endwhere
+        where (k2 .ne. 0 )
+          A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
+          A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
+        elsewhere
+          A_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+          A_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+        endwhere
 !
-         call fourier_transform_other(A_r,A_i,linv=.true.)
+        call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-         f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+        f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 !
-         f(l1:l2,m1:m2,i,iaz)=0.
+        f(l1:l2,m1:m2,i,iaz)=0.
       enddo
 !
 !  Deallocate arrays.
