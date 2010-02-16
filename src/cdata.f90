@@ -495,6 +495,9 @@ module Cdata
   real :: dtphase_kinflow=0.
   real :: kinflow_ck_Balpha=0.
   integer :: kinflow_ck_ell=0.
+! (DM) All previous kinematic stuff can go to hydro_kinematic but I am not sure how
+! to accomodate the following. 
+  real :: kinematic_phase=0.
 !
 !  Scrap yard. Please categorise these variables if you know what they do.
 !  Even better: move them to their relevant modules.

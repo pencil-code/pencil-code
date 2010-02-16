@@ -56,7 +56,7 @@ program run
   use FArrayManager,   only: farray_clean_up
   use Filter
   use Forcing,         only: forcing_clean_up,addforce
-  use Hydro,           only: hydro_clean_up 
+  use Hydro,           only: hydro_clean_up,kinematic_random_phase 
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN
   use IO
@@ -502,6 +502,11 @@ program run
 !
     if (lADI)   finit=f
     if (ltestperturb) call testperturb_begin(f,df)
+!
+!  A random phase for the hydro_kinematic module
+!
+    if(lhydro_kinematic) call kinematic_random_phase()
+    write(*,*) 'DM',kinematic_phase
 !
 !  Time advance.
 !

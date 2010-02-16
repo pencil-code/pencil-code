@@ -15,7 +15,7 @@
   public :: lforcing_cont_uu, ampl_fcont_uu
   public :: hydro_clean_up
   public :: traceless_strain, coriolis_cartesian
-  
+  public:: kinematic_random_phase
 !ajwm SHOULDN'T BE EXPORTED
 !
 ! Keplerian velocity boundary condition parameters

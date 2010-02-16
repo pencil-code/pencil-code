@@ -604,8 +604,7 @@ ky_uukin=2.*pi
         fac=ampl_kinflow
         if (headtt) print*,'potential_random; kx_aa,ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'potential_random; kx_aa=',kx_uukin,ky_uukin,kz_uukin
-          call random_number_wrapper(fran1)
-          phase1=2*pi*fran1(1)
+          phase1=2*pi*kinematic_phase
         p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
         p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
         p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
@@ -1723,5 +1722,17 @@ ky_uukin=2.*pi
       print*, 'Done.'
 !
     endsubroutine hydro_clean_up
+!*******************************************************************
+    subroutine kinematic_random_phase
+!
+!  Get a random phase to be used for the whole kinematic velocity field. 
+!
+!  16-feb-2010/dhruba: coded
+!
+      use General, only: random_number_wrapper
+!
+      call random_number_wrapper(kinematic_phase)
+!
+    endsubroutine kinematic_random_phase
 !*******************************************************************
 endmodule Hydro
