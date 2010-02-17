@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
 !
@@ -74,7 +74,7 @@ module Special
   use Cdata
   use Cparam
   use Messages
-  use Sub
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -122,7 +122,7 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         print*,''
         print*,'Switch '
         print*,' SPECIAL = special/fargo'
@@ -137,8 +137,6 @@ module Special
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
-!
-      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -245,7 +243,7 @@ module Special
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -263,7 +261,7 @@ module Special
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -380,7 +378,7 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
-!!***********************************************************************
+!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -451,10 +449,10 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_pscalar
-!********************************************************************
+!***********************************************************************
     subroutine special_calc_particles(fp)
 !
-!  Called before the loop, in case some particle value is needed 
+!  Called before the loop, in case some particle value is needed
 !  for the special density/hydro/magnetic/entropy.
 !
 !  20-nov-08/wlad: coded
@@ -467,7 +465,7 @@ module Special
 !***********************************************************************
     subroutine special_calc_particles_nbody(fsp)
 !
-!  Called before the loop, in case some massive particles value 
+!  Called before the loop, in case some massive particles value
 !  is needed for the special density/hydro/magnetic/entropy.
 !
 !  20-nov-08/wlad: coded
