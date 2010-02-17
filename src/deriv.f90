@@ -778,10 +778,12 @@ module Deriv
         upwnd = upwind
       else
         upwnd = .false.
-        if ((.not.lcartesian_coords).and.(.not.igndx)) then
-          call fatal_error('der6','in non-cartesian coordinates '//&
-              'just works if upwinding is used')
-        endif
+!        if ((.not.lcartesian_coords).and.(.not.igndx)) then
+!DM: non cartesian grids should not necessarily use upwinding. Wlad do you disagree ?
+!         if (.not.igndx) then
+!          call fatal_error('der6','in non-cartesian coordinates '//&
+!              'just works if upwinding is used')
+!        endif
       endif
 !
       if (j==1) then
