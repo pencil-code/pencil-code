@@ -767,7 +767,7 @@ module Deriv
       if (present(ignoredx)) then
         igndx = ignoredx
       else
-        if ((.not. lequidist(j)).or.(present(upwind))) then
+        if (.not. lequidist(j)) then
           call fatal_error('der6','for non-equidistant grid only '//&
               'if dx is ignored')
         endif
