@@ -3438,132 +3438,135 @@ module Boundcond
 !
 !  Read the time table
 !
-       if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat /= -2) then
+       if (t*unit_time<tl+delta_t.or.t*unit_time>=tr+delta_t.and.iostat /= -2) then
 !
-          inquire(IOLENGTH=lend) tl
-          close (10)
-          open (10,file='driver/time_k',form='unformatted',status='unknown',recl=lend,access='direct')
+         inquire(IOLENGTH=lend) tl
+         close (10)
+         open (10,file='driver/time_k',form='unformatted', &
+             status='unknown',recl=lend,access='direct')
 !
-          iostat = 0
-          i=0
-          do while (iostat == 0)
-            i=i+1
-            read (10,rec=i,iostat=iostat) tl
-            read (10,rec=i+1,iostat=iostat) tr
-            if (iostat /= 0) then
-              i=1
-              delta_t = t*unit_time                  ! EOF is reached => read again
-              read (10,rec=i,iostat=iostat) tl
-              read (10,rec=i+1,iostat=iostat) tr
-              iostat=-1
-            else
-              if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t)  iostat=-1 ! correct time step is reached
-            endif
-          enddo
-          close (10)
+         iostat = 0
+         i=0
+         do while (iostat == 0)
+           i=i+1
+           read (10,rec=i,iostat=iostat) tl
+           read (10,rec=i+1,iostat=iostat) tr
+           if (iostat /= 0) then
+             i=1
+             delta_t = t*unit_time                  ! EOF is reached => read again
+             read (10,rec=i,iostat=iostat) tl
+             read (10,rec=i+1,iostat=iostat) tr
+             iostat=-1
+           else
+             if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) iostat=-1 
+             ! correct time step is reached
+           endif
+         enddo
+         close (10)
 !
 ! Read velocity field
 !
-          open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
-          read (10,rec=(2*i-1)) tmp
-          uxl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-          read (10,rec=2*i)     tmp
-          uyl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         open (10,file='driver/vel_k.dat',form='unformatted', &
+             status='unknown',recl=lend*nxgrid*nygrid,access='direct')
+         read (10,rec=(2*i-1)) tmp
+         uxl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         read (10,rec=2*i)     tmp
+         uyl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-          read (10,rec=2*i+1)   tmp
-          uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-          read (10,rec=2*i+2)   tmp
-          uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-          close (10)
+         read (10,rec=2*i+1)   tmp
+         uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         read (10,rec=2*i+2)   tmp
+         uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         close (10)
 !
-          uxl = uxl / 10. / unit_velocity
-          uxr = uxr / 10. / unit_velocity
-          uyl = uyl / 10. / unit_velocity
-          uyr = uyr / 10. / unit_velocity
+         uxl = uxl / 10. / unit_velocity
+         uxr = uxr / 10. / unit_velocity
+         uyl = uyl / 10. / unit_velocity
+         uyr = uyr / 10. / unit_velocity
 !
        endif
 !
 !   simple linear interploation between timesteps
 !
        if (tr /= tl) then
-          uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
-          uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
+         uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
+         uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
        else
-          uxd = uxl
-          uyd = uyl
+         uxd = uxl
+         uyd = uyl
        endif
 !
 !   suppress footpoint motion at low plasma beta
 !
 !   Calculate B^2 for plasma beta
 !
-!----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
        if (nygrid/=1) then
-          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-          bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iaz)-f(l1:l2,m1-1:m2-1,n1,iaz)) &
-                -  9.0*(f(l1:l2,m1+2:m2+2,n1,iaz)-f(l1:l2,m1-2:m2-2,n1,iaz)) &
-                +      (f(l1:l2,m1+3:m2+3,n1,iaz)-f(l1:l2,m1-3:m2-3,n1,iaz)))
+         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+         bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iaz)-f(l1:l2,m1-1:m2-1,n1,iaz)) &
+             -  9.0*(f(l1:l2,m1+2:m2+2,n1,iaz)-f(l1:l2,m1-2:m2-2,n1,iaz)) &
+             +      (f(l1:l2,m1+3:m2+3,n1,iaz)-f(l1:l2,m1-3:m2-3,n1,iaz)))
        else
-          if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+         if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
        endif
        if (nzgrid/=1) then
-          fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
-          bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iay)-f(l1:l2,m1:m2,n1-1,iay)) &
-               -  9.0*(f(l1:l2,m1:m2,n1+2,iay)-f(l1:l2,m1:m2,n1-2,iay)) &
-               +      (f(l1:l2,m1:m2,n1+3,iay)-f(l1:l2,m1:m2,n1-2,iay)))
+         fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
+         bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iay)-f(l1:l2,m1:m2,n1-1,iay)) &
+             -  9.0*(f(l1:l2,m1:m2,n1+2,iay)-f(l1:l2,m1:m2,n1-2,iay)) &
+             +      (f(l1:l2,m1:m2,n1+3,iay)-f(l1:l2,m1:m2,n1-2,iay)))
        else
-          if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+         if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
        endif
-!----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
        if (nzgrid/=1) then
-          fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
-          bby= fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iax)-f(l1:l2,m1:m2,n1-1,iax)) &
-               -  9.0*(f(l1:l2,m1:m2,n1+2,iax)-f(l1:l2,m1:m2,n1-2,iax)) &
-               +      (f(l1:l2,m1:m2,n1+3,iax)-f(l1:l2,m1:m2,n1-3,iax)))
+         fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
+         bby= fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iax)-f(l1:l2,m1:m2,n1-1,iax)) &
+             -  9.0*(f(l1:l2,m1:m2,n1+2,iax)-f(l1:l2,m1:m2,n1-2,iax)) &
+             +      (f(l1:l2,m1:m2,n1+3,iax)-f(l1:l2,m1:m2,n1-3,iax)))
        else
-          if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+         if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
        endif
        if (nxgrid/=1) then
-          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-          bby= bby -fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iaz)-f(l1-1:l2-1,m1:m2,n1,iaz)) &
-               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iaz)-f(l1-2:l2-2,m1:m2,n1,iaz)) &
-               +      (f(l1+3:l2+3,m1:m2,n1,iaz)-f(l1-3:l2-3,m1:m2,n1,iaz)))
+         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+         bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,n1,iaz)-f(l1-1:l2-1,m1:m2,n1,iaz)) &
+             -  9.0*(f(l1+2:l2+2,m1:m2,n1,iaz)-f(l1-2:l2-2,m1:m2,n1,iaz)) &
+             +      (f(l1+3:l2+3,m1:m2,n1,iaz)-f(l1-3:l2-3,m1:m2,n1,iaz)))
        else
-          if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+         if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
        endif
-!----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
        if (nxgrid/=1) then
-          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-          bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
-               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
-               +      (f(l1+3:l2+3,m1:m2,n1,iay)-f(l1-3:l2-3,m1:m2,n1,iay)))
+         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+         bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
+             -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
+             +      (f(l1+3:l2+3,m1:m2,n1,iay)-f(l1-3:l2-3,m1:m2,n1,iay)))
        else
-          if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+         if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
        endif
        if (nygrid/=1) then
-          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-          bbz= bbz -fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iax)-f(l1:l2,m1-1:m2-1,n1,iax)) &
-               -  9.0*(f(l1:l2,m1+2:m2+2,n1,iax)-f(l1:l2,m1-2:m2-2,n1,iax)) &
-               +      (f(l1:l2,m1+3:m2+3,n1,iax)-f(l1:l2,m1-3:m2-3,n1,iax)))
+         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+         bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,n1,iax)-f(l1:l2,m1-1:m2-1,n1,iax)) &
+             -  9.0*(f(l1:l2,m1+2:m2+2,n1,iax)-f(l1:l2,m1-2:m2-2,n1,iax)) &
+             +      (f(l1:l2,m1+3:m2+3,n1,iax)-f(l1:l2,m1-3:m2-3,n1,iax)))
        else
-          if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+         if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
        endif
-!----------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 !
        bb2 = bbx*bbx + bby*bby + bbz*bbz
        bb2 = bb2/(2.*mu0)
 !
        if (ltemperature) then
-          pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
+         pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
        else if (lentropy) then
-          if (pretend_lnTT) then
-             pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
-          else
-             pp = gamma* (f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma_m1*lnrho0
-             pp = exp(pp) * cs20*gamma_inv
-          endif
+         if (pretend_lnTT) then
+           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
+         else
+           pp=gamma*(f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma_m1*lnrho0
+           pp=exp(pp) * cs20*gamma_inv
+         endif
        else
-          pp=gamma_inv*cs20*exp(lnrho0)
+         pp=gamma_inv*cs20*exp(lnrho0)
        endif
 !
 !   limit plasma beta
