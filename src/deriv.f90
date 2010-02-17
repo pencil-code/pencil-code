@@ -8,13 +8,14 @@
 !
 !***************************************************************
 module Deriv
-
-  use Messages
-
+!
+  use Messages, only: fatal_error, warning
+  use Cdata
+!
   implicit none
-
+!
   private
-
+!
   public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
@@ -57,14 +58,11 @@ module Deriv
   endinterface
 
   contains
-
+!
 !***********************************************************************
     subroutine initialize_deriv()
 !
 !  Initialize stencil coefficients
-!
-      use Cdata
-      use Messages
 !
       select case (der2_type)
 !
@@ -96,8 +94,6 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -151,8 +147,6 @@ module Deriv
 !  z derivative operating on a z-dependent 1-D array
 !
 !   9-feb-07/axel: adapted from der_main; note that f is not the f array!
-
-      use Cdata
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
@@ -176,8 +170,6 @@ module Deriv
 !  z derivative operating on a z-dependent 1-D array
 !
 !   2-jan-10/axel: adapted from der_z and der_main
-
-      use Cdata
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
@@ -208,8 +200,6 @@ module Deriv
 !                          then overload the der interface.
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
-
-      use Cdata
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -264,8 +254,6 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der
 !
-      use Cdata
-!
       real, dimension (:) :: pencil,df
       integer :: j
 !
@@ -312,7 +300,7 @@ module Deriv
         call fatal_error('der_pencil','')
       endif
 !
-      if (lcylindrical_coords.or.lspherical_coords) & 
+      if (lcylindrical_coords.or.lspherical_coords) &
            call fatal_error("der_pencil","Not implemented for non-cartesian")
 !
     endsubroutine der_pencil
@@ -327,8 +315,6 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
@@ -338,7 +324,6 @@ module Deriv
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -386,7 +371,6 @@ module Deriv
           df2=0.
         endif
       endif
-
 !
     endsubroutine der2_main
 !***********************************************************************
@@ -399,8 +383,6 @@ module Deriv
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
-!
-      use Cdata
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
@@ -459,7 +441,6 @@ module Deriv
           df2=0.
         endif
       endif
-
 !
     endsubroutine der2_other
 !***********************************************************************
@@ -468,8 +449,6 @@ module Deriv
 !  Calculate 2nd derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der2
-!
-      use Cdata
 !
       real, dimension (:) :: pencil,df2
       integer :: j
@@ -525,8 +504,6 @@ module Deriv
 !
 !  10-feb-06/anders: adapted from der5
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -544,7 +521,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
 !
@@ -608,8 +585,6 @@ module Deriv
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
       real :: fac
@@ -623,8 +598,8 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
-      if (.not. lequidist(j)) &
-        call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
+     if (.not. lequidist(j)) &
+       call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
 !
       if (lspherical_coords) &
            call fatal_error('der4','NOT IMPLEMENTED for spherical coordinates')
@@ -696,8 +671,6 @@ module Deriv
 !
 !  29-oct-04/anders: adapted from der6
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -715,9 +688,9 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
-          call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
+          call fatal_error('der5','NOT IMPLEMENTED for non-equidistant grid')
 !
       if (lspherical_coords) &
            call fatal_error('der5','NOT IMPLEMENTED for spherical coordinates')
@@ -779,8 +752,6 @@ module Deriv
 !
 !   8-jul-02/wolf: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -796,21 +767,22 @@ module Deriv
       if (present(ignoredx)) then
         igndx = ignoredx
       else
+        if ((.not. lequidist(j)).or.(present(upwind))) then
+          call fatal_error('der6','for non-equidistant grid only '//&
+              'if dx is ignored')
+        endif
         igndx = .false.
       endif
+!
       if (present(upwind)) then
         upwnd = upwind
       else
         upwnd = .false.
-        if (.not. lequidist(j)) then
-          call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
-        endif
         if ((.not.lcartesian_coords).and.(.not.igndx)) then
           call fatal_error('der6','in non-cartesian coordinates '//&
-               'just works if upwinding is used')
+              'just works if upwinding is used')
         endif
-     endif
-!     
+      endif
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -876,8 +848,6 @@ module Deriv
 !  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -970,8 +940,6 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
@@ -1032,7 +1000,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1154,8 +1122,6 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j
@@ -1216,7 +1182,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1334,8 +1300,6 @@ module Deriv
 !  Calculate 6th derivative with respect to two different directions.
 !
 !  05-dec-06/anders: adapted from derij
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -1534,7 +1498,7 @@ module Deriv
       endif
 !
       if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
+          call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
 !
     endsubroutine der5i1j
 !***********************************************************************
@@ -1543,8 +1507,6 @@ module Deriv
 !  First order upwind derivative of variable
 !
 !  Useful for advecting non-logarithmic variables
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
@@ -1558,10 +1520,10 @@ module Deriv
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) &
-        call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
+          call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
 !
       if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der_upwind1st','NOT IMPLEMENTED for non-cartesian grid')
+          call fatal_error('der_upwind1st','NOT IMPLEMENTED for non-cartesian grid')
 !
       if (j == 1) then
         if (nxgrid /= 1) then
@@ -1608,14 +1570,12 @@ module Deriv
 !***********************************************************************
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
 !
-      use Cdata
-!
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
 !   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should 
+!   characteristic equations on boundaries (NSCBC), this sub should
 !   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
 !   scaling factors and connection terms should instead be done when
 !   solving the characteristic equations.
@@ -1629,7 +1589,7 @@ module Deriv
 !
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1671,10 +1631,8 @@ module Deriv
 !***********************************************************************
   subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
 !
-      use Cdata
-!
-!  made using der_onesided_4_slice_main. One sided derivstive is calculated 
-!  at one point (lll,mmm,nnn) 
+!  made using der_onesided_4_slice_main. One sided derivstive is calculated
+!  at one point (lll,mmm,nnn)
 !
 !  15-oct-09/Natalia: coded.
 !
@@ -1685,7 +1643,7 @@ module Deriv
 !
       intent(in)  :: f,k,lll,mmm,nnn,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
        pos=lll
         if (nxgrid/=1) then
@@ -1729,14 +1687,13 @@ module Deriv
     endsubroutine
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
-      use Cdata
 !
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
 !   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should 
+!   characteristic equations on boundaries (NSCBC), this sub should
 !   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
 !   scaling factors and connection terms should instead be done when
 !   solving the characteristic equations.
@@ -1750,7 +1707,7 @@ module Deriv
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1770,7 +1727,7 @@ module Deriv
                     +sgn*23*(f(l1:l2,pos+sgn*1,n1:n2)-f(l1:l2,pos+sgn*2,n1:n2))&
                     -sgn*13*(f(l1:l2,pos+sgn*2,n1:n2)-f(l1:l2,pos+sgn*3,n1:n2))&
                     +sgn*3*(f(l1:l2,pos+sgn*3,n1:n2)-f(l1:l2,pos+sgn*4,n1:n2)))
-
+!
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
@@ -1783,9 +1740,7 @@ module Deriv
                     -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
                     +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
                     -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
-
-
-
+!
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
@@ -1794,15 +1749,12 @@ module Deriv
     endsubroutine
 !***********************************************************************
   subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
-      use Cdata
 !
-!
-!  made using der_onesided_4_slice_other. One sided derivstive is calculated 
-!  at one point (lll,mmm,nnn) 
+!  made using der_onesided_4_slice_other. One sided derivstive is calculated
+!  at one point (lll,mmm,nnn)
 !
 !  15-oct-09/Natalia: coded.
 !  15-oct-09/axel: changed file name to shorter version
-
 !
       real, dimension (mx,my,mz) :: f
       real :: df
@@ -1811,7 +1763,7 @@ module Deriv
 !
       intent(in)  :: f,lll,mmm,nnn,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
        pos=lll
         if (nxgrid/=1) then
@@ -1833,7 +1785,7 @@ module Deriv
                   +sgn*23*(f(lll,pos+sgn*1,nnn)-f(lll,pos+sgn*2,nnn))&
                   -sgn*13*(f(lll,pos+sgn*2,nnn)-f(lll,pos+sgn*3,nnn))&
                   +sgn*3*(f(lll,pos+sgn*3,nnn)-f(lll,pos+sgn*4,nnn)))
-
+!
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
@@ -1847,9 +1799,7 @@ module Deriv
                   -sgn*36*f(lll,mmm,pos+sgn*2)&
                   +sgn*16*f(lll,mmm,pos+sgn*3)&
                   -sgn*3 *f(lll,mmm,pos+sgn*4))
-
-
-
+!
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
