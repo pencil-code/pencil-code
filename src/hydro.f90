@@ -4092,48 +4092,76 @@ module Hydro
       real :: fac,fsum_tmp,fsum
       real, dimension (iux:iuz) :: rum
       integer :: m,n,j
-
+!
+!  Check whether lremove_mean_momenta is true.
+!  If not, there is the alternative possibility of lremove_mean_flow.
+!  Also check if ldensity=T. Otherwise stop.
+!
       if (lremove_mean_momenta) then
-
-        rum = 0.0
-        fac = 1.0/nwgrid
-
-        do n = n1,n2
-        do m = m1,m2
-          if (ldensity_nolog) then
-            rho = f(l1:l2,m,n,irho)
-          else
-            rho = exp(f(l1:l2,m,n,ilnrho))
-          endif
-          do j=iux,iuz
-            uu = f(l1:l2,m,n,j)
-            rum(j) = rum(j) + fac*sum(rho*uu)
+        if (ldensity) then
+!
+!  inititialize mean momentum, rum, to zero
+!
+          rum = 0.0
+          fac = 1.0/nwgrid
+!
+!  Go through all pencils.
+!
+          do n = n1,n2
+          do m = m1,m2
+!
+!  Compute density from the f-array.
+!
+            if (ldensity_nolog) then
+              rho = f(l1:l2,m,n,irho)
+            else
+              rho = exp(f(l1:l2,m,n,ilnrho))
+            endif
+!
+!  Compute mean momentum in each of the 3 directions.
+!
+            do j=iux,iuz
+              uu = f(l1:l2,m,n,j)
+              rum(j) = rum(j) + fac*sum(rho*uu)
+            enddo
           enddo
-        enddo
-        enddo
-
-        do j=iux,iuz
-          fsum_tmp = rum(j)
-          call mpiallreduce_sum(fsum_tmp,fsum)
-          rum(j) = fsum
-        enddo
-
-        do n = n1,n2
-        do m = m1,m2
-          if (ldensity_nolog) then
-            rho1 = 1.0/f(l1:l2,m,n,irho)
-          else
-            rho1 = exp(-f(l1:l2,m,n,ilnrho))
-          endif
-          do j=iux,iuz
-            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - rho1*rum(j)
           enddo
-        enddo
-        enddo
-
+!
+!  Compute total sum for all processors
+!
+          do j=iux,iuz
+            fsum_tmp = rum(j)
+            call mpiallreduce_sum(fsum_tmp,fsum)
+            rum(j) = fsum
+          enddo
+!
+!  Compute inverse density, rho1.
+!
+          do n = n1,n2
+          do m = m1,m2
+            if (ldensity_nolog) then
+              rho1 = 1.0/f(l1:l2,m,n,irho)
+            else
+              rho1 = exp(-f(l1:l2,m,n,ilnrho))
+            endif
+!
+!  Subtract out the mean momentum separately for each direction.
+!
+            do j=iux,iuz
+              f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - rho1*rum(j)
+            enddo
+          enddo
+          enddo
+          if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
+        else
+          call fatal_error('remove_mean_momenta', &
+            'use remove_mean_flow, because ldensity=F')
+        endif
+!
+!  Check for alternative possibility of lremove_mean_flow.
+!
       elseif (lremove_mean_flow) then
         call remove_mean_flow(f)
-
       endif
 
     endsubroutine remove_mean_momenta
@@ -4157,25 +4185,37 @@ module Hydro
       integer :: m,n,j
 
       if (lremove_mean_flow) then
-
+!
+!  initialize um and compute normalization factor fac
+!
         um = 0.0
         fac = 1.0/nwgrid
-
+!
+!  Go through all pencils.
+!
         do n = n1,n2
         do m = m1,m2
+!
+!  Compute mean momentum in each of the 3 directions.
+!
           do j=iux,iuz
             uu = f(l1:l2,m,n,j)
             um(j) = um(j) + fac*sum(uu)
           enddo
         enddo
         enddo
-
+!
+!  Compute total sum for all processors
+!
         do j=iux,iuz
           fsum_tmp = um(j)
           call mpiallreduce_sum(fsum_tmp,fsum)
           um(j) = fsum
         enddo
-
+!
+!  Go through all pencils and subtract out the mean flow
+!  separately for each direction.
+!
         do n = n1,n2
         do m = m1,m2
           do j=iux,iuz
@@ -4183,6 +4223,7 @@ module Hydro
           enddo
         enddo
         enddo
+        if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
 
       endif
 

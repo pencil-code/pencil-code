@@ -168,11 +168,11 @@ module Equ
       call calc_selfpotential(f)
 !
 !  Remove mean x-momentum if desired.
-!  Useful to avoid unphysical winds in shearing box simulations.
+!  Useful to avoid unphysical winds, for example in shearing box simulations.
 !  (This is only done if lremove_mean_momenta=T,
 !  to be set in hydro_run_pars).
 !
-      if (lshear) call remove_mean_momenta(f)
+      call remove_mean_momenta(f)
 !
 !  Remove mean emf in the radial direction if desired.
 !  Useful as a simple way to remove the large scale 

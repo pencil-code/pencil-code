@@ -186,6 +186,10 @@ module Testfield
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
   integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>^{1/2}$
+  integer :: idiag_ux0m=0       ! DIAG_DOC: $\left<u_{0}_x\right>$
+  integer :: idiag_uy0m=0       ! DIAG_DOC: $\left<u_{0}_y\right>$
+  integer :: idiag_ux11m=0      ! DIAG_DOC: $\left<u_{11}_x\right>$
+  integer :: idiag_uy11m=0      ! DIAG_DOC: $\left<u_{11}_y\right>$
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
@@ -696,10 +700,18 @@ module Testfield
         enddo
         call cross_mn(uutest,B0_imposed,uxbtest)
         call cross_mn(jjtest,B0_imposed,jxbtest)
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-          +uxbtest
-        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-          +jxbtest
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
+        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbtest
+!
+!  add Ubar x b^0 and Ubar x b^T terms
+!
+          if (lcalc_uumean) then
+            do j=1,3
+              uum(:,j)=uumz(n-n1+1,j)
+            enddo
+            call cross_mn(uum,bbtest,umxbtest)
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+umxbtest
+          endif
 !
 !  possibility of non-soca terms
 !
@@ -720,8 +732,8 @@ module Testfield
                 +duxbtest
           endif
 !
-!  subtract average emf, unless we ignore the <jxb> term (lignore_jxbtestm=T)
-!
+!  subtract average jxb, unless we ignore the <jxb> term (lignore_jxbtestm=T)
+
           if (ijxb/=0.and..not.ltest_jxb) then
             jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
             if (lignore_jxbtestm) then
@@ -793,16 +805,9 @@ module Testfield
             call fatal_error('daatest_dt','undefined itestfield value')
           endselect
 !
-!  u x B^T + Ubar x b^T
+!  u x B^T
 !
           call cross_mn(uufluct,B0test,uxB)
-          if (lcalc_uumean) then
-            do j=1,3
-              uum(:,j)=uumz(n-n1+1,j)
-            enddo
-            call cross_mn(uum,bbtest,umxbtest)
-            uxB=uxB+umxbtest
-          endif
 !
 !  jxB^T + J^Txb
 !
@@ -1095,6 +1100,11 @@ module Testfield
           call sum_mn_name(jbpq,idiag_jb0m)
         endif
 !
+        if (idiag_ux0m/=0) call sum_mn_name(upq(:,1,iE0),idiag_ux0m)
+        if (idiag_uy0m/=0) call sum_mn_name(upq(:,2,iE0),idiag_uy0m)
+        if (idiag_ux11m/=0) call sum_mn_name(upq(:,1,i1),idiag_ux11m)
+        if (idiag_uy11m/=0) call sum_mn_name(upq(:,2,i1),idiag_uy11m)
+!
         if (idiag_u0rms/=0) then
           call dot2(upq(:,:,iE0),bpq2)
           call sum_mn_name(bpq2,idiag_u0rms,lsqrt=.true.)
@@ -1279,7 +1289,7 @@ module Testfield
         call calc_pencils_hydro(f,p)
         call calc_pencils_magnetic(f,p)
 !
-!  Count jtest backward, so we have access to the reference fields.
+!  Count jtest backward, so we have already access to the reference fields.
 !
         do jtest=njtest,1,-1
 !
@@ -1704,6 +1714,8 @@ module Testfield
         idiag_M12cs=0
         idiag_M11z=0; idiag_M22z=0; idiag_M33z=0; idiag_bamp=0
         idiag_jb0m=0; idiag_u0rms=0; idiag_b0rms=0; idiag_E0rms=0
+        idiag_ux0m=0; idiag_uy0m=0
+        idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1818,6 +1830,10 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'b22rms',idiag_b22rms)
         call parse_name(iname,cname(iname),cform(iname),'jb0m',idiag_jb0m)
         call parse_name(iname,cname(iname),cform(iname),'bamp',idiag_bamp)
+        call parse_name(iname,cname(iname),cform(iname),'ux0m',idiag_ux0m)
+        call parse_name(iname,cname(iname),cform(iname),'uy0m',idiag_uy0m)
+        call parse_name(iname,cname(iname),cform(iname),'ux11m',idiag_ux11m)
+        call parse_name(iname,cname(iname),cform(iname),'uy11m',idiag_uy11m)
         call parse_name(iname,cname(iname),cform(iname),'u0rms',idiag_u0rms)
         call parse_name(iname,cname(iname),cform(iname),'b0rms',idiag_b0rms)
         call parse_name(iname,cname(iname),cform(iname),'E11rms',idiag_E11rms)
@@ -1960,6 +1976,10 @@ module Testfield
         write(3,*) 'idiag_b12rms=',idiag_b12rms
         write(3,*) 'idiag_b22rms=',idiag_b22rms
         write(3,*) 'idiag_jb0m=',idiag_jb0m
+        write(3,*) 'idiag_ux0m=',idiag_ux0m
+        write(3,*) 'idiag_uy0m=',idiag_uy0m
+        write(3,*) 'idiag_ux11m=',idiag_ux11m
+        write(3,*) 'idiag_uy11m=',idiag_uy11m
         write(3,*) 'idiag_u0rms=',idiag_u0rms
         write(3,*) 'idiag_b0rms=',idiag_b0rms
         write(3,*) 'idiag_E11rms=',idiag_E11rms

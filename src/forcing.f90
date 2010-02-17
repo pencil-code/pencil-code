@@ -291,7 +291,7 @@ module Forcing
 !  calculate and add forcing function
 !
         select case (iforce)
-        case ('zero'); if (headt) print*,'addforce: No forcing'
+        case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
         case ('irrotational');    call forcing_irro(f,force)
         case ('helical', '2');    call forcing_hel(f)
         case ('helical_both');    call forcing_hel_both(f)

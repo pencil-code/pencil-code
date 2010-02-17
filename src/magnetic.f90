@@ -91,7 +91,7 @@ module Magnetic
   real, dimension(3) :: axisr1=(/0,0,1/), dispr1=(/0.0,0.5,0.0/)
   real, dimension(3) :: axisr2=(/1,0,0/), dispr2=(/0.0,-0.5,0.0/)
   real, dimension(3) :: axisr3=(/1,0,0/), dispr3=(/0.0,-0.5,0.0/)
-  real, dimension(nx,3) :: uxbb !(temporary)
+  real, dimension(nx,3) :: uxbb
   real, target :: zmode=1.0 !(temporary)
   real :: fring1=0.0, Iring1=0.0, Rring1=1.0, wr1=0.3
   real :: fring2=0.0, Iring2=0.0, Rring2=1.0, wr2=0.3
@@ -461,6 +461,9 @@ module Magnetic
   integer :: idiag_uxbmx=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_x\right>$
   integer :: idiag_uxbmy=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_y\right>$
   integer :: idiag_uxbmz=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_z\right>$
+  integer :: idiag_jxbmx=0      ! DIAG_DOC: $\left<(\jv\times\Bv)_x\right>$
+  integer :: idiag_jxbmy=0      ! DIAG_DOC: $\left<(\jv\times\Bv)_y\right>$
+  integer :: idiag_jxbmz=0      ! DIAG_DOC: $\left<(\jv\times\Bv)_z\right>$
   integer :: idiag_uxbcmx=0     ! DIAG_DOC:
   integer :: idiag_uxbcmy=0     ! DIAG_DOC:
   integer :: idiag_uxbsmx=0     ! DIAG_DOC:
@@ -2061,7 +2064,7 @@ module Magnetic
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
-      real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver
+      real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi
@@ -2836,6 +2839,12 @@ module Magnetic
         jxb_dotB0=B_ext(1)*p%jxb(:,1)+B_ext(2)*p%jxb(:,2)+B_ext(3)*p%jxb(:,3)
         jxb_dotB0=jxb_dotB0*B_ext21
         if (idiag_jxbm/=0) call sum_mn_name(jxb_dotB0,idiag_jxbm)
+        if (idiag_jxbmx/=0.or.idiag_jxbmy/=0.or.idiag_jxbmz/=0) then
+          call cross_mn(p%jj,p%bbb,jxbb)
+          if (idiag_jxbmx/=0) call sum_mn_name(jxbb(:,1),idiag_jxbmx)
+          if (idiag_jxbmy/=0) call sum_mn_name(jxbb(:,2),idiag_jxbmy)
+          if (idiag_jxbmz/=0) call sum_mn_name(jxbb(:,3),idiag_jxbmz)
+        endif
 !
 !  Magnetic triple correlation term (for imposed field).
 !
@@ -5459,7 +5468,7 @@ module Magnetic
 !
 !  12-jul-2005/joishi: coded
 !
-      use General, only:erfcc
+      use General, only: erfcc
 !
       real, dimension(mz) :: eta_z,z2
       real, dimension(mz,3) :: geta_z
@@ -5936,8 +5945,10 @@ module Magnetic
         idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
         idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
-        idiag_jxbxbm=0; idiag_gpxbm=0; idiag_uxDxuxbm=0; idiag_uxbmx=0
-        idiag_uxbmy=0; idiag_uxbmz=0; idiag_uxbcmx=0; idiag_uxbsmx=0
+        idiag_jxbxbm=0; idiag_gpxbm=0; idiag_uxDxuxbm=0
+        idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
+        idiag_jxbmx=0; idiag_jxbmy=0; idiag_jxbmz=0
+        idiag_uxbcmx=0; idiag_uxbsmx=0
         idiag_uxbcmy=0; idiag_uxbsmy=0; idiag_examz1=0; idiag_examz2=0
         idiag_examz3=0; idiag_examx=0; idiag_examy=0; idiag_examz=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
@@ -6047,6 +6058,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbmz',idiag_uxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'jxbmx',idiag_jxbmx)
+        call parse_name(iname,cname(iname),cform(iname),'jxbmy',idiag_jxbmy)
+        call parse_name(iname,cname(iname),cform(iname),'jxbmz',idiag_jxbmz)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmx',idiag_uxbcmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmy',idiag_uxbcmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbsmx',idiag_uxbsmx)
@@ -6398,11 +6412,14 @@ module Magnetic
         write(3,*) 'i_bxbzm=',idiag_bxbzm
         write(3,*) 'i_bybzm=',idiag_bybzm
         write(3,*) 'i_djuidjbim=',idiag_djuidjbim
-        write(3,*) 'i_jxbm=',idiag_jxbm
         write(3,*) 'i_uxbm=',idiag_uxbm
+        write(3,*) 'i_jxbm=',idiag_jxbm
         write(3,*) 'i_uxbmx=',idiag_uxbmx
         write(3,*) 'i_uxbmy=',idiag_uxbmy
         write(3,*) 'i_uxbmz=',idiag_uxbmz
+        write(3,*) 'i_jxbmx=',idiag_jxbmx
+        write(3,*) 'i_jxbmy=',idiag_jxbmy
+        write(3,*) 'i_jxbmz=',idiag_jxbmz
         write(3,*) 'i_examx=',idiag_examx
         write(3,*) 'i_examy=',idiag_examy
         write(3,*) 'i_examz=',idiag_examz
