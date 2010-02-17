@@ -1813,7 +1813,7 @@ module Boundcond
 !
 !  3-jan-2008/dhruba: coded
 !
-      use Sub
+      use Sub, only: step
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -4680,7 +4680,7 @@ module Boundcond
 !  22-mar-00/axel: corrected sign (it is the same on both sides)
 !  29-sep-06/axel: removed multiple calls, removed normalization, non-para
 !
-      use Fourier
+      use Fourier, only: fourier_transform_xy_xy
 !
       real, dimension (:,:,:) :: fz
       real, dimension (:,:) :: f2,f3
@@ -4798,7 +4798,7 @@ module Boundcond
 !  29-sep-06/axel: removed multiple calls, removed normalization, non-para
 !   7-oct-06/axel: corrected sign for irev==+1.
 !
-      use Fourier
+      use Fourier, only: fourier_transform_xy_xy
 !
       real, dimension (:,:,:) :: fz
       real, dimension (:,:) :: f2,f3
