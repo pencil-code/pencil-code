@@ -585,7 +585,13 @@ module Entropy
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
+      if (lheatc_hyper3) then
+        if (ltemperature_nolog) then
+          lpenc_requested(i_del6TT)=.true.
+        else
+          lpenc_requested(i_del6lnTT)=.true.
+        endif
+      endif
 !
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
