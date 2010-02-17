@@ -1756,7 +1756,7 @@ module Boundcond
 !
       real, pointer :: Lambda_V0,Lambda_Omega,nu
       logical, pointer :: llambda_effect
-      integer :: ierr,k,stat
+      integer :: ierr,k
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
