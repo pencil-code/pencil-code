@@ -162,7 +162,7 @@ module Boundcond
                   call bc_onesided_x_old(f,topbot,j)
                 case ('cT')
                   ! BCX_DOC: constant temperature (implemented as
-                  ! BCX_DOC: condition for entropy $s$ or temperature $T$) 
+                  ! BCX_DOC: condition for entropy $s$ or temperature $T$)
                   call bc_ss_temp_x(f,topbot)
                 case ('c1')
                   ! BCX_DOC: constant temperature (or maybe rather constant
@@ -180,12 +180,12 @@ module Boundcond
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   !  value at boundary
                   call bc_freeze_var_x(topbot,j)
-                  call bc_sym_x(f,-1,topbot,j,REL=.true.) 
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.)
                   ! antisymm wrt boundary
                 case ('fg')
                   ! BCX_DOC: ``freeze'' value, i.e. maintain initial
-                  !  value at boundary, also mantaining the 
-                  !  ghost zones at the initial coded value, i.e., 
+                  !  value at boundary, also mantaining the
+                  !  ghost zones at the initial coded value, i.e.,
                   !  keep the gradient frozen as well
                   call bc_freeze_var_x(topbot,j)
                 case ('1')
@@ -205,7 +205,7 @@ module Boundcond
                   call bc_dr0_x(f,fbcx12,topbot,j)
                 case ('ovr')
                   ! BCX_DOC: overshoot boundary condition
-                  ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$ 
+                  ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$
                   call bc_overshoot_x(f,fbcx12,topbot,j)
                 case ('ant')
                   ! BCX_DOC: stops and prompts for adding documentation
@@ -220,8 +220,8 @@ module Boundcond
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
                 case ('hat')
-                  !BCX_DOC: top hat jet profile in spherical coordinate. 
-                  !Defined only for the bottom boundary 
+                  !BCX_DOC: top hat jet profile in spherical coordinate.
+                  !Defined only for the bottom boundary
                   call bc_set_jethat_x(f,j,topbot,fbcx12,fbcx2_12)
                 case ('spd')
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
@@ -234,8 +234,8 @@ module Boundcond
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
                   call bc_set_nfr_x(f,topbot,j)
                 case ('sa2')
-                  ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes 
-                  ! BCX_DOC: boundary condition on 2nd derivative of 
+                  ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes
+                  ! BCX_DOC: boundary condition on 2nd derivative of
                   ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
                   call bc_set_sa2_x(f,topbot,j)
                 case ('pfc')
@@ -248,7 +248,7 @@ module Boundcond
                   ! BCX_DOC: set boundary value from a file
                   call bc_file_x(f,topbot,j)
                 case ('cfb')
-                  ! BCZ_DOC: radial centrifugal balance 
+                  ! BCZ_DOC: radial centrifugal balance
                   if (lcylindrical_coords) then
                     call bc_lnrho_cfb_r_iso(f,topbot)
                   else
@@ -260,8 +260,8 @@ module Boundcond
                   call bc_force_x(f, -1, topbot, j)
                 case ('nil')
                 case ('ioc')
-                  !BCX_DOC: inlet/outlet on western/eastern hemisphere 
-                  !BCX_DOC: in cylindrical coordinates 
+                  !BCX_DOC: inlet/outlet on western/eastern hemisphere
+                  !BCX_DOC: in cylindrical coordinates
                   call bc_inlet_outlet_cyl(f,topbot,j,fbcx12)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
@@ -271,9 +271,9 @@ module Boundcond
                   bc%location=(((k-1)*2)-1)   ! -1/1 for x bot/top
                   bc%value1=fbcx12(j)
                   bc%done=.false.
-
+!
                   call special_boundconds(f,bc)
-
+!
                   if (.not.bc%done) then
                     write(unit=errormsg,fmt='(A,A4,A,I3)') &
                          "No such boundary condition bcx1/2 = ", &
@@ -380,8 +380,8 @@ module Boundcond
                 call bc_sym_y(f,+1,topbot,j) ! symm wrt boundary
               case ('fg')
                 ! BCY_DOC: ``freeze'' value, i.e. maintain initial
-                !  value at boundary, also mantaining the 
-                !  ghost zones at the initial coded value, i.e., 
+                !  value at boundary, also mantaining the
+                !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
                 call bc_freeze_var_y(topbot,j)
               case ('1')
@@ -419,9 +419,9 @@ module Boundcond
                 bc%ivar=j
                 bc%location=(((k-1)*4)-2)   ! -2/2 for y bot/top
                 bc%done=.false.
-
+!
                 if (lspecial) call special_boundconds(f,bc)
-
+!
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
                        bc12(j), " for j=", j
@@ -543,7 +543,7 @@ module Boundcond
                 ! BCZ_DOC: one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('fg')
-                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial 
+                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial
                 !  value at boundary, also mantaining the
                 !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
@@ -566,26 +566,26 @@ module Boundcond
                 ! BCZ_DOC: a variant of `pot'
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 call bc_del2zero(f,topbot,j)
               case ('hds')
-                ! BCZ_DOC: hydrostatic equilibrium with 
+                ! BCZ_DOC: hydrostatic equilibrium with
                 !          a high-frequency filter
-                if (llocal_iso) then 
+                if (llocal_iso) then
                   call bc_lnrho_hdss_z_liso(f,topbot)
                 else
                   call bc_lnrho_hdss_z_iso(f,topbot)
                 endif
               case ('cT')
                 ! BCZ_DOC: constant temp.
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 call bc_ss_temp_z(f,topbot)
                 !if (j==iss) then
                 !   if (pretend_lnTT) then
                 !       force_lower_bound='cT'
                 !       force_upper_bound='cT'
-                !      call bc_force_z(f,-1,topbot,j)                      
+                !      call bc_force_z(f,-1,topbot,j)
                 !   else
                 ! endif
                 !endif
@@ -596,7 +596,7 @@ module Boundcond
                 !endif
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
@@ -610,23 +610,23 @@ module Boundcond
                 endif
               case ('cp')
                 ! BCZ_DOC: constant pressure
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
               case ('sT')
                 ! BCZ_DOC: symmetric temp.
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
               case ('c2')
                 ! BCZ_DOC: complex
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 if (j==iss) call bc_ss_temp_old(f,topbot)
               case ('db')
                 ! BCZ_DOC: complex
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 call bc_db_z(f,topbot,j)
               case ('ce')
                 ! BCZ_DOC: complex
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                 if (j==iss) call bc_ss_energy(f,topbot)
               case ('e1')
                 ! BCZ_DOC: extrapolation
@@ -660,7 +660,7 @@ module Boundcond
                 ! BCZ_DOC: set to given value(s) or function
                  call bc_force_z(f,-1,topbot,j)
               case ('gs')
-                ! BCZ_DOC: 
+                ! BCZ_DOC:
                  call bc_force_z(f,+1,topbot,j)
               case ('1')
                 ! BCZ_DOC: f=1 (for debugging)
@@ -681,7 +681,7 @@ module Boundcond
                 ! BCZ_DOC: allow outflow, but no inflow (experimental)
                 call bc_outflow_z(f,topbot,j)
               case ('win')
-                ! BCZ_DOC: forces massflux given as 
+                ! BCZ_DOC: forces massflux given as
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0) = \textrm{fbcz1/2}(\rho)$
                 if (j==ilnrho) then
                    call bc_wind_z(f,topbot,fbcz12(j))     !
@@ -700,9 +700,9 @@ module Boundcond
                 bc%value1=fbcz12_1(j)
                 bc%value2=fbcz12_2(j)
                 bc%done=.false.
-
+!
                 if (lspecial) call special_boundconds(f,bc)
-
+!
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                        bc12(j), " for j=", j
@@ -726,16 +726,16 @@ module Boundcond
       character (len=3) :: topbot
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (nprocx==1) f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
-
+!
       case ('top')               ! top boundary
         if (nprocx==1) f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
-
+!
       case default
         print*, "bc_per_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_per_x
@@ -750,16 +750,16 @@ module Boundcond
       character (len=3) :: topbot
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (nprocy==1) f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
-
+!
       case ('top')               ! top boundary
         if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
-
+!
       case default
         print*, "bc_per_y: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_per_y
@@ -774,16 +774,16 @@ module Boundcond
       character (len=3) :: topbot
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (nprocz==1) f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
-
+!
       case ('top')               ! top boundary
         if (nprocz==1) f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
-
+!
       case default
         print*, "bc_per_z: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_per_z
@@ -806,9 +806,9 @@ module Boundcond
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -817,7 +817,7 @@ module Boundcond
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
           if (sgn<0) f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -826,10 +826,10 @@ module Boundcond
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
           if (sgn<0) f(l2,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
-
+!
       case default
         print*, "bc_sym_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_sym_x
@@ -851,7 +851,7 @@ module Boundcond
       real :: dxR
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         dxR=-dx/x(l2)
         i=-0; f(l2+i,:,:,j)=0.
@@ -860,7 +860,7 @@ module Boundcond
         i=-2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+16.*extra1)/(1.+dxR)
         extra2=(1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)-10.*extra1
         i=-3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
-
+!
       case ('top')               ! top boundary
         dxR=dx/x(l2)
         i=0; f(l2+i,:,:,j)=0.
@@ -869,10 +869,10 @@ module Boundcond
         i=2; f(l2+i,:,:,j)=(-(1.-   dxR)*f(l2-i,:,:,j)+16.*extra1)/(1.+dxR)
         extra2=(1.+dxR)*f(l2+i,:,:,j)+(1.-dxR)*f(l2-i,:,:,j)-10.*extra1
         i=3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
-
+!
       case default
         print*, "bc_cpc_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_cpc_x
@@ -897,9 +897,9 @@ module Boundcond
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -908,7 +908,7 @@ module Boundcond
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
           f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -917,10 +917,10 @@ module Boundcond
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
           f(l2,:,:,j)=(4.*f(l2-1,:,:,j)-f(l2-2,:,:,j))/3.
         endif
-
+!
       case default
         print*, "bc_symset_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_symset_x
@@ -989,9 +989,9 @@ module Boundcond
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1004,7 +1004,7 @@ module Boundcond
           enddo
 !         f(l1,:,:,j)=(2.*x(l1+1)*f(l1+1,:,:,j)-.5*x(l1+2)*f(l1+2,:,:,j))/(1.5*x(l1))
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1017,16 +1017,16 @@ module Boundcond
           enddo
 !         f(l2,:,:,j)=(2.*x(l2-1)*f(l2-1,:,:,j)-.5*x(l2-2)*f(l2-2,:,:,j))/(1.5*x(l2))
         endif
-
+!
       case default
         print*, "bc_slope_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_slope_x
 !***********************************************************************
     subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
-
+!
 ! FIXME: This documentation is almost certainly wrong
 !
 !  Symmetry boundary conditions.
@@ -1052,9 +1052,9 @@ module Boundcond
       l2_4=l2-4; l2_5=l2-5; l2_6=l2-6
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1070,7 +1070,7 @@ module Boundcond
             f(l1-i,:,:,j)=f(l1+i,:,:,j)+(2.*dx/x(l1))*i*f(l1,:,:,j)
           enddo
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1086,10 +1086,10 @@ module Boundcond
             f(l2+i,:,:,j)=f(l2-i,:,:,j)-(2.*dx/x(l2))*i*f(l2,:,:,j)
           enddo
         endif
-
+!
       case default
         print*, "bc_slope_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_dr0_x
@@ -1198,9 +1198,9 @@ module Boundcond
       call fatal_error('bc_antis_x','outdated/invalid? Document if needed')
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1213,7 +1213,7 @@ module Boundcond
             f(l1-i,:,:,j)=-f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope(j)
           enddo
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1226,10 +1226,10 @@ module Boundcond
             f(l2+i,:,:,j)=-f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope(j)
           enddo
         endif
-
+!
       case default
         print*, "bc_antis_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_antis_x
@@ -1253,9 +1253,9 @@ module Boundcond
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
         if (relative) then
@@ -1264,7 +1264,7 @@ module Boundcond
           do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
           if (sgn<0) f(:,m1,:,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1273,10 +1273,10 @@ module Boundcond
           do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
           if (sgn<0) f(:,m2,:,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
-
+!
       case default
         print*, "bc_sym_y: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_sym_y
@@ -1304,9 +1304,9 @@ module Boundcond
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
         if (relative) then
@@ -1315,7 +1315,7 @@ module Boundcond
           do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
           f(:,m1,:,j)=(4.*f(:,m1+1,:,j)-f(:,m1+2,:,j))/3.
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
         if (relative) then
@@ -1324,10 +1324,10 @@ module Boundcond
           do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
           f(:,m2,:,j)=(4.*f(:,m2-1,:,j)-f(:,m2-2,:,j))/3.
         endif
-
+!
       case default
         print*, "bc_symset_y: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_symset_y
@@ -1394,9 +1394,9 @@ module Boundcond
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) f(l1:l2,m1:m2,n1,j)=val(j)
         if (relative) then
@@ -1405,7 +1405,7 @@ module Boundcond
           do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) f(l1:l2,m1:m2,n2,j)=val(j)
         if (relative) then
@@ -1414,10 +1414,10 @@ module Boundcond
           do i=1,nghost; f(:,:,n2+i,j)=              sgn*f(:,:,n2-i,j); enddo
           if (sgn<0) f(:,:,n2,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
-
+!
       case default
         print*, "bc_sym_z: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_sym_z
@@ -1475,27 +1475,27 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
-
+!
       integer :: i
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j) - 2*i*dx*val; enddo
-
+!
       case ('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j) + 2*i*dx*val; enddo
-
+!
       case default
         call warning('bc_set_der_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_der_x
 !***********************************************************************
     subroutine bc_fix_x(f,topbot,j,val)
 !
-!  Sets the value of f, particularly: 
+!  Sets the value of f, particularly:
 !    A_{\alpha}= <val>
 !  on the boundary to a given value
 !
@@ -1504,19 +1504,19 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-
+!
       real, intent (in) :: val
       integer :: i
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do i=1,nghost;f(l1-i,:,:,j)=val; enddo
       case ('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j)=val; enddo
       case default
         call warning('bc_fix_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_fix_x
@@ -1551,7 +1551,7 @@ module Boundcond
         endif
         lbc_file_x=.false.
       endif
-
+!
       select case (topbot)
 !
 !  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
@@ -1582,7 +1582,7 @@ module Boundcond
         enddo
       case default
         call warning('bc_fix_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
       goto 98
@@ -1599,7 +1599,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_set_spder_x(f,topbot,j,val)
 !
-!  Sets the derivative, particularly: 
+!  Sets the derivative, particularly:
 !    d(rA_{\alpha})/dr = <val>
 !  on the boundary to a given value
 !
@@ -1608,10 +1608,10 @@ module Boundcond
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-
+!
       real, intent (in) :: val
       integer :: i
-
+!
       if (lspherical_coords)then
         select case (topbot)
         case ('bot')               ! bottom boundary
@@ -1622,10 +1622,10 @@ module Boundcond
         do i=1,nghost
           f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*(val-f(l2,:,:,j)*r1_mn(nx))
         enddo
-
+!
       case default
         call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
     else
       call stop_it('Boundary condition spder is valid only in spherical coordinate system')
@@ -1640,19 +1640,19 @@ module Boundcond
 ! and demand $div A = 0$ gives the condition on $A_r$ to be
 ! $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
 ! $j$ the component of f. As this is related to setting the
-! perfect conducting boundary condition we call this "pfc". 
+! perfect conducting boundary condition we call this "pfc".
 !
 !  25-Aug-2007/dhruba: coded
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
 ! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives. 
+! derivatives.
         f(l1-1,:,:,j)= f(l1+1,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(45.*x(l1))
         f(l1-2,:,:,j)= f(l1+2,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/(9.*x(l1))
         f(l1-3,:,:,j)= f(l1+3,:,:,j) +  2.*60.*f(l1,:,:,j)*dx/x(l1)
@@ -1660,10 +1660,10 @@ module Boundcond
         f(l2+1,:,:,j)= f(l2-1,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(45.*x(l2))
         f(l2+2,:,:,j)= f(l2-2,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(9.*x(l2))
         f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(x(l2))
-
+!
       case default
         call warning('bc_set_pfc_x',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_pfc_x
@@ -1671,9 +1671,9 @@ module Boundcond
     subroutine bc_set_nfr_x(f,topbot,j)
 !
 ! Normal-field (or angry-hedgehog) boundary condition for spherical
-! coordinate system. 
+! coordinate system.
 ! d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
-! in spherical coordinate system. 
+! in spherical coordinate system.
 ! (compare with next subroutine sfree )
 !
 !  25-Aug-2007/dhruba: coded
@@ -1682,14 +1682,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do k=1,nghost
           f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
         enddo
-! 
+!
      case ('top')               ! top boundary
        do k=1,nghost
          f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2-k)/x(l2+k))
@@ -1706,7 +1706,7 @@ module Boundcond
 ! To set the boundary condition:
 ! d_r(r B_{\phi} = 0 we need to se
 ! (d_r)^2(r A_{\theta}) = 0 which sets the condition 'a2'
-! on r A_{\theta} and vice-versa for A_{\phi} 
+! on r A_{\theta} and vice-versa for A_{\phi}
 !
 !  3-Dec-2009/dhruba: coded
 !
@@ -1714,15 +1714,15 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do k=1,nghost
           f(l1-k,:,:,j)= f(l1,:,:,j)*2.*(x(l1)/x(l1-k))&
                          -f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
         enddo
-! 
+!
      case ('top')               ! top boundary
        do k=1,nghost
          f(l2+k,:,:,j)= f(l2,:,:,j)*2.*(x(l2)/x(l2+k))&
@@ -1738,12 +1738,12 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 !
-! Details are given in an appendix in the manual. 
-! Lambda effect : stresses due to Lambda effect are added to the stress-tensor. 
+! Details are given in an appendix in the manual.
+! Lambda effect : stresses due to Lambda effect are added to the stress-tensor.
 ! For rotation along the z direction and also for not very strong rotation such
-! that the breaking of rotational symmetry is only due to gravity, the only 
+! that the breaking of rotational symmetry is only due to gravity, the only
 ! new term is appears in the r-phi component. This implies that this term
-! affects only the boundary condition of u_{\phi} for the radial boundary. 
+! affects only the boundary condition of u_{\phi} for the radial boundary.
 !
 !  25-Aug-2007/dhruba: coded
 !  21-Mar-2009/axel: get llambda_effect using get_shared_variable
@@ -1761,24 +1761,24 @@ module Boundcond
 !
       call get_shared_variable('nu',nu,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
-          "there was a problem when getting nu")      
+          "there was a problem when getting nu")
       call get_shared_variable('llambda_effect',llambda_effect,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
-          "there was a problem when getting llambda_effect")      
-      if (llambda_effect) then 
+          "there was a problem when getting llambda_effect")
+      if (llambda_effect) then
       call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-          // "problem getting shared var Lambda_V0")      
+          // "problem getting shared var Lambda_V0")
       call get_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-          // "problem getting shared var Lambda_Omega")      
+          // "problem getting shared var Lambda_Omega")
       else
       endif
 !
       select case (topbot)
 ! bottom boundary
       case ('bot')
-
+!
         if ((llambda_effect).and.(j.eq.iuz)) then
           do k=1,nghost
              f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(1-(Lambda_V0/nu))
@@ -1799,12 +1799,12 @@ module Boundcond
             f(l2+k,:,:,j)= f(l2-k,:,:,j)*(x(l2+k)/x(l2-k))
           enddo
         endif
-
+!
       case default
         call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
 !
       endselect
-
+!
     endsubroutine bc_set_sfree_x
 ! **********************************************************************
     subroutine bc_set_jethat_x(f,jj,topbot,fracall,uzeroall)
@@ -1871,11 +1871,11 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_nfr_y(f,topbot,j)
 !
-! Stress-free boundary condition for spherical coordinate system. 
-! d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets 
+! Stress-free boundary condition for spherical coordinate system.
+! d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets
 ! B_{\theta}=0 in spherical polar
-! coordinate system. This subroutine sets only the first part of this 
-! boundary condition for 'j'-th component of f. 
+! coordinate system. This subroutine sets only the first part of this
+! boundary condition for 'j'-th component of f.
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -1904,11 +1904,11 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
 !
-! Stress-free boundary condition for spherical coordinate system. 
-! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)  with u_{\theta} = 0 sets 
-! S_{\theta \phi} component of the strain matrix to be zero in spherical 
-! coordinate system. This subroutine sets only the first part of this 
-! boundary condition for 'j'-th component of f. 
+! Stress-free boundary condition for spherical coordinate system.
+! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)  with u_{\theta} = 0 sets
+! S_{\theta \phi} component of the strain matrix to be zero in spherical
+! coordinate system. This subroutine sets only the first part of this
+! boundary condition for 'j'-th component of f.
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -1918,7 +1918,7 @@ module Boundcond
       integer :: k
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do k=1,nghost
           f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1-k)*sin1th(m1+k)
@@ -1940,10 +1940,10 @@ module Boundcond
 ! In spherical polar coordinate system,
 ! at a theta boundary set : $A_{r} = 0$ and $A_{\phi} = 0$,
 ! and demand $div A = 0$ gives the condition on $A_{\theta}$ to be
-! $d/d{\theta}( A_{\theta}) + \cot(\theta)A_{\theta} = 0$ . 
-! This subroutine sets this condition on 
+! $d/d{\theta}( A_{\theta}) + \cot(\theta)A_{\theta} = 0$ .
+! This subroutine sets this condition on
 ! $j$ the component of f. As this is related to setting the
-! perfect conducting boundary condition we call this "pfc". 
+! perfect conducting boundary condition we call this "pfc".
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -1957,7 +1957,7 @@ module Boundcond
       case ('bot')               ! bottom boundary
 !
 ! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives. 
+! derivatives.
 !
         cottheta= cotth(m1)
         f(:,m1-1,:,j)= f(:,m1+1,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/45.
@@ -1968,7 +1968,7 @@ module Boundcond
         f(:,m2+1,:,j)= f(:,m2-1,:,j) -  60.*dy*cottheta*f(:,m2,:,j)/45.
         f(:,m2+2,:,j)= f(:,m2-2,:,j) +  60.*dy*cottheta*f(:,m2,:,j)/9.
         f(:,m2+3,:,j)= f(:,m2-3,:,j) -  60.*dy*cottheta*f(:,m2,:,j)
-
+!
       case default
         call warning('bc_set_pfc_y',topbot//" should be `top' or `bot'")
 !
@@ -1986,20 +1986,20 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
-
+!
       integer :: i
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j) - 2*i*dy*val; enddo
-
+!
       case ('top')               ! top boundary
         do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j) + 2*i*dy*val; enddo
-
+!
       case default
         call warning('bc_set_der_y',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_der_y
@@ -2014,20 +2014,20 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
-
+!
       integer :: i
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j) - 2*i*dz*val; enddo
-
+!
       case ('top')               ! top boundary
         do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j) + 2*i*dz*val; enddo
-
+!
       case default
         call warning('bc_set_der_z',topbot//" should be `top' or `bot'")
-
+!
       endselect
 !
     endsubroutine bc_set_der_z
@@ -2042,22 +2042,22 @@ module Boundcond
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           do i=1,nghost
             f(l1-i,:,:,j)=((nghost+1-i)*f(l1,:,:,j))/(nghost+1)
           enddo
-
+!
       case ('top')               ! top boundary
           do i=1,nghost
             f(l2+i,:,:,j)=((nghost+1-i)*f(l2,:,:,j))/(nghost+1)
           enddo
-
+!
       case default
         print*, "bc_van_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_van_x
@@ -2072,22 +2072,22 @@ module Boundcond
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           do i=1,nghost
             f(:,m1-i,:,j)=((nghost+1-i)*f(:,m1,:,j))/(nghost+1)
           enddo
-
+!
       case ('top')               ! top boundary
           do i=1,nghost
             f(:,m2+i,:,j)=((nghost+1-i)*f(:,m2,:,j))/(nghost+1)
           enddo
-
+!
       case default
         print*, "bc_van_y: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_van_y
@@ -2102,22 +2102,22 @@ module Boundcond
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           do i=1,nghost
             f(:,:,n1-i,j)=((nghost+1-i)*f(:,:,n1,j))/(nghost+1)
           enddo
-
+!
       case ('top')               ! top boundary
           do i=1,nghost
             f(:,:,n2+i,j)=((nghost+1-i)*f(:,:,n2,j))/(nghost+1)
           enddo
-
+!
       case default
         print*, "bc_van_z: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_van_z
@@ -2190,7 +2190,7 @@ module Boundcond
       integer :: j,k
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           k=l1-1
           f(k,:,:,j)=7*f(k+1,:,:,j) &
@@ -2219,7 +2219,7 @@ module Boundcond
                   +225*f(k+7,:,:,j) &
                    -72*f(k+8,:,:,j) &
                    +10*f(k+9,:,:,j)
-
+!
       case ('top')               ! top boundary
           k=l2+1
           f(k,:,:,j)=7*f(k-1,:,:,j) &
@@ -2248,10 +2248,10 @@ module Boundcond
                   +225*f(k-7,:,:,j) &
                    -72*f(k-8,:,:,j) &
                    +10*f(k-9,:,:,j)
-
+!
       case default
         print*, "bc_onesided_x ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_onesided_x
@@ -2269,7 +2269,7 @@ module Boundcond
       integer :: i,j,k
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do i=1,nghost
           k=l1-i
@@ -2281,7 +2281,7 @@ module Boundcond
                     -7*f(k+6,:,:,j) &
                       +f(k+7,:,:,j)
         enddo
-
+!
       case ('top')               ! top boundary
         do i=1,nghost
           k=l2+i
@@ -2293,10 +2293,10 @@ module Boundcond
                     -7*f(k-6,:,:,j) &
                       +f(k-7,:,:,j)
         enddo
-
+!
       case default
         print*, "bc_onesided_x_old ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_onesided_x_old
@@ -2316,7 +2316,7 @@ module Boundcond
       integer :: j,k
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           k=m1-1
           f(:,k,:,j)=7*f(:,k+1,:,j) &
@@ -2326,7 +2326,7 @@ module Boundcond
                    +21*f(:,k+5,:,j) &
                     -7*f(:,k+6,:,j) &
                       +f(:,k+7,:,j)
-          k=m1-2               
+          k=m1-2
           f(:,k,:,j)=9*f(:,k+1,:,j) &
                    -35*f(:,k+2,:,j) &
                    +77*f(:,k+3,:,j) &
@@ -2335,7 +2335,7 @@ module Boundcond
                    -49*f(:,k+6,:,j) &
                    +15*f(:,k+7,:,j) &
                     -2*f(:,k+8,:,j)
-          k=m1-3               
+          k=m1-3
           f(:,k,:,j)=9*f(:,k+1,:,j) &
                    -45*f(:,k+2,:,j) &
                   +147*f(:,k+3,:,j) &
@@ -2345,9 +2345,9 @@ module Boundcond
                   +225*f(:,k+7,:,j) &
                    -72*f(:,k+8,:,j) &
                    +10*f(:,k+9,:,j)
-                               
+!
       case ('top')               ! top boundary
-          k=m2+1               
+          k=m2+1
           f(:,k,:,j)=7*f(:,k-1,:,j) &
                    -21*f(:,k-2,:,j) &
                    +35*f(:,k-3,:,j) &
@@ -2364,7 +2364,7 @@ module Boundcond
                    -49*f(:,k-6,:,j) &
                    +15*f(:,k-7,:,j) &
                     -2*f(:,k-8,:,j)
-          k=m2+3               
+          k=m2+3
           f(:,k,:,j)=9*f(:,k-1,:,j) &
                    -45*f(:,k-2,:,j) &
                   +147*f(:,k-3,:,j) &
@@ -2374,10 +2374,10 @@ module Boundcond
                   +225*f(:,k-7,:,j) &
                    -72*f(:,k-8,:,j) &
                    +10*f(:,k-9,:,j)
-
+!
       case default
         print*, "bc_onesided_7 ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_onesided_y
@@ -2395,7 +2395,7 @@ module Boundcond
       integer :: i,j,k
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         do i=1,nghost
           k=n1-i
@@ -2407,7 +2407,7 @@ module Boundcond
                     -7*f(:,:,k+6,j) &
                       +f(:,:,k+7,j)
         enddo
-
+!
       case ('top')               ! top boundary
         do i=1,nghost
           k=n2+i
@@ -2419,10 +2419,10 @@ module Boundcond
                     -7*f(:,:,k-6,j) &
                       +f(:,:,k-7,j)
         enddo
-
+!
       case default
         print*, "bc_onesided_z ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_onesided_z_orig
@@ -2441,7 +2441,7 @@ module Boundcond
       integer :: j,k
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           k=n1-1
           f(:,:,k,j)=7*f(:,:,k+1,j) &
@@ -2451,7 +2451,7 @@ module Boundcond
                    +21*f(:,:,k+5,j) &
                     -7*f(:,:,k+6,j) &
                       +f(:,:,k+7,j)
-          k=n1-2               
+          k=n1-2
           f(:,:,k,j)=9*f(:,:,k+1,j) &
                    -35*f(:,:,k+2,j) &
                    +77*f(:,:,k+3,j) &
@@ -2460,7 +2460,7 @@ module Boundcond
                    -49*f(:,:,k+6,j) &
                    +15*f(:,:,k+7,j) &
                     -2*f(:,:,k+8,j)
-          k=n1-3               
+          k=n1-3
           f(:,:,k,j)=9*f(:,:,k+1,j) &
                    -45*f(:,:,k+2,j) &
                   +147*f(:,:,k+3,j) &
@@ -2470,9 +2470,9 @@ module Boundcond
                   +225*f(:,:,k+7,j) &
                    -72*f(:,:,k+8,j) &
                    +10*f(:,:,k+9,j)
-                               
+!
       case ('top')               ! top boundary
-          k=n2+1               
+          k=n2+1
           f(:,:,k,j)=7*f(:,:,k-1,j) &
                    -21*f(:,:,k-2,j) &
                    +35*f(:,:,k-3,j) &
@@ -2489,7 +2489,7 @@ module Boundcond
                    -49*f(:,:,k-6,j) &
                    +15*f(:,:,k-7,j) &
                     -2*f(:,:,k-8,j)
-          k=n2+3               
+          k=n2+3
           f(:,:,k,j)=9*f(:,:,k-1,j) &
                    -45*f(:,:,k-2,j) &
                   +147*f(:,:,k-3,j) &
@@ -2499,10 +2499,10 @@ module Boundcond
                   +225*f(:,:,k-7,j) &
                    -72*f(:,:,k-8,j) &
                    +10*f(:,:,k-9,j)
-
+!
       case default
         print*, "bc_onesided_z ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_onesided_z
@@ -2520,20 +2520,20 @@ module Boundcond
       integer :: j
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(:,:,n1-1,j)=0.25*(  9*f(:,:,n1,j)- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
         f(:,:,n1-2,j)=0.05*( 81*f(:,:,n1,j)-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
         f(:,:,n1-3,j)=0.05*(127*f(:,:,n1,j)-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
-
+!
       case ('top')               ! top boundary
         f(:,:,n2+1,j)=0.25*(  9*f(:,:,n2,j)- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=0.05*( 81*f(:,:,n2,j)-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
         f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
-
+!
       case default
         print*, "bc_extrap_2_1: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_extrap_2_1
@@ -2551,20 +2551,20 @@ module Boundcond
       integer :: j
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(l1-1,:,:,j)=0.25*(  9*f(l1,:,:,j)- 3*f(l1+1,:,:,j)- 5*f(l1+2,:,:,j)+ 3*f(l1+3,:,:,j))
         f(l1-2,:,:,j)=0.05*( 81*f(l1,:,:,j)-43*f(l1+1,:,:,j)-57*f(l1+2,:,:,j)+39*f(l1+3,:,:,j))
         f(l1-3,:,:,j)=0.05*(127*f(l1,:,:,j)-81*f(l1+1,:,:,j)-99*f(l1+2,:,:,j)+73*f(l1+3,:,:,j))
-
+!
       case ('top')               ! top boundary
         f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
         f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
-
+!
       case default
         print*, "bcx_extrap_2_1: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bcx_extrap_2_1
@@ -2582,20 +2582,20 @@ module Boundcond
       integer :: j
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(:,m1-1,:,j)=0.25*(  9*f(:,m1,:,j)- 3*f(:,m1+1,:,j)- 5*f(:,m1+2,:,j)+ 3*f(:,m1+3,:,j))
         f(:,m1-2,:,j)=0.05*( 81*f(:,m1,:,j)-43*f(:,m1+1,:,j)-57*f(:,m1+2,:,j)+39*f(:,m1+3,:,j))
         f(:,m1-3,:,j)=0.05*(127*f(:,m1,:,j)-81*f(:,m1+1,:,j)-99*f(:,m1+2,:,j)+73*f(:,m1+3,:,j))
-
+!
       case ('top')               ! top boundary
         f(:,m2+1,:,j)=0.25*(  9*f(:,m2,:,j)- 3*f(:,m2-1,:,j)- 5*f(:,m2-2,:,j)+ 3*f(:,m2-3,:,j))
         f(:,m2+2,:,j)=0.05*( 81*f(:,m2,:,j)-43*f(:,m2-1,:,j)-57*f(:,m2-2,:,j)+39*f(:,m2-3,:,j))
         f(:,m2+3,:,j)=0.05*(127*f(:,m2,:,j)-81*f(:,m2-1,:,j)-99*f(:,m2-2,:,j)+73*f(:,m2-3,:,j))
-
+!
       case default
         print*, "bcy_extrap_2_1: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bcy_extrap_2_1
@@ -2620,20 +2620,20 @@ module Boundcond
       n2m4=n2-4
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
         f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
         f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
-
+!
       case ('top')               ! top boundary
         f(:,:,n2+1,j)=0.2   *(  9*f(:,:,n2,j)                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
         f(:,:,n2+2,j)=0.2   *( 15*f(:,:,n2,j)- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j)+ 7*f(:,:,n2m4,j))
         f(:,:,n2+3,j)=1./35.*(157*f(:,:,n2,j)-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
-
+!
       case default
         print*, "bc_extrap_2_2: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_extrap_2_2
@@ -2658,20 +2658,20 @@ module Boundcond
       l2m4=l2-4
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(l1-1,:,:,j)=0.2   *(  9*f(l1,:,:,j)                 -  4*f(l1+2,:,:,j)- 3*f(l1+3,:,:,j)+ 3*f(l1p4,:,:,j))
         f(l1-2,:,:,j)=0.2   *( 15*f(l1,:,:,j)- 2*f(l1+1,:,:,j)-  9*f(l1+2,:,:,j)- 6*f(l1+3,:,:,j)+ 7*f(l1p4,:,:,j))
         f(l1-3,:,:,j)=1./35.*(157*f(l1,:,:,j)-33*f(l1+1,:,:,j)-108*f(l1+2,:,:,j)-68*f(l1+3,:,:,j)+87*f(l1p4,:,:,j))
-
+!
       case ('top')               ! top boundary
         f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 -  4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
         f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-  9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))
         f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
-
+!
       case default
         print*, "bcx_extrap_2_2: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bcx_extrap_2_2
@@ -2696,20 +2696,20 @@ module Boundcond
       m2m4=m2-4
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(:,m1-1,:,j)=0.2   *(  9*f(:,m1,:,j)                 -  4*f(:,m1+2,:,j)- 3*f(:,m1+3,:,j)+ 3*f(:,m1p4,:,j))
         f(:,m1-2,:,j)=0.2   *( 15*f(:,m1,:,j)- 2*f(:,m1+1,:,j)-  9*f(:,m1+2,:,j)- 6*f(:,m1+3,:,j)+ 7*f(:,m1p4,:,j))
         f(:,m1-3,:,j)=1./35.*(157*f(:,m1,:,j)-33*f(:,m1+1,:,j)-108*f(:,m1+2,:,j)-68*f(:,m1+3,:,j)+87*f(:,m1p4,:,j))
-
+!
       case ('top')               ! top boundary
         f(:,m2+1,:,j)=0.2   *(  9*f(:,m2,:,j)                 -  4*f(:,m2-2,:,j)- 3*f(:,m2-3,:,j)+ 3*f(:,m2m4,:,j))
         f(:,m2+2,:,j)=0.2   *( 15*f(:,m2,:,j)- 2*f(:,m2-1,:,j)-  9*f(:,m2-2,:,j)- 6*f(:,m2-3,:,j)+ 7*f(:,m2m4,:,j))
         f(:,m2+3,:,j)=1./35.*(157*f(:,m2,:,j)-33*f(:,m2-1,:,j)-108*f(:,m2-2,:,j)-68*f(:,m2-3,:,j)+87*f(:,m2m4,:,j))
-
+!
       case default
         print*, "bcy_extrap_2_2: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bcy_extrap_2_2
@@ -2718,7 +2718,7 @@ module Boundcond
 !
 !  Extrapolation boundary condition in logarithm:
 !  It maintains a power law
-!  
+!
 !   18-dec-08/wlad: coded
 !
       character (len=3) :: topbot
@@ -2731,7 +2731,7 @@ module Boundcond
         do i=1,nghost
           do n=1,mz
             do l=1,mx
-              if (f(l,m1+i,n,j)/=0.) then 
+              if (f(l,m1+i,n,j)/=0.) then
                 f(l,m1-i,n,j)=f(l,m1,n,j)**2/f(l,m1+i,n,j)
               else
                 f(l,m1-i,n,j)=0.
@@ -2744,7 +2744,7 @@ module Boundcond
         do i=1,nghost
           do n=1,mz
             do l=1,mx
-              if (f(l,m2-i,n,j)/=0.) then 
+              if (f(l,m2-i,n,j)/=0.) then
                 f(l,m2+i,n,j)=f(l,m2,n,j)**2/f(l,m2-i,n,j)
               else
                 f(l,m2+i,n,j)=0.
@@ -2773,48 +2773,48 @@ module Boundcond
       integer :: j
 !
       select case (topbot)
-
+!
 !       case ('bot')               ! bottom boundary
 !         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
 !         f(:,:,n1-1,j)=- 3*f(:,:,n1+1,j)+  f(:,:,n1+2,j)
 !         f(:,:,n1-2,j)=- 8*f(:,:,n1+1,j)+3*f(:,:,n1+2,j)
 !         f(:,:,n1-3,j)=-15*f(:,:,n1+1,j)+6*f(:,:,n1+2,j)
-
+!
 !       case ('top')               ! top boundary
 !         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
 !         f(:,:,n2+1,j)=- 3*f(:,:,n2-1,j)+  f(:,:,n2-2,j)
 !         f(:,:,n2+2,j)=- 8*f(:,:,n2-1,j)+3*f(:,:,n2-2,j)
 !         f(:,:,n2+3,j)=-15*f(:,:,n2-1,j)+6*f(:,:,n2-2,j)
-
+!
 !! Nyquist-filtering
       case ('bot')               ! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=(1/11.)*(-17*f(:,:,n1+1,j)- 9*f(:,:,n1+2,j)+ 8*f(:,:,n1+3,j))
         f(:,:,n1-2,j)=      2*(- 2*f(:,:,n1+1,j)-   f(:,:,n1+2,j)+   f(:,:,n1+3,j))
         f(:,:,n1-3,j)=(3/11.)*(-27*f(:,:,n1+1,j)-13*f(:,:,n1+2,j)+14*f(:,:,n1+3,j))
-
+!
       case ('top')               ! top boundary
         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=(1/11.)*(-17*f(:,:,n2-1,j)- 9*f(:,:,n2-2,j)+ 8*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=      2*(- 2*f(:,:,n2-1,j)-   f(:,:,n2-2,j)+   f(:,:,n2-3,j))
         f(:,:,n2+3,j)=(3/11.)*(-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
-
+!
 ! !! Nyquist-transparent
 !       case ('bot')               ! bottom boundary
 !         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
 !         f(:,:,n1-1,j)=(1/11.)*(-13*f(:,:,n1+1,j)-14*f(:,:,n1+2,j)+10*f(:,:,n1+3,j))
 !         f(:,:,n1-2,j)=(1/11.)*(-48*f(:,:,n1+1,j)-17*f(:,:,n1+2,j)+20*f(:,:,n1+3,j))
 !         f(:,:,n1-3,j)=         - 7*f(:,:,n1+1,j)- 4*f(:,:,n1+2,j)+ 4*f(:,:,n1+3,j)
-
+!
 !       case ('top')               ! top boundary
 !         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
 !         f(:,:,n2+1,j)=(1/11.)*(-13*f(:,:,n2-1,j)-14*f(:,:,n2-2,j)+10*f(:,:,n2-3,j))
 !         f(:,:,n2+2,j)=(1/11.)*(-48*f(:,:,n2-1,j)-17*f(:,:,n2-2,j)+20*f(:,:,n2-3,j))
 !         f(:,:,n2+3,j)=         - 7*f(:,:,n2-1,j)- 4*f(:,:,n2-2,j)+ 4*f(:,:,n2-3,j)
-
+!
       case default
         print*, "bc_extrap0_2_0: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_extrap0_2_0
@@ -2834,22 +2834,22 @@ module Boundcond
       integer :: j
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=0.25*(- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
         f(:,:,n1-2,j)=0.05*(-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
         f(:,:,n1-3,j)=0.05*(-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
-
+!
       case ('top')               ! top boundary
         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=0.25*(- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=0.05*(-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
         f(:,:,n2+3,j)=0.05*(-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
-
+!
       case default
         print*, "bc_extrap0_2_1: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_extrap0_2_1
@@ -2875,22 +2875,22 @@ module Boundcond
       n2m4=n2-4
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=0.2   *(                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
         f(:,:,n1-2,j)=0.2   *(- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
         f(:,:,n1-3,j)=1./35.*(-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
-
+!
       case ('top')               ! top boundary
         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=0.2   *(                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
         f(:,:,n2+2,j)=0.2   *(- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j)+ 7*f(:,:,n2m4,j))
         f(:,:,n2+3,j)=1./35.*(-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
-
+!
       case default
         print*, "bc_extrap0_2_2: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_extrap0_2_2
@@ -2899,7 +2899,7 @@ module Boundcond
 !
 !  Extrapolation boundary condition in logarithm:
 !  It maintains a power law
-!  
+!
 !   18-dec-08/wlad: coded
 !
       character (len=3) :: topbot
@@ -2912,7 +2912,7 @@ module Boundcond
         do i=1,nghost
           do n=1,mz
             do m=1,my
-              if (f(l1+i,m,n,j)/=0.) then 
+              if (f(l1+i,m,n,j)/=0.) then
                 f(l1-i,m,n,j)=f(l1,m,n,j)**2/f(l1+i,m,n,j)
               else
                 f(l1-i,m,n,j)=0.
@@ -2925,7 +2925,7 @@ module Boundcond
         do i=1,nghost
           do n=1,mz
             do m=1,my
-              if (f(l2-i,m,n,j)/=0.) then 
+              if (f(l2-i,m,n,j)/=0.) then
                 f(l2+i,m,n,j)=f(l2,m,n,j)**2/f(l2-i,m,n,j)
               else
                 f(l2+i,m,n,j)=0.
@@ -3151,13 +3151,13 @@ module Boundcond
             if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
             call get_shared_variable('ampl_forc', ampl_forc, ierr)
             if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting ampl_forc")      
+                   "there was a problem when getting ampl_forc")
             call get_shared_variable('k_forc', k_forc, ierr)
             if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting k_forc")      
+                   "there was a problem when getting k_forc")
             call get_shared_variable('w_forc', w_forc, ierr)
             if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting w_forc")      
+                   "there was a problem when getting w_forc")
             if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                    ampl_forc, k_forc, w_forc
             f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
@@ -3179,13 +3179,13 @@ module Boundcond
             if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
             call get_shared_variable('ampl_forc', ampl_forc, ierr)
             if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting ampl_forc")      
+                   "there was a problem when getting ampl_forc")
             call get_shared_variable('k_forc', k_forc, ierr)
             if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting k_forc")      
+                   "there was a problem when getting k_forc")
             call get_shared_variable('w_forc', w_forc, ierr)
             if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting w_forc")      
+                   "there was a problem when getting w_forc")
             if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
                    ampl_forc, k_forc, w_forc
             f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
@@ -3264,16 +3264,16 @@ module Boundcond
       character (len=3) :: topbot
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           f(1:l1-1,:,:,j)=1.
-
+!
       case ('top')               ! top boundary
           f(l2+1:mx,:,:,j)=1.
-
+!
       case default
         print*, "bc_one_x: ",topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_one_x
@@ -3289,16 +3289,16 @@ module Boundcond
       character (len=3) :: topbot
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           f(:,1:m1-1,:,j)=1.
-
+!
       case ('top')               ! top boundary
           f(:,m2+1:my,:,j)=1.
-
+!
       case default
         print*, "bc_one_y: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_one_y
@@ -3314,16 +3314,16 @@ module Boundcond
       character (len=3) :: topbot
 !
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
           f(:,:,1:n1-1,j)=1.
-
+!
       case ('top')               ! top boundary
           f(:,:,n2+1:mz,j)=1.
-
+!
       case default
         print*, "bc_one_z: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_one_z
@@ -3337,7 +3337,7 @@ module Boundcond
       character (len=3) :: topbot
 !
       lfrozen_bcs_x = .true.    ! set flag
-
+!
       select case (topbot)
       case ('bot')               ! bottom boundary
         lfrozen_bot_var_x(j) = .true.
@@ -3358,7 +3358,7 @@ module Boundcond
       character (len=3) :: topbot
 !
       lfrozen_bcs_y = .true.    ! set flag
-
+!
       select case (topbot)
       case ('bot')               ! bottom boundary
         lfrozen_bot_var_y(j) = .true.
@@ -3379,7 +3379,7 @@ module Boundcond
       character (len=3) :: topbot
 !
       lfrozen_bcs_z = .true.    ! set flag
-
+!
       select case (topbot)
       case ('bot')               ! bottom boundary
         lfrozen_bot_var_z(j) = .true.
@@ -3407,73 +3407,43 @@ module Boundcond
        real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
        real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
-       integer :: lend,iostat=0,i,stat
+       integer :: lend,iostat,i,stat
        real,save :: tl=0.,tr=0.,delta_t=0.
 !
        intent (inout) :: f
 !
-       if (.not.allocated(uxl)) then
-         allocate(uxl(nx,ny),stat=stat)
-         if (stat>0) call fatal_error('uu_driver', &
-             'Could not allocate memory for uxl')
-       endif
-       if (.not.allocated(uxr)) then
-         allocate(uxr(nx,ny),stat=stat)
-         if (stat>0) call fatal_error('uu_driver', &
-             'Could not allocate memory for uxr')
-       endif
-       if (.not.allocated(uyl)) then
-         allocate(uyl(nx,ny),stat=stat)
-         if (stat>0) call fatal_error('uu_driver', &
-             'Could not allocate memory for uyl')
-       endif
-       if (.not.allocated(uyr)) then
-         allocate(uyr(nx,ny),stat=stat)
-         if (stat>0) call fatal_error('uu_driver', &
-             'Could not allocate memory for uyr')
-       endif
-       allocate(uxd(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for uxd')
-       allocate(uyd(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for uyd')
-       allocate(quen(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for quen')
-       allocate(pp(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for pp')
-       allocate(betaq(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for betaq')
-       allocate(fac(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for fac')
-       allocate(bbx(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for bbx')
-       allocate(bby(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for bby')
-       allocate(bbz(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for bbz')
-       allocate(bb2(nx,ny),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for bb2')
-       allocate(tmp(nxgrid,nygrid),stat=stat)
-       if (stat>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for tmp')
+       iostat = 0
+       stat = 0
+       if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=iostat)
+       if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
+       iostat = max(stat,iostat)
+       if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
+       iostat = max(stat,iostat)
+       if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
+       iostat = max(stat,iostat)
+       allocate(uxd(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(uyd(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(quen(nx,ny),stat=stat);        iostat = max(stat,iostat)
+       allocate(pp(nx,ny),stat=stat);          iostat = max(stat,iostat)
+       allocate(betaq(nx,ny),stat=stat);       iostat = max(stat,iostat)
+       allocate(fac(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(bbx(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(bby(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(bbz(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(bb2(nx,ny),stat=stat);         iostat = max(stat,iostat)
+       allocate(tmp(nxgrid,nygrid),stat=stat); iostat = max(stat,iostat)
 !
-!     Read the time table
+       if (iostat>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for all variable, please check')
+!
+!  Read the time table
 !
        if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat /= -2) then
 !
           inquire(IOLENGTH=lend) tl
           close (10)
           open (10,file='driver/time_k',form='unformatted',status='unknown',recl=lend,access='direct')
-
+!
           iostat = 0
           i=0
           do while (iostat == 0)
@@ -3501,9 +3471,9 @@ module Boundcond
           uyl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
           read (10,rec=2*i+1)   tmp
-          uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)          
+          uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
           read (10,rec=2*i+2)   tmp
-          uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)                    
+          uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
           close (10)
 !
           uxl = uxl / 10. / unit_velocity
@@ -3582,10 +3552,10 @@ module Boundcond
 !
        bb2 = bbx*bbx + bby*bby + bbz*bbz
        bb2 = bb2/(2.*mu0)
-
+!
        if (ltemperature) then
           pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
-       else if (lentropy) then          
+       else if (lentropy) then
           if (pretend_lnTT) then
              pp = gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
           else
@@ -3623,16 +3593,17 @@ module Boundcond
 !***********************************************************************
     subroutine bc_force_aa_time(f)
 !
-!
+!  reads in time series of magnetograms
+!  17-feb-10/bing: coded
 !
       use Fourier, only : fourier_transform_other
-!       
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, save :: tl=0.,tr=0.,delta_t=0.
       integer :: iostat,lend,i,idx2,idy2,stat
       logical :: ex
 !
-      real, dimension (:,:), allocatable, save :: Bz0l,Bz0r      
+      real, dimension (:,:), allocatable, save :: Bz0l,Bz0r
       real, dimension (:,:), allocatable :: Bz0_i,Bz0_r
       real, dimension (:,:), allocatable :: A_i,A_r
 !
@@ -3642,25 +3613,19 @@ module Boundcond
 !
       real :: mu0_SI,u_b,time_SI
 !
-      iostat = 0 
+      iostat = 0
       stat = 0
-      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=iostat)      
+      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=iostat)
       if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
       iostat = max(stat,iostat)
-      if (.not.allocated(Bz0_i)) allocate(Bz0_i(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      if (.not.allocated(Bz0_r)) allocate(Bz0_r(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      if (.not.allocated(A_i))   allocate(A_i(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      if (.not.allocated(A_r))   allocate(A_r(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      if (.not.allocated(kx))    allocate(kx(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      if (.not.allocated(ky))    allocate(ky(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      if (.not.allocated(k2))    allocate(k2(nxgrid,nygrid),stat=stat)
-!      
+      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
+      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
+      allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
+      allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
+      allocate(kx(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+      allocate(ky(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+      allocate(k2(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+!
       if (iostat>0) call fatal_error('bc_force_aa_time', &
           'Could not allocate memory for all variable, please check')
 !
@@ -3681,7 +3646,7 @@ module Boundcond
       ky =spread(kyp,1,nxgrid)
       k2 = kx*kx + ky*ky
 !
-      if (tr+delta_t.le.time_SI) then 
+      if (tr+delta_t.le.time_SI) then
         !
         inquire(IOLENGTH=lend) tl
         open (10,file='driver/time',form='unformatted',status='unknown', &
@@ -3694,7 +3659,7 @@ module Boundcond
           i=i+1
           read (10,rec=i,iostat=iostat) tl
           read (10,rec=i+1,iostat=iostat) tr
-          if (iostat /= 0) then            
+          if (iostat /= 0) then
             delta_t = time_SI                  ! EOF is reached => read again
             i=1
             read (10,rec=i,iostat=iostat) tl
@@ -3705,7 +3670,7 @@ module Boundcond
           endif
         enddo
         close (10)
-        
+!
         open (10,file='driver/mag_z.dat',form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
         read(10,rec=i,iostat=iostat) Bz0l
@@ -3727,7 +3692,7 @@ module Boundcond
       ! Fourier Transform of Bz0:
       !
       call fourier_transform_other(Bz0_r,Bz0_i)
-      !      
+      !
       ! First the Ax component:
       where (k2 .ne. 0 )
         A_r = -Bz0_i*ky/k2
@@ -3797,7 +3762,7 @@ module Boundcond
            "there was a problem when getting Fbot")
 !
       if (headtt) print*,'bc_lnTT_flux_x: Fbot,hcond,dx=',Fbot,hcond0*hcond1,dx
-
+!
       select case (topbot)
 !
 !  bottom boundary
@@ -3811,10 +3776,10 @@ module Boundcond
         do i=1,nghost
           f(l1-i,:,:,ilnTT)=f(l1+i,:,:,ilnTT)-2*i*dx*tmp_yz
         enddo
-
+!
       case default
         call fatal_error('bc_lnTT_flux_x','invalid argument')
-
+!
       endselect
 !
 !  Deallocate large array.
@@ -3847,16 +3812,16 @@ module Boundcond
 !  ltemperature_nolog=.true.) at the bottom _only_.
 !  lnTT version: enforce dlnT/dz = - Fbot/(K*T)
 !    TT version: enforce   dT/dz = - Fbot/K
-!      
+!
       call get_shared_variable('hcond0',hcond0,ierr)
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
            "there was a problem when getting hcond0")
       call get_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-           "there was a problem when getting Fbot")      
+           "there was a problem when getting Fbot")
 !
       if (headtt) print*,'bc_lnTT_flux_z: Fbot,hcond,dz=',Fbot,hcond0,dz
-
+!
       select case (topbot)
       case ('bot')
         if (ltemperature_nolog) then
@@ -3867,10 +3832,10 @@ module Boundcond
         do i=1,nghost
           f(:,:,n1-i,ilnTT)=f(:,:,n1+i,ilnTT)-2.*i*dz*tmp_xy
         enddo
-
+!
       case default
         call fatal_error('bc_lnTT_flux_z','invalid argument')
-
+!
       endselect
 !
 !  Deallocate large array.
@@ -4467,7 +4432,7 @@ module Boundcond
 !  10-oct-06/tobi: Coded
 !
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
@@ -4954,9 +4919,9 @@ module Boundcond
 !***********************************************************************
     subroutine bc_wind_z(f,topbot,massflux)
 !
-!  Calculates u_0 so that rho*(u+u_0)=massflux 
+!  Calculates u_0 so that rho*(u+u_0)=massflux
 !  massflux can be set as fbcz1/2(rho) in run.in
-!  
+!
 !  18-06-2008/bing: coded
 !
       character (len=3) :: topbot
@@ -5013,7 +4978,7 @@ module Boundcond
          call mpisend_real(local_flux,1,ipz*nprocy,111+iproc)
          call mpisend_real(local_mass,1,ipz*nprocy,211+iproc)
       else
-         do i=1,nprocy-1   
+         do i=1,nprocy-1
             ipt=ipz*nprocy+i
             call mpirecv_real(get_lf,1,ipt,111+ipt)
             call mpirecv_real(get_lm,1,ipt,211+ipt)
@@ -5027,17 +4992,17 @@ module Boundcond
 !  rho*u + u0 *rho =wind
 !  u0 = (wind-rho*u)/rho
 !
-         u_add = (massflux-total_flux) / total_mass 
+         u_add = (massflux-total_flux) / total_mass
       endif
 !
 !  now distribute u_add
 !
-      if (ipy .eq. 0) then 
-         do i=1,nprocy-1   
+      if (ipy .eq. 0) then
+         do i=1,nprocy-1
             ipt=ipz*nprocy+i
             call mpisend_real(u_add,1,ipt,311+ipt)
          enddo
-      else 
+      else
          call mpirecv_real(u_add,1,ipz*nprocy,311+iproc)
       endif
 !
@@ -5052,7 +5017,7 @@ module Boundcond
 !  Constant flux boundary condition for temperature (called when bcz='c3')
 !  at the bottom _only_ in the ADI case where hcond(n1)=hcond(x)
 !  TT version: enforce dT/dz = - Fbot/K
-!  30-jan-2009/dintrans: coded 
+!  30-jan-2009/dintrans: coded
 !
       use SharedVariables, only: get_shared_variable
 !
@@ -5061,14 +5026,14 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: tmp_x
       integer :: i, ierr
-      
+!
       call get_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("bc_lnTT_flux_z: "//&
-           "there was a problem when getting Fbot")      
- 
+           "there was a problem when getting Fbot")
+!
       if (headtt) print*,'bc_ADI_flux_z: Fbot, hcondADI, dz=', &
            Fbot, hcondADI, dz
-
+!
       if (topbot.eq.'bot') then
         tmp_x=-Fbot/hcondADI
         do i=1,nghost
@@ -5082,14 +5047,14 @@ module Boundcond
 !***********************************************************************
     subroutine bc_force_ux_time(f, idz, j)
 !
-!  Set ux = ampl_forc*sin(k_forc*x)*cos(w_forc*t) 
+!  Set ux = ampl_forc*sin(k_forc*x)*cos(w_forc*t)
 !
 !  05-jun-2009/dintrans: coded from bc_force_uxy_sin_cos
-!  Note: the ampl_forc, k_forc & w_forc run parameters are set in 
+!  Note: the ampl_forc, k_forc & w_forc run parameters are set in
 !  'hydro' and shared using the 'shared_variables' module
 !
       use SharedVariables, only : get_shared_variable
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz, j, ierr
       real    :: kx
@@ -5102,19 +5067,19 @@ module Boundcond
       endif
       call get_shared_variable('ampl_forc', ampl_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting ampl_forc")      
+           "there was a problem when getting ampl_forc")
       call get_shared_variable('k_forc', k_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting k_forc")      
+           "there was a problem when getting k_forc")
       call get_shared_variable('w_forc', w_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting w_forc")      
+           "there was a problem when getting w_forc")
       call get_shared_variable('x_forc', x_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting x_forc")      
+           "there was a problem when getting x_forc")
       call get_shared_variable('dx_forc', dx_forc, ierr)
       if (ierr/=0) call stop_it("BC_FORCE_UX_TIME: "//&
-           "there was a problem when getting dx_forc")      
+           "there was a problem when getting dx_forc")
       if (headtt) print*, 'bc_force_ux_time: ampl_forc, k_forc, '//&
            'w_forc, x_forc, dx_forc=', ampl_forc, k_forc, w_forc, &
            x_forc, dx_forc
@@ -5134,7 +5099,7 @@ module Boundcond
 ! set r and theta velocity corresponding to a constant x-velocity
 ! and symmetric for lnrho/rho.
 !
-! Otherwise, set symmetric for velocities, and constant 
+! Otherwise, set symmetric for velocities, and constant
 ! for lnrho/rho.
 !
 ! NB! Assumes y to have the range 0 < y < 2pi
@@ -5143,7 +5108,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
       real, dimension(mcom) :: val
-
+!
       select case (topbot)
       case ('bot')
         call fatal_error('bc_inlet_outlet_cyl', &
