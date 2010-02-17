@@ -24,7 +24,7 @@ module Special
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-  real :: diffrho_hyper3=0.
+  real :: diffrho_hyper3=0.,heatcond_hyper3=0.
 !
   real, parameter, dimension (37) :: intlnT = (/ &
        8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
@@ -48,7 +48,8 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
-       tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3
+       tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
+       heatcond_hyper3
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -254,7 +255,8 @@ module Special
               'not yet implented for ldensity_nolog')
         endif
         if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
-        if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+        if (headtt) print*,'special_calc_density: diffrho_hyper3=', &
+            diffrho_hyper3
       endif
 !
       df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
@@ -268,11 +270,33 @@ module Special
 !   calculate a additional 'special' term on the right hand side of the
 !   entropy (or temperature) equation.
 !
-!   23-jun-08/bing: coded
+!  23-jun-08/bing: coded
+!  17-feb-10/bing: added hyperdiffusion for non-equidistant grid
+!
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      real, dimension (nx) :: hc,tmp
+!
+      if (heatcond_hyper3/=0) then
+        if (.not. ltemperature_nolog) then
+          call der6(f,ilnTT,hc,1,IGNOREDX=.true.)
+          call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
+          hc=hc + tmp
+          call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
+          hc=hc + tmp
+          hc = heatcond_hyper3*hc
+        else
+          call fatal_error('special_calc_density', &
+              'not yet implented for ldensity_nolog')
+        endif
+        if (headtt) print*,'special_calc_entropy: heatcond_hyper3=', &
+            diffrho_hyper3
+      endif
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
       if (Kgpara/=0) call calc_heatcond_tensor(df,p)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
@@ -280,8 +304,6 @@ module Special
       if (tdown/=0) call calc_heat_cool_newton(df,p)
       if (Kgpara2/=0) call calc_heatcond_grad(df,p)
       if (heatamp/=0) call calc_artif_heating(df,p)
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
