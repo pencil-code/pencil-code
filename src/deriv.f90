@@ -598,15 +598,14 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
-     if (.not. lequidist(j)) &
-       call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
-!
       if (lspherical_coords) &
            call fatal_error('der4','NOT IMPLEMENTED for spherical coordinates')
 !
       if (present(ignoredx)) then
         igndx = ignoredx
       else
+        if (.not. lequidist(j)) &
+            call fatal_error('der4','non-equidistant grid works only with IGNOREDX')
         igndx = .false.
       endif
 !
@@ -769,12 +768,16 @@ module Deriv
       else
         if (.not. lequidist(j)) then
           call fatal_error('der6','for non-equidistant grid only '//&
-              'if dx is ignored')
+              'if dx is ignored.')
         endif
         igndx = .false.
       endif
 !
       if (present(upwind)) then
+        if (.not. lequidist(j)) then
+          call fatal_error('der6','upwind cannot be used with '//&
+              'non-equisdistant grid.')
+        endif
         upwnd = upwind
       else
         upwnd = .false.
@@ -815,7 +818,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-         else
+        else
           df=0.
         endif
       elseif (j==3) then
@@ -831,7 +834,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-         else
+        else
           df=0.
         endif
       endif
