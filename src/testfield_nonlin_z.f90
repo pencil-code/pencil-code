@@ -135,6 +135,24 @@ module Testfield
   integer :: idiag_psi21=0      ! DIAG_DOC: $\psi_{21}k$
   integer :: idiag_psi12=0      ! DIAG_DOC: $\psi_{12}k$
   integer :: idiag_psi22=0      ! DIAG_DOC: $\psi_{22}k$
+  integer :: idiag_phiK11=0     ! DIAG_DOC: $\phi_{11}^K$
+  integer :: idiag_phiK21=0     ! DIAG_DOC: $\phi_{21}^K$
+  integer :: idiag_phiK12=0     ! DIAG_DOC: $\phi_{12}^K$
+  integer :: idiag_phiK22=0     ! DIAG_DOC: $\phi_{22}^K$
+  integer :: idiag_phiK32=0     ! DIAG_DOC: $\phi_{32}^K$
+  integer :: idiag_psiK11=0     ! DIAG_DOC: $\psi_{11}^Kk$
+  integer :: idiag_psiK21=0     ! DIAG_DOC: $\psi_{21}^Kk$
+  integer :: idiag_psiK12=0     ! DIAG_DOC: $\psi_{12}^Kk$
+  integer :: idiag_psiK22=0     ! DIAG_DOC: $\psi_{22}^Kk$
+  integer :: idiag_phiM11=0     ! DIAG_DOC: $\phi_{11}^M$
+  integer :: idiag_phiM21=0     ! DIAG_DOC: $\phi_{21}^M$
+  integer :: idiag_phiM12=0     ! DIAG_DOC: $\phi_{12}^M$
+  integer :: idiag_phiM22=0     ! DIAG_DOC: $\phi_{22}^M$
+  integer :: idiag_phiM32=0     ! DIAG_DOC: $\phi_{32}^M$
+  integer :: idiag_psiM11=0     ! DIAG_DOC: $\psi_{11}^Mk$
+  integer :: idiag_psiM21=0     ! DIAG_DOC: $\psi_{21}^Mk$
+  integer :: idiag_psiM12=0     ! DIAG_DOC: $\psi_{12}^Mk$
+  integer :: idiag_psiM22=0     ! DIAG_DOC: $\psi_{22}^Mk$
   integer :: idiag_alp11cc=0    ! DIAG_DOC: $\alpha_{11}\cos^2 kz$
   integer :: idiag_alp21sc=0    ! DIAG_DOC: $\alpha_{21}\sin kz\cos kz$
   integer :: idiag_alp12cs=0    ! DIAG_DOC: $\alpha_{12}\cos kz\sin kz$
@@ -642,11 +660,14 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: uxB,B0test=0,bbtest,B0_imposed,uum,umxbtest
-      real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbtest,eetest
-      real, dimension (nx,3) :: uxbtestK,uxbtestM,J0test=0
+      real, dimension (nx,3) :: uxB,bbtest,B0_imposed,uum,umxbtest
+      real, dimension (nx,3) :: B0test=0,J0test=0
+      real, dimension (nx,3) :: duxbtest,djxbtest,eetest
+      real, dimension (nx,3) :: uxbtest,uxbtestK,uxbtestM
+      real, dimension (nx,3) :: jxbtest,jxbtestK,jxbtestM
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,Fipq,EKipq,EMipq,bpq,jpq,upq
+      real, dimension (nx,3,njtest) :: Eipq,EKipq,EMipq,upq
+      real, dimension (nx,3,njtest) :: Fipq,FKipq,FMipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct,bbfluct,jjfluct
       real, dimension (nx,3) :: graddivAtest,aatest,jjtest
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
@@ -864,6 +885,11 @@ module Testfield
         call cross_mn(p%uu,bbtest,uxbtestK)
         call cross_mn(uutest,p%bb,uxbtestM)
         uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+!
+!  Do the same for jxb.
+!
+        call cross_mn(p%jj,bbtest,jxbtestK)
+        call cross_mn(jjtest,p%bb,jxbtestM)
         jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
 !
 !  evaluate
@@ -871,6 +897,8 @@ module Testfield
         EKipq(:,:,jtest)=uxbtestK*bamp1
         EMipq(:,:,jtest)=uxbtestM*bamp1
         Eipq(:,:,jtest)=uxbtest*bamp1
+        FKipq(:,:,jtest)=jxbtestK*bamp1
+        FMipq(:,:,jtest)=jxbtestM*bamp1
         Fipq(:,:,jtest)=jxbtest*bamp1
         if (ldiagnos.and.idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
 !
@@ -935,13 +963,27 @@ module Testfield
         if (idiag_alpM31/=0) call sum_mn_name(+cz(n)*EMipq(:,3,1)+sz(n)*EMipq(:,3,i2),idiag_alpM31)
         if (idiag_etaM12/=0) call sum_mn_name(-(-sz(n)*EMipq(:,1,i1)+cz(n)*EMipq(:,1,i2))*ktestfield1,idiag_etaM12)
         if (idiag_etaM22/=0) call sum_mn_name(-(-sz(n)*EMipq(:,2,i1)+cz(n)*EMipq(:,2,i2))*ktestfield1,idiag_etaM22)
-
+!
 !  same for jxb
 !
         if (idiag_phi11/=0) call sum_mn_name(+cz(n)*Fipq(:,1,1)+sz(n)*Fipq(:,1,i2),idiag_phi11)
         if (idiag_phi21/=0) call sum_mn_name(+cz(n)*Fipq(:,2,1)+sz(n)*Fipq(:,2,i2),idiag_phi21)
         if (idiag_psi12/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2))*ktestfield1,idiag_psi12)
         if (idiag_psi22/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2))*ktestfield1,idiag_psi22)
+!
+!  same for jxbK
+!
+        if (idiag_phiK11/=0) call sum_mn_name(+cz(n)*FKipq(:,1,1)+sz(n)*FKipq(:,1,i2),idiag_phiK11)
+        if (idiag_phiK21/=0) call sum_mn_name(+cz(n)*FKipq(:,2,1)+sz(n)*FKipq(:,2,i2),idiag_phiK21)
+        if (idiag_psiK12/=0) call sum_mn_name(-(-sz(n)*FKipq(:,1,i1)+cz(n)*FKipq(:,1,i2))*ktestfield1,idiag_psiK12)
+        if (idiag_psiK22/=0) call sum_mn_name(-(-sz(n)*FKipq(:,2,i1)+cz(n)*FKipq(:,2,i2))*ktestfield1,idiag_psiK22)
+!
+!  same for jxbM
+!
+        if (idiag_phiM11/=0) call sum_mn_name(+cz(n)*FMipq(:,1,1)+sz(n)*FMipq(:,1,i2),idiag_phiM11)
+        if (idiag_phiM21/=0) call sum_mn_name(+cz(n)*FMipq(:,2,1)+sz(n)*FMipq(:,2,i2),idiag_phiM21)
+        if (idiag_psiM12/=0) call sum_mn_name(-(-sz(n)*FMipq(:,1,i1)+cz(n)*FMipq(:,1,i2))*ktestfield1,idiag_psiM12)
+        if (idiag_psiM22/=0) call sum_mn_name(-(-sz(n)*FMipq(:,2,i1)+cz(n)*FMipq(:,2,i2))*ktestfield1,idiag_psiM22)
 !
 !  weighted averages alpha and eta
 !  Still need to do this for iE0 /= 0 case.
@@ -1048,6 +1090,22 @@ module Testfield
           if (idiag_phi32/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i3)+sz(n)*Fipq(:,3,i4),idiag_phi32)
           if (idiag_psi11/=0) call sum_mn_name((-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestfield1,idiag_psi11)
           if (idiag_psi21/=0) call sum_mn_name((-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestfield1,idiag_psi21)
+!
+!  same for jxbK
+!
+          if (idiag_phiK12/=0) call sum_mn_name(+cz(n)*FKipq(:,1,i3)+sz(n)*FKipq(:,1,i4),idiag_phiK12)
+          if (idiag_phiK22/=0) call sum_mn_name(+cz(n)*FKipq(:,2,i3)+sz(n)*FKipq(:,2,i4),idiag_phiK22)
+          if (idiag_phiK32/=0) call sum_mn_name(+cz(n)*FKipq(:,3,i3)+sz(n)*FKipq(:,3,i4),idiag_phiK32)
+          if (idiag_psiK11/=0) call sum_mn_name((-sz(n)*FKipq(:,1,i3)+cz(n)*FKipq(:,1,i4))*ktestfield1,idiag_psiK11)
+          if (idiag_psiK21/=0) call sum_mn_name((-sz(n)*FKipq(:,2,i3)+cz(n)*FKipq(:,2,i4))*ktestfield1,idiag_psiK21)
+!
+!  same for jxbM
+!
+          if (idiag_phiM12/=0) call sum_mn_name(+cz(n)*FMipq(:,1,i3)+sz(n)*FMipq(:,1,i4),idiag_phiM12)
+          if (idiag_phiM22/=0) call sum_mn_name(+cz(n)*FMipq(:,2,i3)+sz(n)*FMipq(:,2,i4),idiag_phiM22)
+          if (idiag_phiM32/=0) call sum_mn_name(+cz(n)*FMipq(:,3,i3)+sz(n)*FMipq(:,3,i4),idiag_phiM32)
+          if (idiag_psiM11/=0) call sum_mn_name((-sz(n)*FMipq(:,1,i3)+cz(n)*FMipq(:,1,i4))*ktestfield1,idiag_psiM11)
+          if (idiag_psiM21/=0) call sum_mn_name((-sz(n)*FMipq(:,2,i3)+cz(n)*FMipq(:,2,i4))*ktestfield1,idiag_psiM21)
         endif
 !
 !  Volume-averaged dot products of mean emf and velocity and of mean emf and vorticity
@@ -1702,6 +1760,14 @@ module Testfield
         idiag_phi12=0; idiag_phi22=0; idiag_phi32=0
         idiag_psi11=0; idiag_psi21=0
         idiag_psi12=0; idiag_psi22=0
+        idiag_phiK11=0; idiag_phiK21=0
+        idiag_phiK12=0; idiag_phiK22=0; idiag_phiK32=0
+        idiag_psiK11=0; idiag_psiK21=0
+        idiag_psiK12=0; idiag_psiK22=0
+        idiag_phiM11=0; idiag_phiM21=0
+        idiag_phiM12=0; idiag_phiM22=0; idiag_phiM32=0
+        idiag_psiM11=0; idiag_psiM21=0
+        idiag_psiM12=0; idiag_psiM22=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
         idiag_alpK11cc=0; idiag_alpK21sc=0; idiag_alpK12cs=0; idiag_alpK22ss=0
@@ -1767,6 +1833,24 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'psi21',idiag_psi21)
         call parse_name(iname,cname(iname),cform(iname),'psi12',idiag_psi12)
         call parse_name(iname,cname(iname),cform(iname),'psi22',idiag_psi22)
+        call parse_name(iname,cname(iname),cform(iname),'phiK11',idiag_phiK11)
+        call parse_name(iname,cname(iname),cform(iname),'phiK21',idiag_phiK21)
+        call parse_name(iname,cname(iname),cform(iname),'phiK12',idiag_phiK12)
+        call parse_name(iname,cname(iname),cform(iname),'phiK22',idiag_phiK22)
+        call parse_name(iname,cname(iname),cform(iname),'phiK32',idiag_phiK32)
+        call parse_name(iname,cname(iname),cform(iname),'psiK11',idiag_psiK11)
+        call parse_name(iname,cname(iname),cform(iname),'psiK21',idiag_psiK21)
+        call parse_name(iname,cname(iname),cform(iname),'psiK12',idiag_psiK12)
+        call parse_name(iname,cname(iname),cform(iname),'psiK22',idiag_psiK22)
+        call parse_name(iname,cname(iname),cform(iname),'phiM11',idiag_phiM11)
+        call parse_name(iname,cname(iname),cform(iname),'phiM21',idiag_phiM21)
+        call parse_name(iname,cname(iname),cform(iname),'phiM12',idiag_phiM12)
+        call parse_name(iname,cname(iname),cform(iname),'phiM22',idiag_phiM22)
+        call parse_name(iname,cname(iname),cform(iname),'phiM32',idiag_phiM32)
+        call parse_name(iname,cname(iname),cform(iname),'psiM11',idiag_psiM11)
+        call parse_name(iname,cname(iname),cform(iname),'psiM21',idiag_psiM21)
+        call parse_name(iname,cname(iname),cform(iname),'psiM12',idiag_psiM12)
+        call parse_name(iname,cname(iname),cform(iname),'psiM22',idiag_psiM22)
         call parse_name(iname,cname(iname),cform(iname),'alp11cc',idiag_alp11cc)
         call parse_name(iname,cname(iname),cform(iname),'alp21sc',idiag_alp21sc)
         call parse_name(iname,cname(iname),cform(iname),'alp12cs',idiag_alp12cs)
@@ -1914,6 +1998,24 @@ module Testfield
         write(3,*) 'idiag_psi21=',idiag_psi21
         write(3,*) 'idiag_psi12=',idiag_psi12
         write(3,*) 'idiag_psi22=',idiag_psi22
+        write(3,*) 'idiag_phiK11=',idiag_phiK11
+        write(3,*) 'idiag_phiK21=',idiag_phiK21
+        write(3,*) 'idiag_phiK12=',idiag_phiK12
+        write(3,*) 'idiag_phiK22=',idiag_phiK22
+        write(3,*) 'idiag_phiK32=',idiag_phiK32
+        write(3,*) 'idiag_psiK11=',idiag_psiK11
+        write(3,*) 'idiag_psiK21=',idiag_psiK21
+        write(3,*) 'idiag_psiK12=',idiag_psiK12
+        write(3,*) 'idiag_psiK22=',idiag_psiK22
+        write(3,*) 'idiag_phiM11=',idiag_phiM11
+        write(3,*) 'idiag_phiM21=',idiag_phiM21
+        write(3,*) 'idiag_phiM12=',idiag_phiM12
+        write(3,*) 'idiag_phiM22=',idiag_phiM22
+        write(3,*) 'idiag_phiM32=',idiag_phiM32
+        write(3,*) 'idiag_psiM11=',idiag_psiM11
+        write(3,*) 'idiag_psiM21=',idiag_psiM21
+        write(3,*) 'idiag_psiM12=',idiag_psiM12
+        write(3,*) 'idiag_psiM22=',idiag_psiM22
         write(3,*) 'idiag_alp11cc=',idiag_alp11cc
         write(3,*) 'idiag_alp21sc=',idiag_alp21sc
         write(3,*) 'idiag_alp12cs=',idiag_alp12cs

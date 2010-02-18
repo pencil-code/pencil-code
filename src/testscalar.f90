@@ -79,11 +79,13 @@ module Testscalar
   logical :: ltestscalar_newz=.true.,leta_rank2=.false.
   logical :: ltestscalar_newx=.false.
   logical :: ltestscalar_newy=.false.
+  logical :: ltestscalar_per_unitvolume=.false.
   namelist /testscalar_run_pars/ &
        reinitialize_cctest,zextent,lsoca_ug, &
        lset_cctest2,kappatest,kappatest1,itestscalar,ktestscalar, &
        lam_testscalar,om_testscalar,delta_testscalar, &
        ltestscalar_newx,ltestscalar_newz, &
+       ltestscalar_per_unitvolume, &
        lug_as_aux,lignore_ugtestm, &
        dccinit,linit_cctest,camp, &
        rescale_cctest
@@ -387,6 +389,7 @@ module Testscalar
       use Cdata
 !
       lpenc_requested(i_uu)=.true.
+      if (ltestscalar_per_unitvolume) lpenc_requested(i_divu)=.true.
 !
     endsubroutine pencil_criteria_testscalar
 !***********************************************************************
