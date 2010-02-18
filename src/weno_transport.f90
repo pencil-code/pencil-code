@@ -130,7 +130,7 @@ module WENO_transport
 !
       do i=-nw-1+1,nw-1
         if (iq1<0) then
-          df(i+1,:)=vsig           *fq(:,m+i+1,n,iq)
+          df(i+1,:)=vsig             *fq(:,m+i+1,n,iq)
           f (i+1,:)=fq(:,m+i+1,n,iuy)*fq(:,m+i+1,n,iq)
         else
           df(i+1,:)=vsig             *fq(:,m+i+1,n,iq)*fq(:,m+i+1,n,iq1)
