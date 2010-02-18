@@ -1173,7 +1173,11 @@ module EquationOfState
             ss_=f(l1:l2,m,n,ieosvar2)
           endif
         case (mx)
-          lnrho_=f(:,m,n,ieosvar1)
+          if (ieosvars==ilnrho_ss) then
+            lnrho_=f(:,m,n,ieosvar1)
+          else
+            lnrho_=alog(f(:,m,n,ieosvar1))
+          endif
           if (leos_isentropic) then
             ss_=0
           elseif (leos_isothermal) then
