@@ -204,10 +204,10 @@ module Testfield
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
   integer :: idiag_b22rms=0     ! DIAG_DOC: $\left<b_{22}^2\right>^{1/2}$
-  integer :: idiag_ux0m=0       ! DIAG_DOC: $\left<u_{0}_x\right>$
-  integer :: idiag_uy0m=0       ! DIAG_DOC: $\left<u_{0}_y\right>$
-  integer :: idiag_ux11m=0      ! DIAG_DOC: $\left<u_{11}_x\right>$
-  integer :: idiag_uy11m=0      ! DIAG_DOC: $\left<u_{11}_y\right>$
+  integer :: idiag_ux0m=0       ! DIAG_DOC: $\left<u_{0_x}\right>$
+  integer :: idiag_uy0m=0       ! DIAG_DOC: $\left<u_{0_y}\right>$
+  integer :: idiag_ux11m=0      ! DIAG_DOC: $\left<u_{11_x}\right>$
+  integer :: idiag_uy11m=0      ! DIAG_DOC: $\left<u_{11_y}\right>$
   integer :: idiag_u0rms=0      ! DIAG_DOC: $\left<u_{0}^2\right>^{1/2}$
   integer :: idiag_b0rms=0      ! DIAG_DOC: $\left<b_{0}^2\right>^{1/2}$
   integer :: idiag_jb0m=0       ! DIAG_DOC: $\left<jb_{0}\right>$
