@@ -291,15 +291,17 @@ module Special
       hc = heatcond_hyper3*hc
       !
       call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
-      hc = heatcond_hyper2*tmp
+      hc =  hc + heatcond_hyper2*tmp
       call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
-      hc = heatcond_hyper2*tmp
+      hc =  hc + heatcond_hyper2*tmp
       call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc = heatcond_hyper2*tmp          
+      hc =  hc + heatcond_hyper2*tmp          
 !      
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+heatcond_hyper3+heatcond_hyper2
+      if (lfirst.and.ldt) diffus_chi3=diffus_chi3 &
+          + heatcond_hyper3 &
+          + heatcond_hyper2 
 !
       if (Kgpara/=0) call calc_heatcond_tensor(df,p)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
