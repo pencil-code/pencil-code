@@ -86,6 +86,8 @@ module Hydro
   logical, target :: lcoriolis_force=.true.
   logical, target :: lcentrifugal_force=.false.
   logical :: lscale_tobox=.true.
+  real :: incl_alpha = 0.0, rot_rr = 0.0
+  real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   real :: ampl_Omega=0.0
@@ -104,7 +106,7 @@ module Hydro
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
        lscale_tobox, ampl_Omega,omega_ini, &
-       r_cyl,skin_depth
+       r_cyl,skin_depth, incl_alpha, rot_rr,xsphere,ysphere,zsphere
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
@@ -690,6 +692,7 @@ module Hydro
         case ('trilinear-z'); call trilinear(ampluu(j),f,iuz)
         case ('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
         case ('tor_pert'); call tor_pert(ampluu(j),f,iux)
+        case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,rot_rr,xsphere,ysphere,zsphere)
         case ('diffrot'); call diffrot(ampluu(j),f,iuy)
         case ('centrifugal-balance','global-shear'); call centrifugal_balance(f)
         case ('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
