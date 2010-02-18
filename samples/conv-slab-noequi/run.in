@@ -21,7 +21,9 @@
 /
 &density_run_pars
   cdiffrho=0.
-  lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
+  !lupw_lnrho=T
+  ! upwinding cannot be used togehter with non-equidistant
+  ! grid because it involves higher derivatives
 /
 &grav_run_pars
   gravz_profile='const',gravz=-1.
@@ -29,7 +31,7 @@
 &entropy_run_pars
   Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
   iheatcond='K-profile', hcond0=8.e-3
-  lupw_ss=T ! use upwinding for entropy to avoid wiggles
+  !lupw_ss=T ! use upwinding for entropy to avoid wiggles
 /
 &viscosity_run_pars
   ivisc='nu-const'
@@ -42,4 +44,3 @@
 !   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
 
 ! tinit    -- initial time for smoothly switching on heating, etc
-
