@@ -59,6 +59,7 @@ module Initcond
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
+  public :: rotblob
 !
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -4546,5 +4547,53 @@ module Initcond
       endif
 !
     endsubroutine ferriere_uniform_y
+!***********************************************************************
+subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
+!
+!  Rigid rotating sphere initial velocity
+!  with inclination  angle alpha.
+!
+!  18-feb-10/mvaisala: coded
+!
+      integer :: i,j,l
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, optional :: xsphere,ysphere,zsphere
+      real :: omega, radius, rsphere, phi, rr_rot, ampl, x01=0. 
+      real :: y01=0., z01=0., x_real, y_real, z_real, dire_x, dire_y
+      real :: incl_alpha, theta, vel_phi, ampluu
+
+!
+!  Rotating sphere
+!
+      omega = ampl/radius
+      if (present(xsphere)) x01=xsphere
+      if (present(ysphere)) y01=ysphere
+      if (present(zsphere)) z01=zsphere
+      if (omega==0) then
+        if (lroot) print*,'The sphere does not rotate!'
+      else
+        do n = n1,n2
+          do m = m1,m2
+            do l = l1,l2
+              x_real = x(l) - x01
+              y_real = y(m) - y01
+              z_real = z(n) - z01
+              rr_rot = sqrt((x_real)**2+(y_real)**2+(z_real)**2)
+              theta  = atan(x_real/z_real)
+              phi    = atan(-y_real/x_real)
+              vel_phi = omega*rr_rot*sin(theta)
+              if (rr_rot <= radius) then
+                 j = i
+                 f(l,m,n,j) = vel_phi*sin(phi)
+                 j = i+1
+                 f(l,m,n,j) = vel_phi*cos(phi)*cos(incl_alpha)
+                 j = i+2
+                 f(l,m,n,j) = vel_phi*cos(phi)*sin(incl_alpha)
+              end if 
+            end do
+          end do
+        end do
+      end if
+endsubroutine rotblob
 !***********************************************************************
 endmodule Initcond
