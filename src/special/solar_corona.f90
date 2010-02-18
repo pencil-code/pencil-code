@@ -24,7 +24,7 @@ module Special
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-  real :: diffrho_hyper3=0.,heatcond_hyper3=0.,heatcond_hyper2=0.
+  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.
 !
   real, parameter, dimension (37) :: intlnT = (/ &
        8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
@@ -49,7 +49,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       heatcond_hyper3,heatcond_hyper2
+       chi_hyper3,chi_hyper2
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -254,7 +254,8 @@ module Special
           call fatal_error('special_calc_density', &
               'not yet implented for ldensity_nolog')
         endif
-        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
+!
+!        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
 !
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
 !
@@ -288,20 +289,22 @@ module Special
       hc = hc + tmp
       call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
       hc = hc + tmp
-      hc = heatcond_hyper3*hc
+      hc = chi_hyper3*hc
       !
       call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
-      hc =  hc + heatcond_hyper2*tmp
+      hc =  hc + chi_hyper2*tmp
       call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
-      hc =  hc + heatcond_hyper2*tmp
+      hc =  hc + chi_hyper2*tmp
       call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc =  hc + heatcond_hyper2*tmp          
+      hc =  hc + chi_hyper2*tmp          
 !      
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
+!  due to ignoredx chi_hyperx has [1/s]
+!
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3 &
-          + heatcond_hyper3 &
-          + heatcond_hyper2 
+          + chi_hyper3 &
+          + chi_hyper2 
 !
       if (Kgpara/=0) call calc_heatcond_tensor(df,p)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
