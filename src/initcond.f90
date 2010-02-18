@@ -4558,10 +4558,9 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
       integer :: i,j,l
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xsphere,ysphere,zsphere
-      real :: omega, radius, rsphere, phi, rr_rot, ampl, x01=0. 
-      real :: y01=0., z01=0., x_real, y_real, z_real, dire_x, dire_y
-      real :: incl_alpha, theta, vel_phi, ampluu
-
+      real :: omega, radius, phi, rr_rot, ampl, x01=0.
+      real :: y01=0., z01=0., x_real, y_real, z_real
+      real :: incl_alpha, theta, vel_phi
 !
 !  Rotating sphere
 !
@@ -4583,17 +4582,18 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
               phi    = atan(-y_real/x_real)
               vel_phi = omega*rr_rot*sin(theta)
               if (rr_rot <= radius) then
-                 j = i
-                 f(l,m,n,j) = vel_phi*sin(phi)
-                 j = i+1
-                 f(l,m,n,j) = vel_phi*cos(phi)*cos(incl_alpha)
-                 j = i+2
-                 f(l,m,n,j) = vel_phi*cos(phi)*sin(incl_alpha)
-              end if 
-            end do
-          end do
-        end do
-      end if
+                j = i
+                f(l,m,n,j) = vel_phi*sin(phi)
+                j = i+1
+                f(l,m,n,j) = vel_phi*cos(phi)*cos(incl_alpha)
+                j = i+2
+                f(l,m,n,j) = vel_phi*cos(phi)*sin(incl_alpha)
+              endif
+            enddo
+          enddo
+        enddo
+      endif
+!
 endsubroutine rotblob
 !***********************************************************************
 endmodule Initcond
