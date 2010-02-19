@@ -723,4 +723,14 @@ module Entropy
 !
     endsubroutine get_slices_entropy
 !***********************************************************************
+    subroutine fill_farray_pressure(f)
+!
+!  18-feb-10/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine fill_farray_pressure
+!***********************************************************************
 endmodule Entropy

@@ -7,4 +7,4 @@
   public :: rprint_entropy, get_slices_entropy
   public :: init_ss, dss_dt
   public :: pencil_criteria_entropy, pencil_interdep_entropy
-  public :: calc_pencils_entropy
+  public :: calc_pencils_entropy, fill_farray_pressure

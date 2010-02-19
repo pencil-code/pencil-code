@@ -25,14 +25,14 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: hcond0=0.,hcond1=impossible,chi=impossible
-  real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
-  real :: Ftop=impossible,FtopKtop=impossible
+  real :: hcond0=0.0, hcond1=impossible, chi=impossible
+  real :: Fbot=impossible, FbotKbot=impossible, Kbot=impossible
+  real :: Ftop=impossible, FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
-  logical, pointer :: lpressuregradient_gas ! Shared with Hydro module.
+  logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
-
+!
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to 
@@ -360,5 +360,15 @@ module Entropy
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_entropy
+!***********************************************************************
+    subroutine fill_farray_pressure(f)
+!
+!  18-feb-10/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine fill_farray_pressure
 !***********************************************************************
 endmodule Entropy

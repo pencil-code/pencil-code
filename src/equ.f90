@@ -143,7 +143,8 @@ module Equ
                      leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
-                     lparticles_prepencil_calc.or.lsolid_cells.or.lchemistry
+                     lparticles_prepencil_calc.or.lsolid_cells.or. &
+                     lchemistry.or.lweno_transport
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -254,6 +255,12 @@ module Equ
 !
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
+!
+!  For calculating the pressure gradient directly from the pressure (which is
+!  derived from the basic thermodynamical variables), we need to fill in the
+!  pressure in the f array.
+!
+      if (lentropy) call fill_farray_pressure(f)
 !
 !  Set inverse timestep to zero before entering loop over m and n.
 !

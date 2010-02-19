@@ -24,12 +24,12 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: hcond0=0.,hcond1=impossible,chi=impossible
-  real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
-  real :: Ftop=impossible,FtopKtop=impossible
+  real :: hcond0=0.0, hcond1=impossible, chi=impossible
+  real :: Fbot=impossible, FbotKbot=impossible, Kbot=impossible
+  real :: Ftop=impossible, FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
-  integer :: idiag_dtc=0,idiag_ssm=0,idiag_ugradpm=0
+  integer :: idiag_dtc=0, idiag_ssm=0, idiag_ugradpm=0
 !
   contains
 !***********************************************************************
@@ -353,5 +353,15 @@ module Entropy
       real, dimension(mx,my,mz,mfarray) :: finit,f
 ! 
     endsubroutine calc_heatcond_ADI
+!***********************************************************************
+    subroutine fill_farray_pressure(f)
+!
+!  18-feb-10/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine fill_farray_pressure
 !***********************************************************************
 endmodule Entropy

@@ -33,17 +33,18 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
-  real :: ss_const=0.
-  real :: T0=1.
-  real :: kx_ss=1.
+  real :: chi=0.0, chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: ss_const=0.0
+  real :: T0=1.0
+  real :: kx_ss=1.0
   real :: hcond0=impossible
   real :: Kbot=impossible
   integer, parameter :: nheatc_max=4
-  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
-  logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
+  logical :: lheatc_Kconst=.false., lheatc_simple=.false.
+  logical :: lheatc_chiconst=.false.
+  logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.
-  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
+  logical :: lpressuregradient_gas=.true., ladvection_entropy=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
@@ -53,9 +54,8 @@ module Entropy
       ladvection_entropy
 !
   namelist /entropy_run_pars/ &
-      hcond0, chi_t, chi_shock, chi, iheatcond, &
-      Kbot, lupw_ss,chi_hyper3, lpressuregradient_gas, &
-      beta_glnrho_global, ladvection_entropy
+      hcond0, chi_t, chi_shock, chi, iheatcond, Kbot, lupw_ss,chi_hyper3, &
+      lpressuregradient_gas, beta_glnrho_global, ladvection_entropy
 !
   integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
@@ -1053,5 +1053,18 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
+!***********************************************************************
+    subroutine fill_farray_pressure(f)
+!
+!  Fill f array with the pressure, to be able to calculate pressure gradient
+!  directly from the pressure.
+!
+!  18-feb-10/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine fill_farray_pressure
 !***********************************************************************
 endmodule Entropy

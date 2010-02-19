@@ -1,7 +1,6 @@
 ! $Id$
 ! 
-!  This module takes care of entropy (initial condition
-!  and time advance)
+!  This module takes care of evolving the entropy.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,60 +31,59 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
-  real :: luminosity=0.,wheat=0.1,cool=0.,zcool=0.,rcool=0.,wcool=0.1
-  real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
-  real,target :: chi=0.
-  real :: chi_t=0.,chi_shock=0.,chi_hyper3=0.
-  real :: Kgperp=0.,Kgpara=0.,tdown=0.,allp=2.
-  real :: ss_left=1.,ss_right=1.
-  real :: ss0=0.,khor_ss=1.,ss_const=0.
-  real :: pp_const=0.
-  real :: tau_ss_exterior=0.,T0=0.
-  real :: mixinglength_flux=0.
-  !parameters for Sedov type initial condition
-  real :: center1_x=0., center1_y=0., center1_z=0.
-  real :: center2_x=0., center2_y=0., center2_z=0.
-  real :: kx_ss=1.,ky_ss=1.,kz_ss=1.
-  real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
-  real :: cool_fac=1., chiB=0.
-  real, dimension(3) :: chi_hyper3_aniso=0.
-!
-  real, target :: hcond0=impossible,hcond1=impossible
-  real, target :: Fbot=impossible,FbotKbot=impossible
-  real, target :: Ftop=impossible,FtopKtop=impossible
-!
-  real :: Kbot=impossible,Ktop=impossible
+  real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
+  real :: luminosity=0.0, wheat=0.1, cool=0.0, zcool=0.0, rcool=0.0, wcool=0.1
+  real :: TT_int, TT_ext, cs2_int, cs2_ext
+  real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
+  real, target :: chi=0.0
+  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0
+  real :: ss_left=1.0, ss_right=1.0
+  real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
+  real :: pp_const=0.0
+  real :: tau_ss_exterior=0.0, T0=0.0
+  real :: mixinglength_flux=0.0
+  real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
+  real :: center2_x=0.0, center2_y=0.0, center2_z=0.0
+  real :: kx_ss=1.0, ky_ss=1.0, kz_ss=1.0
+  real :: thermal_background=0.0, thermal_peak=0.0, thermal_scaling=1.0
+  real :: cool_fac=1.0, chiB=0.0
+  real, dimension(3) :: chi_hyper3_aniso=0.0
+  real, target :: hcond0=impossible, hcond1=impossible
+  real, target :: Fbot=impossible, FbotKbot=impossible
+  real, target :: Ftop=impossible, FtopKtop=impossible
+  real :: Kbot=impossible, Ktop=impossible
   real :: hcond2=impossible
-  real :: chit_prof1=1.,chit_prof2=1.
-  real :: tau_cor=0.,TT_cor=0.,z_cor=0.
-  real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
-  real :: heat_uniform=0.,cool_RTV=0.
-  real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
+  real :: chit_prof1=1.0, chit_prof2=1.0
+  real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
+  real :: tauheat_buffer=0.0, TTheat_buffer=0.0
+  real :: zheat_buffer=0.0, dheat_buffer1=0.0
+  real :: heat_uniform=0.0, cool_RTV=0.0
+  real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
-  real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
-  real :: xbot=0.0,xtop=0.0
+  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
+  real :: xbot=0.0, xtop=0.0
   integer, parameter :: nheatc_max=4
+  integer :: iglobal_hcond=0
+  integer :: iglobal_glhc=0
+  integer :: ippaux=0
   logical :: lturbulent_heat=.false.
-  logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
+  logical :: lheatc_Kprof=.false., lheatc_Kconst=.false.
   logical, target :: lheatc_chiconst=.false.
-  logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
+  logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.
   logical :: lheatc_corona=.false.
-  logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
-  logical :: lheatc_hyper3ss_polar=.false.,lheatc_hyper3ss_aniso=.false.
+  logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
+  logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lcooling_general=.false.
   logical :: lupw_ss=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
-  logical, pointer :: lpressuregradient_gas ! Shared with Hydro.
+  logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.
-!
-  integer :: iglobal_hcond=0
-  integer :: iglobal_glhc=0
-!
+  logical :: lfpres_from_pressure=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -93,62 +91,35 @@ module Entropy
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
 !
-! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
+!  Input parameters.
 !
-  double precision, parameter, dimension (10) :: &
-       intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /)
-  double precision, parameter, dimension (9) :: &
-       lnH_1 = (/ -542.398,  -228.833, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
-       B_1   = (/     50.,      15.,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)
-  !
-  ! A second set of parameters for cool_RTV (from interstellar.f90)
-  !
-  double precision, parameter, dimension(7) ::  &
-       intlnT_2 = (/ 5.704,7.601 , 8.987 , 11.513 , 17.504 , 20.723, 24.0 /)
-  double precision, parameter, dimension(6) ::  &
-       lnH_2 = (/-102.811, -99.01, -111.296, -70.804, -90.934, -80.572 /),   &
-       B_2   = (/    2.0,     1.5,   2.867,  -0.65,   0.5, 0.0 /)
-
-  ! input parameters
   namelist /entropy_init_pars/ &
-      initss,     &
-      pertss,     &
-      grads0,     &
-      radius_ss,  &
-      ampl_ss,    &
-      widthss,    &
-      epsilon_ss, &
-      mixinglength_flux, &
-      chi_t, &
-      pp_const, &
-      ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
-      khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
-      center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,ky_ss,kz_ss,beta_glnrho_global,ladvection_entropy, &
-      lviscosity_heat, &
-      r_bcz,luminosity,wheat,hcond0,tau_cool,TTref_cool,lhcond_global, &
-      cool_fac,cs0hs,H0hs,rho0hs, tau_cool2
+      initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
+      mixinglength_flux, chi_t, pp_const, ss_left, ss_right, ss_const, mpoly0, &
+      mpoly1, mpoly2, isothtop, khor_ss, thermal_background, thermal_peak, &
+      thermal_scaling, cs2cool, center1_x, center1_y, center1_z, center2_x, &
+      center2_y, center2_z, T0, ampl_TT, kx_ss, ky_ss, kz_ss, &
+      beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
+      luminosity, wheat, hcond0, tau_cool, TTref_cool, lhcond_global, &
+      cool_fac, cs0hs, H0hs, rho0hs, tau_cool2
 !
-! run parameters
+!  Run parameters.
+!
   namelist /entropy_run_pars/ &
-      hcond0,hcond1,hcond2,widthss,borderss, &
-!AB: allow polytropic indices to be read in also during run stage.
-!AB: They are used to re-calculate the radiative conductivity profile.
-      mpoly0,mpoly1,mpoly2, &
-      luminosity,wheat,cooling_profile,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
-      lcooling_general, &
-      chi_t,chit_prof1,chit_prof2,chi_shock,chi,iheatcond, &
-      Kgperp,Kgpara, cool_RTV, &
-      tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
-      tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
-      heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
-      lturbulent_heat,deltaT_poleq, &
-      tdown, allp,beta_glnrho_global,ladvection_entropy, &
-      lviscosity_heat,r_bcz,lfreeze_sint,lfreeze_sext,lhcond_global, &
-      tau_cool,TTref_cool,mixinglength_flux,chiB,chi_hyper3_aniso, Ftop, &
-      xbot,xtop,tau_cool2,tau_diff
-
-  ! diagnostic variables (need to be consistent with reset list below)
+      hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
+      luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
+      wcool, Fbot, lcooling_general, chi_t, chit_prof1, chit_prof2, chi_shock, &
+      chi, iheatcond, Kgperp, Kgpara, cool_RTV, tau_ss_exterior, lmultilayer, &
+      Kbot, tau_cor, TT_cor, z_cor, tauheat_buffer, TTheat_buffer, &
+      zheat_buffer, dheat_buffer1, heat_uniform, lupw_ss, cool_int, cool_ext, &
+      chi_hyper3, lturbulent_heat, deltaT_poleq, tdown, allp, &
+      beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
+      lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
+      mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
+      tau_diff, lfpres_from_pressure
+!
+!  Diagnostic variables (need to be consistent with reset list below).
+!
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to 
@@ -214,15 +185,13 @@ module Entropy
   integer :: idiag_uxTTmxy=0    ! DIAG_DOC:
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
-
-
+!
   contains
-
 !***********************************************************************
     subroutine register_entropy()
 !
-!  initialise variables which should know that we solve an entropy
-!  equation: iss, etc; increase nvar accordingly
+!  Initialise variables which should know that we solve an entropy
+!  equation: iss, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
 !
@@ -234,7 +203,7 @@ module Entropy
 !
       call farray_register_pde('ss',iss)
 !
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -272,40 +241,38 @@ module Entropy
       logical :: lnothing
       type (pencil_case) :: p
 !
-! Check any module dependencies
+!  Check any module dependencies.
 !
       if (.not. leos) then
         call fatal_error('initialize_entropy', &
             'EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
       endif
 !
-! Tell the equation of state that we're here and what f variable we use
+!  Tell the equation of state that we're here and what f variable we use.
 !
-!ajwm      if (.not. lreloading) then ! already in place when reloading
-        if (pretend_lnTT) then
-          call select_eos_variable('lnTT',iss)
-        else
-          call select_eos_variable('ss',iss)
-        endif
-!ajwm      endif
+      if (pretend_lnTT) then
+        call select_eos_variable('lnTT',iss)
+      else
+        call select_eos_variable('ss',iss)
+      endif
 !
-!  radiative diffusion: initialize flux etc
+!  Radiative diffusion: initialize flux etc.
 !
-        hcond = 0.
-      !
-      !  Kbot and hcond0 are used interchangibly, so if one is
-      !  =impossible, set it to the other's value
-      !
-      if (hcond0 == impossible) then
-        if (Kbot == impossible) then
-          hcond0 = 0.
-          Kbot = 0.
+      hcond=0.0
+!
+!  Kbot and hcond0 are used interchangibly, so if one is
+!  =impossible, set it to the other's value
+!
+      if (hcond0==impossible) then
+        if (Kbot==impossible) then
+          hcond0=0.0
+          Kbot=0.0
         else                    ! Kbot = possible
-          hcond0 = Kbot
+          hcond0=Kbot
         endif
       else                      ! hcond0 = possible
-        if (Kbot == impossible) then
-          Kbot = hcond0
+        if (Kbot==impossible) then
+          Kbot=hcond0
         else
           call warning('initialize_entropy', &
               'You should not set Kbot and hcond0 at the same time')
@@ -315,7 +282,7 @@ module Entropy
 !  hcond0 is given by mixinglength_flux in the MLT case
 !  hcond1 and hcond2 follow below in the block 'if (lmultilayer) etc...'
 !
-      if (mixinglength_flux /= 0.) then
+      if (mixinglength_flux/=0.0) then
         Fbot=mixinglength_flux
         hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
         hcond1 = (mpoly1+1.)/(mpoly0+1.)
@@ -327,14 +294,14 @@ module Entropy
             hcond0, Fbot
       endif
 !
-!  freeze entroopy
+!  Freeze entropy.
 !
       if (lfreeze_sint) lfreeze_varint(iss) = .true.
       if (lfreeze_sext) lfreeze_varext(iss) = .true.
 !
-!  make sure the top boundary condition for temperature (if cT is used)
+!  Make sure the top boundary condition for temperature (if cT is used)
 !  knows about the cooling function or vice versa (cs2cool will take over
-!  if /=0)
+!  if /=0).
 !
       if (lgravz .and. lrun) then
         if (cs2top/=cs2cool) then
@@ -348,17 +315,17 @@ module Entropy
           endif
         endif
 !
-!  settings for fluxes
+!  Settings for fluxes.
 !
         if (lmultilayer) then
-          !
-          !  calculate hcond1,hcond2 if they have not been set in run.in
-          !
+!
+!  Calculate hcond1,hcond2 if they have not been set in run.in.
+!
           if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
           if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
-          !
-          !  calculate Fbot if it has not been set in run.in
-          !
+!
+!  Calculate Fbot if it has not been set in run.in.
+!
           if (Fbot==impossible) then
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
@@ -373,9 +340,9 @@ module Entropy
           else
             FbotKbot=0.
           endif
-          !
-          !  calculate Ftop if it has not been set in run.in
-          !
+!
+!  Calculate Ftop if it has not been set in run.in.
+!
           if (Ftop==impossible) then
             if (bcz2(iss)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
@@ -392,14 +359,14 @@ module Entropy
           endif
 !
         else
-          ! lmultilayer=False
-          !
-          !  NOTE: in future we should define chiz=chi(z) or Kz=K(z) here.
-          !  calculate hcond and FbotKbot=Fbot/K
-          !  (K=hcond is radiative conductivity)
-          !
-          !  calculate Fbot if it has not been set in run.in
-          !
+! lmultilayer=False
+!
+!  NOTE: in future we should define chiz=chi(z) or Kz=K(z) here.
+!  Calculate hcond and FbotKbot=Fbot/K
+!  (K=hcond is radiative conductivity).
+!
+!  Calculate Fbot if it has not been set in run.in.
+!
           if (Fbot==impossible) then
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
@@ -426,9 +393,9 @@ module Entropy
                    'initialize_entropy: Calculated hcond0 = ', hcond0
             endif
           endif
-          !
-          !  calculate Ftop if it has not been set in run.in
-          !
+!
+!  Calculate Ftop if it has not been set in run.in.
+!
           if (Ftop==impossible) then
             if (bcz2(iss)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
@@ -445,8 +412,8 @@ module Entropy
 !
         endif
       endif
-
-!   make sure all relevant parameters are set for spherical shell problems
+!
+!  Make sure all relevant parameters are set for spherical shell problems.
 !
       select case (initss(1))
         case ('geo-kws','geo-benchmark','shell_layers')
@@ -454,12 +421,12 @@ module Entropy
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
           endif
 !
-!  calculate temperature gradient from polytropic index
+!  Calculate temperature gradient from polytropic index.
 !
           call get_cp1(cp1)
           beta1=cp1*g0/(mpoly+1)*gamma/gamma_m1
 !
-!  temperatures at shell boundaries
+!  Temperatures at shell boundaries.
 !
           if (initss(1) .eq. 'shell_layers') then
 !           lmultilayer=.true.   ! this is the default...
@@ -540,6 +507,8 @@ module Entropy
         print*, 'initialize_entropy: 0-D run, turned off pressure gradient term'
         print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
       endif
+!
+      if (lfpres_from_pressure) call farray_register_auxiliary('ppaux',ippaux)
 !
 !  Initialize heat conduction.
 !
@@ -721,43 +690,51 @@ module Entropy
       endsubroutine initialize_entropy
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_init_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_init_pars)
+!
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=entropy_run_pars,ERR=99)
       endif
-
+!
 99    return
+!
     endsubroutine read_entropy_run_pars
 !***********************************************************************
     subroutine write_entropy_run_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=entropy_run_pars)
+!
     endsubroutine write_entropy_run_pars
-!!***********************************************************************
+!***********************************************************************
     subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
@@ -2103,13 +2080,17 @@ module Entropy
         lpencil_in(i_cs2)=.true.
       endif
       if (lpencil_in(i_fpres)) then
-        lpencil_in(i_cs2)=.true.
-        lpencil_in(i_glnrho)=.true.
-        if (leos_idealgas) then
-          lpencil_in(i_glnTT)=.true.
+        if (lfpres_from_pressure) then
+          lpencil_in(i_rho1)=.true.
         else
-          lpencil_in(i_cp1tilde)=.true.
-          lpencil_in(i_gss)=.true.
+          lpencil_in(i_cs2)=.true.
+          lpencil_in(i_glnrho)=.true.
+          if (leos_idealgas) then
+            lpencil_in(i_glnTT)=.true.
+          else
+            lpencil_in(i_cp1tilde)=.true.
+            lpencil_in(i_gss)=.true.
+          endif
         endif
       endif
 !
@@ -2143,17 +2124,24 @@ module Entropy
           call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
 ! fpres
       if (lpencil(i_fpres)) then
-        if (leos_idealgas) then
+        if (lfpres_from_pressure) then
+          call grad(f,ippaux,p%fpres)
           do j=1,3
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
+            p%fpres(:,j)=-p%rho1*p%fpres(:,j)
           enddo
+        else
+          if (leos_idealgas) then
+            do j=1,3
+              p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
+            enddo
 !  TH: The following would work if one uncomments the intrinsic operator
 !  extensions in sub.f90. Please Test.
 !          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma_inv
-        else
-          do j=1,3
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
-          enddo
+          else
+            do j=1,3
+              p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
+            enddo
+          endif
         endif
       endif
 !  transprhos
@@ -3417,10 +3405,28 @@ module Entropy
       use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
       integer :: i,imax
       real :: unit_lnQ
-      type (pencil_case) :: p
+!
+!  Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
+!
+      double precision, parameter, dimension (10) :: &
+          intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /)
+      double precision, parameter, dimension (9) :: &
+          lnH_1 = (/ -542.398,  -228.833, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
+       B_1   = (/     50.,      15.,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)
+!
+!  A second set of parameters for cool_RTV (from interstellar.f90)
+!
+      double precision, parameter, dimension(7) :: &
+          intlnT_2 = (/ 5.704,7.601 , 8.987 , 11.513 , 17.504 , 20.723, 24.0 /)
+      double precision, parameter, dimension(6) :: &
+          lnH_2 = (/-102.811, -99.01, -111.296, -70.804, -90.934, -80.572 /)
+      double precision, parameter, dimension(6) :: &
+          B_2   = (/    2.0,     1.5,   2.867,  -0.65,   0.5, 0.0 /)
 !
       intent(in) :: p
       intent(out) :: df
@@ -3675,6 +3681,7 @@ module Entropy
         write(3,*) 'i_TTmr=',idiag_TTmr
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
+!        write(3,*) 'ippaux=',ippaux
         write(3,*) 'i_yHmax=',idiag_yHmax
         write(3,*) 'i_yHm=',idiag_yHm
         write(3,*) 'i_TTmax=',idiag_TTmax
@@ -4505,5 +4512,27 @@ module Entropy
       close(31)
 !
     endsubroutine read_hcond
+!***********************************************************************
+    subroutine fill_farray_pressure(f)
+!
+!  Fill f array with the pressure, to be able to calculate pressure gradient
+!  directly from the pressure.
+!
+!  18-feb-10/anders: coded
+!
+      use EquationOfState
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (mx) :: pp
+!
+      if (lfpres_from_pressure) then
+        do n=1,mz; do m=1,my
+          call eoscalc(f,mx,pp=pp)
+          f(:,m,n,ippaux)=pp
+        enddo; enddo
+      endif
+!
+    endsubroutine fill_farray_pressure
 !***********************************************************************
 endmodule Entropy
