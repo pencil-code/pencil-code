@@ -598,6 +598,13 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
   varcontent[ihypres].idlinitloc = INIT_3VECTOR_LOC
   varcontent[ihypres].skip       = 2
 ;
+  default, ippaux, 0
+  varcontent[ippaux].variable   = 'Auxiliary pressure (ppaux)'
+  varcontent[ippaux].idlvar     = 'ppaux'
+  varcontent[ippaux].idlinit    = INIT_SCALAR
+  varcontent[ippaux].idlvarloc  = 'ppaux_loc'
+  varcontent[ippaux].idlinitloc = INIT_SCALAR_LOC
+;
   default, ispecaux, 0
   varcontent[ispecaux].variable   = 'Special aux'
   varcontent[ispecaux].idlvar     = 'specaux'
