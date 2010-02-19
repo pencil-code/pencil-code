@@ -3391,7 +3391,7 @@ module Boundcond
 !
     endsubroutine bc_freeze_var_z
 !***********************************************************************
-     subroutine uu_driver(f)
+     subroutine uu_driver(f,quenching)
 !
 !  Simulated velocity field used as photospherec motions
 !  Use of velocity field produced by Boris Gudiksen
@@ -3407,8 +3407,11 @@ module Boundcond
        real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
        real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
-       integer :: lend,iostat,i,stat
-       real,save :: tl=0.,tr=0.,delta_t=0.
+       integer :: lend,iostat,i,stat,iref
+       real, save :: tl=0.,tr=0.,delta_t=0.
+       real  :: zmin
+       logical, optional :: quenching
+       logical :: quench
 !
        intent (inout) :: f
 !
@@ -3436,13 +3439,20 @@ module Boundcond
        if (iostat>0) call fatal_error('uu_driver', &
            'Could not allocate memory for all variable, please check')
 !
+       if (present(quenching)) then
+         quench = quenching
+       else
+         ! Right now quenching is per default active
+         quench=.true.
+       endif
+!
 !  Read the time table
 !
        if (t*unit_time<tl+delta_t.or.t*unit_time>=tr+delta_t.and.iostat /= -2) then
 !
          inquire(IOLENGTH=lend) tl
          close (10)
-         open (10,file='driver/time_k',form='unformatted', &
+         open (10,file='driver/vel_times.dat',form='unformatted', &
              status='unknown',recl=lend,access='direct')
 !
          iostat = 0
@@ -3458,7 +3468,7 @@ module Boundcond
              read (10,rec=i+1,iostat=iostat) tr
              iostat=-1
            else
-             if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) iostat=-1 
+             if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) iostat=-1
              ! correct time step is reached
            endif
          enddo
@@ -3466,7 +3476,7 @@ module Boundcond
 !
 ! Read velocity field
 !
-         open (10,file='driver/vel_k.dat',form='unformatted', &
+         open (10,file='driver/vel_field.dat',form='unformatted', &
              status='unknown',recl=lend*nxgrid*nygrid,access='direct')
          read (10,rec=(2*i-1)) tmp
          uxl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
@@ -3500,85 +3510,99 @@ module Boundcond
 !
 !   Calculate B^2 for plasma beta
 !
+       if (quench) then
 !-----------------------------------------------------------------------
-       if (nygrid/=1) then
-         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-         bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iaz)-f(l1:l2,m1-1:m2-1,n1,iaz)) &
-             -  9.0*(f(l1:l2,m1+2:m2+2,n1,iaz)-f(l1:l2,m1-2:m2-2,n1,iaz)) &
-             +      (f(l1:l2,m1+3:m2+3,n1,iaz)-f(l1:l2,m1-3:m2-3,n1,iaz)))
-       else
-         if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
-       endif
-       if (nzgrid/=1) then
-         fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
-         bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iay)-f(l1:l2,m1:m2,n1-1,iay)) &
-             -  9.0*(f(l1:l2,m1:m2,n1+2,iay)-f(l1:l2,m1:m2,n1-2,iay)) &
-             +      (f(l1:l2,m1:m2,n1+3,iay)-f(l1:l2,m1:m2,n1-2,iay)))
-       else
-         if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
-       endif
-!-----------------------------------------------------------------------
-       if (nzgrid/=1) then
-         fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
-         bby= fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iax)-f(l1:l2,m1:m2,n1-1,iax)) &
-             -  9.0*(f(l1:l2,m1:m2,n1+2,iax)-f(l1:l2,m1:m2,n1-2,iax)) &
-             +      (f(l1:l2,m1:m2,n1+3,iax)-f(l1:l2,m1:m2,n1-3,iax)))
-       else
-         if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
-       endif
-       if (nxgrid/=1) then
-         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-         bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,n1,iaz)-f(l1-1:l2-1,m1:m2,n1,iaz)) &
-             -  9.0*(f(l1+2:l2+2,m1:m2,n1,iaz)-f(l1-2:l2-2,m1:m2,n1,iaz)) &
-             +      (f(l1+3:l2+3,m1:m2,n1,iaz)-f(l1-3:l2-3,m1:m2,n1,iaz)))
-       else
-         if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
-       endif
-!-----------------------------------------------------------------------
-       if (nxgrid/=1) then
-         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-         bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
-             -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
-             +      (f(l1+3:l2+3,m1:m2,n1,iay)-f(l1-3:l2-3,m1:m2,n1,iay)))
-       else
-         if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
-       endif
-       if (nygrid/=1) then
-         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-         bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,n1,iax)-f(l1:l2,m1-1:m2-1,n1,iax)) &
-             -  9.0*(f(l1:l2,m1+2:m2+2,n1,iax)-f(l1:l2,m1-2:m2-2,n1,iax)) &
-             +      (f(l1:l2,m1+3:m2+3,n1,iax)-f(l1:l2,m1-3:m2-3,n1,iax)))
-       else
-         if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
-       endif
-!-----------------------------------------------------------------------
-!
-       bb2 = bbx*bbx + bby*bby + bbz*bbz
-       bb2 = bb2/(2.*mu0)
-!
-       if (ltemperature) then
-         pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
-       else if (lentropy) then
-         if (pretend_lnTT) then
-           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,iss))
+         if (nygrid/=1) then
+           fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+           bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iaz)-f(l1:l2,m1-1:m2-1,n1,iaz)) &
+               -  9.0*(f(l1:l2,m1+2:m2+2,n1,iaz)-f(l1:l2,m1-2:m2-2,n1,iaz)) &
+               +      (f(l1:l2,m1+3:m2+3,n1,iaz)-f(l1:l2,m1-3:m2-3,n1,iaz)))
          else
-           pp=gamma*(f(l1:l2,m1:m2,n1,iss)+f(l1:l2,m1:m2,n1,ilnrho))-gamma_m1*lnrho0
-           pp=exp(pp) * cs20*gamma_inv
+           if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
          endif
-       else
-         pp=gamma_inv*cs20*exp(lnrho0)
-       endif
+         if (nzgrid/=1) then
+           fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
+           bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iay)-f(l1:l2,m1:m2,n1-1,iay)) &
+               -  9.0*(f(l1:l2,m1:m2,n1+2,iay)-f(l1:l2,m1:m2,n1-2,iay)) &
+               +      (f(l1:l2,m1:m2,n1+3,iay)-f(l1:l2,m1:m2,n1-2,iay)))
+         else
+           if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+         endif
+!-----------------------------------------------------------------------
+         if (nzgrid/=1) then
+           fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
+           bby= fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iax)-f(l1:l2,m1:m2,n1-1,iax)) &
+               -  9.0*(f(l1:l2,m1:m2,n1+2,iax)-f(l1:l2,m1:m2,n1-2,iax)) &
+               +      (f(l1:l2,m1:m2,n1+3,iax)-f(l1:l2,m1:m2,n1-3,iax)))
+         else
+           if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+         endif
+         if (nxgrid/=1) then
+           fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+           bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,n1,iaz)-f(l1-1:l2-1,m1:m2,n1,iaz)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iaz)-f(l1-2:l2-2,m1:m2,n1,iaz)) &
+               +      (f(l1+3:l2+3,m1:m2,n1,iaz)-f(l1-3:l2-3,m1:m2,n1,iaz)))
+         else
+           if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+         endif
+!-----------------------------------------------------------------------
+         if (nxgrid/=1) then
+           fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+           bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
+               +      (f(l1+3:l2+3,m1:m2,n1,iay)-f(l1-3:l2-3,m1:m2,n1,iay)))
+         else
+           if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+         endif
+         if (nygrid/=1) then
+           fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+           bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,n1,iax)-f(l1:l2,m1-1:m2-1,n1,iax)) &
+               -  9.0*(f(l1:l2,m1+2:m2+2,n1,iax)-f(l1:l2,m1-2:m2-2,n1,iax)) &
+               +      (f(l1:l2,m1+3:m2+3,n1,iax)-f(l1:l2,m1-3:m2-3,n1,iax)))
+         else
+           if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+         endif
+!-----------------------------------------------------------------------
+!
+         bb2 = bbx*bbx + bby*bby + bbz*bbz
+         bb2 = bb2/(2.*mu0)
+!
+         if (ltemperature) then
+           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+ &
+               f(l1:l2,m1:m2,n1,ilnTT))
+         else if (lentropy) then
+           if (pretend_lnTT) then
+             pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+ &
+                 f(l1:l2,m1:m2,n1,iss))
+           else
+             pp=gamma*(f(l1:l2,m1:m2,n1,iss)+ &
+                 f(l1:l2,m1:m2,n1,ilnrho))-gamma_m1*lnrho0
+             pp=exp(pp) * cs20*gamma_inv
+           endif
+         else
+           pp=gamma_inv*cs20*exp(lnrho0)
+         endif
 !
 !   limit plasma beta
 !
-       betaq = pp / max(tini,bb2)
+         betaq = pp / max(tini,bb2)
 !
-       quen=(1.+betaq**2)/(1e3+betaq**2)
+         quen=(1.+betaq**2)/(1e3+betaq**2)
+       else
+         quen(:,:)=1.
+       endif
 !
-!   Fill bottom layer with velocity field
+!   Fill z=0 layer with velocity field
 !
-       f(l1:l2,m1:m2,n1,iux)=uxd*quen
-       f(l1:l2,m1:m2,n1,iuy)=uyd*quen
+       zmin = minval(abs(z(n1:n2)))
+       iref = n1
+       do i=n1,n2
+         if (z(i).eq.zmin) iref=i
+       enddo
+!
+       f(l1:l2,m1:m2,iref,iux)=uxd*quen
+       f(l1:l2,m1:m2,iref,iuy)=uyd*quen
+       if (iref.ne.n1) f(l1:l2,m1:m2,n1,iux:iuz)=0.
 !
        if (allocated(uxd)) deallocate(uxd)
        if (allocated(uyd)) deallocate(uyd)
@@ -3630,12 +3654,12 @@ module Boundcond
       allocate(k2(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
 !
       if (iostat>0) call fatal_error('bc_force_aa_time', &
-          'Could not allocate memory for all variable, please check')
+          'Could not allocate memory for all variables, please check')
 !
-      inquire (file='driver/mag_z.dat',exist=ex)
-      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: mag_z.dat')
-      inquire (file='driver/time',exist=ex)
-      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: time')
+      inquire (file='driver/mag_field.dat',exist=ex)
+      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: mag_field.dat')
+      inquire (file='driver/mag_times.dat',exist=ex)
+      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: mag_times.dat')
 !
       time_SI = t*unit_time
 !
@@ -3652,7 +3676,7 @@ module Boundcond
       if (tr+delta_t.le.time_SI) then
         !
         inquire(IOLENGTH=lend) tl
-        open (10,file='driver/time',form='unformatted',status='unknown', &
+        open (10,file='driver/mag_times.dat',form='unformatted',status='unknown', &
             recl=lend,access='direct')
         !
         iostat = 0
@@ -3669,12 +3693,13 @@ module Boundcond
             read (10,rec=i+1,iostat=iostat) tr
             iostat=-1
           else
-            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) iostat=-1 ! correct time step is reached
+            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) iostat=-1 
+            ! correct time step is reached
           endif
         enddo
         close (10)
 !
-        open (10,file='driver/mag_z.dat',form='unformatted',status='unknown', &
+        open (10,file='driver/mag_field.dat',form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
         read(10,rec=i,iostat=iostat) Bz0l
         read(10,rec=i+1,iostat=iostat) Bz0r
