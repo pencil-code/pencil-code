@@ -338,7 +338,7 @@ module Special
       real, dimension(nygrid) :: kyp
 !
       real :: mu0_SI,u_b
-      integer :: i,idx2,idy2
+      integer :: i,idx2,idy2,iostat,lend
 !
       ! Auxiliary quantities:
       !
@@ -363,8 +363,10 @@ module Special
         !
         k2 = kx*kx + ky*ky
         !
-        open (11,file='driver/magnetogram_k.dat',form='unformatted')
-        read (11) Bz0
+        inquire(IOLENGTH=lend) u_b
+        open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read(11,rec=1,iostat=iostat) Bz0
         close (11)
         !
         Bz0_i = 0.
