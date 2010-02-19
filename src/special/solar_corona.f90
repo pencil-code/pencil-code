@@ -420,8 +420,8 @@ module Special
       real, dimension (150) :: b_lnT,b_z,b_lnrho
       real, dimension (mz), save :: blnTT,blnrho
       real :: dummy,var1,var2
-      logical :: exist,stat
-      integer :: i,lend,j
+      logical :: exist
+      integer :: i,lend,j,stat
 !
       if (headtt) print*,'special_calc_entropy: newton cooling',tdown
 !

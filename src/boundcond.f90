@@ -3699,10 +3699,10 @@ module Boundcond
         enddo
         close (10)
 !
-        open (10,file='driver/mag_field.dat',form='unformatted',status='unknown', &
-            recl=lend*nxgrid*nygrid,access='direct')
-        read(10,rec=i,iostat=iostat) Bz0l
-        read(10,rec=i+1,iostat=iostat) Bz0r
+        open (10,file='driver/mag_field.dat',form='unformatted')
+        call fseek(10,(lend*nxgrid*nygrid+2*lend)*(i-1))
+        read (10)  Bz0l
+        read (10)  Bz0r
         close (10)
 !
         mu0_SI = 4.*pi*1.e-7

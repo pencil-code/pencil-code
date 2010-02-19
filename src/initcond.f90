@@ -4276,12 +4276,11 @@ module Initcond
         read (11,*) Bz0_r
         close (11)
       else
-        inquire(file='driver/mag_field.txt',exist=exist)
+        inquire(file='driver/mag_field.dat',exist=exist)
         if (exist) then
           inquire(IOLENGTH=lend) u_b
-          open (11,file='driver/mag_field.dat',form='unformatted', &
-              status='unknown',recl=lend*nxgrid*nygrid,access='direct')
-          read (11,rec=1,iostat=iostat) Bz0_r
+          open (11,file='driver/mag_field.dat',form='unformatted')
+          read (11) Bz0_r
           close (11)
         else
           call fatal_error('mdi_init', &
