@@ -120,7 +120,7 @@ module Viscosity
 !
 !  Default viscosity.
 !
-      if (nu/=0.and.ivisc(1)=='') ivisc(1)='nu-const'
+      if ( (nu/=0.0).and.(ivisc(1)=='') ) ivisc(1)='nu-const'
 !
 !  Some viscosity types need the rate-of-strain tensor and grad(lnrho)
 !
