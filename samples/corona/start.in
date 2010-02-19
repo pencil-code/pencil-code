@@ -4,7 +4,7 @@
 &init_pars
   cvsid='$Id$'
   xyz0 = 0., 0., 0.
-  Lxyz = 5., 5. , 3.
+  Lxyz = 5., 5. , 4.
   !
   unit_system  ='SI'
   unit_length  =1e7
@@ -16,7 +16,7 @@
   coeff_grid =  ,  , 0.8
   xyz_star   =  ,  , 0.6
   !
-  bcz = 's','s','a','a2','cT','a2','a2','a2'
+  bcz = 's','s','a','a2','a2','a2','a2','a2'
 /
 &eos_init_pars
   cs0   = 1.12      ! cs0 =  sqrt((gamma-1)T/c_p) = 11.2 km/s
@@ -26,9 +26,8 @@
 &hydro_init_pars
 /
 &density_init_pars
-  initlnrho='corona' 
-  ! This will compute density and entropy
-  ! for a given temperature and density profile
+  initlnrho='stratification'
+  strati_type='lnrho_lnTT'
 /
 &grav_init_pars
   gravz_profile='const'
@@ -37,7 +36,6 @@
 /
 &entropy_init_pars
   initlnTT='nothing'
-  ! entropy will be set together with density
 /
 &magnetic_init_pars
   initaa='magnetogram'

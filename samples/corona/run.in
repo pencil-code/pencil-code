@@ -8,8 +8,9 @@
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
   dsnap=30. 
   !
-  bcz = 'g:s' ,'nil:s' ,'a','a2','cT','fB:pwd','fB:nil','a2:nil'
+  bcz = 'g:s' ,'nil:s' ,'a','set:a2','set:a2','fB:pwd','fB:nil','a2:nil'
   force_lower_bound='uxy_convection'
+  fbcz1 = 0.,0.,0.,16.796295,0.78135928
 ! lpencil_check=T
 /
 &eos_run_pars
@@ -33,10 +34,11 @@
   nu=1e-3
 /
 &special_run_pars 
-  Kgpara=4e-10
-  tdown=1.
-  allp=3.5
-  cool_rtv=1.
+!  Kgpara=4e-10 ! Spitzer heat conduction
+!  tdown=1.     ! Newton cooling strength
+!  allp=3.5     !   and decay 
+!  cool_rtv=1.  ! Radiative loss
+!  bmdi = 0.5   ! Refresh magnetogram
 /
 &shock_run_pars
   lforce_periodic_shockviscosity=T
