@@ -655,7 +655,7 @@ module Special
 !      if (itsub .eq. 3 .and. ip .eq. 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
-      if (Kgapra2/=0 .and. K_iso/=0) call fatal_error('calc_heatcond_grad', &
+      if (Kgpara2/=0 .and. K_iso/=0) call fatal_error('calc_heatcond_grad', &
           'Use either K_iso or Kgpara2, but K_iso is recommended')
       if (K_iso .lt. Kgpara2) K_iso = Kgpara2 
 !

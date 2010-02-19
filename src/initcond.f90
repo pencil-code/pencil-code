@@ -4230,37 +4230,23 @@ module Initcond
       real, dimension (:), allocatable :: kxp, kyp
       real :: mu0_SI,u_b,zref
       logical :: exist
-      integer :: i,idx2,idy2,stat
+      integer :: i,idx2,idy2,stat,iostat,lend
 !
 !  Allocate memory for arrays.
 !
-      allocate(kx(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for kx')
-      allocate(ky(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for ky')
-      allocate(k2(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for k2')
-      allocate(Bz0_i(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for Bz0_i')
-      allocate(Bz0_r(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for Bz0_r')
-      allocate(A_r(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for A_r')
-      allocate(A_i(nxgrid,nygrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for A_i')
-      allocate(kxp(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for kxp')
-      allocate(kyp(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('mdi_init', &
-          'Could not allocate memory for kyp')
+      iostat = 0
+      allocate(kx(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+      allocate(ky(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+      allocate(k2(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
+      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
+      allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
+      allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
+      allocate(kxp(nxgrid),stat=stat);           iostat=max(stat,iostat)
+      allocate(kyp(nxgrid),stat=stat);           iostat=max(stat,iostat)
+!
+      if (iostat>0) call fatal_error('mdi_init', &
+          'Could not allocate memory for variables, please check')
 !
 !
 !  Auxiliary quantities:
@@ -4284,15 +4270,23 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
-      inquire(file='driver/magnetogram_k.txt',exist=exist)
+      inquire(file='driver/mag_field.txt',exist=exist)
       if (exist) then
-        open (11,file='driver/magnetogram_k.txt')
+        open (11,file='driver/mag_field.txt')
         read (11,*) Bz0_r
         close (11)
       else
-        open (11,file='driver/magnetogram_k.dat',form='unformatted')
-        read (11) Bz0_r
-        close (11)
+        inquire(file='driver/mag_field.txt',exist=exist)
+        if (exist) then
+          inquire(IOLENGTH=lend) u_b
+          open (11,file='driver/mag_field.dat',form='unformatted', &
+              status='unknown',recl=lend*nxgrid*nygrid,access='direct')
+          read (11,rec=1,iostat=iostat) Bz0_r
+          close (11)
+        else
+          call fatal_error('mdi_init', &
+              'No file: mag_field.dat,mag_field.txt')
+        endif
       endif
 !
       Bz0_i = 0.
