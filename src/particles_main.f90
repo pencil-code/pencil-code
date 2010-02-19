@@ -154,8 +154,8 @@ module Particles_main
       call initialize_particles_stalker   (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
-        if (lparticles_blocks) print*, 'particles_initialize_modules: '// &
-            'reblocking particles'
+        if (lroot.and.lparticles_blocks) &
+            print*, 'particles_initialize_modules: reblocking particles'
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
         call sort_particles_iblock(fp,ineargrid,ipar)
