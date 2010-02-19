@@ -24,7 +24,7 @@ module Special
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.
+  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
 !
   real, parameter, dimension (37) :: intlnT = (/ &
        8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
@@ -49,7 +49,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2
+       chi_hyper3,chi_hyper2,K_iso
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -107,7 +107,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (Kgpara2/=0) then
+      if (Kgpara2/=0.or.K_iso/=0) then
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -292,11 +292,11 @@ module Special
       hc = chi_hyper3*hc
       !
       call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
-      hc =  hc + chi_hyper2*tmp
+      hc =  hc - chi_hyper2*tmp
       call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
-      hc =  hc + chi_hyper2*tmp
+      hc =  hc - chi_hyper2*tmp
       call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc =  hc + chi_hyper2*tmp          
+      hc =  hc - chi_hyper2*tmp          
 !      
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
@@ -310,7 +310,7 @@ module Special
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tdown/=0) call calc_heat_cool_newton(df,p)
-      if (Kgpara2/=0) call calc_heatcond_grad(df,p)
+      if (Kgpara2/=0.or.K_iso/=0) call calc_heatcond_grad(df,p)
       if (heatamp/=0) call calc_artif_heating(df,p)
 !
     endsubroutine special_calc_entropy
@@ -655,7 +655,11 @@ module Special
 !      if (itsub .eq. 3 .and. ip .eq. 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ Kgpara2 * rhs
+      if (Kgapra2/=0 .and. K_iso/=0) call fatal_error('calc_heatcond_grad', &
+          'Use either K_iso or Kgpara2, but K_iso is recommended')
+      if (K_iso .lt. Kgpara2) K_iso = Kgpara2 
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
 !
       if (lfirst.and.ldt) then
         chix=Kgpara2*exp(p%lnTT)*sqrt(tmpi)

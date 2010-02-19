@@ -584,7 +584,6 @@ module Deriv
 !   8-jul-02/wolf: coded
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
-!  18-feb-10/bing: corrected sign again
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
@@ -620,10 +619,10 @@ module Deriv
           else
             fac=(1.0/6)*1/dx**4
           endif
-          df=fac*(- 56.0* f(l1:l2,m,n,k) &
-                  + 39.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  - 12.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          df=fac*(+ 56.0* f(l1:l2,m,n,k) &
+                  - 39.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  + 12.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  -      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
@@ -634,10 +633,10 @@ module Deriv
           else
             fac=(1.0/6)*1/dy**4
           endif
-          df=fac*(- 56.0* f(l1:l2,m  ,n,k) &
-                  + 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  - 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          df=fac*(+ 56.0* f(l1:l2,m  ,n,k) &
+                  - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  + 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  -      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
           if (lcylindrical_coords)   df=df*rcyl_mn1**4
         else
           df=0.
@@ -649,10 +648,10 @@ module Deriv
           else
             fac=(1.0/6)*1/dz**4
           endif
-          df=fac*(- 56.0* f(l1:l2,m,n  ,k) &
-                  + 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  - 12.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          df=fac*(+ 56.0* f(l1:l2,m,n  ,k) &
+                  - 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  + 12.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  -      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
         else
           df=0.
         endif
