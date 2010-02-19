@@ -129,6 +129,7 @@ module Magnetic
   real :: taareset=0.0, daareset=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
+  real :: eta_jump=0.0
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -179,7 +180,7 @@ module Magnetic
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
-      fluxtube_border_width, va2max_jxb, va2power_jxb
+      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump
 !
 ! Run parameters
 !
@@ -245,7 +246,7 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total
+      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -5469,6 +5470,7 @@ module Magnetic
 !  12-jul-2005/joishi: coded
 !
       use General, only: erfcc
+      use Sub, only: step, der_step
 !
       real, dimension(mz) :: eta_z,z2
       real, dimension(mz,3) :: geta_z
@@ -5499,6 +5501,16 @@ module Magnetic
            geta_z(:,2) = 0.
            geta_z(:,3) = -eta/(2.*eta_width) * ((tanh((z + eta_z0)/eta_width))**2. &
              - (tanh((z - eta_z0)/eta_width))**2.)
+!
+        case ('step')
+!  default to spread gradient over ~5 grid cells.
+           if (eta_width == 0.) eta_width = 5.*dz
+           eta_z = eta + eta*(eta_jump-1.)*step(z,eta_z0,-eta_width)
+!
+! its gradient:
+           geta_z(:,1) = 0.
+           geta_z(:,2) = 0.
+           geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
 !
       endselect
 !
