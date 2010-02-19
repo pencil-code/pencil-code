@@ -508,7 +508,15 @@ module Entropy
         print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
       endif
 !
-      if (lfpres_from_pressure) call farray_register_auxiliary('ppaux',ippaux)
+!  Possible to calculate pressure gradient directly from the pressure, in which
+!  case we must open an auxiliary slot in f to store the pressure. This method
+!  is not compatible with non-blocking communication of ghost zones, so we turn
+!  this behaviour off.
+!
+      if (lfpres_from_pressure) then
+        call farray_register_auxiliary('ppaux',ippaux)
+        test_nonblocking=.true.
+      endif
 !
 !  Initialize heat conduction.
 !
