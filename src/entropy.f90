@@ -4518,6 +4518,12 @@ module Entropy
 !  Fill f array with the pressure, to be able to calculate pressure gradient
 !  directly from the pressure.
 !
+!  You need to open an auxiliary slot in f for this to work. Add the line
+!
+!  !  MAUX CONTRIBUTION 1
+!
+!  to the header of cparam.local.
+!
 !  18-feb-10/anders: coded
 !
       use EquationOfState
