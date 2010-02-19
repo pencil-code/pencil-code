@@ -238,7 +238,7 @@ module Equ
 !  interpolation on the vorticity to subgrid particles positions.
 !
       if (early_finalize.and.lparticles_prepencil_calc) then
-        call particles_doprepencil_calc(f,ivar1,ivar2);
+        call particles_doprepencil_calc(f,ivar1,ivar2)
         if (ivar1>=0 .and. ivar2>=0) then
           call boundconds_x(f,ivar1,ivar2)
           call initiate_isendrcv_bdry(f,ivar1,ivar2)
