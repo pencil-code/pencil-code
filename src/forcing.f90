@@ -39,7 +39,8 @@ module Forcing
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
-  real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
+  real, dimension(my) :: profy_ampl=1.,profy_hel=1.
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
@@ -172,24 +173,38 @@ module Forcing
 !
       if (iforce_profile=='nothing') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
       elseif (iforce_profile=='equator') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)=sin(2*pi*z(n)/Lz)
         enddo
       elseif (iforce_profile=='equator_step') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)= -1.+2.*step_scalar(z(n),equator-ck_equator_gap,ck_gap_step)
         enddo
 !
+!  sign change of helicity proportional to cosy
+!
+      elseif (iforce_profile=='equator_hel=cosy') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.
+        do m=1,my
+          profy_hel(m)=cos(y(n))
+        enddo
+        profz_ampl=1.; profz_hel=1.
+!
 !  sign change of helicity about z=0
 !
       elseif (iforce_profile=='equator_hel=z') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)=z(n)
@@ -199,23 +214,35 @@ module Forcing
 !
       elseif (iforce_profile=='surface_z') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profz_ampl=.5*(1.-erfunc(z/width_ff))
         profz_hel=1.
 !
+!  just a change in intensity in the z direction
+!
       elseif (iforce_profile=='intensity') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profz_hel=1.
         do n=1,mz
           profz_ampl(n)=.5+.5*cos(z(n))
         enddo
+!
+!  Galactic profile both for intensity and helicity
+!
       elseif (iforce_profile=='galactic') then
         profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
         do n=1,mz
           if (abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
           if (abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
         enddo
+!
+!  corona
+!
       elseif (iforce_profile=='diffrot_corona') then
         profz_ampl=1.; profz_hel=1.
+        profy_ampl=1.; profy_hel=1.
         profx_ampl=.5*(1.-tanh((x(l1:l2)-xff_ampl)/wff_ampl))
         profx_hel=1.
       endif
@@ -708,18 +735,19 @@ module Forcing
       force_ampl=1.0
       irufm=0
       if (r_ff == 0) then       ! no radial profile
-        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profz_ampl(n)*cmplx(coef1,profz_hel(n)*coef2),force_ampl)
         do n=n1,n2
           do m=m1,m2
+            if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
+              *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2),force_ampl)
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
               if (extent(j)) then
 !
-                forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
-                  *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
+                forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
+                  *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
 !
-                forcing_rhs2(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
+                forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                   *real(cmplx(0.,coef3(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
 !

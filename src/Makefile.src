@@ -589,6 +589,15 @@ endif
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(neolith)
 ##LIBMPISUFFIX=_#(neolith)
 ##
+## Axel on Hexagon (ftn using pgf90)
+##
+#FC=ftn #(nid00*)
+#FFLAGS= #(nid00*)
+#FFLAGS_DOUBLE=-r8 #(nid00*)
+#CC=cc #(nid00*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(nid00*)
+#LD_MPI= #(nid00*)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)

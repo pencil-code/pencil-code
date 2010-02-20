@@ -3700,7 +3700,8 @@ module Boundcond
         close (10)
 !
         open (10,file='driver/mag_field.dat',form='unformatted')
-        call fseek(10,(lend*nxgrid*nygrid+2*lend)*(i-1))
+!AB: the following doesn't work with other compilers
+!--     call fseek(10,(lend*nxgrid*nygrid+2*lend)*(i-1))
         read (10)  Bz0l
         read (10)  Bz0r
         close (10)

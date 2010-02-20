@@ -120,6 +120,10 @@
         ipz_mid2   = 3*nprocz/4
         print*,'ipz_mid1,ipz_mid2=',ipz_mid1,ipz_mid2
         ipy_front=(nygrid/2-1)/ny
+      elseif (slice_position=='s') then
+        ipz_bottom = 0*nprocz/4
+        ipz_top    = 1*nprocz/4
+        ipy_front  = (nprocy-1)/2
       else
         print*,'slice_position cannot be interpreted by read_videofiles'
       endif
@@ -152,7 +156,7 @@
         if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
-          print*,"Slice not found", fullname
+          print*,"Slice not found: ", fullname
           xy2(:,1+ipy*ny:ny+ipy*ny)=0.
           goto 999
         endif
@@ -186,7 +190,7 @@
         if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
-          print*,"Slice not found", fullname
+          print*,"Slice not found: ", fullname
           xy(:,1+ipy*ny:ny+ipy*ny)=0.
           goto 999
         endif
@@ -220,7 +224,7 @@
         if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
-          print*,"Slice not found", fullname
+          print*,"Slice not found: ", fullname
           xz(:,1+ipz*nz:nz+ipz*nz)=0.
           goto 999
         endif
@@ -256,7 +260,7 @@
         if (it<=itdebug) print*,trim(fullname)
         inquire(FILE=trim(fullname),EXIST=exists)
         if (.not.exists) then
-          print*,"Slice not found", fullname
+          print*,"Slice not found: ", fullname
           yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=0.
           goto 999
         endif
@@ -292,7 +296,7 @@
           if (it<=itdebug) print*,trim(fullname)
           inquire(FILE=trim(fullname),EXIST=exists)
           if (.not.exists) then
-            print*,"Slice not found", fullname
+            print*,"Slice not found: ", fullname
             xy3(:,1+ipy*ny:ny+ipy*ny)=0.
             goto 999
           endif
@@ -326,7 +330,7 @@
           if (it<=itdebug) print*,trim(fullname)
           inquire(FILE=trim(fullname),EXIST=exists)
           if (.not.exists) then
-            print*,"Slice not found", fullname
+            print*,"Slice not found: ", fullname
             xy4(:,1+ipy*ny:ny+ipy*ny)=0.
             goto 999
           endif

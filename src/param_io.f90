@@ -99,7 +99,10 @@ module Param_IO
       lwrite_zaverages, lwrite_phiaverages, test_nonblocking, &
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestfield, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
-      zbot_slice, ztop_slice, bcx, bcy, bcz, r_int, r_ext, r_int_border, &
+      xbot_slice, xtop_slice, &
+      ybot_slice, ytop_slice, &
+      zbot_slice, ztop_slice, &
+      bcx, bcy, bcz, r_int, r_ext, r_int_border, &
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &

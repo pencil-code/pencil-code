@@ -303,6 +303,22 @@ module Slices
         !yz is not needed
         lwrite_slice_yz =.false.        
 !
+!  another slice positions for spherical coordinates
+!  s is for "surface" meaning theta-phi sections
+!  keep iz_loc=n1, corresponding to a meridional slice on n=n1
+!
+      elseif (slice_position=='s') then
+        iz_loc=n1; iz2_loc=n2
+        call xlocation(xbot_slice,ix_loc,lwrite_slice_yz)
+        call ylocation(ybot_slice,iy_loc,lwrite_slice_xz)
+        lwrite_slice_xy2=(ipz==nprocz/4)
+        lwrite_slice_xy=(ipz==0)
+!
+!  later we may also want to write other slices
+!
+        !call xlocation(xtop_slice,ix2_loc,lwrite_slice_yz2)
+        !call ylocation(ytop_slice,iy2_loc,lwrite_slice_xz2)
+!
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
@@ -347,7 +363,7 @@ module Slices
 !  non-spherical coordinates
 !
       if (coord_system=='spherical') then
-        if (slice_position/='w') &
+        if (slice_position/='w'.and.slice_position/='s') &
             call fatal_error("setup_slices",&
             "You are using spherical coordinates. "//&
             "Switch slice_position='w' in run_pars")
@@ -464,6 +480,76 @@ module Slices
       endif
 !
     endsubroutine setup_slices
+!***********************************************************************
+    subroutine xlocation(xpos,ixpos,lproc)
+!
+!  if xpos lies within this processor, then lproc=T and xpos=x(ixpos).
+!  Otherwise lproc=F and ixpos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  20-feb-10/axel: adapted from zlocation
+!
+      real :: xpos
+      integer :: ixpos,l
+      logical :: lproc
+!
+!  run through all x positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do l=l1,l2
+        if (x(l)<=xpos.and.x(l+1)>xpos) then
+          ixpos=l
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put ixpos=1
+!
+      ixpos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine xlocation
+!***********************************************************************
+    subroutine ylocation(ypos,iypos,lproc)
+!
+!  if ypos lies within this processor, then lproc=T and ypos=y(iypos).
+!  Otherwise lproc=F and iypos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  20-feb-10/axel: adapted from xlocation
+!
+      real :: ypos
+      integer :: iypos,m
+      logical :: lproc
+!
+!  run through all y positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do m=m1,m2
+        if (y(m)<=ypos.and.y(m+1)>ypos) then
+          iypos=m
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put iypos=1
+!
+      iypos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine ylocation
 !***********************************************************************
     subroutine zlocation(zpos,izpos,lproc)
 !
