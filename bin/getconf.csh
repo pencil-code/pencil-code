@@ -1311,6 +1311,26 @@ else
   echo "Generic setup; hostname is <$hn>"
   if ($mpi) echo "Use mpirun"
   set mpirun = mpirun
+#----------------------------------------------
+# For ukmhd cluster St Andrews
+# NB replace #!/bin/csh with #!/usr/local/bin/csh line 1
+#
+else if ($hostname =~ mhdc) then
+       set hn = $hostname
+       echo "Running on mhdc cluster st-andrews"
+       set masterhost = 'master'
+       cat $PBS_NODEFILE > mpd.hosts
+       set mpirun = /usr/bin/mpirun
+       set mpirunops = "-machinefile mpd.hosts"# $PBS_NODEFILE"
+       set myprocpernode = 4
+       set mynodes = `expr $ncpus / $myprocpernode `
+       set resub = "/usr/compusys-installed/bin/qsub -d $PENCIL_WORKDIR"
+       set resubop1 = "-lnodes=$mynodes"
+       set resubop2 = ":ppn=4 run.csh -q prod"
+       set resubop = "$resubop1$resubop2"
+       set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
+       echo "Finished  mhdc machine specific settings"
+## --------------------------------------------
 endif
 
 ## ------------------------------
