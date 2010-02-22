@@ -137,6 +137,7 @@ module Special
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_mf_EMF)=.true.
         lpenc_requested(i_mf_EMFdotB)=.true.
+        if (Omega_profile/='nothing') lpenc_requested(i_bij)=.true.
       endif
 !
     endsubroutine pencil_criteria_special

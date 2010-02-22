@@ -457,7 +457,7 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
       !real, pointer :: Fbot, Ftop, FbotKbot, FtopKtop
 !
-      real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
+      real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2, fbcz_zero=0.
       !real :: Ftopbot,FtopbotK
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
@@ -533,6 +533,9 @@ module Boundcond
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
+              case ('a0d')
+                ! BCZ_DOC: antisymmetry with zero derivative
+                call bc_sym_z(f,+1,topbot,j,VAL=fbcz_zero)
               case ('v')
                 ! BCZ_DOC: vanishing third derivative
                 call bc_van_z(f,topbot,j)
