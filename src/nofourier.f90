@@ -5,8 +5,7 @@
 module Fourier
 !
   use Cdata
-  use Cparam
-  use Messages
+  use Messages, only: fatal_error
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -32,7 +31,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform
 !***********************************************************************
@@ -48,7 +47,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xy
 !***********************************************************************
@@ -64,7 +63,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
@@ -80,7 +79,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
@@ -96,7 +95,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_y
 !***********************************************************************
@@ -112,7 +111,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_shear
 !***********************************************************************
@@ -129,7 +128,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_shear_xy
 !***********************************************************************
@@ -145,7 +144,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -161,7 +160,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
@@ -177,7 +176,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
@@ -193,7 +192,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
@@ -209,7 +208,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_y_y
 !***********************************************************************
@@ -257,11 +256,14 @@ module Fourier
       logical, optional :: linv
       real, dimension(2*na+15),optional :: wsavex_temp
 !
+      call fatal_error('fourier_transform_real_1', &
+          'this sub is not available in nofourier.f90!')
+!
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(na)
       call keep_compiler_quiet(ifirst_fft)
-      call keep_compiler_quiet(linv)
-      if (present(wsavex_temp)) call keep_compiler_quiet(wsavex_temp)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(wsavex_temp))
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
