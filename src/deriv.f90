@@ -472,7 +472,8 @@ module Deriv
 !  y-derivative
 !
         if (size(pencil)/=my) then
-          if (lroot) print*, 'der2_pencil: pencil must be of size my for y derivative'
+          if (lroot) &
+              print*, 'der2_pencil: pencil must be of size my for y derivative'
           call fatal_error('der2_pencil','')
         endif
         df2=(1./180)*dy_1(m1:m2)**2*(-490.0*pencil(m1:m2) &
@@ -484,7 +485,8 @@ module Deriv
 !  z-derivative
 !
         if (size(pencil)/=mz) then
-          if (lroot) print*, 'der2_pencil: pencil must be of size mz for z derivative'
+          if (lroot) &
+              print*, 'der2_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der2_pencil','')
         endif
         df2(n1:n2)=(1./180)*dz_1(n1:n2)**2*(-490.0*pencil(n1:n2) &
@@ -792,7 +794,7 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=(1.0/60)
           else if (upwnd) then
             fac=(1.0/60)*dx_1(l1:l2)
           else
@@ -808,7 +810,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=(1.0/60)
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
@@ -824,7 +826,7 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=(1.0/60)
           else if (upwnd) then
             fac=(1.0/60)*dz_1(n)
           else
@@ -886,7 +888,7 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=(1.0/60)
           else if (upwnd) then
             fac=(1.0/60)*dx_1(l1:l2)
           else
@@ -902,7 +904,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=(1.0/60)
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
@@ -918,7 +920,7 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=(1.0/60)
           else if (upwnd) then
             fac=(1.0/60)*dz_1(n)
           else
