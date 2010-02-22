@@ -4483,6 +4483,7 @@ module Entropy
       real, dimension(nx) :: hcond
       real, dimension(nx,3) :: glhc
       integer, parameter :: ntotal=nx*nprocx
+      real, dimension(nx*nprocx) :: tmp1,tmp2
       real :: var1,var2
       logical :: exist
       integer :: stat
@@ -4508,13 +4509,20 @@ module Entropy
         read(31,*,iostat=stat) var1,var2
         if (stat>=0) then
           if (ip<5) print*,"hcond, glhc: ",var1,var2
-          hcond(n)=var1
-          glhc(n,1)=var2
-          glhc(n,2)=0.
-          glhc(n,3)=0.
+          tmp1(n)=var1
+          tmp2(n)=var2
         else
           exit
         endif
+      enddo
+!
+!  assuming no ghost zones in hcond_glhc.dat
+!
+      do n=l1,l2
+         hcond(n-nghost)=tmp1(ipx*nx+n-nghost)
+         glhc(n-nghost,1)=tmp2(ipx*nx+n-nghost)
+         glhc(n-nghost,2)=0.
+         glhc(n-nghost,3)=0.
       enddo
 !
       close(31)
