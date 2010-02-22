@@ -302,6 +302,7 @@ module Equ
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
       call timing('pde','after calc_for_chem_mixture')
 !
+!------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
       mn_loop: do imn=1,ny*nz

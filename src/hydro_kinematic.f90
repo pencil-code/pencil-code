@@ -31,7 +31,8 @@ module Hydro
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
 
   real :: u_out_kep=0.0
-  real :: tphase_kinflow=-1.,phase1=0., phase2=0.
+  real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0., dtforce=impossible
+  real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
@@ -39,7 +40,7 @@ module Hydro
   integer :: KS_modes = 3
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
   real :: ampl_fcont_uu=1.
-  logical :: lforcing_cont_uu=.false.
+  logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
 !
 !
 !init parameters
@@ -55,7 +56,8 @@ module Hydro
   namelist /hydro_run_pars/ &
     kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
     circ_rmax,circ_step_width,circ_amp, &
-    ampl_kinflow,kx_uukin,ky_uukin,kz_uukin
+    ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
+    lrandom_location,lwrite_random_location,location_fixed,dtforce
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -250,8 +252,8 @@ module Hydro
       real, dimension(nx) :: div_vel_prof
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
-      real, dimension(nx) :: rone
-      real :: fac, fac2
+      real, dimension(nx) :: rone, argx
+      real :: fac, fac2, argy, argz
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       integer :: modeN,l
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
@@ -604,10 +606,12 @@ ky_uukin=2.*pi
         fac=ampl_kinflow
         if (headtt) print*,'potential_random; kx_aa,ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'potential_random; kx_aa=',kx_uukin,ky_uukin,kz_uukin
-          phase1=2*pi*kinematic_phase
-        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
-        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-phase1))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+        argx=kx_uukin*(x(l1:l2)-location(1))
+        argy=ky_uukin*(y(m)-location(2))
+        argz=kz_uukin*(z(n)-location(3))
+        p%uu(:,1)=-fac*kx_uukin*sin(argx)*cos(argy)*cos(argz)
+        p%uu(:,2)=-fac*ky_uukin*cos(argx)*sin(argy)*cos(argz)
+        p%uu(:,3)=-fac*kz_uukin*cos(argx)*cos(argy)*sin(argz)
         if (lpencil(i_divu)) p%divu=fac
 !
 !  Convection rolls
@@ -1421,6 +1425,12 @@ ky_uukin=2.*pi
       elseif (id==id_record_NOHYDRO_PHASE2) then
         read (lun) phase2
         done=.true.
+      elseif (id==id_record_NOHYDRO_LOCATION) then
+        read (lun) location
+        done=.true.
+      elseif (id==id_record_NOHYDRO_TSFORCE) then
+        read (lun) tsforce
+        done=.true.
       endif
       if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
 !
@@ -1447,6 +1457,10 @@ ky_uukin=2.*pi
       write (lun) phase1
       write (lun) id_record_NOHYDRO_PHASE2
       write (lun) phase2
+      write (lun) id_record_NOHYDRO_LOCATION
+      write (lun) location
+      write (lun) id_record_NOHYDRO_TSFORCE
+      write (lun) tsforce
 !
     endsubroutine output_persistent_hydro
 !***********************************************************************
@@ -1730,8 +1744,31 @@ ky_uukin=2.*pi
 !  16-feb-2010/dhruba: coded
 !
       use General, only: random_number_wrapper
+      real, dimension(3) :: fran
 !
-      call random_number_wrapper(kinematic_phase)
+!  generate random numbers
+!
+      if (t>tsforce) then
+        if (lrandom_location) then
+          call random_number_wrapper(fran)
+          location=fran*Lxyz+xyz0
+        else
+          location=location_fixed
+        endif
+!
+!  writing down the location
+!
+        if (lroot .and. lwrite_random_location) then
+          open(1,file=trim(datadir)//'/random_location.dat',status='unknown',position='append')
+            write(1,'(4f14.7)') t, location
+          close (1)
+        endif
+!
+!  update next tsforce
+!
+        tsforce=t+dtforce
+        if (ip<=6) print*,'kinematic_random_phase: location=',location
+      endif
 !
     endsubroutine kinematic_random_phase
 !*******************************************************************
