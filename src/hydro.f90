@@ -4358,10 +4358,10 @@ module Hydro
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
         -tau_diffrot1*(f(l1:l2,m,n,iux)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
 !
-!  vertical shear profile centred around z1
+!  vertical shear profile centred around given z
 !
-      case ('vertical_shear_z1')
-      zbot=z1
+      case ('vertical_shear_z')
+      zbot=rdampint
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
         -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
 !
