@@ -93,8 +93,8 @@ module Sub
   endinterface
 !
   interface del2                 ! Overload the `del2' function
-    module procedure del2_main   
-    module procedure del2_other  
+    module procedure del2_main
+    module procedure del2_other
   endinterface
 !
   interface notanumber          ! Overload the `notanumber' function
@@ -778,7 +778,7 @@ module Sub
 !***********************************************************************
     subroutine mult_matrix(a,b,c)
 !
-!  Matrix multiplication of two pencil variables. 
+!  Matrix multiplication of two pencil variables.
 !
       real, dimension (nx,3,3) :: a,b
       real, dimension (nx,3,3) :: c
@@ -1206,7 +1206,7 @@ module Sub
     endsubroutine div
 !***********************************************************************
     subroutine div_other(f,g)
-! 
+!
       use Deriv, only: der
 
       real, dimension (mx,my,mz,3) :: f
@@ -1234,7 +1234,7 @@ module Sub
 !  calculate divergence from derivative matrix
 !  18-sep-04/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
-!  14-mar-07/wlad: added cylindrical coordinates 
+!  14-mar-07/wlad: added cylindrical coordinates
 !
       real, dimension (nx,3,3) :: aij
       real, dimension (nx,3) :: a
@@ -1262,7 +1262,7 @@ module Sub
 !  calculate curl from derivative matrix
 !  21-jul-03/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
-!  14-mar-07/wlad: added cylindrical coordinates 
+!  14-mar-07/wlad: added cylindrical coordinates
 !
       real, dimension (nx,3,3), intent (in) :: aij
       real, dimension (nx,3), intent (in), optional :: a
@@ -1342,7 +1342,7 @@ module Sub
 !  10-sep-01/axel: adapted for cache efficiency
 !  11-sep-04/axel: began adding spherical coordinates
 !  21-feb-07/axel: corrected spherical coordinates
-!  14-mar-07/wlad: added cylindrical coordinates 
+!  14-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der
 !
@@ -1446,21 +1446,21 @@ module Sub
       call der(f,k1+3,tmp1,2)
       call der(f,k1+2,tmp2,3)
       g=tmp1-tmp2
-      if (lspherical_coords) g=tmp1-tmp2& 
+      if (lspherical_coords) g=tmp1-tmp2&
             +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
 !
       case (2)
       call der(f,k1+1,tmp1,3)
       call der(f,k1+3,tmp2,1)
       g=tmp1-tmp2
-      if (lspherical_coords) g=tmp1-tmp2& 
+      if (lspherical_coords) g=tmp1-tmp2&
             -f(l1:l2,m,n,k1+3)*r1_mn
 !
       case (3)
       call der(f,k1+2,tmp1,1)
       call der(f,k1+1,tmp2,2)
       g=tmp1-tmp2
-      if (lspherical_coords) g=tmp1-tmp2& 
+      if (lspherical_coords) g=tmp1-tmp2&
             +f(l1:l2,m,n,k1+2)*r1_mn
 !
       endselect
@@ -1474,7 +1474,7 @@ module Sub
 !
 !  calculate del2 of a scalar, get scalar
 !  12-sep-97/axel: coded
-!   7-mar-07/wlad: added cylindrical coordinates 
+!   7-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der,der2
 !
@@ -1540,7 +1540,7 @@ module Sub
 !
 !  calculate del2 of a vector, get vector
 !  28-oct-97/axel: coded
-!  15-mar-07/wlad: added cylindrical coordinates 
+!  15-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der
 !
@@ -1586,7 +1586,7 @@ module Sub
                r1_mn*(2.*(fij(:,2,1)-cotth(m)*fij(:,3,3)&
                              +fij(:,1,2) )&
                          +cotth(m)*fij(:,2,2)-r1_mn*sin1th(m)*sin1th(m)*pff(:,2) )
-! for phi component  
+! for phi component
          del2f(:,3)=del2f(:,3)+&
                r1_mn*(2.*(fij(:,3,1)+fij(:,1,3)&
                              +cotth(m)*fij(:,2,3) ) &
@@ -1604,7 +1604,7 @@ module Sub
 !  does not speed up the code on Mephisto @ 32x32x64.
 !
 !  12-sep-01/axel: coded
-!  15-mar-07/wlad: added cylindrical coordinates 
+!  15-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der,der2,derij
       use Mpicomm, only: stop_it
@@ -1665,7 +1665,7 @@ module Sub
         do i=1,3
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
         enddo
-        if (lcylindrical_coords) then 
+        if (lcylindrical_coords) then
           !r-component
           call der(f,k1+2,tmp,2)
           del2(:,1)=del2(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
@@ -1784,7 +1784,7 @@ module Sub
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del2vi_etc', &
           'not implemented for non-cartesian coordinates')
-!      
+!
     endsubroutine del2vi_etc
 !***********************************************************************
     subroutine del4v(f,k,del4f)
@@ -1811,7 +1811,7 @@ module Sub
       enddo
 !
 !  Exit if this is requested for non-cartesian runs.
-! 
+!
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del4v', &
           'not implemented for non-cartesian coordinates')
@@ -1843,7 +1843,7 @@ module Sub
       enddo
 !
 !  Exit if this is requested for non-cartesian runs.
-! 
+!
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del6v', &
           'not implemented for non-cartesian coordinates')
@@ -1857,7 +1857,7 @@ module Sub
 !  21-jul-03/axel: coded
 !  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
 !  23-feb-07/axel: added spherical coordinates
-!   7-mar-07/wlad: added cylindrical coordinates 
+!   7-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der2,derij
       use Mpicomm, only: stop_it
@@ -1941,7 +1941,7 @@ module Sub
       if (lcylindrical_coords) then
         bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
         bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
-      endif   
+      endif
 !
 !  calculate del2 and graddiv, if requested
 !
@@ -1949,11 +1949,11 @@ module Sub
 !--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
         if (lspherical_coords) then
-          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ & 
+          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ &
              aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
-          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ & 
+          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ &
              aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+ & 
+          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+ &
              aij(:,2,3)*r1_mn*cotth(m)
         endif
       endif
@@ -2019,7 +2019,7 @@ module Sub
       use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
-      intent(out) :: del4f      
+      intent(out) :: del4f
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: del4f,d4fdx,d4fdy,d4fdz
@@ -2031,7 +2031,7 @@ module Sub
       del4f = d4fdx + d4fdy + d4fdz
 !
 !  Exit if this is requested for non-cartesian runs.
-! 
+!
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del4', &
           'not implemented for non-cartesian coordinates')
@@ -2060,7 +2060,7 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
 !  Exit if this is requested for lspherical_coords run.
-! 
+!
       if (lspherical_coords.or.lcylindrical_coords) &
           call fatal_error('del6', &
           'not implemented for non-cartesian coordinates')
@@ -2089,7 +2089,7 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
 !  Exit if this is requested for non-cartesian runs.
-! 
+!
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del6_other', &
           'not implemented for non-cartesian coordinates')
@@ -2146,7 +2146,7 @@ module Sub
       del6f = vec(1)*d6fdx + vec(2)*d6fdy + vec(3)*d6fdz
 !
 !  Exit if this is requested for non-cartesian runs
-! 
+!
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del6fj', &
           'not implemented for non-cartesian coordinates')
@@ -2179,7 +2179,7 @@ module Sub
       enddo
 !
 !  Exit if this is requested for non-cartesian runs
-! 
+!
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del2fjv', &
           'not implemented for non-cartesian coordinates')
@@ -2286,14 +2286,14 @@ module Sub
 !
       if (lspherical_coords) then
           call inevitably_fatal_error('u_dot_gradM', &
-            'spherical coordinates not implemented yet') 
+            'spherical coordinates not implemented yet')
       endif
 !
 !  the following now works for general u.gradA
 !
       if (lcylindrical_coords) then
           call inevitably_fatal_error('u_dot_gradM', &
-            'cylindrical coordinates not implemented yet') 
+            'cylindrical coordinates not implemented yet')
       endif
 !
     endsubroutine u_dot_grad_mat
@@ -2305,7 +2305,7 @@ module Sub
 !  to calculate upwind correction
 !
 ! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
-! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
+! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
 ! 28-Sep-2009/MR: ladd added for incremental work
 
       use Deriv, only: der6
@@ -2364,7 +2364,7 @@ module Sub
           if (lspherical_coords) &
              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
         endif
-        
+
       endif; endif
 !
     endsubroutine u_dot_grad_scl
@@ -2376,7 +2376,7 @@ module Sub
 !  to calculate upwind correction
 !
 ! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
-! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates. 
+! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
 ! 28-Sep-2009/MR: ladd added for incremental work
 !
       logical :: ladd1
@@ -2423,7 +2423,7 @@ module Sub
           if (lspherical_coords) &
              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6u(:,3)
         endif
-        
+
       endif; endif
 !
     endsubroutine nou_dot_grad_scl
@@ -3173,7 +3173,7 @@ module Sub
 !***********************************************************************
     function der6_step(x,x0,width)
 !
-!  6th order derivative of smooth unit STEP() function given 
+!  6th order derivative of smooth unit STEP() function given
 !   above (i.e. a bump profile).
 !  Adapt this if you change the STEP() profile, or you will run into
 !  inconsistenies.
@@ -4029,7 +4029,7 @@ module Sub
         intent(in) :: bc
         intent(out) :: bc1,bc2
 !
-        if (bc == '') then 
+        if (bc == '') then
           if (lroot) print*, 'Empty boundary condition in (x, y, or z)'
           call fatal_error('parse_bc_radg','')
         endif
@@ -5009,13 +5009,13 @@ nameloop: do
     subroutine get_radial_distance(rrmn,rcylmn,e1_,e2_,e3_)
 !
 !  Calculate distance and its cylindrical projection for different
-!  coordinate systems. 
+!  coordinate systems.
 !
 !  e1, e2, and e3 are the positions in the respective coordinate systems
 !
 !  15-mar-07/wlad : coded
 !
-      use Mpicomm,only: stop_it 
+      use Mpicomm,only: stop_it
 !
       real, dimension(:),intent(out) :: rrmn,rcylmn
       real, dimension(size(rrmn,1)) :: xc
@@ -5112,10 +5112,10 @@ nameloop: do
 !
       real, dimension(:,:), intent(INOUT) :: a
       integer, dimension(:), intent(OUT) :: indx
-      real, dimension(size(a,1)) :: vv,swap 
+      real, dimension(size(a,1)) :: vv,swap
       integer :: j,n,imax
       integer, dimension(1) :: tmp
-      
+
       n=size(a,1)
       if (n /= size(a,2)) call fatal_error('ludcmp','non square matrix')
       if (n /= size(indx)) call fatal_error('ludcmp','bad dimension for indx')
@@ -5147,14 +5147,14 @@ nameloop: do
 !  Solves the equation A.X=B
 !  'a' must contain the LU decomposition of matrix A obtained by ludcmp
 !  'indx' is the permutation vector obtained by ludcmp
-!  'b' contains B, and returns the solution vector X 
+!  'b' contains B, and returns the solution vector X
 !
       real, dimension(:,:), intent(IN) :: a
       integer, dimension(:), intent(IN) :: indx
       real, dimension(:), intent(INOUT) :: b
       integer :: i,n,ii,ll
       real :: summ
-      
+
       n=size(a,1)
       if (n /= size(a,2)) call fatal_error('lubksb','non square matrix')
       if (n /= size(indx)) call fatal_error('lubksb','bad dimension for indx')
@@ -5224,7 +5224,7 @@ nameloop: do
       real, dimension (nx) :: tmp
       integer :: i,j
 !
-! 
+!
 !
 !  calculate all mixed and non-mixed second derivatives
 !  of the vector potential (A_k,ij)
@@ -5238,7 +5238,7 @@ nameloop: do
         do j=1,3
           call der2(psif*ee(i),tmp,j); d2A(:,j,j,i)=tmp
         enddo
-!!DHRUBA 
+!!DHRUBA
         call derij(psif*ee(i),tmp,2,3); d2A(:,2,3,i)=tmp; d2A(:,3,2,i)=tmp
         call derij(psif*ee(i),tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
         call derij(psif*ee(i),tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
@@ -5289,7 +5289,7 @@ nameloop: do
       if (lcylindrical_coords) then
         bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
         bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
-      endif   
+      endif
 !
 !  calculate del2 and graddiv, if requested
 !
@@ -5297,11 +5297,11 @@ nameloop: do
 !--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
         if (lspherical_coords) then
-          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ & 
+          graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ &
              aij(:,2,1)*r1_mn*cotth(m)-aa(:,2)*r2_mn*cotth(m)-aa(:,1)*r2_mn*2
-          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ & 
+          graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*r1_mn*2+ &
              aij(:,2,2)*r1_mn*cotth(m)-aa(:,2)*r2_mn*sin2th(m)
-          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+ & 
+          graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*r1_mn*2+ &
              aij(:,2,3)*r1_mn*cotth(m)
         endif
       endif
