@@ -212,6 +212,16 @@ module Forcing
           profz_hel(n)=z(n)
         enddo
 !
+!  helicity profile proportional to z^2, but vanishing on the boundaries
+!
+      elseif (iforce_profile=='squared') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)=(z(n)-xyz0(3))*(xyz1(3)-z(n))
+        enddo
+!
 !  turn off forcing intensity above z=0
 !
       elseif (iforce_profile=='surface_z') then
@@ -247,6 +257,8 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profx_ampl=.5*(1.-tanh((x(l1:l2)-xff_ampl)/wff_ampl))
         profx_hel=1.
+      else
+        call fatal_error('initialize_forcing','iforce_profile value does not exist')
       endif
 !
 !  at the first step, the sin and cos functions are calculated for all
@@ -473,6 +485,7 @@ module Forcing
 !   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
 !  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
+!  23-feb-10/axel: added helicity profile with finite second derivative.
 !
       use Diagnostics
       use EquationOfState, only: cs0

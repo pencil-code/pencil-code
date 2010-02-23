@@ -309,11 +309,12 @@ module Shear
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
-      if (Sshear>0. .and. .not. lshearadvection_as_shift) then
-        if (lroot) print*
-        if (lroot) print*, 'NOTE: for Sshear > 0, MPI is not completely correct.'
-        if (lroot) print*, 'It is better to use lshearadvection_as_shift=T.'
-        if (lroot) print*
+      if (Sshear>0. .and. .not. lshearadvection_as_shift &
+        .and. ncpus/=1 .and. headt) then
+        print*
+        print*, 'NOTE: for Sshear > 0, MPI is not completely correct.'
+        print*, 'It is better to use lshearadvection_as_shift=T.'
+        print*
       endif
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
