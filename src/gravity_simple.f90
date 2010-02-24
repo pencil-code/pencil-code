@@ -60,7 +60,7 @@ module Gravity
   real :: cs0hs=0.0, H0hs=0.0
   integer :: n_pot=10
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
-  character (len=labellen) :: gravz_profile='zero'
+  character (len=labellen) :: gravz_profile='const'
 !
 !  Parameters used by other modules (only defined for other gravities)
 !
