@@ -139,44 +139,44 @@ module Gravity
           case ('zero')           ! zero potential
             if (lroot) print*, 'initialize_gravity: zero gravity potential'
             cpot(:,j) = 0.
-            
+
           case ('solar')          ! solar case
             if (lroot) print*, 'initialize_gravity: solar gravity potential'
             cpot(:,j) = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
-            
+
           case ('M5-dwarf')       ! M5 dwarf
             if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
             cpot(:,j) = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
-            
+
           case ('M2-sgiant')       ! M super giant
             if (lroot) print*, 'M super giant gravity potential'
             cpot(:,j) = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
-            
+
           case ('A7-star')       ! Ap star
             if (lroot) print*, 'A star gravity potential'
             cpot(:,j) = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
-            
+
           case ('A0-star')       ! A0 star
             if (lroot) print*, 'A0 star gravity potential'
             !cpot(:,j) = (/ 4.7446,  -1.9456,  0.6884,  4.8007, 1.79877 /)
             cpot(:,j) = (/ 4.3641,  -1.5612,  0.4841, 4.0678, 1.2548 /)
-            
+
           case ('simple')         ! simple potential for tests
             if (lroot) print*, 'initialize_gravity: very simple gravity potential'
             cpot(:,j) =  (/ 1., 0., 0., 1., 0. /)
-            
+
           case ('simple-2')       ! another simple potential for tests
             if (lroot) print*, 'initialize_gravity: simple gravity potential'
             cpot(:,j) =  (/ 1., 1., 0., 1., 1. /)
-            
+
           case ('smoothed-newton')
             if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
             lpade=.false.
-            
+
           case ('sph-const')
             if (lroot) print*,'initialize_gravity: constant g_r in the sphere'
             lpade=.false.
-            
+
           case ('no-smooth')
             if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
             lpade=.false.
@@ -210,7 +210,7 @@ module Gravity
                  'Can be set in grav_r namelists.'
             lpade=.false.
             ! end geodynamo
-            
+
           case default
 !
 !  Catch unknown values
@@ -218,7 +218,7 @@ module Gravity
             if (lroot) print*, 'initialize_gravity: '//&
                  'No such value for ipotential: ', trim(ipotential(j))
             call stop_it("")
-            
+
           endselect
 !
           do n=n1,n2
@@ -230,7 +230,7 @@ module Gravity
 !
 !  choose between sphere-in-box and cylindrical gravity
 !
-              if (lcylindrical_gravity) then 
+              if (lcylindrical_gravity) then
                 rr_mn=rr_cyl
               else
 ! sphere in a box
@@ -238,7 +238,7 @@ module Gravity
               endif
 !
               if (lpade) then
-              
+
                 g_r = - rr_mn * poly( (/ 2*(cpot(1,j)*cpot(4,j)-cpot(2,j)), &
                      3*(cpot(1,j)*cpot(5,j)-cpot(3,j)), &
                      4*cpot(1,j)*cpot(3,j), &
@@ -279,7 +279,7 @@ module Gravity
               endif
 !
               call get_gravity_field(g_r,gg_mn,rr_mn)
-              f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = & 
+              f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = &
                   f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) + gg_mn
 !
             enddo
@@ -424,7 +424,7 @@ module Gravity
       integer, pointer :: iglobal_gg
 
       call farray_use_global('global_gg',iglobal_gg)
-! 
+!
 ! if statement for testing purposes
 !
       if (lgravity_gas) then
@@ -432,7 +432,7 @@ module Gravity
              + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
 !
-      if (lneutralvelocity) then 
+      if (lneutralvelocity) then
         df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) &
              + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
@@ -450,7 +450,7 @@ module Gravity
 !  16-jul-02/wolf: coded
 !
       use Sub,     only: poly
-      use Mpicomm, only: stop_it 
+      use Mpicomm, only: stop_it
 
       real, dimension (mx,my,mz) :: pot
       real, optional :: pot0           ! potential at r=0
@@ -538,7 +538,7 @@ module Gravity
           call stop_it("POTENTIAL_PENC: Need to specify either x,y,z or r.")
         endif
       endif
-!      
+!
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
@@ -594,7 +594,7 @@ module Gravity
                call stop_it("gravity_r: potential_point with x,y,z is "//&
                "not yet implemented for non-cartesiand coordinates. Fix the call "//&
                "to  use radial distance instead")
-!          
+!
           rad = sqrt(x**2+y**2+z**2)
         else
           call stop_it("Need to specify either x,y,z or r in potential_point()")
@@ -651,14 +651,14 @@ module Gravity
 !
 !  Gravitational acceleration along one pencil
 !
-!  Analogous to potential, but for the radial acceleration. 
+!  Analogous to potential, but for the radial acceleration.
 !   useful for coding initial condition with centrifugal balance
 !
 !  21-aug-07/wlad: coded
 !
       use Mpicomm,only: stop_it
       use Sub,    only: get_radial_distance
-!     
+!
       real, dimension (:) :: g_r
       real, dimension(size(g_r)) :: rr_mn,rr_sph,rr_cyl,pot
       integer :: j
@@ -688,10 +688,10 @@ module Gravity
                             /(1 + (r1_pot1*rr_mn)**n_pot1))
 !
         case ('varying-q')
-          g_r=g_r -g0/rr_mn**(2*qgshear-1) 
+          g_r=g_r -g0/rr_mn**(2*qgshear-1)
 !
         case ('varying-q-smooth')
-          g_r=g_r -g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear  
+          g_r=g_r -g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
 !
         case ('dark-matter-halo')
           g_r=g_r -g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
@@ -707,7 +707,7 @@ module Gravity
           if (lroot) print*, 'acceleration: '//&
                'No such value for ipotential: ', trim(ipotential(j))
           call stop_it("")
-!              
+!
         endselect
       enddo
 !
@@ -717,13 +717,13 @@ module Gravity
 !
 !  Gravitational acceleration in one point
 !
-!  Analogous to potential, but for the radial acceleration. 
+!  Analogous to potential, but for the radial acceleration.
 !   useful for coding initial condition with centrifugal balance
 !
 !  18-nov-08/wlad: coded
 !
       use Mpicomm,only: stop_it
-!     
+!
       real :: g_r,rad,pot
       real, optional :: x,y,z,r
       integer :: j
@@ -741,7 +741,7 @@ module Gravity
               call stop_it("gravity_r: acceleration_point with x,y,z is "//&
               "not yet implemented for non-cartesiand coordinates. Fix  "//&
               "the call to  use radial distance instead")
-!          
+!
           rad = sqrt(x**2+y**2+z**2)
         else
           call stop_it("Need to specify either x,y,z or r in acceleration_point()")
@@ -764,10 +764,10 @@ module Gravity
                             /(1 + (r1_pot1*rad)**n_pot1))
 !
         case ('varying-q')
-          g_r=g_r -g0/rad**(2*qgshear-1) 
+          g_r=g_r -g0/rad**(2*qgshear-1)
 !
         case ('varying-q-smooth')
-          g_r=g_r -g0*rad/(rad**2+r0_pot**2)**qgshear  
+          g_r=g_r -g0*rad/(rad**2+r0_pot**2)**qgshear
 !
         case ('dark-matter-halo')
           g_r=g_r -g01(j)*(1-rpot(j)/rad*atan2(rad,rpot(j)))/rad
@@ -783,7 +783,7 @@ module Gravity
           if (lroot) print*, 'acceleration: '//&
                'No such value for ipotential: ', trim(ipotential(j))
           call stop_it("")
-!              
+!
         endselect
       enddo
 !
@@ -876,7 +876,7 @@ module Gravity
       endif
       call get_gravity_field(g_r, gg_mn, rr_mn)
       f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = gg_mn
-    enddo 
+    enddo
     enddo
 !
     endsubroutine compute_gravity_star

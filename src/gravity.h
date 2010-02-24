@@ -1,7 +1,7 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 
   private
-                                                                                                       
+
   public :: register_gravity, initialize_gravity
   public :: read_gravity_init_pars, write_gravity_init_pars
   public :: read_gravity_run_pars,  write_gravity_run_pars
