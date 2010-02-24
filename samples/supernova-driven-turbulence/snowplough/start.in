@@ -50,7 +50,7 @@
 !  cooling_select='off'
 !  heating_select='off'
   SNR_damping=.5
-  cooling_select='RBr'
+  cooling_select='SS-Slyz'
   heating_select='wolfire'
 !/
 !&shear_init_pars
