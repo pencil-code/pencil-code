@@ -129,8 +129,9 @@ module Interstellar
 ! If this is not reached then consider moving mass to achieve this.
 !
   real :: cluster_factor=1.25!fred testing clustering
-  real, parameter :: TT_SN_min_cgs=0! 1.e7
+  real, parameter :: TT_SN_min_cgs=1.e7
 ! 22-jan-10/fred with lSN_velocity=T for kinetic energy lower limit no longer required
+! set TT_SN_min=0
   real :: uu_sedov_max=0.
   real :: TT_SN_min=impossible
   real :: TT_cutoff_cgs=100.
@@ -345,7 +346,7 @@ module Interstellar
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, lSN_mass, &
       h_SNI, h_SNII, &
       thermal_profile,velocity_profile, mass_profile, &
-      t_next_SNI, &
+      t_next_SNI, TT_SN_min, &
       SNR_damping, uu_sedov_max, &
       mass_SN_progenitor,cloud_tau, &
       lSNI, lSNII, &
@@ -353,7 +354,7 @@ module Interstellar
       lsmooth_coolingfunc, heatingfunction_scalefactor, &
       center_SN_x, center_SN_y, center_SN_z, &
       SNI_area_rate, &
-      rho_SN_min, TT_SN_max, &
+      rho_SN_min, TT_SN_max, cloud_rho, cloud_TT, &
       lheating_UV, cdt_tauc,  &
       cooling_select, heating_select, heating_rate, &
       t_settle, cluster_factor,  &
@@ -706,8 +707,8 @@ module Interstellar
         h_SNII=h_SNII_cgs / unit_length
         solar_mass=solar_mass_cgs / unit_mass
         if (lroot) print*,'initialize_interstellar: solar_mass (code) =',solar_mass
-        cloud_rho=cloud_rho_cgs / unit_density
-        cloud_TT=cloud_TT_cgs / unit_temperature
+        if (cloud_rho == impossible) cloud_rho=cloud_rho_cgs / unit_density
+        if (cloud_TT == impossible) cloud_TT=cloud_TT_cgs / unit_temperature
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         T0UV=T0UV_cgs / unit_temperature
