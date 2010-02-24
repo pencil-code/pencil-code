@@ -72,7 +72,6 @@ module Gravity
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
   real :: kappa_x1=0.0, kappa_x2=0.0, kappa_z1=0.0, kappa_z2=0.0
   real :: grav_tilt=0.0
-  character (len=labellen) :: grav_profile='const'
 !
   namelist /grav_init_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -81,8 +80,8 @@ module Gravity
       ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, lgravz_gas, &
       lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, kappa_x1, &
       lcalc_zinfty, &
-      kappa_x2, kappa_z1, kappa_z2, reduced_top, lboussinesq, grav_profile, &
-      n_pot, cs0hs, H0hs, grav_tilt
+      kappa_x2, kappa_z1, kappa_z2, reduced_top, lboussinesq, n_pot, cs0hs, &
+      H0hs, grav_tilt
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -91,7 +90,7 @@ module Gravity
       lgravy_dust, lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, &
       lcalc_zinfty, &
       lxyzdependence, kappa_x1, kappa_x2, kappa_z1, kappa_z2, zref, &
-      reduced_top, lboussinesq, grav_profile, n_pot, grav_tilt
+      reduced_top, lboussinesq, n_pot, grav_tilt
 !
   integer :: idiag_epot=0
 !

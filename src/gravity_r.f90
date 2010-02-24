@@ -50,7 +50,7 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   real :: nu_epicycle=1.0
-  character (len=labellen) :: grav_profile='const',gravz_profile='zero'
+  character (len=labellen) :: gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
 
@@ -115,7 +115,7 @@ module Gravity
 !               1    +   b_2 r^2 + b_3 r^3 + a_3 r^4
 
       if (lnumerical_equilibrium) then
-! 
+!
         if (lroot) then
           print*,'inititialize_gravity: numerical exact equilibrium - gravity'
           print*,'                      will be calculated in density module'
@@ -125,7 +125,7 @@ module Gravity
 !
 !  Initialize gg, so we can later retrieve gravity via get_global.
 !  Ensure the reserved array slots are initialized to zero, so we can add
-!  ninit different gravity fields. 
+!  ninit different gravity fields.
 !
         if (igg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
         f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
