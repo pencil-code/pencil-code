@@ -43,6 +43,7 @@
 !  lSNII=T
 !  h_SNII=0.106
   TT_SN_max=1e2
+!  TT_SN_min=0.0
   rho_SN_min=7.5e-1
   lSN_mass=T
   mass_movement='off'

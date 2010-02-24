@@ -51,7 +51,7 @@
 !  heating_select='off'
 !  lSNII=T
 !  lSNI=F
-  cooling_select='SSrr'
+  cooling_select='SS-Slyz'
   heating_select='wolfire'
 /
 &shear_init_pars
