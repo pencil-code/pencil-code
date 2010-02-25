@@ -1582,7 +1582,7 @@ cool_loop: do i=1,ncool
       endif
     endif
 !
-    if (franSN(1) <= prob_SNII) then
+   if (franSN(1) <= prob_SNII) then
       !  position_SN_bycloudmass needs the cloud_masses for each processor;
       !   communicate and store them here, to avoid recalculation.
       cloud_mass_byproc(:)=0.0
@@ -1616,7 +1616,7 @@ cool_loop: do i=1,ncool
 !
       endif
 !
-    endif
+   endif
     call free_SNR(iSNR)
 !If returned unexploded stops code running out of free slots
 !
@@ -1972,6 +1972,7 @@ cool_loop: do i=1,ncool
 !  Construct cumulative distribution function, using cloud_mass_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] )
 !
+    ierr=iEXPLOSION_OK
     cloud_mass=0.0
     cum_prob_byproc=0.0
     do icpu=1,ncpus
