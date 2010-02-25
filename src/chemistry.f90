@@ -4310,7 +4310,8 @@ module Chemistry
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: j,k=1
+      integer :: i,j,k=1
+      real :: xx1,xx2
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
@@ -4433,8 +4434,21 @@ module Chemistry
 
       endif
 
+      if (init_ux /=0.) then
+       f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+      endif
 
-   !   f(:,:,:,iux)=init_ux
+      if (TT<init_TT1) then
+        xx1=xyz0(1)
+        xx2=xyz0(1)+Lxyz(1)*0.1
+        do i=1,mx
+         if (x(i)<=xx2) then
+          f(i,:,:,ilnTT)= &
+             log((TT-init_TT1)*(x(i)-xx1)/(xx2-xx1)+init_TT1)
+         endif
+        enddo
+      endif
+
 
 !
       if (lroot) print*, 'Air temperature, K', TT
