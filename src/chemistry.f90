@@ -4434,11 +4434,12 @@ module Chemistry
 
       endif
 
+      if (TT<init_TT1) then
+         
       if (init_ux /=0.) then
        f(:,:,:,iux)=f(:,:,:,iux)+init_ux
       endif
 
-      if (TT<init_TT1) then
         xx1=xyz0(1)
         xx2=xyz0(1)+Lxyz(1)*0.1
         do i=1,mx
