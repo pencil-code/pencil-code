@@ -126,7 +126,7 @@ include 'NSCBC.h'
 
 !
       use General, only: safe_character_assign, chn
-      use Chemistry, only: bc_nscbc_subin_x,bc_nscbc_nref_subout_x,&
+      use Chemistry, only: bc_nscbc_nref_subout_x, bc_nscbc_subin_x,&
           bc_nscbc_nref_subout_y,bc_nscbc_nref_subout_z
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -285,6 +285,11 @@ include 'NSCBC.h'
           case ('subsonic_inflow')
             if (j==1) then
               call bc_nscbc_subin_x(f,df,topbot,valx)
+            elseif (j==2) then
+            endif
+          case ('subsonic_inflow_new')
+            if (j==1) then
+              call bc_nscbc_subin_x_new(f,df,topbot,valx)
             elseif (j==2) then
             endif
 !
@@ -1311,4 +1316,178 @@ include 'NSCBC.h'
 !
       end subroutine transversal_terms
 !***********************************************************************
+  subroutine bc_nscbc_subin_x_new(f,df,topbot,val)
+!
+!   nscbc case
+!   subsonic inflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    ux,uy,T are fixed, drho  is calculated
+!
+!   16-nov-08/natalia: coded.
+!
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice, der_pencil
+      use Chemistry
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mom2
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      real, dimension(ny,nz) :: dux_dx,L_1, L_2, L_3, L_4, L_5, dpp_dx
+      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
+      real, dimension(my,mz) :: cs0_ar,cs20_ar
+    !  real, dimension (my,mz) :: cs2x
+      real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
+      real, dimension(nchemspec) :: YYi
+      real, dimension (mcom), optional :: val
+      integer :: lll,i, sgn,k
+      real :: u_t, T_t, Mach_num
+!
+      intent(inout) :: f
+      intent(out) :: df
+!
+
+      logical :: non_zero_transveral_velo
+      integer :: dir, dir2, dir3, igrid, jgrid, imin, imax, jmin, jmax
+      real, allocatable, dimension(:,:,:) :: u_in
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! reading data from file
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+      if (inlet_from_file) then 
+  
+        dir=1; dir2=2; dir3=3
+        igrid=ny; jgrid=nz
+        imin=m1; imax=m2
+        jmin=n1; jmax=n2
+        non_zero_transveral_velo=.false.
+
+        allocate(u_in(igrid,jgrid,3))
+          
+        call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
+              igrid,jgrid)
+      endif
+       
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+ !    if (.not.present(val)) call stop_it(&
+ !          'bc_nscbc_subin_x: you must specify fbcx)')
+
+      u_t=val(iux)
+      T_t=val(ilnTT)
+      do k=1,nchemspec
+       YYi(k)=val(ichemspec(k))
+      enddo
+
+      if (leos_chemistry) then
+        call get_cs2_full(cs2_full)
+        call get_gamma_full(gamma_full)
+      endif
+!
+      select case (topbot)
+      case ('bot')
+        lll = l1
+        sgn = 1
+      case ('top')
+        lll = l2
+        sgn = -1
+      case default
+         print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+      if (leos_chemistry) then
+         cs20_ar=cs2_full(lll,:,:)
+         cs0_ar=cs2_full(lll,:,:)**0.5
+         gamma0=gamma_full(lll,:,:)
+       !   TT0=TT_full(lll,:,:)
+         if (ltemperature_nolog) then
+          TT0=f(lll,:,:,iTT)
+         else
+          TT0=exp(f(lll,:,:,ilnTT))
+         endif
+
+         if (ldensity_nolog) then
+          rho_full=f(:,:,:,irho)
+         else
+          rho_full=exp(f(:,:,:,ilnrho))
+         endif
+
+         rho0(:,:) = rho_full(lll,:,:)
+         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
+      else
+        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC subsonic inflos is only implemented for "//&
+            "the chemistry case."
+        print*,"Boundary treatment skipped."
+        return
+      endif
+!
+      Mach_num=maxval(f(lll,m1:m2,n1:n2,iux)/cs0_ar(m1:m2,n1:n2))
+!
+      !  call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+        call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+        call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
+!
+        do i=1,mz
+          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+        enddo
+
+
+        if (ldensity_nolog) then
+           call stop_it('bc_nscbc_subin_x:ldensity_nolog case does not work now!')
+        else
+         df(lll,m1:m2,n1:n2,ilnrho) = &
+              -sgn*nscbc_sigma_in/(gamma0(m1:m2,n1:n2)-1.) &
+              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2)) 
+        endif
+
+        if (ltemperature_nolog) then
+            call stop_it('bc_nscbc_subin_x:ltemperature_nolog case does not work now!')
+        else
+           df(lll,m1:m2,n1:n2,ilnTT) = (gamma0(m1:m2,n1:n2)-1.)*df(lll,m1:m2,n1:n2,ilnrho) &
+              -nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
+        endif
+
+        L_3=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
+                *(f(lll,m1:m2,n1:n2,iuy)-u_in(:,:,2))
+        L_4=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
+                *(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))
+
+        df(lll,m1:m2,n1:n2,iux) = &
+              -sgn*nscbc_sigma_in*cs0_ar(m1:m2,n1:n2) &
+              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1)) &
+              -sgn*cs0_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnrho)
+        df(lll,m1:m2,n1:n2,iuy) = -L_3
+        df(lll,m1:m2,n1:n2,iuz) = -L_4
+
+        df(lll,m1:m2,n1:n2,ilnTT) = (gamma0(m1:m2,n1:n2)-1.)*df(lll,m1:m2,n1:n2,ilnrho) &
+              -sgn*nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
+ 
+  
+   !     do k=1,nchemspec
+   !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
+   !     enddo
+        if (inlet_from_file) then 
+         f(lll,m1:m2,n1:n2,iux) = u_t + u_in(:,:,1)
+         f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
+         f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
+         f(lll,m1:m2,n1:n2,ilnTT) = T_t
+        endif
+      
+   !      df(lll,m1:m2,n1:n2,ilnTT)=0.
+    endsubroutine bc_nscbc_subin_x_new
+!***********************************************************************
+
 endmodule NSCBC

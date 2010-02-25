@@ -23,6 +23,9 @@
   public :: get_mu1_slice
   public :: get_gamma_slice
   public :: get_cs2_slice
+  public :: get_cs2_full
+  public :: get_gamma_full
+ 
 
   public :: Rgas
 
@@ -30,8 +33,7 @@
 !  public :: get_p_infy
 !  public :: get_rhs_Y
 !  public :: get_rhs_T
-!  public :: get_cs2_full
-!  public :: get_gamma_full
+ 
 
   public :: chemistry_clean_up
 
