@@ -1060,8 +1060,13 @@ module Viscosity
 !  Calculate Lambda effect
 !
      if (llambda_effect) then
+!      p%fvisc(:,iuz)=p%fvisc(:,iuz) -Lambda_V0*( &
+!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+!                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
+! PJK: Isn't this what we get when taking the divergence of
+! PJK: rho*(rho*R_(r\phi))? Now the angular momentum is fairly well conserved.
       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
-                   -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+                    2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
 !                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
 !                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
