@@ -1046,7 +1046,7 @@ else if ($hn =~ aims* ) then
   setenv SCP scp
   setenv SCRATCH_DIR /var/tmp/$USER
 #---------------------------------------------------
-else if ($hostname =~ *huygens.sara.nl*) then
+else if ($nodelist[1] =~ *huygens.sara.nl*) then
   echo "huygens cluster in Amsterdam"
 #  set local_disc = 1
 #  set one_local_disc = 1
