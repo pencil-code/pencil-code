@@ -110,6 +110,14 @@ module Entropy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_ppmx=0       ! DIAG_DOC:
+  integer :: idiag_ppmy=0       ! DIAG_DOC:
+  integer :: idiag_ppmz=0       ! DIAG_DOC:
+  integer :: idiag_TTmx=0       ! DIAG_DOC:
+  integer :: idiag_TTmy=0       ! DIAG_DOC:
+  integer :: idiag_TTmz=0       ! DIAG_DOC:
+  integer :: idiag_TTmxy=0      ! DIAG_DOC:
+  integer :: idiag_TTmxz=0      ! DIAG_DOC:
 !
   contains
 !***********************************************************************
@@ -154,7 +162,6 @@ module Entropy
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
       use Sub, only: step,der_step
-      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
       use ImplicitPhysics, only: heatcond_TT, init_param_ADI
 !
@@ -311,27 +318,27 @@ module Entropy
 !  as shared variables
 !
       call put_shared_variable('hcond0', hcond0, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-         "there was a problem when putting hcond0")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcond0')
       call put_shared_variable('Fbot', Fbot, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting Fbot")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting Fbot')
 !
       call put_shared_variable('Tbump', Tbump, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-         "there was a problem when putting Tbump")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting Tbump')
       call put_shared_variable('Kmax', Kmax, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-         "there was a problem when putting Kmax")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting Kmax')
       call put_shared_variable('hole_slope', hole_slope, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-         "there was a problem when putting hole_slope")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hole_slope')
       call put_shared_variable('hole_alpha', hole_alpha, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-         "there was a problem when putting hole_alpha")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hole_alpha')
       call put_shared_variable('hole_width', hole_width, ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-         "there was a problem when putting hole_width")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hole_width')
 !
       call init_param_ADI()
 !
@@ -631,6 +638,10 @@ module Entropy
       if (idiag_eem/=0)    lpenc_diagnos(i_ee) =.true.
       if (idiag_ppm/=0)    lpenc_diagnos(i_pp) =.true.
       if (idiag_thcool/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. idiag_TTmz/=0) &
+          lpenc_diagnos(i_TT)=.true.
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) &
+          lpenc_diagnos(i_TT)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -700,12 +711,12 @@ module Entropy
 !  13-dec-02/axel+tobi: adapted from entropy
 !
       use Deriv, only: der6
-      use Diagnostics, only: sum_mn_name,max_mn_name,save_name
+      use Diagnostics
       use EquationOfState, only: gamma_m1
+      use ImplicitPhysics, only: heatcond_TT
       use Special, only: special_calc_entropy
       use Sub, only: dot2,identify_bcs
       use Viscosity, only: calc_viscous_heat
-      use ImplicitPhysics, only: heatcond_TT
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -822,7 +833,7 @@ module Entropy
         print*, 'dss_dt: max(diffus_chi3) =', maxval(diffus_chi3)
       endif
 !
-!  Calculate entropy related diagnostics.
+!  Calculate temperature related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
@@ -837,14 +848,24 @@ module Entropy
           fradtop=sum(-hcond*p%glnTT(:,3))/nx
           call save_name(fradtop, idiag_fradtop)
         endif
-        if (idiag_ethm/=0)   call sum_mn_name(p%ee/p%rho1,idiag_ethm)
-        if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
+        if (idiag_ethm/=0) call sum_mn_name(p%ee/p%rho1,idiag_ethm)
+        if (idiag_ssm/=0)  call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_dtc/=0) then
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
-        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
-        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_eem/=0)  call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_ppm/=0)  call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_csm/=0)  call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
+      endif
+!
+!  2-D averages.
+!
+      if (l2davgfirst) then
+        if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
+        if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
       endif
 !
     endsubroutine dss_dt
@@ -1318,9 +1339,11 @@ module Entropy
 !
       use Diagnostics, only: parse_name
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+!
+      integer :: iname, inamex, inamey, inamez, inamexy, inamexz
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -1334,6 +1357,9 @@ module Entropy
         idiag_ethm=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
+        idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
+        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0
+        idiag_TTmxy=0; idiag_TTmxz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1352,6 +1378,39 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
+      enddo
+!
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
+      enddo
+!
+!  Check for those quantities for which we want xz-averages.
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'ppmy',idiag_TTmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'TTmy',idiag_TTmy)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+      enddo
+!
+!  Check for those quantities for which we want z-averages.
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',      idiag_TTmxy)
+      enddo
+!
+!  Check for those quantities for which we want y-averages.
+!
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz',      idiag_TTmxz)
       enddo
 !
 !  Write column where which variable is stored.
