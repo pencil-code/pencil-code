@@ -17,8 +17,10 @@
 ;  The /polar option is for sphere/cylinder-in-a-box simulations only.
 ;
 ;  Typical calling sequence:
+;    rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
 ;
-;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
+;  ... and for spherical slices
+;    rvid_plane,'bb1',min=-.5,max=.5,/sph
 ;
 pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     tmax=tmax,max=amax,swap_endian=swap_endian, $
