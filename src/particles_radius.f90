@@ -31,7 +31,7 @@ module Particles_radius
   real :: diffusion_coefficient=1.0, diffusion_coefficient1=1.0
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
-  real :: ztop_ocean=0.0
+  real :: ztop_ocean=0.0, TTocean=300.0
   logical :: lsweepup_par=.true., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -42,14 +42,14 @@ module Particles_radius
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean
+      lborder_driving_ocean, ztop_ocean, TTocean
 !
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean
+      lborder_driving_ocean, ztop_ocean, TTocean
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0
@@ -469,6 +469,13 @@ module Particles_radius
                     pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
               endif
             enddo
+          endif
+        endif
+!
+        if (lborder_driving_ocean) then
+          if (z(n)<ztop_ocean) then
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - &
+                (1.0-TTocean*p%TT1)*tau_ocean_driving1
           endif
         endif
 !
