@@ -4,7 +4,7 @@
 ###
 
 MPICOMM   = nompicomm
-HYDRO     = nohydro
+HYDRO     =   hydro_kinematic
 DENSITY   = nodensity
 MAGNETIC  =   magnetic
 VISCOSITY = noviscosity
