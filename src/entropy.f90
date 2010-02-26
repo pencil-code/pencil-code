@@ -2412,7 +2412,7 @@ module Entropy
         if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
         if (idiag_uxTTmxy/=0) call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
       endif
-
+!
     endsubroutine dss_dt
 !**********************************************************************
     subroutine set_border_entropy(f,df,p)
@@ -3544,7 +3544,7 @@ module Entropy
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -3590,7 +3590,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
       enddo
 !
-!  check for those quantities for which we want yz-averages
+!  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
@@ -3598,7 +3598,7 @@ module Entropy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
       enddo
 !
-!  check for those quantities for which we want xz-averages
+!  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'ssmy',idiag_ssmy)
@@ -3606,7 +3606,7 @@ module Entropy
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'TTmy',idiag_TTmy)
       enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbz',idiag_fturbz)
@@ -3627,7 +3627,7 @@ module Entropy
          call parse_name(inamer,cnamer(inamer),cformr(inamer),'TTmr',idiag_TTmr)
       enddo
 !
-!  check for those quantities for which we want z-averages
+!  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
@@ -3637,21 +3637,21 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
       enddo
 !
-!  check for those quantities for which we want y-averages
+!  Check for those quantities for which we want y-averages.
 !
       do inamexz=1,nnamexz
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz',idiag_TTmxz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'ssmxz',idiag_ssmxz)
       enddo
 !
-!  check for those quantities for which we want phi-averages
+!  Check for those quantities for which we want phi-averages.
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  Write column where which entropy variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc
@@ -3689,7 +3689,6 @@ module Entropy
         write(3,*) 'i_TTmr=',idiag_TTmr
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
-!        write(3,*) 'ippaux=',ippaux
         write(3,*) 'i_yHmax=',idiag_yHmax
         write(3,*) 'i_yHm=',idiag_yHm
         write(3,*) 'i_TTmax=',idiag_TTmax
