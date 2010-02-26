@@ -244,8 +244,9 @@ module Messages
 !***********************************************************************
     subroutine svn_id(svnid)
 !
-!  print SVN Revision info in a compact, yet structured form
-!  Expects the standard SVN Id: line as argument
+!  Print SVN Revision info in a compact, yet structured form.
+!  Expects the standard "SVN Id:" line as argument.
+!
 !  25-jun-02/wolf: coded
 !
       character (len=*) :: svnid
