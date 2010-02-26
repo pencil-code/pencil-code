@@ -14,6 +14,8 @@
 ;  PNG images with ${PENCIL_HOME}/utils/makemovie (requires imagemagick
 ;  and mencoder to be installed).
 ;
+;  The /polar option is for sphere/cylinder-in-a-box simulations only.
+;
 ;  Typical calling sequence:
 ;
 ;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
@@ -27,7 +29,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
     contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
     nsmooth=nsmooth, textsize=textsize, _extra=_extra, polar=polar, $
-    anglecoord=anglecoord, style_polar=style_polar,nlevels=nlevels, $
+    anglecoord=anglecoord, style_polar=style_polar, $
+    spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log
 ;
 COMMON pc_precision, zero, one
@@ -35,7 +38,15 @@ COMMON pc_precision, zero, one
 default,ix,-1
 default,iy,-1
 default,ps,0
-default,extension,'xz'
+;
+;  default extension
+;
+if keyword_set(spherical_surface) then begin
+  default,extension,'yz'
+endif else begin
+  default,extension,'xz'
+endelse
+;
 default,amax,.05
 default,amin,-amax
 default,swap_endian,0
@@ -405,8 +416,8 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
           pixID=!D.Window
         endif
         if (keyword_set(contourplot)) then begin
-           contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-               tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
+            contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
+                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
         end else if (keyword_set(polar)) then begin
           if (style_polar eq 'fill') then begin
             contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
@@ -415,6 +426,22 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
             contour, plane2, x2, y2, nlevels=nlevels, $
                 tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
           endif
+;
+;  spherical surface plot in a good projection
+;
+        end else if (keyword_set(spherical_surface)) then begin
+          phi=120.*findgen(nz)/float(nz-1)
+          theta2=30+120.*findgen(ny)/float(ny-1)
+          !p.background=255
+          map_set,/orthographic,/grid,/noborder,/isotropic,latdel=15,londel=15,xmargin=0.5,ymargin=0.5,15,60,color=0
+          lev=grange(amin,amax,25)
+          contour,transpose(plane2),phi,90.-theta2,lev=lev,/fill,/overplot, $
+            col=0, _extra=_extra
+          colorbar,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
+            ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
+            yaxis=0,char=1.5,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
+          xyouts,20,380,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=2
+          wait,.05
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
