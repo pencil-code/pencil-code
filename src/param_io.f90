@@ -780,6 +780,7 @@ module Param_IO
                               print*,'&run_pars                 /'
         if (leos            ) print*,'&eos_run_pars             /'
         if (lhydro          ) print*,'&hydro_run_pars           /'
+        if (lhydro_kinematic) print*,'&hydro_run_pars           /'
         if (ldensity        ) print*,'&density_run_pars         /'
         if (lforcing        ) print*,'&forcing_run_pars         /'
         if (lgrav           ) print*,'&grav_run_pars            /'
