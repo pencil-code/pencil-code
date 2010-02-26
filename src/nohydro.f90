@@ -295,15 +295,28 @@ module Hydro
 !
       elseif (kinflow=='roberts') then
 ! uu
+        sqrt2=sqrt(2.)
         if (lpencil(i_uu)) then
           if (headtt) print*,'Glen Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
           eps1=1.-eps_kinflow
-          p%uu(:,1)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*eps1
-          p%uu(:,2)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*eps1
-          p%uu(:,3)=+sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sqrt(2.)
+          p%uu(:,1)=+eps1*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+          p%uu(:,2)=-eps1*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+          p%uu(:,3)=sqrt2*sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
         endif
 ! divu
         if (lpencil(i_divu)) p%divu= (kkx_aa-kky_aa)*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+! uij
+        if (lpencil(i_uij)) then
+          p%uij(:,1,1)=+eps1*kkx_aa*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+          p%uij(:,1,2)=-eps1*kky_aa*sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+          p%uij(:,1,3)=+0.
+          p%uij(:,2,1)=+eps1*kkx_aa*sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+          p%uij(:,2,2)=-eps1*kky_aa*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+          p%uij(:,2,3)=+0.
+          p%uij(:,3,1)=sqrt2*kkx_aa*cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+          p%uij(:,3,2)=sqrt2*kky_aa*sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+          p%uij(:,3,3)=+0.
+        endif
 !
 ! Chandrasekhar-Kendall Flow
 !

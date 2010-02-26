@@ -196,11 +196,19 @@ module Forcing
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.
         do m=1,my
-!          profy_hel(m)=cos(y(n))
-! DM this maybe the bug
           profy_hel(m)=cos(y(m))
         enddo
         profz_ampl=1.; profz_hel=1.
+!
+! step function profile
+!
+      elseif (iforce_profile=='equator_hel=step') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        do m=1,my
+          profy_hel(m)= -1.+2.*step_scalar(y(m),yequator-ck_equator_gap,ck_gap_step)
+        enddo
 !
 !  sign change of helicity about z=0
 !
@@ -221,6 +229,14 @@ module Forcing
         do n=1,mz
           profz_hel(n)=(z(n)-xyz0(3))*(xyz1(3)-z(n))
         enddo
+!
+!  turn off forcing intensity above z=0
+!
+      elseif (iforce_profile=='exp(z/H)') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=exp(z/width_ff)
+        profz_hel=1.
 !
 !  turn off forcing intensity above z=0
 !

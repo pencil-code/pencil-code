@@ -203,7 +203,7 @@ module Magnetic
   real, dimension(mz) :: coskz,sinkz,eta_z
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
-  logical :: lweyl_gauge=.false.
+  logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false.
   logical :: lcalc_aamean=.false.
   logical :: lforcing_cont_aa=.false.
@@ -235,7 +235,8 @@ module Magnetic
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
-      lweyl_gauge, lupw_aa, alphaSSm, alpha_rmax, alpha_width, eta_int, &
+      lweyl_gauge, ladvective_gauge, lupw_aa, &
+      alphaSSm, alpha_rmax, alpha_width, eta_int, &
       eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
       wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
@@ -270,6 +271,7 @@ module Magnetic
   integer :: idiag_abmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
   integer :: idiag_abmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_abms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
+  integer :: idiag_abrms=0      ! DIAG_DOC: $\left<(\Av\cdot\Bv)^2\right>^{1/2}$
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
@@ -1244,6 +1246,12 @@ module Magnetic
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
       endif
+      if (ladvective_gauge) then
+        lpenc_requested(i_aa)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_aij)=.true.
+        lpenc_requested(i_uij)=.true.
+      endif
       if (lresi_shell .or. lresi_zdep .or. lresi_xydep) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
@@ -1326,7 +1334,7 @@ module Magnetic
          ) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
-          .or. idiag_abmz/=0) &
+          .or. idiag_abmz/=0 .or. idiag_abrms/=0) &
           lpenc_diagnos(i_ab)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 &
           .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
@@ -2066,6 +2074,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver,jxbb
+      real, dimension (nx,3) :: ujaij,ujiaj
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi
@@ -2389,8 +2398,21 @@ module Magnetic
 !  Induction equation.
 !
       if (.not.lupw_aa) then
-        if (linduction) &
-             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
+        if (linduction) then
+          if (ladvective_gauge) then
+            ujaij=0.; ujiaj=0.
+            do j=1,3; do k=1,3
+              ujaij(:,j)=ujaij(:,j)+p%uu(:,k)*p%aij(:,j,k)
+              ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+            enddo; enddo
+            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ujaij-ujiaj+fres
+!
+!  ladvective_gauge=F, so just the normal uxb term plus resistive term.
+!
+          else
+            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres
+          endif
+        endif
       else
 !
 !  Use upwinding for the advection term.
@@ -2584,6 +2606,7 @@ module Magnetic
         if (idiag_aybym2/=0) &
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
+        if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
 !
 !  Hemispheric magnetic helicity of total field.
 !  North means 1 and south means 2.
@@ -5927,7 +5950,8 @@ module Magnetic
       if (lreset) then
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
         idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0; idiag_b1m=0; idiag_b2m=0
-        idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0; idiag_abmh=0
+        idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
+        idiag_abm=0; idiag_abrms=0; idiag_abmh=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_ubm=0; idiag_ujm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
@@ -6000,6 +6024,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
         call parse_name(iname,cname(iname),cform(iname),'abmn',idiag_abmn)
         call parse_name(iname,cname(iname),cform(iname),'abms',idiag_abms)
+        call parse_name(iname,cname(iname),cform(iname),'abrms',idiag_abrms)
         call parse_name(iname,cname(iname),cform(iname),'ajm',idiag_ajm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
         call parse_name(iname,cname(iname),cform(iname),'jbmn',idiag_jbmn)
@@ -6372,6 +6397,7 @@ module Magnetic
         write(3,*) 'i_abmh=',idiag_abmh
         write(3,*) 'i_abmn=',idiag_abmn
         write(3,*) 'i_abms=',idiag_abms
+        write(3,*) 'i_abrms=',idiag_abrms
         write(3,*) 'i_ajm=',idiag_ajm
         write(3,*) 'i_brmsn=',idiag_brmsn
         write(3,*) 'i_brmss=',idiag_brmss

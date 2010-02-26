@@ -108,7 +108,7 @@ module Density
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
   integer :: idiag_rhomphi=0    ! PHIAVG_DOC: $\left<\varrho\right>_\varphi$
   integer :: idiag_dtd=0        ! DIAG_DOC:
-  integer :: idiag_rhomz=0      ! DIAG_DOC:
+  integer :: idiag_rhomz=0      ! DIAG_DOC: $\left<\varrho\right>_{xy}$
   integer :: idiag_rhomy=0      ! DIAG_DOC:
   integer :: idiag_rhomx=0      ! DIAG_DOC:
   integer :: idiag_rhomxy=0     ! DIAG_DOC:
