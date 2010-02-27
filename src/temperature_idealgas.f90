@@ -640,8 +640,8 @@ module Entropy
       if (idiag_thcool/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. idiag_TTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
-      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) &
-          lpenc_diagnos(i_TT)=.true.
+!
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
