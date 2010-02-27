@@ -314,7 +314,6 @@ f_lop:  do iv=1,mvar
 !  Calculate reference diagnostics with all diagnostic pencils on.
 !
       lpencil=(lpenc_diagnos.or.lpenc_requested)
-      ldiagnos=.true.
       call pde(f_other,df,p)
       fname_ref=fname
 !
