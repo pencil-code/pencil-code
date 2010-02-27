@@ -79,6 +79,7 @@ module Pscalar
   integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
   integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
   integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
+  integer :: idiag_ccmxy=0, idiag_ccmxz=0
 !
   contains
 !***********************************************************************
@@ -272,7 +273,9 @@ module Pscalar
           idiag_gcc4m/=0 .or. idiag_gcc5m/=0 .or. idiag_gcc6m/=0 .or. &
           idiag_gcc7m/=0 .or. idiag_gcc8m/=0 .or. idiag_gcc9m/=0 .or. &
           idiag_gcc10m/=0) lpenc_diagnos(i_gcc1)=.true.
-      if (idiag_ccglnrm/=0) lpenc_requested(i_glnrho)=.true.
+      if (idiag_ccglnrm/=0) lpenc_diagnos(i_glnrho)=.true.
+!
+      if (idiag_ccmxy/=0 .or. idiag_ccmxz/=0) lpenc_diagnos2d(i_cc)=.true.
 !
     endsubroutine pencil_criteria_pscalar
 !***********************************************************************
@@ -527,18 +530,22 @@ module Pscalar
         if (idiag_ccmx/=0)    call yzsum_mn_name_x(p%cc,idiag_ccmx)
       endif
 !
+      if (l2davgfirst) then
+        if (idiag_ccmxy/=0)   call zsum_mn_name_xy(p%cc,idiag_ccmxy)
+        if (idiag_ccmxz/=0)   call ysum_mn_name_xz(p%cc,idiag_ccmxz)
+      endif
+!
 ! AH: notpassive, an angular momentum+gravity workaround
-        if (lnotpassive) then
-          if (lhydro) then
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc &
-               +(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
-               (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
-                -z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
-          endif
+      if (lnotpassive) then
+        if (lhydro) then
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc &
+             +(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
+             (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
+              -z(n)+3*hoverr*zoverh*x(l1:l2))*scalaracc
         endif
-
-
+      endif
+!
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine read_pscalar_init_pars(unit,iostat)
@@ -598,7 +605,7 @@ module Pscalar
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname, inamez, inamey, inamex
+      integer :: iname, inamez, inamey, inamex, inamexy, inamexz
       logical :: lwr
 !
       lwr = .false.
@@ -618,6 +625,7 @@ module Pscalar
         idiag_gcc1m=0; idiag_gcc2m=0; idiag_gcc3m=0; idiag_gcc4m=0
         idiag_gcc5m=0; idiag_gcc6m=0; idiag_gcc7m=0; idiag_gcc8m=0
         idiag_gcc9m=0; idiag_gcc10m=0; idiag_ccglnrm=0
+        idiag_ccmxy=0; idiag_ccmxz=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -677,6 +685,18 @@ module Pscalar
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ccmx',idiag_ccmx)
+      enddo
+!
+!  Check for those quantities for which we want y-averages.
+!
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'ccmxz',idiag_ccmxz)
+      enddo
+!
+!  Check for those quantities for which we want z-averages.
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ccmxy',idiag_ccmxy)
       enddo
 !
 !  Write column where which passive scalar variable is stored.
