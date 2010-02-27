@@ -4015,7 +4015,7 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(nx) :: bymx,bzmx,bmx2
+      real, dimension(nx) :: bymx, bzmx, bmx2
       real, dimension(nx,ny) :: fsumxy
       real :: bmx
 !
@@ -4024,11 +4024,11 @@ module Magnetic
 !
       if (idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get bmx, set bymxy and bzmxy in zaver"
-          print*,"We proceed, but you'll get bmx=0"
+          print*, 'calc_mfield: WARNING'
+          print*, 'NOTE: to get bmx, set bymxy and bzmxy in zaver'
+          print*, 'We proceed, but you will get bmx=0'
         endif
-        bmx=0.
+        bmx=0.0
       else
         if (ipz==0) then
           call mpireduce_sum(fnamexy(:,:,idiag_bymxy),fsumxy,(/nx,ny/),idir=2)
@@ -4039,12 +4039,14 @@ module Magnetic
         if (ipy==0 .and. ipz==0) then
           call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=1)
         endif
-        bmx=sqrt(sum(bmx2)/nxgrid)
       endif
 !
 !  Save the name in the idiag_bmx slot and set first to false.
 !
-      call save_name(bmx,idiag_bmx)
+      if (ipy==0 .and. ipz==0) then
+        bmx=sqrt(sum(bmx2)/nxgrid)
+        call save_name(bmx,idiag_bmx)
+      endif
       first=.false.
 !
     endsubroutine calc_bmx
@@ -4061,7 +4063,7 @@ module Magnetic
       use Mpicomm
 !
       logical,save :: first=.true.
-      real, dimension(ny) :: bxmy,bzmy,bmy2
+      real, dimension(ny) :: bxmy, bzmy, bmy2
       real, dimension(nx,ny) :: fsumxy
       real :: bmy
 !
@@ -4070,11 +4072,11 @@ module Magnetic
 !
       if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
         if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get bmy, set bxmxy and bzmxy in zaver"
-          print*,"We proceed, but you'll get bmy=0"
+          print*, 'calc_mfield: WARNING'
+          print*, 'NOTE: to get bmy, set bxmxy and bzmxy in zaver'
+          print*, 'We proceed, but you will get bmy=0'
         endif
-        bmy=0.
+        bmy=0.0
       else
         if (ipz==0) then
           call mpireduce_sum(fnamexy(:,:,idiag_bxmxy),fsumxy,(/nx,ny/),idir=1)
@@ -4085,12 +4087,14 @@ module Magnetic
         if (ipx==0 .and. ipz==0) then
           call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=2)
         endif
-        bmy=sqrt(sum(bmy2)/nygrid)
       endif
 !
 !  Save the name in the idiag_bmy slot and set first to false.
 !
-      call save_name(bmy,idiag_bmy)
+      if (ipx==0 .and. ipz==0) then
+        bmy=sqrt(sum(bmy2)/nygrid)
+        call save_name(bmy,idiag_bmy)
+      endif
       first=.false.
 !
     endsubroutine calc_bmy
@@ -4112,11 +4116,11 @@ module Magnetic
 !
       if (idiag_bxmz==0.or.idiag_bymz==0) then
         if (first) then
-          print*,"calc_mfield: WARNING"
-          print*,"NOTE: to get bmz, set bxmz and bymz in xyaver"
-          print*,"We proceed, but you'll get bmz=0"
+          print*, 'calc_mfield: WARNING'
+          print*, 'NOTE: to get bmz, set bxmz and bymz in xyaver'
+          print*, 'We proceed, but you will get bmz=0'
         endif
-        bmz=0.
+        bmz=0.0
       else
         bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2 &
                     +fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
