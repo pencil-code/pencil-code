@@ -1081,6 +1081,10 @@ else if ($hostname =~ jugene*) then
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
 #----------------------------------------------------
+else if ($hostname =~ jj[0-9][0-9]*) then
+  echo "JuRoPA at Juelich"
+  set mpirun = mpiexec
+#----------------------------------------------------
 else if ($hn =~ *mckenzie*) then
   echo "McKenzie cluster at CITA"
   if ($#nodelist == 1) then
