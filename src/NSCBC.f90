@@ -511,7 +511,7 @@ include 'NSCBC.h'
               *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
 !
 !  NILS: There seems to be something wrong with the calculation of L_2, as the
-!  NILS: coded crashes with the version above. For now L_2 is therefore 
+!  NILS: coded crashes with the version above. For now L_2 is therefore
 !  NILS: set to zero. This must be fixed!!!!!!!
 !
             L_2=0
@@ -862,7 +862,7 @@ include 'NSCBC.h'
                 print*,'inlet_profile: uniform'
             non_zero_transveral_velo=.false.
             u_in(:,:,dir)=u_in(:,:,dir)+u_t
-            u_profile=1.               
+            u_profile=1.
 !
           case ('coaxial_jet')
             if (lroot .and. it==1 .and. lfirst) &
@@ -897,7 +897,7 @@ include 'NSCBC.h'
                 endif
               enddo
             enddo
-            u_profile=u_in(:,:,dir)               
+            u_profile=u_in(:,:,dir)
 !
           case ('single_jet')
             if (lroot .and. it==1 .and. lfirst) &
@@ -920,8 +920,8 @@ include 'NSCBC.h'
                     +velo(1)*(1-tanh((rad-radius_profile(1))/&
                     momentum_thickness(1)))*0.5+velo(2)
               enddo
-            enddo            
-            u_profile=u_in(:,:,dir)               
+            enddo
+            u_profile=u_in(:,:,dir)
           end select
 !
         enddo
@@ -1333,7 +1333,7 @@ include 'NSCBC.h'
       real, dimension (mx,my,mz) :: mom2
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension(ny,nz) :: dux_dx,L_1, L_2, L_3, L_4, L_5, dpp_dx
+      real, dimension(ny,nz) :: dux_dx, L_3, L_4, dpp_dx
       real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
       real, dimension(my,mz) :: cs0_ar,cs20_ar
     !  real, dimension (my,mz) :: cs2x
@@ -1354,9 +1354,9 @@ include 'NSCBC.h'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! reading data from file
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
-      if (inlet_from_file) then 
-  
+
+      if (inlet_from_file) then
+
         dir=1; dir2=2; dir3=3
         igrid=ny; jgrid=nz
         imin=m1; imax=m2
@@ -1364,12 +1364,12 @@ include 'NSCBC.h'
         non_zero_transveral_velo=.false.
 
         allocate(u_in(igrid,jgrid,3))
-          
+
         call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
               igrid,jgrid)
       endif
-       
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1450,7 +1450,7 @@ include 'NSCBC.h'
         else
          df(lll,m1:m2,n1:n2,ilnrho) = &
               -sgn*nscbc_sigma_in/(gamma0(m1:m2,n1:n2)-1.) &
-              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2)) 
+              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
         endif
 
         if (ltemperature_nolog) then
@@ -1474,18 +1474,18 @@ include 'NSCBC.h'
 
         df(lll,m1:m2,n1:n2,ilnTT) = (gamma0(m1:m2,n1:n2)-1.)*df(lll,m1:m2,n1:n2,ilnrho) &
               -sgn*nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
- 
-  
+
+
    !     do k=1,nchemspec
    !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
    !     enddo
-        if (inlet_from_file) then 
+        if (inlet_from_file) then
          f(lll,m1:m2,n1:n2,iux) = u_t + u_in(:,:,1)
          f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
          f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
          f(lll,m1:m2,n1:n2,ilnTT) = T_t
         endif
-      
+
    !      df(lll,m1:m2,n1:n2,ilnTT)=0.
     endsubroutine bc_nscbc_subin_x_new
 !***********************************************************************
