@@ -1835,7 +1835,7 @@ module Magnetic
             call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
 !
 !           call multmv_transp(p%bij,p%bb,Bk_Bki)
-            !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
+            !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
             !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%vA2*meanfield_urms21/meanfield_Bp2*meanfield_Qp_der,Bk_Bki,p%jxb)
 !           call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func,Bk_Bki,p%jxb)
             !call dot(Bk_Bki,p%bb,BiBk_Bki)
@@ -1856,7 +1856,6 @@ module Magnetic
 !
             call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
             call multmv_transp(p%bij,p%bb,Bk_Bki)
-            !call multsv_mn(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb,ladd=.true.)
             call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
 !
 !  add B.grad[(1-qs)*B_i]

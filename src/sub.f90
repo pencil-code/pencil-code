@@ -899,35 +899,24 @@ module Sub
 !
     endsubroutine multmv_mn_transp
 !***********************************************************************
-    subroutine multsv_mn(a,b,c,ladd)
+    subroutine multsv_mn(a,b,c)
 !
 !  vector multiplied with scalar, gives vector
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
 !  24-jun-08/MR: ladd added for incremental work
-
+!  28-feb-10/bing: removed ladd keyword, use multsv_mn_add instead
+!
       intent(in) :: a,b
       intent(out) :: c
 !
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: a
       integer :: i
-      logical, optional :: ladd
-      logical :: ladd1
-!
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
 !
       do i=1,3
-        if (ladd1) then
-          c(:,i)=c(:,i)+a*b(:,i)
-        else
-          c(:,i)=a*b(:,i)
-        endif
+        c(:,i)=a*b(:,i)
       enddo
 !
     endsubroutine multsv_mn
@@ -939,9 +928,9 @@ module Sub
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
 !  24-jun-08/MR: ladd added for incremental work
-
+!
       intent(in) :: a,b
-      intent(out) :: c
+      intent(inout) :: c
 !
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: a
