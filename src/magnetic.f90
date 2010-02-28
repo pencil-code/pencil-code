@@ -2078,7 +2078,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver,jxbb
-      real, dimension (nx,3) :: ujaij,ujiaj
+      real, dimension (nx,3) :: ujiaj
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi
