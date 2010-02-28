@@ -1859,7 +1859,7 @@ module Boundcond
         case ('top')               ! top boundary
           call warning('bc_set_jethat_x','Jet flowing out of the exit boundary ?')
           do i=1,nghost
-            f(l2+i,:,:,j)=0.
+            f(l2+i,:,:,jj)=0.
           enddo
 !
         case default
@@ -3511,57 +3511,63 @@ module Boundcond
 !
 !   suppress footpoint motion at low plasma beta
 !
+       zmin = minval(abs(z(n1:n2)))
+       iref = n1
+       do i=n1,n2
+         if (z(i).eq.zmin) iref=i
+       enddo
+!
 !   Calculate B^2 for plasma beta
 !
        if (quench) then
 !-----------------------------------------------------------------------
          if (nygrid/=1) then
            fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-           bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,n1,iaz)-f(l1:l2,m1-1:m2-1,n1,iaz)) &
-               -  9.0*(f(l1:l2,m1+2:m2+2,n1,iaz)-f(l1:l2,m1-2:m2-2,n1,iaz)) &
-               +      (f(l1:l2,m1+3:m2+3,n1,iaz)-f(l1:l2,m1-3:m2-3,n1,iaz)))
+           bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,iref,iaz)-f(l1:l2,m1-1:m2-1,iref,iaz)) &
+               -  9.0*(f(l1:l2,m1+2:m2+2,iref,iaz)-f(l1:l2,m1-2:m2-2,iref,iaz)) &
+               +      (f(l1:l2,m1+3:m2+3,iref,iaz)-f(l1:l2,m1-3:m2-3,iref,iaz)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
          endif
          if (nzgrid/=1) then
-           fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
-           bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iay)-f(l1:l2,m1:m2,n1-1,iay)) &
-               -  9.0*(f(l1:l2,m1:m2,n1+2,iay)-f(l1:l2,m1:m2,n1-2,iay)) &
-               +      (f(l1:l2,m1:m2,n1+3,iay)-f(l1:l2,m1:m2,n1-2,iay)))
+           fac=(1./60)*spread(spread(dz_1(iref),1,nx),2,ny)
+           bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,iref+1,iay)-f(l1:l2,m1:m2,iref-1,iay)) &
+               -  9.0*(f(l1:l2,m1:m2,iref+2,iay)-f(l1:l2,m1:m2,iref-2,iay)) &
+               +      (f(l1:l2,m1:m2,iref+3,iay)-f(l1:l2,m1:m2,iref-2,iay)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
          endif
 !-----------------------------------------------------------------------
          if (nzgrid/=1) then
-           fac=(1./60)*spread(spread(dz_1(n1),1,nx),2,ny)
-           bby= fac*(+ 45.0*(f(l1:l2,m1:m2,n1+1,iax)-f(l1:l2,m1:m2,n1-1,iax)) &
-               -  9.0*(f(l1:l2,m1:m2,n1+2,iax)-f(l1:l2,m1:m2,n1-2,iax)) &
-               +      (f(l1:l2,m1:m2,n1+3,iax)-f(l1:l2,m1:m2,n1-3,iax)))
+           fac=(1./60)*spread(spread(dz_1(iref),1,nx),2,ny)
+           bby= fac*(+ 45.0*(f(l1:l2,m1:m2,iref+1,iax)-f(l1:l2,m1:m2,iref-1,iax)) &
+               -  9.0*(f(l1:l2,m1:m2,iref+2,iax)-f(l1:l2,m1:m2,iref-2,iax)) &
+               +      (f(l1:l2,m1:m2,iref+3,iax)-f(l1:l2,m1:m2,iref-3,iax)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
          endif
          if (nxgrid/=1) then
            fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-           bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,n1,iaz)-f(l1-1:l2-1,m1:m2,n1,iaz)) &
-               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iaz)-f(l1-2:l2-2,m1:m2,n1,iaz)) &
-               +      (f(l1+3:l2+3,m1:m2,n1,iaz)-f(l1-3:l2-3,m1:m2,n1,iaz)))
+           bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,iref,iaz)-f(l1-1:l2-1,m1:m2,iref,iaz)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,iref,iaz)-f(l1-2:l2-2,m1:m2,iref,iaz)) &
+               +      (f(l1+3:l2+3,m1:m2,iref,iaz)-f(l1-3:l2-3,m1:m2,iref,iaz)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
          endif
 !-----------------------------------------------------------------------
          if (nxgrid/=1) then
            fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-           bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,n1,iay)-f(l1-1:l2-1,m1:m2,n1,iay)) &
-               -  9.0*(f(l1+2:l2+2,m1:m2,n1,iay)-f(l1-2:l2-2,m1:m2,n1,iay)) &
-               +      (f(l1+3:l2+3,m1:m2,n1,iay)-f(l1-3:l2-3,m1:m2,n1,iay)))
+           bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,iref,iay)-f(l1-1:l2-1,m1:m2,iref,iay)) &
+               -  9.0*(f(l1+2:l2+2,m1:m2,iref,iay)-f(l1-2:l2-2,m1:m2,iref,iay)) &
+               +      (f(l1+3:l2+3,m1:m2,iref,iay)-f(l1-3:l2-3,m1:m2,iref,iay)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
          endif
          if (nygrid/=1) then
            fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-           bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,n1,iax)-f(l1:l2,m1-1:m2-1,n1,iax)) &
-               -  9.0*(f(l1:l2,m1+2:m2+2,n1,iax)-f(l1:l2,m1-2:m2-2,n1,iax)) &
-               +      (f(l1:l2,m1+3:m2+3,n1,iax)-f(l1:l2,m1-3:m2-3,n1,iax)))
+           bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,iref,iax)-f(l1:l2,m1-1:m2-1,iref,iax)) &
+               -  9.0*(f(l1:l2,m1+2:m2+2,iref,iax)-f(l1:l2,m1-2:m2-2,iref,iax)) &
+               +      (f(l1:l2,m1+3:m2+3,iref,iax)-f(l1:l2,m1-3:m2-3,iref,iax)))
          else
            if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
          endif
@@ -3571,15 +3577,15 @@ module Boundcond
          bb2 = bb2/(2.*mu0)
 !
          if (ltemperature) then
-           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+ &
-               f(l1:l2,m1:m2,n1,ilnTT))
+           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+ &
+               f(l1:l2,m1:m2,iref,ilnTT))
          else if (lentropy) then
            if (pretend_lnTT) then
-             pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,n1,ilnrho)+ &
-                 f(l1:l2,m1:m2,n1,iss))
+             pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+ &
+                 f(l1:l2,m1:m2,iref,iss))
            else
-             pp=gamma*(f(l1:l2,m1:m2,n1,iss)+ &
-                 f(l1:l2,m1:m2,n1,ilnrho))-gamma_m1*lnrho0
+             pp=gamma*(f(l1:l2,m1:m2,iref,iss)+ &
+                 f(l1:l2,m1:m2,iref,ilnrho))-gamma_m1*lnrho0
              pp=exp(pp) * cs20*gamma_inv
            endif
          else
@@ -3588,20 +3594,14 @@ module Boundcond
 !
 !   limit plasma beta
 !
-         betaq = pp / max(tini,bb2)
+         betaq = pp / max(tini,bb2)*1e-3
 !
-         quen=(1.+betaq**2)/(1e3+betaq**2)
+         quen=(1.+betaq**2)/(10.+betaq**2)
        else
          quen(:,:)=1.
        endif
 !
 !   Fill z=0 layer with velocity field
-!
-       zmin = minval(abs(z(n1:n2)))
-       iref = n1
-       do i=n1,n2
-         if (z(i).eq.zmin) iref=i
-       enddo
 !
        f(l1:l2,m1:m2,iref,iux)=uxd*quen
        f(l1:l2,m1:m2,iref,iuy)=uyd*quen
@@ -3696,7 +3696,7 @@ module Boundcond
             read (10,rec=i+1,iostat=iostat) tr
             iostat=-1
           else
-            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) iostat=-1 
+            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) iostat=-1
             ! correct time step is reached
           endif
         enddo
