@@ -3277,7 +3277,6 @@ module Magnetic
       use Deriv, only: der_z,der2_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer, parameter :: nreduce=3
       integer :: nxy=nxgrid*nygrid
       integer :: n,j
       real :: fact
