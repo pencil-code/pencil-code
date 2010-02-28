@@ -1193,6 +1193,10 @@ module Magnetic
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_uxb)=.true.
 !
+!  need uga always for advective gauge.
+!
+      if (ladvective_gauge) lpenc_requested(i_uga)=.true.
+!
       if (dvid/=0.0) lpenc_video(i_b2)=.true.
       if (dvid/=0.0) lpenc_video(i_jb)=.true.
 !
@@ -2400,12 +2404,23 @@ module Magnetic
       if (.not.lupw_aa) then
         if (linduction) then
           if (ladvective_gauge) then
-            ujaij=0.; ujiaj=0.
-            do j=1,3; do k=1,3
-              ujaij(:,j)=ujaij(:,j)+p%uu(:,k)*p%aij(:,j,k)
-              ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
-            enddo; enddo
-            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ujaij-ujiaj+fres
+!
+!  Take care of possibility of imposed field.
+!
+            if (any(B_ext/=0.)) then
+              ujiaj(:,1)=p%uu(:,2)*B_ext(3)-p%uu(:,3)*B_ext(2)
+              ujiaj(:,2)=p%uu(:,3)*B_ext(1)-p%uu(:,1)*B_ext(3)
+              ujiaj(:,3)=p%uu(:,1)*B_ext(2)-p%uu(:,2)*B_ext(1)
+            else
+              ujiaj=0.
+            endif
+!
+            do j=1,3
+              do k=1,3
+                ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+              enddo
+            enddo
+            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
 !
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
@@ -2426,24 +2441,48 @@ module Magnetic
 !  we only do upwinding for the advection-type terms on the
 !  left hand side.
 !
-      if (lupw_aa.and.headtt) then
-        print *,'calc_pencils_magnetic: upwinding advection term. '//&
-                'Not well tested; use at own risk!'; endif
+        if (lupw_aa.and.headtt) then
+          print *,'calc_pencils_magnetic: upwinding advection term. '//&
+                  'Not well tested; use at own risk!'
+        endif
+!
 !  Add Lorentz force that results from the external field.
 !  Note: For now, this only works for uniform external fields.
-        uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
-        uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
-        uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
+!
+        if (any(B_ext/=0.)) then
+          uxb_upw(:,1) = p%uu(:,2)*B_ext(3) - p%uu(:,3)*B_ext(2)
+          uxb_upw(:,2) = p%uu(:,3)*B_ext(1) - p%uu(:,1)*B_ext(3)
+          uxb_upw(:,3) = p%uu(:,1)*B_ext(2) - p%uu(:,2)*B_ext(1)
+        else
+          uxb_upw=0.
+        endif
+!
 !  Add u_k A_k,j and `upwinded' advection term.
 !  Note: this works currently only in cartesian geometry!
-        do j=1,3; do k=1,3
-          if (k/=j) then
-            uxb_upw(:,j) = uxb_upw(:,j) + p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))
-            call der6(f,iaa+j-1,penc,k,upwind=.true.)
-            uxb_upw(:,j) = uxb_upw(:,j) + abs(p%uu(:,k))*penc
-          endif
-        enddo; enddo
+!
+        if (ladvective_gauge) then
+          ujiaj=0.
+          do j=1,3
+            do k=1,3
+              ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+            enddo
+            uxb_upw(:,j)=uxb_upw(:,j)-p%uga(:,j)-ujiaj(:,j)
+          enddo
+!
+!  ladvective_gauge=F, so just the normal uxb term plus resistive term.
+!
+        else
+          do j=1,3; do k=1,3
+            if (k/=j) then
+              uxb_upw(:,j)=uxb_upw(:,j)+p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))
+              call der6(f,iaa+j-1,penc,k,upwind=.true.)
+              uxb_upw(:,j) = uxb_upw(:,j) + abs(p%uu(:,k))*penc
+            endif
+          enddo; enddo
+        endif
+!
 !  Full right hand side of the induction equation.
+!
         if (linduction) &
              df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
@@ -4028,7 +4067,7 @@ module Magnetic
           print*, 'NOTE: to get bmx, set bymxy and bzmxy in zaver'
           print*, 'We proceed, but you will get bmx=0'
         endif
-        bmx=0.0
+        bmx2=0.0
       else
         if (ipz==0) then
           call mpireduce_sum(fnamexy(:,:,idiag_bymxy),fsumxy,(/nx,ny/),idir=2)
@@ -4042,8 +4081,9 @@ module Magnetic
       endif
 !
 !  Save the name in the idiag_bmx slot and set first to false.
+!  Compute final result only on the root processor.
 !
-      if (ipy==0 .and. ipz==0) then
+      if (lroot) then
         bmx=sqrt(sum(bmx2)/nxgrid)
         call save_name(bmx,idiag_bmx)
       endif
@@ -4076,7 +4116,7 @@ module Magnetic
           print*, 'NOTE: to get bmy, set bxmxy and bzmxy in zaver'
           print*, 'We proceed, but you will get bmy=0'
         endif
-        bmy=0.0
+        bmy2=0.0
       else
         if (ipz==0) then
           call mpireduce_sum(fnamexy(:,:,idiag_bxmxy),fsumxy,(/nx,ny/),idir=1)
@@ -4090,8 +4130,9 @@ module Magnetic
       endif
 !
 !  Save the name in the idiag_bmy slot and set first to false.
+!  Compute final result only on the root processor.
 !
-      if (ipx==0 .and. ipz==0) then
+      if (lroot) then
         bmy=sqrt(sum(bmy2)/nygrid)
         call save_name(bmy,idiag_bmy)
       endif
@@ -4139,6 +4180,7 @@ module Magnetic
 !  been calculated, so they are present on the z-root processors.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
+!  28-feb-10/axel: final jmx can only be computed on root processor
 !
       use Diagnostics
       use Mpicomm
@@ -4157,7 +4199,7 @@ module Magnetic
           print*,"NOTE: to get jmx, set jymxy and jzmxy in zaver"
           print*,"We proceed, jut you'll get jmx=0"
         endif
-        jmx=0.
+        jmx2=0.
       else
         if (ipz==0) then
           call mpireduce_sum(fnamexy(:,:,idiag_jymxy),fsumxy,(/nx,ny/),idir=2)
@@ -4165,15 +4207,18 @@ module Magnetic
           call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=2)
           jzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (ipx==0 .and. ipz==0) then
-          call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=2)
+        if (ipy==0 .and. ipz==0) then
+          call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=1)
         endif
-        jmx=sqrt(sum(jmx2)/nxgrid)
       endif
 !
 !  Save the name in the idiag_jmx slot and set first to false.
+!  Compute final result only on the root processor.
 !
-      call save_name(jmx,idiag_jmx)
+      if (lroot) then
+        jmx=sqrt(sum(jmx2)/nxgrid)
+        call save_name(jmx,idiag_jmx)
+      endif
       first=.false.
 !
     endsubroutine calc_jmx
@@ -4184,6 +4229,7 @@ module Magnetic
 !  been calculated, so they are present on the z-root processors.
 !
 !   6-apr-08/axel: moved from calc_mfield to here
+!  28-feb-10/axel: final jmy can only be computed on root processor
 !
       use Diagnostics
       use Mpicomm
@@ -4202,7 +4248,7 @@ module Magnetic
           print*,"NOTE: to get jmy, set jxmxy and jzmxy in zaver"
           print*,"We proceed, but you'll get jmy=0"
         endif
-        jmy=0.
+        jmy2=0.
       else
         if (ipz==0) then
           call mpireduce_sum(fnamexy(:,:,idiag_jxmxy),fsumxy,(/nx,ny/),idir=1)
@@ -4213,12 +4259,15 @@ module Magnetic
         if (ipx==0 .and. ipz==0) then
           call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=2)
         endif
-        jmy=sqrt(sum(jmy2)/nygrid)
       endif
 !
 !  Save the name in the idiag_jmy slot and set first to false.
+!  Compute final result only on the root processor.
 !
-      call save_name(jmy,idiag_jmy)
+      if (lroot) then
+        jmy=sqrt(sum(jmy2)/nygrid)
+        call save_name(jmy,idiag_jmy)
+      endif
       first=.false.
 !
     endsubroutine calc_jmy
@@ -4253,7 +4302,7 @@ module Magnetic
 !
 !  Save the name in the idiag_jmz slot and set first to false.
 !
-      call save_name(jmz,idiag_jmz)
+      if (lroot) call save_name(jmz,idiag_jmz)
       first=.false.
 !
     endsubroutine calc_jmz
@@ -4289,7 +4338,7 @@ module Magnetic
 !
 !  Save the name in the idiag_embmz slot and set first to false.
 !
-      call save_name(embmz,idiag_embmz)
+      if (lroot) call save_name(embmz,idiag_embmz)
       first=.false.
 !
     endsubroutine calc_embmz
@@ -4311,7 +4360,8 @@ module Magnetic
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
 !
-      if (idiag_Exmz==0.or.idiag_Eymz==0) then
+      if (idiag_Exmz==0.or.idiag_Eymz==0.or. &
+          idiag_axmz==0.or.idiag_aymz==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
           print*,"NOTE: to get emxamz3, set axmz, aymz, Exmz, and Eymz in xyaver"
@@ -4325,7 +4375,7 @@ module Magnetic
 !
 !  Save the name in the idiag_emxamz3 slot and set first to false.
 !
-      call save_name(emxamz3,idiag_emxamz3)
+      if (lroot) call save_name(emxamz3,idiag_emxamz3)
       first=.false.
 !
     endsubroutine calc_emxamz3
@@ -4361,7 +4411,7 @@ module Magnetic
 !
 !  Save the name in the idiag_ambmz slot and set first to false.
 !
-      if (idiag_ambmz/=0) call save_name(ambmz,idiag_ambmz)
+      if (lroot) call save_name(ambmz,idiag_ambmz)
       first=.false.
 !
     endsubroutine calc_ambmz
@@ -4418,7 +4468,7 @@ module Magnetic
 !  save the name in the idiag_ambmz slot
 !  and set first to false
 !
-      if (idiag_ambmzh/=0) call save_name_halfz(ambmzh,idiag_ambmzh)
+      if (lroot) call save_name_halfz(ambmzh,idiag_ambmzh)
       fname(idiag_ambmzn)=fname_half(idiag_ambmzh,1)
       fname(idiag_ambmzs)=fname_half(idiag_ambmzh,2)
       itype_name(idiag_ambmzn)=ilabel_save
@@ -4458,8 +4508,10 @@ module Magnetic
 !
 !  Save the name in the idiag_jmbmz slot and set first to false.
 !
-      if (idiag_jmbmz/=0) call save_name(jmbmz,idiag_jmbmz)
-      if (idiag_kmz/=0) call save_name(jmbmz/bmz**2,idiag_kmz)
+      if (lroot) then
+        if (idiag_jmbmz/=0) call save_name(jmbmz,idiag_jmbmz)
+        if (idiag_kmz/=0) call save_name(jmbmz/bmz**2,idiag_kmz)
+      endif
       first=.false.
 !
     endsubroutine calc_jmbmz
