@@ -161,7 +161,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real :: nscbc_sigma_out
-!     
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
@@ -175,7 +175,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real :: nscbc_sigma_out
-!     
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
@@ -189,7 +189,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real :: nscbc_sigma_out
-!     
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
@@ -257,28 +257,23 @@ module Chemistry
       !
     endsubroutine get_cs2_slice
 !***********************************************************************
-!***********************************************************************
    subroutine get_cs2_full(cs2_full)
 !
       real, dimension (mx,my,mz) :: cs2_full
 !
       intent(out) :: cs2_full
-
-      integer :: j,k
-
+!
       call keep_compiler_quiet(cs2_full)
 !
     endsubroutine get_cs2_full
-!***********************************************************************
 !***********************************************************************
     subroutine get_gamma_full(gamma_full)
 !
       real, dimension (mx,my,mz) :: gamma_full
 !
       intent(out) :: gamma_full
-
-      integer :: j,k
-       call keep_compiler_quiet(gamma_full)
+!
+      call keep_compiler_quiet(gamma_full)
 !
     endsubroutine get_gamma_full
 !***********************************************************************
