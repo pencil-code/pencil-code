@@ -255,7 +255,7 @@ module Hydro
       real, dimension(nx) :: rone, argx
       real :: fac, fac2, argy, argz
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
-      integer :: modeN,l
+      integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       integer :: ell
       real :: Balpha
@@ -632,7 +632,7 @@ ky_uukin=2.*pi
 !
       elseif (kinflow=='rolls') then
         if (headtt) print*,'Convection rolls; kx_kinflow,kz_uukin=',kx_kinflow,kz_kinflow
-        p%uu(:,1)=ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l:l2))*sin(kz_kinflow*z(n))
+        p%uu(:,1)=ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l1:l2))*sin(kz_kinflow*z(n))
         p%uu(:,2)=+0.
         p%uu(:,3)=ampl_kinflow*kx_kinflow*sin(kx_kinflow*x(l1:l2))*cos(kz_kinflow*z(n))
 ! divu
