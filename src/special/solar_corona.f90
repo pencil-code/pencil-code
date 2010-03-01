@@ -296,17 +296,17 @@ module Special
       call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
       hc =  hc - chi_hyper2*tmp
       call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc =  hc - chi_hyper2*tmp          
-!      
+      hc =  hc - chi_hyper2*tmp
+!
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3 &
           + chi_hyper3 &
-          + chi_hyper2 
+          + chi_hyper2
 !
-      if (Kgpara/=0) call calc_heatcond_tensor(df,p)
+      if (Kgpara/=0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tdown/=0) call calc_heat_cool_newton(df,p)
@@ -331,80 +331,93 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nxgrid,nygrid) :: kx,ky,k2
 !
-      real, dimension(nxgrid,nygrid) :: Bz0,Bz0_i,Bz0_r
+      real, dimension(nxgrid,nygrid) :: Bz0_i,Bz0_r
       real, dimension(nxgrid,nygrid) :: Ax_i,Ay_i
       real, dimension(nxgrid,nygrid),save :: Ax_r,Ay_r
       real, dimension(nxgrid) :: kxp
       real, dimension(nygrid) :: kyp
 !
+      logical :: exist
       real :: mu0_SI,u_b
-      integer :: i,idx2,idy2,iostat,lend
+      integer :: i,idx2,idy2,lend
 !
-      ! Auxiliary quantities:
-      !
-      ! idx2 and idy2 are essentially =2, but this makes compilers
-      ! complain if nygrid=1 (in which case this is highly unlikely to be
-      ! correct anyway), so we try to do this better:
-      if (ipz .eq. 0 .and. bmdi/=0) then
-      if (it  .le. 1) then
-        idx2 = min(2,nxgrid)
-        idy2 = min(2,nygrid)
-        !
-        ! Magnetic field strength unit [B] = u_b
-        !
-        mu0_SI = 4.*pi*1.e-7
-        u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-        !
-        kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-        kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-        !
-        kx =spread(kxp,2,nygrid)
-        ky =spread(kyp,1,nxgrid)
-        !
-        k2 = kx*kx + ky*ky
-        !
-        inquire(IOLENGTH=lend) u_b
-        open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
-            recl=lend*nxgrid*nygrid,access='direct')
-        read(11,rec=1,iostat=iostat) Bz0
-        close (11)
-        !
-        Bz0_i = 0.
-        Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
-        !
-        ! Fourier Transform of Bz0:
-        !
-        call fourier_transform_other(Bz0_r,Bz0_i)
-        !
-        where (k2 .ne. 0 )
-          Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(n1) )
-          Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(n1) )
+! Auxiliary quantities:
+!
+! idx2 and idy2 are essentially =2, but this makes compilers
+! complain if nygrid=1 (in which case this is highly unlikely to be
+! correct anyway), so we try to do this better:
+      if (ipz .eq. 0 .and. bmdi/=0 ) then
+        if (lfirst .and. headt) then
+          idx2 = min(2,nxgrid)
+          idy2 = min(2,nygrid)
+!
+! Magnetic field strength unit [B] = u_b
+!
+          mu0_SI = 4.*pi*1.e-7
+          u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+!
+          kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
+          kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
+!
+          kx =spread(kxp,2,nygrid)
+          ky =spread(kyp,1,nxgrid)
+!
+          k2 = kx*kx + ky*ky
+!
+          inquire(file='driver/mag_field.txt',exist=exist)
+          if (exist) then
+            open (11,file='driver/mag_field.txt')
+            read (11,*) Bz0_r
+            close (11)
+          else
+            inquire(file='driver/mag_field.dat',exist=exist)
+            if (exist) then
+              inquire(IOLENGTH=lend) u_b
+              open (11,file='driver/mag_field.dat',form='unformatted')
+              read (11) Bz0_r
+              close (11)
+            else
+              call fatal_error('mdi_init', &
+                  'No file: mag_field.dat,mag_field.txt')
+            endif
+          endif
+!
+          Bz0_i = 0.
+          Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
+!
+! Fourier Transform of Bz0:
+!
+          call fourier_transform_other(Bz0_r,Bz0_i)
+!
+          where (k2 .ne. 0 )
+            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(n1) )
+            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(n1) )
+            !
+            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(n1) )
+            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(n1) )
+          elsewhere
+            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+            !
+            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+          endwhere
           !
-          Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(n1) )
-          Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(n1) )
-        elsewhere
-          Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
-          Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+          call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
           !
-          Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
-          Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
-        endwhere
-        !
-        call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
-        !
-        call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
-        !
-      endif
+          call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
+          !
+        endif
 !
 !  Do somehow Newton cooling
 !
-      f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
-          dt*bmdi * Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+        f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
+            dt*bmdi * Ax_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 !
-      f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
-          dt*bmdi * Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
+            dt*bmdi * Ay_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
 !
-      if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')
+        if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')
       endif
 !
     endsubroutine special_before_boundary
@@ -509,7 +522,7 @@ module Special
 !
     endsubroutine calc_heat_cool_newton
 !***********************************************************************
-    subroutine calc_heatcond_tensor(df,p)
+    subroutine calc_heatcond_tensor(df,p,Kpara,expo)
 !
 !    anisotropic heat conduction with T^5/2
 !    Div K T Grad ln T
@@ -525,7 +538,7 @@ module Special
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
       real, dimension (nx) :: chi_1,chi_2,rhs
-      real :: Ksatb
+      real :: Ksatb,Kpara,expo
       integer :: i,j,k
       type (pencil_case) :: p
 !
@@ -560,7 +573,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kgpara * exp(2.5*p%lnTT-p%lnrho)
+      chi_1 =  Kpara * exp(expo*p%lnTT-p%lnrho)
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -569,12 +582,11 @@ module Special
         enddo
       enddo
 !
-      gKp = 3.5 * p%glnTT
-!
-      call dot2(p%glnTT,glnTT2)
-!
+      gKp = expo * p%glnTT
+! 
       if (Ksat/=0.) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
+        call dot2(p%glnTT,glnTT2)
 !
         where (glnTT2 .le. tini)
           chi_2 =  0.
@@ -659,7 +671,7 @@ module Special
 !
       if (Kgpara2/=0 .and. K_iso/=0) call fatal_error('calc_heatcond_grad', &
           'Use either K_iso or Kgpara2, but K_iso is recommended')
-      if (K_iso .lt. Kgpara2) K_iso = Kgpara2 
+      if (K_iso .lt. Kgpara2) K_iso = Kgpara2
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
 !
