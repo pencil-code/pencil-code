@@ -107,7 +107,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (Kgpara2/=0.or.K_iso/=0) then
+      if (K_iso/=0) then
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -165,7 +165,19 @@ module Special
         read(unit,NML=special_run_pars,ERR=99)
       endif
 !
+      if (Kgpara2/=0) then
+        if (K_iso/=0) then
+          call fatal_error('calc_heatcond_grad', &
+              'Use only K_iso instead of Kgpara2')
+        else
+          call warning('calc_heatcond_grad', &
+              'Please use K_iso instead of Kgpara2')
+          K_iso = Kgpara2
+        endif
+      endif
+!
  99    return
+!
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
@@ -310,7 +322,7 @@ module Special
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tdown/=0) call calc_heat_cool_newton(df,p)
-      if (Kgpara2/=0.or.K_iso/=0) call calc_heatcond_grad(df,p)
+      if (K_iso/=0) call calc_heatcond_grad(df,p)
       if (heatamp/=0) call calc_artif_heating(df,p)
 !
     endsubroutine special_calc_entropy
@@ -669,14 +681,10 @@ module Special
 !      if (itsub .eq. 3 .and. ip .eq. 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
-      if (Kgpara2/=0 .and. K_iso/=0) call fatal_error('calc_heatcond_grad', &
-          'Use either K_iso or Kgpara2, but K_iso is recommended')
-      if (K_iso .lt. Kgpara2) K_iso = Kgpara2
-!
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
 !
       if (lfirst.and.ldt) then
-        chix=Kgpara2*exp(p%lnTT)*sqrt(tmpi)
+        chix=K_iso*exp(p%lnTT)*sqrt(tmpi)
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
