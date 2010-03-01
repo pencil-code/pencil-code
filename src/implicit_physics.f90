@@ -973,12 +973,12 @@ module ImplicitPhysics
 !***********************************************************************
     subroutine ADI_Kprof_mixed(finit,f)
 !
-!  28-fev-10/dintrans: coded
-!  simpler version as one part of the radiative diffusion term is still
-!  computed during the explicit advance. The implicit part remains 
+!  28-fev-2010/dintrans: coded
+!  simpler version where one part of the radiative diffusion term is
+!  computed during the explicit step. The implicit part remains 
 !  of Yakonov's form:
 !
-!    (1-dt/2*J_x)*lambda = f_x(T^n) + f_y(T^n) + source
+!    (1-dt/2*J_x)*lambda = f_x(T^n) + f_z(T^n) + source
 !    (1-dt/2*J_y)*beta   = lambda
 !    T^(n+1) = T^n + dt*beta
 !
@@ -986,121 +986,19 @@ module ImplicitPhysics
 !
       use EquationOfState, only: gamma,get_cp1
       use General, only: tridag
+      use Boundcond, only: update_ghosts
 !
       implicit none
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: finit, f
-      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, rho
-      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real    :: aalpha, bbeta
-      real    :: dx_2, dz_2, cp1
-!
-      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
-! BC important not for the x-direction (always periodic) but for 
-! the z-direction as we must impose the 'c3' BC at the 2nd-order
-! before going in the implicit stuff
-      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
-      TT=finit(:,4,:,ilnTT)
-      if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
-      else
-        rho=1.
-      endif
-!
-!  rows dealt implicitly
-!
-      do j=n1,n2
-        wx=gamma*cp1*hcond(l1:l2,j)/rho(l1:l2,j)
-        ax=-dt/2.*wx*dx_2    ! ax=-dt/2*J_x for i=i-1 (lower diagonal)
-! bx=1-dt/2*J_x for i=i (main diagonal)
-        bx=1.-dt/2.*wx*dx_2*(-2.+dhcond(l1:l2,j)/hcond(l1:l2,j)* &
-           (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
-        cx=-dt/2.*wx*dx_2    ! cx=-dt/2*J_x for i=i+1 (upper diagonal)
-! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
-! do first f_y(T^n)
-        rhsx=wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
-! then add f_x(T^n)
-        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-           +source(l1:l2,j)
-!
-! x boundary conditions: periodic
-        aalpha=cx(nx) ; bbeta=ax(1)
-        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
-        finter(l1:l2,j)=workx(1:nx)
-      enddo
-!
-!  columns dealt implicitly
-!
-      do i=l1,l2
-        wz=dt*gamma*cp1*dz_2*hcond(i,n1:n2)/rho(i,n1:n2)
-        az=-wz/2.
-        bz=1.-wz/2.*(-2.+dhcond(i,n1:n2)/hcond(i,n1:n2)*    &
-          (TT(i,n1+1:n2+1)-2.*TT(i,n1:n2)+TT(i,n1-1:n2-1)))
-        cz=-wz/2.
-!
-        rhsz=finter(i,n1:n2)
-!
-! z boundary conditions
-! Constant temperature at the top: T^(n+1)-T^n=0
-       bz(nz)=1. ; az(nz)=0.
-       rhsz(nz)=0.
-! bottom
-       select case (bcz1(ilnTT))
-! Constant temperature at the bottom: T^(n+1)-T^n=0
-         case ('cT')
-          bz(1)=1. ; cz(1)=0.
-          rhsz(1)=0.
-! Constant flux at the bottom
-         case ('c3')
-          bz(1)=1. ; cz(1)=-1.
-          rhsz(1)=0.
-         case default 
-          call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
-       endselect
-!
-       call tridag(az,bz,cz,rhsz,workz)
-       val(i,n1:n2)=workz(1:nz)
-      enddo
-!
-      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
-!
-! update hcond used for the 'c3' condition in boundcond.f90
-!
-      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-!
-    endsubroutine ADI_Kprof_mixed
-!***********************************************************************
-    subroutine ADI_Kprof_MPI_mixed(finit,f)
-!
-!  01-mar-10/dintrans: coded
-!  parallel version of the ADI_Kprof_mixed subroutine
-!
-      use EquationOfState, only: gamma, get_cp1
-      use General, only: tridag
-      use Mpicomm, only: transp_mxmz, transp_mzmx, &
-                         initiate_isendrcv_bdry, finalize_isendrcv_bdry
-!
-      implicit none
-!
-      integer :: i,j
-      integer, parameter :: mxt=nx/nprocz+2*nghost
-      integer, parameter :: mzt=nzgrid+2*nghost
-      integer, parameter :: l1t=nghost+1, n1t=nghost+1
-      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
-      real, dimension(mx,my,mz,mfarray) :: finit, f
-      real, dimension(mzt,my,mxt,mfarray) :: ftmpt
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
                                 rho, chi, dLnhcond
-      real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
-      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
+      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
+!
+      call update_ghosts(finit)
 !
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
       call get_cp1(cp1)
@@ -1128,13 +1026,123 @@ module ImplicitPhysics
         bx=1.-dt/2.*wx*dx_2*(-2.+dLnhcond(l1:l2,j)* &
            (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
         cx=-dt/2.*wx*dx_2
-! do first lambda_z(T^n)
+! rhsx=f_x(T^n) + f_z(T^n) + source
+! do first f_z(T^n)
         rhsx=wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
-! then add lambda_x(T^n)
+! then add f_x(T^n) + source
         rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
              +source(l1:l2,j)
 !
-! periodic boundary conditions in x
+! periodic boundary conditions in x --> cyclic matrix
+!
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
+        finter(l1:l2,j)=workx
+      enddo
+!
+! columns in the z-direction dealt implicitly
+!
+      do i=l1,l2
+        wz=dt*gamma*dz_2*chi(i,n1:n2)
+        az=-wz/2.
+        bz=1.-wz/2.*(-2.+dLnhcond(i,n1:n2)*    &
+          (TT(i,n1+1:n2+1)-2.*TT(i,n1:n2)+TT(i,n1-1:n2-1)))
+        cz=-wz/2.
+        rhsz=finter(i,n1:n2)
+!
+! z boundary conditions
+! Constant temperature at the top: T^(n+1)-T^n=0
+       bz(nz)=1. ; az(nz)=0.
+       rhsz(nz)=0.
+! bottom
+       select case (bcz1(ilnTT))
+! Constant temperature at the bottom: T^(n+1)-T^n=0
+         case ('cT')
+          bz(1)=1. ; cz(1)=0.
+          rhsz(1)=0.
+! Constant flux at the bottom
+         case ('c3')
+          bz(1)=1. ; cz(1)=-1.
+          rhsz(1)=0.
+         case default 
+          call fatal_error('ADI_Kprof_mixed','bcz on TT must be cT or c3')
+       endselect
+!
+       call tridag(az,bz,cz,rhsz,workz)
+       val(i,n1:n2)=workz(1:nz)
+      enddo
+!
+      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+!
+! update hcond used for the 'c3' condition in boundcond.f90
+!
+      call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+!
+    endsubroutine ADI_Kprof_mixed
+!***********************************************************************
+    subroutine ADI_Kprof_MPI_mixed(finit,f)
+!
+!  01-mar-2010/dintrans: coded
+!  parallel version of the ADI_Kprof_mixed subroutine
+!
+      use EquationOfState, only: gamma, get_cp1
+      use General, only: tridag
+      use Mpicomm, only: transp_mxmz, transp_mzmx, &
+                         initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use Boundcond, only: update_ghosts
+!
+      implicit none
+!
+      integer :: i,j
+      integer, parameter :: mxt=nx/nprocz+2*nghost
+      integer, parameter :: mzt=nzgrid+2*nghost
+      integer, parameter :: l1t=nghost+1, n1t=nghost+1
+      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
+      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mzt,my,mxt,mfarray) :: ftmpt
+      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
+                                rho, chi, dLnhcond
+      real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
+      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
+      real :: dx_2, dz_2, cp1, aalpha, bbeta
+!
+      call update_ghosts(finit)
+!
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
+! BC important not for the x-direction (always periodic) but for 
+! the z-direction as we must impose the 'c3' BC at the 2nd-order
+! before going in the implicit stuff
+      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
+      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
+      TT=finit(:,4,:,ilnTT)
+      if (ldensity) then
+        rho=exp(f(:,4,:,ilnrho))
+      else
+        rho=1.
+      endif
+      chi=cp1*hcond/rho
+      dLnhcond=dhcond/hcond
+!
+! rows in the x-direction dealt implicitly
+!
+      do j=n1,n2
+        wx=gamma*chi(l1:l2,j)
+        ax=-dt/2.*wx*dx_2
+        bx=1.-dt/2.*wx*dx_2*(-2.+dLnhcond(l1:l2,j)* &
+           (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
+        cx=-dt/2.*wx*dx_2
+! rhsx=f_x(T^n) + f_z(T^n) + source
+! do first f_z(T^n)
+        rhsx=wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
+! then add f_x(T^n) + source
+        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+             +source(l1:l2,j)
+!
+! periodic boundary conditions in x --> cyclic matrix
 !
         aalpha=cx(nx) ; bbeta=ax(1)
         call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
@@ -1174,7 +1182,7 @@ module ImplicitPhysics
             bz(1)=1. ; cz(1)=-1.
             rhsz(1)=0.
           case default 
-            call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
+            call fatal_error('ADI_Kprof_MPI_mixed','bcz on TT must be cT or c3')
         endselect
 !
         call tridag(az,bz,cz,rhsz,workz)
