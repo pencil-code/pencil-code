@@ -1096,8 +1096,6 @@ module ImplicitPhysics
       integer :: i,j
       integer, parameter :: mxt=nx/nprocz+2*nghost
       integer, parameter :: mzt=nzgrid+2*nghost
-      integer, parameter :: l1t=nghost+1, n1t=nghost+1
-      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
       real, dimension(mx,my,mz,mfarray) :: finit, f
       real, dimension(mzt,my,mxt,mfarray) :: ftmpt
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
@@ -1106,6 +1104,13 @@ module ImplicitPhysics
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
+!
+!      print*, 'l1, l2=', l1, l2
+!      print*, 'n1, n2=', n1, n2
+!      print*, 'mx, mz=', mx, mz
+!      print*, 'nx, nz=', nx, nz
+!      print*, 'mxt, mzt=', mxt, mzt
+!      stop
 !
       call update_ghosts(finit)
 !
@@ -1150,6 +1155,7 @@ module ImplicitPhysics
       enddo
 !
 ! do the transpositions x <--> z
+! arrays before = (mx,mz) and after = (nzgrid, nx/nprocz)
 !
       call transp_mxmz(finter, fintert)
       call transp_mxmz(chi, chit)
@@ -1157,14 +1163,16 @@ module ImplicitPhysics
       call transp_mxmz(TT, TTt)
 !
 ! columns in the z-direction dealt implicitly
+! be careful! we still play with the l1,l2 and n1,n2 indices but that applies
+! on *transposed* arrays
 !
-      do i=l1t,l2t
-        wz=dt*gamma*dz_2*chit(n1t:n2t,i)
+      do i=n1,n2
+        wz=dt*gamma*dz_2*chit(l1:l2,i)
         az=-wz/2.
-        bz=1.-wz/2.*(-2.+dLnhcondt(n1t:n2t,i)*    &
-          (TTt(n1t+1:n2t+1,i)-2.*TTt(n1t:n2t,i)+TTt(n1t-1:n2t-1,i)))
+        bz=1.-wz/2.*(-2.+dLnhcondt(l1:l2,i)*    &
+          (TTt(l1+1:l2+1,i)-2.*TTt(l1:l2,i)+TTt(l1-1:l2-1,i)))
         cz=-wz/2.
-        rhsz=fintert(n1t:n2t,i)
+        rhsz=fintert(l1:l2,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
@@ -1185,15 +1193,14 @@ module ImplicitPhysics
             call fatal_error('ADI_Kprof_MPI_mixed','bcz on TT must be cT or c3')
         endselect
 !
-        call tridag(az,bz,cz,rhsz,workz)
-        valt(n1t:n2t,i)=workz(1:nzgrid)
+        call tridag(az, bz, cz, rhsz, workz)
+        valt(l1:l2,i)=workz
       enddo
       ftmpt(:,4,:,ilnTT)=valt
       call initiate_isendrcv_bdry(ftmpt)
       call finalize_isendrcv_bdry(ftmpt)
       valt=ftmpt(:,4,:,ilnTT)
-      call transp_mzmx(valt,val)
-!
+      call transp_mzmx(valt, val)
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
