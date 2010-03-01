@@ -26,7 +26,8 @@ module ImplicitPhysics
   end interface
 !
   real, pointer :: hcond0, Fbot, Tbump, Kmax, hole_slope, hole_width, &
-                   hole_alpha 
+                   hole_alpha
+  logical, pointer :: lADI_mixed
 !
   contains
 !***********************************************************************
@@ -61,6 +62,10 @@ module ImplicitPhysics
       call get_shared_variable('hole_width', hole_width, ierr)
       if (ierr/=0) call stop_it("implicit_physics: "//&
                 "there was a problem when getting hole_width")
+      call get_shared_variable('lADI_mixed', lADI_mixed, ierr)
+      if (ierr/=0) call stop_it("implicit_physics: "//&
+                "there was a problem when getting lADI_mixed")
+      print*, 'lADI_mixed in implicit_physics=', lADI_mixed
 !
     endsubroutine init_param_ADI
 !***********************************************************************
@@ -88,12 +93,20 @@ module ImplicitPhysics
         endif
       else
         if (nx == 1) then
-          call ADI_Kprof_1d(finit,f)
+          if (lADI_mixed) then
+            call ADI_Kprof_1d_mixed(finit,f)
+          else
+            call ADI_Kprof_1d(finit,f)
+          endif
         else
           if (nprocz>1) then
             call ADI_Kprof_MPI(finit,f)
           else
-            call ADI_Kprof(finit,f)
+            if (lADI_mixed) then
+              call ADI_Kprof_mixed(finit,f)
+            else
+              call ADI_Kprof(finit,f)
+            endif
           endif
         endif
       endif

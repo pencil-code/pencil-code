@@ -64,6 +64,7 @@ module Entropy
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=5) :: iinit_str
+  logical :: lADI_mixed=.false.
 !
 !  Input parameters.
 !
@@ -81,7 +82,7 @@ module Entropy
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
-      hole_slope, hole_width, Kgpara, Kgperp
+      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -164,6 +165,7 @@ module Entropy
       use Sub, only: step,der_step
       use SharedVariables, only: put_shared_variable
       use ImplicitPhysics, only: heatcond_TT, init_param_ADI
+      use Mpicomm, only: stop_it
 !
       logical :: lstarting
 !
@@ -227,8 +229,10 @@ module Entropy
           lheatc_Karctan=.true.
           if (.not. ltemperature_nolog) &
             call fatal_error('calc_heatcond_arctan','only valid for TT')
+          if (lADI_mixed .and. .not. lADI) &
+            call fatal_error('calc_heatcond_arctan','lADI_mixed with lADI=F?')
           if (lroot) call information('initialize_entropy', &
-              'heat conduction:arctan profile')
+              'heat conduction: arctan profile')
         case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) call information('initialize_entropy', &
@@ -339,7 +343,15 @@ module Entropy
       call put_shared_variable('hole_width', hole_width, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting hole_width')
+      call put_shared_variable('lADI_mixed', lADI_mixed, ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lADI_mixed')
 !
+      if (lADI_mixed) then
+        if (lADI_mixed .and. iheatcond(1) /= 'K-arctan') &
+          call stop_it("temperature_idealgas: "//&
+          "lADI_mixed=T and iheatcond /= K-arctan?")
+      endif
       call init_param_ADI()
 !
       if (initlnTT(1).eq.'rad_equil') then
@@ -568,10 +580,10 @@ module Entropy
 !
       if (lheatc_Karctan) then
         lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_gTT)=.true.
-        lpenc_requested(i_del2TT)=.true.
-        lpenc_requested(i_cp1)=.true.
+        if (.not. lADI_mixed) lpenc_requested(i_del2TT)=.true.
       endif
 !
       if (lheatc_shock) then
@@ -1141,14 +1153,18 @@ module Entropy
 !
 !  Radiative diffusion with an arctan profile for the conductivity
 !
-!  Calculate gamma/rho*cp*div(K *grad TT)=
-!      gamma*K/rho*cp*(grad LnK.grad TT + del2 TT)
+!  Calculate gamma/(rho*cp)*div(K * grad TT)=
+!      gamma*K/(rho*cp)*(grad LnK.grad TT + del2 TT)
 !
 !  16-may-07/gastine+dintrans: coded
+!  01-mar-10/dintrans: introduced a mixed version with the ADI scheme that only
+!  computes *during the explicit step* the term 
+!  gamma/(rho*cp)*grad(K).grad(TT) with grad(K)=dK/dT*grad(TT)
+!  as this term is less restrictive for the explicit timestep
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot,multsv
+      use Sub, only: dot, multsv
       use ImplicitPhysics, only: heatcond_TT
 !
       real, dimension(mx,my,mz,mvar) :: df
@@ -1161,16 +1177,20 @@ module Entropy
 !
       call heatcond_TT(p%TT, hcond, dhcond)
 !  must specify the new bottom value of hcond for the 'c1' BC
-      if (n == n1) hcond0=hcond(1)
+!     if (n == n1) hcond0=hcond(1)
+      if (lADI_mixed) then
+        call dot(p%gTT, p%gTT, g1)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*p%rho1*p%cp1*dhcond*g1
+        chix=0.
+      else
 !  grad LnK=grad_T Ln K.grad(TT)
-      dhcond=dhcond/hcond
-      call multsv(dhcond, p%gTT, gLnhcond)
-      call dot(gLnhcond, p%gTT, g1)
+        dhcond=dhcond/hcond
+        call multsv(dhcond, p%gTT, gLnhcond)
+        call dot(gLnhcond, p%gTT, g1)
+        chix=p%rho1*p%cp1*hcond
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2TT)
+      endif
 !
-!  Add heat conduction to RHS of temperature equation.
-!
-      chix=p%rho1*hcond*p%cp1
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g1+p%del2TT)
 !
 !  Check maximum diffusion from thermal diffusion.
 !

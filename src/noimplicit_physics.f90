@@ -20,7 +20,6 @@ module ImplicitPhysics
 !
   real, pointer :: hcond0, Fbot, Tbump, Kmax, hole_slope, hole_width, &
                    hole_alpha
-
 !
   contains
 !***********************************************************************
