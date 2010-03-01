@@ -100,7 +100,11 @@ module ImplicitPhysics
           endif
         else
           if (nprocz>1) then
-            call ADI_Kprof_MPI(finit,f)
+            if (lADI_mixed) then
+              call ADI_Kprof_MPI_mixed(finit,f)
+            else
+              call ADI_Kprof_MPI(finit,f)
+            endif
           else
             if (lADI_mixed) then
               call ADI_Kprof_mixed(finit,f)
@@ -1071,5 +1075,125 @@ module ImplicitPhysics
       call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_mixed
+!***********************************************************************
+    subroutine ADI_Kprof_MPI_mixed(finit,f)
+!
+!  01-mar-10/dintrans: coded
+!  parallel version of the ADI_Kprof_mixed subroutine
+!
+      use EquationOfState, only: gamma, get_cp1
+      use General, only: tridag
+      use Mpicomm, only: transp_mxmz, transp_mzmx, &
+                         initiate_isendrcv_bdry, finalize_isendrcv_bdry
+!
+      implicit none
+!
+      integer :: i,j
+      integer, parameter :: mxt=nx/nprocz+2*nghost
+      integer, parameter :: mzt=nzgrid+2*nghost
+      integer, parameter :: l1t=nghost+1, n1t=nghost+1
+      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
+      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mzt,my,mxt,mfarray) :: ftmpt
+      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
+                                rho, chi, dLnhcond
+      real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
+      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
+      real :: dx_2, dz_2, cp1, aalpha, bbeta
+!
+      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
+! BC important not for the x-direction (always periodic) but for 
+! the z-direction as we must impose the 'c3' BC at the 2nd-order
+! before going in the implicit stuff
+      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
+      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
+      TT=finit(:,4,:,ilnTT)
+      if (ldensity) then
+        rho=exp(f(:,4,:,ilnrho))
+      else
+        rho=1.
+      endif
+      chi=cp1*hcond/rho
+      dLnhcond=dhcond/hcond
+!
+! rows in the x-direction dealt implicitly
+!
+      do j=n1,n2
+        wx=gamma*chi(l1:l2,j)
+        ax=-dt/2.*wx*dx_2
+        bx=1.-dt/2.*wx*dx_2*(-2.+dLnhcond(l1:l2,j)* &
+           (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
+        cx=-dt/2.*wx*dx_2
+! do first lambda_z(T^n)
+        rhsx=wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
+! then add lambda_x(T^n)
+        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+             +source(l1:l2,j)
+!
+! periodic boundary conditions in x
+!
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
+        finter(l1:l2,j)=workx
+      enddo
+!
+! do the transpositions x <--> z
+!
+      call transp_mxmz(finter, fintert)
+      call transp_mxmz(chi, chit)
+      call transp_mxmz(dLnhcond, dLnhcondt)
+      call transp_mxmz(TT, TTt)
+!
+! columns in the z-direction dealt implicitly
+!
+      do i=l1t,l2t
+        wz=dt*gamma*dz_2*chit(n1t:n2t,i)
+        az=-wz/2.
+        bz=1.-wz/2.*(-2.+dLnhcondt(n1t:n2t,i)*    &
+          (TTt(n1t+1:n2t+1,i)-2.*TTt(n1t:n2t,i)+TTt(n1t-1:n2t-1,i)))
+        cz=-wz/2.
+        rhsz=fintert(n1t:n2t,i)
+!
+! z boundary conditions
+! Constant temperature at the top: T^(n+1)-T^n=0
+!
+        bz(nzgrid)=1. ; az(nzgrid)=0.
+        rhsz(nzgrid)=0.
+! bottom
+        select case (bcz1(ilnTT))
+! Constant temperature at the bottom: T^(n+1)-T^n=0
+          case ('cT')
+            bz(1)=1. ; cz(1)=0.
+            rhsz(1)=0.
+! Constant flux at the bottom
+          case ('c3')
+            bz(1)=1. ; cz(1)=-1.
+            rhsz(1)=0.
+          case default 
+            call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
+        endselect
+!
+        call tridag(az,bz,cz,rhsz,workz)
+        valt(n1t:n2t,i)=workz(1:nzgrid)
+      enddo
+      ftmpt(:,4,:,ilnTT)=valt
+      call initiate_isendrcv_bdry(ftmpt)
+      call finalize_isendrcv_bdry(ftmpt)
+      valt=ftmpt(:,4,:,ilnTT)
+      call transp_mzmx(valt,val)
+!
+      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+!
+! update hcond used for the 'c3' condition in boundcond.f90
+!
+      if (iproc==0) then
+        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
+      endif
+!
+    endsubroutine ADI_Kprof_MPI_mixed
 !***********************************************************************
 endmodule ImplicitPhysics
