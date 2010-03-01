@@ -25,6 +25,32 @@ module ImplicitPhysics
 !***********************************************************************
     subroutine init_param_ADI()
 !
+      use SharedVariables, only: get_shared_variable
+      use MpiComm, only: stop_it
+!
+      implicit none
+!
+      integer :: ierr
+!
+!  Get the hole parameters as we could run a kappa-mechanism simulation 
+!  in the fully-explicit case (mainly for testing purposes)
+!
+      call get_shared_variable('Tbump', Tbump, ierr)
+      if (ierr/=0) call stop_it("noimplicit_physics: "//&
+                "there was a problem when getting Tbump")
+      call get_shared_variable('Kmax', Kmax, ierr)
+      if (ierr/=0) call stop_it("noimplicit_physics: "//&
+                "there was a problem when getting Kmax")
+      call get_shared_variable('hole_slope', hole_slope, ierr)
+      if (ierr/=0) call stop_it("noimplicit_physics: "//&
+                "there was a problem when getting hole_slope")
+      call get_shared_variable('hole_alpha', hole_alpha, ierr)
+      if (ierr/=0) call stop_it("noimplicit_physics: "//&
+                "there was a problem when getting hole_alpha")
+      call get_shared_variable('hole_width', hole_width, ierr)
+      if (ierr/=0) call stop_it("noimplicit_physics: "//&
+                "there was a problem when getting hole_width")
+!
     endsubroutine init_param_ADI
 !***********************************************************************
     subroutine calc_heatcond_ADI(finit,f)
@@ -49,7 +75,8 @@ module ImplicitPhysics
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      if (present(dhcond)) &
+        dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     endsubroutine heatcond_TT_2d
 !***********************************************************************
@@ -63,12 +90,12 @@ module ImplicitPhysics
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      if (present(dhcond)) &
+        dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     endsubroutine heatcond_TT_1d
 !***********************************************************************
     subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
 !
       implicit none
 !
@@ -77,7 +104,8 @@ module ImplicitPhysics
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      if (present(dhcond)) &
+        dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !
     endsubroutine heatcond_TT_0d
 !***********************************************************************
