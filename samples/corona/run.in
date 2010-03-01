@@ -34,11 +34,13 @@
   nu=1e-3
 /
 &special_run_pars 
-!  Kgpara=4e-10 ! Spitzer heat conduction
-!  tdown=1.     ! Newton cooling strength
-!  allp=3.5     !   and decay 
-!  cool_rtv=1.  ! Radiative loss
-!  bmdi = 0.5   ! Refresh magnetogram
+  Kgpara=4e-10 ! Spitzer heat conduction
+  K_iso=1.e-4  ! isotropic heat conduction
+               ! prop. to |grad(T)|
+  tdown=1.     ! Newton cooling strength
+  allp=3.5     !   and decay 
+  cool_rtv=1.  ! Radiative loss
+  bmdi = 0.5   ! Refresh magnetogram
 /
 &shock_run_pars
   lforce_periodic_shockviscosity=T
