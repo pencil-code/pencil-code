@@ -1017,6 +1017,8 @@ module ImplicitPhysics
       endif
       chi=cp1*hcond/rho
       dLnhcond=dhcond/hcond
+!      chi=cp1*hcond0/rho
+!      dLnhcond=0.
 !
 ! rows in the x-direction dealt implicitly
 !
@@ -1087,30 +1089,20 @@ module ImplicitPhysics
 !
       use EquationOfState, only: gamma, get_cp1
       use General, only: tridag
-      use Mpicomm, only: transp_mxmz, transp_mzmx, &
-                         initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use Mpicomm, only: transp_mxmz, transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
       implicit none
 !
       integer :: i,j
-      integer, parameter :: mxt=nx/nprocz+2*nghost
-      integer, parameter :: mzt=nzgrid+2*nghost
       real, dimension(mx,my,mz,mfarray) :: finit, f
-      real, dimension(mzt,my,mxt,mfarray) :: ftmpt
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
-                                rho, chi, dLnhcond
-      real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
+            rho, chi, dLnhcond, fintert, TTt, chit, dLnhcondt, valt
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
 !
-!      print*, 'l1, l2=', l1, l2
-!      print*, 'n1, n2=', n1, n2
-!      print*, 'mx, mz=', mx, mz
-!      print*, 'nx, nz=', nx, nz
-!      print*, 'mxt, mzt=', mxt, mzt
-!      stop
+! needed for having the correct ghost zones for ilnTT
 !
       call update_ghosts(finit)
 !
@@ -1121,9 +1113,9 @@ module ImplicitPhysics
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
-      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
       TT=finit(:,4,:,ilnTT)
+      call heatcond_TT(TT, hcond, dhcond)
+      call boundary_ADI(TT, hcond(:,n1))
       if (ldensity) then
         rho=exp(f(:,4,:,ilnrho))
       else
@@ -1131,6 +1123,8 @@ module ImplicitPhysics
       endif
       chi=cp1*hcond/rho
       dLnhcond=dhcond/hcond
+!      chi=cp1*hcond0/rho
+!      dLnhcond=0.
 !
 ! rows in the x-direction dealt implicitly
 !
@@ -1155,11 +1149,10 @@ module ImplicitPhysics
       enddo
 !
 ! do the transpositions x <--> z
-! arrays before = (mx,mz) and after = (nzgrid, nx/nprocz)
 !
-      call transp_mxmz(finter, fintert)
-      call transp_mxmz(chi, chit)
-      call transp_mxmz(dLnhcond, dLnhcondt)
+      call transp_xz(finter(l1:l2,n1:n2), fintert(l1:l2,n1:n2))
+      call transp_xz(chi(l1:l2,n1:n2), chit(l1:l2,n1:n2))
+      call transp_xz(dLnhcond(l1:l2,n1:n2), dLnhcondt(l1:l2,n1:n2))
       call transp_mxmz(TT, TTt)
 !
 ! columns in the z-direction dealt implicitly
@@ -1170,7 +1163,7 @@ module ImplicitPhysics
         wz=dt*gamma*dz_2*chit(l1:l2,i)
         az=-wz/2.
         bz=1.-wz/2.*(-2.+dLnhcondt(l1:l2,i)*    &
-          (TTt(l1+1:l2+1,i)-2.*TTt(l1:l2,i)+TTt(l1-1:l2-1,i)))
+           (TTt(l1+1:l2+1,i)-2.*TTt(l1:l2,i)+TTt(l1-1:l2-1,i)))
         cz=-wz/2.
         rhsz=fintert(l1:l2,i)
 !
@@ -1196,12 +1189,11 @@ module ImplicitPhysics
         call tridag(az, bz, cz, rhsz, workz)
         valt(l1:l2,i)=workz
       enddo
-      ftmpt(:,4,:,ilnTT)=valt
-      call initiate_isendrcv_bdry(ftmpt)
-      call finalize_isendrcv_bdry(ftmpt)
-      valt=ftmpt(:,4,:,ilnTT)
-      call transp_mzmx(valt, val)
-      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+!
+! come back on the grid (x,z)
+!
+      call transp_zx(valt(l1:l2,n1:n2), val(l1:l2,n1:n2))
+      f(l1:l2,4,n1:n2,ilnTT)=TT(l1:l2,n1:n2)+dt*val(l1:l2,n1:n2)
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
