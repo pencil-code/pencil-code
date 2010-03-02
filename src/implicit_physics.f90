@@ -383,8 +383,8 @@ module ImplicitPhysics
 !
       use EquationOfState, only: gamma,get_cp1
       use General, only: tridag
-      use Mpicomm, only: transp_mxmz, transp_mzmx, &
-                         initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use Mpicomm, only: transp_mxmz, transp_xz, &
+          transp_zx, initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
       implicit none
 !
@@ -399,17 +399,14 @@ module ImplicitPhysics
       real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, TTt, rhot, valt
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid)    :: az, bz, cz, wz, rhsz, workz
-      real    :: aalpha, bbeta
-      real    :: dx_2, dz_2, cp1
+      real :: dx_2, dz_2, cp1, aalpha, bbeta
 !
 !  It is necessary to communicate ghost-zones points between
 !  processors to ensure a correct transposition of these ghost
 !  zones. It is needed by rho,rhot and source,sourcet.
 !
-      call initiate_isendrcv_bdry(f)
-      call finalize_isendrcv_bdry(f)
-      call initiate_isendrcv_bdry(finit)
-      call finalize_isendrcv_bdry(finit)
+      call initiate_isendrcv_bdry(finit, ilnTT, ilnTT)
+      call finalize_isendrcv_bdry(finit, ilnTT, ilnTT)
       source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
@@ -419,9 +416,9 @@ module ImplicitPhysics
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
 !
-      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
       TT=finit(:,4,:,ilnTT)
+      call heatcond_TT(TT, hcond, dhcond)
+      call boundary_ADI(TT, hcond(:,n1))
       if (ldensity) then
         rho=exp(f(:,4,:,ilnrho))
       else
@@ -431,100 +428,88 @@ module ImplicitPhysics
 !  rows dealt implicitly
 !
       do j=n1,n2
-       wx=cp1*gamma/rho(l1:l2,j)
+        wx=cp1*gamma/rho(l1:l2,j)
 ! ax=-dt/2*J_x for i=i-1 (lower diagonal)
-       ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)    &
-         *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
-         +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
+        ax=-dt*wx*dx_2/4.*(dhcond(l1-1:l2-1,j)     &
+           *(TT(l1-1:l2-1,j)-TT(l1:l2,j))          &
+           +hcond(l1-1:l2-1,j)+hcond(l1:l2,j))
 ! bx=1-dt/2*J_x for i=i (main diagonal)
-       bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)      &
-         *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
-         -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
-         +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
+        bx=1.+dt*wx*dx_2/4.*(dhcond(l1:l2,j)       &
+           *(2.*TT(l1:l2,j)-TT(l1-1:l2-1,j)        &
+           -TT(l1+1:l2+1,j))+2.*hcond(l1:l2,j)     &
+           +hcond(l1+1:l2+1,j)+hcond(l1-1:l2-1,j))
 ! cx=-dt/2*J_x for i=i+1 (upper diagonal)
-       cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)    &
-          *(TT(l1+1:l2+1,j)-TT(l1:l2,j))         &
-          +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
+        cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
+           *(TT(l1+1:l2+1,j)-TT(l1:l2,j))          &
+           +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
 ! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
 ! do first f_y(T^n)
-       rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)        &
-           +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
-           -TT(l1:l2,j))-(hcond(l1:l2,j)         &
-           +hcond(l1:l2,j-1))                    &
-           *(TT(l1:l2,j)-TT(l1:l2,j-1)))
+        rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
+             +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
+             -TT(l1:l2,j))-(hcond(l1:l2,j)         &
+             +hcond(l1:l2,j-1))                    &
+             *(TT(l1:l2,j)-TT(l1:l2,j-1)))
 ! then add f_x(T^n)
-       rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)         &
-           +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
-           -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))          &
-           *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
+        rhsx=rhsx+wx*dx_2/2.*((hcond(l1+1:l2+1,j)            &
+             +hcond(l1:l2,j))*(TT(l1+1:l2+1,j)-TT(l1:l2,j))  &
+             -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))            &
+             *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
 ! x boundary conditions: periodic
 !
-       aalpha=cx(nx) ; bbeta=ax(1)
-       call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,workx,nx)
-       finter(l1:l2,j)=workx(1:nx)
+        aalpha=cx(nx) ; bbeta=ax(1)
+        call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
+        finter(l1:l2,j)=workx(1:nx)
       enddo
 !
-      ftmp(:,4,:,ilnTT)=finter
-      call initiate_isendrcv_bdry(ftmp)
-      call finalize_isendrcv_bdry(ftmp)
-      finter=ftmp(:,4,:,ilnTT)
+! do the transpositions x <--> z
 !
-!  columns dealt implicitly
-!
-      call transp_mxmz(finter, fintert)
-      call transp_mxmz(rho, rhot)
-      call transp_mxmz(hcond, hcondt)
-      call transp_mxmz(dhcond, dhcondt)
+      call transp_xz(finter(l1:l2,n1:n2), fintert(l1:l2,n1:n2))
+      call transp_xz(rho(l1:l2,n1:n2), rhot(l1:l2,n1:n2))
+      call transp_xz(hcond(l1:l2,n1:n2), hcondt(l1:l2,n1:n2))
+      call transp_xz(dhcond(l1:l2,n1:n2), dhcondt(l1:l2,n1:n2))
       call transp_mxmz(TT, TTt)
 !
       do i=l1t,l2t
-         wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
-         az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)   &
+        wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
+        az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)   &
            *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i)) &
            +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
 !
-         bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*             &
+        bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*             &
            (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
            -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
            +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
 !
-         cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
+        cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
            *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))          &
            +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
 !
-         rhsz=fintert(n1t:n2t,i)
+        rhsz=fintert(n1t:n2t,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
 !
-         bz(nzgrid)=1. ; az(nzgrid)=0.
-         rhsz(nzgrid)=0.
+        bz(nzgrid)=1. ; az(nzgrid)=0.
+        rhsz(nzgrid)=0.
 ! bottom
-         select case (bcz1(ilnTT))
+        select case (bcz1(ilnTT))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
-           case ('cT')
-             bz(1)=1. ; cz(1)=0.
-             rhsz(1)=0.
+          case ('cT')
+            bz(1)=1. ; cz(1)=0.
+            rhsz(1)=0.
 ! Constant flux at the bottom
-           case ('c3')
-             bz(1)=1. ; cz(1)=-1.
-             rhsz(1)=0.
-           case default 
+          case ('c3')
+            bz(1)=1. ; cz(1)=-1.
+            rhsz(1)=0.
+          case default 
              call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
-         endselect
+        endselect
 !
-         call tridag(az,bz,cz,rhsz,workz)
-         valt(n1t:n2t,i)=workz(1:nzgrid)
+        call tridag(az, bz, cz, rhsz, workz)
+        valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo
-      ! Necessary to avoid x-direction discontinuities
-      ftmpt(:,4,:,ilnTT)=valt
-      call initiate_isendrcv_bdry(ftmpt)
-      call finalize_isendrcv_bdry(ftmpt)
-      valt=ftmpt(:,4,:,ilnTT)
-!
-      call transp_mzmx(valt,val)
-!
+      call transp_zx(valt(l1:l2,n1:n2), val(l1:l2,n1:n2))
       f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
