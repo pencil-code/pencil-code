@@ -61,6 +61,7 @@ module Register
       use TestPerturb,      only: register_testperturb
       use Testscalar,       only: register_testscalar
       use Viscosity,        only: register_viscosity
+      use ImplicitPhysics,  only: register_implicit_physics
 !
       logical :: ioerr
 !
@@ -144,6 +145,7 @@ module Register
       call register_shear
       call register_hypervisc_strict
       call register_hyperresi_strict
+      call register_implicit_physics
       call register_special
 !
 !  Writing files for use with IDL.

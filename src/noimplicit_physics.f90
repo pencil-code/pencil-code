@@ -23,6 +23,10 @@ module ImplicitPhysics
 !
   contains
 !***********************************************************************
+    subroutine register_implicit_physics()
+!
+    endsubroutine register_implicit_physics
+!***********************************************************************
     subroutine init_param_ADI()
 !
       use SharedVariables, only: get_shared_variable
@@ -53,16 +57,15 @@ module ImplicitPhysics
 !
     endsubroutine init_param_ADI
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
+    subroutine calc_heatcond_ADI(f)
 !
 !  10-sep-07/gastine+dintrans: wrapper to the two possible ADI subroutines
 !  ADI_Kconst: constant radiative conductivity
 !  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
 !
-      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(finit)
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************

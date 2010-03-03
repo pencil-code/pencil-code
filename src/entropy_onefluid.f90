@@ -932,13 +932,15 @@ module Entropy
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
+    subroutine calc_heatcond_ADI(f)
 !
 !  Dummy subroutine.
 !
       implicit none
 !
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************

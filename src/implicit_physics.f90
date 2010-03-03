@@ -6,6 +6,14 @@
 !     lambda_x T(n+1/2) = lambda_x + lambda_z
 !     lambda_z T(n+1) = T(n+1/2)
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
+! COMMUNICATED AUXILIARIES 1
+!
 !***************************************************************
 module ImplicitPhysics
 !
@@ -30,6 +38,20 @@ module ImplicitPhysics
   logical, pointer :: lADI_mixed
 !
   contains
+!***********************************************************************
+    subroutine register_implicit_physics()
+!
+!  Initialise variables which should know that we solve the
+!  compressible hydro equations: ilnrho; increase nvar accordingly.
+!
+!  03-mar-2010/dintrans: coded
+!
+      use FArrayManager, only: farray_register_auxiliary
+!
+      call farray_register_auxiliary('TTold',iTTold,communicated=.true.)
+      print*, 'iTTold=', iTTold
+!
+    endsubroutine register_implicit_physics
 !***********************************************************************
     subroutine init_param_ADI()
 !
@@ -69,7 +91,7 @@ module ImplicitPhysics
 !
     endsubroutine init_param_ADI
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
+    subroutine calc_heatcond_ADI(f)
 !
 !  10-sep-07/gastine+dintrans: wrapper to the two possible ADI subroutines
 !  ADI_Kconst: constant radiative conductivity
@@ -78,38 +100,38 @@ module ImplicitPhysics
 !
       implicit none
 !
-      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mx,my,mz,mfarray) :: f
       integer :: ierr
 !
       if (hcond0 /= impossible) then
         if (nx == 1) then
-          call ADI_Kconst_1d(finit,f)
+          call ADI_Kconst_1d(f)
         else
           if (nprocz>1) then
-            call ADI_Kconst_MPI(finit,f)
+            call ADI_Kconst_MPI(f)
           else
-            call ADI_Kconst(finit,f)
+            call ADI_Kconst(f)
           endif
         endif
       else
         if (nx == 1) then
           if (lADI_mixed) then
-            call ADI_Kprof_1d_mixed(finit,f)
+            call ADI_Kprof_1d_mixed(f)
           else
-            call ADI_Kprof_1d(finit,f)
+            call ADI_Kprof_1d(f)
           endif
         else
           if (nprocz>1) then
             if (lADI_mixed) then
-              call ADI_Kprof_MPI_mixed(finit,f)
+              call ADI_Kprof_MPI_mixed(f)
             else
-              call ADI_Kprof_MPI(finit,f)
+              call ADI_Kprof_MPI(f)
             endif
           else
             if (lADI_mixed) then
-              call ADI_Kprof_mixed(finit,f)
+              call ADI_Kprof_mixed(f)
             else
-              call ADI_Kprof(finit,f)
+              call ADI_Kprof(f)
             endif
           endif
         endif
@@ -117,7 +139,7 @@ module ImplicitPhysics
 !
     endsubroutine calc_heatcond_ADI
 !***********************************************************************
-    subroutine ADI_Kconst(finit,f)
+    subroutine ADI_Kconst(f)
 !
 !  08-Sep-07/gastine+dintrans: coded
 !  2-D ADI scheme for the radiative diffusion term (see
@@ -136,13 +158,13 @@ module ImplicitPhysics
       implicit none
 !
       integer :: i,j
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,nz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta, cp1, dx_2, dz_2, tmp_flux
 !
-      TT=finit(l1:l2,4,n1:n2,ilnTT)
+      TT=f(l1:l2,4,n1:n2,iTTold)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
       if (ldensity) then
         rho=exp(f(l1:l2,4,n1:n2,ilnrho))
@@ -241,7 +263,7 @@ module ImplicitPhysics
 !
     endsubroutine ADI_Kconst
 !***********************************************************************
-    subroutine ADI_Kprof(finit,f)
+    subroutine ADI_Kprof(f)
 !
 !  10-Sep-07/gastine+dintrans: coded
 !  2-D ADI scheme for the radiative diffusion term where the radiative
@@ -260,23 +282,23 @@ module ImplicitPhysics
       implicit none
 !
       integer :: i,j
-      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
       real    :: dx_2, dz_2, cp1
 !
-      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
-      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
-      TT=finit(:,4,:,ilnTT)
+      call heatcond_TT(f(:,4,:,iTTold), hcond, dhcond)
+      call boundary_ADI(f(:,4,:,iTTold), hcond(:,n1))
+      TT=f(:,4,:,iTTold)
       if (ldensity) then
         rho=exp(f(:,4,:,ilnrho))
       else
@@ -360,7 +382,7 @@ module ImplicitPhysics
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
-      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+      f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
@@ -368,7 +390,7 @@ module ImplicitPhysics
 !
     endsubroutine ADI_Kprof
 !***********************************************************************
-    subroutine ADI_Kprof_MPI(finit,f)
+    subroutine ADI_Kprof_MPI(f)
 !
 !  15-jan-10/gastine: coded
 !  2-D ADI scheme for the radiative diffusion term where the radiative
@@ -393,7 +415,7 @@ module ImplicitPhysics
       integer, parameter :: l1t=nghost+1, n1t=nghost+1
       integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
       integer :: i,j
-      real, dimension(mx,my,mz,mfarray) :: finit, f, ftmp
+      real, dimension(mx,my,mz,mfarray) :: f, ftmp
       real, dimension(mzt,my,mxt,mfarray) :: ftmpt
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, TT, rho, val
       real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, TTt, rhot, valt
@@ -405,9 +427,9 @@ module ImplicitPhysics
 !  processors to ensure a correct transposition of these ghost
 !  zones. It is needed by rho,rhot and source,sourcet.
 !
-      call initiate_isendrcv_bdry(finit, ilnTT, ilnTT)
-      call finalize_isendrcv_bdry(finit, ilnTT, ilnTT)
-      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      call initiate_isendrcv_bdry(f, iTTold, iTTold)
+      call finalize_isendrcv_bdry(f, iTTold, iTTold)
+      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
@@ -416,7 +438,7 @@ module ImplicitPhysics
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
 !
-      TT=finit(:,4,:,ilnTT)
+      TT=f(:,4,:,iTTold)
       call heatcond_TT(TT, hcond, dhcond)
       call boundary_ADI(TT, hcond(:,n1))
       if (ldensity) then
@@ -510,7 +532,7 @@ module ImplicitPhysics
         valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo
       call transp_zx(valt(l1:l2,n1:n2), val(l1:l2,n1:n2))
-      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+      f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
@@ -600,7 +622,7 @@ module ImplicitPhysics
       return
     endsubroutine cyclic
 !***********************************************************************
-    subroutine ADI_Kconst_1d(finit,f)
+    subroutine ADI_Kconst_1d(f)
 !
 ! 18-sep-07/dintrans: coded
 ! Implicit Crank Nicolson scheme in 1-D for a constant K (not 
@@ -612,13 +634,11 @@ module ImplicitPhysics
       implicit none
 !
       integer :: j, jj
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: rho, TT
       real, dimension(nz) :: a, b, c, rhs, work
       real  :: cp1, dz_2, wz
 !
-!     source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
-!     TT=finit(4,4,:,ilnTT)
       TT=f(4,4,:,ilnTT)
       rho=exp(f(4,4,:,ilnrho))
       call get_cp1(cp1)
@@ -650,11 +670,9 @@ module ImplicitPhysics
       call tridag(a, b, c, rhs, work)
       f(4,4,n1:n2,ilnTT)=work
 !
-      call keep_compiler_quiet(finit)
-!
     endsubroutine ADI_Kconst_1d
 !***********************************************************************
-    subroutine ADI_Kprof_1d(finit,f)
+    subroutine ADI_Kprof_1d(f)
 !
 ! 18-sep-07/dintrans: coded
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
@@ -666,20 +684,20 @@ module ImplicitPhysics
       implicit none
 !
       integer :: j, jj
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: source, rho, TT, hcond, dhcond
       real, dimension(nz) :: a, b, c, rhs, work
       real  :: cp1, dz_2, wz, hcondp, hcondm
 !
-      source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
+      source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       call get_cp1(cp1)
       dz_2=1./dz**2
       rho=exp(f(4,4,:,ilnrho))
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
-      call heatcond_TT(finit(4,4,:,ilnTT), hcond, dhcond)
+      call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
       hcondADI=spread(hcond(1), 1, mx)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcondADI)
-      TT=finit(4,4,:,ilnTT)
+      call boundary_ADI(f(:,4,:,iTTold), hcondADI)
+      TT=f(4,4,:,iTTold)
 !
       do j=n1,n2
         jj=j-nghost
@@ -716,7 +734,7 @@ module ImplicitPhysics
 !
     endsubroutine ADI_Kprof_1d
 !***********************************************************************
-    subroutine ADI_Kconst_MPI(finit,f)
+    subroutine ADI_Kconst_MPI(f)
 !
 !  04-sep-2009/dintrans: coded
 !  parallel version of the ADI scheme for the K=cte case
@@ -729,7 +747,7 @@ module ImplicitPhysics
 !
       integer :: i,j
       integer, parameter :: nxt=nx/nprocz
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,nz)  :: finter, source, rho, TT
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
@@ -738,7 +756,7 @@ module ImplicitPhysics
       real, dimension(nzgrid) :: tmpz1, tmpz2, send_bufz1, send_bufz2
       real  :: aalpha, bbeta, cp1, dx_2, dz_2
 !
-      TT=finit(l1:l2,4,n1:n2,ilnTT)
+      TT=f(l1:l2,4,n1:n2,iTTold)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
       if (ldensity) then
         rho=exp(f(l1:l2,4,n1:n2,ilnrho))
@@ -899,7 +917,7 @@ module ImplicitPhysics
 !
     endsubroutine heatcond_TT_0d
 !***********************************************************************
-    subroutine ADI_Kprof_1d_mixed(finit,f)
+    subroutine ADI_Kprof_1d_mixed(f)
 !
 ! 28-feb-10/dintrans: coded
 ! Simpler version where a part of the radiative diffusion term is
@@ -911,20 +929,20 @@ module ImplicitPhysics
       implicit none
 !
       integer :: j, jj
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: source, rho, TT, hcond, dhcond
       real, dimension(nz) :: a, b, c, rhs, work
       real  :: cp1, dz_2, wz, hcondp, hcondm
 !
-      source=(f(4,4,:,ilnTT)-finit(4,4,:,ilnTT))/dt
+      source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       call get_cp1(cp1)
       dz_2=1./dz**2
       rho=exp(f(4,4,:,ilnrho))
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
-      call heatcond_TT(finit(4,4,:,ilnTT), hcond, dhcond)
+      call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
       hcondADI=spread(hcond(1), 1, mx)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcondADI)
-      TT=finit(4,4,:,ilnTT)
+      call boundary_ADI(f(:,4,:,iTTold), hcondADI)
+      TT=f(4,4,:,iTTold)
 !
       do j=n1,n2
         jj=j-nghost
@@ -956,7 +974,7 @@ module ImplicitPhysics
 !
     endsubroutine ADI_Kprof_1d_mixed
 !***********************************************************************
-    subroutine ADI_Kprof_mixed(finit,f)
+    subroutine ADI_Kprof_mixed(f)
 !
 !  28-fev-2010/dintrans: coded
 !  simpler version where one part of the radiative diffusion term is
@@ -976,25 +994,25 @@ module ImplicitPhysics
       implicit none
 !
       integer :: i,j
-      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
                                 rho, chi, dLnhcond
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
 !
-      call update_ghosts(finit)
+      call update_ghosts(f)
 !
-      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
-      call heatcond_TT(finit(:,4,:,ilnTT), hcond, dhcond)
-      call boundary_ADI(finit(:,4,:,ilnTT), hcond(:,n1))
-      TT=finit(:,4,:,ilnTT)
+      call heatcond_TT(f(:,4,:,iTTold), hcond, dhcond)
+      call boundary_ADI(f(:,4,:,iTTold), hcond(:,n1))
+      TT=f(:,4,:,iTTold)
       if (ldensity) then
         rho=exp(f(:,4,:,ilnrho))
       else
@@ -1059,7 +1077,7 @@ module ImplicitPhysics
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
-      f(:,4,:,ilnTT)=finit(:,4,:,ilnTT)+dt*val
+      f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
@@ -1067,7 +1085,7 @@ module ImplicitPhysics
 !
     endsubroutine ADI_Kprof_mixed
 !***********************************************************************
-    subroutine ADI_Kprof_MPI_mixed(finit,f)
+    subroutine ADI_Kprof_MPI_mixed(f)
 !
 !  01-mar-2010/dintrans: coded
 !  parallel version of the ADI_Kprof_mixed subroutine
@@ -1080,7 +1098,7 @@ module ImplicitPhysics
       implicit none
 !
       integer :: i,j
-      real, dimension(mx,my,mz,mfarray) :: finit, f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
             rho, chi, dLnhcond, fintert, TTt, chit, dLnhcondt, valt
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
@@ -1089,16 +1107,16 @@ module ImplicitPhysics
 !
 ! needed for having the correct ghost zones for ilnTT
 !
-      call update_ghosts(finit)
+      call update_ghosts(f)
 !
-      source=(f(:,4,:,ilnTT)-finit(:,4,:,ilnTT))/dt
+      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
-      TT=finit(:,4,:,ilnTT)
+      TT=f(:,4,:,iTTold)
       call heatcond_TT(TT, hcond, dhcond)
       call boundary_ADI(TT, hcond(:,n1))
       if (ldensity) then

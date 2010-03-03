@@ -87,7 +87,6 @@ program run
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,mvar) :: df
-  real, allocatable, dimension (:,:,:,:) :: finit
   type (pencil_case) :: p
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
@@ -310,11 +309,6 @@ program run
     call particles_initialize_modules(f,lstarting=.false.)
   endif
 !
-!  Allocate the finit array if lADI=.true.
-!  Do this also when ltestperturb=.true.
-!
-  if (lADI) allocate(finit(mx,my,mz,mfarray))
-!
 !  Write data to file for IDL.
 !
   call wparam2()
@@ -498,9 +492,10 @@ program run
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video
 !
-!  Save state vector prior to update.
+!  Save state vector prior to update for the (implicit) ADI scheme.
 !
-    if (lADI)   finit=f
+    if (lADI) f(:,:,:,iTTold)=f(:,:,:,ilnTT)
+!
     if (ltestperturb) call testperturb_begin(f,df)
 !
 !  A random phase for the hydro_kinematic module
@@ -526,7 +521,7 @@ program run
 !  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
 !  in the temperature equation (using temperature_idealgas).
 !
-    if (lADI) call calc_heatcond_ADI(finit,f)
+    if (lADI) call calc_heatcond_ADI(f)
     if (ltestperturb) call testperturb_finalize(f)
 !
     if (lroot) icount=icount+1  !  reliable loop count even for premature exit
@@ -738,7 +733,6 @@ program run
   call sharedvars_clean_up()
   call chemistry_clean_up()
   call NSCBC_clean_up()
-  if (lADI) deallocate(finit)
   call xyaverages_clean_up()
   call xzaverages_clean_up()
   call yzaverages_clean_up()

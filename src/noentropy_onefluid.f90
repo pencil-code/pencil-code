@@ -346,12 +346,14 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine calc_heatcond_ADI(finit,f)
+    subroutine calc_heatcond_ADI(f)
 !
       implicit none
 !
-      real, dimension(mx,my,mz,mfarray) :: finit,f
+      real, dimension(mx,my,mz,mfarray) :: f
 ! 
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_heatcond_ADI
 !***********************************************************************
     subroutine fill_farray_pressure(f)
