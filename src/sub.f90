@@ -5172,7 +5172,6 @@ nameloop: do
 !  31-jul-07/dhruba: adapted from gij
 !
       use Deriv, only: der
-      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz) :: psif
       real, dimension (3) :: ee
@@ -5197,6 +5196,7 @@ nameloop: do
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
 !  1-aug-07/dhruba : adapted from gij_etc
+!
       use Deriv, only: der2,derij
       use Mpicomm, only: stop_it
 !

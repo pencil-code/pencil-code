@@ -1204,7 +1204,7 @@ module Fourier
 !  15-jan-2008/wlad: adapted from fourier_transform_xy_xy
 !                    and fourier_transform_other_2
 !
-      use Mpicomm, only: transp_xy_other,transp_xy
+      use Mpicomm, only: transp_xy_other
 !
       real, dimension (:,:) :: a_re,a_im
       logical, optional :: linv
@@ -1449,7 +1449,7 @@ module Fourier
 !
 !  19-jul-06/anders: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension (ny,nz) :: a_re
       real :: shift_y
