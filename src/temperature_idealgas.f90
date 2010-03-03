@@ -158,7 +158,7 @@ module Entropy
 !
 !  21-jul-2002/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde,farray_register_global
+      use FArrayManager, only: farray_register_global
       use Gravity, only: g0, gravz
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
@@ -1158,7 +1158,7 @@ module Entropy
 !
 !  16-may-07/gastine+dintrans: coded
 !  01-mar-10/dintrans: introduced a mixed version with the ADI scheme that only
-!  computes *during the explicit step* the term 
+!  computes *during the explicit step* the term
 !  gamma/(rho*cp)*grad(K).grad(TT) with grad(K)=dK/dT*grad(TT),
 !  this term being less restrictive for the explicit timestep
 !
