@@ -136,6 +136,7 @@ module Hydro
 !
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
+  logical :: lno_meridional_flow=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
 !
   namelist /hydro_run_pars/ &
@@ -159,7 +160,8 @@ module Hydro
        interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
        velocity_ceiling,&
        eckmann_friction, ampl_Omega, lcoriolis_xdep,&
-       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu
+       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu,&
+       lno_meridional_flow
 ! diagnostic variables (need to be consistent with reset list below)
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
@@ -1510,7 +1512,16 @@ module Hydro
                 - p%transpurho(:,j)*p%rho1 + p%uu(:,j)*p%rho1*p%transprho
           enddo
         else
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+!          
+! no meridional flow : turn off the meridional flow (in spherical)
+! useful for debugging.  
+!
+          if(lno_meridional_flow) then 
+	    f(l1:l2,m,n,iux:iuy)=0.
+	    df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
+          else
+	    df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+          endif
         endif
       endif
 !
@@ -2661,10 +2672,12 @@ module Hydro
       endif
 !
 !  Centrifugal force
+! The terms added is F_{centrifugal} = - \Omega X \Omega X r
 !
-      if (lcentrifugal_force) &
-          call stop_it("duu_dt: Centrifugal force not "//&
-          "implemented in spherical coordinates")
+      if (lcentrifugal_force) then  
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-x(l1:l2)*sinth(m)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-x(l1:l2)*sinth(m)*costh(m)
+      endif
 !
     endsubroutine coriolis_spherical
 !***********************************************************************

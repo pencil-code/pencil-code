@@ -31,7 +31,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
-  real :: pnlaw=0.0, Lambda_V0=0.0, Lambda_Omega=0.0
+  real :: pnlaw=0.0, Lambda_V0=0.0 
   real :: meanfield_nuB=0.0
   real, dimension(3) :: nu_aniso_hyper3=0.0
 !
@@ -67,7 +67,7 @@ module Viscosity
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
-      pnlaw,llambda_effect,Lambda_V0,Lambda_Omega, &
+      pnlaw,llambda_effect,Lambda_V0, &
       lmeanfield_nu,meanfield_nuB
 !
 ! other variables (needs to be consistent with reset list below)
@@ -306,7 +306,6 @@ module Viscosity
      call put_shared_variable('nu',nu,ierr)
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
       call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
-      call put_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
       call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
@@ -1062,27 +1061,10 @@ module Viscosity
 !                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
 ! PJK: Isn't this what we get when taking the divergence of
 ! PJK: rho*(rho*R_(r\phi))? Now the angular momentum is fairly well conserved.
-      p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
+       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
                     2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
-!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
-!                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
-!                  +p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
-!                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
-!
-!AB: Dhruba, please check the following expression that we adopted from
-!AB: the BMT92 paper.
-!DM: The two are actually the same expression.
-!  viscosity might be added here
-!
-!       p%fvisc(:,iuz)=p%fvisc(:,iuz)-Lambda_V0/x(l1:l2)*( &
-!         p%uij(:,3,1)+Lambda_Omega*sinth(m) &
-!          +(p%uu(:,3)+Lambda_Omega*sinth(m))*(p%glnrho(:,1)+2./x(l1:l2)))
-    endif
-! DM the above is possibly dimensionally wrong, as the two following terms
-! p%uu(:,3)+Lambda_Omega*sinth(m)
-! do not have the same dimension.
-!
+     endif
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?

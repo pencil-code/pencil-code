@@ -73,6 +73,7 @@ module Dustvelocity
       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd, &
       nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
 !
+  integer :: idiag_ekintot_dust=0
   integer, dimension(ndustspec) :: idiag_ud2m=0
   integer, dimension(ndustspec) :: idiag_udxm=0,idiag_udym=0,idiag_udzm=0
   integer, dimension(ndustspec) :: idiag_udx2m=0,idiag_udy2m=0,idiag_udz2m=0
@@ -720,7 +721,7 @@ module Dustvelocity
           lpenc_diagnos(i_rhod)=.true.
       if (maxval(idiag_udrms)/=0 .or. maxval(idiag_udmax)/=0 .or. &
           maxval(idiag_rdudmax)/=0 .or. maxval(idiag_ud2m)/=0 .or. &
-          maxval(idiag_udm2)/=0) &
+          maxval(idiag_udm2)/=0 .or. idiag_ekintot_dust/=0) &
           lpenc_diagnos(i_ud2)=.true.
       if (maxval(idiag_odrms)/=0 .or. maxval(idiag_odmax)/=0 .or. &
           maxval(idiag_od2m)/=0) lpenc_diagnos(i_od2)=.true.
@@ -1083,6 +1084,8 @@ module Dustvelocity
               call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
               lsqrt=.true.)
           if (idiag_ud2m(k)/=0) call sum_mn_name(p%ud2(:,k),idiag_ud2m(k))
+          if (idiag_ekintot_dust/=0) &
+             call integrate_mn_name(p%ud2,idiag_ekintot_dust)
           if (idiag_udxm(k)/=0) call sum_mn_name(p%uud(:,1,k),idiag_udxm(k))
           if (idiag_udym(k)/=0) call sum_mn_name(p%uud(:,2,k),idiag_udym(k))
           if (idiag_udzm(k)/=0) call sum_mn_name(p%uud(:,3,k),idiag_udzm(k))
@@ -1282,6 +1285,7 @@ module Dustvelocity
         idiag_udxm=0; idiag_udym=0; idiag_udzm=0
         idiag_udy2m=0; idiag_udz2m=0; idiag_udm2=0; idiag_oudm=0; idiag_od2m=0
         idiag_udrms=0
+        idiag_ekintot_dust=0
         idiag_udmax=0; idiag_odrms=0; idiag_odmax=0; idiag_rdudmax=0
         idiag_udmx=0; idiag_udmy=0; idiag_udmz=0; idiag_divud2m=0
         idiag_epsKd=0; idiag_rdudxm=0;idiag_rdudym=0; idiag_rdudzm=0;
@@ -1310,6 +1314,8 @@ module Dustvelocity
               'udzm'//trim(sdust),idiag_udzm(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'ud2m'//trim(sdust),idiag_ud2m(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'ekintot_dust'//trim(sdust),idiag_ekintot_dust)
           call parse_name(iname,cname(iname),cform(iname), &
               'udx2m'//trim(sdust),idiag_udx2m(k))
           call parse_name(iname,cname(iname),cform(iname), &

@@ -1757,7 +1757,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
-      real, pointer :: Lambda_V0,Lambda_Omega,nu
+      real, pointer :: Lambda_V0,nu
       logical, pointer :: llambda_effect
       integer :: ierr,k
 ! -------- Either case get the lambda variables first -----------
@@ -1772,9 +1772,6 @@ module Boundcond
       call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: " &
           // "problem getting shared var Lambda_V0")
-      call get_shared_variable('Lambda_Omega',Lambda_Omega,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-          // "problem getting shared var Lambda_Omega")
       else
       endif
 !
