@@ -80,7 +80,7 @@ module Viscosity
   integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK2=0      ! DIAG_DOC:
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
-  integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\, 
+  integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   viscous time step;
@@ -96,9 +96,6 @@ module Viscosity
 !
 !  19-nov-02/tony: coded
 !
-      use Mpicomm
-      use Sub
-!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -110,9 +107,9 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_auxiliary
       use Mpicomm, only: stop_it
-      use SharedVariables
+      use SharedVariables, only: put_shared_variable,get_shared_variable
 !
       logical, intent(in) :: lstarting
 !
@@ -187,7 +184,7 @@ module Viscosity
         case ('hyper3-simplified','hyper3_simplified', 'hyper6')
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           lvisc_hyper3_simplified=.true.
-        case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')  
+        case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
           if (lroot) print*,'viscous force: nu_hyper/pi^4 *(Deltav)^6/Deltaq^2'
           lvisc_hyper3_polar=.true.
         case ('hyper3-rho-nu-const','hyper3_rho_nu-const')
@@ -325,7 +322,7 @@ module Viscosity
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
@@ -365,7 +362,7 @@ module Viscosity
 !
 !  24-nov-03/tony: adapted from rprint_ionization
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -449,8 +446,8 @@ module Viscosity
       if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_nu_profx) lpenc_requested(i_x_mn)=.true.
-      if (lvisc_nu_profr) then 
-        if (lsphere_in_a_box.or.lspherical_coords) then 
+      if (lvisc_nu_profr) then
+        if (lsphere_in_a_box.or.lspherical_coords) then
           lpenc_requested(i_r_mn)=.true.
         else
           lpenc_requested(i_rcyl_mn)=.true.
@@ -460,7 +457,7 @@ module Viscosity
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
-          lvisc_nu_prof .or. lvisc_nu_profx .or. & 
+          lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr) &
           lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
@@ -563,7 +560,7 @@ module Viscosity
 !  20-11-04/anders: coded
 !
       use Deriv, only: der5i1j,der6
-      use Diagnostics
+      use Diagnostics, only: max_mn_name, sum_mn_name
       use Interstellar, only: calc_snr_damping
       use Mpicomm, only: stop_it
       use Sub
@@ -663,7 +660,7 @@ module Viscosity
             +2*p%sgnu(:,i)
        !  if (maxval(p%nu)<0) then
        !    call stop_it("Negative viscosity!")
-       !  endif 
+       !  endif
 
           enddo
         endif
@@ -687,14 +684,14 @@ module Viscosity
             tmp3=p%rcyl_mn
           endif
         endif
-        if (lvisc_nu_profx.and.lvisc_nu_profr) then 
+        if (lvisc_nu_profx.and.lvisc_nu_profr) then
           print*,'You are using both radial and horizontal '
           print*,'profiles for a viscosity jump. Are you '
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("","")
         endif
         pnu = nu + nu*(nu_jump-1.)*(step(tmp3,xnu ,widthnu) - &
-                                    step(tmp3,xnu2,widthnu)) 
+                                    step(tmp3,xnu2,widthnu))
         tmp4=nu*(nu_jump-1.)*(der_step(tmp3,xnu ,widthnu)- &
                               der_step(tmp3,xnu2,widthnu))
 !
@@ -723,7 +720,7 @@ module Viscosity
 !
         pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
 !  viscosity gradient
-        if (lcylindrical_coords) then 
+        if (lcylindrical_coords) then
           gradnu(:,1) = -pnlaw*nu*(p%rcyl_mn/xnu)**(-pnlaw-1)*1/xnu
           gradnu(:,2) = 0.
           gradnu(:,3) = 0.
@@ -731,7 +728,7 @@ module Viscosity
           gradnu(:,1) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*sinth(m)
           gradnu(:,2) = -pnlaw*nu*p%rcyl_mn**(-pnlaw-1)*costh(m)
           gradnu(:,3) = 0.
-        else 
+        else
           print*,'power-law viscosity only implemented '
           print*,'for spherical and cylindrical coordinates'
           call fatal_error("calc_pencils_viscosity","")
@@ -815,7 +812,7 @@ module Viscosity
 !
 ! General way of coding an anisotropic hyperviscosity.
 !
-        do j=1,3 
+        do j=1,3
           ju=j+iuu-1
           do i=1,3
             call der6(f,ju,tmp3,i,IGNOREDX=.true.)
@@ -916,7 +913,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)*p%rho1
         enddo
-!         
+!
         if (lpencil(i_visc_heat)) then  ! Heating term not implemented
           if (headtt) then
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
@@ -1061,30 +1058,30 @@ module Viscosity
 !
      if (llambda_effect) then
 !      p%fvisc(:,iuz)=p%fvisc(:,iuz) -Lambda_V0*( &
-!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
 !                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
 ! PJK: Isn't this what we get when taking the divergence of
 ! PJK: rho*(rho*R_(r\phi))? Now the angular momentum is fairly well conserved.
       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
-                    2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+                    2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
-!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
 !                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
-!                  +p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) & 
+!                  +p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
 !                     +(p%uu(:,3)/x(l1:l2)+Lambda_Omega*sinth(m))*p%glnrho(:,1))
 !
 !AB: Dhruba, please check the following expression that we adopted from
 !AB: the BMT92 paper.
-!DM: The two are actually the same expression. 
+!DM: The two are actually the same expression.
 !  viscosity might be added here
 !
 !       p%fvisc(:,iuz)=p%fvisc(:,iuz)-Lambda_V0/x(l1:l2)*( &
-!         p%uij(:,3,1)+Lambda_Omega*sinth(m) & 
+!         p%uij(:,3,1)+Lambda_Omega*sinth(m) &
 !          +(p%uu(:,3)+Lambda_Omega*sinth(m))*(p%glnrho(:,1)+2./x(l1:l2)))
     endif
-! DM the above is possibly dimensionally wrong, as the two following terms 
-! p%uu(:,3)+Lambda_Omega*sinth(m)  
-! do not have the same dimension. 
+! DM the above is possibly dimensionally wrong, as the two following terms
+! p%uu(:,3)+Lambda_Omega*sinth(m)
+! do not have the same dimension.
 !
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
@@ -1110,7 +1107,7 @@ module Viscosity
 !***********************************************************************
     subroutine get_gradnu(tmp,ljumpx,ljumpr,p,gradnu)
 !
-!  Calculate grad nu for vicosity jump in different 
+!  Calculate grad nu for vicosity jump in different
 !  coordinate systems
 !
 !  20-jun-08/wlad :: coded
@@ -1122,9 +1119,9 @@ module Viscosity
 !
       if (ljumpx.or.                             &
          (ljumpr.and.(lcylindrical_coords.or.    &
-                      lspherical_coords       ))) then 
+                      lspherical_coords       ))) then
         gradnu(:,1)=tmp ; gradnu(:,2)=0 ; gradnu(:,3)=0
-      elseif (ljumpr.and.lcylinder_in_a_box) then 
+      elseif (ljumpr.and.lcylinder_in_a_box) then
         gradnu(:,1)=tmp*x(l1:l2)*p%rcyl_mn1
         gradnu(:,2)=tmp*y(  m  )*p%rcyl_mn1
       elseif (ljumpr.and.lsphere_in_a_box) then
@@ -1140,9 +1137,6 @@ module Viscosity
 !  calculate viscous heating term for right hand side of entropy equation
 !
 !  20-nov-02/tony: coded
-!
-      use Mpicomm
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar)    :: df
@@ -1184,9 +1178,8 @@ module Viscosity
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
 !
-      use Diagnostics
-      use Mpicomm
-      use Sub
+      use Diagnostics, only: sum_mn_name, max_mn_name
+      use Sub, only: cross
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: nu_smag
@@ -1194,7 +1187,7 @@ module Viscosity
       type (pencil_case) :: p
 !
       intent (in) :: p
-      intent (inout) :: df 
+      intent (inout) :: df
 !
 !  Add viscosity to equation of motion
 !
@@ -1272,12 +1265,12 @@ module Viscosity
     endsubroutine calc_viscous_force
 !***********************************************************************
     subroutine calc_visc_heat_ppd(df,p)
-!    
+!
 !  Calculates viscous dissipation term from D'Angelo et al. (2003)
-! 
+!
 !  03/08 steveb
-! 
-      use Sub
+!
+      use Sub, only: get_radial_distance
       use Gravity, only: acceleration
 !
       real, dimension (mx,my,mz,mvar) :: df
