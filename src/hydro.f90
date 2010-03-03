@@ -149,7 +149,7 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, lpressuregradient_gas, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       utop,ubot,omega_out,omega_in, & 
+       utop,ubot,omega_out,omega_in, &
        lprecession, omega_precession, alpha_precession, lshear_rateofstrain, &
        lalways_use_gij_etc,lcalc_uumean, &
        lforcing_cont_uu, &
@@ -168,14 +168,14 @@ module Hydro
   integer :: idiag_outm=0       ! DIAG_DOC: $\left<\omv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
-  integer :: idiag_um2=0        ! DIAG_DOC: 
-  integer :: idiag_uxpt=0       ! DIAG_DOC: 
-  integer :: idiag_uypt=0       ! DIAG_DOC: 
-  integer :: idiag_uzpt=0       ! DIAG_DOC: 
+  integer :: idiag_um2=0        ! DIAG_DOC:
+  integer :: idiag_uxpt=0       ! DIAG_DOC:
+  integer :: idiag_uypt=0       ! DIAG_DOC:
+  integer :: idiag_uzpt=0       ! DIAG_DOC:
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
-  integer :: idiag_uzrmaxs=0    ! DIAG_DOC: 
+  integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
   integer :: idiag_uxmin=0      ! DIAG_DOC: $\min(|u_x|)$
   integer :: idiag_uymin=0      ! DIAG_DOC: $\min(|u_y|)$
   integer :: idiag_uzmin=0      ! DIAG_DOC: $\min(|u_z|)$
@@ -199,9 +199,9 @@ module Hydro
   integer :: idiag_oy2mx=0      ! DIAG_DOC: $\left<\omega_y^2\right>_{yz}$
   integer :: idiag_oz2mx=0      ! DIAG_DOC: $\left<\omega_z^2\right>_{yz}$
   integer :: idiag_uxuycsm=0    ! DIAG_DOC: $\left<u_xu_y\cos kz\sin kz\right>$
-  integer :: idiag_ux2my=0      ! DIAG_DOC: 
-  integer :: idiag_uy2my=0      ! DIAG_DOC: 
-  integer :: idiag_uz2my=0      ! DIAG_DOC: 
+  integer :: idiag_ux2my=0      ! DIAG_DOC:
+  integer :: idiag_uy2my=0      ! DIAG_DOC:
+  integer :: idiag_uz2my=0      ! DIAG_DOC:
   integer :: idiag_ux2mz=0      ! DIAG_DOC: $\left<u_x^2\right>_{xy}$
   integer :: idiag_uy2mz=0      ! DIAG_DOC: $\left<u_y^2\right>_{xy}$
   integer :: idiag_uz2mz=0      ! DIAG_DOC: $\left<u_z^2\right>_{xy}$
@@ -211,20 +211,20 @@ module Hydro
   integer :: idiag_uxuym=0      ! DIAG_DOC: $\left<u_x u_y\right>$
   integer :: idiag_uxuzm=0      ! DIAG_DOC: $\left<u_x u_z\right>$
   integer :: idiag_uyuzm=0      ! DIAG_DOC: $\left<u_y u_z\right>$
-  integer :: idiag_uxuymz=0     ! DIAG_DOC: 
-  integer :: idiag_uxuzmz=0     ! DIAG_DOC: 
-  integer :: idiag_uyuzmz=0     ! DIAG_DOC: 
-  integer :: idiag_uxuymy=0     ! DIAG_DOC: 
-  integer :: idiag_uxuzmy=0     ! DIAG_DOC: 
-  integer :: idiag_uyuzmy=0     ! DIAG_DOC: 
-  integer :: idiag_uxuymx=0     ! DIAG_DOC: 
-  integer :: idiag_uxuzmx=0     ! DIAG_DOC: 
-  integer :: idiag_uyuzmx=0     ! DIAG_DOC: 
+  integer :: idiag_uxuymz=0     ! DIAG_DOC:
+  integer :: idiag_uxuzmz=0     ! DIAG_DOC:
+  integer :: idiag_uyuzmz=0     ! DIAG_DOC:
+  integer :: idiag_uxuymy=0     ! DIAG_DOC:
+  integer :: idiag_uxuzmy=0     ! DIAG_DOC:
+  integer :: idiag_uyuzmy=0     ! DIAG_DOC:
+  integer :: idiag_uxuymx=0     ! DIAG_DOC:
+  integer :: idiag_uxuzmx=0     ! DIAG_DOC:
+  integer :: idiag_uyuzmx=0     ! DIAG_DOC:
   integer :: idiag_uxmz=0       ! DIAG_DOC: $\left< u_x \right>_{x,y}$
                                 ! DIAG_DOC:   \quad(horiz. averaged $x$
                                 ! DIAG_DOC:   velocity)
-  integer :: idiag_uymz=0       ! DIAG_DOC: 
-  integer :: idiag_uzmz=0       ! DIAG_DOC: 
+  integer :: idiag_uymz=0       ! DIAG_DOC:
+  integer :: idiag_uzmz=0       ! DIAG_DOC:
   integer :: idiag_oxmz=0       ! DIAG_DOC: $\left< \omega_x \right>_{xy}$
   integer :: idiag_oymz=0       ! DIAG_DOC: $\left< \omega_y \right>_{xy}$
   integer :: idiag_ozmz=0       ! DIAG_DOC: $\left< \omega_z \right>_{xy}$
@@ -276,23 +276,23 @@ module Hydro
   integer :: idiag_ux2mxz=0     ! DIAG_DOC: $\left< u_x^2 \right>_{y}$
   integer :: idiag_uy2mxz=0     ! DIAG_DOC: $\left< u_y^2 \right>_{y}$
   integer :: idiag_uz2mxz=0     ! DIAG_DOC: $\left< u_z^2 \right>_{y}$
-  integer :: idiag_uxmx=0       ! DIAG_DOC: 
-  integer :: idiag_uymx=0       ! DIAG_DOC: 
-  integer :: idiag_uzmx=0       ! DIAG_DOC: 
-  integer :: idiag_divum=0      ! DIAG_DOC: 
-  integer :: idiag_divu2m=0     ! DIAG_DOC: 
+  integer :: idiag_uxmx=0       ! DIAG_DOC:
+  integer :: idiag_uymx=0       ! DIAG_DOC:
+  integer :: idiag_uzmx=0       ! DIAG_DOC:
+  integer :: idiag_divum=0      ! DIAG_DOC:
+  integer :: idiag_divu2m=0     ! DIAG_DOC:
   integer :: idiag_u3u21m=0     ! DIAG_DOC: $\left<u_3 u_{2,1}\right>$
   integer :: idiag_u1u32m=0     ! DIAG_DOC: $\left<u_1 u_{3,2}\right>$
   integer :: idiag_u2u13m=0     ! DIAG_DOC: $\left<u_2 u_{1,3}\right>$
   integer :: idiag_u2u31m=0     ! DIAG_DOC: $\left<u_2 u_{3,1}\right>$
   integer :: idiag_u3u12m=0     ! DIAG_DOC: $\left<u_3 u_{1,2}\right>$
   integer :: idiag_u1u23m=0     ! DIAG_DOC: $\left<u_1 u_{2,3}\right>$
-  integer :: idiag_u3u21mz=0    ! DIAG_DOC: 
-  integer :: idiag_u1u32mz=0    ! DIAG_DOC: 
-  integer :: idiag_u2u13mz=0    ! DIAG_DOC: 
-  integer :: idiag_u2u31mz=0    ! DIAG_DOC: 
-  integer :: idiag_u3u12mz=0    ! DIAG_DOC: 
-  integer :: idiag_u1u23mz=0    ! DIAG_DOC: 
+  integer :: idiag_u3u21mz=0    ! DIAG_DOC:
+  integer :: idiag_u1u32mz=0    ! DIAG_DOC:
+  integer :: idiag_u2u13mz=0    ! DIAG_DOC:
+  integer :: idiag_u2u31mz=0    ! DIAG_DOC:
+  integer :: idiag_u3u12mz=0    ! DIAG_DOC:
+  integer :: idiag_u1u23mz=0    ! DIAG_DOC:
   integer :: idiag_urmphi=0     ! PHIAVG_DOC: $\left<u_\varpi\right>_\varphi$
                                 ! PHIAVG_DOC: [cyl.\ polar coords
                                 ! PHIAVG_DOC:  $(\varpi,\varphi,z)$]
@@ -303,15 +303,15 @@ module Hydro
                                 ! PHIAVG_DOC: \var{upmphi} and \var{uzmphi}
                                 ! PHIAVG_DOC: together
   integer :: idiag_u2mphi=0     ! PHIAVG_DOC: $\left<\uv^2\right>_\varphi$
-  integer :: idiag_u2mr=0       ! DIAG_DOC: 
-  integer :: idiag_urmr=0       ! DIAG_DOC: 
-  integer :: idiag_upmr=0       ! DIAG_DOC: 
-  integer :: idiag_uzmr=0       ! DIAG_DOC: 
-  integer :: idiag_uxfampm=0    ! DIAG_DOC: 
-  integer :: idiag_uyfampm=0    ! DIAG_DOC: 
-  integer :: idiag_uzfampm=0    ! DIAG_DOC: 
-  integer :: idiag_uxfampim=0   ! DIAG_DOC: 
-  integer :: idiag_uyfampim=0   ! DIAG_DOC: 
+  integer :: idiag_u2mr=0       ! DIAG_DOC:
+  integer :: idiag_urmr=0       ! DIAG_DOC:
+  integer :: idiag_upmr=0       ! DIAG_DOC:
+  integer :: idiag_uzmr=0       ! DIAG_DOC:
+  integer :: idiag_uxfampm=0    ! DIAG_DOC:
+  integer :: idiag_uyfampm=0    ! DIAG_DOC:
+  integer :: idiag_uzfampm=0    ! DIAG_DOC:
+  integer :: idiag_uxfampim=0   ! DIAG_DOC:
+  integer :: idiag_uyfampim=0   ! DIAG_DOC:
   integer :: idiag_uzfampim=0   ! DIAG_DOC:
   integer :: idiag_ruxm=0       ! DIAG_DOC: $\left<\varrho u_x\right>$
                                 ! DIAG_DOC:   \quad(mean $x$-momentum density)
@@ -337,7 +337,7 @@ module Hydro
   integer :: idiag_rly2m=0      ! DIAG_DOC: $\left<(\rho z u_x-x u_z)^2\right>$
   integer :: idiag_rlz2m=0      ! DIAG_DOC: $\left<(\rho x u_y-y u_x)^2\right>$
   integer :: idiag_tot_ang_mom=0! DIAG_DOC: Total angular momentum in spherical
-                                ! DIAG_DOC: coordinates about the axis.  
+                                ! DIAG_DOC: coordinates about the axis.
   integer :: idiag_rufm=0       ! DIAG_DOC:
   integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
                                 ! DIAG_DOC:  /\max|\mathbf{u}|]$
@@ -355,19 +355,19 @@ module Hydro
   integer :: idiag_ox2m=0       ! DIAG_DOC: $\left<\omega_x^2\right>$
   integer :: idiag_oy2m=0       ! DIAG_DOC: $\left<\omega_y^2\right>$
   integer :: idiag_oz2m=0       ! DIAG_DOC: $\left<\omega_z^2\right>$
-  integer :: idiag_oxm=0        ! DIAG_DOC: 
-  integer :: idiag_oym=0        ! DIAG_DOC: 
-  integer :: idiag_ozm=0        ! DIAG_DOC: 
+  integer :: idiag_oxm=0        ! DIAG_DOC:
+  integer :: idiag_oym=0        ! DIAG_DOC:
+  integer :: idiag_ozm=0        ! DIAG_DOC:
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
   integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
                                 ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
-  integer :: idiag_ozmphi=0     ! DIAG_DOC: 
-  integer :: idiag_ormr=0       ! DIAG_DOC: 
-  integer :: idiag_opmr=0       ! DIAG_DOC: 
-  integer :: idiag_ozmr=0       ! DIAG_DOC: 
+  integer :: idiag_ozmphi=0     ! DIAG_DOC:
+  integer :: idiag_ormr=0       ! DIAG_DOC:
+  integer :: idiag_opmr=0       ! DIAG_DOC:
+  integer :: idiag_ozmr=0       ! DIAG_DOC:
   integer :: idiag_oumx=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC: \cdot\uv\right>_{yz}$
   integer :: idiag_oumy=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
@@ -395,20 +395,20 @@ module Hydro
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
                                 ! DIAG_DOC:   \quad(maximum Mach number)
-  integer :: idiag_fintm=0      ! DIAG_DOC: 
-  integer :: idiag_fextm=0      ! DIAG_DOC: 
-  integer :: idiag_duxdzma=0    ! DIAG_DOC: 
-  integer :: idiag_duydzma=0    ! DIAG_DOC: 
+  integer :: idiag_fintm=0      ! DIAG_DOC:
+  integer :: idiag_fextm=0      ! DIAG_DOC:
+  integer :: idiag_duxdzma=0    ! DIAG_DOC:
+  integer :: idiag_duydzma=0    ! DIAG_DOC:
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
-  integer :: idiag_ekinz=0      ! DIAG_DOC: 
-  integer :: idiag_totangmom=0  ! DIAG_DOC: 
-  integer :: idiag_fmassz=0     ! DIAG_DOC: 
+  integer :: idiag_ekinz=0      ! DIAG_DOC:
+  integer :: idiag_totangmom=0  ! DIAG_DOC:
+  integer :: idiag_fmassz=0     ! DIAG_DOC:
   integer :: idiag_fkinz=0      ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
   integer :: idiag_fkinxy=0     ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
-  integer :: idiag_fxbxm=0      ! DIAG_DOC: 
-  integer :: idiag_fxbym=0      ! DIAG_DOC: 
-  integer :: idiag_fxbzm=0      ! DIAG_DOC: 
+  integer :: idiag_fxbxm=0      ! DIAG_DOC:
+  integer :: idiag_fxbym=0      ! DIAG_DOC:
+  integer :: idiag_fxbzm=0      ! DIAG_DOC:
   integer :: idiag_uxglnrym=0   ! DIAG_DOC: $\left<u_x\partial_y\ln\varrho\right>$
   integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
   integer :: idiag_uxuydivum=0  ! DIAG_DOC: $\left<u_x u_y\nabla\cdot\uv\right>$
@@ -442,7 +442,7 @@ module Hydro
 !
       if  (.not.ldensity) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',&
-          lpressuregradient_gas,ierr)     
+          lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_hydro',&
           'there was a problem sharing lpressuregradient_gas')
 !
@@ -483,7 +483,7 @@ module Hydro
       logical :: lstarting
       integer :: ierr
 !
-!  Block use of uninitalised p%fcont 
+!  Block use of uninitalised p%fcont
 !
       if (.not.lforcing_cont) lforcing_cont_uu=.false.
 !
@@ -550,7 +550,7 @@ module Hydro
 !
 !  If fargo is used, advection is taken care of in special/fargo.f90
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         ladvection_velocity=.false.
         print*,'initialize_hydro: fargo used. turned off advection of velocity'
       endif
@@ -560,17 +560,17 @@ module Hydro
 !
       if (borderuu/='nothing') call request_border_driving()
 !
-!  Share lcoriolis_force and lcentrifugal_force so the Particles module 
+!  Share lcoriolis_force and lcentrifugal_force so the Particles module
 !  knows whether to apply them or not.
 !
       if (lparticles.and.Omega/=0.0) then
         call put_shared_variable('lcoriolis_force',&
-            lcoriolis_force,ierr)     
+            lcoriolis_force,ierr)
         if (ierr/=0) call fatal_error('register_hydro',&
             'there was a problem sharing lcoriolis_force')
 !
         call put_shared_variable('lcentrifugal_force',&
-            lcentrifugal_force,ierr)     
+            lcentrifugal_force,ierr)
         if (ierr/=0) call fatal_error('register_hydro',&
             'there was a problem sharing lcentrifugal_force')
       endif
@@ -662,7 +662,7 @@ module Hydro
       type (pencil_case) :: p
 !
 !  inituu corresponds to different initializations of uu (called from start).
-!     
+!
       do j=1,ninit
 
         select case (inituu(j))
@@ -1003,7 +1003,7 @@ module Hydro
             call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
             eta_sigma = (2. - qshear)*Omega
             do n=n1,n2; do m=m1,m2
-              f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy(j)*eta_sigma* & 
+              f(l1:l2,m,n,ilnrho) = -kx_uu*ampl_uy(j)*eta_sigma* &
                   (cos(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) + &
                   sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
             enddo; enddo
@@ -1060,7 +1060,7 @@ module Hydro
           f(:,:,:,iuz)=0.
 !
         case ('cylcoords-stream-x')
-! Constant velocity in x-direction in cylinder coordinates  
+! Constant velocity in x-direction in cylinder coordinates
           do l=l1,l2; do m=m1,m2
             wall_smoothing=1-exp(-((x(l)-r_cyl)/skin_depth)**2)
             f(l,m,:,iux)=cos(y(m))*ampluu(j)*wall_smoothing
@@ -1071,7 +1071,7 @@ module Hydro
 
         case ('cylinderstream_cyl')
 !   Stream functions for flow around a cylinder as initial condition.
-!   Cylindrical coordinates. Flow in x-direction. 
+!   Cylindrical coordinates. Flow in x-direction.
           a2 = r_cyl**2
           do l=l1,l2
             if (x(l) < r_cyl) then
@@ -1130,7 +1130,7 @@ module Hydro
         endif
       endif
 
-! mgellert, add random fluctuation only inside domain, not on boundary 
+! mgellert, add random fluctuation only inside domain, not on boundary
 !           (to be able to use the 'freeze' option for BCs)
       if (urandi /= 0) then
         if (lroot) print*, 'init_uu: Adding random uu fluctuations (not on boundary), urandi=',urandi
@@ -1264,11 +1264,11 @@ module Hydro
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
           idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
           lpenc_diagnos(i_ugu)=.true.
-! check whether right variables are set for half-box calculations. 
+! check whether right variables are set for half-box calculations.
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
-        else  
+        else
           if (lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
           if (lequatorz) write(*,*) 'pencil-criteria_hydro: box divided along z dirn'
         endif
@@ -1291,7 +1291,7 @@ module Hydro
       if (lpencil_in(i_sij)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_divu)=.true.
-      endif      
+      endif
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
         if (lpencil_in(i_del2u))    lpencil_in(i_graddivu)=.true.
         if (lpencil_in(i_graddivu)) lpencil_in(i_oo)=.true.
@@ -1366,7 +1366,7 @@ module Hydro
       if (lpencil(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
-! Useful to debug forcing - Dhruba 
+! Useful to debug forcing - Dhruba
       if (loutest.and.lpencil(i_ou))then
 !      write(*,*) lpencil(i_ou)
         outest = minval(p%ou)
@@ -1376,7 +1376,7 @@ module Hydro
         else
         endif
       else
-      endif 
+      endif
 ! ugu
       if (lpencil(i_ugu)) then
         if (headtt.and.lupw_uu) then
@@ -1416,11 +1416,11 @@ module Hydro
       endif
 ! del2u, graddivu
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
-        if (lpencil(i_graddivu)) then 
+        if (lpencil(i_graddivu)) then
           if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
           call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
         endif
-        if (lpencil(i_del2u)) then 
+        if (lpencil(i_del2u)) then
           call curl_mn(p%oij,p%qq,p%oo)
           p%del2u=p%graddivu-p%qq
        endif
@@ -1503,7 +1503,7 @@ module Hydro
 !
 !  Advection term.
 !
-      if (ladvection_velocity) then 
+      if (ladvection_velocity) then
         if (lweno_transport) then
           do j=1,3
             df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j) &
@@ -1548,8 +1548,8 @@ module Hydro
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt.and.ladvection_velocity) then 
-        if      (lspherical_coords) then 
+      if (lfirst.and.ldt.and.ladvection_velocity) then
+        if      (lspherical_coords) then
           advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
                    abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
                    abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
@@ -1566,7 +1566,7 @@ module Hydro
 !
 !WL: don't know if this is correct, but it's the only way I can make
 !    some 1D and 2D samples work when the non-existent direction has the
-!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates 
+!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates
 !    on the phi direction)
 !    Please check
 !
@@ -1762,7 +1762,7 @@ module Hydro
             (p%rho*(x(l1:l2)*p%uu(:,2)-y(m)*p%uu(:,1)))**2,idiag_rlz2m)
 !
 !  Total angular momentum in spherical coordinates
-! 
+!
         if (idiag_tot_ang_mom/=0) call integrate_mn_name( &
             p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
 
@@ -1815,7 +1815,7 @@ module Hydro
         if (idiag_Mamax/=0) call max_mn_name(p%Ma2,idiag_Mamax,lsqrt=.true.)
 !
 !  Diagonal components of alpha using FOSA:
-!    alp11=<u3*u2,1>-<u2*u3,1> 
+!    alp11=<u3*u2,1>-<u2*u3,1>
 !    alp22=<u1*u3,2>-<u3*u1,2>
 !    alp33=<u2*u1,3>-<u1*u2,3>
 !  For fully periodic domains it is sufficient to compute, e.g., only:
@@ -1828,14 +1828,14 @@ module Hydro
         if (idiag_u3u12m/=0) call sum_mn_name(p%u3u12,idiag_u3u12m)
         if (idiag_u1u23m/=0) call sum_mn_name(p%u1u23,idiag_u1u23m)
 !
-! fourier amplitude f(t) for non-axisymmetric waves: 
+! fourier amplitude f(t) for non-axisymmetric waves:
 !         u_x = f(t)*exp[i(kx*x+ky*y+kz*z)]
 !
         if (idiag_uxfampm/=0 .or. idiag_uyfampm/=0 .or. idiag_uzfampm/=0 .or.&
             idiag_uxfampim/=0 .or. idiag_uxfampim/=0 .or. idiag_uzfampim/=0) then
           kx = kx_uu + qshear*Omega*ky_uu*t
-          space_part_re = cos(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) 
-          space_part_im = -sin(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)) 
+          space_part_re = cos(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n))
+          space_part_im = -sin(kx*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n))
         endif
 !
 !  integrate velocity in time, to calculate correlation time later
@@ -2031,7 +2031,7 @@ module Hydro
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
 !  ldiagnos and idiag_umx and/or idiag_umy, so
 !
-!  We may need to calculate uxmxy without calculating umx. The following 
+!  We may need to calculate uxmxy without calculating umx. The following
 !  if condition was messing up calculation of umxy_rms
 !
         if (ldiagnos) then
@@ -2057,13 +2057,13 @@ module Hydro
     real, dimension (nx,3), optional :: uu
 !
     integer :: i,j
-!   
+!
     intent(in)  :: uij, divu
     intent(out) :: sij
 !
 !  In-place operation is possible, i.e. uij and sij may refer to the same array.
 !
-    do j=1,3                                    
+    do j=1,3
       sij(:,j,j)=uij(:,j,j)
       do i=j+1,3
         sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
@@ -2071,7 +2071,7 @@ module Hydro
       enddo
       sij(:,j,j)=sij(:,j,j)-(1./3.)*divu
     enddo
-! 
+!
     if (lspherical_coords.or.lcylindrical_coords) then
       if (.not.present(uu)) then
         call fatal_error('traceless_strain', &
@@ -2082,21 +2082,21 @@ module Hydro
     endif
 !
     if (lspherical_coords) then
-! sij(:,1,1) remains unchanged in spherical coordinates  
+! sij(:,1,1) remains unchanged in spherical coordinates
       sij(:,1,2)=sij(:,1,2)-.5*r1_mn*uu(:,2)
       sij(:,1,3)=sij(:,1,3)-.5*r1_mn*uu(:,3)
       sij(:,2,1)=sij(:,1,2)
-      sij(:,2,2)=sij(:,2,2)+r1_mn*uu(:,1) 
+      sij(:,2,2)=sij(:,2,2)+r1_mn*uu(:,1)
       sij(:,2,3)=sij(:,2,3)-.5*r1_mn*cotth(m)*uu(:,3)
       sij(:,3,1)=sij(:,1,3)
       sij(:,3,2)=sij(:,2,3)
-      sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2) 
+      sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2)
     elseif (lcylindrical_coords) then
       sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1*uu(:,2)
       sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1*uu(:,1)
       sij(:,2,1)=sij(:,1,2)
     endif
-!    
+!
     if (lshear) then
       if (lshear_rateofstrain) then
         sij(:,1,2)=sij(:,1,2)+Sshear
@@ -2207,10 +2207,10 @@ module Hydro
             uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
           enddo
         enddo
-        
+
         uumzl(n1:n2,:) = uumz
-        
-        call fill_zghostzones_3vec(uumzl,iux)      !MR: checked by numbers        
+
+        call fill_zghostzones_3vec(uumzl,iux)      !MR: checked by numbers
 
         do j=1,3
           call der_z(uumzl(:,j),guumz(:,j))
@@ -2218,8 +2218,8 @@ module Hydro
 
       endif
 
-      if (nprocy>1) then             
- 
+      if (nprocy>1) then
+
         call mpiallreduce_sum(guumz,temp,(/nz,3/),idir=2)
         guumz = temp
 
@@ -2354,7 +2354,7 @@ module Hydro
         do j=1,3
           ju=j+iuu-1
           call set_border_initcond(f,ju,f_target(:,j))
-        enddo  
+        enddo
 !
       case ('nothing')
         if (lroot.and.ip<=5) &
@@ -2414,7 +2414,7 @@ module Hydro
 !
           call get_radial_distance(rr_sph,rr_cyl)
 
-          if (lgrav) then 
+          if (lgrav) then
 !
 ! Gravity of a static central body
 !
@@ -2450,7 +2450,7 @@ module Hydro
               endif
             endif
 !
-          elseif (lparticles_nbody) then 
+          elseif (lparticles_nbody) then
 !
 ! Nbody gravity with a dominating but dynamical central body
 !
@@ -2572,7 +2572,7 @@ module Hydro
         if (lcoriolis_force) then
 
           if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
-          
+
           c2=2*Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
@@ -2633,7 +2633,7 @@ module Hydro
         print*, 'coriolis_spherical: Omega=', Omega
       endif
 !
-! Not yet coded for angular velocity at an angle with the z axis. 
+! Not yet coded for angular velocity at an angle with the z axis.
 !
       if (theta/=0) then
          print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
@@ -2652,7 +2652,7 @@ module Hydro
 !  -2Omega x U = (+c2*u3)
 !                (-c2*u2+s2*u1)
 !
-      if (lcoriolis_force) then 
+      if (lcoriolis_force) then
         c2= 2*Omega*costh(m)
         s2=-2*Omega*sinth(m)
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
@@ -2662,7 +2662,7 @@ module Hydro
 !
 !  Centrifugal force
 !
-      if (lcentrifugal_force) & 
+      if (lcentrifugal_force) &
           call stop_it("duu_dt: Centrifugal force not "//&
           "implemented in spherical coordinates")
 !
@@ -2685,7 +2685,7 @@ module Hydro
         print*, 'coriolis_spherical: Omega=', Omega
       endif
 !
-! Not yet coded for angular velocity at an angle with the z axis. 
+! Not yet coded for angular velocity at an angle with the z axis.
 !
       if (theta/=0) then
          print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
@@ -2707,7 +2707,7 @@ module Hydro
 !
 !  Centrifugal force
 !
-      if (lcentrifugal_force) & 
+      if (lcentrifugal_force) &
           call stop_it("duu_dt: Centrifugal force not "//&
           "implemented in spherical coordinates")
 !
@@ -2719,8 +2719,8 @@ module Hydro
     subroutine coriolis_cylindrical(df,p)
 !
 !  Coriolis terms using cylindrical coords
-!  The formulation is the same as in cartesian, but it is better to 
-!  keep it here because precession is not implemented for 
+!  The formulation is the same as in cartesian, but it is better to
+!  keep it here because precession is not implemented for
 !  cylindrical coordinates.
 !
 !  19-sep-07/steveb: coded
@@ -2736,7 +2736,7 @@ module Hydro
       if (headtt) &
           print*, 'coriolis_cylindrical: Omega=', Omega
 !
-! Not yet coded for angular velocity at an angle with the z axis. 
+! Not yet coded for angular velocity at an angle with the z axis.
 !
       if (theta/=0) then
          print*, 'coriolis_cylindrical: Omega=,theta=', Omega,theta
@@ -2744,8 +2744,8 @@ module Hydro
       endif
 !
 !  -2 Omega x u
-!    
-      if (lcoriolis_force) then 
+!
+      if (lcoriolis_force) then
         c2=2*Omega
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
@@ -2763,8 +2763,8 @@ module Hydro
     subroutine coriolis_cylindrical_del2p(f,p)
 !
 !  Coriolis terms using cylindrical coords
-!  The formulation is the same as in cartesian, but it is better to 
-!  keep it here because precession is not implemented for 
+!  The formulation is the same as in cartesian, but it is better to
+!  keep it here because precession is not implemented for
 !  cylindrical coordinates.
 !
 !  19-sep-07/steveb: coded
@@ -2779,7 +2779,7 @@ module Hydro
       if (headtt) &
           print*, 'coriolis_cylindrical: Omega=', Omega
 !
-! Not yet coded for angular velocity at an angle with the z axis. 
+! Not yet coded for angular velocity at an angle with the z axis.
 !
       if (theta/=0) then
          print*, 'coriolis_cylindrical: Omega=,theta=', Omega,theta
@@ -2793,8 +2793,8 @@ module Hydro
 !***********************************************************************
     subroutine coriolis_xdep(df,p)
 !
-!  Coriolis terms in Cartesian coordinates with Omega depending 
-!  on x, i.e. Omega=Omega0*(-sin(k_x*x),0,cos(l_x*x)) with k_x=2pi/Lx.  
+!  Coriolis terms in Cartesian coordinates with Omega depending
+!  on x, i.e. Omega=Omega0*(-sin(k_x*x),0,cos(l_x*x)) with k_x=2pi/Lx.
 !
 !  28-may-09/PJK: coded
 !
@@ -2810,7 +2810,7 @@ module Hydro
           print*, 'coriolis_xdep: ampl_Omega=', ampl_Omega
 !
 !  -2 Omega x u
-!    
+!
       c1=-2*ampl_Omega*sin(pi*((x(l1:l2))-x0)/Lx)
       c2= 2*ampl_Omega*cos(pi*((x(l1:l2))-x0)/Lx)
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)             +c2*p%uu(:,2)
@@ -2981,24 +2981,24 @@ module Hydro
     endsubroutine udamping
 !***********************************************************************
     subroutine input_persistent_hydro(id,lun,done)
-! 
+!
 !  Dummy routine
-! 
+!
       integer :: id,lun
       logical :: done
-! 
+!
       call keep_compiler_quiet(id)
       call keep_compiler_quiet(lun)
       call keep_compiler_quiet(done)
-! 
+!
     endsubroutine input_persistent_hydro
 !***********************************************************************
     subroutine output_persistent_hydro(lun)
-! 
+!
 !  Dummy routine
-! 
+!
       integer :: lun
-! 
+!
       call keep_compiler_quiet(lun)
 !
     endsubroutine output_persistent_hydro
@@ -3019,7 +3019,7 @@ module Hydro
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
-!    
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=hydro_init_pars)
@@ -3027,7 +3027,7 @@ module Hydro
     endsubroutine write_hydro_init_pars
 !***********************************************************************
     subroutine read_hydro_run_pars(unit,iostat)
-!    
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -3111,11 +3111,11 @@ module Hydro
         idiag_uy2my=0
         idiag_uz2my=0
         idiag_ux2mz=0
-        idiag_uy2mz=0 
-        idiag_uz2mz=0 
+        idiag_uy2mz=0
+        idiag_uz2mz=0
         idiag_rux2mz=0
-        idiag_ruy2mz=0 
-        idiag_ruz2mz=0 
+        idiag_ruy2mz=0
+        idiag_ruz2mz=0
         idiag_uxmz=0
         idiag_uymz=0
         idiag_uzmz=0
@@ -3237,7 +3237,7 @@ module Hydro
         idiag_fextm=0
         idiag_duxdzma=0
         idiag_duydzma=0
-        idiag_ekin=0 
+        idiag_ekin=0
         idiag_totangmom=0
         idiag_ekintot=0
         idiag_ekinz=0
@@ -4278,7 +4278,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
       real, dimension (mz) :: prof_amp3
-      character (len=labellen) :: prof_diffrot 
+      character (len=labellen) :: prof_diffrot
       logical :: ldiffrot_test
       integer :: llx
 !
@@ -4360,7 +4360,7 @@ module Hydro
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
         -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
 !
-!  set u_phi=0 below given radius, i.e. enforce a tachocline in 
+!  set u_phi=0 below given radius, i.e. enforce a tachocline in
 !  spherical convection setup
 !
       case ('tachocline')
@@ -4398,9 +4398,9 @@ module Hydro
         else if (lcylindrical_coords) then
           call stop_it("diffrot_test: not implemented for cylindrical coordinates")
         else
-          do llx=l1,l2 
-            f(llx,m,n,iuz) = prof_amp1(llx)*cos(y(m))*cos(y(m)) 
-!prof_amp1(llx)*cos(y(m))*cos(y(m)) 
+          do llx=l1,l2
+            f(llx,m,n,iuz) = prof_amp1(llx)*cos(y(m))*cos(y(m))
+!prof_amp1(llx)*cos(y(m))*cos(y(m))
           enddo
         endif
         f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
@@ -4414,7 +4414,7 @@ module Hydro
        uinn = omega_in*x(l1)
        uext = omega_out*x(l2)
        slope = (uext - uinn)/(x(l2)-x(l1))
-       prof_amp1=  slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1)) 
+       prof_amp1=  slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
              - prof_amp1)
 !
@@ -4458,7 +4458,7 @@ module Hydro
 !
 !  dummy routine due to dhruba commit 13286
 !
-!  16-feb-2010/bing: 
+!  16-feb-2010/bing:
 !
       print*, 'I should not be called. '
 !

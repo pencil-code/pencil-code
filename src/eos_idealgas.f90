@@ -556,39 +556,39 @@ module EquationOfState
         if (leos_isentropic) then
            call fatal_error('eos_isentropic', 'isentropic case not yet coded')
         elseif (leos_isothermal) then
-          if (lpencil_in(i_lnrho)) then 
+          if (lpencil_in(i_lnrho)) then
             lpencil_in(i_pp)=.true.
             lpencil_in(i_TT)=.true.
           endif
-          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
         else
-          if (lpencil_in(i_cs2)) then 
-            lpencil_in(i_rho)=.true. 
-            lpencil_in(i_pp)=.true. 
+          if (lpencil_in(i_cs2)) then
+            lpencil_in(i_rho)=.true.
+            lpencil_in(i_pp)=.true.
           endif
-          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true. 
-          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true. 
-          if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true. 
-          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
+          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+          if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
           if (lpencil_in(i_lnrho)) then
-            lpencil_in(i_pp)=.true. 
+            lpencil_in(i_pp)=.true.
             lpencil_in(i_ss)=.true.
           endif
         endif
-!        
+!
 
       case (ipp_cs2)
         if (leos_isentropic) then
            call fatal_error('eos_isentropic', 'isentropic case not yet coded')
         elseif (leos_isothermal) then
-          if (lpencil_in(i_lnrho)) then 
+          if (lpencil_in(i_lnrho)) then
             lpencil_in(i_pp)=.true.
           endif
-          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
         else
-          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true. 
-          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true. 
-          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true. 
+          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
+          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
+          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
         endif
       case default
         call fatal_error('pencil_interdep_eos','case not implemented yet')
@@ -709,7 +709,7 @@ module EquationOfState
           do i=1,3; p%glnTT(:,i)=p%gTT(:,i)*p%TT1; enddo
         endif
         if (lpencil(i_del2TT)) call del2(f,ieosvar2,p%del2TT)
-        if (lpencil(i_del2lnTT)) then 
+        if (lpencil(i_del2lnTT)) then
           tmp=0.0
           do i=1,3
             tmp=tmp+p%glnTT(:,i)**2
@@ -836,7 +836,7 @@ module EquationOfState
           if (gamma_m1/=0.0) then
             p%ee=(gamma_inv/gamma_m1)*p%cs2
           else
-            p%ee=p%cs2            
+            p%ee=p%cs2
           endif
         endif
         if (lpencil(i_yH)) p%yH=impossible
@@ -1370,7 +1370,7 @@ module EquationOfState
         lnrho_=pp_*cs20
         TT_=exp(lnTT0)
         endif
-        
+
       case default
         call not_implemented('eoscalc_point')
       end select
@@ -1746,17 +1746,17 @@ module EquationOfState
 !   01-dec-2009/piyali+dhruba: coded
 !
       use Cdata
-!     
+!
       real,intent(in):: init_average_density,average_density
       real,intent(inout):: average_pressure
 !
       if (leos_isothermal.or.lfirst) then
         average_pressure = average_density*cs20
       else
-        average_pressure = average_pressure+((average_density/& 
+        average_pressure = average_pressure+((average_density/&
                            init_average_density)**gamma-1.0)*pp0*pres_corr
         call fatal_error('get_average_pressure','Non isothermal case no coded yet')
-      endif  
+      endif
 !
     endsubroutine get_average_pressure
 !***********************************************************************
@@ -2348,7 +2348,7 @@ module EquationOfState
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_x: cannot have cs2bot<=0'
-        if (lentropy .and. .not. pretend_lnTT) then 
+        if (lentropy .and. .not. pretend_lnTT) then
            tmp = 2*cv*log(cs2bot/cs20)
            f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l1,:,:,ilnrho)-lnrho0)
            do i=1,nghost
@@ -2357,10 +2357,10 @@ module EquationOfState
            enddo
         elseif (lentropy .and. pretend_lnTT) then
            f(l1,:,:,iss) = log(cs2bot/gamma_m1)
-           do i=1,nghost; f(l1-i,:,:,iss)=2*f(l1,:,:,iss)-f(l1+i,:,:,iss); enddo              
+           do i=1,nghost; f(l1-i,:,:,iss)=2*f(l1,:,:,iss)-f(l1+i,:,:,iss); enddo
         elseif (ltemperature) then
            f(l1,:,:,ilnTT) = log(cs2bot/gamma_m1)
-           do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo              
+           do i=1,nghost; f(l1-i,:,:,ilnTT)=2*f(l1,:,:,ilnTT)-f(l1+i,:,:,ilnTT); enddo
         endif
 !
 !  top boundary
@@ -2370,7 +2370,7 @@ module EquationOfState
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
-         if (lentropy .and. .not. pretend_lnTT) then 
+         if (lentropy .and. .not. pretend_lnTT) then
             tmp = 2*cv*log(cs2top/cs20)
             f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
             do i=1,nghost
@@ -2382,7 +2382,7 @@ module EquationOfState
            do i=1,nghost; f(l2+i,:,:,iss)=2*f(l2,:,:,iss)-f(l2-i,:,:,iss); enddo
         elseif (ltemperature) then
            f(l2,:,:,ilnTT) = log(cs2top/gamma_m1)
-           do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo           
+           do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
         endif
 
       case default
@@ -2482,7 +2482,7 @@ module EquationOfState
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
-        if (lentropy .and. .not. pretend_lnTT) then 
+        if (lentropy .and. .not. pretend_lnTT) then
            tmp = 2*cv*log(cs2bot/cs20)
            f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n1,ilnrho)-lnrho0)
            do i=1,nghost
@@ -2493,7 +2493,7 @@ module EquationOfState
             f(:,:,n1,iss) = log(cs2bot/gamma_m1)
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
         elseif (ltemperature) then
-            if (ltemperature_nolog) then 
+            if (ltemperature_nolog) then
               f(:,:,n1,iTT)   = cs2bot/gamma_m1
             else
               f(:,:,n1,ilnTT) = log(cs2bot/gamma_m1)
@@ -2508,7 +2508,7 @@ module EquationOfState
                    'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
-        if (lentropy .and. .not. pretend_lnTT) then 
+        if (lentropy .and. .not. pretend_lnTT) then
            tmp = 2*cv*log(cs2top/cs20)
            f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n2,ilnrho)-lnrho0)
            do i=1,nghost
@@ -2519,7 +2519,7 @@ module EquationOfState
             f(:,:,n2,iss) = log(cs2top/gamma_m1)
             do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
         elseif (ltemperature) then
-            if (ltemperature_nolog) then 
+            if (ltemperature_nolog) then
               f(:,:,n2,iTT)   = cs2top/gamma_m1
             else
               f(:,:,n2,ilnTT) = log(cs2top/gamma_m1)
@@ -3022,10 +3022,10 @@ module EquationOfState
           centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,irho)*exp(gravterm + centterm)
-          else  
+          else
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho) + gravterm + centterm
           endif
-          
+
           !print*,'potentials',potm,potp,-(potm-potp)
           !print*,'centrifugal',f(l1-i,mpoint,npoint,iuy)**2 *step/rad
           !stop
@@ -3041,14 +3041,14 @@ module EquationOfState
           cs2 = cs20
           call potential(R=x(l2+i),pot=potp)
           call potential(R=x(l2-i),pot=potm)
- 
+
           gravterm= -(potp-potm)/cs2
 
           step=2*i*dx
           rad=x(l2+i)
           uphi=f(l2+i,:,:,iuy)
 
-          centterm= uphi**2 * step/(rad*cs2)          
+          centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
             f(l2+i,:,:,irho)   = f(l2-i,:,:,irho)*exp(gravterm + centterm)
           else
@@ -3061,7 +3061,7 @@ module EquationOfState
           !  stop
           !endif
         enddo
-            
+
       case default
 
       endselect
@@ -3388,7 +3388,7 @@ module EquationOfState
 ! non-equidistant grid (still not really correct, but could be OK)
 !
           exp_fact = exp(-kappa*(z(n1+i)-z(n1-i)))
-         
+
           do m=m1,m2
             mm_noghost=m-m1+1
             rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
@@ -3402,7 +3402,7 @@ module EquationOfState
             call potential(x(l1:l2),y(m),z(n1+i),POT=tmp2,RMN=rr_cyl)
             pot=tmp1-tmp2
           !call potential(z=z(n1+i),pot=pot)
-            
+
             if (ldensity_nolog) then
               tmp_re(:,mm_noghost) = f(l1:l2,m,n1+i,irho)*exp(+pot/cs2)
             else
@@ -3506,7 +3506,7 @@ module EquationOfState
             endif
           enddo
         enddo
-        
+
       case default
 
         if (lroot) print*,"bc_lnrho_hydrostatic_z_smooth: invalid argument"
@@ -3539,7 +3539,7 @@ module EquationOfState
       real, dimension (nx) :: potm,potp,tmp1,tmp2,rr_cyl,rr_sph,cs2
       character (len=3), intent (in) :: topbot
       integer :: i
-      
+
       select case (topbot)
 !
 !  Bottom boundary
@@ -3547,7 +3547,7 @@ module EquationOfState
       case ('bot')
 !
         do i=1,nghost
-          do m=m1,m2 
+          do m=m1,m2
             rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
             rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n1-i)**2)
 !
@@ -3575,15 +3575,15 @@ module EquationOfState
       case ('top')
 !
         do i=1,nghost
-          do m=m1,m2 
+          do m=m1,m2
             rr_cyl=sqrt(x(l1:l2)**2+y(m)**2)
             rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n2-i)**2)
-!            
+!
             !call the arrays with potentials
             call potential(x(l1:l2),y(m),z(n2-i),POT=tmp1,RMN=rr_sph)
             call potential(x(l1:l2),y(m),z(n2-i),POT=tmp2,RMN=rr_cyl)
             potm=tmp1-tmp2
-!            
+!
             rr_sph=sqrt(x(l1:l2)**2+y(m)**2+z(n2+i)**2)
             call potential(x(l1:l2),y(m),z(n2+i),POT=tmp1,RMN=rr_sph)
             call potential(x(l1:l2),y(m),z(n2+i),POT=tmp2,RMN=rr_cyl)
@@ -3598,7 +3598,7 @@ module EquationOfState
           enddo
         enddo
       case default
-!        
+!
       endselect
 !
     endsubroutine bc_lnrho_hds_z_liso

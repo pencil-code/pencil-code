@@ -227,7 +227,7 @@ module Boundcond
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case ('sfr')
-                  ! BCX_DOC: stress-free boundary condition for spherical coordinate system. 
+                  ! BCX_DOC: stress-free boundary condition for spherical coordinate system.
                   call bc_set_sfree_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
@@ -239,7 +239,7 @@ module Boundcond
                   ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
                   call bc_set_sa2_x(f,topbot,j)
                 case ('pfc')
-                  !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . 
+                  !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ .
                   call bc_set_pfc_x(f,topbot,j)
                  case ('fix')
                   ! BCX_DOC: set boundary value [really??]
@@ -403,14 +403,14 @@ module Boundcond
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
               case ('sfr')
-                  ! BCY_DOC: stress-free boundary condition for spherical coordinate system. 
+                  ! BCY_DOC: stress-free boundary condition for spherical coordinate system.
                 call bc_set_sfree_y(f,topbot,j)
               case ('nfr')
                   ! BCY_DOC: Normal-field bc for spherical coordinate system.
                   ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
                 call bc_set_nfr_y(f,topbot,j)
               case ('pfc')
-                  !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary  
+                  !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
                 call bc_set_pfc_y(f,topbot,j)
               case ('')
                ! do nothing; assume that everything is set

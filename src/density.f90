@@ -187,7 +187,7 @@ module Density
 !
 !  If fargo is used, continuity is taken care of in special/fargo.f90
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         lcontinuity_gas=.false.
         print*,'initialize_density: fargo used. turned off continuity equation'
       endif
@@ -269,11 +269,11 @@ module Density
         call select_eos_variable('lnrho',ilnrho)
       endif
 !
-! Do not allow inconsistency between rho0 (from eos) and rho_const 
-! or lnrho0 and lnrho_const. 
+! Do not allow inconsistency between rho0 (from eos) and rho_const
+! or lnrho0 and lnrho_const.
 !
       if (rho0.ne.rho_const) then
-        if (lroot) then 
+        if (lroot) then
           print*,"WARNING!"
           print*,"inconsistency between the density constants from eos  "
           print*,"(rho0 or lnrho0) and the ones from the density module "
@@ -315,7 +315,7 @@ module Density
 !
 !  Need to precalculate some terms for anti shock diffusion.
 !
-        if (lanti_shockdiffusion) then        
+        if (lanti_shockdiffusion) then
           call der_pencil(3,lnrho_init_z,dlnrhodz_init_z)
           call der2_pencil(3,lnrho_init_z,del2lnrho_init_z)
           glnrho2_init_z=dlnrhodz_init_z**2
@@ -500,7 +500,7 @@ module Density
               kx_lnrho(j),ky_lnrho(j),kz_lnrho(j))
         case ('corona'); call corona_init(f)
         case ('gaussian3d')
-          call gaussian3d(ampllnrho(j),f,ilnrho,radius_lnrho(j)) 
+          call gaussian3d(ampllnrho(j),f,ilnrho,radius_lnrho(j))
         case ('plaw_gauss_disk'); call power_law_gaussian_disk(f)
         case ('gaussian-z')
           do n=n1,n2; do m=m1,m2
@@ -888,7 +888,7 @@ module Density
               (rho0*sqrt(k_j2))
           print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
-! 
+!
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = lnrho_const + &
               ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2) + &
@@ -931,7 +931,7 @@ module Density
           enddo; enddo
 !
         case ('compressive-shwave')
-!  Should be consistent with density 
+!  Should be consistent with density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
 !
         case default
@@ -941,7 +941,7 @@ module Density
           write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
                             //trim(iinit_str)//'): ',trim(initlnrho(j))
           call fatal_error('init_lnrho',errormsg)
- 
+
         endselect
 !
         if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
@@ -1007,13 +1007,13 @@ module Density
           do m=m1,m2
 
             call grad(f,ilnrho,gradlnrho)
-             
+
             do j=1,3
               glnrhomz(nl,j)=glnrhomz(nl,j)+sum(gradlnrho(:,j))
             enddo
           enddo
 
-          if (nprocy>1) then             
+          if (nprocy>1) then
             call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
             glnrhomz = temp
           endif
@@ -1671,7 +1671,7 @@ module Density
 !
 !  Counteract the shock diffusion of the mean stratification. Must set
 !  lwrite_stratification=T in start.in for this to work.
-!            
+!
             if (lanti_shockdiffusion) then
               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - diffrho_shock*( &
                   p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
@@ -1696,7 +1696,7 @@ module Density
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
       endif
 !
-!  Improve energy and momentum conservation by compensating 
+!  Improve energy and momentum conservation by compensating
 !  for mass diffusion
 !
       if (lmassdiff_fix) then
@@ -1798,7 +1798,7 @@ module Density
       case ('zero','0')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling zero border")
-        if (ldensity_nolog) then  
+        if (ldensity_nolog) then
           f_target=0.
         else
           f_target=1.
@@ -1807,7 +1807,7 @@ module Density
       case ('constant')
         if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling constant border")
-        if (ldensity_nolog) then 
+        if (ldensity_nolog) then
           f_target=rho_const
         else
           f_target=lnrho_const
@@ -1863,7 +1863,7 @@ module Density
 !
       if (lroot) print*, 'isothermal_density: isothermal stratification'
       if (gamma/=1.0) then
-        if ((.not. lentropy) .and. (.not. ltemperature)) & 
+        if ((.not. lentropy) .and. (.not. ltemperature)) &
             call fatal_error('isothermal_density', &
             'for gamma/=1.0, you need entropy or temperature!');
       endif
@@ -1889,16 +1889,16 @@ module Density
     endsubroutine isothermal_density
 !***********************************************************************
     subroutine local_isothermal_density(f)
-!                                                                   
-!  Stratification depends on the gravity potential, which in turn   
-!  varies with radius. This reproduces the initial condition of the 
-!  locally isothermal approximation in which temperature is a power 
+!
+!  Stratification depends on the gravity potential, which in turn
+!  varies with radius. This reproduces the initial condition of the
+!  locally isothermal approximation in which temperature is a power
 !  law of radial distance
 !
 !  18-apr-07/wlad : coded
 !
       use FArrayManager
-      use Mpicomm,     only:stop_it 
+      use Mpicomm,     only:stop_it
       use Initcond,    only:set_thermodynamical_quantities
       use Gravity,     only:potential,acceleration
       use Sub,         only:get_radial_distance,grad,power_law
@@ -1927,7 +1927,7 @@ module Density
         do n=1,mz
           lheader=((m==1).and.(n==1).and.lroot)
           call get_radial_distance(rr_sph,rr_cyl)
-          if (lsphere_in_a_box.or.lspherical_coords) then 
+          if (lsphere_in_a_box.or.lspherical_coords) then
             rr=rr_sph
           elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
             rr=rr_cyl
@@ -1940,27 +1940,27 @@ module Density
 !
 !  Store cs2 in one of the free slots of the f-array
 !
-          if (llocal_iso) then 
+          if (llocal_iso) then
             nullify(iglobal_cs2)
             call farray_use_global('cs2',iglobal_cs2)
             ics2=iglobal_cs2
-          elseif (ltemperature) then 
+          elseif (ltemperature) then
             ics2=ilnTT
-          elseif (lentropy) then 
+          elseif (lentropy) then
             ics2=iss
           endif
           f(:,m,n,ics2)=cs2
         enddo
       enddo
 !
-!  Stratification is only coded for 3D runs. But as 
-!  cylindrical and spherical coordinates store the 
-!  vertical direction in different slots, one has to 
-!  do this trick below to decide whether this run is 
-!  2D or 3D. 
+!  Stratification is only coded for 3D runs. But as
+!  cylindrical and spherical coordinates store the
+!  vertical direction in different slots, one has to
+!  do this trick below to decide whether this run is
+!  2D or 3D.
 !
       lpresent_zed=.false.
-      if (lspherical_coords) then 
+      if (lspherical_coords) then
         if (nygrid/=1) lpresent_zed=.true.
       else
         if (nzgrid/=1) lpresent_zed=.true.
@@ -1976,7 +1976,7 @@ module Density
 !  Midplane density
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          if (lsphere_in_a_box.or.lspherical_coords) then 
+          if (lsphere_in_a_box.or.lspherical_coords) then
             rr=rr_sph
           elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
             rr=rr_cyl
@@ -1994,7 +1994,7 @@ module Density
 !
 !  Vertical stratification, if needed
 !
-          if (.not.lcylindrical_gravity.and.lpresent_zed) then 
+          if (.not.lcylindrical_gravity.and.lpresent_zed) then
             if (lheader) &
                  print*,"Adding vertical stratification with "//&
                  "scale height h/r=",cs0
@@ -2002,7 +2002,7 @@ module Density
 !  Get the sound speed
 !
             cs2=f(:,m,n,ics2)
-!            
+!
             if (lspherical_coords.or.lsphere_in_a_box) then
               ! uphi2/r = -gr + dp/dr
               if (lgrav) then
@@ -2014,7 +2014,7 @@ module Density
                 print*,"there is no gravity to determine the stratification"
                 call stop_it("local_isothermal_density")
               endif
-!                
+!
               tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)/gamma
               lat=pi/2-y(m)
               strat=(tmp2*gamma/cs2) * log(cos(lat))
@@ -2023,14 +2023,14 @@ module Density
 !  The subroutine "potential" yields the whole gradient.
 !  I want the function that partially derived in
 !  z gives g0/r^3 * z. This is NOT -g0/r
-!  The second call takes care of normalizing it 
+!  The second call takes care of normalizing it
 !  i.e., there should be no correction at midplane
 !
-              if (lgrav) then 
+              if (lgrav) then
                 call potential(POT=tmp1,RMN=rr_sph)
                 call potential(POT=tmp2,RMN=rr_cyl)
               elseif (lparticles_nbody) then
-                call get_totalmass(g0) 
+                call get_totalmass(g0)
                 tmp1=-g0/rr_sph ; tmp2=-g0/rr_cyl
               else
                 print*,"both gravity and particles_nbody are switched off"
@@ -2069,10 +2069,10 @@ module Density
     endsubroutine local_isothermal_density
 !***********************************************************************
     subroutine correct_pressure_gradient(f,ics2,ptlaw)
-! 
+!
 !  Correct for pressure gradient term in the centrifugal force.
-!  For now, it only works for flat (isothermal) or power-law 
-!  sound speed profiles, because the temperature gradient is 
+!  For now, it only works for flat (isothermal) or power-law
+!  sound speed profiles, because the temperature gradient is
 !  constructed analytically.
 !
 !  21-aug-07/wlad : coded
@@ -2105,9 +2105,9 @@ module Density
           if (lcartesian_coords) then
             gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
             !!gs= gx*cos + gy*sin
-          else if (lcylindrical_coords) then 
+          else if (lcylindrical_coords) then
             gslnrho=glnrho(:,1)
-          else if (lspherical_coords) then 
+          else if (lspherical_coords) then
             gslnrho=glnrho(:,1)
           endif
 !
@@ -2138,7 +2138,7 @@ module Density
           do i=1,nx
             if (tmp2(i).lt.0.) then
               if (rr(i) .lt. r_int) then
-                !it's inside the frozen zone, so 
+                !it's inside the frozen zone, so
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
                 if ((ip<=10).and.lheader) &
@@ -2163,7 +2163,7 @@ module Density
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
           elseif (lcylindrical_coords) then
             f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-          elseif (lspherical_coords) then 
+          elseif (lspherical_coords) then
             f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
           endif
         enddo
@@ -2175,7 +2175,7 @@ module Density
 !
 !  Exponentially falling radial density profile.
 !
-!  21-aug-07/wlad: coded 
+!  21-aug-07/wlad: coded
 !
       use Sub, only: get_radial_distance
 !
@@ -2193,7 +2193,7 @@ module Density
           lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
           f(1:mx,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
-          if (lexponential_smooth) then 
+          if (lexponential_smooth) then
             rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
             arg=(rr_cyl-rshift)/rmid
             f(1:mx,m,n,ilnrho) = f(1:mx,m,n,ilnrho)*&
@@ -2209,8 +2209,8 @@ module Density
     endsubroutine exponential_fall
 !***********************************************************************
     subroutine correct_for_selfgravity(f)
-!        
-!  Correct for the fluid's self-gravity in the 
+!
+!  Correct for the fluid's self-gravity in the
 !  centrifugal force
 !
 !  03-dec-07/wlad: coded
@@ -2257,11 +2257,11 @@ module Density
 !
 !  correct the angular frequency phidot^2
 !
-            if (lcartesian_coords) then 
+            if (lcartesian_coords) then
               gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
               tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
               tmp2=tmp1+gspotself/rr_cyl
-            elseif (lcylindrical_coords) then 
+            elseif (lcylindrical_coords) then
               gspotself=gpotself(:,1)
               tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
               tmp2=tmp1+gspotself/rr_cyl
@@ -2293,7 +2293,7 @@ module Density
                 endif
               endif
             enddo
-! 
+!
 !  Correct the velocities
 !
             if (lcartesian_coords) then
@@ -2308,7 +2308,7 @@ module Density
         enddo
       endif ! if (lselfgravity)
 !
-    endsubroutine correct_for_selfgravity    
+    endsubroutine correct_for_selfgravity
 !***********************************************************************
     subroutine power_law_gaussian_disk(f)
 !
@@ -2342,7 +2342,7 @@ module Density
 !***********************************************************************
     subroutine power_law_disk(f)
 !
-!  Simple power-law disk. It sets only the density, whereas 
+!  Simple power-law disk. It sets only the density, whereas
 !  local_isothermal sets the density and thermodynamical
 !  quantities
 !
@@ -2648,7 +2648,7 @@ module Density
         idiag_ugrhom=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
+        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0
         idiag_rhomxz=0
       endif
@@ -2823,7 +2823,7 @@ module Density
 !***********************************************************************
     subroutine get_init_average_density(f,init_average_density)
 !
-!  10-dec-09/piyali: added to pass initial average density 
+!  10-dec-09/piyali: added to pass initial average density
 !
     real, dimension (mx,my,mz,mfarray):: f
     real:: init_average_density

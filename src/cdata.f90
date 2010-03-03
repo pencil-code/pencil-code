@@ -74,7 +74,7 @@ module Cdata
   character (len=labellen) :: der2_type='standard'
 !
 !  Box dimensions.
-!  
+!
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: x0,y0,z0,Lx,Ly,Lz
@@ -308,7 +308,7 @@ module Cdata
 !
 ! Averages of half the computational box:
 ! fname_half has two indices, the first contains the quantity averaged
-! over northern hemisphere and the second contains the 
+! over northern hemisphere and the second contains the
 ! quantity averaged over southern hemisphere.
 ! yequator = [xyz0(2)+0.5*Lxyz(2) assigned in start.f90 and run.f90
 ! zequator = [xyz0(3)+0.5*Lxyz(3) assigned in start.f90 and run.f90
@@ -484,10 +484,10 @@ module Cdata
 !
 !  Kinematic flows (computed by nohydro, so must be defined here).
 !  [AJ: should probably not be defined here; AB: would hydro.h be better??]
-! DM : I suggest we move these to hydro_kinematic as that is going to 
+! DM : I suggest we move these to hydro_kinematic as that is going to
 ! do the kinematic flow.  I have introduced a variable in hydro_kinematic
 ! called kinematic_flow. If hydro_kinematic is used kinflow is overwritten
-! by this variable. 
+! by this variable.
 !
   character (len=40) :: kinflow=''
   logical :: lkinflow_as_aux
@@ -498,7 +498,7 @@ module Cdata
   real :: kinflow_ck_Balpha=0.
   integer :: kinflow_ck_ell=0.
 ! (DM) All previous kinematic stuff can go to hydro_kinematic but I am not sure how
-! to accomodate the following. 
+! to accomodate the following.
   real :: kinematic_phase=0.
 !
 !  Scrap yard. Please categorise these variables if you know what they do.

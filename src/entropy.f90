@@ -1,5 +1,5 @@
 ! $Id$
-! 
+!
 !  This module takes care of evolving the entropy.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -122,7 +122,7 @@ module Entropy
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
-                                ! DIAG_DOC:   \quad(time step relative to 
+                                ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   acoustic time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ethm=0       ! DIAG_DOC: $\left<\varrho e\right>$
@@ -210,7 +210,7 @@ module Entropy
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)     
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_entropy','there was a problem getting lpressuregradient_gas')
 !
     endsubroutine register_entropy
@@ -619,7 +619,7 @@ module Entropy
         call warning('initialize_entropy','chi_shock is zero!')
       endif
 !
-!  Heat conduction calculated globally: if lhcond_global=.true., we 
+!  Heat conduction calculated globally: if lhcond_global=.true., we
 !  compute hcond and glhc and put the results in global arrays
 !
       if (lhcond_global) then
@@ -788,7 +788,7 @@ module Entropy
 !  select different initial conditions
 !
         select case (initss(j))
- 
+
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
           case ('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
@@ -1405,7 +1405,7 @@ module Entropy
    10 continue
    20 if (ipz.eq.0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
-! redefine rho0 and lnrho0 as we don't have rho0=1 at the top 
+! redefine rho0 and lnrho0 as we don't have rho0=1 at the top
 ! (important for eoscalc!)
 ! put density and entropy into f-array
 ! write the initial stratification in data/proc*/stratMLT.dat
@@ -1419,7 +1419,7 @@ module Entropy
       do n=1,nz
         iz=n+ipz*nz
         zm=xyz0(3)+(iz-1)*dz
-        lnrho=lnrhom(nzgrid-iz+1) 
+        lnrho=lnrhom(nzgrid-iz+1)
         lnTT=log(tempm(nzgrid-iz+1))
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(:,:,n+nghost,ilnrho)=lnrho
@@ -1716,7 +1716,7 @@ module Entropy
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
         if (lentropy) then
-!  Isothermal 
+!  Isothermal
           pp=rho*gamma_m1/gamma*T0
           call eosperturb(f,nx,pp=pp)
           ss=f(l1:l2,m,n,ilnrho)
@@ -1742,7 +1742,7 @@ module Entropy
 !   with the galactic-hs-gravity profile set in gravity_simple.
 !   Parameters cs0hs and H0hs need to be set consistently
 !   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
-!   equilibrium. 
+!   equilibrium.
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eosperturb
@@ -1755,13 +1755,13 @@ module Entropy
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
 
-      do n=n1,n2            
+      do n=n1,n2
       do m=m1,m2
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
         lnrho=log(rho)
-        f(l1:l2,m,n,ilnrho)=lnrho        
+        f(l1:l2,m,n,ilnrho)=lnrho
         if (lentropy) then
-!  Isothermal 
+!  Isothermal
           pp=rho*cs0hs**2
           call eosperturb(f,nx,pp=pp)
           ss=f(l1:l2,m,n,ilnrho)
@@ -1916,7 +1916,7 @@ module Entropy
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_cp1)=.true.
       endif
-      if (lgravr) then 
+      if (lgravr) then
 ! spherical case (cylindrical case also included)
         if (lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
@@ -2439,7 +2439,7 @@ module Entropy
       case ('constant')
          f_target=ss_const
       case ('power-law')
-        call get_ptlaw(ptlaw) 
+        call get_ptlaw(ptlaw)
         call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
@@ -2605,8 +2605,8 @@ module Entropy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3+ &
-           (chi_hyper3_aniso(1)*dx_1(l1:l2)**6 + & 
-            chi_hyper3_aniso(2)*dy_1(  m  )**6 + & 
+           (chi_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
+            chi_hyper3_aniso(2)*dy_1(  m  )**6 + &
             chi_hyper3_aniso(3)*dz_1(  n  )**6)
 !
     endsubroutine calc_heatcond_hyper3_aniso
@@ -2883,7 +2883,7 @@ module Entropy
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines
-!  
+!
 !
 !  24-aug-09/bing: moved from dss_dt to here
 !
@@ -2895,7 +2895,7 @@ module Entropy
       real, dimension (nx) :: vKpara,vKperp
 !
       type (pencil_case) :: p
-!      
+!
       vKpara(:) = Kgpara
       vKperp(:) = Kgperp
 !
@@ -2909,7 +2909,7 @@ module Entropy
 !
       where ((gT2.le.tini).or.(b2.le.tini))
          cosbgT=0.
-      elsewhere 
+      elsewhere
          cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
@@ -2926,7 +2926,7 @@ module Entropy
 !
 !  Vertically integrated heat flux from a thin globaldisc.
 !  Taken from D'Angelo et al. 2003, ApJ, 599, 548, based on
-!  the grey analytical model of Hubeny 1990, ApJ, 351, 632 
+!  the grey analytical model of Hubeny 1990, ApJ, 351, 632
 !
 !  07-feb-07/wlad+heidar : coded
 !
@@ -2942,15 +2942,15 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'enter heatcond hubeny' 
+      if (headtt) print*,'enter heatcond hubeny'
 !
       if (pretend_lnTT) call fatal_error("calc_heatcond_hubeny","not implemented when pretend_lnTT = T")
 !
       kappa0_cgs=2e-6  !cm2/g
       kappa0=kappa0_cgs*unit_density/unit_length
       kappa=kappa0*p%TT**2
-! 
-!  Optical Depth tau=kappa*rho*H 
+!
+!  Optical Depth tau=kappa*rho*H
 !  If we are using 2D, the pencil value p%rho is actually
 !   sigma, the column density, sigma=rho*2*H
 !
@@ -2961,12 +2961,12 @@ module Entropy
       endif
 !
 ! Analytical gray description of Hubeny (1990)
-! a1 is the optically thick contribution, 
-! a3 the optically thin one. 
+! a1 is the optically thick contribution,
+! a3 the optically thin one.
 !
       a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
 !
-      cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)      
+      cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
 !
@@ -3298,7 +3298,7 @@ module Entropy
         endselect
       endif
 !
-!  Spherical gravity in spherical coordinate case: 
+!  Spherical gravity in spherical coordinate case:
 !           heat at centre, cool outer layers.
 !
       if (lgravx.and.lspherical_coords) then
@@ -3759,7 +3759,7 @@ module Entropy
           slices%ready=.true.
 !
       endselect
-!   
+!
     endsubroutine get_slices_entropy
 !***********************************************************************
     subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
@@ -4166,7 +4166,7 @@ module Entropy
     integer, parameter   :: nr=100
     integer              :: i,l,iter
     real, dimension (nr) :: r,lnrho,temp,hcond
-    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g 
+    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g
     real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
 !
 ! uncomment to force rhotop=rho0 and just compute the corresponding setup
@@ -4211,7 +4211,7 @@ module Entropy
     lnrho0=log(rhotop)
     T0=cs20/gamma_m1
     print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
-    
+
 ! define the radial grid r=[0,r_max]
     if (nzgrid == 1) then
       r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
@@ -4254,7 +4254,7 @@ module Entropy
         else
           lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
         endif
-        if (r(i) .ne. 0.) then 
+        if (r(i) .ne. 0.) then
           if (nzgrid == 1) then
             g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
           else
@@ -4363,7 +4363,7 @@ module Entropy
 !
 !  17-mar-07/dintrans: coded
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers
-!  
+!
       use Gravity, only: gravz, g0
       use EquationOfState, only: lnrho0,cs20,gamma,gamma_m1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_TT
