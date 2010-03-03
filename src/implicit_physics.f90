@@ -19,8 +19,7 @@ module ImplicitPhysics
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: mpoly0
-  use Messages
+  use Messages, only: svn_id, fatal_error
   use Sub, only: keep_compiler_quiet
   use General, only: tridag, cyclic
 !
@@ -103,7 +102,6 @@ module ImplicitPhysics
 !  ADI_Kconst: constant radiative conductivity
 !  ADI_Kprof: radiative conductivity depends on T, i.e. hcond(T)
 !
-!
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -157,7 +155,8 @@ module ImplicitPhysics
 !  where Lambda_x and Lambda_y denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, &
+                                 get_cp1, mpoly0
       use Gravity, only: gravz
 !
       implicit none
@@ -407,7 +406,7 @@ module ImplicitPhysics
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
-      use EquationOfState, only: gamma,get_cp1
+      use EquationOfState, only: gamma, get_cp1
       use Mpicomm, only: transp_mxmz, transp_xz, &
           transp_zx, initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
@@ -418,12 +417,11 @@ module ImplicitPhysics
       integer, parameter :: l1t=nghost+1, n1t=nghost+1
       integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
       integer :: i,j
-      real, dimension(mx,my,mz,mfarray) :: f, ftmp
-      real, dimension(mzt,my,mxt,mfarray) :: ftmpt
-      real, dimension(mx,mz) :: source, hcond, dhcond, finter, TT, rho, val
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz)   :: source, hcond, dhcond, finter, TT, rho, val
       real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, TTt, rhot, valt
-      real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid)    :: az, bz, cz, wz, rhsz, workz
+      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
 !
 !  It is necessary to communicate ghost-zones points between
@@ -489,25 +487,25 @@ module ImplicitPhysics
 !
 ! do the transpositions x <--> z
 !
-      call transp_xz(finter(l1:l2,n1:n2), fintert(l1:l2,n1:n2))
-      call transp_xz(rho(l1:l2,n1:n2), rhot(l1:l2,n1:n2))
-      call transp_xz(hcond(l1:l2,n1:n2), hcondt(l1:l2,n1:n2))
-      call transp_xz(dhcond(l1:l2,n1:n2), dhcondt(l1:l2,n1:n2))
+      call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,l1t:l2t))
+      call transp_xz(rho(l1:l2,n1:n2), rhot(n1t:n2t,l1t:l2t))
+      call transp_xz(hcond(l1:l2,n1:n2), hcondt(n1t:n2t,l1t:l2t))
+      call transp_xz(dhcond(l1:l2,n1:n2), dhcondt(n1t:n2t,l1t:l2t))
       call transp_mxmz(TT, TTt)
 !
       do i=l1t,l2t
         wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
-        az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)   &
-           *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i)) &
+        az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)            &
+           *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i))      &
            +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
 !
-        bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*             &
+        bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
            (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
            -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
            +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
 !
         cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
-           *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))          &
+           *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))      &
            +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
 !
         rhsz=fintert(n1t:n2t,i)
@@ -534,7 +532,7 @@ module ImplicitPhysics
         call tridag(az, bz, cz, rhsz, workz)
         valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo
-      call transp_zx(valt(l1:l2,n1:n2), val(l1:l2,n1:n2))
+      call transp_zx(valt(n1t:n2t,l1t:l2t), val(l1:l2,n1:n2))
       f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
