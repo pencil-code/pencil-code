@@ -2837,7 +2837,7 @@ module Hydro
 !
       real, dimension (nx) :: pdamp,fint_work,fext_work
       real, dimension (nx,3) :: fint,fext
-      real :: zbot,ztop,t_infl,t_span,tau,pfade
+      real :: t_infl,t_span,tau,pfade
       integer :: i,j
 !
 !  warn about the damping term
@@ -2849,11 +2849,6 @@ module Hydro
             print*, 'udamping: Damping velocities smoothly until time ', tdamp
           endif
         endif
-!
-!  define bottom and top height
-!
-      zbot=xyz0(3)
-      ztop=xyz0(3)+Lxyz(3)
 !
 !  1. damp motion during time interval 0<t<tdamp.
 !  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
