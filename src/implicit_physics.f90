@@ -683,7 +683,7 @@ module ImplicitPhysics
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
 ! Not really an ADI but keep the generic name for commodity.
 !
-      use EquationOfState, only: gamma,get_cp1
+      use EquationOfState, only: gamma, get_cp1
       use General, only: tridag
 !
       implicit none
@@ -698,7 +698,9 @@ module ImplicitPhysics
       call get_cp1(cp1)
       dz_2=1./dz**2
       rho=exp(f(4,4,:,ilnrho))
+!
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
+!
       call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
       hcondADI=spread(hcond(1), 1, mx)
       call boundary_ADI(f(:,4,:,iTTold), hcondADI)
@@ -713,11 +715,11 @@ module ImplicitPhysics
         a(jj)=-wz/4.*(hcondm-dhcond(j-1)*(TT(j)-TT(j-1)))
         b(jj)=1.-wz/4.*(-hcondp-hcondm+dhcond(j)*(TT(j+1)-2.*TT(j)+TT(j-1)))
         c(jj)=-wz/4.*(hcondp+dhcond(j+1)*(TT(j+1)-TT(j)))
-!
         rhs(jj)=wz/2.*(hcondp*(TT(j+1)-TT(j))-hcondm*(TT(j)-TT(j-1))) &
-          +dt*source(j)
+                +dt*source(j)
 !
 ! Always constant temperature at the top: T^(n+1)-T^n = 0
+!
         b(nz)=1. ; a(nz)=0.
         rhs(nz)=0.
         if (bcz1(ilnTT)=='cT') then
@@ -730,8 +732,8 @@ module ImplicitPhysics
           rhs(1)=0.
         endif
       enddo
-      call tridag(a,b,c,rhs,work)
-      f(4,4,n1:n2,ilnTT)=work+TT(n1:n2)
+      call tridag(a, b, c, rhs, work)
+      f(4,4,n1:n2,ilnTT)=f(4,4,n1:n2,iTTold)+work
 !
 ! Update the bottom value of hcond used for the 'c3' BC in boundcond
 !
@@ -926,38 +928,47 @@ module ImplicitPhysics
 !
 ! 28-feb-10/dintrans: coded
 ! Simpler version where a part of the radiative diffusion term is
-! computed during the explicit advance
+! computed during the explicit advance.
 !
-      use EquationOfState, only: gamma,get_cp1
+      use EquationOfState, only: gamma, get_cp1
       use General, only: tridag
 !
       implicit none
 !
       integer :: j, jj
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: source, rho, TT, hcond, dhcond
+      real, dimension(mz) :: source, TT, hcond, dhcond, dLnhcond, chi
       real, dimension(nz) :: a, b, c, rhs, work
-      real  :: cp1, dz_2, wz, hcondp, hcondm
+      real :: cp1, dz_2, wz
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       call get_cp1(cp1)
       dz_2=1./dz**2
-      rho=exp(f(4,4,:,ilnrho))
-! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
       call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
+!
+! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
+!
       hcondADI=spread(hcond(1), 1, mx)
       call boundary_ADI(f(:,4,:,iTTold), hcondADI)
       TT=f(4,4,:,iTTold)
+      if (ldensity) then
+        chi=cp1*hcond/exp(f(4,4,:,ilnrho))
+      else
+        chi=cp1*hcond
+      endif
+      dLnhcond=dhcond/hcond
 !
       do j=n1,n2
         jj=j-nghost
-        wz=dt*dz_2*gamma*hcond(j)*cp1/rho(j)
+        wz=dt*dz_2*gamma*chi(j)
 !
         a(jj)=-wz/2.
-        b(jj)=1.-wz/2.*(-2.+dhcond(j)/hcond(j)*(TT(j+1)-2.*TT(j)+TT(j-1)))
+        b(jj)=1.-wz/2.*(-2.+dLnhcond(j)*(TT(j+1)-2.*TT(j)+TT(j-1)))
         c(jj)=-wz/2.
         rhs(jj)=wz*(TT(j+1)-2.*TT(j)+TT(j-1))+dt*source(j)
+!
 ! Always constant temperature at the top: T^(n+1)-T^n = 0
+!
         b(nz)=1. ; a(nz)=0.
         rhs(nz)=0.
         if (bcz1(ilnTT)=='cT') then
@@ -970,8 +981,9 @@ module ImplicitPhysics
           rhs(1)=0.
         endif
       enddo
-      call tridag(a,b,c,rhs,work)
-      f(4,4,n1:n2,ilnTT)=work+TT(n1:n2)
+!
+      call tridag(a, b, c, rhs, work)
+      f(4,4,n1:n2,ilnTT)=f(4,4,n1:n2,iTTold)+work
 !
 ! Update the bottom value of hcond used for the 'c3' BC in boundcond
 !
@@ -1019,13 +1031,12 @@ module ImplicitPhysics
       call boundary_ADI(f(:,4,:,iTTold), hcond(:,n1))
       TT=f(:,4,:,iTTold)
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        chi=cp1*hcond/exp(f(:,4,:,ilnrho))
+!        chi=cp1*hcond0/exp(f(:,4,:,ilnrho))
       else
-        rho=1.
+        chi=cp1*hcond
       endif
-      chi=cp1*hcond/rho
       dLnhcond=dhcond/hcond
-!      chi=cp1*hcond0/rho
 !      dLnhcond=0.
 !
 ! rows in the x-direction dealt implicitly
@@ -1108,11 +1119,11 @@ module ImplicitPhysics
       integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
-            rho, chi, dLnhcond
+      real, dimension(mx,mz)   :: source, hcond, dhcond, finter, val, TT, &
+                                  chi, dLnhcond
       real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
-      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
+      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
 !
 ! needed for having the correct ghost zones for ilnTT
@@ -1130,13 +1141,12 @@ module ImplicitPhysics
       call heatcond_TT(TT, hcond, dhcond)
       call boundary_ADI(TT, hcond(:,n1))
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        chi=cp1*hcond/exp(f(:,4,:,ilnrho))
+!        chi=cp1*hcond0/exp(f(:,4,:,ilnrho))
       else
-        rho=1.
+        chi=cp1*hcond
       endif
-      chi=cp1*hcond/rho
       dLnhcond=dhcond/hcond
-!      chi=cp1*hcond0/rho
 !      dLnhcond=0.
 !
 ! rows in the x-direction dealt implicitly
