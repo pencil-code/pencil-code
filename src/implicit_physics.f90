@@ -1163,9 +1163,9 @@ module ImplicitPhysics
 !
 ! do the transpositions x <--> z
 !
-      call transp_xz(finter(l1:l2,n1:n2), fintert(l1:l2,n1:n2))
-      call transp_xz(chi(l1:l2,n1:n2), chit(l1:l2,n1:n2))
-      call transp_xz(dLnhcond(l1:l2,n1:n2), dLnhcondt(l1:l2,n1:n2))
+      call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,l1t:l2t))
+      call transp_xz(chi(l1:l2,n1:n2), chit(n1t:n2t,l1t:l2t))
+      call transp_xz(dLnhcond(l1:l2,n1:n2), dLnhcondt(n1t:n2t,l1t:l2t))
       call transp_mxmz(TT, TTt)
 !
 ! columns in the z-direction dealt implicitly
