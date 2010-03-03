@@ -485,7 +485,7 @@ module Gravity
 !  12-nov-04/anders: coded
 !   5-dec-06/petri: added Boussinesq approximation
 !
-      use Diagnostics
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -540,7 +540,6 @@ module Gravity
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -740,10 +739,10 @@ module Gravity
 !
       g_r=0.0
 !
-      if (present(x)) call keep_compiler_quiet(x)
-      if (present(y)) call keep_compiler_quiet(y)
-      if (present(z)) call keep_compiler_quiet(z)
-      if (present(r)) call keep_compiler_quiet(r)
+      call keep_compiler_quiet(present(x))
+      call keep_compiler_quiet(present(y))
+      call keep_compiler_quiet(present(z))
+      call keep_compiler_quiet(present(r))
 !
     endsubroutine acceleration_point
 !***********************************************************************
@@ -807,7 +806,7 @@ module Gravity
 !
 !  12-jun-04/axel: adapted from grav_z
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite
