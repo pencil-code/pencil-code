@@ -432,8 +432,8 @@ module ImplicitPhysics
 !  processors to ensure a correct transposition of these ghost
 !  zones. It is needed by rho,rhot and source,sourcet.
 !
-!      call initiate_isendrcv_bdry(f, iTTold, iTTold)
-!      call finalize_isendrcv_bdry(f, iTTold, iTTold)
+      call initiate_isendrcv_bdry(f, iTTold, iTTold)
+      call finalize_isendrcv_bdry(f, iTTold, iTTold)
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
