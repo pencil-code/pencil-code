@@ -23,8 +23,7 @@ module General
 
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: besselj_nu_int,calc_complete_ellints
-  public :: bessj
-
+  public :: bessj,cyclic
 
   include 'record_types.h'
 
@@ -1434,5 +1433,41 @@ end do
     endfunction BESSJ1
 
 !End of file Tbessj.f90
+!*****************************************************************************
+    subroutine cyclic(a,b,c,alpha,beta,r,x,n)
+!
+! 08-Sep-07/gastine+dintrans: coded from numerical recipes.
+! Inversion of a tridiagonal matrix with periodic BC (alpha and beta
+! coefficients in the left and right corners). Used in the ADI scheme
+! of the implicit_physics module.
+! Note: this subroutine is using twice the tridag one written above by tobi.
+!
+      implicit none
+!
+      real, dimension(n) :: a,b,c,r,x,bb,u,z
+      real    :: alpha,beta,gamma,fact      
+      integer :: i,n
+!
+      if (n <= 2) call fatal_error('cyclic', 'n too small in cyclic')
+      gamma=-b(1)
+      bb(1)=b(1)-gamma
+      bb(n)=b(n)-alpha*beta/gamma
+      do i=2,n-1
+        bb(i)=b(i)
+      enddo
+      call tridag(a,bb,c,r,x)
+      u(1)=gamma
+      u(n)=alpha
+      do i=2,n-1
+        u(i)=0.
+      enddo
+      call tridag(a,bb,c,u,z)
+      fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
+      do i=1,n
+        x(i)=x(i)-fact*z(i)
+      enddo
+!
+      return
+    endsubroutine cyclic
 !*****************************************************************************
 endmodule General

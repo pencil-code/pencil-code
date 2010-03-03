@@ -22,6 +22,7 @@ module ImplicitPhysics
   use EquationOfState, only: mpoly0
   use Messages
   use Sub, only: keep_compiler_quiet
+  use General, only: tridag, cyclic
 !
   implicit none
 !
@@ -157,7 +158,6 @@ module ImplicitPhysics
 !  term comes from the explicit advance.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
-      use General, only: tridag
       use Gravity, only: gravz
 !
       implicit none
@@ -282,7 +282,6 @@ module ImplicitPhysics
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
       use EquationOfState, only: gamma,get_cp1
-      use General, only: tridag
 !
       implicit none
 !
@@ -409,7 +408,6 @@ module ImplicitPhysics
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
       use EquationOfState, only: gamma,get_cp1
-      use General, only: tridag
       use Mpicomm, only: transp_mxmz, transp_xz, &
           transp_zx, initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
@@ -588,45 +586,6 @@ module ImplicitPhysics
 !
     endsubroutine boundary_ADI
 !***********************************************************************
-    subroutine cyclic(a,b,c,alpha,beta,r,x,n)
-!
-! 08-Sep-07/gastine+dintrans: coded
-! inversion of a tridiagonal matrix with periodic BC (alpha and beta
-! coefficients); used in the ADI scheme
-!
-      use General, only: tridag
-!
-      implicit none
-!
-      integer :: i,n
-      integer, parameter    :: NMAX=1200
-      real    :: alpha, beta,gamma,fact      
-      real, dimension(n)    :: a,b,c,r,x,bb,u,z
-!     real, dimension(NMAX) :: bb,u,z
-!
-      if (n <= 2) call fatal_error('cyclic', 'n too small in cyclic')
-      if (n > NMAX) call fatal_error('cyclic', 'NMAX too small in cyclic')
-      gamma=-b(1)
-      bb(1)=b(1)-gamma
-      bb(n)=b(n)-alpha*beta/gamma
-      do i=2,n-1
-        bb(i)=b(i)
-      enddo
-      call tridag(a,bb,c,r,x)
-      u(1)=gamma
-      u(n)=alpha
-      do i=2,n-1
-        u(i)=0.
-      enddo
-      call tridag(a,bb,c,u,z)
-      fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
-      do i=1,n
-        x(i)=x(i)-fact*z(i)
-      enddo
-!
-      return
-    endsubroutine cyclic
-!***********************************************************************
     subroutine ADI_Kconst_1d(f)
 !
 ! 18-sep-07/dintrans: coded
@@ -634,7 +593,6 @@ module ImplicitPhysics
 ! really an ADI but keep the generic name for commodity).
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
-      use General, only: tridag
 !
       implicit none
 !
@@ -684,7 +642,6 @@ module ImplicitPhysics
 ! Not really an ADI but keep the generic name for commodity.
 !
       use EquationOfState, only: gamma, get_cp1
-      use General, only: tridag
 !
       implicit none
 !
@@ -747,7 +704,6 @@ module ImplicitPhysics
 !  parallel version of the ADI scheme for the K=cte case
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
-      use General, only: tridag
       use Mpicomm, only: transp_xz, transp_zx, MPI_adi_x, MPI_adi_z
 !
       implicit none
@@ -931,7 +887,6 @@ module ImplicitPhysics
 ! computed during the explicit advance.
 !
       use EquationOfState, only: gamma, get_cp1
-      use General, only: tridag
 !
       implicit none
 !
@@ -1005,7 +960,6 @@ module ImplicitPhysics
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
       use EquationOfState, only: gamma,get_cp1
-      use General, only: tridag
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -1107,7 +1061,6 @@ module ImplicitPhysics
 !  parallel version of the ADI_Kprof_mixed subroutine
 !
       use EquationOfState, only: gamma, get_cp1
-      use General, only: tridag
       use Mpicomm, only: transp_mxmz, transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
