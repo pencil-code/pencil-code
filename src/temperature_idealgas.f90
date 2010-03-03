@@ -1159,8 +1159,8 @@ module Entropy
 !  16-may-07/gastine+dintrans: coded
 !  01-mar-10/dintrans: introduced a mixed version with the ADI scheme that only
 !  computes *during the explicit step* the term 
-!  gamma/(rho*cp)*grad(K).grad(TT) with grad(K)=dK/dT*grad(TT)
-!  as this term is less restrictive for the explicit timestep
+!  gamma/(rho*cp)*grad(K).grad(TT) with grad(K)=dK/dT*grad(TT),
+!  this term being less restrictive for the explicit timestep
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma

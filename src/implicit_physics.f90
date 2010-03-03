@@ -54,7 +54,7 @@ module ImplicitPhysics
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
-          "$Id")
+       "$Id$")
 !
     endsubroutine register_implicit_physics
 !***********************************************************************
@@ -432,8 +432,8 @@ module ImplicitPhysics
 !  processors to ensure a correct transposition of these ghost
 !  zones. It is needed by rho,rhot and source,sourcet.
 !
-      call initiate_isendrcv_bdry(f, iTTold, iTTold)
-      call finalize_isendrcv_bdry(f, iTTold, iTTold)
+!      call initiate_isendrcv_bdry(f, iTTold, iTTold)
+!      call finalize_isendrcv_bdry(f, iTTold, iTTold)
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
       call get_cp1(cp1)
       dx_2=1./dx**2
@@ -1102,10 +1102,15 @@ module ImplicitPhysics
 !
       implicit none
 !
+      integer, parameter :: mxt=nx/nprocz+2*nghost
+      integer, parameter :: mzt=nzgrid+2*nghost
+      integer, parameter :: l1t=nghost+1, n1t=nghost+1
+      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
-            rho, chi, dLnhcond, fintert, TTt, chit, dLnhcondt, valt
+            rho, chi, dLnhcond
+      real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
@@ -1167,13 +1172,13 @@ module ImplicitPhysics
 ! be careful! we still play with the l1,l2 and n1,n2 indices but that applies
 ! on *transposed* arrays
 !
-      do i=n1,n2
-        wz=dt*gamma*dz_2*chit(l1:l2,i)
+      do i=l1t,l2t
+        wz=dt*gamma*dz_2*chit(n1t:n2t,i)
         az=-wz/2.
-        bz=1.-wz/2.*(-2.+dLnhcondt(l1:l2,i)*    &
-           (TTt(l1+1:l2+1,i)-2.*TTt(l1:l2,i)+TTt(l1-1:l2-1,i)))
+        bz=1.-wz/2.*(-2.+dLnhcondt(n1t:n2t,i)*    &
+           (TTt(n1t+1:n2t+1,i)-2.*TTt(n1t:n2t,i)+TTt(n1t-1:n2t-1,i)))
         cz=-wz/2.
-        rhsz=fintert(l1:l2,i)
+        rhsz=fintert(n1t:n2t,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
@@ -1195,13 +1200,13 @@ module ImplicitPhysics
         endselect
 !
         call tridag(az, bz, cz, rhsz, workz)
-        valt(l1:l2,i)=workz
+        valt(n1t:n2t,i)=workz
       enddo
 !
 ! come back on the grid (x,z)
 !
-      call transp_zx(valt(l1:l2,n1:n2), val(l1:l2,n1:n2))
-      f(l1:l2,4,n1:n2,ilnTT)=TT(l1:l2,n1:n2)+dt*val(l1:l2,n1:n2)
+      call transp_zx(valt(n1t:n2t,l1t:l2t), val(l1:l2,n1:n2))
+      f(l1:l2,4,n1:n2,ilnTT)=f(l1:l2,4,n1:n2,iTTold)+dt*val(l1:l2,n1:n2)
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
