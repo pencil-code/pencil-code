@@ -51,6 +51,11 @@ module ImplicitPhysics
       call farray_register_auxiliary('TTold',iTTold,communicated=.true.)
       print*, 'iTTold=', iTTold
 !
+!  Identify version number (generated automatically by SVN).
+!
+      if (lroot) call svn_id( &
+          "$Id")
+!
     endsubroutine register_implicit_physics
 !***********************************************************************
     subroutine init_param_ADI()
