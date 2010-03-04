@@ -1333,7 +1333,7 @@ include 'NSCBC.h'
       real, dimension (mx,my,mz) :: mom2
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
-      real, dimension(ny,nz) :: dux_dx, L_3, L_4, dpp_dx
+      real, dimension(ny,nz) :: dux_dx, L_1, L_2,  L_3, L_4, L_5, dpp_dx
       real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
       real, dimension(my,mz) :: cs0_ar,cs20_ar
     !  real, dimension (my,mz) :: cs2x
@@ -1469,20 +1469,12 @@ include 'NSCBC.h'
           df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
               (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
         else
-<<<<<<< .mine
+
           df(lll,m1:m2,n1:n2,ilnrho) = &
               -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
               *(L_2+0.5*(L_5 + L_1)) !&
            !-1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
         endif        
-=======
-         df(lll,m1:m2,n1:n2,ilnrho) = &
-              -sgn*nscbc_sigma_in/(gamma0(m1:m2,n1:n2)-1.) &
-              *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
-        endif
->>>>>>> .r13407
-
-
 
         if (ltemperature_nolog) then
             call stop_it('bc_nscbc_subin_x:ltemperature_nolog case does not work now!')
