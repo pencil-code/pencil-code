@@ -88,6 +88,7 @@ module Chemistry
      logical :: ldamp_zone_NSCBCy=.false.
      logical :: ldamp_zone_NSCBCz=.false.
      logical :: ldamp_left=.true.,ldamp_right=.true.
+     logical :: linit_velocity=.false.
 ! 1step_test case
 
      logical :: l1step_test=.false., lflame_front=.false.
@@ -130,7 +131,7 @@ module Chemistry
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
-      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right
+      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,linit_velocity
 
 
 ! run parameters
@@ -1442,7 +1443,7 @@ module Chemistry
               enddo
               enddo
 !
-          enddo
+         enddo
         endif
 !
 !  Binary diffusion coefficients
@@ -4434,18 +4435,33 @@ module Chemistry
 
       endif
 
+
+      if (linit_velocity) then
+       if (init_ux /=0.) then
+        f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+       endif
+      endif
+
+
+
       if (TT<init_TT1) then
          
-      if (init_ux /=0.) then
-       f(:,:,:,iux)=f(:,:,:,iux)+init_ux
-      endif
 
         xx1=xyz0(1)
         xx2=xyz0(1)+Lxyz(1)*0.1
+        j=4
         do i=1,mx
          if (x(i)<=xx2) then
           f(i,:,:,ilnTT)= &
              log((TT-init_TT1)*(x(i)-xx1)/(xx2-xx1)+init_TT1)
+          if (i<=4) then
+           f(i,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+               air_mass/init_TT1)/unit_mass*unit_length**3)
+          else
+           f(i,:,:,ilnrho)=f(j,:,:,ilnrho) + f(j,:,:,ilnTT) &
+                   - f(i,:,:,ilnTT)
+          endif
+
          endif
         enddo
       endif
