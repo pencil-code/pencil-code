@@ -163,7 +163,6 @@ module Entropy
                                   select_eos_variable
       use Sub, only: step,der_step
       use SharedVariables, only: put_shared_variable
-      use ImplicitPhysics, only: heatcond_TT
       use Mpicomm, only: stop_it
 !
       logical :: lstarting
@@ -227,9 +226,11 @@ module Entropy
         case ('K-arctan')
           lheatc_Karctan=.true.
           if (.not. ltemperature_nolog) &
-            call fatal_error('calc_heatcond_arctan','only valid for TT')
+            call fatal_error('initialize_entropy', &
+              'K-arctan only valid for TT')
           if (lADI_mixed .and. .not. lADI) &
-            call fatal_error('calc_heatcond_arctan','lADI_mixed with lADI=F?')
+            call fatal_error('initialize_entropy', &
+              'K-arctan with lADI_mixed=T while lADI=F?')
           if (lroot) call information('initialize_entropy', &
               'heat conduction: arctan profile')
         case ('chi-const')
@@ -290,22 +291,20 @@ module Entropy
 !
 !  Some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux).
 !
-      if (hole_slope==0.0) then
-        if (bcz1(ilnTT)=='c1' .and. lrun) then
-          if (Fbot==impossible .and. hcond0 /= impossible) then
-            Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.0)
-            if (lroot) print*, &
-                'initialize_entropy: Calculated Fbot = ', Fbot
-          endif
-          if (hcond0==impossible .and. Fbot /= impossible) then
-            hcond0=-Fbot*gamma_m1/gamma*(mpoly0+1.0)/gravz
-            if (lroot) print*, &
-                'initialize_entropy: Calculated hcond0 = ', hcond0
-          endif
-          if (Fbot==impossible .and. hcond0==impossible) &
-            call fatal_error('temperature_idealgas',  &
-                'Both Fbot and hcond0 are unknown')
+      if (bcz1(ilnTT)=='c1' .and. lrun) then
+        if (Fbot==impossible .and. hcond0 /= impossible) then
+          Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.0)
+          if (lroot) print*, &
+              'initialize_entropy: Calculated Fbot = ', Fbot
         endif
+        if (hcond0==impossible .and. Fbot /= impossible) then
+          hcond0=-Fbot*gamma_m1/gamma*(mpoly0+1.0)/gravz
+          if (lroot) print*, &
+              'initialize_entropy: Calculated hcond0 = ', hcond0
+        endif
+        if (Fbot==impossible .and. hcond0==impossible) &
+          call fatal_error('temperature_idealgas',  &
+              'Both Fbot and hcond0 are unknown')
       endif
 !
 !  now we share several variables
