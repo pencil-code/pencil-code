@@ -134,13 +134,14 @@ include 'NSCBC.h'
       character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
       character (len=60) :: turbfile
-      integer j,k,ip_ok,ip_test
+      integer i,j,k,ip_ok,ip_test
       real, dimension(mcom) :: valx,valy,valz
       logical :: proc_at_inlet
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
       character (len=120) :: directory_in
       character (len=5) :: chproc_in
       real :: T_t,u_t
+      real, dimension(nchemspec) :: YYk
 
       intent(inout) :: f
       intent(inout) :: df
@@ -268,6 +269,16 @@ include 'NSCBC.h'
             if (ilnTT > 0) T_t=valz(ilnTT)
             u_t=valz(j)
           endif
+!
+! Set the values of species 
+!
+
+        if (nchemspec>1) then
+         YYk=0.
+         do i=1,nchemspec
+           YYk(i)=valx(ichemspec(i))
+         enddo
+        endif
 !
 !  Do the NSCBC boundary
 !
@@ -1334,6 +1345,7 @@ include 'NSCBC.h'
       real, dimension (mx,my,mz,mvar) :: df
       character (len=3) :: topbot
       real, dimension(ny,nz) :: dux_dx, L_1, L_2,  L_3, L_4, L_5, dpp_dx
+      real, dimension(ny,nz,nchemspec) :: L_k
       real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
       real, dimension(my,mz) :: cs0_ar,cs20_ar
     !  real, dimension (my,mz) :: cs2x
@@ -1491,6 +1503,10 @@ include 'NSCBC.h'
                 *(f(lll,m1:m2,n1:n2,iuy)-u_in(:,:,2))
         L_4=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
                 *(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))
+       do k=1,nchemspec
+        L_k(:,:,k)=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
+                *(f(lll,m1:m2,n1:n2,ichemspec(k))-YYi(k))
+       enddo
 
         df(lll,m1:m2,n1:n2,iux) =  &
             -0.5/rho0(m1:m2,n1:n2)/cs0_ar(m1:m2,n1:n2)*(L_5 - L_1)
@@ -1500,14 +1516,20 @@ include 'NSCBC.h'
 
 
 
-   !     do k=1,nchemspec
-   !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
-   !     enddo
+        do k=1,nchemspec
+         df(lll,m1:m2,n1:n2,ichemspec(k))=-L_k(:,:,k)
+         f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
+        enddo
+         f(lll,m1:m2,n1:n2,ilnTT) = T_t
+
         if (inlet_from_file) then
          f(lll,m1:m2,n1:n2,iux) = u_t + u_in(:,:,1)
          f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
          f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
-         f(lll,m1:m2,n1:n2,ilnTT) = T_t
+        else
+         f(lll,m1:m2,n1:n2,iux) = u_t 
+         f(lll,m1:m2,n1:n2,iuy) = 0.
+         f(lll,m1:m2,n1:n2,iuz) = 0.
         endif
 
  endsubroutine bc_nscbc_subin_x_new
