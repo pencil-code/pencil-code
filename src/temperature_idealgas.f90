@@ -46,7 +46,6 @@ module Entropy
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
-  real :: hole_alpha ! initialized _after_ the reading
   real :: hcond0=impossible, hcond1=1.0, Fbot=impossible
   integer, parameter :: nheatc_max=2
   logical :: lpressuregradient_gas=.true., ladvection_temperature=.true.
@@ -164,7 +163,7 @@ module Entropy
                                   select_eos_variable
       use Sub, only: step,der_step
       use SharedVariables, only: put_shared_variable
-      use ImplicitPhysics, only: heatcond_TT, init_param_ADI
+      use ImplicitPhysics, only: heatcond_TT
       use Mpicomm, only: stop_it
 !
       logical :: lstarting
@@ -279,15 +278,6 @@ module Entropy
          enddo
        endif
 !
-!  Some initializations for the ADI setup.
-!
-      if (hole_slope.ne.0.) then
-        hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
-        print*,'hole_slope, hole_width, hole_alpha=',hole_slope, &
-             hole_width, hole_alpha
-        print*,'Kmin, Kmax, Fbot, Tbump=', Kmin, Kmax, Fbot, Tbump
-      endif
-!
       if (initlnTT(1).eq.'gaussian') then
 !
 !  Needed when one only works with temperature_idealgas to check the radiative
@@ -318,8 +308,7 @@ module Entropy
         endif
       endif
 !
-!  30-nov-2007/dintrans: now hcond0 and Fbot are passed to boundcond()
-!  as shared variables
+!  now we share several variables
 !
       call put_shared_variable('hcond0', hcond0, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
@@ -327,41 +316,27 @@ module Entropy
       call put_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting Fbot')
-!
       call put_shared_variable('Tbump', Tbump, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting Tbump')
       call put_shared_variable('Kmax', Kmax, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting Kmax')
+      call put_shared_variable('Kmin', Kmin, ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting Kmin')
       call put_shared_variable('hole_slope', hole_slope, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting hole_slope')
-      call put_shared_variable('hole_alpha', hole_alpha, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting hole_alpha')
       call put_shared_variable('hole_width', hole_width, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting hole_width')
       call put_shared_variable('lADI_mixed', lADI_mixed, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lADI_mixed')
-!
-      if (lADI_mixed) then
-        if (lADI_mixed .and. iheatcond(1) /= 'K-arctan') &
-          call stop_it("temperature_idealgas: "//&
-          "lADI_mixed=T and iheatcond /= K-arctan?")
-      endif
-      call init_param_ADI()
-!
-      if (initlnTT(1).eq.'rad_equil') then
-        ! use hcondADI to dynamically share with boundcond() for the 'c3' BC
-        if (lrun) then
-          call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-        else
-          hcondADI=spread(Kmax, 1, mx)
-        endif
-      endif
+      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lviscosity_heat')
 !
 !  A word of warning...
 !
@@ -382,17 +357,16 @@ module Entropy
             call fatal_error('initialize_entropy', &
             'Conductivity coefficient chi_shock is zero!')
       endif
-!
       if (iheatcond(1)=='nothing') then
         if (hcond0/=impossible) call warning('initialize_entropy', &
             'No heat conduction, but hcond0/=0')
         if (chi/=impossible) call warning('initialize_entropy', &
             'No heat conduction, but chi/=0')
       endif
-!
-      call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting lviscosity_heat')
+      if (lADI_mixed .and. iheatcond(1) /= 'K-arctan') then
+        call stop_it("temperature_idealgas: "//&
+          "lADI_mixed=T while iheatcond /= K-arctan?")
+      endif
 !
       call keep_compiler_quiet(lstarting)
 !

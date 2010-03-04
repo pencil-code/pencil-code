@@ -229,6 +229,7 @@ module Register
       use Testscalar,       only: initialize_testscalar
       use Timeavg,          only: initialize_timeavg
       use Viscosity,        only: initialize_viscosity
+      use ImplicitPhysics,  only: initialize_implicit_physics
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(my) :: lat
@@ -343,6 +344,7 @@ module Register
       call initialize_special(f)
       call initialize_border_profiles()
       call initialize_solid_cells()
+      call initialize_implicit_physics(f)
 !
 !  initialize time integrals
 !  (leads to linker problem)
