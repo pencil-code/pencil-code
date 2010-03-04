@@ -494,9 +494,10 @@ module ImplicitPhysics
 !
       call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,l1t:l2t))
       call transp_xz(rho(l1:l2,n1:n2), rhot(n1t:n2t,l1t:l2t))
-      call transp_xz(hcond(l1:l2,n1:n2), hcondt(n1t:n2t,l1t:l2t))
-      call transp_xz(dhcond(l1:l2,n1:n2), dhcondt(n1t:n2t,l1t:l2t))
+      !call transp_mxmz(hcond, hcondt)
+      !call transp_mxmz(dhcond, dhcondt)
       call transp_mxmz(TT, TTt)
+      call heatcond_TT(TTt, hcondt, dhcondt)
 !
       do i=l1t,l2t
         wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
