@@ -1314,7 +1314,7 @@ include 'NSCBC.h'
           T_5=0
         endif
 !
-      end subroutine transversal_terms
+      endsubroutine transversal_terms
 !***********************************************************************
   subroutine bc_nscbc_subin_x_new(f,df,topbot,val)
 !
@@ -1440,24 +1440,59 @@ include 'NSCBC.h'
         call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
         call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
 !
-        do i=1,mz
-          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
-        enddo
+!        do i=1,mz
+!          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+!        enddo
+
+        select case (topbot)
+        case ('bot')
+          L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+              (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+          L_5=nscbc_sigma_in*rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2) &
+              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-(u_t+u_in(:,:,1))) 
 
 
-        if (ldensity_nolog) then
-           call stop_it('bc_nscbc_subin_x:ldensity_nolog case does not work now!')
+        case ('top')
+          L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+              (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+           L_1=-nscbc_sigma_in*rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2) &
+              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-(u_t+u_in(:,:,1)))  
+        endselect
+
+        if (ltemperature_nolog) then
+
         else
+         L_2 = -nscbc_sigma_in*pp(lll,m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
+               *(1.-exp(T_t)/TT0(m1:m2,n1:n2))
+        endif
+        if (ldensity_nolog) then
+          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
+              (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
+        else
+<<<<<<< .mine
+          df(lll,m1:m2,n1:n2,ilnrho) = &
+              -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
+              *(L_2+0.5*(L_5 + L_1)) !&
+           !-1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
+        endif        
+=======
          df(lll,m1:m2,n1:n2,ilnrho) = &
               -sgn*nscbc_sigma_in/(gamma0(m1:m2,n1:n2)-1.) &
               *cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
         endif
+>>>>>>> .r13407
+
+
 
         if (ltemperature_nolog) then
             call stop_it('bc_nscbc_subin_x:ltemperature_nolog case does not work now!')
         else
-           df(lll,m1:m2,n1:n2,ilnTT) = (gamma0(m1:m2,n1:n2)-1.)*df(lll,m1:m2,n1:n2,ilnrho) &
-              -nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
+!           df(lll,m1:m2,n1:n2,ilnTT) = (gamma0(m1:m2,n1:n2)-1.)*df(lll,m1:m2,n1:n2,ilnrho) &
+!              -nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
+           df(lll,m1:m2,n1:n2,ilnTT) = &
+          -1./(rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2))*(-L_2 &
+          +0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1))
+
         endif
 
         L_3=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
@@ -1465,15 +1500,12 @@ include 'NSCBC.h'
         L_4=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
                 *(f(lll,m1:m2,n1:n2,iuz)-u_in(:,:,3))
 
-        df(lll,m1:m2,n1:n2,iux) = &
-              -sgn*nscbc_sigma_in*cs0_ar(m1:m2,n1:n2) &
-              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-u_in(:,:,1)) &
-              -sgn*cs0_ar(m1:m2,n1:n2)/gamma0(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnrho)
+        df(lll,m1:m2,n1:n2,iux) =  &
+            -0.5/rho0(m1:m2,n1:n2)/cs0_ar(m1:m2,n1:n2)*(L_5 - L_1)
+
         df(lll,m1:m2,n1:n2,iuy) = -L_3
         df(lll,m1:m2,n1:n2,iuz) = -L_4
 
-        df(lll,m1:m2,n1:n2,ilnTT) = (gamma0(m1:m2,n1:n2)-1.)*df(lll,m1:m2,n1:n2,ilnrho) &
-              -sgn*nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1)*(1.-exp(T_t)/TT0(m1:m2,n1:n2))
 
 
    !     do k=1,nchemspec
@@ -1486,8 +1518,7 @@ include 'NSCBC.h'
          f(lll,m1:m2,n1:n2,ilnTT) = T_t
         endif
 
-   !      df(lll,m1:m2,n1:n2,ilnTT)=0.
-    endsubroutine bc_nscbc_subin_x_new
+ endsubroutine bc_nscbc_subin_x_new
 !***********************************************************************
 
 endmodule NSCBC
