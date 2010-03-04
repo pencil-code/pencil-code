@@ -33,9 +33,9 @@ module ImplicitPhysics
     module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
   end interface
 !
-  real, pointer :: hcond0, Fbot, Tbump, Kmax, Kmin, hole_slope, hole_width
+  real, pointer :: hcond0, Fbot
   logical, pointer :: lADI_mixed
-  real :: hole_alpha
+  real :: Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
 !
   contains
 !***********************************************************************
@@ -67,6 +67,7 @@ module ImplicitPhysics
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: ierr
+      real, dimension(:), pointer :: hole_params
 !
       call get_shared_variable('hcond0', hcond0, ierr)
       if (ierr/=0) call stop_it("implicit_physics: "//&
@@ -74,28 +75,22 @@ module ImplicitPhysics
       call get_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call stop_it("implicit_physics: "//&
                 "there was a problem when getting Fbot")
-      call get_shared_variable('Tbump', Tbump, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting Tbump")
-      call get_shared_variable('Kmax', Kmax, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting Kmax")
-      call get_shared_variable('Kmin', Kmin, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting Kmin")
-      call get_shared_variable('hole_slope', hole_slope, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting hole_slope")
-      call get_shared_variable('hole_width', hole_width, ierr)
-      if (ierr/=0) call stop_it("implicit_physics: "//&
-                "there was a problem when getting hole_width")
       call get_shared_variable('lADI_mixed', lADI_mixed, ierr)
       if (ierr/=0) call stop_it("implicit_physics: "//&
                 "there was a problem when getting lADI_mixed")
-!
-! computes hole_alpha needed for the radiative conductivity profile
-!
+      call get_shared_variable('hole_params', hole_params, ierr)
+      if (ierr/=0) call stop_it("implicit_physics: "//&
+                "there was a problem when getting the hole_params array")
+      print*, '************ hole parameters ************'
+      Tbump=hole_params(1)
+      Kmax=hole_params(2)
+      Kmin=hole_params(3)
+      hole_slope=hole_params(4)
+      hole_width=hole_params(5)
       hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+      print*,'Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha=', &
+             Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
+      print*, '*****************************************'
 !
       if (lrun) then
 ! hcondADI is dynamically shared with boundcond() for the 'c3' BC

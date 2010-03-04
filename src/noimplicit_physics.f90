@@ -17,8 +17,7 @@ module ImplicitPhysics
     module procedure heatcond_TT_2d  ! get 2d-arrays (hcond, dhcond)
   end interface
 !
-  real, pointer :: Tbump, Kmax, Kmin, hole_slope, hole_width
-  real :: hole_alpha
+  real :: Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
 !
   contains
 !***********************************************************************
@@ -34,31 +33,26 @@ module ImplicitPhysics
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(:), pointer :: hole_params
       integer :: ierr
 !
 !  Get the hole parameters if we want to run a kappa-mechanism simulation 
 !  in the fully-explicit case (mainly for testing purposes)
 !
       if (ltemperature) then
-        call get_shared_variable('Tbump', Tbump, ierr)
+        call get_shared_variable('hole_params', hole_params, ierr)
         if (ierr/=0) call stop_it("implicit_physics: "//&
-                  "there was a problem when getting Tbump")
-        call get_shared_variable('Kmax', Kmax, ierr)
-        if (ierr/=0) call stop_it("implicit_physics: "//&
-                  "there was a problem when getting Kmax")
-        call get_shared_variable('Kmin', Kmin, ierr)
-        if (ierr/=0) call stop_it("implicit_physics: "//&
-                  "there was a problem when getting Kmin")
-        call get_shared_variable('hole_slope', hole_slope, ierr)
-        if (ierr/=0) call stop_it("implicit_physics: "//&
-                  "there was a problem when getting hole_slope")
-        call get_shared_variable('hole_width', hole_width, ierr)
-        if (ierr/=0) call stop_it("implicit_physics: "//&
-                  "there was a problem when getting hole_width")
-!
-! computes hole_alpha needed for the radiative conductivity profile
-!
+                  "there was a problem when getting hole_params")
+        print*, '************ hole parameters ************'
+        Tbump=hole_params(1)
+        Kmax=hole_params(2)
+        Kmin=hole_params(3)
+        hole_slope=hole_params(4)
+        hole_width=hole_params(5)
         hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
+        print*,'Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha=', &
+               Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
+        print*, '*****************************************'
 !
         if (lrun) then
 ! hcondADI is dynamically shared with boundcond() for the 'c3' BC

@@ -171,6 +171,7 @@ module Entropy
       real, dimension (nx) :: hcond, dhcond
       logical :: lnothing
       integer :: i, ierr
+      real, dimension(5) :: hole_params
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !
@@ -307,7 +308,7 @@ module Entropy
               'Both Fbot and hcond0 are unknown')
       endif
 !
-!  now we share several variables
+!  Now we share several variables
 !
       call put_shared_variable('hcond0', hcond0, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
@@ -315,27 +316,20 @@ module Entropy
       call put_shared_variable('Fbot', Fbot, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting Fbot')
-      call put_shared_variable('Tbump', Tbump, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting Tbump')
-      call put_shared_variable('Kmax', Kmax, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting Kmax')
-      call put_shared_variable('Kmin', Kmin, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting Kmin')
-      call put_shared_variable('hole_slope', hole_slope, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting hole_slope')
-      call put_shared_variable('hole_width', hole_width, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting hole_width')
       call put_shared_variable('lADI_mixed', lADI_mixed, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lADI_mixed')
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lviscosity_heat')
+!
+!  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
+!  problem)
+!
+      hole_params=(/Tbump,Kmax,Kmin,hole_slope,hole_width/)
+      call put_shared_variable('hole_params',hole_params,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting the hole_params array')
 !
 !  A word of warning...
 !
