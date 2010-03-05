@@ -39,7 +39,7 @@ module ImplicitPhysics
 !  Get the hole parameters if we want to run a kappa-mechanism simulation 
 !  in the fully-explicit case (mainly for testing purposes)
 !
-      if (ltemperature) then
+      if (ltemperature .and. leos_idealgas) then
         call get_shared_variable('hole_params', hole_params, ierr)
         if (ierr/=0) call stop_it("implicit_physics: "//&
                   "there was a problem when getting hole_params")
