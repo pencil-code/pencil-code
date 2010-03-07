@@ -690,10 +690,10 @@ module Interstellar
            'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
         endif
 ! END TEMPORARY
-      lncoolH(1:ncool+1) = real(dlog(coolH_cgs(1:ncool+1)) - dlog(unit_Lambda) &
-                                + dlog(unit_temperature**coolB(1:ncool+1)) &
-                                + dlog(coolingfunction_scalefactor))
-      lncoolT(1:ncool+1) = real(dlog(coolT_cgs(1:ncool+1) / unit_temperature))
+      lncoolH(1:ncool+1) = real(log(coolH_cgs(1:ncool+1)) - log(unit_Lambda) &
+                                + log(unit_temperature**coolB(1:ncool+1)) &
+                                + log(coolingfunction_scalefactor))
+      lncoolT(1:ncool+1) = real(log(coolT_cgs(1:ncool+1) / unit_temperature))
 !
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
