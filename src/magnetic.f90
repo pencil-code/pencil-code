@@ -121,7 +121,6 @@ module Magnetic
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
   real :: displacement_gun=0.0
-  real :: pertamplaa=0.0
   real :: initpower_aa=0.0, cutoff_aa=0.0, brms_target=1.0
   real :: rescaling_fraction=1.0
   real :: phase_beltrami=0.0, ampl_beltrami=0.0
@@ -167,7 +166,6 @@ module Magnetic
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
-  character (len=labellen) :: pertaa='zero'
 !
   namelist /magnetic_init_pars/ &
       B_ext, lohmic_heat, fring1, Iring1, Rring1, wr1, axisr1, dispr1, fring2, &
@@ -216,6 +214,7 @@ module Magnetic
   logical :: lEMF_profile=.false. 
   logical :: lhalox=.false. 
   logical :: lalpha_profile_total=.false.
+  logical :: lrun_initaa=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
@@ -240,14 +239,15 @@ module Magnetic
       eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
       wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
-      lB_ext_pot, displacement_gun, pertaa, pertamplaa, D_smag, brms_target, &
+      lB_ext_pot, displacement_gun, D_smag, brms_target, &
       rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
       lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
       eta_z0, borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump
+      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump, &
+      lrun_initaa
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -960,6 +960,19 @@ module Magnetic
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 ) then
         sinkz=sin(k1_ff*z)
         coskz=cos(k1_ff*z)
+      endif
+!
+!  When adding a magnetic field to a snapshot of a nomagnetic simulation,
+!  the code allows only the initialization of the field to zero. This 
+!  hack allows a init_aa (from start.in) to be read and added to the 
+!  field upon executing run.csh  
+!
+      if (lread_oldsnap_nomag.and.lrun_initaa) then
+        if (lroot) then
+          print*,'Adding a magnetic field to a previously '//&
+              'non-magnetic simulation. The field is given by initaa=',initaa
+        endif
+        call init_aa(f)
       endif
 !
       call keep_compiler_quiet(lstarting)
