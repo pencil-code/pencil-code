@@ -1070,17 +1070,15 @@ module ImplicitPhysics
 !
       implicit none
 !
-      integer, parameter :: mxt=nx/nprocz+2*nghost
-      integer, parameter :: mzt=nzgrid+2*nghost
-      integer, parameter :: l1t=nghost+1, n1t=nghost+1
-      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
-      integer :: i,j
+      integer, parameter :: mxt=nx/nprocz+2*nghost, mzt=nzgrid+2*nghost
+      integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
+      integer :: i, j, ibox, ll1, ll2
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)   :: source, hcond, dhcond, finter, val, TT, &
-                                  chi, dLnhcond
-      real, dimension(mzt,mxt) :: fintert, TTt, chit, dLnhcondt, valt
-      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
+      real, dimension(mx,mz)  :: source, hcond, dhcond, finter, val, TT, &
+                                 chi, dLnhcond
+      real, dimension(mzt,mz) :: fintert, TTt, chit, dLnhcondt, valt
+      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
       real :: dx_2, dz_2, cp1, aalpha, bbeta
 !
 ! needed for having the correct ghost zones for ilnTT
@@ -1130,50 +1128,54 @@ module ImplicitPhysics
 !
 ! do the transpositions x <--> z
 !
-      call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,l1t:l2t))
-      call transp_xz(chi(l1:l2,n1:n2), chit(n1t:n2t,l1t:l2t))
-      call transp_xz(dLnhcond(l1:l2,n1:n2), dLnhcondt(n1t:n2t,l1t:l2t))
-      call transp_mxmz(TT, TTt)
+      do ibox=1,nxgrid/nzgrid
+        ll1=l1+(ibox-1)*nzgrid
+        ll2=l1+ibox*nzgrid-1
+
+        call transp_xz(finter(ll1:ll2,n1:n2), fintert(n1t:n2t,n1:n2))
+        call transp_xz(chi(ll1:ll2,n1:n2), chit(n1t:n2t,n1:n2))
+        call transp_xz(dLnhcond(ll1:ll2,n1:n2), dLnhcondt(n1t:n2t,n1:n2))
+        call transp_xz(TT(ll1:ll2,n1:n2), TTt(n1t:n2t,n1:n2))
 !
 ! columns in the z-direction dealt implicitly
 ! be careful! we still play with the l1,l2 and n1,n2 indices but that applies
 ! on *transposed* arrays
 !
-      do i=l1t,l2t
-        wz=dt*gamma*dz_2*chit(n1t:n2t,i)
-        az=-wz/2.
-        bz=1.-wz/2.*(-2.+dLnhcondt(n1t:n2t,i)*    &
-           (TTt(n1t+1:n2t+1,i)-2.*TTt(n1t:n2t,i)+TTt(n1t-1:n2t-1,i)))
-        cz=-wz/2.
-        rhsz=fintert(n1t:n2t,i)
+        do i=n1,n2
+          wz=dt*gamma*dz_2*chit(n1t:n2t,i)
+          az=-wz/2.
+          bz=1.-wz/2.*(-2.+dLnhcondt(n1t:n2t,i)*    &
+             (TTt(n1t+1:n2t+1,i)-2.*TTt(n1t:n2t,i)+TTt(n1t-1:n2t-1,i)))
+          cz=-wz/2.
+          rhsz=fintert(n1t:n2t,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
 !
-        bz(nzgrid)=1. ; az(nzgrid)=0.
-        rhsz(nzgrid)=0.
+          bz(nzgrid)=1. ; az(nzgrid)=0.
+          rhsz(nzgrid)=0.
 ! bottom
-        select case (bcz1(ilnTT))
+          select case (bcz1(ilnTT))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
-          case ('cT')
-            bz(1)=1. ; cz(1)=0.
-            rhsz(1)=0.
+            case ('cT')
+              bz(1)=1. ; cz(1)=0.
+              rhsz(1)=0.
 ! Constant flux at the bottom
-          case ('c3')
-            bz(1)=1. ; cz(1)=-1.
-            rhsz(1)=0.
-          case default 
-            call fatal_error('ADI_Kprof_MPI_mixed','bcz on TT must be cT or c3')
-        endselect
-!
-        call tridag(az, bz, cz, rhsz, workz)
-        valt(n1t:n2t,i)=workz
-      enddo
+            case ('c3')
+              bz(1)=1. ; cz(1)=-1.
+              rhsz(1)=0.
+            case default 
+              call fatal_error('ADI_Kprof_MPI_mixed','bcz on TT must be cT or c3')
+          endselect
+          call tridag(az, bz, cz, rhsz, workz)
+          valt(n1t:n2t,i)=workz
+        enddo ! i
 !
 ! come back on the grid (x,z)
 !
-      call transp_zx(valt(n1t:n2t,l1t:l2t), val(l1:l2,n1:n2))
-      f(l1:l2,4,n1:n2,ilnTT)=f(l1:l2,4,n1:n2,iTTold)+dt*val(l1:l2,n1:n2)
+      call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
+      f(ll1:ll2,4,n1:n2,ilnTT)=f(ll1:ll2,4,n1:n2,iTTold)+dt*val(ll1:ll2,n1:n2)
+      enddo ! ibox
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !

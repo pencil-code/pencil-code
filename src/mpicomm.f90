@@ -2935,8 +2935,10 @@ module Mpicomm
 !
 !  19-dec-06/anders: Adapted from transp
 !
-      integer, parameter :: nxt=nx/nprocz
-      real, dimension(nx,nz), intent(in) :: a
+!     integer, parameter :: nxt=nx/nprocz
+      integer, parameter :: nxt=nz
+!     real, dimension(nxx,nz), intent(in) :: a
+      real, dimension(:,:), intent(in) :: a
       real, dimension(nzgrid,nxt), intent (out) :: b
 !
       real, dimension(nxt,nz) :: send_buf, recv_buf
@@ -2952,7 +2954,8 @@ module Mpicomm
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
 !
-      sendc=nx*nz; recvc=sendc
+!     sendc=nx*nz; recvc=sendc
+      sendc=size(a,1)*nz; recvc=sendc
 !
 !  Send information to different processors (x-z transpose)
 !

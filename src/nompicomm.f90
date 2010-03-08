@@ -1187,8 +1187,9 @@ module Mpicomm
 !
 !  19-dec-06/anders: Adapted from transp
 !
-      real, dimension(nx,nz), intent(in) :: a
-      real, dimension(nz,nx), intent(out) :: b
+!     real, dimension(nx,nz), intent(in) :: a
+      real, dimension(:,:), intent(in) :: a
+      real, dimension(:,:), intent(out) :: b
 !
       b=transpose(a)
 !
