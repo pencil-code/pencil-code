@@ -36,6 +36,7 @@ module ImplicitPhysics
   real, pointer :: hcond0, Fbot
   logical, pointer :: lADI_mixed
   real :: Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
+  real :: dx_2, dz_2, cp1
 !
   contains
 !***********************************************************************
@@ -62,6 +63,7 @@ module ImplicitPhysics
 !
       use SharedVariables, only: get_shared_variable
       use MpiComm, only: stop_it
+      use EquationOfState, only: get_cp1
 !
       implicit none
 !
@@ -98,6 +100,10 @@ module ImplicitPhysics
       else
         hcondADI=spread(Kmax, 1, mx)
       endif
+!
+      call get_cp1(cp1)
+      dx_2=1./dx**2
+      dz_2=1./dz**2
 !
     endsubroutine initialize_implicit_physics
 !***********************************************************************
@@ -160,8 +166,7 @@ module ImplicitPhysics
 !  where Lambda_x and Lambda_y denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, &
-                                 get_cp1, mpoly0
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, mpoly0
       use Gravity, only: gravz
 !
       implicit none
@@ -171,7 +176,7 @@ module ImplicitPhysics
       real, dimension(nx,nz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real    :: aalpha, bbeta, cp1, dx_2, dz_2, tmp_flux
+      real    :: aalpha, bbeta, tmp_flux
 !
       TT=f(l1:l2,4,n1:n2,iTTold)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
@@ -180,9 +185,6 @@ module ImplicitPhysics
       else
         rho=1.
       endif
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
 !
 !  row dealt implicitly
 !
@@ -285,7 +287,7 @@ module ImplicitPhysics
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
-      use EquationOfState, only: gamma,get_cp1
+      use EquationOfState, only: gamma
 !
       implicit none
 !
@@ -295,12 +297,8 @@ module ImplicitPhysics
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
-      real    :: dx_2, dz_2, cp1
 !
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
@@ -405,40 +403,35 @@ module ImplicitPhysics
 !  conductivity depends on T (uses heatcond_TT to compute hcond _and_
 !  dhcond). The ADI scheme is of Yakonov's form:
 !
-!    (1-dt/2*J_x)*lambda = f_x(T^n) + f_y(T^n) + source
-!    (1-dt/2*J_y)*beta   = lambda
+!    (1-dt/2*J_x)*lambda = f_x(T^n) + f_z(T^n) + source
+!    (1-dt/2*J_z)*beta   = lambda
 !    T^(n+1) = T^n + dt*beta
 !
-!    where J_x and J_y denote Jacobian matrices df/dT.
+!    where J_x and J_z denote Jacobian matrices df/dT.
+!  08-mar-2010/dintrans: added the case of a non-squared domain (ibox-loop)
 !
-      use EquationOfState, only: gamma, get_cp1
-      use Mpicomm, only: transp_mxmz, transp_xz, &
-          transp_zx, initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use EquationOfState, only: gamma
+      use Mpicomm, only: transp_xz
+      use Boundcond, only: update_ghosts
 !
       implicit none
 !
-      integer, parameter :: mxt=nx/nprocz+2*nghost
       integer, parameter :: mzt=nzgrid+2*nghost
-      integer, parameter :: l1t=nghost+1, n1t=nghost+1
-      integer, parameter :: l2t=l1t+nx/nprocz-1, n2t=n1t+nzgrid-1
-      integer :: i,j
+      integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
+      integer :: i ,j, ibox, ll1, ll2
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)   :: source, hcond, dhcond, finter, TT, rho, val
-      real, dimension(mzt,mxt) :: hcondt, dhcondt, fintert, TTt, rhot, valt
-      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
-      real :: dx_2, dz_2, cp1, aalpha, bbeta
+      real, dimension(mx,mz)  :: source, hcond, dhcond, finter, TT, rho, val
+      real, dimension(mzt,mz) :: hcondt, dhcondt, fintert, TTt, rhot, valt
+      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
+      real :: aalpha, bbeta
 !
 !  It is necessary to communicate ghost-zones points between
 !  processors to ensure a correct transposition of these ghost
 !  zones. It is needed by rho,rhot and source,sourcet.
 !
-      call initiate_isendrcv_bdry(f, iTTold, iTTold)
-      call finalize_isendrcv_bdry(f, iTTold, iTTold)
+      call update_ghosts(f)
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
 !
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
@@ -453,7 +446,7 @@ module ImplicitPhysics
         rho=1.
       endif
 !
-!  rows dealt implicitly
+! rows dealt implicitly
 !
       do j=n1,n2
         wx=cp1*gamma/rho(l1:l2,j)
@@ -470,8 +463,8 @@ module ImplicitPhysics
         cx=-dt*wx*dx_2/4.*(dhcond(l1+1:l2+1,j)     &
            *(TT(l1+1:l2+1,j)-TT(l1:l2,j))          &
            +hcond(l1:l2,j)+hcond(l1+1:l2+1,j))
-! rhsx=f_y(T^n) + f_x(T^n) (Eq. 3.6)
-! do first f_y(T^n)
+! rhsx=f_z(T^n) + f_x(T^n) (Eq. 3.6)
+! do first f_z(T^n)
         rhsx=wx*dz_2/2.*((hcond(l1:l2,j+1)         &
              +hcond(l1:l2,j))*(TT(l1:l2,j+1)       &
              -TT(l1:l2,j))-(hcond(l1:l2,j)         &
@@ -483,7 +476,7 @@ module ImplicitPhysics
              -(hcond(l1:l2,j)+hcond(l1-1:l2-1,j))            &
              *(TT(l1:l2,j)-TT(l1-1:l2-1,j)))+source(l1:l2,j)
 !
-! x boundary conditions: periodic
+! periodic boundary conditions in the x-direction
 !
         aalpha=cx(nx) ; bbeta=ax(1)
         call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
@@ -492,60 +485,62 @@ module ImplicitPhysics
 !
 ! do the transpositions x <--> z
 !
-      call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,l1t:l2t))
-      call transp_xz(rho(l1:l2,n1:n2), rhot(n1t:n2t,l1t:l2t))
-      !call transp_mxmz(hcond, hcondt)
-      !call transp_mxmz(dhcond, dhcondt)
-      call transp_mxmz(TT, TTt)
-      call heatcond_TT(TTt, hcondt, dhcondt)
+      do ibox=1,nxgrid/nzgrid
+        ll1=l1+(ibox-1)*nzgrid
+        ll2=l1+ibox*nzgrid-1
+        call transp_xz(finter(ll1:ll2,n1:n2), fintert(n1t:n2t,n1:n2))
+        call transp_xz(rho(ll1:ll2,n1:n2), rhot(n1t:n2t,n1:n2))
+        call transp_xz(TT(ll1:ll2,n1:n2), TTt(n1t:n2t,n1:n2))
+        call heatcond_TT(TTt, hcondt, dhcondt)
 !
-      do i=l1t,l2t
-        wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
-        az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)            &
-           *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i))      &
-           +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
+        do i=n1,n2
+          wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
+          az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)            &
+             *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i))      &
+             +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
 !
-        bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
-           (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
-           -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
-           +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
+          bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
+             (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
+             -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
+             +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
 !
-        cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
-           *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))      &
-           +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
+          cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
+             *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))      &
+             +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
 !
-        rhsz=fintert(n1t:n2t,i)
+          rhsz=fintert(n1t:n2t,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
 !
-        bz(nzgrid)=1. ; az(nzgrid)=0.
-        rhsz(nzgrid)=0.
+          bz(nzgrid)=1. ; az(nzgrid)=0.
+          rhsz(nzgrid)=0.
 ! bottom
-        select case (bcz1(ilnTT))
+          select case (bcz1(ilnTT))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
-          case ('cT')
-            bz(1)=1. ; cz(1)=0.
-            rhsz(1)=0.
+            case ('cT')
+              bz(1)=1. ; cz(1)=0.
+              rhsz(1)=0.
 ! Constant flux at the bottom
-          case ('c3')
-            bz(1)=1. ; cz(1)=-1.
-            rhsz(1)=0.
-          case default 
-             call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
-        endselect
+            case ('c3')
+              bz(1)=1. ; cz(1)=-1.
+              rhsz(1)=0.
+            case default 
+               call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
+          endselect
+          call tridag(az, bz, cz, rhsz, workz)
+          valt(n1t:n2t,i)=workz(1:nzgrid)
+        enddo ! i
 !
-        call tridag(az, bz, cz, rhsz, workz)
-        valt(n1t:n2t,i)=workz(1:nzgrid)
-      enddo
-      call transp_zx(valt(n1t:n2t,l1t:l2t), val(l1:l2,n1:n2))
-      f(:,4,:,ilnTT)=f(:,4,:,iTTold)+dt*val
+! come back on the grid (x,z)
+!
+        call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
+        f(ll1:ll2,4,:,ilnTT)=f(ll1:ll2,4,:,iTTold)+dt*val(ll1:ll2,:)
+      enddo ! ibox
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
-      if (iproc==0) then
-        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-      endif
+      if (iproc==0) call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_MPI
 !***********************************************************************
@@ -596,7 +591,7 @@ module ImplicitPhysics
 ! Implicit Crank Nicolson scheme in 1-D for a constant K (not 
 ! really an ADI but keep the generic name for commodity).
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
 !
       implicit none
 !
@@ -608,8 +603,6 @@ module ImplicitPhysics
 !
       TT=f(4,4,:,ilnTT)
       rho=exp(f(4,4,:,ilnrho))
-      call get_cp1(cp1)
-      dz_2=1./dz**2
 !
       do j=n1,n2
         wz=dt*gamma*hcond0*cp1/rho(j)
@@ -645,7 +638,7 @@ module ImplicitPhysics
 ! Implicit 1-D case for a temperature-dependent conductivity K(T).
 ! Not really an ADI but keep the generic name for commodity.
 !
-      use EquationOfState, only: gamma, get_cp1
+      use EquationOfState, only: gamma
 !
       implicit none
 !
@@ -656,8 +649,6 @@ module ImplicitPhysics
       real  :: cp1, dz_2, wz, hcondp, hcondm
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
-      call get_cp1(cp1)
-      dz_2=1./dz**2
       rho=exp(f(4,4,:,ilnrho))
 !
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
@@ -707,7 +698,7 @@ module ImplicitPhysics
 !  04-sep-2009/dintrans: coded
 !  parallel version of the ADI scheme for the K=cte case
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, get_cp1
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
       use Mpicomm, only: transp_xz, transp_zx, MPI_adi_x, MPI_adi_z
 !
       implicit none
@@ -721,7 +712,7 @@ module ImplicitPhysics
       real, dimension(nzgrid,nxt) :: fintert, rhot, sourcet, wtmp
       real, dimension(nx)     :: tmpx1, tmpx2, send_bufx1, send_bufx2
       real, dimension(nzgrid) :: tmpz1, tmpz2, send_bufz1, send_bufz2
-      real  :: aalpha, bbeta, cp1, dx_2, dz_2
+      real  :: aalpha, bbeta
 !
       TT=f(l1:l2,4,n1:n2,iTTold)
       source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
@@ -730,9 +721,6 @@ module ImplicitPhysics
       else
         rho=1.
       endif
-      call get_cp1(cp1)
-      dx_2=1/dx**2
-      dz_2=1/dz**2
 !
 ! Communicate the first and last pencils of size nx
 !
@@ -895,7 +883,7 @@ module ImplicitPhysics
 ! Simpler version where a part of the radiative diffusion term is
 ! computed during the explicit advance.
 !
-      use EquationOfState, only: gamma, get_cp1
+      use EquationOfState, only: gamma
 !
       implicit none
 !
@@ -906,8 +894,6 @@ module ImplicitPhysics
       real :: cp1, dz_2, wz
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
-      call get_cp1(cp1)
-      dz_2=1./dz**2
       call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
 !
 ! need to set up the 'c3' BC at the 2nd-order before the implicit stuff
@@ -968,7 +954,7 @@ module ImplicitPhysics
 !
 !    where J_x and J_y denote Jacobian matrices df/dT.
 !
-      use EquationOfState, only: gamma,get_cp1
+      use EquationOfState, only: gamma
       use Boundcond, only: update_ghosts
 !
       implicit none
@@ -979,14 +965,11 @@ module ImplicitPhysics
                                 rho, chi, dLnhcond
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real :: dx_2, dz_2, cp1, aalpha, bbeta
+      real :: aalpha, bbeta
 !
       call update_ghosts(f)
 !
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
@@ -1069,7 +1052,7 @@ module ImplicitPhysics
 !  01-mar-2010/dintrans: coded
 !  parallel version of the ADI_Kprof_mixed subroutine
 !
-      use EquationOfState, only: gamma, get_cp1
+      use EquationOfState, only: gamma
       use Mpicomm, only: transp_mxmz, transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
@@ -1084,16 +1067,13 @@ module ImplicitPhysics
       real, dimension(mzt,mz) :: fintert, TTt, chit, dLnhcondt, valt
       real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
-      real :: dx_2, dz_2, cp1, aalpha, bbeta
+      real :: aalpha, bbeta
 !
 ! needed for having the correct ghost zones for ilnTT
 !
       call update_ghosts(f)
 !
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      call get_cp1(cp1)
-      dx_2=1./dx**2
-      dz_2=1./dz**2
 ! BC important not for the x-direction (always periodic) but for 
 ! the z-direction as we must impose the 'c3' BC at the 2nd-order
 ! before going in the implicit stuff
@@ -1178,15 +1158,13 @@ module ImplicitPhysics
 !
 ! come back on the grid (x,z)
 !
-      call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
-      f(ll1:ll2,4,n1:n2,ilnTT)=f(ll1:ll2,4,n1:n2,iTTold)+dt*val(ll1:ll2,n1:n2)
+        call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
+        f(ll1:ll2,4,n1:n2,ilnTT)=f(ll1:ll2,4,n1:n2,iTTold)+dt*val(ll1:ll2,n1:n2)
       enddo ! ibox
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
-      if (iproc==0) then
-        call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-      endif
+      if (iproc==0) call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_MPI_mixed
 !***********************************************************************
