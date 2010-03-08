@@ -236,7 +236,7 @@ module Register
       real, dimension (nz,nprocz) :: z_allprocs_tmp
       real :: sinth_min=1e-5,costh_min=1e-5 !(to avoid axis)
       logical :: lstarting
-      integer :: xj,yj,zj
+      integer :: xj,yj,zj,ivar
       integer :: itheta
 !
 !  Defaults for some logicals; will later be set to true if needed
@@ -357,6 +357,16 @@ module Register
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,*) 'impossible=',impossible
         close (1)
+      endif
+!
+!  print summary of variable names
+!
+      if (lroot) then
+        open(3,file=trim(datadir)//'/varname.dat',status='replace')
+        do ivar=1,nvar
+          write(3,"(i4,2x,a)") ivar,varname(ivar)
+        enddo
+        close(3)
       endif
 !
 !----------------------------------------------------------------------------

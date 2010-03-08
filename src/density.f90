@@ -163,8 +163,12 @@ module Density
       logical :: lnothing
 !
 !  Set irho equal to ilnrho if we are considering non-logarithmic density.
+!  Also reset the corresponding slot in varname.
 !
-      if (ldensity_nolog) irho=ilnrho
+      if (ldensity_nolog) then
+        irho=ilnrho
+        varname(irho)='rho'
+      endif
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)

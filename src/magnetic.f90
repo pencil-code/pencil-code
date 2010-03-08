@@ -374,6 +374,8 @@ module Magnetic
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $xy$-averaged
                                 ! DIAG_DOC:   mean field)
+  integer :: idiag_bmzS2=0      ! DIAG_DOC: $\left<\left<\Bv_S\right>_{xy}^2\right>$
+  integer :: idiag_bmzA2=0      ! DIAG_DOC: $\left<\left<\Bv_A\right>_{xy}^2\right>$
   integer :: idiag_jmx=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{yz}^2
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $yz$-averaged
@@ -4012,6 +4014,8 @@ module Magnetic
       if (idiag_bmx/=0) call calc_bmx
       if (idiag_bmy/=0) call calc_bmy
       if (idiag_bmz/=0) call calc_bmz
+      if (idiag_bmzS2/=0) call calc_bmzS2
+      if (idiag_bmzA2/=0) call calc_bmzA2
       if (idiag_jmx/=0) call calc_jmx
       if (idiag_jmy/=0) call calc_jmy
       if (idiag_jmz/=0) call calc_jmz
@@ -4137,6 +4141,90 @@ module Magnetic
       first=.false.
 !
     endsubroutine calc_bmy
+!***********************************************************************
+    subroutine calc_bmzS2
+!
+!  Magnetic energy in anisymmetric part of the horizontally averaged field.
+!  The bxmz and bymz must have been calculated, and present on root processor.
+!
+!   8-mar-10/axel: adapted from bmz
+!
+      use Diagnostics
+      use Mpicomm
+!
+      logical,save :: first=.true.
+      integer :: n_reverse,ipz_reverse
+      real :: bxmS,bymS,bmzS2
+!
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
+!
+      if (idiag_bxmz==0.or.idiag_bymz==0) then
+        if (first) then
+          print*, 'calc_mfield: WARNING'
+          print*, 'NOTE: to get bmzS2, set bxmz and bymz in xyaver'
+          print*, 'We proceed, but you will get bmzS2=0'
+        endif
+        bmzS2=0.0
+      else
+        bxmS=0.
+        bymS=0.
+        do n=1,nz
+          n_reverse=nz-n+1
+          ipz_reverse=ipz !(for now)
+          bxmS=bxmS+fnamez(n,ipz+1,idiag_bxmz)+fnamez(n_reverse,ipz_reverse+1,idiag_bxmz)
+          bymS=bymS+fnamez(n,ipz+1,idiag_bymz)+fnamez(n_reverse,ipz_reverse+1,idiag_bymz)
+        enddo
+      endif
+!
+!  Save the name in the idiag_bmzS slot and set first to false.
+!
+      call save_name((bxmS**2+bymS**2)/nz**2,idiag_bmzS2)
+      first=.false.
+!
+    endsubroutine calc_bmzS2
+!***********************************************************************
+    subroutine calc_bmzA2
+!
+!  Magnetic energy in anisymmetric part of the horizontally averaged field.
+!  The bxmz and bymz must have been calculated, and present on root processor.
+!
+!   8-mar-10/axel: adapted from bmz
+!
+      use Diagnostics
+      use Mpicomm
+!
+      logical,save :: first=.true.
+      integer :: n_reverse,ipz_reverse
+      real :: bxmA,bymA,bmzA2
+!
+!  This only works if bxmz and bzmz are in xyaver, so print warning if this is
+!  not ok.
+!
+      if (idiag_bxmz==0.or.idiag_bymz==0) then
+        if (first) then
+          print*, 'calc_mfield: WARNING'
+          print*, 'NOTE: to get bmzA2, set bxmz and bymz in xyaver'
+          print*, 'We proceed, but you will get bmzA2=0'
+        endif
+        bmzA2=0.0
+      else
+        bxmA=0.
+        bymA=0.
+        do n=1,nz
+          n_reverse=nz-n+1
+          ipz_reverse=ipz !(for now)
+          bxmA=bxmA+fnamez(n,ipz+1,idiag_bxmz)-fnamez(n_reverse,ipz_reverse+1,idiag_bxmz)
+          bymA=bymA+fnamez(n,ipz+1,idiag_bymz)-fnamez(n_reverse,ipz_reverse+1,idiag_bymz)
+        enddo
+      endif
+!
+!  Save the name in the idiag_bmzA slot and set first to false.
+!
+      call save_name((bxmA**2+bymA**2)/nz**2,idiag_bmzA2)
+      first=.false.
+!
+    endsubroutine calc_bmzA2
 !***********************************************************************
     subroutine calc_bmz
 !
@@ -6022,6 +6110,7 @@ module Magnetic
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_axmz=0; idiag_aymz=0; idiag_azmz=0; idiag_bxmz=0; idiag_bymz=0
         idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0; idiag_bmz=0; idiag_embmz=0
+        idiag_bmzS2=0; idiag_bmzA2=0
         idiag_emxamz3=0; idiag_jmx=0; idiag_jmy=0; idiag_jmz=0; idiag_ambmz=0
         idiag_jmbmz=0; idiag_kmz=0; idiag_kx_aa=0
         idiag_ambmzh=0;idiag_ambmzn=0;idiag_ambmzs=0; idiag_bmzph=0
@@ -6185,6 +6274,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
+        call parse_name(iname,cname(iname),cform(iname),'bmzS2',idiag_bmzS2)
+        call parse_name(iname,cname(iname),cform(iname),'bmzA2',idiag_bmzA2)
         call parse_name(iname,cname(iname),cform(iname),'jmx',idiag_jmx)
         call parse_name(iname,cname(iname),cform(iname),'jmy',idiag_jmy)
         call parse_name(iname,cname(iname),cform(iname),'jmz',idiag_jmz)
@@ -6560,6 +6651,8 @@ module Magnetic
         write(3,*) 'i_bmx=',idiag_bmx
         write(3,*) 'i_bmy=',idiag_bmy
         write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_bmzS2=',idiag_bmzS2
+        write(3,*) 'i_bmzA2=',idiag_bmzA2
         write(3,*) 'i_jmx=',idiag_jmx
         write(3,*) 'i_jmy=',idiag_jmy
         write(3,*) 'i_jmz=',idiag_jmz
