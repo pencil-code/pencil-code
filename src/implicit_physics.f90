@@ -842,12 +842,14 @@ module ImplicitPhysics
 !
       implicit none
 !
-      real, dimension(mx,mz) :: TT, arg, hcond
-      real, dimension(mx,mz), optional :: dhcond
+      real, dimension(:,:), intent(in) :: TT
+      real, dimension(:,:), intent(out) :: hcond
+      real, dimension(:,:), optional :: dhcond
 !
-      arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
-      hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      if (present(dhcond)) &
+        dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
 !
     endsubroutine heatcond_TT_2d
 !***********************************************************************
@@ -858,13 +860,14 @@ module ImplicitPhysics
 !
       implicit none
 !
-      real, dimension(:)           :: TT, hcond
+      real, dimension(:), intent(in) :: TT
+      real, dimension(:), intent(out) :: hcond
       real, dimension(:), optional :: dhcond
-      real, dimension(size(TT,1))  :: arg
 !
-      arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
-      hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      if (present(dhcond)) &
+        dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
 !
     endsubroutine heatcond_TT_1d
 !***********************************************************************
@@ -875,12 +878,14 @@ module ImplicitPhysics
 !
       implicit none
 !
-      real :: TT, arg, hcond
+      real, intent(in) :: TT
+      real, intent(out) :: hcond
       real, optional :: dhcond
 !
-      arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
-      hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
-      if (present(dhcond)) dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
+      hcond=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
+      if (present(dhcond)) &
+        dhcond=2.*hole_alpha/(1.+hcond**2)*hole_slope*(TT-Tbump)
+      hcond=Kmax+hole_alpha*(-pi/2.+atan(hcond))
 !
     endsubroutine heatcond_TT_0d
 !***********************************************************************
