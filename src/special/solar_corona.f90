@@ -111,6 +111,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
@@ -594,8 +595,8 @@ module Special
         enddo
       enddo
 !
-      gKp = expo * p%glnTT
-! 
+      gKp = (expo+1.) * p%glnTT
+!
       if (Ksat/=0.) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
         call dot2(p%glnTT,glnTT2)
@@ -632,7 +633,7 @@ module Special
       call dot(p%bb,p%glnTT,cosbgT)
       call dot2(p%bb,b2)
 !
-      where ((glnTT2.le.tini).or.(b2.le.tini))
+      where (glnTT2*b2.le.tini)
         cosbgT=0.
       elsewhere
         cosbgT=cosbgT/sqrt(glnTT2*b2)
