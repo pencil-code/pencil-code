@@ -599,7 +599,7 @@ module ImplicitPhysics
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: rho, TT
       real, dimension(nz) :: a, b, c, rhs, work
-      real  :: cp1, dz_2, wz
+      real :: wz
 !
       TT=f(4,4,:,ilnTT)
       rho=exp(f(4,4,:,ilnrho))
@@ -646,7 +646,7 @@ module ImplicitPhysics
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: source, rho, TT, hcond, dhcond
       real, dimension(nz) :: a, b, c, rhs, work
-      real  :: cp1, dz_2, wz, hcondp, hcondm
+      real :: wz, hcondp, hcondm
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       rho=exp(f(4,4,:,ilnrho))
@@ -891,7 +891,7 @@ module ImplicitPhysics
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: source, TT, hcond, dhcond, dLnhcond, chi
       real, dimension(nz) :: a, b, c, rhs, work
-      real :: cp1, dz_2, wz
+      real :: wz
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
