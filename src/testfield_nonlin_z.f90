@@ -204,6 +204,7 @@ module Testfield
   integer :: idiag_u21rms=0     ! DIAG_DOC: $\left<u_{21}^2\right>^{1/2}$
   integer :: idiag_u12rms=0     ! DIAG_DOC: $\left<u_{12}^2\right>^{1/2}$
   integer :: idiag_u22rms=0     ! DIAG_DOC: $\left<u_{22}^2\right>^{1/2}$
+  integer :: idiag_j11rms=0     ! DIAG_DOC: $\left<j_{11}^2\right>^{1/2}$
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>^{1/2}$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>^{1/2}$
   integer :: idiag_b12rms=0     ! DIAG_DOC: $\left<b_{12}^2\right>^{1/2}$
@@ -677,7 +678,7 @@ module Testfield
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
       real, dimension (nx,3) :: del2Utest,uutest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,upq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
+      real, dimension (nx) :: jbpq,upq2,jpq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
       integer :: jtest,j, i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -709,6 +710,7 @@ module Testfield
         call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest,graddivatest)
         call curl_mn(aijtest,bbtest,aatest)
         call curl_mn(bijtest,jjtest,bbtest)
+!-test- call del2v_etc(f,iaxtest,CURLCURL=jjtest)
 !
 !  do diffusion terms
 !
@@ -851,7 +853,7 @@ module Testfield
 !
         if ((ldiagnos.or.l1davgfirst).and. &
           (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
-           idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
+           idiag_j11rms/=0 .or. idiag_b11rms/=0 .or. idiag_b21rms/=0.or. &
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
            idiag_s2kzDFm/=0.or. &
            idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
@@ -911,7 +913,7 @@ module Testfield
         FKipq(:,:,jtest)=jxbtestK*bamp1
         FMipq(:,:,jtest)=jxbtestM*bamp1
         FMKipq(:,:,jtest)=jxbtestMK*bamp1
-        if (ldiagnos.and.idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
+        if (ldiagnos) jpq(:,:,jtest)=jjtest
 !
 !  enddo loop for jtest
 !
@@ -1211,6 +1213,12 @@ module Testfield
         if (idiag_b11rms/=0) then
           call dot2(bpq(:,:,1),bpq2)
           call sum_mn_name(bpq2,idiag_b11rms,lsqrt=.true.)
+        endif
+!
+        if (idiag_j11rms/=0) then
+          call dot2(jpq(:,:,1),jpq2)
+          call sum_mn_name(jpq2,idiag_j11rms,lsqrt=.true.)
+          !-test- call sum_mn_name(jpq(:,1,1)**2,idiag_j11rms,lsqrt=.true.)
         endif
 !
         if (idiag_b21rms/=0) then
@@ -1802,7 +1810,7 @@ module Testfield
         idiag_ux0m=0; idiag_uy0m=0
         idiag_ux11m=0; idiag_uy11m=0
         idiag_u11rms=0; idiag_u21rms=0; idiag_u12rms=0; idiag_u22rms=0
-        idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
+        idiag_j11rms=0; idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
         idiag_bx0pt=0; idiag_bx11pt=0; idiag_bx21pt=0; idiag_bx12pt=0; idiag_bx22pt=0
         idiag_by0pt=0; idiag_by11pt=0; idiag_by21pt=0; idiag_by12pt=0; idiag_by22pt=0
@@ -1931,6 +1939,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'u21rms',idiag_u21rms)
         call parse_name(iname,cname(iname),cform(iname),'u12rms',idiag_u12rms)
         call parse_name(iname,cname(iname),cform(iname),'u22rms',idiag_u22rms)
+        call parse_name(iname,cname(iname),cform(iname),'j11rms',idiag_j11rms)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -2100,6 +2109,7 @@ module Testfield
         write(3,*) 'idiag_u21rms=',idiag_u21rms
         write(3,*) 'idiag_u12rms=',idiag_u12rms
         write(3,*) 'idiag_u22rms=',idiag_u22rms
+        write(3,*) 'idiag_j11rms=',idiag_j11rms
         write(3,*) 'idiag_b11rms=',idiag_b11rms
         write(3,*) 'idiag_b21rms=',idiag_b21rms
         write(3,*) 'idiag_b12rms=',idiag_b12rms
