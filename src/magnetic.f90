@@ -186,6 +186,7 @@ module Magnetic
   real :: meanfield_molecular_eta=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0
+  real :: z_surface=0.0
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0
   real :: alphaSSm=0.0
@@ -228,6 +229,7 @@ module Magnetic
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
+      z_surface, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
       lcalc_aamean, &
       lforcing_cont_aa, iforcing_continuous_aa, &
@@ -282,6 +284,7 @@ module Magnetic
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)\right>$
+  integer :: idiag_uam=0        ! DIAG_DOC: $\left<\uv\cdot\Av\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
@@ -296,6 +299,8 @@ module Magnetic
   integer :: idiag_epsM_LES=0   ! DIAG_DOC:
   integer :: idiag_aybym2=0     ! DIAG_DOC:
   integer :: idiag_exaym2=0     ! DIAG_DOC:
+  integer :: idiag_exabot=0     ! DIAG_DOC: $\int\Ev\times\Av\,dS|_{\rm bot}$
+  integer :: idiag_exatop=0     ! DIAG_DOC: $\int\Ev\times\Av\,dS|_{\rm top}$
   integer :: idiag_exjm2=0      ! DIAG_DOC:
   integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
@@ -432,6 +437,9 @@ module Magnetic
   integer :: idiag_examz1=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
   integer :: idiag_examz2=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_y$
   integer :: idiag_examz3=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_z$
+  integer :: idiag_EMFmz1=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_x$
+  integer :: idiag_EMFmz2=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_y$
+  integer :: idiag_EMFmz3=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_z$
   integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{xy}$
   integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{xy}$
   integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{xy}$
@@ -466,7 +474,8 @@ module Magnetic
   integer :: idiag_b3b21m=0     ! DIAG_DOC: $\left<B_3 B_{2,1} \right>$
   integer :: idiag_b1b32m=0     ! DIAG_DOC: $\left<B_1 B_{3,2} \right>$
   integer :: idiag_b2b13m=0     ! DIAG_DOC: $\left<B_2 B_{1,3} \right>$
-  integer :: idiag_EMFdotBm=0   ! DIAG_DOC:
+  integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv} \right>$
+  integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv} dV$
   integer :: idiag_udotxbm=0    ! DIAG_DOC:
   integer :: idiag_uxbdotm=0    ! DIAG_DOC:
   integer :: idiag_uxbmx=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_x\right>$
@@ -1420,7 +1429,7 @@ module Magnetic
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
       if (idiag_bthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
-      if (idiag_EMFdotBm/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
+      if (idiag_EMFdotBm/=0.or.idiag_EMFdotB_int/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
       if (idiag_uabmx/=0 .or. idiag_uabmy/=0 .or. idiag_uabmz/=0 &
           .or. idiag_uabxmz/=0 .or. idiag_uabymz/=0 .or. idiag_uabzmz/=0) &
@@ -1966,6 +1975,7 @@ module Magnetic
         case ('sinz'); alpha_tmp=sin(z(n))
         case ('z'); alpha_tmp=z(n)
         case ('z/H'); alpha_tmp=z(n)/xyz1(3)
+        case ('z/H_0'); alpha_tmp=z(n)/xyz1(3); if (z(n)==xyz1(3)) alpha_tmp=0.
         case ('y/H'); alpha_tmp=y(m)/xyz1(3)
         case ('cosy'); alpha_tmp=cos(y(m))
         case ('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
@@ -1980,7 +1990,9 @@ module Magnetic
                 -step_scalar(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &
                 -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
                 +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
-        case ('surface_z'); alpha_tmp=0.5*(1.-erfunc(z/alpha_width))
+        case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
+        case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
+          if(headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
         case ('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
@@ -2104,9 +2116,10 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exa,exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj
+      real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: uj,aj,phi
+      real, dimension (nx) :: ua,uj,aj,phi
       real, dimension (nx) :: uxj_dotB0,b3b21,b1b32,b2b13
       real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
@@ -2547,8 +2560,9 @@ module Magnetic
             eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
           enddo
         else
-          tmp=(z(n)/height_eta)**2
-          eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
+!         tmp=(z(n)/height_eta)**2
+!         eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
+          eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_width))-eta
         endif
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
@@ -2716,8 +2730,14 @@ module Magnetic
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
         if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
 !
-!  Current-vortex cross helicity (linkage between vortex tubes and current
-!  tubes).
+!  Field-velocity cross helicity (linkage between velocity and magnetic tubes).
+!
+        if (idiag_uam/=0) then
+          call dot (p%uu,p%aa,ua)
+          call sum_mn_name(ua,idiag_uam)
+        endif
+!
+!  Current-vortex cross helicity (linkage between vortex and current tubes).
 !
         if (idiag_ujm/=0) then
           call dot (p%uu,p%jj,uj)
@@ -2856,11 +2876,37 @@ module Magnetic
 !
 !  Calculate part I of magnetic helicity flux (ExA contribution).
 !
-        if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0) then
-          call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
+        if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
+            idiag_exatop/=0 .or. idiag_exabot/=0) then
+          if (lmeanfield_theory) then
+            !call cross_mn(-p%uxb-p%mf_EMF+eta*p%jj,p%aa,exa)
+            call cross_mn(-p%mf_EMF+eta*p%jj,p%aa,exa)
+          else
+            call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
+          endif
+!
           if (idiag_examx/=0) call sum_mn_name(exa(:,1),idiag_examx)
           if (idiag_examy/=0) call sum_mn_name(exa(:,2),idiag_examy)
           if (idiag_examz/=0) call sum_mn_name(exa(:,3),idiag_examz)
+!
+          if (idiag_exabot/=0) then
+            if (z(n)==xyz0(3)) then
+              exabot=exa(:,3)
+            else
+              exabot=0.
+            endif
+            call integrate_mn_name(exabot,idiag_exabot)
+          endif
+!
+          if (idiag_exatop/=0) then
+            if (z(n)==xyz1(3)) then
+              exatop=exa(:,3)
+            else
+              exatop=0.
+            endif
+            call integrate_mn_name(exatop,idiag_exatop)
+          endif
+!
         endif
 !
 !  Calculate part II of magnetic helicity flux (phi*B contribution).
@@ -3000,6 +3046,7 @@ module Magnetic
 !  Diagnostic output for mean field dynamos.
 !
         if (idiag_EMFdotBm/=0) call sum_mn_name(p%mf_EMFdotB,idiag_EMFdotBm)
+        if (idiag_EMFdotB_int/=0) call integrate_mn_name(p%mf_EMFdotB,idiag_EMFdotB_int)
       endif ! endif (ldiagnos)
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
@@ -3048,11 +3095,19 @@ module Magnetic
 !  Calculate magnetic helicity flux (ExA contribution).
 !
         if (idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0) then
-          call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
+          if (lmeanfield_theory) then
+            !call cross_mn(-p%uxb-p%mf_EMF+eta*p%jj,p%aa,exa)
+            call cross_mn(-p%mf_EMF+eta*p%jj,p%aa,exa)
+          else
+            call cross_mn(-p%uxb+eta*p%jj,p%aa,exa)
+          endif
           if (idiag_examz1/=0) call xysum_mn_name_z(exa(:,1),idiag_examz1)
           if (idiag_examz2/=0) call xysum_mn_name_z(exa(:,2),idiag_examz2)
           if (idiag_examz3/=0) call xysum_mn_name_z(exa(:,3),idiag_examz3)
         endif
+        if (idiag_EMFmz1/=0) call xysum_mn_name_z(p%mf_EMF(:,1),idiag_EMFmz1)
+        if (idiag_EMFmz2/=0) call xysum_mn_name_z(p%mf_EMF(:,2),idiag_EMFmz2)
+        if (idiag_EMFmz3/=0) call xysum_mn_name_z(p%mf_EMF(:,3),idiag_EMFmz3)
 !
 !  Maxwell stress components.
 !
@@ -6126,7 +6181,8 @@ module Magnetic
         idiag_abm=0; idiag_abrms=0; idiag_abmh=0
         idiag_uabmx=0; idiag_uabmy=0; idiag_uabmz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
-        idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_ubm=0; idiag_ujm=0
+        idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0
+        idiag_uam=0; idiag_ubm=0; idiag_ujm=0 
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_Expt=0
         idiag_Eypt=0; idiag_Ezpt=0; idiag_aybym2=0; idiag_exaym2=0
@@ -6162,10 +6218,12 @@ module Magnetic
         idiag_uxbcmx=0; idiag_uxbsmx=0
         idiag_uxbcmy=0; idiag_uxbsmy=0; idiag_examz1=0; idiag_examz2=0
         idiag_examz3=0; idiag_examx=0; idiag_examy=0; idiag_examz=0
+        idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
-        idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0; idiag_EMFdotBm=0
+        idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
+        idiag_EMFdotBm=0; idiag_EMFdotB_int=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
         idiag_bzmphi=0; idiag_b2mphi=0; idiag_jbmphi=0; idiag_uxbrmphi=0
         idiag_uxbpmphi=0; idiag_uxbzmphi=0; idiag_jxbrmphi=0; idiag_jxbpmphi=0
@@ -6192,6 +6250,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
         call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
         call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
+        call parse_name(iname,cname(iname),cform(iname),'exabot',idiag_exabot)
+        call parse_name(iname,cname(iname),cform(iname),'exatop',idiag_exatop)
         call parse_name(iname,cname(iname),cform(iname),'exjm2',idiag_exjm2)
         call parse_name(iname,cname(iname),cform(iname),'b2tm',idiag_b2tm)
         call parse_name(iname,cname(iname),cform(iname),'bjtm',idiag_bjtm)
@@ -6209,6 +6269,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jbms',idiag_jbms)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
         call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'uam',idiag_uam)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
@@ -6304,6 +6365,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
         call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
         call parse_name(iname,cname(iname),cform(iname),'EMFdotBm',idiag_EMFdotBm)
+        call parse_name(iname,cname(iname),cform(iname),'EMFdotB_int',idiag_EMFdotB_int)
         call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
@@ -6488,6 +6550,9 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz1',idiag_examz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz2',idiag_examz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz3',idiag_examz3)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz1',idiag_EMFmz1)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz2',idiag_EMFmz2)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz3',idiag_EMFmz3)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'etatotalmz',idiag_etatotalmz)
       enddo
@@ -6572,6 +6637,8 @@ module Magnetic
         write(3,*) 'i_dteta=',idiag_dteta
         write(3,*) 'i_aybym2=',idiag_aybym2
         write(3,*) 'i_exaym2=',idiag_exaym2
+        write(3,*) 'i_exabot=',idiag_exabot
+        write(3,*) 'i_exatop=',idiag_exatop
         write(3,*) 'i_exjm2=',idiag_exjm2
         write(3,*) 'i_b2tm=',idiag_b2tm
         write(3,*) 'i_bjtm=',idiag_bjtm
@@ -6594,6 +6661,7 @@ module Magnetic
         write(3,*) 'i_jbms=',idiag_abms
         write(3,*) 'i_ubm=',idiag_ubm
         write(3,*) 'i_cosubm=',idiag_cosubm
+        write(3,*) 'i_uam=',idiag_uam
         write(3,*) 'i_ujm=',idiag_ujm
         write(3,*) 'i_fbm=',idiag_fbm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
@@ -6667,6 +6735,7 @@ module Magnetic
         write(3,*) 'i_b1b32m=',idiag_b1b32m
         write(3,*) 'i_b2b13m=',idiag_b2b13m
         write(3,*) 'i_EMFdotBm=',idiag_EMFdotBm
+        write(3,*) 'i_EMFdotB_int=',idiag_EMFdotB_int
         write(3,*) 'i_udotxbm=',idiag_udotxbm
         write(3,*) 'i_uxbdotm=',idiag_uxbdotm
         write(3,*) 'i_axmz=',idiag_axmz
@@ -6742,6 +6811,9 @@ module Magnetic
         write(3,*) 'i_examz1=',idiag_examz1
         write(3,*) 'i_examz2=',idiag_examz2
         write(3,*) 'i_examz3=',idiag_examz3
+        write(3,*) 'i_EMFmz1=',idiag_EMFmz1
+        write(3,*) 'i_EMFmz2=',idiag_EMFmz2
+        write(3,*) 'i_EMFmz3=',idiag_EMFmz3
         write(3,*) 'i_bx2mxy=',idiag_bx2mxy
         write(3,*) 'i_by2mxy=',idiag_by2mxy
         write(3,*) 'i_bz2mxy=',idiag_bz2mxy

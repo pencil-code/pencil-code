@@ -342,7 +342,7 @@ module Forcing
         if (t>tforce_stop) llastforce=.false.
       else
         if ( iforce/='zero' .and. lfirstforce .and. lroot ) &
-            print*, 'addforce: addforce started'
+!--         print*, 'addforce: addforce started'
         lfirstforce=.false.
 !
 !  calculate and add forcing function
@@ -535,10 +535,10 @@ module Forcing
 !  additional stuff for test fields
 !
       if (ifirst==0) then
-        if (lroot) print*,'forcing_hel: opening k.dat'
+        if (lroot.and.ip<14) print*,'forcing_hel: opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
-        if (lroot) print*,'forcing_hel: average k=',kav
+        if (lroot.and.ip<14) print*,'forcing_hel: average k=',kav
         if (nk.gt.mk) then
           if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
           print*,'nk=',nk,'mk=',mk
@@ -600,7 +600,8 @@ module Forcing
         endif
       endif
 !
-      if (headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
+!  compute k^2 and output wavenumbers
+!
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
       if (ip.lt.4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,deltay
@@ -2837,7 +2838,6 @@ module Forcing
       if (ip.le.9) print*,'hel_vec: k,kde,ffnorm,kav,dt,cs0=',k,kde, &
                                                         ffnorm,kav,dt,cs0
       if (ip.le.9) print*,'hel_vec: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
-      !!(debug...) write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional

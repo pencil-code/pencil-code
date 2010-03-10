@@ -32,12 +32,12 @@ module Special
 
   include '../special.h'
 
-  character (len=labellen) :: initalpm='zero',Omega_profile='nothing'
+  character (len=labellen) :: initalpm='zero',VC_Omega_profile='nothing'
 
   ! input parameters
   real :: amplalpm=.1
   real :: kx_alpm=1.,ky_alpm=1.,kz_alpm=1.
-  real :: Omega_ampl=.0
+  real :: VC_Omega_ampl=.0
 
   namelist /special_init_pars/ &
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
@@ -48,10 +48,10 @@ module Special
 
   namelist /special_run_pars/ &
        kf_alpm,ladvect_alpm,alpmdiff, &
-       Omega_profile,Omega_ampl,lupw_alpm,deltat_alpm
+       VC_Omega_profile,VC_Omega_ampl,lupw_alpm,deltat_alpm
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_alpm_int=0
+  integer :: idiag_alpm_int=0, idiag_gatop=0, idiag_gabot=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
 
   logical, pointer :: lmeanfield_theory
@@ -137,7 +137,7 @@ module Special
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_mf_EMF)=.true.
         lpenc_requested(i_mf_EMFdotB)=.true.
-        if (Omega_profile/='nothing') lpenc_requested(i_bij)=.true.
+        if (VC_Omega_profile/='nothing') lpenc_requested(i_bij)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -262,6 +262,26 @@ module Special
         if (idiag_alpmm/=0) call sum_mn_name(alpm,idiag_alpmm)
         if (idiag_ammax/=0) call max_mn_name(alpm,idiag_ammax)
         if (idiag_amrms/=0) call sum_mn_name(alpm**2,idiag_amrms,lsqrt=.true.)
+!
+!  diagnostics of alpm z gradient at top and bottom
+!
+        if (idiag_gabot/=0) then
+          if (z(n)==xyz0(3)) then
+            call grad(f,ialpm,galpm)
+          else
+            galpm=0.
+          endif
+          call integrate_mn_name(galpm(:,3),idiag_gabot)
+        endif
+!
+        if (idiag_gatop/=0) then
+          if (z(n)==xyz1(3)) then
+            call grad(f,ialpm,galpm)
+          else
+            galpm=0.
+          endif
+          call integrate_mn_name(galpm(:,3),idiag_gatop)
+        endif
       endif
 !
     endsubroutine dspecial_dt
@@ -331,7 +351,7 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_alpm_int=0
+        idiag_alpm_int=0; idiag_gatop=0; idiag_gabot=0
         idiag_alpmm=0; idiag_ammax=0; idiag_amrms=0; idiag_alpmmz=0
       endif
 !
@@ -339,6 +359,8 @@ module Special
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alpm_int',idiag_alpm_int)
+        call parse_name(iname,cname(iname),cform(iname),'gatop',idiag_gatop)
+        call parse_name(iname,cname(iname),cform(iname),'gabot',idiag_gabot)
         call parse_name(iname,cname(iname),cform(iname),'alpmm',idiag_alpmm)
         call parse_name(iname,cname(iname),cform(iname),'ammax',idiag_ammax)
         call parse_name(iname,cname(iname),cform(iname),'amrms',idiag_amrms)
@@ -355,6 +377,8 @@ module Special
 !
       if (lwr) then
         write(3,*) 'i_alpm_int=',idiag_alpm_int
+        write(3,*) 'i_gatop=',idiag_gatop
+        write(3,*) 'i_gabot=',idiag_gabot
         write(3,*) 'i_alpmm=',idiag_alpmm
         write(3,*) 'i_ammax=',idiag_ammax
         write(3,*) 'i_amrms=',idiag_amrms
@@ -528,15 +552,16 @@ module Special
 !
 !  Fi = a*eps_ijl Slk BjBk
 !
-      select case (Omega_profile)
-      case ('nothing'); if (headtt) print*,'Omega_profile=nothing'
+      select case (VC_Omega_profile)
+      case ('nothing'); if (headtt) print*,'VC_Omega_profile=nothing'
         divflux=0               ! or we will be using uninitialized memory...
       case ('(0,Sx,0)')
-        if (headtt) print*,'divflux: uniform shear, S=',Omega_ampl
-        divflux=Omega_ampl*(p%bb(:,1)*p%bij(:,1,3)-p%bb(:,2)*p%bij(:,2,3))
+        if (headtt) print*,'divflux: uniform shear, S=',VC_Omega_ampl
+        divflux=VC_Omega_ampl*(p%bb(:,1)*p%bij(:,1,3)-p%bb(:,2)*p%bij(:,2,3))
       case ('(0,cosx*cosz,0)')
-        if (headtt) print*,'divflux: solar shear, S=',Omega_ampl
-        divflux=Omega_ampl*((p%bb(:,2)*p%bij(:,2,1)-   p%bb(:,3)*p%bij(:,3,1)&
+        if (headtt) print*,'divflux: solar shear, S=',VC_Omega_ampl
+        divflux=VC_Omega_ampl*( &
+                            (p%bb(:,2)*p%bij(:,2,1)-   p%bb(:,3)*p%bij(:,3,1)&
                          +.5*p%bb(:,3)*p%bij(:,1,3)+.5*p%bb(:,1)*p%bij(:,3,3))&
                              *cos(x(l1:l2))*sin(z(n))&
                            -(p%bb(:,2)*p%bij(:,2,3)-   p%bb(:,1)*p%bij(:,1,3)&
@@ -544,7 +569,7 @@ module Special
                              *sin(x(l1:l2))*cos(z(n))&
                            +(p%bb(:,1)**2-p%bb(:,3)**2)&
                               *sin(x(l1:l2))*sin(z(n)))
-      case default; print*,'Omega_profile=unknown'
+      case default; print*,'VC_Omega_profile=unknown'
         divflux=0               ! or we will be using uninitialized memory...
       endselect
 !
