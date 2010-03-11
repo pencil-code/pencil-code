@@ -56,7 +56,7 @@ module Testfield
   integer :: iE0=0
 
   ! input parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real, dimension(3) :: Btest_ext=(/0.,0.,0./)
   real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
@@ -71,7 +71,7 @@ module Testfield
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
-       B_ext,zextent,initaatest, &
+       Btest_ext,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
        phasex_aatest,phasez_aatest, &
        luxb_as_aux,ljxb_as_aux
@@ -84,7 +84,7 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
-       B_ext,zextent,lsoca,lsoca_jxb, &
+       Btest_ext,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
@@ -106,28 +106,9 @@ module Testfield
   integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{21}k$
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{12}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{22}k$
-  integer :: idiag_alpK11=0     ! DIAG_DOC: $\alpha_{11}^K$
-  integer :: idiag_alpK21=0     ! DIAG_DOC: $\alpha_{21}^K$
-  integer :: idiag_alpK31=0     ! DIAG_DOC: $\alpha_{31}^K$
-  integer :: idiag_alpK12=0     ! DIAG_DOC: $\alpha_{12}^K$
-  integer :: idiag_alpK22=0     ! DIAG_DOC: $\alpha_{22}^K$
-  integer :: idiag_alpK32=0     ! DIAG_DOC: $\alpha_{32}^K$
-  integer :: idiag_etaK11=0     ! DIAG_DOC: $\eta_{11}^Kk$
-  integer :: idiag_etaK21=0     ! DIAG_DOC: $\eta_{21}^Kk$
-  integer :: idiag_etaK12=0     ! DIAG_DOC: $\eta_{12}^Kk$
-  integer :: idiag_etaK22=0     ! DIAG_DOC: $\eta_{22}^Kk$
-  integer :: idiag_alpM11=0     ! DIAG_DOC: $\alpha_{11}^M$
-  integer :: idiag_alpM21=0     ! DIAG_DOC: $\alpha_{21}^M$
-  integer :: idiag_alpM31=0     ! DIAG_DOC: $\alpha_{31}^M$
-  integer :: idiag_alpM12=0     ! DIAG_DOC: $\alpha_{12}^M$
-  integer :: idiag_alpM22=0     ! DIAG_DOC: $\alpha_{22}^M$
-  integer :: idiag_alpM32=0     ! DIAG_DOC: $\alpha_{32}^M$
-  integer :: idiag_etaM11=0     ! DIAG_DOC: $\eta_{11}^Mk$
-  integer :: idiag_etaM21=0     ! DIAG_DOC: $\eta_{21}^Mk$
-  integer :: idiag_etaM12=0     ! DIAG_DOC: $\eta_{12}^Mk$
-  integer :: idiag_etaM22=0     ! DIAG_DOC: $\eta_{22}^Mk$
-  integer :: idiag_alpMK11=0    ! DIAG_DOC: $\alpha_{11}^{MK}$
-  integer :: idiag_etaMK11=0    ! DIAG_DOC: $\eta_{11}^{MK}k$
+  integer :: idiag_alpK=0       ! DIAG_DOC: $\alpha^K$
+  integer :: idiag_alpM=0       ! DIAG_DOC: $\alpha^K$
+  integer :: idiag_alpMK=0      ! DIAG_DOC: $\alpha^{MK}$
   integer :: idiag_phi11=0      ! DIAG_DOC: $\phi_{11}$
   integer :: idiag_phi21=0      ! DIAG_DOC: $\phi_{21}$
   integer :: idiag_phi12=0      ! DIAG_DOC: $\phi_{12}$
@@ -137,26 +118,9 @@ module Testfield
   integer :: idiag_psi21=0      ! DIAG_DOC: $\psi_{21}k$
   integer :: idiag_psi12=0      ! DIAG_DOC: $\psi_{12}k$
   integer :: idiag_psi22=0      ! DIAG_DOC: $\psi_{22}k$
-  integer :: idiag_phiK11=0     ! DIAG_DOC: $\phi_{11}^K$
-  integer :: idiag_phiK21=0     ! DIAG_DOC: $\phi_{21}^K$
-  integer :: idiag_phiK12=0     ! DIAG_DOC: $\phi_{12}^K$
-  integer :: idiag_phiK22=0     ! DIAG_DOC: $\phi_{22}^K$
-  integer :: idiag_phiK32=0     ! DIAG_DOC: $\phi_{32}^K$
-  integer :: idiag_psiK11=0     ! DIAG_DOC: $\psi_{11}^Kk$
-  integer :: idiag_psiK21=0     ! DIAG_DOC: $\psi_{21}^Kk$
-  integer :: idiag_psiK12=0     ! DIAG_DOC: $\psi_{12}^Kk$
-  integer :: idiag_psiK22=0     ! DIAG_DOC: $\psi_{22}^Kk$
-  integer :: idiag_phiM11=0     ! DIAG_DOC: $\phi_{11}^M$
-  integer :: idiag_phiM21=0     ! DIAG_DOC: $\phi_{21}^M$
-  integer :: idiag_phiM12=0     ! DIAG_DOC: $\phi_{12}^M$
-  integer :: idiag_phiM22=0     ! DIAG_DOC: $\phi_{22}^M$
-  integer :: idiag_phiM32=0     ! DIAG_DOC: $\phi_{32}^M$
-  integer :: idiag_psiM11=0     ! DIAG_DOC: $\psi_{11}^Mk$
-  integer :: idiag_psiM21=0     ! DIAG_DOC: $\psi_{21}^Mk$
-  integer :: idiag_psiM12=0     ! DIAG_DOC: $\psi_{12}^Mk$
-  integer :: idiag_psiM22=0     ! DIAG_DOC: $\psi_{22}^Mk$
-  integer :: idiag_phiMK11=0    ! DIAG_DOC: $\phi_{11}^{MK}$
-  integer :: idiag_psiMK11=0    ! DIAG_DOC: $\psi_{11}^{MK}$
+  integer :: idiag_phiK=0       ! DIAG_DOC: $\phi^K$
+  integer :: idiag_phiM=0       ! DIAG_DOC: $\phi^M$
+  integer :: idiag_phiMK=0      ! DIAG_DOC: $\phi^{MK}$
   integer :: idiag_alp11cc=0    ! DIAG_DOC: $\alpha_{11}\cos^2 kz$
   integer :: idiag_alp21sc=0    ! DIAG_DOC: $\alpha_{21}\sin kz\cos kz$
   integer :: idiag_alp12cs=0    ! DIAG_DOC: $\alpha_{12}\cos kz\sin kz$
@@ -165,22 +129,6 @@ module Testfield
   integer :: idiag_eta21sc=0    ! DIAG_DOC: $\eta_{21}\sin kz\cos kz$
   integer :: idiag_eta12cs=0    ! DIAG_DOC: $\eta_{12}\cos kz\sin kz$
   integer :: idiag_eta22ss=0    ! DIAG_DOC: $\eta_{22}\sin^2 kz$
-  integer :: idiag_alpK11cc=0    ! DIAG_DOC: $\alpha_{11}^{\rm K}\cos^2 kz$
-  integer :: idiag_alpK21sc=0    ! DIAG_DOC: $\alpha_{21}^{\rm K}\sin kz\cos kz$
-  integer :: idiag_alpK12cs=0    ! DIAG_DOC: $\alpha_{12}^{\rm K}\cos kz\sin kz$
-  integer :: idiag_alpK22ss=0    ! DIAG_DOC: $\alpha_{22}^{\rm K}\sin^2 kz$
-  integer :: idiag_etaK11cc=0    ! DIAG_DOC: $\eta_{11}^{\rm K}\cos^2 kz$
-  integer :: idiag_etaK21sc=0    ! DIAG_DOC: $\eta_{21}^{\rm K}\sin kz\cos kz$
-  integer :: idiag_etaK12cs=0    ! DIAG_DOC: $\eta_{12}^{\rm K}\cos kz\sin kz$
-  integer :: idiag_etaK22ss=0    ! DIAG_DOC: $\eta_{22}^{\rm K}\sin^2 kz$
-  integer :: idiag_alpM11cc=0    ! DIAG_DOC: $\alpha_{11}^{\rm M}\cos^2 kz$
-  integer :: idiag_alpM21sc=0    ! DIAG_DOC: $\alpha_{21}^{\rm M}\sin kz\cos kz$
-  integer :: idiag_alpM12cs=0    ! DIAG_DOC: $\alpha_{12}^{\rm M}\cos kz\sin kz$
-  integer :: idiag_alpM22ss=0    ! DIAG_DOC: $\alpha_{22}^{\rm M}\sin^2 kz$
-  integer :: idiag_etaM11cc=0    ! DIAG_DOC: $\eta_{11}^{\rm M}\cos^2 kz$
-  integer :: idiag_etaM21sc=0    ! DIAG_DOC: $\eta_{21}^{\rm M}\sin kz\cos kz$
-  integer :: idiag_etaM12cs=0    ! DIAG_DOC: $\eta_{12}^{\rm M}\cos kz\sin kz$
-  integer :: idiag_etaM22ss=0    ! DIAG_DOC: $\eta_{22}^{\rm M}\sin^2 kz$
   integer :: idiag_s2kzDFm=0    ! DIAG_DOC: $\left<\sin2kz\nabla\cdot F\right>$
   integer :: idiag_M11=0        ! DIAG_DOC: ${\cal M}_{11}$
   integer :: idiag_M22=0        ! DIAG_DOC: ${\cal M}_{22}$
@@ -657,7 +605,7 @@ module Testfield
       use Cdata
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumean
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean
+      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -671,8 +619,10 @@ module Testfield
       real, dimension (nx,3) :: uxbtest,uxbtestK,uxbtestM,uxbtestMK
       real, dimension (nx,3) :: jxbtest,jxbtestK,jxbtestM,jxbtestMK
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,EKipq,EMipq,EMKipq,upq
-      real, dimension (nx,3,njtest) :: Fipq,FKipq,FMipq,FMKipq,bpq,jpq
+      real, dimension (nx,3,njtest) :: Eipq,upq
+      real, dimension (nx,3,njtest) :: Fipq,bpq,jpq
+      real, dimension (nx) :: alpK,alpM,alpMK
+      real, dimension (nx) :: phiK,phiM,phiMK
       real, dimension (nx,3) :: del2Atest,uufluct,bbfluct,jjfluct
       real, dimension (nx,3) :: graddivAtest,aatest,jjtest
       real, dimension (nx,3) :: jxbrtest,jxbtest1,jxbtest2
@@ -736,7 +686,7 @@ module Testfield
 !  This applies to all terms, including the reference fields.
 !
         do j=1,3
-          B0_imposed(:,j)=B_ext(j)
+          B0_imposed(:,j)=Btest_ext(j)
         enddo
         call cross_mn(uutest,B0_imposed,uxbtest)
         call cross_mn(jjtest,B0_imposed,jxbtest)
@@ -901,42 +851,41 @@ module Testfield
 !  Restore uxbtest and jxbtest from f-array, and compute uxbtestK for alpK
 !  computation for comparison.
 !
-        !call cross_mn(p%uu,bbtest,uxbtestK)
-        !call cross_mn(uutest,p%bbb,uxbtestM)
-        !call cross_mn(uutest,bbtest,uxbtestMK)
-        call cross_mn(p%uu,p%bbb-b0ref,uxbtestK)
-        call cross_mn(p%uu-u0ref,p%bbb,uxbtestM)
-        call cross_mn(p%uu-u0ref,p%bbb-b0ref,uxbtestMK)
         uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
 !
 !  Do the same for jxb.
 !
-        !call cross_mn(p%jj,bbtest,jxbtestK)
-        !call cross_mn(jjtest,p%bbb,jxbtestM)
-        !call cross_mn(jjtest,bbtest,jxbtestMK)
-        call cross_mn(p%jj,p%bbb-b0ref,jxbtestK)
-        call cross_mn(p%jj-j0ref,p%bbb,jxbtestM)
-        call cross_mn(p%jj-j0ref,p%bbb-b0ref,jxbtestMK)
         jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
 !
 !  evaluate different contributions to <uxb>
 !
         Eipq(:,:,jtest)=uxbtest*bamp1
-        EKipq(:,:,jtest)=uxbtestK*bamp1
-        EMipq(:,:,jtest)=uxbtestM*bamp1
-        EMKipq(:,:,jtest)=uxbtestMK*bamp1
 !
 !  evaluate different contributions to <jxb>
 !
         Fipq(:,:,jtest)=jxbtest*bamp1
-        FKipq(:,:,jtest)=jxbtestK*bamp1
-        FMipq(:,:,jtest)=jxbtestM*bamp1
-        FMKipq(:,:,jtest)=jxbtestMK*bamp1
         if (ldiagnos) jpq(:,:,jtest)=jjtest
 !
 !  enddo loop for jtest
 !
       enddo
+!
+!  compute kinetic, magnetic, and magneto-kinetic contributions
+!
+      if (any(B_ext_inv/=0.)) then
+        call cross_mn(p%uu,p%bbb-b0ref,uxbtestK)
+        call cross_mn(p%uu-u0ref,p%bbb,uxbtestM)
+        call cross_mn(p%uu-u0ref,p%bbb-b0ref,uxbtestMK)
+        call cross_mn(p%jj,p%bbb-b0ref,jxbtestK)
+        call cross_mn(p%jj-j0ref,p%bbb,jxbtestM)
+        call cross_mn(p%jj-j0ref,p%bbb-b0ref,jxbtestMK)
+        call dot(B_ext_inv,uxbtestK,alpK)
+        call dot(B_ext_inv,uxbtestM,alpM)
+        call dot(B_ext_inv,uxbtestMK,alpMK)
+        call dot(B_ext_inv,jxbtestK,phiK)
+        call dot(B_ext_inv,jxbtestM,phiM)
+        call dot(B_ext_inv,jxbtestMK,phiMK)
+      endif
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
@@ -980,44 +929,12 @@ module Testfield
         if (idiag_eta12/=0) call sum_mn_name(-(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12)
         if (idiag_eta22/=0) call sum_mn_name(-(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22)
 !
-!  averages of alphaK and etaK
-!
-        if (idiag_alpK11/=0) call sum_mn_name(+cz(n)*EKipq(:,1,1)+sz(n)*EKipq(:,1,i2),idiag_alpK11)
-        if (idiag_alpK21/=0) call sum_mn_name(+cz(n)*EKipq(:,2,1)+sz(n)*EKipq(:,2,i2),idiag_alpK21)
-        if (idiag_alpK31/=0) call sum_mn_name(+cz(n)*EKipq(:,3,1)+sz(n)*EKipq(:,3,i2),idiag_alpK31)
-        if (idiag_etaK12/=0) call sum_mn_name(-(-sz(n)*EKipq(:,1,i1)+cz(n)*EKipq(:,1,i2))*ktestfield1,idiag_etaK12)
-        if (idiag_etaK22/=0) call sum_mn_name(-(-sz(n)*EKipq(:,2,i1)+cz(n)*EKipq(:,2,i2))*ktestfield1,idiag_etaK22)
-!
-!  averages of alphaM and etaM
-!
-        if (idiag_alpM11/=0) call sum_mn_name(+cz(n)*EMipq(:,1,1)+sz(n)*EMipq(:,1,i2),idiag_alpM11)
-        if (idiag_alpM21/=0) call sum_mn_name(+cz(n)*EMipq(:,2,1)+sz(n)*EMipq(:,2,i2),idiag_alpM21)
-        if (idiag_alpM31/=0) call sum_mn_name(+cz(n)*EMipq(:,3,1)+sz(n)*EMipq(:,3,i2),idiag_alpM31)
-        if (idiag_alpMK11/=0) call sum_mn_name(+cz(n)*EMKipq(:,1,1)+sz(n)*EMKipq(:,1,i2),idiag_alpMK11)
-        if (idiag_etaM12/=0) call sum_mn_name(-(-sz(n)*EMipq(:,1,i1)+cz(n)*EMipq(:,1,i2))*ktestfield1,idiag_etaM12)
-        if (idiag_etaM22/=0) call sum_mn_name(-(-sz(n)*EMipq(:,2,i1)+cz(n)*EMipq(:,2,i2))*ktestfield1,idiag_etaM22)
-!
 !  same for jxb
 !
         if (idiag_phi11/=0) call sum_mn_name(+cz(n)*Fipq(:,1,1)+sz(n)*Fipq(:,1,i2),idiag_phi11)
         if (idiag_phi21/=0) call sum_mn_name(+cz(n)*Fipq(:,2,1)+sz(n)*Fipq(:,2,i2),idiag_phi21)
         if (idiag_psi12/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2))*ktestfield1,idiag_psi12)
         if (idiag_psi22/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2))*ktestfield1,idiag_psi22)
-!
-!  same for jxbK
-!
-        if (idiag_phiK11/=0) call sum_mn_name(+cz(n)*FKipq(:,1,1)+sz(n)*FKipq(:,1,i2),idiag_phiK11)
-        if (idiag_phiK21/=0) call sum_mn_name(+cz(n)*FKipq(:,2,1)+sz(n)*FKipq(:,2,i2),idiag_phiK21)
-        if (idiag_psiK12/=0) call sum_mn_name(-(-sz(n)*FKipq(:,1,i1)+cz(n)*FKipq(:,1,i2))*ktestfield1,idiag_psiK12)
-        if (idiag_psiK22/=0) call sum_mn_name(-(-sz(n)*FKipq(:,2,i1)+cz(n)*FKipq(:,2,i2))*ktestfield1,idiag_psiK22)
-!
-!  same for jxbM
-!
-        if (idiag_phiM11/=0) call sum_mn_name(+cz(n)*FMipq(:,1,1)+sz(n)*FMipq(:,1,i2),idiag_phiM11)
-        if (idiag_phiM21/=0) call sum_mn_name(+cz(n)*FMipq(:,2,1)+sz(n)*FMipq(:,2,i2),idiag_phiM21)
-        if (idiag_phiMK11/=0) call sum_mn_name(+cz(n)*FMKipq(:,1,1)+sz(n)*FMKipq(:,1,i2),idiag_phiMK11)
-        if (idiag_psiM12/=0) call sum_mn_name(-(-sz(n)*FMipq(:,1,i1)+cz(n)*FMipq(:,1,i2))*ktestfield1,idiag_psiM12)
-        if (idiag_psiM22/=0) call sum_mn_name(-(-sz(n)*FMipq(:,2,i1)+cz(n)*FMipq(:,2,i2))*ktestfield1,idiag_psiM22)
 !
 !  weighted averages alpha and eta
 !  Still need to do this for iE0 /= 0 case.
@@ -1027,19 +944,14 @@ module Testfield
         if (idiag_eta12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
         if (idiag_eta22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
 !
-!  do the same for alpK and etaK contributions
+!  Compute kinetic, magnetic, and magneto-kinetic contributions with imposed-field method
 !
-        if (idiag_alpK11cc/=0) call sum_mn_name(c2z(n)*(+cz(n)*EKipq(:,1,1)+sz(n)*EKipq(:,1,i2)),idiag_alpK11cc)
-        if (idiag_alpK21sc/=0) call sum_mn_name(csz(n)*(+cz(n)*EKipq(:,2,1)+sz(n)*EKipq(:,2,i2)),idiag_alpK21sc)
-        if (idiag_etaK12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*EKipq(:,1,i1)+cz(n)*EKipq(:,1,i2))*ktestfield1,idiag_etaK12cs)
-        if (idiag_etaK22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*EKipq(:,2,i1)+cz(n)*EKipq(:,2,i2))*ktestfield1,idiag_etaK22ss)
-!
-!  do the same for alpM and etaM contributions
-!
-        if (idiag_alpM11cc/=0) call sum_mn_name(c2z(n)*(+cz(n)*EMipq(:,1,1)+sz(n)*EMipq(:,1,i2)),idiag_alpM11cc)
-        if (idiag_alpM21sc/=0) call sum_mn_name(csz(n)*(+cz(n)*EMipq(:,2,1)+sz(n)*EMipq(:,2,i2)),idiag_alpM21sc)
-        if (idiag_etaM12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*EMipq(:,1,i1)+cz(n)*EMipq(:,1,i2))*ktestfield1,idiag_etaM12cs)
-        if (idiag_etaM22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*EMipq(:,2,i1)+cz(n)*EMipq(:,2,i2))*ktestfield1,idiag_etaM22ss)
+        if (idiag_alpK/=0) call sum_mn_name(alpK,idiag_alpK)
+        if (idiag_alpM/=0) call sum_mn_name(alpM,idiag_alpM)
+        if (idiag_alpMK/=0) call sum_mn_name(alpMK,idiag_alpMK)
+        if (idiag_phiK/=0) call sum_mn_name(phiK,idiag_phiK)
+        if (idiag_phiM/=0) call sum_mn_name(phiM,idiag_phiM)
+        if (idiag_phiMK/=0) call sum_mn_name(phiMK,idiag_phiMK)
 !
 !  Divergence of current helicity flux
 !
@@ -1088,35 +1000,10 @@ module Testfield
           if (idiag_alp32/=0) call sum_mn_name(+cz(n)*Eipq(:,3,i3)+sz(n)*Eipq(:,3,i4),idiag_alp32)
           if (idiag_alp12cs/=0) call sum_mn_name(csz(n)*(+cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4)),idiag_alp12cs)
           if (idiag_alp22ss/=0) call sum_mn_name(s2z(n)*(+cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4)),idiag_alp22ss)
-          if (idiag_alpK12cs/=0) call sum_mn_name(csz(n)*(+cz(n)*EKipq(:,1,i3)+sz(n)*EKipq(:,1,i4)),idiag_alpK12cs)
-          if (idiag_alpK22ss/=0) call sum_mn_name(s2z(n)*(+cz(n)*EKipq(:,2,i3)+sz(n)*EKipq(:,2,i4)),idiag_alpK22ss)
-          if (idiag_alpM12cs/=0) call sum_mn_name(csz(n)*(+cz(n)*EMipq(:,1,i3)+sz(n)*EMipq(:,1,i4)),idiag_alpM12cs)
-          if (idiag_alpM22ss/=0) call sum_mn_name(s2z(n)*(+cz(n)*EMipq(:,2,i3)+sz(n)*EMipq(:,2,i4)),idiag_alpM22ss)
           if (idiag_eta11/=0) call sum_mn_name((-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11)
           if (idiag_eta21/=0) call sum_mn_name((-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21)
           if (idiag_eta11cc/=0) call sum_mn_name(c2z(n)*(-sz(n)*Eipq(:,1,i3)+cz(n)*Eipq(:,1,i4))*ktestfield1,idiag_eta11cc)
           if (idiag_eta21sc/=0) call sum_mn_name(csz(n)*(-sz(n)*Eipq(:,2,i3)+cz(n)*Eipq(:,2,i4))*ktestfield1,idiag_eta21sc)
-          if (idiag_etaK11cc/=0) call sum_mn_name(c2z(n)*(-sz(n)*EKipq(:,1,i3)+cz(n)*EKipq(:,1,i4))*ktestfield1,idiag_etaK11cc)
-          if (idiag_etaK21sc/=0) call sum_mn_name(csz(n)*(-sz(n)*EKipq(:,2,i3)+cz(n)*EKipq(:,2,i4))*ktestfield1,idiag_etaK21sc)
-          if (idiag_etaM11cc/=0) call sum_mn_name(c2z(n)*(-sz(n)*EMipq(:,1,i3)+cz(n)*EMipq(:,1,i4))*ktestfield1,idiag_etaM11cc)
-          if (idiag_etaM21sc/=0) call sum_mn_name(csz(n)*(-sz(n)*EMipq(:,2,i3)+cz(n)*EMipq(:,2,i4))*ktestfield1,idiag_etaM21sc)
-!
-!  Remaining alphaK and etatK coefficients
-!
-          if (idiag_alpK12/=0) call sum_mn_name(+cz(n)*EKipq(:,1,i3)+sz(n)*EKipq(:,1,i4),idiag_alpK12)
-          if (idiag_alpK22/=0) call sum_mn_name(+cz(n)*EKipq(:,2,i3)+sz(n)*EKipq(:,2,i4),idiag_alpK22)
-          if (idiag_alpK32/=0) call sum_mn_name(+cz(n)*EKipq(:,3,i3)+sz(n)*EKipq(:,3,i4),idiag_alpK32)
-          if (idiag_etaK11/=0) call sum_mn_name((-sz(n)*EKipq(:,1,i3)+cz(n)*EKipq(:,1,i4))*ktestfield1,idiag_etaK11)
-          if (idiag_etaK21/=0) call sum_mn_name((-sz(n)*EKipq(:,2,i3)+cz(n)*EKipq(:,2,i4))*ktestfield1,idiag_etaK21)
-!
-!  Remaining alphaM and etatM coefficients
-!
-          if (idiag_alpM12/=0) call sum_mn_name(+cz(n)*EMipq(:,1,i3)+sz(n)*EMipq(:,1,i4),idiag_alpM12)
-          if (idiag_alpM22/=0) call sum_mn_name(+cz(n)*EMipq(:,2,i3)+sz(n)*EMipq(:,2,i4),idiag_alpM22)
-          if (idiag_alpM32/=0) call sum_mn_name(+cz(n)*EMipq(:,3,i3)+sz(n)*EMipq(:,3,i4),idiag_alpM32)
-          if (idiag_etaM11/=0) call sum_mn_name((-sz(n)*EMipq(:,1,i3)+cz(n)*EMipq(:,1,i4))*ktestfield1,idiag_etaM11)
-          if (idiag_etaM21/=0) call sum_mn_name((-sz(n)*EMipq(:,2,i3)+cz(n)*EMipq(:,2,i4))*ktestfield1,idiag_etaM21)
-          if (idiag_etaMK11/=0) call sum_mn_name((-sz(n)*EMKipq(:,1,i3)+cz(n)*EMKipq(:,1,i4))*ktestfield1,idiag_etaMK11)
 !
 !  same for jxb
 !
@@ -1125,23 +1012,6 @@ module Testfield
           if (idiag_phi32/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i3)+sz(n)*Fipq(:,3,i4),idiag_phi32)
           if (idiag_psi11/=0) call sum_mn_name((-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestfield1,idiag_psi11)
           if (idiag_psi21/=0) call sum_mn_name((-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestfield1,idiag_psi21)
-!
-!  same for jxbK
-!
-          if (idiag_phiK12/=0) call sum_mn_name(+cz(n)*FKipq(:,1,i3)+sz(n)*FKipq(:,1,i4),idiag_phiK12)
-          if (idiag_phiK22/=0) call sum_mn_name(+cz(n)*FKipq(:,2,i3)+sz(n)*FKipq(:,2,i4),idiag_phiK22)
-          if (idiag_phiK32/=0) call sum_mn_name(+cz(n)*FKipq(:,3,i3)+sz(n)*FKipq(:,3,i4),idiag_phiK32)
-          if (idiag_psiK11/=0) call sum_mn_name((-sz(n)*FKipq(:,1,i3)+cz(n)*FKipq(:,1,i4))*ktestfield1,idiag_psiK11)
-          if (idiag_psiK21/=0) call sum_mn_name((-sz(n)*FKipq(:,2,i3)+cz(n)*FKipq(:,2,i4))*ktestfield1,idiag_psiK21)
-!
-!  same for jxbM
-!
-          if (idiag_phiM12/=0) call sum_mn_name(+cz(n)*FMipq(:,1,i3)+sz(n)*FMipq(:,1,i4),idiag_phiM12)
-          if (idiag_phiM22/=0) call sum_mn_name(+cz(n)*FMipq(:,2,i3)+sz(n)*FMipq(:,2,i4),idiag_phiM22)
-          if (idiag_phiM32/=0) call sum_mn_name(+cz(n)*FMipq(:,3,i3)+sz(n)*FMipq(:,3,i4),idiag_phiM32)
-          if (idiag_psiM11/=0) call sum_mn_name((-sz(n)*FMipq(:,1,i3)+cz(n)*FMipq(:,1,i4))*ktestfield1,idiag_psiM11)
-          if (idiag_psiM21/=0) call sum_mn_name((-sz(n)*FMipq(:,2,i3)+cz(n)*FMipq(:,2,i4))*ktestfield1,idiag_psiM21)
-          if (idiag_psiMK11/=0) call sum_mn_name((-sz(n)*FMKipq(:,1,i3)+cz(n)*FMKipq(:,1,i4))*ktestfield1,idiag_psiMK11)
         endif
 !
 !  Volume-averaged dot products of mean emf and velocity and of mean emf and vorticity
@@ -1820,36 +1690,14 @@ module Testfield
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_eta11=0; idiag_eta21=0
         idiag_eta12=0; idiag_eta22=0
-        idiag_alpK11=0; idiag_alpK21=0; idiag_alpK31=0
-        idiag_alpK12=0; idiag_alpK22=0; idiag_alpK32=0
-        idiag_etaK11=0; idiag_etaK21=0
-        idiag_etaK12=0; idiag_etaK22=0
-        idiag_alpM11=0; idiag_alpM21=0; idiag_alpM31=0
-        idiag_alpM12=0; idiag_alpM22=0; idiag_alpM32=0
-        idiag_etaM11=0; idiag_etaM21=0
-        idiag_etaM12=0; idiag_etaM22=0
-        idiag_alpMK11=0
-        idiag_etaMK11=0
         idiag_phi11=0; idiag_phi21=0
         idiag_phi12=0; idiag_phi22=0; idiag_phi32=0
         idiag_psi11=0; idiag_psi21=0
         idiag_psi12=0; idiag_psi22=0
-        idiag_phiK11=0; idiag_phiK21=0
-        idiag_phiK12=0; idiag_phiK22=0; idiag_phiK32=0
-        idiag_psiK11=0; idiag_psiK21=0
-        idiag_psiK12=0; idiag_psiK22=0
-        idiag_phiM11=0; idiag_phiM21=0
-        idiag_phiM12=0; idiag_phiM22=0; idiag_phiM32=0
-        idiag_psiM11=0; idiag_psiM21=0
-        idiag_psiM12=0; idiag_psiM22=0
-        idiag_phiMK11=0
-        idiag_psiMK11=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
-        idiag_alpK11cc=0; idiag_alpK21sc=0; idiag_alpK12cs=0; idiag_alpK22ss=0
-        idiag_etaK11cc=0; idiag_etaK21sc=0; idiag_etaK12cs=0; idiag_etaK22ss=0
-        idiag_alpM11cc=0; idiag_alpM21sc=0; idiag_alpM12cs=0; idiag_alpM22ss=0
-        idiag_etaM11cc=0; idiag_etaM21sc=0; idiag_etaM12cs=0; idiag_etaM22ss=0
+        idiag_alpK=0; idiag_alpM=0; idiag_alpMK=0
+        idiag_phiK=0; idiag_phiM=0; idiag_phiMK=0
         idiag_s2kzDFm=0
         idiag_M11=0; idiag_M22=0; idiag_M33=0
         idiag_M11cc=0; idiag_M11ss=0; idiag_M22cc=0; idiag_M22ss=0
@@ -1880,28 +1728,9 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
         call parse_name(iname,cname(iname),cform(iname),'eta12',idiag_eta12)
         call parse_name(iname,cname(iname),cform(iname),'eta22',idiag_eta22)
-        call parse_name(iname,cname(iname),cform(iname),'alpK11',idiag_alpK11)
-        call parse_name(iname,cname(iname),cform(iname),'alpK21',idiag_alpK21)
-        call parse_name(iname,cname(iname),cform(iname),'alpK31',idiag_alpK31)
-        call parse_name(iname,cname(iname),cform(iname),'alpK12',idiag_alpK12)
-        call parse_name(iname,cname(iname),cform(iname),'alpK22',idiag_alpK22)
-        call parse_name(iname,cname(iname),cform(iname),'alpK32',idiag_alpK32)
-        call parse_name(iname,cname(iname),cform(iname),'etaK11',idiag_etaK11)
-        call parse_name(iname,cname(iname),cform(iname),'etaK21',idiag_etaK21)
-        call parse_name(iname,cname(iname),cform(iname),'etaK12',idiag_etaK12)
-        call parse_name(iname,cname(iname),cform(iname),'etaK22',idiag_etaK22)
-        call parse_name(iname,cname(iname),cform(iname),'alpM11',idiag_alpM11)
-        call parse_name(iname,cname(iname),cform(iname),'alpM21',idiag_alpM21)
-        call parse_name(iname,cname(iname),cform(iname),'alpM31',idiag_alpM31)
-        call parse_name(iname,cname(iname),cform(iname),'alpM12',idiag_alpM12)
-        call parse_name(iname,cname(iname),cform(iname),'alpM22',idiag_alpM22)
-        call parse_name(iname,cname(iname),cform(iname),'alpM32',idiag_alpM32)
-        call parse_name(iname,cname(iname),cform(iname),'etaM11',idiag_etaM11)
-        call parse_name(iname,cname(iname),cform(iname),'etaM21',idiag_etaM21)
-        call parse_name(iname,cname(iname),cform(iname),'etaM12',idiag_etaM12)
-        call parse_name(iname,cname(iname),cform(iname),'etaM22',idiag_etaM22)
-        call parse_name(iname,cname(iname),cform(iname),'alpMK11',idiag_alpMK11)
-        call parse_name(iname,cname(iname),cform(iname),'etaMK11',idiag_etaMK11)
+        call parse_name(iname,cname(iname),cform(iname),'alpK',idiag_alpK)
+        call parse_name(iname,cname(iname),cform(iname),'alpM',idiag_alpM)
+        call parse_name(iname,cname(iname),cform(iname),'alpMK',idiag_alpMK)
         call parse_name(iname,cname(iname),cform(iname),'phi11',idiag_phi11)
         call parse_name(iname,cname(iname),cform(iname),'phi21',idiag_phi21)
         call parse_name(iname,cname(iname),cform(iname),'phi12',idiag_phi12)
@@ -1911,26 +1740,9 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'psi21',idiag_psi21)
         call parse_name(iname,cname(iname),cform(iname),'psi12',idiag_psi12)
         call parse_name(iname,cname(iname),cform(iname),'psi22',idiag_psi22)
-        call parse_name(iname,cname(iname),cform(iname),'phiK11',idiag_phiK11)
-        call parse_name(iname,cname(iname),cform(iname),'phiK21',idiag_phiK21)
-        call parse_name(iname,cname(iname),cform(iname),'phiK12',idiag_phiK12)
-        call parse_name(iname,cname(iname),cform(iname),'phiK22',idiag_phiK22)
-        call parse_name(iname,cname(iname),cform(iname),'phiK32',idiag_phiK32)
-        call parse_name(iname,cname(iname),cform(iname),'psiK11',idiag_psiK11)
-        call parse_name(iname,cname(iname),cform(iname),'psiK21',idiag_psiK21)
-        call parse_name(iname,cname(iname),cform(iname),'psiK12',idiag_psiK12)
-        call parse_name(iname,cname(iname),cform(iname),'psiK22',idiag_psiK22)
-        call parse_name(iname,cname(iname),cform(iname),'phiM11',idiag_phiM11)
-        call parse_name(iname,cname(iname),cform(iname),'phiM21',idiag_phiM21)
-        call parse_name(iname,cname(iname),cform(iname),'phiM12',idiag_phiM12)
-        call parse_name(iname,cname(iname),cform(iname),'phiM22',idiag_phiM22)
-        call parse_name(iname,cname(iname),cform(iname),'phiM32',idiag_phiM32)
-        call parse_name(iname,cname(iname),cform(iname),'psiM11',idiag_psiM11)
-        call parse_name(iname,cname(iname),cform(iname),'psiM21',idiag_psiM21)
-        call parse_name(iname,cname(iname),cform(iname),'psiM12',idiag_psiM12)
-        call parse_name(iname,cname(iname),cform(iname),'psiM22',idiag_psiM22)
-        call parse_name(iname,cname(iname),cform(iname),'phiMK11',idiag_phiMK11)
-        call parse_name(iname,cname(iname),cform(iname),'psiMK11',idiag_psiMK11)
+        call parse_name(iname,cname(iname),cform(iname),'phiK',idiag_phiK)
+        call parse_name(iname,cname(iname),cform(iname),'phiM',idiag_phiM)
+        call parse_name(iname,cname(iname),cform(iname),'phiMK',idiag_phiMK)
         call parse_name(iname,cname(iname),cform(iname),'alp11cc',idiag_alp11cc)
         call parse_name(iname,cname(iname),cform(iname),'alp21sc',idiag_alp21sc)
         call parse_name(iname,cname(iname),cform(iname),'alp12cs',idiag_alp12cs)
@@ -1939,22 +1751,6 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
         call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
-        call parse_name(iname,cname(iname),cform(iname),'alpK11cc',idiag_alpK11cc)
-        call parse_name(iname,cname(iname),cform(iname),'alpK21sc',idiag_alpK21sc)
-        call parse_name(iname,cname(iname),cform(iname),'alpK12cs',idiag_alpK12cs)
-        call parse_name(iname,cname(iname),cform(iname),'alpK22ss',idiag_alpK22ss)
-        call parse_name(iname,cname(iname),cform(iname),'etaK11cc',idiag_etaK11cc)
-        call parse_name(iname,cname(iname),cform(iname),'etaK21sc',idiag_etaK21sc)
-        call parse_name(iname,cname(iname),cform(iname),'etaK12cs',idiag_etaK12cs)
-        call parse_name(iname,cname(iname),cform(iname),'etaK22ss',idiag_etaK22ss)
-        call parse_name(iname,cname(iname),cform(iname),'alpM11cc',idiag_alpM11cc)
-        call parse_name(iname,cname(iname),cform(iname),'alpM21sc',idiag_alpM21sc)
-        call parse_name(iname,cname(iname),cform(iname),'alpM12cs',idiag_alpM12cs)
-        call parse_name(iname,cname(iname),cform(iname),'alpM22ss',idiag_alpM22ss)
-        call parse_name(iname,cname(iname),cform(iname),'etaM11cc',idiag_etaM11cc)
-        call parse_name(iname,cname(iname),cform(iname),'etaM21sc',idiag_etaM21sc)
-        call parse_name(iname,cname(iname),cform(iname),'etaM12cs',idiag_etaM12cs)
-        call parse_name(iname,cname(iname),cform(iname),'etaM22ss',idiag_etaM22ss)
         call parse_name(iname,cname(iname),cform(iname),'s2kzDFm',idiag_s2kzDFm)
         call parse_name(iname,cname(iname),cform(iname),'M11',idiag_M11)
         call parse_name(iname,cname(iname),cform(iname),'M22',idiag_M22)
@@ -2050,28 +1846,9 @@ module Testfield
         write(3,*) 'idiag_eta21=',idiag_eta21
         write(3,*) 'idiag_eta12=',idiag_eta12
         write(3,*) 'idiag_eta22=',idiag_eta22
-        write(3,*) 'idiag_alpK11=',idiag_alpK11
-        write(3,*) 'idiag_alpK21=',idiag_alpK21
-        write(3,*) 'idiag_alpK31=',idiag_alpK31
-        write(3,*) 'idiag_alpK12=',idiag_alpK12
-        write(3,*) 'idiag_alpK22=',idiag_alpK22
-        write(3,*) 'idiag_alpK32=',idiag_alpK32
-        write(3,*) 'idiag_etaK11=',idiag_etaK11
-        write(3,*) 'idiag_etaK21=',idiag_etaK21
-        write(3,*) 'idiag_etaK12=',idiag_etaK12
-        write(3,*) 'idiag_etaK22=',idiag_etaK22
-        write(3,*) 'idiag_alpM11=',idiag_alpM11
-        write(3,*) 'idiag_alpM21=',idiag_alpM21
-        write(3,*) 'idiag_alpM31=',idiag_alpM31
-        write(3,*) 'idiag_alpM12=',idiag_alpM12
-        write(3,*) 'idiag_alpM22=',idiag_alpM22
-        write(3,*) 'idiag_alpM32=',idiag_alpM32
-        write(3,*) 'idiag_etaM11=',idiag_etaM11
-        write(3,*) 'idiag_etaM21=',idiag_etaM21
-        write(3,*) 'idiag_etaM12=',idiag_etaM12
-        write(3,*) 'idiag_etaM22=',idiag_etaM22
-        write(3,*) 'idiag_alpMK11=',idiag_alpMK11
-        write(3,*) 'idiag_etaMK11=',idiag_etaMK11
+        write(3,*) 'idiag_alpK=',idiag_alpK
+        write(3,*) 'idiag_alpM=',idiag_alpM
+        write(3,*) 'idiag_alpMK=',idiag_alpMK
         write(3,*) 'idiag_phi11=',idiag_phi11
         write(3,*) 'idiag_phi21=',idiag_phi21
         write(3,*) 'idiag_phi12=',idiag_phi12
@@ -2081,26 +1858,9 @@ module Testfield
         write(3,*) 'idiag_psi21=',idiag_psi21
         write(3,*) 'idiag_psi12=',idiag_psi12
         write(3,*) 'idiag_psi22=',idiag_psi22
-        write(3,*) 'idiag_phiK11=',idiag_phiK11
-        write(3,*) 'idiag_phiK21=',idiag_phiK21
-        write(3,*) 'idiag_phiK12=',idiag_phiK12
-        write(3,*) 'idiag_phiK22=',idiag_phiK22
-        write(3,*) 'idiag_phiK32=',idiag_phiK32
-        write(3,*) 'idiag_psiK11=',idiag_psiK11
-        write(3,*) 'idiag_psiK21=',idiag_psiK21
-        write(3,*) 'idiag_psiK12=',idiag_psiK12
-        write(3,*) 'idiag_psiK22=',idiag_psiK22
-        write(3,*) 'idiag_phiM11=',idiag_phiM11
-        write(3,*) 'idiag_phiM21=',idiag_phiM21
-        write(3,*) 'idiag_phiM12=',idiag_phiM12
-        write(3,*) 'idiag_phiM22=',idiag_phiM22
-        write(3,*) 'idiag_phiM32=',idiag_phiM32
-        write(3,*) 'idiag_psiM11=',idiag_psiM11
-        write(3,*) 'idiag_psiM21=',idiag_psiM21
-        write(3,*) 'idiag_psiM12=',idiag_psiM12
-        write(3,*) 'idiag_psiM22=',idiag_psiM22
-        write(3,*) 'idiag_phiMK11=',idiag_phiMK11
-        write(3,*) 'idiag_psiMK11=',idiag_psiMK11
+        write(3,*) 'idiag_phiK=',idiag_phiK
+        write(3,*) 'idiag_phiM=',idiag_phiM
+        write(3,*) 'idiag_phiMK=',idiag_phiMK
         write(3,*) 'idiag_alp11cc=',idiag_alp11cc
         write(3,*) 'idiag_alp21sc=',idiag_alp21sc
         write(3,*) 'idiag_alp12cs=',idiag_alp12cs
@@ -2109,22 +1869,6 @@ module Testfield
         write(3,*) 'idiag_eta21sc=',idiag_eta21sc
         write(3,*) 'idiag_eta12cs=',idiag_eta12cs
         write(3,*) 'idiag_eta22ss=',idiag_eta22ss
-        write(3,*) 'idiag_alpK11cc=',idiag_alpK11cc
-        write(3,*) 'idiag_alpK21sc=',idiag_alpK21sc
-        write(3,*) 'idiag_alpK12cs=',idiag_alpK12cs
-        write(3,*) 'idiag_alpK22ss=',idiag_alpK22ss
-        write(3,*) 'idiag_etaK11cc=',idiag_etaK11cc
-        write(3,*) 'idiag_etaK21sc=',idiag_etaK21sc
-        write(3,*) 'idiag_etaK12cs=',idiag_etaK12cs
-        write(3,*) 'idiag_etaK22ss=',idiag_etaK22ss
-        write(3,*) 'idiag_alpM11cc=',idiag_alpM11cc
-        write(3,*) 'idiag_alpM21sc=',idiag_alpM21sc
-        write(3,*) 'idiag_alpM12cs=',idiag_alpM12cs
-        write(3,*) 'idiag_alpM22ss=',idiag_alpM22ss
-        write(3,*) 'idiag_etaM11cc=',idiag_etaM11cc
-        write(3,*) 'idiag_etaM21sc=',idiag_etaM21sc
-        write(3,*) 'idiag_etaM12cs=',idiag_etaM12cs
-        write(3,*) 'idiag_etaM22ss=',idiag_etaM22ss
         write(3,*) 'idiag_s2kzDFm=',idiag_s2kzDFm
         write(3,*) 'idiag_M11=',idiag_M11
         write(3,*) 'idiag_M22=',idiag_M22
