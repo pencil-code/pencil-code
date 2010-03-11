@@ -25,7 +25,6 @@ ldensity_nolog=F
 &chemistry_init_pars
   initchem='flame_front'
 !  initchem='air','flame_front'
-! visc_simple=F
   init_pressure=1.013e6
   init_TT1=750.
   init_TT2=2500.
@@ -36,4 +35,5 @@ ldensity_nolog=F
 &NSCBC_init_pars
   nscbc_bc = 'subsonic_inflow:subson_nref_outflow','',''
   nscbc_sigma_out=0.5
+  p_infty=1.013e6
 /
