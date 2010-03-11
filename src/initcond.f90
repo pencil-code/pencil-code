@@ -3739,11 +3739,18 @@ module Initcond
       use Fourier, only: fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
+      logical :: lscale_tobox1
       integer :: i,i1,i2,ikx,iky,ikz,stat
       real, dimension (:,:,:), allocatable :: k2, u_re, u_im, r
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,mhalf,cutoff,scale_factor
+
+      if (present(lscale_tobox)) then
+        lscale_tobox1 = lscale_tobox
+      else
+        lscale_tobox1 = .false.
+      endif
 !
 !  Allocate memory for arrays.
 !
@@ -3773,15 +3780,15 @@ module Initcond
 !  calculate k^2
 !
         scale_factor=1
-        if (present(lscale_tobox)) scale_factor=2*pi/Lx
+        if (lscale_tobox1) scale_factor=2*pi/Lx
         kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (present(lscale_tobox)) scale_factor=2*pi/Ly
+        if (lscale_tobox1) scale_factor=2*pi/Ly
         ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (present(lscale_tobox)) scale_factor=2*pi/Lz
+        if (lscale_tobox1) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  integration over shells
