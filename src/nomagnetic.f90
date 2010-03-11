@@ -24,6 +24,7 @@ module Magnetic
 !
   include 'magnetic.h'
 !
+  real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: brms=0., bmz_beltrami_phase=0.

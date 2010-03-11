@@ -139,6 +139,7 @@ module Sub
   endinterface
 !
   interface dot
+    module procedure dot_mn_sv
     module procedure dot_mn
     module procedure dot_0
   endinterface

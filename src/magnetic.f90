@@ -86,7 +86,7 @@ module Magnetic
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
-  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_tmp
+  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(3) :: axisr1=(/0,0,1/), dispr1=(/0.0,0.5,0.0/)
   real, dimension(3) :: axisr2=(/1,0,0/), dispr2=(/0.0,-0.5,0.0/)
@@ -667,6 +667,7 @@ module Magnetic
       endif
 !
 !  calculate B_ext21 = 1/B_ext**2 and the unit vector B1_ext = B_ext/|B_ext|
+!  Also calculate B_ext_inv = B_ext/|B_ext|^2
 !
       B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
       if (B_ext21/=0.0) then
@@ -676,6 +677,7 @@ module Magnetic
       endif
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
+      B_ext_inv=B_ext*B_ext21
 !
 !  rescale magnetic field by a factor reinitialize_aa
 !
@@ -2878,8 +2880,7 @@ module Magnetic
             .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
             .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
             .or. idiag_uxbmz/=0) then
-          uxb_dotB0=B_ext(1)*p%uxb(:,1)+B_ext(2)*p%uxb(:,2)+B_ext(3)*p%uxb(:,3)
-          uxb_dotB0=uxb_dotB0*B_ext21
+          call dot(B_ext_inv,p%uxb,uxb_dotB0)
           if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
           if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
           if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
@@ -2957,8 +2958,7 @@ module Magnetic
 !  Calculate <uxj>.B0/B0^2.
 !
         if (idiag_uxjm/=0) then
-          uxj_dotB0=B_ext(1)*p%uxj(:,1)+B_ext(2)*p%uxj(:,2)+B_ext(3)*p%uxj(:,3)
-          uxj_dotB0=uxj_dotB0*B_ext21
+          call dot(B_ext_inv,p%uxj,uxj_dotB0)
           call sum_mn_name(uxj_dotB0,idiag_uxjm)
         endif
 !
@@ -2984,8 +2984,7 @@ module Magnetic
 !
 !  Calculate <jxb>.B_0/B_0^2.
 !
-        jxb_dotB0=B_ext(1)*p%jxb(:,1)+B_ext(2)*p%jxb(:,2)+B_ext(3)*p%jxb(:,3)
-        jxb_dotB0=jxb_dotB0*B_ext21
+        call dot(B_ext_inv,p%jxb,jxb_dotB0)
         if (idiag_jxbm/=0) call sum_mn_name(jxb_dotB0,idiag_jxbm)
         if (idiag_jxbmx/=0.or.idiag_jxbmy/=0.or.idiag_jxbmz/=0) then
           call cross_mn(p%jj,p%bbb,jxbb)
@@ -2997,16 +2996,14 @@ module Magnetic
 !  Magnetic triple correlation term (for imposed field).
 !
         if (idiag_jxbxbm/=0) then
-          jxbxb_dotB0=B_ext(1)*p%jxbxb(:,1)+B_ext(2)*p%jxbxb(:,2)+B_ext(3)*p%jxbxb(:,3)
-          jxbxb_dotB0=jxbxb_dotB0*B_ext21
+          call dot(B_ext_inv,p%jxbxb,jxbxb_dotB0)
           call sum_mn_name(jxbxb_dotB0,idiag_jxbxbm)
         endif
 !
 !  Triple correlation from Reynolds tensor (for imposed field).
 !
         if (idiag_oxuxbm/=0) then
-          oxuxb_dotB0=B_ext(1)*p%oxuxb(:,1)+B_ext(2)*p%oxuxb(:,2)+B_ext(3)*p%oxuxb(:,3)
-          oxuxb_dotB0=oxuxb_dotB0*B_ext21
+          call dot(B_ext_inv,p%oxuxb,oxuxb_dotB0)
           call sum_mn_name(oxuxb_dotB0,idiag_oxuxbm)
         endif
 !
@@ -3028,8 +3025,7 @@ module Magnetic
           uxDxuxb(:,1)=p%uxb(:,1)*(p%uij(:,2,2)+p%uij(:,3,3))-p%uxb(:,2)*p%uij(:,2,1)-p%uxb(:,3)*p%uij(:,3,1)
           uxDxuxb(:,2)=p%uxb(:,2)*(p%uij(:,1,1)+p%uij(:,3,3))-p%uxb(:,1)*p%uij(:,1,2)-p%uxb(:,3)*p%uij(:,3,2)
           uxDxuxb(:,3)=p%uxb(:,3)*(p%uij(:,1,1)+p%uij(:,2,2))-p%uxb(:,1)*p%uij(:,1,3)-p%uxb(:,2)*p%uij(:,2,3)
-          uxDxuxb_dotB0=B_ext(1)*uxDxuxb(:,1)+B_ext(2)*uxDxuxb(:,2)+B_ext(3)*uxDxuxb(:,3)
-          uxDxuxb_dotB0=uxDxuxb_dotB0*B_ext21
+          call dot(B_ext_inv,uxDxuxb,uxDxuxb_dotB0)
           call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
         endif
 !

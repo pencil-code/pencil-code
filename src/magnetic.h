@@ -20,6 +20,7 @@
   public :: lcalc_aamean, aamz, bbmz, jjmz
 ! public :: pert_aa, rescaling_magnetic
   public :: rescaling_magnetic
+  public :: B_ext_inv
   public :: bb_unitvec_shock, remove_mean_emf
   public :: lelectron_inertia, inertial_length, linertial_2
   public :: idiag_axmz,idiag_aymz
