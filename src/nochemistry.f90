@@ -283,7 +283,7 @@ module Chemistry
 !
       intent(out) :: RHS_Y
 !
-     call keep_compiler_quiet(gamma_full)
+     call keep_compiler_quiet(RHS_Y)
 !
     endsubroutine get_RHS_Y_full
 !***********************************************************************
