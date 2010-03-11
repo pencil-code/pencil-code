@@ -723,73 +723,72 @@ module Testfield
           j0ref=jjtest
           call cross_mn(u0ref,b0ref,uxbtest)
           call cross_mn(j0ref,b0ref,jxbtest)
-        else
+        endif
 !
 !  do diffusion terms
 !
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +etatest*del2Atest
-          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-            +nutest*del2Utest
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+          +etatest*del2Atest
+        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+          +nutest*del2Utest
 !
 !  With imposed field, calculate uutest x B0 and jjtest x B0 terms.
 !  This applies to all terms, including the reference fields.
 !
-          do j=1,3
-            B0_imposed(:,j)=B_ext(j)
-          enddo
-          call cross_mn(uutest,B0_imposed,uxbtest)
-          call cross_mn(jjtest,B0_imposed,jxbtest)
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
-          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbtest
+        do j=1,3
+          B0_imposed(:,j)=B_ext(j)
+        enddo
+        call cross_mn(uutest,B0_imposed,uxbtest)
+        call cross_mn(jjtest,B0_imposed,jxbtest)
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxbtest
+        df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+jxbtest
 !
 !  add Ubar x b^0 and Ubar x b^T terms
 !
-          if (lcalc_uumean) then
-            do j=1,3
-              uum(:,j)=uumz(n-n1+1,j)
-            enddo
-            call cross_mn(uum,bbtest,umxbtest)
-            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+umxbtest
-          endif
+        if (lcalc_uumean) then
+          do j=1,3
+            uum(:,j)=uumz(n-n1+1,j)
+          enddo
+          call cross_mn(uum,bbtest,umxbtest)
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+umxbtest
+        endif
 !
 !  possibility of non-soca terms
 !
-          if (.not.lsoca) then
+        if (.not.lsoca) then
 !
 !  subtract average emf, unless we ignore the <uxb> term (lignore_uxbtestm=T)
 !
-            if (iuxb/=0.and..not.ltest_uxb) then
-              uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
-              if (lignore_uxbtestm) then
-                duxbtest(:,:)=uxbtest(:,:)
-              else
-                do j=1,3
-                  duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(n,j,jtest)
-                enddo
-              endif
-              df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-                  +duxbtest
+          if (iuxb/=0.and..not.ltest_uxb) then
+            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+            if (lignore_uxbtestm) then
+              duxbtest(:,:)=uxbtest(:,:)
+            else
+              do j=1,3
+                duxbtest(:,j)=uxbtest(:,j)-uxbtestmz(n,j,jtest)
+              enddo
             endif
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+                +duxbtest
+          endif
 !
 !  subtract average jxb, unless we ignore the <jxb> term (lignore_jxbtestm=T)
 
-            if (ijxb/=0.and..not.ltest_jxb) then
-              jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
-              if (lignore_jxbtestm) then
-                djxbtest(:,:)=jxbtest(:,:)
-              else
-                do j=1,3
-                  djxbtest(:,j)=jxbtest(:,j)-jxbtestmz(n,j,jtest)
-                enddo
-              endif
-              df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-                +djxbtest
+          if (ijxb/=0.and..not.ltest_jxb) then
+            jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+            if (lignore_jxbtestm) then
+              djxbtest(:,:)=jxbtest(:,:)
+            else
+              do j=1,3
+                djxbtest(:,j)=jxbtest(:,j)-jxbtestmz(n,j,jtest)
+              enddo
             endif
+            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
+              +djxbtest
+          endif
 !
 !  end of .not.lsoca
 !
-          endif
         endif
 !
 !  Do things differently for the reference fields.
