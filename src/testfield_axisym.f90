@@ -706,11 +706,11 @@ module Testfield
 !
           if (idiag_mu     /=0) call sum_mn_name(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_mu     )
           if (idiag_betPERP/=0) call sum_mn_name(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_betPERP)
-          if (idiag_betPARA/=0) call sum_mn_name(+8*                                ky1*cy(m)*sz(n)*Eipq(:,3,3) ,idiag_betPARA)
+          if (idiag_betPARA/=0) call sum_mn_name(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) ,idiag_betPARA)
 !
           if (idiag_del    /=0) call sum_mn_name(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_del    )
-          if (idiag_kapPERP/=0) call sum_mn_name(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
-          if (idiag_kapPARA/=0) call sum_mn_name(-4*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARA)
+          if (idiag_kapPERP/=0) call sum_mn_name(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
+          if (idiag_kapPARA/=0) call sum_mn_name(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARA)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
