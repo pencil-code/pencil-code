@@ -142,6 +142,9 @@ endif
 # Write time and current working directory into log file
 (date; echo $cwd; echo "")>> $PENCIL_HOME/.run_directories.log
 
+# Write time string into log file
+timestr>> $datadir/runtime.dat
+
 # Run run.x
 rm -f 'ERROR'
 date
