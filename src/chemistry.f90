@@ -4215,6 +4215,20 @@ module Chemistry
 !
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************
+   subroutine get_RHS_Y_full(RHS_Y)
+!
+      real, dimension (mx,my,mz,nchemspec) :: RHS_Y
+!
+      intent(out) :: RHS_Y
+
+!      integer :: j,k
+
+!
+     RHS_Y=RHS_Y_full
+!
+    endsubroutine get_RHS_Y_full
+!***********************************************************************
+!***********************************************************************
    subroutine get_cs2_full(cs2_full)
 !
       real, dimension (mx,my,mz) :: cs2_full

@@ -25,6 +25,7 @@
   public :: get_cs2_slice
   public :: get_cs2_full
   public :: get_gamma_full
+  public :: get_RHS_Y_full
  
 
   public :: Rgas

@@ -277,4 +277,14 @@ module Chemistry
 !
     endsubroutine get_gamma_full
 !***********************************************************************
+  subroutine get_RHS_Y_full(RHS_Y)
+!
+      real, dimension (mx,my,mz,nchemspec) :: RHS_Y
+!
+      intent(out) :: RHS_Y
+!
+     call keep_compiler_quiet(gamma_full)
+!
+    endsubroutine get_RHS_Y_full
+!***********************************************************************
 endmodule Chemistry
