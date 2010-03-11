@@ -100,7 +100,7 @@ module Initcond
      dmx=(l2-l1)/mx
      dtheta=pi/my
      f(:,:,:,i)=0.0
-
+!
      do j=1,mx
        radius=l1+(j-1)*dmx
      if (radius>=0.7) then
@@ -197,7 +197,7 @@ module Initcond
 !  wavenumber k, helicity H=ampl (can be either sign)
 !
 !  sinx(kx*x)*sin(kz*z)
-
+!
       if (present(kx)) kx1=kx
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
@@ -664,8 +664,6 @@ module Initcond
 !  set background value plus a different value inside a box
 !
 !   9-mar-08/axel: coded
-!
-      use General, only: find_index_range
 !
       integer :: i,ll1,ll2,mm1,mm2,nn1,nn2
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1325,7 +1323,7 @@ module Initcond
              +.5*(fzright-fzleft)*width*alog_cosh_xwidth
         f(:,:,:,i+1)=f(:,:,:,i+1)+spread(spread(profy,2,my),3,mz)
         f(:,:,:,i+2)=f(:,:,:,i+2)-spread(spread(profz,2,my),3,mz)
-
+!
       case default
         print*,'bjump: no default value'
 !
@@ -1345,7 +1343,7 @@ module Initcond
       real, dimension (mz) :: profx,profy,alog_cosh_zwidth
       real :: fyleft,fyright,fxleft,fxright,width
       character(len=*) :: dir
-
+!
       select case (dir)
       case ('z')
         alog_cosh_zwidth=abs(z/width)+alog(.5*(1.+exp(-2*abs(z/width))))
@@ -2034,7 +2032,7 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
           enddo
         endif
-
+!
       case default
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
@@ -2044,7 +2042,7 @@ module Initcond
                 ' lines though.'
         endif
         call fatal_error('','')
-
+!
       endselect
 !
       close(19)
@@ -2151,7 +2149,7 @@ module Initcond
             f(n,:,:,ilnTT)=lnTT0(ipx*nx+n)
           enddo
         endif
-
+!
       case default
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
@@ -2161,7 +2159,7 @@ module Initcond
                 ' lines though.'
         endif
         call fatal_error('','')
-
+!
       endselect
 !
       close(19)
@@ -2901,7 +2899,7 @@ module Initcond
       endif
 !
     endsubroutine halfcos_x
-
+!
 !***********************************************************************
     subroutine uniform_x(ampl,f,i)
 !
@@ -3059,7 +3057,7 @@ module Initcond
       else
          k = 2*pi/Lx
       endif
-
+!
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'vfield: set variable to zero; i=',i
@@ -3679,20 +3677,20 @@ module Initcond
         if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
       else
         call gaunoise_vect(ampl,f,i1,i2) ! which has a k^2. spectrum
-
+!
         if ((initpower.ne.2.).or.(cutoff.ne.0.)) then
-
+!
           k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx
           k2 =      (spread(spread(k2x,2,ny),3,nz))**2
-
+!
           k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly
           k2 = k2 + (spread(spread(k2y,1,nx),3,nz))**2
-
+!
           k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
           k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
-
+!
           k2(1,1,1) = 1.  ! Avoid division by zero
-
+!
           do i=i1,i2
             u_re=f(l1:l2,m1:m2,n1:n2,i)
             u_im=0.
@@ -3709,7 +3707,7 @@ module Initcond
             ! back to real space
             call fourier_transform(u_re,u_im,linv=.true.)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
-
+!
             if (lroot .and. (cutoff.eq.0)) then
               print*,'powern: k^',initpower,' spectrum : var  i=',i
             else
@@ -3777,11 +3775,11 @@ module Initcond
         scale_factor=1
         if (present(lscale_tobox)) scale_factor=2*pi/Lx
         kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
-
+!
         scale_factor=1
         if (present(lscale_tobox)) scale_factor=2*pi/Ly
         ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
-
+!
         scale_factor=1
         if (present(lscale_tobox)) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
@@ -3826,7 +3824,7 @@ module Initcond
                    initpower,', k0 =',cutoff,' : var  i=',i
           endif
         enddo !i
-
+!
       endif !(ampl.eq.0)
 !
 !  Deallocate arrays.
@@ -3850,16 +3848,16 @@ module Initcond
 !
 !   24-sept-04/snod: coded first attempt
 !
-      use Sub
+      use Sub, only: cross, dot, dot2
+!
       integer :: modeN,N_modes,l,n,m,i1
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
 ! how many wavenumbers?
       real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber?
       real, dimension (3) :: k_unit,vec,ee,e1,e2,field
       real :: initpower,kmin,ps,k,phi,theta,alpha,beta,dk
       real :: ex,ey,ez,norm,kdotx,r
-
 !
 !    minlen=Lxyz(1)/(nx-1)
 !    kmax=2.*pi/minlen
@@ -3897,13 +3895,13 @@ module Initcond
 !
 !   pick 4 random angles for each mode
 !
-
+!
         call random_number_wrapper(r); theta=pi*(2*r - 0.)
         call random_number_wrapper(r); phi=pi*(2*r - 0.)
         call random_number_wrapper(r); alpha=pi*(2*r - 0.)
         call random_number_wrapper(r); beta=pi*(2*r - 0.)
 !       call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  ! random phase?
-
+!
 !
 !   make a random unit vector by rotating fixed vector to random position
 !   (alternatively make a random transformation matrix for each k)
@@ -3992,11 +3990,9 @@ module Initcond
 !                  variables.
 !
       use FArrayManager
-      use Mpicomm
       use EquationOfState, only: gamma,gamma_m1,get_cp1,&
                                  cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
-      use Messages       , only: warning
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
@@ -4350,7 +4346,7 @@ module Initcond
 !
       use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
       use Gravity, only: gravz
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
       real, dimension (150) :: b_lnT,b_z
@@ -4398,10 +4394,10 @@ module Initcond
             do i=1,149
                if (tmpz .ge. b_z(i)  .and. tmpz .lt. b_z(i+1) ) then
 !                  tmpdT = linear_inpol(b_z(i),b_z(i+1),b_lnT(i),b_lnT(i+1),tmpz)-tmpT
-
+!
                   tmpdT = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (tmpz-b_z(i)) + b_lnT(i) -tmpT
                   !blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (z(j)-b_z(i)) + b_lnT(i)
-
+!
                   tmpT = tmpT + tmpdT
                   !exit
                elseif (tmpz .ge. b_z(150)) then
