@@ -3775,15 +3775,15 @@ module Initcond
 !  calculate k^2
 !
         scale_factor=1
-        if (lscale_tobox) scale_factor=2*pi/Lx
+        if (present(lscale_tobox)) scale_factor=2*pi/Lx
         kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 
         scale_factor=1
-        if (lscale_tobox) scale_factor=2*pi/Ly
+        if (present(lscale_tobox)) scale_factor=2*pi/Ly
         ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 
         scale_factor=1
-        if (lscale_tobox) scale_factor=2*pi/Lz
+        if (present(lscale_tobox)) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  integration over shells
