@@ -158,6 +158,7 @@ module Magnetic
   logical :: reinitialize_aa=.false.
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
+  logical :: lforcing_cont_aa_local=.false.
   logical :: lmeanfield_theory=.false., lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
@@ -191,7 +192,7 @@ module Magnetic
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0
   real :: alphaSSm=0.0
   real :: alpha_rmax=0.0, alpha_width=0.0
-  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
+  real :: k1_ff=1.0, ampl_ff=0.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
   real :: forcing_continuous_aa_phasefact=1.0
@@ -232,7 +233,7 @@ module Magnetic
       z_surface, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
       lcalc_aamean, &
-      lforcing_cont_aa, iforcing_continuous_aa, &
+      lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
@@ -2593,6 +2594,10 @@ module Magnetic
 !
       if (lforcing_cont_aa) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
           ampl_fcont_aa*p%fcont
+!
+!  Add possibility of local forcing that is also not delta-correlated in time.
+!
+      if (lforcing_cont_aa_local) call forcing_continuous(df,p)
 !
 !  Possibility of relaxation of A in exterior region.
 !
