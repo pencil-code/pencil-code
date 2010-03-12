@@ -72,6 +72,8 @@ module EquationOfState
 !
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(mz) :: profz_eos=1.
+  real, dimension(nchemspec,18) :: species_constants
+  real, dimension(nchemspec,7)     :: tran_data
 !
   contains
 !***********************************************************************
@@ -1831,5 +1833,61 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_liso
+!***********************************************************************
+!***********************************************************************
+    subroutine read_transport_data
+
+       real, dimension (mx,my,mz,mfarray) :: f
+
+       call keep_compiler_quiet(f)
+
+    endsubroutine read_transport_data
+!***********************************************************************
+    subroutine write_thermodyn()
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+       call keep_compiler_quiet(f)
+
+    endsubroutine write_thermodyn
+!***********************************************************************
+    subroutine read_thermodyn(input_file)
+
+      character (len=*), intent(in) :: input_file
+
+      call keep_compiler_quiet(input_file)
+
+    endsubroutine read_thermodyn
+!***********************************************************************
+    subroutine read_species(input_file)
+
+      character (len=*) :: input_file
+
+      call keep_compiler_quiet(input_file)
+    endsubroutine read_species
+!***********************************************************************
+    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
+
+      integer, intent(out) :: ind_glob
+      integer, intent(inout) :: ind_chem
+      character (len=*), intent(in) :: species_name
+      logical, intent(out) :: found_specie
+
+         call keep_compiler_quiet(ind_glob)
+         call keep_compiler_quiet(ind_chem)
+         call keep_compiler_quiet(species_name)
+         call keep_compiler_quiet(found_specie)
+
+     endsubroutine find_species_index
+!***********************************************************************
+     subroutine find_mass(element_name,MolMass)
+
+      character (len=*), intent(in) :: element_name
+      real, intent(out) :: MolMass
+!
+       call keep_compiler_quiet(element_name)
+       call keep_compiler_quiet(MolMass)
+
+     endsubroutine find_mass
 !***********************************************************************
 endmodule EquationOfState
