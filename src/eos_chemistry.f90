@@ -348,19 +348,10 @@ module EquationOfState
 !
 !   12-aug-03/tony: implemented
 !
-      real, intent(out) :: mu_tmp
-!
-!  mu = mu_H * (1 - xHe) + mu_He * xHe
-!     = mu_H + (mu_He-mu_H) * xHe
-!  mu_H = 1.
-!  mu_He = 4.0026 / 1.0079  (molar masses from a Periodic Table)
-!        = 3.97
-!
-      if (mu == 0.) then
-        mu_tmp=1.!+2.97153*xHe
-      else
-        mu_tmp=mu
-      endif
+    real, intent(out) :: mu_tmp
+       mu_tmp=impossible
+       call fatal_error("getmu", &
+             "This thermodynamic variable combination is not implemented: ")
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -377,16 +368,6 @@ module EquationOfState
       call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_eos
-!***********************************************************************
-!    subroutine get_slices_eos(f,slices)
-!
-!      real, dimension (mx,my,mz,mfarray) :: f
-!      type (slice_data) :: slices
-!
-!      call keep_compiler_quiet(f)
-!      call keep_compiler_quiet(slices%ready)
-!
-!    endsubroutine get_slices_eos
 !***********************************************************************
     subroutine get_slices_eos(f,slices)
 !
