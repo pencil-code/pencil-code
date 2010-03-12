@@ -49,3 +49,12 @@
   public :: mpoly, mpoly0, mpoly1, mpoly2
   public :: isothtop
   public :: ieos_profile,profz_eos
+
+! chemistry
+  public :: read_thermodyn,write_thermodyn
+  public :: read_transport_data
+  public :: read_species,find_species_index,find_mass
+  public :: species_constants,  tran_data
+!  public :: B_n, alpha_n, E_an, low_coeff,high_coeff,troe_coeff,a_k4
+!  public :: Mplus_case, tran_data
+
