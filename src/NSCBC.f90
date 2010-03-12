@@ -126,7 +126,6 @@ include 'NSCBC.h'
 
 !
       use General, only: safe_character_assign, chn
-      use Chemistry, only: bc_nscbc_subin_x
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -305,11 +304,11 @@ include 'NSCBC.h'
 !
           case ('subson_nref_outflow')
             if (j==1) then
-              call bc_nscbc_nref_subout_x_new(f,df,topbot,nscbc_sigma_out)
+              call bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
             elseif (j==2) then
-              call bc_nscbc_nref_subout_y_new(f,df,topbot,nscbc_sigma_out)
+              call bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
             elseif (j==3) then
-              call bc_nscbc_nref_subout_z_new(f,df,topbot,nscbc_sigma_out)
+              call bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
             endif
           case ('')
 !   Do nothing.
@@ -1326,6 +1325,157 @@ include 'NSCBC.h'
 !
       endsubroutine transversal_terms
 !***********************************************************************
+!***********************************************************************
+   subroutine bc_nscbc_subin_x(f,df,topbot,val)
+!
+!   nscbc case
+!   subsonic inflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    ux,uy,T are fixed, drho  is calculated
+!
+!   16-nov-08/natalia: coded.
+!
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice, der_pencil
+      use Chemistry
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mom2
+      real, dimension (mx,my,mz,mvar) :: df
+      character (len=3) :: topbot
+      real, dimension(ny,nz) :: dux_dx, L_1, L_2, L_5, dpp_dx
+      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
+      real, dimension(my,mz) :: cs0_ar,cs20_ar
+    !  real, dimension (my,mz) :: cs2x
+      real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
+      real, dimension(nchemspec) :: YYi
+      real, dimension (mcom), optional :: val
+      integer :: lll,i, sgn,k
+      real :: u_t, T_t
+!
+      intent(inout) :: f
+      intent(out) :: df
+!
+
+ !    if (.not.present(val)) call stop_it(&
+ !          'bc_nscbc_subin_x: you must specify fbcx)')
+
+      u_t=val(iux)
+      T_t=val(ilnTT)
+      do k=1,nchemspec
+       YYi(k)=val(ichemspec(k))
+      enddo
+
+      if (leos_chemistry) then
+        call get_cs2_full(cs2_full)
+        call get_gamma_full(gamma_full)
+      endif
+!
+      select case (topbot)
+      case ('bot')
+        lll = l1
+        sgn = 1
+      case ('top')
+        lll = l2
+        sgn = -1
+      case default
+        print*, "bc_nscbc_subin_x: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+      if (leos_chemistry) then
+         cs20_ar=cs2_full(lll,:,:)
+         cs0_ar=cs2_full(lll,:,:)**0.5
+         gamma0=gamma_full(lll,:,:)
+       !   TT0=TT_full(lll,:,:)
+         if (ltemperature_nolog) then
+          TT0=f(lll,:,:,iTT)
+         else
+          TT0=exp(f(lll,:,:,ilnTT))
+         endif
+
+         if (ldensity_nolog) then
+          rho_full=f(:,:,:,irho)
+         else
+          rho_full=exp(f(:,:,:,ilnrho))
+         endif
+
+         rho0(:,:) = rho_full(lll,:,:)
+         mom2(lll,:,:)=rho0(:,:)*f(lll,:,:,iuy)
+         do i=1,my
+         do k=1,mz
+          if (minval(gamma_full(:,i,k))<=0.) then
+           pp(:,i,k)=0.
+          else
+           pp(:,i,k)=cs2_full(:,i,k)*rho_full(:,i,k)/gamma_full(:,i,k)
+          endif
+         enddo
+         enddo
+      else
+        print*,"bc_nscbc_subin_x: leos_idealgas=",leos_idealgas,"."
+        print*,"NSCBC subsonic inflos is only implemented for "//&
+            "the chemistry case."
+        print*,"Boundary treatment skipped."
+        return
+      endif
+!
+!
+      !  call der_onesided_4_slice(f,sgn,ilnrho,dlnrho_dx,lll,1)
+        call der_onesided_4_slice(f,sgn,iux,dux_dx,lll,1)
+        call der_onesided_4_slice(pp,sgn,dpp_dx,lll,1)
+!
+        do i=1,mz
+          call der_pencil(2,mom2(lll,:,i),dmom2_dy(:,i))
+        enddo
+
+        select case (topbot)
+        case ('bot')
+          L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
+              (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+          L_5 =L_1-2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
+              df(lll,m1:m2,n1:n2,iux)
+        case ('top')
+          L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
+              (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
+          L_1 = L_5+2.*rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*&
+              df(lll,m1:m2,n1:n2,iux)
+        endselect
+
+        if (ltemperature_nolog) then
+        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
+            +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2) &
+            *df(lll,m1:m2,n1:n2,iTT)/TT0(m1:m2,n1:n2)
+        else
+        L_2 = 0.5*(gamma0(m1:m2,n1:n2)-1.)*(L_5+L_1) &
+            +rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2)*df(lll,m1:m2,n1:n2,ilnTT)
+        endif
+        if (ldensity_nolog) then
+          df(lll,m1:m2,n1:n2,ilnrho) = -1./cs20_ar(m1:m2,n1:n2)*&
+              (L_2+0.5*(L_5 + L_1)) ! -dmom2_dy(m1:m2,n1:n2)
+        else
+          df(lll,m1:m2,n1:n2,ilnrho) = &
+              -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
+              *(L_2+0.5*(L_5 + L_1)) !&
+           !-1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
+        endif
+
+!
+! natalia: this subroutine is still under construction
+! Please, do not remove this commented part !!!!!
+!
+
+!
+!  this conditions can be important!
+!  check without them
+!
+
+   !     do k=1,nchemspec
+   !      f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
+   !     enddo
+   !      f(lll,m1:m2,n1:n2,iux) = u_t
+   !     f(lll,m1:m2,n1:n2,ilnTT) = T_t
+   !      df(lll,m1:m2,n1:n2,ilnTT)=0.
+    endsubroutine bc_nscbc_subin_x
+!***********************************************************************
   subroutine bc_nscbc_subin_x_new(f,df,topbot,val)
 !
 !   nscbc case
@@ -1531,7 +1681,7 @@ include 'NSCBC.h'
  endsubroutine bc_nscbc_subin_x_new
 !***********************************************************************
 !***********************************************************************
-    subroutine bc_nscbc_nref_subout_x_new(f,df,topbot,nscbc_sigma_out)
+    subroutine bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
 
 !
 !   nscbc case
@@ -1994,10 +2144,10 @@ include 'NSCBC.h'
        enddo
       endif
 !
-    endsubroutine bc_nscbc_nref_subout_x_new
+    endsubroutine bc_nscbc_nref_subout_x
 !***********************************************************************
 !***********************************************************************
-    subroutine bc_nscbc_nref_subout_y_new(f,df,topbot,nscbc_sigma_out)
+    subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
@@ -2433,9 +2583,9 @@ include 'NSCBC.h'
        enddo
       endif
 !
-    endsubroutine bc_nscbc_nref_subout_y_new
+    endsubroutine bc_nscbc_nref_subout_y
 !***********************************************************************
-   subroutine bc_nscbc_nref_subout_z_new(f,df,topbot,nscbc_sigma_out)
+   subroutine bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
 !
 !   nscbc case
 !   subsonic non-reflecting outflow boundary conditions
@@ -2858,6 +3008,6 @@ include 'NSCBC.h'
 !
 !
 
-    endsubroutine bc_nscbc_nref_subout_z_new
+    endsubroutine bc_nscbc_nref_subout_z
 !***********************************************************************
 endmodule NSCBC
