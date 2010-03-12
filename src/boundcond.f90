@@ -1757,9 +1757,10 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
-      real, pointer :: Lambda_V0,nu
+      real, pointer :: Lambda_V0,nu,Lambda_V1
       logical, pointer :: llambda_effect
       integer :: ierr,k
+      real :: lambda_exp
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -1772,6 +1773,9 @@ module Boundcond
       call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
       if (ierr/=0) call stop_it("bc_set_sfree_x: " &
           // "problem getting shared var Lambda_V0")
+      call get_shared_variable('Lambda_V1',Lambda_V1,ierr)
+      if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+          // "problem getting shared var Lambda_V1")
       else
       endif
 !
@@ -1780,8 +1784,11 @@ module Boundcond
       case ('bot')
 !
         if ((llambda_effect).and.(j.eq.iuz)) then
-          do k=1,nghost
-             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))**(1-(Lambda_V0/nu))
+          do iy=1,my
+            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+            do k=1,nghost
+               f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))
+            enddo
           enddo
         else
           do k=1,nghost
@@ -1791,8 +1798,12 @@ module Boundcond
 ! top boundary
       case ('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
-          do k=1,nghost
-            f(l2+k,:,:,j)= f(l2-k,:,:,j)*((x(l2+k)/x(l2-k))**(1-(Lambda_V0/nu)))
+          do iy=1,my
+            lambda_exp=Lambda_V0
+!+Lambda_V1*sinth(iy)*sinth(iy)
+            do k=1,nghost
+              f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))
+            enddo
           enddo
         else
           do k=1,nghost
@@ -1912,21 +1923,61 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
+      use SharedVariables, only : get_shared_variable
+!
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
-      integer :: k
+      real, pointer :: Lambda_H1,nu
+      logical, pointer :: llambda_effect
+      integer :: ierr,k
+      real :: ftheta_m1_minus_k,ftheta_m1_plus_k
+      real :: ftheta_m2_minus_k,ftheta_m2_plus_k
+! -------- Either case get the lambda variables first -----------
+!
+      call get_shared_variable('nu',nu,ierr)
+      if (ierr/=0) call stop_it("bc_set_sfree_y: "//&
+          "there was a problem when getting nu")
+      call get_shared_variable('llambda_effect',llambda_effect,ierr)
+      if (ierr/=0) call stop_it("bc_set_sfree_y: "//&
+          "there was a problem when getting llambda_effect")
+      if (llambda_effect) then
+      call get_shared_variable('Lambda_H1',Lambda_H1,ierr)
+      if (ierr/=0) call stop_it("bc_set_sfree_y: " &
+          // "problem getting shared var Lambda_H1")
+      else
+      endif
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do k=1,nghost
-          f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1-k)*sin1th(m1+k)
-        enddo
+        if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0.)) then
+          do k=1,nghost
+            ftheta_m1_minus_k=sinth(m1-k)/exp((Lambda_H1/nu)*& 
+                              (2.*costh(m1-k)*costh(m1-k)-0.5)/4.)
+            ftheta_m1_plus_k=sinth(m1+k)/exp(-(Lambda_H1/nu)*&
+                              (2.*costh(m1+k)*costh(m1+k)-0.5)/4.)
+            f(:,m1-k,:,j)= f(:,m1+k,:,j)*ftheta_m1_minus_k/ftheta_m1_plus_k
+          enddo
+        else
+          do k=1,nghost
+            f(:,m1-k,:,j)= f(:,m1+k,:,j)*sinth(m1-k)*sin1th(m1+k)
+          enddo
+        endif
       case ('top')               ! top boundary
-        do k=1,nghost
-          f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2+k)*sin1th(m2-k)
-        enddo
+        if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0)) then
+          do k=1,nghost
+             ftheta_m2_minus_k=sinth(m2-k)/exp((Lambda_H1/nu)*&
+                            (2.*costh(m2-k)*costh(m2-k)-0.5)/4.)
+             ftheta_m2_plus_k=sinth(m2+k)/exp((Lambda_H1/nu)*&
+                            (2.*costh(m2+k)*costh(m2+k)-0.5)/4.)
+             f(:,m2+k,:,j)= f(:,m2-k,:,j)*ftheta_m2_plus_k/ftheta_m2_minus_k
+          enddo
+        else
+          do k=1,nghost
+            f(:,m2+k,:,j)= f(:,m2-k,:,j)*sinth(m2+k)*sin1th(m2-k)
+          enddo
+        endif
 !
      case default
         call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")
@@ -3935,7 +3986,7 @@ module Boundcond
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
              "there was a problem when getting FtopKtop")
 !
-        if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+        if (headtt) print*,'bc_ss_flux_z: FtopKtop=',FtopKtop
 !
 !  calculate Ftop/(K*cs2)
 !

@@ -31,7 +31,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
-  real :: pnlaw=0.0, Lambda_V0=0.0 
+  real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: meanfield_nuB=0.0
   real, dimension(3) :: nu_aniso_hyper3=0.0
 !
@@ -67,7 +67,7 @@ module Viscosity
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
-      pnlaw,llambda_effect,Lambda_V0, &
+      pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
       lmeanfield_nu,meanfield_nuB
 !
 ! other variables (needs to be consistent with reset list below)
@@ -300,12 +300,25 @@ module Viscosity
         endif
       endif
 !
+! consistency check for Lambda effect
+!
+      if(llambda_effect) then
+        if((Lambda_V0.eq. 0).and.(Lambda_V1.eq.0).and.(Lambda_H1.eq.0)) &
+          call fatal_error('initialize_viscosity', &
+            'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
+        if((Lambda_V0.eq.0).and.((Lambda_V1.ne.0).or.(Lambda_H1.eq.0))) &
+          call warning('initialize_viscosity', &
+            'Lambda effect: V_zero=0 but V1 or H1 nonzero')
+      endif
+!
 !  Shared variables.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
      call put_shared_variable('nu',nu,ierr)
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
       call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
+      call put_shared_variable('Lambda_V1',Lambda_V1,ierr)
+      call put_shared_variable('Lambda_H1',Lambda_H1,ierr)
       call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
@@ -568,6 +581,7 @@ module Viscosity
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,nu_smag,tmp3,tmp4,pnu
+      real, dimension (nx) :: Lambda_zero_order,Lambda_1st_order 
 !
       integer :: i,j,ju
 !
@@ -1056,15 +1070,32 @@ module Viscosity
 !  Calculate Lambda effect
 !
      if (llambda_effect) then
-!      p%fvisc(:,iuz)=p%fvisc(:,iuz) -Lambda_V0*( &
-!                  -p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
-!                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
-! PJK: Isn't this what we get when taking the divergence of
-! PJK: rho*(rho*R_(r\phi))? Now the angular momentum is fairly well conserved.
-       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
-                    2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
+       Lambda_zero_order = Lambda_V0*( &
+                    2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
+         if((Lambda_V1.eq.0).or.(Lambda_H1.eq.0)) then
+           Lambda_1st_order=0.
+         else
+           Lambda_1st_order = Lambda_V1*(sinth(m)**2)*( & 
+                     2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
+                    +p%uu(:,3)*p%glnrho(:,1)/x(l1:l2) )  &
+                    + Lambda_H1*( &
+                     (4.*costh(m)*costh(m)-0.5)*p%uu(:,3)/(x(l1:l2)*x(l1:l2)) & 
+                    +sinth(m)*costh(m)*p%uij(:,3,2)/x(l1:l2) &
+                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
+            Lambda_1st_order=0.
+         endif
+       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_zero_order+Lambda_1st_order
      endif
+! The following is the correct expression for vertical lambda effect 
+! for the axisymmetric case. This is now commented out because the
+! more complete expression above reduces to the following in the
+! special case of axisymmetry and vertical lambda effect. 
+!DM     if (llambda_effect) then
+!DM       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
+!DM                    2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
+!DM                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
+!DM     endif
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
