@@ -278,11 +278,11 @@ module Particles_collisions
                     prob=dt*tau_coll1
                     call random_number_wrapper(r)
                     if (r<=prob) then
+                      call particle_collision(xpj,xpk,vpj,vpk,j,k)
                       if (lshear .and. lshear_in_vp) then
                         vpk(2)=vpk(2)+qshear*Omega*xpk(1)
                         vpj(2)=vpj(2)+qshear*Omega*xpj(1)
                       endif
-                      call particle_collision(xpj,xpk,vpj,vpk,j,k)
                       fp(k,ivpx:ivpz)=vpk
                       fp(j,ivpx:ivpz)=vpj
                       ncoll=ncoll+1
@@ -507,11 +507,11 @@ module Particles_collisions
                     prob=dt*tau_coll1
                     call random_number_wrapper(r)
                     if (r<=prob) then
+                      call particle_collision(xpj,xpk,vpj,vpk,j,k)
                       if (lshear .and. lshear_in_vp) then
                         vpk(2)=vpk(2)+qshear*Omega*xpk(1)
                         vpj(2)=vpj(2)+qshear*Omega*xpj(1)
                       endif
-                      call particle_collision(xpj,xpk,vpj,vpk,j,k)
                       fp(k,ivpx:ivpz)=vpk
                       fp(j,ivpx:ivpz)=vpj
                       ncoll=ncoll+1
