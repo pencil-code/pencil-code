@@ -1034,6 +1034,30 @@ module Particles_mpicomm
               dfp_mig(isort_array(1:nmig_leave_total),:)
         endif
 !
+!  Make sure that processors only exchange particles with direct neighbours.
+!  Wrong block decomposition can cause an error here - in that case set
+!  lreblock_particles_run=T in run.in to create a new block decomposition.
+!
+        do i=0,ncpus-1
+          if (nmig_enter(i)/=0) then
+            if (.not.any(iproc_comm(1:nproc_comm)==i)) then
+              print*, 'migrate_particles_ptop: trying to send particles '// &
+                  'from proc ', i, ' to proc ', iproc, &
+                  ', but those processors are not neighbours!'
+              call fatal_error_local('migrate_particles_ptop','')
+            endif
+          endif
+          if (nmig_leave(i)/=0) then
+            if (.not.any(iproc_comm(1:nproc_comm)==i)) then
+              print*, 'migrate_particles_ptop: trying to send particles '// &
+                  'from proc ', iproc, ' to proc ', i, &
+                  ', but those processors are not neighbours!'
+              call fatal_error_local('migrate_particles_ptop','')
+            endif
+          endif
+        enddo
+        call fatal_error_local_collect()
+!
 !  Set to receive.
 !
         do i=0,ncpus-1
