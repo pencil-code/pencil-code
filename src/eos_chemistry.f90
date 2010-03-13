@@ -70,15 +70,13 @@ module EquationOfState
   logical :: l_gamma_m1=.false.
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
-
 !
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(mz) :: profz_eos=1.
 !
-!000000000000000000000000000000000000000
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data
-!00000000000000000000000000000000000000
+!
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 !
   namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp, ptlaw

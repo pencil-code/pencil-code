@@ -72,6 +72,7 @@ module EquationOfState
 !
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(mz) :: profz_eos=1.
+!
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data
 !
@@ -1833,7 +1834,6 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_liso
-!***********************************************************************
 !***********************************************************************
     subroutine read_transport_data
 
