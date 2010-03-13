@@ -1194,6 +1194,8 @@ module Dustvelocity
         ! Do nothing, initialized in initialize_dustvelocity
       case ('epstein_cst_b')
         tausd1(:,k) = betad(k)/rhod
+      case ('stokes_cst_tausd')
+        tausd1(:,k) = betad(k)
       case ('epstein_var')
         call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
         csrho       = sqrt(cs2+deltaud2)*rho

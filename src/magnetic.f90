@@ -192,7 +192,8 @@ module Magnetic
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0
   real :: alphaSSm=0.0
   real :: alpha_rmax=0.0, alpha_width=0.0
-  real :: k1_ff=1.0, ampl_ff=0.0, swirl=1.0
+  real :: Omega_rmax=0.0, Omega_rwidth=0.0
+  real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
   real :: forcing_continuous_aa_phasefact=1.0
@@ -249,8 +250,8 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump, &
-      lrun_initaa
+      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total,eta_jump,&
+      Omega_rmax,Omega_rwidth,lrun_initaa
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2569,7 +2570,7 @@ module Magnetic
         (meanfield_etat/=0.0 .or. ietat/=0 .or. &
         alpha_effect/=0.0.or.delta_effect/=0.0)) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
-        if (lOmega_effect) call Omega_effect(f,df)
+        if (lOmega_effect) call Omega_effect(f,df,p)
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
@@ -3636,7 +3637,7 @@ module Magnetic
 !
     endsubroutine calc_tau_aa_exterior
 !***********************************************************************
-    subroutine Omega_effect(f,df)
+    subroutine Omega_effect(f,df,p)
 !
 !  Omega effect coded (normally used in context of mean field theory)
 !  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
@@ -3648,11 +3649,13 @@ module Magnetic
 !
 !  30-apr-05/axel: coded
 !
+  use Sub, only: stepdown 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       real kx
 !
-      intent(in) :: f
+      intent(in) :: f,p
       intent(inout) :: df
 !
 !  use gauge transformation, uxB = -Ay*grad(Uy) + gradient-term
@@ -3681,6 +3684,13 @@ module Magnetic
         if (headtt) print*,'Omega_effect: (0,0,siny), Omega_ampl=',Omega_ampl
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
             *sin(y(m))
+      case('rcutoff_sin_theta')
+        if (headtt) print*,'Omega_effect: r cutoff sin(theta), Omega_ampl=',Omega_ampl
+!        df(l1:l2,m,n,iax)=Omega_ampl*df(l1:l2,m,n,iax)
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*p%bb(:,2) &
+            *sin(y(m))*x(l1:l2)*(1+stepdown(x(l1:l2),Omega_rmax,Omega_rwidth))
+        df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+Omega_ampl*p%bb(:,1) &
+            *sin(y(m))*x(l1:l2)*(1+stepdown(x(l1:l2),Omega_rmax,Omega_rwidth))
       case default; print*,'Omega_profile=unknown'
       endselect
 !
