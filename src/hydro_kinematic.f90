@@ -696,6 +696,17 @@ ky_uukin=2.*pi
           p%uu(:,3)=wind_amp*step_scalar(z(n),wind_rmin,wind_step_width)
         endif
 !
+!  Vertical wind
+!
+      elseif (kinflow=='vertical-wind') then
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'vertical-wind along z'
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=wind_amp*z(n)
+        endif
+        if (lpencil(i_divu)) p%divu=wind_amp
+!
 ! Radial wind
 !
       elseif (kinflow=='radial-wind') then

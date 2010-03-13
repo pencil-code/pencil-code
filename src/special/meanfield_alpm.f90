@@ -139,6 +139,8 @@ module Special
         lpenc_requested(i_mf_EMFdotB)=.true.
         if (VC_Omega_profile/='nothing') lpenc_requested(i_bij)=.true.
       endif
+      if (ladvect_alpm) lpenc_requested(i_divu)=.true.
+      if (ladvect_alpm) lpenc_requested(i_uu)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
