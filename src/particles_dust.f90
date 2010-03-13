@@ -71,7 +71,7 @@ module Particles
   logical :: lcollisional_cooling_twobody=.false.
   logical :: lcollisional_dragforce_cooling=.false.
   logical :: ltau_coll_min_courant=.true.
-  logical :: ldragforce_equi_global_eps=.false.
+  logical :: ldragforce_equi_global_eps=.false., ldragforce_equi_noback=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
@@ -122,7 +122,7 @@ module Particles
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const
+      lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -1091,27 +1091,30 @@ k_loop:   do while (.not. (k>npar_loc))
             eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
                 sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
           endif
+          if (ldragforce_equi_noback) eps=0.0
 !
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !  Set gas velocity field.
-          do l=l1,l2; do m=m1,m2; do n=n1,n2
+          if (lhydro) then
+            do l=l1,l2; do m=m1,m2; do n=n1,n2
 !  Take either global or local dust-to-gas ratio.
-            if (.not. ldragforce_equi_global_eps) then
-              if (ldensity_nolog) then
-                eps=f(l,m,n,irhop)/f(l,m,n,irho)
-              else
-                eps=f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
+              if (.not. ldragforce_equi_global_eps) then
+                if (ldensity_nolog) then
+                  eps=f(l,m,n,irhop)/f(l,m,n,irho)
+                else
+                  eps=f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
+                endif
               endif
-            endif
 !
-            f(l,m,n,iux) = f(l,m,n,iux) - &
-                beta_glnrho_global(1)*eps*Omega*tausp/ &
-                ((1.0+eps)**2+(Omega*tausp)**2)*cs
-            f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+              f(l,m,n,iux) = f(l,m,n,iux) - &
+                  beta_glnrho_global(1)*eps*Omega*tausp/ &
+                  ((1.0+eps)**2+(Omega*tausp)**2)*cs
+              f(l,m,n,iuy) = f(l,m,n,iuy) + &
+                  beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                  (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
 !
-          enddo; enddo; enddo
+            enddo; enddo; enddo
+          endif
 !  Set particle velocity field.
           do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
@@ -1145,11 +1148,9 @@ k_loop:   do while (.not. (k>npar_loc))
           cs=sqrt(cs20)
           do k=1,npar_loc
             fp(k,ivpx) = fp(k,ivpx) + &
-                1/gamma*beta_dPdr_dust/ &
-                (Omega*tausp+1/(Omega*tausp))*cs
+                1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
             fp(k,ivpy) = fp(k,ivpy) - &
-                1/gamma*beta_dPdr_dust*Omega*tausp*0.5/ &
-                (Omega*tausp+1/(Omega*tausp))*cs
+                1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
           enddo
 !
        case ('Keplerian','keplerian')
@@ -2014,8 +2015,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  velocities relative to the shear flow modified by the global pressure grad.)
 !
       if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
-        dfp(1:npar_loc,ivpx) = &
-            dfp(1:npar_loc,ivpx) + 1/gamma*cs20*beta_dPdr_dust_scaled
+        dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
       endif
 !
 !  Gravity on the particles.
