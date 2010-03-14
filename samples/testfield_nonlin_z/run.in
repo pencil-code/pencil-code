@@ -6,7 +6,7 @@
   cvsid='$Id: run.in,v 1.1 2010-01-01 18:05:23 brandenb Exp $',
   nt=11, it1=2, isave=500, itorder=3
   dsnap=500, dvid=100., ialive=1
-  lpencil_check=T
+! lpencil_check=T
 /
 &hydro_run_pars
   ladvection_velocity=F
@@ -23,14 +23,14 @@
   eta=1.
 /
 &testfield_run_pars
-  linit_aatest=T, daainit=100., reinitialize_from_mainrun=T
+  !linit_aatest=T, daainit=100., reinitialize_from_mainrun=T
   itestfield='B11-B22', ktestfield=1.
   etatest=1., nutest=1.
   lsoca=F, lsoca_jxb=F
   bamp=1., ltestfield_newz=F
   lforcing_cont_uutest=F
   lforcing_cont_aatest=T
-  itestfield_method='(i)'
+  itestfield_method='ju'
   lphase_adjust=T, phase_testfield=0.
 /
 &viscosity_run_pars
