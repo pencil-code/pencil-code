@@ -122,6 +122,7 @@ module Chemistry
      real, allocatable, dimension(:)  :: B_n, alpha_n, E_an
      real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
      logical, allocatable, dimension(:) :: Mplus_case
+     logical, allocatable, dimension(:) :: photochem_case
    !  real, dimension(nchemspec,7)     :: tran_data
 !
 ! input parameters
@@ -1845,8 +1846,11 @@ module Chemistry
 !
       character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: stat,k
-      logical :: tran_exist
+      integer :: stat,k,i
+      logical :: tran_exist 
+      character (len=20) :: input_file2="./data/stoich.out"
+      integer :: file_id=123
+!
 
       inquire(file='tran.dat',exist=tran_exist)
 !
@@ -1883,6 +1887,7 @@ module Chemistry
 !
       call read_reactions(input_file,NrOfReactions=mreactions)
       if (lroot) print*,'Number of reactions=',mreactions
+      if (lroot) print*,'Number of species=',nchemspec
       nreactions=mreactions
 !
 !  Allocate reaction arrays
@@ -1917,7 +1922,9 @@ module Chemistry
         if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
         allocate(Mplus_case (nreactions),STAT=stat)
         Mplus_case=.false.
-        if (stat>0) call stop_it("Couldn't allocate memory for Mplus_case")
+        allocate(photochem_case (nreactions),STAT=stat)
+        photochem_case=.false.
+        if (stat>0) call stop_it("Couldn't allocate memory for photochem_case")
       endif
 !
 !  Initialize data
@@ -1937,14 +1944,26 @@ module Chemistry
 !  print input data for verification
 !
       if (lroot .and. nreactions>0) then
-       ! print*,'kreactions_m=',kreactions_m(1:nreactions)
-       ! print*,'kreactions_p=',kreactions_p(1:nreactions)
-        print*,'Sijm:' ; write(*,100),Sijm(:,1:nreactions)
-        print*,'Sijp:' ; write(*,100),Sijp(:,1:nreactions)
-        print*,'stoichio=' ; write(*,100),stoichio(:,1:nreactions)
+
+        open(file_id,file=input_file2,POSITION='APPEND',FORM='FORMATTED')
+         write(file_id,*) 'STOICHIOMETRIC MATRIX'
+
+         write(file_id,*),'Sijm'
+         do i=1,nreactions
+          write(file_id,100),Sijm(:,i)
+         enddo
+         write(file_id,*),'Sijp:' 
+         do i=1,nreactions
+          write(file_id,100),Sijp(:,i)
+         enddo
+         write(file_id,*),'stoichio='
+         do i=1,nreactions
+          write(file_id,100),stoichio(:,i)
+         enddo
+        close(file_id)
       endif
 
-100   format(8i4)
+100   format(16i4)
 !
       call keep_compiler_quiet(f)
 !
@@ -2592,6 +2611,7 @@ module Chemistry
       integer :: VarNumber, VarNumber_add, SeparatorInd
       integer :: PlusInd
       integer :: LastLeftCharacter,ParanthesisInd,Mplussind
+      integer :: photochemInd
       character (len=80) :: ChemInpLine, ChemInpLine_add
       character (len=*) :: input_file
 !
@@ -2639,6 +2659,8 @@ module Chemistry
 !
                 StopIndName=index(ChemInpLine(StartInd:),' ')+StartInd-1
                 reaction_name(k)=ChemInpLine(StartInd:StopIndName)
+!print*,'Natalia',reaction_name(k)
+
 !
 ! Find reactant side stoichiometric coefficients
 !
@@ -2646,7 +2668,17 @@ module Chemistry
                 if (SeparatorInd==0) then
                   SeparatorInd=index(ChemInpLine(StartInd:),'=')
                 endif
-!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!photochem
+!!!!!!!!!!!!!!!!!!!
+               !ParanthesisInd=0
+               photochemInd=0
+               photochemInd=index(ChemInpLine(StartInd:),'hv')
+               if (photochemInd>0) then
+                 photochem_case (k)=.true.
+!print*,'Natalia2',photochem_case (k)
+               endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 ParanthesisInd=0
                 MplussInd=0
 !
@@ -2676,9 +2708,9 @@ module Chemistry
                       if (ChemInpLine_add(i:i)==' ') then
                         i=i+1
                       elseif (ChemInpLine_add(i:i+2)=='LOW') then
-                        if (lroot) print*,ChemInpLine_add(i:i+2),&
-                            '   coefficients for reaction ', &
-                            reaction_name(k),'number ', k
+                      !  if (lroot) print*,ChemInpLine_add(i:i+2),&
+                      !      '   coefficients for reaction ', &
+                      !      reaction_name(k),'number ', k
                         VarNumber_add=1; StartInd_add=i+4; StopInd_add=i+4
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),&
@@ -2710,9 +2742,9 @@ module Chemistry
                         enddo
                         i=80
                       elseif (ChemInpLine_add(i:i+3)=='TROE') then
-                        if (lroot) print*,ChemInpLine_add(i:i+3),&
-                            '   coefficients for reaction ', reaction_name(k),&
-                            'number ', k
+                      !  if (lroot) print*,ChemInpLine_add(i:i+3),&
+                      !      '   coefficients for reaction ', reaction_name(k),&
+                      !      'number ', k
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),&
@@ -2744,9 +2776,9 @@ module Chemistry
                         enddo
                         i=80
                       elseif (ChemInpLine_add(i:i+3)=='HIGH') then
-                        if (lroot) print*,ChemInpLine_add(i:i+3),&
-                            '   coefficients for reaction ', reaction_name(k),&
-                            'number ', k
+                      !  if (lroot) print*,ChemInpLine_add(i:i+3),&
+                      !      '   coefficients for reaction ', reaction_name(k),&
+                      !      'number ', k
                         VarNumber_add=1; StartInd_add=i+5; StopInd_add=i+5
                         do while (VarNumber_add<4)
                           StopInd_add=index(ChemInpLine_add(StartInd_add:),&
@@ -2778,7 +2810,7 @@ module Chemistry
                         enddo
                         i=80
                       else
-                        if (lroot) print*,' --------------  a_k4 coefficients-------------'
+                      !  if (lroot) print*,' --------------  a_k4 coefficients-------------'
                         !                a_k4=0.
                         StartInd_add=i; StopInd_add=0; StopInd_add_=0
                         do while (ChemInpLine_add(i:i+1)/='  ')
@@ -2796,8 +2828,8 @@ module Chemistry
                               if (found_specie) then
                                 read (unit=ChemInpLine_add(StartInd_add:&
                                     StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
-                                if (lroot) print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),&
-                                    ind_chem,k
+                            !    if (lroot) print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),&
+                            !        ind_chem,k
                               else
                                 call stop_it("Did not find specie!")
                               endif
@@ -2923,7 +2955,8 @@ module Chemistry
       integer :: StartSpecie,ind_glob,ind_chem,stoi
       logical :: found_specie,product
 !
-      if (ChemInpLine(StartInd:StopInd) /= "M" ) then
+      if ((ChemInpLine(StartInd:StopInd) /= "M" ) & 
+          .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" ))then
         StartSpecie=verify(ChemInpLine(StartInd:StopInd),&
             "1234567890")+StartInd-1
         call find_species_index(ChemInpLine(StartSpecie:StopInd),&
@@ -3007,6 +3040,7 @@ module Chemistry
 !
       write(file_id,*) 'END'
       write(file_id,*) '(M+) case: ',Mplus_case
+      write(file_id,*) 'photochemical case: ',photochem_case
 !
       close(file_id)
 !
@@ -4411,6 +4445,7 @@ module Chemistry
   if (allocated(troe_coeff))     deallocate(troe_coeff)
   if (allocated(a_k4))           deallocate(a_k4)
   if (allocated(Mplus_case))     deallocate(Mplus_case)
+  if (allocated(photochem_case)) deallocate(photochem_case)
 !
   endsubroutine chemistry_clean_up
 !***********************************************************************

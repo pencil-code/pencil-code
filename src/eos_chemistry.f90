@@ -1329,7 +1329,7 @@ module EquationOfState
       !                  'no species has been found')
       else
         found_specie=.true.
-        if (lroot) print*,species_name,'   species index= ',ind_chem
+    !    if (lroot) print*,species_name,'   species index= ',ind_chem
       endif
 !
     endsubroutine find_species_index
@@ -1610,6 +1610,7 @@ module EquationOfState
         call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
 !
         if (found_specie) then
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
 !
           VarNumber=1; StartInd=1; StopInd =0
           stringloop: do while (VarNumber<7)
