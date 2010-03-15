@@ -2077,6 +2077,8 @@ module Magnetic
           select case (EMF_profile)
           case ('xcutoff');
             EMF_prof= 1+stepdown(x(l1:l2),alpha_rmax,alpha_width)
+          case ('surface_z');
+            EMF_prof=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           case ('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'lEMF_profile=T, but no profile selected !')

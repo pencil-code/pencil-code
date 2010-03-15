@@ -707,6 +707,17 @@ ky_uukin=2.*pi
         endif
         if (lpencil(i_divu)) p%divu=wind_amp
 !
+!  Vertical wind that goes to zero for z < 0.
+!
+      elseif (kinflow=='vertical-wind-surface') then
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'vertical-wind along z'
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=wind_amp*z(n)*0.5*(1.+erfunc((z(n)/wind_step_width)))
+        endif
+        if (lpencil(i_divu)) p%divu=wind_amp
+!
 ! Radial wind
 !
       elseif (kinflow=='radial-wind') then
