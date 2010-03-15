@@ -597,9 +597,10 @@ module Special
 !
       gKp = (expo+1.) * p%glnTT
 !
+      call dot2(p%glnTT,glnTT2)
+!
       if (Ksat/=0.) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
-        call dot2(p%glnTT,glnTT2)
 !
         where (glnTT2 .le. tini)
           chi_2 =  0.
