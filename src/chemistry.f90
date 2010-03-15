@@ -123,6 +123,7 @@ module Chemistry
      real, allocatable, dimension(:,:) :: low_coeff,high_coeff,troe_coeff,a_k4
      logical, allocatable, dimension(:) :: Mplus_case
      logical, allocatable, dimension(:) :: photochem_case
+     real :: lamb_low,lamb_up
    !  real, dimension(nchemspec,7)     :: tran_data
 !
 ! input parameters
@@ -1945,16 +1946,16 @@ module Chemistry
 !
       if (lroot .and. nreactions>0) then
 
-        open(file_id,file=input_file2,POSITION='APPEND',FORM='FORMATTED')
+        open(file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
          write(file_id,*) 'STOICHIOMETRIC MATRIX'
 
          write(file_id,*),'Sijm'
          do i=1,nreactions
-          write(file_id,100),Sijm(:,i)
+          write(file_id,100),i,Sijm(:,i)
          enddo
          write(file_id,*),'Sijp:' 
          do i=1,nreactions
-          write(file_id,100),Sijp(:,i)
+          write(file_id,100),i,Sijp(:,i)
          enddo
          write(file_id,*),'stoichio='
          do i=1,nreactions
@@ -2661,6 +2662,43 @@ module Chemistry
                 reaction_name(k)=ChemInpLine(StartInd:StopIndName)
 !print*,'Natalia',reaction_name(k)
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!photochem
+!!!!!!!!!!!!!!!!!!!
+               ParanthesisInd=0
+               photochemInd=0
+               SeparatorInd=0
+               photochemInd=index(ChemInpLine(StartInd:),'hv')
+               if (photochemInd>0) then
+                 photochem_case (k)=.true.
+               endif
+               ParanthesisInd=index(ChemInpLine(photochemInd:),'(') &
+                             +photochemInd-1
+
+
+               if ((ParanthesisInd>0) .and. (photochemInd>0)) then
+                StopInd=index(ChemInpLine(StartInd:),'lam')
+
+                SeparatorInd=index(ChemInpLine(ParanthesisInd:StopInd),'<') 
+
+                if (SeparatorInd>0) then
+                  SeparatorInd=SeparatorInd+ParanthesisInd-1
+                  read (unit=ChemInpLine(ParanthesisInd+1:&
+                                 SeparatorInd-1),fmt='(E15.8)') lamb_low
+                !    print*,'Natalia1',lamb_low
+                endif
+                ParanthesisInd=index(ChemInpLine(StopInd:),')') +StopInd-1
+                SeparatorInd=index(ChemInpLine(StopInd:ParanthesisInd),'<') &
+                             +StopInd-1
+                 if (SeparatorInd>0) then
+                   read (unit=ChemInpLine(SeparatorInd+1:&
+                                  ParanthesisInd-1),fmt='(E15.8)') lamb_up
+                 !   print*,'Natalia2',lamb_up
+                 endif
+               endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! Find reactant side stoichiometric coefficients
 !
@@ -2668,17 +2706,7 @@ module Chemistry
                 if (SeparatorInd==0) then
                   SeparatorInd=index(ChemInpLine(StartInd:),'=')
                 endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!photochem
-!!!!!!!!!!!!!!!!!!!
-               !ParanthesisInd=0
-               photochemInd=0
-               photochemInd=index(ChemInpLine(StartInd:),'hv')
-               if (photochemInd>0) then
-                 photochem_case (k)=.true.
-!print*,'Natalia2',photochem_case (k)
-               endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                 ParanthesisInd=0
                 MplussInd=0
 !
@@ -3020,10 +3048,14 @@ module Chemistry
         enddo
 !
         output_string=trim(reac_string)//'='//trim(product_string)
+
+       if (.not. photochem_case(reac)) then
         write(unit=output_string(30:45),fmt='(E14.4)') B_n(reac)
         write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
         write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
+       endif
         write(file_id,*) trim(output_string)
+       if (.not. photochem_case(reac)) then
         if (maxval(abs(low_coeff(:,reac))) > 0.) then
           write(file_id,*) 'LOW/',low_coeff(:,reac)
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
@@ -3035,6 +3067,9 @@ module Chemistry
         if (minval(a_k4(:,reac))<impossible) then
           write(file_id,*) a_k4(:,reac)
         endif
+       else
+         write(file_id,*) ' min lambda=',lamb_low,' max lambda=',lamb_up
+       endif
 !
       enddo
 !
