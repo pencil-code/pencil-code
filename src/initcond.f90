@@ -4144,6 +4144,7 @@ module Initcond
 !
       if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
 !
+      call start_serialize()
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnT
@@ -4153,6 +4154,7 @@ module Initcond
       open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnrho
       close (10)
+      call end_serialize()
 !
       b_z = b_z*1.e6/unit_length
       b_lnT = b_lnT - alog(real(unit_temperature))
@@ -4246,7 +4248,7 @@ module Initcond
       allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
       allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
       allocate(kxp(nxgrid),stat=stat);           iostat=max(stat,iostat)
-      allocate(kyp(nxgrid),stat=stat);           iostat=max(stat,iostat)
+      allocate(kyp(nygrid),stat=stat);           iostat=max(stat,iostat)
 !
       if (iostat>0) call fatal_error('mdi_init', &
           'Could not allocate memory for variables, please check')
@@ -4273,6 +4275,7 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
+      call start_serialize()
       inquire(file='driver/mag_field.txt',exist=exist)
       if (exist) then
         open (11,file='driver/mag_field.txt')
@@ -4290,6 +4293,7 @@ module Initcond
               'No file: mag_field.dat,mag_field.txt')
         endif
       endif
+      call end_serialize()
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
@@ -4367,11 +4371,13 @@ module Initcond
       !
       ! read in temperature profile T in [K] and z in [Mm]
       !
+      call start_serialize()
       inquire(IOLENGTH=lend) tmp
       open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
       read (10) b_lnT
       read (10) b_z
       close (10)
+      call end_serialize()
       !
       b_z = b_z*1.e6/unit_length
       b_lnT = b_lnT - alog(real(unit_temperature))
