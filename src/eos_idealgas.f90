@@ -171,7 +171,7 @@ module EquationOfState
         else
 !
 !  Checking whether the units are overdetermined.
-!  This is assumed to be the case when the to differ by error_cp.
+!  This is assumed to be the case when the two differ by error_cp.
 !
           if (gamma_m1==0.0) then
             cp_reference=Rgas/mu

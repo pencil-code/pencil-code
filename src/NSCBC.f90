@@ -1495,7 +1495,7 @@ include 'NSCBC.h'
       character (len=3) :: topbot
       real, dimension(ny,nz) :: dux_dx, L_1, L_2,  L_3, L_4, L_5, dpp_dx
       real, dimension(ny,nz,nchemspec) :: L_k
-      real, dimension(my,mz) :: rho0, gamma0, dmom2_dy, TT0
+      real, dimension(my,mz) :: rho0, gamma0, TT0 !, dmom2_dy
       real, dimension(my,mz) :: cs0_ar,cs20_ar
     !  real, dimension (my,mz) :: cs2x
       real, dimension (mx,my,mz) :: cs2_full, gamma_full, rho_full, pp
