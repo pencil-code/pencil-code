@@ -301,12 +301,6 @@ module Chemistry
         ladvection=.false.
         ldiffusion=.false.
       endif
-
-!     if (lreactions==.false.)
-!     if (ladvection==.false.)
-!     if (ldiffusion==.false.) then
-!      lnospec_eqns=.true.
-!     endif
 !
 !  check for the existence of chemistry input files
 !
@@ -513,8 +507,7 @@ module Chemistry
            lpenc_requested(i_lambda)=.true.
            lpenc_requested(i_glambda)=.true.
          endif
-!
-      endif
+       endif
 !
     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
@@ -592,12 +585,6 @@ module Chemistry
         !  enddo
         !endif
 !
-!-----------------------------------------------------------------
-!
-!  Density
-!
-        !if (lpencil(i_lnrho)) p%lnrho=f(l1:l2,m,n,ilnrho)
-        !if (lpencil(i_rho))   p%rho=exp(p%lnrho)
 !
 !  Pressure
 !
@@ -648,23 +635,10 @@ module Chemistry
 !
         if (lpencil(i_cv1)) p%cv1=1./p%cv
 !
-
 !
 !  Polytropic index
 !
         if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-  !      if (lpencil(i_gamma_inv)) p%gamma_inv = p%cv*p%cp1
-  !      if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
-!
-!  Sound speed
-!
-        !if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*p%gamma_m1*p%mu1
-!
-!------------------------------------------
-!  NB:this is wrong for the chemistry case
-!------------------------------------------
-!  WL: what is wrong?
-
 !
 !  Viscosity of a mixture
 !
@@ -713,8 +687,6 @@ module Chemistry
               enddo
            enddo
           endif
-
-
 !
 !  Enthalpy flux
 !
@@ -844,8 +816,6 @@ module Chemistry
 
      if (final_massfrac_O2<0.) final_massfrac_O2=0.
 
-!print*,initial_massfractions(ichem_O2),mO2,initial_massfractions(ichem_H2),mH2
-
 !
 !  Initialize temperature and species
 !
@@ -890,8 +860,6 @@ module Chemistry
              f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
                 *(exp(f(k,:,:,ilnTT))-init_TT2) &
                 /(init_TT1-init_TT2)
-
-
        !      if (final_massfrac_O2>0.) then
        !       f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
        !          *(exp(f(k,:,:,ilnTT))-init_TT1) &
@@ -928,7 +896,6 @@ module Chemistry
         endif
       enddo
 
-
          do k=1,mx
           if (x(k)>=init_x1) then
 
@@ -947,14 +914,11 @@ module Chemistry
           endif
          enddo
 !
-  !  call calc_for_chem_mixture(f)
-
    if (unit_system == 'cgs') then
 !
           Rgas_unit_sys = k_B_cgs/m_u_cgs
           Rgas=Rgas_unit_sys/unit_energy
    endif
-
 !
 !  Find logaritm of density at inlet
 !
@@ -967,7 +931,6 @@ module Chemistry
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
        print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
-
        mu1_full=0.
           do k=1,nchemspec
            do j2=mm1,mm2
@@ -977,7 +940,6 @@ module Chemistry
            enddo
            enddo
           enddo
-
 !
 !
 !  Initialize density
@@ -990,11 +952,6 @@ module Chemistry
       f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)  &
           +init_ux*exp(log_inlet_density)/exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
-
-  !   call calc_for_chem_mixture(f)
-
-     !
-!
 !
 !  Check if we want nolog of density or nolog of temperature
 !
@@ -1003,7 +960,6 @@ module Chemistry
 !
     endsubroutine flame_front
 !***********************************************************************
-! !***********************************************************************
     subroutine flame_blob(f)
 
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1104,11 +1060,8 @@ module Chemistry
 
       !  f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(l1,m1,n1,ilnTT)  &
       !      -log(mu1_full(l1,m1,n1))
-
-
-
- !      f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
- !          -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
+      !  f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
+    !        -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
 
 !
 !  Initialize velocity
@@ -1199,7 +1152,6 @@ module Chemistry
           Rgas=Rgas_unit_sys/unit_energy
       endif
 
- !     call calc_for_chem_mixture(f)
 !
 !  Find logaritm of density at inlet
 !
@@ -1219,11 +1171,8 @@ module Chemistry
           enddo
           enddo
 
-
-      log_inlet_density=&
+       log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-
-
 
        do j1=1,mx
          Rad=abs(x(j1))
@@ -1306,7 +1255,6 @@ module Chemistry
         rho_full=exp(f(:,:,:,ilnrho))
       endif
 
-
      if (ltemperature_nolog) then
          TT_full=f(:,:,:,iTT)
      else
@@ -1342,19 +1290,13 @@ module Chemistry
 !  Mole fraction XX
 !
           do k=1,nchemspec
-           do j2=mm1,mm2
-            do j3=nn1,nn2
-!!$              if (minval(mu1_full(:,j2,j3))<=0) then
-!!$                XX_full(:,j2,j3,k)=0.
-!!$              else
-                XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
-                 /(species_constants(k,imass)*mu1_full(:,j2,j3))
-!!$              endif
-            enddo
-           enddo
+          do j2=mm1,mm2
+          do j3=nn1,nn2
+             XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
+                /(species_constants(k,imass)*mu1_full(:,j2,j3))
           enddo
-!
-! NILS: Is this really necesarry?
+          enddo
+          enddo
 !
            do j2=mm1,mm2
            do j3=nn1,nn2
@@ -1362,11 +1304,9 @@ module Chemistry
                             *rho_full(:,j2,j3)*TT_full(:,j2,j3)
            enddo
            enddo
-
 !
 !  Specific heat at constant pressure
 !
-
         if ((Cp_const<impossible) .or. (Cv_const<impossible)) then
 
           if (Cp_const<impossible) then
@@ -1593,13 +1533,10 @@ module Chemistry
                                  Diff_full(l2,m2,n2,k)*unit_length**2/unit_time
         enddo
         write(file_id,*) ''
-
-
         if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
         close(file_id)
         lwrite=.false.
       endif
-
 !
       call timing('calc_for_chem_mixture','finished')
 
@@ -2005,9 +1942,6 @@ module Chemistry
       intent(in) :: f,p
       intent(inout) :: df
 !
-      !      real,dimension(nchemspec) :: reac_rate=0.
-!
-!      real,dimension(nx) :: sum_reac_rate
 !
 !  identify module and boundary conditions
 !
@@ -2072,8 +2006,6 @@ module Chemistry
     !        sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(i))/p%TT(i) & !(-p%TT(i)+Tinf)
     !        *Cp_const/lambda_const*p%rho(1)*beta*(beta-1.)* &
     !        (1.-f(l1-1+i,m,n,ichemspec(ipr)))
-
-
       !   endif
         enddo
        else
@@ -2113,8 +2045,6 @@ module Chemistry
           RHS_T_full=sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-        !    RHS_T_full(l1:l2,m,n)=(sum_DYDt(:)- Rgas*p%mu1*p%divu)*p%cv1*p%TT(:)! &
-           ! -(hYrho_full(l1:l2,m,n)*p%divu(:)+p%ghYrho_uu(:))*p%cv1/p%rho(:)
            call stop_it('ltemperature_nolog case does not work now!')
           else
             RHS_T_full=(sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
@@ -2594,7 +2524,6 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
-!***********************************************************************
     subroutine read_reactions(input_file,NrOfReactions)
 !
 !  This subroutine reads all reaction information from chem.inp
@@ -2660,12 +2589,9 @@ module Chemistry
 !
                 StopIndName=index(ChemInpLine(StartInd:),' ')+StartInd-1
                 reaction_name(k)=ChemInpLine(StartInd:StopIndName)
-!print*,'Natalia',reaction_name(k)
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!photochem
-!!!!!!!!!!!!!!!!!!!
+!photochemical case
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                ParanthesisInd=0
                photochemInd=0
                SeparatorInd=0
@@ -2974,7 +2900,7 @@ module Chemistry
 !***********************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
 !
-!  DOCUMENT ME!
+!  calculation of the stoichoimetric matrix
 !
 !  10-mar-08/nils: coded
 !
@@ -3166,7 +3092,6 @@ module Chemistry
       if (lwrite) write(file_id,*)'**************************'
 !
       do reac=1,nreactions
-
 !
 !  Find the product of the species molar consentrations (where
 !  each molar consentration is taken to the power of the number)
@@ -3198,7 +3123,6 @@ module Chemistry
 !
 !  Find backward rate constant for reaction 'reac'
 !
-
        if (prod2(i)>0) then
         dSR(i)=0.
         dHRT(i)=0.
@@ -3230,7 +3154,6 @@ module Chemistry
         if (lwrite) write(file_id,*)  'Nreact= ',reac,  'Kc= ', maxval(Kc)
         if (lwrite) write(file_id,*)  'Nreact= ',reac,  'kr= ', maxval(kr)
         if (lwrite) write(file_id,*)'**************************'
-
 !
 !  Finalize writing to file
 !
@@ -3386,7 +3309,6 @@ module Chemistry
 !
 !  Chemkin data case
 !
-
          call get_reaction_rate(f,vreactions_p,vreactions_m,p)
       endif
 !
@@ -3519,11 +3441,9 @@ module Chemistry
       real, dimension (mx,my,mz) :: lnTjk,lnTk_array
       integer :: k,j,j1,j2,j3
       real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
-      character (len=7) :: omega
       real :: Na=6.022E23 ,tmp_local,tmp_local2, delta_jk_star
+      character (len=7) :: omega
 
-
-!
 !  Find binary diffusion coefficients
 !
       tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
@@ -3535,9 +3455,9 @@ module Chemistry
       enddo
       enddo
       enddo
-! NILS: remove omega?
-      omega="Omega11"
-!
+
+      omega='Omega11'
+
 ! Check if we use fixed Schmidt number for speeding up calculations
 !
       if (.not. lfix_Sc) then
@@ -3624,13 +3544,12 @@ module Chemistry
 !  Calculate viscosity
 !
      if (visc_const==impossible) then
-
-      omega="Omega22"
+      omega='Omega22'
       tmp_local=5./16.*(k_B_cgs/(Na*pi))**0.5
 
       do k=1,nchemspec
-        tmp_local2=(species_constants(k,imass))**0.5/(tran_data(k,3)*1e-8)**2 &
-            *tmp_local
+        tmp_local2=(species_constants(k,imass))**0.5/  &
+             (tran_data(k,3)*1e-8)**2*tmp_local
 !
 ! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
 !
@@ -3654,11 +3573,9 @@ module Chemistry
           enddo
           enddo
           enddo
-
       enddo
       endif
      !
-
     endsubroutine calc_diff_visc_coef
 !***********************************************************************
     subroutine calc_therm_diffus_coef(f)
@@ -3674,7 +3591,7 @@ module Chemistry
       integer :: j1,j2,j3,k
       real :: Cv_rot_R, Cv_tran_R,T_st, pi_1_5, pi_2
 
-      call timing('calc_therm_diffus_coef','just entered')
+!        call timing('calc_therm_diffus_coef','just entered')
 
         pi_1_5=pi**1.5
         pi_2=pi**2.
@@ -3705,7 +3622,6 @@ module Chemistry
 ! The rotational and vibrational contributions are zero for the single
 ! atom molecules but not for the linear or non-linear molecules
 !
-
             if (tran_data(k,1)>0.) then
               tmp_val=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3)&
                   /species_viscosity(j1,j2,j3,k)
@@ -3756,7 +3672,6 @@ module Chemistry
         enddo
         enddo
 !
-
       call keep_compiler_quiet(f)
       call timing('calc_therm_diffus_coef','just finished')
 !
@@ -3908,16 +3823,11 @@ module Chemistry
    subroutine get_RHS_Y_full(RHS_Y)
 !
       real, dimension (mx,my,mz,nchemspec) :: RHS_Y
-!
       intent(out) :: RHS_Y
-
-!      integer :: j,k
-
 !
-     RHS_Y=RHS_Y_full
+      RHS_Y=RHS_Y_full
 !
     endsubroutine get_RHS_Y_full
-!***********************************************************************
 !***********************************************************************
    subroutine get_cs2_full(cs2_full)
 !
