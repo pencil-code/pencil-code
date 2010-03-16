@@ -196,6 +196,7 @@ module Mpicomm
   real, dimension (nghost,my,mz,mcom) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: ipx_partner, nextya, nextyb, lastya, lastyb, displs ! For shear
   integer :: nprocs, ierr
+  integer :: serial_level = 0
 !
 !  mpi tags
 !
@@ -2198,6 +2199,9 @@ module Mpicomm
       integer :: buf
       integer, dimension(MPI_STATUS_SIZE) :: status
 !
+      serial_level = serial_level+1
+      if (serial_level > 1) return
+!
       buf = 0
       if (.not. lroot) then     ! root starts, others wait for permission
         call MPI_RECV(buf,1,MPI_INTEGER,root,io_perm,MPI_COMM_WORLD,status,ierr)
@@ -2213,6 +2217,9 @@ module Mpicomm
 !
       integer :: i,buf
       integer, dimension(MPI_STATUS_SIZE) :: status
+!
+      serial_level = serial_level-1
+      if (serial_level >= 1) return
 !
       buf = 0
       if (lroot) then
