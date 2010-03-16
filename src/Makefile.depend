@@ -344,7 +344,7 @@ filter.o: filter.f90 $(CDATA_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ)
 #
 # Explicit dependencies for the different physics modules.
 #
-$(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) $(CDATA_OBJ)
+$(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ)
 #
 $(VISCOSITY_OBJ): viscosity.h $(VISCOSITY_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(INTERSTELLAR_OBJ) 
 #
@@ -402,7 +402,7 @@ $(HYPERRESI_STRICT_OBJ): hyperresi_strict.h $(HYPERRESI_STRICT_SRC) $(CDATA_OBJ)
 #
 $(EOS_OBJ): eos.h $(EOS_SRC) $(COMMON_DEPS) $(FARRAY_OBJ) $(GRAVITY_OBJ) $(FOURIER_OBJ)
 #
-nofourier.o: $(FOURIER_SRC) fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+nofourier.o: $(FOURIER_SRC) fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 #
 fourier_fft.o: $(FOURIER_SRC) fft.o fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 #
