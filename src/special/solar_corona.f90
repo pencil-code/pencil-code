@@ -338,8 +338,8 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Fourier, only : fourier_transform_other
-      use Mpicomm, only : stop_it
+      use Fourier, only: fourier_transform_other
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nxgrid,nygrid) :: kx,ky,k2
@@ -386,8 +386,9 @@ module Special
             inquire(file='driver/mag_field.dat',exist=exist)
             if (exist) then
               inquire(IOLENGTH=lend) u_b
-              open (11,file='driver/mag_field.dat',form='unformatted')
-              read (11) Bz0_r
+              open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+                  recl=lend*nxgrid*nygrid,access='direct')
+              read (11,rec=1) Bz0_r
               close (11)
             else
               call fatal_error('mdi_init', &
@@ -460,7 +461,7 @@ module Special
 !
         inquire(file='stratification.dat',exist=exist)
         if (exist) then
-          open(10+ipz,file='stratification.dat')
+          open (10+ipz,file='stratification.dat')
           do i=1,nzgrid
             read(10+ipz,*,iostat=stat) dummy,var1,var2
             if (i.gt.ipz*nz.and.i.le.(ipz+1)*nz) then

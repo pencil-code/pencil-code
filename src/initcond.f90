@@ -4239,6 +4239,7 @@ module Initcond
 !
 !  Allocate memory for arrays.
 !
+      if (ipz.eq.0) then
       iostat = 0
       allocate(kx(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
       allocate(ky(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
@@ -4275,25 +4276,17 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
-      call start_serialize()
-      inquire(file='driver/mag_field.txt',exist=exist)
+      inquire(file='driver/mag_field.dat',exist=exist)
       if (exist) then
-        open (11,file='driver/mag_field.txt')
-        read (11,*) Bz0_r
+        inquire(IOLENGTH=lend) u_b
+        open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read (11,rec=1) Bz0_r
         close (11)
       else
-        inquire(file='driver/mag_field.dat',exist=exist)
-        if (exist) then
-          inquire(IOLENGTH=lend) u_b
-          open (11,file='driver/mag_field.dat',form='unformatted')
-          read (11) Bz0_r
-          close (11)
-        else
-          call fatal_error('mdi_init', &
-              'No file: mag_field.dat,mag_field.txt')
-        endif
+        call fatal_error('mdi_init', &
+            'No file: mag_field.dat')
       endif
-      call end_serialize()
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
@@ -4345,6 +4338,7 @@ module Initcond
       if (allocated(A_i)) deallocate(A_i)
       if (allocated(kxp)) deallocate(kxp)
       if (allocated(kyp)) deallocate(kyp)
+      endif
 !
     endsubroutine mdi_init
 !***********************************************************************

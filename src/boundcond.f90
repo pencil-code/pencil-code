@@ -3133,6 +3133,8 @@ module Boundcond
          !   call bc_force_kepler(f,n1,j)
          case ('mag_time')
             call bc_force_aa_time(f)
+         case ('mag_convection')
+            call bc_force_aa_time(f)
             call uu_driver(f)
          case ('cT')
             f(:,:,n1,j) = log(cs2bot/gamma_m1)
@@ -3750,11 +3752,10 @@ module Boundcond
         enddo
         close (10)
 !
-        open (10,file='driver/mag_field.dat',form='unformatted')
-!AB: the following doesn't work with other compilers
-!--     call fseek(10,(lend*nxgrid*nygrid+2*lend)*(i-1))
-        read (10)  Bz0l
-        read (10)  Bz0r
+        open (10,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read (10,rec=i)  Bz0l
+        read (10,rec=i+1)  Bz0r
         close (10)
 !
         mu0_SI = 4.*pi*1.e-7
