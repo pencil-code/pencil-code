@@ -2215,6 +2215,8 @@ module Mpicomm
 !
 !  19-nov-02/wolf: coded
 !
+      use Messages, only: fatal_error
+!
       integer :: i,buf
       integer, dimension(MPI_STATUS_SIZE) :: status
 !
