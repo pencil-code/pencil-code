@@ -9,7 +9,7 @@
   public :: eosperturb
   public :: get_soundspeed
   public :: getmu
-  public :: getdensity
+  public :: getdensity, gettemperature, getpressure
   public :: get_average_pressure
                                                                                                        
   public :: register_eos

@@ -378,12 +378,13 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine getmu(mu_tmp)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !   12-aug-03/tony: implemented
 !
+      real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu_tmp
 !
 !  mu = mu_H * (1 - xHe) + mu_He * xHe
@@ -398,6 +399,7 @@ module EquationOfState
         mu_tmp=mu
       endif
 !
+      call keep_compiler_quiet(present(f))
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -887,6 +889,24 @@ module EquationOfState
       call keep_compiler_quiet(yH)
 !
     endsubroutine getdensity
+!***********************************************************************
+  subroutine gettemperature(f,TT_tmp)
+
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_tmp
+!
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(TT_tmp)
+!  
+   endsubroutine gettemperature
+!***********************************************************************
+ subroutine getpressure(pp_tmp)
+
+     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+!
+     call keep_compiler_quiet(pp_tmp)
+!  
+   endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !

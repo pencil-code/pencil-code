@@ -424,7 +424,7 @@ module Interstellar
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 !
-      call getmu(mu)
+      call getmu(f,mu)
       if (unit_system=='cgs') then
 !
 !  this Lambda as such enters as n^2*Lambda(T) on the rhs of the

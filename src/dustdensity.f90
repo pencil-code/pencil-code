@@ -1287,7 +1287,7 @@ module Dustdensity
       select case (dust_chemistry)
 
       case ('ice')
-        if (it == 1) call getmu(mu)
+        if (it == 1) call getmu(f,mu)
         call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*cc*mu/mumon
         ppsat = 6.035e12*exp(-5938*TT1)

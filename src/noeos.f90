@@ -106,13 +106,14 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine getmu(mu)
+    subroutine getmu(f,mu)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !   12-aug-03/tony: dummy
 !
-      real, intent(out) :: mu
+      real, dimension (mx,my,mz,mfarray), optional :: f
+      real, dimension (mx,my,mz), intent(out) :: mu
 !
       mu=0.0
 !
@@ -206,10 +207,11 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine getdensity(EE,TT,yH,rho)
+    subroutine getdensity(f,EE,TT,yH,rho)
 !
-      real, intent(in) :: EE,TT,yH
-      real, intent(inout) :: rho
+      real, intent(in), optional :: EE,TT,yH
+      real, dimension (mx,my,mz), intent(inout) :: rho
+      real, dimension (mx,my,mz,mfarray), optional :: f
 !
       call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
 !
@@ -220,6 +222,24 @@ module EquationOfState
       call keep_compiler_quiet(TT)
 !
     endsubroutine getdensity
+!***********************************************************************
+    subroutine gettemperature(f,TT_tmp)
+
+     real, dimension (mx,my,mz,mfarray), optional :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_tmp
+!
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(TT_tmp)
+!  
+    endsubroutine gettemperature
+!***********************************************************************
+    subroutine getpressure(pp_tmp)
+
+     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+!
+     call keep_compiler_quiet(pp_tmp)
+!     
+    endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !

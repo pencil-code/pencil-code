@@ -453,7 +453,7 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos
 !*******************************************************************
-    subroutine getmu(mu)
+    subroutine getmu(f,mu)
 !
 !  Calculate average particle mass in the gas relative to
 !  Note that the particles density is N = nHI + nHII + ne + nHe
@@ -465,6 +465,7 @@ module EquationOfState
 !
 !   12-aug-03/tony: implemented
 !
+      real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu
 !
       mu=1.+3.97153*xHe
@@ -473,6 +474,7 @@ module EquationOfState
 !
 ! mu=(1.+3.97153*xHe)/(1+yH+xHe)
 !
+      call keep_compiler_quiet(present(f))
     endsubroutine getmu
 !***********************************************************************
     subroutine ioninit(f)
@@ -530,6 +532,24 @@ module EquationOfState
       rho=EE/(1.5*(1.+yH+xHe)*ss_ion*TT+yH*ee_ion)
 
     endsubroutine getdensity
+!***********************************************************************
+  subroutine gettemperature(f,TT_tmp)
+
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_tmp
+!
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(TT_tmp)
+!  
+   endsubroutine gettemperature
+!***********************************************************************
+ subroutine getpressure(pp_tmp)
+
+     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+!
+     call keep_compiler_quiet(pp_tmp)
+!  
+   endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !

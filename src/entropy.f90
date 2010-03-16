@@ -1705,7 +1705,7 @@ module Entropy
 !  uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !   at solar radius.  (for interstellar runs)
 !
-      call getmu(muhs)
+      call getmu(f,muhs)
 !
       if (lroot) print*, &
          'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'

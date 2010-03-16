@@ -11,14 +11,15 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gTT(3); mu1; gamma
+! PENCILS PROVIDED gamma; gamma_m1
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3); YY(nchemspec); gXXk(3,nchemspec); gYYk(3,nchemspec)
-! PENCILS PROVIDED cs2; rho1gpp(3); glnpp(3);  nu; gradnu(3),gamma_m1, gradcp(3)
+! PENCILS PROVIDED nu; gradnu(3), gradcp(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED Diff_penc_add(nchemspec), gmu1(3), H0_RT(nchemspec), hhk_full(nchemspec)
+! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec)
+! PENCILS PROVIDED gmu1(3); mu1; glnpp(3); del2pp; gTT(3)
 !
 !***************************************************************
 module Chemistry
@@ -476,8 +477,9 @@ module Chemistry
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_gYYk)=.true.
       lpenc_requested(i_ghhk)=.true.
-      lpenc_requested(i_cs2)=.true.
-!
+ !     lpenc_requested(i_cs2)=.true.
+
+ !
       lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
 !
@@ -488,15 +490,17 @@ module Chemistry
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
          lpenc_requested(i_lnrho)=.true.
-         lpenc_requested(i_glnpp)=.true.
-         lpenc_requested(i_mu1)=.true.
-         lpenc_requested(i_gmu1)=.true.
-         lpenc_requested(i_pp)=.true.
+      !   lpenc_requested(i_glnpp)=.true.
+      !   lpenc_requested(i_del2pp)=.true.
+      !   lpenc_requested(i_mu1)=.true.
+      !   lpenc_requested(i_gmu1)=.true.
+      !   lpenc_requested(i_pp)=.true.
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cp1)=.true.
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
+    !     lpenc_requested(i_gamma_m1)=.true.
          lpenc_requested(i_H0_RT)=.true.
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
@@ -571,11 +575,11 @@ module Chemistry
 !
 !  Mean molecular weight
 !
-        if (lpencil(i_mu1)) then
-          p%mu1=mu1_full(l1:l2,m,n)
-        endif
+      !  if (lpencil(i_mu1)) then
+      !    p%mu1=mu1_full(l1:l2,m,n)
+      !  endif
 
-        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
+      !  if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !  Mole fraction XX
 !
@@ -588,26 +592,32 @@ module Chemistry
 !
 !  Pressure
 !
-        if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
+      !  if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
 
 !
 !  Logarithmic pressure gradient
 !
-        if (lpencil(i_rho1gpp)) then
+     !   if (lpencil(i_rho1gpp)) then
 !
-          do i=1,3
-            p%rho1gpp(:,i) = p%pp/p%rho(:) &
-               *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-          enddo
-        endif
+    !      do i=1,3
+    !        p%rho1gpp(:,i) = p%pp/p%rho(:) &
+    !           *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+    !      enddo
+    !    endif
 !
 ! Gradient of the lnpp
 !
-       if (lpencil(i_glnpp)) then
-            do i=1,3
-             p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
-            enddo
-       endif
+   !    if (lpencil(i_glnpp)) then
+   !         do i=1,3
+   !          p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
+   !         enddo
+   !    endif
+!
+! Laplasian of pressure
+!
+  !     if (lpencil(i_del2pp)) then
+  !       call del2(pp_full(:,:,:),p%del2pp)
+  !     endif
 !
 !  Specific heat at constant pressure
 !
@@ -780,6 +790,8 @@ module Chemistry
 !                                   routine in special/chem_stream.f90
 ! This routine set up the initial profiles used in 1D flame speed measurments
 !
+      use EquationOfState
+ 
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: k
 
@@ -931,15 +943,17 @@ module Chemistry
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
        print*,'inlet rho=', exp(log_inlet_density),'inlet mu=',1./initial_mu1
 
-       mu1_full=0.
-          do k=1,nchemspec
-           do j2=mm1,mm2
-           do j3=nn1,nn2
-            mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                /species_constants(k,imass)
-           enddo
-           enddo
-          enddo
+  !     mu1_full=0.
+  !        do k=1,nchemspec
+  !         do j2=mm1,mm2
+  !         do j3=nn1,nn2
+  !          mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+  !              /species_constants(k,imass)
+  !         enddo
+  !         enddo
+  !        enddo
+       call getmu(f,mu1_full)
+
 !
 !
 !  Initialize density
@@ -961,6 +975,8 @@ module Chemistry
     endsubroutine flame_front
 !***********************************************************************
     subroutine flame_blob(f)
+
+     use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
@@ -1015,15 +1031,17 @@ module Chemistry
           +initial_massfractions(ichem_O2)/(mO2)&
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
-       mu1_full=0.
-          do k=1,nchemspec
-          do j2=mm1,mm2
-          do j3=nn1,nn2
-           mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                /species_constants(k,imass)
-          enddo
-          enddo
-          enddo
+     !  mu1_full=0.
+     !     do k=1,nchemspec
+     !     do j2=mm1,mm2
+     !     do j3=nn1,nn2
+     !      mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+     !           /species_constants(k,imass)
+     !     enddo
+     !     enddo
+     !     enddo
+
+          call getmu(f,mu1_full)
 !
         do j3=1,mz
        do j2=1,my
@@ -1111,6 +1129,8 @@ module Chemistry
 !***********************************************************************
     subroutine flame_slab(f)
 
+     use EquationOfState
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
       integer :: j1,j2,j3,k
@@ -1161,15 +1181,17 @@ module Chemistry
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
 
-         mu1_full=0.
-          do k=1,nchemspec
-          do j2=mm1,mm2
-          do j3=nn1,nn2
-           mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                /species_constants(k,imass)
-          enddo
-          enddo
-          enddo
+      !   mu1_full=0.
+      !    do k=1,nchemspec
+      !   do j2=mm1,mm2
+      !    do j3=nn1,nn2
+      !     mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+      !          /species_constants(k,imass)
+      !    enddo
+      !    enddo
+      !    enddo
+
+       call getmu(f,mu1_full)
 
        log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
@@ -1238,6 +1260,7 @@ module Chemistry
       integer :: k,j, j1,j2,j3
       real :: T_up, T_mid, T_low, T_loc, T_loc_2,T_loc_3,T_loc_4
       real :: cp_R_spec
+      real :: EE,TT,yH
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
@@ -1248,18 +1271,21 @@ module Chemistry
 !
 ! Density and temperature
 !
-      call timing('calc_for_chem_mixture','entered')
-      if (ldensity_nolog) then
-        rho_full=f(:,:,:,ilnrho)
-      else
-        rho_full=exp(f(:,:,:,ilnrho))
-      endif
+   !   call timing('calc_for_chem_mixture','entered')
+    !  if (ldensity_nolog) then
+    !    rho_full=f(:,:,:,ilnrho)
+    !  else
+    !    rho_full=exp(f(:,:,:,ilnrho))
+    !  endif
 
-     if (ltemperature_nolog) then
-         TT_full=f(:,:,:,iTT)
-     else
-         TT_full=exp(f(:,:,:,ilnTT))
-     endif
+      call getdensity(f,EE,TT,yH,rho_full)
+      call gettemperature(f,TT_full)
+
+  !   if (ltemperature_nolog) then
+  !       TT_full=f(:,:,:,iTT)
+  !   else
+  !       TT_full=exp(f(:,:,:,ilnTT))
+  !   endif
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -1272,16 +1298,18 @@ module Chemistry
 !
 !  Mean molecular weight
 !
-          mu1_full=0.
-          do k=1,nchemspec
-           do j2=mm1,mm2
-           do j3=nn1,nn2
-            mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                /species_constants(k,imass)
-           enddo
-           enddo
-          enddo
+        !  mu1_full=0.
+        !  do k=1,nchemspec
+        !   do j2=mm1,mm2
+        !   do j3=nn1,nn2
+        !    mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+        !        /species_constants(k,imass)
+        !   enddo
+        !   enddo
+        !  enddo
 
+          call getmu(f,mu1_full)
+        
           if (l1step_test) then
              species_constants(:,imass)=1.
              mu1_full=1.
@@ -1298,12 +1326,14 @@ module Chemistry
           enddo
           enddo
 !
-           do j2=mm1,mm2
-           do j3=nn1,nn2
-            pp_full(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
-                            *rho_full(:,j2,j3)*TT_full(:,j2,j3)
-           enddo
-           enddo
+       call  getpressure(pp_full)
+
+      !     do j2=mm1,mm2
+      !     do j3=nn1,nn2
+      !      pp_full(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
+      !                      *rho_full(:,j2,j3)*TT_full(:,j2,j3)
+      !     enddo
+      !     enddo
 !
 !  Specific heat at constant pressure
 !
@@ -3568,7 +3598,8 @@ module Chemistry
           do j1=ll1,ll2
            species_viscosity(j1,j2,j3,k)=TT_full(j1,j2,j3)**0.5&
                /(Omega_kl(j1,j2,j3) &
-               +0.2*delta_st*delta_st/(TT_full(j1,j2,j3)/tran_data(k,2)))*tmp_local2 &
+               +0.2*delta_st*delta_st/(TT_full(j1,j2,j3)  &
+               /tran_data(k,2)))*tmp_local2 &
                /(unit_mass/unit_length/unit_time)
           enddo
           enddo
@@ -3690,7 +3721,7 @@ module Chemistry
       real, dimension (nx) :: Xk_Yk
       real, dimension (nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX, del2pp, del2lnpp
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX,  del2lnpp!del2pp,
       real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
       real :: diff_k
       integer :: k,i
@@ -3740,10 +3771,10 @@ module Chemistry
            endif
             call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
 !
-            call del2(pp_full(:,:,:),del2pp)
+         !   call del2(pp_full(:,:,:),del2pp)
             call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
 
-            del2lnpp=del2pp/p%pp-glnpp_glnpp
+            del2lnpp=p%del2pp/p%pp-glnpp_glnpp
 
             do i=1,3
              gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)

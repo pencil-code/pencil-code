@@ -410,15 +410,17 @@ module EquationOfState
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
-    subroutine getmu(mu)
+    subroutine getmu(f,mu)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !   12-aug-03/tony: implemented dummy
 !
+      real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu
 
       mu=0.
+      call keep_compiler_quiet(present(f))
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -515,6 +517,25 @@ module EquationOfState
 !
     endsubroutine getdensity
 !***********************************************************************
+  subroutine gettemperature(f,TT_tmp)
+
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_tmp
+!
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(TT_tmp)
+!  
+   endsubroutine gettemperature
+!***********************************************************************
+ subroutine getpressure(pp_tmp)
+
+     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+!
+     call keep_compiler_quiet(pp_tmp)
+!  
+   endsubroutine getpressure
+!***********************************************************************
+
     subroutine get_cp1(cp1_)
 !
 !  04-nov-06/axel: added to alleviate spurious use of pressure_gradient

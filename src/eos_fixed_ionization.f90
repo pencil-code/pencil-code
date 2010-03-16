@@ -105,13 +105,14 @@ module EquationOfState
 !
     endsubroutine register_eos
 !*******************************************************************
-    subroutine getmu(mu)
+    subroutine getmu(f,mu)
 !
 !  Calculate mean molecular weight of the gas
 !
 !   12-aug-03/tony: implemented
 !   30-mar-04/anders: Added molecular hydrogen to ionization_fixed
 !
+      real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu
 !
       mu = (1.+3.97153*xHe)/(1-xH2+xHe)
@@ -120,6 +121,7 @@ module EquationOfState
 !
       if (xH2 < 0. .or. xH2 > 0.5) &
           call stop_it('initialize_ionization: xH2 must be <= 0.5 and >= 0.0')
+      call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
 !***********************************************************************
@@ -481,6 +483,24 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
       rho=exp(max(lnrho,-15.))
     endsubroutine getdensity
+!***********************************************************************
+  subroutine gettemperature(f,TT_tmp)
+
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_tmp
+!
+     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(TT_tmp)
+!  
+   endsubroutine gettemperature
+!***********************************************************************
+  subroutine getpressure(pp_tmp)
+
+     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+!
+     call keep_compiler_quiet(pp_tmp)
+!  
+   endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !

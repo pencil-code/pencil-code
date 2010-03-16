@@ -12,7 +12,8 @@
 ! PENCILS PROVIDED lnTT; cp1tilde; glnTT(3); TT; TT1; gTT(3)
 ! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT; del6lnTT
-! PENCILS PROVIDED yH; ee; ss; pp; delta; glnmumol(3); ppvap; csvap2
+! PENCILS PROVIDED yH; ee; ss; pp; delta; glnmumol(3); ppvap; csvap2; cs2
+! PENCILS PROVIDED mu1; gmu1(3); rho1gpp(3); glnpp(3); del2pp
 !
 !***************************************************************
 module EquationOfState
@@ -62,6 +63,7 @@ module EquationOfState
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
+  integer :: ll1,ll2,mm1,mm2,nn1,nn2
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
@@ -70,12 +72,14 @@ module EquationOfState
   logical :: l_gamma_m1=.false.
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
+  integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
 !
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(mz) :: profz_eos=1.
 !
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data
+ real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full, rho_full, TT_full
 !
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
 !
@@ -108,18 +112,18 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
-      real ::  cp_reference
+!      real ::  cp_reference
 !
 !  set gamma_m1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
 !
-      gamma_m1=gamma-1.
-      gamma_inv=1./gamma
+!      gamma_m1=gamma-1.
+ !     gamma_inv=1./gamma
 !
 !  avoid floating overflow if cs0 was not set:
 !
-      cs20=cs0**2
-      lnrho0=log(rho0)
+ !     cs20=cs0**2
+ !     lnrho0=log(rho0)
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
@@ -150,57 +154,57 @@ module EquationOfState
         call stop_it('unit_temperature is not found!')
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
-        if (cp == impossible) then
-          if (gamma_m1 == 0.) then
-            cp=Rgas/mu
-          else
-            cp=Rgas/(mu*gamma_m1*gamma_inv)
-          endif
-        else
+        !if (cp == impossible) then
+       !   if (gamma_m1 == 0.) then
+       !     cp=Rgas/mu
+       !   else
+       !     cp=Rgas/(mu*gamma_m1*gamma_inv)
+       !   endif
+       ! else
 !
 !  checking whether the units are overdetermined.
 !  This is assumed to be the case when the to differ by error_cp
 !
-          if (gamma_m1 == 0.) then
-            cp_reference=Rgas/mu
-          else
-            cp_reference=Rgas/(mu*gamma_m1*gamma_inv)
-          endif
-          if (abs(cp-cp_reference)/cp > error_cp) then
-            if (lroot) print*,'initialize_eos: consistency: cp=',cp, &
-               'while: cp_reference=',cp_reference
-            call stop_it('initialize_eos')
-          endif
-        endif
+    !      if (gamma_m1 == 0.) then
+    !        cp_reference=Rgas/mu
+    !     else
+    !        cp_reference=Rgas/(mu*gamma_m1*gamma_inv)
+    !      endif
+    !      if (abs(cp-cp_reference)/cp > error_cp) then
+    !        if (lroot) print*,'initialize_eos: consistency: cp=',cp, &
+    !           'while: cp_reference=',cp_reference
+    !        call stop_it('initialize_eos')
+    !      endif
+    !    endif
       endif
-      cp1=1./cp
-      cv=gamma_inv*cp
-      cv1=gamma*cp1
+    !  cp1=1./cp
+    !  cv=gamma_inv*cp
+    !  cv1=gamma*cp1
 !
 !  Need to calculate the equivalent of cs0
 !  Distinguish between gamma=1 case and not.
 !
-      if (gamma_m1 /= 0.) then
-        lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
-      else
-        lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
-      endif
+   !   if (gamma_m1 /= 0.) then
+   !     lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
+   !   else
+   !     lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
+   !   endif
 !
       inquire(FILE=input_file, EXIST=lcheminp_eos)
 !
-      if (lcheminp_eos) then
-       l_gamma_m1=.true.
-       l_gamma=.true.
-       l_cp=.true.
-      endif
+    !  if (lcheminp_eos) then
+    !   l_gamma_m1=.true.
+    !   l_gamma=.true.
+    !   l_cp=.true.
+    !  endif
 !
 !  check that everything is OK
 !
       if (lroot) then
 !
-       if (.not. l_gamma_m1) then
-        print*,'initialize_eos: unit_temperature=',unit_temperature
-        print*,'initialize_eos: cp,lnTT0,cs0=',cp,lnTT0,cs0
+       if (.not. lcheminp_eos ) then
+        call fatal_error('initialize_eos',&
+                        'chem.imp is not found!')
        else
         print*,'initialize_eos: chem.imp is found! Now cp, cv, gamma, mu are pencils ONLY!'
        endif
@@ -226,7 +230,28 @@ module EquationOfState
         write (1,*) 'cp=',cp
         close (1)
       endif
+      
+      if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
+       ll1=1; ll2=mx; mm1=m1; mm2=m2; nn1=n1; nn2=n2
+      else
+      if (nxgrid==1) then
+       ll1=l1; ll2=l2
+      else
+       ll1=1; ll2=mx
+      endif
 
+      if (nygrid==1) then
+       mm1=m1; mm2=m2
+      else
+       mm1=1; mm2=my
+      endif
+
+      if (nzgrid==1) then
+       nn1=n1; nn2=n2
+      else
+       nn1=1;  nn2=mz
+      endif
+     endif
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -346,16 +371,32 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine getmu(mu_tmp)
+    subroutine getmu(f,mu1_full_tmp)
 !
-!  Calculate average particle mass in the gas relative to
+!  Calculate  mean molecular weight
 !
 !   12-aug-03/tony: implemented
+!   16-mar-10/natalia 
+
+    real, dimension (mx,my,mz,mfarray), optional :: f
+    real, dimension (mx,my,mz) :: mu1_full_tmp
+    integer :: k,j2,j3
+       !
+!  Mean molecular weight
 !
-    real, intent(out) :: mu_tmp
-       mu_tmp=impossible
-       call fatal_error("getmu", &
-             "This thermodynamic variable combination is not implemented: ")
+          mu1_full_tmp=0.
+          do k=1,nchemspec
+           do j2=mm1,mm2
+           do j3=nn1,nn2
+            mu1_full_tmp(:,j2,j3)=mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                /species_constants(k,imass)
+           enddo
+           enddo
+          enddo
+           mu1_full=mu1_full_tmp
+
+     !  call fatal_error("getmu", &
+      !       "This thermodynamic variable combination is not implemented: ")
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -410,15 +451,25 @@ module EquationOfState
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
 !
-    lpenc_requested(i_lnTT)=.true.
-    lpenc_requested(i_TT)=.true.
-    lpenc_requested(i_TT_2)=.true.
-    lpenc_requested(i_TT_3)=.true.
-    lpenc_requested(i_TT_4)=.true.
-    lpenc_requested(i_TT1)=.true.
-    lpenc_requested(i_glnTT)=.true.
-    lpenc_requested(i_del2lnTT)=.true.
+      lpenc_requested(i_lnTT)=.true.
+      lpenc_requested(i_TT)=.true.
+      lpenc_requested(i_TT_2)=.true.
+      lpenc_requested(i_TT_3)=.true.
+      lpenc_requested(i_TT_4)=.true.
+      lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_del2lnTT)=.true.
 !
+
+     if (lcheminp_eos) then
+      lpenc_requested(i_glnpp)=.true.
+      lpenc_requested(i_del2pp)=.true.
+      lpenc_requested(i_mu1)=.true.
+      lpenc_requested(i_gmu1)=.true.
+      lpenc_requested(i_pp)=.true.
+     endif
+    
+
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
@@ -455,11 +506,7 @@ module EquationOfState
 !
       intent(in) :: f
       intent(inout) :: p
-!
-! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
-! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
-! The code is not wrong however since this is correctly
-! handled by the eos moduleinteger :: tm1=1, tm2=2,tm3=3.
+      integer :: i
 !
 ! Natalia: removed all previous staff and included my own
 !
@@ -511,6 +558,49 @@ module EquationOfState
          if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
         if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+       
+
+       if (lcheminp_eos) then
+!
+!  Mean molecular weight
+!
+        if (lpencil(i_mu1)) then
+          p%mu1=mu1_full(l1:l2,m,n)
+        endif
+
+        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
+!
+!
+!  Pressure
+!
+        if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
+
+!
+!  Logarithmic pressure gradient
+!
+        if (lpencil(i_rho1gpp)) then
+!
+          do i=1,3
+            p%rho1gpp(:,i) = p%pp/p%rho(:) &
+               *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+          enddo
+        endif
+!
+! Gradient of the lnpp
+!
+       if (lpencil(i_glnpp)) then
+            do i=1,3
+             p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
+            enddo
+       endif
+!
+! Laplasian of pressure
+!
+       if (lpencil(i_del2pp)) then
+         call del2(pp_full(:,:,:),p%del2pp)
+       endif
+
+      endif
 !
 !  Natalia: 26.02.2008: calculation of additional penciles
 !
@@ -542,13 +632,54 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-   subroutine getdensity(rho)
+   subroutine getdensity(f,EE,TT,yH,rho_full_tmp)
 
-     real, intent(out) :: rho
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: rho_full_tmp
+     real, intent(in), optional :: EE,TT,yH
 
-      call fatal_error('getdensity','SHOULD NOT BE CALLED WITH eos_chemistry')
-      rho=impossible
+      if (ldensity_nolog) then
+        rho_full_tmp=f(:,:,:,ilnrho)
+      else
+        rho_full_tmp=exp(f(:,:,:,ilnrho))
+      endif
+        rho_full=rho_full_tmp
+
+      call keep_compiler_quiet(yH)
+      call keep_compiler_quiet(EE)
+      call keep_compiler_quiet(TT)
+
    endsubroutine getdensity
+!***********************************************************************
+   subroutine gettemperature(f,TT_full_tmp)
+
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_full_tmp
+
+      if (ldensity_nolog) then
+        TT_full_tmp=f(:,:,:,ilnTT)
+      else
+        TT_full_tmp=exp(f(:,:,:,ilnTT))
+      endif
+        TT_full=TT_full_tmp
+
+   endsubroutine gettemperature
+!***********************************************************************
+  subroutine getpressure(pp_full_tmp)
+
+     real, dimension (mx,my,mz), intent(out) :: pp_full_tmp
+     integer :: j2,j3
+      
+       do j2=mm1,mm2
+       do j3=nn1,nn2
+         pp_full_tmp(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
+                   *rho_full(:,j2,j3)*TT_full(:,j2,j3)
+       enddo
+       enddo
+
+       pp_full=pp_full_tmp
+
+   endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
