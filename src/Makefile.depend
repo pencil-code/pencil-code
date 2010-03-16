@@ -344,7 +344,7 @@ filter.o: filter.f90 $(CDATA_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ)
 #
 # Explicit dependencies for the different physics modules.
 #
-$(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ)
+$(MPICOMM_OBJ): mpicomm.h $(MPICOMM_SRC) $(CDATA_OBJ)
 #
 $(VISCOSITY_OBJ): viscosity.h $(VISCOSITY_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(INTERSTELLAR_OBJ) 
 #

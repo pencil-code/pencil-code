@@ -2215,14 +2215,13 @@ module Mpicomm
 !
 !  19-nov-02/wolf: coded
 !
-      use Messages, only: fatal_error
-!
       integer :: i,buf
       integer, dimension(MPI_STATUS_SIZE) :: status
 !
       serial_level=serial_level-1
       if (serial_level>=1) return
-      if (serial_level<0) call fatal_error('serialize','Too many end_serialize calls')
+      if (serial_level<0) &
+          call stop_it('end_serialize: too many end_serialize calls')
 !
       buf = 0
       if (lroot) then
