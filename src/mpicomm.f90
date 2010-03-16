@@ -2199,8 +2199,8 @@ module Mpicomm
       integer :: buf
       integer, dimension(MPI_STATUS_SIZE) :: status
 !
-      serial_level = serial_level+1
-      if (serial_level > 1) return
+      serial_level=serial_level+1
+      if (serial_level>1) return
 !
       buf = 0
       if (.not. lroot) then     ! root starts, others wait for permission
@@ -2218,8 +2218,9 @@ module Mpicomm
       integer :: i,buf
       integer, dimension(MPI_STATUS_SIZE) :: status
 !
-      serial_level = serial_level-1
-      if (serial_level >= 1) return
+      serial_level=serial_level-1
+      if (serial_level>=1) return
+      if (serial_level<0) call fatal_error('serialize','Too many end_serialize calls')
 !
       buf = 0
       if (lroot) then
