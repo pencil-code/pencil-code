@@ -585,6 +585,8 @@ module EquationOfState
       call fatal_error('isothermal_density_ion','SHOULD NOT BE CALLED WITH eos_chemistry')
       tmp=impossible
 !
+      call keep_compiler_quiet(pot)
+!
     endsubroutine isothermal_density_ion
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
@@ -732,20 +734,20 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
-      real, dimension(psize) :: lnTT_, cs2_
+      real, dimension(psize) :: lnTT_
       real, dimension(psize) :: lnrho_,ss_
 
-        if (present(lnrho)) lnrho=lnrho_
-        if (present(lnTT)) lnTT=lnTT_
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(lnTT)) lnTT=lnTT_
 !
-       if (.not. l_cp) then
+      if (.not. l_cp) then
         if (present(ee)) ee=cv*exp(lnTT_)
         if (ieosvars==ilnrho_lnTT) then
           if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
         else
           if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
         endif
-       endif
+      endif
 !
       if (present(yH)) yH=impossible
 !
@@ -753,10 +755,11 @@ module EquationOfState
         kapparho=0
         call fatal_error("eoscalc","sorry, no Hminus opacity with noionization")
       endif
-
+!
       call fatal_error('eoscalc_farray', &
-        'This routine is not coded for eos_chemistry')
-
+          'This routine is not coded for eos_chemistry')
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
@@ -841,7 +844,8 @@ module EquationOfState
       cs2=impossible
       call fatal_error('get_soundspeed', &
         'This routine is not coded for eos_chemistry')
-
+!
+      call keep_compiler_quiet(lnTT)
 !
     endsubroutine get_soundspeed
 !***********************************************************************
@@ -906,12 +910,13 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
-      real, dimension(nx) :: lnrho,ss,lnTT
-
+!
       cs2top=cs2bot
-     call fatal_error('isothermal_entropy', &
-        'This routine is not coded for eos_chemistry')
-
+      call fatal_error('isothermal_entropy', &
+          'This routine is not coded for eos_chemistry')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(T0)
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
