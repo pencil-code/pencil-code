@@ -381,14 +381,9 @@ module EquationOfState
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
 !
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_TT)=.true.
       lpenc_requested(i_TT_2)=.true.
       lpenc_requested(i_TT_3)=.true.
       lpenc_requested(i_TT_4)=.true.
-      lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_glnTT)=.true.
-      lpenc_requested(i_del2lnTT)=.true.
 !
 
      if (lcheminp_eos) then
@@ -437,6 +432,7 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
       integer :: i
+      real :: tmp
 !
 !  Temperature
 !
@@ -446,16 +442,16 @@ module EquationOfState
          else
           p%lnTT=f(l1:l2,m,n,ilnTT)
          endif
-!
        endif
+!
        if (lpencil(i_TT))  then
          if (ltemperature_nolog) then
            p%TT=f(l1:l2,m,n,iTT)
          else
-           p%TT=exp(p%lnTT)
+           p%TT=exp(f(l1:l2,m,n,ilnTT))
          endif
        endif
-
+!
        if (lpencil(i_TT_2)) p%TT_2=p%TT*p%TT
        if (lpencil(i_TT_3)) p%TT_3=p%TT_2*p%TT
        if (lpencil(i_TT_4)) p%TT_4=p%TT_3*p%TT

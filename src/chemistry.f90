@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED gamma; gamma_m1
-! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3); YY(nchemspec); gXXk(3,nchemspec); gYYk(3,nchemspec)
+! PENCILS PROVIDED cp; cp1; cv; cv1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
 ! PENCILS PROVIDED nu; gradnu(3), gradcp(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
@@ -468,7 +468,7 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !
-      lpenc_requested(i_YY)=.true.
+  !    lpenc_requested(i_YY)=.true.
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_gYYk)=.true.
       lpenc_requested(i_ghhk)=.true.
@@ -483,12 +483,8 @@ module Chemistry
 !
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
-         lpenc_requested(i_lnrho)=.true.
-         lpenc_requested(i_cp)=.true.
-         lpenc_requested(i_cp1)=.true.
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
-         lpenc_requested(i_gamma)=.true.
          lpenc_requested(i_H0_RT)=.true.
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
@@ -511,8 +507,8 @@ module Chemistry
 !
       logical, dimension(npencils) :: lpencil_in
 !
-        if (lpencil_in(i_cp))  lpencil_in(i_glncp)=.true.
-        if (lpencil_in(i_cp))  lpencil_in(i_cp1)=.true.
+        if (lpencil_in(i_cp))    lpencil_in(i_glncp)=.true.
+        if (lpencil_in(i_lnTT))  lpencil_in(i_S0_R)=.true.
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -540,9 +536,9 @@ module Chemistry
 !
 !  Mass fraction YY
 !
-      if (lpencil(i_YY)) then
-        do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
-      endif
+!      if (lpencil(i_YY) .and. lreactions ) then
+!        do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
+!      endif
 !
       if (lpencil(i_gYYk) .and. ldiffusion) then
        do k=1,nchemspec
@@ -560,18 +556,13 @@ module Chemistry
 !
       if (lcheminp) then
 !
-!  Specific heat at constant pressure
 !
-        if (lpencil(i_cp)) then
-          p%cp=cp_full(l1:l2,m,n)
-        endif
+        if (lpencil(i_cp)) p%cv = cp_full(l1:l2,m,n)
 !
-        if (lpencil(i_cp1) .and. maxval(p%cp)>0)   p%cp1 = 1./p%cp
-!
-        if ((lpencil(i_glncp)) .and. (lThCond_simple)) then
+        if (lpencil(i_glncp) .and. lThCond_simple) then
           call grad(cp_full,glncp_tmp)
           do i=1,3
-           p%glncp(:,i)=glncp_tmp(:,i)*p%cp1(:)
+           p%glncp(:,i)=glncp_tmp(:,i)/cp_full(l1:l2,m,n)
           enddo
         endif
 !
@@ -584,11 +575,6 @@ module Chemistry
         if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
 !
         if (lpencil(i_cv1)) p%cv1=1./p%cv
-!
-!
-!  Polytropic index
-!
-        if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
 !
 !  Viscosity of a mixture
 !
@@ -611,7 +597,7 @@ module Chemistry
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
-        if (lpenc_requested(i_H0_RT)) then
+        if (lpencil(i_H0_RT)) then
           if (.not. lT_const) then
            do j1=1,nx
            do k=1,nchemspec
@@ -640,7 +626,7 @@ module Chemistry
 !
 !  Enthalpy flux
 !
-         if (lreactions) then
+         if (lpencil(i_hhk_full) .and.lreactions) then
          do j1=1,nx
           do k=1,nchemspec
             p%hhk_full(j1,k)=p%H0_RT(j1,k)*Rgas*p%TT(j1)&
@@ -660,6 +646,8 @@ module Chemistry
          endif
 
         endif
+
+
 !
 ! Calculate the reaction term and the corresponding pencil
 !
@@ -700,24 +688,24 @@ module Chemistry
 !
 ! Calculate chethermal diffusivity
 !
-      if (lpenc_requested(i_lambda) .and. lheatc_chemistry) then
+      if (lpencil(i_lambda) .and. lheatc_chemistry) then
       if ((lThCond_simple) .or. (lambda_const<impossible))then
         if (lThCond_simple) then
           if (lambda_const==impossible) lambda_const=1e4
           p%lambda=lambda_const &
-             *(p%TT(:)/p%TT(1))**0.7*p%cp(:)/p%cp(1)
-          if (lpenc_requested(i_glambda))  then
+             *(p%TT(:)/p%TT(1))**0.7*cp_full(l1:l2,m,n)/cp_full(l1,m,n)
+          if (lpencil(i_glambda))  then
            do i=1,3
             p%glambda(:,i)=p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
            enddo
           endif
         elseif ((.not. lThCond_simple) .and. (lambda_const<impossible)) then
           p%lambda=lambda_const
-          if (lpenc_requested(i_glambda)) p%glambda=0.
+          if (lpencil(i_glambda)) p%glambda=0.
         endif
       else
        p%lambda=lambda_full(l1:l2,m,n)
-       if (lpenc_requested(i_glambda)) call grad(lambda_full,p%glambda)
+       if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
       endif
       endif
 !
@@ -1994,14 +1982,14 @@ module Chemistry
             reac_chem=0.
             do k=1,nchemspec
               reac_chem=max(reac_chem, &
-                  abs(p%DYDt_reac(:,k)/max(p%YY(:,k),.001)))
+                  abs(p%DYDt_reac(:,k)/max(f(l1:l2,m,n,ichemspec(k)),.001)))
             enddo
 !
           elseif (lcheminp) then
             reac_chem=0.
             !sum_reac_rate=0.
             do k=1,nchemspec
-              reac_chem=reac_chem+abs(p%DYDt_reac(:,k)/p%YY(:,k))
+              reac_chem=reac_chem+abs(p%DYDt_reac(:,k)/f(l1:l2,m,n,ichemspec(k)))
               !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
             enddo
             if (maxval(reac_chem)>1e11) then
@@ -2933,6 +2921,8 @@ module Chemistry
       p_atm=1e6*unit_length**3/unit_energy
       if (lwrite)  write(file_id,*)'T= ',   p%TT
       if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
+
+      if (lpencil(i_S0_R)) then
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
@@ -2941,7 +2931,12 @@ module Chemistry
       if (lwrite)  write(file_id,*)'**************************'
 !
         do i=1,nx
-          T_loc=p%TT(i)
+          if (lpencil_check) then
+            T_loc=exp(f(l1+i-1,m,n,ilnTT))
+          else
+            T_loc=p%TT(i)
+          endif
+!    
         do k=1,nchemspec
          T_low=species_constants(k,iTemp1)-10.
          T_mid=species_constants(k,iTemp2)
@@ -2962,9 +2957,11 @@ module Chemistry
                  +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
                  +species_constants(k,iaa1(ii7))
           else
-                  print*,'p%TT(i)=',p%TT(i)
-                   call fatal_error('get_reaction_rate',&
+          !    if (i==50) then
+                print*,'p%TT(i)=',p%TT(i),exp(p%lnTT(i)),i
+                  call fatal_error('get_reaction_rate',&
                         'p%TT(i) is outside range')
+            !  endif
 
           endif
 !
@@ -2975,6 +2972,7 @@ module Chemistry
         endif
         enddo
         enddo
+        endif
 !
 !  calculation of the reaction rate
 !

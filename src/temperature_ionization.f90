@@ -287,8 +287,10 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
 !
       if (ldensity) then
+       if (.not. lchemistry) then
         lpenc_requested(i_gamma_m1)=.true.
         lpenc_requested(i_delta)=.true.
+       endif
         lpenc_requested(i_divu)=.true.
       endif
 !
@@ -335,6 +337,14 @@ module Entropy
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
 !
       if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
+!
+      if (lchemistry) then
+         lpenc_requested(i_lnTT)=.true.
+         lpenc_requested(i_TT)=.true.
+         lpenc_requested(i_TT1)=.true.
+         lpenc_requested(i_glnTT)=.true.
+         lpenc_requested(i_del2lnTT)=.true.
+      endif     
 !
 !  Diagnostics
 !
