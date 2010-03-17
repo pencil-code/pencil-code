@@ -490,17 +490,11 @@ module Chemistry
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
          lpenc_requested(i_lnrho)=.true.
-      !   lpenc_requested(i_glnpp)=.true.
-      !   lpenc_requested(i_del2pp)=.true.
-      !   lpenc_requested(i_mu1)=.true.
-      !   lpenc_requested(i_gmu1)=.true.
-      !   lpenc_requested(i_pp)=.true.
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cp1)=.true.
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_gamma)=.true.
-    !     lpenc_requested(i_gamma_m1)=.true.
          lpenc_requested(i_H0_RT)=.true.
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
@@ -573,14 +567,6 @@ module Chemistry
 !
       if (lcheminp) then
 !
-!  Mean molecular weight
-!
-      !  if (lpencil(i_mu1)) then
-      !    p%mu1=mu1_full(l1:l2,m,n)
-      !  endif
-
-      !  if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
-!
 !  Mole fraction XX
 !
         !if (lpencil(i_XX)) then
@@ -588,36 +574,6 @@ module Chemistry
         !    p%XX(:,k)=p%YY(:,k)/species_constants(ichemspec(k),imass)/p%mu1
         !  enddo
         !endif
-!
-!
-!  Pressure
-!
-      !  if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
-
-!
-!  Logarithmic pressure gradient
-!
-     !   if (lpencil(i_rho1gpp)) then
-!
-    !      do i=1,3
-    !        p%rho1gpp(:,i) = p%pp/p%rho(:) &
-    !           *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-    !      enddo
-    !    endif
-!
-! Gradient of the lnpp
-!
-   !    if (lpencil(i_glnpp)) then
-   !         do i=1,3
-   !          p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
-   !         enddo
-   !    endif
-!
-! Laplasian of pressure
-!
-  !     if (lpencil(i_del2pp)) then
-  !       call del2(pp_full(:,:,:),p%del2pp)
-  !     endif
 !
 !  Specific heat at constant pressure
 !
@@ -1272,20 +1228,9 @@ module Chemistry
 ! Density and temperature
 !
    !   call timing('calc_for_chem_mixture','entered')
-    !  if (ldensity_nolog) then
-    !    rho_full=f(:,:,:,ilnrho)
-    !  else
-    !    rho_full=exp(f(:,:,:,ilnrho))
-    !  endif
 
       call getdensity(f,EE,TT,yH,rho_full)
       call gettemperature(f,TT_full)
-
-  !   if (ltemperature_nolog) then
-  !       TT_full=f(:,:,:,iTT)
-  !   else
-  !       TT_full=exp(f(:,:,:,ilnTT))
-  !   endif
 !
 ! Now this routine is only for chemkin data !!!
 !
@@ -1295,18 +1240,6 @@ module Chemistry
 !
           Rgas_unit_sys = k_B_cgs/m_u_cgs
           Rgas=Rgas_unit_sys/unit_energy
-!
-!  Mean molecular weight
-!
-        !  mu1_full=0.
-        !  do k=1,nchemspec
-        !   do j2=mm1,mm2
-        !   do j3=nn1,nn2
-        !    mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-        !        /species_constants(k,imass)
-        !   enddo
-        !   enddo
-        !  enddo
 
           call getmu(f,mu1_full)
         
@@ -1326,14 +1259,7 @@ module Chemistry
           enddo
           enddo
 !
-       call  getpressure(pp_full)
-
-      !     do j2=mm1,mm2
-      !     do j3=nn1,nn2
-      !      pp_full(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
-      !                      *rho_full(:,j2,j3)*TT_full(:,j2,j3)
-      !     enddo
-      !     enddo
+          call  getpressure(pp_full)
 !
 !  Specific heat at constant pressure
 !

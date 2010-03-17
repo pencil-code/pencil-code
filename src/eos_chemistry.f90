@@ -109,33 +109,14 @@ module EquationOfState
 !  before the rest of the units are being calculated.
 !
 !  22-jun-06/axel: adapted from initialize_eos
+!  16-mar-10/Natalia
 !
       use Mpicomm, only: stop_it
-!
-!      real ::  cp_reference
-!
-!  set gamma_m1, cs20, and lnrho0
-!  (used currently for non-dimensional equation of state)
-!
-!      gamma_m1=gamma-1.
- !     gamma_inv=1./gamma
-!
-!  avoid floating overflow if cs0 was not set:
-!
- !     cs20=cs0**2
- !     lnrho0=log(rho0)
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
       ieosvars=-1
       ieosvar_count=0
-!
-!  Unless unit_temperature is set, calculate by default with cp=1.
-!  If unit_temperature is set, cp must follow from this.
-!  Conversely, if cp is set, then unit_temperature must follow from this.
-!  If unit_temperature and cp are set, the problem is overdetermined,
-!    but it may still be correct, so this will be checked here.
-!  When gamma=1. (gamma_m1=0.), write Rgas=mu*cp or cp=Rgas/mu.
 !
       if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
@@ -144,61 +125,12 @@ module EquationOfState
       endif
 !
       if (unit_temperature == impossible) then
-    !    if (cp == impossible) cp=1.
-    !    if (gamma_m1 == 0.) then
-    !      Rgas=mu*cp
-    !    else
-    !      Rgas=mu*gamma_m1*gamma_inv*cp
-    !    endif
-    !    unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         call stop_it('unit_temperature is not found!')
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
-        !if (cp == impossible) then
-       !   if (gamma_m1 == 0.) then
-       !     cp=Rgas/mu
-       !   else
-       !     cp=Rgas/(mu*gamma_m1*gamma_inv)
-       !   endif
-       ! else
-!
-!  checking whether the units are overdetermined.
-!  This is assumed to be the case when the to differ by error_cp
-!
-    !      if (gamma_m1 == 0.) then
-    !        cp_reference=Rgas/mu
-    !     else
-    !        cp_reference=Rgas/(mu*gamma_m1*gamma_inv)
-    !      endif
-    !      if (abs(cp-cp_reference)/cp > error_cp) then
-    !        if (lroot) print*,'initialize_eos: consistency: cp=',cp, &
-    !           'while: cp_reference=',cp_reference
-    !        call stop_it('initialize_eos')
-    !      endif
-    !    endif
       endif
-    !  cp1=1./cp
-    !  cv=gamma_inv*cp
-    !  cv1=gamma*cp1
-!
-!  Need to calculate the equivalent of cs0
-!  Distinguish between gamma=1 case and not.
-!
-   !   if (gamma_m1 /= 0.) then
-   !     lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
-   !   else
-   !     lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
-   !   endif
 !
       inquire(FILE=input_file, EXIST=lcheminp_eos)
-!
-    !  if (lcheminp_eos) then
-    !   l_gamma_m1=.true.
-    !   l_gamma=.true.
-    !   l_cp=.true.
-    !  endif
-!
-!  check that everything is OK
 !
       if (lroot) then
 !
@@ -395,8 +327,6 @@ module EquationOfState
           enddo
            mu1_full=mu1_full_tmp
 
-     !  call fatal_error("getmu", &
-      !       "This thermodynamic variable combination is not implemented: ")
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -508,8 +438,6 @@ module EquationOfState
       intent(inout) :: p
       integer :: i
 !
-! Natalia: removed all previous staff and included my own
-!
 !  Temperature
 !
        if (lpencil(i_lnTT)) then
@@ -601,8 +529,6 @@ module EquationOfState
        endif
 
       endif
-!
-!  Natalia: 26.02.2008: calculation of additional penciles
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
