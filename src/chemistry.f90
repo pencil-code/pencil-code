@@ -737,7 +737,6 @@ module Chemistry
       real :: mO2, mH2, mN2, mH2O
       real :: log_inlet_density, del
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      integer :: j2,j3
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
 !
@@ -905,7 +904,7 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: j1,j2,j3,k
+      integer :: j1,j2,j3
 
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
@@ -1042,7 +1041,7 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: mu1
-      integer :: j1,j2,j3,k
+      integer :: j1
       real :: mO2, mH2, mN2, mH2O
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       real :: initial_mu1, final_massfrac_O2, del=0.

@@ -792,7 +792,7 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
       real, dimension(psize) :: lnTT_
-      real, dimension(psize) :: lnrho_,ss_
+      real, dimension(psize) :: lnrho_
 
       if (present(lnrho)) lnrho=lnrho_
       if (present(lnTT)) lnTT=lnTT_
@@ -834,7 +834,7 @@ module EquationOfState
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
-      real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
+      real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
 !
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -871,7 +871,7 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: lnrho,ss
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
-      real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
+      real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
 !
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -1580,7 +1580,6 @@ module EquationOfState
 
    endsubroutine read_thermodyn
 !***********************************************************************
-!***********************************************************************
     subroutine write_thermodyn()
 !
 !  This subroutine writes the thermodynamical data for every specie
@@ -1594,8 +1593,8 @@ module EquationOfState
       character (len=5) :: ispec
       integer :: file_id=123,k
       integer, dimension(7) :: iaa1,iaa2
-      integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
-
+      integer :: imass=1, iTemp1=2,iTemp3=4
+!
 !      Initialize some index pointers
 !
       iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
