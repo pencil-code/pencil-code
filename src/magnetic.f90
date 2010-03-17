@@ -6290,7 +6290,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jbmn',idiag_jbmn)
         call parse_name(iname,cname(iname),cform(iname),'jbms',idiag_jbms)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
-        call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_cosubm)
         call parse_name(iname,cname(iname),cform(iname),'uam',idiag_uam)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
