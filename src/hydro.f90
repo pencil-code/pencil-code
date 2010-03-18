@@ -1514,14 +1514,16 @@ module Hydro
           enddo
         else
 !          
-! no meridional flow : turn off the meridional flow (in spherical)
-! useful for debugging.  
+!  No meridional flow : turn off the meridional flow (in spherical)
+!  useful for debugging.  
 !
-          if(lno_meridional_flow) then 
-	    f(l1:l2,m,n,iux:iuy)=0.
-	    df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
+!  18-Mar-2010/AJ: this should probably go in a special module.
+!
+          if (lno_meridional_flow) then 
+            f(l1:l2,m,n,iux:iuy)=0.0
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
           else
-	    df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
           endif
         endif
       endif
