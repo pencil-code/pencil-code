@@ -408,7 +408,7 @@ module ImplicitPhysics
 !    T^(n+1) = T^n + dt*beta
 !
 !    where J_x and J_z denote Jacobian matrices df/dT.
-!  08-mar-2010/dintrans: added the case of a non-squared domain (ibox-loop)
+!  08-mar-2010/dintrans: added the case of a non-square domain (ibox-loop)
 !
       use EquationOfState, only: gamma
       use Mpicomm, only: transp_xz
