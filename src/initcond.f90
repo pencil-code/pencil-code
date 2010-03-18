@@ -4239,7 +4239,6 @@ module Initcond
 !
 !  Allocate memory for arrays.
 !
-      if (ipz.eq.0) then
       iostat = 0
       allocate(kx(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
       allocate(ky(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
@@ -4338,7 +4337,6 @@ module Initcond
       if (allocated(A_i)) deallocate(A_i)
       if (allocated(kxp)) deallocate(kxp)
       if (allocated(kyp)) deallocate(kyp)
-      endif
 !
     endsubroutine mdi_init
 !***********************************************************************
