@@ -432,7 +432,6 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
       integer :: i
-      real :: tmp
 !
 !  Temperature
 !
@@ -609,8 +608,6 @@ module EquationOfState
 !
 !  return the value of cp1 to outside modules
 !
-    use Mpicomm, only: stop_it
-!
       real, intent(out) :: cp1_
       call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_chemistry')
       cp1_=impossible
@@ -686,8 +683,6 @@ module EquationOfState
 !   gP/rho=cs2*(glnrho+cp1*gss)
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
-!
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
@@ -823,15 +818,12 @@ module EquationOfState
 !
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
-      use Mpicomm, only: stop_it
-!
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
-!
 !
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
@@ -840,10 +832,12 @@ module EquationOfState
       if (present(ee)) ee=ee_
       if (present(pp)) pp=pp_
       if (present(cs2)) cs2=cs2_
-
+!
       call fatal_error('eoscalc_point', &
         'This routine is not coded for eos_chemistry')
-
+!
+      call keep_compiler_quiet(ivars)
+      call keep_compiler_quiet(var1,var2)
 !
     endsubroutine eoscalc_point
 !***********************************************************************
@@ -869,7 +863,6 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
 !
-!
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=impossible
@@ -881,6 +874,9 @@ module EquationOfState
       call fatal_error('eoscalc_pencil', &
         'This routine is not coded for eos_chemistry')
 !
+      call keep_compiler_quiet(ivars)
+      call keep_compiler_quiet(var1,var2)
+!
     endsubroutine eoscalc_pencil
 !***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
@@ -888,8 +884,6 @@ module EquationOfState
 !  Calculate sound speed for given temperature
 !
 !  20-Oct-03/tobi: Coded
-!
-     use Mpicomm, only: stop_it
 !
       real, intent(in)  :: lnTT
       real, intent(out) :: cs2
@@ -1222,8 +1216,6 @@ module EquationOfState
     endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
-!
-!      use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
