@@ -1374,6 +1374,9 @@ cool_loop: do i=1,ncool
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
 !
+      real, parameter :: g_B_cgs=6.172e20
+      real :: g_B
+!
       if (heating_select == 'cst') Then
          heat = heating_rate_code
       else if (heating_select == 'wolfire') Then
@@ -1392,6 +1395,9 @@ cool_loop: do i=1,ncool
             call fatal_error("interstellar: calc_heat","heating_select=eql is broken")
          endif
          heat = heating_rate
+      else if (heating_select == 'Gressel-hs') Then
+        g_B=g_B_cgs/unit_length
+        heat(1:nx) = GammaUV*exp(-z(n)**2/g_B**2)
       else if (heating_select == 'off') Then
          heat = 0.
       endif

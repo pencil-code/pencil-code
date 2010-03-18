@@ -808,6 +808,7 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
+          case('Gressel-hs'); call gressel_hs(f,rho0hs)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1735,6 +1736,92 @@ module Entropy
 !
     endsubroutine ferriere_hs
 !***********************************************************************
+    subroutine gressel_hs(f,rho0hs)
+!
+!   Density and isothermal entropy profile in hydrostatic equilibrium
+!   with the Ferriere profile set in gravity_simple.f90
+!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
+!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
+!   equilibrium. Constants g_A..D from gravz_profile. In addition equating
+!   the cooling function with heat/rho for thermal equilibrium
+!  
+!
+      use Mpicomm, only: mpibcast_real
+      use EquationOfState , only: eosperturb, getmu
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: rho,pp,lnrho,ss,heat,TT
+      real, dimension(1) :: fmpi1
+      real :: rho0hs,muhs
+      real :: g_A, g_C, GammaUV
+      real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9, GammaUV_cgs=0.0147
+      real, dimension(2) :: zbound
+      double precision,dimension(3) :: zlambda
+      double precision :: g_B, g_D, unit_Lambda
+      double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_B = g_B_cgs/unit_length
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+          GammaUV = GammaUV_cgs * real(unit_length/unit_velocity**3)
+          unit_Lambda = unit_velocity**2 / unit_density / unit_time
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+      endif
+!
+!  uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!   at solar radius.  (for interstellar runs)
+!  requires T0 set to 10000K and GammaUV=0.0147 with 'SS-Slyz' cooling_select
+!
+      call getmu(f,muhs)
+      zbound = (/1.031213132e21,1.319826455e21/)/unit_length
+      zlambda = (/1.0944376395513d20,8.73275974868d18,3.42d16/)/unit_Lambda
+!
+      if (lroot) print*, &
+         'Gressel-hs: hydrostatic & thermal equilibrium density and entropy profiles'
+      T0=1.0!cs20/gamma_m1
+      do n=n1,n2
+      do m=m1,m2
+        heat=GammaUV*exp(-z(n)**2/g_B**2)
+        rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
+        lnrho=log(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho
+        if (lentropy) then
+!  Isothermal
+          if (abs(z(n)) < zbound(1)) then
+            TT=(heat/rho/zlambda(1))**(1./0.56)
+            TT=TT/unit_temperature**(1./0.56)
+          endif
+          if ((abs(z(n)) .ge. zbound(1)).and.(abs(z(n)) < zbound(2)))then
+            TT=heat/rho/zlambda(2)
+            TT=TT/unit_temperature
+          endif
+          if (abs(z(n)) .ge. zbound(2) ) then
+            TT=(heat/rho/zlambda(3))**(1./2.12)
+            TT=TT/unit_temperature**(1./2.12)
+          endif
+          pp=k_B/muhs/m_u*rho*TT
+          call eosperturb(f,nx,pp=pp)
+          ss=f(l1:l2,m,n,ilnrho)
+          fmpi1=(/ cs2bot /)
+          call mpibcast_real(fmpi1,1,0)
+          cs2bot=fmpi1(1)
+          fmpi1=(/ cs2top /)
+          call mpibcast_real(fmpi1,1,ncpus-1)
+          cs2top=fmpi1(1)
+!
+         endif
+       enddo
+     enddo
+!
+      if (lroot) print*, 'Gressel-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
+!
+    endsubroutine gressel_hs
+!***********************************************************************
     subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
 !
 !   22-jan-10/fred
@@ -2275,7 +2362,7 @@ module Entropy
         call newton_cool(df,p)
         call calc_heat_cool_RTV(df,p)
       endif
-      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
+      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,f,p)
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 !
@@ -2831,8 +2918,9 @@ module Entropy
 !
       call dot2_mn(p%bb,bb2)
       b1=1./max(tiny(bb2),bb2)
+      
 !
-      vKpara = Kgpara * p%TT**3.5
+      vKpara = Kgpara * exp(p%lnTT)**3.5
       vKperp = Kgperp * b1*exp(2*p%lnrho+0.5*p%lnTT)
 !
 !     limit perpendicular diffusion
@@ -2879,7 +2967,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine calc_heatcond_tensor(df,p)
+    subroutine calc_heatcond_tensor(df,f,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines
@@ -2890,7 +2978,7 @@ module Entropy
       use Diagnostics
       use Sub, only: tensor_diffusion_coef,dot,dot2
 
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar) :: df,f
       real, dimension (nx) :: cosbgT,gT2,b2,rhs
       real, dimension (nx) :: vKpara,vKperp
 !
@@ -2900,6 +2988,7 @@ module Entropy
       vKperp(:) = Kgperp
 !
       call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
+      where (p%rho .le. tiny(0.0)) p%rho1=0.0
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
 !
