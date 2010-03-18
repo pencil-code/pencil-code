@@ -49,7 +49,7 @@ module ImplicitPhysics
         hole_slope=hole_params(4)
         hole_width=hole_params(5)
         hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))
-        if (lroot) then
+        if (lroot .and. ldebug) then
           print*, '************ hole parameters ************'
           print*,'Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha=', &
               Tbump, Kmax, Kmin, hole_slope, hole_width, hole_alpha
