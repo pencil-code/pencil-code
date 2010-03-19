@@ -2175,10 +2175,15 @@ module EquationOfState
 !  check whether we have chi=constant at top, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
+!DM+PC we think in the following top should be replaced by bot we have
+! done one change. Axel, you introduced these lines in version 10959 could
+! please have a look. 
         if (lheatc_chiconst) then
+! The following line may be wrong Fbot -> Ftop
           tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
         else
-          tmp_xy=FbotKbot/cs2_xy
+!          tmp_xy=FbotKbot/cs2_xy
+          tmp_xy=FtopKtop/cs2_xy
         endif
 !
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
