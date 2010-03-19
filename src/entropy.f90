@@ -1744,7 +1744,7 @@ module Entropy
 !   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
 !   equilibrium. Constants g_A..D from gravz_profile. In addition equating
 !   the cooling function with heat/rho for thermal equilibrium
-!  
+!
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eosperturb, getmu
@@ -2362,7 +2362,7 @@ module Entropy
         call newton_cool(df,p)
         call calc_heat_cool_RTV(df,p)
       endif
-      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,f,p)
+      if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 !
@@ -2560,9 +2560,8 @@ module Entropy
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
-      use Diagnostics
-      use Gravity
-      use Sub
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2744,10 +2743,9 @@ module Entropy
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
 !  19-nov-03/axel: added chi_t also here.
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Gravity
-      use Sub
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2814,8 +2812,8 @@ module Entropy
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
-      use Diagnostics
-      use Sub
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot
 !
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
@@ -2918,7 +2916,6 @@ module Entropy
 !
       call dot2_mn(p%bb,bb2)
       b1=1./max(tiny(bb2),bb2)
-      
 !
       vKpara = Kgpara * exp(p%lnTT)**3.5
       vKperp = Kgperp * b1*exp(2*p%lnrho+0.5*p%lnTT)
@@ -2967,7 +2964,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine calc_heatcond_tensor(df,f,p)
+    subroutine calc_heatcond_tensor(df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines
@@ -2975,10 +2972,10 @@ module Entropy
 !
 !  24-aug-09/bing: moved from dss_dt to here
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name
       use Sub, only: tensor_diffusion_coef,dot,dot2
-
-      real, dimension (mx,my,mz,mvar) :: df,f
+!
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: cosbgT,gT2,b2,rhs
       real, dimension (nx) :: vKpara,vKperp
 !
@@ -3020,7 +3017,6 @@ module Entropy
 !  07-feb-07/wlad+heidar : coded
 !
       use EquationOfState, only: gamma,gamma_m1
-      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
@@ -3071,7 +3067,6 @@ module Entropy
 !
       use Diagnostics
       use IO, only: output_pencil
-      use Gravity
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3243,10 +3238,10 @@ module Entropy
 !
 !  02-jul-02/wolf: coded
 !
-      use Diagnostics
-      use Gravity
-      use IO
-      use Sub
+      use Diagnostics, only: sum_mn_name, xysum_mn_name_z
+      use Gravity, only: z2
+      use IO, only: output_pencil
+      use Sub, only: step, cubic_step, write_zprof
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -3598,7 +3593,7 @@ module Entropy
 !
 !  29-jul-02/axel: coded
 !
-      use Gravity
+      use Gravity, only: zgrav
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -3857,7 +3852,7 @@ module Entropy
 !
 !  12-jul-05/axel: coded
 !
-      use Sub
+      use Sub, only: cubic_step, cubic_der_step
       use Gravity, only: z1, z2
 !
       real, dimension (nz,3) :: zprof_glhc
@@ -3971,7 +3966,7 @@ module Entropy
 !  18-sep-2002/axel: added lmultilayer switch
 !
       use Sub, only: step
-      use Gravity
+      use Gravity, only: z1, z2
 !
       real, dimension (nx) :: chit_prof,z_mn
 !
@@ -4000,7 +3995,7 @@ module Entropy
 !  23-jan-2002/wolf: coded
 !
       use Sub, only: der_step
-      use Gravity
+      use Gravity, only: z1, z2
 !
       real, dimension (nx,3) :: glchit_prof
       real, dimension (nx) :: z_mn
@@ -4630,7 +4625,7 @@ module Entropy
 !
 !  18-feb-10/anders: coded
 !
-      use EquationOfState
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
