@@ -117,6 +117,8 @@ module EquationOfState
 !
       mu=0.0
 !
+      call keep_compiler_quiet(present(f))
+!
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -217,9 +219,10 @@ module EquationOfState
 !
       rho = 0.0
 !
-      call keep_compiler_quiet(yH)
-      call keep_compiler_quiet(EE)
-      call keep_compiler_quiet(TT)
+      call keep_compiler_quiet(present(yH))
+      call keep_compiler_quiet(present(EE))
+      call keep_compiler_quiet(present(TT))
+      call keep_compiler_quiet(present(f))
 !
     endsubroutine getdensity
 !***********************************************************************
@@ -228,9 +231,9 @@ module EquationOfState
      real, dimension (mx,my,mz,mfarray), optional :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
-     call keep_compiler_quiet(f)
+     call keep_compiler_quiet(present(f))
      call keep_compiler_quiet(TT_tmp)
-!  
+!
     endsubroutine gettemperature
 !***********************************************************************
     subroutine getpressure(pp_tmp)
@@ -238,7 +241,7 @@ module EquationOfState
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
-!     
+!
     endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
@@ -370,8 +373,8 @@ module EquationOfState
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(psize)
-      if (present(ee)) call keep_compiler_quiet(ee)
-      if (present(pp)) call keep_compiler_quiet(pp)
+      call keep_compiler_quiet(present(ee))
+      call keep_compiler_quiet(present(pp))
 !
     endsubroutine eosperturb
 !***********************************************************************
@@ -467,7 +470,7 @@ module EquationOfState
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_eos_init_pars
 !***********************************************************************
@@ -485,7 +488,7 @@ module EquationOfState
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_eos_run_pars
 !***********************************************************************
