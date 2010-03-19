@@ -330,7 +330,7 @@ program start
     call init_gg        (f)
 !
 !  This is a temporary solution for calculating the correct initial
-!  condition for incompressible case where we need to set div(rho u)=0
+!  condition for anelastic case where we need to set div(rho u)=0
 !  The dust-vortex auto-test requires that uu is initialised before
 !  lnrho
 !
