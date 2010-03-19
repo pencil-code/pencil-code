@@ -308,25 +308,25 @@ module EquationOfState
 !  Calculate  mean molecular weight
 !
 !   12-aug-03/tony: implemented
-!   16-mar-10/natalia 
-
+!   16-mar-10/natalia
+!
     real, dimension (mx,my,mz,mfarray), optional :: f
     real, dimension (mx,my,mz) :: mu1_full_tmp
     integer :: k,j2,j3
-       !
+!
 !  Mean molecular weight
 !
-          mu1_full_tmp=0.
-          do k=1,nchemspec
-           do j2=mm1,mm2
-           do j3=nn1,nn2
-            mu1_full_tmp(:,j2,j3)=mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                /species_constants(k,imass)
-           enddo
-           enddo
-          enddo
-           mu1_full=mu1_full_tmp
-
+    mu1_full_tmp=0.
+    do k=1,nchemspec
+      do j2=mm1,mm2
+        do j3=nn1,nn2
+          mu1_full_tmp(:,j2,j3)=mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+              /species_constants(k,imass)
+        enddo
+      enddo
+    enddo
+    mu1_full=mu1_full_tmp
+!
     endsubroutine getmu
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
@@ -554,22 +554,22 @@ module EquationOfState
     endsubroutine ioncalc
 !***********************************************************************
    subroutine getdensity(f,EE,TT,yH,rho_full_tmp)
-
+!
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: rho_full_tmp
      real, intent(in), optional :: EE,TT,yH
-
+!
       if (ldensity_nolog) then
         rho_full_tmp=f(:,:,:,ilnrho)
       else
         rho_full_tmp=exp(f(:,:,:,ilnrho))
       endif
         rho_full=rho_full_tmp
-
-      call keep_compiler_quiet(yH)
-      call keep_compiler_quiet(EE)
-      call keep_compiler_quiet(TT)
-
+!
+      call keep_compiler_quiet(present(yH))
+      call keep_compiler_quiet(present(EE))
+      call keep_compiler_quiet(present(TT))
+!
    endsubroutine getdensity
 !***********************************************************************
    subroutine gettemperature(f,TT_full_tmp)
