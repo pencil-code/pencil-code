@@ -285,6 +285,9 @@ module Magnetic
   integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
+  integer :: idiag_uxbxm=0      ! DIAG_DOC: $\left<u_xB_x\right>$
+  integer :: idiag_uybym=0      ! DIAG_DOC: $\left<u_yB_y\right>$
+  integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
   integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)\right>$
   integer :: idiag_uam=0        ! DIAG_DOC: $\left<\uv\cdot\Av\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
@@ -2757,6 +2760,9 @@ module Magnetic
 !  Cross helicity (linkage between vortex tubes and flux tubes).
 !
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
+        if (idiag_uxbxm/=0) call sum_mn_name(p%uu(:,1)*p%bb(:,1),idiag_uxbxm)
+        if (idiag_uybym/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,2),idiag_uybym)
+        if (idiag_uzbzm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,3),idiag_uzbzm)
         if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
 !
 !  Field-velocity cross helicity (linkage between velocity and magnetic tubes).
@@ -6202,7 +6208,8 @@ module Magnetic
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0
-        idiag_uam=0; idiag_ubm=0; idiag_ujm=0 
+        idiag_uam=0; idiag_ubm=0; idiag_ujm=0
+        idiag_uxbxm=0; idiag_uybym=0; idiag_uzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_Expt=0
         idiag_Eypt=0; idiag_Ezpt=0; idiag_aybym2=0; idiag_exaym2=0
@@ -6290,6 +6297,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jbmn',idiag_jbmn)
         call parse_name(iname,cname(iname),cform(iname),'jbms',idiag_jbms)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbxm',idiag_uxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'uybym',idiag_uybym)
+        call parse_name(iname,cname(iname),cform(iname),'uzbzm',idiag_uzbzm)
         call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_cosubm)
         call parse_name(iname,cname(iname),cform(iname),'uam',idiag_uam)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
@@ -6686,6 +6696,9 @@ module Magnetic
         write(3,*) 'i_jbmn=',idiag_abmn
         write(3,*) 'i_jbms=',idiag_abms
         write(3,*) 'i_ubm=',idiag_ubm
+        write(3,*) 'i_uxbxm=',idiag_uxbxm
+        write(3,*) 'i_uybym=',idiag_uybym
+        write(3,*) 'i_uzbzm=',idiag_uzbzm
         write(3,*) 'i_cosubm=',idiag_cosubm
         write(3,*) 'i_uam=',idiag_uam
         write(3,*) 'i_ujm=',idiag_ujm

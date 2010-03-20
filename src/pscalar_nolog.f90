@@ -57,6 +57,7 @@ module Pscalar
   real :: scalaracc=0.0
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
   logical :: lpscalar_per_unitvolume=.false.
+  logical :: lpscalar_per_unitvolume_diff=.false.
   logical :: lnotpassive=.false., lupw_cc=.false.
 !
   namelist /pscalar_run_pars/ &
@@ -235,6 +236,7 @@ module Pscalar
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_cc)=.true.
       endif
+      if (lpscalar_per_unitvolume_diff) lpenc_requested(i_del2lnrho)=.true.
       if (lnotpassive) lpenc_requested(i_cc)=.true.
       if (lpscalar_sink) lpenc_requested(i_rho1)=.true.
       if (pscalar_diff/=0.) then
@@ -406,12 +408,20 @@ module Pscalar
           df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-bump*f(l1:l2,m,n,icc)
         endif
 !
-!  Diffusion operator.
+!  Diffusion operator. If lpscalar_per_unitvolume is chosen, use
+!  div[kappa*rho*grad(c/rho)] = kappa*(del2c-gradc.gradlnrho-c*del2lnrho).
+!  Otherwise, with lpscalar_per_unitvolume and not lpscalar_per_unitvolume_diff
+!  use just kappa*del2c.
 !
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
           if (lpscalar_per_unitvolume) then
-            diff_op=p%del2cc
+            if (lpscalar_per_unitvolume_diff) then
+              call dot_mn(p%glnrho,p%gcc,diff_op)
+              diff_op=p%del2cc-diff_op-p%cc*p%del2lnrho
+            else
+              diff_op=p%del2cc
+            endif
           else
             call dot_mn(p%glnrho,p%gcc,diff_op)
             diff_op=diff_op+p%del2cc
