@@ -1141,7 +1141,7 @@ module Chemistry
       integer :: k,j, j1,j2,j3
       real :: T_up, T_mid, T_low, T_loc, T_loc_2,T_loc_3,T_loc_4
       real :: cp_R_spec
-      real :: EE,TT,yH
+      real :: EE=0.,TT=0.,yH=1.
 !
       logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
@@ -1150,10 +1150,11 @@ module Chemistry
       integer :: file_id=123
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5
 !
-! Density and temperature
+!  Density and temperature
+!AB: Note that EE, TT, and yH are used by getdensity, so
+!AB: these quantities need to be defined. For now I put 0, 0, 1.
 !
-   !   call timing('calc_for_chem_mixture','entered')
-
+!     call timing('calc_for_chem_mixture','entered')
       call getdensity(f,EE,TT,yH,rho_full)
       call gettemperature(f,TT_full)
 !
