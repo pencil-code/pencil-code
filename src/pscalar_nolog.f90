@@ -55,15 +55,18 @@ module Pscalar
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
   real :: lam_gradC=0.0, om_gradC=0.0, lambda_cc=0.0
   real :: scalaracc=0.0
+  real :: LLambda_cc=0.0
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
   logical :: lpscalar_per_unitvolume=.false.
   logical :: lpscalar_per_unitvolume_diff=.false.
   logical :: lnotpassive=.false., lupw_cc=.false.
+  logical :: lmean_friction_cc=.false.
 !
   namelist /pscalar_run_pars/ &
       pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
       pscalar_diff_hyper3, reinitialize_lncc, reinitialize_cc, lpscalar_sink, &
-      lpscalar_per_unitvolume, &
+      lmean_friction_cc, LLambda_cc, &
+      lpscalar_per_unitvolume, lpscalar_per_unitvolume_diff, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
       om_gradC, lgradC_profile, lnotpassive, lupw_cc
 !
@@ -362,9 +365,10 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump
+      real, dimension (nx) :: diff_op,diff_op2,bump,cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j
+      integer, parameter :: nxy=nxgrid*nygrid
 !
       intent(in)  :: f
       intent(out) :: df
@@ -475,12 +479,29 @@ module Pscalar
         if (tensor_pscalar_diff/=0.) &
             call tensor_diff(df,p,tensor_pscalar_diff)
 !
+!  Consider here the action of a mean friction term, -LLambda*Cbar.
+!  This can be used to compendate for the decay of a horizontally
+!  averaged mean concentration and allows thus the determination of
+!  the turbulent diffusivity under stationary conditions. Only those 
+!  results are then comparable with the results of the test-field method.
+!
+      if (lmean_friction_cc) then
+        if (nprocx*nprocy==1) then
+          cc_xyaver=sum(f(l1:l2,m1:m2,n,icc))/nxy
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-LLambda_cc*cc_xyaver
+        else
+          call stop_it("pscalar: lmean_friction works only for nprocxy=1")
+        endif
+      endif
+!
 !  For the timestep calculation, need maximum diffusion.
 !
         if (lfirst.and.ldt) then
           diffus_pscalar =(pscalar_diff+tensor_pscalar_diff)*dxyz_2
           diffus_pscalar3=pscalar_diff_hyper3*dxyz_6
         endif
+!
+!  Special contributions to this module are called here.
 !
         if (lspecial) call special_calc_pscalar(f,df,p)
 !
