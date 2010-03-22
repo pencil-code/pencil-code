@@ -129,7 +129,7 @@ module Interstellar
 ! If this is not reached then consider moving mass to achieve this.
 !
   real :: cluster_factor=1.25!fred testing clustering
-  real, parameter :: TT_SN_min_cgs=1.e7
+  real, parameter :: TT_SN_min_cgs=0!1.e7
 ! 22-jan-10/fred with lSN_velocity=T for kinetic energy lower limit no longer required
 ! set TT_SN_min=0
   real :: uu_sedov_max=0.
@@ -1395,9 +1395,10 @@ cool_loop: do i=1,ncool
             call fatal_error("interstellar: calc_heat","heating_select=eql is broken")
          endif
          heat = heating_rate
+!  if using Gressel-hs in initial entropy this must also be specified for stability
       else if (heating_select == 'Gressel-hs') Then
         g_B=g_B_cgs/unit_length
-        heat(1:nx) = GammaUV*exp(-z(n)**2/g_B**2)
+        heat(1:nx) = GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
       else if (heating_select == 'off') Then
          heat = 0.
       endif
@@ -2413,11 +2414,11 @@ find_SN: do n=n1,n2
 !
       if (lSN_velocity) then
         if (velocity_profile=="r15gaussian3") then
-          cvelocity_SN=sqrt(6.*ampl_SN/pi/SNR%rhom/width_velocity**6) !fred
+          cvelocity_SN=sqrt(6.*ampl_SN/pi/SNR%rhom/width_velocity**6) 
         elseif (velocity_profile=="r3gaussian3") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448) !fred 
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)  
         elseif (velocity_profile=="r6gaussian3") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358) !fred 
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)  
         else
           cvelocity_SN=uu_sedov
           if (lroot) &
