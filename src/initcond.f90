@@ -4133,10 +4133,12 @@ module Initcond
 !  07-dec-05/bing : coded.
 !
       use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      real, dimension (150) :: b_lnT,b_lnrho,b_z
+      integer, parameter :: b_nz=150
+      real, dimension (b_nz) :: b_lnT,b_lnrho,b_z
       integer :: i,lend,j
 !
 !  temperature given as function lnT(z) in SI units
@@ -4144,17 +4146,21 @@ module Initcond
 !
       if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
 !
-      call start_serialize()
-      inquire(IOLENGTH=lend) tmp
-      open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
-      read (10) b_lnT
-      read (10) b_z
-      close (10)
+      if (lroot) then
+        inquire(IOLENGTH=lend) tmp
+        open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*b_nz)
+        read (10) b_lnT
+        read (10) b_z
+        close (10)
 !
-      open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*150)
-      read (10) b_lnrho
-      close (10)
-      call end_serialize()
+        open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*b_nz)
+        read (10) b_lnrho
+        close (10)
+      endif
+!
+      call mpibcast_real(b_lnT,b_nz)
+      call mpibcast_real(b_z,b_nz)
+      call mpibcast_real(b_lnrho,b_nz)
 !
       b_z = b_z*1.e6/unit_length
       b_lnT = b_lnT - alog(real(unit_temperature))
@@ -4180,10 +4186,10 @@ module Initcond
                exit
             endif
          enddo
-         if (z(j) .ge. b_z(150)) then
-            f(:,:,j,ilnrho) = b_lnrho(150)
+         if (z(j) .ge. b_z(b_nz)) then
+            f(:,:,j,ilnrho) = b_lnrho(b_nz)
 !
-            tmp =  b_lnT(150)
+            tmp =  b_lnT(b_nz)
 !
             if (ltemperature) then
                f(:,:,j,ilnTT) = tmp
@@ -4204,8 +4210,8 @@ module Initcond
                  b_lnT(i+1)*(ztop-b_z(i)) ) / (b_z(i+1)-b_z(i))
             cs2top = gamma_m1*exp(tmp)
 !
-         elseif (ztop .ge. b_z(150)) then
-            cs2top = gamma_m1*exp(b_lnT(150))
+         elseif (ztop .ge. b_z(b_nz)) then
+            cs2top = gamma_m1*exp(b_lnT(b_nz))
          endif
          if (zbot .ge. b_z(i) .and. zbot .lt. b_z(i+1) ) then
 !
@@ -4228,6 +4234,7 @@ module Initcond
 !
       use Fourier
       use Sub
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -4236,6 +4243,7 @@ module Initcond
       real :: mu0_SI,u_b,zref
       logical :: exist
       integer :: i,idx2,idy2,stat,iostat,lend
+      integer, dimension(2) :: dims=(nxgrid,nygrid)
 !
 !  Allocate memory for arrays.
 !
@@ -4275,17 +4283,20 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
-      inquire(file='driver/mag_field.dat',exist=exist)
-      if (exist) then
-        inquire(IOLENGTH=lend) u_b
-        open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
-            recl=lend*nxgrid*nygrid,access='direct')
-        read (11,rec=1) Bz0_r
-        close (11)
-      else
-        call fatal_error('mdi_init', &
-            'No file: mag_field.dat')
+      if (lroot) then
+        inquire(file='driver/mag_field.dat',exist=exist)
+        if (exist) then
+          inquire(IOLENGTH=lend) u_b
+          open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+              recl=lend*nxgrid*nygrid,access='direct')
+          read (11,rec=1) Bz0_r
+          close (11)
+        else
+          call fatal_error('mdi_init', &
+              'No file: mag_field.dat')
+        endif
       endif
+      call mpibcast_real(Bz0_r,dims)
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
@@ -4349,10 +4360,12 @@ module Initcond
 !
       use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
       use Gravity, only: gravz
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      real, dimension (150) :: b_lnT,b_z
+      integer, parameter :: b_nz=150
+      real, dimension (b_nz) :: b_lnT,b_z
       real :: tmprho,tmpT,tmpdT,tmpz
       integer :: i,lend,j
       !
@@ -4363,13 +4376,16 @@ module Initcond
       !
       ! read in temperature profile T in [K] and z in [Mm]
       !
-      call start_serialize()
-      inquire(IOLENGTH=lend) tmp
-      open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
-      read (10) b_lnT
-      read (10) b_z
-      close (10)
-      call end_serialize()
+      if (lroot) then
+        inquire(IOLENGTH=lend) tmp
+        open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*b_nz)
+        read (10) b_lnT
+        read (10) b_z
+        close (10)
+      endif
+      !
+      call mpibcast_real(b_lnT,b_nz)
+      call mpibcast_real(b_z,b_nz)
       !
       b_z = b_z*1.e6/unit_length
       b_lnT = b_lnT - alog(real(unit_temperature))
@@ -4405,8 +4421,8 @@ module Initcond
 !
                   tmpT = tmpT + tmpdT
                   !exit
-               elseif (tmpz .ge. b_z(150)) then
-                  tmpdT = b_lnT(150) - tmpT
+               elseif (tmpz .ge. b_z(b_nz)) then
+                  tmpdT = b_lnT(b_nz) - tmpT
                   tmpT = tmpT + tmpdT
                   !exit
                endif
