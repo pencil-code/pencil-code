@@ -133,6 +133,7 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
+  logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., linduction=.true.
   logical :: lresi_eta_const=.false.
   logical :: lresi_etaSS=.false.
@@ -179,7 +180,8 @@ module Magnetic
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
-      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump
+      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,& 
+      lpress_equil_alt
 !
 ! Run parameters
 !
@@ -1018,16 +1020,18 @@ module Magnetic
       use FArrayManager
       use Gravity, only: gravz, z1, z2
       use Initcond
+      use Boundcond
       use InitialCondition, only: initial_condition_aa
       use Mpicomm
       use SharedVariables
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact
+      real, dimension (nx) :: b2,fact,cs2
       real :: beq2
       integer :: j
 !
@@ -1202,10 +1206,14 @@ module Magnetic
 !
       if (lpress_equil.or.lpress_equil_via_ss) then
         if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
+        call boundconds(f,iaa,iaa+2)
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
+!          if(m.eq.(m1+m2)/2) then
+!            write(15,*) z(n),b2((l1+l2)/2)
+!          end if
           if (gamma==1.0) then
             f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
           else
@@ -1214,7 +1222,13 @@ module Magnetic
             if (lentropy.and.lpress_equil_via_ss) then
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
             else
-              f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
+              if (lpress_equil_alt) then
+                cs2=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)
+                f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2*gamma/ &
+                (beq2*cs2))
+              else
+                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
+              endif
             endif
           endif
         enddo
