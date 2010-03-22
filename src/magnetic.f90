@@ -1031,7 +1031,7 @@ module Magnetic
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact,cs2
+      real, dimension (nx) :: b2,fact,cs2,lnrho_old
       real :: beq2
       integer :: j
 !
@@ -1223,9 +1223,14 @@ module Magnetic
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
             else
               if (lpress_equil_alt) then
-                cs2=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)
-                f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2*gamma/ &
-                (beq2*cs2))
+                !cs2=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)
+                lnrho_old=f(l1:l2,m,n,ilnrho)
+                cs2=cs20*exp(gamma_m1*(lnrho_old-lnrho0) &
+                  +gamma*f(l1:l2,m,n,iss))
+                f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
+                  (beq2*cs2))
+                f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ &
+                  (1.-gamma_inv)*(lnrho_old-f(l1:l2,m,n,ilnrho))
               else
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
               endif

@@ -61,6 +61,8 @@ module Testscalar
   logical :: lignore_ugtestm=.false.
   character (len=labellen) :: itestscalar='G1-G2'
   real :: ktestscalar=1., ktestscalar1=1.
+  real :: kxtestscalar=1., kxtestscalar1=1.
+  real :: kytestscalar=1., kytestscalar1=1.
   real :: lam_testscalar=0.,om_testscalar=0.,delta_testscalar=0.
   real :: delta_testscalar_next=0.
   integer, parameter :: mtestscalar=njtestscalar
@@ -76,13 +78,14 @@ module Testscalar
   ! run parameters
   real :: kappatest=0.,kappatest1=0.
   real, dimension(njtestscalar) :: rescale_cctest=0.
-  logical :: ltestscalar_newz=.true.,leta_rank2=.false.
+  logical :: ltestscalar_newz=.true.
   logical :: ltestscalar_newx=.false.
   logical :: ltestscalar_newy=.false.
   logical :: ltestscalar_per_unitvolume=.false.
   namelist /testscalar_run_pars/ &
        reinitialize_cctest,zextent,lsoca_ug, &
-       lset_cctest2,kappatest,kappatest1,itestscalar,ktestscalar, &
+       lset_cctest2,kappatest,kappatest1,itestscalar, &
+       kxtestscalar,kytestscalar,ktestscalar, &
        lam_testscalar,om_testscalar,delta_testscalar, &
        ltestscalar_newx,ltestscalar_newz, &
        ltestscalar_per_unitvolume, &
@@ -209,10 +212,11 @@ module Testscalar
       real, dimension(nx) :: xtestscalar
       real, dimension(my) :: ytestscalar
       real, dimension(mz) :: ztestscalar
+      real :: kxtestscalar_effective,kytestscalar_effective
       real :: ktestscalar_effective
       integer :: jtest, jcctest
 !
-!  Precalculate kappatest if 1/kappatest (==kappatest1) is given instead
+!  Precalculate kxappatest if 1/kappatest (==kappatest1) is given instead
 !
       if (kappatest1/=0.) then
         kappatest=1./kappatest1
@@ -224,30 +228,30 @@ module Testscalar
 !  Define ktestscalar_effective to deal with boxes bigger than 2pi.
 !
       if (ltestscalar_newx) then
-        ktestscalar_effective=ktestscalar*(2.*pi/Lx)
-        xtestscalar=ktestscalar_effective*(x(l1:l2)-x0)-pi
+        kxtestscalar_effective=kxtestscalar*(2.*pi/Lx)
+        xtestscalar=kxtestscalar_effective*(x(l1:l2)-x0)-pi
       else
-        ktestscalar_effective=ktestscalar
+        kxtestscalar_effective=kxtestscalar
         xtestscalar=x(l1:l2)
       endif
-      cx=cos(ktestscalar*xtestscalar)
-      sx=sin(ktestscalar*xtestscalar)
+      cx=cos(kxtestscalar*xtestscalar)
+      sx=sin(kxtestscalar*xtestscalar)
 !
 !  Choice of using rescaled y-array or original y-array
-!  Define ktestscalar_effective to deal with boxes bigger than 2pi.
+!  Define kytestscalar_effective to deal with boxes bigger than 2pi.
 !
       if (ltestscalar_newy) then
-        ktestscalar_effective=ktestscalar*(2.*pi/Ly)
-        ytestscalar=ktestscalar_effective*(y-y0)-pi
+        kytestscalar_effective=kytestscalar*(2.*pi/Ly)
+        ytestscalar=kytestscalar_effective*(y-y0)-pi
       else
-        ktestscalar_effective=ktestscalar
+        kytestscalar_effective=kytestscalar
         ytestscalar=y
       endif
-      cy=cos(ktestscalar*ytestscalar)
-      sy=sin(ktestscalar*ytestscalar)
+      cy=cos(kytestscalar*ytestscalar)
+      sy=sin(kytestscalar*ytestscalar)
 !
 !  Choice of using rescaled z-array or original z-array
-!  Define ktestscalar_effective to deal with boxes bigger than 2pi.
+!  Define kztestscalar_effective to deal with boxes bigger than 2pi.
 !
       if (ltestscalar_newz) then
         ktestscalar_effective=ktestscalar*(2.*pi/Lz)
@@ -265,11 +269,41 @@ module Testscalar
 !  debug output
 !
       if (lroot.and.ip<14) then
+        print*,'x0=',x0
+        print*,'cx=',cx
+        print*,'sx=',sx
+        print*,'y0=',y0
+        print*,'cy=',cy
+        print*,'sy=',sy
+        print*,'z0=',z0
         print*,'cz=',cz
         print*,'sz=',sz
       endif
 !
 !  Also calculate its inverse, but only if different from zero
+!  first kx
+!
+      if (kxtestscalar==0) then
+        kxtestscalar1=1.
+      else
+        kxtestscalar1=1./kxtestscalar_effective
+      endif
+!
+      if (ktestscalar==0) then
+        ktestscalar1=1.
+      else
+        ktestscalar1=1./ktestscalar_effective
+      endif
+!
+!  next ky
+!
+      if (kytestscalar==0) then
+        kytestscalar1=1.
+      else
+        kytestscalar1=1./kytestscalar_effective
+      endif
+!
+!  finally kz (still called k)
 !
       if (ktestscalar==0) then
         ktestscalar1=1.
@@ -330,6 +364,8 @@ module Testscalar
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca_ug='  ,merge(1,0,lsoca_ug)
         write(1,'(3a)') "itestscalar='",trim(itestscalar)//"'"
+        write(1,'(a,f5.2)') 'kxtestscalar=',kxtestscalar
+        write(1,'(a,f5.2)') 'kytestscalar=',kytestscalar
         write(1,'(a,f5.2)') 'ktestscalar=',ktestscalar
         write(1,'(a,f7.4)') 'lam_testscalar=',lam_testscalar
         write(1,'(a,f7.4)') 'om_testscalar=', om_testscalar
