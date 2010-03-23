@@ -2257,9 +2257,13 @@ module Magnetic
       endif
 !
       if (lresi_zdep) then
-        do j=1,3
-          fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
-        enddo
+        if (lweyl_gauge) then
+          fres=fres-eta_z(n)*p%jj
+        else
+          do j=1,3
+            fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
+          enddo
+        endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
         etatotal=etatotal+eta_z(n)
       endif
