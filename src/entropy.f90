@@ -1757,7 +1757,7 @@ module Entropy
 !   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
 !   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
 !   equilibrium. Constants g_A..D from gravz_profile. In addition equating
-!   the cooling function with uv-heating/rho for thermal equilibrium. Use 
+!   the cooling function with uv-heating/rho for thermal equilibrium. Use
 !   heating_select='Gressel-hs' in interstellar init & runpars
 !
 !
@@ -1765,24 +1765,23 @@ module Entropy
       use EquationOfState , only: eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho,pp,lnrho,ss,heat,TT,lambda,fbeta,flamk,lnTT
-      real, dimension(1) :: fmpi1
-      real :: rho0hs,muhs
-      real :: g_A, g_C, GammaUV
-      real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9, GammaUV_cgs=0.0147
+      real, dimension(nx) :: rho,lnrho,ss,heat,TT,lambda,fbeta,flamk,lnTT
+      real :: rho0hs, GammaUV
+!      real :: g_A, g_C
+      real, parameter :: GammaUV_cgs=0.0147 !, g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       real, dimension(10) :: beta
       double precision,dimension(10) :: lamk,lamstep,lamT
-      double precision :: g_B, g_D, unit_Lambda
-      double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
+      double precision :: g_B, unit_Lambda !,g_D
+      double precision, parameter :: g_B_cgs=6.172D20 !, g_D_cgs=3.086D21
       integer :: j
 !
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
 !          g_A = g_A_cgs/unit_velocity*unit_time
-          g_B = g_B_cgs/unit_length
 !          g_C = g_C_cgs/unit_velocity*unit_time
 !          g_D = g_D_cgs/unit_length
+          g_B = g_B_cgs/unit_length
           GammaUV = GammaUV_cgs * real(unit_length/unit_velocity**3)
           unit_Lambda = unit_velocity**2 / unit_density / unit_time
       else if (unit_system=='SI') then
@@ -1808,21 +1807,21 @@ module Entropy
       do m=m1,m2
 !
 !  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
-!                  require initial profile to produce finite Lambda between lamstep(3) and 
+!                  require initial profile to produce finite Lambda between lamstep(3) and
 !                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above
 !
 
         heat=GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
         rho=rho0hs*exp(-abs(z(n))*19.8)
         lambda=heat/rho
-!       
+!
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
-! 
+!
 !  define initial values for the Lambda array from which an initial temerature profile
 !  is derived
 !
-! 
+!
         where (lambda .lt. lamstep(1)) lambda=lamstep(1)
         do j=1,9
            if (lambda(n) .ge. lamstep(j) .and. lambda(n) .le. lamstep(j+1)) then
@@ -2683,7 +2682,7 @@ module Entropy
     subroutine calc_heatcond_thermchi(df,p)
 !
 !  adapted from Heat conduction for constant value to
-!  include temperature dependence to handle high temperatures 
+!  include temperature dependence to handle high temperatures
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(T)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
@@ -2740,7 +2739,7 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
-!     
+!
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
           diffus_chi=diffus_chi+(gamma*thchi+chi_t)*dxyz_2
