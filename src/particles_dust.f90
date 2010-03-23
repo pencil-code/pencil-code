@@ -122,7 +122,8 @@ module Particles
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback
+      lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback,&
+      rhops
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -565,7 +566,7 @@ module Particles
 !  Initial particle position.
 !
       do j=1,ninit
-
+!
         select case (initxxp(j))
 
         case ('nothing')
@@ -651,9 +652,10 @@ module Particles
           enddo
 
        case ('random-cylindrical','random-cyl')
+!
           if (lroot) print*, 'init_particles: Random particle '//&
                'cylindrical positions with power-law pdlaw=',pdlaw
-!
+!         
           do k=1,npar_loc
 !
 ! Start the particles obeying a power law pdlaw
@@ -685,7 +687,7 @@ module Particles
                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
-
+!
         case ('np-constant')
           if (lroot) print*, 'init_particles: Constant number density'
           k=1
@@ -3127,7 +3129,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !  
-!  Possibility to include the transition from Esptein to Stokes drag
+!  Possibility to include the transition from Epstein to Stokes drag
 !
       if (present(lstokes)) then
 !
@@ -3235,7 +3237,7 @@ k_loop:   do while (.not. (k>npar_loc))
           !bad because it comes at the expense of evil divisions
         if (nzgrid==1) then
           if (luse_tau_ap) then 
-            tausp1_par=tmp1*2*pi_1*OO*p%rho(inx0)*fac/ rho0
+            tausp1_par=tmp1*2*pi_1*OO*p%rho(inx0)*fac/(rho0*rhops)
           else
             tausp1_par=tmp1*OO*p%rho(inx0)*fac/ rho0
           endif
