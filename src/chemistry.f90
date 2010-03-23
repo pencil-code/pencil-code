@@ -122,6 +122,11 @@ module Chemistry
      real :: lamb_low,lamb_up
    !  real, dimension(nchemspec,7)     :: tran_data
 !
+!   Atmospheric physics 
+!
+     logical :: latmchem=.false. 
+     integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0.
+!
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
@@ -130,7 +135,8 @@ module Chemistry
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
-      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,linit_velocity
+      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,linit_velocity, &
+      latmchem
 
 
 ! run parameters
@@ -273,6 +279,8 @@ module Chemistry
       logical :: data_file_exit=.false.
       logical :: exist,exist1,exist2
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
+      integer :: ind_glob,ind_chem
+      logical :: found_specie=.false.
 !
 !  initialize chemistry
 !
@@ -309,6 +317,29 @@ module Chemistry
       if (lcheminp) then
         call chemkin_data(f)
         data_file_exit=.true.
+       if (latmchem) then
+         call find_species_index('O2',ind_glob,ind_chem,found_specie)
+         if (found_specie) then
+          index_O2=ind_chem
+         else
+             call fatal_error('initialize_chemistry',&
+                       'no O2 has been found')
+         endif
+         call find_species_index('O2',ind_glob,ind_chem,found_specie)
+         if (found_specie) then
+          index_N2=ind_chem
+         else
+             call fatal_error('initialize_chemistry',&
+                       'no N2 has been found')
+         endif
+         call find_species_index('O2N2',ind_glob,ind_chem,found_specie)
+         if (found_specie) then
+          index_O2N2=ind_chem
+         else
+             call fatal_error('initialize_chemistry',&
+                       'no O2N2 has been found')
+         endif
+       endif
       endif
 !
 !  Alternatively, read in stoichiometric matrices in explicit format.
@@ -684,7 +715,11 @@ module Chemistry
         p%DYDt_diff=0.
       endif
 !
+      if (latmchem) then
+      RHS_Y_full(l1:l2,m,n,:)=p%DYDt_diff
+      else
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
+      endif
 !
 ! Calculate chethermal diffusivity
 !
@@ -1136,11 +1171,12 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) ::  tmp_sum,tmp_sum2, nu_dyn
+      real, dimension (mx,my,mz) ::  nuk_nuj,Phi
 !
       intent(in) :: f
       integer :: k,j, j1,j2,j3
       real :: T_up, T_mid, T_low, T_loc, T_loc_2,T_loc_3,T_loc_4
-      real :: cp_R_spec
+      real :: cp_R_spec,mk_mj
       real :: EE=0.,TT=0.,yH=1.
 !
       logical :: tran_exist=.false.
@@ -1280,19 +1316,19 @@ module Chemistry
           else
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
-!              tmp_sum2(j1,j2,j3)=0.
-!              do j=1,k
-!                mk_mj=species_constants(k,imass) &
-!                    /species_constants(j,imass)
-!                nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
-!                    /species_viscosity(j1,j2,j3,j)
-!                Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-!                    *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
-!                tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
-!                                  +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
-!              enddo
+              tmp_sum2(j1,j2,j3)=0.
+              do j=1,k
+                mk_mj=species_constants(k,imass) &
+                    /species_constants(j,imass)
+                nuk_nuj(j1,j2,j3)=species_viscosity(j1,j2,j3,k) &
+                    /species_viscosity(j1,j2,j3,j)
+                Phi(j1,j2,j3)=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
+                    *(1.+sqrt(nuk_nuj(j1,j2,j3))*mk_mj**(-0.25))**2
+                tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
+                                  +XX_full(j1,j2,j3,j)*Phi(j1,j2,j3)
+              enddo
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
-                  species_viscosity(j1,j2,j3,k)!/tmp_sum2(j1,j2,j3)
+                  species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
              enddo
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
           endif
@@ -2958,11 +2994,11 @@ module Chemistry
                  +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
                  +species_constants(k,iaa1(ii7))
           else
-          !    if (i==50) then
+              if (.not. latmchem) then
                 print*,'p%TT(i)=',p%TT(i),exp(p%lnTT(i)),i
                   call fatal_error('get_reaction_rate',&
                         'p%TT(i) is outside range')
-            !  endif
+              endif
 
           endif
 !
@@ -3000,16 +3036,22 @@ module Chemistry
               /species_constants(k,imass))**Sijm(k,reac)
          endif
         enddo
-
+!
       do i=1,nx
 !
 !  Find forward rate constant for reaction 'reac'
 !
-    !    if (prod1(i)==0. .and. prod2(i)==0.) then
-    !     kf(i)=0.
-    !    else
+       if (latmchem) then
+         if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
+            .and. (E_an(reac)==0.)) then
+            call calc_extra_react(f,reac,kf(i),p%TT1(i),i,m,n)
+         else
+           kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)*p%TT1(i))
+         endif
+       else
          kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
-    !    endif
+       endif
+
 !
 !  Find backward rate constant for reaction 'reac'
 !
@@ -3028,12 +3070,16 @@ module Chemistry
         else
           Kc(i)=Kp(i)*(p_atm(i)*p%TT1(i)/Rgas)**sum_tmp
         endif
-        if (Kc(i)==0.) then
+        if (Kc(i)==0. .and. (.not. latmchem)) then
           print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
           call fatal_error('get_reaction_rate',&
                         'Kc(i)=0')
         else
+        if (latmchem) then
+         kr(i)=kf(i)!/Kc(i)
+        else
          kr(i)=kf(i)/Kc(i)
+        endif
         endif
        endif
       enddo
@@ -3507,7 +3553,7 @@ module Chemistry
 ! The rotational and vibrational contributions are zero for the single
 ! atom molecules but not for the linear or non-linear molecules
 !
-            if (tran_data(k,1)>0.) then
+            if (tran_data(k,1)>0. .and. (.not. lfix_Sc)) then
               tmp_val=Bin_Diff_coef(j1,j2,j3,k,k)*rho_full(j1,j2,j3)&
                   /species_viscosity(j1,j2,j3,k)
               AA=2.5-tmp_val
@@ -4235,6 +4281,44 @@ module Chemistry
       end if
 !
     end subroutine get_mu1_slice
+!***********************************************************************
+  subroutine calc_extra_react(f,reac,kf_loc,TT1_loc,ll,mm,nn)
+!
+!
+      use Mpicomm, only: stop_it
+
+   !   character (len=*), intent(in) :: element_name
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, intent(in) :: reac, ll, mm,nn 
+      real, intent(in) :: TT1_loc
+      real, intent(out) :: kf_loc
+      real :: X_O2, X_N2, X_O2N2
+ !
+  
+      select case (reaction_name(reac))
+      case ('O=O3')
+         X_O2=f(l1+ll-1,mm,nn,ichemspec(index_O2))*unit_mass &
+                /(species_constants(index_O2,imass)*mu1_full(l1+ll-1,mm,nn))
+         X_N2=f(l1+ll-1,mm,nn,ichemspec(index_N2))*unit_mass &
+                /(species_constants(index_N2,imass)*mu1_full(l1+ll-1,mm,nn))
+         kf_loc=5.60D-34*X_O2*X_N2*((1./300./TT1_loc)**-2.6) &
+           +6.00D-34*X_O2**2*((1./300./TT1_loc)**-2.6) 
+       case ('O1D=O')
+         X_O2=f(l1+ll-1,mm,nn,ichemspec(index_O2))*unit_mass &
+                /(species_constants(index_O2,imass)*mu1_full(l1+ll-1,mm,nn))
+         X_N2=f(l1+ll-1,mm,nn,ichemspec(index_N2))*unit_mass &
+                /(species_constants(index_N2,imass)*mu1_full(l1+ll-1,mm,nn))
+         kf_loc=3.20D-11*X_O2*exp(67.*TT1_loc)+1.80D-11*X_N2*exp(107.*TT1_loc)
+       case ('OH+CO=HO2')
+         X_O2N2=f(l1+ll-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
+                /(species_constants(index_O2N2,imass)*mu1_full(l1+ll-1,mm,nn))
+         kf_loc=1.30D-13*(1+((0.6*index_O2N2)/(2.652E+19*(300.*TT1_loc)))) 
+      case default
+        if (lroot) print*,'reaction_name=', reaction_name(reac)
+        call stop_it('calc_extra_react: Element not found!')
+      end select
+!
+    endsubroutine calc_extra_react
 !***********************************************************************
   subroutine chemistry_clean_up()
 !

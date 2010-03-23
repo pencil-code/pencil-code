@@ -1336,6 +1336,8 @@ module EquationOfState
         MolMass=39.948
       case ('He','HE')
         MolMass=4.0026
+      case ('S')
+        MolMass=32.0655
       case default
         if (lroot) print*,'element_name=',element_name
         call stop_it('find_mass: Element not found!')
@@ -1365,7 +1367,7 @@ module EquationOfState
           ind_chem=k
           exit
         endif
-!print*, varname(ichemspec(k))
+!print*, trim(varname(ichemspec(k))),(species_name)
       enddo
 !
 !  Check if the species was really found
@@ -1374,9 +1376,9 @@ module EquationOfState
 
       if ((ind_glob==0)) then
         found_specie=.false.
-      ! if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem
-      !  call fatal_error('find_species_index',&
-      !                  'no species has been found')
+     !  if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem,species_name
+     !   call fatal_error('find_species_index',&
+      !                 'no species has been found')
       else
         found_specie=.true.
     !    if (lroot) print*,species_name,'   species index= ',ind_chem
