@@ -180,7 +180,7 @@ module Magnetic
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
-      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,& 
+      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
       lpress_equil_alt
 !
 ! Run parameters
@@ -216,8 +216,8 @@ module Magnetic
   logical :: luse_Bext_in_b2=.false.
   logical :: lmean_friction=.false.
   logical :: llarge_scale_velocity=.false.
-  logical :: lEMF_profile=.false. 
-  logical :: lhalox=.false. 
+  logical :: lEMF_profile=.false.
+  logical :: lhalox=.false.
   logical :: lalpha_profile_total=.false.
   logical :: lrun_initaa=.false.
   character (len=labellen) :: zdep_profile='fs'
@@ -419,13 +419,13 @@ module Magnetic
   integer :: idiag_embmz=0      ! DIAG_DOC: $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean field helicity production )
-  integer :: idiag_ambmz=0      ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+  integer :: idiag_ambmz=0      ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
                                 ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field)
-  integer :: idiag_ambmzh=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+  integer :: idiag_ambmzh=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
                                 ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field, temp)
-  integer :: idiag_ambmzn=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+  integer :: idiag_ambmzn=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
                                 ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field, north)
-  integer :: idiag_ambmzs=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$ 
+  integer :: idiag_ambmzs=0     ! DIAG_DOC: $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
                                 ! DIAG_DOC:   \quad (magnetic helicity of $xy$-averaged mean field, south)
   integer :: idiag_jmbmz=0      ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
@@ -991,9 +991,9 @@ module Magnetic
       endif
 !
 !  When adding a magnetic field to a snapshot of a nomagnetic simulation,
-!  the code allows only the initialization of the field to zero. This 
-!  hack allows a init_aa (from start.in) to be read and added to the 
-!  field upon executing run.csh  
+!  the code allows only the initialization of the field to zero. This
+!  hack allows a init_aa (from start.in) to be read and added to the
+!  field upon executing run.csh
 !
       if (lread_oldsnap_nomag.and.lrun_initaa) then
         if (lroot) then
@@ -1027,7 +1027,6 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
@@ -1444,7 +1443,7 @@ module Magnetic
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
-          idiag_emag/=0 ) & 
+          idiag_emag/=0 ) &
           lpenc_diagnos(i_b2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
       if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
@@ -1667,7 +1666,7 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
       real, dimension (nx) :: EMF_prof
-      real, dimension (nx) :: jcrossb2 
+      real, dimension (nx) :: jcrossb2
       real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func, meanfield_qe_func
       real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
@@ -1789,7 +1788,7 @@ module Magnetic
 ! DM : this requires later attention
       if (lpencil(i_uga)) then
         if (.not.lcartesian_coords) then
-          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates") 
+          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates")
         else
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         endif
@@ -1958,7 +1957,7 @@ module Magnetic
 ! cosub
       if (lpencil(i_cosub)) then
         do ix=1,nx
-          if ((abs(p%u2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini)) then 
+          if ((abs(p%u2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini)) then
             p%cosub(ix)=0.
           else
             p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
@@ -3676,7 +3675,7 @@ module Magnetic
 !
 !  30-apr-05/axel: coded
 !
-  use Sub, only: stepdown 
+  use Sub, only: stepdown
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
