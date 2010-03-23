@@ -1205,14 +1205,15 @@ module Magnetic
 !
       if (lpress_equil.or.lpress_equil_via_ss) then
         if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
-        call boundconds(f,iaa,iaa+2)
+        call boundconds_x(f)
+        call initiate_isendrcv_bdry(f)
+        call finalize_isendrcv_bdry(f)
+        call boundconds_y(f)
+        call boundconds_z(f)
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
-!          if(m.eq.(m1+m2)/2) then
-!            write(15,*) z(n),b2((l1+l2)/2)
-!          end if
           if (gamma==1.0) then
             f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
           else
@@ -1222,12 +1223,12 @@ module Magnetic
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
             else
               if (lpress_equil_alt) then
-                !cs2=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)
+!                cs2(1:nx)=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)
                 lnrho_old=f(l1:l2,m,n,ilnrho)
                 cs2=cs20*exp(gamma_m1*(lnrho_old-lnrho0) &
                   +gamma*f(l1:l2,m,n,iss))
                 f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
-                  (beq2*cs2))
+                  (beq2*cs2(1:nx)))
                 f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ &
                   (1.-gamma_inv)*(lnrho_old-f(l1:l2,m,n,ilnrho))
               else
