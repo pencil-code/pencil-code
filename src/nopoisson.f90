@@ -102,7 +102,7 @@ module Poisson
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_Poisson_run_pars
+    endsubroutine read_poisson_run_pars
 !***********************************************************************
     subroutine write_poisson_run_pars(unit)
 !
