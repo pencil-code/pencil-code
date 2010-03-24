@@ -125,7 +125,7 @@ module Chemistry
 !   Atmospheric physics 
 !
      logical :: latmchem=.false. 
-     integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0.
+     integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -338,6 +338,13 @@ module Chemistry
          else
              call fatal_error('initialize_chemistry',&
                        'no O2N2 has been found')
+         endif
+         call find_species_index('H2O',ind_glob,ind_chem,found_specie)
+         if (found_specie) then
+          index_H2O=ind_chem
+         else
+             call fatal_error('initialize_chemistry',&
+                       'no H2O has been found')
          endif
        endif
       endif
@@ -1279,10 +1286,13 @@ module Chemistry
                           +species_constants(k,iaa1(ii5))*T_loc_4
                     cv_R_spec_full(j1,j2,j3,k)=cp_R_spec-1.
                   else
+                  ! if (.not. latmchem) then
                     print*,'TT_full(j1,j2,j3)=',T_loc
                     print*,'j1,j2,j3=',j1,j2,j3
+                   
                     call fatal_error('calc_for_chem_mixture',&
                         'TT_full(j1,j2,j3) is outside range')
+                  ! endif
                   endif
                  cp_full(j1,j2,j3)=cp_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
                   *cp_R_spec/species_constants(k,imass)*Rgas
@@ -2941,7 +2951,7 @@ module Chemistry
       real :: Rcal
       integer :: k , reac, i
       real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd, T_loc
-      logical,save :: lwrite=.true.
+      logical,save :: lwrite=.true., lwrite_first=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii7=7
@@ -2949,7 +2959,7 @@ module Chemistry
       real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
 !
-      if (lwrite)  open(file_id,file=input_file)
+      if (lwrite_first)  open(file_id,file=input_file)
 !
 !  p is in atm units; atm/bar=1./10.13
 !
@@ -2994,11 +3004,11 @@ module Chemistry
                  +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
                  +species_constants(k,iaa1(ii7))
           else
-              if (.not. latmchem) then
+           !   if (.not. latmchem) then
                 print*,'p%TT(i)=',p%TT(i),exp(p%lnTT(i)),i
                   call fatal_error('get_reaction_rate',&
                         'p%TT(i) is outside range')
-              endif
+           !   endif
 
           endif
 !
@@ -3013,9 +3023,9 @@ module Chemistry
 !
 !  calculation of the reaction rate
 !
-      if (lwrite) write(file_id,*)'**************************'
-      if (lwrite) write(file_id,*)'Reaction rates'
-      if (lwrite) write(file_id,*)'**************************'
+      if (lwrite_first) write(file_id,*)'**************************'
+      if (lwrite_first) write(file_id,*)'Reaction rates'
+      if (lwrite_first) write(file_id,*)'**************************'
 !
       do reac=1,nreactions
 !
@@ -3044,14 +3054,13 @@ module Chemistry
        if (latmchem) then
          if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
             .and. (E_an(reac)==0.)) then
-            call calc_extra_react(f,reac,kf(i),p%TT1(i),i,m,n)
+            call calc_extra_react(f,reac,kf(i),i,m,n,p)
          else
            kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)*p%TT1(i))
          endif
        else
          kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
        endif
-
 !
 !  Find backward rate constant for reaction 'reac'
 !
@@ -3064,7 +3073,8 @@ module Chemistry
           dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
           sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
-        Kp(i)=exp(dSR(i)-dHRT(i))
+ 
+       Kp(i)=exp(dSR(i)-dHRT(i))
         if (sum_tmp==0.) then
           Kc(i)=Kp(i)
         else
@@ -3075,29 +3085,11 @@ module Chemistry
           call fatal_error('get_reaction_rate',&
                         'Kc(i)=0')
         else
-        if (latmchem) then
-         kr(i)=kf(i)!/Kc(i)
-        else
          kr(i)=kf(i)/Kc(i)
-        endif
         endif
        endif
       enddo
 !
-        if (lwrite) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR)
-        if (lwrite) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT)
-        if (lwrite) write(file_id,*)  'Nreact= ',reac,  'kf= ', maxval(kf)
-        if (lwrite) write(file_id,*)  'Nreact= ',reac,  'Kc= ', maxval(Kc)
-        if (lwrite) write(file_id,*)  'Nreact= ',reac,  'kr= ', maxval(kr)
-        if (lwrite) write(file_id,*)'**************************'
-!
-!  Finalize writing to file
-!
-        if (lwrite) write(file_id,*) ''
-        if (lwrite) write(file_id,*) '*******************'
-        if (lwrite) print*,'get_reaction_rate: writing react.out file'
-        if (lwrite) close(file_id)
-        lwrite=.false.
 !
 !  Multiply by third body reaction term
 !
@@ -3165,8 +3157,13 @@ module Chemistry
           vreact_p(i,reac)=0.
        endif
        if (prod2(i)>0) then
-        kr(i)=kf(i)/Kc(i)
-        if (Mplus_case (reac)) then
+        if (latmchem) then
+         kr(i)=kf(i)!/Kc(i)
+        else
+         kr(i)=kf(i)/Kc(i)
+        endif
+
+       if (Mplus_case (reac)) then
          vreact_m(i,reac)=prod2(i)*kr(i)
         else
          vreact_m(i,reac)=prod2(i)*kr(i)*sum_sp(i)
@@ -3174,29 +3171,45 @@ module Chemistry
        else
          vreact_m(i,reac)=0.
        endif
-      enddo
+       enddo
 !
-
 ! This part calculates forward and reverse reaction rates
 !  for the test case R->P
 !
 !  For more details see Doom, et al., J. Comp. Phys., 226, 2007
 !
       if (l1step_test) then
-
         do i=1,nx
          if (p%TT(i) > Tc) then
          vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const/lambda_const*beta*(beta-1.) &
                           *(1.-f(l1-1+i,m,n,ichemspec(ipr)))
-        !  vreact_p(i,reac)=f(l1,m,n,iux)**2*Cp_const/lambda_const*beta*(beta-1.) &
-         !                 *(1.-p%TT(i)/Tinf)
         else
          vreact_p(i,reac)=0.
         endif
        enddo
          vreact_m(:,reac)=0.
       endif
+
+
+     !  lwrite=.true.
+        if (lwrite_first) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
+        if (lwrite_first) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
+        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kf= ', maxval(kf), minval(kf)
+        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
+        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kr= ', maxval(kr), minval(kr)
+        if (lwrite_first) write(file_id,*)'**************************'
+     ! lwrite=.false.
+
       enddo
+ 
+!  Finalize writing to file
+!
+        if (lwrite_first) write(file_id,*) ''
+        if (lwrite_first) write(file_id,*) '*******************'
+        if (lwrite_first) print*,'get_reaction_rate: writing react.out file'
+        if (lwrite_first) close(file_id)
+      ! lwrite=.false.
+       lwrite_first=.false.
 !
     endsubroutine get_reaction_rate
 !***********************************************************************
@@ -4282,38 +4295,54 @@ module Chemistry
 !
     end subroutine get_mu1_slice
 !***********************************************************************
-  subroutine calc_extra_react(f,reac,kf_loc,TT1_loc,ll,mm,nn)
+  subroutine calc_extra_react(f,reac,kf_loc,i,mm,nn,p)
 !
 !
       use Mpicomm, only: stop_it
 
    !   character (len=*), intent(in) :: element_name
       real, dimension (mx,my,mz,mfarray) :: f
-      integer, intent(in) :: reac, ll, mm,nn 
-      real, intent(in) :: TT1_loc
+      type (pencil_case), intent(in) :: p
+      integer, intent(in) :: reac, i, mm,nn 
       real, intent(out) :: kf_loc
-      real :: X_O2, X_N2, X_O2N2
+      real :: X_O2, X_N2, X_O2N2, X_M, X_H2O
+      real :: K1,K2,K3,K4,KMT06
  !
   
       select case (reaction_name(reac))
       case ('O=O3')
-         X_O2=f(l1+ll-1,mm,nn,ichemspec(index_O2))*unit_mass &
-                /(species_constants(index_O2,imass)*mu1_full(l1+ll-1,mm,nn))
-         X_N2=f(l1+ll-1,mm,nn,ichemspec(index_N2))*unit_mass &
-                /(species_constants(index_N2,imass)*mu1_full(l1+ll-1,mm,nn))
-         kf_loc=5.60D-34*X_O2*X_N2*((1./300./TT1_loc)**-2.6) &
-           +6.00D-34*X_O2**2*((1./300./TT1_loc)**-2.6) 
+         X_O2=f(l1+i-1,mm,nn,ichemspec(index_O2))*unit_mass &
+                /species_constants(index_O2,imass)*p%rho(i)
+         X_N2=f(l1+i-1,mm,nn,ichemspec(index_N2))*unit_mass &
+                /species_constants(index_N2,imass)*p%rho(i)
+         kf_loc=5.60D-34*X_O2*X_N2*((1./300.*p%TT(i))**-2.6) &
+           +6.00D-34*X_O2**2*((1./300.*p%TT(i))**-2.6) 
        case ('O1D=O')
-         X_O2=f(l1+ll-1,mm,nn,ichemspec(index_O2))*unit_mass &
-                /(species_constants(index_O2,imass)*mu1_full(l1+ll-1,mm,nn))
-         X_N2=f(l1+ll-1,mm,nn,ichemspec(index_N2))*unit_mass &
-                /(species_constants(index_N2,imass)*mu1_full(l1+ll-1,mm,nn))
-         kf_loc=3.20D-11*X_O2*exp(67.*TT1_loc)+1.80D-11*X_N2*exp(107.*TT1_loc)
+         X_O2=f(l1+i-1,mm,nn,ichemspec(index_O2))*unit_mass &
+                /species_constants(index_O2,imass)*p%rho(i)
+         X_N2=f(l1+i-1,mm,nn,ichemspec(index_N2))*unit_mass &
+                /species_constants(index_N2,imass)*p%rho(i)
+         kf_loc=3.20D-11*X_O2*exp(67.*p%TT1(i))+1.80D-11*X_N2*exp(107.*p%TT1(i))
        case ('OH+CO=HO2')
-         X_O2N2=f(l1+ll-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
-                /(species_constants(index_O2N2,imass)*mu1_full(l1+ll-1,mm,nn))
-         kf_loc=1.30D-13*(1+((0.6*index_O2N2)/(2.652E+19*(300.*TT1_loc)))) 
-      case default
+         X_O2N2=f(l1+i-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
+                /species_constants(index_O2N2,imass)*p%rho(i)
+         kf_loc=1.30D-13*(1+((0.6*index_O2N2)/(2.652E+19*(300.*p%TT1(i))))) 
+       case ('2HO2=H2O2')
+         X_M=p%rho(i)*mu1_full(l1+i-1,mm,nn)
+         X_H2O=f(l1+i-1,mm,nn,ichemspec(index_H2O))*unit_mass &
+                /species_constants(index_H2O,imass)*p%rho(i)
+         KMT06=1 + (1.4E-21 * EXP(2200.*p%TT1(i)) * X_H2O) 
+         kf_loc= 2.20D-13*KMT06*EXP(600.*p%TT1(i)) &
+                + 1.90D-33*X_M*KMT06*EXP(980.*p%TT1(i))
+       case ('OH+HNO3=NO3')
+         X_O2N2=f(l1+i-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
+                /species_constants(index_O2N2,imass)*p%rho(i)
+         K1        =  2.4E-14 * EXP(460.*p%TT1(i))
+         K3        =  6.5E-34 * EXP(1335.*p%TT1(i))
+         K4        =  2.7E-17 * EXP(2199.*p%TT1(i))
+         K2        =  (K3 * X_O2N2) / (1 + (K3*X_O2N2/K4))
+         kf_loc= K1 + K2
+       case default
         if (lroot) print*,'reaction_name=', reaction_name(reac)
         call stop_it('calc_extra_react: Element not found!')
       end select
