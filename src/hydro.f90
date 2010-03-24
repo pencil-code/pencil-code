@@ -76,6 +76,7 @@ module Hydro
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
   real :: mu_omega=0., gap=0.
   integer :: nb_rings=0
+  integer :: neddy=0
   real, dimension (5) :: om_rings=0.
   integer :: N_modes_uu=0
   logical :: ladvection_velocity=.true.
@@ -106,7 +107,8 @@ module Hydro
        luut_as_aux,loot_as_aux, &
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
        lscale_tobox, ampl_Omega,omega_ini, &
-       r_cyl,skin_depth, incl_alpha, rot_rr,xsphere,ysphere,zsphere
+       r_cyl,skin_depth, incl_alpha, rot_rr,xsphere,ysphere,zsphere,&
+       neddy
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
@@ -658,10 +660,11 @@ module Hydro
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
-      real, dimension (nx) :: r,p1,tmp,prof
+      real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      integer :: j,i,l
+      real :: dis, xold,yold
+      integer :: j,i,l,ixy
       type (pencil_case) :: p
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -1011,20 +1014,39 @@ module Hydro
                   sin(kx_uu*x(l1:l2)+ky_uu*y(m)+kz_uu*z(n)))
             enddo; enddo
           endif
-        case ( 'anelastic-2dxy')
-          print*, "anelastic-2dxy: ampl_uz,kx_uu,ky_uu = ", ampl_uz(j),kx_uu,ky_uu
+        case ( 'random-2D-eddies')
+          if (lroot) & 
+            print*, "random-2D-eddies: ampluu,kx_uu,ky_uu = ", ampluu(j),kx_uu,ky_uu
+          f(:,:,:,iuz)=0.
+          call random_number_wrapper(xc0)
+          xc0=(1.-2*xc0)*Lxyz(1)/2
+          call random_number_wrapper(yc0)
+          yc0=(1.-2*yc0)*Lxyz(2)/2
+          if (lroot) &
+          write(*,*) 'PC:init_uu ', xc0
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iuz)=ampl_uz(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))
+            do ixy=1,neddy
+              dis=sqrt((xold-xc0(ixy))**2+(yold-yc0(ixy))**2)
+              if (dis.lt.5*sqrt(1./kx_uu**2+1./ky_uu**2)) then
+                ampluu(j)=-ampluu(j)
+                if (lroot) & 
+                  write(*,*) 'PC:init_uu ', 'Eddies have come very close'
+              endif
+              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)* & 
+                exp(-kx_uu*(x(l1:l2)-xc0(ixy))**2-ky_uu*(y(m)-yc0(ixy))**2)
+              xold=xc0(ixy)
+              yold=yc0(ixy)
+            end do
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
           do n=n1,n2;do m=m1,m2
-            call calc_pencils_density(f,p)
             call grad(f,iuz,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)/p%rho
-            f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)/p%rho
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,2)
+            f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)
           enddo;enddo
           f(:,:,:,iuz)=0.
+          close(15)
 
         case ( 'anelastic-2dxz')
           print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,kz_uu
@@ -1038,12 +1060,8 @@ module Hydro
             call grad(f,iuy,tmp_nx3)
             f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/exp(f(l1:l2,m,n,ilnrho))
             f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/exp(f(l1:l2,m,n,ilnrho))
-            do l=l1,l2
-              write(15,*) l,n,f(l,m,n,iux),f(l,m,n,iuz)
-            enddo
           enddo;enddo
           f(:,:,:,iuy)=0.
-          write(*,*) 'PC:init_uu','Finished initializing uu'
 
 !
         case ('incompressive-shwave')
