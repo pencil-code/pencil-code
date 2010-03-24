@@ -303,16 +303,17 @@ module Slices
         !yz is not needed
         lwrite_slice_yz =.false.        
 !
-!  another slice positions for spherical coordinates
+!  Another slice positions for spherical coordinates
 !  s is for "surface" meaning theta-phi sections
-!  keep iz_loc=n1, corresponding to a meridional slice on n=n1
+!  keep iz_loc=n1, corresponding to a meridional slice on n=n1.
+!  The lwrite_slice_xz=.true. is needed for the read_video routine.
 !
       elseif (slice_position=='s') then
         iz_loc=n1; iz2_loc=n2
-        call xlocation(xbot_slice,ix_loc,lwrite_slice_yz)
-        call ylocation(ybot_slice,iy_loc,lwrite_slice_xz)
+        call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
         lwrite_slice_xy2=(ipz==nprocz/4)
         lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=.true.
 !
 !  later we may also want to write other slices
 !

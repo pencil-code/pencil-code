@@ -3521,35 +3521,14 @@ module Entropy
 !  surface cooling: entropy or temperature
 !  cooling profile; maximum = 1
 !
-!       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
-        if (rcool==0.) rcool=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
-!
 !  pick type of cooling
 !
         select case (cooltype)
         case ('shell')          !  heating/cooling at shell boundaries
-!
-!  possibility of a latitudinal heating profile
-!  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
-!  Note that P2(x)=(1/2)*(3*x^2-1).
-!
-          if (deltaT_poleq/=0.) then
-            if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
-            if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
-            if (headtt) print*,'p%z_mn=',p%z_mn
-            theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
-            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-            prof = 1 - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
-            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
-          else
-            prof = step(x(l1:l2),r_ext,wcool)     ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-            prof = 1 - step(x(l1:l2),r_int,wcool) ! inner heating/cooling step
-            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
-            endif
-!
+           if (rcool==0.) rcool=r_ext
+           prof = step(x(l1:l2),rcool,wcool)
+           heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+           
         case default
           write(unit=errormsg,fmt=*) &
                'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
