@@ -220,6 +220,16 @@ module Forcing
           profz_hel(n)=z(n)
         enddo
 !
+!  cosine profile of helicity about z=0
+!
+      elseif (iforce_profile=='cos(z/2)') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)=cos(.5*z(n))
+        enddo
+!
 !  helicity profile proportional to z^2, but vanishing on the boundaries
 !
       elseif (iforce_profile=='squared') then
