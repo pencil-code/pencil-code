@@ -3157,13 +3157,9 @@ module Chemistry
           vreact_p(i,reac)=0.
        endif
        if (prod2(i)>0) then
-        if (latmchem) then
-         kr(i)=kf(i)!/Kc(i)
-        else
          kr(i)=kf(i)/Kc(i)
-        endif
 
-       if (Mplus_case (reac)) then
+        if (Mplus_case (reac)) then
          vreact_m(i,reac)=prod2(i)*kr(i)
         else
          vreact_m(i,reac)=prod2(i)*kr(i)*sum_sp(i)
@@ -3171,6 +3167,10 @@ module Chemistry
        else
          vreact_m(i,reac)=0.
        endif
+          if (latmchem) then
+            kr(i)=kf(i)!/Kc(i)
+          endif
+
        enddo
 !
 ! This part calculates forward and reverse reaction rates
@@ -3190,16 +3190,15 @@ module Chemistry
          vreact_m(:,reac)=0.
       endif
 
-
      !  lwrite=.true.
         if (lwrite_first) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
         if (lwrite_first) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
-        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kf= ', maxval(kf), minval(kf)
+        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kf= ', kf(1), minval(kf)
         if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
-        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kr= ', maxval(kr), minval(kr)
+        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kr= ', kr(1), minval(kr)
         if (lwrite_first) write(file_id,*)'**************************'
      ! lwrite=.false.
-
+       
       enddo
  
 !  Finalize writing to file
