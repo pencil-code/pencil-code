@@ -112,7 +112,7 @@ GetOptions(\%opts,
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
 if ($debug) {
     printopts(\%opts);
-    print "\@ARGV = `@ARGV'\n";
+    print "\@ARGV = '@ARGV'\n";
 }
 
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
@@ -173,6 +173,8 @@ unless (-d './src/scripts') {
 
 my @make_args = @{$parser->get_makefile_args()};
 push @make_args, @extra_make_args;
+
+for (my $i = 0; $i < @make_args; $i++) { $make_args[$i] =~ s/^\s*MAKE_VAR\d*[\s=]*//s; }
 
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
