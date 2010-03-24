@@ -223,7 +223,7 @@ module Density
        case ('hyper3_aniso','hyper3-aniso')
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
           ldiff_hyper3_aniso=.true.
-        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
+        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph','hyper3_mesh')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
           ldiff_hyper3_polar=.true.
         case ('shock','diff-shock','diffrho-shock')
@@ -1625,6 +1625,10 @@ module Density
           call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
           if (.not.ldensity_nolog) tmp=tmp*p%rho1
           fdiff = fdiff + diffrho_hyper3*pi4_1*tmp*dline_1(:,j)**2
+!AB: wouldn't the following line make more sense?
+!AB: But then the meaning of diffrho_hyper3 changes, so we
+!AB: should not just add it to the previous diffus_diffrho3.
+          !fdiff = fdiff + diffrho_hyper3*pi5_1*tmp*dline_1(:,j)**5
         enddo
         if (lfirst.and.ldt) &
              diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1/dxyz_4
