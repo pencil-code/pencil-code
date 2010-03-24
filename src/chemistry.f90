@@ -3157,20 +3157,22 @@ module Chemistry
           vreact_p(i,reac)=0.
        endif
        if (prod2(i)>0) then
-         kr(i)=kf(i)/Kc(i)
-
+          if (latmchem) then
+            kr(i)=kf(i)!/Kc(i)
+          else
+            kr(i)=kf(i)/Kc(i)
+          endif
         if (Mplus_case (reac)) then
          vreact_m(i,reac)=prod2(i)*kr(i)
         else
          vreact_m(i,reac)=prod2(i)*kr(i)*sum_sp(i)
         endif
        else
-         vreact_m(i,reac)=0.
-       endif
           if (latmchem) then
             kr(i)=kf(i)!/Kc(i)
           endif
-
+         vreact_m(i,reac)=0.
+       endif
        enddo
 !
 ! This part calculates forward and reverse reaction rates
