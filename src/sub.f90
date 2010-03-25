@@ -1418,7 +1418,6 @@ module Sub
 !  22-oct-02/axel+tarek: adapted from curl
 !
       use Deriv, only: der
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g
@@ -1597,7 +1596,6 @@ module Sub
 !  15-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der,der2,derij
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: fjji,fijj
@@ -1734,7 +1732,6 @@ module Sub
 !   7-feb-04/axel: adapted from del2v_etc
 !
       use Deriv, only: der2,derij
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: fjji,fijj
@@ -1782,8 +1779,6 @@ module Sub
 !  calculate del4 of a vector, get vector
 !  09-dec-03/nils: adapted from del6v
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del4f
       real, dimension (nx) :: tmp
@@ -1813,8 +1808,6 @@ module Sub
 !  calculate del6 of a vector, get vector
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
-!
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del6f
@@ -1850,7 +1843,6 @@ module Sub
 !   7-mar-07/wlad: added cylindrical coordinates
 !
       use Deriv, only: der2,derij
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       integer, intent (in) :: iref
@@ -2006,7 +1998,6 @@ module Sub
 !  9-dec-03/nils: adapted from del6
 !
       use Deriv, only: der4
-      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del4f
@@ -2035,7 +2026,6 @@ module Sub
 !  8-jul-02/wolf: coded
 !
       use Deriv, only: der6
-      use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2065,7 +2055,6 @@ module Sub
 !  13-jun-05/anders: adapted from del6
 !
       use Deriv, only: der6_other
-      use Mpicomm, only: stop_it
 !
       intent(in) :: f
       intent(out) :: del6f
@@ -2095,7 +2084,6 @@ module Sub
 !  8-jul-02/wolf: coded
 !
       use Deriv, only: der6
-      use Mpicomm, only: stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2120,7 +2108,6 @@ module Sub
 !  30-oct-06/wlad: adapted from del6
 !
       use Deriv, only: der6
-      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2150,8 +2137,6 @@ module Sub
 !  the coefficient depends on resolution. Returns vector.
 !
 !  30-oct-06/wlad: adapted from del6v
-!
-      use Mpicomm, only:stop_it
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2510,8 +2495,6 @@ module Sub
 !
 !  read data (random seed, etc.) from file
 !  11-apr-00/axel: adapted from input
-!
-      use Mpicomm, only: stop_it
 !
       integer :: nv,iostat
       integer, dimension (nv) :: a
@@ -3540,8 +3523,6 @@ module Sub
 !  30-apr-04/anders: coded
 !  12-jun-04/anders: region or intervals supplied in call
 !
-        use Mpicomm, only: stop_it
-!
         real, dimension(:,:,:,:) :: f
         character (len=*) :: msg
         integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
@@ -3939,8 +3920,6 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
-        use Mpicomm, only: stop_it
-!
         character (len=2*bclen+1), dimension(mcom) :: bc
         character (len=bclen), dimension(mcom) :: bc1,bc2
         integer :: j,isep
@@ -3973,8 +3952,6 @@ module Sub
 !  `s' for upper boundary.
 !
 !   6-jul-03/axel: adapted from parse_bc
-!
-        use Mpicomm, only: stop_it
 !
         character (len=2*bclen+1), dimension(3) :: bc
         character (len=bclen), dimension(3) :: bc1,bc2
@@ -4009,8 +3986,6 @@ module Sub
 !  `s' for upper boundary.
 !
 !   6-jul-03/axel: adapted from parse_bc
-!
-        use Mpicomm, only: stop_it
 !
         character (len=2*bclen+1) :: bc
         character (len=bclen) :: bc1,bc2
@@ -4210,7 +4185,7 @@ nameloop: do
 !  Different compilers have different lengths:
 !    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
 !
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: lroot
       use General, only: random_seed_wrapper
 !
       integer :: nseed
@@ -4393,8 +4368,6 @@ nameloop: do
 !  may crash mysteriously.
 !
 !  4-oct-02/wolf: coded
-!
-      use Mpicomm, only: stop_it
 !
       intent (out) :: date
 !
@@ -5005,8 +4978,6 @@ nameloop: do
 !
 !  15-mar-07/wlad : coded
 !
-      use Mpicomm,only: stop_it
-!
       real, dimension(:),intent(out) :: rrmn,rcylmn
       real, dimension(size(rrmn,1)) :: xc
       real, intent(in), optional :: e1_,e2_,e3_
@@ -5199,7 +5170,6 @@ nameloop: do
 !  1-aug-07/dhruba : adapted from gij_etc
 !
       use Deriv, only: der2,derij
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz), intent (in) :: psif
       real, dimension(3), intent(in) :: ee
