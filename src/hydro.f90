@@ -665,7 +665,6 @@ module Hydro
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold
       integer :: j,i,l,ixy
-      type (pencil_case) :: p
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
