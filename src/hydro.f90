@@ -281,11 +281,11 @@ module Hydro
   integer :: idiag_ux2mxz=0     ! DIAG_DOC: $\left< u_x^2 \right>_{y}$
   integer :: idiag_uy2mxz=0     ! DIAG_DOC: $\left< u_y^2 \right>_{y}$
   integer :: idiag_uz2mxz=0     ! DIAG_DOC: $\left< u_z^2 \right>_{y}$
-  integer :: idiag_uxmx=0       ! DIAG_DOC:
-  integer :: idiag_uymx=0       ! DIAG_DOC:
-  integer :: idiag_uzmx=0       ! DIAG_DOC:
-  integer :: idiag_divum=0      ! DIAG_DOC:
-  integer :: idiag_divu2m=0     ! DIAG_DOC:
+  integer :: idiag_uxmx=0       ! DIAG_DOC: $\left< u_x \right>_{yz}$
+  integer :: idiag_uymx=0       ! DIAG_DOC: $\left< u_y \right>_{yz}$
+  integer :: idiag_uzmx=0       ! DIAG_DOC: $\left< u_z \right>_{yz}$
+  integer :: idiag_divum=0      ! DIAG_DOC:$\left<{\rm div}\uv)\right>$
+  integer :: idiag_divu2m=0     ! DIAG_DOC: $\left<({\rm div}\uv)^2\right>$
   integer :: idiag_u3u21m=0     ! DIAG_DOC: $\left<u_3 u_{2,1}\right>$
   integer :: idiag_u1u32m=0     ! DIAG_DOC: $\left<u_1 u_{3,2}\right>$
   integer :: idiag_u2u13m=0     ! DIAG_DOC: $\left<u_2 u_{1,3}\right>$
