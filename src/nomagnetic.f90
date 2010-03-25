@@ -15,9 +15,8 @@
 !***************************************************************
 module Magnetic
 !
-  use Cparam
   use Cdata
-  use Messages
+  use Messages, only: svn_id
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -54,10 +53,6 @@ module Magnetic
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
 !  3-may-2002/wolf: dummy routine
-!
-      use Cdata
-      use Mpicomm
-      use Sub
 !
 !  identify version number
 !
@@ -136,7 +131,6 @@ module Magnetic
       if (lpencil(i_uxb)) p%uxb=0.0
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
@@ -211,7 +205,7 @@ module Magnetic
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
@@ -229,7 +223,7 @@ module Magnetic
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
@@ -333,9 +327,9 @@ module Magnetic
     endsubroutine bb_unitvec_shock
 !***********************************************************************
     subroutine input_persistent_magnetic(id,lun,done)
-! 
+!
 !  Dummy routine
-! 
+!
       integer :: id,lun
       logical :: done
 !
@@ -363,7 +357,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
 !
       call keep_compiler_quiet(f,df)
-!      
+!
     endsubroutine remove_mean_emf
 !***********************************************************************
 endmodule Magnetic
