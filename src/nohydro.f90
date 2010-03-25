@@ -62,9 +62,8 @@ module Hydro
 !
 !  6-nov-01/wolf: coded
 !
-      use Mpicomm, only: lroot,stop_it
-      use SharedVariables
-      use Sub
+      use Mpicomm, only: lroot
+      use SharedVariables, only: put_shared_variable
 !
       integer :: ierr
 !
@@ -144,8 +143,6 @@ module Hydro
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -214,10 +211,10 @@ module Hydro
 !
 !   08-nov-04/tony: coded
 !
-      use Diagnostics
-      use General
+      use Diagnostics, only: sum_mn_name, max_mn_name, integrate_mn_name
+      use General, only: random_number_wrapper
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
-      use Sub
+      use Sub, only: quintic_step, quintic_der_step, dot_mn, dot2_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -694,8 +691,7 @@ kky_aa=2.*pi
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      use Diagnostics
-      use FArrayManager
+      use Diagnostics, only: sum_mn_name, save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -818,8 +814,8 @@ kky_aa=2.*pi
 !                    correct periodicity.
 !                    renamed from random_isotropic_KS_setup
 !
-    use Sub
-    use General
+    use Sub, only: cross
+    use General, only: random_number_wrapper
 !
     integer :: modeN
 !
@@ -956,8 +952,8 @@ kky_aa=2.*pi
 !   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
 !                    KS modes.
 !
-    use Sub
-    use General
+    use Sub, only: cross, dot2
+    use General, only: random_number_wrapper
 !
     integer :: modeN
 !
@@ -1093,8 +1089,7 @@ kky_aa=2.*pi
 !
 !   03-feb-06/weezy: modified from random_isotropic_KS_setup
 !
-    use Sub
-    use General
+    use Sub, only: cross
 !
     integer :: modeN
 !
@@ -1551,7 +1546,7 @@ kky_aa=2.*pi
     subroutine init_ck
 !
 !  8-sep-2009/dhruba: coded
-!     
+!
       integer :: l,m
       real :: Balpha,jl,jlp1,jlm1,LPl,LPlm1
       integer :: ell
@@ -1605,7 +1600,7 @@ kky_aa=2.*pi
 !
 !  dummy routine due to dhruba commit 13286
 !
-!  16-feb-2010/bing: 
+!  16-feb-2010/bing:
 !
       print*, 'I should not be called. '
 !
