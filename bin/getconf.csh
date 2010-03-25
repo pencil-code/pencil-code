@@ -1155,7 +1155,7 @@ else if ($hn =~ *.pdc.kth.se) then
 # set remote_top     = 1
 # set local_binary   = 0
 #----------------------------------------------------
-else if (($hn =~ n[0-9]*) && (($USER =~ x_axebr) || ($USER =~ x_emebr)) then
+else if (($hn =~ n[0-9]*) && (($USER =~ x_axebr) || ($USER =~ x_emebr))) then
   echo "Neolith cluster in Linkoping"
   echo "special settings for USER=$USER"
   if ($mpi) echo "Use mpprun"
