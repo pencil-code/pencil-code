@@ -4243,7 +4243,7 @@ module Initcond
       real :: mu0_SI,u_b,zref
       logical :: exist
       integer :: i,idx2,idy2,stat,iostat,lend
-      integer, dimension(2) :: dims=(nxgrid,nygrid)
+      integer, dimension(2) :: dims=(/nxgrid,nygrid/)
 !
 !  Allocate memory for arrays.
 !
