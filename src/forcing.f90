@@ -230,6 +230,17 @@ module Forcing
           profz_hel(n)=cos(.5*z(n))
         enddo
 !
+!  Cosine profile of helicity about z=0, with max function.
+!  Should be used only if |z| < 1.5*pi.
+!
+      elseif (iforce_profile=='cos(z/2)_with_halo') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)=max(cos(.5*z(n)),0.)
+        enddo
+!
 !  helicity profile proportional to z^2, but vanishing on the boundaries
 !
       elseif (iforce_profile=='squared') then

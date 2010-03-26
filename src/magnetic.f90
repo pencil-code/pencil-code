@@ -191,7 +191,7 @@ module Magnetic
   real :: height_eta=0.0, eta_out=0.0
   real :: z_surface=0.0
   real :: tau_aa_exterior=0.0
-  real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0
+  real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: alphaSSm=0.0
   real :: alpha_rmax=0.0, alpha_width=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
@@ -248,7 +248,8 @@ module Magnetic
       lB_ext_pot, displacement_gun, D_smag, brms_target, &
       rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
       lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
-      eta_z0, borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
+      eta_z0, eta_z1, &
+      borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
@@ -5801,10 +5802,29 @@ module Magnetic
            geta_z(:,3) = -eta/(2.*eta_width) * ((tanh((z + eta_z0)/eta_width))**2. &
              - (tanh((z - eta_z0)/eta_width))**2.)
 !
+!  Single step function
+!
         case ('step')
+!
 !  default to spread gradient over ~5 grid cells.
+!
            if (eta_width == 0.) eta_width = 5.*dz
            eta_z = eta + eta*(eta_jump-1.)*step(z,eta_z0,-eta_width)
+!
+! its gradient:
+           geta_z(:,1) = 0.
+           geta_z(:,2) = 0.
+           geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
+!
+!  Two-step function
+!
+        case ('two_step')
+!
+!  default to spread gradient over ~5 grid cells.
+!
+           if (eta_width == 0.) eta_width = 5.*dz
+           eta_z = eta*eta_jump-eta*(eta_jump-1.)* &
+             (step(z,eta_z0,eta_width)-step(z,eta_z1,eta_width))
 !
 ! its gradient:
            geta_z(:,1) = 0.
