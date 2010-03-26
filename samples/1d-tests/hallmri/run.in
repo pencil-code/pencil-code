@@ -1,0 +1,27 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Mangentorotaional instability with Hall effeft
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2009-04-29 10:02:29 brandenb Exp $',
+  nt=52500, it1=20, dsnap=5, dvid=1., isave=100, ialive=1
+  dt=5e-4
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  iresistivity='eta-const'
+  eta=1e-3
+  hall_term=-0.75
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-3
+/

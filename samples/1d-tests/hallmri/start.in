@@ -1,0 +1,29 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2009-04-29 10:02:29 brandenb Exp $',
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+  Omega=1.
+  inituu='soundwave-z'
+  ampluu=1e-6 
+  kz_uu=1.
+/
+&density_init_pars
+
+/
+&magnetic_init_pars
+  initaa='nothing', 'Alfvenz-rot-shear'
+  amplaa=0., 1e-6
+  kz_aa=0., 1.
+  B_ext=0.,0.,1.
+ 
+/
+&shear_init_pars
+  qshear=1.5
+/
