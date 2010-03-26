@@ -4408,7 +4408,7 @@ module Boundcond
         kappa1 = 0
       endwhere
 !
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4706,7 +4706,7 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (mod(nxgrid,nygrid)/=0) &
              call stop_it("bc_aa_pot: pot-field doesn't work "//&
-                          "with mod(nxgrid,nygrid)/=1")
+                          "with mod(nxgrid,nygrid)/=0")
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
