@@ -479,16 +479,16 @@ module Boundcond
 !
       case default
         !call get_shared_variable('Fbot',Fbot,ierr)
-        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !if (ierr/=0) call stop_it("boundconds_z: "//&
         !     "there was a problem when getting Fbot")
         !call get_shared_variable('Ftop',Ftop,ierr)
-        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !if (ierr/=0) call stop_it("boundconds_z: "//&
         !     "there was a problem when getting Fbot")
         !call get_shared_variable('FbotKbot',FbotKbot,ierr)
-        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !if (ierr/=0) call stop_it("boundconds_z: "//&
         !     "there was a problem when getting FbotKbot")
         !call get_shared_variable('FtopKtop',FtopKtop,ierr)
-        !if (ierr/=0) call stop_it("boundcond_z: "//&
+        !if (ierr/=0) call stop_it("boundconds_z: "//&
         !     "there was a problem when getting FtopKtop")
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
