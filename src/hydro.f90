@@ -128,6 +128,7 @@ module Hydro
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
+  logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumean=.false.
   logical :: lforcing_cont_uu=.false.
@@ -145,10 +146,11 @@ module Hydro
        Omega,theta, &
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
+       inituu,ampluu,kz_uu, &
        ampl1_diffrot,ampl2_diffrot,uuprof, &
        xexp_diffrot,kx_diffrot,kz_diffrot, &
        kz_analysis, &
-       lremove_mean_momenta,lremove_mean_flow, &
+       lreinitialize_uu,lremove_mean_momenta,lremove_mean_flow, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, lpressuregradient_gas, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
@@ -477,16 +479,18 @@ module Hydro
 !
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
+!  26-mar-10/axel: lreinitialize_uu added
 !
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use Mpicomm, only: stop_it
+      use Initcond
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
       logical :: lstarting
-      integer :: ierr
+      integer :: ierr,j
 !
 !  Block use of uninitalised p%fcont
 !
@@ -502,6 +506,16 @@ module Hydro
       c2z=c**2
       s2z=s**2
       csz=c*s
+!
+!  rescale magnetic field by a factor reinitialize_aa
+!
+      if (lreinitialize_uu) then
+        do j=1,ninit
+          select case (inituu(j))
+          case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+          endselect
+        enddo
+      endif
 !
 !  r_int and r_ext override rdampint and rdampext if both are set
 !
