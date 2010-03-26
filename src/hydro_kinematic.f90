@@ -52,12 +52,15 @@ module Hydro
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
+  real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,& 
+          uphi_step_width=0.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
     kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
     circ_rmax,circ_step_width,circ_amp, &
     ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
-    lrandom_location,lwrite_random_location,location_fixed,dtforce
+    lrandom_location,lwrite_random_location,location_fixed,dtforce,&
+    radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -260,6 +263,7 @@ module Hydro
       integer :: ell
       real :: Balpha
       real :: theta,theta1
+      real :: omega0,shear
 !
       intent(in) :: f
       intent(inout) :: p
@@ -696,6 +700,20 @@ ky_uukin=2.*pi
           p%uu(:,3)=wind_amp*step_scalar(z(n),wind_rmin,wind_step_width)
         endif
 !
+! uniform radial shear with a cutoff at rmax
+! uniform radial shear with saturation.
+!
+      elseif (kinflow=='rshear-sat') then
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'radial shear saturated'
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+!          omega0=uphi_at_rmax/uphi_rmax
+!          shear = arctanh(omega0)/(uphi_rmax-x(l1))
+          p%uu(:,3)=x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
+!              (1+stepdown(x(l1:l2),uphi_rmax,uphi_step_width))
+        endif
+!
 !  Vertical wind
 !
       elseif (kinflow=='vertical-wind') then
@@ -778,6 +796,52 @@ ky_uukin=2.*pi
             cos(theta)*sin(theta-theta1)**2)*&
            (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
           p%uu(:,3)=0.
+        endif
+        p%divu=div_uprof*wind_amp + &
+          div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
+            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+            -sin(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
+        p%der6u(:,1)=wind_amp*der6_uprof
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
+!
+! radial shear + radial wind + circulation
+!
+      elseif (kinflow=='rshear-sat+rwind+circ') then
+! 
+! first set wind and cirulation
+! 
+        select case (wind_profile)
+        case ('none'); wind_prof=0.;div_uprof=0.
+        case ('constant'); wind_prof=1.;div_uprof=0.
+!
+        case ('radial-step')
+          wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
+          div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
+!          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
+          der6_uprof=0.
+        case default;
+          call fatal_error('hydro_kinematic: kinflow= radial-shear+rwind+rcirc', 'no such wind profile. ')
+        endselect
+!
+        rone=xyz0(1)
+        theta=y(m)
+        theta1=xyz0(2)
+        if (lpencil(i_uu)) then
+          if (headtt) print*,'radial shear, wind, circulation: not complete yet'
+          vel_prof=circ_amp*(1+stepdown(x(l1:l2),circ_rmax,circ_step_width))
+          div_vel_prof=-der_step(x(l1:l2),circ_rmax,circ_step_width)
+
+          p%uu(:,1)=vel_prof*(r1_mn**2)*(sin1th(m))*(&
+            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+            -sin(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 + &
+           wind_amp*wind_prof
+          p%uu(:,2)=-vel_prof*r1_mn*sin1th(m)*(&
+            cos(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
+          p%uu(:,3)=x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
         endif
         p%divu=div_uprof*wind_amp + &
           div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
