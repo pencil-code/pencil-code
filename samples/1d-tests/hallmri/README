@@ -1,20 +1,20 @@
 Directory:
     ${PENCIL_HOME}/samples/1d-tests/hallmri
 SVN Id:
-    $Id: $
+    $Id$
 Maintainer:
-    Bejarano Cecilia <cbejarano/iafe[dot]uba[dot]ar>
+    Cecilia Bejarano <cbejarano/iafe[dot]uba[dot]ar>
 Added:
     2010-mar-26
 Status:
     still unsuccessful # One of [succeeds|failing since <date>|obsolete| ...]
     The run inevitably blows up at specific time (in this case t ~ 25). 
     The cause seems to be the shear, which is now fixed at q=1.5 
-    (keplerian rotation profile). If we raise this value, it explodes earlier.
+    (Keplerian rotation profile). If we raise this value, it explodes earlier.
 Recommended resolution:
     nz=128 (nu=eta=1e-3) 
 Comments:
-    Magnetorotaional innstability with Hall effect. Non linear saturation.
+    Magneto-rotational instability with Hall effect. Nonlinear saturation.
     
     The acoustic and MRI parts work together such that the acoustic waves seem 
     to lead to the saturation of the MRI. The acoustic wave is initially 

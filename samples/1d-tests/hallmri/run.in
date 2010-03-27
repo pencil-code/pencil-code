@@ -4,8 +4,8 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2009-04-29 10:02:29 brandenb Exp $',
-  nt=52500, it1=20, dsnap=5, dvid=1., isave=100, ialive=1
+  cvsid='$Id$',
+  nt=201, it1=20, dsnap=5, dvid=1., isave=100, ialive=1
   dt=5e-4
 /
 &eos_run_pars
