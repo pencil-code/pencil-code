@@ -3688,8 +3688,6 @@ module Boundcond
       real, dimension (:,:), allocatable :: A_i,A_r
 !
       real, dimension (:,:), allocatable :: kx,ky,k2
-      real, dimension (nxgrid) :: kxp
-      real, dimension (nygrid) :: kyp
 !
       real :: mu0_SI,u_b,time_SI
 !
@@ -3719,11 +3717,8 @@ module Boundcond
       idx2 = min(2,nxgrid)
       idy2 = min(2,nygrid)
 !
-      kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-      kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-!
-      kx =spread(kxp,2,nygrid)
-      ky =spread(kyp,1,nxgrid)
+      kx =spread(kx_fft,2,nygrid)
+      ky =spread(ky_fft,1,nxgrid)
       k2 = kx*kx + ky*ky
 !
       if (tr+delta_t.le.time_SI) then
@@ -4568,7 +4563,7 @@ module Boundcond
         kappa1 = 0
       endwhere
 !
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4769,8 +4764,6 @@ module Boundcond
 !
       real, dimension (:,:), allocatable :: fac,kk,f1r,f1i,g1r,g1i
       real, dimension (:,:), allocatable :: f2r,f2i,f3r,f3i
-      real, dimension (:), allocatable :: ky
-      real, dimension (nx) :: kx
       real :: delz
       integer :: i,stat
 !
@@ -4806,9 +4799,6 @@ module Boundcond
       allocate(f3i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
           'Could not allocate memory for f3i')
-      allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for ky')
 !
 !  initialize workspace
 !
@@ -4821,13 +4811,9 @@ module Boundcond
       call fourier_transform_xy_xy(f3r,f3i)
 !
 !  define wave vector
+!  calculate sqrt(k^2)
 !
-      kx=cshift((/(i-(nx-1)/2,i=0,nx-1)/),+(nx-1)/2)*2*pi/Lx
-      ky=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-!
-!  calculate 1/k^2, zero mean
-!
-      kk=sqrt(spread(kx**2,2,ny)+spread(ky(ipy*ny+1:(ipy+1)*ny)**2,1,nx))
+      kk=sqrt(spread(kx_fft(ipx*nx+1:ipx*nx+nx)**2,2,ny)+spread(ky_fft(ipy*ny+1:ipy*ny+ny)**2,1,nx))
 !
 !  one-sided derivative
 !
@@ -4864,7 +4850,6 @@ module Boundcond
       if (allocated(f2i)) deallocate(f2i)
       if (allocated(f3r)) deallocate(f3r)
       if (allocated(f3i)) deallocate(f3i)
-      if (allocated(ky)) deallocate(ky)
 !
     endsubroutine potential_field
 !***********************************************************************
