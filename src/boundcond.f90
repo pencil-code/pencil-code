@@ -4056,7 +4056,7 @@ module Boundcond
         kappa = sqrt(kx**2 + ky**2)
       endif
 !
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4147,7 +4147,7 @@ module Boundcond
 !  Top boundary.
 !
       case ('top')
-        f(n2+1:mx,:,:,j)=0.0
+        f(l2+1:mx,:,:,j)=0.0
 !
 !  Default.
 !
