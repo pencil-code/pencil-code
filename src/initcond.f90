@@ -4255,8 +4255,6 @@ module Initcond
       allocate(Bz0_r(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
       allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
       allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
-      allocate(kxp(nxgrid),stat=stat);           iostat=max(stat,iostat)
-      allocate(kyp(nygrid),stat=stat);           iostat=max(stat,iostat)
 !
       if (iostat>0) call fatal_error('mdi_init', &
           'Could not allocate memory for variables, please check')
@@ -4275,11 +4273,8 @@ module Initcond
       mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
-      kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-      kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-!
-      kx =spread(kxp,2,nygrid)
-      ky =spread(kyp,1,nxgrid)
+      kx =spread(kx_fft,2,nygrid)
+      ky =spread(ky_fft,1,nxgrid)
 !
       k2 = kx*kx + ky*ky
 !
@@ -4346,8 +4341,6 @@ module Initcond
       if (allocated(Bz0_r)) deallocate(Bz0_r)
       if (allocated(A_r)) deallocate(A_r)
       if (allocated(A_i)) deallocate(A_i)
-      if (allocated(kxp)) deallocate(kxp)
-      if (allocated(kyp)) deallocate(kyp)
 !
     endsubroutine mdi_init
 !***********************************************************************
