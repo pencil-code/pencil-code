@@ -175,6 +175,8 @@ my @make_args = @{$parser->get_makefile_args()};
 push @make_args, @extra_make_args;
 
 # Handle MAKE_VAR1=-j4, etc.
+# NOTE: This should be implemented with -Wm,<options>, akin to
+# pencil-test's -Wa or gcc's -Wl options
 map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 
 print STDERR "Running make '", join("' '", @make_args), "'\n"
