@@ -175,7 +175,7 @@ my @make_args = @{$parser->get_makefile_args()};
 push @make_args, @extra_make_args;
 
 # Handle MAKE_VAR1=-j4, etc.
-map { s/^\s*MAKE_VAR\d*\s*=\s*//s } @make_args;
+map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
