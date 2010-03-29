@@ -2276,7 +2276,7 @@ find_SN: do n=n1,n2
       double precision :: cavity_depth, r_cavity, rhom, ekintot
       double precision ::  rhom_new, ekintot_new
       real :: rho_SN_new,lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
-      real :: TT_SN_new, uu_sedov
+      real :: TT_SN_new, uu_sedov,t_merge
 !
       double precision, dimension(nx) :: deltarho, deltaEE
       double precision, dimension(nx,3) :: deltauu
@@ -2303,6 +2303,10 @@ find_SN: do n=n1,n2
 !
       SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
       uu_sedov = 0.4*SNR%radius/SNR%t_sedov
+      t_merge=4.6672803e13/unit_time
+!  29-mar-10/fred: temporary patch, t_merge time for remnant to merge with ism given rho0=1.6726,
+!                  T0=10000K, snowplough solutions converge for distinct width_SN
+!                  additional calculation required to adapt to any T0, ampl_SN and SNR%rhom to follow
 !
       if ((uu_sedov_max > 0.).and.(uu_sedov > uu_sedov_max)) then
         do i=1,10
@@ -2414,7 +2418,8 @@ find_SN: do n=n1,n2
 !
       if (lSN_velocity) then
         if (velocity_profile=="r15gaussian3") then
-          cvelocity_SN=sqrt(6.*ampl_SN/pi/SNR%rhom/width_velocity**6) 
+          cvelocity_SN=sqrt(6.*ampl_SN/pi/SNR%rhom/width_velocity**6)&
+                       *(1.-1.82*SNR%t_sedov/t_merge) 
         elseif (velocity_profile=="r3gaussian3") then
           cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)  
         elseif (velocity_profile=="r6gaussian3") then
