@@ -4239,7 +4239,6 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
-      real, dimension (:), allocatable :: kxp, kyp
       real :: mu0_SI,u_b,zref
       logical :: exist
       integer :: i,idx2,idy2,stat,iostat,lend
