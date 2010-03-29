@@ -1,4 +1,4 @@
-;$Id: cwd.pro,v 1.1 2009-02-25 08:57:44 brandenb Exp $
+;$Id$
 ;
 ;  this routine returns the name of the directory
 ;  without the rest of the full path
