@@ -25,6 +25,7 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
+  logical :: lgranulation=.false.
 !
   real, parameter, dimension (37) :: intlnT = (/ &
        8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
@@ -49,7 +50,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso
+       chi_hyper3,chi_hyper2,K_iso,lgranulation
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -64,6 +65,27 @@ module Special
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+!
+    TYPE point
+      integer,dimension(2) :: pos
+      real,dimension(4) :: data
+      type(point),pointer :: next
+    end TYPE point
+!
+    Type(point), pointer :: first
+    Type(point), pointer :: previous
+    Type(point), pointer :: current
+    Type(point), pointer :: last
+    Type(point), pointer,save :: firstlev
+    Type(point), pointer,save :: secondlev
+    Type(point), pointer,save :: thirdlev
+!
+    integer :: xrange,yrange,p,nrpoints,ipsnap,writing,isnap,nsnap=30
+    real, dimension(nxgrid,nygrid) :: w,vx,vy
+    real, dimension(nxgrid,nygrid) :: Ux,Uy
+    real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
+    integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
+!
   contains
 !
 !***********************************************************************
@@ -78,6 +100,20 @@ module Special
            "$Id$")
 !
     endsubroutine register_special
+!***********************************************************************
+    subroutine initialize_special(f)
+!
+!  called by run.f90 after reading parameters, but before the time loop
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+      if (lgranulation) call setdrparams()
+!
+    endsubroutine initialize_special
 !***********************************************************************
     subroutine pencil_criteria_special()
 !
@@ -433,6 +469,8 @@ module Special
 !
         if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')
       endif
+!
+      if (lgranulation .and. ipz.eq.0) call uudriver(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -887,8 +925,719 @@ module Special
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
+    subroutine setdrparams()
 !
-!********************************************************************
+! Every granule has 6 values associated with it: data(1-6).
+! These contain, y,z,current amplitude, amplitude at t=t_0, t_0, and life_time.
+!
+      seed=53412
+!
+! Gives intergranular area / (granular+intergranular area)
+      ig=0.3
+!
+! Gives average radius of granule + intergranular lane
+! (no smaller than 8 grid points across)
+!* here radius of granules is 0.8 Mm or bigger (4 times dx)
+      if (unit_system.eq.'SI') then
+        granr=max(0.8*1.e6/unit_length,4*dx,4*dy)
+      elseif  (unit_system.eq.'cgs') then
+        granr=max(0.8*1.e8/unit_length,4*dx,4*dy)
+      endif
+!
+!
+! Fractional difference in granule power
+      pd=0.1
+!
+! Gives exponential power of evolvement. Higher power faster growth/decay.
+      p=2
+!
+! Fractional distance, where after emergence, no granule can emerge
+! whithin this radius.(In order to not 'overproduce' granules).
+! This limit is unset when granule reaches t_0.
+      avoid=0.8
+!
+! Lifetime of granule
+! Now also resolution dependent(5 min for granular scale)
+!
+      life_t=(60.*5./unit_time)
+!*(granr/(0.8*1e8/u_l))**2    !* removed since the life time was about 20 min !
+!
+      print*,'life time of granules in min',life_t/60.*unit_time
+      dxdy2=dx**2+dy**2
+!
+! Typical central velocity of granule(1.5e5 cm/s=1.5km/s)
+! Has to be multiplied by the smallest distance, since velocity=ampl/dist
+! should now also be dependant on smallest granluar scale resolvable.
+!
+      if (unit_system.eq.'SI') then
+        ampl=sqrt(dxdy2)/granr*0.28e4/unit_velocity
+      elseif (unit_system.eq.'cgs') then
+        ampl=sqrt(dxdy2)/granr*0.28e6/unit_velocity
+      endif
+!
+      xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
+      yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
+!
+      granlane(:,:)=0
+      avoidarr(:,:)=0
+!
+! instead of calling 'call initpoints' do
+      allocate(first)
+      if (associated(first%next)) nullify(first%next)
+      current => first
+!
+    endsubroutine setdrparams
+!***********************************************************************
+  subroutine uudriver(f)
+!
+    real, dimension(mx,my,mz,mfarray) :: f
+!
+    real :: zref
+    integer :: iref,i
+!
+    Ux=0.0
+    Uy=0.0
+!
+    call multi_drive3
+!
+    zref = minval(abs(z(n1:n2)))
+    iref = n1
+    do i=n1,n2
+      if (z(i).eq.zref) iref=i
+    enddo
+!
+    f(l1:l2,m1:m2,iref,iux) = Ux(ipx*nx+1:ipx*nx+nx,ipy*ny+1:ipy*ny+ny)
+    f(l1:l2,m1:m2,iref,iuy) = Uy(ipx*nx+1:ipx*nx+nx,ipy*ny+1:ipy*ny+ny)
+    f(l1:l2,m1:m2,iref,iuz) = 0.
+!
+  endsubroutine uudriver
+!***********************************************************************
+  subroutine multi_drive3
+!
+    integer,parameter :: gg=3
+    real,parameter :: ldif=2.0
+    real,dimension(gg),save :: amplarr,granrarr,life_tarr
+    integer,dimension(gg),save :: xrangearr,yrangearr
+    integer :: k
+!
+    if (.not.associated(firstlev)) then
+      granrarr(1)=granr
+      granrarr(2)=granr*ldif
+      granrarr(3)=granr*ldif*ldif
+!
+      amplarr(1)=ampl
+      amplarr(2)=ampl/ldif
+      amplarr(3)=ampl/(ldif*ldif)
+!
+      life_tarr(1)=life_t
+      life_tarr(2)=ldif**2*life_t
+      life_tarr(3)=ldif**4*life_t
+!
+      xrangearr(1)=xrange
+      xrangearr(2)=min(nint(ldif*xrange),nint(nxgrid/2.-1.))
+      xrangearr(3)=min(nint(ldif*ldif*xrange),nint(nxgrid/2.-1.))
+      yrangearr(1)=yrange
+      yrangearr(2)=min(nint(ldif*yrange),nint(nygrid/2-1.))
+      yrangearr(3)=min(nint(ldif*ldif*yrange),nint(nygrid/2-1.))
+!
+      allocate(firstlev)
+      if (associated(firstlev%next)) nullify(firstlev%next)
+      allocate(secondlev)
+      if (associated(secondlev%next)) nullify(secondlev%next)
+      allocate(thirdlev)
+      if (associated(thirdlev%next)) nullify(thirdlev%next)
+    endif
+!
+    do k=1,3
+      select case (k)
+      case (1)
+        if (associated(first)) nullify(first)
+        first => firstlev
+        current => firstlev
+        if (associated(firstlev%next)) then
+          first%next => firstlev%next
+          current%next => firstlev%next
+        endif
+        previous => first
+        last => first
+      case (2)
+        if (associated(first)) nullify(first)
+        first => secondlev
+        current => secondlev
+        if (associated(secondlev%next)) then
+          first%next => secondlev%next
+          current%next => secondlev%next
+        endif
+        previous => first
+        last => first
+      case (3)
+        if (associated(first)) nullify(first)
+        first => thirdlev
+        current => thirdlev
+        if (associated(thirdlev%next)) then
+          first%next => thirdlev%next
+          current%next => thirdlev%next
+        endif
+        previous => first
+        last => first
+      end select
+!
+      ampl=amplarr(k)
+      granr=granrarr(k)
+      life_t=life_tarr(k)
+      xrange=xrangearr(k)
+      yrange=yrangearr(k)
+!
+      call drive3(k)
+!
+      select case (k)
+      case (1)
+        do
+          if (associated(firstlev,first)) then
+            if (.NOT. associated(firstlev%next,first%next)) then
+              firstlev%next=>first%next
+            endif
+            exit
+          else
+            firstlev => first
+            if (.NOT.associated(firstlev%next,first%next)) &
+                firstlev%next=>first%next
+          endif
+        enddo
+!
+      case (2)
+        do
+          if (associated(secondlev,first)) then
+            if (.NOT. associated(secondlev%next,first%next)) then
+              secondlev%next => first%next
+            endif
+            exit
+          else
+            secondlev => first
+            if (.NOT.associated(secondlev%next,first%next)) &
+                secondlev%next=>first%next
+          endif
+        enddo
+      case (3)
+        do
+          if (associated(thirdlev,first)) then
+            if (.NOT. associated(thirdlev%next,first%next)) then
+              thirdlev%next=>first%next
+            endif
+            exit
+          else
+            thirdlev => first
+            if (.NOT.associated(thirdlev%next,first%next)) &
+                thirdlev%next => first%next
+          endif
+        enddo
+      end select
+!
+      call resetarr
+    enddo
+    !
+    endsubroutine multi_drive3
+!***********************************************************************
+    subroutine drive3(level)
+!
+      real :: nvor,vrms,vtot
+      real,dimension(nxgrid,nygrid) :: wscr,wscr2
+      integer, intent(in) :: level
+      integer :: nnrpoints
+      call resetarr
+!
+      nrpoints=0
+      !
+      if (.not.associated(current%next)) then
+        call rdpoints((max(level-1,0))*1000+isnap)
+        if (.not.associated(current%next)) then
+          call driveinit
+          if (lroot) call wrpoints(isnap+1000*max(level-1,0))
+        endif
+      else
+        call resetarr
+        call updatepoints
+        call drawupdate
+        do
+          if (associated(current%next)) then
+            call gtnextpoint
+            call drawupdate
+            nrpoints=nrpoints+1
+          else
+            exit
+          endif
+        end do
+        nnrpoints=0
+        do
+          if (minval(w(:,:)/(1-avoidarr(:,:)+1e-20)).ge. &
+              ampl/(granr*(1+ig)+sqrt(dxdy2))) then
+            exit
+          endif
+          call addpoint
+          call make_newpoint
+          call drawupdate
+          nrpoints=nrpoints+1
+          nnrpoints=nnrpoints+1
+        enddo
+        call reset
+      endif
+!
+! Using lower boundary Uy,Uz as temp memory
+      Ux = Ux+vx
+      Uy = Uy+vy
+!
+! w(:,:) should now be free!!
+!
+      if (level .eq. 3 .or. level .eq. 0) then
+        !
+        ! Putting sum of velocities back into vx,vy
+        vx=Ux(:,:)
+        vy=Uy(:,:)
+        !
+        ! Calculating and enhancing rotational part by factor 5
+        call helmholtz(wscr,wscr2)
+        nvor = 15.0  !* war vorher 5 ; zum testen auf  50
+        vx=(vx+nvor*wscr )
+        vy=(vy+nvor*wscr2)
+        !
+        ! Normalize to given total rms-velocity
+        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+1e-30
+!
+        if (unit_system.eq.'SI') then
+          vtot=0.3*1e3/unit_velocity
+        elseif (unit_system.eq.'cgs') then
+          vtot=0.3*1e5/unit_velocity
+        endif
+!
+        vx=vx*vtot/vrms
+        vy=vy*vtot/vrms
+        !
+        ! Reinserting rotationally enhanced and beta quenched velocity field
+        Ux(:,:)=vx !*w
+        Uy(:,:)=vy !*w
+      endif
+!
+      if (modulo(it,nsnap).eq.0) then
+        writing=writing+1
+        if ( (level.eq.0) .and. (writing.eq.3) ) then
+          if (lroot) call wrpoints(isnap)
+        else
+          if (writing.ge.7) then
+            if (lroot) call wrpoints(isnap+1000*(level-1))
+            if (writing.ge.9) writing=0
+          endif
+        endif
+      else
+      endif
+!
+    endsubroutine drive3
+!***********************************************************************
+    subroutine resetarr
+!
+      w(:,:)=0.0
+      granlane(:,:)=0
+      avoidarr(:,:)=0
+!
+    endsubroutine resetarr
+!***********************************************************************
+    subroutine rdpoints(isnap2)
+!
+      real,dimension(6) :: tmppoint
+      integer :: iost,rn,isnscr
+      integer,intent(in) :: isnap2
+      logical :: ex
+      character(len=21) :: filename
+!
+      isnscr=isnap2
+      write (filename,'("driver/points",I4.4,".dat")') isnap2
+!
+      inquire(file=filename,exist=ex)
+!
+      if (ex) then
+        inquire(IOLENGTH=rn) dy
+        print*,'reading velocity field nr',isnap2
+        open(10,file=filename,status="unknown",access="direct",recl=6*rn)
+        iost=0
+!
+        rn=1
+        do
+          if (.not.iost.eq.0) exit
+          read(10,iostat=iost,rec=rn) tmppoint
+          if (iost.eq.0) then
+            current%pos(:)=int(tmppoint(1:2))
+            current%data(:)=tmppoint(3:6)
+            call addpoint
+            rn=rn+1
+          else
+            last => previous
+            nullify(previous%next)
+            deallocate(current)
+            current => previous
+          endif
+        enddo
+        print*,'read ',rn-1,' points'
+        print*
+        call reset
+      endif
+      !
+    endsubroutine rdpoints
+!***********************************************************************
+    subroutine wrpoints(issnap)
+!
+      integer :: rn=1
+      integer,intent(in) :: issnap
+      real,dimension(6) :: posdata
+      character(len=21) :: filename
+!
+      inquire(IOLENGTH=rn) dy
+!
+      write (filename,'("driver/points",I4.4,".dat")') issnap
+      open(10,file=filename,status="replace",access="direct",recl=6*rn)
+!
+      do while (associated(current%next))
+!
+        posdata(1:2)=real(current%pos)
+        posdata(3:6)=current%data
+!
+        write(10,rec=rn) posdata
+        call gtnextpoint
+        rn=rn+1
+      enddo
+!
+      close (10)
+!
+      call reset
+!
+    endsubroutine wrpoints
+!***********************************************************************
+    subroutine addpoint
+!
+      type(point),pointer :: newpoint
+!
+      allocate(newpoint)
+      if (associated(newpoint%next)) nullify(newpoint%next)
+      previous => current
+      current%next => newpoint
+      current => newpoint
+      last => current
+!
+endsubroutine addpoint
+!***********************************************************************
+    subroutine rmpoint
+!
+      if (associated(current%next)) then
+        previous%next => current%next
+        if (associated(first%next,current)) then
+          first%next => current%next
+          if (associated(firstlev,first)) firstlev%next => current%next
+          if (associated(secondlev,first)) secondlev%next => current%next
+          if (associated(thirdlev,first)) thirdlev%next => current%next
+        endif
+        deallocate(current)
+        current => previous%next
+      else
+        last => previous
+        nullify(previous%next)
+        deallocate(current)
+        current => previous
+! BE AWARE THAT PREVIOUS IS NOT NOT ALLOCATED TO THE RIGHT POSITION
+      endif
+    endsubroutine rmpoint
+!***********************************************************************
+    subroutine gtnextpoint
+!
+      previous => current
+      current => current%next
+!
+    endsubroutine gtnextpoint
+!***********************************************************************
+    subroutine reset
+!
+      current => first
+      previous => first
+!
+    endsubroutine reset
+!***********************************************************************
+!     subroutine wrpointsscr
+! !
+!       integer :: rn
+!       real,dimension(6) :: posdata
+! !
+!       inquire(IOLENGTH=rn) dy
+! !
+!       print*,'Writing Scratch velocity data'
+!       OPEN(10,file="points.scr",status="replace",access="direct",recl=6*rn)
+! !
+!       rn=1
+! !
+!       do while (associated(current%next))
+!         posdata(1:2)=real(current%pos)
+!         posdata(3:6)=current%data
+!         write(10,rec=rn) posdata
+!         call gtnextpoint
+!         rn=rn+1
+!       enddo
+!       close (10)
+!       call reset
+! !
+! endsubroutine wrpointsscr
+!***********************************************************************
+    subroutine driveinit
+!
+      use General, only: random_number_wrapper
+!
+      real :: ran1
+!
+      call resetarr
+      call make_newpoint
+      nrpoints=1
+      do
+        if (minval(w/(1-avoidarr+1e-20)).ge.ampl/(granr*(1+ig))) exit
+!
+        call addpoint
+        call make_newpoint
+        nrpoints=nrpoints+1
+!
+! Initital t_0's different in initital drawing, must update
+!
+        call random_number_wrapper(ran1)
+        current%data(3)=t+(ran1*2-1)*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
+            (current%data(2)*granr*(1-ig))))**(1./p)
+        current%data(1)=current%data(2)* &
+            exp(-((t-current%data(3))/current%data(4))**p)
+!
+! Update arrays with new data
+!
+        call drawupdate
+!
+      enddo
+!
+! And reset
+!
+      call reset
+!
+    endsubroutine driveinit
+!***********************************************************************
+    subroutine helmholtz(rotx,roty)
+!
+! extracts the rotational part of a 2d vector field
+! to increase vorticity for drive3.
+! Uses cfft operators
+!
+      use Fourier, only: fourier_transform_other
+      real, dimension(nxgrid,nygrid) :: rotx,roty
+      real, dimension(nxgrid,nygrid) :: fftvx_re,fftvx_im
+      real, dimension(nxgrid,nygrid) :: fftvy_re,fftvy_im
+      real, dimension(nxgrid,nygrid) :: fftrx_re,fftrx_im
+      real, dimension(nxgrid,nygrid) :: fftry_re,fftry_im
+      real, dimension(2) :: corr
+      integer :: j,k
+      real :: k2,k20,filter,kx,ky
+!
+      fftvx_re=vx
+      fftvx_im=0.
+      fftvy_re=vy
+      fftvy_im=0.
+!
+      call fourier_transform_other(fftvx_re,fftvx_im)
+      call fourier_transform_other(fftvy_re,fftvy_im)
+!      call cfft2df(fftvx,fftvx,nxgrid,nygrid)
+!      call cfft2df(fftvy,fftvy,nxgrid,nygrid)
+!
+      k20=(nxgrid/4.)**2
+      do j=1,nygrid
+        kx=(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
+        if (j.eq.nxgrid/2+1) kx=0.
+        do k=1,nygrid
+          ky=(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
+          if (k.eq.nygrid/2+1) ky=0.
+!
+          k2=kx**2 + ky**2 + 1e-30
+!
+          corr(1) = - fftvx_im(j,k)*kx - fftvy_im(j,k)*ky
+          corr(2 ) =  fftvx_re(j,k)*kx + fftvy_re(j,k)*ky
+          corr = corr/k2
+!
+          fftrx_re(j,k)=fftvx_re(j,k)
+          fftrx_im(j,k)=fftvx_im(j,k)-corr(2)*kx
+          fftry_re(j,k)=fftvy_re(j,k)-corr(2)*ky
+          fftry_im(j,k)=fftvy_im(j,k)-corr(2)*ky
+!
+          filter=exp(-(k2/k20)**2)
+!
+          fftvx_re(j,k)=fftvx_re(j,k)*filter
+          fftvx_im(j,k)=fftvx_im(j,k)*filter
+          fftvy_re(j,k)=fftvy_re(j,k)*filter
+          fftvy_im(j,k)=fftvy_im(j,k)*filter
+!
+          fftrx_re(j,k)=fftrx_re(j,k)*filter
+          fftrx_im(j,k)=fftrx_im(j,k)*filter
+          fftry_re(j,k)=fftry_re(j,k)*filter
+          fftry_im(j,k)=fftry_im(j,k)*filter
+        enddo
+      enddo
+!
+      call fourier_transform_other(fftvx_re,fftvx_im)
+      call fourier_transform_other(fftvy_re,fftvy_im)
+      !call cfft2db(fftvx,fftvx,nxgrid,nygrid)
+      !call cfft2db(fftvy,fftvy,nxgrid,nygrid)
+!
+      call fourier_transform_other(fftrx_re,fftrx_im)
+      call fourier_transform_other(fftry_re,fftry_im)
+      !call cfft2db(fftrx,fftrx,nxgrid,nygrid)
+      !call cfft2db(fftry,fftry,nxgrid,nygrid)
+!
+      vx=real(fftvx_re)
+      vy=real(fftvy_re)
+!
+      rotx=real(fftrx_im)
+      roty=real(fftry_im)
+!
+    endsubroutine helmholtz
+!***********************************************************************
+    subroutine drawupdate
+!
+      real :: xdist,ydist,dist2,dist,dxdy,vtmp,vtmp2
+      integer :: i,ii,j,jj
+!
+      dxdy=sqrt(dxdy2)
+!
+! Update weight and velocity for new granule
+!
+!  !$omp parallel do private(i,ii,j,jj,xdist,ydist,dist2,dist,vtmp,vtmp2)
+!
+      do jj=current%pos(2)-yrange,current%pos(2)+yrange
+        j = 1+mod(jj-1+nygrid,nygrid)
+        do ii=current%pos(1)-xrange,current%pos(1)+xrange
+          i = 1+mod(ii-1+nxgrid,nxgrid)
+          xdist=dx*(ii-(current%pos(1)))
+          ydist=dy*(jj-(current%pos(2)))
+          dist2=max(xdist**2+ydist**2,dxdy2)
+          dist=sqrt(dist2)
+          if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
+          !
+          ! where the field strength is greater than 1200 Gaus avoid new granules
+          !if (abs(Bz0(i,j)) .gt.1200.*(1+(2*ran1(seed)-1)*0.5)) avoidarr(i,j)=1
+          vtmp=current%data(1)/dist
+          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
+              dist**2*exp(-(dist/(0.53*granr))**2)
+          if (vtmp.gt.w(i,j)*(1-ig)) then
+            if (vtmp.gt.w(i,j)*(1+ig)) then
+              vx(i,j)=vtmp2*xdist/dist
+              vy(i,j)=vtmp2*ydist/dist
+              w(i,j)=vtmp
+              granlane(i,j)=0
+            else
+              vx(i,j)=vx(i,j)+vtmp2*xdist/dist
+              vy(i,j)=vy(i,j)+vtmp2*ydist/dist
+              w(i,j)=max(w(i,j),vtmp)
+              granlane(i,j)=1
+            end if
+          endif
+        enddo
+      enddo
+!
+    endsubroutine drawupdate
+!***********************************************************************
+    subroutine make_newpoint
+!
+      use General, only: random_number_wrapper
+!
+      integer :: kfind,count,ipos,jpos,i,j
+      integer,dimension(nxgrid,nygrid) :: k
+      real :: rand
+!
+      k(:,:)=0
+      where (w/(1-avoidarr+1e-20).lt.ampl/(granr*(1+ig))) k=1
+!
+! Choose and find location of one of them
+!
+      call random_number_wrapper(rand)
+      kfind=int(rand*sum(k))+1
+      count=0
+      do i=1,nxgrid
+        do j=1,nygrid
+          if (k(i,j).eq.1) then
+            count=count+1
+            if (count.eq.kfind) then
+              ipos=i
+              jpos=j
+            endif
+          endif
+        enddo
+      enddo
+!
+! Create new data for new point
+!
+      current%pos(1)=ipos
+      current%pos(2)=jpos
+      call random_number_wrapper(rand)
+      current%data(2)=ampl*(1+(2*rand-1)*pd)
+      call random_number_wrapper(rand)
+      current%data(4)=life_t*(1+(2*rand-1)/10.)
+      current%data(3)=t+0.99*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
+          (current%data(2)*granr*(1-ig))))**(1./p)
+      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**p)
+!
+    endsubroutine make_newpoint
+!***********************************************************************
+    subroutine updatepoints
+!
+      real :: dxdy
+      integer :: nrmpoints
+!
+      dxdy=sqrt(dxdy2)
+! MUST take care of case when first granule dissapears
+!
+      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**p)
+!
+      do
+        if (current%data(1)/dxdy.ge.ampl/(granr*(1-ig))) exit
+        first => current%next
+        previous => first
+        if (associated(firstlev,current).or. &
+            &  associated(secondlev,current).or. &
+            &  associated(thirdlev,current)) then
+          nullify(current)
+        else
+          if (associated(current,first).or.associated(current,firstlev).or. &
+              associated(current,secondlev).or.associated(current,thirdlev)) then
+            nullify(current)
+          else
+            deallocate(current)
+          endif
+        endif
+        current => first
+        if (.not.associated(first)) then
+          allocate(first)
+          if (associated(first%next)) then
+            deallocate(first%next)
+          endif
+          current => first
+          previous => first
+          call make_newpoint
+          exit
+        endif
+      enddo
+!
+      nrmpoints=0
+      do
+        if (associated(current%next)) then
+          call gtnextpoint
+          current%data(1)=current%data(2)* &
+              exp(-((t-current%data(3))/current%data(4))**p)
+          if (current%data(1)/dxdy.lt.ampl/(granr*(1-ig))) then
+            call rmpoint
+            nrmpoints=nrmpoints+1
+          end if
+        else
+          exit
+        endif
+      end do
+      call reset
+!
+    endsubroutine updatepoints
+!***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
