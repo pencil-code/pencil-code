@@ -80,11 +80,12 @@ module Special
     Type(point), pointer,save :: secondlev
     Type(point), pointer,save :: thirdlev
 !
-    integer :: xrange,yrange,p,nrpoints,ipsnap,writing,isnap,nsnap=30
+    integer :: xrange,yrange,p,nrpoints,ipsnap,isnap,nsnap=30
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
+    real, save :: tsnap_uu=0.
 !
   contains
 !
@@ -111,7 +112,10 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-      if (lgranulation) call setdrparams()
+      if (lgranulation.and.ipz.eq.0) then
+        call setdrparams()
+        tsnap_uu = t + dsnap
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -232,19 +236,17 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics, only: parse_name
-!!
-!!!   SAMPLE IMPLEMENTATION
-!!
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
         idiag_dtchi2=0.
       endif
@@ -1144,10 +1146,11 @@ module Special
       real,dimension(nxgrid,nygrid) :: wscr,wscr2
       integer, intent(in) :: level
       integer :: nnrpoints
+!
       call resetarr
 !
       nrpoints=0
-      !
+!
       if (.not.associated(current%next)) then
         call rdpoints((max(level-1,0))*1000+isnap)
         if (.not.associated(current%next)) then
@@ -1213,21 +1216,13 @@ module Special
         vy=vy*vtot/vrms
         !
         ! Reinserting rotationally enhanced and beta quenched velocity field
-        Ux(:,:)=vx !*w
-        Uy(:,:)=vy !*w
+        Ux(:,:)=vx
+        Uy(:,:)=vy
       endif
 !
-      if (modulo(it,nsnap).eq.0) then
-        writing=writing+1
-        if ( (level.eq.0) .and. (writing.eq.3) ) then
-          if (lroot) call wrpoints(isnap)
-        else
-          if (writing.ge.7) then
-            if (lroot) call wrpoints(isnap+1000*(level-1))
-            if (writing.ge.9) writing=0
-          endif
-        endif
-      else
+      if (t >= tsnap_uu) then 
+        if (lroot) call wrpoints(isnap+1000*(level-1))
+        tsnap_uu = tsnap_uu + dsnap
       endif
 !
     endsubroutine drive3
@@ -1243,19 +1238,18 @@ module Special
     subroutine rdpoints(isnap2)
 !
       real,dimension(6) :: tmppoint
-      integer :: iost,rn,isnscr
+      integer :: iost,rn
       integer,intent(in) :: isnap2
       logical :: ex
       character(len=21) :: filename
 !
-      isnscr=isnap2
       write (filename,'("driver/points",I4.4,".dat")') isnap2
 !
       inquire(file=filename,exist=ex)
 !
       if (ex) then
         inquire(IOLENGTH=rn) dy
-        print*,'reading velocity field nr',isnap2
+        if (lroot) print*,'reading velocity field nr',isnap2
         open(10,file=filename,status="unknown",access="direct",recl=6*rn)
         iost=0
 !
@@ -1275,11 +1269,11 @@ module Special
             current => previous
           endif
         enddo
-        print*,'read ',rn-1,' points'
-        print*
+        close(10)
+        if (lroot) print*,'read ',rn-1,' points'
         call reset
       endif
-      !
+!
     endsubroutine rdpoints
 !***********************************************************************
     subroutine wrpoints(issnap)
