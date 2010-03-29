@@ -7,7 +7,8 @@ end
 ;
 ;  read header
 ; 
-if not keyword_set(lun) or lun lt 0 then begin
+if not keyword_set(lun) then lun=0
+if lun le 0 then begin
   lun=0
   openr,lun,/get_lun,file
 endif
