@@ -189,7 +189,6 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
-! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
@@ -1142,10 +1141,13 @@ module Special
 !***********************************************************************
     subroutine drive3(level)
 !
+      use Sub, only: control_file_exists
+!
       real :: nvor,vrms,vtot
       real,dimension(nxgrid,nygrid) :: wscr,wscr2
       integer, intent(in) :: level
       integer :: nnrpoints
+      logical :: lstop=.false.
 !
       call resetarr
 !
@@ -1220,10 +1222,13 @@ module Special
         Uy(:,:)=vy
       endif
 !
-      if (t >= tsnap_uu) then 
+      if (t >= tsnap_uu) then
         if (lroot) call wrpoints(isnap+1000*(level-1))
         tsnap_uu = tsnap_uu + dsnap
       endif
+      if (lroot .and. itsub .eq. 3) &
+          lstop = control_file_exists('STOP')
+      if ((lstop .or. t>=tmax).and.lroot) call wrpoints(isnap+1000*(level-1))
 !
     endsubroutine drive3
 !***********************************************************************
@@ -1336,6 +1341,7 @@ endsubroutine addpoint
         current => previous
 ! BE AWARE THAT PREVIOUS IS NOT NOT ALLOCATED TO THE RIGHT POSITION
       endif
+!
     endsubroutine rmpoint
 !***********************************************************************
     subroutine gtnextpoint
@@ -1352,35 +1358,11 @@ endsubroutine addpoint
 !
     endsubroutine reset
 !***********************************************************************
-!     subroutine wrpointsscr
-! !
-!       integer :: rn
-!       real,dimension(6) :: posdata
-! !
-!       inquire(IOLENGTH=rn) dy
-! !
-!       print*,'Writing Scratch velocity data'
-!       OPEN(10,file="points.scr",status="replace",access="direct",recl=6*rn)
-! !
-!       rn=1
-! !
-!       do while (associated(current%next))
-!         posdata(1:2)=real(current%pos)
-!         posdata(3:6)=current%data
-!         write(10,rec=rn) posdata
-!         call gtnextpoint
-!         rn=rn+1
-!       enddo
-!       close (10)
-!       call reset
-! !
-! endsubroutine wrpointsscr
-!***********************************************************************
     subroutine driveinit
 !
       use General, only: random_number_wrapper
 !
-      real :: ran1
+      real :: rand
 !
       call resetarr
       call make_newpoint
@@ -1394,8 +1376,8 @@ endsubroutine addpoint
 !
 ! Initital t_0's different in initital drawing, must update
 !
-        call random_number_wrapper(ran1)
-        current%data(3)=t+(ran1*2-1)*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
+        call random_number_wrapper(rand)
+        current%data(3)=t+(rand*2-1)*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
             (current%data(2)*granr*(1-ig))))**(1./p)
         current%data(1)=current%data(2)* &
             exp(-((t-current%data(3))/current%data(4))**p)
