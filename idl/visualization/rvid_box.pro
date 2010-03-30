@@ -44,7 +44,7 @@ pro rvid_box, field, $
   shell=shell, centred=centred, r_int=r_int, r_ext=r_ext, colmpeg=colmpeg, $
   z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
   z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
-  magnify=magnify, xpos=xpos, zpos=zpos, xmax=xmax, ymax=ymax, $
+  magnify=magnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, xmax=xmax, ymax=ymax, $
   xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
   size_label=size_label, $
   monotonous_scaling=monotonous_scaling, symmetric_scaling=symmetric_scaling, $
@@ -52,7 +52,7 @@ pro rvid_box, field, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
   bnorm=bnorm, swap_endian=swap_endian, newwindow=newwindow, $
-  quiet_skip=quiet_skip, axes=axes
+  quiet_skip=quiet_skip, axes=axes, ct=ct
 ;
 common pc_precision, zero, one
 ;
@@ -77,6 +77,7 @@ default,r_ext,1.0
 default,imgdir,'.'
 default,dev,'x'
 default,magnify,1.0
+default,zmagnify,1.0
 default,xpos,0.0
 default,zpos,0.34
 default,xrot,30.0
@@ -194,6 +195,10 @@ endif else if (keyword_set(mpeg)) then begin
 endif else begin
   if (!d.name eq 'X') then wdwset,xs=xsize,ys=ysize
 endelse
+;
+;  set color table (if keyword set)
+;
+if (keyword_set(ct)) then loadct,ct
 ;
 ;  Go through all video snapshots and find global min and max.
 ;
@@ -336,7 +341,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       if (not keyword_set(shell)) then begin
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
             amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
-            xpos=xpos,magnify=magnify,nobottom=nobottom,norm=norm,$
+            xpos=xpos,magnify=magnify,zmagnify=zmagnify,nobottom=nobottom,norm=norm,$
             xrot=xrot,zrot=zrot
         if (keyword_set(nolabel)) then begin
           if (label ne '') then begin
