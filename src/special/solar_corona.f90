@@ -27,22 +27,6 @@ module Special
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   logical :: lgranulation=.false.
 !
-  real, parameter, dimension (37) :: intlnT = (/ &
-       8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
-       , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
-       , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
-       , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
-       , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
-       ,  15.6576,  69.0776 /), &
-       intlnQ = (/ &
-       -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
-       , -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765 &
-       , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
-       , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
-       , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
-       , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
-       , -0.66650 /)
-!
 ! input parameters
 !  namelist /special_init_pars/ dumy
 !
@@ -80,12 +64,13 @@ module Special
     Type(point), pointer,save :: secondlev
     Type(point), pointer,save :: thirdlev
 !
-    integer :: xrange,yrange,p,nrpoints,ipsnap,isnap,nsnap=30
+    integer :: xrange,yrange,p,nrpoints
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
     real, save :: tsnap_uu=0.
+    integer, save :: isnap
 !
   contains
 !
@@ -115,6 +100,8 @@ module Special
       if (lgranulation.and.ipz.eq.0) then
         call setdrparams()
         tsnap_uu = t + dsnap
+        isnap = int(t/dsnap)
+        print*,'ISNAP',isnap,'-------------------'
       endif
 !
     endsubroutine initialize_special
@@ -149,7 +136,7 @@ module Special
 !
       if (K_iso/=0) then
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -158,11 +145,12 @@ module Special
       if (Kgpara/=0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_TT)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
-        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho1)=.true.
@@ -379,7 +367,7 @@ module Special
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nxgrid,nygrid) :: kx,ky,k2
+      real, dimension(nxgrid,nygrid) :: kx,ky,k2,exp_fact
 !
       real, dimension(nxgrid,nygrid) :: Bz0_i,Bz0_r
       real, dimension(nxgrid,nygrid) :: Ax_i,Ay_i
@@ -440,18 +428,19 @@ module Special
 !
           call fourier_transform_other(Bz0_r,Bz0_i)
 !
+          exp_fact = exp(-sqrt(k2)*z(n1) )
           where (k2 .ne. 0 )
-            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(n1) )
-            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(n1) )
+            Ax_r = -Bz0_i*ky/k2*exp_fact
+            Ax_i =  Bz0_r*ky/k2*exp_fact
             !
-            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(n1) )
-            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(n1) )
+            Ay_r =  Bz0_i*kx/k2*exp_fact
+            Ay_i = -Bz0_r*kx/k2*exp_fact
           elsewhere
-            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
-            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp_fact
+            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp_fact
             !
-            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
-            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp_fact
+            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp_fact
           endwhere
           !
           call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
@@ -471,7 +460,9 @@ module Special
         if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')
       endif
 !
-      if (lgranulation .and. ipz.eq.0) call uudriver(f)
+      if (lgranulation .and. ipz.eq.0 ) then
+        if (.not. lpencil_check_at_work) call uudriver(f)
+      endif
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -568,8 +559,7 @@ module Special
       if (lfirst.and.ldt) then
 !
         if (.not.(n==n1 .and. ipz==0)) then
-          dt1_max=max(dt1_max*1D0 ,tdown*exp(-allp*(z(n)*&
-              unit_length*1e-6))/cdts)
+          dt1_max=max(dt1_max*1D0 ,newton/cdts)
         endif
       endif
 !
@@ -626,7 +616,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * exp(expo*p%lnTT-p%lnrho)
+      chi_1 =  Kpara * p%rho1 * p%TT**expo
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -645,7 +635,7 @@ module Special
         where (glnTT2 .le. tini)
           chi_2 =  0.
         elsewhere
-          chi_2 =  Ksatb * sqrt(exp(p%lnTT)/max(tini,glnTT2))
+          chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2))
         endwhere
 !
         where (chi_1 .gt. chi_2)
@@ -718,7 +708,7 @@ module Special
 !
       call dot(p%glnrho,p%glnTT,g2)
 !
-      rhs=exp(p%lnTT)*(tmpi*(p%del2lnTT+2.*tmpi + g2)+tmpj)/max(tini,sqrt(tmpi))
+      rhs=p%TT*(tmpi*(p%del2lnTT+2.*tmpi + g2)+tmpj)/max(tini,sqrt(tmpi))
 !
 !      if (itsub .eq. 3 .and. ip .eq. 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
@@ -726,7 +716,7 @@ module Special
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
 !
       if (lfirst.and.ldt) then
-        chix=K_iso*exp(p%lnTT)*sqrt(tmpi)
+        chix=K_iso*p%TT*sqrt(tmpi)
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
@@ -833,13 +823,10 @@ module Special
       use Mpicomm,         only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnQ,rtv_cool=0.,lnTT_SI,lnneni
-      real, dimension (nx) :: slope,ordinate
-      real, dimension (nx) :: lnQ1,lnQ2
-      integer :: i
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
       real :: unit_lnQ
       type (pencil_case) :: p
-      !
+!
       unit_lnQ=3*alog(real(unit_velocity))+&
           5*alog(real(unit_length))+alog(real(unit_density))
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
@@ -848,39 +835,12 @@ module Special
 !          ln(ne*ni) = ln( 1.17*rho^2/(1.34*mp)^2)
 !     lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
 !
-      lnneni = 2.*(p%lnrho+61.4412+alog(real(unit_mass)))
+      lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
 !
-      lnQ=-1000.
-      do i=1,36
-        where(lnTT_SI .ge. intlnT(i) .and. lnTT_SI .lt. intlnT(i+1))
-          slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-          ordinate = intlnQ(i) - slope*intlnT(i)
-          lnQ = slope*lnTT_SI + ordinate
-        endwhere
-      enddo
+      lnQ   = get_lnQ(lnTT_SI)
 !
-      if (lfirst .and. ip .eq. 13) then
-        lnQ1=-1000.
-        lnQ2=-1000.
-        do i=1,36
-          where(lnTT_SI.ge.intlnT(i) &
-              .and.lnTT_SI.lt.intlnT(i+1) &
-              .and.lnTT_SI.ge.11.513)
-            slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-            ordinate = intlnQ(i) - slope*intlnT(i)
-            lnQ1 = slope*lnTT_SI + ordinate
-          endwhere
-          where(lnTT_SI.ge.intlnT(i) &
-              .and.lnTT_SI.lt.intlnT(i+1) &
-              .and.lnTT_SI.lt.11.513)
-            slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-            ordinate = intlnQ(i) - slope*intlnT(i)
-            lnQ2 = slope*lnTT_SI + ordinate
-          endwhere
-        enddo
-      endif
-!
-      rtv_cool = gamma*p%cp1*exp(lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho)
+      rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
+      rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
       rtv_cool = rtv_cool*cool_RTV
 !     for adjusting by setting cool_RTV in run.in
@@ -905,6 +865,93 @@ module Special
       endif
 !
     endsubroutine calc_heat_cool_RTV
+!***********************************************************************
+    function get_lnQ(lnTT)
+!
+!  input: lnTT in SI units
+!  output: lnP  [p]=W/s * m^3
+!
+      real, parameter, dimension (37) :: intlnT = (/ &
+          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
+          , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
+          , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
+          , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
+          , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
+          ,  15.6576,  69.0776 /)
+      real, parameter, dimension (37) :: intlnQ = (/ &
+          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
+          , -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765 &
+          , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
+          , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
+          , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
+          , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
+          , -0.66650 /)
+!
+      real, parameter, dimension (16) :: intlnT1 = (/ &
+          8.98008,    9.44060,    9.90112,    10.3616,    10.8221,    11.2827 &
+         ,11.5129,    11.8583,    12.4340,    12.8945,    13.3550,    13.8155 &
+         ,14.2760,    14.9668,    15.8878,    18.4207 /)
+      real, parameter, dimension (16) :: intlnQ1 = (/ &
+          -83.9292,   -81.2275,   -80.0532,   -80.1837,   -79.6694,   -79.0938 &
+         ,-79.1322,   -79.4776,   -79.2934,   -79.6618,   -79.3778,   -79.5159 &
+         ,-80.1990,   -82.5093,   -82.1793,   -78.6717 /)
+!
+      real, dimension(9) :: pars=(/2.12040e+00,3.88284e-01,2.02889e+00, &
+          3.35665e-01,6.34343e-01,1.94052e-01,2.54536e+00,7.28306e-01, &
+          -2.40088e+01/)
+!
+      real, dimension (nx) :: lnTT,get_lnQ
+      real, dimension (nx) :: slope,ordinate
+      integer :: i,cool_type=1
+!
+!  select type for cooling fxunction
+!  1: 10 points interpolation
+!  2: 37 points interpolation
+!  3: four gaussian fit 
+!
+      get_lnQ=-1000.
+!
+      select case(cool_type)
+      case(1)
+        do i=1,15
+          where(lnTT .ge. intlnT1(i) .and. lnTT .lt. intlnT1(i+1))
+            slope=(intlnQ1(i+1)-intlnQ1(i))/(intlnT1(i+1)-intlnT1(i))
+            ordinate = intlnQ1(i) - slope*intlnT1(i)
+            get_lnQ = slope*lnTT + ordinate
+          endwhere
+        enddo
+!
+      case(2)
+        call fatal_error('get_lnQ','this will slow down to much')
+        do i=1,36
+          where(lnTT .ge. intlnT(i) .and. lnTT .lt. intlnT(i+1))
+            slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
+            ordinate = intlnQ(i) - slope*intlnT(i)
+            get_lnQ = slope*lnTT + ordinate
+          endwhere
+        enddo
+!
+      case(3)
+        call fatal_error('get_lnQ','this invokes epx() to often')
+        lnTT  = lnTT*alog10(exp(1.))
+        get_lnQ  = -1000.
+        !
+        get_lnQ = pars(1)*exp(-(lnTT-4.3)**2/pars(2)**2)  &
+            +pars(3)*exp(-(lnTT-4.9)**2/pars(4)**2)  &
+            +pars(5)*exp(-(lnTT-5.35)**2/pars(6)**2) &
+            +pars(7)*exp(-(lnTT-5.85)**2/pars(8)**2) &
+            +pars(9)
+        !
+        get_lnQ = get_lnQ * (20.*(-tanh((lnTT-3.7)*10.))+21)
+        get_lnQ = get_lnQ+(tanh((lnTT-6.9)*3.1)/2.+0.5)*3.
+        !
+        get_lnQ = (get_lnQ +19.-32)*alog(10.)
+!
+      case default
+        call fatal_erro('get_lnQ','wrong type')
+      endselect
+!
+    endfunction get_lnQ
 !***********************************************************************
     subroutine calc_artif_heating(df,p)
 !
@@ -931,8 +978,8 @@ module Special
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain, y,z,current amplitude, amplitude at t=t_0, t_0, and life_time.
 !
-      seed=53412
-!
+      if (lroot) call information('solar_corona','Setting up parameters for granules')
+!     
 ! Gives intergranular area / (granular+intergranular area)
       ig=0.3
 !
@@ -961,9 +1008,8 @@ module Special
 ! Now also resolution dependent(5 min for granular scale)
 !
       life_t=(60.*5./unit_time)
-!*(granr/(0.8*1e8/u_l))**2    !* removed since the life time was about 20 min !
+!            *(granr/(0.8*1e8/u_l))**2 !* removed since the life time was about 20 min !
 !
-      print*,'life time of granules in min',life_t/60.*unit_time
       dxdy2=dx**2+dy**2
 !
 ! Typical central velocity of granule(1.5e5 cm/s=1.5km/s)
@@ -982,7 +1028,6 @@ module Special
       granlane(:,:)=0
       avoidarr(:,:)=0
 !
-! instead of calling 'call initpoints' do
       allocate(first)
       if (associated(first%next)) nullify(first%next)
       current => first
@@ -1225,10 +1270,12 @@ module Special
       if (t >= tsnap_uu) then
         if (lroot) call wrpoints(isnap+1000*(level-1))
         tsnap_uu = tsnap_uu + dsnap
+        isnap  = isnap + 1
+        print*,'ISNAP',isnap,'-------------------'
       endif
       if (lroot .and. itsub .eq. 3) &
           lstop = control_file_exists('STOP')
-      if ((lstop .or. t>=tmax).and.lroot) call wrpoints(isnap+1000*(level-1))
+      if ((lstop .or. t>=tmax .or. it.eq.nt).and.lroot) call wrpoints(isnap+1000*(level-1))
 !
     endsubroutine drive3
 !***********************************************************************
@@ -1495,7 +1542,9 @@ endsubroutine addpoint
           ! where the field strength is greater than 1200 Gaus avoid new granules
           !if (abs(Bz0(i,j)) .gt.1200.*(1+(2*ran1(seed)-1)*0.5)) avoidarr(i,j)=1
           vtmp=current%data(1)/dist
-          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
+!          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
+!              dist**2*exp(-(dist/(0.53*granr))**2)
+          vtmp2=(1.6*2.*2.71828/(0.53*granr)**2)*current%data(1)* &
               dist**2*exp(-(dist/(0.53*granr))**2)
           if (vtmp.gt.w(i,j)*(1-ig)) then
             if (vtmp.gt.w(i,j)*(1+ig)) then
