@@ -227,6 +227,7 @@ module Entropy
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma_m1
       use FArrayManager
+      use Initcond
       use Gravity, only: gravz, g0, compute_gravity_star
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
@@ -763,8 +764,8 @@ module Entropy
 !
       use Sub
       use Gravity
-      use General, only: chn
       use Initcond
+      use General, only: chn
       use InitialCondition, only: initial_condition_ss
       use EquationOfState,  only: isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
@@ -775,7 +776,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: tmp,pot
-      real, dimension (nx) :: pp,lnrho,ss,r_mn
+      real, dimension (nx) :: pp,lnrho,ss,r_mn,heat
       real, dimension (mx) :: ss_mx
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       integer :: j
@@ -820,7 +821,8 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          case('Gressel-hs'); call gressel_hs(f,rho0hs)
+!          case('Gressel-hs'); call gressel_hs(f,rho0hs)
+          case('Gressel-hs'); call gressel_entropy(f)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1847,6 +1849,87 @@ module Entropy
 !
     endsubroutine gressel_hs
 !***********************************************************************
+    subroutine gressel_entropy(f)
+!
+!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
+!
+!   Density and isothermal entropy profile in hydrostatic equilibrium
+!   with the Ferriere profile set in gravity_simple.f90
+!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
+!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
+!   equilibrium. Constants g_A..D from gravz_profile. In addition equating
+!   the cooling function with uv-heating/rho for thermal equilibrium. Use
+!   heating_select='Gressel-hs' in interstellar init & runpars
+!
+!
+      use Mpicomm, only: mpibcast_real
+      use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
+      use Sub, only: erfunc
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: rho,ss,TT,lnTT
+      real, dimension(nz) :: erfz
+      real :: rho0ts, T0hs, muhs
+      real :: g_A, g_C, erfB, T_k
+      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      double precision :: g_B ,g_D
+      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      integer :: j
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+          g_B = g_B_cgs/unit_length
+          T0hs=6250/unit_temperature
+          rho0ts=1.8747e-24/unit_density
+          T_k=5000.0/unit_temperature
+!
+!chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
+!
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+      endif
+!
+!  uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!   at solar radius.  (for interstellar runs)
+!  requires GammaUV=0.0147 with 'SS-Slyz' cooling_select
+!  uses simpler heating function but in principle same method
+!  as O. Gressel 2008 (PhD)
+!
+!
+      call getmu(f,muhs)
+!
+!
+      if (lroot) print*, &
+         'Gressel-hs: hydrostatic & thermal equilibrium density and entropy profiles'
+      do n=n1,n2
+      do m=m1,m2
+        erfB=g_B
+        erfz(n)=sqrt((T_k*z(n))**2+g_B**2)
+!
+!  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
+!                  require initial profile to produce finite Lambda between lamstep(3) and
+!                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                  !
+        TT =T0hs*exp((T_k*z(n))**2)
+        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
+            *(erfunc(erfz(n))-erfunc(erfB)) + g_C/g_D*(1.-exp(-T_k*z(n)**2))))
+!
+        f(l1:l2,m,n,ilnrho)=log(rho)
+          lnTT=log(TT)
+!
+          call eoscalc(ilnrho_lnTT,log(rho),lnTT,ss=ss)
+!
+          f(l1:l2,m,n,iss)=ss
+!
+      enddo
+     enddo
+!
+!
+    endsubroutine gressel_entropy
+!***********************************************************************
     subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
 !
 !   22-jan-10/fred
@@ -2699,6 +2782,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
+      real :: boost_chi
 !
       intent(out) :: df
 !
@@ -2721,7 +2805,11 @@ module Entropy
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
 !
-      thchi=chi_th*exp(0.5*(p%lnTT))
+
+      boost_chi=1e5/unit_temperature
+      thchi=chi_th
+      where (p%lnTT .ge. log(boost_chi)) &
+      thchi=chi_th*(1+(exp(p%lnTT)-boost_chi)**0.5)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)

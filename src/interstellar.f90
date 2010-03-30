@@ -242,6 +242,7 @@ module Interstellar
   double precision, dimension(11) :: coolT_cgs, coolH_cgs
   real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
+  real, dimension(nz) :: heat_gressel
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
@@ -410,6 +411,7 @@ module Interstellar
       logical :: lstarting
 !
       real :: mu
+      real, dimension(nz) :: heat
 !
       f(:,:,:,icooling)=0.0
 !
@@ -729,6 +731,12 @@ module Interstellar
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
 !
+      if (heating_select == 'Gressel-hs') then
+            call gressel_interstellar(f,heat)
+            heat_gressel = heat
+      endif
+!
+!
 !  Cooling cutoff in shocks
 !
       if (heatcool_shock_cutoff_rate/=0.) then
@@ -1001,7 +1009,8 @@ module Interstellar
           SNRs(iSNR)%site%rho=0.
           SNRs(iSNR)%t=t
           SNRs(iSNR)%radius=width_SN
-          call position_SN_testposition(f,SNRs(iSNR))
+          call position_SN_uniformz(f,SNRs(iSNR))
+!          call position_SN_testposition(f,SNRs(iSNR))
           call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
@@ -1180,6 +1189,106 @@ module Interstellar
 !
 !
     endsubroutine interstellar_before_boundary
+!***********************************************************************
+    subroutine gressel_interstellar(f,heat)
+!
+!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
+!
+!   Density and isothermal entropy profile in hydrostatic equilibrium
+!   with the Ferriere profile set in gravity_simple.f90
+!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
+!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
+!   equilibrium. Constants g_A..D from gravz_profile. In addition equating
+!   the uv-heating with cooling*rho for thermal equilibrium. Use
+!   initss='Gressel-hs' in entropy initpars and heating_select='Gressel-hs' in
+!   interstellar init & runpars
+!
+!
+      use Mpicomm, only: mpibcast_real
+      use EquationOfState , only: getmu
+      use Sub, only: erfunc
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nz) :: rho,TT,lambda,fbeta,flamk, erfz
+      real, dimension(nz), intent(out) :: heat
+      real :: rho0ts, T0hs, muhs
+      real :: g_A, g_C, T_k, erfB
+      real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      real, dimension(10) :: beta
+      double precision,dimension(10) :: lamk,lamstep,lamT
+      double precision :: g_B, unit_Lambda ,g_D
+      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      integer :: j
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+          g_B = g_B_cgs/unit_length
+          unit_Lambda = unit_velocity**2 / unit_density / unit_time
+          T0hs=6250/unit_temperature
+          rho0ts=1.8747e-24/unit_density
+          T_k=5000.0/unit_temperature
+!
+!chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
+!
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+      endif
+!
+!  uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!   at solar radius.  (for interstellar runs)
+!  requires SS-Slyz' cooling_select for similar method
+!  as O. Gressel 2008 (PhD)
+!
+      beta = (/2.12,1.0, 0.56,3.21,-0.2,-3.,-0.22,-3.,.33,.5/)
+      lamk = ((/3.420D16, 8.73275974868D18,1.094d20,10178638302.185D0,&
+                1.142D27,2.208D42,3.69d26,1.41D44,&
+          1.485d22,8.52d20/)) / unit_Lambda * unit_temperature**beta
+      lamT = ((/10.D0,141.D0,313.D0,6102.D0,1.D5,2.88D5,4.73D5,2.11D6,3.980D6,2.D7/))/unit_temperature
+      lamstep = lamk*lamT**beta
+!
+      call getmu(f,muhs)
+!
+!
+      if (lroot) print*, &
+         'Gressel1-interstellar: calculating z-dependent uv-heating function for init hydrostatic & thermal equilibrium'
+      do n=n1,n2
+        erfB=g_B
+        erfz(n)=sqrt(T_k*z(n)**2+g_B**2)
+!
+!  30-mar-10/fred: principle Gamma=Lambda*rho. 
+!                  dlnrho/dz=1/RT*gravz
+!                   Set Gamma(z) with GammaUV/Rho0hs z=0
+!                  require initial profile to produce finite Lambda between lamstep(3) and
+!                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                                                                                                                                 !
+        TT =T0hs  *exp((T_k*z(n))**2)
+        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
+            *(erfunc(erfz(n))-erfunc(erfB)) + g_C/g_D*(exp(-T_k*z(n)**2)-1)))
+!
+!
+!  define initial values for the Lambda(z) array from initial temerature profile
+!
+!
+        where (TT .lt. lamT(1)) TT=lamT(1)
+        do j=1,9
+           if (TT(n) .ge. lamT(j) .and. TT(n) .le. lamT(j+1)) then
+           fbeta(n)=beta(j)
+           flamk(n)=lamk(j)
+           end if
+        where (TT .gt. lamT(10))
+           fbeta=beta(10)
+           flamk=lamk(10)
+        endwhere
+        enddo
+          lambda=real(flamk*TT**fbeta)
+          heat(n)=lambda(n)*rho(n)
+!
+      enddo
+!
+    endsubroutine gressel_interstellar
 !***********************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
@@ -1397,8 +1506,10 @@ cool_loop: do i=1,ncool
          heat = heating_rate
 !  if using Gressel-hs in initial entropy this must also be specified for stability
       else if (heating_select == 'Gressel-hs') Then
-        g_B=g_B_cgs/unit_length
-        heat(1:nx) = GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
+!        g_B=g_B_cgs/unit_length
+!        heat(1:nx) = GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
+!      else if (heating_select == 'Gressel2-hs') then
+        heat = heat_gressel(n)
       else if (heating_select == 'off') Then
          heat = 0.
       endif
@@ -1719,25 +1830,25 @@ cool_loop: do i=1,ncool
       if (center_SN_x.eq.impossible) then
         i=max(int(nxgrid/2)+1,1)
       else
-        i=int((center_SN_x-x00)/dx)
+        i=int((center_SN_x-x00)/dx)+1
       endif
-      SNR%l=i+nghost+1
+      SNR%l=i+nghost
 !
       if (center_SN_y.eq.impossible) then
         i=max(int(nygrid/2)+1,1)
       else
-        i=int((center_SN_y-y00)/dy)
+        i=int((center_SN_y-y00)/dy)+1
       endif
-      SNR%ipy=(i-1)/ny  ! uses integer division
-      SNR%m=i-(SNR%ipy*ny)+nghost+1
+      SNR%ipy=(i-1)/ny ! uses integer division !removed -1 after i fred debug
+      SNR%m=i-(SNR%ipy*ny)+nghost
 !
       if (center_SN_z.eq.impossible) then
         i=max(int(nzgrid/2)+1,1)
       else
-        i=int((center_SN_z-z00)/dz)
+        i=int((center_SN_z-z00)/dz)+1
       endif
-      SNR%ipz=(i-1)/nz   ! uses integer division
-      SNR%n=i-(SNR%ipz*nz)+nghost+1
+      SNR%ipz=(i-1)/nz   ! uses integer division !+1 fred debug
+      SNR%n=i-(SNR%ipz*nz)+nghost
       SNR%iproc=SNR%ipz*nprocy + SNR%ipy
     endif
     call share_SN_parameters(f,SNR)
@@ -2219,9 +2330,9 @@ find_SN: do n=n1,n2
       if (nxgrid/=1) SNR%x=x(SNR%l) !+dx/2.
       if (nygrid/=1) SNR%y=y(SNR%m) !+dy/2.
       if (nzgrid/=1) SNR%z=z(SNR%n) !+dz/2.
-    if (lroot.and.ip<18) print*, &
- 'share_SN_parameters: (MY SNe) SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT = ' &
-          ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT
+!    if (lroot.and.ip<18) print*, &
+! 'share_SN_parameters: (MY SNe) SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT = ' &
+!          ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT
     else
       ! Better initialise these to something on the other processors
       SNR%site%lnrho=0.
@@ -2245,7 +2356,7 @@ find_SN: do n=n1,n2
                     yH=SNR%site%yH,ss=SNR%site%ss,ee=SNR%site%ee)
     SNR%site%TT=exp(SNR%site%lnTT)
 !
-    if (lroot.and.ip<54) print*, &
+    if (lroot.and.ip<24) print*, &
  'share_SN_parameters: SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%ss,SNR%site%TT = ' &
           ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%ss,SNR%site%TT
 !
