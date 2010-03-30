@@ -43,7 +43,7 @@ module EquationOfState
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer :: iglobal_cs2, iglobal_glnTT
-  real, dimension(mz) :: profz_eos=1.0
+  real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: lnTT0=impossible
   real :: xHe=0.0
@@ -222,8 +222,10 @@ module EquationOfState
 !
       if (ieos_profile=='nothing') then
         profz_eos=1.0
+        dprofz_eos=0.0
       elseif (ieos_profile=='surface_z') then
         profz_eos=0.5*(1.0-erfunc(z/width_eos_prof))
+        dprofz_eos=-exp(-(z/width_eos_prof)**2)/(sqrtpi*width_eos_prof)
       endif
 !
     endsubroutine units_eos

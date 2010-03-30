@@ -75,7 +75,7 @@ module EquationOfState
   integer :: isothtop=0
 !
   character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.
+  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
 !
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data

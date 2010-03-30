@@ -48,7 +48,7 @@
   public :: cs2cool
   public :: mpoly, mpoly0, mpoly1, mpoly2
   public :: isothtop
-  public :: ieos_profile,profz_eos
+  public :: ieos_profile,profz_eos,dprofz_eos
 
 ! chemistry
   public :: read_thermodyn,write_thermodyn

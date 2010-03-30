@@ -65,6 +65,7 @@ module Density
   logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
+  logical :: ldensity_profile_masscons=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -91,7 +92,7 @@ module Density
       lnrho_const, plaw, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
-      lcalc_glnrhomean
+      lcalc_glnrhomean, ldensity_profile_masscons
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1574,10 +1575,32 @@ module Density
                 'logarithmic density!')
           endif
         else
-          if (ldensity_nolog) then
-            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
+          if (ieos_profile=='nothing') then
+            if (ldensity_nolog) then
+              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
+            else
+              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+            endif
           else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+!
+!  Choice of vertical profile in front of density evolution.
+!  Default is off. This is useful to simulate outer halo regions.
+!  There is an additional option of doing this by obeying mass
+!  conservation, which is not currently the default.
+!
+            if (ldensity_nolog) then
+              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
+                  - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+              if (ldensity_profile_masscons) &
+                  df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+                    -dprofz_eos(n)*p%rho*p%uu(:,3)
+            else
+              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+                - profz_eos(n)*(p%uglnrho + p%divu)
+              if (ldensity_profile_masscons) &
+                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                    -dprofz_eos(n)*p%uu(:,3)
+            endif
           endif
         endif
       endif
