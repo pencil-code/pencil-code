@@ -78,6 +78,7 @@ module Testscalar
   ! run parameters
   real :: kappatest=0.,kappatest1=0.
   real, dimension(njtestscalar) :: rescale_cctest=0.
+  logical :: ltestscalar_ugc=.false.
   logical :: ltestscalar_newz=.true.
   logical :: ltestscalar_newx=.false.
   logical :: ltestscalar_newy=.false.
@@ -112,6 +113,7 @@ module Testscalar
   integer :: idiag_kap13=0      ! DIAG_DOC: $\kappa_{13}$
   integer :: idiag_kap23=0      ! DIAG_DOC: $\kappa_{23}$
   integer :: idiag_kap33=0      ! DIAG_DOC: $\kappa_{33}$
+  integer :: idiag_mkap33=0     ! DIAG_DOC: $\kappa'_{33}$
   integer :: idiag_c1rms=0      ! DIAG_DOC: $\left<c_{1}^2\right>^{1/2}$
   integer :: idiag_c2rms=0      ! DIAG_DOC: $\left<c_{2}^2\right>^{1/2}$
   integer :: idiag_c3rms=0      ! DIAG_DOC: $\left<c_{3}^2\right>^{1/2}$
@@ -505,7 +507,7 @@ module Testscalar
       real, dimension (nx) :: cc,cctest,del2ctest,ug
       real, dimension (nx,3) :: ggtest, G0test=0.,uctest
       real, dimension (nx) :: ugtest,dugtest
-      real, dimension (nx,3,njtestscalar) :: Fipq
+      real, dimension (nx,3,njtestscalar) :: Fipq,Gipq
       real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
       integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
@@ -615,6 +617,7 @@ module Testscalar
         endif
         cpq(:,jtest)=cctest
         Fipq(:,:,jtest)=uctest*camp1
+        Gipq(:,3,jtest)=ugtest*camp1
       enddo
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
@@ -665,6 +668,7 @@ module Testscalar
         if (idiag_kap13/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2),idiag_kap13)
         if (idiag_kap23/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2),idiag_kap23)
         if (idiag_kap33/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2),idiag_kap33)
+        if (idiag_mkap33/=0) call sum_mn_name(-sz(n)*Gipq(:,3,i1)+cz(n)*Gipq(:,3,i2),idiag_mkap33)
 !
 !  pumping effect
 !
@@ -1003,7 +1007,7 @@ module Testscalar
         idiag_F12z=0; idiag_F22z=0; idiag_F32z=0
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
         idiag_kap12=0; idiag_kap22=0; idiag_kap32=0
-        idiag_kap13=0; idiag_kap23=0; idiag_kap33=0
+        idiag_kap13=0; idiag_kap23=0; idiag_kap33=0; idiag_mkap33=0
         idiag_gam11=0; idiag_gam21=0; idiag_gam31=0
         idiag_gam12=0; idiag_gam22=0; idiag_gam32=0
         idiag_gam13=0; idiag_gam23=0; idiag_gam33=0
@@ -1023,6 +1027,7 @@ module Testscalar
         call parse_name(iname,cname(iname),cform(iname),'kap13',idiag_kap13)
         call parse_name(iname,cname(iname),cform(iname),'kap23',idiag_kap23)
         call parse_name(iname,cname(iname),cform(iname),'kap33',idiag_kap33)
+        call parse_name(iname,cname(iname),cform(iname),'mkap33',idiag_mkap33)
         call parse_name(iname,cname(iname),cform(iname),'gam11',idiag_gam11)
         call parse_name(iname,cname(iname),cform(iname),'gam21',idiag_gam21)
         call parse_name(iname,cname(iname),cform(iname),'gam31',idiag_gam31)
@@ -1069,6 +1074,7 @@ module Testscalar
         write(3,*) 'idiag_kap13=',idiag_kap13
         write(3,*) 'idiag_kap23=',idiag_kap23
         write(3,*) 'idiag_kap33=',idiag_kap33
+        write(3,*) 'idiag_mkap33=',idiag_mkap33
         write(3,*) 'idiag_gam11=',idiag_gam11
         write(3,*) 'idiag_gam21=',idiag_gam21
         write(3,*) 'idiag_gam31=',idiag_gam31

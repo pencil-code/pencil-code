@@ -2020,6 +2020,7 @@ module Magnetic
         case ('const'); alpha_tmp=1.
         case ('siny'); alpha_tmp=sin(y(m))
         case ('sinz'); alpha_tmp=sin(z(n))
+        case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
         case ('z'); alpha_tmp=z(n)
         case ('z/H'); alpha_tmp=z(n)/xyz1(3)
         case ('z/H_0'); alpha_tmp=z(n)/xyz1(3); if (z(n)==xyz1(3)) alpha_tmp=0.

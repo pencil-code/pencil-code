@@ -234,6 +234,7 @@ module Pscalar
 !
       integer :: i
 !
+      lpenc_requested(i_cc)=.true.
       if (.not. nopscalar) lpenc_requested(i_ugcc)=.true.
       if (lpscalar_per_unitvolume) then
         lpenc_requested(i_divu)=.true.
