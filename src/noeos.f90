@@ -41,7 +41,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3, ilnrho_lnTT=4
   integer, parameter :: ilnrho_TT=9, ipp_ss=11,ipp_cs2=12
 !
-  real, dimension (mz) :: profz_eos=1.0
+  real, dimension (mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension (3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: cp=impossible, cp1=impossible
   real :: cs0=1.0, rho0=1.0
