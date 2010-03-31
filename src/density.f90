@@ -40,7 +40,8 @@ module Density
   real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
   real :: lnrho_const=0.0, rho_const=1.0
-  real :: cdiffrho=0.0, diffrho=0.0, diffrho_hyper3=0.0, diffrho_shock=0.0
+  real :: cdiffrho=0.0, diffrho=0.0
+  real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
   real :: xblob=0.0, yblob=0.0, zblob=0.0
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
@@ -59,6 +60,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
+  logical :: ldiff_hyper3_mesh=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
@@ -85,7 +87,8 @@ module Density
       lnrho_z_shift, lshare_plaw, powerlr,  zoverh,  hoverr
 !
   namelist /density_run_pars/ &
-      cdiffrho, diffrho, diffrho_hyper3, diffrho_shock, cs2bot, cs2top, &
+      cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
+      cs2bot, cs2top, &
       lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
       mass_source_Mdot,  mass_source_sigma, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
@@ -205,6 +208,7 @@ module Density
       ldiff_hyper3lnrho=.false.
       ldiff_hyper3_aniso=.false.
       ldiff_hyper3_polar=.false.
+      ldiff_hyper3_mesh=.false.
 !
       lnothing=.false.
 !
@@ -224,9 +228,12 @@ module Density
        case ('hyper3_aniso','hyper3-aniso')
           if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
           ldiff_hyper3_aniso=.true.
-        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph','hyper3_mesh')
+        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
           ldiff_hyper3_polar=.true.
+        case ('hyper3_mesh')
+          if (lroot) print*,'diffusion: mesh hyperdiffusion'
+          ldiff_hyper3_mesh=.true.
         case ('shock','diff-shock','diffrho-shock')
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
@@ -1655,6 +1662,22 @@ module Density
         enddo
         if (lfirst.and.ldt) &
              diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1/dxyz_4
+        if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+      endif
+!
+!  Mesh-hyperdiffusion. The parameter diffrho_hyper3_mesh has currently the unit
+!  of velocity and should later be changed to maxadvec (to be checked as disgnostics).
+!  A good value for diffrho_hyper3_mesh is 5 (which is currently the default).
+!  This method should also work in all coordinate systems.
+!
+      if (ldiff_hyper3_mesh) then
+        do j=1,3
+          call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
+          if (.not.ldensity_nolog) tmp=tmp*p%rho1
+          fdiff = fdiff + diffrho_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
+        enddo
+        if (lfirst.and.ldt) &
+            advec_lnrho=diffrho_hyper3_mesh*pi5_1*dx_1(l1:l2)
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !

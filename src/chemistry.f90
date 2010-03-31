@@ -4316,8 +4316,8 @@ module Chemistry
                 /species_constants(index_O2,imass)*p%rho(i)
          X_N2=f(l1+i-1,mm,nn,ichemspec(index_N2))*unit_mass &
                 /species_constants(index_N2,imass)*p%rho(i)
-         kf_loc=5.60D-34*X_O2*X_N2*((1./300.*p%TT(i))**-2.6) &
-           +6.00D-34*X_O2**2*((1./300.*p%TT(i))**-2.6) 
+         kf_loc=5.60D-34*X_O2*X_N2*((1./300.*p%TT(i))**(-2.6)) &
+           +6.00D-34*X_O2**2*((1./300.*p%TT(i))**(-2.6))
        case ('O1D=O')
          X_O2=f(l1+i-1,mm,nn,ichemspec(index_O2))*unit_mass &
                 /species_constants(index_O2,imass)*p%rho(i)

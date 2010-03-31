@@ -341,7 +341,7 @@ module Equ
             advec_uu=0.0
           endif
           if (ldensity) then
-            diffus_diffrho=0.0; diffus_diffrho3=0.0
+            diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_lnrho=0.0
             if (leos) advec_cs2=0.0
           endif
           if (lentropy) then
@@ -628,7 +628,7 @@ module Equ
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
           if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
             advec2=0.0
-            if (ldensity) advec2=advec2+advec_cs2
+            if (ldensity) advec2=advec2+advec_cs2+advec_lnrho**2
             if (lmagnetic) advec2=advec2+advec_va2
             if (lradiation) advec2=advec2+advec_crad2
             if (lneutralvelocity) advec2=advec2+advec_csn2

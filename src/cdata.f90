@@ -95,7 +95,7 @@ module Cdata
   real :: dt1_last=0.
   real :: dtmin=1.0e-6,dtmax=1.0e37
   logical :: lini_t_eq_zero=.false.
-  real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
+  real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2,advec_lnrho
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
   real, dimension (nx) :: diffus_nu,diffus_nu2,diffus_nu3
   real, dimension (nx) :: diffus_diffrho,diffus_diffrho3

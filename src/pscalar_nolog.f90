@@ -57,6 +57,7 @@ module Pscalar
   real :: scalaracc=0.0
   real :: LLambda_cc=0.0
   logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
+  logical :: lpscalar_diff_simple=.false.
   logical :: lpscalar_per_unitvolume=.false.
   logical :: lpscalar_per_unitvolume_diff=.false.
   logical :: lnotpassive=.false., lupw_cc=.false.
@@ -66,6 +67,7 @@ module Pscalar
       pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
       pscalar_diff_hyper3, reinitialize_lncc, reinitialize_cc, lpscalar_sink, &
       lmean_friction_cc, LLambda_cc, &
+      lpscalar_diff_simple, &
       lpscalar_per_unitvolume, lpscalar_per_unitvolume_diff, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
       om_gradC, lgradC_profile, lnotpassive, lupw_cc
@@ -238,9 +240,12 @@ module Pscalar
       if (.not. nopscalar) lpenc_requested(i_ugcc)=.true.
       if (lpscalar_per_unitvolume) then
         lpenc_requested(i_divu)=.true.
-        lpenc_requested(i_cc)=.true.
       endif
-      if (lpscalar_per_unitvolume_diff) lpenc_requested(i_del2lnrho)=.true.
+      if (lpscalar_per_unitvolume_diff) then
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gcc)=.true.
+      endif
       if (lnotpassive) lpenc_requested(i_cc)=.true.
       if (lpscalar_sink) lpenc_requested(i_rho1)=.true.
       if (pscalar_diff/=0.) then
@@ -428,10 +433,14 @@ module Pscalar
               diff_op=p%del2cc
             endif
           else
-            call dot_mn(p%glnrho,p%gcc,diff_op)
-            diff_op=diff_op+p%del2cc
+            if (lpscalar_diff_simple) then
+              diff_op=p%del2cc
+            else
+              call dot_mn(p%glnrho,p%gcc,diff_op)
+              diff_op=diff_op+p%del2cc
+            endif
           endif
-          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + pscalar_diff*diff_op
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+pscalar_diff*diff_op
         endif
 !
 !  Hyperdiffusion operator.
