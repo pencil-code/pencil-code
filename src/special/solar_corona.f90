@@ -67,6 +67,7 @@ module Special
     integer :: xrange,yrange,p,nrpoints
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
+    real, dimension(nxgrid,nygrid) :: absB
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
     real, save :: tsnap_uu=0.
@@ -906,7 +907,7 @@ module Special
 !  select type for cooling fxunction
 !  1: 10 points interpolation
 !  2: 37 points interpolation
-!  3: four gaussian fit 
+!  3: four gaussian fit
 !
       get_lnQ=-1000.
 !
@@ -978,8 +979,9 @@ module Special
 ! These contain,  x-position, y-position,
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
 !
-      if (lroot) call information('solar_corona','Setting up parameters for granules')
-!     
+      if (lroot) call information('solar_corona', &
+          'Setting up parameters for granules')
+!
 ! Gives intergranular area / (granular+intergranular area)
       ig=0.3
 !
@@ -1008,7 +1010,8 @@ module Special
 ! Now also resolution dependent(5 min for granular scale)
 !
       life_t=(60.*5./unit_time)
-!            *(granr/(0.8*1e8/u_l))**2 !* removed since the life time was about 20 min !
+      !*(granr/(0.8*1e8/u_l))**2 
+      !  removed since the life time was about 20 min !
 !
       dxdy2=dx**2+dy**2
 !
@@ -1038,13 +1041,12 @@ module Special
 !
     real, dimension(mx,my,mz,mfarray) :: f
 !
-    real :: zref
+    real :: zref,mu0_SI,u_b
     integer :: iref,i
+    real, dimension(nx,ny) :: dx_ux,dy_uy
 !
-    Ux=0.0
-    Uy=0.0
-!
-    call multi_drive3
+    mu0_SI = 4.*pi*1.e-7
+    u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
     zref = minval(abs(z(n1:n2)))
     iref = n1
@@ -1052,9 +1054,35 @@ module Special
       if (z(i).eq.zref) iref=i
     enddo
 !
+! compute abs(B) to quench velocities and avoid new
+! granules at places with strong magnetic fields
+!
+    absB =( (f(l1:l2,m1+1:m2+1,iref,iaz)-f(l1:l2,m1-1:m2-1,iref,iaz))/2./dy  &
+        -   (f(l1:l2,m1:m2,iref+1,iay)-f(l1:l2,m1:m2,iref-1,iay))/2./dz )**2. &        
+        +( (f(l1:l2,m1:m2,iref+1,iax)-f(l1:l2,m1:m2,iref-1,iax))/2./dz  &
+        -   (f(l1+1:l2+1,m1:m2,iref,iaz)-f(l1-1:l2-1,m1:m2,iref,iaz))/2./dx )**2. &
+        +( (f(l1+1:l2+1,m1:m2,iref,iay)-f(l1-1:l2-1,m1:m2,iref,iay))/2./dx  &
+        -   (f(l1:l2,m1+1:m+12,iref,iax)-f(l1:l2,m1-1:m2-1,iref,iax))/2./dy )**2.
+    absB = sqrt(absB)*u_b
+!
+    Ux=0.0
+    Uy=0.0
+!
+    call multi_drive3
+!
     f(l1:l2,m1:m2,iref,iux) = Ux(ipx*nx+1:ipx*nx+nx,ipy*ny+1:ipy*ny+ny)
     f(l1:l2,m1:m2,iref,iuy) = Uy(ipx*nx+1:ipx*nx+nx,ipy*ny+1:ipy*ny+ny)
-    f(l1:l2,m1:m2,iref,iuz) = 0.
+!
+! compute uz to force mass conservation at the zref
+!
+    dx_ux = f(l1+1:l2+1,m1:m2,iref,iux)-f(l1-1:l2-1,m1:m2,iref,iux)
+    dx_ux = dx_ux /2.*spread(dx_1(l1:l2),2,ny)
+!
+    dy_uy = f(l1:l2,m1+1:m2+1,iref,iuy)-f(l1:l2,m-11:m2-1,iref,iuy)
+    dy_uy = dy_uy /2.*spread(dy_1(m1:m2),1,nx)
+!
+    f(l1:l2,m1:m2,iref,iuz)   =  0.
+    f(l1:l2,m1:m2,iref-1,iuz) = (dx_ux + dy_uy)*(z(iref)-z(iref-1))
 !
   endsubroutine uudriver
 !***********************************************************************
@@ -1274,7 +1302,8 @@ module Special
       endif
       if (lroot .and. itsub .eq. 3) &
           lstop = control_file_exists('STOP')
-      if ((lstop .or. t>=tmax .or. it.eq.nt).and.lroot) call wrpoints(isnap+1000*(level-1))
+      if ((lstop .or. t>=tmax .or. it.eq.nt).and.lroot) &
+          call wrpoints(isnap+1000*(level-1))
 !
     endsubroutine drive3
 !***********************************************************************
@@ -1536,8 +1565,9 @@ endsubroutine addpoint
           dist=sqrt(dist2)
           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
           !
-          ! where the field strength is greater than 1200 Gaus avoid new granules
-          !if (abs(Bz0(i,j)) .gt.1200.*(1+(2*ran1(seed)-1)*0.5)) avoidarr(i,j)=1
+          ! where the field strength is greater than 500 Gaus (0.05 Tesla) 
+          ! avoid new granules
+          if (absB(i,j) .gt.0.05) avoidarr(i,j)=1
           vtmp=current%data(1)/dist
 !          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
 !              dist**2*exp(-(dist/(0.53*granr))**2)
