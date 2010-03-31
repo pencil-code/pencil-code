@@ -101,7 +101,6 @@ module Special
         call setdrparams()
         tsnap_uu = t + dsnap
         isnap = int(t/dsnap)
-        print*,'ISNAP',isnap,'-------------------'
       endif
 !
     endsubroutine initialize_special
@@ -976,7 +975,8 @@ module Special
     subroutine setdrparams()
 !
 ! Every granule has 6 values associated with it: data(1-6).
-! These contain, y,z,current amplitude, amplitude at t=t_0, t_0, and life_time.
+! These contain,  x-position, y-position,
+!    current amplitude, amplitude at t=t_0, t_0, and life_time.
 !
       if (lroot) call information('solar_corona','Setting up parameters for granules')
 !     
@@ -1271,7 +1271,6 @@ module Special
         if (lroot) call wrpoints(isnap+1000*(level-1))
         tsnap_uu = tsnap_uu + dsnap
         isnap  = isnap + 1
-        print*,'ISNAP',isnap,'-------------------'
       endif
       if (lroot .and. itsub .eq. 3) &
           lstop = control_file_exists('STOP')
@@ -1526,8 +1525,6 @@ endsubroutine addpoint
       dxdy=sqrt(dxdy2)
 !
 ! Update weight and velocity for new granule
-!
-!  !$omp parallel do private(i,ii,j,jj,xdist,ydist,dist2,dist,vtmp,vtmp2)
 !
       do jj=current%pos(2)-yrange,current%pos(2)+yrange
         j = 1+mod(jj-1+nygrid,nygrid)
