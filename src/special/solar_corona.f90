@@ -67,7 +67,7 @@ module Special
     integer :: xrange,yrange,p,nrpoints
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
-    real, dimension(nxgrid,nygrid) :: absB
+    real, dimension(nxgrid,nygrid),save :: absB
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
     real, save :: tsnap_uu=0.
@@ -975,6 +975,18 @@ module Special
 !***********************************************************************
     subroutine setdrparams()
 !
+      integer :: lend
+!
+! compute abs(B) to quench velocities and avoid new
+! granules at places with strong magnetic fields
+!
+    inquire(IOLENGTH=lend) ampl
+    open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+        recl=lend*nxgrid*nygrid,access='direct')
+    read (11,rec=1) absB
+    close (11)
+    absB =  abs(absB)
+!
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain,  x-position, y-position,
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
@@ -1041,29 +1053,15 @@ module Special
 !
     real, dimension(mx,my,mz,mfarray) :: f
 !
-    real :: zref,mu0_SI,u_b
+    real :: zref
     integer :: iref,i
     real, dimension(nx,ny) :: dx_ux,dy_uy
-!
-    mu0_SI = 4.*pi*1.e-7
-    u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
     zref = minval(abs(z(n1:n2)))
     iref = n1
     do i=n1,n2
       if (z(i).eq.zref) iref=i
     enddo
-!
-! compute abs(B) to quench velocities and avoid new
-! granules at places with strong magnetic fields
-!
-    absB =( (f(l1:l2,m1+1:m2+1,iref,iaz)-f(l1:l2,m1-1:m2-1,iref,iaz))/2./dy  &
-        -   (f(l1:l2,m1:m2,iref+1,iay)-f(l1:l2,m1:m2,iref-1,iay))/2./dz )**2. &        
-        +( (f(l1:l2,m1:m2,iref+1,iax)-f(l1:l2,m1:m2,iref-1,iax))/2./dz  &
-        -   (f(l1+1:l2+1,m1:m2,iref,iaz)-f(l1-1:l2-1,m1:m2,iref,iaz))/2./dx )**2. &
-        +( (f(l1+1:l2+1,m1:m2,iref,iay)-f(l1-1:l2-1,m1:m2,iref,iay))/2./dx  &
-        -   (f(l1:l2,m1+1:m+12,iref,iax)-f(l1:l2,m1-1:m2-1,iref,iax))/2./dy )**2.
-    absB = sqrt(absB)*u_b
 !
     Ux=0.0
     Uy=0.0
