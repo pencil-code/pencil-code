@@ -486,8 +486,8 @@ module Magnetic
   integer :: idiag_b3b21m=0     ! DIAG_DOC: $\left<B_3 B_{2,1} \right>$
   integer :: idiag_b1b32m=0     ! DIAG_DOC: $\left<B_1 B_{3,2} \right>$
   integer :: idiag_b2b13m=0     ! DIAG_DOC: $\left<B_2 B_{1,3} \right>$
-  integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv} \right>$
-  integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv} dV$
+  integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
+  integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
   integer :: idiag_udotxbm=0    ! DIAG_DOC:
   integer :: idiag_uxbdotm=0    ! DIAG_DOC:
   integer :: idiag_uxbmx=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_x\right>$
