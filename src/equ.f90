@@ -727,6 +727,8 @@ module Equ
                 call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
             if (idiag_Rmesh3/=0) &
                 call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
+            if (idiag_maxadvec/=0) &
+                call max_mn_name(maxadvec,idiag_maxadvec)
           endif
         endif
 !
