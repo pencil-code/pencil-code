@@ -8213,6 +8213,13 @@ viscosity by a factor of about $2^5=32$ (Haugen \& Brandenburg 2004).
 This shows that hyperviscosity can allow
 a dramatic increase of the Reynolds number based on the scale of the box.
 
+By choosing \cmd{idiff='hyper3_mesh'} in \code{density_run_pars}
+the hyperdiffusion for density is being set automatically in a
+mesh-independent way.
+A hyper-mesh Reynolds number of 30 corresponds to a coefficient
+\cmd{diffrho_hyper3_mesh=2} if \var{maxadvec} is about 1, but in
+practice we need a bit more (5 is currently the default).
+
 \subsection{Anisotropic hyperdissipation}
 
 As we want quenching primarily at the Nyquist frequency, hyperdissipation
@@ -10375,7 +10382,7 @@ possible inputs to the file \file{video.in}.
 \midrule
   \var{ss}    & entropy $s$;
                 writes \file[]{ss.\{xz,yz,xy,xy2\}}  \\
-  \var{pp}    & presure $p$;
+  \var{pp}    & pressure $p$;
                 writes \file[]{pp.\{xz,yz,xy,xy2\}}  \\
 %
 \midrule

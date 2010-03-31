@@ -22,6 +22,7 @@
 %%   chemistry.f90
 %%   noentropy.f90
 %%   solid_cells.f90
+%%   testfield_axisym2.f90
 %%   testfield_nonlin_z.f90
 %%   nolorenz_gauge.f90
 %%   magnetic_axisym.f90
@@ -42,7 +43,8 @@
   \var{walltime}  & wall clock time since start of
                     run.x, in seconds \\
   \var{Rmesh}     & $R_{\rm mesh}$ \\
-  \var{Rmesh3}    & $R_{\rm mesh}$ \\
+  \var{Rmesh3}    & $R_{\rm mesh}^{(3)}$ \\
+  \var{maxadvec}  & maxadvec \\
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
@@ -105,6 +107,7 @@
                     \cdot\left<\Uv\right>_{xy}
                     \right>$ \quad($xy$-averaged
                     mean cross helicity production) \\
+  \var{umamz}     & $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ \\
   \var{umbmz}     & $\left<\left<\Uv\right>_{xy}
                     \cdot\left<\Bv\right>_{xy}
                     \right>$ \quad($xy$-averaged
@@ -142,6 +145,11 @@
   \var{ux2mxz}    & $\left< u_x^2 \right>_{y}$ \\
   \var{uy2mxz}    & $\left< u_y^2 \right>_{y}$ \\
   \var{uz2mxz}    & $\left< u_z^2 \right>_{y}$ \\
+  \var{uxmx}      & $\left< u_x \right>_{yz}$ \\
+  \var{uymx}      & $\left< u_y \right>_{yz}$ \\
+  \var{uzmx}      & $\left< u_z \right>_{yz}$ \\
+  \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
   \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
   \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
   \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
@@ -223,6 +231,7 @@
   \var{rhomin}    & $\min(\rho)$ \\
   \var{rhomax}    & $\max(\rho)$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
+  \var{rhomz}     & $\left<\varrho\right>_{xy}$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
 \midrule
@@ -277,16 +286,24 @@
   \var{j2m}       & $\left<\jv^2\right>$ \\
   \var{jm2}       & $\max(\jv^2)$ \\
   \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abumx}     & $\left<u_x\Av\cdot\Bv\right>$ \\
+  \var{abumy}     & $\left<u_y\Av\cdot\Bv\right>$ \\
+  \var{abumz}     & $\left<u_z\Av\cdot\Bv\right>$ \\
   \var{abmh}      & $\left<\Av\cdot\Bv\right>$ (temp) \\
   \var{abmn}      & $\left<\Av\cdot\Bv\right>$ (north) \\
   \var{abms}      & $\left<\Av\cdot\Bv\right>$ (south) \\
+  \var{abrms}     & $\left<(\Av\cdot\Bv)^2\right>^{1/2}$ \\
   \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
   \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
   \var{jbmh}      & $\left<\Av\cdot\Bv\right>$ (temp) \\
   \var{jbmn}      & $\left<\Av\cdot\Bv\right>$ (north) \\
   \var{jbms}      & $\left<\Av\cdot\Bv\right>$ (south) \\
   \var{ubm}       & $\left<\uv\cdot\Bv\right>$ \\
+  \var{uxbxm}     & $\left<u_xB_x\right>$ \\
+  \var{uybym}     & $\left<u_yB_y\right>$ \\
+  \var{uzbzm}     & $\left<u_zB_z\right>$ \\
   \var{cosubm}    & $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)\right>$ \\
+  \var{uam}       & $\left<\uv\cdot\Av\right>$ \\
   \var{ujm}       & $\left<\uv\cdot\Jv\right>$ \\
   \var{fbm}       & $\left<\fv\cdot\Bv\right>$ \\
   \var{fxbxm}     & $\left<f_x B_x\right>$ \\
@@ -298,6 +315,8 @@
   \var{Expt}      & ${\cal E}_x(x_0,y_0,z_0,t)$ \\
   \var{Eypt}      & ${\cal E}_y(x_0,y_0,z_0,t)$ \\
   \var{Ezpt}      & ${\cal E}_z(x_0,y_0,z_0,t)$ \\
+  \var{exabot}    & $\int\Ev\times\Av\,dS|_{\rm bot}$ \\
+  \var{exatop}    & $\int\Ev\times\Av\,dS|_{\rm top}$ \\
   \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
   \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
   \var{bmax}      & $\max(|\Bv|)$ \\
@@ -342,6 +361,12 @@
   \var{axmz}      & $\left<{\cal A}_x\right>_{xy}$ \\
   \var{aymz}      & $\left<{\cal A}_y\right>_{xy}$ \\
   \var{azmz}      & $\left<{\cal A}_z\right>_{xy}$ \\
+  \var{abuxmz}    & $\left<(\Av \cdot \Bv) u_x \right>_{xy}$ \\
+  \var{abuymz}    & $\left<(\Av \cdot \Bv) u_y \right>_{xy}$ \\
+  \var{abuzmz}    & $\left<(\Av \cdot \Bv) u_z \right>_{xy}$ \\
+  \var{uabxmz}    & $\left<(\uv \cdot \Av) B_x \right>_{xy}$ \\
+  \var{uabymz}    & $\left<(\uv \cdot \Av) B_y \right>_{xy}$ \\
+  \var{uabzmz}    & $\left<(\uv \cdot \Av) B_z \right>_{xy}$ \\
   \var{bxmz}      & $\left<{\cal B}_x\right>_{xy}$ \\
   \var{bymz}      & $\left<{\cal B}_y\right>_{xy}$ \\
   \var{bzmz}      & $\left<{\cal B}_z\right>_{xy}$ \\
@@ -363,6 +388,8 @@
                     \right>^{1/2}$
                     \quad(energy of $xy$-averaged
                     mean field) \\
+  \var{bmzS2}     & $\left<\left<\Bv_S\right>_{xy}^2\right>$ \\
+  \var{bmzA2}     & $\left<\left<\Bv_A\right>_{xy}^2\right>$ \\
   \var{jmx}       & $\left<\left<\Jv\right>_{yz}^2
                     \right>^{1/2}$
                     \quad(energy of $yz$-averaged
@@ -410,9 +437,13 @@
   \var{bz2rmz}    & $\left< B_z^2/\varrho \right>_{xy}$ \\
   \var{jbmz}      & $\left<\Jv\cdot\Bv\right>|_{xy}$ \\
   \var{abmz}      & $\left<\Av\cdot\Bv\right>|_{xy}$ \\
+  \var{uamz}      & $\left<\uv\cdot\Av\right>|_{xy}$ \\
   \var{examz1}    & $\left<\Ev\times\Av\right>_{xy}|_x$ \\
   \var{examz2}    & $\left<\Ev\times\Av\right>_{xy}|_y$ \\
   \var{examz3}    & $\left<\Ev\times\Av\right>_{xy}|_z$ \\
+  \var{EMFmz1}    & $\left<{\cal E}\right>_{xy}|_x$ \\
+  \var{EMFmz2}    & $\left<{\cal E}\right>_{xy}|_y$ \\
+  \var{EMFmz3}    & $\left<{\cal E}\right>_{xy}|_z$ \\
   \var{bxmxy}     & $\left< B_x \right>_{xy}$ \\
   \var{bymxy}     & $\left< B_y \right>_{xy}$ \\
   \var{bzmxy}     & $\left< B_z \right>_{xy}$ \\
@@ -442,9 +473,14 @@
   \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
   \var{b1b32m}    & $\left<B_1 B_{3,2} \right>$ \\
   \var{b2b13m}    & $\left<B_2 B_{1,3} \right>$ \\
+  \var{EMFdotBm}  & $\left<{\cal E}\cdot\Bv \right>$ \\
+  \var{EMFdotB_int} & $\int{\cal E}\cdot\Bv dV$ \\
   \var{uxbmx}     & $\left<(\uv\times\Bv)_x\right>$ \\
   \var{uxbmy}     & $\left<(\uv\times\Bv)_y\right>$ \\
   \var{uxbmz}     & $\left<(\uv\times\Bv)_z\right>$ \\
+  \var{jxbmx}     & $\left<(\jv\times\Bv)_x\right>$ \\
+  \var{jxbmy}     & $\left<(\jv\times\Bv)_y\right>$ \\
+  \var{jxbmz}     & $\left<(\jv\times\Bv)_z\right>$ \\
   \var{examx}     & $\left<\Ev\times\Av\right>|_x$ \\
   \var{examy}     & $\left<\Ev\times\Av\right>|_y$ \\
   \var{examz}     & $\left<\Ev\times\Av\right>|_z$ \\
@@ -922,6 +958,24 @@
   \multicolumn{2}{c}{Module \file{solid_cells.f90}} \\
 \midrule
 \midrule
+  \multicolumn{2}{c}{Module \file{testfield_axisym2.f90}} \\
+\midrule
+  \var{alpPERP}   & $\alpha_\perp$ \\
+  \var{alpPARA}   & $\alpha_\perp$ \\
+  \var{gam}       & $\gamma$ \\
+  \var{betPERP}   & $\beta_\perp$ \\
+  \var{betPARA}   & $\beta_\perp$ \\
+  \var{del}       & $\delta$ \\
+  \var{kapPERP}   & $\kappa_\perp$ \\
+  \var{kapPARA}   & $\kappa_\perp$ \\
+  \var{mu}        & $\mu$ \\
+  \var{bx1pt}     & $b_x^{1}$ \\
+  \var{bx2pt}     & $b_x^{2}$ \\
+  \var{bx3pt}     & $b_x^{3}$ \\
+  \var{b1rms}     & $\left<b_{1}^2\right>^{1/2}$ \\
+  \var{b2rms}     & $\left<b_{2}^2\right>^{1/2}$ \\
+  \var{b3rms}     & $\left<b_{3}^2\right>^{1/2}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{testfield_nonlin_z.f90}} \\
 \midrule
   \var{alp11}     & $\alpha_{11}$ \\
@@ -934,26 +988,9 @@
   \var{eta21}     & $\eta_{21}k$ \\
   \var{eta12}     & $\eta_{12}k$ \\
   \var{eta22}     & $\eta_{22}k$ \\
-  \var{alpK11}    & $\alpha_{11}^K$ \\
-  \var{alpK21}    & $\alpha_{21}^K$ \\
-  \var{alpK31}    & $\alpha_{31}^K$ \\
-  \var{alpK12}    & $\alpha_{12}^K$ \\
-  \var{alpK22}    & $\alpha_{22}^K$ \\
-  \var{alpK32}    & $\alpha_{32}^K$ \\
-  \var{etaK11}    & $\eta_{11}^Kk$ \\
-  \var{etaK21}    & $\eta_{21}^Kk$ \\
-  \var{etaK12}    & $\eta_{12}^Kk$ \\
-  \var{etaK22}    & $\eta_{22}^Kk$ \\
-  \var{alpM11}    & $\alpha_{11}^M$ \\
-  \var{alpM21}    & $\alpha_{21}^M$ \\
-  \var{alpM31}    & $\alpha_{31}^M$ \\
-  \var{alpM12}    & $\alpha_{12}^M$ \\
-  \var{alpM22}    & $\alpha_{22}^M$ \\
-  \var{alpM32}    & $\alpha_{32}^M$ \\
-  \var{etaM11}    & $\eta_{11}^Mk$ \\
-  \var{etaM21}    & $\eta_{21}^Mk$ \\
-  \var{etaM12}    & $\eta_{12}^Mk$ \\
-  \var{etaM22}    & $\eta_{22}^Mk$ \\
+  \var{alpK}      & $\alpha^K$ \\
+  \var{alpM}      & $\alpha^K$ \\
+  \var{alpMK}     & $\alpha^{MK}$ \\
   \var{phi11}     & $\phi_{11}$ \\
   \var{phi21}     & $\phi_{21}$ \\
   \var{phi12}     & $\phi_{12}$ \\
@@ -963,6 +1000,9 @@
   \var{psi21}     & $\psi_{21}k$ \\
   \var{psi12}     & $\psi_{12}k$ \\
   \var{psi22}     & $\psi_{22}k$ \\
+  \var{phiK}      & $\phi^K$ \\
+  \var{phiM}      & $\phi^M$ \\
+  \var{phiMK}     & $\phi^{MK}$ \\
   \var{alp11cc}   & $\alpha_{11}\cos^2 kz$ \\
   \var{alp21sc}   & $\alpha_{21}\sin kz\cos kz$ \\
   \var{alp12cs}   & $\alpha_{12}\cos kz\sin kz$ \\
@@ -971,22 +1011,6 @@
   \var{eta21sc}   & $\eta_{21}\sin kz\cos kz$ \\
   \var{eta12cs}   & $\eta_{12}\cos kz\sin kz$ \\
   \var{eta22ss}   & $\eta_{22}\sin^2 kz$ \\
-  \var{alpK11cc}  & $\alpha_{11}^{\rm K}\cos^2 kz$ \\
-  \var{alpK21sc}  & $\alpha_{21}^{\rm K}\sin kz\cos kz$ \\
-  \var{alpK12cs}  & $\alpha_{12}^{\rm K}\cos kz\sin kz$ \\
-  \var{alpK22ss}  & $\alpha_{22}^{\rm K}\sin^2 kz$ \\
-  \var{etaK11cc}  & $\eta_{11}^{\rm K}\cos^2 kz$ \\
-  \var{etaK21sc}  & $\eta_{21}^{\rm K}\sin kz\cos kz$ \\
-  \var{etaK12cs}  & $\eta_{12}^{\rm K}\cos kz\sin kz$ \\
-  \var{etaK22ss}  & $\eta_{22}^{\rm K}\sin^2 kz$ \\
-  \var{alpM11cc}  & $\alpha_{11}^{\rm M}\cos^2 kz$ \\
-  \var{alpM21sc}  & $\alpha_{21}^{\rm M}\sin kz\cos kz$ \\
-  \var{alpM12cs}  & $\alpha_{12}^{\rm M}\cos kz\sin kz$ \\
-  \var{alpM22ss}  & $\alpha_{22}^{\rm M}\sin^2 kz$ \\
-  \var{etaM11cc}  & $\eta_{11}^{\rm M}\cos^2 kz$ \\
-  \var{etaM21sc}  & $\eta_{21}^{\rm M}\sin kz\cos kz$ \\
-  \var{etaM12cs}  & $\eta_{12}^{\rm M}\cos kz\sin kz$ \\
-  \var{etaM22ss}  & $\eta_{22}^{\rm M}\sin^2 kz$ \\
   \var{s2kzDFm}   & $\left<\sin2kz\nabla\cdot F\right>$ \\
   \var{M11}       & ${\cal M}_{11}$ \\
   \var{M22}       & ${\cal M}_{22}$ \\
@@ -1010,10 +1034,15 @@
   \var{u21rms}    & $\left<u_{21}^2\right>^{1/2}$ \\
   \var{u12rms}    & $\left<u_{12}^2\right>^{1/2}$ \\
   \var{u22rms}    & $\left<u_{22}^2\right>^{1/2}$ \\
+  \var{j11rms}    & $\left<j_{11}^2\right>^{1/2}$ \\
   \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
   \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
   \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
   \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
+  \var{ux0m}      & $\left<u_{0_x}\right>$ \\
+  \var{uy0m}      & $\left<u_{0_y}\right>$ \\
+  \var{ux11m}     & $\left<u_{11_x}\right>$ \\
+  \var{uy11m}     & $\left<u_{11_y}\right>$ \\
   \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
   \var{jb0m}      & $\left<jb_{0}\right>$ \\
@@ -1092,6 +1121,7 @@
   \var{kap13}     & $\kappa_{13}$ \\
   \var{kap23}     & $\kappa_{23}$ \\
   \var{kap33}     & $\kappa_{33}$ \\
+  \var{mkap33}    & $\kappa'_{33}$ \\
   \var{c1rms}     & $\left<c_{1}^2\right>^{1/2}$ \\
   \var{c2rms}     & $\left<c_{2}^2\right>^{1/2}$ \\
   \var{c3rms}     & $\left<c_{3}^2\right>^{1/2}$ \\
