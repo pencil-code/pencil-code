@@ -160,7 +160,7 @@ module Deriv
                 +      (f(n1+3:n2+3)-f(n1-3:n2-3)))
       else
         df=0.
-        if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
+        if (ip<=5) print*, 'der_z: Degenerate case in z-direction'
       endif
 !
     endsubroutine der_z
