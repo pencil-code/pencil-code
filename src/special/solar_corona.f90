@@ -991,21 +991,18 @@ module Special
 ! These contain,  x-position, y-position,
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
 !
-      if (lroot) call information('solar_corona', &
-          'Setting up parameters for granules')
-!
 ! Gives intergranular area / (granular+intergranular area)
       ig=0.3
 !
 ! Gives average radius of granule + intergranular lane
-! (no smaller than 8 grid points across)
-!* here radius of granules is 0.8 Mm or bigger (4 times dx)
-      if (unit_system.eq.'SI') then
-        granr=max(0.8*1.e6/unit_length,4*dx,4*dy)
-      elseif  (unit_system.eq.'cgs') then
-        granr=max(0.8*1.e8/unit_length,4*dx,4*dy)
-      endif
+! (no smaller than 6 grid points across)
+!     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
+      if (unit_system.eq.'SI') then
+        granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
+      elseif  (unit_system.eq.'cgs') then
+        granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
+      endif
 !
 ! Fractional difference in granule power
       pd=0.1
@@ -1043,46 +1040,75 @@ module Special
       granlane(:,:)=0
       avoidarr(:,:)=0
 !
+      if (lroot) then
+        print*,'| solar_corona: settings for granules'
+        print*,'-----------------------------------'
+        print*,'| radius [Mm]:',granr*unit_length*1e-6
+        print*,'| lifetime [min]',life_t*unit_time/60.
+        print*,'| amplitude [km/s]',ampl*unit_velocity*1e-3
+        print*,'-----------------------------------'
+      endif
+!
       allocate(first)
       if (associated(first%next)) nullify(first%next)
       current => first
 !
     endsubroutine setdrparams
 !***********************************************************************
-  subroutine uudriver(f)
+    subroutine uudriver(f)
 !
-    real, dimension(mx,my,mz,mfarray) :: f
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
-    real :: zref
-    integer :: iref,i
-    real, dimension(nx,ny) :: dx_ux,dy_uy
+      real, dimension(mx,my,mz,mfarray) :: f
 !
-    zref = minval(abs(z(n1:n2)))
-    iref = n1
-    do i=n1,n2
-      if (z(i).eq.zref) iref=i
-    enddo
+      real :: zref
+      integer :: iref,i,j,ipt
+      real, dimension(nxgrid,nygrid) :: dz_uz
+      real, dimension(nx,ny) :: ux_local,uy_local,uz_local
+      integer, dimension(2) :: dims=(/nx,ny/)
 !
-    Ux=0.0
-    Uy=0.0
+      zref = minval(abs(z(n1:n2)))
+      iref = n1
+      do i=n1,n2
+        if (z(i).eq.zref) iref=i
+      enddo
 !
-    call multi_drive3
+      if (lroot) then
+        Ux=0.0
+        Uy=0.0
 !
-    f(l1:l2,m1:m2,iref,iux) = Ux(ipx*nx+1:ipx*nx+nx,ipy*ny+1:ipy*ny+ny)
-    f(l1:l2,m1:m2,iref,iuy) = Uy(ipx*nx+1:ipx*nx+nx,ipy*ny+1:ipy*ny+ny)
+        call multi_drive3
 !
 ! compute uz to force mass conservation at the zref
+        dz_uz = (cshift(Ux,1,1)-cshift(Ux,-1,1))/dx &
+            +   (cshift(Uy,1,2)-cshift(Uy,-1,2))/dy
 !
-    dx_ux = f(l1+1:l2+1,m1:m2,iref,iux)-f(l1-1:l2-1,m1:m2,iref,iux)
-    dx_ux = dx_ux /2.*spread(dx_1(l1:l2),2,ny)
+        do i=0,nprocx-1
+          do j=0,nprocy-1
+            ipt = i+nprocx*j
+            if (ipt.ne.0) then 
+              call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
+              call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
+              call mpisend_real(dz_uz(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,314+ipt)
+            else
+              ux_local = Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny) 
+              uy_local = Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
+              uz_local = dz_uz(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
+            endif
+          enddo
+        enddo
+      else
+        call mpirecv_real(ux_local,dims,0,312+iproc)
+        call mpirecv_real(uy_local,dims,0,313+iproc)
+        call mpirecv_real(uz_local,dims,0,314+iproc)
+      endif
 !
-    dy_uy = f(l1:l2,m1+1:m2+1,iref,iuy)-f(l1:l2,m-11:m2-1,iref,iuy)
-    dy_uy = dy_uy /2.*spread(dy_1(m1:m2),1,nx)
+      f(l1:l2,m1:m2,iref,iux) = ux_local
+      f(l1:l2,m1:m2,iref,iuy) = uy_local
+      f(l1:l2,m1:m2,iref,iuz) = 0.
+      f(l1:l2,m1:m2,iref-1,iuz) = uz_local/2.*(z(iref)-z(iref-1))
 !
-    f(l1:l2,m1:m2,iref,iuz)   =  0.
-    f(l1:l2,m1:m2,iref-1,iuz) = (dx_ux + dy_uy)*(z(iref)-z(iref-1))
-!
-  endsubroutine uudriver
+    endsubroutine uudriver
 !***********************************************************************
   subroutine multi_drive3
 !
@@ -1228,7 +1254,7 @@ module Special
         call rdpoints((max(level-1,0))*1000+isnap)
         if (.not.associated(current%next)) then
           call driveinit
-          if (lroot) call wrpoints(isnap+1000*max(level-1,0))
+          call wrpoints(isnap+1000*max(level-1,0))
         endif
       else
         call resetarr
@@ -1294,13 +1320,13 @@ module Special
       endif
 !
       if (t >= tsnap_uu) then
-        if (lroot) call wrpoints(isnap+1000*(level-1))
+        call wrpoints(isnap+1000*(level-1))
         tsnap_uu = tsnap_uu + dsnap
         isnap  = isnap + 1
       endif
-      if (lroot .and. itsub .eq. 3) &
+      if (itsub .eq. 3) &
           lstop = control_file_exists('STOP')
-      if ((lstop .or. t>=tmax .or. it.eq.nt).and.lroot) &
+      if (lstop .or. t>=tmax .or. it.eq.nt) &
           call wrpoints(isnap+1000*(level-1))
 !
     endsubroutine drive3
@@ -1327,7 +1353,7 @@ module Special
 !
       if (ex) then
         inquire(IOLENGTH=rn) dy
-        if (lroot) print*,'reading velocity field nr',isnap2
+        print*,'reading velocity field nr',isnap2
         open(10,file=filename,status="unknown",access="direct",recl=6*rn)
         iost=0
 !
@@ -1348,7 +1374,7 @@ module Special
           endif
         enddo
         close(10)
-        if (lroot) print*,'read ',rn-1,' points'
+        print*,'read ',rn-1,' points'
         call reset
       endif
 !
