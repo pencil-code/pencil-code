@@ -1883,9 +1883,9 @@ module Entropy
           g_C = g_C_cgs/unit_velocity*unit_time
           g_D = g_D_cgs/unit_length
           g_B = g_B_cgs/unit_length
-          T0hs=6250/unit_temperature
-          rho0ts=1.8747e-24/unit_density
-          T_k=5000.0/unit_temperature
+          T0hs=2500/unit_temperature
+          rho0ts=1.714e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
+          T_k=1250.0/unit_temperature
 !
 !chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
 !

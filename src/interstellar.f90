@@ -89,7 +89,7 @@ module Interstellar
 !  Save space for last SNI time
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0
-  real :: t_interval_SNI=impossible
+  real :: t_interval_SNI=impossible,t_interval_SNII=impossible
 !
 ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
@@ -758,6 +758,7 @@ module Interstellar
         preSN(:,:)=0
 !
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNII = 1./(6 * SNI_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
@@ -1617,6 +1618,21 @@ cool_loop: do i=1,ncool
                                                   ,t_next_SNI
     endsubroutine set_next_SNI
 !***********************************************************************
+    subroutine set_next_SNII()
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension(1) :: franSN
+!
+       !  pre-determine time for next SNI
+          if (lroot.and.ip<14) print*,"check_SNII: Old t_next_SNII=",&
+                                       t_next_SNI
+          call random_number_wrapper(franSN)
+          t_next_SNII=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNII
+          if (lroot.and.ip<20) print*,'check_SNII: Next SNII at time = '&
+                                                  ,t_next_SNII
+    endsubroutine set_next_SNII
+!***********************************************************************
     subroutine check_SNII(f,l_SNI)
 !
 !  Check for SNII, via self-regulating scheme.
@@ -1650,94 +1666,97 @@ cool_loop: do i=1,ncool
 !  determine and sum all cells comprising dense cooler clouds
 !  where type 2 SNe are likely
 !
-    cloud_mass=0.0
-    do n=n1,n2
-      do m=m1,m2
-        rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
-                    ,yH=yH,lnTT=lnTT)
-        TT(1:nx)=exp(lnTT(1:nx))
-!          if(ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
-!                             minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
-        rho_cloud(1:nx)=0.
-        where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
-          rho_cloud(1:nx) = rho(1:nx)
-!          if(ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
-!                           ,sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
-          cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+    if (t >= t_next_SNII) then
+      cloud_mass=0.0
+      do n=n1,n2
+        do m=m1,m2
+          rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
+          call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
+                      ,yH=yH,lnTT=lnTT)
+          TT(1:nx)=exp(lnTT(1:nx))
+!            if(ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
+!                               minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
+          rho_cloud(1:nx)=0.
+          where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
+            rho_cloud(1:nx) = rho(1:nx)
+!            if(ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
+!                             ,sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
+            cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+        enddo
       enddo
-    enddo
-    fsum1_tmp=(/ cloud_mass /)
-!
-    call mpireduce_sum(fsum1_tmp,fsum1,1)
-    call mpibcast_real(fsum1,1)
-    cloud_mass_dim=fsum1(1)*dv
-    if (ip<14) &
-    print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
-!
-    if (lroot .and. ip < 14) &
-        print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
-            cloud_mass_dim,fsum1(1),dv
-!
-!  dtsn: elapsed time since last SNII injected
-!  prob of next increases with time
-!  last_SN_t updated afte each SNII
-!  SNI independent distribution
-!
-    dtsn=t-last_SN_t
-    freq_SNII= &
-      frac_heavy*frac_converted*cloud_mass_dim/&
-                 mass_SN_progenitor/cloud_tau
-    prob_SNII=freq_SNII*dtsn
-    call random_number_wrapper(franSN)
-!
-    if (lroot.and.ip<20) then
-      if (cloud_mass_dim .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
-        print*,'check_SNII: freq,prob,rnd,dtsn:',&
-                freq_SNII,prob_SNII,franSN(1),dtsn
-        print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
-              frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+      fsum1_tmp=(/ cloud_mass /)
+!  
+      call mpireduce_sum(fsum1_tmp,fsum1,1)
+      call mpibcast_real(fsum1,1)
+      cloud_mass_dim=fsum1(1)*dv
+      if (ip<14) &
+      print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
+!  
+      if (lroot .and. ip < 14) &
+          print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
+              cloud_mass_dim,fsum1(1),dv
+!  
+!    dtsn: elapsed time since last SNII injected
+!    prob of next increases with time
+!    last_SN_t updated afte each SNII
+!    SNI independent distribution
+!  
+      dtsn=t-last_SN_t
+      freq_SNII= &
+        frac_heavy*frac_converted*cloud_mass_dim/&
+                   mass_SN_progenitor/cloud_tau
+      prob_SNII=freq_SNII*dtsn
+      call random_number_wrapper(franSN)
+!  
+      if (lroot.and.ip<20) then
+        if (cloud_mass_dim .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
+          print*,'check_SNII: freq,prob,rnd,dtsn:',&
+                  freq_SNII,prob_SNII,franSN(1),dtsn
+          print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
+                frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+        endif
+      endif
+!  
+      if (franSN(1) <= prob_SNII) then
+        !  position_SN_bycloudmass needs the cloud_masses for each processor;
+        !   communicate and store them here, to avoid recalculation.
+        cloud_mass_byproc(:)=0.0
+        ! use non-root broadcasts for the communication...
+        do icpu=1,ncpus
+          fmpi1=cloud_mass
+!          if (icpu==iproc+1) then
+          call mpibcast_real(fmpi1,1,icpu-1)
+          cloud_mass_byproc(icpu)=fmpi1(1)
+!          endif
+        enddo
+!  
+        if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
+                                                ,cloud_mass_byproc
+        call position_SN_bycloudmass&
+                        (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
+        if (ierr == iEXPLOSION_TOO_HOT) then
+          call free_SNR(iSNR)
+          ierr=iEXPLOSION_OK
+      return
+        endif
+        SNRs(iSNR)%t=t
+        SNRs(iSNR)%radius=width_SN
+        SNRs(iSNR)%SN_type=2
+        call explode_SN(f,SNRs(iSNR),ierr,preSN)
+        if (ierr==iEXPLOSION_OK) then
+        call set_next_SNII
+          last_SN_t=t
+!  
+!   30-dec-09/fred: added ierr and if statement so time of SN can be
+!                   updated if explosion successful else last_SN_t unchanged
+!  
+        endif
+!  
       endif
     endif
-!
-   if (franSN(1) <= prob_SNII) then
-      !  position_SN_bycloudmass needs the cloud_masses for each processor;
-      !   communicate and store them here, to avoid recalculation.
-      cloud_mass_byproc(:)=0.0
-      ! use non-root broadcasts for the communication...
-      do icpu=1,ncpus
-        fmpi1=cloud_mass
-!        if (icpu==iproc+1) then
-        call mpibcast_real(fmpi1,1,icpu-1)
-        cloud_mass_byproc(icpu)=fmpi1(1)
-!        endif
-      enddo
-!
-      if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
-                                              ,cloud_mass_byproc
-      call position_SN_bycloudmass&
-                      (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
-      if (ierr == iEXPLOSION_TOO_HOT) then
-        call free_SNR(iSNR)
-        ierr=iEXPLOSION_OK
-    return
-      endif
-      SNRs(iSNR)%t=t
-      SNRs(iSNR)%radius=width_SN
-      SNRs(iSNR)%SN_type=2
-      call explode_SN(f,SNRs(iSNR),ierr,preSN)
-      if (ierr==iEXPLOSION_OK) then
-        last_SN_t=t
-!
-! 30-dec-09/fred: added ierr and if statement so time of SN can be
-!                 updated if explosion successful else last_SN_t unchanged
-!
-      endif
-!
-   endif
     call free_SNR(iSNR)
-!If returned unexploded stops code running out of free slots
-!
+!  If returned unexploded stops code running out of free slots
+!  
     endsubroutine check_SNII
 !***********************************************************************
     subroutine check_SNIIb(f,l_SNI) !fred test new SNII scheme
