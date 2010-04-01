@@ -1031,7 +1031,7 @@ module Magnetic
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact,cs2,lnrho_old
+      real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old
       real :: beq2
       integer :: j
 !
@@ -1216,12 +1216,20 @@ module Magnetic
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
           if (gamma==1.0) then
-            f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
+            f(l1:l2,m,n,ilnrho)=log(exp(f(l1:l2,m,n,ilnrho))-b2/(2.*cs0**2))
           else
             beq2=2.*rho0*cs0**2
             fact=max(1.0e-6,1.0-b2/beq2)
             if (lentropy.and.lpress_equil_via_ss) then
-              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
+              if (lpress_equil_alt) then
+                ssold=f(l1:l2,m,n,iss)
+                cs2old=cs20*exp(gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0) &
+                  +gamma*ssold)
+                cs2=cs2old-gamma*b2/(beq2*exp(f(l1:l2,m,n,ilnrho)-lnrho0))
+                f(l1:l2,m,n,iss)=ssold+gamma_inv*(log(cs2/cs20)-log(cs2old/cs20))
+              else
+                f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
+              endif
             else
               if (lpress_equil_alt) then
 !                cs2(1:nx)=cs0**2*exp((f(l1:l2,m,n,ilnrho)-lnrho0)/mpoly)

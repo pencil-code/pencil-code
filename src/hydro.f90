@@ -1032,20 +1032,31 @@ module Hydro
             print*, "random-2D-eddies: ampluu,kx_uu,ky_uu = ", ampluu(j),kx_uu,ky_uu
           f(:,:,:,iuz)=0.
           call random_number_wrapper(xc0)
+! Introduce both counter cloclwise and clockwise eddies
+          do ixy=1, neddy
+            if (xc0(ixy).le.0.5) then
+              tmp(ixy)=-1.0
+            else
+              tmp(ixy)=1.0
+            endif
+          enddo
+!
+          call random_number_wrapper(xc0)
           xc0=(1.-2*xc0)*Lxyz(1)/2
           call random_number_wrapper(yc0)
           yc0=(1.-2*yc0)*Lxyz(2)/2
           if (lroot) &
           write(*,*) 'PC:init_uu ', xc0
           do n=n1,n2; do m=m1,m2
+! Check for nearest neighbour eddies and change their sign
             do ixy=1,neddy
               dis=sqrt((xold-xc0(ixy))**2+(yold-yc0(ixy))**2)
               if (dis.lt.5*sqrt(1./kx_uu**2+1./ky_uu**2)) then
-                ampluu(j)=-ampluu(j)
+                tmp(ixy)=-tmp(ixy-1)
                 if (lroot) & 
                   write(*,*) 'PC:init_uu ', 'Eddies have come very close'
               endif
-              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)* & 
+              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+tmp(ixy)*ampluu(j)* & 
                 exp(-kx_uu*(x(l1:l2)-xc0(ixy))**2-ky_uu*(y(m)-yc0(ixy))**2)
               xold=xc0(ixy)
               yold=yc0(ixy)
