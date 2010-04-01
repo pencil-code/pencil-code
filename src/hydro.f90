@@ -1070,6 +1070,13 @@ module Hydro
             f(l1:l2,m,n,iuy) =  tmp_nx3(:,1)
           enddo;enddo
           f(:,:,:,iuz)=0.
+          do m=m1,m2
+            call random_number_wrapper(f(l1:l2,m,n1,iuz))
+            do n=n1,n2
+              f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
+              write(*,*) f(l1:l2,m,n,iuz)
+            end do
+          end do
           close(15)
 
         case ( 'anelastic-2dxz')

@@ -1238,8 +1238,8 @@ module Magnetic
                   +gamma*f(l1:l2,m,n,iss))
                 f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
                   (beq2*cs2(1:nx)))
-                f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ &
-                  (1.-gamma_inv)*(lnrho_old-f(l1:l2,m,n,ilnrho))
+                f(l1:l2,m,n,iss)=gamma_inv*(log(cs2/cs20)-& 
+                  gamma_m1*f(l1:l2,m,n,ilnrho))
               else
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
               endif
