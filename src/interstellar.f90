@@ -146,7 +146,7 @@ module Interstellar
 ! SNI per (x,y)-area explosion rate
 !
   double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
-  real :: SNI_area_rate=impossible
+  real :: SNI_area_rate=impossible,SNII_area_rate=impossible
 !
 ! Some useful constants
 !
@@ -354,7 +354,7 @@ module Interstellar
       laverage_SN_heating, coolingfunction_scalefactor, &
       lsmooth_coolingfunc, heatingfunction_scalefactor, &
       center_SN_x, center_SN_y, center_SN_z, &
-      SNI_area_rate, &
+      SNI_area_rate, SNII_area_rate,&
       rho_SN_min, TT_SN_max, cloud_rho, cloud_TT, &
       lheating_UV, cdt_tauc,  &
       cooling_select, heating_select, heating_rate, &
@@ -705,6 +705,7 @@ module Interstellar
         TT_SN_min=TT_SN_min_cgs / unit_temperature
         TT_cutoff=TT_cutoff_cgs / unit_temperature
         if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (SNII_area_rate==impossible) SNII_area_rate=6.*SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
         h_SNII=h_SNII_cgs / unit_length
         solar_mass=solar_mass_cgs / unit_mass
@@ -758,7 +759,7 @@ module Interstellar
         preSN(:,:)=0
 !
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
-      t_interval_SNII = 1./(6 * SNI_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
@@ -1628,7 +1629,7 @@ cool_loop: do i=1,ncool
           if (lroot.and.ip<14) print*,"check_SNII: Old t_next_SNII=",&
                                        t_next_SNI
           call random_number_wrapper(franSN)
-          t_next_SNII=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNII
+          t_next_SNII=t + (1.0 + 0.6*(franSN(1)-0.5)) * t_interval_SNII
           if (lroot.and.ip<20) print*,'check_SNII: Next SNII at time = '&
                                                   ,t_next_SNII
     endsubroutine set_next_SNII
@@ -1705,7 +1706,7 @@ cool_loop: do i=1,ncool
       freq_SNII= &
         frac_heavy*frac_converted*cloud_mass_dim/&
                    mass_SN_progenitor/cloud_tau
-      prob_SNII=freq_SNII*dtsn
+      prob_SNII=freq_SNII*dtsn*5.
       call random_number_wrapper(franSN)
 !  
       if (lroot.and.ip<20) then

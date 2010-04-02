@@ -1868,9 +1868,8 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,ss,TT,lnTT
-      real, dimension(nz) :: erfz
       real :: rho0ts, T0hs, muhs
-      real :: g_A, g_C, erfB, T_k
+      real :: g_A, g_C, erfB, T_k, erfz
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B ,g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
@@ -1908,14 +1907,14 @@ module Entropy
       do n=n1,n2
       do m=m1,m2
         erfB=g_B
-        erfz(n)=sqrt((T_k*z(n))**2+g_B**2)
+        erfz=sqrt((T_k*z(n))**2+g_B**2)
 !
 !  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
 !                  require initial profile to produce finite Lambda between lamstep(3) and
 !                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                  !
         TT =T0hs*exp((T_k*z(n))**2)
         rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
-            *(erfunc(erfz(n))-erfunc(erfB)) + g_C/g_D*(1.-exp(-T_k*z(n)**2))))
+            *(erfunc(erfz)-erfunc(erfB)) + g_C/g_D*(1.-exp(-(T_k*z(n))**2))))
 !
         f(l1:l2,m,n,ilnrho)=log(rho)
           lnTT=log(TT)
