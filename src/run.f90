@@ -627,7 +627,7 @@ program run
 !
     if ((it<nt) .and. (dt<dtmin)) then
       if (lroot) &
-          write(0,*) ' Time step has become too short: dt = ', dt
+          write(*,*) ' Time step has become too short: dt = ', dt
       save_lastsnap=.false.
       exit Time_loop
     endif
