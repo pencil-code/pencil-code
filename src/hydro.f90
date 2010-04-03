@@ -1056,8 +1056,10 @@ module Hydro
                 if (lroot) & 
                   write(*,*) 'PC:init_uu ', 'Eddies have come very close'
               endif
-              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+tmp(ixy)*ampluu(j)* & 
-                exp(-kx_uu*(x(l1:l2)-xc0(ixy))**2-ky_uu*(y(m)-yc0(ixy))**2)
+              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+tmp(ixy)*ampluu(j) & 
+              *exp(-kx_uu*(x(l1:l2)-xc0(ixy))**2-ky_uu*(y(m)-yc0(ixy))**2) &
+              *exp(-kz_uu*z(n)**2)
+!
               xold=xc0(ixy)
               yold=yc0(ixy)
             end do
