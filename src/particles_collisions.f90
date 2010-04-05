@@ -303,7 +303,7 @@ module Particles_collisions
 !    a) Collision diagnostics for time-step zero are all zero
 !    b) Collision diagnostics are not particle normalized if it1==1
 !
-              if (mod(it,it1)==0) then
+              if (it==1 .or. mod(it,it1)==0) then
                 if (idiag_ncollpm/=0) &
                     call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
                 if (idiag_npartpm/=0) &
@@ -316,7 +316,10 @@ module Particles_collisions
       enddo
 !
 !  We need to register the diagnostic type, even if there are no particles
-!  at the local processor. This is a bug and should be fixed.
+!  at the local processor. In the same spirit we calculate diagnostics even
+!  for it==1 on processors that do have particles (above). Otherwise a
+!  processor starting with N>0 particles, but arriving at mod(it,it1)==0 with
+!  zero particles, will not register collision diagnostics properly.
 !
       if (it==1) then
         if (npar_loc==0) then
@@ -532,7 +535,7 @@ module Particles_collisions
 !    a) Collision diagnostics for time-step zero are all zero
 !    b) Collision diagnostics are not particle normalized if it1==1
 !
-              if (mod(it,it1)==0) then
+              if (it==1 .or. mod(it,it1)==0) then
                 if (idiag_ncollpm/=0) &
                     call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
                 if (idiag_npartpm/=0) &
@@ -545,7 +548,10 @@ module Particles_collisions
       enddo
 !
 !  We need to register the diagnostic type, even if there are no particles
-!  at the local processor. This is a bug and should be fixed.
+!  at the local processor. In the same spirit we calculate diagnostics even
+!  for it==1 on processors that do have particles (above). Otherwise a
+!  processor starting with N>0 particles, but arriving at mod(it,it1)==0 with
+!  zero particles, will not register collision diagnostics properly.
 !
       if (it==1) then
         if (npar_loc==0) then
