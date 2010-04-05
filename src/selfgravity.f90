@@ -42,6 +42,7 @@ module Selfgravity
       lselfgravity_neutrals, tstart_selfgrav, gravitational_const
 !
   integer :: idiag_potselfm=0, idiag_potself2m=0, idiag_potselfmxy=0
+  integer :: idiag_potselfmx=0, idiag_potselfmy=0, idiag_potselfmz=0
   integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
@@ -214,9 +215,8 @@ module Selfgravity
 !
       lpenc_requested(i_gpotself)=.true.
       if (idiag_potselfm/=0 .or. idiag_potself2m/=0.0 .or. &
-          idiag_potselfmxy/=0) then
-        lpenc_diagnos(i_potself)=.true.
-      endif
+          idiag_potselfmx/=0 .or. idiag_potselfmy/=0 .or. idiag_potselfmz/=0) &
+          lpenc_diagnos(i_potself)=.true.
 !
       if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) then 
         lpenc_diagnos(i_pomx)=.true.
@@ -224,6 +224,8 @@ module Selfgravity
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
+!
+      if (idiag_potselfmxy/=0) lpenc_diagnos2d(i_potself)=.true.
 !
     endsubroutine pencil_criteria_selfgravity
 !***********************************************************************
@@ -396,6 +398,14 @@ module Selfgravity
              call calc_cylgrav_stresses(p)
       endif
 !
+!  1-D averages.
+!
+      if (l1davgfirst) then
+        if (idiag_potselfmx/=0) call yzsum_mn_name_x(p%potself,idiag_potselfmx)
+        if (idiag_potselfmy/=0) call xzsum_mn_name_y(p%potself,idiag_potselfmy)
+        if (idiag_potselfmz/=0) call xysum_mn_name_z(p%potself,idiag_potselfmz)
+      endif
+!
 !  2-D averages.
 !
       if (l2davgfirst) then
@@ -494,18 +504,24 @@ module Selfgravity
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
-      integer :: iname, inamexy
+      integer :: iname, inamex, inamey, inamez, inamexy
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
+!  Reset everything in case of reset.
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
         idiag_potselfm=0; idiag_potself2m=0; idiag_potselfmxy=0
+        idiag_potselfmx=0; idiag_potselfmy=0; idiag_potselfmz=0
         idiag_gpotselfxm=0; idiag_gpotselfym=0; idiag_gpotselfzm=0
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
       endif
+!
+!  Run through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'potselfm', &
@@ -530,6 +546,27 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'grgpm',idiag_grgpm)
         call parse_name(iname,cname(iname),cform(iname),'grgzm',idiag_grgzm)
         call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
+      enddo
+!
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'potselfmx', &
+            idiag_potselfmx)
+      enddo
+!
+!  Check for those quantities for which we want xz-averages.
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'potselfmy', &
+            idiag_potselfmy)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'potselfmz', &
+            idiag_potselfmz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
