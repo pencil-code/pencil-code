@@ -1867,7 +1867,7 @@ module Entropy
       use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho,ss,TT,lnTT
+      real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: rho0ts, T0hs, muhs
       real :: g_A, g_C, erfB, T_k, erfz
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -1882,9 +1882,9 @@ module Entropy
           g_C = g_C_cgs/unit_velocity*unit_time
           g_D = g_D_cgs/unit_length
           g_B = g_B_cgs/unit_length
-          T0hs=2500/unit_temperature
-          rho0ts=1.714e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
-          T_k=1250.0/unit_temperature
+          T0hs=7645./unit_temperature
+          rho0ts=1.83e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
+          T_k=sqrt(2.)
 !
 !chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
 !
@@ -1912,11 +1912,14 @@ module Entropy
 !  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
 !                  require initial profile to produce finite Lambda between lamstep(3) and
 !                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                  !
-        TT =T0hs*exp((T_k*z(n))**2)
-        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
-            *(erfunc(erfz)-erfunc(erfB)) + g_C/g_D*(1.-exp(-(T_k*z(n))**2))))
+        TT =T0hs!*exp((T_k*z(n))**2)
+        rho = rho0ts*exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)&
+                         -0.5*g_C*(z(n))**2/g_D))
+!        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
+!            *(erfunc(erfz)-erfunc(erfB)) + g_C/g_D*(1.-exp(-(T_k*z(n))**2))))
 !
-        f(l1:l2,m,n,ilnrho)=log(rho)
+          lnrho=log(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho
           lnTT=log(TT)
 !
           call eoscalc(ilnrho_lnTT,log(rho),lnTT,ss=ss)

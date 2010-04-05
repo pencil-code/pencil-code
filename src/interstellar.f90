@@ -354,7 +354,7 @@ module Interstellar
       laverage_SN_heating, coolingfunction_scalefactor, &
       lsmooth_coolingfunc, heatingfunction_scalefactor, &
       center_SN_x, center_SN_y, center_SN_z, &
-      SNI_area_rate, SNII_area_rate,&
+      SNI_area_rate, SNII_area_rate, &
       rho_SN_min, TT_SN_max, cloud_rho, cloud_TT, &
       lheating_UV, cdt_tauc,  &
       cooling_select, heating_select, heating_rate, &
@@ -705,7 +705,7 @@ module Interstellar
         TT_SN_min=TT_SN_min_cgs / unit_temperature
         TT_cutoff=TT_cutoff_cgs / unit_temperature
         if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (SNII_area_rate==impossible) SNII_area_rate=6.*SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (SNII_area_rate==impossible) SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
         h_SNII=h_SNII_cgs / unit_length
         solar_mass=solar_mass_cgs / unit_mass
@@ -1011,8 +1011,7 @@ module Interstellar
           SNRs(iSNR)%site%rho=0.
           SNRs(iSNR)%t=t
           SNRs(iSNR)%radius=width_SN
-          call position_SN_uniformz(f,SNRs(iSNR))
-!          call position_SN_testposition(f,SNRs(iSNR))
+          call position_SN_testposition(f,SNRs(iSNR))
           call explode_SN(f,SNRs(iSNR))
           lSNI=.false.
           lSNII=.false.
@@ -1230,9 +1229,9 @@ module Interstellar
           g_D = g_D_cgs/unit_length
           g_B = g_B_cgs/unit_length
           unit_Lambda = unit_velocity**2 / unit_density / unit_time
-          T0hs=6250/unit_temperature
-          rho0ts=1.8747e-24/unit_density
-          T_k=5000.0/unit_temperature
+          T0hs=7645./unit_temperature
+          rho0ts=1.83e-24/unit_density
+          T_k=sqrt(2.)!
 !
 !chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
 !
@@ -1266,9 +1265,11 @@ module Interstellar
 !                   Set Gamma(z) with GammaUV/Rho0hs z=0
 !                  require initial profile to produce finite Lambda between lamstep(3) and
 !                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                                                                                                                                 !
-        TT =T0hs  *exp((T_k*z(n))**2)
-        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
-            *(erfunc(erfz(n))-erfunc(erfB)) + g_C/g_D*(exp(-T_k*z(n)**2)-1)))
+        TT =T0hs!  *exp((T_k*z(n))**2)
+        rho = rho0ts*exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)&
+                         -0.5*g_C*(z(n))**2/g_D))
+!        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
+!            *(erfunc(erfz(n))-erfunc(erfB)) + g_C/g_D*(exp(-T_k*z(n)**2)-1)))
 !
 !
 !  define initial values for the Lambda(z) array from initial temerature profile
@@ -1511,7 +1512,7 @@ cool_loop: do i=1,ncool
 !        g_B=g_B_cgs/unit_length
 !        heat(1:nx) = GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
 !      else if (heating_select == 'Gressel2-hs') then
-        heat = heat_gressel(n)
+        heat = heat_gressel(n)*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
       else if (heating_select == 'off') Then
          heat = 0.
       endif
@@ -1809,7 +1810,7 @@ cool_loop: do i=1,ncool
           if (lroot) print*,'franSN = ',franSN(1)
 !          t_next_SNII=1./sqrt(2.*pi)*exp(-(0.47729*franSN(1)*&
 !                      6.*SNI_area_rate*Lxyz(1)*Lxyz(2))**2)
-          t_next_SNII=2.*franSN(1)/(6.*SNI_area_rate*Lxyz(1)*Lxyz(2))
+          t_next_SNII=2.*franSN(1)/(SNII_area_rate*Lxyz(1)*Lxyz(2))
           last_SN_t=t
           if (lroot.and.ip<14) print*,'t_next_SNII,franSN,last_SN_t =',&
                                        t_next_SNII,franSN(1),last_SN_t
