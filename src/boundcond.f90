@@ -3962,15 +3962,27 @@ module Boundcond
 !  calculate Fbot/(K*cs2)
 !
 !       cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
-        cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
+
+! Both, bottom and tom boundary conditions are corrected for linear density
+
+        if (ldensity_nolog) then
+           cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,ilnrho))-lnrho0)+gamma*f(l1,:,:,iss))
+        else
+           cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
+        endif
         tmp_yz=FbotKbot/cs2_yz
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
 !         f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
-          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
+           if (ldensity_nolog) then
+              f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
+                   (log(f(l1+i,:,:,ilnrho))-log(f(l1-i,:,:,ilnrho))+2*i*dx*tmp_yz)
+           else
+              f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
+                   (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
+           endif
         enddo
 !
 !  top boundary
@@ -3986,14 +3998,23 @@ module Boundcond
 !
 !  calculate Ftop/(K*cs2)
 !
-        cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
+        if (ldensity_nolog) then
+           cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,ilnrho))-lnrho0)+gamma*f(l2,:,:,iss))
+        else
+           cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
+        endif
         tmp_yz=FtopKtop/cs2_yz
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Ftop/(K*cs2)
 !
         do i=1,nghost
-          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-              (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
+           if (ldensity_nolog) then
+              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
+                   (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
+           else
+              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
+                   (log(f(l2-i,:,:,ilnrho))-log(f(l2+i,:,:,ilnrho))-2*i*dx*tmp_yz)
+           endif
 !          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
 !              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
         enddo
