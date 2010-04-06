@@ -2380,11 +2380,21 @@ module EquationOfState
                    'bc_ss_temp_x: cannot have cs2bot<=0'
         if (lentropy .and. .not. pretend_lnTT) then
            tmp = 2*cv*log(cs2bot/cs20)
-           f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l1,:,:,ilnrho)-lnrho0)
-           do i=1,nghost
-              f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
-               - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
-           enddo
+!  Corrected for linear density
+           if (ldensity_nolog) then
+              f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(log(f(l1,:,:,ilnrho)) - lnrho0)
+              do i=1,nghost
+                 f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
+                      - (cp-cv)*(log(f(l1+i,:,:,ilnrho)*f(l1-i,:,:,ilnrho)) - 2*lnrho0)
+              enddo
+           else
+              f(l1,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l1,:,:,ilnrho)-lnrho0)
+              do i=1,nghost
+                 f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
+                      - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
+              enddo
+           endif
+
         elseif (lentropy .and. pretend_lnTT) then
            f(l1,:,:,iss) = log(cs2bot/gamma_m1)
            do i=1,nghost; f(l1-i,:,:,iss)=2*f(l1,:,:,iss)-f(l1+i,:,:,iss); enddo
@@ -2401,13 +2411,22 @@ module EquationOfState
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
          if (lentropy .and. .not. pretend_lnTT) then
+!  Corrected for linear density 
             tmp = 2*cv*log(cs2top/cs20)
-            f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
-            do i=1,nghost
-               f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-                    - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
-            enddo
-        elseif (lentropy .and. pretend_lnTT) then
+            if (ldensity_nolog) then
+               f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(log(f(l2,:,:,ilnrho)) - lnrho0 ) 
+               do i=1,nghost
+                  f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
+                       - (cp-cv)*(log(f(l2-i,:,:,ilnrho)*f(l2+i,:,:,ilnrho)) - 2*lnrho0 ) 
+               enddo
+            else
+               f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
+               do i=1,nghost
+                  f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
+                       - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
+               enddo
+            endif
+         elseif (lentropy .and. pretend_lnTT) then
            f(l2,:,:,iss) = log(cs2top/gamma_m1)
            do i=1,nghost; f(l2+i,:,:,iss)=2*f(l2,:,:,iss)-f(l2-i,:,:,iss); enddo
         elseif (ltemperature) then
