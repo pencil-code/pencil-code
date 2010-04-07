@@ -299,9 +299,7 @@ module Particles_collisions
 !  Collision diagnostics. Since this subroutine is called in the last sub-
 !  time-step, we can not use ldiagnos. Therefore we calculate collision
 !  diagnostics in the preceding time-step. This has the side effect that
-!
-!    a) Collision diagnostics for time-step zero are all zero
-!    b) Collision diagnostics are not particle normalized if it1==1
+!  collision diagnostics are not particle normalized in it==1 or if it1==1.
 !
               if (it==1 .or. mod(it,it1)==0) then
                 if (idiag_ncollpm/=0) &
@@ -531,9 +529,7 @@ module Particles_collisions
 !  Collision diagnostics. Since this subroutine is called in the last sub-
 !  time-step, we can not use ldiagnos. Therefore we calculate collision
 !  diagnostics in the preceding time-step. This has the side effect that
-!
-!    a) Collision diagnostics for time-step zero are all zero
-!    b) Collision diagnostics are not particle normalized if it1==1
+!  collision diagnostics are not particle normalized in it==1 or if it1==1.
 !
               if (it==1 .or. mod(it,it1)==0) then
                 if (idiag_ncollpm/=0) &
