@@ -5839,7 +5839,8 @@ module Magnetic
 ! its gradient:
            geta_z(:,1) = 0.
            geta_z(:,2) = 0.
-           geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
+           geta_z(:,3) = eta*(eta_jump-1.)*( &
+             der_step(z,eta_z0,-eta_width)-der_step(z,eta_z1,eta_width))
 !
       endselect
 !
