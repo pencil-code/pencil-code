@@ -35,7 +35,6 @@ if [ -z $PENCIL_HOME ]; then
   if [ -z $PENCIL_HOME ]; then # no success
     echo "sourceme.sh: Cannot locate home directory of pencil code."
     echo "  Try sourcing me from the home directory itself, or set PENCIL_HOME"
-    exit 0
   fi
 fi
 
@@ -43,7 +42,7 @@ if [ -z $_sourceme_quiet ]; then echo "PENCIL_HOME = <$PENCIL_HOME>"; fi
 
 if [ -z $_sourceme ]; then	# called for the first time?
   # CDPATH="./:../:../../:../../../:$HOME"
-  if [ -d $PENCIL_HOME/bin ]; then
+  if ([ -n $PENCIL_HOME ] && [ -d $PENCIL_HOME/bin ]); then
 
     #  Set shell path
     if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"; fi
@@ -70,6 +69,8 @@ if [ -z $_sourceme ]; then	# called for the first time?
     export PATH DXMACROS IDL_PATH PERL5LIB _sourceme 
     
   else
-    echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
+    if [ -n $PENCIL_HOME ]; then
+      echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
+    fi
   fi
 fi
