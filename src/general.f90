@@ -63,6 +63,7 @@ module General
 !
 !  For non-parallel runs simply go through m and n from bottom left to to right.
 !
+      imn_array=0
       if (ncpus==1) then
         imn=1
         necessary(1)=.true.
@@ -78,10 +79,12 @@ module General
         imn=1
         do n=n1i+2,n2i-2
           do m=m1i+2,m2i-2
-            mm(imn)=m
-            nn(imn)=n
-            imn_array(m,n)=imn
-            imn=imn+1
+            if (imn_array(m,n) == 0) then
+              mm(imn)=m
+              nn(imn)=n
+              imn_array(m,n)=imn
+              imn=imn+1
+            endif
           enddo
         enddo
         necessary(imn)=.true.
@@ -90,21 +93,25 @@ module General
 !
         do n=max(n2i-1,n1+1),n2
           do m=m1i+2,m2i-2
-            mm(imn)=m
-            nn(imn)=n
-            imn_array(m,n)=imn
-            imn=imn+1
+            if (imn_array(m,n) == 0) then
+              mm(imn)=m
+              nn(imn)=n
+              imn_array(m,n)=imn
+              imn=imn+1
+            endif
           enddo
         enddo
 !
-!  lower stripe in the n-direction
+!  do the lower stripe in the n-direction
 !
         do n=n1,min(n1i+1,n2)
           do m=m1i+2,m2i-2
-            mm(imn)=m
-            nn(imn)=n
-            imn_array(m,n)=imn
-            imn=imn+1
+            if (imn_array(m,n) == 0) then
+              mm(imn)=m
+              nn(imn)=n
+              imn_array(m,n)=imn
+              imn=imn+1
+            endif
           enddo
         enddo
 !
@@ -120,16 +127,20 @@ module General
 !
         do n=n1,n2
           do m=m1,min_m1i_m2
-            mm(imn)=m
-            nn(imn)=n
-            imn_array(m,n)=imn
-            imn=imn+1
+            if (imn_array(m,n) == 0) then
+              mm(imn)=m
+              nn(imn)=n
+              imn_array(m,n)=imn
+              imn=imn+1
+            endif
           enddo
           do m=max_m2i_m1,m2
-            mm(imn)=m
-            nn(imn)=n
-            imn_array(m,n)=imn
-            imn=imn+1
+            if (imn_array(m,n) == 0) then
+              mm(imn)=m
+              nn(imn)=n
+              imn_array(m,n)=imn
+              imn=imn+1
+            endif
           enddo
         enddo
       endif
