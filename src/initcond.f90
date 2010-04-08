@@ -4240,7 +4240,7 @@ module Initcond
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       real :: mu0_SI,u_b,zref
-      logical :: exist
+      logical :: exists,lerr
       integer :: i,idx2,idy2,stat,iostat,lend
       integer, dimension(2) :: dims=(/nxgrid,nygrid/)
 !
@@ -4277,19 +4277,19 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
+      lerr=.false.
       if (lroot) then
-        inquire(file='driver/mag_field.dat',exist=exist)
-        if (exist) then
+        inquire(file='driver/mag_field.dat',exist=exists)
+        lerr=.not.exists
+        if (exists) then
           inquire(IOLENGTH=lend) u_b
           open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
               recl=lend*nxgrid*nygrid,access='direct')
           read (11,rec=1) Bz0_r
           close (11)
-        else
-          call fatal_error('mdi_init', &
-              'No file: mag_field.dat')
         endif
       endif
+      call stop_it_if_any(lerr, 'mdi_init: Magnetogram file not found: "mag_field.dat"')
       call mpibcast_real(Bz0_r,dims)
 !
       Bz0_i = 0.
@@ -4314,7 +4314,7 @@ module Initcond
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-        f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+        f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
         where (k2 .ne. 0 )
           A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*zref )
@@ -4326,7 +4326,7 @@ module Initcond
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-        f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+        f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
         f(l1:l2,m1:m2,i,iaz)=0.
       enddo
