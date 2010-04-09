@@ -776,7 +776,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: tmp,pot
-      real, dimension (nx) :: pp,lnrho,ss,r_mn,heat
+      real, dimension (nx) :: pp,lnrho,ss,r_mn
       real, dimension (mx) :: ss_mx
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       integer :: j
@@ -1873,7 +1873,6 @@ module Entropy
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B ,g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
-      integer :: j
 !
 !  Set up physical units.
 !
