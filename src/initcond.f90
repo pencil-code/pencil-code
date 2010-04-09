@@ -47,7 +47,7 @@ module Initcond
   public :: cosxz_cosz, cosyz_sinz
   public :: halfcos_x, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z, uniform_phi, phi_comp_over_r
-  public :: vfluxlayer, hfluxlayer
+  public :: vfluxlayer, hfluxlayer, hfluxlayer_y
   public :: vortex_2d
   public :: vfield2
   public :: hawley_etal99a
@@ -2815,6 +2815,31 @@ module Initcond
       endif
 !
     endsubroutine hfluxlayer
+!***********************************************************************
+    subroutine hfluxlayer_y(ampl,f,i,zflayer,width)
+!
+!  Horizontal flux layer (for vector potential)
+!
+!  09-apr-10/piyali: copied from hfluxlayer
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,zflayer,width
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'hfluxlayer-y: set variable to zero; i=',i
+      else
+        if (lroot) print*,'hfluxlayer-y: horizontal flux layer; i=',i
+        if ((ip<=16).and.lroot) print*,'hfluxlayer-y: ampl,width=',ampl,width
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=ampl*tanh((z(n)-zflayer)/width)
+          f(l1:l2,m,n,i+1)=0.0
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
+      endif
+!
+    endsubroutine hfluxlayer_y
 !***********************************************************************
     subroutine vfluxlayer(ampl,f,i,xflayer,width)
 !

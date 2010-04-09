@@ -1045,8 +1045,6 @@ module Hydro
           xc0=(1.-2*xc0)*Lxyz(1)/2
           call random_number_wrapper(yc0)
           yc0=(1.-2*yc0)*Lxyz(2)/2
-          if (lroot) &
-          write(*,*) 'PC:init_uu ', xc0
           do n=n1,n2; do m=m1,m2
 ! Check for nearest neighbour eddies and change their sign
             do ixy=1,neddy
@@ -1076,7 +1074,6 @@ module Hydro
             call random_number_wrapper(f(l1:l2,m,n1,iuz))
             do n=n1,n2
               f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
-              write(*,*) f(l1:l2,m,n,iuz)
             end do
           end do
           close(15)
