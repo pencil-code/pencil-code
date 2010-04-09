@@ -1799,8 +1799,7 @@ module Boundcond
       case ('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-            lambda_exp=Lambda_V0
-!+Lambda_V1*sinth(iy)*sinth(iy)
+            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
             do k=1,nghost
               f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))
             enddo
@@ -1953,11 +1952,7 @@ module Boundcond
       case ('bot')               ! bottom boundary
         if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0.)) then
           do k=1,nghost
-            ftheta_m1_minus_k=sinth(m1-k)/exp((Lambda_H1/nu)*& 
-                              (2.*costh(m1-k)*costh(m1-k)-0.5)/4.)
-            ftheta_m1_plus_k=sinth(m1+k)/exp(-(Lambda_H1/nu)*&
-                              (2.*costh(m1+k)*costh(m1+k)-0.5)/4.)
-            f(:,m1-k,:,j)= f(:,m1+k,:,j)*ftheta_m1_minus_k/ftheta_m1_plus_k
+            f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sinth(m1-k)**(1-Lambda_H1))*(sin1th(m1+k)**(1-Lambda_H1))
           enddo
         else
           do k=1,nghost
@@ -1967,11 +1962,7 @@ module Boundcond
       case ('top')               ! top boundary
         if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0)) then
           do k=1,nghost
-             ftheta_m2_minus_k=sinth(m2-k)/exp((Lambda_H1/nu)*&
-                            (2.*costh(m2-k)*costh(m2-k)-0.5)/4.)
-             ftheta_m2_plus_k=sinth(m2+k)/exp((Lambda_H1/nu)*&
-                            (2.*costh(m2+k)*costh(m2+k)-0.5)/4.)
-             f(:,m2+k,:,j)= f(:,m2-k,:,j)*ftheta_m2_plus_k/ftheta_m2_minus_k
+            f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sinth(m2+k)**(1-Lambda_H1))*(sin1th(m2-k)**(1-Lambda_H1))
           enddo
         else
           do k=1,nghost

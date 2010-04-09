@@ -133,13 +133,13 @@ module Hydro
   logical :: lcalc_uumean=.false.
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
+  logical :: lno_meridional_flow=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  parameters for interior boundary conditions
 !
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
-  logical :: lno_meridional_flow=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
 !
   namelist /hydro_run_pars/ &

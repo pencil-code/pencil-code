@@ -304,7 +304,8 @@ module Viscosity
 !
       if(llambda_effect) then
         if((Lambda_V0.eq. 0).and.(Lambda_V1.eq.0).and.(Lambda_H1.eq.0)) &
-          call fatal_error('initialize_viscosity', &
+!          call fatal_rror('initialize_viscosity', &
+          call warning('initialize_viscosity', &
             'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
         if((Lambda_V0.eq.0).and.((Lambda_V1.ne.0).or.(Lambda_H1.eq.0))) &
           call warning('initialize_viscosity', &
@@ -1073,20 +1074,23 @@ module Viscosity
        Lambda_zero_order = Lambda_V0*( &
                     2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
-         if((Lambda_V1.eq.0).or.(Lambda_H1.eq.0)) then
-           Lambda_1st_order=0.
-         else
+!         if((Lambda_V1.eq.0).or.(Lambda_H1.eq.0)) then
+!           Lambda_1st_order=0.
+!         else
            Lambda_1st_order = Lambda_V1*(sinth(m)**2)*( & 
                      2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
                     +p%uu(:,3)*p%glnrho(:,1)/x(l1:l2) )  &
-                    + Lambda_H1*( &
-                     (4.*costh(m)*costh(m)-0.5)*p%uu(:,3)/(x(l1:l2)*x(l1:l2)) & 
-                    +sinth(m)*costh(m)*p%uij(:,3,2)/x(l1:l2) &
-                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
-            Lambda_1st_order=0.
+                    - Lambda_H1*( &
+                      (2.*cotth(m)/x(l1:l2)+p%glnrho(:,2))*cotth(m)*p%uu(:,3)/x(l1:l2)&
+                      +cotth(m)*p%uij(:,3,2)/x(l1:l2)&
+                      - p%uu(:,3)/(sinth(m)*sinth(m)*x(l1:l2)) )
+!                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
+!                     (4.*costh(m)*costh(m)-0.5)*p%uu(:,3)/(x(l1:l2)*x(l1:l2)) & 
+!                    +sinth(m)*costh(m)*p%uij(:,3,2)/x(l1:l2) &
+!                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
          endif
        p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_zero_order+Lambda_1st_order
-     endif
+!     endif
 ! The following is the correct expression for vertical lambda effect 
 ! for the axisymmetric case. This is now commented out because the
 ! more complete expression above reduces to the following in the

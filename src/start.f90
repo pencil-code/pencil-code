@@ -337,6 +337,9 @@ program start
 !  condition for anelastic case where we need to set div(rho u)=0
 !  The dust-vortex auto-test requires that uu is initialised before
 !  lnrho
+! DM: it seems to me that the sequence of calls below is important.
+! so this is just a caution : Please do not modify the sequence of 
+! calls to 'init' routines below. 
 !
     if (ldensity_anelastic) then
       call init_lnrho     (f)
