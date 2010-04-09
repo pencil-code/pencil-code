@@ -867,6 +867,21 @@ module Magnetic
         close(1)
       endif
 !
+!  write profile (uncomment for debugging)
+!
+!     if (lroot) then
+!       do n=n1,n2
+!         print*,z(n),eta_z(n)
+!       enddo
+!     endif
+!
+!  share eta profile with test-field procedure
+!
+      if (ltestfield) then
+        call put_shared_variable('eta_z',eta_z,ierr)
+        call put_shared_variable('geta_z',geta_z,ierr)
+      endif
+!
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
 !

@@ -44,6 +44,8 @@ module Testfield
 !  cosine and sine function for setting test fields and analysis
 !
   real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz
+  real, dimension(:,:), pointer :: geta_z
+  real, dimension(:), pointer :: eta_z
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
@@ -84,12 +86,14 @@ module Testfield
   logical :: llorentzforce_testfield=.false.
   logical :: lforcing_cont_aatest=.false.
   logical :: ltestfield_artifric=.false.
+  logical :: ltestfield_profile_eta_z=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        ltestfield_taver,llorentzforce_testfield, &
+       ltestfield_profile_eta_z, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
@@ -266,12 +270,13 @@ module Testfield
 !
       use Cdata
       use FArrayManager
+      use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: ztestfield, c, s
       real :: ktestfield_effective
       logical, intent(in) :: lstarting
-      integer :: jtest
+      integer :: jtest, ierr
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
@@ -377,7 +382,19 @@ module Testfield
         tau1_aatest=1./tau_aatest
         if (lroot) print*,'initialize_testfield: tau1_aatest=',tau1_aatest
       endif
-
+!
+!  if magnetic, get a possible eta_z profile from there
+!
+      if (lmagnetic) then
+        call get_shared_variable('eta_z',eta_z,ierr)
+        if (ierr/=0) call fatal_error("initialize_testfield","shared eta_z")
+        call get_shared_variable('geta_z',geta_z,ierr)
+        if (ierr/=0) call fatal_error("initialize_testfield","shared geta_z")
+        do n=n1,n2
+          print*,ipz,z(n),eta_z(n),geta_z(n,3)
+        enddo
+      endif
+!
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
@@ -583,8 +600,9 @@ module Testfield
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
-      integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
+      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.
+      integer :: jtest, j, jaatest, iuxtest, iuytest, iuztest
+      integer :: i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -673,15 +691,32 @@ module Testfield
         if (B_ext(2)/=0.) B0test(:,2)=B0test(:,2)+B_ext(2)
         if (B_ext(3)/=0.) B0test(:,3)=B0test(:,3)+B_ext(3)
 !
-        call cross_mn(uufluct,B0test,uxB)
-        if (lsoca) then
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest
+!  add diffusion
+!
+        if (ltestfield_profile_eta_z) then
+          aatest=f(l1:l2,m,n,iaxtest:iaztest)
+          call gij(f,iaxtest,aijtest,1)
+          call div_mn(aijtest,divatest,aatest)
+          do j=1,3
+            jaatest=iaxtest+j-1
+            df(l1:l2,m,n,jaatest)=df(l1:l2,m,n,jaatest) &
+              +eta_z(n)*etatest*del2Atest(:,j)+geta_z(n,j)*divatest
+          enddo
         else
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+            +etatest*del2Atest
+        endif
 !
-!  use f-array for uxb (if space has been allocated for this) and
-!  if we don't test (i.e. if ltest_uxb=.false.)
+!  Compute u=U-Ubar
 !
+        call cross_mn(uufluct,B0test,uxB)
+        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxB
+!
+!  Add non-SOCA terms:
+!  Use f-array for uxb (if space has been allocated for this) and
+!  if we don't test (i.e. if ltest_uxb=.false.).
+!
+        if (.not.lsoca) then
           if (iuxb/=0.and..not.ltest_uxb) then
             uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
           else
@@ -701,10 +736,9 @@ module Testfield
             enddo
           endif
 !
-!  advance test field equation
+!  add to advance test-field equation
 !
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest+duxbtest
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+duxbtest
         endif
 !
 !  add possibility of forcing that is not delta-correlated in time
