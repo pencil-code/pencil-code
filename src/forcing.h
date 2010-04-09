@@ -13,3 +13,4 @@
   public :: pencil_criteria_forcing, pencil_interdep_forcing
   public :: calc_pencils_forcing
   public :: forcing_clean_up
+  public :: forcing_cont

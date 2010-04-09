@@ -308,7 +308,7 @@ module Forcing
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
         siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
         sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='RobertsFlow') then
+      elseif (iforcing_cont=='RobertsFlow' .or. iforcing_cont=='RobertsFlow_exact' ) then
         if (lroot) print*,'forcing_cont: Roberts Flow'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
         siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
@@ -2988,40 +2988,72 @@ module Forcing
 !  24-mar-08/axel: adapted from density.f90
 !   6-feb-09/axel: added epsilon factor in ABC flow (eps_fcont=1. -> nocos)
 !
-      use Sub, only: quintic_step, quintic_der_step
-      use Mpicomm, only: stop_it
-      use Gravity, only: gravz
-      use SharedVariables, only: get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
-      real :: fact, fact2, fpara, dfpara, sqrt2, sqrt21k1
-      real, pointer :: gravx
-      integer :: ierr
 !
       intent(inout) :: f,p
 !
 !  calculate forcing
 !
       if (lpencil(i_fcont)) then
+
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
+        call forcing_cont(p%fcont)
+
+      endif
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_pencils_forcing
+!***********************************************************************
+    subroutine forcing_cont(force)
+
+! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
+
+      use Sub, only: quintic_step, quintic_der_step
+      use Mpicomm, only: stop_it
+      use Gravity, only: gravz
+      use SharedVariables, only: get_shared_variable
+      use Viscosity, only: getnu
+
+      implicit none
+
+      real, dimension (nx,3), intent(out) :: force 
+
+      real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu
+      real, parameter :: sqrt2=sqrt(2.)
+      real, pointer   :: gravx
+      integer         :: ierr
+
         if (iforcing_cont=='ABC') then
           fact=ampl_ff/sqrt(3.)
           fact2=1.-eps_fcont
-          p%fcont(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
-          p%fcont(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
-          p%fcont(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
+          force(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
+          force(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
+          force(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
         elseif (iforcing_cont=='RobertsFlow') then
           fact=ampl_ff
-          p%fcont(:,1)=-fact*cosx(l1:l2)*siny(m)
-          p%fcont(:,2)=+fact*sinx(l1:l2)*cosy(m)
-          p%fcont(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+          force(:,1)=-fact*cosx(l1:l2)*siny(m)
+          force(:,2)=+fact*sinx(l1:l2)*cosy(m)
+          force(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt2
+        elseif (iforcing_cont=='RobertsFlow_exact') then
+
+          kx=k1_ff; ky=k1_ff
+          kf=sqrt(kx*kx+ky*ky)
+          call getnu(nu)
+          fact=ampl_ff*kf*kf*nu
+          fact2=ampl_ff*ampl_ff*kx*ky
+
+          !!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
+          force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
+          force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
+          force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
+
         elseif (iforcing_cont=='KolmogorovFlow-x') then
           fact=ampl_ff
-          p%fcont(:,1)=0
-          p%fcont(:,2)=fact*cosx(l1:l2)
-          p%fcont(:,3)=0
+          force(:,1)=0
+          force(:,2)=fact*cosx(l1:l2)
+          force(:,3)=0
         elseif (iforcing_cont=='RobertsFlow-zdep') then
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
           fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
@@ -3031,50 +3063,46 @@ module Forcing
 !
 !  abbreviations
 !
-          sqrt2=sqrt(2.)
           sqrt21k1=1./(sqrt2*k1_ff)
 !
 !  amplitude factor missing in upper lines
 !
-          p%fcont(:,1)=-ampl_ff*cosx(l1:l2)*siny(m) &
+          force(:,1)=-ampl_ff*cosx(l1:l2)*siny(m) &
                 -dfpara*ampl_ff*sinx(l1:l2)*cosy(m)*sqrt21k1
-          p%fcont(:,2)=+ampl_ff*sinx(l1:l2)*cosy(m) &
+          force(:,2)=+ampl_ff*sinx(l1:l2)*cosy(m) &
                 -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
-          p%fcont(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
+          force(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
         elseif (iforcing_cont=='nocos') then
           fact=ampl_ff
-          p%fcont(:,1)=fact*sinz(n)
-          p%fcont(:,2)=fact*sinx(l1:l2)
-          p%fcont(:,3)=fact*siny(m)
+          force(:,1)=fact*sinz(n)
+          force(:,2)=fact*sinx(l1:l2)
+          force(:,3)=fact*siny(m)
         elseif (iforcing_cont=='TG') then
           fact=2.*ampl_ff
-          p%fcont(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
-          p%fcont(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
-          p%fcont(:,3)=0.
+          force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
+          force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
+          force(:,3)=0.
         elseif (iforcing_cont=='AKA') then
           fact=sqrt(2.)*ampl_ff
-          p%fcont(:,1)=fact*phi1_ff(m    )
-          p%fcont(:,2)=fact*phi2_ff(l1:l2)
-          p%fcont(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
+          force(:,1)=fact*phi1_ff(m    )
+          force(:,2)=fact*phi2_ff(l1:l2)
+          force(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
         elseif (iforcing_cont=='grav_z') then
-          p%fcont(:,1)=0
-          p%fcont(:,2)=0
-          p%fcont(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+          force(:,1)=0
+          force(:,2)=0
+          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
         elseif (iforcing_cont=='grav_xz') then
           call get_shared_variable('gravx', gravx, ierr)
           if (ierr/=0) call stop_it("forcing: "//&
             "there was a problem when getting gravx")
-          p%fcont(:,1)=gravx*ampl_ff*cos(omega_ff*t)
-          p%fcont(:,2)=0
-          p%fcont(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+          force(:,1)=gravx*ampl_ff*cos(omega_ff*t)
+          force(:,2)=0
+          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
         else
           call stop_it("forcing: no continuous iforcing_cont specified")
         endif
-      endif
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_pencils_forcing
+
+    endsubroutine forcing_cont
 !***********************************************************************
     subroutine forcing_continuous(df,p)
 !
