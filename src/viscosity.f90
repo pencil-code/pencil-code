@@ -1066,12 +1066,12 @@ module Viscosity
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
-     endif
+      endif
 !
 !  Calculate Lambda effect
 !
-     if (llambda_effect) then
-       Lambda_zero_order = Lambda_V0*( &
+      if (llambda_effect) then
+        Lambda_zero_order = Lambda_V0*( &
                     2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
                      +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
 !         if((Lambda_V1.eq.0).or.(Lambda_H1.eq.0)) then
@@ -1088,8 +1088,9 @@ module Viscosity
 !                     (4.*costh(m)*costh(m)-0.5)*p%uu(:,3)/(x(l1:l2)*x(l1:l2)) & 
 !                    +sinth(m)*costh(m)*p%uij(:,3,2)/x(l1:l2) &
 !                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
-         endif
-       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_zero_order+Lambda_1st_order
+        p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_zero_order+Lambda_1st_order
+      endif
+!
 !     endif
 ! The following is the correct expression for vertical lambda effect 
 ! for the axisymmetric case. This is now commented out because the
@@ -1104,13 +1105,13 @@ module Viscosity
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
-     if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
+      if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
 !
-     if (ldiagnos) then
-       if (idiag_nusmagm/=0)   call sum_mn_name(nu_smag,idiag_nusmagm)
-       if (idiag_nusmagmin/=0) call max_mn_name(-nu_smag,idiag_nusmagmin,lneg=.true.)
-       if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
-     endif
+      if (ldiagnos) then
+        if (idiag_nusmagm/=0)   call sum_mn_name(nu_smag,idiag_nusmagm)
+        if (idiag_nusmagmin/=0) call max_mn_name(-nu_smag,idiag_nusmagmin,lneg=.true.)
+        if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
+      endif
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
