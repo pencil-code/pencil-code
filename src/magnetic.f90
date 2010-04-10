@@ -5849,17 +5849,19 @@ module Magnetic
 !
         case ('two_step')
 !
-!  default to spread gradient over ~5 grid cells.
+!  Default to spread gradient over ~5 grid cells,
 !
            if (eta_width == 0.) eta_width = 5.*dz
            eta_z = eta*eta_jump-eta*(eta_jump-1.)* &
              (step(z,eta_z0,eta_width)-step(z,eta_z1,eta_width))
 !
-! its gradient:
+!  ... and its gradient. Note that the sign of the second term enters
+!  with the opposite sign, because we have used negative eta_width.
+!
            geta_z(:,1) = 0.
            geta_z(:,2) = 0.
            geta_z(:,3) = eta*(eta_jump-1.)*( &
-             der_step(z,eta_z0,-eta_width)-der_step(z,eta_z1,eta_width))
+             der_step(z,eta_z0,-eta_width)+der_step(z,eta_z1,eta_width))
 !
       endselect
 !
