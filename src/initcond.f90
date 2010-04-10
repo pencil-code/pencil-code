@@ -1364,7 +1364,7 @@ module Initcond
 !
     endsubroutine bjumpz
 !***********************************************************************
-    subroutine beltrami(ampl,f,i,kx,ky,kz,phase)
+    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
 !
 !  Beltrami field (as initial condition)
 !
@@ -1373,8 +1373,11 @@ module Initcond
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz,phase
-      real :: ampl,k=1.,fac,ph
+      real, dimension (mx) :: sfuncx,cfuncx
+      real, dimension (my) :: sfuncy,cfuncy
+      real, dimension (mz) :: sfuncz,cfuncz
+      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
+      real :: ampl,k=1.,ph
 !
 !  possibility of shifting the Beltrami wave by phase ph
 !
@@ -1392,18 +1395,19 @@ module Initcond
       if (present(kx)) then
         k=abs(kx)
         if (k==0) print*,'beltrami: k must not be zero!'
-        fac=sign(sqrt(abs(ampl/k)),kx)
-        if (iproc==0) print*,'beltrami: fac=',fac
+        cfuncx=sign(sqrt(abs(ampl/k)),kx)*cos(k*x+ph)
+        sfuncx=sign(sqrt(abs(ampl/k)),kx)*sin(k*x+ph)
+        if (present(kx2)) sfuncx=sfuncx*sin(kx2*x+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*x+ph),2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*x+ph),2,my),3,mz)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*x+ph),2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*x+ph),2,my),3,mz)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
         endif
       endif
 !
@@ -1412,17 +1416,19 @@ module Initcond
       if (present(ky)) then
         k=abs(ky)
         if (k==0) print*,'beltrami: k must not be zero!'
-        fac=sign(sqrt(abs(ampl/k)),ky)
+        cfuncy=sign(sqrt(abs(ampl/k)),ky)*cos(k*y+ph)
+        sfuncy=sign(sqrt(abs(ampl/k)),ky)*sin(k*y+ph)
+        if (present(ky2)) sfuncy=sfuncy*sin(ky2*y+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*y+ph),1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*y+ph),1,mx),3,mz)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*y+ph),1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*y+ph),1,mx),3,mz)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
         endif
       endif
 !
@@ -1431,17 +1437,19 @@ module Initcond
       if (present(kz)) then
         k=abs(kz)
         if (k==0) print*,'beltrami: k must not be zero!'
-        fac=sign(sqrt(abs(ampl/k)),kz)
+        cfuncz=sign(sqrt(abs(ampl/k)),kz)*cos(k*z+ph)
+        sfuncz=sign(sqrt(abs(ampl/k)),kz)*sin(k*z+ph)
+        if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*z+ph),1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*z+ph),1,mx),2,my)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*z+ph),1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*z+ph),1,mx),2,my)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
         endif
       endif
 !

@@ -1081,6 +1081,9 @@ module Magnetic
                call beltrami(amplaa(j),f,iaa,KY=-kx_aa(j),phase=phasex_aa(j))
         case ('Beltrami-y'); call beltrami(amplaa(j),f,iaa,KY=-ky_aa(j),phase=phasey_aa(j))
         case ('Beltrami-z'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j))
+        case ('Beltrami-x-equ'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j),KX2=2*pi/Lxyz(1))
+        case ('Beltrami-y-equ'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j),KY2=2*pi/Lxyz(2))
+        case ('Beltrami-z-equ'); call beltrami(amplaa(j),f,iaa,KZ=-kz_aa(j),phase=phasez_aa(j),KZ2=2*pi/Lxyz(3))
 !
         case ('Bessel-x'); call bessel_x(amplaa(j),f,iaa,kx_aa(j))
         case ('Bessel_Az-x'); call bessel_az_x(amplaa(j),f,iaa,kx_aa(j))
