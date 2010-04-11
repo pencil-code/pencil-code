@@ -162,7 +162,7 @@ module EquationOfState
         write (1,*) 'cp=',cp
         close (1)
       endif
-      
+!
       if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
        ll1=1; ll2=mx; mm1=m1; mm2=m2; nn1=n1; nn2=n2
       else
@@ -393,8 +393,7 @@ module EquationOfState
       lpenc_requested(i_gmu1)=.true.
       lpenc_requested(i_pp)=.true.
      endif
-    
-
+!
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
@@ -481,8 +480,7 @@ module EquationOfState
          if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
         if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
-       
-
+!
        if (lcheminp_eos) then
 !
 !  Mean molecular weight
@@ -590,7 +588,7 @@ module EquationOfState
 
      real, dimension (mx,my,mz), intent(out) :: pp_full_tmp
      integer :: j2,j3
-      
+!
        do j2=mm1,mm2
        do j3=nn1,nn2
          pp_full_tmp(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
@@ -769,45 +767,21 @@ module EquationOfState
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
 !
-!   Calculate thermodynamical quantities
-!
-!   02-feb-03/axel: simple example coded
-!   13-jun-03/tobi: the ionization fraction as part of the f-array
-!                   now needs to be given as an argument as input
-!   17-nov-03/tobi: moved calculation of cs2 and cp1 to
-!                   subroutine pressure_gradient
+!   dummy routine to calculate thermodynamical quantities
+!   copied from eo_idealgas
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: lnrho
-      real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
-      real, dimension(psize), intent(out), optional :: lnTT
-      real, dimension(psize) :: lnTT_
-      real, dimension(psize) :: lnrho_
-
-      if (present(lnrho)) lnrho=lnrho_
-      if (present(lnTT)) lnTT=lnTT_
+      real, dimension(psize), optional :: lnrho,lnTT
+      real, dimension(psize), optional :: yH,ee,pp,kapparho
 !
-      if (.not. l_cp) then
-        if (present(ee)) ee=cv*exp(lnTT_)
-        if (ieosvars==ilnrho_lnTT) then
-          if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
-        else
-          if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
-        endif
-      endif
-!
-      if (present(yH)) yH=impossible
-!
-      if (present(kapparho)) then
-        kapparho=0
-        call fatal_error("eoscalc","sorry, no Hminus opacity with noionization")
-      endif
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(present(lnrho),present(lnTT))
+      call keep_compiler_quiet(present(yH),present(ee))
+      call keep_compiler_quiet(present(pp),present(kapparho))
 !
       call fatal_error('eoscalc_farray', &
           'This routine is not coded for eos_chemistry')
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
@@ -1007,7 +981,6 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
- 
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1037,10 +1010,8 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1054,17 +1025,14 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
-!
     endsubroutine bc_ss_temp_x
-!***********************************************************************
 !***********************************************************************
     subroutine bc_ss_temp_y(f,topbot)
 !
@@ -1073,14 +1041,11 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
-!
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
@@ -1091,11 +1056,9 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1108,11 +1071,9 @@ module EquationOfState
 !  27-sep-2002/axel: coded
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1126,10 +1087,9 @@ module EquationOfState
 !   1-may-2003/axel: added the same for top boundary
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-!      use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1142,10 +1102,9 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1158,10 +1117,9 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1174,10 +1132,9 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1190,10 +1147,9 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1208,8 +1164,9 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1217,8 +1174,8 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1229,16 +1186,13 @@ module EquationOfState
 !
 !  Boundary condition for radial centrifugal balance
 !
-!
 !  21-aug-2006/wlad: coded
-!
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
- 
 !
     endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
@@ -1248,12 +1202,9 @@ module EquationOfState
 !
 !  12-Juil-2006/dintrans: coded
 !
-      use Gravity
-      use Sub, only: div
-!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1265,13 +1216,12 @@ module EquationOfState
 !  stratification in Fourier space.
 !  05-jul-07/tobi: Adapted from bc_aa_pot3
 !
-!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
-
+!
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_liso(f,topbot)
@@ -1281,7 +1231,6 @@ module EquationOfState
 !  02-jul-07/wlad: Adapted from Tobi's bc_aa_pot2
 !  Does the same thing as bc_lnrho_hdss_z_iso, but for a local isothermal
 !  equation of state (as opposed to strictly isothermal).
-!
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -1295,18 +1244,15 @@ module EquationOfState
 !
 !  Boundary condition for density
 !
-!
-!
 !  12-Jul-2006/dintrans: coded
 !  18-Jul-2007/wlad: adapted for local isothermal equation of state
-!
-      use Gravity
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+!
     endsubroutine bc_lnrho_hds_z_liso
 !***********************************************************************
 !0000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1351,8 +1297,6 @@ module EquationOfState
 !
 !  05-feb-08/nils: coded
 !
-
-
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
@@ -1471,8 +1415,7 @@ module EquationOfState
       integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
 
       ind_chem=0
-
- 
+!
 !  Initialize some index pointers
 !
       iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
@@ -1715,5 +1658,4 @@ module EquationOfState
 !
     endsubroutine read_transport_data
 !***********************************************************************
-!!***********************************************************************
 endmodule EquationOfState
