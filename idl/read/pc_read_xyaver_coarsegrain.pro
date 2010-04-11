@@ -58,10 +58,12 @@ close,2
 wait,.3
 
 @.xyaver
+print
 print,'Note: this procedure just wrote a temporary idl script in .xyaver,'
 print,'but after the first execution this new script may not yet be recognized.'
-print,'This would be the case if the variable t below doesn't exist.'
+print,"This would be the case if the variable t below doesn't exist."
 print,'In that case, just run this script again."
+print
 print,'t',t
 ;
 ;spawn,'mv .xyaver .xyaver_old'
