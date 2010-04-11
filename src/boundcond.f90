@@ -1930,8 +1930,6 @@ module Boundcond
       real, pointer :: Lambda_H1,nu
       logical, pointer :: llambda_effect
       integer :: ierr,k
-      real :: ftheta_m1_minus_k,ftheta_m1_plus_k
-      real :: ftheta_m2_minus_k,ftheta_m2_plus_k
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)

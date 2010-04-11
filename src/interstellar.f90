@@ -1487,7 +1487,7 @@ cool_loop: do i=1,ncool
       real, dimension (nx), intent(in) :: lnTT
 !
       real, parameter :: g_B_cgs=6.172e20
-      real :: g_B
+!      real :: g_B
 !
       if (heating_select == 'cst') Then
          heat = heating_rate_code

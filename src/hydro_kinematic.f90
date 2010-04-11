@@ -263,7 +263,7 @@ module Hydro
       integer :: ell
       real :: Balpha
       real :: theta,theta1
-      real :: omega0,shear
+!      real :: omega0,shear
 !
       intent(in) :: f
       intent(inout) :: p
