@@ -948,7 +948,7 @@ module Special
         get_lnQ = (get_lnQ +19.-32)*alog(10.)
 !
       case default
-        call fatal_erro('get_lnQ','wrong type')
+        call fatal_error('get_lnQ','wrong type')
       endselect
 !
     endfunction get_lnQ
