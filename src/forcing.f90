@@ -3021,7 +3021,6 @@ module Forcing
       real, dimension (nx,3), intent(out) :: force 
 
       real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu
-      real, parameter :: sqrt2=sqrt(2.)
       real, pointer   :: gravx
       integer         :: ierr
 
