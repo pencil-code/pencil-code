@@ -915,7 +915,11 @@ module Testfield
           if (idiag_eta12z/=0) call xysum_mn_name_z(-(-z(n)*Eipq(:,1,i1)+Eipq(:,1,i2)),idiag_eta12z)
           if (idiag_eta22z/=0) call xysum_mn_name_z(-(-z(n)*Eipq(:,2,i1)+Eipq(:,2,i2)),idiag_eta22z)
         else
-          if (idiag_alp11z/=0) call fatal_error('daatest_dt','works only for ltestfield_linear')
+          if (idiag_alp11z/=0) call xysum_mn_name_z(cz(n)*Eipq(:,1,i1)+sz(n)*Eipq(:,1,i2),idiag_alp11z)
+          if (idiag_alp21z/=0) call xysum_mn_name_z(cz(n)*Eipq(:,2,i1)+sz(n)*Eipq(:,2,i2),idiag_alp21z)
+          if (idiag_alp12z/=0) call xysum_mn_name_z(cz(n)*Eipq(:,1,i3)+sz(n)*Eipq(:,1,i4),idiag_alp12z)
+          if (idiag_alp22z/=0) call xysum_mn_name_z(cz(n)*Eipq(:,2,i3)+sz(n)*Eipq(:,2,i4),idiag_alp22z)
+!          if (idiag_alp11z/=0) call fatal_error('daatest_dt','works only for ltestfield_linear')
         endif
 !
 !  averages of alpha and eta
