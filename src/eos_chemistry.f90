@@ -789,27 +789,21 @@ module EquationOfState
 !
 !   Calculate thermodynamical quantities
 !
-!
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
-      real, intent(out), optional :: lnrho,ss
-      real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: ee,pp,cs2
-      real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
-!
-      if (present(lnrho)) lnrho=lnrho_
-      if (present(ss)) ss=ss_
-      if (present(yH)) yH=impossible
-      if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=ee_
-      if (present(pp)) pp=pp_
-      if (present(cs2)) cs2=cs2_
+      real, optional :: lnrho,ss
+      real, optional :: yH,lnTT
+      real, optional :: ee,pp,cs2
 !
       call fatal_error('eoscalc_point', &
         'This routine is not coded for eos_chemistry')
 !
+      call keep_compiler_quiet(present(lnrho),present(lnTT))
+      call keep_compiler_quiet(present(pp),present(ee))
+      call keep_compiler_quiet(present(yH))
+      call keep_compiler_quiet(present(ss),present(cs2))
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(var1,var2)
 !
@@ -832,22 +826,17 @@ module EquationOfState
 !
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
-      real, dimension(nx), intent(out), optional :: lnrho,ss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp,cs2
-      real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_
+      real, dimension(nx), optional :: lnrho,ss
+      real, dimension(nx), optional :: yH,lnTT
+      real, dimension(nx), optional :: ee,pp,cs2
 !
-      if (present(lnrho)) lnrho=lnrho_
-      if (present(ss)) ss=ss_
-      if (present(yH)) yH=impossible
-      if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=ee_
-      if (present(pp)) pp=pp_
-      if (present(cs2)) cs2=cs2_
-
       call fatal_error('eoscalc_pencil', &
         'This routine is not coded for eos_chemistry')
 !
+      call keep_compiler_quiet(present(lnrho),present(lnTT))
+      call keep_compiler_quiet(present(pp),present(ee))
+      call keep_compiler_quiet(present(yH))
+      call keep_compiler_quiet(present(ss),present(cs2))
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(var1,var2)
 !
