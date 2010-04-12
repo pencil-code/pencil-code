@@ -196,9 +196,12 @@ default, iaatest, 0
 default, ntestfield, 0
 varcontent[iaatest].variable   = 'Testfield vector potential (aatest)'
 varcontent[iaatest].idlvar     = 'aatest'
-varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
+;This allows pc_read_var to read var.dat without giving initialising errors
+;varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
+varcontent[iaatest].idlinit    = INIT_3VECTOR
 varcontent[iaatest].idlvarloc  = 'aatest_loc'
-varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
+;varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
+varcontent[iaatest].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iaatest].skip       = ntestfield-1
 ;
 default, iuutest, 0
