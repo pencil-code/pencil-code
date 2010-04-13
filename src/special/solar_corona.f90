@@ -70,7 +70,7 @@ module Special
     real, dimension(nxgrid,nygrid) :: Ux,Uy
     real, dimension(nxgrid,nygrid) :: BB2
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
-    integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
+    integer, dimension(nxgrid,nygrid) :: avoidarr
     real, save :: tsnap_uu=0.
     integer, save :: isnap
 !
@@ -1038,7 +1038,6 @@ module Special
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
-      granlane(:,:)=0
       avoidarr(:,:)=0
 !
       if (lroot) then
@@ -1322,7 +1321,6 @@ module Special
     subroutine resetarr
 !
       w(:,:)=0.0
-      granlane(:,:)=0
       avoidarr(:,:)=0
 !
     endsubroutine resetarr
@@ -1552,14 +1550,12 @@ endsubroutine addpoint
 !***********************************************************************
     subroutine drawupdate
 !
-      real :: xdist,ydist,dist2,dist,dxdy,vtmp,vtmp2
+      real :: xdist,ydist,dist2,dist,vtmp,vtmp2
       integer :: i,ii,j,jj
       real :: mu0_SI,u_b
 
       mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-!
-      dxdy=sqrt(dxdy2)
 !
 ! Update weight and velocity for new granule
 !
@@ -1586,12 +1582,10 @@ endsubroutine addpoint
               vx(i,j)=vtmp2*xdist/dist
               vy(i,j)=vtmp2*ydist/dist
               w(i,j)=vtmp
-              granlane(i,j)=0
             else
               vx(i,j)=vx(i,j)+vtmp2*xdist/dist
               vy(i,j)=vy(i,j)+vtmp2*ydist/dist
               w(i,j)=max(w(i,j),vtmp)
-              granlane(i,j)=1
             end if
           endif
         enddo
