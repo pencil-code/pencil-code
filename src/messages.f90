@@ -39,7 +39,6 @@ module Messages
   integer, public, parameter :: iterm_BG_CYAN   = 46
   integer, public, parameter :: iip_EVERYTHING  = 0
   integer, public, parameter :: iip_DEFAULT     = 0
-  integer, parameter :: iwarning_ip     = 1000
   integer, parameter :: iinformation_ip = 1000
   integer :: warnings=0
   integer :: errors=0
