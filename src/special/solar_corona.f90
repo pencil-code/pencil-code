@@ -65,7 +65,7 @@ module Special
     Type(point), pointer,save :: secondlev
     Type(point), pointer,save :: thirdlev
 !
-    integer :: xrange,yrange,p,nrpoints
+    integer :: xrange,yrange,pow
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
     real, dimension(nxgrid,nygrid) :: BB2
@@ -106,15 +106,15 @@ module Special
         tsnap_uu = t + dsnap
         isnap = int(t/dsnap)
 !
-! if irefz is not set choose z=0 or irefz=n1 
+! if irefz is not set choose z=0 or irefz=n1
         if (irefz .eq. 0)  then
           zref = minval(abs(z(n1:n2)))
           irefz = n1
           do i=n1,n2
             if (z(i).eq.zref) irefz=i
           enddo
-          !
-        endif        
+!
+        endif
       endif
 !
     endsubroutine initialize_special
@@ -1009,7 +1009,7 @@ module Special
       pd=0.1
 !
 ! Gives exponential power of evolvement. Higher power faster growth/decay.
-      p=2
+      pow=2
 !
 ! Fractional distance, where after emergence, no granule can emerge
 ! whithin this radius.(In order to not 'overproduce' granules).
@@ -1238,12 +1238,9 @@ module Special
       real :: nvor,vrms,vtot
       real,dimension(nxgrid,nygrid) :: wscr,wscr2
       integer, intent(in) :: level
-      integer :: nnrpoints
       logical :: lstop=.false.
 !
       call resetarr
-!
-      nrpoints=0
 !
       if (.not.associated(current%next)) then
         call rdpoints((max(level-1,0))*1000+isnap)
@@ -1259,12 +1256,10 @@ module Special
           if (associated(current%next)) then
             call gtnextpoint
             call drawupdate
-            nrpoints=nrpoints+1
           else
             exit
           endif
         end do
-        nnrpoints=0
         do
           if (minval(w(:,:)/(1-avoidarr(:,:)+1e-20)).ge. &
               ampl/(granr*(1+ig)+sqrt(dxdy2))) then
@@ -1273,8 +1268,6 @@ module Special
           call addpoint
           call make_newpoint
           call drawupdate
-          nrpoints=nrpoints+1
-          nnrpoints=nnrpoints+1
         enddo
         call reset
       endif
@@ -1460,21 +1453,19 @@ endsubroutine addpoint
 !
       call resetarr
       call make_newpoint
-      nrpoints=1
       do
         if (minval(w/(1-avoidarr+1e-20)).ge.ampl/(granr*(1+ig))) exit
 !
         call addpoint
         call make_newpoint
-        nrpoints=nrpoints+1
 !
 ! Initital t_0's different in initital drawing, must update
 !
         call random_number_wrapper(rand)
         current%data(3)=t+(rand*2-1)*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
-            (current%data(2)*granr*(1-ig))))**(1./p)
+            (current%data(2)*granr*(1-ig))))**(1./pow)
         current%data(1)=current%data(2)* &
-            exp(-((t-current%data(3))/current%data(4))**p)
+            exp(-((t-current%data(3))/current%data(4))**pow)
 !
 ! Update arrays with new data
 !
@@ -1492,9 +1483,9 @@ endsubroutine addpoint
 !
 ! extracts the rotational part of a 2d vector field
 ! to increase vorticity for drive3.
-! Uses cfft operators
 !
       use Fourier, only: fourier_transform_other
+!
       real, dimension(nxgrid,nygrid) :: rotx,roty
       real, dimension(nxgrid,nygrid) :: fftvx_re,fftvx_im
       real, dimension(nxgrid,nygrid) :: fftvy_re,fftvy_im
@@ -1511,8 +1502,6 @@ endsubroutine addpoint
 !
       call fourier_transform_other(fftvx_re,fftvx_im)
       call fourier_transform_other(fftvy_re,fftvy_im)
-!      call cfft2df(fftvx,fftvx,nxgrid,nygrid)
-!      call cfft2df(fftvy,fftvy,nxgrid,nygrid)
 !
       k20=(nxgrid/4.)**2
       do j=1,nygrid
@@ -1549,13 +1538,9 @@ endsubroutine addpoint
 !
       call fourier_transform_other(fftvx_re,fftvx_im)
       call fourier_transform_other(fftvy_re,fftvy_im)
-      !call cfft2db(fftvx,fftvx,nxgrid,nygrid)
-      !call cfft2db(fftvy,fftvy,nxgrid,nygrid)
 !
       call fourier_transform_other(fftrx_re,fftrx_im)
       call fourier_transform_other(fftry_re,fftry_im)
-      !call cfft2db(fftrx,fftrx,nxgrid,nygrid)
-      !call cfft2db(fftry,fftry,nxgrid,nygrid)
 !
       vx=real(fftvx_re)
       vy=real(fftvy_re)
@@ -1651,20 +1636,19 @@ endsubroutine addpoint
       call random_number_wrapper(rand)
       current%data(4)=life_t*(1+(2*rand-1)/10.)
       current%data(3)=t+0.99*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
-          (current%data(2)*granr*(1-ig))))**(1./p)
-      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**p)
+          (current%data(2)*granr*(1-ig))))**(1./pow)
+      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
 !
     endsubroutine make_newpoint
 !***********************************************************************
     subroutine updatepoints
 !
       real :: dxdy
-      integer :: nrmpoints
 !
       dxdy=sqrt(dxdy2)
 ! MUST take care of case when first granule dissapears
 !
-      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**p)
+      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
 !
       do
         if (current%data(1)/dxdy.ge.ampl/(granr*(1-ig))) exit
@@ -1695,15 +1679,13 @@ endsubroutine addpoint
         endif
       enddo
 !
-      nrmpoints=0
       do
         if (associated(current%next)) then
           call gtnextpoint
           current%data(1)=current%data(2)* &
-              exp(-((t-current%data(3))/current%data(4))**p)
+              exp(-((t-current%data(3))/current%data(4))**pow)
           if (current%data(1)/dxdy.lt.ampl/(granr*(1-ig))) then
             call rmpoint
-            nrmpoints=nrmpoints+1
           end if
         else
           exit
