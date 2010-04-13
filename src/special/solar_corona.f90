@@ -68,7 +68,7 @@ module Special
     integer :: xrange,yrange,p,nrpoints
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
-    real, dimension(nxgrid,nygrid),save :: absB
+    real, dimension(nxgrid,nygrid) :: BB2
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: granlane,avoidarr
     real, save :: tsnap_uu=0.
@@ -988,18 +988,6 @@ module Special
 !***********************************************************************
     subroutine setdrparams()
 !
-      integer :: lend
-!
-! compute abs(B) to quench velocities and avoid new
-! granules at places with strong magnetic fields
-!
-    inquire(IOLENGTH=lend) ampl
-    open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
-        recl=lend*nxgrid*nygrid,access='direct')
-    read (11,rec=1) absB
-    close (11)
-    absB =  abs(absB)
-!
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain,  x-position, y-position,
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
@@ -1032,7 +1020,7 @@ module Special
 ! Now also resolution dependent(5 min for granular scale)
 !
       life_t=(60.*5./unit_time)
-      !*(granr/(0.8*1e8/u_l))**2 
+      !*(granr/(0.8*1e8/u_l))**2
       !  removed since the life time was about 20 min !
 !
       dxdy2=dx**2+dy**2
@@ -1073,11 +1061,12 @@ module Special
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
-!
       integer :: i,j,ipt
       real, dimension(nxgrid,nygrid) :: dz_uz
       real, dimension(nx,ny) :: ux_local,uy_local,uz_local
       integer, dimension(2) :: dims=(/nx,ny/)
+!
+      call set_B2(f)
 !
       if (lroot) then
         Ux=0.0
@@ -1092,12 +1081,12 @@ module Special
         do i=0,nprocx-1
           do j=0,nprocy-1
             ipt = i+nprocx*j
-            if (ipt.ne.0) then 
+            if (ipt.ne.0) then
               call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
               call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
               call mpisend_real(dz_uz(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,314+ipt)
             else
-              ux_local = Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny) 
+              ux_local = Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
               uy_local = Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
               uz_local = dz_uz(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
             endif
@@ -1580,6 +1569,10 @@ endsubroutine addpoint
 !
       real :: xdist,ydist,dist2,dist,dxdy,vtmp,vtmp2
       integer :: i,ii,j,jj
+      real :: mu0_SI,u_b
+
+      mu0_SI = 4.*pi*1.e-7
+      u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
       dxdy=sqrt(dxdy2)
 !
@@ -1595,9 +1588,9 @@ endsubroutine addpoint
           dist=sqrt(dist2)
           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
           !
-          ! where the field strength is greater than 500 Gaus (0.05 Tesla) 
+          ! where the field strength is greater than 500 Gaus (0.05 Tesla)
           ! avoid new granules
-          if (absB(i,j) .gt.0.05) avoidarr(i,j)=1
+          if (BB2(i,j) .gt. (0.05/u_b)**2) avoidarr(i,j)=1
           vtmp=current%data(1)/dist
 !          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
 !              dist**2*exp(-(dist/(0.53*granr))**2)
@@ -1719,6 +1712,90 @@ endsubroutine addpoint
       call reset
 !
     endsubroutine updatepoints
+!***********************************************************************
+    subroutine set_B2(f)
+!
+      use Mpicomm, only: mpisend_real, mpirecv_real
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,ny) :: bbx,bby,bbz
+      real, dimension(nx,ny) :: fac,bb2_tmp,tmp
+      integer :: i,j,ipt
+      integer, dimension(2) :: dims=(/nx,ny/)
+!
+! compute B = curl(A) for irefz layer
+!
+      if (nygrid/=1) then
+        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+        bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
+            -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
+            +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
+      else
+        if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+      endif
+      if (nzgrid/=1) then
+        fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
+        bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
+            -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
+            +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
+      else
+        if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+      endif
+!
+      if (nzgrid/=1) then
+        fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
+        bby= fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
+            -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
+            +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
+      else
+        if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+      endif
+      if (nxgrid/=1) then
+        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+        bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
+            -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
+            +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
+      else
+        if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+      endif
+      if (nxgrid/=1) then
+        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+        bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
+            -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
+            +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
+      else
+        if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+      endif
+      if (nygrid/=1) then
+        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+        bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
+            -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
+            +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
+      else
+        if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+      endif
+!
+      BB2_tmp = bbx*bbx + bby*bby + bbz*bbz
+      BB2_tmp = BB2_tmp/(2.*mu0)
+!
+! communicate to root processor
+!
+      if (iproc.eq.0) then
+        BB2(1:nx,1:ny) = BB2_tmp
+        do i=0,nprocx-1
+          do j=0,nprocy-1
+            ipt = i+nprocx*j
+            if (ipt.ne.0) then
+              call mpirecv_real(tmp,dims,ipt,555+ipt)
+              BB2(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)  = tmp
+            endif
+          enddo
+        enddo
+      else
+        call mpisend_real(bb2_tmp,dims,0,555+iproc)
+      endif
+!
+    endsubroutine set_B2
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
