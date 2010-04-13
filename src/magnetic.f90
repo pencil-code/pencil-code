@@ -4313,12 +4313,11 @@ module Magnetic
 !
 !   8-mar-10/axel: adapted from bmz
 !
-      use Diagnostics
-      use Mpicomm
+      use Diagnostics, only: save_name
 !
       logical,save :: first=.true.
       integer :: n_reverse,ipz_reverse
-      real :: bxmS,bymS,bmzS2
+      real :: bxmS,bymS
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
@@ -4329,7 +4328,8 @@ module Magnetic
           print*, 'NOTE: to get bmzS2, set bxmz and bymz in xyaver'
           print*, 'We proceed, but you will get bmzS2=0'
         endif
-        bmzS2=0.0
+        bxmS=0.
+        bymS=0.
       else
         bxmS=0.
         bymS=0.
@@ -4355,12 +4355,11 @@ module Magnetic
 !
 !   8-mar-10/axel: adapted from bmz
 !
-      use Diagnostics
-      use Mpicomm
+      use Diagnostics, only: save_name
 !
       logical,save :: first=.true.
       integer :: n_reverse,ipz_reverse
-      real :: bxmA,bymA,bmzA2
+      real :: bxmA,bymA
 !
 !  This only works if bxmz and bzmz are in xyaver, so print warning if this is
 !  not ok.
@@ -4371,7 +4370,8 @@ module Magnetic
           print*, 'NOTE: to get bmzA2, set bxmz and bymz in xyaver'
           print*, 'We proceed, but you will get bmzA2=0'
         endif
-        bmzA2=0.0
+        bxmA=0.
+        bymA=0.
       else
         bxmA=0.
         bymA=0.
