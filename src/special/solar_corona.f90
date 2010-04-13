@@ -26,6 +26,7 @@ module Special
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   logical :: lgranulation=.false.
+  integer :: irefz=0.
 !
 ! input parameters
 !  namelist /special_init_pars/ dumy
@@ -34,7 +35,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso,lgranulation
+       chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -95,6 +96,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: zref
+      integer :: i
 !
       call keep_compiler_quiet(f)
 !
@@ -102,6 +105,16 @@ module Special
         call setdrparams()
         tsnap_uu = t + dsnap
         isnap = int(t/dsnap)
+!
+! if irefz is not set choose z=0 or irefz=n1 
+        if (irefz .eq. 0)  then
+          zref = minval(abs(z(n1:n2)))
+          irefz = n1
+          do i=n1,n2
+            if (z(i).eq.zref) irefz=i
+          enddo
+          !
+        endif        
       endif
 !
     endsubroutine initialize_special
@@ -1061,17 +1074,10 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      real :: zref
-      integer :: iref,i,j,ipt
+      integer :: i,j,ipt
       real, dimension(nxgrid,nygrid) :: dz_uz
       real, dimension(nx,ny) :: ux_local,uy_local,uz_local
       integer, dimension(2) :: dims=(/nx,ny/)
-!
-      zref = minval(abs(z(n1:n2)))
-      iref = n1
-      do i=n1,n2
-        if (z(i).eq.zref) iref=i
-      enddo
 !
       if (lroot) then
         Ux=0.0
@@ -1103,10 +1109,10 @@ module Special
         call mpirecv_real(uz_local,dims,0,314+iproc)
       endif
 !
-      f(l1:l2,m1:m2,iref,iux) = ux_local
-      f(l1:l2,m1:m2,iref,iuy) = uy_local
-      f(l1:l2,m1:m2,iref,iuz) = 0.
-      f(l1:l2,m1:m2,iref-1,iuz) = uz_local/2.*(z(iref)-z(iref-1))
+      f(l1:l2,m1:m2,irefz,iux) = ux_local
+      f(l1:l2,m1:m2,irefz,iuy) = uy_local
+      f(l1:l2,m1:m2,irefz,iuz) = 0.
+      f(l1:l2,m1:m2,irefz-1,iuz) = uz_local/2.*(z(irefz)-z(irefz-1))
 !
     endsubroutine uudriver
 !***********************************************************************
