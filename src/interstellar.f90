@@ -679,6 +679,49 @@ module Interstellar
                     0.5, &
                     tiny(0.) /)
          ncool=10
+      else if (cooling_select == 'SS-Slyzr') then
+!
+! 26-Jan-10/fred
+!
+! combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
+! as Gressel simulation (2008) constants revised for continuity 
+! last beta increased from 0.5 to 1.5 to inhibit T>1e7 K
+!
+         if (lroot) print*,'initialize_interstellar: SS-Slyz cooling fct'
+         coolT_cgs = (/ 10.D0, &
+                        141.D0, &
+                        313.D0, &
+                        6102.D0, &
+                        1.D5, &
+                        2.88D5, &
+                        4.73D5, &
+                        2.11D6, &
+                        3.98D6,  &
+                        1.0D7,  &
+                        huge(0D0)/)
+         coolH_cgs = (/ 3.420D16, &
+                        8.73275974868D18, &
+                        1.0944376395513D20, &
+                        1.0178638302185D10, &
+                        1.1420600147164D27, &
+                        2.2079470147055D42, &
+                        3.697214745591D26, &
+                        1.4105221231863D22, &
+                        1.48514641828986D22, &
+                        9.58891065704518D13, &
+                        tiny(0D0) /)
+         coolB = (/ 2.12, &
+                    1.0, &
+                    0.56, &
+                    3.21, &
+                    -0.20, &
+                    -3.0, &
+                    -0.22, &
+                    -3.00, &
+                    0.33, &
+                    1.5, &
+                    tiny(0.) /)
+         ncool=10
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=tiny(0.D0)

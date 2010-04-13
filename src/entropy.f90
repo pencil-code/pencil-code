@@ -2807,16 +2807,33 @@ module Entropy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 
-      boost_chi=1e5/unit_temperature
+      boost_chi=1e6/unit_temperature
       thchi=chi_th
       where (p%lnTT .ge. log(boost_chi)) &
-      thchi=chi_th*(1+(exp(p%lnTT)-boost_chi)**0.5)
+      thchi=chi_th*(1+((exp(p%lnTT)-boost_chi)/boost_chi)**0.5)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
+        endif
+      else
+        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        !thdiff=cp*chi*(p%del2lnTT+g2)
+!AB:  divide by p%cp1, since we don't have cp here.
+        thdiff=thchi*(p%del2lnTT+g2)/p%cp1
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+!
+!  Provisional expression for magnetic chi_t quenching;
+!  (Derivatives of B are still missing.
+!
+          if (chiB==0.) then
+            thdiff=thdiff+chi_t*(p%del2ss+g2)
+          else
+            thdiff=thdiff+chi_t*(p%del2ss+g2)/(1.+chiB*p%b2)
+          endif
         endif
       endif
 !
