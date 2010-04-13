@@ -4139,12 +4139,12 @@ module Magnetic
 !  Plasma beta
 !
        case ('beta')
-          slices%yz =>jb_yz
-          slices%xz =>jb_xz
-          slices%xy =>jb_xy
-          slices%xy2=>jb_xy2
-          if (lwrite_slice_xy3) slices%xy3=>jb_xy3
-          if (lwrite_slice_xy4) slices%xy4=>jb_xy4
+          slices%yz =>beta_yz
+          slices%xz =>beta_xz
+          slices%xy =>beta_xy
+          slices%xy2=>beta_xy2
+          if (lwrite_slice_xy3) slices%xy3=>beta_xy3
+          if (lwrite_slice_xy4) slices%xy4=>beta_xy4
           slices%ready=.true.
 !
       endselect
