@@ -2150,7 +2150,7 @@ module Density
 !
       do m=m1,m2
         do n=n1,n2
-          lheader=((m==m1).and.(n==n1).and.lroot)
+          lheader=(lfirstpoint.and.lroot)
 !
 !  Get the density gradient
 !
@@ -2236,7 +2236,6 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,arg
       real :: rmid,fac
-      logical :: lheader
 !
       if (lroot) print*,'setting exponential falling '//&
            'density with e-fold=',r_ref
@@ -2244,7 +2243,6 @@ module Density
       fac=pi/2
       do m=1,my
         do n=1,mz
-          lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
           f(1:mx,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
           if (lexponential_smooth) then
@@ -2302,7 +2300,7 @@ module Density
         do n=n1,n2
           do m=m1,m2
 !
-            lheader=((m==m1).and.(n==n1).and.lroot)
+            lheader=(lfirstpoint.and.lroot)
 !
 !  Get the potential gradient
 !
@@ -2375,14 +2373,12 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: rr_sph,rr_cyl
-      logical :: lheader
 !
       if (lroot) print*,'setting density gradient of power '//&
           'law=',plaw
 !
       do m=1,my
         do n=1,mz
-          lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
           f(:,m,n,ilnrho) = & ! f(:,m,n,ilnrho) + &
               lnrho_const+0.5*log(r_ref/rr_cyl) &
@@ -2406,14 +2402,12 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: rr_sph,rr_cyl
-      logical :: lheader
 !
       if (lroot) print*,'setting density gradient of power '//&
            'law=',plaw
 !
       do m=1,my
         do n=1,mz
-          lheader=lroot.and.(m==1).and.(n==1)
           call get_radial_distance(rr_sph,rr_cyl)
           f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
         enddo
