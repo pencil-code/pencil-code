@@ -87,8 +87,10 @@ module Chemistry
      logical :: ldamp_zone_NSCBCz=.false.
      logical :: ldamp_left=.true.,ldamp_right=.true.
      logical :: linit_velocity=.false.
+!
 ! 1step_test case
-
+! possible, will be removed later
+!
      logical :: l1step_test=.false., lflame_front=.false.
      integer :: ipr=2
      real :: Tc=440., Tinf=2000., beta=1.09
@@ -120,11 +122,12 @@ module Chemistry
      logical, allocatable, dimension(:) :: Mplus_case
      logical, allocatable, dimension(:) :: photochem_case
      real :: lamb_low,lamb_up
-   !  real, dimension(nchemspec,7)     :: tran_data
+!  real, dimension(nchemspec,7)     :: tran_data
 !
 !   Atmospheric physics 
 !
      logical :: latmchem=.false. 
+     logical :: lcloud=.false.
      integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
 ! input parameters
@@ -136,7 +139,7 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
       ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,linit_velocity, &
-      latmchem
+      latmchem, lcloud
 
 
 ! run parameters
@@ -667,19 +670,23 @@ module Chemistry
          if (lpencil(i_hhk_full) .and.lreactions) then
          do j1=1,nx
           do k=1,nchemspec
+          if (species_constants(k,imass)>0.)  then
             p%hhk_full(j1,k)=p%H0_RT(j1,k)*Rgas*p%TT(j1)&
                /species_constants(k,imass)
+          endif
           enddo
          enddo
          endif
 
          if (lpencil(i_ghhk) .and. lreactions) then
          do k=1,nchemspec
+         if (species_constants(k,imass)>0.)  then
          !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
           do i=1,3
            p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
              /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
           enddo
+         endif
          enddo
          endif
 
@@ -1220,12 +1227,14 @@ module Chemistry
 !  Mole fraction XX
 !
           do k=1,nchemspec
+          if (species_constants(k,imass)>0.) then
           do j2=mm1,mm2
           do j3=nn1,nn2
              XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
                 /(species_constants(k,imass)*mu1_full(:,j2,j3))
           enddo
           enddo
+          endif
           enddo
 !
           call  getpressure(pp_full)
@@ -1253,9 +1262,10 @@ module Chemistry
               T_loc_3=T_loc_2*T_loc
               T_loc_4=T_loc_3*T_loc
               do k=1,nchemspec
-               T_low=species_constants(k,iTemp1)-1.
-               T_mid=species_constants(k,iTemp2)
-               T_up= species_constants(k,iTemp3)
+               if (species_constants(k,imass)>0.) then
+                T_low=species_constants(k,iTemp1)-1.
+                T_mid=species_constants(k,iTemp2)
+                T_up= species_constants(k,iTemp3)
 !
                   if (j1<=l1 .or. j2>=l2) then
                     T_low=0.
@@ -1298,11 +1308,11 @@ module Chemistry
                   *cp_R_spec/species_constants(k,imass)*Rgas
                  cv_full(j1,j2,j3)=cv_full(j1,j2,j3)+f(j1,j2,j3,ichemspec(k))  &
                   *cv_R_spec_full(j1,j2,j3,k)/species_constants(k,imass)*Rgas
+               endif
               enddo
-              enddo
-              enddo
-!
-         enddo
+            enddo
+            enddo
+            enddo
         endif
 !
 !  Binary diffusion coefficients
@@ -1326,6 +1336,7 @@ module Chemistry
           else
             nu_dyn(j1,j2,j3)=0.
             do k=1,nchemspec
+             if (species_constants(k,imass)>0.) then
               tmp_sum2(j1,j2,j3)=0.
               do j=1,k
                 mk_mj=species_constants(k,imass) &
@@ -1339,7 +1350,8 @@ module Chemistry
               enddo
               nu_dyn(j1,j2,j3)=nu_dyn(j1,j2,j3)+XX_full(j1,j2,j3,k)*&
                   species_viscosity(j1,j2,j3,k)/tmp_sum2(j1,j2,j3)
-             enddo
+             endif
+            enddo
               nu_full(j1,j2,j3)=nu_dyn(j1,j2,j3)/rho_full(j1,j2,j3)
           endif
 
@@ -1361,8 +1373,10 @@ module Chemistry
 
              if (lfix_Sc) then
               do k=1,nchemspec
+               if (species_constants(k,imass)>0.) then
                Diff_full(j1,j2,j3,k)=species_viscosity(j1,j2,j3,k) &
                                     /rho_full(j1,j2,j3)/Sc_number
+               endif
               enddo
              elseif (ldiffusion) then
 !
@@ -1374,12 +1388,14 @@ module Chemistry
                 tmp_sum(j1,j2,j3)=0.
                 tmp_sum2(j1,j2,j3)=0.
                 do j=1,nchemspec
+                 if (species_constants(k,imass)>0.) then
                  if (j .ne. k) then
                    tmp_sum(j1,j2,j3)=tmp_sum(j1,j2,j3) &
                         +XX_full(j1,j2,j3,j)/Bin_Diff_coef(j1,j2,j3,j,k)
                    tmp_sum2(j1,j2,j3)=tmp_sum2(j1,j2,j3) &
                        +XX_full(j1,j2,j3,j)*species_constants(j,imass)
 
+                 endif
                  endif
                 enddo
                  Diff_full(j1,j2,j3,k)=mu1_full(j1,j2,j3)*tmp_sum2(j1,j2,j3)&
@@ -1388,9 +1404,11 @@ module Chemistry
              endif
             endif
              do k=1,nchemspec
+              if (species_constants(k,imass)>0.) then
               Diff_full_add(j1,j2,j3,k)=Diff_full(j1,j2,j3,k)*&
                   species_constants(k,imass)/unit_mass &
                   *mu1_full(j1,j2,j3)
+              endif
              enddo
          enddo
          enddo
@@ -1942,6 +1960,7 @@ module Chemistry
         sum_dk_ghk=0.
 
         do k=1,nchemspec
+        if (species_constants(k,imass)>0.) then
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)&
               *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
           if (lreactions) then
@@ -1965,7 +1984,8 @@ module Chemistry
            call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
            sum_dk_ghk=sum_dk_ghk+dk_dhhk
          endif
-
+         
+        endif
         enddo
        endif
 !
@@ -2985,6 +3005,7 @@ module Chemistry
           endif
 !    
         do k=1,nchemspec
+        if (species_constants(k,imass)>0.) then
          T_low=species_constants(k,iTemp1)-10.
          T_mid=species_constants(k,iTemp2)
          T_up= species_constants(k,iTemp3)
@@ -3017,6 +3038,7 @@ module Chemistry
           varname(ichemspec(k)), maxval(p%S0_R(:,k)), &
               minval(p%S0_R(:,k))
         endif
+        endif
         enddo
         enddo
         endif
@@ -3035,13 +3057,13 @@ module Chemistry
         prod1=1.
         prod2=1.
         do k=1,nchemspec
-         if (abs(Sijp(k,reac))>0) then
+         if ((abs(Sijp(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
           prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
               /species_constants(k,imass))**Sijp(k,reac)
          endif
         enddo
         do k=1,nchemspec
-         if (abs(Sijm(k,reac))>0) then
+         if ((abs(Sijm(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
           prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
               /species_constants(k,imass))**Sijm(k,reac)
          endif
@@ -3096,8 +3118,10 @@ module Chemistry
         if (minval(a_k4(:,reac))<impossible) then
           sum_sp=0.
           do k=1,nchemspec
+           if (species_constants(k,imass)>0.) then
             sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                 *rho_cgs(:)/species_constants(k,imass)
+           endif
           enddo
           mix_conc=sum_sp
         else
@@ -3268,6 +3292,7 @@ module Chemistry
 !  in the chemkin manual)
 !
       do k=1,nchemspec
+       if (species_constants(k,imass)>0.) then
         xdot=0.
         do j=1,nreactions
           xdot=xdot+stoichio(k,j)*vreactions(:,j)
@@ -3280,7 +3305,9 @@ module Chemistry
          endif
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
-
+       else
+        p%DYDt_reac(:,k)=0.
+       endif
       enddo
 !
 ! NH:
@@ -3926,7 +3953,9 @@ module Chemistry
             if (lroot) print*, ' volume fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
 !
-            air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
+            if (species_constants(ind_chem,imass)>0.) then
+             air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
+            endif
 !
             if (StartInd==80) exit
 !
