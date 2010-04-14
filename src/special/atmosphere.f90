@@ -1,4 +1,4 @@
-! $Id: chem_stream.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $
+! $Id: atmosphere.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
