@@ -36,7 +36,7 @@ module Entropy
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real, target :: chi=0.0
-  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_th=0.0
+  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_th=0.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
@@ -71,7 +71,7 @@ module Entropy
   logical :: lheatc_Kprof=.false., lheatc_Kconst=.false.
   logical, target :: lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
-  logical :: lheatc_hubeny=.false.
+  logical :: lheatc_hubeny=.false.,lheatc_sqrtrhochiconst=.false.
   logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
@@ -95,7 +95,7 @@ module Entropy
 !
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
-      mixinglength_flux, chi_t, chi_th, pp_const, ss_left, ss_right, ss_const, mpoly0, &
+      mixinglength_flux, chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, ss_const, mpoly0, &
       mpoly1, mpoly2, isothtop, khor_ss, thermal_background, thermal_peak, &
       thermal_scaling, cs2cool, center1_x, center1_y, center1_z, center2_x, &
       center2_y, center2_z, T0, ampl_TT, kx_ss, ky_ss, kz_ss, &
@@ -108,7 +108,7 @@ module Entropy
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      wcool, Fbot, lcooling_general, chi_t, chi_th, chit_prof1, chit_prof2, chi_shock, &
+      wcool, Fbot, lcooling_general, chi_t, chi_th, chi_rho, chit_prof1, chit_prof2, chi_shock, &
       chi, iheatcond, Kgperp, Kgpara, cool_RTV, tau_ss_exterior, lmultilayer, &
       Kbot, tau_cor, TT_cor, z_cor, tauheat_buffer, TTheat_buffer, &
       zheat_buffer, dheat_buffer1, heat_uniform, lupw_ss, cool_int, cool_ext, &
@@ -551,7 +551,10 @@ module Entropy
           if (lroot) print*, 'heat conduction: constant chi'
         case ('chi-therm')
           lheatc_chitherm=.true.
-          if (lroot) print*, 'heat conduction: constant chi'
+          if (lroot) print*, 'heat conduction: constant chi except high TT'
+        case ('sqrtrhochi-const')
+          lheatc_sqrtrhochiconst=.true.
+          if (lroot) print*, 'heat conduction: constant sqrt(rho)*chi'
         case ('tensor-diffusion')
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
@@ -599,6 +602,9 @@ module Entropy
       endif
       if (lheatc_chitherm .and. (chi_th==0.0 .and. chi_t==0.0)) then
         call warning('initialize_entropy','chi_th and chi_t are zero!')
+      endif
+      if (lheatc_sqrtrhochiconst .and. (chi_rho==0.0 .and. chi_t==0.0)) then
+        call warning('initialize_entropy','chi_rho and chi_t are zero!')
       endif
       if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
         call warning('initialize_entropy', &
@@ -693,6 +699,9 @@ module Entropy
       call put_shared_variable('chi_th',chi_th,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting chi_th")
+      call put_shared_variable('chi_rho',chi_rho,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting chi_rho")
       call put_shared_variable('lmultilayer',lmultilayer,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lmultilayer")
@@ -702,6 +711,9 @@ module Entropy
       call put_shared_variable('lheatc_chitherm',lheatc_chitherm,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lcalc_heatcond_chitherm")
+      call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting lcalc_heatcond_sqrtrhochiconst")
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lviscosity_heat")
@@ -2069,7 +2081,8 @@ module Entropy
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
-          tau_cor>0 .or. lheatc_chitherm) lpenc_requested(i_cp1)=.true.
+          tau_cor>0 .or. lheatc_chitherm.or. &
+          lheatc_sqrtrhochiconst) lpenc_requested(i_cp1)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) then
@@ -2131,6 +2144,12 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
+      if (lheatc_sqrtrhochiconst) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
       if (lheatc_Kprof) then
         if (hcond0/=0) then
           lpenc_requested(i_rho1)=.true.
@@ -2155,12 +2174,7 @@ module Entropy
            lpenc_requested(i_glnrho)=.true.
            lpenc_requested(i_gss)=.true.
         endif
-        if (chi_th/=0) then
-           lpenc_requested(i_del2ss)=.true.
-           lpenc_requested(i_glnrho)=.true.
-           lpenc_requested(i_gss)=.true.
-        endif
-     endif
+      endif
       if (lheatc_spitzer) then
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_lnrho)=.true.
@@ -2200,6 +2214,16 @@ module Entropy
       if (lheatc_chitherm) then
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        if (chi_t/=0.) then
+           lpenc_requested(i_gss)=.true.
+           lpenc_requested(i_del2ss)=.true.
+        endif
+      endif
+      if (lheatc_sqrtrhochiconst) then
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
         if (chi_t/=0.) then
            lpenc_requested(i_gss)=.true.
@@ -2483,6 +2507,7 @@ module Entropy
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_chitherm) call calc_heatcond_thermchi(df,p)
+      if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
@@ -2858,6 +2883,102 @@ module Entropy
       endif
 !
     endsubroutine calc_heatcond_thermchi
+!***********************************************************************
+    subroutine calc_heatcond_sqrtrhochi(df,p)
+!
+!  adapted from Heat conduction for constant value to
+!  include temperature dependence to handle high temperatures
+!  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(rho)
+!  This routine also adds in turbulent diffusion, if chi_t /= 0.
+!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
+!  flux = chi_th*rho*gradT + chi_t*rho*T*grads
+!  This routine is currently not correct when ionization is used.
+!
+!  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test physics
+!  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
+!
+      use Diagnostics
+      use Gravity
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: thdiff,g2,rhochi
+      real :: boost_chi
+!
+      intent(out) :: df
+!
+!  check that chi is ok
+!
+      if (headtt) print*,'calc_heatcond_sqrtrhochi: chi_rho=',chi_rho
+!
+!  Heat conduction
+!  Note: these routines require revision when ionization turned on
+!  The variable g2 is reused to calculate glnP.gss a few lines below.
+!
+!  diffusion of the form:
+!  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
+!        Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
+!
+!  with additional turbulent diffusion
+!  rho*T*Ds/Dt = ... + nab.(rho*T*chit*grads)
+!        Ds/Dt = ... + chit*[del2ss+(glnrho+glnTT).gss]
+!
+!  Note: need thermally sensitive diffusion without magnetic field
+!  for interstellar hydro runs to contrain SNr core temp
+!
+
+!      boost_chi=1e6/unit_temperature
+!      rhochi=chi_rho
+!      where (p%lnTT .ge. log(boost_chi)) &
+      rhochi=chi_rho*sqrt(p%rho1)
+      if (pretend_lnTT) then
+        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        thdiff=gamma*rhochi*(p%del2lnTT+g2)
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=thdiff+chi_t*(p%del2ss+g2)
+        endif
+      else
+        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        !thdiff=cp*chi*(p%del2lnTT+g2)
+!AB:  divide by p%cp1, since we don't have cp here.
+        thdiff=rhochi*(p%del2lnTT+g2)/p%cp1
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+!
+!  Provisional expression for magnetic chi_t quenching;
+!  (Derivatives of B are still missing.
+!
+          if (chiB==0.) then
+            thdiff=thdiff+chi_t*(p%del2ss+g2)
+          else
+            thdiff=thdiff+chi_t*(p%del2ss+g2)/(1.+chiB*p%b2)
+          endif
+        endif
+      endif
+!
+!  add heat conduction to entropy equation
+!
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+thdiff
+      if (headtt) print*,'calc_heatcond_sqrtrhochi: added thdiff'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chi*del2ss
+!
+      if (lfirst.and.ldt) then
+        if (leos_idealgas) then
+          diffus_chi=diffus_chi+(gamma*rhochi+chi_t)*dxyz_2
+        else
+          diffus_chi=diffus_chi+(rhochi+chi_t)*dxyz_2
+        endif
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_sqrtrhochi
 !***********************************************************************
     subroutine calc_heatcond_hyper3(df,p)
 !

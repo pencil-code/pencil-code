@@ -136,6 +136,7 @@ module Magnetic
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., linduction=.true.
   logical :: lresi_eta_const=.false.
+  logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
@@ -706,6 +707,7 @@ module Magnetic
 !
       if (iresistivity(1)=='') iresistivity(1)='eta-const'  ! default
       lresi_eta_const=.false.
+      lresi_sqrtrhoeta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
       lresi_hyper3_polar=.false.
@@ -726,6 +728,9 @@ module Magnetic
         case ('eta-const')
           if (lroot) print*, 'resistivity: constant eta'
           lresi_eta_const=.true.
+        case ('sqrtrhoeta-const')
+          if (lroot) print*, 'resistivity: constant sqrt(rho)*eta'
+          lresi_sqrtrhoeta_const=.true.
         case ('etaSS')
           if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
           lresi_etaSS=.true.
@@ -808,6 +813,9 @@ module Magnetic
 !
       if (lrun) then
         if (lresi_eta_const.and.(eta==0.0.and.meanfield_etat==0.0)) &
+            call warning('initialize_magnetic', &
+            'Resistivity coefficient eta is zero!')
+        if (lresi_sqrtrhoeta_const.and.(eta==0.0.and.meanfield_etat==0.0)) &
             call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
         if (lresi_hyper2.and.eta_hyper2==0.0) &
@@ -1300,6 +1308,11 @@ module Magnetic
           lresi_eta_shock.or.lresi_smagorinsky.or.lresi_zdep.or. &
           lresi_xydep.or.lresi_smagorinsky_cross)) &
           lpenc_requested(i_del2a)=.true.
+      if (lresi_sqrtrhoeta_const) then
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_rho1)=.true.
+        if (.not.lweyl_gauge) lpenc_requested(i_del2a)=.true.
+      endif
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
         if (.not.lweyl_gauge) then
@@ -2257,6 +2270,19 @@ module Magnetic
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta
         etatotal=etatotal+eta
+      endif
+      if (lresi_sqrtrhoeta_const) then
+        if (lweyl_gauge) then
+        do j=1,3
+          fres(:,j)=fres(:,j)-eta*sqrt(p%rho1)*p%jj(:,j)
+        enddo
+        else
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta*sqrt(p%rho1)*p%del2a(:,j)
+        enddo
+        endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*sqrt(p%rho1)
+        etatotal=etatotal+eta*sqrt(p%rho1)
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
