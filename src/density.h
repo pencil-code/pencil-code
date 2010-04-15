@@ -10,5 +10,9 @@
 
   public :: pencil_criteria_density, pencil_interdep_density
   public :: calc_pencils_density
-  public :: glnrhomz,lcalc_glnrhomean,calc_ldensity_pars,lupw_lnrho
-  public :: get_init_average_density, anelastic_after_mn
+  public :: get_init_average_density, anelastic_after_mn,calc_ldensity_pars
+!
+! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
+!
+  public :: glnrhomz,lcalc_glnrhomean,lupw_lnrho
+
