@@ -2410,28 +2410,30 @@ module EquationOfState
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
-         if (lentropy .and. .not. pretend_lnTT) then
-!  Corrected for linear density 
-            tmp = 2*cv*log(cs2top/cs20)
-            if (ldensity_nolog) then
-               f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(log(f(l2,:,:,ilnrho)) - lnrho0 ) 
-               do i=1,nghost
-                  f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-                       - (cp-cv)*(log(f(l2-i,:,:,ilnrho)*f(l2+i,:,:,ilnrho)) - 2*lnrho0 ) 
-               enddo
-            else
-               f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
-               do i=1,nghost
-                  f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-                       - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
-               enddo
-            endif
-         elseif (lentropy .and. pretend_lnTT) then
-           f(l2,:,:,iss) = log(cs2top/gamma_m1)
-           do i=1,nghost; f(l2+i,:,:,iss)=2*f(l2,:,:,iss)-f(l2-i,:,:,iss); enddo
+        if (lentropy .and. .not. pretend_lnTT) then
+!
+!  Distinguish cases for linear and logarithmic density 
+!
+          tmp = 2*cv*log(cs2top/cs20)
+          if (ldensity_nolog) then
+            f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(log(f(l2,:,:,ilnrho))-lnrho0)
+            do i=1,nghost
+              f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
+                - (cp-cv)*(log(f(l2-i,:,:,ilnrho)*f(l2+i,:,:,ilnrho))-2*lnrho0)
+            enddo
+          else
+            f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(f(l2,:,:,ilnrho)-lnrho0)
+            do i=1,nghost
+              f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
+                - (cp-cv)*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
+            enddo
+          endif
+        elseif (lentropy .and. pretend_lnTT) then
+          f(l2,:,:,iss) = log(cs2top/gamma_m1)
+          do i=1,nghost; f(l2+i,:,:,iss)=2*f(l2,:,:,iss)-f(l2-i,:,:,iss); enddo
         elseif (ltemperature) then
-           f(l2,:,:,ilnTT) = log(cs2top/gamma_m1)
-           do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
+          f(l2,:,:,ilnTT) = log(cs2top/gamma_m1)
+          do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
         endif
 
       case default
