@@ -318,12 +318,14 @@ module EquationOfState
 !
     mu1_full_tmp=0.
     do k=1,nchemspec
+     if (species_constants(k,imass)>0.) then
       do j2=mm1,mm2
         do j3=nn1,nn2
           mu1_full_tmp(:,j2,j3)=mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
               /species_constants(k,imass)
         enddo
       enddo
+     endif
     enddo
     mu1_full=mu1_full_tmp
 !
@@ -775,6 +777,8 @@ module EquationOfState
       real, dimension(psize), optional :: lnrho,lnTT
       real, dimension(psize), optional :: yH,ee,pp,kapparho
 !
+      lnrho=1.
+      lnTT=1.
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(present(lnrho),present(lnTT))
       call keep_compiler_quiet(present(yH),present(ee))
@@ -1273,6 +1277,8 @@ module EquationOfState
         MolMass=4.0026
       case ('S')
         MolMass=32.0655
+      case ('CLOUD')
+        MolMass=0.
       case default
         if (lroot) print*,'element_name=',element_name
         call stop_it('find_mass: Element not found!')
