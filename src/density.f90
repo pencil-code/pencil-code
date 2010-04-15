@@ -796,7 +796,7 @@ module Density
 !
 !  Shock tube test (should be consistent with hydro module).
 !
-          call information('init_lnrho','polytopic standing shock')
+          call information('init_lnrho','polytropic standing shock')
           do n=n1,n2; do m=m1,m2
             prof=0.5*(1.+tanh(x(l1:l2)/widthlnrho(j)))
             f(l1:l2,m,n,ilnrho)=log(rho_left(j))+ &
