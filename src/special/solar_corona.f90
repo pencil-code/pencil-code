@@ -1058,14 +1058,18 @@ module Special
     subroutine uudriver(f)
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
+      use EquationOfState, only: gamma_inv,gamma_m1,get_cp1
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
       real, dimension(nxgrid,nygrid) :: dz_uz
       real, dimension(nx,ny) :: ux_local,uy_local,uz_local
+      real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
+      real :: cp1
       integer, dimension(2) :: dims=(/nx,ny/)
 !
-      call set_B2(f)
+      call set_B2(f,BB2_local)
+      call get_cp1(cp1)
 !
       if (lroot) then
         Ux=0.0
@@ -1097,8 +1101,27 @@ module Special
         call mpirecv_real(uz_local,dims,0,314+iproc)
       endif
 !
-      f(l1:l2,m1:m2,irefz,iux) = ux_local
-      f(l1:l2,m1:m2,irefz,iuy) = uy_local
+! for footpoint quenching compute pressure
+!
+      if (ltemperature) then
+        if (ldensity_nolog) then
+          call fatal_error('solar_corona', &
+              'uudriver only implemented for ltemperature=true')
+        else
+          pp_tmp =gamma_m1*gamma_inv/cp1 * &
+              exp(f(l1:l2,m1:m2,irefz,ilnrho)+f(l1:l2,m1:m2,irefz,ilnrho))
+        endif
+      else
+        call fatal_error('solar_corona', &
+            'uudriver only implemented for ltemperature=true')
+      endif
+!
+      beta =  pp_tmp/max(tini,BB2_local)*2*mu0
+!
+      quench = (beta**2+1.)/(beta**2+3.)
+!
+      f(l1:l2,m1:m2,irefz,iux) = ux_local*quench
+      f(l1:l2,m1:m2,irefz,iuy) = uy_local*quench
       f(l1:l2,m1:m2,irefz,iuz) = 0.
       f(l1:l2,m1:m2,irefz-1,iuz) = uz_local/2.*(z(irefz)-z(irefz-1))
 !
@@ -1569,9 +1592,9 @@ endsubroutine addpoint
           dist=sqrt(dist2)
           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
           !
-          ! where the field strength is greater than 500 Gaus (0.05 Tesla)
+          ! where the field strength is greater than 200 Gaus (0.02 Tesla)
           ! avoid new granules
-          if (BB2(i,j) .gt. (0.05/u_b)**2) avoidarr(i,j)=1
+          if (BB2(i,j) .gt. (0.02/u_b)**2) avoidarr(i,j)=1
           vtmp=current%data(1)/dist
 !          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
 !              dist**2*exp(-(dist/(0.53*granr))**2)
@@ -1631,7 +1654,8 @@ endsubroutine addpoint
       current%data(4)=life_t*(1+(2*rand-1)/10.)
       current%data(3)=t+0.99*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
           (current%data(2)*granr*(1-ig))))**(1./pow)
-      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
+      current%data(1)=current%data(2)* &
+          exp(-((t-current%data(3))/current%data(4))**pow)
 !
     endsubroutine make_newpoint
 !***********************************************************************
@@ -1642,7 +1666,8 @@ endsubroutine addpoint
       dxdy=sqrt(dxdy2)
 ! MUST take care of case when first granule dissapears
 !
-      current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
+      current%data(1)=current%data(2)* &
+          exp(-((t-current%data(3))/current%data(4))**pow)
 !
       do
         if (current%data(1)/dxdy.ge.ampl/(granr*(1-ig))) exit
@@ -1689,15 +1714,18 @@ endsubroutine addpoint
 !
     endsubroutine updatepoints
 !***********************************************************************
-    subroutine set_B2(f)
+    subroutine set_B2(f,bb2_local)
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,ny) :: bbx,bby,bbz
-      real, dimension(nx,ny) :: fac,bb2_tmp,tmp
+      real, dimension(nx,ny) :: fac,bb2_local,tmp
       integer :: i,j,ipt
       integer, dimension(2) :: dims=(/nx,ny/)
+!
+      intent(in) :: f
+      intent(out) :: bb2_local
 !
 ! compute B = curl(A) for irefz layer
 !
@@ -1751,13 +1779,13 @@ endsubroutine addpoint
         if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
       endif
 !
-      BB2_tmp = bbx*bbx + bby*bby + bbz*bbz
-      BB2_tmp = BB2_tmp/(2.*mu0)
+      Bb2_local = bbx*bbx + bby*bby + bbz*bbz
+      Bb2_local = Bb2_local/(2.*mu0)
 !
 ! communicate to root processor
 !
       if (iproc.eq.0) then
-        BB2(1:nx,1:ny) = BB2_tmp
+        BB2(1:nx,1:ny) = Bb2_local
         do i=0,nprocx-1
           do j=0,nprocy-1
             ipt = i+nprocx*j
@@ -1768,7 +1796,7 @@ endsubroutine addpoint
           enddo
         enddo
       else
-        call mpisend_real(bb2_tmp,dims,0,555+iproc)
+        call mpisend_real(bb2_local,dims,0,555+iproc)
       endif
 !
     endsubroutine set_B2
