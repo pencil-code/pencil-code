@@ -3553,7 +3553,7 @@ module Boundcond
        zmin = minval(abs(z(n1:n2)))
        iref = n1
        do i=n1,n2
-         if (z(i).eq.zmin) iref=i
+         if (abs(z(i)).eq.zmin) iref=i; exit
        enddo
 !
 !   Calculate B^2 for plasma beta

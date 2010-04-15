@@ -111,7 +111,7 @@ module Special
           zref = minval(abs(z(n1:n2)))
           irefz = n1
           do i=n1,n2
-            if (z(i).eq.zref) irefz=i
+            if (abs(z(i)).eq.zref) irefz=i; exit
           enddo
 !
         endif
