@@ -32,10 +32,13 @@ class read_ts:
          logical: print_std = 0
          logical: quiet     = 0
         """
-        datadir = os.path.expanduser(datadir)
-        infile = open(datadir+'/'+filename, "r")
-        lines = infile.readlines()
-        infile.close()
+        try:
+            datadir = os.path.expanduser(datadir)
+            infile = open(datadir+'/'+filename, "r")
+            lines = infile.readlines()
+            infile.close()
+        except IOError:
+            return
     
         # need to handle cases where restart AND print.in changes, 
         # but not right away
