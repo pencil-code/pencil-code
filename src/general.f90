@@ -1455,9 +1455,9 @@ end do
 !
       implicit none
 !
+      integer :: i,n
       real, dimension(n) :: a,b,c,r,x,bb,u,z
       real    :: alpha,beta,gamma,fact      
-      integer :: i,n
 !
       if (n <= 2) stop "cyclic in the general module: n too small"
       gamma=-b(1)
