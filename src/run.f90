@@ -195,7 +195,7 @@ program run
     mvar_io=mvar
   endif
 !
-! Shall we read also auxilary variables?
+! Shall we read also auxiliary variables?
 !
   if (lread_aux) then
     mvar_in=mvar+maux
