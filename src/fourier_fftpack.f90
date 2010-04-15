@@ -1686,8 +1686,8 @@ module Fourier
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension (na) :: a
       integer, intent (in) :: na,ifirst_fft
+      real, dimension (na) :: a
       logical, optional :: linv
       real, dimension (2*na+15) :: wsavex_temp  
 !
