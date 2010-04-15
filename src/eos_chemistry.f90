@@ -777,8 +777,6 @@ module EquationOfState
       real, dimension(psize), optional :: lnrho,lnTT
       real, dimension(psize), optional :: yH,ee,pp,kapparho
 !
-      lnrho=1.
-      lnTT=1.
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(present(lnrho),present(lnTT))
       call keep_compiler_quiet(present(yH),present(ee))
