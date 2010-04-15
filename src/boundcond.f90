@@ -3769,7 +3769,7 @@ module Boundcond
       endwhere
       !
       call fourier_transform_other(A_r,A_i,linv=.true.)
-      f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+      f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
       !
       !  then Ay component:
       where (k2 .ne. 0 )
@@ -3781,7 +3781,7 @@ module Boundcond
       endwhere
       !
       call fourier_transform_other(A_r,A_i,linv=.true.)
-      f(l1:l2,m1:m2,n1,iay) = A_r(ipx*nx+1:(ipx+1)*nx+1,ipy*ny+1:(ipy+1)*ny+1)
+      f(l1:l2,m1:m2,n1,iay) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
       !
       if (allocated(Bz0_r)) deallocate(Bz0_r)
       if (allocated(Bz0_i)) deallocate(Bz0_i)
