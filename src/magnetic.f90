@@ -80,7 +80,7 @@ module Magnetic
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
-  character (len=labellen) :: EMF_profile='nothing'
+  character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
   character (len=labellen) :: fring_profile='tanh'
 !
 ! Input parameters
@@ -220,6 +220,7 @@ module Magnetic
   logical :: lEMF_profile=.false.
   logical :: lhalox=.false.
   logical :: lalpha_profile_total=.false.
+  logical :: ldelta_profile=.false.
   logical :: lrun_initaa=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
@@ -228,7 +229,8 @@ module Magnetic
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, omega_Bz_ext, nu_ni, &
       hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
-      delta_effect, alpha_eps, lmeanfield_noalpm, alpha_profile, &
+      alpha_eps, lmeanfield_noalpm, alpha_profile, &
+      ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_Qs, meanfield_Qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
@@ -254,7 +256,7 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total,eta_jump,&
+      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump,&
       Omega_rmax,Omega_rwidth,lrun_initaa
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -1392,7 +1394,8 @@ module Magnetic
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
       if ((lhydro .and. llorentzforce) .or. nu_ni/=0.0) &
           lpenc_requested(i_jxbr)=.true.
-      if (lresi_smagorinsky_cross .or. delta_effect/=0.0) &
+      if (lresi_smagorinsky_cross &
+          .or. (delta_effect/=0.0.and..not.ldelta_profile)) &
           lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.0) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
@@ -1706,7 +1709,7 @@ module Magnetic
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb,alpha_total
-      real, dimension (nx) :: alpha_tmp
+      real, dimension (nx) :: alpha_tmp, delta_tmp
       real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: jcrossb2
       real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func, meanfield_qe_func
@@ -2091,6 +2094,17 @@ module Magnetic
             'alpha_profile no such alpha profile')
         endselect
 !
+!  delta effect
+!
+        select case (delta_profile)
+        case ('const'); delta_tmp=1.
+        case ('cos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)
+        case ('sincos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)*sin(.5*z(n))
+        case default;
+          call inevitably_fatal_error('calc_pencils_magnetic', &
+            'delta_profile no such delta profile')
+        endselect
+!
 !  Possibility of dynamical alpha.
 !
         if (lalpm.and..not.lmeanfield_noalpm) then
@@ -2112,7 +2126,15 @@ module Magnetic
 !
 !  Add possible delta x J effect and turbulent diffusion to EMF.
 !
-        if (delta_effect/=0.0) p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
+        if (ldelta_profile) then
+          p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
+        else
+          p%mf_EMF(:,1)=p%mf_EMF(:,1)-delta_effect*delta_tmp*p%jj(:,2)
+          p%mf_EMF(:,2)=p%mf_EMF(:,2)+delta_effect*delta_tmp*p%jj(:,1)
+        endif
+!
+!  Compute diffusion term
+!
         if (meanfield_etat/=0.0) then
           if (lweyl_gauge) then
             if (meanfield_etaB/=0.0) then

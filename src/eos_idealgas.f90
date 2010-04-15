@@ -2144,8 +2144,14 @@ module EquationOfState
 !
 !  calculate Fbot/(K*cs2)
 !
-        rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        
+        if (ldensity_nolog) then
+          rho_xy=f(:,:,n1,irho)
+          cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n1,irho))-lnrho0)+cv1*f(:,:,n1,iss))
+        else
+          rho_xy=exp(f(:,:,n1,ilnrho))
+          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+        endif
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
@@ -2159,8 +2165,13 @@ module EquationOfState
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
+          if (ldensity_nolog) then
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
+              (log(f(:,:,n1+i,irho)/f(:,:,n1-i,irho))+2*i*dz*tmp_xy)
+          else
+            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)* &
               (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+          endif
         enddo
 !
 !  top boundary
@@ -2560,12 +2571,23 @@ module EquationOfState
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
-           tmp = 2*cv*log(cs2top/cs20)
-           f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n2,ilnrho)-lnrho0)
-           do i=1,nghost
+!
+!  Distinguish cases for linear and logarithmic density 
+!
+          tmp = 2*cv*log(cs2top/cs20)
+          if (ldensity_nolog) then
+            f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(alog(f(:,:,n2,irho))-lnrho0)
+            do i=1,nghost
+              f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
+                   - (cp-cv)*(log(f(:,:,n2-i,irho)*f(:,:,n2+i,irho))-2*lnrho0)
+            enddo
+          else
+            f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n2,ilnrho)-lnrho0)
+            do i=1,nghost
               f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
                    - (cp-cv)*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
-           enddo
+            enddo
+          endif
         elseif (lentropy .and. pretend_lnTT) then
             f(:,:,n2,iss) = log(cs2top/gamma_m1)
             do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
