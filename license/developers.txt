@@ -13,12 +13,13 @@ Name,            email,                    office,            mobile/home/altern
 ---------------------------------------------------------------------------------------------------------------------
 Natalia Babkovskaia, nbabkovskaia/gmail.com  +358 8 553 1939   +358 40 5286784
 Steve Berukoff,   steveb/physics.ucla.edu
-Sven Bingert,     bingert/mps.mpg.de,       +495556979358,    +491792126192, bingert 
-Axel Brandenburg, brandenb/nordita.org,     +46 8 5537 8707 +46 70 574 0650, brandenb, axelbrandenburg
+Sven Bingert,     bingert/mps.mpg.de,      +49-5556-979-358,  +491792126192, bingert 
+Philippe Bourdin, bourdin/mps.mpg.de,      +49-5556-979-408,  +49-5551-5893072, Bourdin.KIS
+Axel Brandenburg, brandenb/nordita.org,    +46 8 5537 8707,   +46 70 574 0650, brandenb, axelbrandenburg
 Simon Candelaresi, iomsn1/gmail.com        +46 8 5537 8277,   +46 737204349, iomsn, iomsn1
 Piyali Chatterjee, mppiyali/gmail.com,     +46-8-5537-8375,   +46 738794457
 Fabio Del Sordo, fabio/nordita.org         +46 8 5537 8277
-Boris Dintrans,   dintrans/ast.obs-mip.fr   +33 5 6133 2811    +33 6 61 24 79 83, boris.dintrans, bdintrans
+Boris Dintrans,   dintrans/ast.obs-mip.fr  +33 5 6133 2811    +33 6 61 24 79 83, boris.dintrans, bdintrans
 Wolfgang Dobler, wdobler/gmail.com,        +49 33201 43791,   +49 1520 4056 762, +49 305331 12083 (office), wdobler, mob (new): +49 1 51 281 23 472
 Fred A. Gent,    f.a.gent/newcastle.ac.uk
 Gustavo Guerrero, tavo.buk/gmail.com,      +468 5537 8718,    +46 76 089 1432
