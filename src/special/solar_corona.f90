@@ -1301,18 +1301,18 @@ module Special
 ! w(:,:) should now be free!!
 !
       if (level .eq. 3 .or. level .eq. 0) then
-        !
-        ! Putting sum of velocities back into vx,vy
+!
+! Putting sum of velocities back into vx,vy
         vx=Ux(:,:)
         vy=Uy(:,:)
-        !
-        ! Calculating and enhancing rotational part by factor 5
+!
+! Calculating and enhancing rotational part by factor 5
         call helmholtz(wscr,wscr2)
         nvor = 15.0  !* war vorher 5 ; zum testen auf  50
         vx=(vx+nvor*wscr )
         vy=(vy+nvor*wscr2)
-        !
-        ! Normalize to given total rms-velocity
+!
+! Normalize to given total rms-velocity
         vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+1e-30
 !
         if (unit_system.eq.'SI') then
@@ -1573,9 +1573,9 @@ endsubroutine addpoint
 !***********************************************************************
     subroutine drawupdate
 !
-      real :: xdist,ydist,dist2,dist,vtmp,vtmp2
+      real :: xdist,ydist,dist2,dist,wtmp,vv
       integer :: i,ii,j,jj
-      real :: mu0_SI,u_b
+      real :: mu0_SI,u_b,dist0,tmp
 
       mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
@@ -1590,25 +1590,30 @@ endsubroutine addpoint
           ydist=dy*(jj-(current%pos(2)))
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
-          if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
-          !
-          ! where the field strength is greater than 200 Gaus (0.02 Tesla)
-          ! avoid new granules
+!
+! avoid granules where the field strength is greater than 200 Gaus (0.02 Tesla)
+!
           if (BB2(i,j) .gt. (0.02/u_b)**2) avoidarr(i,j)=1
-          vtmp=current%data(1)/dist
-!          vtmp2=(1.6*2.*exp(1.0)/(0.53*granr)**2)*current%data(1)* &
-!              dist**2*exp(-(dist/(0.53*granr))**2)
-          vtmp2=(1.6*2.*2.71828/(0.53*granr)**2)*current%data(1)* &
-              dist**2*exp(-(dist/(0.53*granr))**2)
-          if (vtmp.gt.w(i,j)*(1-ig)) then
-            if (vtmp.gt.w(i,j)*(1+ig)) then
-              vx(i,j)=vtmp2*xdist/dist
-              vy(i,j)=vtmp2*ydist/dist
-              w(i,j)=vtmp
+          if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
+!
+          wtmp=current%data(1)/dist
+!
+          dist0 = 0.53*granr
+          tmp = (dist/dist0)**2
+!
+          vv=exp(1.)*current%data(1)*tmp*exp(-tmp)
+!
+          if (wtmp.gt.w(i,j)*(1-ig)) then
+            if (wtmp.gt.w(i,j)*(1+ig)) then
+              ! granular area
+              vx(i,j)=vv*xdist/dist
+              vy(i,j)=vv*ydist/dist
+              w(i,j) =wtmp
             else
-              vx(i,j)=vx(i,j)+vtmp2*xdist/dist
-              vy(i,j)=vy(i,j)+vtmp2*ydist/dist
-              w(i,j)=max(w(i,j),vtmp)
+              ! intergranular area
+              vx(i,j)=vx(i,j)+vv*xdist/dist
+              vy(i,j)=vy(i,j)+vv*ydist/dist
+              w(i,j) =max(w(i,j),wtmp)
             end if
           endif
         enddo
@@ -1651,9 +1656,11 @@ endsubroutine addpoint
       call random_number_wrapper(rand)
       current%data(2)=ampl*(1+(2*rand-1)*pd)
       call random_number_wrapper(rand)
+
       current%data(4)=life_t*(1+(2*rand-1)/10.)
       current%data(3)=t+0.99*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
           (current%data(2)*granr*(1-ig))))**(1./pow)
+
       current%data(1)=current%data(2)* &
           exp(-((t-current%data(3))/current%data(4))**pow)
 !
