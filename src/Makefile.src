@@ -1084,6 +1084,19 @@ endif
 #CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
 ##
+##HP CP4000 BL Proliant supercluster
+##Vuori - (Espoo, Finland)
+##
+#FC=mpif90 #(vuori)
+#F90=$(FC) #(vuori)
+#CC=mpicc #(vuori)
+##FFLAGS=-O2 -Mrecursive -mcmodel=medium #(vuori)
+#FFLAGS=-O2 -Mrecursive #(vuori)
+#CFLAGS=-DFUNDERSC=1 -O3 #(vuori)
+#LD_MPI= #(vuori)
+#FFLAGS_DOUBLE=-r8 #(vuori)
+##
+##
 ## Steve's test cluster
 ##
 #FC=mpif90 #(asd|kool)
