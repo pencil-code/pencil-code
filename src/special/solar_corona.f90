@@ -1283,8 +1283,8 @@ module Special
           endif
         end do
         do
-          if (minval(w(:,:)/(1-avoidarr(:,:)+1e-20)).ge. &
-              ampl/(granr*(1+ig)+sqrt(dxdy2))) then
+          if (minval(w/(1-avoidarr+1e-20)).ge. &
+              ampl/(granr*(1+ig))) then
             exit
           endif
           call addpoint
@@ -1316,15 +1316,15 @@ module Special
         vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+1e-30
 !
         if (unit_system.eq.'SI') then
-          vtot=0.3*1e3/unit_velocity
+          vtot=3.*1e3/unit_velocity
         elseif (unit_system.eq.'cgs') then
-          vtot=0.3*1e5/unit_velocity
+          vtot=3.*1e5/unit_velocity
         endif
 !
         vx=vx*vtot/vrms
         vy=vy*vtot/vrms
-        !
-        ! Reinserting rotationally enhanced and beta quenched velocity field
+!
+! Reinserting rotationally enhanced and beta quenched velocity field
         Ux(:,:)=vx
         Uy(:,:)=vy
       endif
@@ -1630,7 +1630,7 @@ endsubroutine addpoint
       real :: rand
 !
       k(:,:)=0
-      where (w/(1-avoidarr+1e-20).lt.ampl/(granr*(1+ig))) k=1
+      where (avoidarr.eq.0.and.w.lt.ampl/(granr*(1+ig))) k=1
 !
 ! Choose and find location of one of them
 !
