@@ -4,6 +4,7 @@
 Class for reading and writing numpy arrays from / to binary files
 """
 
+import struct
 import sys
 
 import numpy as N
@@ -223,6 +224,41 @@ class npfile(object):
             return arr.byteswap()
         return arr.copy()
 
+    def fort_write(self,data,endian=None,order=None,head_size=4):
+        """Write a Fortran binary record from a numpy array
+
+        Inputs:
+
+          fmt -- If a string then it represents the same format string as
+                 used by struct.pack.  The remaining arguments are passed
+                 to struct.pack.
+
+                 If fmt is an array, then this array will be written as
+                 a Fortran record using the output type args[0].
+
+          *args -- Arguments representing data to write.
+        """
+        endian, order = self._endian_order(endian, order)
+        if endian == '<':
+            nfmt = "<"
+        elif endian == '>':
+            nfmt = ">"
+        else:
+            nfmt = ""
+        if head_size == 4:
+            nfmt+= 'i'
+        elif head_size == 8:
+            nfmt+='L'
+        else:
+            raise TypeError, "Unknown head_size. Valid vaules are 4 & 8."
+
+        #outstr = struct.pack(data.dtype,data.tostring(order=order))
+        outstr = data.tostring(order=order)
+        strlen = struct.pack(nfmt,len(outstr))
+        self.file.write(strlen)
+        self.file.write(outstr)
+        self.file.write(strlen)
+
     def fort_read(self, dt, shape=-1, endian=None, order=None, head_size=4):
         '''Read data from a fortran binary record and return it in a numpy array.
 
@@ -287,4 +323,3 @@ class npfile(object):
         if (not endian == 'dtype') and (dt_endian != endian):
             return arr.byteswap()
         return arr.copy()
-        

@@ -12,13 +12,13 @@ import os
 
 def read_param(datadir='data/',param2=False,quiet=False):
 
-    if (not datadir.endswith('/')): datadir += '/'
+
     datadir = os.path.expanduser(datadir)
 
     if (param2):
-        filen = datadir+'/param2.nml'
+        filen = os.path.join(datadir,'param2.nml')
     else:
-        filen = datadir+'/param.nml'
+        filen = os.path.join(datadir,'param.nml')
 
     # will need to read dim.dat to deal with precision, should that be necessary
     #dim = read_dim(datadir)
@@ -26,7 +26,7 @@ def read_param(datadir='data/',param2=False,quiet=False):
     # execute output of nl2python script
     if (not os.path.exists(filen)):
         print "read_param: no such file",filen
-        return -1
+        raise ValueError
     
     cmd = 'nl2python '+filen
     script = os.popen(cmd).read()

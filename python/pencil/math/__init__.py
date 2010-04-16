@@ -1,1 +1,4 @@
-__all__ = ["derivatives","vector_multiplication"]
+import numpy as N
+
+from vector_multiplication import *
+from derivatives import *

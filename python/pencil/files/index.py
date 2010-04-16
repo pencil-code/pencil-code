@@ -1,5 +1,5 @@
 #$Id$
-
+import os
 from pencil import read_param, read_dim
 
 class read_index(dict):
@@ -21,9 +21,6 @@ class read_index(dict):
          -------      
             a read_index class
         """
-        if datadir.endswith('/'):
-            datadir += '/'
-
         if param is None:
             param = read_param(datadir=datadir, quiet=True)
         if dim is None:
@@ -34,7 +31,7 @@ class read_index(dict):
         else:
             totalvars = dim.mvar
 
-        f = open(datadir+'index.pro')
+        f = open(os.path.join(datadir,'index.pro'))
         for line in f.readlines():
             clean = line.strip()
             name=clean.split('=')[0].strip()

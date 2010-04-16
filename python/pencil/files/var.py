@@ -56,6 +56,7 @@ class read_var:
             run2D=False
         """
         datadir = os.path.expanduser(datadir)
+
         if dim is None:
             dim = read_dim(datadir,proc) 
         if param is None:
@@ -114,7 +115,7 @@ class read_var:
             mzloc = procdim.mz
 
             #read data
-            filename = datadir+directory+'/'+varfile
+            filename = os.path.join(datadir,directory,varfile)
             infile = npfile(filename, endian=format)
             if (not run2D):
                 f_loc = infile.fort_read(precision, 
