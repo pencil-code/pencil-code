@@ -204,6 +204,17 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
+    subroutine calc_lentropy_pars(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lentropy_pars
+!***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to entropy

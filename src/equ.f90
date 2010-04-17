@@ -290,6 +290,7 @@ module Equ
       call timing('pde','before calc_lhydro_pars')
       if (lhydro.and.ldensity)    call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
+      if (lentropy)               call calc_lentropy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (ltestscalar)            call calc_ltestscalar_pars(f)
       if (ltestfield)             call calc_ltestfield_pars(f,p)

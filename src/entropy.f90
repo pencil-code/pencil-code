@@ -77,6 +77,7 @@ module Entropy
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lcooling_general=.false.
   logical :: lupw_ss=.false.
+  logical :: lcalc_ssmean=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
@@ -90,6 +91,12 @@ module Entropy
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
+!
+!  xy-averaged field
+!
+  real, dimension (mz) :: ssmz
+  real, dimension (nz,3) :: gssmz
+  real, dimension (nz) :: del2ssmz
 !
 !  Input parameters.
 !
@@ -114,6 +121,7 @@ module Entropy
       zheat_buffer, dheat_buffer1, heat_uniform, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
+      lcalc_ssmean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
       mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
       tau_diff, lfpres_from_pressure
@@ -2656,6 +2664,48 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine calc_lentropy_pars(f)
+!
+!  Calculate <s>, which is needed for diffusion with respect to xy-flucts
+!
+!  17-apr-10/axel: adapted from calc_lmagnetic_pars
+!
+      use Mpicomm, only: mpiallreduce_sum
+      use Deriv, only: der_z,der2_z
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: nxy=nxgrid*nygrid
+      integer :: n,j
+      real :: fact
+      real, dimension (mz) :: ssmz1_tmp
+!
+      intent(inout) :: f
+!
+!  Compute mean field for each component. Include the ghost zones,
+!  because they have just been set.
+!
+      if (lcalc_ssmean) then
+        fact=1./nxy
+        do n=1,mz
+          ssmz(n)=fact*sum(f(l1:l2,m1:m2,n,iss))
+        enddo
+!
+!  communication over all processors in the xy plane
+!
+        if (nprocx>1.or.nprocy>1) then
+          call mpiallreduce_sum(ssmz,ssmz1_tmp,mz,idir=12)
+          ssmz=ssmz1_tmp
+        endif
+!
+!  Compute first and second derivatives.
+!
+        gssmz(:,1:2)=0.
+        call der_z(ssmz,gssmz(:,3))
+        call der2_z(ssmz,del2ssmz)
+      endif
+!
+    endsubroutine calc_lentropy_pars
 !**********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
@@ -3419,11 +3469,12 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof !,glnT
+      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof,gss1 !,glnT
       real, dimension (nx) :: chix
-      real, dimension (nx) :: thdiff,g2
+      real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: hcond,chit_prof
       real, save :: z_prev=-1.23e20
+      integer :: j
 !
       save :: hcond, glhc, chit_prof, glchit_prof
 !
@@ -3445,7 +3496,9 @@ module Entropy
           print*,'calc_heatcond: lgravz=',lgravz
           if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
         endif
-
+!
+!  Assume that a vertical K profile is given if lgravz is true.
+!
         if (lgravz) then
           ! For vertical geometry, we only need to calculate this
           ! for each new value of z -> speedup by about 8% at 32x32x64
@@ -3484,8 +3537,8 @@ module Entropy
 !  where chix = K/(cp rho) is needed for diffus_chi calculation
 !
         chix = p%rho1*hcond*p%cp1
-     glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-!        glnThcond = p%glnTT + glhc*spread(1./hcond,2,3)    ! grad ln(T*hcond)
+        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+!       glnThcond = p%glnTT + glhc*spread(1./hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)
       endif  ! hcond0/=0
@@ -3522,8 +3575,15 @@ module Entropy
 !
 !  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
 !
-        call dot(p%glnrho+p%glnTT+glchit_prof,p%gss,g2)
-        thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
+        if (lcalc_ssmean) then
+          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+          del2ss1=p%del2ss-del2ssmz(n-n1+1)
+          call dot(p%glnrho+p%glnTT+glchit_prof,gss1,g2)
+          thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
+        else
+          call dot(p%glnrho+p%glnTT+glchit_prof,p%gss,g2)
+          thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
+        endif
       endif
 !
 !  check for NaNs initially

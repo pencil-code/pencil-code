@@ -595,6 +595,17 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
+    subroutine calc_lentropy_pars(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lentropy_pars
+!***********************************************************************
     subroutine calc_heatcond_constchi(f,df,p)
 !
 !  Heat conduction for constant value of chi=K/(rho*cp)

@@ -274,6 +274,17 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
+    subroutine calc_lentropy_pars(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lentropy_pars
+!***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
