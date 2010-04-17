@@ -3342,7 +3342,6 @@ module Initcond
       if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_VECT: i1,i2=',i1,i2
       do n=1,mz; do m=1,my
         do i=i1,i2
-          print*, m, n
           if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
           if (modulo(i-i1,2)==0) then
             call random_number_wrapper(r)
