@@ -3292,7 +3292,6 @@ module Chemistry
 !  in the chemkin manual)
 !
       do k=1,nchemspec
-       if (species_constants(k,imass)>0.) then
         xdot=0.
         do j=1,nreactions
           xdot=xdot+stoichio(k,j)*vreactions(:,j)
@@ -3305,9 +3304,6 @@ module Chemistry
          endif
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
-       else
-        p%DYDt_reac(:,k)=0.
-       endif
       enddo
 !
 ! NH:

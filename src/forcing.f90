@@ -324,6 +324,9 @@ module Forcing
      elseif (iforcing_cont=='KolmogorovFlow-x') then
         if (lroot) print*,'forcing_cont: Kolmogorov flow'
         cosx=cos(k1_ff*x)
+     elseif (iforcing_cont=='KolmogorovFlow-z') then
+        if (lroot) print*,'forcing_cont: Kolmogorov flow z'
+        cosz=cos(k1_ff*z)
       elseif (iforcing_cont=='TG') then
         if (lroot) print*,'forcing_cont: TG'
         sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -3053,6 +3056,11 @@ module Forcing
           force(:,1)=0
           force(:,2)=fact*cosx(l1:l2)
           force(:,3)=0
+        elseif (iforcing_cont=='KolmogorovFlow-z') then
+          fact=ampl_ff
+          force(:,1)=fact*cosz(l1:l2)
+          force(:,2)=0.
+          force(:,3)=0.
         elseif (iforcing_cont=='RobertsFlow-zdep') then
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
           fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
