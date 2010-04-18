@@ -109,9 +109,10 @@ module Param_IO
       fshift_int, fshift_ext, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, &
       fbcx1_2, fbcx2_2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, Udrift_bc, &
       ttransient, tavg, idx_tavg, lserial_io, nr_directions, lsfu, lsfb, &
-      lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, oned, lwrite_aux, &
+      lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, lwrite_aux, &
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
-      lwrite_dvar, force_lower_bound, force_upper_bound, twod, border_frac_x, &
+      lwrite_dvar, force_lower_bound, force_upper_bound, border_frac_x, &
+      oned, twod, powerspectrum_xy, &
       border_frac_y, border_frac_z, lpoint, mpoint, npoint, lpoint2, mpoint2, &
       npoint2, lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &

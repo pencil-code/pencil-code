@@ -399,7 +399,7 @@ module Cdata
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: lr_spec=.false.,r2u_spec=.false.,r3u_spec=.false.
   logical :: ou_spec=.false.,ab_spec=.false.,ub_spec=.false.
-  logical :: oned=.false.,twod=.false.
+  logical :: oned=.false.,twod=.false.,powerspectrum_xy=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
   logical :: gcc_pdf=.false.,lngcc_pdf=.false.
