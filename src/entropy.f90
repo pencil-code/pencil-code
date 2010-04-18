@@ -55,6 +55,7 @@ module Entropy
   real :: Kbot=impossible, Ktop=impossible
   real :: hcond2=impossible
   real :: chit_prof1=1.0, chit_prof2=1.0
+  real :: chit_aniso=0.0
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
   real :: zheat_buffer=0.0, dheat_buffer1=0.0
@@ -124,7 +125,7 @@ module Entropy
       lcalc_ssmean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
       mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
-      tau_diff, lfpres_from_pressure
+      tau_diff, lfpres_from_pressure, chit_aniso
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -3473,6 +3474,7 @@ module Entropy
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: hcond,chit_prof
+      real, dimension (nx,3,3) :: tmp
       real, save :: z_prev=-1.23e20
       integer :: j
 !
@@ -3584,6 +3586,75 @@ module Entropy
           call dot(p%glnrho+p%glnTT+glchit_prof,p%gss,g2)
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
         endif
+      endif
+!
+!  Turbulent entropy diffusion with rotational anisotropy:
+!    chi_ij = chi_t*(delta_{ij} + chit_aniso*Om_i*Om_j),
+!  where chit_aniso=chi_Om/chi_t. The first term is the isotropic part, 
+!  which is already dealt with above. The current formulation works only 
+!  in spherical coordinates. Here we assume axisymmetry so all off-diagonals
+!  involving phi-indices are neglected.
+!
+      if (chit_aniso/=0. .and. lspherical_coords) then
+        if (headtt) then
+          print*,'calc_headcond: anisotropic "turbulent" entropy diffusion: chit_aniso=',chit_aniso
+          if (hcond0 /= 0) then
+            call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
+          endif
+        endif
+!
+!  terms involving radial gradient of s
+!
+        thdiff=thdiff+chi_t*chit_aniso*(glchit_prof(:,1)*costh(m)**2 &
+                     +chit_prof*(sinth(m)**2)/x(l1:l2))*p%gss(:,1)
+!
+!  terms involving latitudinal gradient of s
+!
+        thdiff=thdiff+chi_t*chit_aniso*costh(m)*sinth(m) &
+                     *(2.*chit_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2)
+!
+!  2nd derivatives of s
+!
+        call g2ij(f,iss,tmp)
+        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
+                     (-sinth(m)*costh(m)*tmp(:,1,2)/x(l1:l2) &
+                      -sinth(m)*costh(m)*tmp(:,2,1)/x(l1:l2) &
+                +costh(m)**2*tmp(:,1,1)+sinth(m)**2*tmp(:,2,2)/(x(l1:l2)**2))
+!
+!  terms involving glnr and glnT
+!
+        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
+               ((p%glnrho(:,1)+p%glnTT(:,1))*(costh(m)**2*p%gss(:,1) &
+                                    -sinth(m)*costh(m)*p%gss(:,2)) + &
+                (p%glnrho(:,2)+p%glnTT(:,2))*(sinth(m)**2*p%gss(:,2) &
+                                    -sinth(m)*costh(m)*p%gss(:,1)))
+!
+!  PJK: Simplified formulation starts
+!
+!  terms involving radial gradient of s
+!
+!        thdiff=thdiff+chi_t*chit_aniso*chit_prof*(1.-3.*costh(m)**2)*r1_mn*p%gss(:,1)
+!
+!  terms involving latitudinal gradient of s
+!
+!        thdiff=thdiff-chi_t*chit_aniso*costh(m)*sinth(m) &
+!                     *(chit_prof*r1_mn+glchit_prof(:,1))*p%gss(:,2)
+!
+!  2nd derivatives of s
+!
+!        call g2ij(f,iss,tmp)
+!        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
+!                     (-r1_mn*sinth(m)*costh(m)*tmp(:,1,2) &
+!                      -r1_mn*sinth(m)*costh(m)*tmp(:,2,1))
+!
+!  terms involving glnr and glnT
+!
+!        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
+!          ((p%glnrho(:,1)+p%glnTT(:,1))*(-sinth(m)*costh(m)*p%gss(:,2)) + &
+!           (p%glnrho(:,2)+p%glnTT(:,2))*(-sinth(m)*costh(m)*p%gss(:,1)))
+!
+!  PJK: Simplified formulation ends
+!
       endif
 !
 !  check for NaNs initially
@@ -3815,7 +3886,6 @@ module Entropy
            if (rcool==0.) rcool=r_ext
            prof = step(x(l1:l2),rcool,wcool)
            heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
-           
         case default
           write(unit=errormsg,fmt=*) &
                'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
