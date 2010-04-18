@@ -30,6 +30,16 @@ module power_spectrum
 !
     endsubroutine power_2d
 !***********************************************************************
+    subroutine power_xy(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=1) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine power_xy
+!***********************************************************************
     subroutine powerhel(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
