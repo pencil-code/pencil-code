@@ -47,7 +47,12 @@ nlines=long(nlines[0])
 nit=nlines/(1L+nvar*nz/8L)
 
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
-
+;
+;  Generate command name. Note that an empty line in the xyaver.in
+;  file will lead to problems. If this happened, you may want to replace
+;  the empty line by a non-empty line rather than nothing, so you can
+;  read the data with idl.
+;
 for i=0,nvar-1 do begin
   cmd=varnames[i]+'=fltarr(nz,nit)*one'
   if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
