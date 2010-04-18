@@ -344,30 +344,25 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
       use Cdata
-      use Mpicomm, only: stop_it_if_any
+      use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      logical :: ioerr
+      integer :: ierr
+      integer :: unit=1
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = t
-      ioerr = .true.            ! will be overridden unless we go 911
-      open(1,FILE=file,FORM='unformatted',err=911)
-      write(1) t_sp,x,y,z,dx,dy,dz
-      write(1) dx,dy,dz
-      write(1) Lx,Ly,Lz
-      write(1) dx_1,dy_1,dz_1
-      write(1) dx_tilde,dy_tilde,dz_tilde
-      close(1)
-      ioerr = .false.
-!
-!  Something went wrong. Catches cases that would make mpich 1.x hang,
-!  provided that this is the first collective write call
-!
-911   call stop_it_if_any(ioerr, &
+      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")
-
+      write(unit) t_sp,x,y,z,dx,dy,dz
+      write(unit) dx,dy,dz
+      write(unit) Lx,Ly,Lz
+      write(unit) dx_1,dy_1,dz_1
+      write(unit) dx_tilde,dy_tilde,dz_tilde
+      close(unit)
+!
     endsubroutine wgrid
 !***********************************************************************
     subroutine rgrid (file)
@@ -381,29 +376,34 @@ contains
       use Cdata
       use Mpicomm, only: stop_it
 !
-      integer :: iostat
       character (len=*) :: file
+!
+      integer :: ierr
+      integer :: unit=1
       real :: t_sp   ! t in single precision for backwards compatibility
 !
 !  if xiprim etc is not written, just ignore it
 !
-      open(1,FILE=file,FORM='unformatted')
-      read(1) t_sp,x,y,z,dx,dy,dz
-      read(1) dx,dy,dz
-      read(1,IOSTAT=iostat) Lx,Ly,Lz
-      read(1,end=990) dx_1,dy_1,dz_1
-      read(1) dx_tilde,dy_tilde,dz_tilde
-990   close(1)
+      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      if (ierr /= 0) call stop_it( &
+          "Cannot open " // trim(file) // " (or similar) for reading" // &
+          " -- is data/ visible from all nodes?")
+      read(unit) t_sp,x,y,z,dx,dy,dz
+      read(unit) dx,dy,dz
+      read(unit,IOSTAT=ierr) Lx,Ly,Lz
+      read(unit,end=990) dx_1,dy_1,dz_1
+      read(unit) dx_tilde,dy_tilde,dz_tilde
+990   close(unit)
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
 !  We should keep this for the time being
 !
-      if (iostat /= 0) then
-        if (iostat < 0) then
+      if (ierr /= 0) then
+        if (ierr < 0) then
           print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
         else
-          print*, 'rgrid: IOSTAT=', iostat
+          print*, 'rgrid: IOSTAT=', ierr
           call stop_it("rgrid: I/O error")
         endif
       endif
@@ -441,22 +441,21 @@ contains
 !   10-jul-08/kapelrud: coded
 !
       use Cdata, only: procx_bounds,procy_bounds,procz_bounds
-      use Mpicomm, only: stop_it_if_any
+      use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      logical :: ioerr=.true.
+      integer :: ierr
+      integer :: unit=20
 !
-      open(20,FILE=file,FORM='unformatted',err=930)
-      write(20) procx_bounds
-      write(20) procy_bounds
-      write(20) procz_bounds
-      close(20)
-      ioerr=.false.
-
-930   call stop_it_if_any(ioerr, &
+      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")
-
+      write(unit) procx_bounds
+      write(unit) procy_bounds
+      write(unit) procz_bounds
+      close(unit)
+!
     endsubroutine wproc_bounds
 !***********************************************************************
     subroutine rproc_bounds(file)
@@ -466,15 +465,16 @@ contains
 !   10-jul-08/kapelrud: coded
 !
       use Cdata, only: procx_bounds,procy_bounds,procz_bounds
-      use Mpicomm, only: stop_it_if_any
 !
       character (len=*) :: file
 !
-      open(1,FILE=file,FORM='unformatted')
-      read(1) procx_bounds
-      read(1) procy_bounds
-      read(1) procz_bounds
-      close(1)
+      integer :: unit=1
+!
+      open(unit,FILE=file,FORM='unformatted')
+      read(unit) procx_bounds
+      read(unit) procy_bounds
+      read(unit) procz_bounds
+      close(unit)
 !
     endsubroutine rproc_bounds
 !***********************************************************************

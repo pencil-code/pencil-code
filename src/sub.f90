@@ -4069,112 +4069,65 @@ nameloop: do
 !***********************************************************************
       subroutine remove_file(fname)
 !
-!  Remove a file; this variant seems to be portable
+!  Remove a file
 !  5-mar-02/wolf: coded
 !
+        use Syscalls, only: file_exists
+!
         character (len=*) :: fname
-        logical :: exist
 !
-!  check whether file exists
+        logical :: removed = .false.
 !
-        inquire(FILE=fname,exist=exist)
-!
-!  remove file
-!
-        if (exist) then
-          if (ip<=6) print*,'remove_file: Removing file <',trim(fname),'>'
-          open(1,FILE=fname)
-          close(1,STATUS='DELETE')
-        endif
+        removed = file_exists(fname,DELETE=.true.)
+        if (removed .and. (ip<=6)) print*,'remove_file: Removed file <',trim(fname),'>'
 !
       endsubroutine remove_file
-!***********************************************************************
-      subroutine touch_file(fname)
-!
-!  touch file (used for code locking)
-!  25-may-03/axel: coded
-!
-        character (len=*) :: fname
-!
-        open(1,FILE=fname)
-        close(1)
-!
-      endsubroutine touch_file
 !***********************************************************************
       function control_file_exists(fname, delete)
 !
 !  Does the given control file exist in either ./ or ./runtime/ ?
 !  If DELETE is true, delete the file after checking for existence.
-!  Does nothing and returns .false. on any non-root MPI node.
 !
 !  26-jul-09/wolf: coded
+!
+        use Mpicomm, only : parallel_file_exists
+!
+        implicit none
 !
         logical :: control_file_exists
         character (len=*) :: fname
         logical, optional :: delete
-        logical :: delete1, exists
 !
-        if (present(delete)) then
-          delete1 = delete
-        else
-          delete1 = .false.
-        endif
-
-        exists = file_exists(trim("./" // fname), delete1)
-        if (.not. exists) then
-          exists = file_exists(trim("./runtime/" // fname), delete1)
-        endif
-        control_file_exists = exists
-
+        control_file_exists = parallel_file_exists(trim(fname), delete)
+        if (.not. control_file_exists) &
+            control_file_exists = parallel_file_exists(trim("runtime/"//fname), delete)
+!
       endfunction control_file_exists
-!***********************************************************************
-      function file_exists(fname, delete)
-!
-!  Does the given file exist?
-!  If DELETE is true, delete the file after checking for existence.
-!  Does nothing and returns .false. on any non-root MPI node.
-!
-!  24-jul-09/wolf: coded
-!
-        logical :: file_exists
-        character (len=*) :: fname
-        logical, optional :: delete
-        logical :: exist
-!
-        if (lroot) then
-          inquire(FILE=fname, EXIST=exist)
-!
-          if (exist .and. present(delete)) then
-            if (delete) then
-              call remove_file(fname)
-            endif
-          endif
-!
-          file_exists = exist
-        else
-          file_exists = .false.
-        endif
-!
-      endfunction file_exists
 !***********************************************************************
       function read_line_from_file(fname)
 !
 !  Read the first line from a file; return empty string if file is empty
 !  4-oct-02/wolf: coded
 !
-        character (len=linelen) :: read_line_from_file,line
-        character (len=*) :: fname
-        logical :: exist
+        use Syscalls, only : file_exists
 !
-        read_line_from_file=''  ! default
-        inquire(FILE=fname,EXIST=exist)
-        if (exist) then
-          open(1,FILE=fname,ERR=666)
-          read(1,'(A)',END=666,ERR=666) line
-          close(1)
-          read_line_from_file = line
+        implicit none
+!
+        character (len=linelen) :: read_line_from_file
+        character (len=*) :: fname
+!
+        integer :: unit=1
+        integer :: ierr=0
+!
+        read_line_from_file=char(0)
+        if (.not. lroot) return
+!
+        if (file_exists(fname)) then
+          open(unit,FILE=fname,IOSTAT=ierr)
+          read(unit,'(A)',IOSTAT=ierr) read_line_from_file
+          close(unit)
+          if (ierr /= 0) read_line_from_file=char(0)
         endif
-666     return
 !
       endfunction read_line_from_file
 !***********************************************************************
@@ -4290,7 +4243,7 @@ nameloop: do
 
     endsubroutine write_dx_general
 !***********************************************************************
-    subroutine write_zprof(file,a)
+    subroutine write_zprof(fname,a)
 !
 !  writes z-profile to a file (if constructed for identical pencils)
 !
@@ -4299,7 +4252,9 @@ nameloop: do
       use General, only: safe_character_assign
 !
       real, dimension(nx) :: a
-      character (len=*) :: file
+      character (len=*) :: fname
+!
+      integer :: unit=1
       character (len=120) :: wfile
 !
 !  do this only for the first step
@@ -4310,18 +4265,18 @@ nameloop: do
 !  write zprofile file
 !
           call safe_character_assign(wfile, &
-            trim(directory)//'/zprof_'//trim(file)//'.dat')
-          open(1,file=wfile,position='append')
-          write(1,*) z(n),a(1)
-          close(1)
+            trim(directory)//'/zprof_'//trim(fname)//'.dat')
+          open(unit,file=wfile,position='append')
+          write(unit,*) z(n),a(1)
+          close(unit)
 !
 !  add file name to list of f zprofile files
 !
           if (n==n1) then
             call safe_character_assign(wfile,trim(directory)//'/zprof_list.dat')
-            open(1,file=wfile,position='append')
-            write(1,*) file
-            close(1)
+            open(unit,file=wfile,position='append')
+            write(unit,*) fname
+            close(unit)
           endif
         endif
       endif
@@ -4336,7 +4291,8 @@ nameloop: do
 !
       use General, only: safe_character_assign
 !
-      character (len=120) :: filename,wfile,listfile
+      character (len=120) :: fname,wfile,listfile
+      integer :: ierr, unit=2
 !
 !  do this only for the first step
 !
@@ -4344,14 +4300,16 @@ nameloop: do
 !
 !  read list of file and remove them one by one
 !
-      open(2,file=listfile)
-      filename_loop: do while (it<=nt)
-        read(2,*,end=999) filename
-        call safe_character_assign(wfile, &
-          trim(directory)//'/zprof_'//trim(filename)//'.dat')
-        call remove_file(wfile)
-      enddo filename_loop
-999   close(2)
+      open(unit,file=listfile,iostat=ierr)
+      do while ((it <= nt) .and. (ierr == 0))
+        read(unit,*,iostat=ierr) fname
+        if (ierr == 0) then
+          call safe_character_assign(wfile, &
+              trim(directory)//'/zprof_'//trim(fname)//'.dat')
+          call remove_file(wfile)
+        endif
+      enddo
+      close(unit)
 !
 !  now delete this listfile altogether
 !

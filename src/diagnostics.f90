@@ -33,6 +33,7 @@ module Diagnostics
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
+  public :: allocate_vnames
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
   public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages
@@ -1781,6 +1782,27 @@ module Diagnostics
 !
     endfunction get_from_fname
 !***********************************************************************
+    subroutine allocate_vnames
+!
+!  Allocate space needed for reading the video.in file.
+!
+!   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
+!
+      integer :: stat
+!
+      allocate(cnamev(nnamev),stat=stat)
+      cnamev(:)=char(0)
+!
+      if (stat>0) then
+        call fatal_error('allocate_vnames', &
+            'Could not allocate memory for cnamev', .true.)
+      else
+        if (lroot) print*, 'allocate_vnames: allocated memory for '// &
+            'cnamev  with nnamev  =', nnamev
+      endif
+!
+    endsubroutine allocate_vnames
+!***********************************************************************
     subroutine allocate_xyaverages
 !
 !  Allocate the variables needed for xy-averages.
@@ -1799,7 +1821,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for fnamez')
+            'Could not allocate memory for fnamez', .true.)
       else
         if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
             'fnamez  with nnamez  =', nnamez
@@ -1821,7 +1843,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for fnamey')
+            'Could not allocate memory for fnamey', .true.)
       else
         if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
             'fnamey  with nnamey  =', nnamey
@@ -1843,7 +1865,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for fnamex')
+            'Could not allocate memory for fnamex', .true.)
       else
         if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
             'fnamex  with nnamex  =', nnamex
@@ -1866,7 +1888,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for fnamer')
+            'Could not allocate memory for fnamer', .true.)
       else
         if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
             'fnamer  with nnamer+1 =', mnamer
@@ -1888,7 +1910,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for fnamexz')
+            'Could not allocate memory for fnamexz', .true.)
       else
         if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
             'fnamexz with nnamexz =', nnamexz
@@ -1910,7 +1932,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for fnamexy')
+            'Could not allocate memory for fnamexy', .true.)
       else
         if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
             'fnamexy with nnamexy =', nnamexy
@@ -1932,7 +1954,7 @@ module Diagnostics
 !
       if (stat>0) then
         call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for fnamerz')
+            'Could not allocate memory for fnamerz', .true.)
       else
         if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
             'fnamerz with nnamerz =', nnamerz+iadd

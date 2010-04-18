@@ -958,6 +958,16 @@ module Mpicomm
 !
     endsubroutine die_gracefully
 !***********************************************************************
+    subroutine die_immediately()
+!
+!  Stop... perform any necessary shutdown stuff.
+!
+!  29-jun-05/tony: coded
+!
+      STOP 2                    ! Return nonzero exit status
+!
+    endsubroutine die_immediately
+!***********************************************************************
     subroutine stop_it(msg)
 !
 !  Print message and stop.
@@ -1331,5 +1341,86 @@ module Mpicomm
       if (NO_WARN) print*, tmp1, tmp2, send_buf1, send_buf2
 !
     endsubroutine MPI_adi_z
+!***********************************************************************
+    subroutine parallel_open(unit,file,form)
+!
+!  Read a global file
+!
+!  18-mar-10/Bourdin.KIS: implemented
+!
+      integer :: unit
+      character (len=*) :: file
+      character (len=*), optional :: form
+!
+      logical :: exists
+!
+      ! test if file exists
+      inquire(FILE=file,exist=exists)
+      if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
+!
+      ! open file
+      if (present(form)) then
+        open(unit, FILE=file, FORM=form, STATUS='old')
+      else
+        open(unit, FILE=file, STATUS='old')
+      endif
+!
+    endsubroutine parallel_open
+!***********************************************************************
+    subroutine parallel_close(unit)
+!
+!  Close a file unit opened by parallel_open
+!
+!  18-mar-10/Bourdin.KIS: implemented
+!
+      integer :: unit
+!
+      close(unit)
+!
+    endsubroutine parallel_close
+!***********************************************************************
+    function parallel_count_lines(file)
+!
+!  Determines the number of lines in a file
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      use Syscalls, only: count_lines
+!
+      implicit none
+!
+      character(len=*) :: file
+      integer :: parallel_count_lines
+!
+      parallel_count_lines = count_lines(file)
+!
+    endfunction
+!***********************************************************************
+    function parallel_file_exists(file, delete)
+!
+!  Determines in parallel if a given file exists.
+!  If delete is true, deletes the file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      use Syscalls, only: file_exists
+!
+      implicit none
+!
+      character(len=*) :: file
+      logical :: parallel_file_exists
+      logical, optional :: delete
+!
+      parallel_file_exists = file_exists(file,delete)
+!
+    endfunction
 !***********************************************************************
 endmodule Mpicomm

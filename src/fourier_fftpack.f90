@@ -1085,13 +1085,15 @@ module Fourier
       real, dimension (4*nygrid+15) :: wsavey
       real, dimension (ny) :: deltay_x
       integer :: l,m,ibox
-      logical :: lforward
+      logical :: lforward,lleading
+!
+      lleading=(ipx==0).and.(ipy==0)
 !
       if (nprocx>1) &
-          call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!')
+          call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!',lleading)
 !
       if (mod(nxgrid,nygrid)/=0) call fatal_error('fourier_transform_xy_xy', &
-          'nxgrid needs to be an integer multiple of nygrid.')
+          'nxgrid needs to be an integer multiple of nygrid.',lleading)
 !
       lforward=.true.
       if (present(linv)) then
@@ -1215,7 +1217,9 @@ module Fourier
       real, dimension (4*nprocy*size(a_re,2)+15) :: wsavey
       integer :: l,m,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
-      logical :: lforward
+      logical :: lforward,lleading
+!
+      lleading=(ipx==0).and.(ipy==0)
 !
       lforward=.true.
       if (present(linv)) then
@@ -1226,10 +1230,9 @@ module Fourier
       nxgrid_other=nx_other
       nygrid_other=ny_other*nprocy     
 !
-      if (nxgrid_other/=nygrid_other) then
+      if (nxgrid_other/=nygrid_other) &
         call fatal_error('fourier_transform_xy_xy_other', &
-             'nxgrid_other needs to be equal to nygrid_other.')
-      endif
+             'nxgrid_other needs to be equal to nygrid_other.',lleading)
 !
       if (lforward) then
         if (nygrid_other > 1) then

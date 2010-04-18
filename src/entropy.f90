@@ -4485,50 +4485,59 @@ module Entropy
 !
       use EquationOfState, only: lnrho0,gamma
       use Io, only:  output_pencil
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
-      real, dimension (150), save :: b_lnT,b_z
+      integer, parameter :: prof_nz=150
+      real, dimension (prof_nz), save :: prof_lnT,prof_z
       real :: lnTTor
       integer :: i,lend
       type (pencil_case) :: p
 !
-      intent(in) :: p
       intent(inout) :: df
+      intent(in) :: p
+!
+      ! file location settings
+      character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
 !
       if (pretend_lnTT) call fatal_error("newton_cool","not implemented when pretend_lnTT = T")
 !
 !  Initial temperature profile is given in ln(T) in [K] over z in [Mm]
 !
       if (it .eq. 1) then
-         inquire(IOLENGTH=lend) lnTTor
-         open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
-         read (10) b_lnT
-         read (10) b_z
-         close (10)
-         !
-         b_lnT = b_lnT - alog(real(unit_temperature))
-         if (unit_system == 'SI') then
-           b_z = b_z * 1.e6 / unit_length
-         elseif (unit_system == 'cgs') then
-           b_z = b_z * 1.e8 / unit_length
-         endif
+        if (lroot) then
+          inquire(IOLENGTH=lend) lnTTor
+          open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          read (10) prof_lnT
+          read (10) prof_z
+          close (10)
+        endif
+        call mpibcast_real(prof_lnT, prof_nz)
+        call mpibcast_real(prof_z, prof_nz)
+!
+        prof_lnT = prof_lnT - alog(real(unit_temperature))
+        if (unit_system == 'SI') then
+          prof_z = prof_z * 1.e6 / unit_length
+        elseif (unit_system == 'cgs') then
+          prof_z = prof_z * 1.e8 / unit_length
+        endif
       endif
 !
 !  Get reference temperature
 !
-      if (z(n) .lt. b_z(1) ) then
-        lnTTor = b_lnT(1)
-      elseif (z(n) .ge. b_z(150)) then
-        lnTTor = b_lnT(150)
+      if (z(n) .lt. prof_z(1) ) then
+        lnTTor = prof_lnT(1)
+      elseif (z(n) .ge. prof_z(prof_nz)) then
+        lnTTor = prof_lnT(prof_nz)
       else
-        do i=1,149
-          if (z(n) .ge. b_z(i) .and. z(n) .lt. b_z(i+1)) then
+        do i=1,prof_nz-1
+          if (z(n) .ge. prof_z(i) .and. z(n) .lt. prof_z(i+1)) then
             !
             ! linear interpolation
             !
-            lnTTor = (b_lnT(i)*(b_z(i+1) - z(n)) +   &
-                b_lnT(i+1)*(z(n) - b_z(i)) ) / (b_z(i+1)-b_z(i))
+            lnTTor = (prof_lnT(i)*(prof_z(i+1) - z(n)) +   &
+                prof_lnT(i+1)*(z(n) - prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
             exit
           endif
         enddo

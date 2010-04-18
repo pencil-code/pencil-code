@@ -6,7 +6,7 @@
   public :: mpicomm_init, mpifinalize
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
-  public :: die_gracefully
+  public :: die_gracefully, die_immediately
   public :: check_emergency_brake
 
   public :: mpirecv_logical, mpirecv_real, mpirecv_int
@@ -34,6 +34,10 @@
 
   public :: fill_zghostzones_3vec
   public :: MPI_adi_x, MPI_adi_z
+
+  public :: parallel_open, parallel_close
+  public :: parallel_file_exists
+  public :: parallel_count_lines
   
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send

@@ -68,7 +68,7 @@ module Messages
       if (.not.llife_support) then
         errors=errors+1
 !
-        if (lroot .or. ncpus<=32) then
+        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_error()
           write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
           call terminal_defaultcolor()
@@ -86,21 +86,26 @@ module Messages
 !
     endsubroutine not_implemented
 !***********************************************************************
-    subroutine fatal_error(location,message)
+   subroutine fatal_error(location,message,force)
 !
       character(len=*) :: location
       character(len=*) :: message
+      logical, optional :: force
+!
+      logical :: fatal = .false.
 !
       if (.not.llife_support) then
         errors=errors+1
+        if (present(force)) fatal=force
 !
-        if (lroot .or. ncpus<=32) then
+        if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
           write (*,*) trim(location) // ": " // trim(message)
         endif
 !
+        if (ldie_onfatalerror .and. fatal) call die_immediately
         if (ldie_onfatalerror) call die_gracefully
 !
       endif
@@ -118,7 +123,7 @@ module Messages
 !
       errors=errors+1
 !
-      if (lroot .or. ncpus<=32) then
+      if (lroot .or. (ncpus<=16 .and. (message/=''))) then
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
@@ -142,7 +147,7 @@ module Messages
       if (.not.llife_support) then
         fatal_errors=fatal_errors+1
 !
-        if (lroot .or. ncpus<=32) then
+        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
@@ -187,7 +192,7 @@ module Messages
       if (.not.llife_support) then
         errors=errors+1
 !
-        if (lroot .or. ncpus<=32) then
+        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_error()
           write (*,'(A7)',ADVANCE='NO') "ERROR: "
           call terminal_defaultcolor()
@@ -210,7 +215,7 @@ module Messages
       integer, optional :: ip
 !
       if (.not.llife_support) then
-        if (lroot .or. ncpus<=32) then
+        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
           call terminal_defaultcolor()

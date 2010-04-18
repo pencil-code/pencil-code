@@ -4169,45 +4169,48 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      integer, parameter :: b_nz=150
-      real, dimension (b_nz) :: b_lnT,b_lnrho,b_z
+      integer, parameter :: prof_nz=150
+      real, dimension (prof_nz) :: prof_lnT,prof_lnrho,prof_z
       integer :: i,lend,j
 !
-!  temperature given as function lnT(z) in SI units
-!  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
+      ! file location settings
+      character (len=*), parameter :: lnrho_dat = 'driver/b_lnrho.dat'
+      character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
 !
+      ! temperature given as function lnT(z) in SI units
+      ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
 !
       if (lroot) then
         inquire(IOLENGTH=lend) tmp
-        open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*b_nz)
-        read (10) b_lnT
-        read (10) b_z
+        open (10,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+        read (10) prof_lnT
+        read (10) prof_z
         close (10)
 !
-        open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*b_nz)
-        read (10) b_lnrho
+        open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+        read (10) prof_lnrho
         close (10)
       endif
 !
-      call mpibcast_real(b_lnT,b_nz)
-      call mpibcast_real(b_z,b_nz)
-      call mpibcast_real(b_lnrho,b_nz)
+      call mpibcast_real(prof_lnT,prof_nz)
+      call mpibcast_real(prof_z,prof_nz)
+      call mpibcast_real(prof_lnrho,prof_nz)
 !
-      b_z = b_z*1.e6/unit_length
-      b_lnT = b_lnT - alog(real(unit_temperature))
-      b_lnrho = b_lnrho - alog(real(unit_density))
+      prof_z = prof_z*1.e6/unit_length
+      prof_lnT = prof_lnT - alog(real(unit_temperature))
+      prof_lnrho = prof_lnrho - alog(real(unit_density))
 !
 ! simple linear interpolation
 !
       do j=n1,n2
-         do i=1,149
-            if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1) ) then
-               f(:,:,j,ilnrho) = (b_lnrho(i)*(b_z(i+1) - z(j)) +   &
-                    b_lnrho(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
+         do i=1,prof_nz-1
+            if (z(j) .ge. prof_z(i) .and. z(j) .lt. prof_z(i+1) ) then
+               f(:,:,j,ilnrho) = (prof_lnrho(i)*(prof_z(i+1) - z(j)) +   &
+                    prof_lnrho(i+1)*(z(j)-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
 !
-               tmp =  (b_lnT(i)*(b_z(i+1) - z(j)) +   &
-                    b_lnT(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
+               tmp =  (prof_lnT(i)*(prof_z(i+1) - z(j)) +   &
+                    prof_lnT(i+1)*(z(j)-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
 !
                if (ltemperature) then
                   f(:,:,j,ilnTT) = tmp
@@ -4218,10 +4221,10 @@ module Initcond
                exit
             endif
          enddo
-         if (z(j) .ge. b_z(b_nz)) then
-            f(:,:,j,ilnrho) = b_lnrho(b_nz)
+         if (z(j) .ge. prof_z(prof_nz)) then
+            f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
 !
-            tmp =  b_lnT(b_nz)
+            tmp =  prof_lnT(prof_nz)
 !
             if (ltemperature) then
                f(:,:,j,ilnTT) = tmp
@@ -4235,20 +4238,20 @@ module Initcond
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
 !
-      do i=1,149
-         if (ztop .ge. b_z(i) .and. ztop .lt. b_z(i+1) ) then
+      do i=1,prof_nz-1
+         if (ztop .ge. prof_z(i) .and. ztop .lt. prof_z(i+1) ) then
 !
-            tmp =  (b_lnT(i)*(b_z(i+1) - ztop) +   &
-                 b_lnT(i+1)*(ztop-b_z(i)) ) / (b_z(i+1)-b_z(i))
+            tmp =  (prof_lnT(i)*(prof_z(i+1) - ztop) +   &
+                 prof_lnT(i+1)*(ztop-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
             cs2top = gamma_m1*exp(tmp)
 !
-         elseif (ztop .ge. b_z(b_nz)) then
-            cs2top = gamma_m1*exp(b_lnT(b_nz))
+         elseif (ztop .ge. prof_z(prof_nz)) then
+            cs2top = gamma_m1*exp(prof_lnT(prof_nz))
          endif
-         if (zbot .ge. b_z(i) .and. zbot .lt. b_z(i+1) ) then
+         if (zbot .ge. prof_z(i) .and. zbot .lt. prof_z(i+1) ) then
 !
-            tmp =  (b_lnT(i)*(b_z(i+1) - zbot) +   &
-                 b_lnT(i+1)*(zbot-b_z(i)) ) / (b_z(i+1)-b_z(i))
+            tmp =  (prof_lnT(i)*(prof_z(i+1) - zbot) +   &
+                 prof_lnT(i+1)*(zbot-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
             cs2bot = gamma_m1*exp(tmp)
 !
          endif
@@ -4272,9 +4275,12 @@ module Initcond
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       real :: mu0_SI,u_b,zref
-      logical :: exists,lerr
+      logical :: exists
       integer :: i,idx2,idy2,stat,iostat,lend
-      integer, dimension(2) :: dims=(/nxgrid,nygrid/)
+!
+      ! file location settings
+      character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
+      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
 !  Allocate memory for arrays.
 !
@@ -4287,7 +4293,7 @@ module Initcond
       allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
       allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
 !
-      if (iostat>0) call fatal_error('mdi_init', &
+      call stop_it_if_any((iostat>0),'mdi_init: '// &
           'Could not allocate memory for variables, please check')
 !
 !
@@ -4309,20 +4315,18 @@ module Initcond
 !
       k2 = kx*kx + ky*ky
 !
-      lerr=.false.
       if (lroot) then
-        inquire(file='driver/mag_field.dat',exist=exists)
-        lerr=.not.exists
-        if (exists) then
-          inquire(IOLENGTH=lend) u_b
-          open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
-              recl=lend*nxgrid*nygrid,access='direct')
-          read (11,rec=1) Bz0_r
-          close (11)
-        endif
+        inquire(file=mag_field_dat,exist=exists)
+        call stop_it_if_any(.not.exists, 'mdi_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
+        inquire(IOLENGTH=lend) u_b
+        open (11,file=mag_field_dat,form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read (11,rec=1) Bz0_r
+        close (11)
+      else
+        call stop_it_if_any(.false.,'')
       endif
-      call stop_it_if_any(lerr, 'mdi_init: Magnetogram file not found: "mag_field.dat"')
-      call mpibcast_real(Bz0_r,dims)
+      call mpibcast_real(Bz0_r,(/nxgrid,nygrid/))
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
@@ -4388,40 +4392,42 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp,ztop,zbot
-      integer, parameter :: b_nz=150
-      real, dimension (b_nz) :: b_lnT,b_z
+      integer, parameter :: prof_nz=150
+      real, dimension (prof_nz) :: prof_lnT,prof_z
       real :: tmprho,tmpT,tmpdT,tmpz
       integer :: i,lend,j
-      !
+!
+      ! file location settings
+      character (len=*), parameter :: lnrho_dat = 'driver/b_lnrho.dat'
+      character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
+!
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
-      !
       if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
-      !
+!
       ! read in temperature profile T in [K] and z in [Mm]
-      !
       if (lroot) then
         inquire(IOLENGTH=lend) tmp
-        open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*b_nz)
-        read (10) b_lnT
-        read (10) b_z
+        open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+        read (10) prof_lnT
+        read (10) prof_z
         close (10)
       endif
       !
-      call mpibcast_real(b_lnT,b_nz)
-      call mpibcast_real(b_z,b_nz)
+      call mpibcast_real(prof_lnT,prof_nz)
+      call mpibcast_real(prof_z,prof_nz)
       !
-      b_z = b_z*1.e6/unit_length
-      b_lnT = b_lnT - alog(real(unit_temperature))
+      prof_z = prof_z*1.e6/unit_length
+      prof_lnT = prof_lnT - alog(real(unit_temperature))
       !
       ! simple linear interpolation
       !
-      dz = (b_z(2)-b_z(1))/10.
+      dz = (prof_z(2)-prof_z(1))/10.
       !
       do j=n1,n2
          tmprho = lnrho0
-         tmpT = b_lnT(1)
-         tmpz = b_z(1)
+         tmpT = prof_lnT(1)
+         tmpz = prof_z(1)
          !
          ztop=xyz0(3)+Lxyz(3)
          zbot=xyz0(3)
@@ -4436,17 +4442,17 @@ module Initcond
             ! new z coord
             tmpz = tmpz+dz
             ! get T at new z
-            do i=1,149
-               if (tmpz .ge. b_z(i)  .and. tmpz .lt. b_z(i+1) ) then
-!                  tmpdT = linear_inpol(b_z(i),b_z(i+1),b_lnT(i),b_lnT(i+1),tmpz)-tmpT
+            do i=1,prof_nz-1
+               if (tmpz .ge. prof_z(i)  .and. tmpz .lt. prof_z(i+1) ) then
+!                  tmpdT = linear_inpol(prof_z(i),prof_z(i+1),prof_lnT(i),prof_lnT(i+1),tmpz)-tmpT
 !
-                  tmpdT = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (tmpz-b_z(i)) + b_lnT(i) -tmpT
-                  !blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) * (z(j)-b_z(i)) + b_lnT(i)
+                  tmpdT = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (tmpz-prof_z(i)) + prof_lnT(i) -tmpT
+                  !blnTT(j) = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnT(i)
 !
                   tmpT = tmpT + tmpdT
                   !exit
-               elseif (tmpz .ge. b_z(b_nz)) then
-                  tmpdT = b_lnT(b_nz) - tmpT
+               elseif (tmpz .ge. prof_z(prof_nz)) then
+                  tmpdT = prof_lnT(prof_nz) - tmpT
                   tmpT = tmpT + tmpdT
                   !exit
                endif

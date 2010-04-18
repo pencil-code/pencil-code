@@ -28,6 +28,9 @@ module Special
   logical :: lgranulation=.false.
   integer :: irefz=0.
 !
+  real, dimension (nx,ny) :: A_init_x, A_init_y
+  real, dimension (mz) :: init_lnTT, init_lnrho
+!
 ! input parameters
 !  namelist /special_init_pars/ dumy
 !
@@ -96,6 +99,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
       real :: zref
       integer :: i
 !
@@ -117,7 +121,232 @@ module Special
         endif
       endif
 !
+      call setup_special()
+!
     endsubroutine initialize_special
+!***********************************************************************
+    subroutine init_special(f)
+!
+!  initialise special condition; called from start.f90
+!  06-oct-2003/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+      call setup_special()
+!
+    endsubroutine init_special
+!***********************************************************************
+    subroutine setup_special()
+!
+!  Compute and save initial magnetic vector potential A_init_x/_y
+!
+!  25-mar-10/Bourdin.KIS: coded
+!
+      use Fourier, only: fourier_transform_other
+      use Mpicomm, only: mpibcast_real, mpisend_real, mpirecv_real, stop_it_if_any
+      use Syscalls, only: file_exists
+!
+      integer, parameter :: prof_nz=150
+      real, dimension (prof_nz) :: prof_lnT, prof_z, prof_lnrho
+!
+      real, dimension(:,:), allocatable :: kx, ky, k2
+      real, dimension(:,:), allocatable :: Bz0_i, Bz0_r
+      real, dimension(:,:), allocatable :: Ax_i, Ay_i
+      real, dimension(:,:), allocatable :: Ax_r, Ay_r
+      real, dimension(:), allocatable :: kxp, kyp
+!
+      real :: mu0_SI,u_b
+      real :: dummy,var1,var2
+      integer :: idx2,idy2,lend,ierr
+      integer :: i,j,px,py,unit=1
+      integer :: Ax_tag=366,Ay_tag=367
+!
+      ! file location settings
+      character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
+      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+      character (len=*), parameter :: stratification_dat = 'stratification.dat'
+      character (len=*), parameter :: lnrho_dat = 'driver/b_lnrho.dat'
+      character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
+!
+      inquire(IOLENGTH=lend) dummy
+!
+      if ((ipz /= 0) .or. (bmdi == 0.0)) then
+        A_init_x = 0.0
+        A_init_y = 0.0
+      else
+        ! Magnetic field is set only in the bottom layer
+        if (lroot) then
+          allocate(kx(nxgrid,nygrid), ky(nxgrid,nygrid), k2(nxgrid,nygrid))
+          allocate(Bz0_i(nxgrid,nygrid), Bz0_r(nxgrid,nygrid))
+          allocate(Ax_i(nxgrid,nygrid), Ay_i(nxgrid,nygrid))
+          allocate(Ax_r(nxgrid,nygrid), Ay_r(nxgrid,nygrid))
+          allocate(kxp(nxgrid), kyp(nygrid))
+          ! Auxiliary quantities:
+          ! idx2 and idy2 are essentially =2, but this makes compilers
+          ! complain if nygrid=1 (in which case this is highly unlikely to be
+          ! correct anyway), so we try to do this better:
+          idx2 = min(2,nxgrid)
+          idy2 = min(2,nygrid)
+!
+          ! Magnetic field strength unit [B] = u_b
+          mu0_SI = 4.*pi*1.e-7
+          u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+!
+          kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
+          kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
+!
+          kx=spread(kxp,2,nygrid)
+          ky=spread(kyp,1,nxgrid)
+!
+          k2 = kx*kx + ky*ky
+!
+          ! Read in magnetogram
+          if (file_exists(mag_field_txt)) then
+            open (unit,file=mag_field_txt)
+            read (unit,*,iostat=ierr) Bz0_r
+            if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+                'Error reading magnetogram file: "'//trim(mag_field_txt)//'"')
+            close (unit)
+          elseif (file_exists(mag_field_dat)) then
+            open (unit,file=mag_field_dat,form='unformatted',status='unknown', &
+                recl=lend*nxgrid*nygrid,access='direct')
+            read (unit,rec=1,iostat=ierr) Bz0_r
+            if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+                'Error reading magnetogram file: "'//trim(mag_field_dat)//'"')
+            close (unit)
+          else
+            call stop_it_if_any(.true., 'setup_special: No magnetogram file found.')
+          endif
+!
+          ! Gauss to Tesla and SI to PENCIL units
+          Bz0_r = Bz0_r * 1e-4 / u_b
+          Bz0_i = 0.
+!
+          ! Fourier Transform of Bz0:
+          call fourier_transform_other(Bz0_r,Bz0_i)
+!
+          where (k2 /= 0)
+            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(n1) )
+            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(n1) )
+!
+            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(n1) )
+            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(n1) )
+          elsewhere
+            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
+!
+            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
+          endwhere
+!
+          deallocate(kx, ky, k2)
+          deallocate(Bz0_i, Bz0_r)
+          deallocate(kxp, kyp)
+!
+          call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
+          call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
+!
+          ! Distribute inital A data
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px /= 0) .or. (py /= 0)) then
+                A_init_x = Ax_r(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                A_init_y = Ay_r(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                call mpisend_real (A_init_x, (/ nx, ny /), px+py*nprocx, Ax_tag)
+                call mpisend_real (A_init_y, (/ nx, ny /), px+py*nprocx, Ay_tag)
+              endif
+            enddo
+          enddo
+          A_init_x = Ax_r(1:nx,1:ny)
+          A_init_y = Ay_r(1:nx,1:ny)
+!
+          deallocate(Ax_i, Ay_i)
+          deallocate(Ax_r, Ay_r)
+!
+        else
+          ! Receive inital A data
+          call mpirecv_real (A_init_x, (/ nx, ny /), 0, Ax_tag)
+          call mpirecv_real (A_init_y, (/ nx, ny /), 0, Ay_tag)
+        endif
+      endif
+      ! globally catch eventual 'stop_it_if_any' calls from single MPI ranks
+      call stop_it_if_any(.false.,'')
+!
+!  Initial temperature profile is given in ln(T) [K] over z [Mm]
+!  It will be read at the beginning and then kept in memory
+!
+      if (lroot) then
+        ! check wether stratification.dat or b_ln*.dat should be used
+        if (file_exists(stratification_dat)) then
+          open (unit,file=stratification_dat)
+          do i=1,nzgrid
+            read(unit,*,iostat=ierr) dummy,var1,var2
+            if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+                'Error reading stratification file: "'//trim(stratification_dat)//'"')
+            if ((i > ipz*nz) .and. (i <= (ipz+1)*nz)) then
+              j = i - ipz*nz
+              init_lnrho(j+nghost)=var1
+              init_lnTT(j+nghost) =var2
+            endif
+          enddo
+          close(unit)
+        elseif (file_exists(lnT_dat) .and. file_exists(lnrho_dat)) then
+          open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          read (unit,iostat=ierr) prof_lnT
+          read (unit,iostat=ierr) prof_z
+          if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+              'Error reading stratification file: "'//trim(lnrho_dat)//'"')
+          close (unit)
+!
+          open (unit,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          read (unit,iostat=ierr) prof_lnrho
+          if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+              'Error reading stratification file: "'//trim(lnrho_dat)//'"')
+          close (unit)
+!
+          prof_lnT = prof_lnT - alog(real(unit_temperature))
+          prof_lnrho = prof_lnrho - alog(real(unit_density))
+!
+          if (unit_system == 'SI') then
+            prof_z = prof_z * 1.e6 / unit_length
+          elseif (unit_system == 'cgs') then
+            prof_z = prof_z * 1.e8 / unit_length
+          endif
+!
+          do j=n1,n2
+            if (z(j) < prof_z(1) ) then
+              init_lnTT(j) = prof_lnT(1)
+              init_lnrho(j)= prof_lnrho(1)
+            elseif (z(j) >= prof_z(prof_nz)) then
+              init_lnTT(j) = prof_lnT(prof_nz)
+              init_lnrho(j) = prof_lnrho(prof_nz)
+            else
+              do i=1,prof_nz-1
+                if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  init_lnTT(j) = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnT(i)
+                  init_lnrho(j) = (prof_lnrho(i+1)-prof_lnrho(i))/(prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        else
+          call stop_it_if_any(.true.,'setup_special: No stratification file found.')
+        endif
+      endif
+      ! globally catch eventual 'stop_it_if_any' calls from single MPI ranks
+      call stop_it_if_any(.false.,'')
+!
+      ! distribute stratification data
+      call mpibcast_real(init_lnTT, prof_nz)
+      call mpibcast_real(init_lnrho, prof_nz)
+!
+    endsubroutine setup_special
 !***********************************************************************
     subroutine pencil_criteria_special()
 !
@@ -376,101 +605,17 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Fourier, only: fourier_transform_other
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nxgrid,nygrid) :: kx,ky,k2,exp_fact
-!
-      real, dimension(nxgrid,nygrid) :: Bz0_i,Bz0_r
-      real, dimension(nxgrid,nygrid) :: Ax_i,Ay_i
-      real, dimension(nxgrid,nygrid),save :: Ax_r,Ay_r
-      real, dimension(nxgrid) :: kxp
-      real, dimension(nygrid) :: kyp
-!
-      logical :: exist
-      real :: mu0_SI,u_b
-      integer :: i,idx2,idy2,lend
-!
-! Auxiliary quantities:
-!
-! idx2 and idy2 are essentially =2, but this makes compilers
-! complain if nygrid=1 (in which case this is highly unlikely to be
-! correct anyway), so we try to do this better:
-      if (ipz .eq. 0 .and. bmdi/=0 ) then
-        if (lfirst .and. headt) then
-          idx2 = min(2,nxgrid)
-          idy2 = min(2,nygrid)
-!
-! Magnetic field strength unit [B] = u_b
-!
-          mu0_SI = 4.*pi*1.e-7
-          u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-!
-          kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-          kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-!
-          kx =spread(kxp,2,nygrid)
-          ky =spread(kyp,1,nxgrid)
-!
-          k2 = kx*kx + ky*ky
-!
-          inquire(file='driver/mag_field.txt',exist=exist)
-          if (exist) then
-            open (11,file='driver/mag_field.txt')
-            read (11,*) Bz0_r
-            close (11)
-          else
-            inquire(file='driver/mag_field.dat',exist=exist)
-            if (exist) then
-              inquire(IOLENGTH=lend) u_b
-              open (11,file='driver/mag_field.dat',form='unformatted',status='unknown', &
-                  recl=lend*nxgrid*nygrid,access='direct')
-              read (11,rec=1) Bz0_r
-              close (11)
-            else
-              call fatal_error('mdi_init', &
-                  'No file: mag_field.dat,mag_field.txt')
-            endif
-          endif
-!
-          Bz0_i = 0.
-          Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
-!
-! Fourier Transform of Bz0:
-!
-          call fourier_transform_other(Bz0_r,Bz0_i)
-!
-          exp_fact = exp(-sqrt(k2)*z(n1) )
-          where (k2 .ne. 0 )
-            Ax_r = -Bz0_i*ky/k2*exp_fact
-            Ax_i =  Bz0_r*ky/k2*exp_fact
-            !
-            Ay_r =  Bz0_i*kx/k2*exp_fact
-            Ay_i = -Bz0_r*kx/k2*exp_fact
-          elsewhere
-            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp_fact
-            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp_fact
-            !
-            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp_fact
-            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp_fact
-          endwhere
-          !
-          call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
-          !
-          call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
-          !
-        endif
 !
 !  Do somehow Newton cooling
 !
-        f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
-            dt*bmdi * Ax_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-!
-        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
-            dt*bmdi * Ay_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-!
-        if (bmdi*dt.gt.1) call stop_it('special before boundary: bmdi*dt.gt.1 ')
+      if ((ipz == 0) .and. (bmdi /= 0.0)) then
+        f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + dt*bmdi * A_init_x
+        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + dt*bmdi * A_init_y
+
+        if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
       endif
 !
       if (lgranulation .and. ipz.eq.0 ) then
@@ -486,9 +631,10 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
+      integer, parameter :: prof_nz=150
       real, dimension (nx) :: newton=0.
-      real, dimension (150) :: b_lnT,b_z,b_lnrho
-      real, dimension (mz), save :: blnTT,blnrho
+      real, dimension (prof_nz) :: prof_lnT,prof_z,prof_lnrho
+      real, dimension (mz), save :: init_lnTT,init_lnrho
       real :: dummy,var1,var2
       logical :: exist
       integer :: i,lend,j,stat
@@ -509,49 +655,49 @@ module Special
             read(10+ipz,*,iostat=stat) dummy,var1,var2
             if (i.gt.ipz*nz.and.i.le.(ipz+1)*nz) then
               j = i - ipz*nz
-              blnrho(j+nghost)=var1
-              blnTT(j+nghost) =var2
+              init_lnrho(j+nghost)=var1
+              init_lnTT(j+nghost) =var2
             endif
           enddo
           close(10+ipz)
         else
           inquire(IOLENGTH=lend) dummy
           open (10,file='driver/b_lnT.dat',form='unformatted', &
-              status='unknown',recl=lend*150)
-          read (10) b_lnT
-          read (10) b_z
+              status='unknown',recl=lend*prof_nz)
+          read (10) prof_lnT
+          read (10) prof_z
           close (10)
           !
           open (10,file='driver/b_lnrho.dat',form='unformatted', &
-              status='unknown',recl=lend*150)
-          read (10) b_lnrho
+              status='unknown',recl=lend*prof_nz)
+          read (10) prof_lnrho
           close (10)
           !
-          b_lnT = b_lnT - alog(real(unit_temperature))
-          b_lnrho = b_lnrho - alog(real(unit_density))
+          prof_lnT = prof_lnT - alog(real(unit_temperature))
+          prof_lnrho = prof_lnrho - alog(real(unit_density))
           !
           if (unit_system == 'SI') then
-            b_z = b_z * 1.e6 / unit_length
+            prof_z = prof_z * 1.e6 / unit_length
           elseif (unit_system == 'cgs') then
-            b_z = b_z * 1.e8 / unit_length
+            prof_z = prof_z * 1.e8 / unit_length
           endif
           !
           do j=n1,n2
-            if (z(j) .lt. b_z(1) ) then
-              blnTT(j) = b_lnT(1)
-              blnrho(j)= b_lnrho(1)
-            elseif (z(j) .ge. b_z(150)) then
-              blnTT(j) = b_lnT(150)
-              blnrho(j) = b_lnrho(150)
+            if (z(j) .lt. prof_z(1) ) then
+              init_lnTT(j) = prof_lnT(1)
+              init_lnrho(j)= prof_lnrho(1)
+            elseif (z(j) .ge. prof_z(prof_nz)) then
+              init_lnTT(j) = prof_lnT(prof_nz)
+              init_lnrho(j) = prof_lnrho(prof_nz)
             else
-              do i=1,149
-                if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1)) then
+              do i=1,prof_nz-1
+                if (z(j) .ge. prof_z(i) .and. z(j) .lt. prof_z(i+1)) then
                   !
                   ! linear interpol   y = m*(x-x1) + y1
-                  blnTT(j) = (b_lnT(i+1)-b_lnT(i))/(b_z(i+1)-b_z(i)) *&
-                      (z(j)-b_z(i)) + b_lnT(i)
-                  blnrho(j) = (b_lnrho(i+1)-b_lnrho(i))/(b_z(i+1)-b_z(i)) *&
-                      (z(j)-b_z(i)) + b_lnrho(i)
+                  init_lnTT(j) = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) *&
+                      (z(j)-prof_z(i)) + prof_lnT(i)
+                  init_lnrho(j) = (prof_lnrho(i+1)-prof_lnrho(i))/(prof_z(i+1)-prof_z(i)) *&
+                      (z(j)-prof_z(i)) + prof_lnrho(i)
                   exit
                 endif
               enddo
@@ -562,7 +708,7 @@ module Special
       !
       !  Get reference temperature
       !
-      newton  = exp(blnTT(n)-p%lnTT)-1.
+      newton  = exp(init_lnTT(n)-p%lnTT)-1.
       newton  = newton  * tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
       !
       !  Add newton cooling term to entropy

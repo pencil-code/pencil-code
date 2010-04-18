@@ -195,7 +195,7 @@ module Mpicomm
 !
   real, dimension (nghost,my,mz,mcom) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: ipx_partner, nextya, nextyb, lastya, lastyb, displs ! For shear
-  integer :: nprocs, ierr
+  integer :: nprocs, mpierr
   integer :: serial_level = 0
 !
 !  mpi tags
@@ -254,9 +254,9 @@ module Mpicomm
 !  Get processor number, number of procs, and whether we are root.
 !
       lmpicomm = .true.
-      call MPI_INIT(ierr)
-      call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr)
-      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , ierr)
+      call MPI_INIT(mpierr)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , mpierr)
       lroot = (iproc==root)
 !
 !  Check consistency in processor layout.
@@ -301,11 +301,11 @@ module Mpicomm
         ipx = modulo(iproc, nprocx)
         ipy = modulo(iproc/nprocx, nprocy)
         ipz = iproc/(nprocx*nprocy)
-       else
+      else
         ipx = modulo(iproc, nprocx)
         ipy = iproc/(nprocx*nprocy)
         ipz = modulo(iproc/nprocx, nprocy)
-       endif
+      endif
 !
 !  Set up `lower' and `upper' neighbours.
 !
@@ -353,17 +353,17 @@ module Mpicomm
 !  combination of the two other directional processor indices.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy+nprocy*ipz, ipx, &
-          MPI_COMM_XBEAM, ierr)
+          MPI_COMM_XBEAM, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipz, ipy, &
-          MPI_COMM_YBEAM, ierr)
+          MPI_COMM_YBEAM, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipy, ipz, &
-          MPI_COMM_ZBEAM, ierr)
+          MPI_COMM_ZBEAM, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipx+nprocx*ipy, &
-          MPI_COMM_XYPLANE, ierr)
+          MPI_COMM_XYPLANE, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipx+nprocx*ipz, &
-          MPI_COMM_XZPLANE, ierr)
+          MPI_COMM_XZPLANE, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx, ipy+nprocy*ipz, &
-          MPI_COMM_YZPLANE, ierr)
+          MPI_COMM_YZPLANE, mpierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -396,13 +396,13 @@ module Mpicomm
         ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
         nbufy=mx*nz*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+            yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+            ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
         call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+            ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
         call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            yuneigh,touppy,MPI_COMM_WORLD,isend_rq_touppy,ierr)
+            yuneigh,touppy,MPI_COMM_WORLD,isend_rq_touppy,mpierr)
       endif
 !
 !  Periodic boundary conditions in z.
@@ -412,13 +412,13 @@ module Mpicomm
         ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !!(upper z-zone)
         nbufz=mx*ny*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
+            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
         call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
         call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
+            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
+            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
       endif
 !
 !  The four corners (in counter-clockwise order).
@@ -431,21 +431,21 @@ module Mpicomm
         lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
         nbufyz=mx*nghost*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
+            uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
         call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
+            lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
         call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
+            llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
         call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,ierr)
+            ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
         call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,ierr)
+            llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
         call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,ierr)
+            ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
         call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,ierr)
+            uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
         call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,ierr)
+            lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
       endif
 !
 !  communication sample
@@ -481,8 +481,8 @@ module Mpicomm
 !  Communication in y (includes periodic bc)
 !
       if (nprocy>1) then
-        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
-        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
           if (ipy/=0 .or. bcy1(j)=='p') then
             f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
@@ -491,15 +491,15 @@ module Mpicomm
             f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
-        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
-        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
       endif
 !
 !  Communication in z (includes periodic bc)
 !
       if (nprocz>1) then
-        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
-        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
+        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
           if (ipz/=0 .or. bcz1(j)=='p') then
             f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
@@ -508,17 +508,17 @@ module Mpicomm
             f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
-        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
-        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
+        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
+        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
       endif
 !
 !  The four yz-corners (in counter-clockwise order)
 !
       if (nprocy>1.and.nprocz>1) then
-        call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,ierr)
-        call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
-        call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
-        call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
+        call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
+        call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
+        call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
+        call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
         do j=ivar1,ivar2
           if (ipz/=0 .or. bcz1(j)=='p') then
             if (ipy/=0 .or. bcy1(j)=='p') then
@@ -537,10 +537,10 @@ module Mpicomm
             endif
           endif
         enddo
-        call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,ierr)
-        call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,ierr)
-        call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,ierr)
-        call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,ierr)
+        call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
+        call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
+        call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
+        call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
       endif
 !
 !  communication sample
@@ -553,7 +553,7 @@ module Mpicomm
 !  make sure the other precessors don't carry on sending new data
 !  which could be mistaken for an earlier time
 !
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      call mpibarrier
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
@@ -581,15 +581,15 @@ module Mpicomm
         ubufxo(:,:,:,ivar1:ivar2)=f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2) !!(upper x-zone)
         nbufx=ny*nz*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,tolowx,MPI_COMM_WORLD,irecv_rq_fromuppx,ierr)
+            xuneigh,tolowx,MPI_COMM_WORLD,irecv_rq_fromuppx,mpierr)
         call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,touppx,MPI_COMM_WORLD,irecv_rq_fromlowx,ierr)
+            xlneigh,touppx,MPI_COMM_WORLD,irecv_rq_fromlowx,mpierr)
         call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,tolowx,MPI_COMM_WORLD,isend_rq_tolowx,ierr)
+            xlneigh,tolowx,MPI_COMM_WORLD,isend_rq_tolowx,mpierr)
         call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,touppx,MPI_COMM_WORLD,isend_rq_touppx,ierr)
-        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,ierr)
-        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,ierr)
+            xuneigh,touppx,MPI_COMM_WORLD,isend_rq_touppx,mpierr)
+        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
+        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
           if (ipx/=0 .or. bcx1(j)=='p' .or. &
               (bcx1(j)=='she'.and.nygrid==1)) then
@@ -600,8 +600,8 @@ module Mpicomm
             f(l2+1:mx,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
-        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,ierr)
-        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,ierr)
+        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
+        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
       endif
 !
     endsubroutine isendrcv_bdry_x
@@ -685,43 +685,43 @@ module Mpicomm
           nbufx_gh=my*mz*nghost*(ivar2-ivar1+1)
           if (lastya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
-                tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
+                tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,mpierr)
           endif
           if (nextyb==iproc) then
             fbhi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
-                tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
+                tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,mpierr)
           endif
           if (nextya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
-                tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
+                tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,mpierr)
           endif
           if (lastyb==iproc) then
             fblo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
-                tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
+                tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,mpierr)
           endif
           if (lastyb/=iproc) then
             call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
-                tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
+                tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,mpierr)
           endif
           if (nextya==iproc) then
             fahi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
-                tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
+                tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,mpierr)
           endif
           if (nextyb/=iproc) then
             call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
-                tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
+                tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,mpierr)
           endif
           if (lastya==iproc) then
             falo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
-                tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
+                tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,mpierr)
           endif
         endif
       endif
@@ -758,13 +758,13 @@ module Mpicomm
 !  Need to wait till all communication has been recived.
 !
         if (lastyb/=iproc) &
-            call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
+            call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,mpierr)
         if (nextyb/=iproc) &
-            call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,ierr)
+            call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,mpierr)
         if (lastya/=iproc) &
-            call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,ierr)
+            call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,mpierr)
         if (nextya/=iproc) &
-            call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
+            call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,mpierr)
 !
 !  Reading communicated information into f.
 !
@@ -799,10 +799,10 @@ module Mpicomm
 !
 !  Need to wait till buffer is empty before re-using it again.
 !
-        if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
-        if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,ierr)
-        if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
-        if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
+        if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,mpierr)
+        if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,mpierr)
+        if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,mpierr)
+        if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,mpierr)
 !
       endif
 !
@@ -832,7 +832,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_RECV(Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
-                    MPI_COMM_WORLD,irecv_zx,ierr)
+                    MPI_COMM_WORLD,irecv_zx,mpierr)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
@@ -860,7 +860,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_RECV(Qrecv_xy,mx*my,MPI_REAL,isource,Qtag_xy+idir, &
-                    MPI_COMM_WORLD,irecv_xy,ierr)
+                    MPI_COMM_WORLD,irecv_xy,mpierr)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
@@ -888,7 +888,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
-                    MPI_COMM_WORLD,isend_zx,ierr)
+                    MPI_COMM_WORLD,isend_zx,mpierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -916,7 +916,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_xy,mx*my,MPI_REAL,idest,Qtag_xy+idir, &
-                    MPI_COMM_WORLD,isend_xy,ierr)
+                    MPI_COMM_WORLD,isend_xy,mpierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
@@ -944,7 +944,7 @@ module Mpicomm
 !
       call MPI_SENDRECV(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
                         Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
-                        MPI_COMM_WORLD,isendrecv_zx,ierr)
+                        MPI_COMM_WORLD,isendrecv_zx,mpierr)
 
     endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
@@ -966,10 +966,10 @@ module Mpicomm
 !  actual MPI calls
 !
       call MPI_ALLGATHER(tau_zx,nx*nz,MPI_REAL,tau_zx_all,nx*nz,MPI_REAL, &
-          MPI_COMM_YBEAM,ierr)
+          MPI_COMM_YBEAM,mpierr)
 
       call MPI_ALLGATHER(Qrad_zx,nx*nz,MPI_REAL,Qrad_zx_all,nx*nz,MPI_REAL, &
-          MPI_COMM_YBEAM,ierr)
+          MPI_COMM_YBEAM,mpierr)
 !
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
@@ -985,7 +985,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_logical_scl
 !***********************************************************************
@@ -1001,7 +1001,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
@@ -1019,7 +1019,7 @@ module Mpicomm
       intent(out) :: bcast_array
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_scl
 !***********************************************************************
@@ -1037,7 +1037,7 @@ module Mpicomm
       intent(out) :: bcast_array
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr
 !***********************************************************************
@@ -1057,7 +1057,7 @@ module Mpicomm
      nbcast=nbcast_array(1)*nbcast_array(2)
 !
       call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
@@ -1078,7 +1078,7 @@ module Mpicomm
      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
 !
       call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
@@ -1099,7 +1099,7 @@ module Mpicomm
       nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
 !
       call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
@@ -1115,7 +1115,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
@@ -1131,7 +1131,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
@@ -1150,7 +1150,7 @@ module Mpicomm
       nbcast = nbcast_array(1)*nbcast_array(2)
 !
       call MPI_RECV(bcast_array, nbcast, MPI_INTEGER, proc_src, &
-          tag_id, MPI_COMM_WORLD, stat, ierr)
+          tag_id, MPI_COMM_WORLD, stat, mpierr)
 !
     endsubroutine mpirecv_int_arr2
 !***********************************************************************
@@ -1165,7 +1165,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD, ierr)
+          tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_logical_scl
 !***********************************************************************
@@ -1180,7 +1180,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_logical_arr
 !***********************************************************************
@@ -1195,7 +1195,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD, ierr)
+          tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_real_scl
 !***********************************************************************
@@ -1210,7 +1210,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
@@ -1227,7 +1227,7 @@ module Mpicomm
       nbcast=nbcast_array(1)*nbcast_array(2)
 !
       call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr2
 !***********************************************************************
@@ -1245,7 +1245,7 @@ module Mpicomm
       nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
 !
       call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
@@ -1263,7 +1263,7 @@ module Mpicomm
       nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
 !
       call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_real_arr4
 !***********************************************************************
@@ -1278,7 +1278,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD, ierr)
+          tag_id, MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
@@ -1293,7 +1293,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -1310,7 +1310,7 @@ module Mpicomm
       nbcast=nbcast_array(1)*nbcast_array(2)
 !
       call MPI_SEND(bcast_array, nbcast, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD,ierr)
+          tag_id, MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpisend_int_arr2
 !***********************************************************************
@@ -1330,7 +1330,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
@@ -1350,7 +1350,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_logical_arr
 !***********************************************************************
@@ -1373,7 +1373,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(lbcast_array, nbcast, MPI_LOGICAL, ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
@@ -1393,7 +1393,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
@@ -1413,7 +1413,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
@@ -1433,7 +1433,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
@@ -1453,7 +1453,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
@@ -1476,7 +1476,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************
@@ -1499,7 +1499,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr3
 !***********************************************************************
@@ -1519,7 +1519,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_double_scl
 !***********************************************************************
@@ -1539,7 +1539,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
@@ -1559,7 +1559,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -1579,7 +1579,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
-          MPI_COMM_WORLD,ierr)
+          MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
@@ -1609,7 +1609,7 @@ module Mpicomm
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, &
-                      MPI_COMM_WORLD, ierr)
+                      MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
@@ -1635,7 +1635,7 @@ module Mpicomm
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
@@ -1663,7 +1663,7 @@ module Mpicomm
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-          mpiprocs, ierr)
+          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
@@ -1691,7 +1691,7 @@ module Mpicomm
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-          mpiprocs, ierr)
+          mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr3
 !***********************************************************************
@@ -1702,7 +1702,7 @@ module Mpicomm
       integer :: fsum_tmp,fsum
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
@@ -1714,7 +1714,7 @@ module Mpicomm
       integer, dimension(nreduce) :: fsum_tmp,fsum
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
@@ -1725,7 +1725,7 @@ module Mpicomm
       real :: fmax_tmp,fmax
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
@@ -1737,7 +1737,7 @@ module Mpicomm
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
@@ -1748,7 +1748,7 @@ module Mpicomm
       real :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_max_scl
 !***********************************************************************
@@ -1759,7 +1759,7 @@ module Mpicomm
       integer :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_INTEGER, MPI_MAX, root, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
@@ -1771,7 +1771,7 @@ module Mpicomm
       real, dimension(nreduce) :: fmax_tmp,fmax
 !
       call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
@@ -1782,7 +1782,7 @@ module Mpicomm
       real :: fmin_tmp,fmin
 !
       call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_min_scl
 !***********************************************************************
@@ -1794,7 +1794,7 @@ module Mpicomm
       real, dimension(nreduce) :: fmin_tmp,fmin
 !
       call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
-          MPI_COMM_WORLD, ierr)
+          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
@@ -1808,7 +1808,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_scl
@@ -1824,7 +1824,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr
@@ -1840,7 +1840,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr2
@@ -1856,7 +1856,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr3
@@ -1872,7 +1872,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-            MPI_COMM_WORLD, ierr)
+            MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr4
@@ -1906,7 +1906,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD 
         endif
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
-            mpiprocs, ierr)
+            mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_scl
@@ -1938,7 +1938,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD 
         endif
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
-            mpiprocs, ierr)
+            mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr
@@ -1970,7 +1970,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD 
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-            root, mpiprocs, ierr)
+            root, mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr2
@@ -2002,7 +2002,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD 
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-            root, mpiprocs, ierr)
+            root, mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr3
@@ -2034,7 +2034,7 @@ module Mpicomm
           mpiprocs=MPI_COMM_WORLD 
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-            root, mpiprocs, ierr)
+            root, mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr4
@@ -2049,7 +2049,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
-            root, MPI_COMM_WORLD, ierr)
+            root, MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_double_scl
@@ -2065,7 +2065,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, &
-            MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr
@@ -2081,7 +2081,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
-            MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr2
@@ -2097,7 +2097,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
-            MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr3
@@ -2113,7 +2113,7 @@ module Mpicomm
         dsum=dsum_tmp
       else
         call MPI_REDUCE(dsum_tmp, dsum, product(nreduce), MPI_DOUBLE_PRECISION,&
-            MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            MPI_SUM, root, MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_double_arr4
@@ -2130,7 +2130,7 @@ module Mpicomm
         flor=flor_tmp
       else
         call MPI_REDUCE(flor_tmp, flor, 1, MPI_LOGICAL, MPI_LOR, root, &
-                        MPI_COMM_WORLD, ierr)
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_or_scl
@@ -2148,7 +2148,7 @@ module Mpicomm
         flor=flor_tmp
       else
         call MPI_REDUCE(flor_tmp, flor, nreduce, MPI_LOGICAL, MPI_LOR, root, &
-                        MPI_COMM_WORLD, ierr)
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_or_arr
@@ -2165,7 +2165,7 @@ module Mpicomm
         fland=fland_tmp
       else
         call MPI_REDUCE(fland_tmp, fland, 1, MPI_LOGICAL, MPI_LAND, root, &
-                        MPI_COMM_WORLD, ierr)
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_and_scl
@@ -2183,7 +2183,7 @@ module Mpicomm
         fland=fland_tmp
       else
         call MPI_REDUCE(fland_tmp, fland, nreduce, MPI_LOGICAL, MPI_LAND, root,&
-                        MPI_COMM_WORLD, ierr)
+                        MPI_COMM_WORLD, mpierr)
       endif
 !
     endsubroutine mpireduce_and_arr
@@ -2204,7 +2204,7 @@ module Mpicomm
 !
       buf = 0
       if (.not. lroot) then     ! root starts, others wait for permission
-        call MPI_RECV(buf,1,MPI_INTEGER,root,io_perm,MPI_COMM_WORLD,status,ierr)
+        call MPI_RECV(buf,1,MPI_INTEGER,root,io_perm,MPI_COMM_WORLD,status,mpierr)
       endif
 !
     endsubroutine start_serialize
@@ -2226,11 +2226,11 @@ module Mpicomm
       buf = 0
       if (lroot) then
         do i=1,ncpus-1            ! send permission, wait for success message
-          call MPI_SEND(buf,1,MPI_INTEGER,i,io_perm,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(buf,1,MPI_INTEGER,i,io_succ,MPI_COMM_WORLD,status,ierr)
+          call MPI_SEND(buf,1,MPI_INTEGER,i,io_perm,MPI_COMM_WORLD,mpierr)
+          call MPI_RECV(buf,1,MPI_INTEGER,i,io_succ,MPI_COMM_WORLD,status,mpierr)
         enddo
       else                  ! tell root we're done
-        call MPI_SEND(buf,1,MPI_INTEGER,root,io_succ,MPI_COMM_WORLD,ierr)
+        call MPI_SEND(buf,1,MPI_INTEGER,root,io_succ,MPI_COMM_WORLD,mpierr)
       endif
 !
     endsubroutine end_serialize
@@ -2241,14 +2241,14 @@ module Mpicomm
 !
 !  23-jul-2002/wolf: coded
 !
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpibarrier
 !***********************************************************************
     subroutine mpifinalize()
 !
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-      call MPI_FINALIZE(ierr)
+      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+      call MPI_FINALIZE(mpierr)
 !
     endsubroutine mpifinalize
 !***********************************************************************
@@ -2287,7 +2287,7 @@ module Mpicomm
 !
 !  Stop having shutdown MPI neatly
 !  With at least some MPI implementations, this only stops if all
-!  processors agree to call stop_it().
+!  processors agree to call die_gracefully().
 !
 !  29-jun-05/tony: coded
 !
@@ -2301,6 +2301,23 @@ module Mpicomm
 !
     endsubroutine die_gracefully
 !***********************************************************************
+    subroutine die_immediately()
+!
+!  Stop without shuting down MPI
+!  For those MPI implementations, which only finalize when all
+!  processors agree to finalize.
+!
+!  29-jun-05/tony: coded
+!
+!  Tell the world something went wrong -- mpirun may not propagate
+!  an error status.
+!
+      if (lroot) call touch_file('ERROR') 
+!
+      STOP 2                    ! Return nonzero exit status
+!
+    endsubroutine die_immediately
+!***********************************************************************
     subroutine stop_it(msg)
 !
 !  Print message and stop.
@@ -2312,7 +2329,7 @@ module Mpicomm
 !
       character (len=*) :: msg
 !
-      if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
+      if (lroot) write(*,'(A,A)') 'STOPPED: ', msg
 !
       call die_gracefully()
 !
@@ -2322,21 +2339,28 @@ module Mpicomm
 !
 !  Conditionally print message and stop.
 !  This works unilaterally, i.e. if STOP_FLAG is true on _any_ processor,
-!  we will all stop.
+!  we will all stop. The error message will be printed together with
+!  the MPI rank number, if the message is not empty.
 !
 !  22-nov-04/wolf: coded
 !
       logical :: stop_flag
       character (len=*) :: msg
-      logical :: global_stop_flag
+      logical :: global_stop_flag, identical_stop_flag
 !
 !  Get global OR of stop_flag and distribute it, so all processors agree
 !  on whether to call stop_it():
 !
       call MPI_ALLREDUCE(stop_flag,global_stop_flag,1,MPI_LOGICAL, &
-                         MPI_LOR,MPI_COMM_WORLD,ierr)
+                         MPI_LOR,MPI_COMM_WORLD,mpierr)
+      call MPI_ALLREDUCE(stop_flag,identical_stop_flag,1,MPI_LOGICAL, &
+                         MPI_LAND,MPI_COMM_WORLD,mpierr)
 !
-      if (global_stop_flag) call stop_it(msg)
+      if (global_stop_flag) then
+        if ((.not. lroot) .and. (.not. identical_stop_flag) .and. (msg/='')) &
+            write(*,'(A,I8,A,A)') 'RANK ', iproc, ' STOPPED: ', msg
+        call stop_it(msg)
+      endif
 !
     endsubroutine stop_it_if_any
 !***********************************************************************
@@ -2353,7 +2377,7 @@ module Mpicomm
 !  processors agree on whether to call stop_it():
 !
       call MPI_ALLREDUCE(lemergency_brake,global_stop_flag,1,MPI_LOGICAL, &
-                         MPI_LOR,MPI_COMM_WORLD,ierr)
+                         MPI_LOR,MPI_COMM_WORLD,mpierr)
 !
       if (global_stop_flag) call stop_it( &
             "Emergency brake activated. Check for error messages above.")
@@ -2382,7 +2406,7 @@ module Mpicomm
       real, dimension(:,:), allocatable :: tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
-      integer :: ytag=101,ztag=102,partner,ierr
+      integer :: ystag=111,yrtag=112,zstag=113,zrtag=114,partner
       integer :: m,n,ibox,ix
 !
 !  Doing x-y transpose if var='y'
@@ -2450,11 +2474,11 @@ module Mpicomm
               ix=ibox*nprocy*ny+px*ny
               send_buf_y=a(ix+1:ix+ny,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ystag,MPI_COMM_WORLD,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,yrtag,MPI_COMM_WORLD,stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ystag,MPI_COMM_WORLD,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,yrtag,MPI_COMM_WORLD,mpierr)
               endif
               a(ix+1:ix+ny,:,:)=recv_buf_y
             endif
@@ -2511,11 +2535,11 @@ module Mpicomm
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SEND (send_buf_z,sendc_z,MPI_REAL,partner,zstag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zstag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,mpierr)
             endif
             a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
           endif
@@ -2554,7 +2578,7 @@ module Mpicomm
       real, dimension(ny,ny) :: send_buf_y, recv_buf_y, tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,px
-      integer :: ytag=101,partner,ierr
+      integer :: ytag=101,partner
       integer :: ibox,iy
 
       if (mod(nxgrid,nygrid)/=0) then
@@ -2615,11 +2639,11 @@ module Mpicomm
             iy=(ibox*nprocy+px)*ny
             send_buf_y=a(iy+1:iy+ny,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
             endif
             a(iy+1:iy+ny,:)=recv_buf_y
           endif
@@ -2660,7 +2684,7 @@ module Mpicomm
       real, dimension(size(a,2),size(a,2)) :: send_buf_y, recv_buf_y, tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,px
-      integer :: ytag=101,partner,ierr
+      integer :: ytag=101,partner
       integer :: ibox,iy,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
 !
@@ -2725,11 +2749,11 @@ module Mpicomm
             iy=(ibox*nprocy+px)*ny_other
             send_buf_y=a(iy+1:iy+ny_other,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
             endif
             a(iy+1:iy+ny_other,:)=recv_buf_y
           endif
@@ -2774,7 +2798,7 @@ module Mpicomm
       real, dimension(:,:), allocatable :: tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
-      integer :: ytag=101,ztag=202,partner,ierr
+      integer :: ytag=101,ztag=202,partner
       integer :: m,n,ibox,ix,nx_other,ny_other,nz_other
       integer :: nxgrid_other,nygrid_other,nzgrid_other
 !
@@ -2845,11 +2869,11 @@ module Mpicomm
               ix=(ibox*nprocy+px)*ny_other
               send_buf_y=a(ix+1:ix+ny_other,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
               endif
               a(ix+1:ix+ny_other,:,:)=recv_buf_y
             endif
@@ -2907,11 +2931,11 @@ module Mpicomm
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz_other+1:(px+1)*nz_other,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
             endif
             a(px*nz_other+1:(px+1)*nz_other,:,:)=recv_buf_z
           endif
@@ -2953,7 +2977,7 @@ module Mpicomm
       real, dimension(nxt,nz) :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,recvc,px
-      integer :: ztag=101,partner,ierr
+      integer :: ztag=101,partner
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
@@ -2973,11 +2997,11 @@ module Mpicomm
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           send_buf=a(px*nxt+1:(px+1)*nxt,:)
           if (px<ipz) then      ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
           elseif (px>ipz) then  ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
           endif
           b(px*nz+1:(px+1)*nz,:)=transpose(recv_buf)
         endif
@@ -2999,7 +3023,7 @@ module Mpicomm
       real, dimension(nz,nxt) :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,recvc,px
-      integer :: ztag=101,partner,ierr
+      integer :: ztag=101,partner
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
@@ -3019,11 +3043,11 @@ module Mpicomm
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           send_buf=a(px*nz+1:(px+1)*nz,:)
           if (px<ipz) then      ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
           elseif (px>ipz) then  ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
           endif
           b(px*nxt+1:(px+1)*nxt,:)=transpose(recv_buf)
         endif
@@ -3046,7 +3070,7 @@ module Mpicomm
       real, dimension(mxt,mz) :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,recvc,px
-      integer :: ztag=101,partner,ierr
+      integer :: ztag=101,partner
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_mxmz: nxgrid needs to be an integer multiple of nprocz'
@@ -3067,11 +3091,11 @@ module Mpicomm
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           send_buf=a(px*(mxt-2*nghost)+1:(px+1)*mxt-2*nghost*px,:)
           if (px<ipz) then      ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
           elseif (px>ipz) then  ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
           endif
           b(px*(mz-2*nghost)+1:(px+1)*mz-2*nghost*px,:)=transpose(recv_buf)
         endif
@@ -3094,7 +3118,7 @@ module Mpicomm
       real, dimension(mz,mxt) :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,recvc,px
-      integer :: ztag=101,partner,ierr
+      integer :: ztag=101,partner
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
@@ -3115,11 +3139,11 @@ module Mpicomm
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           send_buf=a(px*(mz-2*nghost)+1:(px+1)*mz-2*nghost*px,:)
           if (px<ipz) then      ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
           elseif (px>ipz) then  ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
           endif
           b(px*(mxt-2*nghost)+1:(px+1)*mxt-2*nghost*px,:)=transpose(recv_buf)
         endif
@@ -3157,22 +3181,22 @@ module Mpicomm
         nbufy=nx*nghost*(nghost+1)*3
 
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
-                       MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
+                       MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
-                       MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
+                       MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
-                       MPI_COMM_WORLD,isend_rq_tolowy,ierr)
+                       MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
         call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
-                       MPI_COMM_WORLD,isend_rq_touppy,ierr)
+                       MPI_COMM_WORLD,isend_rq_touppy,mpierr)
 
-        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
-        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
 
         f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = lbufyi
         f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = ubufyi
 
-        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
-        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
 
       else
 
@@ -3203,7 +3227,7 @@ module Mpicomm
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
 
-      integer                    :: ierr, nbuf, j
+      integer                    :: nbuf, j
       real, dimension (nghost,3) :: lbufi,ubufi,lbufo,ubufo
 
       if (nprocz>1) then
@@ -3214,17 +3238,17 @@ module Mpicomm
         nbuf=nghost*3
 
         call MPI_IRECV(ubufi,nbuf,MPI_REAL, &
-                       zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
+                       zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
         call MPI_IRECV(lbufi,nbuf,MPI_REAL, &
-                       zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+                       zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
 
         call MPI_ISEND(lbufo,nbuf,MPI_REAL, &
-                       zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
+                       zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufo,nbuf,MPI_REAL, &
-                       zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
+                       zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
 
-        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
-        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
+        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
 
         do j=1,3
 
@@ -3236,8 +3260,8 @@ module Mpicomm
 
         enddo
 
-        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
-        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
+        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
+        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
      
       else
 
@@ -3289,17 +3313,17 @@ module Mpicomm
 ! RECV : tmp1 = TT(:,nz+1) and tmp2 = TT(:,1-1)
 !
       call MPI_IRECV(tmp1,nx,MPI_REAL, &
-            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
+            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
       call MPI_IRECV(tmp2,nx,MPI_REAL, &
-            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
       call MPI_ISEND(send_buf1,nx,MPI_REAL, &
-            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
+            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
       call MPI_ISEND(send_buf2,nx,MPI_REAL, &
-            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
-      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
-      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
-      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
-      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
+      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
+      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
+      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
 !
     endsubroutine MPI_adi_x
 !***********************************************************************
@@ -3311,18 +3335,151 @@ module Mpicomm
       real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
 !
       call MPI_IRECV(tmp1,nzgrid,MPI_REAL, &
-            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
+            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
       call MPI_IRECV(tmp2,nzgrid,MPI_REAL, &
-            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
       call MPI_ISEND(send_buf1,nzgrid,MPI_REAL, &
-            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
+            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
       call MPI_ISEND(send_buf2,nzgrid,MPI_REAL, &
-            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
-      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
-      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
-      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
-      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
+      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
+      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
+      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
 !
     endsubroutine MPI_adi_z
+!***********************************************************************
+    subroutine parallel_open(unit,file,form,recl)
+!
+!  Read a global file in parallel
+!
+!  17-mar-10/Bourdin.KIS: implemented
+!
+      use Syscalls, only: file_size
+!
+      implicit none
+!
+      integer :: unit
+      character (len=*) :: file
+      character (len=*), optional :: form
+      integer, optional :: recl
+!
+      logical :: exists
+      integer :: ierr, bytes, pos
+      integer, parameter :: buf_len=128
+      character (len=buf_len) :: filename
+      character, dimension(:), allocatable :: buffer
+!
+      if (lroot) then
+        ! test if file exists
+        inquire(FILE=file,exist=exists)
+        if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
+        bytes=file_size(file)
+        if (bytes < 0) call stop_it('parallel_open: could not determine file size "'//trim(file)//'"')
+        if (bytes == 0) call stop_it('parallel_open: file is empty "'//trim(file)//'"')
+      endif
+      call mpibcast_int(bytes, 1)
+!
+      ! allocate temporary memory
+      allocate(buffer(bytes))
+      buffer=char(0)
+!
+      if (lroot) then
+        ! read file content into buffer
+        open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
+        read(unit, REC=1, IOSTAT=ierr) buffer
+        close(unit)
+      endif
+!
+      ! broadcast buffer to all MPI ranks
+      call mpibcast_char(buffer, bytes)
+!
+      ! create unique temporary filename
+      pos=scan(file, '/')
+      do while(pos /= 0)
+        file(pos:pos)='_'
+        pos=scan(file, '/')
+      enddo
+      write(filename,'(A,A,A,I0)') '/tmp/', file, '-', iproc      
+!
+      ! write temproary file into local RAM disk (/tmp)
+      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
+      write(unit, REC=1) buffer
+      close(unit)
+      deallocate(buffer)
+!
+      ! open temporary file
+      if (present(form) .and. present(recl)) then
+        open(unit, FILE=filename, FORM=form, RECL=recl, STATUS='old')
+      elseif (present(recl)) then
+        open(unit, FILE=filename, RECL=recl, STATUS='old')
+      elseif (present(form)) then
+        open(unit, FILE=filename, FORM=form, STATUS='old')
+      else
+        open(unit, FILE=filename, STATUS='old')
+      endif
+      ! unit is now reading from RAM and is ready to be used on all ranks in parallel
+!
+    endsubroutine parallel_open
+!***********************************************************************
+    subroutine parallel_close(unit)
+!
+!  Close a file unit opened by parallel_open and remove temporary file
+!
+!  17-mar-10/Bourdin.KIS: implemented
+!
+      implicit none
+!
+      integer :: unit
+!
+      close(unit,STATUS='delete')
+!
+    endsubroutine parallel_close
+!***********************************************************************
+    function parallel_count_lines(file)
+!
+!  Determines in parallel the number of lines in a file
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      use Syscalls, only: count_lines
+!
+      implicit none
+!
+      character(len=*) :: file
+      integer :: parallel_count_lines
+!
+      if (lroot) parallel_count_lines = count_lines(file)
+      call mpibcast_int(parallel_count_lines, 1)
+!
+    endfunction
+!***********************************************************************
+    function parallel_file_exists(file, delete)
+!
+!  Determines in parallel if a given file exists.
+!  If delete is true, deletes the file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      use Syscalls, only: file_exists
+!
+      implicit none
+!
+      character(len=*) :: file
+      logical :: parallel_file_exists
+      logical, optional :: delete
+!
+      if (lroot) parallel_file_exists = file_exists(file, delete)
+      call mpibcast_logical(parallel_file_exists, 1)
+!
+    endfunction
 !***********************************************************************
 endmodule Mpicomm

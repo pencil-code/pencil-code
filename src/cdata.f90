@@ -282,7 +282,7 @@ module Cdata
   real, dimension(:,:,:,:), allocatable :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30) :: cname(mname),cform(mname)
-  character (len=30) :: cnamev(mname)
+  character (len=30), allocatable :: cnamev(:)
   character (len=30), allocatable :: cnamexy(:),cformxy(:)
   character (len=30), allocatable :: cnamexz(:),cformxz(:)
   character (len=30), allocatable :: cnamerz(:),cformrz(:)
@@ -478,10 +478,6 @@ module Cdata
 !  Shift data cube by one grid point each time-step.
 !
   logical :: lshift_datacube_x=.false.
-!
-!  Fix SGI reading problem.
-!
-  logical :: lsgifix=.false.
 !
 !  Kinematic flows (computed by nohydro, so must be defined here).
 !  [AJ: should probably not be defined here; AB: would hydro.h be better??]

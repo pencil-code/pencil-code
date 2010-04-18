@@ -543,7 +543,7 @@ contains
 !  write grid positions for var to file
 !  20-sep-02/wolf: coded
 !
-      use Mpicomm, only: stop_it_if_any
+      use Mpicomm, only: stop_it
 
       real, dimension(*) :: var ! x, y or z
       integer :: nglobal,nlocal,mlocal,ipvar
@@ -557,13 +557,12 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
-      ! Abort if ierr=.true. on any processor.
-      ! Possibly, MPI would realize  problems and abort, but who knows..
-      call stop_it_if_any(ierr /= 0, &
+!
+      if (ierr /= 0) call stop_it( &
            "Cannot MPI_FILE_OPEN " // trim(file) // &
            " (or similar) for writing" // &
            " -- is data/ visible from all nodes?")
-
+!
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, filetype, &
                "native", MPI_INFO_NULL, ierr)
 !
@@ -719,23 +718,22 @@ contains
 !   20-aug-09/bourdin: adapted
 !
       use Cdata, only: procy_bounds,procz_bounds
-      use Mpicomm, only: stop_it_if_any
+      use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      logical :: ioerr=.true.
+      integer :: ierr
+      integer :: unit=20
 !
       if (lroot) then
-        open(20,FILE=file,FORM='unformatted',err=930)
-        write(20) procy_bounds
-        write(20) procz_bounds
-        close(20)
+        open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+        if (ierr /= 0) call stop_it( &
+            "Cannot open " // trim(file) // " (or similar) for writing" // &
+            " -- is data/ visible from all nodes?")
+        write(unit) procy_bounds
+        write(unit) procz_bounds
+        close(unit)
       endif
-      ioerr=.false.
-
-930   call stop_it_if_any(ioerr, &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
-
+!
     endsubroutine wproc_bounds 
 !***********************************************************************
     subroutine rproc_bounds(file)
@@ -745,14 +743,19 @@ contains
 !   20-aug-09/bourdin: adapted
 !
       use Cdata, only: procy_bounds,procz_bounds
-      use Mpicomm, only: stop_it_if_any
+      use Mpicomm, only: stop_it
 !
       character (len=*) :: file
+      integer :: ierr
+      integer :: unit=1
 !
-      open(1,FILE=file,FORM='unformatted')
-      read(1) procy_bounds
-      read(1) procz_bounds
-      close(1)
+      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      if (ierr /= 0) call stop_it( &
+          "Cannot open " // trim(file) // " (or similar) for reading" // &
+          " -- is data/ visible from all nodes?")
+      read(unit) procy_bounds
+      read(unit) procz_bounds
+      close(unit)
 !
     endsubroutine rproc_bounds
 !***********************************************************************
@@ -763,13 +766,18 @@ contains
 !
       double precision :: tau
       character (len=*) :: file
+!
+      integer :: ierr
+      integer :: unit=1
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = tau
       if (lroot) then
-        open(1,FILE=file)
-        write(1,*) t_sp
-        close(1)
+        open(unit,FILE=file,IOSTAT=ierr)
+        if (ierr /= 0) call stop_it( &
+            "Cannot open " // trim(file) // " for writing")
+        write(unit,*) t_sp
+        close(unit)
       endif
 !
     endsubroutine wtime
@@ -781,11 +789,16 @@ contains
 !
       double precision :: tau
       character (len=*) :: file
+!
+      integer :: ierr
+      integer :: unit=1
       real:: t_sp   ! t in single precision for backwards compatibility
 !
-      open(1,FILE=file)
-      read(1,*) t_sp
-      close(1)
+      open(unit,FILE=file,IOSTAT=ierr)
+      if (ierr /= 0) call stop_it( &
+          "Cannot open " // trim(file) // " for reading")
+      read(unit,*) t_sp
+      close(unit)
       tau = t_sp
 !
     endsubroutine rtime

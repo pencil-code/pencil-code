@@ -132,29 +132,30 @@ module Param_IO
 !   2-oct-02/wolf: coded
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
 !
-      use Mpicomm
+      use Mpicomm, only: mpibcast_logical, mpibcast_char
 !
       character (len=*) :: dir
-      logical :: exist
+      logical :: exists
+      integer :: unit=1
 !
 !  Let root processor check for existence of datadir.in.
 !
       if (lroot) then
-        inquire(FILE='datadir.in',EXIST=exist)
-        if (exist) then
-          open(1,FILE='datadir.in',FORM='formatted')
-          read(1,'(A)') dir
-          close(1)
+        inquire(FILE='datadir.in',EXIST=exists)
+        if (exists) then
+          open(unit,FILE='datadir.in',FORM='formatted')
+          read(unit,'(A)') dir
+          close(unit)
         endif
       endif
 !
 !  Tell other processors whether we need to communicate dir (i.e. datadir).
 !
-      call mpibcast_logical(exist, 1)
+      call mpibcast_logical(exists, 1)
 !
 !  Let root processor communicate dir (i.e. datadir) to all other processors.
 !
-      if (exist) call mpibcast_char(dir, len(dir))
+      if (exists) call mpibcast_char(dir, len(dir))
 !
     endsubroutine get_datadir
 !***********************************************************************
@@ -168,22 +169,17 @@ module Param_IO
 !
       character (len=*) :: dir
       character (len=120) :: tdir
-      character (len=10) :: a_format
-      logical :: exist
+      logical :: exists
+      integer :: unit=1
 !
 !  check for existence of `data/directory_snap'
 !
-      inquire(FILE=trim(datadir)//'/directory_snap',EXIST=exist)
-      if (exist) then
-        open(1,FILE=trim(datadir)//'/directory_snap',FORM='formatted')
-! NB: the following does not work under IRIX (silently misses reading of
-! run parameters):
-!        read(1,'(a)') dir
-! ..so we do it like this:
-        a_format = '(a)'
-        read(1,a_format) tdir
-        close(1)
-        if (len(trim(tdir)) .gt. 0) call parse_shell(tdir,dir)
+      inquire(FILE=trim(datadir)//'/directory_snap',EXIST=exists)
+      if (exists) then
+        open(unit,FILE=trim(datadir)//'/directory_snap',FORM='formatted')
+        read(unit,'(A)') tdir
+        close(unit)
+        if (len(trim(tdir)) > 0) call parse_shell(tdir,dir)
       endif
       if (lroot.and.ip<20) print*,'get_snapdir: dir=',trim(dir)
 !
@@ -196,167 +192,165 @@ module Param_IO
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !
-      integer :: ierr
+      use Mpicomm, only: parallel_open, parallel_close
+!
       logical, optional :: print,file
-      character (len=30) :: label='[none]'
+!
+      integer :: ierr, unit=1
 !
 !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
 !
       if (lshear) bcx(:)='she'
 !
-! find out if we should open and close the file everytime
-! to fix the SGI reading problem
-      inquire(FILE='SGIFIX',EXIST=lsgifix)
-!
 !  open namelist file
 !
-      open(1,FILE='start.in',FORM='formatted',STATUS='old')
+      call parallel_open(unit,'start.in','formatted')
 !
 !  read through all items that *may* be present
 !  in the various modules
 !
-      label='init_pars'
-      read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
+      read(unit,NML=init_pars,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_initial_condition_pars(1,IOSTAT=ierr)
+      call read_initial_condition_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('initial_condition_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_eos_init_pars(1,IOSTAT=ierr)
+      call read_eos_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('eos_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_hydro_init_pars(1,IOSTAT=ierr)
+      call read_hydro_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('hydro_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_density_init_pars(1,IOSTAT=ierr)
+      call read_density_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('density_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_forcing_init_pars(1,IOSTAT=ierr)
+      call read_forcing_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('forcing_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_gravity_init_pars(1,IOSTAT=ierr)
+      call read_gravity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('grav_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_selfgravity_init_pars(1,IOSTAT=ierr)
+      call read_selfgravity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('selfgrav_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_poisson_init_pars(1,IOSTAT=ierr)
+      call read_poisson_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('poisson_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_entropy_init_pars(1,IOSTAT=ierr)
+      call read_entropy_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('entropy_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_magnetic_init_pars(1,IOSTAT=ierr)
+      call read_magnetic_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('magnetic_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_lorenz_gauge_init_pars(1,IOSTAT=ierr)
+      call read_lorenz_gauge_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('lorenz_gauge_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_testscalar_init_pars(1,IOSTAT=ierr)
+      call read_testscalar_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('testscalar_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_testfield_init_pars(1,IOSTAT=ierr)
+      call read_testfield_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('testfield_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_testflow_init_pars(1,IOSTAT=ierr)
+      call read_testflow_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('testflow_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_radiation_init_pars(1,IOSTAT=ierr)
+      call read_radiation_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('radiation_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_pscalar_init_pars(1,IOSTAT=ierr)
+      call read_pscalar_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('pscalar_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_chiral_init_pars(1,IOSTAT=ierr)
+      call read_chiral_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('chiral_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_chemistry_init_pars(1,IOSTAT=ierr)
+      call read_chemistry_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('chemistry_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_signal_init_pars(1,IOSTAT=ierr)
+      call read_signal_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('signal_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_dustvelocity_init_pars(1,IOSTAT=ierr)
+      call read_dustvelocity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('dustvelocity_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_dustdensity_init_pars(1,IOSTAT=ierr)
+      call read_dustdensity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('dustdensity_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_neutralvelocity_init_pars(1,IOSTAT=ierr)
+      call read_neutralvelocity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('neutralvelocity_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_neutraldensity_init_pars(1,IOSTAT=ierr)
+      call read_neutraldensity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('neutraldensity_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_cosmicray_init_pars(1,IOSTAT=ierr)
+      call read_cosmicray_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('cosmicray_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_cosmicrayflux_init_pars(1,IOSTAT=ierr)
+      call read_cosmicrayflux_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('cosmicrayflux_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_interstellar_init_pars(1,IOSTAT=ierr)
+      call read_interstellar_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('interstellar_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_shear_init_pars(1,IOSTAT=ierr)
+      call read_shear_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('shear_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_testperturb_init_pars(1,IOSTAT=ierr)
+      call read_testperturb_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('testperturb_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_viscosity_init_pars(1,IOSTAT=ierr)
+      call read_viscosity_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('viscosity_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_special_init_pars(1,IOSTAT=ierr)
+      call read_special_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('special_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_shock_init_pars(1,IOSTAT=ierr)
+      call read_shock_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('shock_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_solid_cells_init_pars(1,IOSTAT=ierr)
+      call read_solid_cells_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('solid_cells_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call read_NSCBC_init_pars(1,IOSTAT=ierr)
+      call read_NSCBC_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('NSCBC_init_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'start.in')
-      call particles_read_startpars(1,IOSTAT=ierr)
+      call particles_read_startpars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('particles_init_pars_wrap',ierr)
+      rewind(unit)
 !
       ! no input parameters for viscosity
-      label='[none]'
-      close(1)
+      call parallel_close(unit)
 !
 !  Print cvs id from first line.
 !
@@ -411,12 +405,6 @@ module Param_IO
         call fatal_error('read_startpars','')
       endif
 !
-!  In case of i/o error: print sample input list.
-!
-      return
-!
-99  call sample_startpars(label,ierr)
-!
     endsubroutine read_startpars
 !***********************************************************************
     subroutine sample_startpars(label,iostat)
@@ -438,7 +426,7 @@ module Param_IO
         if (lentropy          ) print*,'&entropy_init_pars         /'
         if (ltemperature      ) print*,'&entropy_init_pars         /'
         if (lmagnetic         ) print*,'&magnetic_init_pars        /'
-        if (llorenz_gauge     ) print*,'&lorenz_gauge_init_pars        /'
+        if (llorenz_gauge     ) print*,'&lorenz_gauge_init_pars    /'
         if (ltestscalar       ) print*,'&testscalar_init_pars      /'
         if (ltestfield        ) print*,'&testfield_init_pars       /'
         if (ltestflow         ) print*,'&testflow_init_pars        /'
@@ -462,7 +450,7 @@ module Param_IO
         if (lparticles        ) print*,'&particles_init_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
-        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(label))  print*, 'Found error in input namelist "' // trim(label) // '"'
         if (present(iostat)) print*, 'iostat = ', iostat
         if (present(iostat).or.present(label)) &
                            print*,  '-- use sample above.'
@@ -550,11 +538,12 @@ module Param_IO
       use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
       use Slices, only: setup_slices
+      use Mpicomm, only: parallel_open, parallel_close
 !
-      integer :: ierr
       logical, optional :: print,file
       character (len=*), optional :: annotation
-      character (len=30) :: label='[none]'
+!
+      integer :: ierr, unit=1
 !
 !  Reset some parameters, in particular those where we play tricks with
 !  `impossible' values
@@ -563,151 +552,146 @@ module Param_IO
 !
       if (lshear) bcx(:)='she'
 !
-!  Find out if we should open and close the file everytime
-!  to fix the SGI reading problem.
-!
-      inquire(FILE='SGIFIX',EXIST=lsgifix)
-!
 !  Open namelist file.
 !
-      open(1,FILE='run.in',FORM='formatted',STATUS='old')
+      call parallel_open(unit,'run.in','formatted')
 !
 !  Read through all items that *may* be present in the various modules.
 !  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
 !
-      label='run_pars'
-                         read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
+      read(unit,NML=run_pars,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_eos_run_pars(1,IOSTAT=ierr)
+      call read_eos_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('eos_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_hydro_run_pars(1,IOSTAT=ierr)
+      call read_hydro_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('hydro_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_density_run_pars(1,IOSTAT=ierr)
+      call read_density_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('density_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_forcing_run_pars(1,IOSTAT=ierr)
+      call read_forcing_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('forcing_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_gravity_run_pars(1,IOSTAT=ierr)
+      call read_gravity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('grav_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_selfgravity_run_pars(1,IOSTAT=ierr)
+      call read_selfgravity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('selfgrav_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_poisson_run_pars(1,IOSTAT=ierr)
+      call read_poisson_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('poisson_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_entropy_run_pars(1,IOSTAT=ierr)
+      call read_entropy_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('entropy_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_magnetic_run_pars(1,IOSTAT=ierr)
+      call read_magnetic_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('magnetic_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_lorenz_gauge_run_pars(1,IOSTAT=ierr)
+      call read_lorenz_gauge_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('lorenz_gauge_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_testscalar_run_pars(1,IOSTAT=ierr)
+      call read_testscalar_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('testscalar_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_testfield_run_pars(1,IOSTAT=ierr)
+      call read_testfield_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('testfield_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_testflow_run_pars(1,IOSTAT=ierr)
+      call read_testflow_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('testflow_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_radiation_run_pars(1,IOSTAT=ierr)
+      call read_radiation_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('radiation_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_pscalar_run_pars(1,IOSTAT=ierr)
+      call read_pscalar_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('pscalar_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_chiral_run_pars(1,IOSTAT=ierr)
+      call read_chiral_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('chiral_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_chemistry_run_pars(1,IOSTAT=ierr)
+      call read_chemistry_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('chemistry_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_dustvelocity_run_pars(1,IOSTAT=ierr)
+      call read_dustvelocity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('dustvelocity_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_dustdensity_run_pars(1,IOSTAT=ierr)
+      call read_dustdensity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('dustdensity_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_neutralvelocity_run_pars(1,IOSTAT=ierr)
+      call read_neutralvelocity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('neutralvelocity_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_neutraldensity_run_pars(1,IOSTAT=ierr)
+      call read_neutraldensity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('neutraldensity_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_cosmicray_run_pars(1,IOSTAT=ierr)
+      call read_cosmicray_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('cosmicray_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_cosmicrayflux_run_pars(1,IOSTAT=ierr)
+      call read_cosmicrayflux_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('cosmicrayflux_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_interstellar_run_pars(1,IOSTAT=ierr)
+      call read_interstellar_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('interstellar_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_shear_run_pars(1,IOSTAT=ierr)
+      call read_shear_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('shear_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_testperturb_run_pars(1,IOSTAT=ierr)
+      call read_testperturb_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('testperturb_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_viscosity_run_pars(1,IOSTAT=ierr)
+      call read_viscosity_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('viscosity_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_special_run_pars(1,IOSTAT=ierr)
+      call read_special_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('special_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_shock_run_pars(1,IOSTAT=ierr)
+      call read_shock_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('shock_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_solid_cells_run_pars(1,IOSTAT=ierr)
+      call read_solid_cells_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('solid_cells_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call read_NSCBC_run_pars(1,IOSTAT=ierr)
+      call read_NSCBC_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('NSCBC_run_pars',ierr)
+      rewind(unit)
 !
-      call sgi_fix(lsgifix,1,'run.in')
-      call particles_read_runpars(1,IOSTAT=ierr)
+      call particles_read_runpars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
+      rewind(unit)
 !
-      label='[none]'
-      close(1)
+      call parallel_close(unit)
 !
 !  Copy boundary conditions on first dust species to all others.
 !
@@ -762,12 +746,6 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_runpars')
 !
-!  In case of i/o error: print sample input list.
-!
-      return
-!
-99    call sample_runpars(label,ierr)
-!
     endsubroutine read_runpars
 !***********************************************************************
     subroutine sample_runpars(label,iostat)
@@ -815,7 +793,7 @@ module Param_IO
         if (lparticles      ) print*,'&particles_run_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
-        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(label))  print*, 'Found error in input namelist "' // trim(label) // '"'
         if (present(iostat)) print*, 'iostat = ', iostat
         if (present(iostat).or.present(label)) &
                            print*,  '-- use sample above.'
@@ -824,19 +802,6 @@ module Param_IO
       call fatal_error('sample_runpars','')
 !
     endsubroutine sample_runpars
-!***********************************************************************
-    subroutine sgi_fix(lfix,lun,file)
-!
-      logical :: lfix
-      integer :: lun
-      character (LEN=*) :: file
-!
-      if (lfix) then
-        close (lun)
-        open(lun, FILE=file,FORM='formatted')
-      endif
-!
-    endsubroutine sgi_fix
 !***********************************************************************
     subroutine print_runpars(file,annotation)
 !
@@ -852,7 +817,8 @@ module Param_IO
       character (len=datelen) :: date
 !
       if (lroot) then
-        line = read_line_from_file('RELOAD') ! get first line from file RELOAD
+        ! get first line from file RELOAD
+        line = read_line_from_file('RELOAD')
         if ((line == '') .and. present(annotation)) then
           line = trim(annotation)
         endif
@@ -861,7 +827,7 @@ module Param_IO
           call date_time_string(date)
           open(unit,FILE=file,position='append')
           write(unit,*) &
-               '! -------------------------------------------------------------'
+              '! -------------------------------------------------------------'
 !
 !  Add comment from `RELOAD' and time.
 !
@@ -870,7 +836,7 @@ module Param_IO
           write(unit,*) '! t=', t
         endif
 !
-        write(unit,NML=run_pars             )
+        write(unit,NML=run_pars)
 !
         call write_eos_run_pars(unit)
         call write_hydro_run_pars(unit)
@@ -904,9 +870,7 @@ module Param_IO
         call write_NSCBC_run_pars(unit)
         call particles_wparam2(unit)
 !
-        if (present(file)) then
-          close(unit)
-        endif
+        if (present(file)) close(unit)
 !
       endif
 !
@@ -1020,6 +984,7 @@ module Param_IO
       logical :: linterstellar  = linterstellar_var
       logical :: lcosmicray     = lcosmicray_var
       logical :: lcosmicrayflux = lcosmicrayflux_var
+      integer :: unit=1
 !
       namelist /lphysics/ &
           lhydro,ldensity,lentropy,lmagnetic, llorenz_gauge, &
@@ -1038,52 +1003,52 @@ module Param_IO
 !  one at each site.)
 !
       if (lroot) then
-        open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe', &
+        open(unit,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe', &
                STATUS='unknown')
 !
 !  Write init_pars.
 !
-        write(1,NML=init_pars)
+        write(unit,NML=init_pars)
 !
 !  Write each namelist separately.
 !
-        call write_eos_init_pars(1)
-        call write_hydro_init_pars(1)
-        call write_density_init_pars(1)
-        call write_forcing_init_pars(1)
-        call write_gravity_init_pars(1)
-        call write_selfgravity_init_pars(1)
-        call write_poisson_init_pars(1)
-        call write_entropy_init_pars(1)
-        call write_magnetic_init_pars(1)
-        call write_lorenz_gauge_init_pars(1)
-        call write_testscalar_init_pars(1)
-        call write_testfield_init_pars(1)
-        call write_testflow_init_pars(1)
-        call write_radiation_init_pars(1)
-        call write_pscalar_init_pars(1)
-        call write_chiral_init_pars(1)
-        call write_chemistry_init_pars(1)
-        call write_signal_init_pars(1)
-        call write_dustvelocity_init_pars(1)
-        call write_dustdensity_init_pars(1)
-        call write_neutralvelocity_init_pars(1)
-        call write_neutraldensity_init_pars(1)
-        call write_cosmicray_init_pars(1)
-        call write_cosmicrayflux_init_pars(1)
-        call write_interstellar_init_pars(1)
-        call write_shear_init_pars(1)
-        call write_testperturb_init_pars(1)
-        call write_viscosity_init_pars(1)
-        call write_special_init_pars(1)
-        call write_shock_init_pars(1)
-        call write_solid_cells_init_pars(1)
-        call write_NSCBC_init_pars(1)
-        call write_initial_condition_pars(1)
-        call particles_wparam(1)
+        call write_eos_init_pars(unit)
+        call write_hydro_init_pars(unit)
+        call write_density_init_pars(unit)
+        call write_forcing_init_pars(unit)
+        call write_gravity_init_pars(unit)
+        call write_selfgravity_init_pars(unit)
+        call write_poisson_init_pars(unit)
+        call write_entropy_init_pars(unit)
+        call write_magnetic_init_pars(unit)
+        call write_lorenz_gauge_init_pars(unit)
+        call write_testscalar_init_pars(unit)
+        call write_testfield_init_pars(unit)
+        call write_testflow_init_pars(unit)
+        call write_radiation_init_pars(unit)
+        call write_pscalar_init_pars(unit)
+        call write_chiral_init_pars(unit)
+        call write_chemistry_init_pars(unit)
+        call write_signal_init_pars(unit)
+        call write_dustvelocity_init_pars(unit)
+        call write_dustdensity_init_pars(unit)
+        call write_neutralvelocity_init_pars(unit)
+        call write_neutraldensity_init_pars(unit)
+        call write_cosmicray_init_pars(unit)
+        call write_cosmicrayflux_init_pars(unit)
+        call write_interstellar_init_pars(unit)
+        call write_shear_init_pars(unit)
+        call write_testperturb_init_pars(unit)
+        call write_viscosity_init_pars(unit)
+        call write_special_init_pars(unit)
+        call write_shock_init_pars(unit)
+        call write_solid_cells_init_pars(unit)
+        call write_NSCBC_init_pars(unit)
+        call write_initial_condition_pars(unit)
+        call particles_wparam(unit)
         ! The following parameters need to be communicated to IDL
-        write(1,NML=lphysics              )
-        close(1)
+        write(unit,NML=lphysics)
+        close(unit)
       endif
 !
       call keep_compiler_quiet(lhydro)
@@ -1104,46 +1069,86 @@ module Param_IO
 !
 !  21-jan-02/wolf: coded
 !
-      open(1,FILE=trim(datadir)//'/param.nml')
-      read(1,NML=init_pars)
-      call read_eos_init_pars(1)
-      call read_hydro_init_pars(1)
-      call read_density_init_pars(1)
-      call read_forcing_init_pars(1)
-      call read_gravity_init_pars(1)
-      call read_selfgravity_init_pars(1)
-      call read_poisson_init_pars(1)
-      call read_entropy_init_pars(1)
-      call read_magnetic_init_pars(1)
-      call read_testscalar_init_pars(1)
-      call read_testfield_init_pars(1)
-      call read_testflow_init_pars(1)
-      call read_radiation_init_pars(1)
-      call read_pscalar_init_pars(1)
-      call read_chiral_init_pars(1)
-      call read_chemistry_init_pars(1)
-      call read_signal_init_pars(1)
-      call read_dustvelocity_init_pars(1)
-      call read_dustdensity_init_pars(1)
-      call read_neutralvelocity_init_pars(1)
-      call read_neutraldensity_init_pars(1)
-      call read_cosmicray_init_pars(1)
-      call read_cosmicrayflux_init_pars(1)
-      call read_interstellar_init_pars(1)
-      call read_shear_init_pars(1)
-      call read_testperturb_init_pars(1)
-      call read_viscosity_init_pars(1)
-      call read_special_init_pars(1)
-      call read_shock_init_pars(1)
-      call read_solid_cells_init_pars(1)
-      call read_NSCBC_init_pars(1)
-      call read_initial_condition_pars(1)
-      call particles_rparam(1)
-      close(1)
+      use Mpicomm, only: parallel_open, parallel_close
 !
-      if (lroot.and.ip<14) then
-        print*, "rho0,gamma=", rho0,gamma
-      endif
+      implicit none
+!
+      integer :: unit=1
+!
+      call parallel_open(unit,trim(datadir)//'/param.nml')
+!
+      read(unit,NML=init_pars)
+      rewind(unit)
+      call read_eos_init_pars(unit)
+      rewind(unit)
+      call read_hydro_init_pars(unit)
+      rewind(unit)
+      call read_density_init_pars(unit)
+      rewind(unit)
+      call read_forcing_init_pars(unit)
+      rewind(unit)
+      call read_gravity_init_pars(unit)
+      rewind(unit)
+      call read_selfgravity_init_pars(unit)
+      rewind(unit)
+      call read_poisson_init_pars(unit)
+      rewind(unit)
+      call read_entropy_init_pars(unit)
+      rewind(unit)
+      call read_magnetic_init_pars(unit)
+      rewind(unit)
+      call read_testscalar_init_pars(unit)
+      rewind(unit)
+      call read_testfield_init_pars(unit)
+      rewind(unit)
+      call read_testflow_init_pars(unit)
+      rewind(unit)
+      call read_radiation_init_pars(unit)
+      rewind(unit)
+      call read_pscalar_init_pars(unit)
+      rewind(unit)
+      call read_chiral_init_pars(unit)
+      rewind(unit)
+      call read_chemistry_init_pars(unit)
+      rewind(unit)
+      call read_signal_init_pars(unit)
+      rewind(unit)
+      call read_dustvelocity_init_pars(unit)
+      rewind(unit)
+      call read_dustdensity_init_pars(unit)
+      rewind(unit)
+      call read_neutralvelocity_init_pars(unit)
+      rewind(unit)
+      call read_neutraldensity_init_pars(unit)
+      rewind(unit)
+      call read_cosmicray_init_pars(unit)
+      rewind(unit)
+      call read_cosmicrayflux_init_pars(unit)
+      rewind(unit)
+      call read_interstellar_init_pars(unit)
+      rewind(unit)
+      call read_shear_init_pars(unit)
+      rewind(unit)
+      call read_testperturb_init_pars(unit)
+      rewind(unit)
+      call read_viscosity_init_pars(unit)
+      rewind(unit)
+      call read_special_init_pars(unit)
+      rewind(unit)
+      call read_shock_init_pars(unit)
+      rewind(unit)
+      call read_solid_cells_init_pars(unit)
+      rewind(unit)
+      call read_NSCBC_init_pars(unit)
+      rewind(unit)
+      call read_initial_condition_pars(unit)
+      rewind(unit)
+      call particles_rparam(unit)
+      rewind(unit)
+!
+      call parallel_close(unit)
+!
+      if (lroot.and.ip<14) print*, "rho0,gamma=", rho0, gamma
 !
     endsubroutine rparam
 !***********************************************************************
@@ -1153,41 +1158,43 @@ module Param_IO
 !
 !  21-jan-02/wolf: coded
 !
+      integer :: unit=1
+!
       if (lroot) then
         open(1,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
         write(1,NML=run_pars)
-        call write_eos_run_pars(1)
-        call write_hydro_run_pars(1)
-        call write_density_run_pars(1)
-        call write_forcing_run_pars(1)
-        call write_gravity_run_pars(1)
-        call write_selfgravity_run_pars(1)
-        call write_poisson_run_pars(1)
-        call write_entropy_run_pars(1)
-        call write_magnetic_run_pars(1)
-        call write_testscalar_run_pars(1)
-        call write_testfield_run_pars(1)
-        call write_testflow_run_pars(1)
-        call write_radiation_run_pars(1)
-        call write_pscalar_run_pars(1)
-        call write_chiral_run_pars(1)
-        call write_chemistry_run_pars(1)
-        call write_dustvelocity_run_pars(1)
-        call write_dustdensity_run_pars(1)
-        call write_neutralvelocity_run_pars(1)
-        call write_neutraldensity_run_pars(1)
-        call write_cosmicray_run_pars(1)
-        call write_cosmicrayflux_run_pars(1)
-        call write_interstellar_run_pars(1)
-        call write_shear_run_pars(1)
-        call write_testperturb_run_pars(1)
-        call write_viscosity_run_pars(1)
-        call write_special_run_pars(1)
-        call write_shock_run_pars(1)
-        call write_solid_cells_run_pars(1)
-        call write_NSCBC_run_pars(1)
-        call particles_wparam2(1)
-        close(1)
+        call write_eos_run_pars(unit)
+        call write_hydro_run_pars(unit)
+        call write_density_run_pars(unit)
+        call write_forcing_run_pars(unit)
+        call write_gravity_run_pars(unit)
+        call write_selfgravity_run_pars(unit)
+        call write_poisson_run_pars(unit)
+        call write_entropy_run_pars(unit)
+        call write_magnetic_run_pars(unit)
+        call write_testscalar_run_pars(unit)
+        call write_testfield_run_pars(unit)
+        call write_testflow_run_pars(unit)
+        call write_radiation_run_pars(unit)
+        call write_pscalar_run_pars(unit)
+        call write_chiral_run_pars(unit)
+        call write_chemistry_run_pars(unit)
+        call write_dustvelocity_run_pars(unit)
+        call write_dustdensity_run_pars(unit)
+        call write_neutralvelocity_run_pars(unit)
+        call write_neutraldensity_run_pars(unit)
+        call write_cosmicray_run_pars(unit)
+        call write_cosmicrayflux_run_pars(unit)
+        call write_interstellar_run_pars(unit)
+        call write_shear_run_pars(unit)
+        call write_testperturb_run_pars(unit)
+        call write_viscosity_run_pars(unit)
+        call write_special_run_pars(unit)
+        call write_shock_run_pars(unit)
+        call write_solid_cells_run_pars(unit)
+        call write_NSCBC_run_pars(unit)
+        call particles_wparam2(unit)
+        close(unit)
       endif
 !
     endsubroutine wparam2
@@ -1198,30 +1205,31 @@ module Param_IO
 !  Do this only when on root processor.
 !
      integer :: i
+     integer :: unit=1
 !
      if (lroot) then
-       open(1,FILE=trim(datadir)//'/pencils.list')
-       write(1,*) 'Pencils requested:'
+       open(unit,FILE=trim(datadir)//'/pencils.list')
+       write(unit,*) 'Pencils requested:'
        do i=1,npencils
-         if (lpenc_requested(i)) write(1,*) i, pencil_names(i)
+         if (lpenc_requested(i)) write(unit,*) i, pencil_names(i)
        enddo
-       write(1,*) ''
-       write(1,*) 'Pencils requested for diagnostics:'
+       write(unit,*) ''
+       write(unit,*) 'Pencils requested for diagnostics:'
        do i=1,npencils
-         if (lpenc_diagnos(i)) write(1,*) i, pencil_names(i)
+         if (lpenc_diagnos(i)) write(unit,*) i, pencil_names(i)
        enddo
-       write(1,*) ''
-       write(1,*) 'Pencils requested for 2-D diagnostics:'
+       write(unit,*) ''
+       write(unit,*) 'Pencils requested for 2-D diagnostics:'
        do i=1,npencils
-         if (lpenc_diagnos2d(i)) write(1,*) i, pencil_names(i)
+         if (lpenc_diagnos2d(i)) write(unit,*) i, pencil_names(i)
        enddo
-       write(1,*) ''
-       write(1,*) 'Pencils requested video output'
+       write(unit,*) ''
+       write(unit,*) 'Pencils requested video output'
        do i=1,npencils
-         if (lpenc_video(i)) write(1,*) i, pencil_names(i)
+         if (lpenc_video(i)) write(unit,*) i, pencil_names(i)
        enddo
        print*, 'write_pencil_info: pencil information written to the file pencils.list'
-       close(1)
+       close(unit)
      endif
 !
    endsubroutine write_pencil_info

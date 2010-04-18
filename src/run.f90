@@ -248,6 +248,7 @@ program run
   if (lparticles_nbody) &
       call particles_nbody_read_snapshot(&
       trim(datadir)//'/proc0/spvar.dat')
+  call get_nseed(nseed)
 !
 !  Read time and global variables (if any).
 !
@@ -344,7 +345,6 @@ program run
 !  Perform pencil_case consistency check if requested.
 !
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
-  call mpibcast_logical(suppress_pencil_check, 1)
   if ( (lpencil_check .and. .not. suppress_pencil_check) .or. &
        ((.not.lpencil_check).and.lpencil_check_small) ) then
     call pencil_consistency_check(f,df,p)
@@ -365,9 +365,11 @@ program run
     it1d=it1
   else
     if (it1d<it1) then
-      if (lroot) call fatal_error('run','it1d smaller than it1')
+      if (lroot) call stop_it_if_any(.true.,'run: it1d smaller than it1')
     endif
   endif
+  ! globally catch eventual 'stop_it_if_any' call from single MPI ranks
+  call stop_it_if_any(.false.,'')
 !
 !  Prepare signal catching
 !
@@ -385,45 +387,33 @@ program run
 !  Exit do loop if file `STOP' exists.
 !
       lstop=control_file_exists('STOP',DELETE=.true.)
-      call mpibcast_logical(lstop,1)
       if (lstop .or. t>tmax .or. emergency_stop) then
         if (lroot) then
           print*
           if (emergency_stop) print*, 'Emergency stop requested'
           if (lstop) print*, 'Found STOP file'
           if (t>tmax) print*, 'Maximum simulation time exceeded'
-          resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
-          if (resubmit) then
-            print*, 'Cannot be resubmitted'
-          else
-          endif
         endif
+        resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
+        if (resubmit) print*, 'Cannot be resubmitted'
         exit Time_loop
       endif
 !
 !  initialize timer
 !
-    call timing('run','entered Time_loop',INSTRUCT='initialize')
+      call timing('run','entered Time_loop',INSTRUCT='initialize')
 !
 !  Re-read parameters if file `RELOAD' exists; then remove the file
 !  (this allows us to change parameters on the fly).
 !  Re-read parameters if file `RELOAD_ALWAYS' exists; don't remove file
 !  (only useful for debugging RELOAD issues).
 !
-      lreload_file       =control_file_exists('RELOAD', DELETE=.true.)
+      lreload_file       =control_file_exists('RELOAD')
       lreload_always_file=control_file_exists('RELOAD_ALWAYS')
       lreloading         =lreload_file .or. lreload_always_file
 !
-!  In some compilers (particularly pathf90) the file reload is being give
-!  unit = 1 hence there is conflict during re-reading of parameters.
-!  In this temporary fix, the RELOAD file is being removed just after it
-!  has been seen, not after RELOAD-ing has been completed. There must
-!  be a better solution.
-!
-      call mpibcast_logical(lreloading, 1)
-!
       if (lreloading) then
-        if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
+        if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
         dt=0.0
         call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
@@ -448,7 +438,8 @@ program run
         endif
         call choose_pencils()
         call wparam2()
-        if (lroot .and. lreload_file) call remove_file('RELOAD')
+!
+        lreload_file=control_file_exists('RELOAD', DELETE=.true.)
         lreload_file        = .false.
         lreload_always_file = .false.
         lreloading          = .false.
@@ -635,8 +626,7 @@ program run
 !  Exit do loop if wall_clock_time has exceeded max_walltime.
 !
     if (max_walltime>0.0) then
-      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
-      call mpibcast_logical(timeover,1)
+      timeover=(wall_clock_time>max_walltime)
       if (timeover) then
         if (lroot) then
           print*

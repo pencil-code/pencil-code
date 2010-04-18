@@ -9,6 +9,7 @@
 BORDER_PROFILES   = noborder_profiles
 BOUNDCOND         =   boundcond
 DEBUG             = nodebug
+SYSCALLS          =   syscalls
 DERIV             =   deriv
 FOURIER           = nofourier
 GHOSTFOLD         = noghostfold
@@ -1026,10 +1027,10 @@ endif
 ##
 ## Dhruba on andromeda.qmul cluster
 ##
-#FC=mpif90  -axW  -L${HOME}/Library/lib #(andromeda)
-#FFLAGS= -O3  #(andromeda)
-#CC=mpicc #(andromeda) 
-#CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(andromeda)
+#FC=mpif90  -axW  -L${HOME}/Library/lib #(andromeda.maths.qmul.ac.uk)
+#FFLAGS= -O3  #(andromeda.maths.qmul.ac.uk)
+#CC=mpicc #(andromeda.maths.qmul.ac.uk)
+#CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(andromeda.maths.qmul.ac.uk)
 ##
 ## Dhruba at manchester, lancaster, liverpool
 ## 
@@ -1369,11 +1370,11 @@ switchable=$(physics) $(BORDER_PROFILES).o $(INITIAL_CONDITION).o
 #
 comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o $(PARTICLES_MAP).o $(PARTICLES_MPICOMM).o
 #
-start_deps=$(comm_deps) $(TESTPERTURB).o $(DEBUG).o $(GSL).o
+start_deps=$(comm_deps) $(TESTPERTURB).o $(DEBUG).o $(GSL).o $(SYSCALLS).o $(SYSCALLS)_ansi.o
 #
 run_deps_f90=$(comm_deps) pencil_check.o equ.o $(TIMESTEP).o $(TESTPERTURB).o
 #
-run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o
+run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o $(SYSCALLS).o $(SYSCALLS)_ansi.o
 #
 start=start.o $(start_deps)
 #

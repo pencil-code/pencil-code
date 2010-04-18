@@ -278,7 +278,7 @@ module Boundcond
                     write(unit=errormsg,fmt='(A,A4,A,I3)') &
                          "No such boundary condition bcx1/2 = ", &
                          bc12(j), " for j=", j
-                    call fatal_error("boundconds_x",errormsg)
+                    call stop_it_if_any(.true.,"boundconds_x: "//trim(errormsg))
                   endif
                 endselect
               endif
@@ -286,6 +286,11 @@ module Boundcond
           enddo
         endif
       endselect
+!
+      ! Catch any 'stop_it_if_any' calls from single MPI ranks that may
+      ! have occured inside the above select statement. This final call
+      ! for all MPI ranks is necessary to prevent dead-lock situations.
+      call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_x
 !***********************************************************************
@@ -425,13 +430,18 @@ module Boundcond
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
                        bc12(j), " for j=", j
-                  call fatal_error("boundconds_y",errormsg)
+                  call stop_it_if_any(.true.,"boundconds_y: "//trim(errormsg))
                 endif
               endselect
             endif
           enddo
         enddo
       endselect
+!
+      ! Catch any 'stop_it_if_any' calls from single MPI ranks that may
+      ! have occured inside the above select statement. This final call
+      ! for all MPI ranks is necessary to prevent dead-lock situations.
+      call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_y
 !***********************************************************************
@@ -478,18 +488,6 @@ module Boundcond
 !  Boundary conditions in z
 !
       case default
-        !call get_shared_variable('Fbot',Fbot,ierr)
-        !if (ierr/=0) call stop_it("boundconds_z: "//&
-        !     "there was a problem when getting Fbot")
-        !call get_shared_variable('Ftop',Ftop,ierr)
-        !if (ierr/=0) call stop_it("boundconds_z: "//&
-        !     "there was a problem when getting Fbot")
-        !call get_shared_variable('FbotKbot',FbotKbot,ierr)
-        !if (ierr/=0) call stop_it("boundconds_z: "//&
-        !     "there was a problem when getting FbotKbot")
-        !call get_shared_variable('FtopKtop',FtopKtop,ierr)
-        !if (ierr/=0) call stop_it("boundconds_z: "//&
-        !     "there was a problem when getting FtopKtop")
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
             topbot='bot'
@@ -709,13 +707,18 @@ module Boundcond
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                        bc12(j), " for j=", j
-                  call fatal_error("boundconds_z",errormsg)
+                  call stop_it_if_any(.true.,"boundconds_z: "//trim(errormsg))
                 endif
               endselect
             endif
           enddo
         enddo
       endselect
+!
+      ! Catch any 'stop_it_if_any' calls from single MPI ranks that may
+      ! have occured inside the above select statement. This final call
+      ! for all MPI ranks is necessary to prevent dead-lock situations.
+      call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_z
 !***********************************************************************
@@ -3443,42 +3446,55 @@ module Boundcond
 !  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
        use EquationOfState, only : gamma,gamma_m1,gamma_inv,cs20,lnrho0
+       use Mpicomm, only : mpisend_real, mpirecv_real
+       use Syscalls, only : file_exists
 !
        real, dimension (mx,my,mz,mfarray) :: f
 !
        real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
        real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
-       integer :: lend,iostat,i,stat,iref
+       integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
+       integer :: tag_tl=345,tag_tr=346,tag_dt=347
+       integer :: lend=0,ierr,i=0,stat,iref,px,py
        real, save :: tl=0.,tr=0.,delta_t=0.
        real  :: zmin
        logical, optional :: quenching
        logical :: quench
 !
+       character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
+       character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
+       integer :: unit=1
+!
        intent (inout) :: f
 !
-       iostat = 0
-       stat = 0
-       if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=iostat)
-       if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
-       iostat = max(stat,iostat)
-       if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
-       iostat = max(stat,iostat)
-       if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
-       iostat = max(stat,iostat)
-       allocate(uxd(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(uyd(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(quen(nx,ny),stat=stat);        iostat = max(stat,iostat)
-       allocate(pp(nx,ny),stat=stat);          iostat = max(stat,iostat)
-       allocate(betaq(nx,ny),stat=stat);       iostat = max(stat,iostat)
-       allocate(fac(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(bbx(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(bby(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(bbz(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(bb2(nx,ny),stat=stat);         iostat = max(stat,iostat)
-       allocate(tmp(nxgrid,nygrid),stat=stat); iostat = max(stat,iostat)
+       if (lroot .and. .not. file_exists(vel_times_dat)) &
+           call stop_it_if_any(.true.,'uu_driver: Could not find file "'//trim(vel_times_dat)//'"')
+       if (lroot .and. .not. file_exists(vel_field_dat)) &
+           call stop_it_if_any(.true.,'uu_driver: Could not find file "'//trim(vel_field_dat)//'"')
 !
-       if (iostat>0) call fatal_error('uu_driver', &
+       ierr = 0
+       stat = 0
+       if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=ierr)
+       if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
+       ierr = max(stat,ierr)
+       if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
+       ierr = max(stat,ierr)
+       if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
+       ierr = max(stat,ierr)
+       allocate(uxd(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(uyd(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(quen(nx,ny),stat=stat);        ierr = max(stat,ierr)
+       allocate(pp(nx,ny),stat=stat);          ierr = max(stat,ierr)
+       allocate(betaq(nx,ny),stat=stat);       ierr = max(stat,ierr)
+       allocate(fac(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(bbx(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(bby(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(bbz(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(bb2(nx,ny),stat=stat);         ierr = max(stat,ierr)
+       allocate(tmp(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+!
+       if (ierr>0) call stop_it_if_any(.true.,'uu_driver: '// &
            'Could not allocate memory for all variable, please check')
 !
        if (present(quenching)) then
@@ -3490,46 +3506,103 @@ module Boundcond
 !
 !  Read the time table
 !
-       if (t*unit_time<tl+delta_t.or.t*unit_time>=tr+delta_t.and.iostat /= -2) then
+       if ((t*unit_time<tl+delta_t) .or. (t*unit_time>=tr+delta_t)) then
 !
-         inquire(IOLENGTH=lend) tl
-         close (10)
-         open (10,file='driver/vel_times.dat',form='unformatted', &
-             status='unknown',recl=lend,access='direct')
+         if (lroot) then
+           inquire(IOLENGTH=lend) tl
+           open (unit,file=vel_times_dat,form='unformatted',status='unknown',recl=lend,access='direct')
 !
-         iostat = 0
-         i=0
-         do while (iostat == 0)
-           i=i+1
-           read (10,rec=i,iostat=iostat) tl
-           read (10,rec=i+1,iostat=iostat) tr
-           if (iostat /= 0) then
-             i=1
-             delta_t = t*unit_time                  ! EOF is reached => read again
-             read (10,rec=i,iostat=iostat) tl
-             read (10,rec=i+1,iostat=iostat) tr
-             iostat=-1
-           else
-             if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) iostat=-1
-             ! correct time step is reached
-           endif
-         enddo
-         close (10)
+           ierr = 0
+           i=0
+           do while (ierr == 0)
+             i=i+1
+             read (unit,rec=i,iostat=ierr) tl
+             read (unit,rec=i+1,iostat=ierr) tr
+             if (ierr /= 0) then
+               i=1
+               delta_t = t*unit_time                  ! EOF is reached => read again
+               read (unit,rec=i,iostat=ierr) tl
+               read (unit,rec=i+1,iostat=ierr) tr
+               ierr=-1
+             else
+               if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) ierr=-1
+               ! correct time step is reached
+             endif
+           enddo
+           close (unit)
+!
+           do px=0, nprocx-1
+             do py=0, nprocy-1
+               if ((px /= 0) .or. (py /= 0)) then
+                 call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
+                 call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
+                 call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
+               endif
+             enddo
+           enddo
+         else
+           call mpirecv_real (tl, 1, 0, tag_tl)
+           call mpirecv_real (tr, 1, 0, tag_tr)
+           call mpirecv_real (delta_t, 1, 0, tag_dt)
+         endif
 !
 ! Read velocity field
 !
-         open (10,file='driver/vel_field.dat',form='unformatted', &
-             status='unknown',recl=lend*nxgrid*nygrid,access='direct')
-         read (10,rec=(2*i-1)) tmp
-         uxl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-         read (10,rec=2*i)     tmp
-         uyl = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         if (lroot) then
+           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
-         read (10,rec=2*i+1)   tmp
-         uxr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-         read (10,rec=2*i+2)   tmp
-         uyr = tmp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-         close (10)
+           read (unit,rec=2*i-1) tmp
+           do px=0, nprocx-1
+             do py=0, nprocy-1
+               if ((px /= 0) .or. (py /= 0)) then
+                 uxl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                 call mpisend_real (uxl, (/ nx, ny /), px+py*nprocx, tag_xl)
+               endif
+             enddo
+           enddo
+           uxl = tmp(1:nx,1:ny)
+!
+           read (unit,rec=2*i)   tmp
+           do px=0, nprocx-1
+             do py=0, nprocy-1
+               if ((px /= 0) .or. (py /= 0)) then
+                 uyl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                 call mpisend_real (uyl, (/ nx, ny /), px+py*nprocx, tag_yl)
+               endif
+             enddo
+           enddo
+           uyl = tmp(1:nx,1:ny)
+!
+           read (unit,rec=2*i+1) tmp
+           do px=0, nprocx-1
+             do py=0, nprocy-1
+               if ((px /= 0) .or. (py /= 0)) then
+                 uxr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                 call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_xr)
+               endif
+             enddo
+           enddo
+           uxr = tmp(1:nx,1:ny)
+!
+           read (unit,rec=2*i+2) tmp
+           uyr = tmp(1:nx,1:ny)
+           do px=0, nprocx-1
+             do py=0, nprocy-1
+               if ((px /= 0) .or. (py /= 0)) then
+                 uyr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                 call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_yr)
+               endif
+             enddo
+           enddo
+           uyr = tmp(1:nx,1:ny)
+!
+           close (unit)
+         else
+           call mpirecv_real (uxl, (/ nx, ny /), 0, tag_xl)
+           call mpirecv_real (uyl, (/ nx, ny /), 0, tag_yl)
+           call mpirecv_real (uxr, (/ nx, ny /), 0, tag_xr)
+           call mpirecv_real (uyr, (/ nx, ny /), 0, tag_yr)
+         endif
 !
          uxl = uxl / 10. / unit_velocity
          uxr = uxr / 10. / unit_velocity
@@ -3616,12 +3689,10 @@ module Boundcond
          bb2 = bb2/(2.*mu0)
 !
          if (ltemperature) then
-           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+ &
-               f(l1:l2,m1:m2,iref,ilnTT))
+           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+f(l1:l2,m1:m2,iref,ilnTT))
          else if (lentropy) then
            if (pretend_lnTT) then
-             pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+ &
-                 f(l1:l2,m1:m2,iref,iss))
+             pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+f(l1:l2,m1:m2,iref,iss))
            else
              pp=gamma*(f(l1:l2,m1:m2,iref,iss)+ &
                  f(l1:l2,m1:m2,iref,ilnrho))-gamma_m1*lnrho0
@@ -3666,10 +3737,11 @@ module Boundcond
 !  17-feb-10/bing: coded
 !
       use Fourier, only : fourier_transform_other
+      use Mpicomm, only : mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, save :: tl=0.,tr=0.,delta_t=0.
-      integer :: iostat,lend,i,idx2,idy2,stat
+      integer :: ierr,lend,i,idx2,idy2,stat
       logical :: ex
 !
       real, dimension (:,:), allocatable, save :: Bz0l,Bz0r
@@ -3680,26 +3752,29 @@ module Boundcond
 !
       real :: mu0_SI,u_b,time_SI
 !
-      iostat = 0
-      stat = 0
-      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=iostat)
-      if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
-      iostat = max(stat,iostat)
-      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
-      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
-      allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
-      allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
-      allocate(kx(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
-      allocate(ky(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
-      allocate(k2(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
+      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+      character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
 !
-      if (iostat>0) call fatal_error('bc_force_aa_time', &
+      ierr = 0
+      stat = 0
+      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=ierr)
+      if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+      allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
+      allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
+      allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+      allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+      allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+!
+      if (ierr>0) call fatal_error('bc_force_aa_time', &
           'Could not allocate memory for all variables, please check')
 !
-      inquire (file='driver/mag_field.dat',exist=ex)
-      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: mag_field.dat')
-      inquire (file='driver/mag_times.dat',exist=ex)
-      if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: mag_times.dat')
+      inquire (file=mag_field_dat,exist=ex)
+      if (.not. ex) call stop_it_if_any(.true.,'bc_force_aa_time: File does not exists: '//trim(mag_field_dat))
+      inquire (file=mag_times_dat,exist=ex)
+      if (.not. ex) call stop_it_if_any(.true.,'bc_force_aa_time: File does not exists: '//trim(mag_times_dat))
 !
       time_SI = t*unit_time
 !
@@ -3710,36 +3785,36 @@ module Boundcond
       ky =spread(ky_fft,1,nxgrid)
       k2 = kx*kx + ky*ky
 !
-      if (tr+delta_t.le.time_SI) then
+      if (tr+delta_t <= time_SI) then
         !
         inquire(IOLENGTH=lend) tl
-        open (10,file='driver/mag_times.dat',form='unformatted',status='unknown', &
+        open (10,file=mag_times_dat,form='unformatted',status='unknown', &
             recl=lend,access='direct')
         !
-        iostat = 0
+        ierr = 0
         tl = 0.
         i=0
-        do while (iostat == 0)
+        do while (ierr == 0)
           i=i+1
-          read (10,rec=i,iostat=iostat) tl
-          read (10,rec=i+1,iostat=iostat) tr
-          if (iostat /= 0) then
+          read (10,rec=i,iostat=ierr) tl
+          read (10,rec=i+1,iostat=ierr) tr
+          if (ierr /= 0) then
             delta_t = time_SI                  ! EOF is reached => read again
             i=1
-            read (10,rec=i,iostat=iostat) tl
-            read (10,rec=i+1,iostat=iostat) tr
-            iostat=-1
+            read (10,rec=i,iostat=ierr) tl
+            read (10,rec=i+1,iostat=ierr) tr
+            ierr=-1
           else
-            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) iostat=-1
+            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) ierr=-1
             ! correct time step is reached
           endif
         enddo
         close (10)
 !
-        open (10,file='driver/mag_field.dat',form='unformatted',status='unknown', &
+        open (10,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
-        read (10,rec=i)  Bz0l
-        read (10,rec=i+1)  Bz0r
+        read (10,rec=i) Bz0l
+        read (10,rec=i+1) Bz0r
         close (10)
 !
         mu0_SI = 4.*pi*1.e-7
@@ -4373,31 +4448,31 @@ module Boundcond
 !
       allocate(aa_re(nx,ny,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for aa_re')
+          'Could not allocate memory for aa_re',.true.)
       allocate(aa_im(nx,ny,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for aa_im')
+          'Could not allocate memory for aa_im',.true.)
       allocate(kx(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for kx')
+          'Could not allocate memory for kx',.true.)
       allocate(ky(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for ky')
+          'Could not allocate memory for ky',.true.)
       allocate(kappa(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for kappa')
+          'Could not allocate memory for kappa',.true.)
       allocate(kappa1(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for kappa1')
+          'Could not allocate memory for kappa1',.true.)
       allocate(exp_fact(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for exp_fact')
+          'Could not allocate memory for exp_fact',.true.)
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for tmp_im')
+          'Could not allocate memory for tmp_im',.true.)
       allocate(tmp_im(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for tmp_im')
+          'Could not allocate memory for tmp_im',.true.)
 !
 !  Get local wave numbers
 !
@@ -4413,14 +4488,13 @@ module Boundcond
         kappa1 = 0
       endwhere
 !
-!  Check whether we want to do top or bottom (this is processor dependent)
+!  Fourier transforms of x- and y-components on the boundary
+!  Check whether we want to do top or bottom (this is precessor dependent)
 !
       select case (topbot)
 !
-!  Potential field condition at the bottom
-!
       case ('bot')
-!
+        ! Potential field condition at the bottom
         do j=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -4428,10 +4502,7 @@ module Boundcond
 !
           delta_z  = z(n1+j) - z(n1-j)
           exp_fact = exp(-kappa*delta_z)
-!
-!  Determine potential field in ghost zones
-!
-          !  Fourier transforms of x- and y-components on the boundary
+          ! Determine potential field in ghost zones
           do i=iax,iaz
             tmp_re = f(l1:l2,m1:m2,n1+j,i)
             tmp_im = 0.0
@@ -4439,7 +4510,6 @@ module Boundcond
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
-!
          ! Transform back
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
@@ -4447,17 +4517,10 @@ module Boundcond
             call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n1-j,i) = tmp_re
           enddo
-!
         enddo
 !
-!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
-!
-        call communicate_bc_aa_pot(f,topbot)
-!
-!  Potential field condition at the top
-!
       case ('top')
-!
+        ! Potential field condition at the top
         do j=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -4465,10 +4528,7 @@ module Boundcond
 !
           delta_z  = z(n2+j) - z(n2-j)
           exp_fact = exp(-kappa*delta_z)
-!
-!  Determine potential field in ghost zones
-!
-          !  Fourier transforms of x- and y-components on the boundary
+          ! Determine potential field in ghost zones
           do i=iax,iaz
             tmp_re = f(l1:l2,m1:m2,n2-j,i)
             tmp_im = 0.0
@@ -4476,7 +4536,6 @@ module Boundcond
             aa_re(:,:,i) = tmp_re*exp_fact
             aa_im(:,:,i) = tmp_im*exp_fact
           enddo
-!
           ! Transform back
           do i=iax,iaz
             tmp_re = aa_re(:,:,i)
@@ -4484,18 +4543,16 @@ module Boundcond
             call fourier_transform_xy_xy(tmp_re,tmp_im,linv=.true.)
             f(l1:l2,m1:m2,n2+j,i) = tmp_re
           enddo
-!
         enddo
+!
+      case default
+        call fatal_error('bc_aa_pot3', 'invalid argument', (ipx==0).and.(ipy==0))
+!
+      endselect
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
-        call communicate_bc_aa_pot(f,topbot)
-!
-      case default
-!
-        if (lroot) print*,"bc_aa_pot2: invalid argument"
-!
-      endselect
+      call communicate_bc_aa_pot(f,topbot)
 !
 !  Deallocate large arrays.
 !
@@ -4531,28 +4588,28 @@ module Boundcond
 !
       allocate(aa_re(nx,ny,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for aa_re')
+          'Could not allocate memory for aa_re',.true.)
       allocate(aa_im(nx,ny,iax:iaz),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for aa_im')
+          'Could not allocate memory for aa_im',.true.)
       allocate(kx(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for kx')
+          'Could not allocate memory for kx',.true.)
       allocate(ky(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for ky')
+          'Could not allocate memory for ky',.true.)
       allocate(kappa(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for kappa')
+          'Could not allocate memory for kappa',.true.)
       allocate(kappa1(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for kappa1')
+          'Could not allocate memory for kappa1',.true.)
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for tmp_im')
+          'Could not allocate memory for tmp_im',.true.)
       allocate(fac(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for fac')
+          'Could not allocate memory for fac',.true.)
 !
 !  Get local wave numbers
 !
@@ -4573,16 +4630,13 @@ module Boundcond
         kappa1 = 0
       endwhere
 !
-!  Check whether we want to do top or bottom (this is processor dependent)
+!  Fourier transforms of x- and y-components on the boundary
+!  Check whether we want to do top or bottom (this is precessor dependent)
 !
       select case (topbot)
 !
-!  Potential field condition at the bottom
-!
       case ('bot')
-!
-!  Fourier transforms of x- and y-components on the boundary
-!
+        ! Potential field condition at the bottom
         do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n1,i)
           tmp_im = 0.0
@@ -4594,9 +4648,7 @@ module Boundcond
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
-!
-!  Determine potential field in ghost zones
-!
+        ! Determine potential field in ghost zones
         do j=1,nghost
           fac = exp(-j*kappa*dz)
           do i=iax,iaz
@@ -4611,16 +4663,8 @@ module Boundcond
           enddo
         enddo
 !
-!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
-!
-        call communicate_bc_aa_pot(f,topbot)
-!
-!  Potential field condition at the top
-!
       case ('top')
-!
-!  Fourier transforms of x- and y-components on the boundary
-!
+        ! Potential field condition at the top
         do i=iax,iaz
           tmp_re = f(l1:l2,m1:m2,n2,i)
           tmp_im = 0.0
@@ -4632,9 +4676,7 @@ module Boundcond
           aa_re(:,:,i) = tmp_re
           aa_im(:,:,i) = tmp_im
         enddo
-!
-!  Determine potential field in ghost zones
-!
+        ! Determine potential field in ghost zones
         do j=1,nghost
           fac = exp(-j*kappa*dz)
           do i=iax,iaz
@@ -4649,15 +4691,14 @@ module Boundcond
           enddo
         enddo
 !
+      case default
+        call fatal_error('bc_aa_pot2', 'invalid argument', (ipx==0).and.(ipy==0))
+!
+      endselect
+!
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
         call communicate_bc_aa_pot(f,topbot)
-!
-!      case default
-!
-        if (lroot) print*,"bc_aa_pot2: invalid argument"
-!
-      endselect
 !
 !  Deallocate large arrays.
 !
@@ -4692,13 +4733,13 @@ module Boundcond
 !
       allocate(f2(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot', &
-          'Could not allocate memory for f2')
+          'Could not allocate memory for f2',.true.)
       allocate(f3(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot', &
-          'Could not allocate memory for f3')
+          'Could not allocate memory for f3',.true.)
       allocate(fz(nx,ny,nghost+1),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot', &
-          'Could not allocate memory for fz')
+          'Could not allocate memory for fz',.true.)
 !
 !  potential field condition
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -4710,8 +4751,8 @@ module Boundcond
       case ('bot')
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (mod(nxgrid,nygrid)/=0) &
-             call stop_it("bc_aa_pot: pot-field doesn't work "//&
-                          "with mod(nxgrid,nygrid)/=0")
+             call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
+                 "with mod(nxgrid,nygrid)/=1", (ipx==0).and.(ipy==0))
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -4723,15 +4764,14 @@ module Boundcond
         f3=f(l1:l2,m1:m2,n1,iay)
         call potentdiv(fz,f2,f3,-1)
         f(l1:l2,m1:m2,1:n1,iaz)=-fz
-        call communicate_bc_aa_pot(f,topbot)
 !
 !  potential field condition at the top
 !
       case ('top')
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
         if (mod(nxgrid,nygrid)/=0) &
-             call stop_it("bc_aa_pot: pot-field doesn't work "//&
-                          "with mod(nxgrid,nygrid)/=1")
+             call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
+                 "with mod(nxgrid,nygrid)/=1", (ipx==0).and.(ipy==0))
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
@@ -4743,10 +4783,11 @@ module Boundcond
         f3=f(l1:l2,m1:m2,n2,iay)
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
-        call communicate_bc_aa_pot(f,topbot)
       case default
-        if (lroot) print*,"bc_aa_pot: invalid argument"
+        call fatal_error('bc_aa_pot', 'invalid argument', (ipx==0).and.(ipy==0))
       endselect
+!
+      call communicate_bc_aa_pot(f,topbot)
 !
 !  Deallocate large arrays.
 !
@@ -4781,34 +4822,34 @@ module Boundcond
 !
       allocate(fac(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for fac')
+          'Could not allocate memory for fac',.true.)
       allocate(kk(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for kk')
+          'Could not allocate memory for kk',.true.)
       allocate(f1r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f1r')
+          'Could not allocate memory for f1r',.true.)
       allocate(f1i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f1i')
+          'Could not allocate memory for f1i',.true.)
       allocate(g1r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for g1r')
+          'Could not allocate memory for g1r',.true.)
       allocate(g1i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for g1i')
+          'Could not allocate memory for g1i',.true.)
       allocate(f2r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f2r')
+          'Could not allocate memory for f2r',.true.)
       allocate(f2i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f2i')
+          'Could not allocate memory for f2i',.true.)
       allocate(f3r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f3r')
+          'Could not allocate memory for f3r',.true.)
       allocate(f3i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f3i')
+          'Could not allocate memory for f3i',.true.)
 !
 !  initialize workspace
 !
@@ -4891,43 +4932,43 @@ module Boundcond
 !
       allocate(fac(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for fac')
+          'Could not allocate memory for fac',.true.)
       allocate(kk(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for kk')
+          'Could not allocate memory for kk',.true.)
       allocate(kkkx(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for kkkx')
+          'Could not allocate memory for kkkx',.true.)
       allocate(kkky(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for kkky')
+          'Could not allocate memory for kkky',.true.)
       allocate(f1r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f1r')
+          'Could not allocate memory for f1r',.true.)
       allocate(f1i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f1i')
+          'Could not allocate memory for f1i',.true.)
       allocate(g1r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for g1r')
+          'Could not allocate memory for g1r',.true.)
       allocate(g1i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for g1i')
+          'Could not allocate memory for g1i',.true.)
       allocate(f2r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f2r')
+          'Could not allocate memory for f2r',.true.)
       allocate(f2i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f2i')
+          'Could not allocate memory for f2i',.true.)
       allocate(f3r(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f3r')
+          'Could not allocate memory for f3r',.true.)
       allocate(f3i(nx,ny),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f3i')
+          'Could not allocate memory for f3i',.true.)
       allocate(ky(nygrid),stat=stat)
       if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for ky')
+          'Could not allocate memory for ky',.true.)
 !
       f2r=f2; f2i=0
       f3r=f3; f3i=0

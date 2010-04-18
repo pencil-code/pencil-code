@@ -26,7 +26,7 @@ module Register
       use Cdata
       use General,          only: setup_mm_nn
       use Io,               only: register_io
-      use Mpicomm,          only: mpicomm_init,stop_it,stop_it_if_any
+      use Mpicomm,          only: mpicomm_init,stop_it
       use Param_Io,         only: get_datadir,get_snapdir
       use Sub
       use Chemistry,        only: register_chemistry
@@ -63,7 +63,7 @@ module Register
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
 !
-      logical :: ioerr
+      integer :: ierr
 !
 !  Initialize all mpi stuff.
 !
@@ -93,16 +93,19 @@ module Register
 !
 !  Writing files for use with IDL.
 !
-      ioerr = .true.            ! will be overridden unless we go 911
       if (lroot) then
-        print*, trim(datadir)//'/def_var.pro'
-        open(15,FILE=trim(datadir)//'/def_var.pro',ERR=911)
-        open(4,FILE=trim(datadir)//'/variables.pro',ERR=911)
+        if (ldebug) print *, 'Creating ' // trim(datadir) // '/def_var.pro and variables.pro'
+        open(15,FILE=trim(datadir)//'/def_var.pro',IOSTAT=ierr)
+        if (ierr /= 0) call stop_it("Cannot open "//trim(datadir)// &
+            "/def_var.pro for writing -- is "//trim(datadir)//" visible from root node?")
+        print *, 'Creating ' // trim(datadir) // '/variables.pro'
+        open(4,FILE=trim(datadir)//'/variables.pro',IOSTAT=ierr)
+        if (ierr /= 0) call stop_it("Cannot open "//trim(datadir)// &
+            "/variables.pro for writing -- is "//trim(datadir)//" visible from root node?")
         write(4,*) 'close,1'
         write(4,*) "openr,1, datadir+'/'+varfile, /F77"
         write(4,*) 'readu,1 $'
       endif
-      ioerr = .false.
 !
 !  Initialize file for writing constants to be read by IDL.
 !
@@ -168,13 +171,6 @@ module Register
 !
       if (lroot) headt=.true.
 !
-!  Something went wrong. Catches cases that would make mpich 1.x hang,
-!  provided that this is the first attempt to write a file.
-!
-911   call stop_it_if_any(ioerr, &
-          "Cannot open "//datadir//"/def_var.pro for writing" // &
-          " -- is data/ visible from root node?")
-!
     endsubroutine register_modules
 !***********************************************************************
     subroutine initialize_modules(f,lstarting)
@@ -190,7 +186,7 @@ module Register
 ! 11-sep-04/axel: began adding spherical coordinates
 !
       use Cdata
-      use Mpicomm, only: mpireduce_sum
+      use Mpicomm,          only: mpireduce_sum
       use Param_IO
       use Sub, only: remove_zprof
       use BorderProfiles,   only: initialize_border_profiles
@@ -1021,253 +1017,187 @@ module Register
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamer
       integer :: inamexy,inamexz,inamerz
-      integer :: iname_tmp,iread,iadd
-      logical :: lreset,exist,print_in_double
-      character (LEN=30)    :: cname_tmp
-      character (LEN=fnlen) :: print_in_file
+      integer :: iname_tmp,ierr,iadd
+      integer :: unit=1
+      logical :: lreset
 !
+      character (LEN=30) :: cname_tmp
+      character (LEN=30) :: print_in_file
+      character (LEN=*), parameter :: video_in_file    = 'video.in'
+      character (LEN=*), parameter :: xyaver_in_file   = 'xyaver.in'
+      character (LEN=*), parameter :: xzaver_in_file   = 'xzaver.in'
+      character (LEN=*), parameter :: yzaver_in_file   = 'yzaver.in'
+      character (LEN=*), parameter :: phizaver_in_file = 'phizaver.in'
+      character (LEN=*), parameter :: yaver_in_file    = 'yaver.in'
+      character (LEN=*), parameter :: zaver_in_file    = 'zaver.in'
+      character (LEN=*), parameter :: phiaver_in_file  = 'phiaver.in'
+!
+!  Read print.in.double if applicable, else print.in.
 !  Read in the list of variables to be printed.
 !  Recognize "!" and "#" as comments.
 !
-!  Read print.in.double if applicable, else print.in.
-!
       print_in_file = 'print.in'
-      inquire(FILE="print.in.double", EXIST=print_in_double)
-      if (print_in_double .and. (numeric_precision() == 'D')) then
-        print_in_file = 'print.in.double'
+      if (numeric_precision() == 'D') then
+        if (parallel_file_exists(trim(print_in_file)//'.double')) &
+            print_in_file = trim(print_in_file)//'.double'
       endif
-91    if (lroot) print*, 'Reading print formats from ' // trim(print_in_file)
-      inquire(FILE=print_in_file, EXIST=exist)
-      if (exist) then
-        open(1,FILE=print_in_file)
-        iname=0
-        do iname_tmp=1,mname
-          read(1,*,end=99) cname_tmp
-          if (cname_tmp(1:1)/='!'.and.cname_tmp(1:1)/='#') then
-            iname=iname+1
-            cname(iname)=cname_tmp
-          endif
-        enddo
-99      nname=iname
-        if (lroot.and.ip<14) print*,'rprint_list: nname=',nname
-        close(1)
-      else
-        open(1,FILE=print_in_file)
-        write(1,*) "it(i9)"
-        close(1)
-        if (lroot) then
-          print*, 'You must have a print.in file in the run directory!'
-          print*, 'For now we generated a minimalistic version.'
-          print*, 'Please edit it and type reload run.'
+      if (.not. parallel_file_exists(trim(print_in_file))) &
+          call stop_it('You must have a "'//trim(print_in_file)//'" file in the run directory!')
+      if (lroot) print *, 'Reading print formats from ' // trim(print_in_file)
+!
+      call parallel_open(unit,FILE=trim(print_in_file))
+      iname=0
+      do iname_tmp=1,mname
+        read(unit,*,end=99) cname_tmp
+        if ((cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= '#')) then
+          iname=iname+1
+          cname(iname)=cname_tmp
         endif
-        goto 91
-      endif
+      enddo
+99    nname=iname
+      call parallel_close(unit)
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nname=', nname
 !
 !  Read in the list of variables for video slices.
 !
-      inquire(file='video.in',exist=exist)
-      if (exist .and. dvid/=0.0) then
+      nnamev = parallel_count_lines(video_in_file)
+      if ((dvid /= 0.0) .and. (nnamev > 0)) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_vnames()
         lwrite_slices=.true.
-        open(1,file='video.in')
-        inamev=0; iread=0
-        do while (iread==0)
-          inamev=inamev+1
-          read(1,*,iostat=iread) cnamev(inamev)
+        call parallel_open(unit,file=video_in_file)
+        do inamev=1, nnamev
+          read(unit,*,iostat=ierr) cnamev(inamev)
         enddo
-        nnamev=inamev
-        close(1)
+        call parallel_close(unit)
       endif
-      if (lroot.and.ip<14) print*, 'rprint_list: ix,iy,iz,iz2=',ix,iy,iz,iz2
-      if (lroot.and.ip<14) print*, 'rprint_list: nnamev=', nnamev
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamev=', nnamev
 !
 !  Read in the list of variables for xy-averages.
 !
-      inquire(file='xyaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='xyaver.in')
-        nnamez=0; iread=0
-        do while (iread==0)
-          read(1,*,iostat=iread)
-          if (iread==0) nnamez=nnamez+1
+      nnamez = parallel_count_lines(xyaver_in_file)
+      if (nnamez > 0) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_xyaverages()
+        call parallel_open(unit,file=xyaver_in_file)
+        do inamez=1,nnamez
+          read(unit,*,iostat=ierr) cnamez(inamez)
         enddo
-        close(1)
-        if (nnamez>0) then
-!  Allocate the relevant arrays here...
-          call allocate_xyaverages()
-!  ... then read into these arrays.
-          open(1,file='xyaver.in')
-          do inamez=1,nnamez
-            read(1,*,iostat=iread) cnamez(inamez)
-          enddo
-          close(1)
-        endif
       endif
-      if (lroot.and.ip<14) print*, 'rprint_list: nnamez=',nnamez
+      call parallel_close(unit)
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamez=', nnamez
 !
 !  Read in the list of variables for xz-averages.
 !
-      inquire(file='xzaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='xzaver.in')
-        nnamey=0; iread=0
-        do while (iread==0)
-          read(1,*,iostat=iread)
-          if (iread==0) nnamey=nnamey+1
+      nnamey = parallel_count_lines(xzaver_in_file)
+      if (nnamey > 0) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_xzaverages()
+        call parallel_open(unit, xzaver_in_file)
+        do inamey=1,nnamey
+          read(unit,*,iostat=ierr) cnamey(inamey)
         enddo
-        close(1)
-        if (nnamey>0) then
-!  Allocate the relevant arrays here...
-          call allocate_xzaverages()
-!  ... then read into these arrays.
-          open(1,file='xzaver.in')
-          do inamey=1,nnamey
-            read(1,*,iostat=iread) cnamey(inamey)
-          enddo
-          close(1)
-        endif
+        call parallel_close(unit)
       endif
-      if (lroot.and.ip<14) print*, 'rprint_list: nnamey=',nnamey
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
-      inquire(file='yzaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='yzaver.in')
-        nnamex=0; iread=0
-        do while (iread==0)
-          read(1,*,iostat=iread)
-          if (iread==0) nnamex=nnamex+1
+      nnamex = parallel_count_lines(yzaver_in_file)
+      if (nnamex > 0) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_yzaverages()
+        call parallel_open(unit,file=yzaver_in_file)
+        do inamex=1,nnamex
+          read(unit,*,iostat=ierr) cnamex(inamex)
         enddo
-        close(1)
-        if (nnamex>0) then
-!  Allocate the relevant arrays here...
-          call allocate_yzaverages()
-!  ... then read into these arrays.
-          open(1,file='yzaver.in')
-          do inamex=1,nnamex
-            read(1,*,iostat=iread) cnamex(inamex)
-          enddo
-          close(1)
-        endif
+        call parallel_close(unit)
       endif
-      if (lroot.and.ip<14) print*, 'rprint_list: nnamex=',nnamex
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.
 !
-      inquire(file='phizaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='phizaver.in')
-        nnamer=0; iread=0
-        do while (iread==0)
-          read(1,*,iostat=iread)
-          if (iread==0) nnamer=nnamer+1
+      nnamer = parallel_count_lines(phizaver_in_file)
+      if (nnamer > 0) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_phizaverages()
+        call parallel_open(unit,file=phizaver_in_file)
+        do inamer=1,nnamer
+          read(unit,*,iostat=ierr) cnamer(inamer)
         enddo
-        close(1)
-        if (nnamer>0) then
-!  Allocate the relevant arrays here...
-          call allocate_phizaverages()
-!  ... then read into these arrays.
-          open(1,file='phizaver.in')
-          do inamer=1,nnamer
-            read(1,*,iostat=iread) cnamer(inamer)
-          enddo
-          close(1)
-        endif
+        call parallel_close(unit)
       else
-        lwrite_phizaverages=.false. ! switch phizaverages off
+        ! switch phizaverages off
+        lwrite_phizaverages=.false.
       endif
-      if (lroot.and.ip<14) print*, 'rprint_list: nnamer=', nnamer
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamer=', nnamer
 !
-!  2-D averages: Read the files and allocate the relevant arrays here.
+!  2-D averages:
 !
 !  Read in the list of variables for y-averages.
 !
-      inquire(file='yaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='yaver.in')
-        nnamexz=0; iread=0
-        do while (iread==0)
-          read(1,*,iostat=iread)
-          if (iread==0) nnamexz=nnamexz+1
+      nnamexz = parallel_count_lines(yaver_in_file)
+      if (nnamexz > 0) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_yaverages()
+        call parallel_open(unit,file=yaver_in_file)
+        do inamexz=1,nnamexz
+          read(unit,*,iostat=ierr) cnamexz(inamexz)
         enddo
-        close(1)
-        if (nnamexz>0) then
-!  Allocate the relevant arrays here...
-          call allocate_yaverages()
-!  ... then read into these arrays.
-          open(1,file='yaver.in')
-          do inamexz=1,nnamexz
-            read(1,*,iostat=iread) cnamexz(inamexz)
-          enddo
-          close(1)
-        endif
+        call parallel_close(unit)
       else
-        lwrite_yaverages = .false. ! switch yaverages off
+        ! switch yaverages off
+        lwrite_yaverages = .false.
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamexz=',nnamexz
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamexz=', nnamexz
 !
 !  Read in the list of variables for z-averages.
 !
-      inquire(file='zaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='zaver.in')
-        nnamexy=0; iread=0
-        do while (iread==0)
-          read(1,*,iostat=iread )
-          if (iread==0) nnamexy=nnamexy+1
+      nnamexy = parallel_count_lines(zaver_in_file)
+      if (nnamexy > 0) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_zaverages()
+        call parallel_open(unit,file=zaver_in_file)
+        do inamexy=1,nnamexy
+          read(unit,*,iostat=ierr) cnamexy(inamexy)
         enddo
-        close(1)
-        if (nnamexy>0) then
-!  Allocate the relevant arrays here...
-          call allocate_zaverages()
-!  ... then read into these arrays.
-          open(1,file='zaver.in')
-          do inamexy=1,nnamexy
-            read(1,*,iostat=iread) cnamexy(inamexy)
-          enddo
-          close(1)
-        endif
+        call parallel_close(unit)
       else
-        lwrite_zaverages = .false. ! switch zaverages off
+        ! switch zaverages off
+        lwrite_zaverages = .false.
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamexy=',nnamexy
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamexy=', nnamexy
 !
 !  Read in the list of variables for phi-averages.
 !
-      inquire(file='phiaver.in',exist=exist)
-      if (exist) then
-!  Count the number of lines in it first.
-        open(1,file='phiaver.in')
-        nnamerz=0; iread=0 ; iadd=0
-        do while (iread==0)
-          read(1,*,iostat=iread) cname_tmp
-          if (iread==0) nnamerz=nnamerz+1
-          if (cname_tmp=='uumphi')  iadd=iadd+2
-          if (cname_tmp=='bbmphi')  iadd=iadd+2
-          if (cname_tmp=='uxbmphi') iadd=iadd+2
-          if (cname_tmp=='jxbmphi') iadd=iadd+2
+      if (parallel_file_exists(phiaver_in_file)) then
+        ! Count the number of lines in it first.
+        call parallel_open(unit,file=phiaver_in_file)
+        nnamerz=0; ierr=0 ; iadd=0
+        do while (ierr==0)
+          read(unit,*,iostat=ierr) cname_tmp
+          if (ierr == 0) nnamerz=nnamerz+1
+          if (cname_tmp == 'uumphi')  iadd=iadd+2
+          if (cname_tmp == 'bbmphi')  iadd=iadd+2
+          if (cname_tmp == 'uxbmphi') iadd=iadd+2
+          if (cname_tmp == 'jxbmphi') iadd=iadd+2
         enddo
-        close(1)
-        if (nnamerz>0) then
-!  Allocate the relevant arrays here...
+        call parallel_close(unit)
+        if (nnamerz > 0) then
+          ! Allocate the relevant arrays and read into these arrays
           call allocate_phiaverages(iadd)
-!  ... then read into these arrays.
-          open(1,file='phiaver.in')
+          call parallel_open(unit,file=phiaver_in_file)
           do inamerz=1,nnamerz
-            read(1,*,iostat=iread) cnamerz(inamerz)
+            read(unit,*,iostat=ierr) cnamerz(inamerz)
           enddo
-          close(1)
+          call parallel_close(unit)
         endif
       else
-        lwrite_phiaverages = .false. ! switch phiaverages off
+        ! switch phiaverages off
+        lwrite_phiaverages = .false.
       endif
-      if (lroot.and.ip<14) print*,'rprint_list: nnamerz=',nnamerz
+      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamerz=', nnamerz
 !
 !  Set logical for 2-D averages.
 !

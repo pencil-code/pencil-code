@@ -42,8 +42,9 @@ module Pencil_check
 !
       use Equ, only: initialize_pencils, pde
       use General, only: random_number_wrapper, random_seed_wrapper
-      use Mpicomm, only: mpireduce_and, mpireduce_or, mpibcast_logical
+      use Mpicomm, only: mpireduce_and, mpireduce_or, mpibcast_logical, stop_it_if_any
       use Sub, only: notanumber
+ use Mpicomm, only: mpibarrier
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -56,7 +57,7 @@ module Pencil_check
       logical, dimension (mfarray) :: lfound_nan=.false.
       logical, dimension (mfarray) :: lfound_nan_loc=.false.
       logical :: lconsistent=.true., lconsistent_allproc=.false.
-      logical :: ldie=.false., ldie_all=.false.
+      logical :: ldie=.false.
       integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
@@ -71,15 +72,16 @@ module Pencil_check
       allocate(f_other(mx,my,mz,mfarray)  ,stat=mem_stat1)
       allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
       allocate(fname_ref(mname)           ,stat=mem_stat3)
-      if ((mem_stat1+mem_stat2+mem_stat3)>0) then
+      if ((mem_stat1>0).or.(mem_stat2>0).or.(mem_stat3>0)) then
         if (lroot) then
-        print*, '  Large buffers are needed to perform these tests'
-        print*, '  rigourously. For that reason it may only be  '
-        print*, '  possible to perform the check on smaller test runs.'
-        call fatal_error('pencil_consistency_check', &
-            'failed to allocate required memory')
+          print*, '  Large buffers are needed to perform these tests'
+          print*, '  rigourously. For that reason it may only be  '
+          print*, '  possible to perform the check on smaller test runs.'
+          call stop_it_if_any(.true.,'pencil_consistency_check: '// &
+              'failed to allocate required memory')
         endif
       endif
+      call stop_it_if_any(.false.,'')
 !
 !  Check requested pencils.
 !
@@ -122,7 +124,7 @@ module Pencil_check
                'in df_ref makes this test impossible'
           print*, 'pencil_consistency_check: quitting pencil check'
         endif
-        return
+        stop
       endif
       if (notanumber(dt1_max_ref)) &
           print*, 'pencil_consistency_check: NaNs in dt1_max_ref'
@@ -433,15 +435,11 @@ f_lop:  do iv=1,mvar
 !
       call life_support_off('end of pencil consistency check')
 !
-      call mpireduce_or(ldie,ldie_all)
-      call mpibcast_logical(ldie_all,1)
-      if (ldie_all) call fatal_error('pencil_consistency_check', &
-          'one or more tests failed')
+      call stop_it_if_any(ldie,'pencil_consistency_check: one or more tests failed')
 !
       lpencil_check_at_work=.false.
 !
       if (lroot) print*, 'pencil_consistency_check: all tests passed'
-
 !
     endsubroutine pencil_consistency_check
 !***********************************************************************
