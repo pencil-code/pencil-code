@@ -665,10 +665,10 @@ module Viscosity
           ! components
           !   S_xy = S_yx = 1/2 (du_x/dy + du_y/dx + Sshear)
           ! so that one must add
-          if (.false.) then
-            p%fvisc(:,1) = p%fvisc(:,1) + Sshear*nu*p%glnrho(:,2)
-            p%fvisc(:,2) = p%fvisc(:,2) + Sshear*nu*p%glnrho(:,1)
-          endif
+          !if (.false.) then
+          !  p%fvisc(:,1) = p%fvisc(:,1) + Sshear*nu*p%glnrho(:,2)
+          !  p%fvisc(:,2) = p%fvisc(:,2) + Sshear*nu*p%glnrho(:,1)
+          !endif
         else
           if (lmeanfield_nu) then
             if (meanfield_nuB/=0.) then
