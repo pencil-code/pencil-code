@@ -260,10 +260,14 @@ module Snapshot
           if (mag_spec) call power_2d(f,'b')
           if (vec_spec) call power_2d(f,'a')
         endif
-        if (powerspectrum_xy) then
-          if (vel_spec) call power_xy(f,'u')
-          if (mag_spec) call power_xy(f,'b')
-        endif
+!
+!  xy power spectra
+!
+        if (uxy_spec) call power_xy(f,'u')
+        if (bxy_spec) call power_xy(f,'b')
+!
+!  phi power spectra (in spherical or cylindrical coordinates)
+!
         if (vel_phispec) call power_phi(f,'u')
         if (mag_phispec) call power_phi(f,'b')
         if (vec_phispec) call power_phi(f,'a')

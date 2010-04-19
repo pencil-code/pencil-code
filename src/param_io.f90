@@ -87,6 +87,7 @@ module Param_IO
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, d2davg, dvid, dtmin, dspec, tmax, iwig, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
+      uxy_spec, bxy_spec, &
       uxj_spec, vec_spec, ou_spec, ab_spec, ub_spec, vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, isaveglobal, lr_spec, r2u_spec, &
@@ -112,7 +113,7 @@ module Param_IO
       lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, lwrite_aux, &
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_dvar, force_lower_bound, force_upper_bound, border_frac_x, &
-      oned, twod, powerspectrum_xy, &
+      oned, twod, &
       border_frac_y, border_frac_z, lpoint, mpoint, npoint, lpoint2, mpoint2, &
       npoint2, lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
