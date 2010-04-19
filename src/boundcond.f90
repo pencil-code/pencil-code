@@ -1953,7 +1953,10 @@ module Boundcond
       case ('bot')               ! bottom boundary
         if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0.)) then
           do k=1,nghost
-            f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sinth(m1-k)**(1-Lambda_H1))*(sin1th(m1+k)**(1-Lambda_H1))
+!            f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sinth(m1-k)**(1-Lambda_H1))*(sin1th(m1+k)**(1-Lambda_H1))
+            f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
+                 ((exp(-(Lambda_H1/(4.*nu))*(costh(m1+k)**2-sinth(m1+k)**2)))*sin1th(m1+k)) &
+                /((exp(-(Lambda_H1/(4.*nu))*(costh(m1-k)**2-sinth(m1-k)**2)))*sin1th(m1-k))
           enddo
         else
           do k=1,nghost
@@ -1963,7 +1966,10 @@ module Boundcond
       case ('top')               ! top boundary
         if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0)) then
           do k=1,nghost
-            f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sinth(m2+k)**(1-Lambda_H1))*(sin1th(m2-k)**(1-Lambda_H1))
+!            f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sinth(m2+k)**(1-Lambda_H1))*(sin1th(m2-k)**(1-Lambda_H1))
+            f(:,m2+k,:,j)= f(:,m2-k,:,j)* &
+                 ((exp(-(Lambda_H1/(4.*nu))*(costh(m2-k)**2-sinth(m2-k)**2)))*sin1th(m2-k)) &
+                /((exp(-(Lambda_H1/(4.*nu))*(costh(m2+k)**2-sinth(m2+k)**2)))*sin1th(m2+k))
           enddo
         else
           do k=1,nghost

@@ -1104,10 +1104,16 @@ module Viscosity
            Lambda_1st_order = Lambda_V1*(sinth(m)**2)*( & 
                      2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
                     +p%uu(:,3)*p%glnrho(:,1)/x(l1:l2) )  &
-                    - Lambda_H1*( &
-                      (2.*cotth(m)/x(l1:l2)+p%glnrho(:,2))*cotth(m)*p%uu(:,3)/x(l1:l2)&
-                      +cotth(m)*p%uij(:,3,2)/x(l1:l2)&
-                      - p%uu(:,3)/(sinth(m)*sinth(m)*x(l1:l2)) )
+!                    - Lambda_H1*( &
+!                      (2.*cotth(m)/x(l1:l2)+p%glnrho(:,2))*cotth(m)*p%uu(:,3)/x(l1:l2)&
+!                      +cotth(m)*p%uij(:,3,2)/x(l1:l2)&
+!                      - p%uu(:,3)/(sinth(m)*sinth(m)*x(l1:l2)) )
+!PJK: I cannot figure out how the equation above has been obtained...
+                    + (Lambda_H1/x(l1:l2)**2)*( &
+                      p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)*x(l1:l2)  &
+                    + (4.*costh(m)**2-1.)*p%uu(:,3) & 
+                    + sinth(m)*costh(m)*p%uij(:,3,2)*x(l1:l2))
+!PJK
 !                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
 !                     (4.*costh(m)*costh(m)-0.5)*p%uu(:,3)/(x(l1:l2)*x(l1:l2)) & 
 !                    +sinth(m)*costh(m)*p%uij(:,3,2)/x(l1:l2) &
