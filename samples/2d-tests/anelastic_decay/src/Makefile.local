@@ -6,7 +6,7 @@
 MPICOMM  = nompicomm
 
 HYDRO    =   hydro
-DENSITY  =   special/anelastic
+DENSITY  =   density_anelastic
 ENTROPY  = noentropy
 MAGNETIC = nomagnetic
 GRAVITY  =   gravity_simple
