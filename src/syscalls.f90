@@ -1,4 +1,4 @@
-! $Id: $
+! $Id$
 !
 !  This module takes care of system calls and provides ANSI-C functionality.
 !
@@ -41,11 +41,12 @@ module Syscalls
         endif
       endif
 !
-    endfunction
+    endfunction file_exists
 !***********************************************************************
     subroutine touch_file(file)
 !
-!  Touches a given file (used for code locking)
+!  Touches a given file (used for code locking).
+!
 !  25-may-03/axel: coded
 !  24-mar-10/Bourdin.KIS: moved here from sub.f90 and mpicomm.f90
 !
@@ -81,7 +82,7 @@ module Syscalls
 !***********************************************************************
     function count_lines(file)
 !
-!  Determines the number of lines in a file
+!  Determines the number of lines in a file.
 !
 !  Returns:
 !  * Integer containing the number of lines in a given file
@@ -99,15 +100,15 @@ module Syscalls
       count_lines=-1
       if (.not. file_exists(file)) return
 !
-      count_lines=-1
+      count_lines=0
       open(unit, FILE=file, STATUS='old', IOSTAT=ierr)
-      if (ierr /= 0) return
-      do while (ierr == 0)
+      if (ierr/=0) return
+      do while (ierr==0)
         read(unit,*,iostat=ierr)
-        if (ierr == 0) count_lines=count_lines+1
+        if (ierr==0) count_lines=count_lines+1
       enddo
       close(unit)
 !
-    endfunction
+    endfunction count_lines
 !***********************************************************************
 endmodule Syscalls

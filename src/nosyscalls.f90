@@ -1,4 +1,4 @@
-! $Id: $
+! $Id$
 !
 !  This module takes care of system calls and provides ANSI-C functionality.
 !
@@ -7,7 +7,6 @@ module Syscalls
   implicit none
 !
   contains
-
 !***********************************************************************
     function file_exists(file, delete)
 !
@@ -19,7 +18,7 @@ module Syscalls
 !
 !  23-mar-10/Bourdin.KIS: implemented
 !
-      use Cparam, only : ip
+      use Cparam, only: ip
 !
       implicit none
 !
@@ -39,11 +38,12 @@ module Syscalls
         endif
       endif
 !
-    endfunction
+    endfunction file_exists
 !***********************************************************************
     subroutine touch_file(file)
 !
-!  Touches a given file (used for code locking)
+!  Touches a given file (used for code locking).
+!
 !  25-may-03/axel: coded
 !  24-mar-10/Bourdin.KIS: moved here from sub.f90 and mpicomm.f90
 !
@@ -94,11 +94,11 @@ module Syscalls
       n_chunks=0
       file_size=0
       trim_len=0
-      do while(ierr == 0)
+      do while(ierr==0)
         chunk = char(0)
         n_chunks=n_chunks+1
         read(unit, REC=n_chunks, IOSTAT=ierr) chunk
-        if (ierr == 0) then
+        if (ierr==0) then
           file_size=file_size+buf_len
           trim_len=len(trim(chunk))
         endif
@@ -113,7 +113,7 @@ module Syscalls
 !***********************************************************************
     function count_lines(file)
 !
-!  Determines the number of lines in a file
+!  Determines the number of lines in a file.
 !
 !  Returns:
 !  * Integer containing the number of lines in a given file
@@ -131,16 +131,15 @@ module Syscalls
       count_lines=-1
       if (.not. file_exists(file)) return
 !
-      count_lines=-1
+      count_lines=0
       open(unit, FILE=file, STATUS='old', IOSTAT=ierr)
-      if (ierr /= 0) return
+      if (ierr/=0) return
       do while (ierr == 0)
         read(unit,*,iostat=ierr)
-        if (ierr == 0) count_lines=count_lines+1
+        if (ierr==0) count_lines=count_lines+1
       enddo
       close(unit)
 !
-    endfunction
+    endfunction count_lines
 !***********************************************************************
 endmodule Syscalls
-
