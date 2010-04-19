@@ -33,7 +33,7 @@ module Density
 !
   implicit none
 !
-  include '../density_anelastic.h'
+  include 'density_anelastic.h'
 !
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
