@@ -90,7 +90,7 @@ module Viscosity
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
-
+!
   contains
 !***********************************************************************
     subroutine register_viscosity()
@@ -329,7 +329,6 @@ module Viscosity
       call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
-
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -374,7 +373,7 @@ module Viscosity
       write(unit,NML=viscosity_run_pars)
 !
     endsubroutine write_viscosity_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
 !  Writes ishock to index.pro file
@@ -501,7 +500,7 @@ module Viscosity
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm .or. &
           lvisc_hyper3_mu_const_strict) lpenc_requested(i_rho1)=.true.
-
+!
       if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr) &
@@ -585,14 +584,13 @@ module Viscosity
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
       use Interstellar, only: calc_snr_damping
-      use Mpicomm, only: stop_it
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,nu_smag,tmp3,tmp4,pnu
-      real, dimension (nx) :: Lambda_zero_order,Lambda_1st_order,lambda_phi 
+      real, dimension (nx) :: lambda_phi
 !
       integer :: i,j,ju
 !
@@ -678,11 +676,11 @@ module Viscosity
             p%fvisc=p%fvisc+nu*(p%del2u+1.0/3.0*p%graddivu)
           endif
         endif
-
+!
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
       endif
-
+!
       if (lvisc_mixture) then
 !
 !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)+2S.gradnu
@@ -690,7 +688,7 @@ module Viscosity
 !  sglnrho
 !
         if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
-
+!
         if (ldensity) then
           do i=1,3
             p%fvisc(:,i)=2*p%nu*p%sglnrho(:,i) &
@@ -699,7 +697,7 @@ module Viscosity
        !  if (maxval(p%nu)<0) then
        !    call stop_it("Negative viscosity!")
        !  endif
-
+!
           enddo
         endif
 !
@@ -713,7 +711,7 @@ module Viscosity
 !
 !  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on x; nu_jump=nu2/nu1
-!!        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
+!        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
         if (lvisc_nu_profx) tmp3=p%x_mn
         if (lvisc_nu_profr) then
           if (lspherical_coords.or.lsphere_in_a_box) then
@@ -1292,10 +1290,9 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
       real, dimension (nx) :: diss
       real, dimension (nx) :: rr_sph,rr_cyl,g_r,OO2
-
 !
 ! 'Dissipative' heating term Y=9/4 \Sigma \nu \Omega_K^2
 !  Need to get correct angular velocity first
@@ -1336,7 +1333,7 @@ module Viscosity
 !  Calculates the lambda effect
 !
 !  20-apr-10/dhruba: coded
-! 
+!
      real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta,lver,lhor,&
            dlver_dr,dlhor_dtheta
       type (pencil_case) :: p
@@ -1349,17 +1346,16 @@ module Viscosity
       dlver_dr = 0.
       dlhor_dtheta = Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)
 !
-      div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  & 
+      div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  &
                          +3.*sinth(m)*lomega/x(l1:l2)   &
-                         +sinth(m)*dlomega_dr)  & 
+                         +sinth(m)*dlomega_dr)  &
                   +lomega*sinth(m)*dlver_dr   &
                   +lhor*(costh(m)*lomega*p%glnrho(:,2)  &
-                         -sinth(m)*lomega/x(l1:l2)  & 
+                         -sinth(m)*lomega/x(l1:l2)  &
                          +2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
-                         +costh(m)*dlomega_dtheta ) & 
-                   +lomega*costh(m)*dlhor_dtheta  
+                         +costh(m)*dlomega_dtheta ) &
+                   +lomega*costh(m)*dlhor_dtheta
 !
     endsubroutine calc_lambda
 !***********************************************************************
-!
 endmodule Viscosity
