@@ -32,10 +32,10 @@ module Io
     module procedure output_pencil_vect
     module procedure output_pencil_scal
   endinterface
-
+!
   ! define unique logical unit number for output calls
   integer :: lun_output=91
-
+!
   !
   ! Interface to external C function(s).
   ! Need to have two different C functions in order to have F90
@@ -81,16 +81,13 @@ contains
 !
 !  20-sep-02/wolf: coded
 !
-      use General
-      use Sub
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: lroot
 !
 !  identify version number
 !
       if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_io
-!
 !***********************************************************************
     subroutine directory_names()
 !
@@ -160,7 +157,7 @@ contains
 !
       close(1)
       if (lserial_io) call end_serialize()
-
+!
     endsubroutine input
 !***********************************************************************
     subroutine output_vect(file,a,nv)
@@ -486,7 +483,7 @@ contains
 !     nothing needs to be done here
 !
 ! temporary work around to keep the compiler quiet
-      tmp = tau 
+      tmp = tau
       call keep_compiler_quiet(file)
 !
     endsubroutine wtime
@@ -499,10 +496,10 @@ contains
 !     nothing needs to be done here
 !
 ! temporary work around to keep the compiler quiet
-      tmp = tau 
+      tmp = tau
       call keep_compiler_quiet(file)
 !
     endsubroutine rtime
 !***********************************************************************
-
+!
 endmodule Io

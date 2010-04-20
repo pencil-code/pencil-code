@@ -1,9 +1,9 @@
 ! $Id$
-
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!
-
+!
 !!!  Parallel IO via MPI2 (i.e. all process write to the same file, like
 !!!  data/allprocs/var.dat)
 !!!
@@ -23,22 +23,22 @@ module Io
   use Sub, only: keep_compiler_quiet
 !
   implicit none
-
+!
   include 'io.h'
-
+!
   interface output              ! Overload the `output' function
     module procedure output_vect
     module procedure output_scal
   endinterface
-
+!
   interface output_pencil        ! Overload the `output_pencil' function
     module procedure output_pencil_vect
     module procedure output_pencil_scal
   endinterface
-
+!
   ! define unique logical unit number for output calls
   integer :: lun_output=91
-
+!
   !
   ! Interface to external C function(s).
   ! Need to have two different C functions in order to have F90
@@ -85,9 +85,9 @@ module Io
   integer :: io_filetype,io_memtype,io_filetype_v,io_memtype_v
   integer :: fhandle,ierr
   logical :: io_initialized=.false.
-
+!
 contains
-
+!
 !***********************************************************************
     subroutine register_io()
 !
@@ -148,7 +148,6 @@ contains
       directory_snap = ''
 !
     endsubroutine register_io
-!
 !***********************************************************************
     subroutine directory_names()
 !
@@ -181,7 +180,7 @@ contains
       integer, dimension(4) :: start_index_v,mem_start_index_v
       integer,save :: lastnv=-1 ! value of nv at previous call
       integer :: nv
-
+!
 !
       if (nv /= lastnv) then
         if (lastnv > 0) then
@@ -354,7 +353,7 @@ contains
       real, dimension (mx,my,mz) :: a
       integer :: nv
       character (len=*) :: file
-
+!
       if ((ip<=8) .and. lroot) print*,'output_scal: ENTER'
       if (.not. io_initialized) &
            call stop_it("output_scal: Need to call register_io first")
@@ -414,7 +413,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Mpicomm, only: stop_it
-
+!
 !
       integer :: ndim
       real, dimension (nx) :: a
@@ -544,7 +543,7 @@ contains
 !  20-sep-02/wolf: coded
 !
       use Mpicomm, only: stop_it
-
+!
       real, dimension(*) :: var ! x, y or z
       integer :: nglobal,nlocal,mlocal,ipvar
       integer :: filetype,memtype
@@ -734,7 +733,7 @@ contains
         close(unit)
       endif
 !
-    endsubroutine wproc_bounds 
+    endsubroutine wproc_bounds
 !***********************************************************************
     subroutine rproc_bounds(file)
 !
@@ -803,5 +802,4 @@ contains
 !
     endsubroutine rtime
 !***********************************************************************
-
 endmodule Io
