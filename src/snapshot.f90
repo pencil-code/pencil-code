@@ -174,6 +174,7 @@ module Snapshot
 !  28-dec-02/axel: call structure from herel; allow optional lwrite_only
 !
       use Boundcond, only: update_ghosts
+      use Particles_main, only: particles_powersnap
       use Power_spectrum
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
