@@ -63,7 +63,6 @@ module Special
     Type(point), pointer :: first
     Type(point), pointer :: previous
     Type(point), pointer :: current
-    Type(point), pointer :: last
     Type(point), pointer,save :: firstlev
     Type(point), pointer,save :: secondlev
     Type(point), pointer,save :: thirdlev
@@ -1320,7 +1319,6 @@ module Special
           current%next => firstlev%next
         endif
         previous => first
-        last => first
       case (2)
         if (associated(first)) nullify(first)
         first => secondlev
@@ -1330,7 +1328,6 @@ module Special
           current%next => secondlev%next
         endif
         previous => first
-        last => first
       case (3)
         if (associated(first)) nullify(first)
         first => thirdlev
@@ -1340,7 +1337,6 @@ module Special
           current%next => thirdlev%next
         endif
         previous => first
-        last => first
       end select
 !
       ampl=amplarr(k)
@@ -1401,7 +1397,7 @@ module Special
 !***********************************************************************
     subroutine drive3(level)
 !
-      use Sub, only: control_file_exists
+      use Syscalls, only: file_exists
 !
       real :: nvor,vrms,vtot
       real,dimension(nxgrid,nygrid) :: wscr,wscr2
@@ -1481,8 +1477,8 @@ module Special
         isnap  = isnap + 1
       endif
       if (itsub .eq. 3) &
-          lstop = control_file_exists('STOP')
-      if (lstop .or. t>=tmax .or. it.eq.nt) &
+          lstop = file_exists('STOP')
+      if (lstop.or.t>=tmax .or. it.eq.nt) &
           call wrpoints(isnap+1000*(level-1))
 !
     endsubroutine drive3
@@ -1522,7 +1518,6 @@ module Special
             call addpoint
             rn=rn+1
           else
-            last => previous
             nullify(previous%next)
             deallocate(current)
             current => previous
@@ -1568,11 +1563,18 @@ module Special
       type(point),pointer :: newpoint
 !
       allocate(newpoint)
+!
+! the next after the last is not defined
       if (associated(newpoint%next)) nullify(newpoint%next)
-      previous => current
+!
+! the actual should have the new point as the next in the list
       current%next => newpoint
+!
+! the current will be the previous
+      previous => current
+!
+! make the new point as the current one
       current => newpoint
-      last => current
 !
 endsubroutine addpoint
 !***********************************************************************
@@ -1589,7 +1591,6 @@ endsubroutine addpoint
         deallocate(current)
         current => previous%next
       else
-        last => previous
         nullify(previous%next)
         deallocate(current)
         current => previous
