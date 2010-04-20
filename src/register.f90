@@ -5,6 +5,8 @@
 !
 module Register
 !
+  use Messages
+!
   implicit none
 !
   private
@@ -1042,26 +1044,27 @@ module Register
             print_in_file = trim(print_in_file)//'.double'
       endif
       if (.not. parallel_file_exists(trim(print_in_file))) &
-          call stop_it('You must have a "'//trim(print_in_file)//'" file in the run directory!')
-      if (lroot) print *, 'Reading print formats from ' // trim(print_in_file)
+          call fatal_error('rprint_list','You must have a "'// &
+          trim(print_in_file)//'" file in the run directory!')
+      if (lroot) print*, 'Reading print formats from '//trim(print_in_file)
 !
       call parallel_open(unit,FILE=trim(print_in_file))
       iname=0
       do iname_tmp=1,mname
         read(unit,*,end=99) cname_tmp
-        if ((cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= '#')) then
+        if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/='#')) then
           iname=iname+1
           cname(iname)=cname_tmp
         endif
       enddo
 99    nname=iname
       call parallel_close(unit)
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nname=', nname
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
 !
 !  Read in the list of variables for video slices.
 !
       nnamev = parallel_count_lines(video_in_file)
-      if ((dvid /= 0.0) .and. (nnamev > 0)) then
+      if ((dvid/=0.0) .and. (nnamev>0)) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_vnames()
         lwrite_slices=.true.
@@ -1071,13 +1074,13 @@ module Register
         enddo
         call parallel_close(unit)
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamev=', nnamev
+      if (lroot .and. (ip<14)) print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
 !
 !  Read in the list of variables for xy-averages.
 !
       nnamez = parallel_count_lines(xyaver_in_file)
-      if (nnamez > 0) then
+      if (nnamez>0) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_xyaverages()
         call parallel_open(unit,file=xyaver_in_file)
@@ -1086,12 +1089,12 @@ module Register
         enddo
       endif
       call parallel_close(unit)
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamez=', nnamez
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
 !  Read in the list of variables for xz-averages.
 !
       nnamey = parallel_count_lines(xzaver_in_file)
-      if (nnamey > 0) then
+      if (nnamey>0) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_xzaverages()
         call parallel_open(unit, xzaver_in_file)
@@ -1100,12 +1103,12 @@ module Register
         enddo
         call parallel_close(unit)
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamey=', nnamey
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
       nnamex = parallel_count_lines(yzaver_in_file)
-      if (nnamex > 0) then
+      if (nnamex>0) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_yzaverages()
         call parallel_open(unit,file=yzaver_in_file)
@@ -1114,12 +1117,12 @@ module Register
         enddo
         call parallel_close(unit)
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamex=', nnamex
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.
 !
       nnamer = parallel_count_lines(phizaver_in_file)
-      if (nnamer > 0) then
+      if (nnamer>0) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_phizaverages()
         call parallel_open(unit,file=phizaver_in_file)
@@ -1131,14 +1134,14 @@ module Register
         ! switch phizaverages off
         lwrite_phizaverages=.false.
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamer=', nnamer
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamer=', nnamer
 !
 !  2-D averages:
 !
 !  Read in the list of variables for y-averages.
 !
       nnamexz = parallel_count_lines(yaver_in_file)
-      if (nnamexz > 0) then
+      if (nnamexz>0) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_yaverages()
         call parallel_open(unit,file=yaver_in_file)
@@ -1150,12 +1153,12 @@ module Register
         ! switch yaverages off
         lwrite_yaverages = .false.
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamexz=', nnamexz
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexz=', nnamexz
 !
 !  Read in the list of variables for z-averages.
 !
       nnamexy = parallel_count_lines(zaver_in_file)
-      if (nnamexy > 0) then
+      if (nnamexy>0) then
         ! Allocate the relevant arrays and read into these arrays
         call allocate_zaverages()
         call parallel_open(unit,file=zaver_in_file)
@@ -1167,7 +1170,7 @@ module Register
         ! switch zaverages off
         lwrite_zaverages = .false.
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamexy=', nnamexy
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy
 !
 !  Read in the list of variables for phi-averages.
 !
@@ -1177,11 +1180,11 @@ module Register
         nnamerz=0; ierr=0 ; iadd=0
         do while (ierr==0)
           read(unit,*,iostat=ierr) cname_tmp
-          if (ierr == 0) nnamerz=nnamerz+1
-          if (cname_tmp == 'uumphi')  iadd=iadd+2
-          if (cname_tmp == 'bbmphi')  iadd=iadd+2
-          if (cname_tmp == 'uxbmphi') iadd=iadd+2
-          if (cname_tmp == 'jxbmphi') iadd=iadd+2
+          if (ierr==0) nnamerz=nnamerz+1
+          if (cname_tmp=='uumphi')  iadd=iadd+2
+          if (cname_tmp=='bbmphi')  iadd=iadd+2
+          if (cname_tmp=='uxbmphi') iadd=iadd+2
+          if (cname_tmp=='jxbmphi') iadd=iadd+2
         enddo
         call parallel_close(unit)
         if (nnamerz > 0) then
@@ -1197,7 +1200,7 @@ module Register
         ! switch phiaverages off
         lwrite_phiaverages = .false.
       endif
-      if (lroot .and. (ip < 14)) print *, 'rprint_list: nnamerz=', nnamerz
+      if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
 !
 !  Set logical for 2-D averages.
 !
