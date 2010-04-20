@@ -29,7 +29,7 @@ module Hydro
 !
   real, dimension (nz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
-
+!
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0., dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
@@ -52,7 +52,7 @@ module Hydro
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
-  real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,& 
+  real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,&
           uphi_step_width=0.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
@@ -77,7 +77,7 @@ module Hydro
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
 !
-
+!
   contains
 !***********************************************************************
     subroutine register_hydro()
@@ -87,9 +87,8 @@ module Hydro
 !
 !  6-nov-01/wolf: coded
 !
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: lroot
       use SharedVariables
-      use Sub
 !
       integer :: ierr
 !
@@ -602,7 +601,7 @@ ky_uukin=2.*pi
         p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+sin(ky_uukin*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
-!  
+!
 !potential flow, u=gradphi, with phi=cosx*cosy*cosz
 !  assume kx_uukin=ky_uukin=kz_uukin
 !
@@ -615,11 +614,11 @@ ky_uukin=2.*pi
         p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
         if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2*kz_uukin**2) &
           *cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-
+!
 !potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz
 !  assume kx_uukin=ky_uukin=kz_uukin
 !
-
+!
       elseif (kinflow=='potential_random') then
         fac=ampl_kinflow
         if (headtt) print*,'potential_random; kx_uukin,ampl_kinflow=',ampl_kinflow
@@ -787,7 +786,7 @@ ky_uukin=2.*pi
           if (headtt) print*,'Radial wind and circulation: not complete yet'
           vel_prof=circ_amp*(1+stepdown(x(l1:l2),circ_rmax,circ_step_width))
           div_vel_prof=-der_step(x(l1:l2),circ_rmax,circ_step_width)
-
+!
           p%uu(:,1)=vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
@@ -810,9 +809,9 @@ ky_uukin=2.*pi
 ! radial shear + radial wind + circulation
 !
       elseif (kinflow=='rshear-sat+rwind+circ') then
-! 
+!
 ! first set wind and cirulation
-! 
+!
         select case (wind_profile)
         case ('none'); wind_prof=0.;div_uprof=0.
         case ('constant'); wind_prof=1.;div_uprof=0.
@@ -833,7 +832,7 @@ ky_uukin=2.*pi
           if (headtt) print*,'radial shear, wind, circulation: not complete yet'
           vel_prof=circ_amp*(1+stepdown(x(l1:l2),circ_rmax,circ_step_width))
           div_vel_prof=-der_step(x(l1:l2),circ_rmax,circ_step_width)
-
+!
           p%uu(:,1)=vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
@@ -1036,8 +1035,8 @@ ky_uukin=2.*pi
 !                    correct periodicity.
 !                    renamed from random_isotropic_KS_setup
 !
-    use Sub
-    use General
+    use Sub, only: cross
+    use General, only: random_number_wrapper
 !
     integer :: modeN
 !
@@ -1050,7 +1049,7 @@ ky_uukin=2.*pi
     real :: theta,phi,alpha,beta
     real :: a,mkunit
     real :: newthet,newphi  !get rid of this line if there's no change
-
+!
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))
     allocate(KS_B(3,KS_modes))
@@ -1082,7 +1081,7 @@ ky_uukin=2.*pi
 !       kmin=kmin*2.*pi
        kmax=128.*pi    !nx*pi
        a=(kmax/kmin)**(1./(KS_modes-1.))
-
+!
 !
     do modeN=1,KS_modes
 !
@@ -1145,7 +1144,7 @@ ky_uukin=2.*pi
                        *exp(-0.5*(k/kmax)**2.)
        energy=1.*energy
        ps=sqrt(2.*energy*dk)   !/3.0)
-
+!
        KS_A(:,modeN) = ps*e1
        KS_B(:,modeN) = ps*e2
 !
@@ -1174,8 +1173,8 @@ ky_uukin=2.*pi
 !   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
 !                    KS modes.
 !
-    use Sub
-    use General
+    use Sub, only: cross, dot2
+    use General, only: random_number_wrapper
 !
     integer :: modeN
 !
@@ -1187,7 +1186,7 @@ ky_uukin=2.*pi
     real, dimension(KS_modes) :: k,dk,energy,ps
     real :: theta,phi,alpha,beta
     real :: ex,ey,ez,norm,a
-
+!
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))
     allocate(KS_B(3,KS_modes))
@@ -1197,7 +1196,7 @@ ky_uukin=2.*pi
 !    kmin=kmin*2.*pi
     kmax=128.*pi    !nx*pi
     a=(kmax/kmin)**(1./(KS_modes-1.))
-
+!
 !
     do modeN=1,KS_modes
 !
@@ -1212,11 +1211,11 @@ ky_uukin=2.*pi
 !weezy !
 !weezy       print *,kmin,kmax,k
 !weezy       dk=1.0*kmin
-
+!
 !weezy       if (modeN==1)dk=kmin*(a-1.)/2.
 !weezy       if (modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
 !weezy       if (modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
-
+!
 !
 !  pick 4 random angles for each mode
 !
@@ -1235,7 +1234,7 @@ ky_uukin=2.*pi
       k_unit(1)=sin(theta)*cos(phi)
       k_unit(2)=sin(theta)*sin(phi)
       k_unit(3)=cos(theta)
-
+!
       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
                        *exp(-0.5*(k/kmax)**2.)
 !      energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
@@ -1273,14 +1272,14 @@ ky_uukin=2.*pi
 !
 !      ps=(k**(initpower/2.))*sqrt(dk*2./3.)
 !  The factor of 2 just after the sqrt may need to be 2./3.
-
+!
 !
 !  With the `weezey' stuff above commented out, dk is currently used, but
 !  never set, so we better abort
 !
       call error('random_isotropic_KS_setup', 'Using uninitialized dk')
       dk=0.                     ! to make compiler happy
-
+!
       ps=sqrt(2.*energy*dk)   !/3.0)
 !
 !  give KS_A and KS_B length ps
@@ -1311,8 +1310,8 @@ ky_uukin=2.*pi
 !
 !   03-feb-06/weezy: modified from random_isotropic_KS_setup
 !
-    use Sub
-    use General
+    use Sub, only: cross
+    use General, only: random_number_wrapper
 !
     integer :: modeN
 !
@@ -1403,7 +1402,7 @@ ky_uukin=2.*pi
 !
 !   form RA = RA x k_unit and RB = RB x k_unit
 !
-
+!
      do modeN=1,KS_modes
        call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
        call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
@@ -1461,15 +1460,15 @@ ky_uukin=2.*pi
    !  k_option(1,i)=direction(1)*angle(1)!a possible orientation
    !  k_option(2,i)=direction(2)*angle(2)   !provided we haven't
    !  k_option(3,i)=direction(3)*angle(3)  !already got this length
-
+!
    !  !find the length of the current k_option vector
    !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
-
+!
    !  if (i==1.and.mkunit(i).gt.0.)then
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
    !  endif
-
+!
    !  !now we check that the current length is unique (hasn't come before)
    !  if (i.gt.1.and.num.lt.KS_modes)then
    !    do s1=i-1,1,-1
@@ -1479,7 +1478,7 @@ ky_uukin=2.*pi
    !        ne=.false.
    !        exit
    !      endif
-   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new......
    !        num=num+1
    !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
    !        klengths(num)=mkunit(i)  ! store the length also
@@ -1611,7 +1610,7 @@ ky_uukin=2.*pi
 !
 !   8-jun-02/axel: adapted from hydro
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr
@@ -1769,9 +1768,9 @@ ky_uukin=2.*pi
 !  32-nov-06/tobi: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       call keep_compiler_quiet(f)
-
+!
     endsubroutine remove_mean_momenta
 !***********************************************************************
     subroutine impose_velocity_ceiling(f)
@@ -1839,7 +1838,7 @@ ky_uukin=2.*pi
 !*******************************************************************
     subroutine kinematic_random_phase
 !
-!  Get a random phase to be used for the whole kinematic velocity field. 
+!  Get a random phase to be used for the whole kinematic velocity field.
 !
 !  16-feb-2010/dhruba: coded
 !

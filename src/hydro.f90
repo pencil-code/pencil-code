@@ -245,7 +245,7 @@ module Hydro
                                 ! DIAG_DOC:   \cdot\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean cross helicity production)
-  integer :: idiag_umamz=0      ! DIAG_DOC: $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$ 
+  integer :: idiag_umamz=0      ! DIAG_DOC: $\left<\left<\uv\right>_{xy}\cdot\left<\Av\right>_{xy}\right>$
   integer :: idiag_umbmz=0      ! DIAG_DOC: $\left<\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
@@ -434,7 +434,6 @@ module Hydro
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
-      use Sub
 !
       integer :: ierr
 !
@@ -647,7 +646,7 @@ module Hydro
         call put_shared_variable('x_forc', x_forc, ierr)
         call put_shared_variable('dx_forc', dx_forc, ierr)
       endif
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -683,9 +682,9 @@ module Hydro
 !  inituu corresponds to different initializations of uu (called from start).
 !
       do j=1,ninit
-
+!
         select case (inituu(j))
-
+!
         case ('nothing'); if (lroot .and. j==1) print*,'init_uu: nothing'
         case ('zero', '0')
           if (lroot) print*,'init_uu: zero velocity'
@@ -770,7 +769,7 @@ module Hydro
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iux)=uu_const(1)+ampluu(j)*sin(kx_uu*x(l1:l2))
           enddo; enddo
-
+!
         case ('sound-wave2')
 !
 !  sound wave (should be consistent with density module)
@@ -784,7 +783,7 @@ module Hydro
               f(l1:l2,m,n,iux)=-ampluu(j)*sin(kx_uu*x(l1:l2))*sqrt(abs(crit))
             endif
           enddo; enddo
-
+!
         case ('shock-tube', '13')
 !
 !  shock tube test (should be consistent with density module)
@@ -794,7 +793,7 @@ module Hydro
             prof=.5*(1.+tanh(x(l1:l2)/widthuu))
             f(l1:l2,m,n,iux)=uu_left+(uu_right-uu_left)*prof
           enddo; enddo
-
+!
         case ('tanhx')
 !
 !  Burgers shock
@@ -804,7 +803,7 @@ module Hydro
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iux)=prof
           enddo; enddo
-
+!
         case ('tanhy')
 !
 !  A*tanh(y/d) profile in the x-direction
@@ -816,7 +815,7 @@ module Hydro
               f(l1:l2,m,n,iux)=prof
             enddo
           enddo
-
+!
         case ('shock-sphere')
 !
 !  shock tube test (should be consistent with density module)
@@ -828,7 +827,7 @@ module Hydro
             f(l1:l2,m,n,iuz)=0.5*z(n)/radiusuu*ampluu(j)*(1.-tanh((sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)-radiusuu)/widthuu))
           enddo; enddo
 !
-
+!
         case ('bullets')
 !
 !  blob-like velocity perturbations (bullets)
@@ -837,8 +836,8 @@ module Hydro
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)-ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
           enddo; enddo
-
-
+!
+!
         case ('bullets_x')
 !
 !  blob-like velocity perturbations in x-direction (bullets)
@@ -848,8 +847,8 @@ module Hydro
             f(l1:l2,m,n,iux)=uu_const(1)+f(l1:l2,m,n,iux) &
               -ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
           enddo; enddo
-
-
+!
+!
         case ('Alfven-circ-x')
 !
 !  circularly polarised Alfven wave in x direction
@@ -859,13 +858,13 @@ module Hydro
             f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + ampluu(j)*sin(kx_uu*x(l1:l2))
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + ampluu(j)*cos(kx_uu*x(l1:l2))
           enddo; enddo
-
+!
         case ('coszsiny-uz')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)- &
                 ampluu(j)*cos(pi*z(n)/Lxyz(3))*sin(2*pi*y(m)/Lxyz(2))
           enddo; enddo
-
+!
         case ('linear-shear')
 !
 !  Linear shear
@@ -902,14 +901,14 @@ module Hydro
 !
           if (lroot) print*,'init_uu: constant x-velocity'
           f(:,:,:,iux) = ampluu(j)
-
+!
         case ('const-uy')
 !
 !  constant y-velocity
 !
           if (lroot) print*,'init_uu: constant y-velocity'
           f(:,:,:,iuy) = ampluu(j)
-
+!
         case ('const-uz')
 !
 !  constant z-velocity
@@ -942,7 +941,7 @@ module Hydro
           do n=n1,n2; do m=m1,m2
             prof=.5*(1.+tanh(z(n)/widthuu))
             f(l1:l2,m,n,iux)=uu_lower+(uu_upper-uu_lower)*prof
-
+!
 !  Add some random noise to see the development of instability
 !WD: Can't we incorporate this into the urand stuff?
             print*, 'init_uu: ampluu(j)=',ampluu(j)
@@ -952,7 +951,7 @@ module Hydro
             tmp=exp(-z(n)**2*10.)*cos(2.*x(l1:l2)+sin(4.*x(l1:l2)))
             f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ampluu(j)*tmp
           enddo; enddo
-
+!
         case ('Fourier-trunc')
 !
 !  truncated simple Fourier series as nontrivial initial profile
@@ -972,7 +971,7 @@ module Hydro
             f(l1:l2,m,n,iux) = tmp*kx_uu/kabs
             f(l1:l2,m,n,iuy) = tmp*ky_uu/kabs
           enddo; enddo
-
+!
         case ('up-down')
 !
 !  flow upwards in one spot, downwards in another; not soneloidal
@@ -985,27 +984,27 @@ module Hydro
             tmp = sqrt((x(l1:l2)-(x0+0.5*Lx))**2+(y(m)-(y0+0.8*Ly))**2)! dist. from spot 1
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
           enddo; enddo
-
+!
         case ('powern')
 ! initial spectrum k^power
           call powern(ampluu(j),initpower,cutoff,f,iux,iuz)
-
+!
         case ('power_randomphase')
 ! initial spectrum k^power
           call power_randomphase(ampluu(j),initpower,cutoff,f,iux,iuz,lscale_tobox)
-
+!
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
-
+!
         case ('vortex_2d')
 ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
           call vortex_2d(f,b_ell,widthuu,rbound)
-
+!
         case ('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
-
+!
         case ('rigid')
           do n=n1,n2; do m=m1,m2; do l=l1,l2
             if (x(l)**2+y(m)**2+z(n)**2<=radiusuu**2) then
@@ -1028,7 +1027,7 @@ module Hydro
             enddo; enddo
           endif
         case ( 'random-2D-eddies')
-          if (lroot) & 
+          if (lroot) &
             print*, "random-2D-eddies: ampluu,kx_uu,ky_uu = ", ampluu(j),kx_uu,ky_uu
           f(:,:,:,iuz)=0.
           call random_number_wrapper(xc0)
@@ -1051,10 +1050,10 @@ module Hydro
               dis=sqrt((xold-xc0(ixy))**2+(yold-yc0(ixy))**2)
               if (dis.lt.5*sqrt(1./kx_uu**2+1./ky_uu**2)) then
                 tmp(ixy)=-tmp(ixy-1)
-                if (lroot) & 
+                if (lroot) &
                   write(*,*) 'PC:init_uu ', 'Eddies have come very close'
               endif
-              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+tmp(ixy)*ampluu(j) & 
+              f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+tmp(ixy)*ampluu(j) &
               *exp(-kx_uu*(x(l1:l2)-xc0(ixy))**2-ky_uu*(y(m)-yc0(ixy))**2) &
               *exp(-kz_uu*z(n)**2)
 !
@@ -1077,7 +1076,7 @@ module Hydro
             end do
           end do
           close(15)
-
+!
         case ( 'anelastic-2dxz')
           print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,kz_uu
           do n=n1,n2; do m=m1,m2
@@ -1092,7 +1091,7 @@ module Hydro
             f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/exp(f(l1:l2,m,n,ilnrho))
           enddo;enddo
           f(:,:,:,iuy)=0.
-
+!
 !
         case ('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)
@@ -1119,7 +1118,7 @@ module Hydro
           enddo; enddo
           f(:,:,:,iuz)=0.
           f(1:l1,:,:,iux:iuz)=0.
-
+!
         case ('cylinderstream_cyl')
 !   Stream functions for flow around a cylinder as initial condition.
 !   Cylindrical coordinates. Flow in x-direction.
@@ -1138,8 +1137,8 @@ module Hydro
               enddo
             endif
           enddo
-
-
+!
+!
         case default
           !
           !  Catch unknown values
@@ -1147,7 +1146,7 @@ module Hydro
           if (lroot) print*, 'init_uu: No such value for inituu: ', &
             trim(inituu(j))
           call stop_it("")
-
+!
         endselect
 !
 !  End loop over initial conditions
@@ -1180,7 +1179,7 @@ module Hydro
           enddo
         endif
       endif
-
+!
 ! mgellert, add random fluctuation only inside domain, not on boundary
 !           (to be able to use the 'freeze' option for BCs)
       if (urandi /= 0) then
@@ -1383,7 +1382,6 @@ module Hydro
 !  26-mar-07/axel: started using the gij_etc routine
 !
       use Deriv
-      use Mpicomm, only: stop_it
       use Sub
       use WENO_transport
 !
@@ -1438,7 +1436,7 @@ module Hydro
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
-
+!
       if (lpencil(i_rhougu)) then
        p%rhougu(:,1)=p%rho*p%ugu(:,1)
        p%rhougu(:,2)=p%rho*p%ugu(:,2)
@@ -1526,10 +1524,9 @@ module Hydro
 !  27-jun-07/dhruba: differential rotation as subroutine call
 !
       use Diagnostics
-      use IO
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
-      use Sub
+      use Sub, only: vecout, dot, identify_bcs
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1561,13 +1558,13 @@ module Hydro
                 - p%transpurho(:,j)*p%rho1 + p%uu(:,j)*p%rho1*p%transprho
           enddo
         else
-!          
+!
 !  No meridional flow : turn off the meridional flow (in spherical)
-!  useful for debugging.  
+!  useful for debugging.
 !
 !  18-Mar-2010/AJ: this should probably go in a special module.
 !
-          if (lno_meridional_flow) then 
+          if (lno_meridional_flow) then
             f(l1:l2,m,n,iux:iuy)=0.0
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
           else
@@ -1583,7 +1580,7 @@ module Hydro
 !  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
       if (Omega/=0.) then
-
+!
         if (lcylindrical_coords) then
           call coriolis_cylindrical(df,p)
         elseif (lspherical_coords) then
@@ -1593,7 +1590,7 @@ module Hydro
         else
           call coriolis_cartesian(df,p%uu,iux)
         endif
-
+!
       endif
 !
 !  Coriolis force with in Cartesian domain with Omega=Omega(x)
@@ -1827,7 +1824,7 @@ module Hydro
 !
         if (idiag_tot_ang_mom/=0) call integrate_mn_name( &
             p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
-
+!
 !
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
@@ -2260,31 +2257,31 @@ module Hydro
 !  do mean field for each component
 !
       if (lcalc_uumean) then
-
+!
         fact=1./nxy
         uumz = 0.
-
+!
         do n=n1,n2
           do j=1,3
             uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
           enddo
         enddo
-
+!
         uumzl(n1:n2,:) = uumz
-
+!
         call fill_zghostzones_3vec(uumzl,iux)      !MR: checked by numbers
-
+!
         do j=1,3
           call der_z(uumzl(:,j),guumz(:,j))
         enddo
-
+!
       endif
-
+!
       if (nprocy>1) then
-
+!
         call mpiallreduce_sum(guumz,temp,(/nz,3/),idir=2)
         guumz = temp
-
+!
       endif
 !
 !  do communication for array of size nz*nprocz*3*njtest
@@ -2394,7 +2391,6 @@ module Hydro
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles,  only: border_driving,set_border_initcond
-      use Mpicomm,         only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2475,7 +2471,7 @@ module Hydro
         do n=1,mz
 !
           call get_radial_distance(rr_sph,rr_cyl)
-
+!
           if (lgrav) then
 !
 ! Gravity of a static central body
@@ -2585,8 +2581,6 @@ module Hydro
 !
 !  19-jan-07/axel: added terms derived by Gailitis
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -2621,24 +2615,24 @@ module Hydro
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
-
+!
 ! velind is start index for velocity variable to which Coriolis force corresponds
 ! x,y,z -components referred to by velind, velind+1, velind+2      (MR:IMMER ERF†LLT?)
-
+!
       real :: c2, s2
-
+!
       if (Omega==0.) return
-
+!
       if (theta==0) then
-
+!
         if (lcoriolis_force) then
-
+!
           if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
-
+!
           c2=2*Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
-
+!
         endif
 !
 !  add centrifugal force (doing this with periodic boundary
@@ -2646,13 +2640,13 @@ module Hydro
 !  therefore usually ignored in those cases!)
 !
         if (lcentrifugal_force) then
-
+!
           if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*Omega**2
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*Omega**2
-
+!
         endif
-
+!
       else
 !
 !  add Coriolis force with an angle (defined such that theta=60,
@@ -2660,21 +2654,21 @@ module Hydro
 !  Omega=(-sin_theta, 0, cos_theta).
 !
         if (lcoriolis_force) then
-
+!
           if (headtt) &
             print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
-
+!
           c2= 2*Omega*cos(theta*pi/180.)
           s2=-2*Omega*sin(theta*pi/180.)
-
+!
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)+s2*uu(:,3)
           df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           -s2*uu(:,2)
-
+!
         endif
-
+!
       endif
-
+!
    endsubroutine coriolis_cartesian
 !***********************************************************************
    subroutine coriolis_spherical(df,p)
@@ -2682,8 +2676,6 @@ module Hydro
 !  coriolis_spherical terms using spherical polars
 !
 !  21-feb-07/axel+dhruba: coded
-!
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2725,7 +2717,7 @@ module Hydro
 !  Centrifugal force
 ! The terms added is F_{centrifugal} = - \Omega X \Omega X r
 !
-      if (lcentrifugal_force) then  
+      if (lcentrifugal_force) then
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-x(l1:l2)*sinth(m)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-x(l1:l2)*sinth(m)*costh(m)
       endif
@@ -2789,8 +2781,6 @@ module Hydro
 !
 !  19-sep-07/steveb: coded
 !
-     use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: c2
@@ -2833,8 +2823,6 @@ module Hydro
 !
 !  19-sep-07/steveb: coded
 !
-     use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -2861,8 +2849,6 @@ module Hydro
 !  on x, i.e. Omega=Omega0*(-sin(k_x*x),0,cos(l_x*x)) with k_x=2pi/Lx.
 !
 !  28-may-09/PJK: coded
-!
-     use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2918,7 +2904,7 @@ module Hydro
 !  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
 !  With ldamp_fade=T, damping coefficient is smoothly fading out
 !
-
+!
         if ((dampu .ne. 0.) .and. (t < tdamp)) then
           if (ldamp_fade) then  ! smoothly fade
             !
@@ -2978,7 +2964,7 @@ module Hydro
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
           enddo
         endif
-
+!
         if (dampuint > 0.0 .and. rdampint /= impossible) then
 !         x0=abs(z(n))
 !         pdamp = step(x(l1:l2), x0, wdamp)
@@ -3120,7 +3106,7 @@ module Hydro
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr
@@ -3919,8 +3905,8 @@ module Hydro
 !   8-nov-02/axel: adapted from calc_mfield
 !   9-nov-02/axel: allowed mean flow to be compressible
 !
-      use Diagnostics
-      use Mpicomm
+      use Diagnostics, only: save_name
+      use Mpicomm, only: mpibcast_real, mpireduce_sum
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
@@ -4036,8 +4022,7 @@ module Hydro
 !
 !  14-feb-09/axel: adapted from calc_umbmz
 !
-      use Diagnostics
-      use Mpicomm
+      use Diagnostics, only: save_name
 !
       logical,save :: first=.true.
       real :: omumz
@@ -4073,9 +4058,8 @@ module Hydro
 !
 !   5-mar-10/axel: adapted from calc_umbmz
 !
-      use Diagnostics
+      use Diagnostics, only:save_name
       use Magnetic, only: idiag_axmz,idiag_aymz
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: umamz
@@ -4111,9 +4095,8 @@ module Hydro
 !
 !  26-jan-09/axel: adapted from calc_ebmz
 !
-      use Diagnostics
+      use Diagnostics, only: save_name
       use Magnetic, only: idiag_bxmz,idiag_bymz
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: umbmz
@@ -4149,9 +4132,8 @@ module Hydro
 !
 !  17-mar-09/axel: adapted from calc_umbmz
 !
-      use Diagnostics
+      use Diagnostics, only: save_name
       use Magnetic, only: idiag_bxmz,idiag_bymz
-      use Mpicomm
 !
       logical,save :: first=.true.
       real :: umxbmz
@@ -4189,9 +4171,9 @@ module Hydro
 !  15-nov-06/tobi: coded
 !
       use Mpicomm, only: mpiallreduce_sum
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-
+!
       real, dimension (nx) :: rho,rho1,uu
       real :: fac,fsum_tmp,fsum
       real, dimension (iux:iuz) :: rum
@@ -4267,7 +4249,7 @@ module Hydro
       elseif (lremove_mean_flow) then
         call remove_mean_flow(f)
       endif
-
+!
     endsubroutine remove_mean_momenta
 !***********************************************************************
     subroutine remove_mean_flow(f)
@@ -4280,14 +4262,14 @@ module Hydro
 !  22-may-07/axel: adapted from remove_mean_momenta
 !
       use Mpicomm, only: mpiallreduce_sum
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-
+!
       real, dimension (nx) :: uu
       real :: fac,fsum_tmp,fsum
       real, dimension (iux:iuz) :: um
       integer :: m,n,j
-
+!
       if (lremove_mean_flow) then
 !
 !  initialize um and compute normalization factor fac
@@ -4328,9 +4310,9 @@ module Hydro
         enddo
         enddo
         if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
-
+!
       endif
-
+!
     endsubroutine remove_mean_flow
 !***********************************************************************
     subroutine interior_bc_hydro(f)
@@ -4376,9 +4358,10 @@ module Hydro
 !
 !  27-june-2007 dhruba: coded
 !
-      use Mpicomm
+      use Mpicomm, only: stop_it
       use Sub, only: step
       use Gravity, only: z1
+!
       real :: slope,uinn,uext,zbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
