@@ -724,7 +724,7 @@ module Magnetic
       lresi_smagorinsky=.false.
       lresi_smagorinsky_cross=.false.
       lresi_anomalous=.false.
-
+!
       do i=1,nresi_max
         select case (iresistivity(i))
         case ('eta-const')
@@ -1217,7 +1217,7 @@ module Magnetic
 !
           call fatal_error('init_aa', &
               'init_aa value "' // trim(initaa(j)) // '" not recognised')
-
+!
         endselect
 !
 !  End loop over initial conditions
@@ -1267,7 +1267,7 @@ module Magnetic
                   +gamma*f(l1:l2,m,n,iss))
                 f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
                   (beq2*cs2(1:nx)))
-                f(l1:l2,m,n,iss)=gamma_inv*(log(cs2/cs20)-& 
+                f(l1:l2,m,n,iss)=gamma_inv*(log(cs2/cs20)-&
                   gamma_m1*f(l1:l2,m,n,ilnrho))
               else
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
@@ -5535,13 +5535,12 @@ module Magnetic
 !
 !  where xi = sqrt(r**2/(r**2+z**2))
 !
-!
 !  30-may-04/tobi: coded
 !
       use Sub, only: hypergeometric2F1,gamma_function
       use Deriv, only: der
       use IO, only: output
-
+!
       real, intent(in) :: mu
       real :: xi2,A_phi
       real :: r2
@@ -5549,53 +5548,52 @@ module Magnetic
       real, parameter :: tol=10*epsilon(1.0)
       integer :: l
       real, dimension(mx,my,mz) :: Ax_ext,Ay_ext
- !     real, dimension(nx,3) :: bb_ext_pot
-!      real, dimension(nx) :: bb_x,bb_y,bb_z
+      !real, dimension(nx,3) :: bb_ext_pot
+      !real, dimension(nx) :: bb_x,bb_y,bb_z
 !
 !  calculate un-normalized |B| at r=r_ref and z=0 for later normalization
 !
       if (lroot.and.ip<=5) print*,'FORCE_FREE_JET: calculating normalization'
-
+!
       B1r_=sin(pi*mu/2)*gamma_function(   abs(mu) /2) / &
                         gamma_function((1+abs(mu))/2)
-
+!
       B1z_=cos(pi*mu/2)*gamma_function((1+abs(mu))/2) / &
                         gamma_function((2+abs(mu))/2)
-
+!
       B1=sqrt(4/pi)*r_ref**(mu-1)*sqrt(B1r_**2+B1z_**2)
 !
 !  calculate external vector potential
 !
       if (lroot) print*,'FORCE_FREE_JET: calculating external vector potential'
-
+!
       if (lforce_free_test) then
-
+!
         if (lroot) print*,'FORCE_FREE_JET: using analytic solution for mu=-1'
         do l=1,mx; do m=1,my; do n=1,mz
           Ax_ext=-2*y(m)*(1-z(n)/sqrt(x(l)**2+y(m)**2+z(n)**2))/(x(l)**2+y(m)**2)/B1
           Ay_ext= 2*x(l)*(1-z(n)/sqrt(x(l)**2+y(m)**2+z(n)**2))/(x(l)**2+y(m)**2)/B1
         enddo; enddo; enddo
-
+!
       else
-
+!
         do l=1,mx; do m=1,my; do n=1,mz
           r2=x(l)**2+y(m)**2
           xi2=r2/(r2+z(n)**2)
           A_phi=hypergeometric2F1((1-mu)/2,(2+mu)/2,2.0,xi2,tol) &
                *sqrt(xi2)*sqrt(r2+z(n)**2)**mu/B1
-
+!
           Ax_ext(l,m,n)=-y(m)*A_phi/sqrt(r2)
           Ay_ext(l,m,n)= x(l)*A_phi/sqrt(r2)
         enddo; enddo; enddo
-
+!
       endif
-
 !
 !  calculate external magnetic field
 !
       if (lroot.and.ip<=5) &
         print*,'FORCE_FREE_JET: calculating the external magnetic field'
-
+!
       do n=n1,n2
       do m=m1,m2
 !        call der(Ay_ext,bb_x,3)
@@ -5609,12 +5607,12 @@ module Magnetic
 !        call set_global(bb_ext_pot,m,n,'B_ext_pot',nx)
       enddo
       enddo
-
+!
       if (ip<=5) then
         call output(trim(directory)//'/Ax_ext.dat',Ax_ext,1)
         call output(trim(directory)//'/Ay_ext.dat',Ay_ext,1)
       endif
-
+!
     endsubroutine force_free_jet
 !***********************************************************************
     subroutine piecew_dipole_aa(ampl,inclaa,f,ivar)
@@ -5647,7 +5645,7 @@ module Magnetic
         r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         r_1_mn = 1./max(r_mn,tini)
         r_2_mn = 1./max(r_mn**2,tini)
-
+!
         fact = ampl
         ! beta = [beta_1^0, beta_1^1] combines coefficients for m=0, m=1
         beta =  fact * (/ cos(inclaa), -sin(inclaa)/sqrt(2.) /)
@@ -5689,16 +5687,16 @@ module Magnetic
       real, dimension(nx) :: theta_mn,ar,atheta,aphi,r_mn,phi_mn
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
-
+!
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
         r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         theta_mn=acos(spread(z(n),1,nx)/r_mn)
         phi_mn=atan2(spread(y(m),1,nx),x(l1:l2))
-
- ! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
-
+!
+! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
+!
         do j=1,ninit
            select case (initaa(j))
            case ('geo-benchmark-case1')
@@ -5711,13 +5709,13 @@ module Magnetic
                      - 1./5.*r_ext**7*r_int**2*log(r_ext) )
               A_int=5./2.*(r_ext-r_int)
               A_ext=5./8.*(r_ext**4-r_int**4)
-
+!
               where (r_mn < r_int)
                 ar=C_int*ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)*r_mn
                 atheta=3.*C_int*ampl_B0*80.*sin(2.*theta_mn)*r_mn
                 aphi=ampl_B0*A_int*r_mn*sin(theta_mn)
               endwhere
-
+!
               where (r_mn <= r_ext .and. r_mn >= r_int)
                 ar=ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)*                 &
                    (   1./36.*r_mn**5 - 1./12.*(r_int+r_ext)*r_mn**4        &
@@ -5734,13 +5732,13 @@ module Magnetic
                 aphi=ampl_B0*5./8.*sin(theta_mn)*                           &
                    ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 )
               endwhere
-
+!
               where (r_mn > r_ext)
                 ar=C_ext*ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)/r_mn**4
                 atheta=-2.*C_ext*ampl_B0*80.*sin(2.*theta_mn)/r_mn**4
                 aphi=ampl_B0*A_ext/r_mn**2*sin(theta_mn)
               endwhere
-
+!
           ! debug checks -- look at a pencil near the centre...
               if (ip<=4 .and. imn==(ny+1)*nz/2) then
                  print*,'r_int,r_ext',r_int,r_ext
@@ -5763,10 +5761,10 @@ module Magnetic
                       'geo_benchmark_B: minmax(aphi), imn, iproc:', &
                       iproc, imn, minval(aphi), maxval(aphi)
               endif
-
+!
            case ('geo-benchmark-case2')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case2 not yet coded.'
-
+!
            case default
               if (lroot .and. imn==1) print*,'geo_benchmark_B: case not defined!'
               call stop_it("")
@@ -5776,14 +5774,14 @@ module Magnetic
         f(l1:l2,m,n,iay)=sin(theta_mn)*sin(phi_mn)*ar + cos(theta_mn)*sin(phi_mn)*atheta + cos(phi_mn)*aphi
         f(l1:l2,m,n,iaz)=cos(theta_mn)*ar - sin(theta_mn)*atheta
      enddo
-
-
+!
+!
      if (ip<=14) then
         print*,'geo_benchmark_B: minmax(ax) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iax)),maxval(f(l1:l2,m1:m2,n1:n2,iax))
         print*,'geo_benchmark_B: minmax(ay) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iay)),maxval(f(l1:l2,m1:m2,n1:n2,iay))
         print*,'geo_benchmark_B: minmax(az) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iaz)),maxval(f(l1:l2,m1:m2,n1:n2,iaz))
      endif
-
+!
     endsubroutine geo_benchmark_B
 !***********************************************************************
     subroutine eta_xy_dep(eta_xy,geta_xy,eta_xy_profile)
@@ -5817,7 +5815,7 @@ module Magnetic
       rmax2=1.
       a=(eta_xy_max-100.*eta)/eta_xy_max
       w=(eta_xy_max-100.*eta)/(5400.*eta)
-
+!
       do i=1,mx
       do j=1,my
 !  inside
@@ -5835,7 +5833,7 @@ module Magnetic
           geta_xy(i,j,3) = 0.
       enddo
       enddo
-
+!
       endselect
 !
     endsubroutine eta_xy_dep
@@ -5967,7 +5965,7 @@ module Magnetic
 !
           uu2=f(:,m,n,iuz)**2
           va2=rho1*(Btheta+B_ext(2))**2
-
+!
           rho1_jxb=rho1
 !
 !  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
@@ -6066,7 +6064,6 @@ module Magnetic
 !
 !  13-sep-07/wlad: adapted from remove_mean_momenta
 !
-!
       use Mpicomm, only: mpiallreduce_sum
       use Sub    , only: curl
 !
@@ -6118,7 +6115,6 @@ module Magnetic
 !  This is a cylindrical version of the rtime_phiavg special file.
 !
 !  13-sep-07/wlad: adapted from remove_mean_momenta
-!
 !
       use Mpicomm,  only: mpiallreduce_sum
       use Sub    ,  only: curl
@@ -6192,20 +6188,19 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
-
+!
       !Tobi: Not sure about this value
       real, parameter :: tol=1e-11
-
+!
       real, dimension (mx,3) :: bb,bb2
       real, dimension (mx) :: bb_len,aerr2
       real :: fac
       integer :: j
-
 !
 !  Compute magnetic field from vector potential.
 !
       bb=0.
-
+!
       if (nxgrid/=1) then
         fac = 1/(2*dx)
         bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) + fac*( f(l1-1:l2+3,m  ,n  ,iay)   &
@@ -6213,7 +6208,7 @@ module Magnetic
         bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) - fac*( f(l1-1:l2+3,m  ,n  ,iaz)   &
                                                 - f(l1-3:l2+1,m  ,n  ,iaz) )
       endif
-
+!
       if (nygrid/=1) then
         fac = 1/(2*dy)
         bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) + fac*( f(l1-2:l2+2,m+1,n  ,iaz)   &
@@ -6221,7 +6216,7 @@ module Magnetic
         bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) - fac*( f(l1-2:l2+2,m+1,n  ,iax)   &
                                                 - f(l1-2:l2+2,m-1,n  ,iax) )
       endif
-
+!
       if (nzgrid/=1) then
         fac = 1/(2*dz)
         bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) + fac*( f(l1-2:l2+2,m  ,n+1,iax)   &
@@ -6229,19 +6224,17 @@ module Magnetic
         bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) - fac*( f(l1-2:l2+2,m  ,n+1,iay)   &
                                                 - f(l1-2:l2+2,m  ,n-1,iay) )
       endif
-
 !
 !  Add external magnetic field.
 !
       do j=1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo
-
 !
 !  Truncate small components to zero.
 !
       bb2 = bb**2
-
+!
       aerr2 = tol**2 * max(sum(bb2,2),1.)
-
+!
       do j=1,3
         where (bb2(:,j) < aerr2)
           bb_hat(:,j) = 0.
@@ -6249,14 +6242,14 @@ module Magnetic
           bb_hat(:,j) = bb(:,j)
         endwhere
       enddo
-
+!
 !
 !  Get unit vector.
 !
       bb_len = sqrt(sum(bb_hat**2,2))
-
+!
       do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
-
+!
     endsubroutine bb_unitvec_shock
 !***********************************************************************
     subroutine input_persistent_magnetic(id,lun,done)
@@ -6772,7 +6765,7 @@ module Magnetic
         call parse_name(irz,cnamerz(irz),cformrz(irz),'armphi'  ,idiag_armphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'apmphi'  ,idiag_apmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'azmphi'  ,idiag_azmphi)
-
+!
       enddo
 !
 !  Check for those quantities for which we want phiz-averages.
@@ -7042,3 +7035,4 @@ module Magnetic
     endsubroutine rprint_magnetic
 !***********************************************************************
 endmodule Magnetic
+!
