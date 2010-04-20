@@ -29,11 +29,10 @@ module Snapshot
 !   5-apr-03/axel: possibility for additional (hard-to-get) output
 !  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
 !
-      use Mpicomm
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign
-      use Sub, only: read_snaptime,update_snaptime
       use IO, only: log_filename_to_file
+      use Sub, only: read_snaptime,update_snaptime
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -99,8 +98,6 @@ module Snapshot
 !
 !  24-jun-05/tony: coded from snap reading code in run.f90
 !
-      use Mpicomm
-!
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
@@ -118,11 +115,11 @@ module Snapshot
 !  NOTE: for this to work one has to modify *manually* data/param.nml
 !  by adding an entry for MAGNETIC_INIT_PARS or PSCALAR_INIT_PARS.
 !
-!DM: I do not understand why we need to shift the data below. 
-! I seem to need to set f(:,:,:,iax:iaz) = 0 . Otherwise 
+!DM: I do not understand why we need to shift the data below.
+! I seem to need to set f(:,:,:,iax:iaz) = 0 . Otherwise
 ! the vector potential is initialised as junk data. And then
 ! init_aa just adds to it, so junk remains junk. Anyhow
-! the initialisation to zero cannot do any harm.  
+! the initialisation to zero cannot do any harm.
 !
         if (lread_oldsnap_nomag) then
           f(:,:,:,iax:iaz)=0.
@@ -176,14 +173,11 @@ module Snapshot
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !  28-dec-02/axel: call structure from herel; allow optional lwrite_only
 !
-      use Boundcond
-      use IO
-      use Mpicomm
-      use Particles_main
+      use Boundcond, only: update_ghosts
       use Power_spectrum
-      use Pscalar
-      use Struct_func
-      use Sub
+      use Pscalar, only: cc2m, gcc2m, rhoccm
+      use Struct_func, only: structure
+      use Sub, only: update_snaptime, read_snaptime, curli
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
@@ -332,7 +326,7 @@ module Snapshot
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
-! 
+!
       t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
@@ -438,7 +432,7 @@ module Snapshot
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
-
+!
       if (lwrite_2d) then
         if (nx==1) then
           write(lun_output) a(4,:,:,:)
@@ -485,7 +479,7 @@ module Snapshot
         else
           call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
         endif
-      else 
+      else
         read(1) a
       endif
       if (ip<=8) print*,'input_globals: read ',filename
@@ -497,9 +491,9 @@ module Snapshot
 !***********************************************************************
     subroutine update_auxiliaries(a)
 !
-      use Shock, only: calc_shock_profile,calc_shock_profile_simple
       use EquationOfState, only: ioncalc
       use Radiation, only: radtransfer
+      use Shock, only: calc_shock_profile,calc_shock_profile_simple
       use Viscosity, only: lvisc_first,calc_viscosity
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: a
