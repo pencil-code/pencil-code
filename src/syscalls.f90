@@ -9,7 +9,6 @@ module Syscalls
   external file_size_c
 !
   contains
-
 !***********************************************************************
     function file_exists(file, delete)
 !
