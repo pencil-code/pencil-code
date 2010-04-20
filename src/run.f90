@@ -723,6 +723,7 @@ program run
   call sharedvars_clean_up()
   call chemistry_clean_up()
   call NSCBC_clean_up()
+  call vnames_clean_up()
   call xyaverages_clean_up()
   call xzaverages_clean_up()
   call yzaverages_clean_up()

@@ -37,6 +37,7 @@ module Diagnostics
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
   public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages
+  public :: vnames_clean_up
   public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
   public :: phizaverages_clean_up
   public :: yaverages_clean_up, zaverages_clean_up, phiaverages_clean_up
@@ -1788,9 +1789,9 @@ module Diagnostics
 !
 !   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
 !
-      integer :: stat
+      integer :: stat=0
 !
-      allocate(cnamev(nnamev),stat=stat)
+      if (.not. allocated(cnamev)) allocate(cnamev(nnamev),stat=stat)
       cnamev(:)=char(0)
 !
       if (stat>0) then
@@ -1964,9 +1965,19 @@ module Diagnostics
 !
     endsubroutine allocate_phiaverages
 !***********************************************************************
+    subroutine vnames_clean_up
+!
+!  Deallocate space needed for reading the video.in file.
+!
+!   20-apr-10/Bourdin.KIS: copied from xyaverages_clean_up
+!
+      if (allocated(cnamev)) deallocate(cnamev)
+!
+    endsubroutine vnames_clean_up
+!***********************************************************************
     subroutine xyaverages_clean_up
 !
-!  Allocate the variables needed for xy-averages.
+!  Deallocate the variables needed for xy-averages.
 !
 !   24-nov-09/anders: copied from yaverages_clean_up
 !
@@ -1978,7 +1989,7 @@ module Diagnostics
 !***********************************************************************
     subroutine xzaverages_clean_up
 !
-!  Allocate the variables needed for xz-averages.
+!  Deallocate the variables needed for xz-averages.
 !
 !   24-nov-09/anders: copied from yaverages_clean_up
 !
@@ -1990,7 +2001,7 @@ module Diagnostics
 !***********************************************************************
     subroutine yzaverages_clean_up
 !
-!  Allocate the variables needed for yz-averages.
+!  Deallocate the variables needed for yz-averages.
 !
 !   24-nov-09/anders: copied from yaverages_clean_up
 !
@@ -2002,7 +2013,7 @@ module Diagnostics
 !***********************************************************************
     subroutine phizaverages_clean_up
 !
-!  Allocate the variables needed for phiz-averages.
+!  Deallocate the variables needed for phiz-averages.
 !
 !   24-nov-09/anders: copied from yaverages_clean_up
 !
@@ -2014,7 +2025,7 @@ module Diagnostics
 !***********************************************************************
     subroutine yaverages_clean_up
 !
-!  Allocate the variables needed for y-averages.
+!  Deallocate the variables needed for y-averages.
 !
 !   12-aug-09/dhruba: coded
 !
@@ -2026,7 +2037,7 @@ module Diagnostics
 !*******************************************************************
     subroutine zaverages_clean_up
 !
-!  Allocate the variables needed for z-averages.
+!  Deallocate the variables needed for z-averages.
 !
 !   12-aug-09/dhruba: coded
 !
@@ -2038,7 +2049,7 @@ module Diagnostics
 !*******************************************************************
     subroutine phiaverages_clean_up
 !
-!  Allocate the variables needed for phi-averages.
+!  Dellocate the variables needed for phi-averages.
 !
 !   24-nov-09/anders: copied from zaverages_clean_up
 !
