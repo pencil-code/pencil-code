@@ -8,11 +8,11 @@
 module Param_IO
 !
   use Cdata
-  use Cparam
   use Chemistry
   use Chiral
   use Cosmicray
   use CosmicrayFlux
+  use Cparam
   use Density
   use Dustdensity
   use Dustvelocity
@@ -24,8 +24,8 @@ module Param_IO
   use Hydro
   use InitialCondition
   use Interstellar
-  use Magnetic
   use Lorenz_gauge
+  use Magnetic
   use Messages
   use NeutralDensity
   use NeutralVelocity
@@ -36,9 +36,9 @@ module Param_IO
   use Radiation
   use Selfgravity
   use Shear
+  use Signal_handling
   use Shock
   use Solid_Cells
-  use Signal_handling
   use Special
   use Sub
   use Testfield
@@ -81,7 +81,7 @@ module Param_IO
       lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, border_frac_x, border_frac_y, border_frac_z, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
-      lequatorz, zequator, lav_smallx, xav_max 
+      lequatorz, zequator, lav_smallx, xav_max
 !
   namelist /run_pars/ &
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
