@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  This module takes care of most of the things related to velocity.
-!  Pressure, for example, is added in the energy (entropy) module,
+!  Pressure, for example, is added in the energy (entropy) module.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,10 +25,9 @@ module Hydro
 !
   use Cdata
   use Cparam
-  use Viscosity
   use Messages
   use Sub, only: keep_compiler_quiet
-  use Deriv, only : der_pencil
+  use Viscosity, only: calc_viscous_force
 !
   implicit none
 !
@@ -482,8 +481,8 @@ module Hydro
 !
       use BorderProfiles, only: request_border_driving
       use FArrayManager
-      use Mpicomm, only: stop_it
       use Initcond
+      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -659,6 +658,8 @@ module Hydro
 !  07-nov-01/wolf: coded
 !  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
 !
+      use Boundcond,only:update_ghosts
+      use Density, only: calc_pencils_density
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
       use Gravity, only: gravz_const,z1
@@ -666,8 +667,6 @@ module Hydro
       use InitialCondition, only: initial_condition_uu
       use Mpicomm, only: stop_it
       use Sub
-      use Boundcond,only:update_ghosts
-      use Density, only: calc_pencils_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -2197,8 +2196,8 @@ module Hydro
 !   9-nov-06/axel: adapted from calc_ltestfield_pars
 !  31-jul-08/axel: Poincare force with O=(sinalp*cosot,sinalp*sinot,cosalp)
 !
-      use Mpicomm, only: mpiallreduce_sum, fill_zghostzones_3vec
       use Deriv, only: der_z
+      use Mpicomm, only: mpiallreduce_sum, fill_zghostzones_3vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rux,ruy,ruz
@@ -2448,9 +2447,9 @@ module Hydro
 !  08-sep-07/wlad: moved here from initcond
 !
       use Gravity, only: r0_pot,n_pot,acceleration,qgshear
-      use Sub,     only: get_radial_distance,power_law
       use Mpicomm, only: stop_it
       use Particles_nbody, only: get_totalmass
+      use Sub,     only: get_radial_distance,power_law
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: rr_cyl,rr_sph,OO,g_r,tmp
@@ -4358,9 +4357,9 @@ module Hydro
 !
 !  27-june-2007 dhruba: coded
 !
+      use Gravity, only: z1
       use Mpicomm, only: stop_it
       use Sub, only: step
-      use Gravity, only: z1
 !
       real :: slope,uinn,uext,zbot
       real, dimension (mx,my,mz,mfarray) :: f
