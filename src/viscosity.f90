@@ -592,7 +592,7 @@ module Viscosity
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,nu_smag,tmp3,tmp4,pnu
-      real, dimension (nx) :: Lambda_zero_order,Lambda_1st_order 
+      real, dimension (nx) :: Lambda_zero_order,Lambda_1st_order,lambda_phi 
 !
       integer :: i,j,ju
 !
@@ -1095,42 +1095,10 @@ module Viscosity
 !  Calculate Lambda effect
 !
       if (llambda_effect) then
-        Lambda_zero_order = Lambda_V0*( &
-                    2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
-                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
-!         if((Lambda_V1.eq.0).or.(Lambda_H1.eq.0)) then
-!           Lambda_1st_order=0.
-!         else
-           Lambda_1st_order = Lambda_V1*(sinth(m)**2)*( & 
-                     2.*p%uu(:,3)/x(l1:l2)**2 + p%uij(:,3,1)/x(l1:l2) &
-                    +p%uu(:,3)*p%glnrho(:,1)/x(l1:l2) )  &
-!                    - Lambda_H1*( &
-!                      (2.*cotth(m)/x(l1:l2)+p%glnrho(:,2))*cotth(m)*p%uu(:,3)/x(l1:l2)&
-!                      +cotth(m)*p%uij(:,3,2)/x(l1:l2)&
-!                      - p%uu(:,3)/(sinth(m)*sinth(m)*x(l1:l2)) )
-!PJK: I cannot figure out how the equation above has been obtained...
-                    + (Lambda_H1/x(l1:l2)**2)*( &
-                      p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)*x(l1:l2)  &
-                    + (4.*costh(m)**2-1.)*p%uu(:,3) & 
-                    + sinth(m)*costh(m)*p%uij(:,3,2)*x(l1:l2))
-!PJK
-!                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
-!                     (4.*costh(m)*costh(m)-0.5)*p%uu(:,3)/(x(l1:l2)*x(l1:l2)) & 
-!                    +sinth(m)*costh(m)*p%uij(:,3,2)/x(l1:l2) &
-!                    +p%uu(:,3)*sinth(m)*costh(m)*p%glnrho(:,2)/x(l1:l2) )
-        p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_zero_order+Lambda_1st_order
+        call calc_lambda(p,lambda_phi)
+        p%fvisc(:,iuz)=p%fvisc(:,iuz) + lambda_phi
       endif
 !
-!     endif
-! The following is the correct expression for vertical lambda effect 
-! for the axisymmetric case. This is now commented out because the
-! more complete expression above reduces to the following in the
-! special case of axisymmetry and vertical lambda effect. 
-!DM     if (llambda_effect) then
-!DM       p%fvisc(:,iuz)=p%fvisc(:,iuz) +Lambda_V0*( &
-!DM                    2.*p%uu(:,3)/x(l1:l2)**2  +p%uij(:,3,1)/x(l1:l2) &
-!DM                     +(p%uu(:,3)/x(l1:l2))*p%glnrho(:,1))
-!DM     endif
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
@@ -1363,4 +1331,35 @@ module Viscosity
 !
     endsubroutine getnu
 !***********************************************************************
+    subroutine calc_lambda(p,div_lambda)
+!
+!  Calculates the lambda effect
+!
+!  20-apr-10/dhruba: coded
+! 
+     real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta,lver,lhor,&
+           dlver_dr,dlhor_dtheta
+      type (pencil_case) :: p
+!
+      lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))
+      dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
+      dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))
+      lver = Lambda_V0 + Lambda_V1*sinth(m)*sinth(m)
+      lhor = Lambda_H1*sinth(m)*sinth(m)
+      dlver_dr = 0.
+      dlhor_dtheta = Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)
+!
+      div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  & 
+                         +3.*sinth(m)*lomega/x(l1:l2)   &
+                         +sinth(m)*dlomega_dr)  & 
+                  +lomega*sinth(m)*dlver_dr   &
+                  +lhor*(costh(m)*lomega*p%glnrho(:,2)  &
+                         -sinth(m)*lomega/x(l1:l2)  & 
+                         +2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
+                         +costh(m)*dlomega_dtheta ) & 
+                   +lomega*costh(m)*dlhor_dtheta  
+!
+    endsubroutine calc_lambda
+!***********************************************************************
+!
 endmodule Viscosity
