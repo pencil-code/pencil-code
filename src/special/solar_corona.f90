@@ -1194,9 +1194,12 @@ module Special
         print*,'-----------------------------------'
       endif
 !
-      allocate(first)
-      if (associated(first%next)) nullify(first%next)
-      current => first
+      if (associated(first)) nullify(first)
+      if (associated(current)) nullify(current)
+      if (associated(previous)) nullify(previous)
+      if (associated(firstlev)) nullify(firstlev)
+      if (associated(secondlev)) nullify(secondlev)
+      if (associated(thirdlev)) nullify(thirdlev)
 !
     endsubroutine setdrparams
 !***********************************************************************
@@ -1300,6 +1303,8 @@ module Special
       yrangearr(2)=min(nint(ldif*yrange),nint(nygrid/2-1.))
       yrangearr(3)=min(nint(ldif*ldif*yrange),nint(nygrid/2-1.))
 !
+! create first entries of the 3 lists
+!
       allocate(firstlev)
       if (associated(firstlev%next)) nullify(firstlev%next)
       allocate(secondlev)
@@ -1318,7 +1323,7 @@ module Special
           first%next => firstlev%next
           current%next => firstlev%next
         endif
-        previous => first
+        nullify(previous)                  
       case (2)
         if (associated(first)) nullify(first)
         first => secondlev
@@ -1327,7 +1332,7 @@ module Special
           first%next => secondlev%next
           current%next => secondlev%next
         endif
-        previous => first
+        nullify(previous)                  
       case (3)
         if (associated(first)) nullify(first)
         first => thirdlev
@@ -1336,7 +1341,7 @@ module Special
           first%next => thirdlev%next
           current%next => thirdlev%next
         endif
-        previous => first
+        nullify(previous)                  
       end select
 !
       ampl=amplarr(k)
@@ -1349,45 +1354,14 @@ module Special
 !
       select case (k)
       case (1)
-        do
-          if (associated(firstlev,first)) then
-            if (.NOT. associated(firstlev%next,first%next)) then
-              firstlev%next=>first%next
-            endif
-            exit
-          else
-            firstlev => first
-            if (.NOT.associated(firstlev%next,first%next)) &
-                firstlev%next=>first%next
-          endif
-        enddo
-!
+        if (.NOT. associated(firstlev,first)) firstlev => first
+        if (.NOT. associated(firstlev%next,first%next)) firstlev%next=>first%next
       case (2)
-        do
-          if (associated(secondlev,first)) then
-            if (.NOT. associated(secondlev%next,first%next)) then
-              secondlev%next => first%next
-            endif
-            exit
-          else
-            secondlev => first
-            if (.NOT.associated(secondlev%next,first%next)) &
-                secondlev%next=>first%next
-          endif
-        enddo
+        if (.NOT. associated(secondlev,first)) secondlev => first
+        if (.NOT. associated(secondlev%next,first%next)) secondlev%next=>first%next
       case (3)
-        do
-          if (associated(thirdlev,first)) then
-            if (.NOT. associated(thirdlev%next,first%next)) then
-              thirdlev%next=>first%next
-            endif
-            exit
-          else
-            thirdlev => first
-            if (.NOT.associated(thirdlev%next,first%next)) &
-                thirdlev%next => first%next
-          endif
-        enddo
+        if (.NOT. associated(thirdlev,first)) thirdlev => first
+        if (.NOT. associated(thirdlev%next,first%next)) thirdlev%next=>first%next
       end select
 !
       call resetarr
@@ -1576,24 +1550,33 @@ module Special
 ! make the new point as the current one
       current => newpoint
 !
-endsubroutine addpoint
+    endsubroutine addpoint
 !***********************************************************************
     subroutine rmpoint
 !
-      if (associated(current%next)) then
-        previous%next => current%next
-        if (associated(first%next,current)) then
-          first%next => current%next
-          if (associated(firstlev,first)) firstlev%next => current%next
-          if (associated(secondlev,first)) secondlev%next => current%next
-          if (associated(thirdlev,first)) thirdlev%next => current%next
+      if (associated(current%next)) then  
+! current is NOT the last one
+        if (associated(first,current)) then
+! but current is the first point,
+! check which level it is
+          if (associated(firstlev,first)) firstlev => current%next
+          if (associated(secondlev,first)) secondlev => current%next
+          if (associated(thirdlev,first)) thirdlev => current%next
+          first => current%next
+          deallocate(current)
+          current => first
+          nullify(previous)
+        else
+! we are in between 
+          previous%next => current%next
+          deallocate(current)
+          current => previous%next
         endif
-        deallocate(current)
-        current => previous%next
       else
-        nullify(previous%next)
+! we are at the end        
         deallocate(current)
         current => previous
+        nullify(previous)        
 ! BE AWARE THAT PREVIOUS IS NOT NOT ALLOCATED TO THE RIGHT POSITION
       endif
 !
@@ -1610,6 +1593,8 @@ endsubroutine addpoint
 !
       current => first
       previous => first
+!
+      if (associated(previous)) nullify(previous)
 !
     endsubroutine reset
 !***********************************************************************
@@ -1818,39 +1803,9 @@ endsubroutine addpoint
       real :: dxdy
 !
       dxdy=sqrt(dxdy2)
-! MUST take care of case when first granule dissapears
 !
       current%data(1)=current%data(2)* &
           exp(-((t-current%data(3))/current%data(4))**pow)
-!
-      do
-        if (current%data(1)/dxdy.ge.ampl/(granr*(1-ig))) exit
-        first => current%next
-        previous => first
-        if (associated(firstlev,current).or. &
-            &  associated(secondlev,current).or. &
-            &  associated(thirdlev,current)) then
-          nullify(current)
-        else
-          if (associated(current,first).or.associated(current,firstlev).or. &
-              associated(current,secondlev).or.associated(current,thirdlev)) then
-            nullify(current)
-          else
-            deallocate(current)
-          endif
-        endif
-        current => first
-        if (.not.associated(first)) then
-          allocate(first)
-          if (associated(first%next)) then
-            deallocate(first%next)
-          endif
-          current => first
-          previous => first
-          call make_newpoint
-          exit
-        endif
-      enddo
 !
       do
         if (associated(current%next)) then
