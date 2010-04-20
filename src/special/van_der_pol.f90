@@ -28,7 +28,7 @@ module Special
 
 !
 ! Declare index of variables
-! 
+!
    integer :: ispecial=0,ispecial1=0,ispecial2=0
 
   ! input parameters
@@ -194,7 +194,7 @@ module Special
 !
         df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)+u2
         df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+ &
-	                        2*tau*(1.-u1**2/finalamp**2)*u2 -om1**2*u1 
+                          2*tau*(1.-u1**2/finalamp**2)*u2 -om1**2*u1
 !
 !  diagnostics
 !
@@ -452,7 +452,7 @@ module Special
 !********************************************************************
     subroutine special_calc_particles(fp)
 !
-!   Called before the loop, in case some particle value is needed 
+!   Called before the loop, in case some particle value is needed
 !   for the special density/hydro/magnetic/entropy
 !
 !   20-nov-08/wlad: coded
@@ -465,7 +465,7 @@ module Special
 !***********************************************************************
     subroutine special_calc_particles_nbody(fsp)
 !
-!   Called before the loop, in case some massive particles value 
+!   Called before the loop, in case some massive particles value
 !   is needed for the special density/hydro/magnetic/entropy
 !
 !   20-nov-08/wlad: coded
