@@ -304,7 +304,7 @@ module  power_spectrum
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpiallreduce_sum(spectrum,spectrum_sum,(/nk,nzgrid/),idir=12)
+  call mpiallreduce_sum(spectrum,spectrum_sum,(/nk,nzgrid/))
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
