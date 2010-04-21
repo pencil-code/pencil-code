@@ -206,7 +206,6 @@ module Entropy
 !
       use FArrayManager
       use SharedVariables
-      use Sub
 !
       integer :: ierr
 !
@@ -382,7 +381,7 @@ module Entropy
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                    'initialize_entropy: Calculated Fbot = ', Fbot
-
+!
               Kbot=gamma_m1/gamma*(mpoly+1.)*Fbot
               FbotKbot=gamma/gamma_m1/(mpoly+1.)
               if (lroot) print*,'initialize_entropy: Calculated Fbot,Kbot=', &
@@ -486,18 +485,18 @@ module Entropy
           ! compute the gravity profile inside the star
           star_cte=(mpoly0+1.)/hcond0*gamma_m1/gamma
           call compute_gravity_star(f, wheat, luminosity, star_cte)
-
+!
         case ('cylind_layers')
           if (bcx1(iss)=='c1') then
             Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
             FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
           endif
           cs2cool=cs2top
-
+!
         case ('single_polytrope')
           if (cool/=0.) cs2cool=cs0**2
           mpoly=mpoly0  ! needed to compute Fbot when bc=c1 (L383)
-
+!
       endselect
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
@@ -811,7 +810,7 @@ module Entropy
 !
       save_pretend_lnTT=pretend_lnTT
       pretend_lnTT=.false.
-
+!
       do j=1,ninit
 !
         if (initss(j)=='nothing') cycle
@@ -822,7 +821,7 @@ module Entropy
 !  select different initial conditions
 !
         select case (initss(j))
-
+!
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
           case ('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
@@ -1118,7 +1117,7 @@ module Entropy
 !
         write (unit=errormsg,fmt=*) 'No such value for pertss:', pertss
         call fatal_error('init_ss',errormsg)
-
+!
       endselect
 !
 !  Interface fow user's own initial condition
@@ -1320,7 +1319,7 @@ module Entropy
 !
       use EquationOfState, only: eoscalc,ilnrho_ss
       use Gravity, only: gravz
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
       real :: cs2_,lnrho,lnrho_m
@@ -1328,7 +1327,7 @@ module Entropy
       if (.not. lgravz) then
         call fatal_error("hydrostatic_isentropic","Currently only works for vertical gravity field")
       endif
-
+!
       !
       ! In case this processor is not located at the very bottom
       ! perform integration through lower lying processors
@@ -1340,7 +1339,7 @@ module Entropy
         call eoscalc(ilnrho_ss,lnrho_m,ss_const,cs2=cs2_)
         lnrho=lnrho+dz*gravz/cs2_
       enddo
-
+!
       !
       ! Do the integration on this processor
       !
@@ -1352,12 +1351,12 @@ module Entropy
         lnrho=lnrho+dz*gravz/cs2_
         f(:,:,n,ilnrho)=lnrho
       enddo
-
+!
       !
       ! Entropy is simply constant
       !
       f(:,:,:,iss)=ss_const
-
+!
     endsubroutine hydrostatic_isentropic
 !***********************************************************************
     subroutine mixinglength(mixinglength_flux,f)
@@ -1418,7 +1417,7 @@ module Entropy
       rhotop=rt_new
       call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
       rb_new=rhobot
-
+!
       do 10 iter=1,10
 !
 !  new estimate
@@ -1479,7 +1478,7 @@ module Entropy
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
       use Mpicomm, only:stop_it
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
       real :: beta1,cp1
@@ -1580,7 +1579,7 @@ module Entropy
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-
+!
       real, dimension (nx) :: lnrho,lnTT,TT,ss,z_mn
       real :: beta1,cp1
 !
@@ -1653,7 +1652,7 @@ module Entropy
       T_w=T_w_cgs/unit_temperature
       T_i=T_i_cgs/unit_temperature
       T_h=T_h_cgs/unit_temperature
-
+!
 !      pp0=6.0*k_B*(rho0/1.38) *                                               &
 !       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
 !      pp0=k_B*unit_length**3*                                               &
@@ -1682,7 +1681,7 @@ module Entropy
         rho=real((n_c+n_w+n_i+n_h)*rhoscale)
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
-
+!
 !  define entropy via pressure, assuming fixed T for each component
         if (lentropy) then
 !  thermal pressure (eq 15)
@@ -1833,7 +1832,7 @@ module Entropy
 !                  require initial profile to produce finite Lambda between lamstep(3) and
 !                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above
 !
-
+!
         heat=GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
         rho=rho0hs*exp(-abs(z(n))*19.8)
         lambda=heat/rho
@@ -1971,7 +1970,7 @@ module Entropy
 !
       if (lroot) print*, &
          'Galactic-hs: hydrostatic equilibrium density and entropy profiles'
-
+!
       do n=n1,n2
       do m=m1,m2
         rho=rho0hs*exp(1 - sqrt(1 + (z(n)/H0hs)**2))
@@ -2677,7 +2676,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: nxy=nxgrid*nygrid
-      integer :: n,j
+      integer :: n
       real :: fact
       real, dimension (mz) :: ssmz1_tmp
 !
@@ -2707,7 +2706,7 @@ module Entropy
       endif
 !
     endsubroutine calc_lentropy_pars
-!**********************************************************************
+!***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
 !  Calculates the driving term for the border profile
@@ -2852,9 +2851,8 @@ module Entropy
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test physics
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
-      use Diagnostics
-      use Gravity
-      use Sub
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2882,7 +2880,7 @@ module Entropy
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
 !
-
+!
       boost_chi=1e6/unit_temperature
       thchi=chi_th
       where (p%lnTT .ge. log(boost_chi)) &
@@ -2948,14 +2946,13 @@ module Entropy
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test physics
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
-      use Diagnostics
-      use Gravity
-      use Sub
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,rhochi
-      real :: boost_chi
+!      real :: boost_chi
 !
       intent(out) :: df
 !
@@ -2978,7 +2975,7 @@ module Entropy
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
 !
-
+!
 !      boost_chi=1e6/unit_temperature
 !      rhochi=chi_rho
 !      where (p%lnTT .ge. log(boost_chi)) &
@@ -3246,7 +3243,7 @@ module Entropy
       !glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       !call dot(glnT,glnThcond,g2)
       !thdiff =  p%rho1*hcond * (gamma*p%del2ss*p%cp1 + gamma_m1*p%del2lnrho + g2)
-
+!
       !  diffusion of the form:
       !  rho*T*Ds/Dt = ... + nab.(K*gradT)
       !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT)^2]
@@ -3296,7 +3293,7 @@ module Entropy
 !  10-feb-04/bing: coded
 !
       use EquationOfState, only: gamma,gamma_m1
-      use Sub
+      use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
       use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3419,7 +3416,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
       real :: a2,kappa0,kappa0_cgs
-
+!
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -3454,7 +3451,7 @@ module Entropy
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
 !
     endsubroutine calc_heatcond_hubeny
-!************************************************************************
+!***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
 !  heat conduction
@@ -3465,7 +3462,7 @@ module Entropy
 !
       use Diagnostics
       use IO, only: output_pencil
-      use Sub
+      use Sub, only: dot, notanumber, g2ij, write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3590,8 +3587,8 @@ module Entropy
 !
 !  Turbulent entropy diffusion with rotational anisotropy:
 !    chi_ij = chi_t*(delta_{ij} + chit_aniso*Om_i*Om_j),
-!  where chit_aniso=chi_Om/chi_t. The first term is the isotropic part, 
-!  which is already dealt with above. The current formulation works only 
+!  where chit_aniso=chi_Om/chi_t. The first term is the isotropic part,
+!  which is already dealt with above. The current formulation works only
 !  in spherical coordinates. Here we assume axisymmetry so all off-diagonals
 !  involving phi-indices are neglected.
 !
@@ -4074,7 +4071,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -4640,12 +4637,12 @@ module Entropy
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
                                  mpoly1, lnrho0, get_cp1
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
       real :: beta0,beta1,TT_crit,cp1
       real :: lnrho_int,lnrho_ext,lnrho_crit
-
+!
       if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
 !
 !  beta is the temperature gradient
@@ -4710,7 +4707,7 @@ module Entropy
 !
     use EquationOfState, only: rho0, lnrho0, get_soundspeed,eoscalc, ilnrho_TT
     use Sub, only: step, interp1, erfunc
-
+!
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer, parameter   :: nr=100
     integer              :: i,l,iter
@@ -4722,23 +4719,23 @@ module Entropy
 !   rhotop=rho0
 !   call strat_heat(lnrho,temp,rhotop,rhobot)
 !   goto 20
-
+!
 !  the bottom value that we want for density at r=r_bcz, actually given by rho0
     rbot=rho0
     rt_old=0.1*rbot
     rt_new=0.12*rbot
-
+!
 !  need to iterate for rhobot=1
 !  produce first estimate
     rhotop=rt_old
     call strat_heat(lnrho,temp,rhotop,rhobot)
     rb_old=rhobot
-
+!
 !  next estimate
     rhotop=rt_new
     call strat_heat(lnrho,temp,rhotop,rhobot)
     rb_new=rhobot
-
+!
     do 10 iter=1,10
 !  new estimate
       rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
@@ -4746,7 +4743,7 @@ module Entropy
       crit=abs(rhotop/rt_new-1.)
       if (crit.le.1e-4) goto 20
       call strat_heat(lnrho,temp,rhotop,rhobot)
-
+!
 !  update new estimates
       rt_old=rt_new
       rb_old=rb_new
@@ -4754,13 +4751,13 @@ module Entropy
       rb_new=rhobot
  10 continue
  20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
-
+!
 !  redefine rho0 and lnrho0 (important for eoscalc!)
     rho0=rhotop
     lnrho0=log(rhotop)
     T0=cs20/gamma_m1
     print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
-
+!
 ! define the radial grid r=[0,r_max]
     if (nzgrid == 1) then
       r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
@@ -4770,7 +4767,7 @@ module Entropy
     do i=1,nr
       r(i)=r_max*float(i-1)/(nr-1)
     enddo
-
+!
     do imn=1,ny*nz
       n=nn(imn)
       m=mm(imn)
@@ -4818,7 +4815,7 @@ module Entropy
       enddo
       close(11)
     endif
-
+!
     endsubroutine star_heat
 !***********************************************************************
     subroutine strat_heat(lnrho,temp,rhotop,rhobot)
@@ -4830,12 +4827,12 @@ module Entropy
 !
     use EquationOfState, only: gamma, gamma_m1, mpoly0, mpoly1, lnrho0, cs20
     use Sub, only: step, erfunc, interp1
-
+!
     integer, parameter   :: nr=100
     integer              :: i
     real, dimension (nr) :: r,lumi,hcond,g,lnrho,temp
     real                 :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max
-
+!
 ! define the radial grid r=[0,r_max]
     if (nzgrid == 1) then
       r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
@@ -4845,7 +4842,7 @@ module Entropy
     do i=1,nr
       r(i)=r_max*float(i-1)/(nr-1)
     enddo
-
+!
 ! luminosity and gravity radial profiles
     lumi(1)=0. ; g(i)=0.
     do i=2,nr
@@ -4858,14 +4855,14 @@ module Entropy
         g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
       endif
     enddo
-
+!
 ! radiative conductivity profile
     hcond1=(mpoly1+1.)/(mpoly0+1.)
     hcond2=(mpoly2+1.)/(mpoly0+1.)
     hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
             +(hcond2-1.)*step(r,r_ext,widthss)
     hcond=hcond0*hcond
-
+!
 ! start from surface values for rho and temp
     temp(nr)=cs20/gamma_m1 ; lnrho(nr)=alog(rhotop)
     dr=r(2)
@@ -4905,7 +4902,7 @@ module Entropy
     lnrhobot=interp1(r,lnrho,nr,r_bcz)
     rhobot=exp(lnrhobot)
     print*,'find rhobot=',rhobot
-
+!
     endsubroutine strat_heat
 !***********************************************************************
     subroutine cylind_layers(f)
@@ -4916,7 +4913,7 @@ module Entropy
       use Gravity, only: gravz, g0
       use EquationOfState, only: lnrho0,cs20,gamma,gamma_m1,cs2top,cs2bot, &
                                  get_cp1,eoscalc,ilnrho_TT
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
@@ -5106,3 +5103,4 @@ module Entropy
     endsubroutine fill_farray_pressure
 !***********************************************************************
 endmodule Entropy
+
