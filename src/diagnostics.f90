@@ -219,7 +219,7 @@ module Diagnostics
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
 !
-      real, dimension (mname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
+      real, dimension (nname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
       integer :: iname,imax_count,isum_count,nmax_count,nsum_count
       logical :: lweight_comm
