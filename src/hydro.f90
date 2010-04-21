@@ -2224,33 +2224,33 @@ module Hydro
 !  calculate averages of rho*ux and rho*uy
 !
       if (ldensity) then
-      if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
-        ruxm=0.
-        ruym=0.
-        ruzm=0.
-        fact=1./nwgrid
-        do n=n1,n2
-          do m=m1,m2
-            rho=exp(f(l1:l2,m,n,ilnrho))
-            rux=rho*f(l1:l2,m,n,iux)
-            ruy=rho*f(l1:l2,m,n,iuy)
-            ruz=rho*f(l1:l2,m,n,iuz)
-            ruxm=ruxm+fact*sum(rux)
-            ruym=ruym+fact*sum(ruy)
-            ruzm=ruzm+fact*sum(ruz)
+        if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
+          ruxm=0.
+          ruym=0.
+          ruzm=0.
+          fact=1./nwgrid
+          do n=n1,n2
+            do m=m1,m2
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              rux=rho*f(l1:l2,m,n,iux)
+              ruy=rho*f(l1:l2,m,n,iuy)
+              ruz=rho*f(l1:l2,m,n,iuz)
+              ruxm=ruxm+fact*sum(rux)
+              ruym=ruym+fact*sum(ruy)
+              ruzm=ruzm+fact*sum(ruz)
+            enddo
           enddo
-        enddo
-      endif
+        endif
 !
 !  communicate to the other processors
 !
-      fsum_tmp(1)=ruxm
-      fsum_tmp(2)=ruym
-      fsum_tmp(3)=ruzm
-      call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
-      ruxm=fsum(1)
-      ruym=fsum(2)
-      ruzm=fsum(3)
+        fsum_tmp(1)=ruxm
+        fsum_tmp(2)=ruym
+        fsum_tmp(3)=ruzm
+        call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
+        ruxm=fsum(1)
+        ruym=fsum(2)
+        ruzm=fsum(3)
       endif
 !
 !  do mean field for each component
