@@ -233,11 +233,11 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz,ikztot,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
-  real, dimension(nk,nz) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk,nzgrid) :: spectrum=0.,spectrum_sum=0
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -289,10 +289,11 @@ module  power_spectrum
 !
      if (lroot .AND. ip<10) print*,'fft done; now integrate over circles...'
      do ikz=1,nz
+       ikztot=ikz+ipz*nz
        do iky=1,ny
          do ikx=1,nx
            k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-           if (k>=0 .and. k<=(nk-1)) spectrum(k+1,ikz)=spectrum(k+1,ikz) &
+           if (k>=0 .and. k<=(nk-1)) spectrum(k+1,ikztot)=spectrum(k+1,ikztot) &
                 +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
          enddo
        enddo
@@ -303,7 +304,7 @@ module  power_spectrum
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpiallreduce_sum(spectrum,spectrum_sum,(/nk,nz/),idir=12)
+  call mpiallreduce_sum(spectrum,spectrum_sum,(/nk,nzgrid/),idir=12)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
