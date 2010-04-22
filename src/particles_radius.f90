@@ -25,6 +25,7 @@ module Particles_radius
 !
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
   real, dimension (ninit) :: ap0=0.0
+  real, dimension (ninit) :: radii_distribution=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
   real :: tstart_condensation_par=0.0
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
@@ -42,7 +43,7 @@ module Particles_radius
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean, TTocean
+      lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean
 !
   namelist /particles_radius_run_pars/ &
       rhops, vthresh_sweepup, deltavp12_floor, &
@@ -136,11 +137,13 @@ module Particles_radius
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: npar_low,npar_high
+      integer :: npar_tot, npar_limit
       logical, optional :: init
       logical :: initial
       real :: radius_fraction
+      real, dimension (ninit) :: radii_cumulative
 !
-      integer :: j,ind
+      integer :: i,j,ind,p
 !
       initial=.false.
       if (present(init)) then
@@ -148,6 +151,7 @@ module Particles_radius
       endif
 !
       do j=1,ninit
+!   
         select case (initap(j))
 !
         case ('nothing')
@@ -159,6 +163,33 @@ module Particles_radius
           call random_number_wrapper(radius_fraction)
           ind=ceiling(npart_radii*radius_fraction)
           fp(npar_low:npar_high,iap)=ap0(ind)
+!
+        case ('specify') 
+          !  user specified particle size distribution
+          ! (with constant radii)
+          if (initial.and.lroot) &
+              print*, 'set_particles_radius: constant radius, user specified distribution'
+          radii_cumulative=0.0
+          radii_cumulative(1)=radii_distribution(1)
+          do i=2,npart_radii
+            radii_cumulative(i) = radii_cumulative(i-1) + radii_distribution(i)
+          enddo
+          if (radii_cumulative(npart_radii) .ne. 1.0) then
+          !  renormalize
+            do i=1,npart_radii
+              radii_cumulative(i)=radii_cumulative(i)/radii_cumulative(npart_radii)
+            enddo
+          endif
+!           
+          do p=npar_low,npar_high
+            call random_number_wrapper(radius_fraction)
+            do i=1,npart_radii
+              if(radius_fraction .le. radii_cumulative(i)) then
+                fp(p,iap)=ap0(i)
+                exit
+                endif
+              enddo
+            enddo
 !
         endselect
       enddo
