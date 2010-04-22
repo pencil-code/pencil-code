@@ -3373,10 +3373,10 @@ module Mpicomm
       if (lroot) then
         ! test if file exists
         inquire(FILE=file,exist=exists)
-        if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
+        if (.not. exists) call stop_it_if_any(.true.,'parallel_open: file not found "'//trim(file)//'"')
         bytes=file_size(file)
-        if (bytes < 0) call stop_it('parallel_open: could not determine file size "'//trim(file)//'"')
-        if (bytes == 0) call stop_it('parallel_open: file is empty "'//trim(file)//'"')
+        if (bytes < 0) call stop_it_if_any(.true.,'parallel_open: could not determine file size "'//trim(file)//'"')
+        if (bytes == 0) call stop_it_if_any(.true.,'parallel_open: file is empty "'//trim(file)//'"')
       endif
       call mpibcast_int(bytes, 1)
 !
@@ -3403,10 +3403,19 @@ module Mpicomm
       write(filename,'(A,A,A,I0)') '/tmp/', file, '-', iproc      
 !
       ! write temproary file into local RAM disk (/tmp)
-      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
-      write(unit, REC=1) buffer
+!     *** WORK HERE: THIS CODE WILL BE DELETED SOON (because of an ifort compiler bug)
+!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
+!      write(unit, REC=1) buffer
+!     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
+      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct')
+      do pos=1,bytes
+        write (unit, '(A)', REC=pos) buffer(pos)
+      enddo
+      endfile(unit, iostat=ierr)
+      if (ierr<0) call stop_it_if_any(.true.,'parallel_open: error writing EOF "'//trim(file)//'"')
       close(unit)
       deallocate(buffer)
+      call stop_it_if_any(.false.,'')
 !
       ! open temporary file
       if (present(form) .and. present(recl)) then
