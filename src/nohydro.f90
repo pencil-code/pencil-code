@@ -218,15 +218,6 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
-      real, dimension (nx) :: tmp_mn, cos1_mn, cos2_mn
-      real :: kkx_aa, kky_aa, kkz_aa, fac, fac2
-      real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
-      integer :: modeN
-      real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
-      integer :: ell
-      real :: Balpha
-!
       intent(in) :: f
       intent(inout) :: p
 !
