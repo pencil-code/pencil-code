@@ -134,7 +134,6 @@ module Pscalar
 !
 !   6-jul-2001/axel: coded
 !
-      use Mpicomm
       use Sub
       use Initcond
       use InitialCondition, only: initial_condition_lncc
@@ -163,7 +162,7 @@ module Pscalar
             f(l1:l2,m,n,ilncc)=-1.0+2*0.5*(1.+tanh(z(n)/widthlncc))
           enddo; enddo
         case ('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,radius_lncc,epsilon_lncc)
-        case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
+        case default; call fatal_error('init_lncc','bad initlncc='//trim(initlncc))
       endselect
 !
 !  Superimpose something else.

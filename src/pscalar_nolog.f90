@@ -139,7 +139,6 @@ module Pscalar
 !
 !   6-jul-2001/axel: coded
 !
-      use Mpicomm
       use Sub
       use Initcond
       use InitialCondition, only: initial_condition_lncc
@@ -205,7 +204,7 @@ module Pscalar
         case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,'y')
         case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,'z')
         case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
-        case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
+        case default; call fatal_error('init_lncc','bad initcc='//trim(initcc))
       endselect
 !
 !  superimpose something else
@@ -366,7 +365,6 @@ module Pscalar
       use Diagnostics
       use Special, only: special_calc_pscalar
       use Sub
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -501,7 +499,7 @@ module Pscalar
           cc_xyaver=sum(f(l1:l2,m1:m2,n,icc))/nxy
           df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-LLambda_cc*cc_xyaver
         else
-          call stop_it("pscalar: lmean_friction works only for nprocxy=1")
+          call fatal_error('pscalar','lmean_friction works only for nprocxy=1')
         endif
       endif
 !
