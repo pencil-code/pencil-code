@@ -85,7 +85,7 @@ module Entropy
       logical :: lstarting
       integer :: ierr
 !
-!  Tell the equation of state that we're here and what f variable we use
+!  Tell the equation of state that we're here and what f variable we use.
 !
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
@@ -98,7 +98,7 @@ module Entropy
       endif
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
-!  gradient dlnrho/dr = beta/H
+!  gradient dlnrho/dr = beta/H.
 !
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
@@ -117,7 +117,7 @@ module Entropy
 !***********************************************************************
     subroutine init_ss(f)
 !
-!  Initialise entropy; called from start.f90
+!  Initialise entropy; called from start.f90.
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -133,8 +133,8 @@ module Entropy
 !
       use EquationOfState, only: beta_glnrho_scaled
 !
-      if (lhydro .and. lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
-      if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
+      if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
+      if (leos.and.ldensity.and.ldt) lpenc_requested(i_cs2)=.true.
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
@@ -236,12 +236,13 @@ module Entropy
 !
       if (leos.and.ldensity) then ! no sound waves without equation of state
         if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-        if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+        if (headtt.or.ldebug) &
+            print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
       endif
 !
-!  Add isothermal/polytropic pressure term in momentum equation
+!  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (lhydro .and. lpressuregradient_gas) then
+      if (lhydro.and.lpressuregradient_gas) then
         do j=1,3
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
@@ -258,7 +259,7 @@ module Entropy
         endif
      endif
 !
-!  Calculate entropy related diagnostics
+!  Calculate entropy related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_dtc/=0) &
@@ -276,7 +277,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_lentropy_pars(f)
 !
-!  dummy routine
+!  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -334,7 +335,7 @@ module Entropy
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -348,7 +349,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  Write column where which entropy variable is stored.
 !
       if (lwr) then
         write(3,*) 'i_dtc=',idiag_dtc
