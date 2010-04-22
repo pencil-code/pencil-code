@@ -366,6 +366,7 @@ module Pscalar
       use Diagnostics
       use Special, only: special_calc_pscalar
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
