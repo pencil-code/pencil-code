@@ -30,9 +30,5 @@
 !
 ! Used to get parameters into nohydro for kinematic dynamo simulations!
 !
-  public :: ABC_A, KZ_AA, ABC_C, KY_AA, ABC_B, KX_AA
-!
-!ajwm  Are these totally dead now? [29-03-06]
-!
-  !public :: eta !(needed for alpm [20-11-04/axel])
-  !public :: meanfield_EMFdotB !(needed for alpm [20-11-04/axel])
+!AB: the following is hopefully not neccesary
+! public :: ABC_A, KZ_AA, ABC_C, KY_AA, ABC_B, KX_AA

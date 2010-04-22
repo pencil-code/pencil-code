@@ -28,7 +28,6 @@ module Radiation
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0
-  real :: DFF_new=0.
 
   contains
 

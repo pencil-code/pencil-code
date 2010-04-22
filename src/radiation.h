@@ -12,7 +12,7 @@
   public :: init_rad, radtransfer, de_dt, radiative_cooling, radiative_pressure
 
 !ajwm SHOULDN'T BE EXPORTED
-  public :: DFF_new
+! public :: DFF_new
                                                                                                        
 
 

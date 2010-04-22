@@ -16,13 +16,3 @@
   public :: hydro_clean_up
   public :: traceless_strain, coriolis_cartesian
   public:: kinematic_random_phase
-!ajwm SHOULDN'T BE EXPORTED
-!
-! Keplerian velocity boundary condition parameters
-!    (needed by boundcond.f90)
-!
-!WL: commented out the routine that needed them
-!
-!  public :: kep_cutoff_pos_ext,kep_cutoff_width_ext
-!  public :: kep_cutoff_pos_int,kep_cutoff_width_int
-!  public :: u_out_kep

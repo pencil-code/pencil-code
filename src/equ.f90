@@ -812,8 +812,9 @@ module Equ
 !      endif
 !
 !  Take care of flux-limited diffusion
+!  This is now commented out, because we always use radiation_ray instead.
 !
-      if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!--   if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
 !  Fold df from first ghost zone into main df.
 !  Currently only needed for smoothed out particle drag force.

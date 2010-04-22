@@ -49,6 +49,7 @@ module Hydro
 !run parameters
 !
   character (len=labellen) :: kinematic_flow='none'
+  real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
@@ -58,6 +59,7 @@ module Hydro
   namelist /hydro_run_pars/ &
     kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
     circ_rmax,circ_step_width,circ_amp, &
+    ABC_A,ABC_B,ABC_C, &
     ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
     lrandom_location,lwrite_random_location,location_fixed,dtforce,&
     radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width
@@ -243,7 +245,6 @@ module Hydro
 !
       use Diagnostics
       use General
-      use Magnetic, only: ABC_A,ABC_B,ABC_C
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

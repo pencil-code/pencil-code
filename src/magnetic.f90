@@ -98,7 +98,6 @@ module Magnetic
   real :: fring3=0.0, Iring3=0.0, Rring3=1.0, wr3=0.3
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
-  real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
   real :: eta_shock=0.0
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., etaj20=0.
@@ -237,7 +236,7 @@ module Magnetic
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
       z_surface, &
-      tau_aa_exterior, kx_aa, ky_aa, kz_aa, ABC_A, ABC_B, ABC_C, &
+      tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
       lcalc_aamean, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &

@@ -93,7 +93,6 @@ module Radiation
 !
 !  Definition of dummy variables for FLD routine
 !
-  real :: DFF_new=0.  !(dum)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
   integer :: idiag_Fradzm=0,idiag_xyFradzm=0
