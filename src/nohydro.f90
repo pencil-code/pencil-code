@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
+! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
 !
 !***************************************************************
@@ -220,6 +220,24 @@ module Hydro
 !
       intent(in) :: f
       intent(inout) :: p
+! uu
+      if (lpencil(i_uu)) p%uu=0.0
+! u2
+      if (lpencil(i_u2)) p%u2=0.0
+! oo
+      if (lpencil(i_oo)) p%oo=0.0
+! ou
+      if (lpencil(i_ou)) p%ou=0.0
+! uij
+      if (lpencil(i_uij)) p%uij=0.0
+! sij
+      if (lpencil(i_sij)) p%sij=0.0
+! divu
+      if (lpencil(i_divu)) p%divu=0.0
+! uij5
+      if (lpencil(i_uij5)) p%uij5=0.0
+! graddivu
+      if (lpencil(i_graddivu)) p%graddivu=0.0
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
