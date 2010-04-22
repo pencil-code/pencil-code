@@ -1,24 +1,26 @@
-;
-;  $Id:$
+
 ;
 ; This script will visualise the flow of particles around one or more
-; solid objects.  
+; solid objects or inside a channel, and will find capture/deposition 
+; efficiencies
 ;
-;  Author: Nils Erland L. Haugen
+;  Author: Nils Erland L. Haugen, Anders G. Bjørnstad and Solveig S. Alnes
 ;
-FUNCTION CIRCLE_, xcenter, ycenter, radius
-points = (2 * !PI / 99.0) * FINDGEN(100)
-x = xcenter + radius * COS(points )
-y = ycenter + radius * SIN(points )
-RETURN, TRANSPOSE([[x],[y]])
-END
+
 ;
-pro pc_visualize_particles,png=png,removed=removed, savefile=savefile,xmin=xmin,$
-                           xmax=xmax,ymin=ymin,ymax=ymax,tmin=tmin,tmax=tmax,$
-                           w=w,trace=trace,velofield=velofield,dots=dots,$
-                           finalpng=finalpng,xtrace=xtrace,ytrace=ytrace,$
-                           store_vec=store_vec,theta_arr=theta_arr,npart=npart
+pro pc_visualize_particles,png=png,removed=removed,savefile=savefile,$
+                                xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,$
+                                tmin=tmin,tmax=tmax,w=w,trace=trace,$
+                                velofield=velofield,dots=dots,finalpng=finalpng,$
+                                xtrace=xtrace,ytrace=ytrace,store_vec=store_vec,$
+                                theta_arr=theta_arr,npart=npart,$
+                                noviz=noviz, oneradius=oneradius,xdir=xdir,$
+                                nopvar=nopvar,channel=channel,plotvort=plotvort
 ;
+; compile needed procedures
+resolve_routine,'solid_object_findcapture',/compile_full_file
+resolve_routine,'solid_object_visualize',/compile_full_file
+
 device,decompose=0
 loadct,5
 !p.multi=[0,1,1]
@@ -26,7 +28,6 @@ loadct,5
 ; Set defaults
 ;
 default,png,0
-default,finalpng,0
 default,removed,0
 default,savefile,1
 default,tmin,-1e37
@@ -37,33 +38,60 @@ default,xtrace,0
 default,ytrace,0
 default,velofield,0
 default,dots,0
+default,finalpng,0
+default,xdir,0       ; flow in x-direction
+default,noviz,0  ; don't visualize stalked particles
+default,oneradius,0  ; show only one radius if more than one are present
+default,nopvar,0 ; don't read pvar to save time
 default,noread,0
+default,channel,0 ; solid walls
+default,plotvort,0; plot vorticity plot
 print,'noread=',noread
 ;
 ; Read dimensions and namelists
 ;
 pc_read_dim,obj=procdim
 pc_read_param, object=param
-pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,$
-  savefile=savefile,trmv=trmv
+if (nopvar eq 0) then begin
+    pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,$
+      savefile=savefile,trmv=trmv
+endif
 pc_read_pstalk,obj=obj
-dims=size(obj.xp)
-npar=dims[1]
-print,'npar=',npar
+
 ;
-; Find number of cylinders
+; Find number of solid objects
 ;
+
 if (param.coord_system eq 'cylindric') then begin
     ncylinders=1
+    solid_object=1
 endif else begin
-    ncylinders=param.ncylinders
+    if(channel) then begin 
+        solid_object=0
+    endif else begin
+        ncylinders=param.ncylinders
+        solid_object=1
+    endelse
 endelse
+
+if (solid_object) then begin
+    ; Find position and radius of cylinder(s)
+    radius=fltarr(ncylinders,1)
+    xpos=fltarr(ncylinders,1)
+    ypos=fltarr(ncylinders,1)
+    if (param.coord_system eq 'cylindric') then begin
+        radius[0]=param.xyz0[0]
+        xpos[0]=0.0
+        ypos[0]=0.0
+    endif else begin
+        radius=param.cylinder_radius[0:ncylinders-1]
+        xpos=param.cylinder_xpos[0:ncylinders-1]
+        ypos=param.cylinder_ypos[0:ncylinders-1]
+    endelse
+endif 
 ;
 ; Set some auxillary variables
 ;
-radius=fltarr(ncylinders,1)
-xpos=fltarr(ncylinders,1)
-ypos=fltarr(ncylinders,1)
 nx=procdim.nx
 ny=procdim.ny
 dims=size(obj.xp)
@@ -71,17 +99,11 @@ n_parts=dims(1)
 n_steps=dims(2)
 print,'param.coord_system=',param.coord_system
 if (param.coord_system eq 'cylindric') then begin
-    radius[0]=param.xyz0[0]
-    xpos[0]=0.0
-    ypos[0]=0.0
     default,xmax,param.xyz1[0]
     default,xmin,-xmax
     default,ymax, xmax
     default,ymin,-xmax
 endif else begin
-    radius=param.cylinder_radius[0:ncylinders-1]
-    xpos=param.cylinder_xpos[0:ncylinders-1]
-    ypos=param.cylinder_ypos[0:ncylinders-1]
     default,xmax,param.xyz1[0]
     default,xmin,param.xyz0[0]
     default,ymax,param.xyz1[1]
@@ -119,414 +141,214 @@ endif else begin
     linsert_particles_continuously=param.linsert_particles_continuously
 endelse
 ;
-; Find total number of particles with the different radii
+; Some things should be done only if we have read pvar.dat
 ;
-npart=fltarr(npart_radii)
-for ipart_radii=0,npart_radii-1 do begin
-    npart[ipart_radii]=n_elements(where(objpvar.a eq param.ap0[ipart_radii]))
-end
-print,'npart=',npart
-;
-;  Check how many particles have collided with a solid object
-;
-solid_object=1
-print_remove_data=0
-if (solid_object) then begin
-  pc_read_ts,obj=ts
-  dims=size(irmv)
-  solid_colls=fltarr(ncylinders,npart_radii)
-  solid_colls[*,*]=0
-  front_colls=solid_colls
-  back_colls=solid_colls
-  maxy=param.xyz1[1]
-  theta_arr=fltarr(ncylinders,npart_radii,500000,2)
-  ;
-  ; Loop over all cylinders
-  ;
-  for icyl=0,ncylinders-1 do begin
-      if (param.coord_system eq 'cylindric') then begin
-          init_uu=param.ampluu
-      endif else begin
-          init_uu=param.init_uu
-      endelse
-      ;
-      ; Loop over all removed particles
-      ;
-      for k=long(0),long(dims[1])-1 do begin        
-          if (dims[0]>0) then begin              
-             x0=objpvar.xx[irmv[k],0]-xpos[icyl]
-             y0=objpvar.xx[irmv[k],1]-ypos[icyl]
-             deposition_radius2=x0^2+y0^2
-             deposition_radius=sqrt(deposition_radius2)
-             ;
-             ; Check if the solid collision happended in the vicinity of the
-             ; cylinder. Here this is defined as being closer than 
-             ; 0.2 radii away from the surface.
-             ;
-             if (deposition_radius lt radius[icyl]*1.2) then begin
-                 ;
-                 ; Find the radius of the particle
-                 ;
-                 ipart_radii=0
-                 while (objpvar.a[irmv[k]] ne param.ap0(ipart_radii)) do begin
-                     ipart_radii=ipart_radii+1
-                 end
-                 ;
-                 ; Find the angle of the impaction
-                 ;
-                 theta_tmp=acos(y0/deposition_radius)
-                 theta=3.1415-theta_tmp
-                 if (print_remove_data) then begin
-                     print,'time,k,r,x,y,theta=',$
-                       trmv[k],irmv[k],deposition_radius,x0,y0,theta
-                 endif
-                 ;
-                 ; Store the angle of impaction in an array. 
-                 ;
-                 if (total(solid_colls[icyl]) lt 100000) then begin
-                     theta_arr[icyl,ipart_radii,$
-                               solid_colls[icyl,ipart_radii],0]=theta
-                     theta_arr[icyl,ipart_radii,$
-                               solid_colls[icyl,ipart_radii],1]=trmv[k]
-                 endif
-                 ;
-                 ; Find the number of solid collisions for a given cylinder 
-                 ; and a given particle radius.
-                 ;
-                 solid_colls[icyl,ipart_radii]=solid_colls[icyl,ipart_radii]+1
-                 ;
-                 ; Find the number of back side and front side collisions.
-                 ;
-                 if (objpvar.xx[irmv[k],1] gt ypos[icyl]) then begin
-                     back_colls[icyl,ipart_radii]=$
-                       back_colls[icyl,ipart_radii]+1
-                 endif else begin
-                     front_colls[icyl,ipart_radii]=$
-                       front_colls[icyl,ipart_radii]+1
-                 endelse
-             endif
-          endif
-       endfor
-   endfor
-  ; 
-  ; Find how many particles have been inserted
-  ;
-  if (linsert_particles_continuously) then begin
-     initial_time=ts.t[0]
-     final_time=min([objpvar.t,param2.max_particle_insert_time])
-     npar_inserted=(final_time-initial_time)*param2.particles_insert_rate
-     dimsp=size(where(objpvar.a gt 0))
-     npar_inserted=dimsp[1]
-  endif else begin
-     npar_inserted=npar
-  endelse
-  print,'Total number of inserted particles:',npar_inserted
-  lambda=67e-9
-  ;
-  ; Loop over all particle diameters
-  ;
-  for i=0,npart_radii-1 do begin
-     diameter=2*param.ap0[i]
-     Stokes_Cunningham=1+2*lambda/diameter*$
-                       (1.257+0.4*exp(-1.1*diameter/(2*lambda)))
-     tau_p=param.rhops*diameter^2/(18.0*param2.nu)
-     ;
-     ; Assume that the radii of all cylinders are the same
-     ;
-     Stokes=tau_p*init_uu/radius[0]
-     ;
-     ; Check how large the box for the initial particle positions is
-     ; compared to the radius of the cylinder.
-     ;
-     fractional_area=-param.xp0/radius[0]
-     ;
-     ; Print header
-     ;
-     if (i eq 0) then begin
-        print,'Part. dia.','icyl','Stokes','eta_front','eta_back','n_colls',$
-        'Cs',FORMAT='(A12,A6,5A12)'
-     endif
-     ;
-     ; Find the capture efficiency
-     ;
-     eta=float(solid_colls[*,i])*fractional_area/npart(i)
-     front_eta=float(front_colls[*,i])*fractional_area/npart(i)
-     back_eta=float(back_colls[*,i])*fractional_area/npart(i)
-     for icyl=0,ncylinders-1 do begin
-        print,$
-           diameter,$
-           icyl+1,$
-           Stokes,$
-           front_eta[icyl],$
-           back_eta[icyl],$
-           solid_colls[icyl,i],$
-           Stokes_Cunningham,FORMAT='(E12.3,I6,F12.5,2E12.3,I12,E12.3)'
-     endfor
-     if (ncylinders gt 1) then begin
-        print,$
-           diameter,$
-           'All',$
-           Stokes,$
-           total(front_eta),$
-           total(back_eta),$
-           total(solid_colls[*,i]),$
-           Stokes_Cunningham,FORMAT='(E12.3,A6,F12.5,2E12.3,I12,E12.3)'
-     endif
-     if (savefile) then begin
-        filename='./data/capture_eff.sav'
-        if (i gt 0) then begin
-           filename='./data/capture_eff'+str(i)+'.sav'           
-        endif
-        save,Stokes,eta,Stokes_Cunningham,front_eta,back_eta,ncylinders,$
-             filename=filename
-     endif
-  end ; Particle diameter loop
-endif
-;
-; Find positions of removed particles (to be used later for plotting them).
-;
-dims=size(irmv)
-if ((removed eq 1) and (dims[0] ne 0) ) then begin
-    removed_pos=objpvar.xx(irmv,*)
-    skin=nx
-    for icyl=0,ncylinders-1 do begin
-        collision_radius=sqrt($
-                               (removed_pos(*,0)-xpos[icyl])^2+$
-                               (removed_pos(*,1)-ypos[icyl])^2)
-        if ( icyl eq 0) then begin
-            solid_colls=where(collision_radius lt radius[icyl]*1.1)
-        endif else begin
-            solid_colls=[solid_colls,where(collision_radius lt radius[icyl]*1.1)]
-        endelse
+if (not nopvar) then begin
+    ;
+    ; Find total number of particles with the different radii
+    ;
+    npart=fltarr(npart_radii)
+    for ipart_radii=0,npart_radii-1 do begin
+        npart[ipart_radii]=$
+          n_elements(where(float(objpvar.a) eq float(param.ap0[ipart_radii])))
     end
-endif
-;
-; Find where (in radians) the particles hit the surface of the cylinder as a
-; function of time
-;
-particle_hit=0
-tmin2=1e38
-tmax2=-1e38
-print,'The initial time of the simulation is  t =',min(obj.t)
-first=1
-WINDOW,4,XSIZE=256*2,YSIZE=256*2
-!p.multi=[0,1,2]
-!x.range=[min(obj.t),objpvar.t]
-!y.range=[0,!pi]
-for i=0,npart_radii-1 do begin
-   theta_=total(theta_arr[*,i,*,0],1)
-   time_=total(theta_arr[*,i,*,1],1)
-   here=where(theta_ ne 0)
-   if (here[0] ne -1) then begin
-       particle_hit=1
-      theta=theta_[here]
-      timereal=time_[here]
-      dims=size(theta)
-      ind=indgen(dims[1])
-      if (min(timereal) lt tmin2) then begin
-          tmin2=min(timereal)
-      endif
-      if (max(timereal) gt tmax2) then begin
-          tmax2=max(timereal)
-      endif
-      if (first) then begin
-         plot,timereal,theta,ps=1,ytit='!4h!6',xtit='time'
-         if (savefile) then begin
-             ap0=param.ap0[0:npart_radii-1]
-            save,timereal,theta_arr,ap0,filename='./data/theta_arr.sav'
-         endif
-         first=0
-      endif else begin
-         oplot,timereal,theta,ps=1
-      end
-  endif
-end
-first=1
-!x.range=[min(param.ap0[0:npart_radii-1]),max(param.ap0[0:npart_radii-1])]
-for i=0,npart_radii-1 do begin
-    theta_=total(theta_arr[*,i,*,0],1)
-    rad_=param.ap0[i]
-    here=where(theta_ ne 0)
-    if (here[0] ne -1) then begin
-        particle_hit=1
-        theta=theta_[here]
-        rad=time_[here]
-        rad[*]=rad_
-        dims=size(theta)
-        ind=indgen(dims[1])
-        if (first) then begin
-            plot_oi,rad,theta,ps=3,ytit='!4h!6',xtit='particle radius'
-            first=0
-        endif else begin
-            oplot,rad,theta,ps=3
-        end
+    print,'npart=',npart, param.ap0
+    ;
+    ;  Check how many particles have collided with a solid object
+    ;
+     if (solid_object) then begin
+         solid_object_findcapture,ncylinders=ncylinders,npart_radii=npart_radii,$
+           startparam=param,runparam=param2,$
+           linsert_particles_continuously=linsert_particles_continuously,$
+           objpvar=objpvar,irmv=irmv,trmv=trmv,xdir=xdir,radii_arr=npart,$
+           savefile=savefile,removed=removed,oneradius=oneradius,radius=radius,$
+           xpos=xpos,ypos=ypos,rmv_pos=removed_pos,$
+           on_cylinder_indices=on_cylinder_indices,r_i=r_i
+    endif ; solid_object
+    ;
+    ;  Check how many particles have collided with a the walls
+    ;
+    if (channel) then begin
+        channel_deposition,npart_radii,irmv,trmv,$
+          objpvar=objpvar,startparam=param,savefile=savefile
+    endif ; channel
+
+endif ;nopvar=0 endif
+
+
+if (noviz eq 0) then begin
+    if (nopvar and oneradius) then begin
+        print,'npart_radii=',npart_radii
+        READ, r_i, PROMPT = $
+          'Enter # of particle radius of interest [0,npart_radii-1]'
     endif
-end
-!p.multi=[0,1,1]
-if (particle_hit) then begin
-    print,'The first particle hit the surface at  t =',tmin2
-    print,'The last particle hit the surface at   t =',tmax2
-endif else begin
-    print,'No particle has hit the surface!'
-end
-print,'The final time of the simulation is    t =',objpvar.t
-;
-; Set window size
-;
-xr=xmax-xmin
-yr=ymax-ymin
-WINDOW,3,XSIZE=1024*xr/yr*1.6,YSIZE=1024
-!x.range=[xmin,xmax]
-!y.range=[ymin,ymax]
-!x.style=1
-!y.style=1
-;
-; Choose symbol for representing particles
-;
-if (dots) then begin
-    psym=3
-endif else begin
-    psym=sym(1)
-endelse
-;
-; Show results
-;
-for i=0,n_steps-1 do begin
+    if (oneradius) then begin
+        if(solid_object) then begin
+            diameter=2*param.ap0
+            tau_p=param.rhops*diameter^2/(18.0*param2.nu)
+            tau_f=radius[0]/param.init_uu
+            Stokes=tau_p/tau_f
+            print,'Only visualizing particles with Stokes no St=',Stokes[r_i]
+        endif else if (channel) then begin
+            print,'Only visualizing particles with radius=',param.ap0(r_i)
+        endif
+    endif
+    ;
+    ; Set window size
+    ;
+    xr=xmax-xmin
+    yr=ymax-ymin
+    WINDOW,3,XSIZE=1024*xr/yr*1.6,YSIZE=1024
+    !x.range=[xmin,xmax]
+    !y.range=[ymin,ymax]
+    !x.style=1
+    !y.style=1
+    ;
+    ; Choose symbol for representing particles
+    ;
+    if (dots) then begin
+        psym=3
+    endif else begin
+        psym=sym(1)
+    endelse
    ;
-   ; Check if we want to plot for this time
+   ; Show results
    ;
-   if ((obj.t[i] gt tmin) and (obj.t[i] lt tmax)) then begin
-      titlestring='t='+str(obj.t[i])
-      if (param.coord_system eq 'cylindric') then begin
-         xp=obj.xp(*,i)*cos(obj.yp(*,i))
-         yp=obj.xp(*,i)*sin(obj.yp(*,i))
-         plot,xp,yp,psym=psym,symsize=1,/iso,title=titlestring 
-         POLYFILL, CIRCLE_(xpos, $
-                           ypos, $
-                           radius),color=122        
-      endif else begin
-         plot,obj.xp(*,i),obj.yp(*,i),psym=psym,symsize=1,/iso,$
-           title=titlestring
-         for icyl=0,ncylinders-1 do begin
-             POLYFILL, CIRCLE_(xpos[icyl], $
-                               ypos[icyl], $
-                               radius[icyl]),color=122
-         end
-     endelse
-      ;
-      ; Do we want to write png files or to show results on screen
-      ;
-      if png eq 1 then begin
-         istr2 = strtrim(string(i,'(I20.4)'),2) ;(only up to 9999 frames)
-         file='img_'+istr2+'.png'
-         print,'Writing file: ',file
-         write_png,file,tvrd(/true)
-      endif else begin
-         wait,w
-      endelse
+   if (solid_object) then begin
+      solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,xpos,ypos,$
+        radius,oneradius,png,w,psym,Stokes=Stokes,r_i=r_i,i=i
    endif
-end
-;
-; Do we want to give x and y values of the trace as output?
-;
-xytrace=0
-if (arg_present(xtrace) or arg_present(ytrace)) then begin
-    dims=size(obj.xp)
-    timeiter=dims[2]
-    xtrace=dblarr(npar,timeiter)
-    ytrace=dblarr(npar,timeiter)
-    xytrace=1
-endif
-;
-; Do we want to show the trace of the particles?
-;
-ddt=2e-4
-if (trace) then begin
-   for ipar=0,npar-1 do begin
-       if (param.coord_system eq 'cylindric') then begin
-           xx0=obj.xp(ipar,*)*cos(obj.yp(ipar,*))
-           yy0=obj.xp(ipar,*)*sin(obj.yp(ipar,*))
-           ux_loc=cos(obj.yp(ipar,*))*obj.ux(ipar,*)$
-                 -sin(obj.yp(ipar,*))*obj.uy(ipar,*)
-           uy_loc=sin(obj.yp(ipar,*))*obj.ux(ipar,*)$
-                 +cos(obj.yp(ipar,*))*obj.uy(ipar,*)
-           ARROW, xx0, yy0,$
-             xx0+ux_loc*ddt, $
-             yy0+uy_loc*ddt, $
-             /data,col=255,HSIZE=4           
-       endif else begin
-           xx0=obj.xp(ipar,*)
-           yy0=obj.yp(ipar,*)
-           ARROW, xx0, yy0,$
-             xx0+obj.ux(ipar,*)*ddt, $
-             yy0+obj.uy(ipar,*)*ddt, $
-             /data,col=255,HSIZE=4
-       endelse
-       oplot,xx0,yy0,ps=3
-       if (xytrace) then begin
-           xtrace(ipar,*)=xx0
-           ytrace(ipar,*)=yy0
-       endif
-   end 
-end
-;
-; Do we want to overplot the velocity field?
-;
-if (velofield) then begin
-    store_vec=fltarr(10000,4)
-    store_count=0
-   pc_read_var,obj=objvar
-   pc_read_dim,obj=objdim
-   l1=objdim.l1
-   l2=objdim.l2
-   m1=objdim.m1
-   m2=objdim.m2
-   n1=objdim.n1
-   for iii=l1,l2 do begin
-       for jjj=m1,m2 do begin
-           if (param.coord_system eq 'cylindric') then begin
-               xx0=objvar.x(iii)*cos(objvar.y(jjj))
-               yy0=objvar.x(iii)*sin(objvar.y(jjj))
-               ux=cos(objvar.y(jjj))*objvar.uu(iii,jjj,n1,0)$
-                 -sin(objvar.y(jjj))*objvar.uu(iii,jjj,n1,1)
-               uy=sin(objvar.y(jjj))*objvar.uu(iii,jjj,n1,0)$
-                 +cos(objvar.y(jjj))*objvar.uu(iii,jjj,n1,1)
-           endif else begin
-               xx0=objvar.x(iii)
-               yy0=objvar.y(jjj)
-               ux=objvar.uu(iii,jjj,n1,0)
-               uy=objvar.uu(iii,jjj,n1,1)
-           endelse
-           if ((xx0 gt xmin) and (xx0 lt xmax)) then begin
-               if ((yy0 gt ymin) and (yy0 lt ymax)) then begin
-                   ARROW, xx0, yy0,$
-                     xx0+ux*ddt, $
-                     yy0+uy*ddt, $
-                     /data,col=122,HSIZE=4  
-                   store_vec(store_count,0)=xx0
-                   store_vec(store_count,1)=yy0
-                   store_vec(store_count,2)=xx0+ux*ddt
-                   store_vec(store_count,3)=yy0+uy*ddt
-                   store_count=store_count+1
-               endif
-           end
-       end
-   end
-endif
+   if (channel) then begin
+       channel_visualize,irmv,trmv,n_steps,tmin,tmax,png,w,psym,$
+         obj=obj,pvar=objpvar
+       plot_vorticity,npart_radii=npart_radii,irmv=irmv,trmv=trmv,$
+         totpar=n_parts,nts=n_steps,savefile=savefile,$
+         prmv=prvm,$
+         startparam=startparam,obj=obj
+   endif
+
+  ;
+  ; Do we want to give x and y values of the trace as output?
+  ;
+  xytrace=0
+  if (arg_present(xtrace) or arg_present(ytrace)) then begin
+      dims=size(obj.xp)
+      timeiter=dims[2]
+      xtrace=dblarr(npar,timeiter)
+      ytrace=dblarr(npar,timeiter)
+      xytrace=1
+  endif
+  
+  ;
+  ; Do we want to show the trace of the particles?
+  ;
+  ddt=2e-4
+  if (trace) then begin
+      for ipar=0,npar-1 do begin
+          if (param.coord_system eq 'cylindric') then begin
+              xx0=obj.xp(ipar,*)*cos(obj.yp(ipar,*))
+              yy0=obj.xp(ipar,*)*sin(obj.yp(ipar,*))
+              ux_loc=cos(obj.yp(ipar,*))*obj.ux(ipar,*)$
+                -sin(obj.yp(ipar,*))*obj.uy(ipar,*)
+              uy_loc=sin(obj.yp(ipar,*))*obj.ux(ipar,*)$
+                +cos(obj.yp(ipar,*))*obj.uy(ipar,*)
+              ARROW, xx0, yy0,$
+                xx0+ux_loc*ddt, $
+                yy0+uy_loc*ddt, $
+                /data,col=255,HSIZE=4           
+          endif else if (tracermv) then begin
+              rmvdims=size(irmv)
+              for k=0,rmvdims[1]-1 do begin        
+                  xx0=obj.xp(irmv(k),*)
+                  yy0=obj.yp(irmv(k),*)
+          
+                  ARROW, xx0, yy0,$
+                    xx0+obj.ux(irmv(k),*)*ddt, $
+                    yy0+obj.uy(irmv(k),*)*ddt, $
+                    /data,col=255,HSIZE=4
+              endfor
+          endif else begin
+              xx0=obj.xp(ipar,*)
+              yy0=obj.yp(ipar,*)
+              ARROW, xx0, yy0,$
+                xx0+obj.ux(ipar,*)*ddt, $
+                yy0+obj.uy(ipar,*)*ddt, $
+                /data,col=255,HSIZE=4
+          endelse
+          oplot,xx0,yy0,ps=3
+          if (xytrace) then begin
+              xtrace(ipar,*)=xx0
+              ytrace(ipar,*)=yy0
+          endif
+      endfor
+  endif
+
+  ;
+  ; Do we want to overplot the velocity field?
+  ;
+  if (velofield) then begin
+      store_vec=fltarr(10000,4)
+      store_count=0
+      pc_read_var,obj=objvar
+      pc_read_dim,obj=objdim
+      l1=objdim.l1
+      l2=objdim.l2
+      m1=objdim.m1
+      m2=objdim.m2
+      n1=objdim.n1
+      for iii=l1,l2 do begin
+          for jjj=m1,m2 do begin
+              if (param.coord_system eq 'cylindric') then begin
+                  xx0=objvar.x(iii)*cos(objvar.y(jjj))
+                  yy0=objvar.x(iii)*sin(objvar.y(jjj))
+                  ux=cos(objvar.y(jjj))*objvar.uu(iii,jjj,n1,0)$
+                    -sin(objvar.y(jjj))*objvar.uu(iii,jjj,n1,1)
+                  uy=sin(objvar.y(jjj))*objvar.uu(iii,jjj,n1,0)$
+                    +cos(objvar.y(jjj))*objvar.uu(iii,jjj,n1,1)
+              endif else begin
+                  xx0=objvar.x(iii)
+                  yy0=objvar.y(jjj)
+                  ux=objvar.uu(iii,jjj,n1,0)
+                  uy=objvar.uu(iii,jjj,n1,1)
+              endelse
+              if ((xx0 gt xmin) and (xx0 lt xmax)) then begin
+                  if ((yy0 gt ymin) and (yy0 lt ymax)) then begin
+                      ARROW, xx0, yy0,$
+                        xx0+ux*ddt, $
+                        yy0+uy*ddt, $
+                        /data,col=122,HSIZE=4  
+                      store_vec(store_count,0)=xx0
+                      store_vec(store_count,1)=yy0
+                      store_vec(store_count,2)=xx0+ux*ddt
+                      store_vec(store_count,3)=yy0+uy*ddt
+                      store_count=store_count+1
+                  endif
+              endif 
+          endfor  
+      endfor 
+  endif 
 ;
 ; Plot the removed particles as blue dots
 ;
 if (removed eq 1) then begin
-    oplot,removed_pos(solid_colls,0),removed_pos(solid_colls,1),col=45,ps=sym(1)
+    oplot,removed_pos(on_cylinder_indices,0),removed_pos(on_cylinder_indices,1),col=45,ps=sym(1)
 endif
 ;
 ; Write png files if required
 ;
-if (png or finalpng) then begin
-    istr2 = strtrim(string(i+1,'(I20.4)'),2) ;(only up to 9999 frames)
-    file='img_'+istr2+'.png'
-    print,'Writing file: ',file
-    write_png,file,tvrd(/true)
-endif
+  if (png or finalpng) then begin
+      store_png_frame,i+1
+  endif
+endif ; end noviz
+
+!x.range=''
+!y.range=''
 ;
+END
+
+pro store_png_frame,i
+ istr2 = strtrim(string(i,'(I20.4)'),2) ;(only up to 9999 frames)
+ file='img_'+istr2+'.png'
+ print,'Writing file: ',file
+ write_png,file,tvrd(/true)
 END
