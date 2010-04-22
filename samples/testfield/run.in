@@ -2,7 +2,9 @@
   cvsid='$Id$',
   nt=10, it1=3, cdtv=.3 isave=0, itorder=3
   dsnap=2., d2davg=2., dvid=200., ialive=1
-  kinflow='poshel-roberts'
+/
+&hydro_run_pars
+  kinematic_flow='poshel-roberts'
 /
 &testfield_run_pars
   itestfield=4

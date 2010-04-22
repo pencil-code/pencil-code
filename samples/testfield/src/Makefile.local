@@ -5,7 +5,7 @@
 
 MPICOMM   =   mpicomm
 
-HYDRO     = nohydro
+HYDRO     =   hydro_kinematic
 DENSITY   = nodensity
 ENTROPY   = noentropy
 MAGNETIC  = nomagnetic
