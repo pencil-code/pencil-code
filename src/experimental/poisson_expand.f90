@@ -112,7 +112,7 @@ module Poisson
           call inverse_laplacian_expandgrid(phi)
         else
           call fatal_error('inverse_laplacian', &
-              'this file ius just for expand grid') 
+              'this file is just for expand grid') 
         endif
       endif
 !
@@ -141,7 +141,8 @@ module Poisson
       real, dimension(2*nygrid) :: kky_fft
 !      
       logical, dimension(0:ncpus-1) :: lproc_comm_loc,ltmp
-      logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send,lproc_comm_recv
+      logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send
+      logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_recv
 !
       real :: rr,k_abs
       integer :: ikx, iky
@@ -165,7 +166,14 @@ module Poisson
       if (lshear) call fatal_error('inverse_laplacian_expandgrid',&
           'not implemented for external shear')
 !
-      if (lroot.and.lfirstcall) print*, 'Entered inverse_laplacian_expandgrid'
+!  Break if nprocx>1
+!
+      if (nprocx.gt.1) &
+           call fatal_error("inverse_laplacian_expandgrid",&
+           "Not yet implemented for nprocx > 1")
+!
+      if (lroot.and.lfirstcall) print*,'Entered inverse_laplacian_expandgrid'
+!
       iroot=0
       nnghost=1
 !
@@ -213,17 +221,18 @@ module Poisson
         enddo
 !
         if (.not.lroot) then 
+          if (ip<=8) print*,'poisson:log proc ',iproc,' sending to proc',iroot
           call mpisend_logical(lproc_comm_loc,ncpus,iroot,333)
         else
           do i=0,ncpus-1
-            if (i==0) then 
+            if (i==iroot) then 
               ltmp=lproc_comm_loc
             else
+              if (ip<=8) print*,'poisson:log proc ',iproc,' receiving from proc',i
               call mpirecv_logical(ltmp,ncpus,i,333)
             endif
             do j=0,ncpus-1
               if (ltmp(j)) then
-                !print*,i,'wants to send to',j
                 lproc_comm_send(i,j)=.true.
                 lproc_comm_recv(j,i)=.true.
               endif
@@ -238,13 +247,11 @@ module Poisson
 !
         do j=0,ncpus-1
           if (lproc_comm_send(iproc,j)) then
-            if (ip<=8) print*,'for:sending from proc ',iproc,' to ',j
-            !stop
+            if (ip<=8) print*,'poisson:proc ',iproc,' sending to proc',j
             call mpisend_real(phi_send(:,:,j),(/nx,ny/),j,111)
           endif
           if (lproc_comm_recv(iproc,j)) then
-            if (ip<=8) print*,'for:proc ',iproc,' receiving from proc ',j
-            !stop
+            if (ip<=8) print*,'poisson:proc ',iproc,' receiving from proc ',j
             call mpirecv_real(phi_recv(:,:,j),(/nx,ny/),j,111)
           endif
           if (j==iproc) phi_recv(:,:,iproc)=phi(:,:,nnghost)     
@@ -315,7 +322,9 @@ module Poisson
 !
 !  Copy back to small grid
 !
-      xdo=nx/2+1 ; xup=3*nx/2+1
+      xdo=nx/2+1 ; xup=3*nx/2
+      if (ip<=8) print*,'x-limits of large grid to be copied', &
+           xc(xdo),xc(xup)
 !
       if (lmpicomm) then 
 !
@@ -323,16 +332,18 @@ module Poisson
           if (iproc/=j) then
             !this processor received info, now it has to send back
             if (lproc_comm_recv(iproc,j)) then
-              if (ip<=8) print*,'rev:sending from proc ',iproc,' to ',j
+              if (ip<=8) print*,'copy grid: sending from proc ',iproc,' to ',j
               mdo=(    j*ny+1+nygrid/2)-iproc*nny
               mup=((j+1)*ny  +nygrid/2)-iproc*nny
-              if (ip<=8) print*,'mdo,mup',iproc,j,mdo,mup
+              if (ip<=8) print*,'y-limits of large grid to be copied', &
+                   yc(mdo),yc(mup)
               phi_send(:,:,j)=nphi(xdo:xup,mdo:mup)
               call mpisend_real(phi_send(:,:,j),(/nx,ny/),j,222)
             endif
             !this one sent, now it receives
             if (lproc_comm_send(iproc,j)) then
-              if (ip<=8) print*,'rev:proc ',iproc,' receiving from proc ',j
+              if (ip<=8) print*,'copy grid: proc ',iproc, &
+                   ' receiving from proc ',j
               call mpirecv_real(phi_recv(:,:,j),(/nx,ny/),j,222)
               phi(:,:,nnghost)=phi_recv(:,:,j)
             endif
@@ -348,7 +359,7 @@ module Poisson
           endif
         enddo
       else
-        mdo=ny/2+1 ; mup=3*ny/2+1
+        mdo=ny/2+1 ; mup=3*ny/2
         phi(:,:,nnghost)=nphi(xdo:xup,mdo:mup)
       endif
 !
