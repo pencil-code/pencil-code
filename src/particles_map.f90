@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90 12068 2009-11-13 13:22:31Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  This module contains subroutines for mapping particles on the mesh.
 !  Different domain decompositions have different versions of this module.

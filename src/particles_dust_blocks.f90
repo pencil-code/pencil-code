@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90 12270 2009-11-28 10:23:08Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  This module takes care of everything related to dust particles.
 !
@@ -141,7 +141,7 @@ module Particles
       use FArrayManager
 !
       if (lroot) call svn_id( &
-           "$Id: particles_dust.f90 12270 2009-11-28 10:23:08Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
 !  Indices for particle position.
 !

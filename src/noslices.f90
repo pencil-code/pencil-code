@@ -1,4 +1,4 @@
-! $Id: slices.f90 11853 2009-10-07 09:20:11Z boris.dintrans $
+! $Id$
 !
 !  This module produces slices for animation purposes.
 !

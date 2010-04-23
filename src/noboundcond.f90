@@ -1,4 +1,4 @@
-! $Id: boundcond.f90 12214 2009-11-23 10:39:46Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  Module for boundary conditions. Extracted from (no)mpicomm, since
 !  all non-periodic (external) boundary conditions require the same

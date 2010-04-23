@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90 10335 2009-02-05 23:24:22Z pencilsteve $
+! $Id$
 
 !***********************************************************************
       program combine_videofiles

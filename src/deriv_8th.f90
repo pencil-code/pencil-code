@@ -1,4 +1,4 @@
-! $Id: deriv.f90 11067 2009-06-17 19:53:43Z dhruba.mitra $
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array

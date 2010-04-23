@@ -1,4 +1,4 @@
-! $Id: noparticles_sub.f90 9840 2008-09-05 07:29:37Z ajohan $
+! $Id$
 !
 !  This module contains subroutines for mapping particles on the mesh.
 !

@@ -1,4 +1,4 @@
-! $Id: particles_mpicomm_block.f90,v 1.56 2009/11/17 07:41:20 ajohan Exp $
+! $Id$
 !
 !  This module deals with communication of particles between processors.
 !

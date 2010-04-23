@@ -1,4 +1,4 @@
-! $Id: timestep_stiff.f90 10805 2009-06-30 14:53:07Z rplasson@nordita.org $
+! $Id$
 ! adapted from timestep_rkf, and from numerical recipe stiff algorithm
 
 module Timestep

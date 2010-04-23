@@ -1,4 +1,4 @@
-! $Id: particles_map_block.f90,v 1.35 2009/11/17 07:38:40 ajohan Exp $
+! $Id$
 !
 !  This module contains subroutines useful for mapping particles on the mesh.
 !

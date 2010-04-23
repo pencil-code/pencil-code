@@ -1,4 +1,4 @@
-! $Id: particles_viscosity.f90 10506 2009-03-19 12:42:20Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  This modules takes care of instantaneous collisions between
 !  superparticles.
