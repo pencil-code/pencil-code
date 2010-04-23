@@ -25,6 +25,7 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
+  real :: Bavoid=0.01
   logical :: lgranulation=.false.
   integer :: irefz=0.
 !
@@ -38,7 +39,8 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz
+       chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
+       Bavoid
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -1145,9 +1147,9 @@ module Special
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
       if (unit_system.eq.'SI') then
-        granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
+        granr=max(0.8*1.e6/unit_length,2*dx,2*dy)
       elseif  (unit_system.eq.'cgs') then
-        granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
+        granr=max(0.8*1.e8/unit_length,2*dx,2*dy)
       endif
 !
 ! Fractional difference in granule power
@@ -1399,10 +1401,7 @@ module Special
           endif
         end do
         do
-          if (minval(w/(1-avoidarr+1e-20)).ge. &
-              ampl/(granr*(1+ig))) then
-            exit
-          endif
+          if (minval(avoidarr).eq.1) exit
           call addpoint
           call make_newpoint
           call drawupdate
@@ -1607,7 +1606,7 @@ module Special
       call resetarr
       call make_newpoint
       do
-        if (minval(w/(1-avoidarr+1e-20)).ge.ampl/(granr*(1+ig))) exit
+        if (minval(avoidarr).eq.1) exit
 !
         call addpoint
         call make_newpoint
@@ -1723,9 +1722,10 @@ module Special
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
 !
-! avoid granules where the field strength is greater than 200 Gaus (0.02 Tesla)
+! avoid granules where the field strength is greater than Bavoid
+!    (default 100 Gaus=0.01 Tesla)
 !
-          if (BB2(i,j) .gt. (0.02/u_b)**2) avoidarr(i,j)=1
+          if (BB2(i,j) .gt. (Bavoid/u_b)**2) avoidarr(i,j)=1
           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
 !
           wtmp=current%data(1)/dist
@@ -1748,6 +1748,7 @@ module Special
               w(i,j) =max(w(i,j),wtmp)
             end if
           endif
+          if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
         enddo
       enddo
 !
@@ -1762,7 +1763,7 @@ module Special
       real :: rand
 !
       k(:,:)=0
-      where (avoidarr.eq.0.and.w.lt.ampl/(granr*(1+ig))) k=1
+      where (avoidarr.eq.0) k=1
 !
 ! Choose and find location of one of them
 !
