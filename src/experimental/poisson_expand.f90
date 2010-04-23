@@ -158,7 +158,7 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call svn_id( &
-        '$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $')
+          '$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $')
 !
 !  Break if lshear or 3D
 !
@@ -177,7 +177,7 @@ module Poisson
       nnxgrid=2*nxgrid       ; nnygrid=2*nygrid
 !
       do i=1,nnx
-        xc(i)=1.0*(i-1)       /(nnxgrid-1)*(xn-x0)+x0
+        xc(i)=1.0*(i-1)        /(nnxgrid-1)*(xn-x0)+x0
       enddo
       do m=1,nny
         yc(m)=1.0*(m-1+ipy*nny)/(nnygrid-1)*(yn-y0)+y0
@@ -186,11 +186,11 @@ module Poisson
       dxc=xc(2)-xc(1)  ; dyc=dxc
       dxc1=1/dxc       ; dyc1=1/dyc
 !
-      Lxn=2*xc(nnx);Lyn=Lxn
+      Lxn=2*xc(nnx)    ; Lyn=Lxn
 !
-      kkx_fft=&
+      kkx_fft = &
           cshift((/(i-(nnxgrid+1)/2,i=0,nnxgrid-1)/),+(nnxgrid+1)/2)*2*pi/Lxn
-      kky_fft=&
+      kky_fft = &
           cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
 !
 !  Prepare the sending/receiving between different processors
@@ -245,8 +245,7 @@ module Poisson
             !stop
             call mpirecv_real(phi_recv(:,:,j),(/nx,ny/),j,111)
           endif
-          if (j==iproc) &
-               phi_recv(:,:,iproc)=phi(:,:,nnghost)     
+          if (j==iproc) phi_recv(:,:,iproc)=phi(:,:,nnghost)     
         enddo
       else
         phi_recv(:,:,0)=phi(:,:,nnghost)
