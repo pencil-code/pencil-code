@@ -65,12 +65,13 @@ module Particles_stalker
 !
 !  Turn off stalking if physics not selected.
 !
-      if (ivpx==0)         lstalk_vv=.false.
-      if (.not. lhydro)    lstalk_uu=.false.
-      if (.not. lhydro)    lstalk_guu=.false.
-      if (.not. ldensity)  lstalk_rho=.false.
-      if (.not. ldensity)  lstalk_grho=.false.
-      if (.not. lmagnetic) lstalk_bb=.false.
+      if (ivpx==0)   lstalk_vv=.false.
+      if (iuu==0)    lstalk_uu=.false.
+      if (iuu==0)    lstalk_guu=.false.
+      if (ilnrho==0) lstalk_rho=.false.
+      if (ilnrho==0) lstalk_grho=.false.
+      if (iaa==0)    lstalk_bb=.false.
+      if (iap==0)    lstalk_ap=.false.
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
