@@ -1053,6 +1053,7 @@ module Interstellar
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
           SNRs(iSNR)%t=t
+          SNRs(iSNR)%SN_type=1
           SNRs(iSNR)%radius=width_SN
           call position_SN_testposition(f,SNRs(iSNR))
           call explode_SN(f,SNRs(iSNR))
@@ -1063,6 +1064,7 @@ module Interstellar
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
           SNRs(iSNR)%t=t
+          SNRs(iSNR)%SN_type=1
           SNRs(iSNR)%radius=width_SN
           center_SN_x=0.
           center_SN_y=0.
@@ -1076,6 +1078,7 @@ module Interstellar
           SNRs(iSNR)%site%TT=1E20
           SNRs(iSNR)%site%rho=0.
           SNRs(iSNR)%t=t
+          SNRs(iSNR)%SN_type=1
           SNRs(iSNR)%radius=width_SN
           center_SN_x=0.
           center_SN_y=0.
@@ -1903,7 +1906,7 @@ cool_loop: do i=1,ncool
       else
         i=int((center_SN_y-y00)/dy)+1
       endif
-      SNR%ipy=(i-1)/ny ! uses integer division !removed -1 after i fred debug
+      SNR%ipy=(i-1)/ny ! uses integer division
       SNR%m=i-(SNR%ipy*ny)+nghost
 !
       if (center_SN_z.eq.impossible) then
@@ -1911,7 +1914,7 @@ cool_loop: do i=1,ncool
       else
         i=int((center_SN_z-z00)/dz)+1
       endif
-      SNR%ipz=(i-1)/nz   ! uses integer division !+1 fred debug
+      SNR%ipz=(i-1)/nz   ! uses integer division
       SNR%n=i-(SNR%ipz*nz)+nghost
       SNR%iproc=SNR%ipz*nprocy + SNR%ipy
     endif
@@ -2759,8 +2762,8 @@ find_SN: do n=n1,n2
           endif
       enddo; enddo
 !
-      call mpibcast_int(ierr,1,SNR%iproc)
       if (present(ierr)) then
+        call mpibcast_int(ierr,1,SNR%iproc)
         if (ierr==iEXPLOSION_TOO_UNEVEN.or.ierr==iEXPLOSION_TOO_HOT) return
       endif
 !
