@@ -1,38 +1,38 @@
 ! $Id$
-
+!
 module General
-
+!
 !  Module with general utility subroutines
 !  (Used for example in Sub and Mpicomm)
-
+!
   use Cparam
   use Messages
-
+!
   implicit none
-
+!
   private
-
+!
   public :: safe_character_assign,safe_character_append, chn
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
-
+!
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
   public :: find_index_range
-
+!
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
-
+!
   include 'record_types.h'
-
+!
   interface random_number_wrapper   ! Overload this function
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
   endinterface
-
+!
   interface safe_character_append   ! Overload this function
     module procedure safe_character_append_2
     module procedure safe_character_append_3 ! add more if you like..
@@ -42,7 +42,7 @@ module General
 !
   integer, save, dimension(mseed) :: rstate=0
   character (len=labellen) :: random_gen='min_std'
-
+!
   contains
 !***********************************************************************
     subroutine setup_mm_nn()
@@ -55,7 +55,6 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cparam
       use Cdata, only: mm,nn,imn_array,necessary,lroot
 !
       integer :: imn,m,n
@@ -162,10 +161,8 @@ module General
 !***********************************************************************
     subroutine input_persistent_general(id,lun,done)
 !
-!  Fills a with a random number calculated with one of the generators
-!  available with random_gen
+! reads seed from a snapshot
 !
-      use Cparam
       use Cdata, only: seed,nseed
 !
       integer :: id,lun
@@ -182,10 +179,8 @@ module General
 !***********************************************************************
     subroutine output_persistent_general(lun)
 !
-!  Fills a with a random number calculated with one of the generators
-!  available with random_gen
+! writes seed to a snapshot
 !
-      use Cparam
       use Cdata, only: seed,nseed
 !
       integer :: lun
@@ -240,7 +235,7 @@ module General
       case default
         if (lroot) print*, 'No such random number generator: ', random_gen
         STOP 1                ! Return nonzero exit status
-
+!
      endselect
 !
     endsubroutine random_number_wrapper_1
@@ -272,7 +267,7 @@ module General
       case default
         if (lroot) print*, 'No such random number generator: ', random_gen
         STOP 1                ! Return nonzero exit status
-
+!
       endselect
 !
     endsubroutine random_number_wrapper_3
@@ -303,7 +298,7 @@ module General
       enddo
 !
       a=v/u
-!      
+!
     endsubroutine normal_deviate
 !***********************************************************************
     subroutine random_seed_wrapper(size,put,get)
@@ -366,7 +361,6 @@ module General
       dummy=ieor(dummy,mask)
 !
     endfunction ran0
-
 !***********************************************************************
     function mars_ran(init)
 !
@@ -442,11 +436,11 @@ module General
       ! value: call with iseed1 a negative integer to initialize;
       ! thereafter, do not alter iseed1 except to reinitialize. The period
       ! of this generator is about 3.1x10^18.
-
+!
       real, save :: am
       integer(ikind), parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
       integer(ikind), save      :: ix=-1,iy=-1,k
-
+!
       if (iseed1 <= 0 .or. iy < 0) then   ! Initialize.
         am=nearest(1.0,-1.0)/im
         iy=ior(ieor(888889999,abs(iseed1)),1)
@@ -529,7 +523,7 @@ module General
         call safe_character_assign(dirpart,'.')
         call safe_character_assign(filepart,trim(filename))
       endif
-
+!
     endsubroutine parse_filename
 !***********************************************************************
     subroutine safe_character_assign(dest,src)
@@ -542,10 +536,10 @@ module General
       character (len=*), intent(in):: src
       character (len=*), intent(inout):: dest
       integer :: destLen, srcLen
-
+!
       destLen = len(dest)
       srcLen = len(src)
-
+!
       if (destLen<srcLen) then
          print *, "safe_character_assign: ", &
               "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
@@ -554,7 +548,7 @@ module General
       else
          dest=src
       endif
-
+!
     endsubroutine safe_character_assign
 !***********************************************************************
     subroutine safe_character_append_2(str1,str2)
@@ -653,9 +647,9 @@ module General
       real, dimension(size(z)) :: d,spline_derivative
       real :: c
       integer :: mz,k
-
+!
       mz=size(z)
-
+!
       w1(1)=1./(z(2)-z(1))**2
       w3(1)=-1./(z(3)-z(2))**2
       w2(1)=w1(1)+w3(1)
@@ -667,10 +661,10 @@ module General
       w1(2:mz-1)=1./(z(2:mz-1)-z(1:mz-2))
       w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
       w2(2:mz-1)=2.*(w1(2:mz-1)+w3(2:mz-1))
-
+!
       d(2:mz-1)=3.*(w3(2:mz-1)**2*(f(3:mz)-f(2:mz-1)) &
            +w1(2:mz-1)**2*(f(2:mz-1)-f(1:mz-2)))
-
+!
 !
 ! last point
 !
@@ -712,7 +706,7 @@ module General
       do k=mz-1,1,-1
          d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
       enddo
-
+!
       spline_derivative=d
     endfunction spline_derivative
 !***********************************************************************
@@ -730,9 +724,9 @@ module General
       double precision, dimension(size(z)) :: d,spline_derivative_double
       double precision :: c
       integer :: mz,k
-
+!
       mz=size(z)
-
+!
       w1(1)=1./(z(2)-z(1))**2
       w3(1)=-1./(z(3)-z(2))**2
       w2(1)=w1(1)+w3(1)
@@ -744,10 +738,10 @@ module General
       w1(2:mz-1)=1./(z(2:mz-1)-z(1:mz-2))
       w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
       w2(2:mz-1)=2.*(w1(2:mz-1)+w3(2:mz-1))
-
+!
       d(2:mz-1)=3.*(w3(2:mz-1)**2*(f(3:mz)-f(2:mz-1)) &
            +w1(2:mz-1)**2*(f(2:mz-1)-f(1:mz-2)))
-
+!
 !
 ! last point
 !
@@ -789,7 +783,7 @@ module General
       do k=mz-1,1,-1
          d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
       enddo
-
+!
       spline_derivative_double=d
     endfunction spline_derivative_double
 !***********************************************************************
@@ -806,21 +800,21 @@ module General
       real, dimension(size(z)) :: q,spline_integral
       real, optional :: q0
       integer :: mz,k
-
+!
       mz=size(z)
-
+!
       q(1)=0.
       if (present(q0)) q(1)=q0
       df=spline_derivative(z,f)
       dz(2:mz)=z(2:mz)-z(1:mz-1)
-
+!
       q(2:mz)=.5*dz(2:mz)*(f(1:mz-1)+f(2:mz)) &
               +(1./12.)*dz(2:mz)**2*(df(1:mz-1)-df(2:mz))
-
+!
       do k=2,mz
          q(k)=q(k)+q(k-1)
       enddo
-
+!
       spline_integral=q
     endfunction spline_integral
 !***********************************************************************
@@ -839,21 +833,21 @@ module General
       double precision, dimension(size(z)) :: q,spline_integral_double
       double precision, optional :: q0
       integer :: mz,k
-
+!
       mz=size(z)
-
+!
       q(1)=0.
       if (present(q0)) q(1)=q0
       df=spline_derivative_double(z,f)
       dz(2:mz)=z(2:mz)-z(1:mz-1)
-
+!
       q(2:mz)=.5*dz(2:mz)*(f(1:mz-1)+f(2:mz)) &
               +(1./12.)*dz(2:mz)**2*(df(1:mz-1)-df(2:mz))
-
+!
       do k=2,mz
          q(k)=q(k)+q(k-1)
       enddo
-
+!
       spline_integral_double=q
     endfunction spline_integral_double
 !***********************************************************************
@@ -947,61 +941,61 @@ module General
 !
 !  01-apr-00/John Crowe (Newcastle): written
 !
-implicit none
-
-integer :: i,m
-real :: x
-real, dimension (m) :: a,b,c,d,e,r
-
+      implicit none
+!
+      integer :: i,m
+      real :: x
+      real, dimension (m) :: a,b,c,d,e,r
+!
 ! eliminate sub-diagonals
-
-   x    = b(2)/c(1)
-   c(2) = c(2)-d(1)*x
-   d(2) = d(2)-e(1)*x
-   r(2) = r(2)-r(1)*x
-
-do i=3,m-1,1
-
-   x    = a(i)/c(i-2)
-   b(i) = b(i)-d(i-2)*x
-   c(i) = c(i)-e(i-2)*x
-   r(i) = r(i)-r(i-2)*x
-
-   x    = b(i)/c(i-1)
-   c(i) = c(i)-d(i-1)*x
-   d(i) = d(i)-e(i-1)*x
-   r(i) = r(i)-r(i-1)*x
-
-end do
-
-   x    = a(m)/c(m-2)
-   b(m) = b(m)-d(m-2)*x
-   c(m) = c(m)-e(m-2)*x
-   r(m) = r(m)-r(m-2)*x
-
-   x    = b(m)/c(m-1)
-   c(m) = c(m)-d(m-1)*x
-   r(m) = r(m)-r(m-1)*x
-
-
+!
+      x    = b(2)/c(1)
+      c(2) = c(2)-d(1)*x
+      d(2) = d(2)-e(1)*x
+      r(2) = r(2)-r(1)*x
+!
+      do i=3,m-1,1
+!
+        x    = a(i)/c(i-2)
+        b(i) = b(i)-d(i-2)*x
+        c(i) = c(i)-e(i-2)*x
+        r(i) = r(i)-r(i-2)*x
+!
+        x    = b(i)/c(i-1)
+        c(i) = c(i)-d(i-1)*x
+        d(i) = d(i)-e(i-1)*x
+        r(i) = r(i)-r(i-1)*x
+!
+      end do
+!
+      x    = a(m)/c(m-2)
+      b(m) = b(m)-d(m-2)*x
+      c(m) = c(m)-e(m-2)*x
+      r(m) = r(m)-r(m-2)*x
+!
+      x    = b(m)/c(m-1)
+      c(m) = c(m)-d(m-1)*x
+      r(m) = r(m)-r(m-1)*x
+!
+!
 ! eliminate super-diagonals
-
-   r(m-1) = r(m-1) - d(m-1)*r(m)/c(m)
-
-do i = m-2 , 1 , -1
-
-   r(i)   = r(i) - d(i)*r(i+1)/c(i+1) - e(i)*r(i+2)/c(i+2)
-
-end do
-
+!
+      r(m-1) = r(m-1) - d(m-1)*r(m)/c(m)
+!
+      do i = m-2 , 1 , -1
+!
+        r(i)   = r(i) - d(i)*r(i+1)/c(i+1) - e(i)*r(i+2)/c(i+2)
+!
+      end do
+!
 ! reduce c's to unity, leaving the answers in r
+!
+      do i = 1 , m , 1
 
-do i = 1 , m , 1
- 
-   r(i) = r(i) / c(i)
-
-end do
-
+        r(i) = r(i) / c(i)
+!
+      end do
+!
     endsubroutine pendag
 !***********************************************************************
     subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
@@ -1017,10 +1011,10 @@ end do
       real, dimension (psize2) :: x2,S
       real :: fac=0.1666666
       logical, intent(out), optional :: err
-
+!
       intent(in)  :: arrx,arry,x2
       intent(out) :: S
-
+!
       if (present(err)) err=.false.
       ct1 = psize1
       ct2 = psize2
@@ -1070,7 +1064,7 @@ end do
 !
             if ((x2(j).ge.arrx(i)).and.(x2(j).le.arrx(i+1))) then
 !
-! substitute 1/6. by 0.1666666 to avoid divisions 
+! substitute 1/6. by 0.1666666 to avoid divisions
 !
                S(j) = (fac*h1(i)) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
                     (x2(j) - arrx(i))*(arry(i+1)*h1(i) - h(i)*sol(i+1)*fac)                          + &
@@ -1090,7 +1084,7 @@ end do
        enddo
 !
     endsubroutine spline
-!*****************************************************************************
+!***********************************************************************
     function complex_phase(z)
 !
 !  takes complex number and returns Theta where
@@ -1116,15 +1110,15 @@ end do
   if ( (re .ge. 0.0) .and. (im .lt. 0.0) ) complex_phase = 2*pi+asin(im/c)
 !
    endfunction complex_phase
-!*****************************************************************************
+!***********************************************************************
     function erfcc(x)
 !  nr routine.
 !  12-jul-2005/joishi: added, translated syntax to f90, and pencilized
 !  21-jul-2006/joishi: generalized.
        real :: x(:)
        real,dimension(size(x)) :: erfcc,t,z
-
-
+!
+!
       z=abs(x)
       t=1./(1.+0.5*z)
       erfcc=t*exp(-z*z-1.26551223+t*(1.00002368+t*(.37409196+t* &
@@ -1133,27 +1127,27 @@ end do
       where (x.lt.0.) erfcc=2.-erfcc
       return
     endfunction erfcc
-!*****************************************************************************
+!***********************************************************************
     subroutine besselj_nu_int(res,nu,arg,loversample)
 !
       use Cdata, only: pi,pi_1
 !
 !  Calculate the cylindrical bessel function
-!  with integer index. The function in gsl_wrapper.c 
-!  only calculates the cylindrical Bessel functions 
-!  with real index. The amount of factorials in the 
+!  with integer index. The function in gsl_wrapper.c
+!  only calculates the cylindrical Bessel functions
+!  with real index. The amount of factorials in the
 !  real index Bessel function leads to over and underflows
 !  as the index goes only moderately high.
-!                 
-!                 _ 
+!
+!                 _
 !             1  /  pi
-!  J_m(z) = ____ |     (cos(z*sin(theta)-m*theta)) dtheta 
-!                |  
+!  J_m(z) = ____ |     (cos(z*sin(theta)-m*theta)) dtheta
+!                |
 !            pi _/  0
 !
 !  The function defines its own theta from 0 to pi for the
-!  integration, with the same number of points as the 
-!  azimuthal direction. 
+!  integration, with the same number of points as the
+!  azimuthal direction.
 !
 !  06-03-08/wlad: coded
 !
@@ -1164,12 +1158,12 @@ end do
 !
       intent(in)  :: nu,arg
       intent(out) :: res
-!        
+!
 ! Possibility of very high resolution
 ! useful in start time, for instance
-!        
+!
       nnt=max(100,nygrid)
-      if (present(loversample)) then 
+      if (present(loversample)) then
         if (loversample) nnt=30000
       endif
 !
@@ -1186,35 +1180,35 @@ end do
       res=pi_1*d_angle*(sum(a(2:nnt-1))+.5*(a(1)+a(nnt)))
 !
     endsubroutine besselj_nu_int
-!*****************************************************************************
+!***********************************************************************
     subroutine calc_complete_ellints(mu,Kappa_mu,E_mu,loversample)
 !
-!  Calculate the complete elliptic integrals of first (K) 
-!  and second kind (E) 
-!                 
-!              _ 
+!  Calculate the complete elliptic integrals of first (K)
+!  and second kind (E)
+!
+!              _
 !             /  pi/2
 !  K(mu)  =   |       1/sqrt(1-mu*sin(x)) dx
-!             |  
+!             |
 !            _/  0
 !
 !  The function defines its own theta from 0 to pi for the
-!  integration, with the same number of points as the 
-!  azimuthal direction, or 100 points if nygrid<100. The 
+!  integration, with the same number of points as the
+!  azimuthal direction, or 100 points if nygrid<100. The
 !  integration is performed with the trapezoidal rule.  As
 !  K(mu) is not defined at the point mu=1, we set K(1)=0
 !
-!  The complete elliptic integral of second kind 
+!  The complete elliptic integral of second kind
 !
-!              _ 
+!              _
 !             /  pi/2
 !  E(mu)  =   |       sqrt(mu*sin(x)) dx
-!             |  
+!             |
 !            _/  0
 !
 !  is defined everywhere and does not need this fix.
 !
-
+!
       use Cdata, only : pi
 !
       real, dimension(:),allocatable :: angle,a_K,a_E
@@ -1222,12 +1216,12 @@ end do
       real, optional :: E_mu
       integer :: i,nnt
       logical, optional :: loversample
-!        
+!
 ! Possibility of very high resolution
 ! useful in start time, for instance
-!        
+!
       nnt=max(100,nygrid)
-      if (present(loversample)) then 
+      if (present(loversample)) then
         if (loversample) nnt=30000
       endif
 !
@@ -1257,28 +1251,28 @@ end do
       endif
 !
     endsubroutine calc_complete_ellints
-!*****************************************************************************
+!***********************************************************************
 !
-!************************************************************************
-!*                                                                      *
-!*    Program to calculate the first kind Bessel function of integer    *
-!*    order N, for any REAL X, using the function BESSJ(N,X).           *
-!*                                                                      *
-!* -------------------------------------------------------------------- *
-!*                                                                      *
-!*    SAMPLE RUN:                                                       *
-!*                                                                      *
-!*    (Calculate Bessel function for N=2, X=0.75).                      *
-!*                                                                      *
-!*    Bessel function of order  2 for X =  0.7500:                      *
-!*                                                                      *
-!*         Y =  0.67073997E-01                                          *
-!*                                                                      *
-!* -------------------------------------------------------------------- *
-!*   Reference: From Numath Library By Tuan Dang Trong in Fortran 77.   *
-!*                                                                      *
-!*                               F90 Release 1.0 By J-P Moreau, Paris.  *
-!************************************************************************
+!***********************************************************************
+!*                                                                     *
+!*    Program to calculate the first kind Bessel function of integer   *
+!*    order N, for any REAL X, using the function BESSJ(N,X).          *
+!*                                                                     *
+!* ------------------------------------------------------------------- *
+!*                                                                     *
+!*    SAMPLE RUN:                                                      *
+!*                                                                     *
+!*    (Calculate Bessel function for N=2, X=0.75).                     *
+!*                                                                     *
+!*    Bessel function of order  2 for X =  0.7500:                     *
+!*                                                                     *
+!*         Y =  0.67073997E-01                                         *
+!*                                                                     *
+!* ------------------------------------------------------------------- *
+!*   Reference: From Numath Library By Tuan Dang Trong in Fortran 77.  *
+!*                                                                     *
+!*                               F90 Release 1.0 By J-P Moreau, Paris. *
+!***********************************************************************
 !PROGRAM TBESSJ
 !
 !  REAL*8  BESSI, X, Y
@@ -1301,15 +1295,15 @@ end do
 !END
 !
      FUNCTION BESSJ (N,X)
-
+!
 !     This subroutine calculates the first kind modified Bessel function
 !     of integer order N, for any REAL X. We use here the classical
 !     recursion formula, when X > N. For X < N, the Miller's algorithm
-!     is used to avoid overflows. 
+!     is used to avoid overflows.
 !     REFERENCE:
 !     C.W.CLENSHAW, CHEBYSHEV SERIES FOR MATHEMATICAL FUNCTIONS,
 !     MATHEMATICAL TABLES, VOL.5, 1962.
-
+!
       integer, parameter :: IACC = 40
       real, parameter :: BIGNO = 1.D10, BIGNI = 1.D-10
       real :: X,BESSJ,TOX,BJM,BJ,BJP,SUM1
@@ -1363,10 +1357,10 @@ end do
       ENDIF
       RETURN
     endfunction BESSJ
-
+!
     FUNCTION BESSJ0 (X)
       REAL :: X,BESSJ0,AX,FR,FS,Z,FP,FQ,XX
-
+!
 !     This subroutine calculates the First Kind Bessel Function of
 !     order 0, for any real number X. The polynomial approximation by
 !     series of Chebyshev polynomials is used for 0<X<8 and 0<8/X<1.
@@ -1374,7 +1368,7 @@ end do
 !     M.ABRAMOWITZ,I.A.STEGUN, HANDBOOK OF MATHEMATICAL FUNCTIONS, 1965.
 !     C.W.CLENSHAW, NATIONAL PHYSICAL LABORATORY MATHEMATICAL TABLES,
 !     VOL.5, 1962.
-
+!
       REAL :: Y,P1,P2,P3,P4,P5,R1,R2,R3,R4,R5,R6  &
                ,Q1,Q2,Q3,Q4,Q5,S1,S2,S3,S4,S5,S6
       DATA P1,P2,P3,P4,P5 /1.D0,-.1098628627D-2,.2734510407D-4, &
@@ -1404,7 +1398,7 @@ end do
     1 BESSJ0 = 1.D0
       RETURN
     endfunction BESSJ0
-
+!
 ! ---------------------------------------------------------------------------
       FUNCTION BESSJ1 (X)
       REAL :: X,BESSJ1,AX,FR,FS,Z,FP,FQ,XX
@@ -1421,11 +1415,11 @@ end do
       .2457520174D-5,-.240337019D-6 /,P6 /.636619772D0 /
       DATA Q1,Q2,Q3,Q4,Q5 /.04687499995D0,-.2002690873D-3,   &
       .8449199096D-5,-.88228987D-6,.105787412D-6 /
-      DATA R1,R2,R3,R4,R5,R6 /72362614232.D0,-7895059235.D0, & 
+      DATA R1,R2,R3,R4,R5,R6 /72362614232.D0,-7895059235.D0, &
       242396853.1D0,-2972611.439D0,15704.48260D0,-30.16036606D0 /
       DATA S1,S2,S3,S4,S5,S6 /144725228442.D0,2300535178.D0, &
       18583304.74D0,99447.43394D0,376.9991397D0,1.D0 /
-
+!
       AX = ABS(X)
       IF (AX.LT.8.) THEN
       Y = X*X
@@ -1442,9 +1436,9 @@ end do
       ENDIF
       RETURN
     endfunction BESSJ1
-
+!
 !End of file Tbessj.f90
-!*****************************************************************************
+!***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
 ! 08-Sep-07/gastine+dintrans: coded from numerical recipes.
@@ -1457,7 +1451,7 @@ end do
 !
       integer :: i,n
       real, dimension(n) :: a,b,c,r,x,bb,u,z
-      real    :: alpha,beta,gamma,fact      
+      real    :: alpha,beta,gamma,fact
 !
       if (n <= 2) stop "cyclic in the general module: n too small"
       gamma=-b(1)
@@ -1480,5 +1474,5 @@ end do
 !
       return
     endsubroutine cyclic
-!*****************************************************************************
+!***********************************************************************
 endmodule General
