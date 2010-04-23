@@ -198,6 +198,8 @@ module Poisson
       nnghost=1
       if (lmpicomm) then 
         lproc_comm_loc=.false.
+        lproc_comm_send=.false.
+        lproc_comm_recv=.false.
         do m=1,ny
           mm=m+m1-1
           iy_serial=nint((y(mm)-y0)*dyc1)+1
