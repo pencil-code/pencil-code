@@ -3605,34 +3605,42 @@ k_loop:   do while (.not. (k>npar_loc))
       type (pencil_case) :: p
       logical :: lnbody
 !
-!  Calculate the average velocity at each cell
+!  Initialize the variables
 !
       vvpm=0.0; dvp2m=0.0
-      do k=k1_imn(imn),k2_imn(imn)
-        lnbody=any(ipar(k).eq.ipar_nbody)
-        if (.not.lnbody) then
-          inx0=ineargrid(k,1)-nghost
-          vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
-        endif
-      enddo
-      do l=1,nx
-        if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
-      enddo
 !
-!  Get the residual in quadrature, dvp2m
+!  Calculate the average velocity at each cell 
+!  if there are particles in the pencil only
 !
-      do k=k1_imn(imn),k2_imn(imn)
-        lnbody=any(ipar(k).eq.ipar_nbody)
-        if (.not.lnbody) then
-          inx0=ineargrid(k,1)-nghost
-          dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
-          dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
-          dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
-        endif
-      enddo
-      do l=1,nx
-        if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
-      enddo
+      if (npar_imn(imn)/=0) then 
+!
+        do k=k1_imn(imn),k2_imn(imn)
+          lnbody=any(ipar(k).eq.ipar_nbody)
+          if (.not.lnbody) then
+            inx0=ineargrid(k,1)-nghost
+            vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
+          endif
+        enddo
+        do l=1,nx
+          if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
+        enddo
+!
+!  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
+!
+        do k=k1_imn(imn),k2_imn(imn)
+          lnbody=any(ipar(k).eq.ipar_nbody)
+          if (.not.lnbody) then
+            inx0=ineargrid(k,1)-nghost
+            dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
+            dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
+            dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
+          endif
+        enddo
+        do l=1,nx
+          if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
+        enddo
+!
+      endif        
 !
 !  Output the diagnostics
 !
