@@ -158,30 +158,29 @@ module Poisson
 !  Identify version.
 !
       if (lroot .and. ip<10) call svn_id( &
-        "$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $")
+        '$Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $')
 !
 !  Break if lshear or 3D
 !
-      if (lshear) &
-           call fatal_error("inverse_laplacian_expandgrid",&
-           "not implemented for external shear")
+      if (lshear) call fatal_error('inverse_laplacian_expandgrid',&
+          'not implemented for external shear')
 !
-      if (lroot.and.lfirstcall) print*,'Entered inverse_laplacian_expandgrid'
+      if (lroot.and.lfirstcall) print*, 'Entered inverse_laplacian_expandgrid'
       iroot=0
       nnghost=1
 !
 !  Define the expanded Cartesian axes
 ! 
       nnx=2*nx               ; nny=2*ny
-      xn=2*x(l2)+.5*dx       ; x0=-xn
+      xn=2*x(l2)+0.5*dx      ; x0=-xn
       yn=xn                  ; y0=-yn
       nnxgrid=2*nxgrid       ; nnygrid=2*nygrid
 !
       do i=1,nnx
-        xc(i)=1.*(i-1)        /(nnxgrid-1)*(xn-x0)+x0
+        xc(i)=1.0*(i-1)       /(nnxgrid-1)*(xn-x0)+x0
       enddo
       do m=1,nny
-        yc(m)=1.*(m-1+ipy*nny)/(nnygrid-1)*(yn-y0)+y0
+        yc(m)=1.0*(m-1+ipy*nny)/(nnygrid-1)*(yn-y0)+y0
       enddo      
 ! 
       dxc=xc(2)-xc(1)  ; dyc=dxc
@@ -190,9 +189,9 @@ module Poisson
       Lxn=2*xc(nnx);Lyn=Lxn
 !
       kkx_fft=&
-           cshift((/(i-(nnxgrid+1)/2,i=0,nnxgrid-1)/),+(nnxgrid+1)/2)*2*pi/Lxn
+          cshift((/(i-(nnxgrid+1)/2,i=0,nnxgrid-1)/),+(nnxgrid+1)/2)*2*pi/Lxn
       kky_fft=&
-           cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
+          cshift((/(i-(nnygrid+1)/2,i=0,nnygrid-1)/),+(nnygrid+1)/2)*2*pi/Lyn
 !
 !  Prepare the sending/receiving between different processors
 !
@@ -253,18 +252,18 @@ module Poisson
         phi_recv(:,:,0)=phi(:,:,nnghost)
       endif
 !
-      nphi=0.
+      nphi=0.0
       do i=1,nnx
         do m=1,nny
 !  Zero mass outside of the domain
           rr=sqrt(xc(i)**2+yc(m)**2)
-          if ((rr .gt. r_ext).or.(rr.lt.r_int)) then
-            nphi(i,m)=0
+          if ( (rr>r_ext) .or. (rr<r_int) ) then
+            nphi(i,m)=0.0
           else
             ix=i-nx/2
             iy=m+nny*ipy-nygrid/2
             j=(iy-1)/ny
-            do while (iy > ny)
+            do while (iy>ny)
               iy=iy-ny
             enddo
             nphi(i,m)=phi_recv(ix,iy,j)
@@ -287,8 +286,8 @@ module Poisson
             nb1(ikx,iky) = 0.0
           else
             if (.not.lrazor_thin) then
-              call fatal_error("inverse_laplacian_expandgrid",&
-                   "3d case not implemented yet")
+              call fatal_error('inverse_laplacian_expandgrid',&
+                  '3d case not implemented yet')
 !
 !  Razor-thin approximation. Here we solve the equation
 !    del2Phi=4*pi*G*Sigma(x,y)*delta(z)
@@ -297,8 +296,8 @@ module Poisson
 !
             else
               k2 = (kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
-              nphi(ikx,iky) = -.5*nphi(ikx,iky) / sqrt(k2)
-              nb1(ikx,iky)  = -.5*nb1(ikx,iky)  / sqrt(k2)
+              nphi(ikx,iky) = -0.5*nphi(ikx,iky) / sqrt(k2)
+              nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / sqrt(k2)
             endif
           endif
 !
@@ -306,8 +305,8 @@ module Poisson
 !
           if (kmax>0.0) then
             if (sqrt(k2)>=kmax) then
-              nphi(ikx,iky) = 0.
-              nb1(ikx,iky) = 0.
+              nphi(ikx,iky) = 0.0
+              nb1(ikx,iky) = 0.0
             endif
           endif
         enddo
@@ -342,7 +341,7 @@ module Poisson
             endif
           else
             !only if the big processor encompasses the little
-            if ((yc(1).le.y(m1+1)).and.(yc(nny).ge.y(m2-1))) then
+            if ( (yc(1)<=y(m1+1)) .and. (yc(nny)>=y(m2-1)) ) then
               !plus minus 1 just to avoid rounding errors
               mdo=(    j*ny+1+nygrid/2)-iproc*nny
               mup=((j+1)*ny  +nygrid/2)-iproc*nny
