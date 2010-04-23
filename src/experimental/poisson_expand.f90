@@ -143,7 +143,7 @@ module Poisson
       logical, dimension(0:ncpus-1) :: lproc_comm_loc,ltmp
       logical, dimension(0:ncpus-1,0:ncpus-1) :: lproc_comm_send,lproc_comm_recv
 !
-      real :: rr,k2
+      real :: rr,k_abs
       integer :: ikx, iky
 !
       real    :: x0,xn,y0,yn,dxc,dyc,dxc1,dyc1,Lxn,Lyn
@@ -295,17 +295,15 @@ module Poisson
 !  The solution at scale k=(kx,ky) is
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
-            k2 = (kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
-            nphi(ikx,iky) = -0.5*nphi(ikx,iky) / sqrt(k2)
-            nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / sqrt(k2)
+            k_abs = sqrt(kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
+            nphi(ikx,iky) = -0.5*nphi(ikx,iky) / k_abs
+            nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / k_abs
 !
 !  Limit |k| < kmax
 !
-            if (kmax>0.0) then
-              if (sqrt(k2)>=kmax) then
-                nphi(ikx,iky) = 0.0
-                nb1(ikx,iky) = 0.0
-              endif
+            if ((kmax>0.0) .and. (k_abs>=kmax)) then
+              nphi(ikx,iky) = 0.0
+              nb1(ikx,iky) = 0.0
             endif
           endif
         enddo
