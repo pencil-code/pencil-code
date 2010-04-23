@@ -100,8 +100,8 @@ module Poisson
           print*,'There is no poisson solver for spherical '
           print*,'coordinates yet. Please feel free to implement it. '
           print*,'Many people will thank you for that.'
-          call fatal_error("inverse_laplacian","")
         endif
+        call fatal_error("inverse_laplacian","")
       endif
 !
       if (lsemispectral) then
