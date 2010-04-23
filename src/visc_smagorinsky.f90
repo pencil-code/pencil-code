@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -72,9 +72,9 @@ module Viscosity
 !
         if (headtt.and.lroot) print*,'viscosity: nu=',nu
         if (headtt.and.lroot) print*,'viscosity: c_smag=',c_smag
-
+!
         lneed_sij=.true.
-
+!
     endsubroutine initialize_viscosity
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
@@ -174,8 +174,8 @@ module Viscosity
       real, dimension (nx) :: nu_smag
       integer :: i,j,ncount,mcount
 !
-
-
+!
+!
       sij2=0
       do i=1,2
          do j=i+1,3
@@ -218,12 +218,11 @@ module Viscosity
             enddo
          endif
       endif
-
-
-
+!
+!
+!
 !
     endsubroutine calc_viscosity
-
 !***********************************************************************
     subroutine der_2nd_nof(var,tmp,j)
 !
@@ -239,7 +238,7 @@ module Viscosity
       intent (out) :: tmp
 !
       tmp=0.
-
+!
       if (j==1 .and. nxgrid/=1) then
           tmp(     1,:,:) = (- 3.*var(1,:,:) &
                             + 4.*var(2,:,:) &
@@ -274,8 +273,8 @@ module Viscosity
       endif
 !
     endsubroutine der_2nd_nof
-
-!!***********************************************************************
+!
+!!**********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
@@ -285,7 +284,7 @@ module Viscosity
       use Cdata
       use Mpicomm
       use Sub
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx)   :: rho1,TT1,cs2,Hmax
@@ -319,7 +318,7 @@ module Viscosity
       use Cdata
       use Mpicomm
       use Sub
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
@@ -328,7 +327,7 @@ module Viscosity
       real, dimension (nx,3) :: nusglnrho,tmp1,tmp2,gradnu_smag
       real, dimension (nx) :: murho1,rho,rho1,divu,shock,SS12,sij2
       integer :: i
-
+!
       intent (in) :: f, glnrho, rho1,rho
       intent (out) :: df
 !
@@ -336,7 +335,7 @@ module Viscosity
 !  rho1 is pre-calculated in equ
 !
       select case (ivisc)
-
+!
         case ('smagorinsky')
           !
           !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_smag
@@ -384,7 +383,7 @@ module Viscosity
          !
          if (lroot) print*, 'No such value for ivisc: ', trim(ivisc)
          call stop_it('calc_viscous_forcing')
-
+!
       endselect
       !
       ! Add ordinary viscosity if nu /= 0
