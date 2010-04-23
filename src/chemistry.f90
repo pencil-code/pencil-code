@@ -2544,7 +2544,7 @@ module Chemistry
                photochemInd=index(ChemInpLine(StartInd:),'hv')
                if (photochemInd>0) then
                  photochem_case (k)=.true.
-               endif
+              
                ParanthesisInd=index(ChemInpLine(photochemInd:),'(') &
                              +photochemInd-1
 !
@@ -2569,7 +2569,7 @@ module Chemistry
                  !   print*,'Natalia2',lamb_up
                  endif
                endif
-!
+               endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! Find reactant side stoichiometric coefficients
