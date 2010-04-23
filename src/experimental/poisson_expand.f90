@@ -1,12 +1,10 @@
 ! $Id: poisson.f90 12460 2009-12-10 15:19:51Z sven.bingert $
-
 !
 !  This module solves the Poisson equation
 !    (d^2/dx^2 + d^2/dy^2 + d^2/dz^2 - h) f = RHS(x,y,z)
 !  [which for h/=0 could also be called inhomogenous nonuniform Helmholtz
 !  equation] for the function f(x,y,z).
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -17,30 +15,28 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Poisson
-
+!
   use Cdata
   use Cparam
   use Fourier
   use Messages
-
+!
   implicit none
-
+!
   real :: kmax=0.0
   logical :: lrazor_thin=.false., lsemispectral=.false., lklimit_shear=.false.
   logical :: lexpand_grid=.false.
-
+!
   include 'poisson.h'
-
+!
   namelist /poisson_init_pars/ &
       lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid
-
+!
   namelist /poisson_run_pars/ &
       lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid
-
+!
   contains
-
 !***********************************************************************
     subroutine initialize_poisson()
 !
@@ -109,12 +105,14 @@ module Poisson
       endif
 !
       if (lsemispectral) then
-        call fatal_error("inverse_laplacian","this file is just for expand grid")
+        call fatal_error('inverse_laplacian', &
+            'this file is just for expand grid')
       else
         if (lexpand_grid) then
           call inverse_laplacian_expandgrid(phi)
         else
-          call fatal_error("inverse_laplacian","this file ius just for expand grid") 
+          call fatal_error('inverse_laplacian', &
+              'this file ius just for expand grid') 
         endif
       endif
 !
@@ -124,14 +122,14 @@ module Poisson
 !***********************************************************************
     subroutine inverse_laplacian_expandgrid(phi)
 !
-      use Mpicomm
-!
 !  Solve the Poisson equation in a 2D global disk by expanding the 
 !  grid to avoid the periodicity of the Fourier transform
 !
 !  Exclude shear and no-razor thin
 !
 !  25-may-2008/wlad: coded
+!
+      use Mpicomm
 !
       real, dimension (nx,ny,nz) :: phi
       real, dimension (2*nx,2*ny) :: nphi,nb1
@@ -382,6 +380,7 @@ module Poisson
       endif
 !
 99    return
+!
     endsubroutine read_poisson_init_pars
 !***********************************************************************
     subroutine write_poisson_init_pars(unit)
@@ -412,6 +411,7 @@ module Poisson
       endif
 !
 99    return
+!
     endsubroutine read_Poisson_run_pars
 !***********************************************************************
     subroutine write_poisson_run_pars(unit)
