@@ -286,7 +286,7 @@ module Poisson
             nphi(ikx,iky) = 0.0
             nb1(ikx,iky) = 0.0
           else
-            if (.not.lrazor_thin) then
+            if (.not.lrazor_thin) &
               call fatal_error('inverse_laplacian_expandgrid',&
                   '3d case not implemented yet')
 !
@@ -295,19 +295,17 @@ module Poisson
 !  The solution at scale k=(kx,ky) is
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
-            else
-              k2 = (kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
-              nphi(ikx,iky) = -0.5*nphi(ikx,iky) / sqrt(k2)
-              nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / sqrt(k2)
-            endif
-          endif
+            k2 = (kkx_fft(ikx)**2+kky_fft(iky+ipy*nny)**2)
+            nphi(ikx,iky) = -0.5*nphi(ikx,iky) / sqrt(k2)
+            nb1(ikx,iky)  = -0.5*nb1(ikx,iky)  / sqrt(k2)
 !
 !  Limit |k| < kmax
 !
-          if (kmax>0.0) then
-            if (sqrt(k2)>=kmax) then
-              nphi(ikx,iky) = 0.0
-              nb1(ikx,iky) = 0.0
+            if (kmax>0.0) then
+              if (sqrt(k2)>=kmax) then
+                nphi(ikx,iky) = 0.0
+                nb1(ikx,iky) = 0.0
+              endif
             endif
           endif
         enddo
