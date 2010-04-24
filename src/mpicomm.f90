@@ -3378,6 +3378,10 @@ module Mpicomm
         if (bytes < 0) call stop_it_if_any(.true.,'parallel_open: could not determine file size "'//trim(file)//'"')
         if (bytes == 0) call stop_it_if_any(.true.,'parallel_open: file is empty "'//trim(file)//'"')
       endif
+      ! catch conditional errors of the MPI root rank
+      call stop_it_if_any(.false.,'')
+!
+      ! broadcast the file size
       call mpibcast_int(bytes, 1)
 !
       ! allocate temporary memory
@@ -3388,7 +3392,10 @@ module Mpicomm
         ! read file content into buffer
         open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
         read(unit, REC=1, IOSTAT=ierr) buffer
+        call stop_it_if_any((ierr<0),'parallel_open: error reading file "'//trim(file)//'" into buffer')
         close(unit)
+      else
+        call stop_it_if_any(.false.,'')
       endif
 !
       ! broadcast buffer to all MPI ranks
@@ -3412,10 +3419,9 @@ module Mpicomm
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
       endfile(unit, iostat=ierr)
-      if (ierr<0) call stop_it_if_any(.true.,'parallel_open: error writing EOF "'//trim(file)//'"')
+      call stop_it_if_any((ierr<0),'parallel_open: error writing EOF "'//trim(file)//'"')
       close(unit)
       deallocate(buffer)
-      call stop_it_if_any(.false.,'')
 !
       ! open temporary file
       if (present(form) .and. present(recl)) then
