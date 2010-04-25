@@ -1715,7 +1715,7 @@ module Magnetic
       real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
-      real, dimension (nx,3) :: Bk_Bki
+      real, dimension (nx,3) :: Bk_Bki,tmp_jxb
       real :: B2_ext,c,s,kx
       integer :: i,j,ix
 !
@@ -1788,10 +1788,10 @@ module Magnetic
 !
 !  Add the external potential field.
 !
-        if (lB_ext_pot) then
+!        if (lB_ext_pot) then
 !          call get_global(bb_ext_pot,m,n,'B_ext_pot')
 !          p%bb=p%bb+bb_ext_pot
-        endif
+!        endif
 !
 !  Add external B-field.
 !
@@ -1956,7 +1956,7 @@ module Magnetic
             meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)/(1.+(p%vA2*meanfield_urms21)**2)
             meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)/(1.+(p%vA2*meanfield_urms21)**2)
             meanfield_qe_der=-2*pi_1* meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
-            call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
+            call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb
 !
 !           call multmv_transp(p%bij,p%bb,Bk_Bki)
             !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
@@ -1978,7 +1978,7 @@ module Magnetic
 !
 !  add -(1/2)*grad[(1-qp)B^2]
 !
-            call multsv_mn(meanfield_Qs_func,p%jxb,p%jxb)
+            call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb 
             call multmv_transp(p%bij,p%bb,Bk_Bki)
             call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
 !
