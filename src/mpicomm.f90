@@ -3499,7 +3499,7 @@ module Mpicomm
         ldelete=.false.
       endif
 !
-      if (lroot) parallel_file_exists = file_exists(file, delete)
+      if (lroot) parallel_file_exists = file_exists(file,ldelete)
       call mpibcast_logical(parallel_file_exists, 1)
 !
     endfunction
