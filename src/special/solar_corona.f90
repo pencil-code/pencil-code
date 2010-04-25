@@ -1434,6 +1434,9 @@ module Special
           vtot=3.*1e3/unit_velocity
         elseif (unit_system.eq.'cgs') then
           vtot=3.*1e5/unit_velocity
+        else
+          vtot=0.
+          call fatal_error('solar_corona','define a valid unit system')
         endif
 !
         vx=vx*vtot/vrms
@@ -1762,7 +1765,8 @@ module Special
       integer,dimension(nxgrid,nygrid) :: k
       real :: rand
 !
-      k(:,:)=0
+      k(:,:)=0; ipos=0; jpos=0
+!
       where (avoidarr.eq.0) k=1
 !
 ! Choose and find location of one of them
@@ -1783,6 +1787,8 @@ module Special
       enddo
 !
 ! Create new data for new point
+!
+      write(*,*) 'Creating new point at',ipos*dx,jpos*dy
 !
       current%pos(1)=ipos
       current%pos(2)=jpos
