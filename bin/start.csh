@@ -86,7 +86,7 @@ foreach dir ($procdirs $subdirs)
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
     set list = \
-        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* $ddir/PVAR* $ddir/SPVAR*`
+        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* $ddir/PVAR* $ddir/SPVAR* $ddir/varN.list`
     if (! -e NOERASE) then
       foreach rmfile ($list)
         if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
