@@ -302,6 +302,7 @@ contains
       write(1) a(l1:l2,m1:m2,n1:n2,:)
       write(1) t_sp,x,y,z,dx,dy,dz,deltay
       close(1)
+!
     endsubroutine outpus
 !***********************************************************************
     subroutine log_filename_to_file(filename,flist)
@@ -501,5 +502,4 @@ contains
 !
     endsubroutine rtime
 !***********************************************************************
-!
 endmodule Io
