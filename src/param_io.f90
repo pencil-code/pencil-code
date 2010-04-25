@@ -896,27 +896,30 @@ module Param_IO
 !
       if (label=='read_startpars'.and.ip>13) return
       if (label=='read_startpars') lwarning=.false.
+
+      if (nvar > 0) then
 !
 !  Check x direction.
 !
-      j=1
-      if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
-         any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
-           call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
+        j=1
+        if (any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
+            any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
+            call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
 !
 !  Check y direction.
 !
-      j=2
-      if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
-         any(bcy(1:nvar)/='p').and.lperi(j)) &
-           call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
+        j=2
+        if (any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
+            any(bcy(1:nvar)/='p').and.lperi(j)) &
+            call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
 !
 !  Check z direction.
 !
-      j=3
-      if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
-         any(bcz(1:nvar)/='p').and.lperi(j)) &
-           call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
+        j=3
+        if (any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
+            any(bcz(1:nvar)/='p').and.lperi(j)) &
+            call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
+      endif
 !
 !  Print final warning.
 !  Make the warnings less dramatic looking, if we are only in start.
