@@ -11,7 +11,7 @@
 FC=g95
 FFLAGS=-O3
 
-MOD_O = timings_module.o
+MOD_O = timings_module.o array_valued_module.o
 EXE = array-val-funcs.x
 
 ## Generic rules:
@@ -50,7 +50,7 @@ param.inc: Makefile
 	    '!' \
 	    '! Written by Makefile; if you edit this file, you get what you deserve.' \
 	    '' \
-	    'integer, parameter :: nx=128, niter=1000000' \
+	    'integer, parameter :: nx=1024, niter=1000000' \
 	    '' \
 	    '! End of file' \
 	    > param.inc
@@ -58,7 +58,7 @@ param.inc: Makefile
 
 
 clean:
-	rm -rf *.o *.x
+	rm -rf *.o *.x *.mod
 	rm -rf param.inc
 
 cleanall: clean

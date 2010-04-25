@@ -27,14 +27,19 @@ module Timings
   contains
 
 !***********************************************************************
-    subroutine init()
+    subroutine init(dummy_flag)
 !
 ! Initialize 1d variables and similar stuff
 !
       integer :: i
       real    :: x
+      logical :: dummy_flag
 !
-      false = .false.
+      if (dummy_flag) then
+        write(0,*) &
+            'Unexpected: dummy_flag should be false to avoid excessive output'
+      endif
+      false = dummy_flag
 !
 ! Use chaotic logistic map to initialize scal1 with `random' values
 ! in [0,1]. Could just as well use random number, I guess, but this is
@@ -76,7 +81,6 @@ module Timings
 !
     endsubroutine dummy_use_scal
 !***********************************************************************
-!***********************************************************************
     subroutine dummy_use_vect(vect_field)
 !
 ! Call this to make the compiler think we are using the argument
@@ -91,7 +95,7 @@ module Timings
 !
     endsubroutine dummy_use_vect
 !***********************************************************************
-    subroutine report_timings(labels,measured_times)
+    subroutine report_timings(labels, measured_times)
 !
       character(LEN=*), dimension(:)  :: labels
       real, dimension(size(labels,1)) :: measured_times
@@ -114,7 +118,7 @@ module Timings
         abstime = measured_times(i)
         reltime = abstime / measured_times(1)
         write(*,fmt2) labels(i), abstime, reltime
-        call assess_precision(abstime, imprecise)
+        imprecise = assess_precision(abstime)
       enddo
 !
 ! Warn about possible bad precision
@@ -126,14 +130,13 @@ module Timings
 !
     endsubroutine report_timings
 !***********************************************************************
-    subroutine assess_precision(abstime, imprecise)
+    logical function assess_precision(abstime)
 !
-! Set flag IMPRECISE to T if the absolute time  indicates impreceise
-! results. Assumes that ABSTIME is in seconds and uses some handwaving
-! gut numbers (you get the picture...).
+! Set flag IMPRECISE to T if the absolute time indicates impreceise
+! results. Assumes that ABSTIME is in seconds and uses some handwaving gut
+! numbers (you get the picture...).
 !
       real,    intent(in)  :: abstime
-      logical, intent(out) :: imprecise
 
       real,    save :: clocktick=0. 
       logical, save :: first_call=.true.
@@ -147,10 +150,12 @@ module Timings
 !
       if (      (abstime < 2) &                ! < 2 seconds is unreliable
            .or. (abstime/clocktick < 10)) then ! < 10 ticks means > 10% error
-        imprecise = .true.
+        assess_precision = .true.
+      else
+        assess_precision = .false.
       endif
 !
-    endsubroutine assess_precision
+    endfunction assess_precision
 !***********************************************************************
     function mpiwtime()
 !

@@ -9,33 +9,44 @@
 !!!   Compare array-valued functions with subroutines. Only 1d is
 !!!   relevant for the Pencil Code.
 !!!
-!!!  Results (large values are bad):
-!!!   Compiler
-!!!       Variant           : absolute  relative
-!!!   ----------------------+---------------------
-!!!   - g95 -O4
-!!!       Subroutine        : 2.6       1.0
-!!!       Array-valued-func
-!!!         + overloading * : 7.5       2.9
+!!!  Results on Frenesi (large values are bad), normalized by Subroutine
+!!!  time:
+!!!   Compiler:               g95      gfortran  openf90
+!!!   Version:                0.92     4.4.1     4.2.1
+!!!                           Jun 24
+!!!                           2009
+!!!   ---------------------------------------------------
+!!!   Subroutine:             1.0      1.0       1.0
+!!!   Array-valued fn:        1.9      2.6       2.1
+!!!   Fair array-valued fn:   1.2      1.8       1.1
+!!!   Hybrid w/ intrinsic     0.79     0.67      0.66
+!!!     vector operations:
+!!!
+!!!  Same results in absolute times (comparable since tests were done on
+!!!  the same machine):
+!!!   Compiler:               g95     gfortran  openf90
+!!!   Version:                0.92    4.4.1     4.2.1
+!!!   --------------------------------------------------
+!!!   Subroutine:             20.      6.0       7.5
+!!!   Array-valued fn:        37.     16.       16.
+!!!   Fair array-valued fn:   26.     11.        8.4
+!!!   Hybrid w/ intrinsic     15.     4.0        5.0
+!!!     vector operations:
+
+
+
+! ---------------------------------------------------------------------- !
 
 program Array_val_funcs
 
   use Timings
+  use Array_valued
 
   implicit none
 
-  interface operator (*)
-    module procedure pencil_multiply1
-  endinterface
-
-  interface operator (/)
-    module procedure pencil_divide1
-  endinterface
-
-
   real :: t0,t1,t2,t3,t4
 
-  call init()
+  call init(.false.)
 
   t0 = mpiwtime()
   call sub1()
@@ -48,9 +59,11 @@ program Array_val_funcs
   t4 = mpiwtime()
 
   call report_timings(&
-      (/ 'Subroutine', 'Array-valued fn',  'Fair array-valued fn', &
-                  'Hybrid w/ intrinsic vector operator'/) , &
-      (/ t1-t0       , t2-t1, t3-t2, t4-t3         /) &
+      (/ 'Subroutine                         ', &
+         'Array-valued fn                    ', &
+         'Fair array-valued fn               ', &
+         'Hybrid w/ intrinsic vector operator' /) , &
+      (/ t1-t0, t2-t1, t3-t2, t4-t3 /) &
   )
 
 contains
@@ -119,70 +132,6 @@ contains
     call dummy_use(vect_field2)
 !
   endsubroutine sub4
-!***********************************************************************
-  subroutine multsv_mn(a,b,c)
-!
-!  vector multiplied with scalar, gives vector
-!   22-nov-01/nils erland: coded
-!   10-oct-03/axel: a is now the scalar (now consistent with old routines)
-!
-!    use Cdata
-!
-    intent(in)  :: a,b
-    intent(out) :: c
-!
-    real, dimension (nx,3) :: b,c
-    real, dimension (nx) :: a
-    integer :: i
-!
-    do i=1,3
-      c(:,i)=a*b(:,i)
-    enddo
-!
-  endsubroutine multsv_mn
-!***********************************************************************
-  function pencil_multiply1(s,v)
-!
-!  The `*' operator may be extended through this function to allow
-!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
-!
-!   6-Sep-05/tobi: coded
-!
-!    use Cdata
-
-    real, dimension(nx), intent(in) :: s
-    real, dimension(nx,3), intent(in) :: v
-    real, dimension(nx,3) :: pencil_multiply1
-
-    integer :: i
-
-    do i=1,3
-      pencil_multiply1(:,i) = s(:) * v(:,i)
-    enddo
-
-  endfunction pencil_multiply1
-!***********************************************************************
-  function pencil_divide1(v,s)
-!
-!  The `*' operator may be extended through this function to allow
-!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
-!
-!   18-Sep-05/tony: coded
-!
-!    use Cdata
-
-    real, dimension(nx), intent(in) :: s
-    real, dimension(nx,3), intent(in) :: v
-    real, dimension(nx,3) :: pencil_divide1
-
-    integer :: i
-
-    do i=1,3
-      pencil_divide1(:,i) = v(:,i) / s(:)
-    enddo
-
-  endfunction pencil_divide1
-!***********************************************************************
 
 
 endprogram Array_val_funcs
