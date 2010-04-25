@@ -1030,8 +1030,8 @@ module Hydro
             print*, "random-2D-eddies: ampluu,kx_uu,ky_uu = ", ampluu(j),kx_uu,ky_uu
           f(:,:,:,iuz)=0.
           call random_number_wrapper(xc0)
-! Introduce both counter cloclwise and clockwise eddies
-          do ixy=1, neddy
+! Introduce both counter clockwise and clockwise eddies
+          do ixy=1,neddy
             if (xc0(ixy).le.0.5) then
               tmp(ixy)=-1.0
             else
@@ -1043,6 +1043,11 @@ module Hydro
           xc0=(1.-2*xc0)*Lxyz(1)/2
           call random_number_wrapper(yc0)
           yc0=(1.-2*yc0)*Lxyz(2)/2
+! need to initialize xold, yold
+! bing: suggestion use pos of last eddy
+          xold = xc0(neddy)
+          yold = yc0(neddy)
+!
           do n=n1,n2; do m=m1,m2
 ! Check for nearest neighbour eddies and change their sign
             do ixy=1,neddy
