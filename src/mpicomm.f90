@@ -227,16 +227,16 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
-
+!
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine mpicomm_init()
 !
@@ -945,7 +945,7 @@ module Mpicomm
       call MPI_SENDRECV(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
                         Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
                         MPI_COMM_WORLD,isendrecv_zx,mpierr)
-
+!
     endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
@@ -967,7 +967,7 @@ module Mpicomm
 !
       call MPI_ALLGATHER(tau_zx,nx*nz,MPI_REAL,tau_zx_all,nx*nz,MPI_REAL, &
           MPI_COMM_YBEAM,mpierr)
-
+!
       call MPI_ALLGATHER(Qrad_zx,nx*nz,MPI_REAL,Qrad_zx_all,nx*nz,MPI_REAL, &
           MPI_COMM_YBEAM,mpierr)
 !
@@ -1594,8 +1594,8 @@ module Mpicomm
 !
 !  Sum over all processors and return to root (MPI_COMM_WORLD).
 !  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
-!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM). 
-!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM). 
+!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM).
+!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
 !
       if (present(idir)) then
         if (idir==1) mpiprocs=MPI_COMM_XBEAM
@@ -1605,7 +1605,7 @@ module Mpicomm
         if (idir==13) mpiprocs=MPI_COMM_XZPLANE
         if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
-        mpiprocs=MPI_COMM_WORLD 
+        mpiprocs=MPI_COMM_WORLD
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, &
@@ -1631,7 +1631,7 @@ module Mpicomm
         if (idir==13) mpiprocs=MPI_COMM_XZPLANE
         if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
-        mpiprocs=MPI_COMM_WORLD 
+        mpiprocs=MPI_COMM_WORLD
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
@@ -1659,7 +1659,7 @@ module Mpicomm
         if (idir==13) mpiprocs=MPI_COMM_XZPLANE
         if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
-        mpiprocs=MPI_COMM_WORLD 
+        mpiprocs=MPI_COMM_WORLD
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
@@ -1687,7 +1687,7 @@ module Mpicomm
         if (idir==13) mpiprocs=MPI_COMM_XZPLANE
         if (idir==23) mpiprocs=MPI_COMM_YZPLANE
       else
-        mpiprocs=MPI_COMM_WORLD 
+        mpiprocs=MPI_COMM_WORLD
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
@@ -1892,8 +1892,8 @@ module Mpicomm
 !
 !  Sum over all processors and return to root (MPI_COMM_WORLD).
 !  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
-!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM). 
-!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM). 
+!  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM).
+!  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
 !
         if (present(idir)) then
           if (idir==1) mpiprocs=MPI_COMM_XBEAM
@@ -1903,7 +1903,7 @@ module Mpicomm
           if (idir==13) mpiprocs=MPI_COMM_XZPLANE
           if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
-          mpiprocs=MPI_COMM_WORLD 
+          mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
             mpiprocs, mpierr)
@@ -1935,7 +1935,7 @@ module Mpicomm
           if (idir==13) mpiprocs=MPI_COMM_XZPLANE
           if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
-          mpiprocs=MPI_COMM_WORLD 
+          mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
             mpiprocs, mpierr)
@@ -1967,7 +1967,7 @@ module Mpicomm
           if (idir==13) mpiprocs=MPI_COMM_XZPLANE
           if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
-          mpiprocs=MPI_COMM_WORLD 
+          mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
             root, mpiprocs, mpierr)
@@ -1999,7 +1999,7 @@ module Mpicomm
           if (idir==13) mpiprocs=MPI_COMM_XZPLANE
           if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
-          mpiprocs=MPI_COMM_WORLD 
+          mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
             root, mpiprocs, mpierr)
@@ -2031,7 +2031,7 @@ module Mpicomm
           if (idir==13) mpiprocs=MPI_COMM_XZPLANE
           if (idir==23) mpiprocs=MPI_COMM_YZPLANE
         else
-          mpiprocs=MPI_COMM_WORLD 
+          mpiprocs=MPI_COMM_WORLD
         endif
         call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
             root, mpiprocs, mpierr)
@@ -2294,7 +2294,7 @@ module Mpicomm
 !  Tell the world something went wrong -- mpirun may not propagate
 !  an error status.
 !
-      if (lroot) call touch_file('ERROR') 
+      if (lroot) call touch_file('ERROR')
 !
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
@@ -2312,7 +2312,7 @@ module Mpicomm
 !  Tell the world something went wrong -- mpirun may not propagate
 !  an error status.
 !
-      if (lroot) call touch_file('ERROR') 
+      if (lroot) call touch_file('ERROR')
 !
       STOP 2                    ! Return nonzero exit status
 !
@@ -2445,7 +2445,7 @@ module Mpicomm
 !            +--------------
 !        px=    0  1  2  3 ..
 !
-
+!
 !        ipy
 !         ^
 !  C D    |
@@ -2508,12 +2508,11 @@ module Mpicomm
 !  Deallocate temporary scratch array
 !
         deallocate (tmp)
-
 !
 !  Doing x-z transpose if var='z'
 !
       elseif (var=='z') then
-
+!
         if (nzgrid/=nxgrid) then
           if (lroot) print*, 'transp: need to have nzgrid=nxgrid for var==z'
           call stop_it('transp: inconsistency - nzgrid/=nxgrid')
@@ -2580,17 +2579,17 @@ module Mpicomm
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner
       integer :: ibox,iy
-
+!
       if (mod(nxgrid,nygrid)/=0) then
         print*,'transp: nxgrid needs to be an integer multiple of '//&
                'nygrid for var==y'
         call stop_it('Inconsistency: mod(nxgrid,nygrid)/=0')
       endif
-
+!
 !
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
-
+!
       sendc_y=ny**2
       recvc_y=ny**2
 !
@@ -2611,7 +2610,7 @@ module Mpicomm
 !            +--------------
 !        px=    0  1  2  3 ..
 !
-
+!
 !        ipy
 !         ^
 !  C D    |
@@ -2667,7 +2666,7 @@ module Mpicomm
           tmp=transpose(a(iy+1:iy+ny,:)); a(iy+1:iy+ny,:)=tmp
         enddo
       enddo
-
+!
     endsubroutine transp_xy
 !***********************************************************************
     subroutine transp_xy_other(a)
@@ -2690,7 +2689,7 @@ module Mpicomm
 !
       nx_other=size(a,1); ny_other=size(a,2)
       nxgrid_other=nx_other
-      nygrid_other=ny_other*nprocy   
+      nygrid_other=ny_other*nprocy
 !
       if (mod(nxgrid_other,nygrid_other)/=0) then
         print*,'transp: nxgrid_other needs to be an integer multiple of '//&
@@ -2700,7 +2699,7 @@ module Mpicomm
 !
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
-
+!
       sendc_y=ny_other**2
       recvc_y=ny_other**2
 !
@@ -2721,7 +2720,7 @@ module Mpicomm
 !            +--------------
 !        px=    0  1  2  3 ..
 !
-
+!
 !        ipy
 !         ^
 !  C D    |
@@ -2777,13 +2776,13 @@ module Mpicomm
           tmp=transpose(a(iy+1:iy+ny_other,:)); a(iy+1:iy+ny_other,:)=tmp
         enddo
       enddo
-
+!
     endsubroutine transp_xy_other
 !***********************************************************************
     subroutine transp_other(a,var)
 !
 !  Doing the transpose of information distributed on several processors.
-!  This routine transposes 3D arrays but is presently restricted to the 
+!  This routine transposes 3D arrays but is presently restricted to the
 !  case nxgrid=nygrid (if var=y) and nygrid=nzgrid (if var=z)
 !
 !  08-may-08/wlad: Adapted from transp
@@ -2804,8 +2803,8 @@ module Mpicomm
 !
       nx_other=size(a,1); ny_other=size(a,2) ; nz_other=size(a,3)
       nxgrid_other=nx_other
-      nygrid_other=ny_other*nprocy   
-      nzgrid_other=nz_other*nprocz   
+      nygrid_other=ny_other*nprocy
+      nzgrid_other=nz_other*nprocz
 !
       if (var=='y') then
 !
@@ -2821,7 +2820,7 @@ module Mpicomm
 !
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
-
+!
         sendc_y=ny_other**2*nz_other ; recvc_y=sendc_y
 !
 !  Send information to different processors (x-y transpose)
@@ -2841,7 +2840,7 @@ module Mpicomm
 !            +--------------
 !        px=    0  1  2  3 ..
 !
-
+!
 !        ipy
 !         ^
 !  C D    |
@@ -2903,12 +2902,11 @@ module Mpicomm
 !  Deallocate temporary scratch array
 !
         deallocate (tmp)
-
 !
 !  Doing x-z transpose if var='z'
 !
       elseif (var=='z') then
-
+!
         if (nzgrid_other/=nxgrid_other) then
           if (lroot) print*, 'transp_other: need to have '//&
           'nzgrid_other=nxgrid_other for var==z'
@@ -3160,10 +3158,10 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
+!
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
       integer :: nbufy,nn1,nn2
-
+!
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
@@ -3174,12 +3172,12 @@ module Mpicomm
 !  Periodic boundaries in y -- communicate along y if necessary
 !
       if (nprocy>1) then
-
+!
         lbufyo = f(l1:l2, m1:m1i,nn1:nn2,iax:iaz)
         ubufyo = f(l1:l2,m2i:m2 ,nn1:nn2,iax:iaz)
-
+!
         nbufy=nx*nghost*(nghost+1)*3
-
+!
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
                        MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
@@ -3188,21 +3186,21 @@ module Mpicomm
                        MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
         call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
                        MPI_COMM_WORLD,isend_rq_touppy,mpierr)
-
+!
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
-
+!
         f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = lbufyi
         f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = ubufyi
-
+!
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
-
+!
       else
-
+!
         f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = f(l1:l2,m2i:m2 ,nn1:nn2,iax:iaz)
         f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = f(l1:l2, m1:m1i,nn1:nn2,iax:iaz)
-
+!
       endif
 !
 !  Periodic boundaries in x
@@ -3215,65 +3213,67 @@ module Mpicomm
     subroutine fill_zghostzones_3vec(vec,ivar)
 !
 !  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of processors in z-direction.
-!  The three components of vec are supposed to be subject to the same z-boundary condiitons like the variables 
-!  ivar, ivar+1, ivar+2   
+!  The three components of vec are supposed to be subject to the same z-boundary condiitons like the variables
+!  ivar, ivar+1, ivar+2
 !
 !   18-oct-2009/MR: Coded
 !
       use Cdata
-
+!
       implicit none
-
+!
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
-
+!
       integer                    :: nbuf, j
       real, dimension (nghost,3) :: lbufi,ubufi,lbufo,ubufo
-
+!
       if (nprocz>1) then
-
+!
         lbufo = vec(n1:n1i,:)                        !!(lower z-zone)
         ubufo = vec(n2i:n2,:)                        !!(upper z-zone)
-
+!
         nbuf=nghost*3
-
+!
         call MPI_IRECV(ubufi,nbuf,MPI_REAL, &
                        zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
         call MPI_IRECV(lbufi,nbuf,MPI_REAL, &
                        zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
-
+!
         call MPI_ISEND(lbufo,nbuf,MPI_REAL, &
                        zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufo,nbuf,MPI_REAL, &
                        zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
-
+!
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-
+!
         do j=1,3
-
+!
           if (ipz/=0 .or. bcz1(j-1+ivar)=='p') &
-            vec(1:n1-1,j)=lbufi(:,j)            !read from buffer in lower ghostzones
-          
+            vec(1:n1-1,j)=lbufi(:,j)            
+!   read from buffer in lower ghostzones
+!
           if (ipz/=nprocz-1 .or. bcz2(j-1+ivar)=='p') &
-            vec(n2+1:mz,j)=ubufi(:,j)           !read from buffer in upper ghostzones
-
+            vec(n2+1:mz,j)=ubufi(:,j)          
+!   read from buffer in upper ghostzones
+!
         enddo
-
+!
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
-     
+!
       else
-
+!
         do j=1,3
           if ( bcz1(ivar+j-1)=='p' ) then
             vec(1   :n1-1     ,j) = vec(n2i:n2 ,j)
             vec(n2+1:n2+nghost,j) = vec(n1 :n1i,j)
           endif
         enddo
-
+!
       endif
-
+!
     endsubroutine fill_zghostzones_3vec
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
@@ -3297,7 +3297,7 @@ module Mpicomm
       az_local=0.
       endif
       call mpireduce_sum(az_local,az,nzgrid)
-! maybe we should synchrosize here. 
+! maybe we should synchrosize here.
       call mpibarrier
 !
     endsubroutine z2x
@@ -3407,10 +3407,11 @@ module Mpicomm
         file(pos:pos)='_'
         pos=scan(file, '/')
       enddo
-      write(filename,'(A,A,A,I0)') '/tmp/', file, '-', iproc      
+      write(filename,'(A,A,A,I0)') '/tmp/', file, '-', iproc
 !
       ! write temproary file into local RAM disk (/tmp)
-!     *** WORK HERE: THIS CODE WILL BE DELETED SOON (because of an ifort compiler bug)
+!     *** WORK HERE: THIS CODE WILL BE DELETED SOON 
+!                   (because of an ifort compiler bug)
 !      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
 !      write(unit, REC=1) buffer
 !     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
@@ -3433,7 +3434,7 @@ module Mpicomm
       else
         open(unit, FILE=filename, STATUS='old')
       endif
-      ! unit is now reading from RAM and is ready to be used on all ranks in parallel
+! unit is now reading from RAM and is ready to be used on all ranks in parallel
 !
     endsubroutine parallel_open
 !***********************************************************************
@@ -3489,8 +3490,14 @@ module Mpicomm
       implicit none
 !
       character(len=*) :: file
-      logical :: parallel_file_exists
+      logical :: parallel_file_exists,ldelete
       logical, optional :: delete
+!
+      if (present(delete)) then
+        ldelete=delete
+      else
+        ldelete=.false.
+      endif
 !
       if (lroot) parallel_file_exists = file_exists(file, delete)
       call mpibcast_logical(parallel_file_exists, 1)
