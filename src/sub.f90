@@ -62,7 +62,6 @@ module Sub
 !
   public :: read_line_from_file, remove_file, control_file_exists
   public :: noform
-
 !
   public :: update_snaptime, read_snaptime
   public :: inpui, outpui, inpup, outpup
@@ -255,14 +254,14 @@ module Sub
 !    module procedure pencil_substract1
 !    module procedure pencil_substract2
 !  endinterface
-
+!
 !ajwm Commented pending a C replacement
 !  INTERFACE getenv
 !    SUBROUTINE GETENV (VAR, VALUE)
 !      CHARACTER(LEN=*) VAR, VALUE
 !    endsubroutine
 !  END INTERFACE
-
+!
   real, dimension(7,7,7), parameter :: smth_kernel = reshape((/ &
  6.03438e-15,9.07894e-11,1.24384e-08,5.46411e-08,1.24384e-08,9.07894e-11,5.03438e-15,9.07894e-11,2.21580e-07,9.14337e-06,&
  2.69243e-05,9.14337e-06,2.21580e-07,9.07894e-11, 1.24384e-08, 9.14337e-06, 0.000183649, 0.000425400, 0.000183649, 9.14337e-06,&
@@ -469,16 +468,16 @@ module Sub
 !  dot product, c=a.b, on pencil arrays
 !   3-apr-01/axel+gitta: coded
 !  24-jun-08/MR: ladd added for incremental work
-
+!
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
 !
       logical, optional :: ladd
       logical :: ladd1
-
+!
       intent(in) :: a,b,ladd
       intent(out) :: c
-
+!
       if (present(ladd)) then
         ladd1=ladd
       else
@@ -498,7 +497,7 @@ module Sub
 !  dot product of a vector with 3 tensor,
 !   c_ij = a_k b_ijk
 !   28-aug-08/dhruba : coded
-
+!
       real, dimension (nx,3) :: a
       real, dimension (nx,3,3) :: c
       real, dimension (nx,3,3,3) :: b
@@ -506,10 +505,10 @@ module Sub
 !
       logical, optional :: ladd
       logical :: ladd1
-
+!
       intent(in) :: a,b,ladd
       intent(out) :: c
-
+!
       if (present(ladd)) then
         ladd1=ladd
       else
@@ -532,7 +531,7 @@ module Sub
 !
 !  contracts the jk of a_ijk
 !  20-aug-08/dhruba: coded
-
+!
       real, dimension (nx,3,3,3) :: a
       real, dimension (nx,3) :: c
       integer :: i,j,k
@@ -625,7 +624,7 @@ module Sub
       else
         fast_sqrt1=.false.
       endif
-
+!
       if (present(precise_sqrt)) then
         precise_sqrt1=precise_sqrt
       else
@@ -691,7 +690,6 @@ module Sub
       c=c-(a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3))
 !
     endsubroutine dot_mn_sub
-
 !***********************************************************************
     subroutine dyadic2(a,b)
 !
@@ -793,7 +791,6 @@ module Sub
           enddo
         enddo
       enddo
-
 !
     endsubroutine mult_matrix
 !***********************************************************************
@@ -839,21 +836,21 @@ module Sub
       else
         ladd1=.false.
       endif
-
+!
       do i=1,3
-
+!
         j=1
         tmp=a(:,i,j)*b(:,j)
         do j=2,3
           tmp=tmp+a(:,i,j)*b(:,j)
         enddo
-
+!
         if (ladd1) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
         endif
-
+!
       enddo
 !
     endsubroutine multmv_mn
@@ -882,20 +879,20 @@ module Sub
       else
         ladd1=.false.
       endif
-
+!
       do i=1,3
         j=1
         tmp=a(:,j,i)*b(:,j)
         do j=2,3
           tmp=tmp+a(:,j,i)*b(:,j)
         enddo
-
+!
         if (ladd1) then
           c(:,i)=c(:,i)+tmp
         else
           c(:,i)=tmp
         endif
-
+!
       enddo
 !
     endsubroutine multmv_mn_transp
@@ -1159,7 +1156,7 @@ module Sub
       call der5(f,k,tmp,3); g(:,3)=tmp
 !
     endsubroutine grad5
-!**********************************************************************
+!***********************************************************************
     subroutine div(f,k,g)
 !
 !  calculate divergence of vector, get scalar
@@ -1198,7 +1195,7 @@ module Sub
     subroutine div_other(f,g)
 !
       use Deriv, only: der
-
+!
       real, dimension (mx,my,mz,3) :: f
       real, dimension (nx) :: g, tmp
 !
@@ -1244,7 +1241,7 @@ module Sub
       if (lcylindrical_coords) then
         b=b+rcyl_mn1*a(:,1)
       endif
-
+!
     endsubroutine div_mn
 !***********************************************************************
     subroutine curl_mn(aij,b,a)
@@ -1484,14 +1481,14 @@ module Sub
         del2f=del2f+tmp*rcyl_mn1
       endif
 !
-     if (lspherical_coords) then
-       call der(f,k,tmp,1)
-       del2f=del2f+2.*r1_mn*tmp
-       call der(f,k,tmp,2)
-       del2f=del2f+cotth(m)*r1_mn*tmp
-     endif
+      if (lspherical_coords) then
+        call der(f,k,tmp,1)
+        del2f=del2f+2.*r1_mn*tmp
+        call der(f,k,tmp,2)
+        del2f=del2f+cotth(m)*r1_mn*tmp
+      endif
 !
-   endsubroutine del2_main
+    endsubroutine del2_main
 !***********************************************************************
     subroutine del2_other(f,del2f)
 !
@@ -1516,14 +1513,14 @@ module Sub
         del2f=del2f+tmp*rcyl_mn1
       endif
 !
-     if (lspherical_coords) then
-       call der(f,tmp,1)
-       del2f=del2f+2.*r1_mn*tmp
-       call der(f,tmp,2)
-       del2f=del2f+cotth(m)*r1_mn*tmp
-     endif
+      if (lspherical_coords) then
+        call der(f,tmp,1)
+        del2f=del2f+2.*r1_mn*tmp
+        call der(f,tmp,2)
+        del2f=del2f+cotth(m)*r1_mn*tmp
+      endif
 !
-   endsubroutine del2_other
+    endsubroutine del2_other
 !***********************************************************************
     subroutine del2v(f,k,del2f,fij,pff)
 !
@@ -1564,7 +1561,7 @@ module Sub
            call fatal_error('del2v', &
                'Cannot do a spherical del2v without aij and aa')
          endif
-
+!
 ! for r component (factors of line elements are taken care of inside p%uij
          del2f(:,1)= del2f(:,1)+&
                r1_mn*(2.*(fij(:,1,1)-fij(:,2,2)-fij(:,3,3) &
@@ -1632,8 +1629,6 @@ module Sub
 !     do j=1,3
 !       fjji(:,j,j)=fijj(:,j,j)
 !     enddo
-!
-
 !
 !  calculate f_{i,jk} for i /= j /= k
 !
@@ -1705,11 +1700,11 @@ module Sub
          gradcurl(:,1,1) = fjik(:,3)   - fjik(:,2)
          gradcurl(:,1,2) = fjji(:,1,3) - fijj(:,3,1)
          gradcurl(:,1,3) = fijj(:,2,1) - fjji(:,1,2)
-
+!
          gradcurl(:,2,1) = fijj(:,3,2) - fjji(:,2,3)
          gradcurl(:,2,2) = fjik(:,1)   - fjik(:,3)
          gradcurl(:,2,3) = fjji(:,2,1) - fijj(:,1,2)
-
+!
          gradcurl(:,3,1) = fjji(:,3,2) - fijj(:,2,3)
          gradcurl(:,3,2) = fijj(:,1,3) - fjji(:,3,1)
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)
@@ -1989,7 +1984,7 @@ module Sub
       enddo
 !
     endsubroutine g2ij
-!*************************************************************************
+!***********************************************************************
     subroutine del4(f,k,del4f)
 !
 !  calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
@@ -2195,14 +2190,14 @@ module Sub
 !
       if (present(upwind)) then
         do j=1,3
-
+!
           call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
           if (ladd1) then
             ugradf(:,j)=ugradf(:,j)+tmp
           else
             ugradf(:,j)=tmp
           endif
-
+!
         enddo
       else
         do j=1,3
@@ -2282,11 +2277,11 @@ module Sub
 ! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
 ! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
 ! 28-Sep-2009/MR: ladd added for incremental work
-
+!
       use Deriv, only: der6
 !
       logical :: ladd1
-
+!
       intent(in) :: f,k,gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
@@ -2339,7 +2334,7 @@ module Sub
           if (lspherical_coords) &
              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
         endif
-
+!
       endif; endif
 !
     endsubroutine u_dot_grad_scl
@@ -2355,7 +2350,7 @@ module Sub
 ! 28-Sep-2009/MR: ladd added for incremental work
 !
       logical :: ladd1
-
+!
       intent(in) :: gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
@@ -2398,7 +2393,7 @@ module Sub
           if (lspherical_coords) &
              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6u(:,3)
         endif
-
+!
       endif; endif
 !
     endsubroutine nou_dot_grad_scl
@@ -2653,10 +2648,10 @@ module Sub
         close(1)
       endif
 !
-      endsubroutine wdim
+    endsubroutine wdim
 !***********************************************************************
-      subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
-          prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
+    subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
+        prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
 !
 !  write dimension to file
 !
@@ -2678,7 +2673,7 @@ module Sub
 !
       close(124)
 !
-      endsubroutine rdim
+    endsubroutine rdim
 !***********************************************************************
     subroutine read_snaptime(file,tout,nout,dtout,t)
 !
@@ -2883,7 +2878,7 @@ module Sub
             (/ 3,3,3 /))
       integer :: ii,jj,kk
       integer :: j
-
+!
       meanf=0.
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
         tmp_penc=f(:,m,n,j)
@@ -3001,7 +2996,7 @@ module Sub
         call error("noform", &
                    "Increase max_col_width or sanitize print.in{,.double}")
       endif
-
+!
       noform=dashes(1:number1)//cname(1:length)//dashes(1:number2)
       return
 !
@@ -3036,7 +3031,7 @@ module Sub
       else
         levi_civita=0.
       endif
-
+!
     endfunction levi_civita
 !***********************************************************************
     function poly_1(coef, x)
@@ -3049,14 +3044,14 @@ module Sub
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: poly_1
       integer :: Ncoef,i
-
+!
       Ncoef = size(coef,1)
-
+!
       poly_1 = coef(Ncoef)
       do i=Ncoef-1,1,-1
         poly_1 = poly_1*x+coef(i)
       enddo
-
+!
     endfunction poly_1
 !***********************************************************************
     function poly_0(coef, x)
@@ -3069,14 +3064,14 @@ module Sub
       real :: x
       real :: poly_0
       integer :: Ncoef,i
-
+!
       Ncoef = size(coef,1)
-
+!
       poly_0 = coef(Ncoef)
       do i=Ncoef-1,1,-1
         poly_0 = poly_0*x+coef(i)
       enddo
-
+!
     endfunction poly_0
 !***********************************************************************
     function poly_3(coef, x)
@@ -3089,14 +3084,14 @@ module Sub
       real, dimension(:,:,:) :: x
       real, dimension(size(x,1),size(x,2),size(x,3)) :: poly_3
       integer :: Ncoef,i
-
+!
       Ncoef = size(coef,1)
-
+!
       poly_3 = coef(Ncoef)
       do i=Ncoef-1,1,-1
         poly_3 = poly_3*x+coef(i)
       enddo
-
+!
     endfunction poly_3
 !***********************************************************************
     function step_scalar(x,x0,width)
@@ -3182,7 +3177,7 @@ module Sub
 !
     endfunction stepdown
 !***********************************************************************
-      function cubic_step_pt(x,x0,width,shift)
+    function cubic_step_pt(x,x0,width,shift)
 !
 !  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
@@ -3195,86 +3190,86 @@ module Sub
 !
 !  18-apr-04/wolf: coded
 !
-        real :: x
-        real :: cubic_step_pt,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
+      real :: x
+      real :: cubic_step_pt,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        cubic_step_pt = 0.5 + xi*(0.75-xi**2*0.25)
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      xi = (x-x0)/(width+tini) - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      cubic_step_pt = 0.5 + xi*(0.75-xi**2*0.25)
 !
-      endfunction cubic_step_pt
+    endfunction cubic_step_pt
 !***********************************************************************
-      function cubic_step_mn(x,x0,width,shift)
+    function cubic_step_mn(x,x0,width,shift)
 !
 !  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w].
 !  Version for 1d arg (in particular pencils).
 !
 !  18-apr-04/wolf: coded
 !
-        real, dimension(:) :: x
-        real, dimension(size(x,1)) :: cubic_step_mn,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: cubic_step_mn,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        cubic_step_mn = 0.5 + xi*(0.75-xi**2*0.25)
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      xi = (x-x0)/(width+tini) - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      cubic_step_mn = 0.5 + xi*(0.75-xi**2*0.25)
 !
-      endfunction cubic_step_mn
+    endfunction cubic_step_mn
 !***********************************************************************
-      function cubic_der_step_pt(x,x0,width,shift)
+    function cubic_der_step_pt(x,x0,width,shift)
 !
 !  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !  This version is for scalar args.
 !
 !  12-jul-05/axel: adapted from cubic_step_pt
 !
-        real :: x
-        real :: cubic_der_step_pt,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift,width1
+      real :: x
+      real :: cubic_der_step_pt,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift,width1
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        width1 = 1./(width+tini)
-        xi = (x-x0)*width1 - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        cubic_der_step_pt = (0.75-xi**2*0.75) * width1
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      width1 = 1./(width+tini)
+      xi = (x-x0)*width1 - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      cubic_der_step_pt = (0.75-xi**2*0.75) * width1
 !
-      endfunction cubic_der_step_pt
+    endfunction cubic_der_step_pt
 !***********************************************************************
-      function cubic_der_step_mn(x,x0,width,shift)
+    function cubic_der_step_mn(x,x0,width,shift)
 !
 !  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !  Version for 1d arg (in particular pencils).
 !
 !  12-jul-05/axel: adapted from cubic_step_mn
 !
-        real, dimension(:) :: x
-        real, dimension(size(x,1)) :: cubic_der_step_mn,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift,width1
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: cubic_der_step_mn,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift,width1
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        width1 = 1./(width+tini)
-        xi = (x-x0)*width1 - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        cubic_der_step_mn = (0.75-xi**2*0.75) * width1
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      width1 = 1./(width+tini)
+      xi = (x-x0)*width1 - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      cubic_der_step_mn = (0.75-xi**2*0.75) * width1
 !
-      endfunction cubic_der_step_mn
+    endfunction cubic_der_step_mn
 !***********************************************************************
-      function quintic_step_pt(x,x0,width,shift)
+    function quintic_step_pt(x,x0,width,shift)
 !
 !  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
@@ -3286,21 +3281,21 @@ module Sub
 !
 !  09-aug-05/wolf: coded
 !
-        real :: x
-        real :: quintic_step_pt,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
+      real :: x
+      real :: quintic_step_pt,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        quintic_step_pt = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      xi = (x-x0)/(width+tini) - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      quintic_step_pt = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
 !
-      endfunction quintic_step_pt
+    endfunction quintic_step_pt
 !***********************************************************************
-      function quintic_step_mn(x,x0,width,shift)
+    function quintic_step_mn(x,x0,width,shift)
 !
 !  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
 !
@@ -3308,21 +3303,21 @@ module Sub
 !
 !  09-aug-05/wolf: coded
 !
-        real, dimension(:) :: x
-        real, dimension(size(x,1)) :: quintic_step_mn,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: quintic_step_mn,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        quintic_step_mn = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      xi = (x-x0)/(width+tini) - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      quintic_step_mn = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
 !
-      endfunction quintic_step_mn
+    endfunction quintic_step_mn
 !***********************************************************************
-      function quintic_der_step_pt(x,x0,width,shift)
+    function quintic_der_step_pt(x,x0,width,shift)
 !
 !  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !
@@ -3330,23 +3325,23 @@ module Sub
 !
 !  09-aug-05/wolf: coded
 !
-        real :: x
-        real :: quintic_der_step_pt,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift,width1
+      real :: x
+      real :: quintic_der_step_pt,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift,width1
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        width1 = 1./(width+tini)
-        xi = (x-x0)*width1 - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        quintic_der_step_pt = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      width1 = 1./(width+tini)
+      xi = (x-x0)*width1 - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      quintic_der_step_pt = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
                               * width1
 !
-      endfunction quintic_der_step_pt
+    endfunction quintic_der_step_pt
 !***********************************************************************
-      function quintic_der_step_mn(x,x0,width,shift)
+    function quintic_der_step_mn(x,x0,width,shift)
 !
 !  Derivative of smooth unit step function, localized to [x0-w,x0+w].
 !
@@ -3354,23 +3349,23 @@ module Sub
 !
 !  09-aug-05/wolf: coded
 !
-        real, dimension(:) :: x
-        real, dimension(size(x,1)) :: quintic_der_step_mn,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift,width1
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: quintic_der_step_mn,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift,width1
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        width1 = 1./(width+tini)
-        xi = (x-x0)*width1 - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        quintic_der_step_mn = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      width1 = 1./(width+tini)
+      xi = (x-x0)*width1 - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      quintic_der_step_mn = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
                               * width1
 !
-      endfunction quintic_der_step_mn
+    endfunction quintic_der_step_mn
 !***********************************************************************
-      function sine_step_pt(x,x0,width,shift)
+    function sine_step_pt(x,x0,width,shift)
 !
 !  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
 !  Optional argument SHIFT shifts center:
@@ -3382,21 +3377,21 @@ module Sub
 !
 !  13-jun-06/tobi: Adapted from cubic_step
 !
-        real :: x
-        real :: sine_step_pt,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
+      real :: x
+      real :: sine_step_pt,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        sine_step_pt = 0.5*(1+sin(0.5*pi*xi))
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      xi = (x-x0)/(width+tini) - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      sine_step_pt = 0.5*(1+sin(0.5*pi*xi))
 !
-      endfunction sine_step_pt
+    endfunction sine_step_pt
 !***********************************************************************
-      function sine_step_mn(x,x0,width,shift)
+    function sine_step_mn(x,x0,width,shift)
 !
 !  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
 !
@@ -3404,21 +3399,21 @@ module Sub
 !
 !  13-jun-06/tobi: Adapted from cubic_step
 !
-        real, dimension(:) :: x
-        real, dimension(size(x,1)) :: sine_step_mn,xi
-        real :: x0,width
-        real, optional :: shift
-        real :: relshift
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: sine_step_mn,xi
+      real :: x0,width
+      real, optional :: shift
+      real :: relshift
 !
-        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
-        xi = (x-x0)/(width+tini) - relshift
-        xi = max(xi,-1.)
-        xi = min(xi, 1.)
-        sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
+      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      xi = (x-x0)/(width+tini) - relshift
+      xi = max(xi,-1.)
+      xi = min(xi, 1.)
+      sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
 !
-      endfunction sine_step_mn
+    endfunction sine_step_mn
 !***********************************************************************
-      function notanumber_0(f)
+    function notanumber_0(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
 !  The test used here should work on all architectures even if
@@ -3427,16 +3422,16 @@ module Sub
 !  Version for scalars
 !  20-Nov-03/tobi: adapted
 !
-        logical :: notanumber_0
-        real :: f,g
+      logical :: notanumber_0
+      real :: f,g
 !
-        g=f
-        notanumber_0 = &
-             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      g=f
+      notanumber_0 = &
+          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
-      endfunction notanumber_0
+    endfunction notanumber_0
 !***********************************************************************
-      function notanumber_1(f)
+    function notanumber_1(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
 !  The test used here should work on all architectures even if
@@ -3445,17 +3440,17 @@ module Sub
 !  Version for 1d arrays.
 !  24-jan-02/wolf: coded
 !
-        logical :: notanumber_1
-        real, dimension(:) :: f
-        real, dimension(size(f,1)) :: g
+      logical :: notanumber_1
+      real, dimension(:) :: f
+      real, dimension(size(f,1)) :: g
 !
-        g=f
-        notanumber_1 = any&
-             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      g=f
+      notanumber_1 = any&
+          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
-      endfunction notanumber_1
+    endfunction notanumber_1
 !***********************************************************************
-      function notanumber_2(f)
+    function notanumber_2(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
 !  The test used here should work on all architectures even if
@@ -3465,17 +3460,17 @@ module Sub
 !
 !  1-may-02/wolf: coded
 !
-        logical :: notanumber_2
-        real, dimension(:,:) :: f
-        real, dimension(size(f,1),size(f,2)) :: g
+      logical :: notanumber_2
+      real, dimension(:,:) :: f
+      real, dimension(size(f,1),size(f,2)) :: g
 !
-        g=f
-        notanumber_2 = any&
-             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      g=f
+      notanumber_2 = any&
+          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
-      endfunction notanumber_2
+    endfunction notanumber_2
 !***********************************************************************
-      function notanumber_3(f)
+    function notanumber_3(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
 !  The test used here should work on all architectures even if
@@ -3485,17 +3480,17 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
-        logical :: notanumber_3
-        real, dimension(:,:,:) :: f
-        real, dimension(size(f,1),size(f,2),size(f,3)) :: g
+      logical :: notanumber_3
+      real, dimension(:,:,:) :: f
+      real, dimension(size(f,1),size(f,2),size(f,3)) :: g
 !
-        g=f
-        notanumber_3 = any&
-             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      g=f
+      notanumber_3 = any&
+          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
-      endfunction notanumber_3
+    endfunction notanumber_3
 !***********************************************************************
-      function notanumber_4(f)
+    function notanumber_4(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
 !  The test used here should work on all architectures even if
@@ -3505,17 +3500,17 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
-        logical :: notanumber_4
-        real, dimension(:,:,:,:) :: f
-        real, dimension(size(f,1),size(f,2),size(f,3),size(f,4)) :: g
+      logical :: notanumber_4
+      real, dimension(:,:,:,:) :: f
+      real, dimension(size(f,1),size(f,2),size(f,3),size(f,4)) :: g
 !
-        g=f
-        notanumber_4 = any&
-             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      g=f
+      notanumber_4 = any&
+          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
-      endfunction notanumber_4
+    endfunction notanumber_4
 !***********************************************************************
-      subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
+    subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
 !
 !  Check input array (f or df) for NaN, -Inf, Inf, and output location in
 !  array.
@@ -3523,396 +3518,396 @@ module Sub
 !  30-apr-04/anders: coded
 !  12-jun-04/anders: region or intervals supplied in call
 !
-        real, dimension(:,:,:,:) :: f
-        character (len=*) :: msg
-        integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
-        integer, dimension(2), optional :: int1,int2,int3,int4
-        character (len=*), optional :: region
-        logical, optional :: lstop
+      real, dimension(:,:,:,:) :: f
+      character (len=*) :: msg
+      integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
+      integer, dimension(2), optional :: int1,int2,int3,int4
+      character (len=*), optional :: region
+      logical, optional :: lstop
 !
 !  Must set d2 according to whether f or df is considered
 !
-        d2 = size(f,4)
+      d2 = size(f,4)
 !
 !  Set intervals for different predescribed regions
 !
-        if (present(region)) then
-
-          select case (region)
-            case ('f_array')
-            case ('pencil')
-              b1=m
-              b2=m
-              c1=n
-              c2=n
-            case ('default')
-              call fatal_error('nan_inform','No such region')
-          endselect
-
-        endif
+      if (present(region)) then
+!
+        select case (region)
+        case ('f_array')
+        case ('pencil')
+          b1=m
+          b2=m
+          c1=n
+          c2=n
+        case ('default')
+          call fatal_error('nan_inform','No such region')
+        endselect
+!
+      endif
 !
 !  Overwrite with supplied intervals
 !
-        if (present(int1)) then  ! x
-          a1=int1(1)
-          a2=int1(2)
-        endif
-
-        if (present(int2)) then  ! y
-          b1=int2(1)
-          b2=int2(2)
-        endif
-
-        if (present(int3)) then  ! z
-          c1=int3(1)
-          c2=int3(2)
-        endif
-
-        if (present(int4)) then  ! variable
-          d1=int4(1)
-          d2=int4(2)
-        endif
+      if (present(int1)) then  ! x
+        a1=int1(1)
+        a2=int1(2)
+      endif
+!
+      if (present(int2)) then  ! y
+        b1=int2(1)
+        b2=int2(2)
+      endif
+!
+      if (present(int3)) then  ! z
+        c1=int3(1)
+        c2=int3(2)
+      endif
+!
+      if (present(int4)) then  ! variable
+        d1=int4(1)
+        d2=int4(2)
+      endif
 !
 !  Look for NaN and inf in resulting interval
 !
-        do a=a1,a2
-          do b=b1,b2
-            do c=c1,c2
-              do d=d1,d2
-                if (notanumber(f(a,b,c,d))) then
-                  print*,'nan_inform: NaN with message "', msg, &
-                      '" encountered in the variable ', varname(d)
-                  print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
-                  print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-                  print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
-                  print*,'----------------------------'
-                  if (present(lstop)) then
-                    if (lstop) call fatal_error('nan_stop','')
-                  endif
+      do a=a1,a2
+        do b=b1,b2
+          do c=c1,c2
+            do d=d1,d2
+              if (notanumber(f(a,b,c,d))) then
+                print*,'nan_inform: NaN with message "', msg, &
+                    '" encountered in the variable ', varname(d)
+                print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
+                print*,'nan_inform: t, it, itsub   = ', t, it, itsub
+                print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
+                print*,'----------------------------'
+                if (present(lstop)) then
+                  if (lstop) call fatal_error('nan_stop','')
                 endif
-              enddo
+              endif
             enddo
           enddo
         enddo
+      enddo
 !
-      endsubroutine nan_inform
+    endsubroutine nan_inform
 !***********************************************************************
-      subroutine keep_compiler_quiet_r(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_r(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        real     :: v1, v2, v3, v4
-        optional ::     v2, v3, v4
+      real     :: v1, v2, v3, v4
+      optional ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
 !
-      endsubroutine keep_compiler_quiet_r
+    endsubroutine keep_compiler_quiet_r
 !***********************************************************************
-      subroutine keep_compiler_quiet_r1d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_r1d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        real, dimension(:) :: v1, v2, v3, v4
-        optional           ::     v2, v3, v4
+      real, dimension(:) :: v1, v2, v3, v4
+      optional           ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r1d', &
-              '91 is a prime, and we never got here...')
-          print*,                  minval(v1)
-          if (present(v2)) print*, minval(v2)
-          if (present(v3)) print*, minval(v3)
-          if (present(v4)) print*, minval(v4)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r1d', &
+            '91 is a prime, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
 !
-      endsubroutine keep_compiler_quiet_r1d
+    endsubroutine keep_compiler_quiet_r1d
 !***********************************************************************
-      subroutine keep_compiler_quiet_r2d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_r2d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        real, dimension(:,:) :: v1, v2, v3, v4
-        optional             ::     v2, v3, v4
+      real, dimension(:,:) :: v1, v2, v3, v4
+      optional             ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r2d', &
-              '91 is a prime, and we never got here...')
-          print*,                  minval(v1)
-          if (present(v2)) print*, minval(v2)
-          if (present(v3)) print*, minval(v3)
-          if (present(v4)) print*, minval(v4)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r2d', &
+            '91 is a prime, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
 !
-      endsubroutine keep_compiler_quiet_r2d
+    endsubroutine keep_compiler_quiet_r2d
 !***********************************************************************
-      subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        real, dimension(:,:,:) :: v1, v2, v3, v4
-        optional               ::     v2, v3, v4
+      real, dimension(:,:,:) :: v1, v2, v3, v4
+      optional               ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r3d', &
-              '91 is a prime, and we never got here...')
-          print*,                  minval(v1)
-          if (present(v2)) print*, minval(v2)
-          if (present(v3)) print*, minval(v3)
-          if (present(v4)) print*, minval(v4)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r3d', &
+            '91 is a prime, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
 !
-      endsubroutine keep_compiler_quiet_r3d
+    endsubroutine keep_compiler_quiet_r3d
 !***********************************************************************
-      subroutine keep_compiler_quiet_r4d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_r4d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        real, dimension(:,:,:,:) :: v1, v2, v3, v4
-        optional                 ::     v2, v3, v4
+      real, dimension(:,:,:,:) :: v1, v2, v3, v4
+      optional                 ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_r4d', &
-              'The world is a disk, and we never got here...')
-          print*,                  minval(v1)
-          if (present(v2)) print*, minval(v2)
-          if (present(v3)) print*, minval(v3)
-          if (present(v4)) print*, minval(v4)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r4d', &
+            'The world is a disk, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
 !
-      endsubroutine keep_compiler_quiet_r4d
+    endsubroutine keep_compiler_quiet_r4d
 !***********************************************************************
-      subroutine keep_compiler_quiet_p(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_p(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        type (pencil_case) :: v1, v2, v3, v4
-        optional           ::     v2, v3, v4
+      type (pencil_case) :: v1, v2, v3, v4
+      optional           ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_p', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_p', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
 !
-      endsubroutine keep_compiler_quiet_p
+    endsubroutine keep_compiler_quiet_p
 !***********************************************************************
-      subroutine keep_compiler_quiet_bc(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_bc(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        type (boundary_condition) :: v1, v2, v3, v4
-        optional                  ::     v2, v3, v4
+      type (boundary_condition) :: v1, v2, v3, v4
+      optional                  ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_p', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_p', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
 !
-      endsubroutine keep_compiler_quiet_bc
+    endsubroutine keep_compiler_quiet_bc
 !***********************************************************************
-      subroutine keep_compiler_quiet_sl(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_sl(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        type (slice_data) :: v1, v2, v3, v4
-        optional          ::     v2, v3, v4
+      type (slice_data) :: v1, v2, v3, v4
+      optional          ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_p', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1%ix
-          if (present(v2)) print*, v2%ix
-          if (present(v3)) print*, v3%ix
-          if (present(v4)) print*, v4%ix
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_p', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1%ix
+        if (present(v2)) print*, v2%ix
+        if (present(v3)) print*, v3%ix
+        if (present(v4)) print*, v4%ix
+      endif
 !
-      endsubroutine keep_compiler_quiet_sl
+    endsubroutine keep_compiler_quiet_sl
 !***********************************************************************
-      subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        integer  :: v1, v2, v3, v4
-        optional ::     v2, v3, v4
+      integer  :: v1, v2, v3, v4
+      optional ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_1', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_1', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
 !
-      endsubroutine keep_compiler_quiet_i
+    endsubroutine keep_compiler_quiet_i
 !***********************************************************************
-      subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        integer, dimension(:)  :: v1, v2, v3, v4
-        optional               ::     v2, v3, v4
+      integer, dimension(:)  :: v1, v2, v3, v4
+      optional               ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_i1d', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1(1)
-          if (present(v2)) print*, v2(1)
-          if (present(v3)) print*, v3(1)
-          if (present(v4)) print*, v4(1)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i1d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+      endif
 !
-      endsubroutine keep_compiler_quiet_i1d
+    endsubroutine keep_compiler_quiet_i1d
 !***********************************************************************
-      subroutine keep_compiler_quiet_i2d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_i2d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        integer, dimension(:,:)  :: v1, v2, v3, v4
-        optional                 ::     v2, v3, v4
+      integer, dimension(:,:)  :: v1, v2, v3, v4
+      optional                 ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_i2d', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1(1,1)
-          if (present(v2)) print*, v2(1,1)
-          if (present(v3)) print*, v3(1,1)
-          if (present(v4)) print*, v4(1,1)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i2d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1,1)
+        if (present(v2)) print*, v2(1,1)
+        if (present(v3)) print*, v3(1,1)
+        if (present(v4)) print*, v4(1,1)
+      endif
 !
-      endsubroutine keep_compiler_quiet_i2d
+    endsubroutine keep_compiler_quiet_i2d
 !***********************************************************************
-      subroutine keep_compiler_quiet_i3d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_i3d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        integer, dimension(:,:,:)  :: v1, v2, v3, v4
-        optional                   ::     v2, v3, v4
+      integer, dimension(:,:,:)  :: v1, v2, v3, v4
+      optional                   ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_i3d', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1(1,1,1)
-          if (present(v2)) print*, v2(1,1,1)
-          if (present(v3)) print*, v3(1,1,1)
-          if (present(v4)) print*, v4(1,1,1)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i3d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1,1,1)
+        if (present(v2)) print*, v2(1,1,1)
+        if (present(v3)) print*, v3(1,1,1)
+        if (present(v4)) print*, v4(1,1,1)
+      endif
 !
-      endsubroutine keep_compiler_quiet_i3d
+    endsubroutine keep_compiler_quiet_i3d
 !***********************************************************************
-      subroutine keep_compiler_quiet_l1d(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_l1d(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        logical, dimension(:)  :: v1, v2, v3, v4
-        optional               ::     v2, v3, v4
+      logical, dimension(:)  :: v1, v2, v3, v4
+      optional               ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_l1d', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1(1)
-          if (present(v2)) print*, v2(1)
-          if (present(v3)) print*, v3(1)
-          if (present(v4)) print*, v4(1)
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_l1d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+      endif
 !
-      endsubroutine keep_compiler_quiet_l1d
+    endsubroutine keep_compiler_quiet_l1d
 !***********************************************************************
-      subroutine keep_compiler_quiet_l(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_l(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        logical  :: v1, v2, v3, v4
-        optional ::     v2, v3, v4
+      logical  :: v1, v2, v3, v4
+      optional ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_l', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_l', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
 !
-      endsubroutine keep_compiler_quiet_l
+    endsubroutine keep_compiler_quiet_l
 !***********************************************************************
-      subroutine keep_compiler_quiet_c(v1,v2,v3,v4)
+    subroutine keep_compiler_quiet_c(v1,v2,v3,v4)
 !
 !  Call this to avoid compiler warnings about unused variables.
 !  Optional arguments allow for more variables of the same shape+type.
 !
 !  04-aug-06/wolf: coded
 !
-        character (len=*) :: v1, v2, v3, v4
-        optional          ::     v2, v3, v4
+      character (len=*) :: v1, v2, v3, v4
+      optional          ::     v2, v3, v4
 !
-        if (NO_WARN) then
-          call error('keep_compiler_quiet_l', &
-              'The world is a disk, and we never got here...')
-          print*,                  v1
-          if (present(v2)) print*, v2
-          if (present(v3)) print*, v3
-          if (present(v4)) print*, v4
-        endif
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_l', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
 !
-      endsubroutine keep_compiler_quiet_c
+    endsubroutine keep_compiler_quiet_c
 !***********************************************************************
-      subroutine parse_bc(bc,bc1,bc2)
+    subroutine parse_bc(bc,bc1,bc2)
 !
 !  Parse boundary conditions, which may be in the form `a' (applies to
 !  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
@@ -3920,101 +3915,100 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
-        character (len=2*bclen+1), dimension(mcom) :: bc
-        character (len=bclen), dimension(mcom) :: bc1,bc2
-        integer :: j,isep
+      character (len=2*bclen+1), dimension(mcom) :: bc
+      character (len=bclen), dimension(mcom) :: bc1,bc2
+      integer :: j,isep
 !
-        intent(in) :: bc
-        intent(out) :: bc1,bc2
+      intent(in) :: bc
+      intent(out) :: bc1,bc2
 !
-        do j=1,mcom
-          if (bc(j) == '') then ! will probably never happen due to default='p'
-            if (lroot) print*, 'Empty boundary condition No. ', &
-                 j, 'in (x, y, or z)'
-            call fatal_error('parse_bc','')
-          endif
-          isep = index(bc(j),':')
-          if (isep > 0) then
-            bc1(j) = bc(j)(1:isep-1)
-            bc2(j) = bc(j)(isep+1:)
-          else
-            bc1(j) = bc(j)(1:bclen)
-            bc2(j) = bc(j)(1:bclen)
-          endif
-        enddo
-!
-      endsubroutine parse_bc
-!***********************************************************************
-      subroutine parse_bc_rad(bc,bc1,bc2)
-!
-!  Parse boundary conditions, which may be in the form `a' (applies to
-!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
-!  `s' for upper boundary.
-!
-!   6-jul-03/axel: adapted from parse_bc
-!
-        character (len=2*bclen+1), dimension(3) :: bc
-        character (len=bclen), dimension(3) :: bc1,bc2
-        integer :: j,isep
-!
-        intent(in) :: bc
-        intent(out) :: bc1,bc2
-!
-
-        do j=1,3
-          if (bc(j) == '') then ! will probably never happen due to default='p'
-            if (lroot) print*, 'Empty boundary condition No. ', &
-                 j, 'in (x, y, or z)'
-            call fatal_error('parse_bc','')
-          endif
-          isep = index(bc(j),':')
-          if (isep > 0) then
-            bc1(j) = bc(j)(1:isep-1)
-            bc2(j) = bc(j)(isep+1:)
-          else
-            bc1(j) = bc(j)(1:bclen)
-            bc2(j) = bc(j)(1:bclen)
-          endif
-        enddo
-!
-      endsubroutine parse_bc_rad
-!***********************************************************************
-      subroutine parse_bc_radg(bc,bc1,bc2)
-!
-!  Parse boundary conditions, which may be in the form `a' (applies to
-!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
-!  `s' for upper boundary.
-!
-!   6-jul-03/axel: adapted from parse_bc
-!
-        character (len=2*bclen+1) :: bc
-        character (len=bclen) :: bc1,bc2
-        integer :: isep
-!
-        intent(in) :: bc
-        intent(out) :: bc1,bc2
-!
-        if (bc == '') then
-          if (lroot) print*, 'Empty boundary condition in (x, y, or z)'
-          call fatal_error('parse_bc_radg','')
+      do j=1,mcom
+        if (bc(j) == '') then ! will probably never happen due to default='p'
+          if (lroot) print*, 'Empty boundary condition No. ', &
+              j, 'in (x, y, or z)'
+          call fatal_error('parse_bc','')
         endif
-        isep = index(bc,':')
+        isep = index(bc(j),':')
         if (isep > 0) then
-          bc1 = bc(1:isep-1)
-          bc2 = bc(isep+1:)
+          bc1(j) = bc(j)(1:isep-1)
+          bc2(j) = bc(j)(isep+1:)
         else
-          bc1 = bc(1:bclen)
-          bc2 = bc(1:bclen)
+          bc1(j) = bc(j)(1:bclen)
+          bc2(j) = bc(j)(1:bclen)
         endif
+      enddo
 !
-      endsubroutine parse_bc_radg
+    endsubroutine parse_bc
 !***********************************************************************
-      subroutine parse_shell(strin,strout)
+    subroutine parse_bc_rad(bc,bc1,bc2)
+!
+!  Parse boundary conditions, which may be in the form `a' (applies to
+!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
+!  `s' for upper boundary.
+!
+!   6-jul-03/axel: adapted from parse_bc
+!
+      character (len=2*bclen+1), dimension(3) :: bc
+      character (len=bclen), dimension(3) :: bc1,bc2
+      integer :: j,isep
+!
+      intent(in) :: bc
+      intent(out) :: bc1,bc2
+!
+      do j=1,3
+        if (bc(j) == '') then ! will probably never happen due to default='p'
+          if (lroot) print*, 'Empty boundary condition No. ', &
+                 j, 'in (x, y, or z)'
+          call fatal_error('parse_bc','')
+        endif
+        isep = index(bc(j),':')
+        if (isep > 0) then
+          bc1(j) = bc(j)(1:isep-1)
+          bc2(j) = bc(j)(isep+1:)
+        else
+          bc1(j) = bc(j)(1:bclen)
+          bc2(j) = bc(j)(1:bclen)
+        endif
+      enddo
+!
+    endsubroutine parse_bc_rad
+!***********************************************************************
+    subroutine parse_bc_radg(bc,bc1,bc2)
+!
+!  Parse boundary conditions, which may be in the form `a' (applies to
+!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
+!  `s' for upper boundary.
+!
+!   6-jul-03/axel: adapted from parse_bc
+!
+      character (len=2*bclen+1) :: bc
+      character (len=bclen) :: bc1,bc2
+      integer :: isep
+!
+      intent(in) :: bc
+      intent(out) :: bc1,bc2
+!
+      if (bc == '') then
+        if (lroot) print*, 'Empty boundary condition in (x, y, or z)'
+        call fatal_error('parse_bc_radg','')
+      endif
+      isep = index(bc,':')
+      if (isep > 0) then
+        bc1 = bc(1:isep-1)
+        bc2 = bc(isep+1:)
+      else
+        bc1 = bc(1:bclen)
+        bc2 = bc(1:bclen)
+      endif
+!
+    endsubroutine parse_bc_radg
+!***********************************************************************
+    subroutine parse_shell(strin,strout)
 !
 !  Parse strin replacing all $XXXX sequences with appropriate
 !  values from the environment.  Return the parsed result in strout
 !
-        use General, only: safe_character_assign
+      use General, only: safe_character_assign
 !
       character (len=*) :: strin, strout
       character (len=255) :: envname, chunk !, envvalue
@@ -4028,7 +4022,7 @@ module Sub
       inptr=1
       inlen=len(trim(strin))
       strout=''
-
+!
 dlrloop:do
         envstart =index(strin(inptr:inlen),'$')
         if (envstart .le. 0) exit;
@@ -4036,7 +4030,7 @@ dlrloop:do
         if (envstart .gt. inptr) call safe_character_assign(strout,trim(strout)//trim(chunk))
         inptr = envstart + 1;
         if (inptr .gt. inlen) exit dlrloop
-
+!
         nameptr = inptr
 nameloop: do
           chr = trim(strin(nameptr:nameptr))
@@ -4045,7 +4039,7 @@ nameloop: do
           else
             exit nameloop
           endif
-
+!
           if (nameptr .gt. inlen) exit nameloop
         enddo nameloop
         if ((nameptr-1) .ge. inptr) then
@@ -4054,82 +4048,88 @@ nameloop: do
 !         call getenv(trim(envname),envvalue)
 !         call safe_character_assign(strout,trim(strout)//trim(envvalue))
         endif
-
+!
         inptr=nameptr
         if (inptr .gt. inlen) exit dlrloop
-
+!
       enddo dlrloop
-
+!
       if (inptr .le. inlen) then
-         chunk = trim(strin(inptr:inlen))
-         call safe_character_assign(strout,trim(strout)//trim(chunk))
+        chunk = trim(strin(inptr:inlen))
+        call safe_character_assign(strout,trim(strout)//trim(chunk))
       endif
 !
-      endsubroutine parse_shell
+    endsubroutine parse_shell
 !***********************************************************************
-      subroutine remove_file(fname)
+    subroutine remove_file(fname)
 !
 !  Remove a file
 !  5-mar-02/wolf: coded
 !
-        use Syscalls, only: file_exists
+      use Syscalls, only: file_exists
 !
-        character (len=*) :: fname
+      character (len=*) :: fname
 !
-        logical :: removed = .false.
+      logical :: removed = .false.
 !
-        removed = file_exists(fname,DELETE=.true.)
-        if (removed .and. (ip<=6)) print*,'remove_file: Removed file <',trim(fname),'>'
+      removed = file_exists(fname,DELETE=.true.)
+      if (removed .and. (ip<=6)) print*,'remove_file: Removed file <',trim(fname),'>'
 !
-      endsubroutine remove_file
+    endsubroutine remove_file
 !***********************************************************************
-      function control_file_exists(fname, delete)
+    function control_file_exists(fname,delete)
 !
 !  Does the given control file exist in either ./ or ./runtime/ ?
 !  If DELETE is true, delete the file after checking for existence.
 !
 !  26-jul-09/wolf: coded
 !
-        use Mpicomm, only : parallel_file_exists
+      use Mpicomm, only : parallel_file_exists
 !
-        implicit none
+      implicit none
 !
-        logical :: control_file_exists
-        character (len=*) :: fname
-        logical, optional :: delete
+      logical :: control_file_exists,ldelete
+      character (len=*) :: fname
+      logical, optional :: delete
 !
-        control_file_exists = parallel_file_exists(trim(fname), delete)
-        if (.not. control_file_exists) &
-            control_file_exists = parallel_file_exists(trim("runtime/"//fname), delete)
+      if (present(delete)) then
+        ldelete=delete
+      else
+        ldelete=.false.
+      endif
 !
-      endfunction control_file_exists
+      control_file_exists = parallel_file_exists(trim(fname), ldelete)
+      if (.not. control_file_exists) &
+          control_file_exists = parallel_file_exists(trim("runtime/"//fname), ldelete)
+!
+    endfunction control_file_exists
 !***********************************************************************
-      function read_line_from_file(fname)
+    function read_line_from_file(fname)
 !
 !  Read the first line from a file; return empty string if file is empty
 !  4-oct-02/wolf: coded
 !
-        use Syscalls, only : file_exists
+      use Syscalls, only : file_exists
 !
-        implicit none
+      implicit none
 !
-        character (len=linelen) :: read_line_from_file
-        character (len=*) :: fname
+      character (len=linelen) :: read_line_from_file
+      character (len=*) :: fname
 !
-        integer :: unit=1
-        integer :: ierr=0
+      integer :: unit=1
+      integer :: ierr=0
 !
-        read_line_from_file=char(0)
-        if (.not. lroot) return
+      read_line_from_file=char(0)
+      if (.not. lroot) return
 !
-        if (file_exists(fname)) then
-          open(unit,FILE=fname,IOSTAT=ierr)
-          read(unit,'(A)',IOSTAT=ierr) read_line_from_file
-          close(unit)
-          if (ierr /= 0) read_line_from_file=char(0)
-        endif
+      if (file_exists(fname)) then
+        open(unit,FILE=fname,IOSTAT=ierr)
+        read(unit,'(A)',IOSTAT=ierr) read_line_from_file
+        close(unit)
+        if (ierr /= 0) read_line_from_file=char(0)
+      endif
 !
-      endfunction read_line_from_file
+    endfunction read_line_from_file
 !***********************************************************************
     subroutine get_nseed(nseed)
 !
@@ -4240,7 +4240,7 @@ nameloop: do
       write(1,'(A)') 'end'
 !
       close(1)
-
+!
     endsubroutine write_dx_general
 !***********************************************************************
     subroutine write_zprof(fname,a)
@@ -4399,22 +4399,22 @@ nameloop: do
     endsubroutine blob
 !***********************************************************************
     recursive function hypergeometric2F1(a,b,c,z,tol) result (hyp2F1)
-
+!
       real, intent(in) :: a,b,c,z,tol
       real :: hyp2F1
       real :: fac
       integer :: n
-
+!
       real :: aa,bb,cc
-
+!
       aa=a; bb=b; cc=c
-
+!
       fac=1
       hyp2F1=fac
       n=1
-
+!
       if (z<=0.5) then
-
+!
         do while (fac>tol)
           fac=fac*aa*bb*z/(cc*n)
           hyp2F1=hyp2F1+fac
@@ -4423,9 +4423,9 @@ nameloop: do
           cc=cc+1
           n=n+1
         enddo
-
+!
       else
-
+!
         !!!!!!!! only valid for mu=-1 !!!!!!!!
         !hyp2F1=2*hypergeometric2F1(aa,bb,aa+bb-cc+1,1-z,tol)-sqrt(1-z)* &
                !2*hypergeometric2F1(cc-aa,cc-bb,cc-aa-bb+1,1-z,tol)
@@ -4436,9 +4436,9 @@ nameloop: do
                (gamma_function(cc)*gamma_function(aa+bb-cc))/ &
                (gamma_function(aa)*gamma_function(bb))* &
                hypergeometric2F1(cc-aa,cc-bb,cc-aa-bb+1,1-z,tol)
-
+!
       endif
-
+!
     endfunction hypergeometric2F1
 !***********************************************************************
     recursive function pi_function(x) result(pi_func)
@@ -4449,7 +4449,6 @@ nameloop: do
 !
 !  coefficients were determined using maple's minimax() function
 !
-!
 !  9-jun-04/tobi+wolf: coded
 !
       real, intent(in) :: x
@@ -4458,7 +4457,7 @@ nameloop: do
       real, dimension(order) :: coeff1,coeff2
       real :: enum,denom
       integer :: i
-
+!
       coeff1=(/0.66761295020790986D00, &
                0.36946093910826145D00, &
                0.18669829780572704D00, &
@@ -4466,7 +4465,7 @@ nameloop: do
                1.36528684153155468D-2, &
                1.7488042503123817D-3, &
                3.6032044608268575D-4/)
-
+!
       coeff2=(/0.66761295020791116D00, &
                0.754817592058897962D00, &
               -3.7915754844972276D-2, &
@@ -4474,21 +4473,21 @@ nameloop: do
                1.5035521280605477D-2, &
                3.1375176929984225D-3, &
               -5.5599617153443518D-4/)
-
+!
       if (x>1) then
-
+!
         pi_func=x*pi_function(x-1)
-
+!
       elseif (x<0) then
-
+!
         if (abs(x+1)<=epsilon(x)) then
           pi_func=pi_function(x+1)/epsilon(x)
         else
           pi_func=pi_function(x+1)/(x+1)
         endif
-
+!
       else
-
+!
         enum=coeff1(order)
         do i=order-1,1,-1
           enum=enum*x+coeff1(i)
@@ -4498,7 +4497,7 @@ nameloop: do
           denom=denom*x+coeff2(i)
         enddo
         pi_func=enum/denom
-
+!
       endif
 !
     endfunction pi_function
@@ -4621,7 +4620,7 @@ nameloop: do
       call dot_mn(gvKperp1,gecr,tmpj)
 !
 !  nonuniform conductivities, add terms into tmpj
-
+!
       call dot(bunit,gvKpara1-gvKperp1,tmpi)
       call dot(bunit,gecr,tmpk)
       tmpj = tmpj+tmpi*tmpk
@@ -5002,7 +5001,7 @@ nameloop: do
     integer :: nr,istop,i,i1,i2
     real, dimension (nr) :: r,fr
     real    :: r0,interp1
-
+!
     if (r0 == r(1)) then
       interp1=fr(1)
       return
@@ -5034,7 +5033,7 @@ nameloop: do
       real, dimension(size(a,1)) :: vv,swap
       integer :: j,n,imax
       integer, dimension(1) :: tmp
-
+!
       n=size(a,1)
       if (n /= size(a,2)) call fatal_error('ludcmp','non square matrix')
       if (n /= size(indx)) call fatal_error('ludcmp','bad dimension for indx')
@@ -5073,7 +5072,7 @@ nameloop: do
       real, dimension(:), intent(INOUT) :: b
       integer :: i,n,ii,ll
       real :: summ
-
+!
       n=size(a,1)
       if (n /= size(a,2)) call fatal_error('lubksb','non square matrix')
       if (n /= size(indx)) call fatal_error('lubksb','bad dimension for indx')
