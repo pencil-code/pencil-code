@@ -40,7 +40,7 @@ module Snapshot
       character (len=*) :: chsnap, flist
       real, dimension (mx,my,mz,msnap) :: a
       integer :: msnap
-      logical :: enum, noghost
+      logical :: enum,enum_,noghost
       optional :: enum, flist, noghost
 !
       real, save :: tsnap
@@ -49,10 +49,16 @@ module Snapshot
       character (len=fnlen) :: file
       character (len=5) :: ch
 !
+      if (present(enum)) then
+        enum_=enum
+      else
+        enum_=.false.
+      endif
+!
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
 !
-      if (enum) then
+      if (enum_) then
         call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
 !
 !  At first call, need to initialize tsnap.

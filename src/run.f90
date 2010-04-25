@@ -672,7 +672,7 @@ program run
 !  dvar is written for analysis and debugging purposes only.
 !
     if (ip<=11 .or. lwrite_dvar) then
-      call wsnap(trim(directory)//'/dvar.dat',df,mvar,enum=.false., &
+      call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false., &
           noghost=.true.)
       call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
     endif
