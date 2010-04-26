@@ -155,6 +155,9 @@ else if ($hn =~ p6012 ) then # huygens.sara.nl
 else if ($hn =~ andromeda ) then # andromeda.qmul.ac.uk
   echo $hn
   set str='s/users/andromeda\/scratch/g'
+else if ($hn =~ taurus ) then # taurus.qmul.ac.uk
+  echo $hn
+  set str='s/home/state\/partition1\/scratch/g'
 else if ($hn =~ mhdc ) then # ukmhd cluster 
   echo $hn
   set str='s/home/workspace/g'
