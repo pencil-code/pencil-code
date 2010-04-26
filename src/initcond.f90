@@ -4279,7 +4279,6 @@ module Initcond
       integer :: i,idx2,idy2,stat,iostat,lend
 !
       ! file location settings
-      character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
 !  Allocate memory for arrays.
@@ -4398,7 +4397,6 @@ module Initcond
       integer :: i,lend,j
 !
       ! file location settings
-      character (len=*), parameter :: lnrho_dat = 'driver/b_lnrho.dat'
       character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
 !
       ! temperature given as function lnT(z) in SI units
