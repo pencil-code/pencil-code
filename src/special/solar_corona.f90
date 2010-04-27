@@ -75,7 +75,7 @@ module Special
     real, dimension(nxgrid,nygrid) :: BB2
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: avoidarr
-    real, save :: tsnap_uu=0.
+    real, save :: tsnap_uu=0.,thresh
     integer, save :: isnap
 !
   contains
@@ -979,7 +979,7 @@ module Special
 !  30-jan-08/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub,             only: cubic_step,notanumber
+      use Sub,             only: cubic_step
       use Mpicomm,         only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1182,6 +1182,10 @@ module Special
         ampl=sqrt(dxdy2)/granr*0.28e6/unit_velocity
       endif
 !
+! fraction of current amplitude to maximum amplitude to the beginning
+! and when the granule disapears
+      thresh=0.3
+!
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
@@ -1325,7 +1329,7 @@ module Special
           first%next => firstlev%next
           current%next => firstlev%next
         endif
-        nullify(previous)                  
+        nullify(previous)
       case (2)
         if (associated(first)) nullify(first)
         first => secondlev
@@ -1334,7 +1338,7 @@ module Special
           first%next => secondlev%next
           current%next => secondlev%next
         endif
-        nullify(previous)                  
+        nullify(previous)
       case (3)
         if (associated(first)) nullify(first)
         first => thirdlev
@@ -1343,7 +1347,7 @@ module Special
           first%next => thirdlev%next
           current%next => thirdlev%next
         endif
-        nullify(previous)                  
+        nullify(previous)
       end select
 !
       ampl=amplarr(k)
@@ -1357,13 +1361,16 @@ module Special
       select case (k)
       case (1)
         if (.NOT. associated(firstlev,first)) firstlev => first
-        if (.NOT. associated(firstlev%next,first%next)) firstlev%next=>first%next
+        if (.NOT. associated(firstlev%next,first%next)) &
+            firstlev%next=>first%next
       case (2)
         if (.NOT. associated(secondlev,first)) secondlev => first
-        if (.NOT. associated(secondlev%next,first%next)) secondlev%next=>first%next
+        if (.NOT. associated(secondlev%next,first%next)) &
+            secondlev%next=>first%next
       case (3)
         if (.NOT. associated(thirdlev,first)) thirdlev => first
-        if (.NOT. associated(thirdlev%next,first%next)) thirdlev%next=>first%next
+        if (.NOT. associated(thirdlev%next,first%next)) &
+            thirdlev%next=>first%next
       end select
 !
       call resetarr
@@ -1556,7 +1563,7 @@ module Special
 !***********************************************************************
     subroutine rmpoint
 !
-      if (associated(current%next)) then  
+      if (associated(current%next)) then
 ! current is NOT the last one
         if (associated(first,current)) then
 ! but current is the first point,
@@ -1569,16 +1576,16 @@ module Special
           current => first
           nullify(previous)
         else
-! we are in between 
+! we are in between
           previous%next => current%next
           deallocate(current)
           current => previous%next
         endif
       else
-! we are at the end        
+! we are at the end
         deallocate(current)
         current => previous
-        nullify(previous)        
+        nullify(previous)
 ! BE AWARE THAT PREVIOUS IS NOT NOT ALLOCATED TO THE RIGHT POSITION
       endif
 !
@@ -1602,6 +1609,8 @@ module Special
 !***********************************************************************
     subroutine driveinit
 !
+      use General, only: random_number_wrapper
+      real :: rand
       call resetarr
       call make_newpoint
       do
@@ -1609,6 +1618,14 @@ module Special
 !
         call addpoint
         call make_newpoint
+!
+! Set randomly some points t0 to the past so they already decay
+!
+        call random_number_wrapper(rand)
+        current%data(3)=t+(rand*2-1)*current%data(4)* &
+            (-alog(thresh*ampl/current%data(2)))**(1./pow)
+!
+        current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
 !
 ! Update arrays with new data
 !
@@ -1776,18 +1793,18 @@ module Special
 !
 ! Create new data for new point
 !
-      write(*,*) 'Creating new point at',ipos*dx,jpos*dy
-!
       current%pos(1)=ipos
       current%pos(2)=jpos
+!
       call random_number_wrapper(rand)
       current%data(2)=ampl*(1+(2*rand-1)*pd)
+!
       call random_number_wrapper(rand)
-
       current%data(4)=life_t*(1+(2*rand-1)/10.)
-      current%data(3)=t+0.99*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
-          (current%data(2)*granr*(1-ig))))**(1./pow)
-
+!
+      current%data(3)=t+current%data(4)* &
+          (-alog(thresh*ampl/current%data(2)))**(1./pow)
+!
       current%data(1)=current%data(2)* &
           exp(-((t-current%data(3))/current%data(4))**pow)
 !
@@ -1795,25 +1812,26 @@ module Special
 !***********************************************************************
     subroutine updatepoints
 !
-      real :: dxdy
-!
-      dxdy=sqrt(dxdy2)
-!
-      current%data(1)=current%data(2)* &
-          exp(-((t-current%data(3))/current%data(4))**pow)
+      use Sub, only: notanumber
 !
       do
-        if (associated(current%next)) then
-          call gtnextpoint
-          current%data(1)=current%data(2)* &
-              exp(-((t-current%data(3))/current%data(4))**pow)
-          if (current%data(1)/dxdy.lt.ampl/(granr*(1-ig))) then
-            call rmpoint
-          end if
-        else
-          exit
-        endif
+        if (notanumber(current%data)) &
+            call fatal_error('update points','NaN found')
+!
+! update amplitude
+        current%data(1)=current%data(2)* &
+            exp(-((t-current%data(3))/current%data(4))**pow)
+!
+! remove point if amplitude is less than threshold
+        if (current%data(1)/ampl.lt.thresh) call rmpoint
+!
+! check if last point is reached
+        if (.not. associated(current%next)) exit
+!
+! if not go to next point
+        call gtnextpoint
       end do
+!
       call reset
 !
     endsubroutine updatepoints
