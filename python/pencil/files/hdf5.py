@@ -445,7 +445,9 @@ class h5file:
                                 subsec.create_dataset(res[0],data=res[1])
                             except ValueError:
                                 print "Warning! Multiple presence of "+res[0]+" in params.log init parameters"
-                                subsec[res[0]]=res[1]
+                                print "Old value: ",subsec[res[0]][...]
+                                print "New value: ",res[1]
+                                subsec[res[0]][...]=res[1]
                         else:
                             subsec[res[0]][...]=res[1]
                 elif descr=='e':
