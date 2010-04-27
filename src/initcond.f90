@@ -4183,12 +4183,12 @@ module Initcond
 !
       if (lroot) then
         inquire(IOLENGTH=lend) tmp
-        open (10,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+        open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
         read (10) prof_lnT
         read (10) prof_z
         close (10)
 !
-        open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+        open (10,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
         read (10) prof_lnrho
         close (10)
       endif
