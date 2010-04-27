@@ -1518,12 +1518,12 @@ module Special
       write (filename,'("driver/points",I4.4,".dat")') issnap
       open(10,file=filename,status="replace",access="direct",recl=6*rn)
 !
-      do while (associated(current%next))
-!
+      do
         posdata(1:2)=real(current%pos)
         posdata(3:6)=current%data
 !
         write(10,rec=rn) posdata
+        if (.not.associated(current%next)) exit
         call gtnextpoint
         rn=rn+1
       enddo
@@ -1602,10 +1602,6 @@ module Special
 !***********************************************************************
     subroutine driveinit
 !
-      use General, only: random_number_wrapper
-!
-      real :: rand
-!
       call resetarr
       call make_newpoint
       do
@@ -1613,14 +1609,6 @@ module Special
 !
         call addpoint
         call make_newpoint
-!
-! Initital t_0's different in initital drawing, must update
-!
-        call random_number_wrapper(rand)
-        current%data(3)=t+(rand*2-1)*current%data(4)*(-alog(ampl*sqrt(dxdy2)/  &
-            (current%data(2)*granr*(1-ig))))**(1./pow)
-        current%data(1)=current%data(2)* &
-            exp(-((t-current%data(3))/current%data(4))**pow)
 !
 ! Update arrays with new data
 !
