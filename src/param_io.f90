@@ -943,7 +943,7 @@ module Param_IO
 !
 !  18-jul-03/axel: coded
 !
-      character (len=*), dimension(mvar) :: bc
+      character (len=*), dimension(:), intent(in) :: bc
       logical, dimension(3) :: lperi
       logical :: lwarning
       integer :: j
