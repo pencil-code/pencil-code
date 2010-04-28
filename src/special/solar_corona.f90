@@ -1184,7 +1184,7 @@ module Special
 !
 ! fraction of current amplitude to maximum amplitude to the beginning
 ! and when the granule disapears
-      thresh=0.3
+      thresh=0.7
 !
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
@@ -1319,7 +1319,7 @@ module Special
       if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
 !
-    do k=1,3
+    do k=1,1
       select case (k)
       case (1)
         if (associated(first)) nullify(first)
@@ -1836,18 +1836,18 @@ module Special
 !
     endsubroutine updatepoints
 !***********************************************************************
-    subroutine set_B2(f,bb2_local)
+    subroutine set_B2(f,BB2_local)
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,ny) :: bbx,bby,bbz
-      real, dimension(nx,ny) :: fac,bb2_local,tmp
+      real, dimension(nx,ny) :: fac,BB2_local,tmp
       integer :: i,j,ipt
       integer, dimension(2) :: dims=(/nx,ny/)
 !
       intent(in) :: f
-      intent(out) :: bb2_local
+      intent(out) :: BB2_local
 !
 ! compute B = curl(A) for irefz layer
 !
@@ -1901,13 +1901,13 @@ module Special
         if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
       endif
 !
-      Bb2_local = bbx*bbx + bby*bby + bbz*bbz
-      Bb2_local = Bb2_local/(2.*mu0)
+      BB2_local = bbx*bbx + bby*bby + bbz*bbz
+      BB2_local = BB2_local
 !
 ! communicate to root processor
 !
       if (iproc.eq.0) then
-        BB2(1:nx,1:ny) = Bb2_local
+        BB2(1:nx,1:ny) = BB2_local
         do i=0,nprocx-1
           do j=0,nprocy-1
             ipt = i+nprocx*j
@@ -1918,7 +1918,7 @@ module Special
           enddo
         enddo
       else
-        call mpisend_real(bb2_local,dims,0,555+iproc)
+        call mpisend_real(BB2_local,dims,0,555+iproc)
       endif
 !
     endsubroutine set_B2
