@@ -160,7 +160,6 @@ module Special
       real, dimension(:,:), allocatable :: Ax_r, Ay_r
       real, dimension(:), allocatable :: kxp, kyp
 !
-      real :: mu0_SI,u_b
       real :: dummy,var1,var2
       integer :: idx2,idy2,lend,ierr
       integer :: i,j,px,py,unit=1
@@ -193,10 +192,6 @@ module Special
           idx2 = min(2,nxgrid)
           idy2 = min(2,nygrid)
 !
-          ! Magnetic field strength unit [B] = u_b
-          mu0_SI = 4.*pi*1.e-7
-          u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-!
           kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
           kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
 !
@@ -224,7 +219,7 @@ module Special
           endif
 !
           ! Gauss to Tesla and SI to PENCIL units
-          Bz0_r = Bz0_r * 1e-4 / u_b
+          Bz0_r = Bz0_r * 1e-4 / unit_magnetic
           Bz0_i = 0.
 !
           ! Fourier Transform of Bz0:
@@ -1319,7 +1314,7 @@ module Special
       if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
 !
-    do k=1,1
+    do k=1,3
       select case (k)
       case (1)
         if (associated(first)) nullify(first)
@@ -1651,9 +1646,8 @@ module Special
       real, dimension(nxgrid,nygrid) :: fftvy_re,fftvy_im
       real, dimension(nxgrid,nygrid) :: fftrx_re,fftrx_im
       real, dimension(nxgrid,nygrid) :: fftry_re,fftry_im
-      real, dimension(2) :: corr
       integer :: j,k
-      real :: k2,k20,filter,kx,ky
+      real :: k2,k20,filter,kx,ky,corr
 !
       fftvx_re=vx
       fftvx_im=0.
@@ -1664,23 +1658,24 @@ module Special
       call fourier_transform_other(fftvy_re,fftvy_im)
 !
       k20=(nxgrid/4.)**2
-      do j=1,nygrid
+!
+      do j=1,nxgrid
         kx=(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
         if (j.eq.nxgrid/2+1) kx=0.
         do k=1,nygrid
           ky=(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
           if (k.eq.nygrid/2+1) ky=0.
 !
-          k2=kx**2 + ky**2 + 1e-30
+          k2=kx**2 + ky**2
 !
-          corr(1) = - fftvx_im(j,k)*kx - fftvy_im(j,k)*ky
-          corr(2 ) =  fftvx_re(j,k)*kx + fftvy_re(j,k)*ky
-          corr = corr/k2
+          corr = fftvx_im(j,k)*kx + fftvy_im(j,k)*ky
+!
+          if (k2.ne.0) corr = corr/k2
 !
           fftrx_re(j,k)=fftvx_re(j,k)
-          fftrx_im(j,k)=fftvx_im(j,k)-corr(2)*kx
-          fftry_re(j,k)=fftvy_re(j,k)-corr(2)*ky
-          fftry_im(j,k)=fftvy_im(j,k)-corr(2)*ky
+          fftrx_im(j,k)=fftvx_im(j,k)-corr*kx
+          fftry_re(j,k)=fftvy_re(j,k)
+          fftry_im(j,k)=fftvy_im(j,k)-corr*ky
 !
           filter=exp(-(k2/k20)**2)
 !
@@ -1696,11 +1691,11 @@ module Special
         enddo
       enddo
 !
-      call fourier_transform_other(fftvx_re,fftvx_im)
-      call fourier_transform_other(fftvy_re,fftvy_im)
+      call fourier_transform_other(fftvx_re,fftvx_im,linv=.true.)
+      call fourier_transform_other(fftvy_re,fftvy_im,linv=.true.)
 !
-      call fourier_transform_other(fftrx_re,fftrx_im)
-      call fourier_transform_other(fftry_re,fftry_im)
+      call fourier_transform_other(fftrx_re,fftrx_im,linv=.true.)
+      call fourier_transform_other(fftry_re,fftry_im,linv=.true.)
 !
       vx=real(fftvx_re)
       vy=real(fftvy_re)
@@ -1714,10 +1709,7 @@ module Special
 !
       real :: xdist,ydist,dist2,dist,wtmp,vv
       integer :: i,ii,j,jj
-      real :: mu0_SI,u_b,dist0,tmp
-
-      mu0_SI = 4.*pi*1.e-7
-      u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+      real :: dist0,tmp
 !
 ! Update weight and velocity for new granule
 !
@@ -1733,7 +1725,7 @@ module Special
 ! avoid granules where the field strength is greater than Bavoid
 !    (default 100 Gaus=0.01 Tesla)
 !
-          if (BB2(i,j) .gt. (Bavoid/u_b)**2) avoidarr(i,j)=1
+          if (BB2(i,j) .gt. (Bavoid/unit_magnetic)**2) avoidarr(i,j)=1
           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
 !
           wtmp=current%data(1)/dist
