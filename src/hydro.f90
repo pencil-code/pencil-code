@@ -4544,27 +4544,27 @@ module Hydro
 ! Meridional circulation as initial condition. 
 !
 !  26-apr-2010/dhruba: coded.
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: m,n
-      real :: rone,theta,theta1,vel_prof
+      real :: rone,theta,theta1
 !
       do n=n1,n2
         do m=m1,m2
-           rone=xyz0(1)
-           theta=y(m)
-           theta1=xyz0(2)
+          rone=xyz0(1)
+          theta=y(m)
+          theta1=xyz0(2)
 !
           f(l1:l2,m,n,iux)=amp_meri_circ*(r1_mn**2)*(sin1th(m))*(&
-            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
-            -sin(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 
+              2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+              -sin(theta)*sin(theta-theta1)**2)*&
+              (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 
           f(l1:l2,m,n,iuy)=-amp_meri_circ*r1_mn*sin1th(m)*(&
-            cos(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
-          f(l1:l2,m,n,3)=0.
-       enddo
-     enddo
+              cos(theta)*sin(theta-theta1)**2)*&
+              (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
+          f(l1:l2,m,n,iuz)=0.
+        enddo
+      enddo
 !
     endsubroutine  meri_circ
 !***********************************************************************
