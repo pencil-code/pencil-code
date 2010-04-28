@@ -1334,11 +1334,13 @@ module Viscosity
 !
 !  20-apr-10/dhruba: coded
 !
-     real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta,lver,lhor,&
-           dlver_dr,dlhor_dtheta
-      type (pencil_case) :: p
+  use cdata, only: Omega
+  real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta,lver,lhor,&
+    dlver_dr,dlhor_dtheta
+  type (pencil_case) :: p
 !
-      lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))
+      lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))+Omega
+!DM      lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))
       dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
       dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))
       lver = Lambda_V0 + Lambda_V1*sinth(m)*sinth(m)

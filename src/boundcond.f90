@@ -1763,7 +1763,7 @@ module Boundcond
       real, pointer :: Lambda_V0,nu,Lambda_V1
       logical, pointer :: llambda_effect
       integer :: ierr,k
-      real :: lambda_exp
+      real :: lambda_exp,lambda_exp_sinth,somega
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -1789,8 +1789,15 @@ module Boundcond
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
             lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+            lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
-               f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))
+               if(Omega.eq.0) then 
+                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))
+               else
+                 somega=lambda_exp_sinth*omega*(x(l1+k)-x(l1-k))*(x(l1-k)**(1-lambda_exp/nu))
+                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))&
+                                 +somega
+               endif
             enddo
           enddo
         else
@@ -1803,8 +1810,15 @@ module Boundcond
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
             lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+            lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
-              f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))
+              if(Omega.eq.0) then
+                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))
+              else
+                somega=lambda_exp_sinth*omega*(x(l1-k)-x(l1+k))*(x(l1+k)**(1-lambda_exp/nu))
+                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))&
+                                 +somega
+              endif 
             enddo
           enddo
         else
@@ -1932,7 +1946,8 @@ module Boundcond
       integer, intent (in) :: j
       real, pointer :: Lambda_H1,nu
       logical, pointer :: llambda_effect
-      integer :: ierr,k
+      integer :: ierr,k,ix
+      real :: cos2thm_k,cos2thmpk,somega
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -1953,10 +1968,23 @@ module Boundcond
       case ('bot')               ! bottom boundary
         if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0.)) then
           do k=1,nghost
-!            f(:,m1-k,:,j)= f(:,m1+k,:,j)*(sinth(m1-k)**(1-Lambda_H1))*(sin1th(m1+k)**(1-Lambda_H1))
-            f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
-                 ((exp(-(Lambda_H1/(4.*nu))*(costh(m1+k)**2-sinth(m1+k)**2)))*sin1th(m1+k)) &
-                /((exp(-(Lambda_H1/(4.*nu))*(costh(m1-k)**2-sinth(m1-k)**2)))*sin1th(m1-k))
+              cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
+              cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
+            if(Omega.eq.0) then
+              f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
+                   (exp(Lambda_H1*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
+                   *(exp(-Lambda_H1*cos2thmpk/(4.*nu))*sinth(m1-k))
+            else
+              do ix=1,mx
+                somega=x(ix)*Omega*sinth(m1-k)*( &
+                   exp(2*cos2thm_k*Lambda_H1/(4.*nu))&
+                        -exp((cos2thmpk+cos2thm_k)*Lambda_H1/(4.*nu)) )
+                f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                   (exp(Lambda_H1*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
+                   *(exp(-Lambda_H1*cos2thmpk/(4.*nu))*sinth(m1-k)) &
+                      +somega
+              enddo
+            endif
           enddo
         else
           do k=1,nghost
@@ -1966,10 +1994,23 @@ module Boundcond
       case ('top')               ! top boundary
         if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0)) then
           do k=1,nghost
-!            f(:,m2+k,:,j)= f(:,m2-k,:,j)*(sinth(m2+k)**(1-Lambda_H1))*(sin1th(m2-k)**(1-Lambda_H1))
-            f(:,m2+k,:,j)= f(:,m2-k,:,j)* &
-                 ((exp(-(Lambda_H1/(4.*nu))*(costh(m2-k)**2-sinth(m2-k)**2)))*sin1th(m2-k)) &
-                /((exp(-(Lambda_H1/(4.*nu))*(costh(m2+k)**2-sinth(m2+k)**2)))*sin1th(m2+k))
+            cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
+            cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
+            if(Omega.eq.0)then
+              f(:,m2+k,:,j)= f(:,m2-k,:,j)* &
+                   (exp(Lambda_H1*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
+                  *(exp(-Lambda_H1*cos2thm_k/(4.*nu))*sinth(m2+k))
+             else
+              do ix=1,mx
+                somega=x(ix)*Omega*sinth(m2+k)*( &
+                   exp(2*cos2thmpk*Lambda_H1/(4.*nu))&
+                        -exp((cos2thmpk+cos2thm_k)*Lambda_H1/(4.*nu)) )
+                f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                     (exp(Lambda_H1*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
+                    *(exp(-Lambda_H1*cos2thm_k/(4.*nu))*sinth(m2+k)) &
+                      +somega
+              enddo
+             endif
           enddo
         else
           do k=1,nghost

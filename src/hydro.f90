@@ -88,6 +88,7 @@ module Hydro
   logical :: lscale_tobox=.true.
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
+  real :: amp_meri_circ = 0.0
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   real :: ampl_Omega=0.0
@@ -107,7 +108,7 @@ module Hydro
        velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
        lscale_tobox, ampl_Omega,omega_ini, &
        r_cyl,skin_depth, incl_alpha, rot_rr,xsphere,ysphere,zsphere,&
-       neddy
+       neddy,amp_meri_circ
 ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
@@ -760,6 +761,7 @@ module Hydro
         case ('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu)
         case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
+        case ('meri_circ'); call meri_circ(f)
         case ('sound-wave', '11')
 !
 !  sound wave (should be consistent with density module)
@@ -4536,6 +4538,35 @@ module Hydro
       endif
 !
     endsubroutine impose_velocity_ceiling
+!***********************************************************************
+    subroutine meri_circ(f)
+!
+! Meridional circulation as initial condition. 
+!
+!  26-apr-2010/dhruba: coded.
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: m,n
+      real :: rone,theta,theta1,vel_prof
+!
+      do n=n1,n2
+        do m=m1,m2
+           rone=xyz0(1)
+           theta=y(m)
+           theta1=xyz0(2)
+!
+          f(l1:l2,m,n,iux)=amp_meri_circ*(r1_mn**2)*(sin1th(m))*(&
+            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+            -sin(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 
+          f(l1:l2,m,n,iuy)=-amp_meri_circ*r1_mn*sin1th(m)*(&
+            cos(theta)*sin(theta-theta1)**2)*&
+           (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
+          f(l1:l2,m,n,3)=0.
+       enddo
+     enddo
+!
+    endsubroutine  meri_circ
 !***********************************************************************
     subroutine hydro_clean_up
 !

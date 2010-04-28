@@ -1224,8 +1224,9 @@ endif
 ## norosx52 (Mac Pro, 8 cores)
 ##
 #FC=/opt/ompi/bin/mpif90 #(norosx52)
-#FFLAGS= -O3 -fno-second-underscore#(norosx52)
-#CFLAGS=-DFUNDERSC=1 -m32 #(norosx52)
+#FFLAGS= -O3 -fno-second-underscore #(norosx52)
+#CFLAGS=-DFUNDERSC=1 -m32  -I/opt/local/include#(norosx52)
+#LD_GSL = -lgsl -lgslcblas -L/opt/local/lib/#(norosx52)
 ##
 ## Dhruba's laptop 
 ##
