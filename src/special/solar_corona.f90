@@ -324,8 +324,10 @@ module Special
               do i=1,prof_nz-1
                 if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
                   ! linear interpolation: y = m*(x-x1) + y1
-                  init_lnTT(j) = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnT(i)
-                  init_lnrho(j) = (prof_lnrho(i+1)-prof_lnrho(i))/(prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
+                  init_lnTT(j) = (prof_lnT(i+1)-prof_lnT(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnT(i)
+                  init_lnrho(j) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
                   exit
                 endif
               enddo
@@ -608,8 +610,10 @@ module Special
 !  Do somehow Newton cooling
 !
       if ((ipz == 0) .and. (bmdi /= 0.0)) then
-        f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + dt*bmdi * A_init_x
-        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + dt*bmdi * A_init_y
+        f(l1:l2,m1:m2,n1,iax)=f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
+            dt*bmdi * A_init_x
+        f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
+            dt*bmdi * A_init_y
 
         if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
       endif
@@ -1184,8 +1188,6 @@ module Special
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
-      avoidarr(:,:)=0
-!
       if (lroot) then
         print*,'| solar_corona: settings for granules'
         print*,'-----------------------------------'
@@ -1368,9 +1370,8 @@ module Special
             thirdlev%next=>first%next
       end select
 !
-      call resetarr
     enddo
-    !
+!
     endsubroutine multi_drive3
 !***********************************************************************
     subroutine drive3(level)
@@ -1383,6 +1384,7 @@ module Special
       logical :: lstop=.false.
 !
       call resetarr
+      call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
         call rdpoints((max(level-1,0))*1000+isnap)
@@ -1391,7 +1393,6 @@ module Special
           call wrpoints(isnap+1000*max(level-1,0))
         endif
       else
-        call resetarr
         call updatepoints
         call drawupdate
         do
@@ -1415,13 +1416,12 @@ module Special
       Ux = Ux+vx
       Uy = Uy+vy
 !
-! w(:,:) should now be free!!
-!
-      if (level .eq. 3 .or. level .eq. 0) then
+! When last level is done enhance the vorticity of the flow
+      if (level .eq. 31) then
 !
 ! Putting sum of velocities back into vx,vy
-        vx=Ux(:,:)
-        vy=Uy(:,:)
+        vx=Ux
+        vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
         call helmholtz(wscr,wscr2)
@@ -1441,12 +1441,10 @@ module Special
           call fatal_error('solar_corona','define a valid unit system')
         endif
 !
-        vx=vx*vtot/vrms
-        vy=vy*vtot/vrms
+! Reinserting rotationally enhanced velocity field
 !
-! Reinserting rotationally enhanced and beta quenched velocity field
-        Ux(:,:)=vx
-        Uy(:,:)=vy
+        Ux=vx*vtot/vrms
+        Uy=vy*vtot/vrms
       endif
 !
       if (t >= tsnap_uu) then
@@ -1464,7 +1462,7 @@ module Special
     subroutine resetarr
 !
       w(:,:)=0.0
-      avoidarr(:,:)=0
+      avoidarr(:,:)=0.0
 !
     endsubroutine resetarr
 !***********************************************************************
@@ -1605,8 +1603,9 @@ module Special
     subroutine driveinit
 !
       use General, only: random_number_wrapper
+!
       real :: rand
-      call resetarr
+!
       call make_newpoint
       do
         if (minval(avoidarr).eq.1) exit
@@ -1722,10 +1721,6 @@ module Special
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
 !
-! avoid granules where the field strength is greater than Bavoid
-!    (default 100 Gaus=0.01 Tesla)
-!
-          if (BB2(i,j) .gt. (Bavoid/unit_magnetic)**2) avoidarr(i,j)=1
           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
 !
           wtmp=current%data(1)/dist
@@ -1849,7 +1844,7 @@ module Special
             -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
             +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
       else
-        if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+        if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
       endif
       if (nzgrid/=1) then
         fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
@@ -1857,7 +1852,7 @@ module Special
             -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
             +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
       else
-        if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+        if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
       endif
 !
       if (nzgrid/=1) then
@@ -1866,7 +1861,7 @@ module Special
             -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
             +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
       else
-        if (ip<=5) print*, 'uu_driver: Degenerate case in z-direction'
+        if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
       endif
       if (nxgrid/=1) then
         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
@@ -1874,7 +1869,7 @@ module Special
             -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
             +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
       else
-        if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+        if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
       endif
       if (nxgrid/=1) then
         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
@@ -1882,7 +1877,7 @@ module Special
             -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
             +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
       else
-        if (ip<=5) print*, 'uu_driver: Degenerate case in x-direction'
+        if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
       endif
       if (nygrid/=1) then
         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
@@ -1890,7 +1885,7 @@ module Special
             -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
             +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
       else
-        if (ip<=5) print*, 'uu_driver: Degenerate case in y-direction'
+        if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
       endif
 !
       BB2_local = bbx*bbx + bby*bby + bbz*bbz
@@ -1914,6 +1909,34 @@ module Special
       endif
 !
     endsubroutine set_B2
+!***********************************************************************
+    subroutine fill_B_avoidarr
+!
+      integer :: i,j,itmp,jtmp
+      integer :: il,ir,jl,jr
+      integer :: ii,jj
+!
+      itmp  = nint(granr*(1-ig)/dx)
+      jtmp  = nint(granr*(1-ig)/dy)
+!
+      do i=1,nxgrid
+        do j=1,nygrid
+          if (BB2(i,j).gt.(Bavoid/unit_magnetic)**2) then
+            il=max(1,i-itmp); ir=min(nxgrid,i+itmp)
+            jl=max(1,j-jtmp); jr=min(nygrid,j+jtmp)
+!
+            do ii=il,ir
+              do jj=jl,jr
+                if ((ii-i)**2+(jj-j)**2.lt.itmp**2+jtmp**2) then
+                  avoidarr(ii,jj)=1
+                endif
+              enddo
+            enddo
+          endif
+        enddo
+      enddo
+!
+    endsubroutine fill_B_avoidarr
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
