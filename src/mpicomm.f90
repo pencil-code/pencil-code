@@ -384,6 +384,7 @@ module Mpicomm
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
+      if (ivar2==0) return
 !
 !  Periodic boundary conditions in x.
 !
@@ -473,6 +474,7 @@ module Mpicomm
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
+      if (ivar2==0) return
 !
 !  1. wait until data received
 !  2. set ghost zones
