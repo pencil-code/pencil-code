@@ -295,7 +295,7 @@ module Special
           read (unit,iostat=ierr) prof_lnT
           read (unit,iostat=ierr) prof_z
           if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-              'Error reading stratification file: "'//trim(lnrho_dat)//'"')
+              'Error reading stratification file: "'//trim(lnT_dat)//'"')
           close (unit)
 !
           open (unit,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
