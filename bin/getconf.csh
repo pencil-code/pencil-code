@@ -584,11 +584,11 @@ else if ($hn =~ louhi-login*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if ($hn =~ vuori*) then
+else if (($hn =~ n[0-9]*) && ($USER =~ pkapyla || $USER =~ fagent)) then
   echo "Vuori - CSC, Espoo, Finland"
-  set mpirunops = '-srun'
-  set mpirun = 'nuripm'
-  set npops = "-np $ncpus"
+  set mpirunops = ''
+  set mpirun = 'srun'
+  set npops = ''
   set local_disc = 0
   set one_local_disc = 0
   set remote_top     = 1
@@ -1385,6 +1385,9 @@ if ($mpi) then
   else if ("$mpirun" =~ *aprun*) then
     set mpirun = 'aprun'
     set npops = "-n $ncpus"
+  else if ("$mpirun" =~ *srun*) then
+    set mpirun = 'srun'
+    set npops = ''
   else if ("$mpirun" =~ *orterun*) then
     set npops = "-np $ncpus"
   else
