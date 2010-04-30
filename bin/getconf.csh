@@ -596,16 +596,16 @@ else if (($hn =~ n[0-9]*) && ($USER =~ pkapyla || $USER =~ fagent)) then
   setenv SSH rsh
   setenv SCP rcp
 #--------------------------------------------------------------
-#else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ mkorpi || $USER =~ aliljest || $USER =~ mvaisala || $USER =~ fagent)) then
-#  echo "Murska - CSC, Espoo, Finland"
-#  set mpirunops = '-srun'
-#  set mpirun = 'nuripm'
-#  set npops = ''
-#  set remote_top     = 1
-#  set local_disc = 0
-#  set one_local_disc = 0
-#  set local_binary = 0
-#  setenv SSH rsh
+else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ abranden || $USER =~ mkorpi || $USER =~ aliljest || $USER =~ mvaisala || $USER =~ fagent)) then
+  echo "Murska - CSC, Espoo, Finland"
+  set mpirunops = '-srun'
+  set mpirun = 'nuripm'
+  set npops = ''
+  set remote_top     = 1
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
+  setenv SSH rsh
 #-------------------------------------------------------------
 else if (($hn =~ c[0-9]*) && ($USER =~ csur || $USER =~ ckandu)) then
   echo "Cetus, Iucaa, India"
