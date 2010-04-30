@@ -577,7 +577,7 @@ else if ($hn =~ louhi-login*) then
     echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
-  set mpirun = 'mpirun'
+  set mpirun = 'aprun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
