@@ -3058,7 +3058,7 @@ module Forcing
           force(:,3)=0
         elseif (iforcing_cont=='KolmogorovFlow-z') then
           fact=ampl_ff
-          force(:,1)=fact*cosz(l1:l2)
+          force(:,1)=fact*cosz(n)
           force(:,2)=0.
           force(:,3)=0.
         elseif (iforcing_cont=='RobertsFlow-zdep') then
