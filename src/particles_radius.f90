@@ -97,7 +97,7 @@ module Particles_radius
 !
       if (npart_radii>1 .and. &
           (.not. lcartesian_coords .or. lparticles_nbody .or. &
-          lparticles_number .or. lparticles_spin)) then 
+          lparticles_number .or. lparticles_spin)) then
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
         mp_swarm=4/3.0*pi*rhops*ap0(1)**3
@@ -137,7 +137,6 @@ module Particles_radius
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: npar_low,npar_high
-      integer :: npar_tot, npar_limit
       logical, optional :: init
       logical :: initial
       real :: radius_fraction
@@ -151,7 +150,7 @@ module Particles_radius
       endif
 !
       do j=1,ninit
-!   
+!
         select case (initap(j))
 !
         case ('nothing')
@@ -164,7 +163,7 @@ module Particles_radius
           ind=ceiling(npart_radii*radius_fraction)
           fp(npar_low:npar_high,iap)=ap0(ind)
 !
-        case ('specify') 
+        case ('specify')
           !  user specified particle size distribution
           ! (with constant radii)
           if (initial.and.lroot) &
@@ -180,7 +179,7 @@ module Particles_radius
               radii_cumulative(i)=radii_cumulative(i)/radii_cumulative(npart_radii)
             enddo
           endif
-!           
+!
           do p=npar_low,npar_high
             call random_number_wrapper(radius_fraction)
             do i=1,npart_radii
