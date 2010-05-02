@@ -275,7 +275,7 @@ module Special
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  It will be read at the beginning and then kept in memory
 !
-      if (lroot) then
+      if (lroot.and.(ltemperature.or.lentropy)) then
         ! check wether stratification.dat or b_ln*.dat should be used
         if (file_exists(stratification_dat)) then
           open (unit,file=stratification_dat)
@@ -1209,7 +1209,7 @@ module Special
     subroutine uudriver(f)
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
-      use EquationOfState, only: gamma_inv,gamma_m1,get_cp1
+      use EquationOfState, only: gamma_inv,gamma_m1,get_cp1,lnrho0,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
@@ -1263,8 +1263,9 @@ module Special
               exp(f(l1:l2,m1:m2,irefz,ilnrho)+f(l1:l2,m1:m2,irefz,ilnrho))
         endif
       else
-        call fatal_error('solar_corona', &
+        if (headt.and.lroot) call warning('solar_corona', &
             'uudriver only implemented for ltemperature=true')
+        pp_tmp=gamma_inv*cs20*exp(lnrho0)
       endif
 !
       beta =  pp_tmp/max(tini,BB2_local)*2*mu0
