@@ -384,7 +384,10 @@ program start
 !
   if (leos_ionization) call ioninit(f)
   if (leos_temperature_ionization) call ioncalc(f)
-  if (lradiation_ray) call radtransfer(f)
+  if (lradiation_ray) then
+    call update_ghosts(f)
+    call radtransfer(f)
+  endif
 !
 !  Filter initial velocity.
 !  NOTE: this procedure is currently not very efficient,
