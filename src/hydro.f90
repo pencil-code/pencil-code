@@ -1252,7 +1252,9 @@ module Hydro
       if (dvid/=0.) then
         lpenc_video(i_oo)=.true.
         lpenc_video(i_o2)=.true.
+        lpenc_video(i_divu)=.true.
         lpenc_video(i_u2)=.true.
+        lpenc_video(i_Ma2)=.true.
       endif
 !
 !  diagnostic pencils
@@ -3889,7 +3891,7 @@ module Hydro
           if (lwrite_slice_xy4) slices%xy4=>o2_xy4
           slices%ready=.true.
 !
-!  Mach number.
+!  Mach number squared.
 !
         case ('mach')
           slices%yz =>mach_yz
