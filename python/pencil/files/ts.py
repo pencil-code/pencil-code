@@ -17,7 +17,7 @@ class read_ts:
     """
 
     def __init__(self, filename='time_series.dat', datadir='data',
-                 double=0, print_std=0, quiet=0, plot_data=True):
+                 double=0, print_std=0, quiet=0, plot_data=True, comment_char='#'):
         """
         constructor:
         -----------
@@ -49,9 +49,9 @@ class read_ts:
         data = N.zeros((nlines_init, len(keys)))
         nlines = 0
         for line in lines:
-            if re.search("^#--", line):
+            if re.search("^%s--" % comment_char, line):
                 # read header and create keys for dictionary
-                line = line.strip("#-\n")
+                line = line.strip("%s-\n" % comment_char)
                 keys_new = re.split("-+", line)
                 if keys_new != keys:
                     n_newrows = abs(len(keys_new) - len(keys))
