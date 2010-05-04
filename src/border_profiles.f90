@@ -180,7 +180,6 @@ module BorderProfiles
         elseif (lspherical_coords.or.lsphere_in_a_box) then
           lpenc_requested(i_r_mn)=.true.
           lpenc_requested(i_r_mn1)=.true.
-          lpenc_requested(i_rborder_mn)=.true.
         else
           lpenc_requested(i_x_mn)=.true.
         endif
