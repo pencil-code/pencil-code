@@ -2159,7 +2159,6 @@ module Density
           call grad(f,ilnrho,glnrho)
           if (lcartesian_coords) then
             gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
-            !!gs= gx*cos + gy*sin
           else if (lcylindrical_coords) then
             gslnrho=glnrho(:,1)
           else if (lspherical_coords) then
