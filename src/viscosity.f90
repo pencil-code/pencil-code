@@ -722,7 +722,7 @@ module Viscosity
         endif
         if (lvisc_nu_profx.and.lvisc_nu_profr) then
           print*,'You are using both radial and horizontal '
-          print*,'profiles for a viscosity jump. Are you '
+          print*,'profiles for a viscosity jump. Are you sure '
           print*,'this is reasonable? Better stop and check.'
           call fatal_error("","")
         endif
@@ -738,6 +738,7 @@ module Viscosity
         !gradnu(:,1) = nu*(nu_jump-1.)*der_step(tmp3,xnu,widthnu)
         !gradnu(:,2) = 0.
         !gradnu(:,3) = 0.
+        gradnu=0.
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         !tobi: The following only works with operator overloading for pencils
