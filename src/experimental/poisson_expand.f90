@@ -31,7 +31,7 @@ module Poisson
   logical :: lrazor_thin=.false., lsemispectral=.false., lklimit_shear=.false.
   logical :: lexpand_grid=.false.
 !
-  include 'poisson.h'
+  include '../poisson.h'
 !
   namelist /poisson_init_pars/ &
       lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid
