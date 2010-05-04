@@ -267,6 +267,16 @@ module Forcing
         profz_ampl=.5*(1.-erfunc(z/width_ff))
         profz_hel=1.
 !
+!  turn off forcing intensity above x=x0
+!
+      elseif (iforce_profile=='surface_x') then
+        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
+        profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.; profz_hel=1.
+       
+
+!
 !  just a change in intensity in the z direction
 !
       elseif (iforce_profile=='intensity') then
@@ -1311,10 +1321,7 @@ module Forcing
        do j=1,3
          jf = iuu+j-1
          if (r_ff .ne. 0.) then
-         do inx=1,nx
-            if (x(inx) .gt. r_ff) capitalH(inx,j) = 0
-         enddo
-         else
+            capitalH(:,j)=profx_ampl*capitalH(:,j)
          endif
          if (lhelical_test) then
            if (lwrite_psi) then
