@@ -11,8 +11,6 @@ module Initcond
   use Cdata
   use General
   use Messages
-  use Mpicomm
-  use Sub
 !
   implicit none
 !
@@ -1947,7 +1945,6 @@ module Initcond
 !   8-apr-03/axel: coded
 !  23-may-04/anders: made structure for other input variables
 !
-      use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2063,7 +2060,6 @@ module Initcond
 !
 !   02-mar-09/petri: adapted from stratification
 !
-      use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2557,12 +2553,9 @@ module Initcond
 !
       integer :: i1,i2
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: tmp,modulate,tube_radius_sqr
+      real, dimension (nx) :: tmp,tube_radius_sqr !,modulate
       real :: ampl,radius,eps
       real :: center1_x,center1_z
-!
-! please remove the variable if not needed anymore
-      call keep_compiler_quiet(modulate)
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -2663,14 +2656,12 @@ module Initcond
 !
 !   18-mar-09/dhruba: aped from htube
 !
+      use Sub, only: erfunc
+!
       integer :: i1,i2,l
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: modulate
       real :: ampl,a,eps,width,tmp,radius,a_minus_r
       real :: center1_x,center1_z
-!
-! please remove the variable if not needed anymore
-      call keep_compiler_quiet(modulate)
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
@@ -2696,8 +2687,6 @@ module Initcond
              write(*,*) 'wrong place:radius,tini',radius,tini
           endif
           write(*,*) 'Dhruba:radius,tini,a,a_minus_r,width,tmp',radius,tini,a,a_minus_r,width,tmp
-!         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/&
-!                   (max((radius*modulate)**2-tube_radius_sqr,1e-6))
 !
 !  check whether vector or scalar
 !
@@ -3777,7 +3766,7 @@ module Initcond
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,initpower,mhalf,cutoff,scale_factor
-
+!
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
       else
@@ -4267,9 +4256,8 @@ module Initcond
 !
 !  13-dec-05/bing : coded.
 !
-      use Fourier
-      use Sub
-      use Mpicomm, only: mpibcast_real
+      use Fourier, only: fourier_transform_other
+      use Mpicomm, only: mpibcast_real,stop_it_if_any
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -4294,7 +4282,6 @@ module Initcond
 !
       call stop_it_if_any((iostat>0),'mdi_init: '// &
           'Could not allocate memory for variables, please check')
-!
 !
 !  Auxiliary quantities:
 !
