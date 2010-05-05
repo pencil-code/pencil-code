@@ -474,19 +474,23 @@ module Radiation
             endif
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
+!  We need to set Iup=Idown+I0 at the lower boundary. We must first integrate
+!  Idown into the lower boundary following:
 !
-            if ((bc_rad1(1)=='R').or.(bc_rad1(1)=='R+F')) then
-              if ((ndir==2).and.(idir==1)) &
-                  Irad_refl_yz=Qrad(llstop,:,:)+Srad(llstop,:,:)
-            endif
-            if ((bc_rad1(2)=='R').or.(bc_rad1(2)=='R+F')) then
-              if ((ndir==2).and.(idir==1).and.(ipy==ipystop)) &
-                  Irad_refl_xz=Qrad(:,mmstop,:)+Srad(:,mmstop,:)
-            endif
+!    Idown(n1-1) = Idown(n1) - dtau*Qdown(n1)
+!
+!  [using simply Idown(n1) as the outgoing intensity is not consistent]
+!
+!  This corresponds to
+!
+!    Idown(n1-1) = S(n1) + (1-dtau)*Qdown(n1)
+!
+!  where dtau=kappa*rho(n1)*dz.
+!
             if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
               if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
-                  Irad_refl_xy=Qrad(:,:,nnstop)+Srad(:,:,nnstop)
-               print*, 'AAAAAAA', Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
+                  Irad_refl_xy=Srad(:,:,nnstop)+Qrad(:,:,nnstop)* &
+                  (1.0-f(:,:,nnstop,ikapparho)*dz)
             endif
 !
 !  enddo from idir.
