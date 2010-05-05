@@ -25,9 +25,9 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
-  real :: Bavoid=0.01
-  logical :: lgranulation=.false.
-  integer :: irefz=0.
+  real :: Bavoid=0.01,nvor=5.
+  logical :: lgranulation=.false.,lrotin=.true.
+  integer :: irefz=0,nglevel=3
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
   real, dimension (mz) :: init_lnTT, init_lnrho
@@ -40,7 +40,7 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
-       Bavoid
+       Bavoid,nglevel,lrotin,nvor
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -1183,7 +1183,7 @@ module Special
 !
 ! fraction of current amplitude to maximum amplitude to the beginning
 ! and when the granule disapears
-      thresh=0.7
+      thresh=0.78
 !
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
@@ -1317,7 +1317,7 @@ module Special
       if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
 !
-    do k=1,3
+    do k=1,nglevel
       select case (k)
       case (1)
         if (associated(first)) nullify(first)
@@ -1379,7 +1379,7 @@ module Special
 !
       use Syscalls, only: file_exists
 !
-      real :: nvor,vrms,vtot
+      real :: vrms,vtot
       real,dimension(nxgrid,nygrid) :: wscr,wscr2
       integer, intent(in) :: level
       logical :: lstop=.false.
@@ -1417,18 +1417,22 @@ module Special
       Ux = Ux+vx
       Uy = Uy+vy
 !
-! When last level is done enhance the vorticity of the flow
-      if (level .eq. 31) then
+! When last level is done normalize to given rms velocity and
+! enhance the vorticity of the flow
+      if (level.eq.nglevel) then
 !
 ! Putting sum of velocities back into vx,vy
         vx=Ux
         vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-        call helmholtz(wscr,wscr2)
-        nvor = 15.0  !* war vorher 5 ; zum testen auf  50
-        vx=(vx+nvor*wscr )
-        vy=(vy+nvor*wscr2)
+        if (lrotin) then 
+          call helmholtz(wscr,wscr2)
+          !* war vorher 5 ; zum testen auf  50
+          ! nvor is now keyword !!!
+          vx=(vx+nvor*wscr )
+          vy=(vy+nvor*wscr2)
+        endif
 !
 ! Normalize to given total rms-velocity
         vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+1e-30
@@ -1463,6 +1467,8 @@ module Special
     subroutine resetarr
 !
       w(:,:)=0.0
+      vx(:,:)=0.0
+      vy(:,:)=0.0
       avoidarr(:,:)=0.0
 !
     endsubroutine resetarr
@@ -1487,7 +1493,6 @@ module Special
 !
         rn=1
         do
-          if (.not.iost.eq.0) exit
           read(10,iostat=iost,rec=rn) tmppoint
           if (iost.eq.0) then
             current%pos(:)=int(tmppoint(1:2))
@@ -1498,8 +1503,10 @@ module Special
             nullify(previous%next)
             deallocate(current)
             current => previous
-          endif
+            exit
+         endif
         enddo
+!
         close(10)
         print*,'read ',rn-1,' points'
         call reset
@@ -1642,66 +1649,71 @@ module Special
       use Fourier, only: fourier_transform_other
 !
       real, dimension(nxgrid,nygrid) :: rotx,roty
-      real, dimension(nxgrid,nygrid) :: fftvx_re,fftvx_im
-      real, dimension(nxgrid,nygrid) :: fftvy_re,fftvy_im
-      real, dimension(nxgrid,nygrid) :: fftrx_re,fftrx_im
-      real, dimension(nxgrid,nygrid) :: fftry_re,fftry_im
+      real, dimension(nxgrid,nygrid) :: tmp_r,tmp_i
+      complex, dimension(nxgrid,nygrid) :: fvx,fvy,frx,fry
+      complex :: ci,kx,ky,corr
       integer :: j,k
-      real :: k2,k20,filter,kx,ky,corr
+      real :: k20,filter,k2
 !
-      fftvx_re=vx
-      fftvx_im=0.
-      fftvy_re=vy
-      fftvy_im=0.
+      tmp_r=vx
+      tmp_i=0.
+      call fourier_transform_other(tmp_r,tmp_i)
+      fvx= cmplx(tmp_r,tmp_i)
 !
-      call fourier_transform_other(fftvx_re,fftvx_im)
-      call fourier_transform_other(fftvy_re,fftvy_im)
+      tmp_r=vy
+      tmp_i=0.
+      call fourier_transform_other(tmp_r,tmp_i)
+      fvy= cmplx(tmp_r,tmp_i)
 !
-      k20=(nxgrid/4.)**2
-!
+
+      k20 = (nxgrid/4.)**2.
+
+      ci =  cmplx(0.,1.)
+
       do j=1,nxgrid
-        kx=(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
-        if (j.eq.nxgrid/2+1) kx=0.
+        kx=ci*(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
+!
+        if (j.eq.nxgrid/2+1) kx=0.   
         do k=1,nygrid
-          ky=(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
+          ky=ci*(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
           if (k.eq.nygrid/2+1) ky=0.
 !
-          k2=kx**2 + ky**2
+        k2=kx**2 + ky**2 + tini
 !
-          corr = fftvx_im(j,k)*kx + fftvy_im(j,k)*ky
+        corr=(fvx(j,k)*kx+fvy(j,k)*ky)/k2
 !
-          if (k2.ne.0) corr = corr/k2
+        frx(j,k) = fvx(j,k) - corr*kx
+        fry(j,k) = fvy(j,k) - corr*ky
 !
-          fftrx_re(j,k)=fftvx_re(j,k)
-          fftrx_im(j,k)=fftvx_im(j,k)-corr*kx
-          fftry_re(j,k)=fftvy_re(j,k)
-          fftry_im(j,k)=fftvy_im(j,k)-corr*ky
+        filter=exp(-(k2/k20)**2)
 !
-          filter=exp(-(k2/k20)**2)
+        fvx(j,k)=fvx(j,k)*filter
+        fvy(j,k)=fvy(j,k)*filter
 !
-          fftvx_re(j,k)=fftvx_re(j,k)*filter
-          fftvx_im(j,k)=fftvx_im(j,k)*filter
-          fftvy_re(j,k)=fftvy_re(j,k)*filter
-          fftvy_im(j,k)=fftvy_im(j,k)*filter
-!
-          fftrx_re(j,k)=fftrx_re(j,k)*filter
-          fftrx_im(j,k)=fftrx_im(j,k)*filter
-          fftry_re(j,k)=fftry_re(j,k)*filter
-          fftry_im(j,k)=fftry_im(j,k)*filter
-        enddo
+        frx(j,k)=frx(j,k)*filter
+        fry(j,k)=fry(j,k)*filter
+       enddo
       enddo
 !
-      call fourier_transform_other(fftvx_re,fftvx_im,linv=.true.)
-      call fourier_transform_other(fftvy_re,fftvy_im,linv=.true.)
+      tmp_r = real(fvx)
+      tmp_i = aimag(fvx)
+      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
+      vx=tmp_r
 !
-      call fourier_transform_other(fftrx_re,fftrx_im,linv=.true.)
-      call fourier_transform_other(fftry_re,fftry_im,linv=.true.)
-!
-      vx=real(fftvx_re)
-      vy=real(fftvy_re)
-!
-      rotx=real(fftrx_im)
-      roty=real(fftry_im)
+      tmp_r = real(fvy)
+      tmp_i = aimag(fvy)
+      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
+      vy=tmp_r
+
+      tmp_r = real(frx)
+      tmp_i = aimag(frx)
+      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
+      rotx=tmp_r
+
+      tmp_r = real(fry)
+      tmp_i = aimag(fry)
+      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
+      roty=tmp_r
 !
     endsubroutine helmholtz
 !***********************************************************************
