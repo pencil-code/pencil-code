@@ -47,47 +47,24 @@ module Radiation
     real, dimension (nx,ny) :: xy2
   endtype radslice
 !
-! Slice precalculation buffers
-!
   integer, parameter :: mnu=2
+  integer, parameter :: maxdir=26
+!
+  real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
+  real, dimension (mx,my,mz,3) :: Frad
+  real, dimension (mx,my) :: Irad_refl_xy
+  real, dimension (mx,mz) :: Irad_refl_xz
+  real, dimension (my,mz) :: Irad_refl_yz
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
   real, target, dimension (nx,ny,mnu) :: Jrad_xy3
   real, target, dimension (nx,ny,mnu) :: Jrad_xy4
   real, target, dimension (nx,nz,mnu) :: Jrad_xz
   real, target, dimension (ny,nz,mnu) :: Jrad_yz
-!
-  real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
-  real, dimension (mx,my,mz,3) :: Frad
-  type (Qbound), dimension (my,mz), target :: Qbc_yz
-  type (Qbound), dimension (mx,mz), target :: Qbc_zx
-  type (Qbound), dimension (mx,my), target :: Qbc_xy
-  type (Qpoint), dimension (my,mz) :: Qpt_yz
-  type (Qpoint), dimension (mx,mz) :: Qpt_zx
-  type (Qpoint), dimension (mx,my) :: Qpt_xy
-
-  character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
-  character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
-  character (len=bclen) :: bc_ray_x, bc_ray_y, bc_ray_z
-  integer, parameter :: maxdir=26
-  integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
-  type (radslice), dimension (maxdir), target :: Isurf
   real :: arad
   real :: dtau_thresh_min, dtau_thresh_max
-  integer :: lrad, mrad, nrad, rad2
-  integer :: idir, ndir
-  integer :: l
-  integer :: llstart, llstop, ll1, ll2, lsign
-  integer :: mmstart, mmstop, mm1, mm2, msign
-  integer :: nnstart, nnstop, nn1, nn2, nsign
-  integer :: ipzstart, ipzstop, ipystart, ipystop
-  integer :: nIsurf
-  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
-  logical :: lfix_radweight_1d=.true.
-  character (len=labellen) :: source_function_type='LTE', opacity_type='Hminus'
-  character (len=labellen) :: angle_weight='constant'
   real :: tau_top=0.0, TT_top=0.0
   real :: tau_bot=0.0, TT_bot=0.0
   real :: kappa_cst=1.0, kapparho_cst=1.0
@@ -99,22 +76,41 @@ module Radiation
   real :: cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_Srad=1.0
 !
-!  Default values for one pair of vertical rays
-!
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
+  integer, dimension (maxdir,3) :: dir
   integer, dimension (3) :: single_ray
+  integer :: lrad, mrad, nrad, rad2
+  integer :: idir, ndir
+  integer :: l
+  integer :: llstart, llstop, ll1, ll2, lsign
+  integer :: mmstart, mmstop, mm1, mm2, msign
+  integer :: nnstart, nnstop, nn1, nn2, nsign
+  integer :: ipzstart, ipzstop, ipystart, ipystop
+  integer :: nIsurf
 !
+  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
+  logical :: lfix_radweight_1d=.true.
   logical :: lcooling=.true., lrad_debug=.false.
   logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
-
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false. 
-
-  character :: lrad_str, mrad_str, nrad_str
-  character(len=3) :: raydir_str
 !
-!  Definition of dummy variables for FLD routine
+  character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
+  character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
+  character (len=bclen) :: bc_ray_x, bc_ray_y, bc_ray_z
+  character (len=labellen) :: source_function_type='LTE', opacity_type='Hminus'
+  character (len=labellen) :: angle_weight='constant'
+  character :: lrad_str, mrad_str, nrad_str
+  character (len=3) :: raydir_str
+!
+  type (Qbound), dimension (my,mz), target :: Qbc_yz
+  type (Qbound), dimension (mx,mz), target :: Qbc_zx
+  type (Qbound), dimension (mx,my), target :: Qbc_xy
+  type (Qpoint), dimension (my,mz) :: Qpt_yz
+  type (Qpoint), dimension (mx,mz) :: Qpt_zx
+  type (Qpoint), dimension (mx,my) :: Qpt_xy
+  type (radslice), dimension (maxdir), target :: Isurf
 !
   integer :: idiag_frms=0, idiag_fmax=0, idiag_Erad_rms=0, idiag_Erad_max=0
   integer :: idiag_Egas_rms=0, idiag_Egas_max=0
@@ -200,14 +196,17 @@ module Radiation
 !
 !  Check that the number of rays does not exceed maximum.
 !
-      if (radx>1) call stop_it("radx currently must not be greater than 1")
-      if (rady>1) call stop_it("rady currently must not be greater than 1")
-      if (radz>1) call stop_it("radz currently must not be greater than 1")
+      if (radx>1) call fatal_error('initialize_radiation', &
+          'radx currently must not be greater than 1')
+      if (rady>1) call fatal_error('initialize_radiation', &
+          'rady currently must not be greater than 1')
+      if (radz>1) call fatal_error('initialize_radiation', &
+          'radz currently must not be greater than 1')
 !
 !  Check boundary conditions.
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad =',bc_rad
-
+!
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
 !
 !  Count.
@@ -251,7 +250,6 @@ module Radiation
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
-
 !
 !  Ray length from one grid point to the next one.
 !
@@ -354,7 +352,7 @@ module Radiation
         aspect_ratio=dx/dz
         if (aspect_ratio<0.69.or.aspect_ratio>sqrt(3.0)) &
             call fatal_error('initialize_radiation', &
-                'weights go negative for this dx/dz ratio')
+            'weights go negative for this dx/dz ratio')
 !
 !  Calculate the weights.
 !
@@ -396,7 +394,7 @@ module Radiation
 !  Integration of the radiative transfer equation along rays.
 !
 !  This routine is called before the communication part (certainly needs to be
-!  given a better name).  All rays start with zero intensity.
+!  given a better name). All rays start with zero intensity.
 !
 !  16-jun-03/axel+tobi: coded
 !
@@ -473,6 +471,22 @@ module Radiation
                 k=iFrad+(j-1)
                 f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)
               enddo
+            endif
+!
+!  Store outgoing intensity in case of lower reflective boundary condition.
+!
+            if ((bc_rad1(1)=='R').or.(bc_rad1(1)=='R+F')) then
+              if ((ndir==2).and.(idir==1)) &
+                  Irad_refl_yz=Qrad(llstop,:,:)+Srad(llstop,:,:)
+            endif
+            if ((bc_rad1(2)=='R').or.(bc_rad1(2)=='R+F')) then
+              if ((ndir==2).and.(idir==1).and.(ipy==ipystop)) &
+                  Irad_refl_xz=Qrad(:,mmstop,:)+Srad(:,mmstop,:)
+            endif
+            if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
+              if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
+                  Irad_refl_xy=Qrad(:,:,nnstop)+Srad(:,:,nnstop)
+               print*, 'AAAAAAA', Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
             endif
 !
 !  enddo from idir.
@@ -601,7 +615,7 @@ module Radiation
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
-
+!
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
                     f(l,m,n,ikapparho))*dlength
         dtau_p=sqrt(f(l,m,n,ikapparho)* &
@@ -664,107 +678,107 @@ module Radiation
 !  yz-plane
 !
       if (lrad/=0) then
-
+!
         l=llstop
         lsteps=(l+lrad-llstart)/lrad
-
+!
         msteps=huge(msteps)
         nsteps=huge(nsteps)
-
+!
         do m=mm1,mm2
         do n=nn1,nn2
-
+!
           if (mrad/=0) msteps = (m+mrad-mmstart)/mrad
           if (nrad/=0) nsteps = (n+nrad-nnstart)/nrad
-
+!
           call assign_pointer(lsteps,msteps,nsteps,val,set)
-
+!
           Qpt_yz(m,n)%set => set
           Qpt_yz(m,n)%val => val
-
+!
         enddo
         enddo
-
+!
       endif
 !
 !  zx-plane
 !
       if (mrad/=0) then
-
+!
         m=mmstop
         msteps=(m+mrad-mmstart)/mrad
-
+!
         nsteps=huge(nsteps)
         lsteps=huge(lsteps)
-
+!
         do n=nn1,nn2
         do l=ll1,ll2
-
+!
           if (nrad/=0) nsteps = (n+nrad-nnstart)/nrad
           if (lrad/=0) lsteps = (l+lrad-llstart)/lrad
-
+!
           call assign_pointer(lsteps,msteps,nsteps,val,set)
-
+!
           Qpt_zx(l,n)%set => set
           Qpt_zx(l,n)%val => val
-
+!
         enddo
         enddo
-
+!
       endif
 !
 !  xy-plane
 !
       if (nrad/=0) then
-
+!
         n=nnstop
         nsteps=(n+nrad-nnstart)/nrad
-
+!
         lsteps=huge(lsteps)
         msteps=huge(msteps)
-
+!
         do l=ll1,ll2
         do m=mm1,mm2
-
+!
           if (lrad/=0) lsteps = (l+lrad-llstart)/lrad
           if (mrad/=0) msteps = (m+mrad-mmstart)/mrad
-
+!
           call assign_pointer(lsteps,msteps,nsteps,val,set)
-
+!
           Qpt_xy(l,m)%set => set
           Qpt_xy(l,m)%val => val
-
+!
         enddo
         enddo
-
+!
       endif
-
+!
     endsubroutine Qpointers
 !***********************************************************************
     subroutine assign_pointer(lsteps,msteps,nsteps,val,set)
-
+!
       integer, intent(in) :: lsteps,msteps,nsteps
       real, pointer :: val
       logical, pointer :: set
       integer :: steps
-
+!
       steps=min(lsteps,msteps,nsteps)
-
+!
       if (steps==lsteps) then
         val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
         set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
       endif
-
+!
       if (steps==msteps) then
         val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
         set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
       endif
-
+!
       if (steps==nsteps) then
         val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
         set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
       endif
-
+!
     endsubroutine assign_pointer
 !***********************************************************************
     subroutine Qcommunicate
@@ -785,14 +799,13 @@ module Radiation
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_zx_sendrecv
-
+!
       real, dimension (my,mz) :: emtau_yz,Qrad_yz
       real, dimension (mx,mz) :: emtau_zx,Qrad_zx
       real, dimension (mx,my) :: emtau_xy,Qrad_xy
       real, dimension (my,mz) :: Qrecv_yz !,Qsend_yz CHECK why this is not used!
       real, dimension (mx,mz) :: Qsend_zx,Qrecv_zx
       real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
-
       logical :: all_yz,all_zx
 !
 !  Initially no boundaries are set.
@@ -966,9 +979,8 @@ module Radiation
 !
 !  The requirement of periodicity gives the following heating rate at the
 !  upstream boundary.
-  !
+!
         Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_yz/emtau1_yz
-
       endif
 !
 !  y-direction
@@ -1047,7 +1059,7 @@ module Radiation
 !
 !  Identifier.
 !
-      if (ldebug.and.headt) print*,'Qrevision'
+      if (ldebug.and.headt) print*, 'Qrevision'
 !
 !  Do the ray...
 !
@@ -1074,127 +1086,121 @@ module Radiation
 !***********************************************************************
     subroutine radboundary_yz_set(Qrad0_yz)
 !
-!  Sets the physical boundary condition on yz plane
+!  Sets the physical boundary condition on yz plane.
 !
 !   6-jul-03/axel+tobi: coded
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension(my,mz), intent(out) :: Qrad0_yz
 !
-!  No incoming intensity
+!  No incoming intensity.
 !
       if (bc_ray_z=='0') then
         Qrad0_yz=-Srad(llstart-lrad,:,:)
       endif
 !
-!  Set intensity equal to unity (as a numerical experiment for now)
+!  Set intensity equal to unity (as a numerical experiment for now).
 !
       if (bc_ray_z=='1') then
-        Qrad0_yz=1.-Srad(llstart-lrad,:,:)
+        Qrad0_yz=1.0-Srad(llstart-lrad,:,:)
       endif
 !
-!  Set intensity equal to source function
+!  Set intensity equal to source function.
 !
       if (bc_ray_z=='S') then
         Qrad0_yz=0
       endif
 !
-!  Set intensity equal to S-F
+!  Set intensity equal to S-F.
 !
       if (bc_ray_z=='S-F') then
-        Qrad0_yz=-Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_yz=-Frad_boundary_ref/(2*weightn(idir))
       endif
 !
-!  Set intensity equal to S+F
+!  Set intensity equal to S+F.
 !
       if (bc_ray_z=='S+F') then
-        Qrad0_yz=+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_yz=+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
-!  Set intensity equal to a pre-defined incoming intensity
+!  Set intensity equal to a pre-defined incoming intensity.
 !
       if (bc_ray_z=='F') then
-        Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_yz=-Srad(llstart-lrad,:,:)+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
     endsubroutine radboundary_yz_set
 !***********************************************************************
     subroutine radboundary_zx_set(Qrad0_zx)
 !
-!  Sets the physical boundary condition on zx plane
+!  Sets the physical boundary condition on zx plane.
 !
 !  6-jul-03/axel+tobi: coded
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension(mx,mz), intent(out) :: Qrad0_zx
 !
-!  No incoming intensity
+!  No incoming intensity.
 !
       if (bc_ray_z=='0') then
         Qrad0_zx=-Srad(:,mmstart-mrad,:)
       endif
 !
-!  Set intensity equal to unity (as a numerical experiment for now)
+!  Set intensity equal to unity (as a numerical experiment for now).
 !
       if (bc_ray_z=='1') then
-        Qrad0_zx=1.-Srad(:,mmstart-mrad,:)
+        Qrad0_zx=1.0-Srad(:,mmstart-mrad,:)
       endif
 !
-!  Set intensity equal to source function
+!  Set intensity equal to source function.
 !
       if (bc_ray_z=='S') then
         Qrad0_zx=0
       endif
 !
-!  Set intensity equal to S-F
+!  Set intensity equal to S-F.
 !
       if (bc_ray_z=='S-F') then
-        Qrad0_zx=-Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_zx=-Frad_boundary_ref/(2*weightn(idir))
       endif
 !
-!  Set intensity equal to S+F
+!  Set intensity equal to S+F.
 !
       if (bc_ray_z=='S+F') then
-        Qrad0_zx=+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_zx=+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
-!  Set intensity equal to a pre-defined incoming intensity
+!  Set intensity equal to a pre-defined incoming intensity.
 !
       if (bc_ray_z=='F') then
-        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_zx=-Srad(:,mmstart-mrad,:)+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
     endsubroutine radboundary_zx_set
 !***********************************************************************
     subroutine radboundary_xy_set(Qrad0_xy)
 !
-!  Sets the physical boundary condition on xy plane
+!  Sets the physical boundary condition on xy plane.
 !
 !  6-jul-03/axel+tobi: coded
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension(mx,my), intent(out) :: Qrad0_xy
       real :: Irad_xy
 !
-!  No incoming intensity
+!  No incoming intensity.
 !
       if (bc_ray_z=='0') then
         Qrad0_xy=-Srad(:,:,nnstart-nrad)
       endif
 !
-!  Set intensity equal to unity (as a numerical experiment for now)
+!  Set intensity equal to unity (as a numerical experiment for now).
 !
       if (bc_ray_z=='1') then
-        Qrad0_xy=1.-Srad(:,:,nnstart-nrad)
+        Qrad0_xy=1.0-Srad(:,:,nnstart-nrad)
       endif
 !
-!  incoming intensity from a layer of constant temperature TT_top
+!  Incoming intensity from a layer of constant temperature TT_top.
 !
       if (bc_ray_z=='c') then
         if (nrad<0) Irad_xy=arad*TT_top**4*(1-exp(tau_top/mu(idir)))
@@ -1202,34 +1208,41 @@ module Radiation
         Qrad0_xy=Irad_xy-Srad(:,:,nnstart-nrad)
       endif
 !
-!  Set intensity equal to source function
+!  Set intensity equal to source function.
 !
       if (bc_ray_z=='S') then
         Qrad0_xy=0
       endif
 !
-!  Set intensity equal to S-F
+!  Set intensity equal to S-F.
 !
       if (bc_ray_z=='S-F') then
-        Qrad0_xy=-Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_xy=-Frad_boundary_ref/(2*weightn(idir))
       endif
 !
-!  Set intensity equal to S+F
+!  Set intensity equal to S+F.
 !
       if (bc_ray_z=='S+F') then
-        Qrad0_xy=+Frad_boundary_ref/(2.*weightn(idir))
-      endif
-!                              
-!  Set intensity equal to F
-!
-      if (bc_ray_z=='F') then
-        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_xy=+Frad_boundary_ref/(2*weightn(idir))
       endif
 !
-!  Set intensity equal to a pre-defined incoming intensity
+!  Set intensity equal to a pre-defined incoming intensity.
 !
       if (bc_ray_z=='F') then
-        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2.*weightn(idir))
+        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Frad_boundary_ref/(2*weightn(idir))
+      endif
+!
+!  Set intensity equal to outgoing intensity.
+!
+      if (bc_ray_z=='R') then
+        Qrad0_xy=-Srad(:,:,nnstart-nrad)+Irad_refl_xy
+      endif
+!
+!  Set intensity equal to outgoing intensity plus pre-defined flux.
+!
+      if (bc_ray_z=='R+F') then
+        Qrad0_xy=-Srad(:,:,nnstart-nrad)+ &
+            Frad_boundary_ref/(2*weightn(idir))+Irad_refl_xy
       endif
 !
     endsubroutine radboundary_xy_set
@@ -1292,7 +1305,7 @@ module Radiation
 !***********************************************************************
      subroutine radiative_pressure(f,df,p)
 !
-!  Add radiative pressure to equation of motion
+!  Add radiative pressure to equation of motion.
 !
 !  17-may-06/axel: coded
 !
@@ -1305,7 +1318,7 @@ module Radiation
       real, dimension (nx,3) :: radpressure
       integer :: j,k
 !
-!  radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c
+!  Radiative pressure force = kappa*Frad/c = (kappa*rho)*rho1*Frad/c.
 !
       if (lradpressure) then
         do j=1,3
@@ -1315,7 +1328,7 @@ module Radiation
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
       endif
 !
-!  diagnostics
+!  Diagnostics.
 !
       if (ldiagnos) then
         if (idiag_Fradzm/=0) then
@@ -1408,7 +1421,7 @@ module Radiation
 !***********************************************************************
     subroutine opacity(f)
 !
-!  calculates opacity
+!  Calculates opacity.
 !
 !  Note that currently the diffusion approximation does not take
 !  into account any gradient terms of kappa.
@@ -1419,7 +1432,7 @@ module Radiation
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
-
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH
       real :: kappa0, kappa0_cgs,k1,k2
@@ -1427,7 +1440,7 @@ module Radiation
       integer :: i
 !
       select case (opacity_type)
-
+!
       case ('Hminus')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1435,7 +1448,7 @@ module Radiation
           f(:,m,n,ikapparho)=tmp
         enddo
         enddo
-
+!
       case ('kappa_es')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1443,7 +1456,7 @@ module Radiation
           f(:,m,n,ikapparho)=kappa_es*exp(lnrho)
         enddo
         enddo
-
+!
       case ('kappa_cst')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1451,14 +1464,14 @@ module Radiation
           f(:,m,n,ikapparho)=kappa_cst*exp(lnrho)
         enddo
         enddo
-
+!
       case ('kapparho_cst')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           f(:,m,n,ikapparho)=kapparho_cst
         enddo
         enddo
-
+!
       case ('Tsquare') !! Morfill et al. 1985 
         kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
         kappa0=kappa0_cgs!!*unit_density*unit_length
@@ -1468,7 +1481,7 @@ module Radiation
           f(:,m,n,ikapparho)=exp(lnrho)*kappa0*((exp(lnTT))**2)
         enddo
         enddo
-
+!
       case ('Kramers') !! as in Frank et al. 1992 (D'Angelo 2003)
          kappa0_cgs=6.6e22 !! (7.5e22 in Prialnik)
          kappa0=kappa0_cgs!!*unit_density*unit_length
@@ -1478,7 +1491,7 @@ module Radiation
           f(:,m,n,ikapparho)=kappa0*(exp(lnrho)**2)*(exp(lnTT))**(-3.5)
         enddo
         enddo
-        
+!        
       case ('dust-infrared')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1497,7 +1510,7 @@ module Radiation
           f(:,m,n,ikapparho)=exp(lnrho)*tmp
         enddo
         enddo
-        
+!        
       case ('blob')
         if (lfirst) then
           f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
@@ -1506,7 +1519,7 @@ module Radiation
                   *spread(spread(exp(-(z/radius_kapparho)**2),1,mx),2,my)
           lfirst=.false.
         endif
-
+!
       case ('cos')
         if (lfirst) then
           f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
@@ -1515,7 +1528,7 @@ module Radiation
                   *spread(spread(cos(kz_kapparho*z),1,mx),2,my)
           lfirst=.false.
         endif
-
+!
       case ('rad_ionization') !! as in Miao et al. 2006
       ! TODO: The code still needs to be able to calculate the right 
       ! ionization fraction for this. This does not work right without it, 
@@ -1533,23 +1546,23 @@ module Radiation
 !
       case ('B2') !! magnetic field
         call calc_kapparho_B2(f)
-
+!
       case ('B2+W2') !! magnetic field and vorticity
         call calc_kapparho_B2_W2(f)
-
+!
       case ('nothing')
-        f(l1:l2,m,n,ikapparho)=0.
-
+        f(l1:l2,m,n,ikapparho)=0.0
+!
       case default
         call stop_it('no such opacity type: '//trim(opacity_type))
-
+!
       endselect
-
+!
     endsubroutine opacity
 !***********************************************************************
     subroutine calc_Srad_B2(f,Srad)
 !
-!  Calculate B2 for special prescriptions of source function
+!  Calculate B2 for special prescriptions of source function.
 !
 !  21-feb-2009/axel: coded
 !
@@ -1562,7 +1575,7 @@ module Radiation
       real, dimension(nx,3) :: aa,bb
       real, dimension(nx) :: b2
 !
-!  Check whether B-field is available, and then calculate (curlA)^2
+!  Check whether B-field is available, and then calculate (curlA)^2.
 !
       if (iaa==0) then
         call stop_it("no magnetic field available")
@@ -1582,7 +1595,7 @@ module Radiation
 !***********************************************************************
     subroutine calc_Srad_W2(f,Srad)
 !
-!  Calculate W2 for special prescriptions of source function
+!  Calculate W2 for special prescriptions of source function.
 !
 !  21-feb-2009/axel: coded
 !
@@ -1595,7 +1608,7 @@ module Radiation
       real, dimension(nx,3) :: uu,oo
       real, dimension(nx) :: o2
 !
-!  Check whether B-field is available, and then calculate (curlA)^2
+!  Check whether B-field is available, and then calculate (curlA)^2.
 !
       if (iuu==0) then
         call stop_it("no magnetic field available")
@@ -1660,8 +1673,8 @@ module Radiation
 !***********************************************************************
     subroutine calc_kapparho_B2_W2(f)
 !
-!  Calculate B2+W2 for special prescriptions of opacity
-!  assume that both are opaque in all colors
+!  Calculate B2+W2 for special prescriptions of opacity.
+!  Assume that both are opaque in all colors.
 !
 !  21-feb-2009/axel: coded
 !
@@ -1674,7 +1687,7 @@ module Radiation
       real, dimension(nx) :: b2,o2
       integer :: ighost
 !
-!  Check whether B-field is available, and then calculate (curlA)^2
+!  Check whether B-field is available, and then calculate (curlA)^2.
 !
       if (iaa==0) then
         call stop_it("no magnetic field available")
@@ -1691,7 +1704,7 @@ module Radiation
           call dot2_mn(oo,o2)
           f(l1:l2,m,n,ikapparho)=b2+o2
 !
-!  in the ghost zones, put the magnetic field equal to the value
+!  In the ghost zones, put the magnetic field equal to the value
 !  in the layer layer inside the domain.
 !
           do ighost=1,nghost
@@ -2031,7 +2044,7 @@ module Radiation
 !***********************************************************************
     subroutine calc_rad_diffusion(f,p)
 !
-!  radiation in the diffusion approximation
+!  Radiation in the diffusion approximation.
 !
 !  12-apr-06/natalia: adapted from Wolfgang's more complex version
 !   3-nov-06/axel: included gradient of conductivity, gradK.gradT
@@ -2050,12 +2063,12 @@ module Radiation
       intent(inout) :: f
       intent(in) :: p
 !
-!  calculate diffusion coefficient, Krad=16*sigmaSB*T^3/(3*kappa*rho)
+!  Calculate diffusion coefficient, Krad=16*sigmaSB*T^3/(3*kappa*rho).
 !
       fact=16.*sigmaSB/(3.*kappa_es)
       Krad=fact*p%TT**3*p%rho1
 !
-!  calculate Qrad = div(K*gradT) = KT*[del2lnTT + (4*glnTT-glnrho).glnTT]
+!  Calculate Qrad = div(K*gradT) = KT*[del2lnTT + (4*glnTT-glnrho).glnTT].
 !  Note: this is only correct for constant kappa (and here kappa=kappa_es)
 !
       if (lrad_cool_diffus.and.lcooling) then
@@ -2063,7 +2076,7 @@ module Radiation
          f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
       endif
 !
-!  radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad
+!  Radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad.
 !
       if (lrad_pres_diffus.and.lradflux) then
         do j=1,3
@@ -2072,16 +2085,16 @@ module Radiation
         enddo
       endif
 !
-!  include constraint from radiative time step
-!  (has to do with radiation pressure waves)
+!  Include constraint from radiative time step
+!  (has to do with radiation pressure waves).
 !
       if (lfirst.and.ldt) then
         advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
       endif
 !
-!  check maximum diffusion from thermal diffusion
+!  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for leading entropy term
-!  is gamma*chi_rad*del2ss
+!  is gamma*chi_rad*del2ss.
 !
       if (lfirst.and.ldt) then
 !
@@ -2098,8 +2111,8 @@ module Radiation
           diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
         else
 !
-!  calculate switches for optically thin/thick regions
-!  (should really make dxmax a pencil)
+!  Calculate switches for optically thin/thick regions
+!  (should really make dxmax a pencil).
 !
           local_optical_depth=dxmax*f(l1:l2,m,n,ikapparho)
           opt_thick=sign(.5,local_optical_depth-1.)+.5
@@ -2123,7 +2136,7 @@ module Radiation
         endif
       endif
 !
-!  check radiative time step
+!  Check radiative time step.
 !
       if (lfirst.and.ldt) then
         if (ldiagnos) then
