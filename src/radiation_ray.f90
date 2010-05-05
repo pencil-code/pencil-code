@@ -189,7 +189,6 @@ module Radiation
 !  03-jul-03/tobi: position array added
 !
       use Sub, only: parse_bc_rad
-      use Mpicomm, only: stop_it
 !
       real :: radlength,arad_normal
       logical :: periodic_xy_plane,bad_ray,ray_good
@@ -1358,7 +1357,6 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use EquationOfState, only: eoscalc
-      use Mpicomm, only: stop_it
       use IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -1434,7 +1432,6 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use EquationOfState, only: eoscalc
-      use Mpicomm, only: stop_it
       use IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -1558,7 +1555,7 @@ module Radiation
         f(l1:l2,m,n,ikapparho)=0.0
 !
       case default
-        call stop_it('no such opacity type: '//trim(opacity_type))
+        call fatal_error('opacity','no such opacity type: '//trim(opacity_type))
 !
       endselect
 !
@@ -1571,7 +1568,6 @@ module Radiation
 !  21-feb-2009/axel: coded
 !
       use Sub, only: gij, curl_mn, dot2_mn
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz), intent(out) :: Srad
@@ -1582,7 +1578,7 @@ module Radiation
 !  Check whether B-field is available, and then calculate (curlA)^2.
 !
       if (iaa==0) then
-        call stop_it("no magnetic field available")
+        call fatal_error('calc_Srad_B2','no magnetic field available')
       else
         do n=n1,n2
         do m=m1,m2
@@ -1604,7 +1600,6 @@ module Radiation
 !  21-feb-2009/axel: coded
 !
       use Sub, only: gij, curl_mn, dot2_mn
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz), intent(out) :: Srad
@@ -1615,7 +1610,7 @@ module Radiation
 !  Check whether B-field is available, and then calculate (curlA)^2.
 !
       if (iuu==0) then
-        call stop_it("no magnetic field available")
+        call fatal_error('calc_Srad_W2','no magnetic field available')
       else
         do n=n1,n2
         do m=m1,m2
@@ -1637,7 +1632,6 @@ module Radiation
 !  21-feb-2009/axel: coded
 !
       use Sub, only: gij, curl_mn, dot2_mn
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,3,3) :: aij
@@ -1648,7 +1642,7 @@ module Radiation
 !  Check whether B-field is available, and then calculate (curlA)^2
 !
       if (iaa==0) then
-        call stop_it("no magnetic field available")
+        call fatal_error('calc_kapparho_B2','no magnetic field available')
       else
         do n=n1,n2
         do m=m1,m2
@@ -1683,7 +1677,6 @@ module Radiation
 !  21-feb-2009/axel: coded
 !
       use Sub, only: gij, curl_mn, dot2_mn
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,3,3) :: aij,uij
@@ -1694,7 +1687,7 @@ module Radiation
 !  Check whether B-field is available, and then calculate (curlA)^2.
 !
       if (iaa==0) then
-        call stop_it("no magnetic field available")
+        call fatal_error('calc_kapparho_B2_W2','no magnetic field available')
       else
         do n=n1,n2
         do m=m1,m2
