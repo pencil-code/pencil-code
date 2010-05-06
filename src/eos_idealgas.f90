@@ -2545,12 +2545,23 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
+!
+!  Distinguish cases for linear and logarithmic density 
+!
            tmp = 2*cv*log(cs2bot/cs20)
-           f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n1,ilnrho)-lnrho0)
-           do i=1,nghost
-              f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
+           if (ldensity_nolog) then
+             f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(alog(f(:,:,n1,irho))-lnrho0)
+             do i=1,nghost
+               f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
+                  - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
+             enddo
+           else
+             f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n1,ilnrho)-lnrho0)
+             do i=1,nghost
+               f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
                    - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
-           enddo
+             enddo
+           endif
         elseif (lentropy .and. pretend_lnTT) then
             f(:,:,n1,iss) = log(cs2bot/gamma_m1)
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
