@@ -3,23 +3,24 @@
 !  This module contains FFT wrapper subroutines.
 !
 module Fourier
-
+!
   use Cdata
   use Cparam
-  use Messages
+  use Messages, only: fatal_error
   use Mpicomm, only: transp
-
+  use Sub, only: keep_compiler_quiet
+!
   implicit none
-
+!
   include 'fourier.h'
-
+!
   interface fourier_transform_other
     module procedure fourier_transform_other_1
     module procedure fourier_transform_other_2
   endinterface
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
 !
@@ -168,6 +169,22 @@ module Fourier
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
+    subroutine fourier_transform_y(a_re,a_im,linv)
+!
+!  Subroutine to do Fourier transform in the x-direction.
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      logical, optional :: linv
+!
+      call fatal_error('fourier_transform_y', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
+!
+    endsubroutine fourier_transform_y
+!***********************************************************************
     subroutine fourier_transform_shear(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
@@ -196,6 +213,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -211,6 +229,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(linv)
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
@@ -238,17 +257,18 @@ module Fourier
 !
 !  04-oct-07/anders: dummy
 !
-    real, dimension (nx,ny,nz) :: a_re
-    real, dimension (nx) :: shift_y
+      real, dimension (nx,ny,nz) :: a_re
+      real, dimension (nx) :: shift_y
 !
-    call keep_compiler_quiet(a_re)
-    call keep_compiler_quiet(shift_y)
+      call fatal_error('fourier_shif_y', &
+          'this sub is not available in fourier_fft.f90!')
 !
-  endsubroutine fourier_shift_y
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(shift_y)
+!
+    endsubroutine fourier_shift_y
 !***********************************************************************
     subroutine fourier_transform_real_1(a,na,ifirst_fft,wsavex_temp,linv)
-!
-    use Mpicomm, only: stop_it
 !
 !   3-jul-08/dhruba: dummy routine
 !
@@ -257,11 +277,14 @@ module Fourier
       logical, optional :: linv
       real, dimension(2*na+15),optional :: wsavex_temp
 !
+      call fatal_error('fourier_transform_real', &
+          'this sub is not available in fourier_fft.f90!')
+!
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(na)
       call keep_compiler_quiet(ifirst_fft)
       call keep_compiler_quiet(linv)
-      call stop_it('fourier_transform_real_1: written only for fftpack')
+      call keep_compiler_quiet(wsavex_temp)
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
