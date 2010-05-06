@@ -718,7 +718,7 @@ module Special
       if (lfirst.and.ldt) then
 !
         if (.not.(n==n1 .and. ipz==0)) then
-          dt1_max=max(dt1_max*1D0 ,newton/cdts)
+          dt1_max=max(dt1_max*1D0 ,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
         endif
       endif
 !
