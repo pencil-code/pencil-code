@@ -1426,7 +1426,7 @@ module Special
         vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-        if (lrotin) then 
+        if (lrotin) then
           call helmholtz(wscr,wscr2)
           !* war vorher 5 ; zum testen auf  50
           ! nvor is now keyword !!!
@@ -1673,7 +1673,7 @@ module Special
       do j=1,nxgrid
         kx=ci*(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
 !
-        if (j.eq.nxgrid/2+1) kx=0.   
+        if (j.eq.nxgrid/2+1) kx=0.
         do k=1,nygrid
           ky=ci*(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
           if (k.eq.nygrid/2+1) ky=0.
