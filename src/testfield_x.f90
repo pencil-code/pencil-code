@@ -836,11 +836,8 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1
-      real, dimension (nz*nprocz*3*njtest) :: uxbtestm2,uxbtestm3
-!
-      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1
-      real, dimension (nz*nprocz*3*njtest) :: jxbtestm2,jxbtestm3
+      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
+      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
@@ -890,14 +887,12 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        uxbtestm2=reshape(uxbtestm1,shape=(/nz*nprocz*3*njtest/))
-        call mpireduce_sum(uxbtestm2,uxbtestm3,(/nz,nprocz,3,njtest/))
-        call mpibcast_real(uxbtestm3,nz*nprocz*3*njtest)
-        uxbtestm1=reshape(uxbtestm3,shape=(/nz,nprocz,3,njtest/))
+        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/))
+        call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtest)
         do jtest=1,njtest
           do n=n1,n2
             do j=1,3
-              uxbtestm(n,j,jtest)=uxbtestm1(n-n1+1,ipz+1,j,jtest)
+              uxbtestm(n,j,jtest)=uxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
             enddo
           enddo
         enddo
@@ -939,14 +934,12 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        jxbtestm2=reshape(jxbtestm1,shape=(/nz*nprocz*3*njtest/))
-        call mpireduce_sum(jxbtestm2,jxbtestm3,(/nz,nprocz,3,njtest/))
-        call mpibcast_real(jxbtestm3,nz*nprocz*3*njtest)
-        jxbtestm1=reshape(jxbtestm3,shape=(/nz,nprocz,3,njtest/))
+        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtest/))
+        call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtest)
         do jtest=1,njtest
           do n=n1,n2
             do j=1,3
-              jxbtestm(n,j,jtest)=jxbtestm1(n-n1+1,ipz+1,j,jtest)
+              jxbtestm(n,j,jtest)=jxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
             enddo
           enddo
         enddo

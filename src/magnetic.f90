@@ -80,6 +80,7 @@ module Magnetic
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
+  character (len=labellen) :: meanfield_etat_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
   character (len=labellen) :: fring_profile='tanh'
 !
@@ -112,10 +113,11 @@ module Magnetic
   real :: rmode=1.0, rm_int=0.0, rm_ext=0.0
   real :: nu_ni=0.0, nu_ni1,hall_term=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
-  real :: meanfield_etat=0.0
+  real :: meanfield_etat=0.0, meanfield_etat_height=1.
   real :: alpha_eps=0.0
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
+  real :: meanfield_Beq=1.0
   real :: meanfield_Qs=1.0, meanfield_Qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
@@ -230,8 +232,9 @@ module Magnetic
       hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
       alpha_eps, lmeanfield_noalpm, alpha_profile, &
       ldelta_profile, delta_effect, delta_profile, &
-      meanfield_etat, lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      meanfield_Qs, meanfield_Qp, meanfield_qe, &
+      meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
+      lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
+      meanfield_Qs, meanfield_Qp, meanfield_qe, meanfield_Beq, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
@@ -1708,6 +1711,7 @@ module Magnetic
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb,alpha_total
+      real, dimension (nx) :: meanfield_etat_tmp, meanfield_detatdz_tmp
       real, dimension (nx) :: alpha_tmp, delta_tmp
       real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: jcrossb2
@@ -1965,9 +1969,9 @@ module Magnetic
             !call dot(Bk_Bki,p%bb,BiBk_Bki)
 !           call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki*p%rho1*meanfield_urms21,p%bb,p%jxb)
           else
-            meanfield_Bs21=1./meanfield_Bs**2
-            meanfield_Bp21=1./meanfield_Bp**2
-            meanfield_Be21=1./meanfield_Be**2
+            meanfield_Bs21=1./(meanfield_Bs/meanfield_Beq)**2
+            meanfield_Bp21=1./(meanfield_Bp/meanfield_Beq)**2
+            meanfield_Be21=1./(meanfield_Be/meanfield_Beq)**2
             meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
             meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
             meanfield_qe_func=    meanfield_qe    *(1.-2*pi_1*atan(p%b2*meanfield_Be21))
@@ -2135,15 +2139,41 @@ module Magnetic
 !  Compute diffusion term
 !
         if (meanfield_etat/=0.0) then
+          select case (meanfield_etat_profile)
+          case ('const')
+            meanfield_etat_tmp=1.
+            meanfield_detatdz_tmp=0.
+          case ('exp(z/H)')
+            meanfield_etat_tmp=exp(z(n)/meanfield_etat_height)
+            meanfield_detatdz_tmp=meanfield_etat_tmp/meanfield_etat_height
+          case default;
+            call inevitably_fatal_error('calc_pencils_magnetic', &
+              'no such meanfield_etat_profile profile')
+          endselect
+!
+!  Scale with meanfield_etat
+!
+          meanfield_etat_tmp=meanfield_etat*meanfield_etat_tmp
+!
+!  Magnetic etat quenching (contribution to pumping currently ignored)
+!
+          if (meanfield_etaB/=0.0) then
+            meanfield_etaB2=meanfield_etaB**2
+            meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
+          endif
+!
+!  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
+!
+          p%mf_EMF(:,1)=p%mf_EMF(:,1)+.5*meanfield_detatdz_tmp*p%bb(:,2)
+          p%mf_EMF(:,2)=p%mf_EMF(:,2)-.5*meanfield_detatdz_tmp*p%bb(:,1)
+!
+!  apply diffusion term (simple in Weyl gauge, which is not
+!  the default!), and not yet correct if not Weyl gauge.
+!
           if (lweyl_gauge) then
-            if (meanfield_etaB/=0.0) then
-              meanfield_etaB2=meanfield_etaB**2
-              call multsv_mn_add(meanfield_etat/sqrt(1.+p%b2/meanfield_etaB2),p%jj,p%mf_EMF)
-            else
-              p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
-            endif
+            call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
           else
-            p%mf_EMF=p%mf_EMF+meanfield_etat*p%del2a
+            call multsv_mn_add(+meanfield_etat_tmp,p%del2a,p%mf_EMF)
           endif
 !
 !  Allow for possibility of variable etat.
