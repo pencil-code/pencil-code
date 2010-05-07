@@ -1388,10 +1388,11 @@ module Special
       call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
-        call rdpoints((max(level-1,0))*1000+isnap)
+        call rdpoints(level)
         if (.not.associated(current%next)) then
           call driveinit
-          call wrpoints(isnap+1000*max(level-1,0))
+          call wrpoints(level,0)
+          call wrpoints(level)
         endif
       else
         call updatepoints
@@ -1453,14 +1454,14 @@ module Special
       endif
 !
       if (t >= tsnap_uu) then
-        call wrpoints(isnap+1000*(level-1))
+        call wrpoints(level,isnap)
         tsnap_uu = tsnap_uu + dsnap
         isnap  = isnap + 1
       endif
       if (itsub .eq. 3) &
           lstop = file_exists('STOP')
-      if (lstop.or.t>=tmax .or. it.eq.nt) &
-          call wrpoints(isnap+1000*(level-1))
+      if (lstop.or.t>=tmax .or. it.eq.nt.or.mod(it,isave).eq.0) &
+          call wrpoints(level)
 !
     endsubroutine drive3
 !***********************************************************************
@@ -1473,21 +1474,21 @@ module Special
 !
     endsubroutine resetarr
 !***********************************************************************
-    subroutine rdpoints(isnap2)
+    subroutine rdpoints(level)
 !
       real,dimension(6) :: tmppoint
       integer :: iost,rn
-      integer,intent(in) :: isnap2
+      integer,intent(in) :: level
       logical :: ex
-      character(len=21) :: filename
+      character(len=20) :: filename
 !
-      write (filename,'("driver/points",I4.4,".dat")') isnap2
+      write (filename,'("driver/pts_",I1.1,".dat")') level
 !
       inquire(file=filename,exist=ex)
 !
       if (ex) then
         inquire(IOLENGTH=rn) dy
-        print*,'reading velocity field nr',isnap2
+        print*,'Reading granule level ',level,':',filename
         open(10,file=filename,status="unknown",access="direct",recl=6*rn)
         iost=0
 !
@@ -1514,16 +1515,22 @@ module Special
 !
     endsubroutine rdpoints
 !***********************************************************************
-    subroutine wrpoints(issnap)
+    subroutine wrpoints(level,issnap)
 !
       integer :: rn=1
-      integer,intent(in) :: issnap
+      integer, optional, intent(in) :: issnap
+      integer,intent(in) :: level
       real,dimension(6) :: posdata
-      character(len=21) :: filename
+      character(len=20) :: filename
 !
       inquire(IOLENGTH=rn) dy
 !
-      write (filename,'("driver/points",I4.4,".dat")') issnap
+      if (present(issnap)) then
+        write (filename,'("driver/pts_",I1.1,"_",I3.3,".dat")') level,issnap
+      else
+        write (filename,'("driver/pts_",I1.1,".dat")') level
+      endif
+
       open(10,file=filename,status="replace",access="direct",recl=6*rn)
 !
       do
