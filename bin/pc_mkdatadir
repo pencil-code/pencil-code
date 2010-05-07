@@ -160,7 +160,7 @@ else if ($hn =~ andromeda ) then # andromeda.qmul.ac.uk
   set str='s/users/andromeda\/scratch/g'
 else if ($hn =~ taurus ) then # taurus.qmul.ac.uk
   echo $hn
-  set str='s/home/state\/partition1\/scratch/g'
+  set str='s/home/share\/scratch/g'
 else if ($hn =~ mhdc ) then # ukmhd cluster 
   echo $hn
   set str='s/home/workspace/g'
