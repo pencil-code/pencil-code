@@ -50,6 +50,7 @@ module Special
 !!
 !!   integer :: i_POSSIBLEDIAGNOSTIC=0
 !!
+    integer :: idiag_dtnewt
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
@@ -478,18 +479,21 @@ module Special
 !
       if (lreset) then
         idiag_dtchi2=0.
+        idiag_dtnewt=0.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
+        call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
       enddo
 !
 !  write column where which variable is stored
 !
       if (lwr) then
         write(3,*) 'i_dtchi2=',idiag_dtchi2
+        write(3,*) 'i_dtnewt=',idiag_dtnewt
       endif
 !
     endsubroutine rprint_special
@@ -628,7 +632,9 @@ module Special
 !***********************************************************************
     subroutine calc_heat_cool_newton(df,p)
 !
-!  newton cooling
+!  newton cooling dT/dt = -1/tau * (T-T0)
+!
+      use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -718,9 +724,11 @@ module Special
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
       !
       if (lfirst.and.ldt) then
-!
-        if (.not.(n==n1 .and. ipz==0)) then
-          dt1_max=max(dt1_max*1D0 ,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
+        if (ldiagnos.and.idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt)=ilabel_max_dt
+          call max_mn_name(tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts &
+              ,idiag_dtnewt,l_dt=.true.)
+          dt1_max=max(dt1_max,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
         endif
       endif
 !
@@ -980,8 +988,9 @@ module Special
 !  30-jan-08/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub,             only: cubic_step
+      use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
+      use Sub,             only: cubic_step
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
@@ -1013,16 +1022,18 @@ module Special
 !
       if (ltemperature) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-!         if (itsub .eq. 3 .and. ip .eq. 118) &
-!             call output_pencil(trim(directory)//'/rtv.dat',rtv_cool,1)
       else
         if (lentropy) &
             call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
       endif
 !
       if (lfirst.and.ldt) then
-        !
-        dt1_max=max(dt1_max,rtv_cool/cdts)
+        if (ldiagnos.and.idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt)=ilabel_max_dt
+          call max_mn_name(rtv_cool/cdts &
+              ,idiag_dtnewt,l_dt=.true.)
+          dt1_max=max(dt1_max,rtv_cool/cdts)
+        endif
       endif
 !
     endsubroutine calc_heat_cool_RTV
@@ -1063,7 +1074,7 @@ module Special
 !
       real, dimension (nx) :: lnTT,get_lnQ
       real, dimension (nx) :: slope,ordinate
-      integer :: i,cool_type=1
+      integer :: i,cool_type=2
 !
 !  select type for cooling fxunction
 !  1: 10 points interpolation
@@ -1083,7 +1094,6 @@ module Special
         enddo
 !
       case(2)
-        call fatal_error('get_lnQ','this will slow down to much')
         do i=1,36
           where(lnTT .ge. intlnT(i) .and. lnTT .lt. intlnT(i+1))
             slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
