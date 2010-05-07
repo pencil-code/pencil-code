@@ -66,7 +66,7 @@ module Diagnostics
 !  done after each reload of run.in, but this is the easiest way
 !  of doing it.
 !
-        if (nrcyl/=0) then 
+        if (nrcyl/=0) then
           drcyl=xyz1(1)/nrcyl
         else
           drcyl=0.0
@@ -202,7 +202,6 @@ module Diagnostics
 !  Communicate over all processors.
 !
       call mpireduce_sum(mass_per_proc,mass,1)
-
 !
 !  The result is present everywhere
 !
@@ -317,7 +316,7 @@ module Diagnostics
             if (itype_name(iname)==ilabel_max_reciprocal) &
                 fname(iname)=1./fmax(imax_count)
 !
-          elseif (itype_name(iname)>0) then 
+          elseif (itype_name(iname)>0) then
             isum_count=isum_count+1
 !
             if (itype_name(iname)==ilabel_sum)            &
@@ -452,7 +451,7 @@ module Diagnostics
     subroutine phizaverages_r()
 !
 !  Calculate phiz-averages (still depending on r).
-!  
+!
 !  29-jan-07/wlad: adapted from yzaverages_x and phiaverages_rz
 !
       real, dimension (nrcyl,nnamer) :: fsumr
@@ -652,8 +651,8 @@ module Diagnostics
 !
 !  Also write rcyl to the output. It is needed just once, since it will
 !  not change over the simulation. The condition "if (it==1)" is not the
-!  best one, since it is reset upon restarting of a simulation and 
-!  therefore one has to manually remove the extra(s) rcyl from 
+!  best one, since it is reset upon restarting of a simulation and
+!  therefore one has to manually remove the extra(s) rcyl from
 !  the phizaverages.dat file
 !
 !  29-jan-07/wlad: adapted from write_yzaverages
@@ -813,7 +812,7 @@ module Diagnostics
       if (cname(1:length)==ctest .and. itest==0) then
         itest=iname
         fparse_name=iname
-      else 
+      else
         fparse_name=0
       endif
 !
@@ -829,8 +828,8 @@ module Diagnostics
 !***********************************************************************
     subroutine parse_name(iname,cname,cform,ctest,itest)
 !
-!   subroutine wrapper around fparse_name function: ignores return value 
-
+!   subroutine wrapper around fparse_name function: ignores return value
+!
 !   26-nov-09/MR: coded
 !
       character (len=*) :: cname,cform
@@ -839,11 +838,11 @@ module Diagnostics
 !
       intent(in)    :: iname,cname,ctest
       intent(inout) :: itest,cform
-
+!
       integer iret;
-
+!
       iret = fparse_name(iname,cname,cform,ctest,itest)
-
+!
     endsubroutine parse_name
 !***********************************************************************
     subroutine expand_cname(ccname,nname,vlabel,xlabel,ylabel,zlabel)
@@ -954,13 +953,13 @@ module Diagnostics
       integer, intent(in) :: iname
 !
      if (lfirstpoint) then
-
+!
        fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
 !
        itype_name(iname)=ilabel_sum
-
+!
      else
        fname(iname)=fname(iname)+a
      endif
@@ -1104,14 +1103,13 @@ module Diagnostics
     subroutine sum_mn_name_halfy(a,iname)
 !
 !  To calculate averages over half the size of box, useful for simulations
-!  which includes equator (either cartesian or spherical).  
+!  which includes equator (either cartesian or spherical).
 !
 !  dhruba : aped from sum_mn_name
 !
       real, dimension (nx) :: a
       real :: sum_name
       integer :: iname
-
 !
       if (iname /= 0) then
         sum_name=0
@@ -1156,8 +1154,8 @@ module Diagnostics
     subroutine sum_mn_name_halfz(a,iname)
 !
 ! To calculate averages over half the size of box (this time divided along the z
-! direction), useful for simulations which includes equator (either cartesian 
-! or spherical).  
+! direction), useful for simulations which includes equator (either cartesian
+! or spherical).
 !
 !  7-may-09/dhruba: aped from sum_mn_name_halfy
 !
@@ -1272,7 +1270,7 @@ module Diagnostics
         else
           call warning("sum_lim_mn_name","no reason to call it if you are "//&
                "not using a cylinder or a sphere embedded in a "//&
-               "Cartesian grid") 
+               "Cartesian grid")
         endif
 !
          dv=1.
@@ -1292,7 +1290,7 @@ module Diagnostics
             if (lspherical_coords)then
               fname(iname) = 0.
               do isum=l1,l2
-                fname(iname)=fname(iname)+ & 
+                fname(iname)=fname(iname)+ &
                         x(isum)*x(isum)*sinth(m)*aux(isum-nghost)*dv
               enddo
             else
@@ -1301,7 +1299,7 @@ module Diagnostics
          else
             if (lspherical_coords)then
               do isum=l1,l2
-                fname(iname)=fname(iname)+ &  
+                fname(iname)=fname(iname)+ &
                       x(isum)*x(isum)*sinth(isum)*aux(isum-nghost)*dv
               enddo
             else
@@ -1350,7 +1348,7 @@ module Diagnostics
 !  Note, for regular integration (uniform meshes) it is better
 !  to use the usual sum_mn_name routine with lint=.true.
 !
-!   1-dec-09/dhruba+piyali: 
+!   1-dec-09/dhruba+piyali:
 !
       real, dimension (nx) :: a,fac
       real :: inta
@@ -1368,7 +1366,7 @@ module Diagnostics
       endif
 !
     endsubroutine integrate_mn
-
+!
 !***********************************************************************
     subroutine integrate_mn_name(a,iname)
 !
@@ -1429,12 +1427,12 @@ module Diagnostics
       if (.not.loutside_avg) then
         if (lspherical_coords.or.lcylindrical_coords)then
           do isum=l1,lmax
-            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
                                 x(isum)*a(isum-nghost)
           enddo
         else
          do isum=l1,lmax
-           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ & 
+           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
                                a(isum-nghost)
          enddo
         endif
@@ -1557,13 +1555,13 @@ module Diagnostics
 !  which are later merged with an mpi reduce command.
 !
       if (lfirstpoint) fnamey(:,:,iname) = 0.
-
+!
       fac = 1.
-
+!
       if ((n==n1.and.ipz==0).or.(n==n2.and.ipz==nprocz-1)) then
         if (.not.lperi(3)) fac = .5*fac
       endif
-
+!
       if (lperi(1)) then
         suma = fac*sum(a)
       else
@@ -1573,7 +1571,7 @@ module Diagnostics
 !  m starts with mghost+1=4, so the correct index is m-nghost.
 !
       fnamey(m-nghost,ipy+1,iname) = fnamey(m-nghost,ipy+1,iname) + suma
-
+!
     endsubroutine xzintegrate_mn_name_y
 !***********************************************************************
     subroutine yzintegrate_mn_name_x(a,iname)
@@ -1714,7 +1712,7 @@ module Diagnostics
           call warning('calc_phiavg_profile', &
           'no reason to call it if you are '//&
           'not using a cylinder or a sphere embedded in a '//&
-          'Cartesian grid') 
+          'Cartesian grid')
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
@@ -1828,7 +1826,7 @@ module Diagnostics
             'fnamez  with nnamez  =', nnamez
       endif
 !
-      allocate(cnamez(nnamez),cformz(nnamez)) 
+      allocate(cnamez(nnamez),cformz(nnamez))
 !
     endsubroutine allocate_xyaverages
 !***********************************************************************
@@ -1850,7 +1848,7 @@ module Diagnostics
             'fnamey  with nnamey  =', nnamey
       endif
 !
-      allocate(cnamey(nnamey),cformy(nnamey)) 
+      allocate(cnamey(nnamey),cformy(nnamey))
 !
     endsubroutine allocate_xzaverages
 !***********************************************************************
@@ -1872,7 +1870,7 @@ module Diagnostics
             'fnamex  with nnamex  =', nnamex
       endif
 !
-      allocate(cnamex(nnamex),cformx(nnamex)) 
+      allocate(cnamex(nnamex),cformx(nnamex))
 !
     endsubroutine allocate_yzaverages
 !***********************************************************************
@@ -1895,7 +1893,7 @@ module Diagnostics
             'fnamer  with nnamer+1 =', mnamer
       endif
 !
-      allocate(cnamer(nnamer),cformr(nnamer)) 
+      allocate(cnamer(nnamer),cformr(nnamer))
 !
     endsubroutine allocate_phizaverages
 !***********************************************************************
@@ -1917,7 +1915,7 @@ module Diagnostics
             'fnamexz with nnamexz =', nnamexz
       endif
 !
-      allocate(cnamexz(nnamexz),cformxz(nnamexz)) 
+      allocate(cnamexz(nnamexz),cformxz(nnamexz))
 !
     endsubroutine allocate_yaverages
 !*******************************************************************
@@ -2067,9 +2065,9 @@ module Diagnostics
 !
      integer :: lx
 !
-     if (xav_max.lt.x(l1)) loutside_avg=.true.  
+     if (xav_max.lt.x(l1)) loutside_avg=.true.
 !
-     ixav_max=l1   
+     ixav_max=l1
 !
      do lx=l1,l2
        if (x(lx).lt.xav_max) ixav_max=lx
