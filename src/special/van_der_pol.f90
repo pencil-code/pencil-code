@@ -70,21 +70,19 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
+      logical :: lstarting
 !
-! DO NOTHING
+!  Initialize any module variables which are parameter dependent
+!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

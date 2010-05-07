@@ -93,7 +93,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  Perform any necessary post-parameter read initialization
 !  Dummy routine
@@ -101,8 +101,10 @@ module Special
 !  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

@@ -93,9 +93,10 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
-!  called by run.f90 after reading parameters, but before the time loop
+!  called by run.f90 after reading parameter either at the beginning 
+!  or if RELOAD is found
 !
 !  06-oct-03/tony: coded
 !
@@ -103,11 +104,12 @@ module Special
 !
       real :: zref
       integer :: i
+      logical :: lstarting
 !
       call keep_compiler_quiet(f)
 !
       if (lgranulation.and.ipz.eq.0) then
-        call setdrparams()
+        call setdrparams(lstarting)
         tsnap_uu = t + dsnap
         isnap = int(t/dsnap)
 !
@@ -1132,7 +1134,9 @@ module Special
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
-    subroutine setdrparams()
+    subroutine setdrparams(lstarting)
+!
+      logical :: lstarting
 !
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain,  x-position, y-position,
@@ -1197,12 +1201,14 @@ module Special
         print*,'-----------------------------------'
       endif
 !
-      if (associated(first)) nullify(first)
-      if (associated(current)) nullify(current)
-      if (associated(previous)) nullify(previous)
-      if (associated(firstlev)) nullify(firstlev)
-      if (associated(secondlev)) nullify(secondlev)
-      if (associated(thirdlev)) nullify(thirdlev)
+      if (lstarting) then
+        if (associated(first)) nullify(first)
+        if (associated(current)) nullify(current)
+        if (associated(previous)) nullify(previous)
+        if (associated(firstlev)) nullify(firstlev)
+        if (associated(secondlev)) nullify(secondlev)
+        if (associated(thirdlev)) nullify(thirdlev)
+      endif
 !
     endsubroutine setdrparams
 !***********************************************************************

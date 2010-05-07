@@ -153,7 +153,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -161,15 +161,12 @@ module Special
 !
       use EquationOfState
 !
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 !
 !  Initialize any module variables which are parameter dependent
 !
-!
-!
       l1D_cool_heat=l1D_cooling.or.l1D_heating
-!
 !
       if (l1D_cool_heat.and.lroot) &
           print*, 'neutron_star: 1D cooling or heating'
@@ -183,6 +180,7 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

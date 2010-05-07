@@ -110,17 +110,17 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       if (lfargo_advection) then
         print*,''
@@ -128,7 +128,7 @@ module Special
         print*,' SPECIAL = special/fargo'
         print*,'in src/Makefile.local if you want to use the fargo algorithm'
         print*,''
-        call stop_it("")
+        call fatal_error('nospecial','initialize_special()')
       endif
 !
     endsubroutine initialize_special
@@ -148,8 +148,8 @@ module Special
 !!        case ('nothing'); if (lroot) print*,'init_special: nothing'
 !!        case ('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
 !!        case default
-!!          if (lroot) print*,'init_special: No such value for initspecial: ', trim(initspecial)
-!!          call stop_it("")
+!!          call fatal_error("init_special: No such value for initspecial:" &
+!!              ,trim(initspecial))
 !!      endselect
 !
       call keep_compiler_quiet(f)
@@ -203,12 +203,10 @@ module Special
 !  Due to the multi-step Runge Kutta timestepping used one MUST always
 !  add to the present contents of the df array.  NEVER reset it to zero.
 !
-!  several precalculated Pencils of information are passed if for
+!  Several precalculated Pencils of information are passed for
 !  efficiency.
 !
 !  06-oct-03/tony: coded
-!
-      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -231,7 +229,7 @@ module Special
 !!! see also integrate_mn_name
 !!        endif
 !!      endif
-! Keep compiler quiet by ensuring every parameter is used
+!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
@@ -294,7 +292,8 @@ module Special
       endif
 !!
 !!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
+!!        call parse_name(iname,cname(iname),cform(iname),&
+!!            'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
 !!      enddo
 !!
 !!!  write column where which magnetic variable is stored

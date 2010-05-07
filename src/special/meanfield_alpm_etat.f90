@@ -97,7 +97,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  Perform any necessary post-parameter read initialization
 !  Dummy routine
@@ -105,6 +105,7 @@ module Special
 !  24-nov-02/tony: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 ! 
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -112,7 +113,9 @@ module Special
 ! set the magnetic Reynold number :
 !      Rm_alpm=etat_alpm/eta
 !      write(*,*) 'Dhruba', Rm_alpm,etat_alpm
+!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

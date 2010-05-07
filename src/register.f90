@@ -339,7 +339,7 @@ module Register
       call initialize_testperturb()
       call initialize_shock(f,lstarting)
       call initialize_viscosity(lstarting)
-      call initialize_special(f)
+      call initialize_special(f,lstarting)
       call initialize_border_profiles()
       call initialize_solid_cells()
       call initialize_implicit_physics(f)

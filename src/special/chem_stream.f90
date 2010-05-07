@@ -165,27 +165,23 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
-   !   use Density
       use EquationOfState
-
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
-    if (unit_system == 'cgs') then
-         Rgas_unit_sys = k_B_cgs/m_u_cgs
-         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
-       endif
-
-
+      logical :: lstarting
+!
+!  Initialize any module variables which are parameter dependent
+!
+      if (unit_system == 'cgs') then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+      endif
 !
 !  Make sure initialization (somehow) works with eos_ionization.f90
 !
@@ -196,6 +192,7 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

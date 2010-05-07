@@ -118,17 +118,14 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState
-      use Sub
-
-!
       real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
 !
 !  Initialize any module variables which are parameter dependant
 !
@@ -137,6 +134,7 @@ module Special
       rmask12=rmask1**2
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

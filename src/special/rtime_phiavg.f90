@@ -124,7 +124,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -132,9 +132,9 @@ module Special
 !
       use EquationOfState
       use Sub
-
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
       real :: rloop_int,rloop_ext,tmp,drc1
       integer :: ir
 !
@@ -142,9 +142,9 @@ module Special
 !
       if (r_int.ne.0) rt_int=r_int
       if (r_ext.ne.impossible) rt_ext=r_ext
-
+!
       if (lroot) print*,'rt_int,rt_ext',rt_int,rt_ext
-
+!
       tmp = (rt_ext - rt_int)/nrcylrun
 !
       drc=tmp
@@ -160,6 +160,7 @@ module Special
       if (nzgrid==1) nd=2
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

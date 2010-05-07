@@ -74,13 +74,14 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
 !
 !  Initialize module variables which are parameter dependent
 !  set cosine and sine function for setting test fields and analysis
@@ -97,6 +98,7 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

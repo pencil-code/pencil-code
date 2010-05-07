@@ -150,40 +150,40 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
-   !   use Density
       use EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
       integer :: k
-!!
-!!  Initialize any module variables which are parameter dependent
-!!
-       if (unit_system == 'cgs') then
-         Rgas_unit_sys = k_B_cgs/m_u_cgs
-         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
-       endif
-
-        do k=1,nchemspec
-         if (trim(varname(ichemspec(k)))=='CLOUD') then
+!
+!  Initialize any module variables which are parameter dependent
+!
+      if (unit_system == 'cgs') then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+      endif
+!      
+      do k=1,nchemspec
+        if (trim(varname(ichemspec(k)))=='CLOUD') then
           ind_cloud=k
-         endif
-         if (trim(varname(ichemspec(k)))=='H2O') then
+        endif
+        if (trim(varname(ichemspec(k)))=='H2O') then
           ind_water=k
-         endif
-
-        enddo
-
-        print*,'cloud index', ind_cloud
-        print*,'water index', ind_water
+        endif
+!        
+      enddo
+!      
+      print*,'cloud index', ind_cloud
+      print*,'water index', ind_water
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************

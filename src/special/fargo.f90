@@ -82,16 +82,16 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata 
-      use Mpicomm
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 !   
       if (.not.lfargo_advection) then
         print*,""
@@ -136,6 +136,9 @@ module Special
 !
       if (lentropy.or.ltemperature) call stop_it("fargo advection not "//&
           "implemented for the energy equation")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
