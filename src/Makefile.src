@@ -1033,6 +1033,13 @@ endif
 #CC=mpicc #(andromeda.maths.qmul.ac.uk)
 #CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(andromeda.maths.qmul.ac.uk)
 ##
+## Dhruba on taurus.qmul cluster
+##
+#FC=mpif90    -L${HOME}/Library/lib #(taurus)
+#FFLAGS= -O3  #(taurus)
+#CC=mpicc #(taurus) 
+#CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(taurus)
+##
 ## Dhruba at manchester, lancaster, liverpool
 ## 
 #FC = mpif90 #(man2|penumbra|lv1)
