@@ -103,6 +103,7 @@ module Chemistry
      real :: chem_diff=0.
      character (len=labellen), dimension (ninit) :: initchem='nothing'
      character (len=labellen), allocatable, dimension (:) :: kreactions_profile
+     character (len=60) :: prerun_directory
 !
      real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
      real, allocatable, dimension(:,:,:,:) :: Diff_full, Diff_full_add
@@ -140,7 +141,7 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
       ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,linit_velocity, &
-      latmchem, lcloud
+      latmchem, lcloud, prerun_directory
 !
 !
 ! run parameters
@@ -480,6 +481,8 @@ module Chemistry
           call flame_blob(f)
         case ('flame_slab')
           call flame_slab(f)
+        case ('prerun_1D')
+          call prerun_1D(f,prerun_directory)
         case default
 !
 !  Catch unknown values
@@ -2745,7 +2748,8 @@ module Chemistry
                             !    if (lroot) print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),&
                             !        ind_chem,k
                               else
-                                call stop_it("Did not find specie!")
+                                print*,'ChemInpLine=',ChemInpLine_add
+                                call stop_it("read_reactions: Did not find specie!")
                               endif
                             endif
                             StartInd_add=StopInd_add+2
@@ -2876,7 +2880,11 @@ module Chemistry
         call find_species_index(ChemInpLine(StartSpecie:StopInd),&
             ind_glob,ind_chem,found_specie)
 !
-        if (.not. found_specie) call stop_it("Did not find specie!")
+        if (.not. found_specie) then
+          print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
+          print*,'ind_glob,ind_chem=',ind_glob,ind_chem
+          call stop_it("build_stoich_matrix:Did not find specie!")
+        endif
         if (StartSpecie==StartInd) then
           stoi=1
         else
@@ -4385,6 +4393,43 @@ module Chemistry
       end select
 !
     endsubroutine calc_extra_react
+!***********************************************************************
+    subroutine prerun_1D(f,directory)
+!
+!  read snapshot file, possibly with mesh and time (if mode=1)
+!  11-apr-97/axel: coded
+!
+      use Cdata
+!
+      character (len=*) :: directory
+      character (len=100) :: file
+      character (len=10) :: processor
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,7,7,mfarray) :: a
+      integer :: j,k
+!
+! NILS: For the time beeing the prerun simulation can not have been run in parallell
+! NILS: Should fix this soon.
+!
+      processor='proc0'
+      file=trim(directory)//'/data/'//trim(processor)//'/var.dat'
+      print*,'Reading inlet data from ',file
+!
+!  Open and read data from file
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) a
+      close(1)
+!
+!  Spread the data on the f-array
+!
+      do j=1,my
+        do k=1,mz
+          f(:,j,k,:)=a(:,m1,n1,:)
+        enddo
+      enddo
+!
+    endsubroutine prerun_1D
 !***********************************************************************
   subroutine chemistry_clean_up()
 !
