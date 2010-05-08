@@ -79,6 +79,9 @@ module EquationOfState
 !
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data
+
+
+!NILS: Why do we spend a lot of memory allocating these variables here????
  real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full, rho_full, TT_full
 !
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
@@ -577,13 +580,13 @@ module EquationOfState
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_full_tmp
 
-      if (ldensity_nolog) then
+      if (ltemperature_nolog) then
         TT_full_tmp=f(:,:,:,ilnTT)
       else
         TT_full_tmp=exp(f(:,:,:,ilnTT))
       endif
         TT_full=TT_full_tmp
-
+!
    endsubroutine gettemperature
 !***********************************************************************
   subroutine getpressure(pp_full_tmp)
