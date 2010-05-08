@@ -105,7 +105,8 @@ module Chemistry
      character (len=labellen), allocatable, dimension (:) :: kreactions_profile
 !
      real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
-     real, dimension (mx,my,mz,nchemspec) :: Diff_full, Diff_full_add, XX_full
+     real, allocatable, dimension(:,:,:,:) :: Diff_full, Diff_full_add
+     real, dimension (mx,my,mz,nchemspec) :: XX_full
      real, dimension (mx,my,mz,nchemspec) :: species_viscosity
      real, dimension (mx,my,mz,nchemspec), save :: RHS_Y_full
      real, dimension(nchemspec) :: nu_spec=0., mobility=1.
@@ -148,7 +149,7 @@ module Chemistry
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry,  &
       lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
-      ldamp_left, ldamp_right
+      ldamp_left, ldamp_right,lDiff_simple,lThCond_simple,visc_const,cp_const
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -642,31 +643,32 @@ module Chemistry
           if (.not. lT_const) then
            do j1=1,nx
            do k=1,nchemspec
-            T_low=species_constants(k,iTemp1)
-            T_mid=species_constants(k,iTemp2)
-            T_up= species_constants(k,iTemp3)
-              T_loc= p%TT(j1)
-               if (T_loc <= T_mid) then
-                 p%H0_RT(j1,k)=species_constants(k,iaa2(ii1)) &
-                              +species_constants(k,iaa2(ii2))*T_loc/2 &
-                              +species_constants(k,iaa2(ii3))*p%TT_2(j1)/3 &
-                              +species_constants(k,iaa2(ii4))*p%TT_3(j1)/4 &
-                              +species_constants(k,iaa2(ii5))*p%TT_4(j1)/5 &
-                              +species_constants(k,iaa2(ii6))/T_loc
-               else
-                 p%H0_RT(j1,k)=species_constants(k,iaa1(ii1)) &
-                              +species_constants(k,iaa1(ii2))*T_loc/2 &
-                              +species_constants(k,iaa1(ii3))*p%TT_2(j1)/3 &
-                              +species_constants(k,iaa1(ii4))*p%TT_3(j1)/4 &
-                              +species_constants(k,iaa1(ii5))*p%TT_4(j1)/5 &
-                              +species_constants(k,iaa1(ii6))/T_loc
-               endif
+             T_low=species_constants(k,iTemp1)
+             T_mid=species_constants(k,iTemp2)
+             T_up= species_constants(k,iTemp3)
+             T_loc= p%TT(j1)
+             if (T_loc <= T_mid) then
+               p%H0_RT(j1,k)=species_constants(k,iaa2(ii1)) &
+                   +species_constants(k,iaa2(ii2))*T_loc/2 &
+                   +species_constants(k,iaa2(ii3))*p%TT_2(j1)/3 &
+                   +species_constants(k,iaa2(ii4))*p%TT_3(j1)/4 &
+                   +species_constants(k,iaa2(ii5))*p%TT_4(j1)/5 &
+                   +species_constants(k,iaa2(ii6))/T_loc
+             else
+               p%H0_RT(j1,k)=species_constants(k,iaa1(ii1)) &
+                   +species_constants(k,iaa1(ii2))*T_loc/2 &
+                   +species_constants(k,iaa1(ii3))*p%TT_2(j1)/3 &
+                   +species_constants(k,iaa1(ii4))*p%TT_3(j1)/4 &
+                   +species_constants(k,iaa1(ii5))*p%TT_4(j1)/5 &
+                   +species_constants(k,iaa1(ii6))/T_loc
+             endif
            enddo
            enddo
-          endif
+         endif
 !
 !  Enthalpy flux
 !
+
          if (lpencil(i_hhk_full) .and.lreactions) then
          do j1=1,nx
           do k=1,nchemspec
@@ -690,7 +692,7 @@ module Chemistry
          enddo
          endif
 !
-        endif
+       endif
 !
 !
 !
@@ -711,14 +713,14 @@ module Chemistry
        if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
        if  ((Diff_coef_const<impossible) .or. (lDiff_simple) ) then
          if (lDiff_simple) then
-           if (Diff_coef_const==impossible)  Diff_coef_const=10.
+           if (Diff_coef_const>impossible/2.)  Diff_coef_const=10.
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=Diff_coef_const &
                *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7  &
                *species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
            enddo
          elseif ((.not. lDiff_simple) .and. (Diff_coef_const<impossible)) then
-           p%Diff_penc_add(:,k)=Diff_coef_const
+           p%Diff_penc_add(:,:)=Diff_coef_const
          endif
       endif
       endif
@@ -735,12 +737,12 @@ module Chemistry
       RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
       endif
 !
-! Calculate chethermal diffusivity
+! Calculate the thermal diffusivity
 !
       if (lpencil(i_lambda) .and. lheatc_chemistry) then
       if ((lThCond_simple) .or. (lambda_const<impossible))then
         if (lThCond_simple) then
-          if (lambda_const==impossible) lambda_const=1e4
+          if (lambda_const>impossible/2.) lambda_const=1e4
           p%lambda=lambda_const &
              *(p%TT(:)/p%TT(1))**0.7*cp_full(l1:l2,m,n)/cp_full(l1,m,n)
           if (lpencil(i_glambda))  then
@@ -1241,16 +1243,16 @@ module Chemistry
 !
 !  Specific heat at constant pressure
 !
-        if ((Cp_const<impossible) .or. (Cv_const<impossible)) then
+          if ((Cp_const<impossible) .or. (Cv_const<impossible)) then
 !
-          if (Cp_const<impossible) then
-            cp_full=Cp_const*mu1_full
-            cv_full=(Cp_const-Rgas)*mu1_full
-          endif
+            if (Cp_const<impossible) then
+              cp_full=Cp_const*mu1_full
+              cv_full=(Cp_const-Rgas)*mu1_full
+            endif
 !
-          if (Cv_const<impossible) then
-            cv_full=Cv_const*mu1_full
-          endif
+            if (Cv_const<impossible) then
+              cv_full=Cv_const*mu1_full
+            endif
           else
           cp_full=0.
           cv_full=0.
@@ -1474,10 +1476,13 @@ module Chemistry
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-        do k=1,nchemspec
-        write(file_id,'(7E12.4)')Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
-                                 Diff_full(l2,m2,n2,k)*unit_length**2/unit_time
-        enddo
+        if (.not. ldiff_simple) then 
+          do k=1,nchemspec
+            write(file_id,'(7E12.4)')&
+                Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
+                Diff_full(l2,m2,n2,k)*unit_length**2/unit_time
+          enddo
+        endif
         write(file_id,*) ''
         if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
         close(file_id)
@@ -1741,10 +1746,19 @@ module Chemistry
 !  Allocate binary diffusion coefficient array
 !
       if (.not.lreloading) then
-        if (.not. lfix_Sc) then
+        if (.not. lfix_Sc .and. (.not. lDiff_simple)) then
+!NILS: Since Bin_diff_coeff is such a huge array we must check if it 
+!NILS: required to define it for the full domain!!!!!!
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
           if (stat>0) call stop_it("Couldn't allocate memory "//&
               "for binary diffusion coefficients")
+
+          allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
+          allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory "//&
+              "for binary diffusion coefficients")
+
+
         endif
       endif
 !
@@ -2022,7 +2036,7 @@ module Chemistry
           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
         else
           do j=1,nx
-            if (ldiffusion) then
+            if (ldiffusion .and. .not. ldiff_simple) then
 !
 !--------------------------------------
 !  This expression should be discussed
@@ -2997,51 +3011,50 @@ module Chemistry
       if (lwrite) write(file_id,*)'S0_R'
       if (lwrite)  write(file_id,*)'**************************'
 !
-        do i=1,nx
-          if (lpencil_check) then
-            T_loc=exp(f(l1+i-1,m,n,ilnTT))
-          else
-            T_loc=p%TT(i)
-          endif
+      do i=1,nx
+        if (lpencil_check) then
+          T_loc=exp(f(l1+i-1,m,n,ilnTT))
+        else
+          T_loc=p%TT(i)
+        endif
 !
         do k=1,nchemspec
-        if (species_constants(k,imass)>0.) then
-         T_low=species_constants(k,iTemp1)-10.
-         T_mid=species_constants(k,iTemp2)
-         T_up= species_constants(k,iTemp3)
+          if (species_constants(k,imass)>0.) then
+            T_low=species_constants(k,iTemp1)!-10.
+            T_mid=species_constants(k,iTemp2)
+            T_up= species_constants(k,iTemp3)
 !
-          if (T_loc <= T_mid .and. T_low <= T_loc) then
-            p%S0_R(i,k)=species_constants(k,iaa2(ii1))*p%lnTT(i) &
-                 +species_constants(k,iaa2(ii2))*T_loc &
-                 +species_constants(k,iaa2(ii3))*p%TT_2(i)/2 &
-                 +species_constants(k,iaa2(ii4))*p%TT_3(i)/3 &
-                 +species_constants(k,iaa2(ii5))*p%TT_4(i)/4 &
-                 +species_constants(k,iaa2(ii7))
-          elseif (T_mid <= T_loc .and. T_loc <= T_up) then
-            p%S0_R(i,k)=species_constants(k,iaa1(ii1))*p%lnTT(i) &
-                 +species_constants(k,iaa1(ii2))*T_loc &
-                 +species_constants(k,iaa1(ii3))*p%TT_2(i)/2 &
-                 +species_constants(k,iaa1(ii4))*p%TT_3(i)/3 &
-                 +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
-                 +species_constants(k,iaa1(ii7))
-          else
+            if (T_loc <= T_mid .and. T_low <= T_loc) then
+              p%S0_R(i,k)=species_constants(k,iaa2(ii1))*p%lnTT(i) &
+                  +species_constants(k,iaa2(ii2))*T_loc &
+                  +species_constants(k,iaa2(ii3))*p%TT_2(i)/2 &
+                  +species_constants(k,iaa2(ii4))*p%TT_3(i)/3 &
+                  +species_constants(k,iaa2(ii5))*p%TT_4(i)/4 &
+                  +species_constants(k,iaa2(ii7))
+            elseif (T_mid <= T_loc .and. T_loc <= T_up) then
+              p%S0_R(i,k)=species_constants(k,iaa1(ii1))*p%lnTT(i) &
+                  +species_constants(k,iaa1(ii2))*T_loc &
+                  +species_constants(k,iaa1(ii3))*p%TT_2(i)/2 &
+                  +species_constants(k,iaa1(ii4))*p%TT_3(i)/3 &
+                  +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
+                  +species_constants(k,iaa1(ii7))
+            else
            !   if (.not. latmchem) then
-                print*,'p%TT(i)=',p%TT(i),exp(p%lnTT(i)),i
-                  call fatal_error('get_reaction_rate',&
-                        'p%TT(i) is outside range')
+              print*,'p%TT(i)=',p%TT(i),exp(p%lnTT(i)),i
+              call fatal_error('get_reaction_rate',&
+                  'p%TT(i) is outside range')
            !   endif
+            endif
 !
+            if (lwrite)  then
+              write(file_id,*)&
+                  varname(ichemspec(k)), maxval(p%S0_R(:,k)), &
+                  minval(p%S0_R(:,k))
+            endif
           endif
-!
-        if (lwrite)  then
-          write(file_id,*)&
-          varname(ichemspec(k)), maxval(p%S0_R(:,k)), &
-              minval(p%S0_R(:,k))
-        endif
-        endif
         enddo
-        enddo
-        endif
+      enddo
+    endif
 !
 !  calculation of the reaction rate
 !
@@ -3057,60 +3070,60 @@ module Chemistry
         prod1=1.
         prod2=1.
         do k=1,nchemspec
-         if ((abs(Sijp(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
-          prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-              /species_constants(k,imass))**Sijp(k,reac)
-         endif
+          if ((abs(Sijp(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
+            prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                /species_constants(k,imass))**Sijp(k,reac)
+          endif
         enddo
         do k=1,nchemspec
-         if ((abs(Sijm(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
-          prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-              /species_constants(k,imass))**Sijm(k,reac)
-         endif
+          if ((abs(Sijm(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
+            prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                /species_constants(k,imass))**Sijm(k,reac)
+          endif
         enddo
 !
-      do i=1,nx
+        do i=1,nx
 !
 !  Find forward rate constant for reaction 'reac'
 !
-       if (latmchem) then
-         if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
-            .and. (E_an(reac)==0.)) then
-            call calc_extra_react(f,reac,kf(i),i,m,n,p)
-         else
-           kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)*p%TT1(i))
-         endif
-       else
-         kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
-       endif
+          if (latmchem) then
+            if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
+                .and. (E_an(reac)==0.)) then
+              call calc_extra_react(f,reac,kf(i),i,m,n,p)
+            else
+              kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)*p%TT1(i))
+            endif
+          else
+            kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
+          endif
 !
 !  Find backward rate constant for reaction 'reac'
 !
-       if (prod2(i)>0) then
-        dSR(i)=0.
-        dHRT(i)=0.
-        sum_tmp=0.
-        do k=1,nchemspec
-          dSR(i) =dSR(i)+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(i,k)
-          dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
-          sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
-        enddo
+          if (prod2(i)>0) then
+            dSR(i)=0.
+            dHRT(i)=0.
+            sum_tmp=0.
+            do k=1,nchemspec
+              dSR(i) =dSR(i)+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(i,k)
+              dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
+              sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+            enddo
 !
-       Kp(i)=exp(dSR(i)-dHRT(i))
-        if (sum_tmp==0.) then
-          Kc(i)=Kp(i)
-        else
-          Kc(i)=Kp(i)*(p_atm(i)*p%TT1(i)/Rgas)**sum_tmp
-        endif
-        if (Kc(i)==0. .and. (.not. latmchem)) then
-          print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
-          call fatal_error('get_reaction_rate',&
-                        'Kc(i)=0')
-        else
-         kr(i)=kf(i)/Kc(i)
-        endif
-       endif
-      enddo
+            Kp(i)=exp(dSR(i)-dHRT(i))
+            if (sum_tmp==0.) then
+              Kc(i)=Kp(i)
+            else
+              Kc(i)=Kp(i)*(p_atm(i)*p%TT1(i)/Rgas)**sum_tmp
+            endif
+            if (Kc(i)==0. .and. (.not. latmchem)) then
+              print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
+              call fatal_error('get_reaction_rate',&
+                  'Kc(i)=0')
+            else
+              kr(i)=kf(i)/Kc(i)
+            endif
+          endif
+        enddo
 !
 !
 !  Multiply by third body reaction term
@@ -3118,10 +3131,10 @@ module Chemistry
         if (minval(a_k4(:,reac))<impossible) then
           sum_sp=0.
           do k=1,nchemspec
-           if (species_constants(k,imass)>0.) then
-            sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
-                *rho_cgs(:)/species_constants(k,imass)
-           endif
+            if (species_constants(k,imass)>0.) then
+              sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
+                  *rho_cgs(:)/species_constants(k,imass)
+            endif
           enddo
           mix_conc=sum_sp
         else
@@ -3692,41 +3705,41 @@ module Chemistry
         else
 !
           if (ldiffusion) then
-!
             call del2(XX_full(:,:,:,k),del2XX)
             call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
 !
-           if (lDiff_simple) then
-            do i=1,3
-             gDiff_full_add(:,i)=species_constants(k,imass)/unit_mass* &
-               p%Diff_penc_add(:,k) &
-               *((p%glnTT(:,i)+p%glnrho(:,i))*(0.7-1.) &
-               *mu1_full(l1:l2,m,n)+p%gmu1(:,i))
-            enddo
-           else
-            call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-           endif
+            if (lDiff_simple) then
+              do i=1,3
+                gDiff_full_add(:,i)=species_constants(k,imass)/unit_mass* &
+                    p%Diff_penc_add(:,k) &
+                    *((p%glnTT(:,i)+p%glnrho(:,i))*(0.7-1.) &
+                    *mu1_full(l1:l2,m,n)+p%gmu1(:,i))
+              enddo
+            else
+              call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
+            endif
             call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
 !
-         !   call del2(pp_full(:,:,:),del2pp)
-            call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
+! Neglect terms including pressure gradients for the simplified diffusion
 !
-            del2lnpp=p%del2pp/p%pp-glnpp_glnpp
-!
-            do i=1,3
-             gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
-            enddo
+           if (.not. lDiff_simple) then 
+             call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
+             do i=1,3
+               gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
+             enddo
+             del2lnpp=p%del2pp/p%pp-glnpp_glnpp
              Xk_Yk=XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
-            call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
-            call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
-            call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
+             call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
+             call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
+             call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
+           endif
           endif
 !
           if (lDiff_simple) then
-           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2 &
-           +p%Diff_penc_add(:,k)*Xk_Yk(:)*del2lnpp &
-           +p%Diff_penc_add(:,k)*Xk_Yk(:)*glnrho_glnpp &
-           +Xk_Yk(:)*gD_glnpp+p%Diff_penc_add(:,k)*glnpp_gXkYk
+! Have removed all terms including pressure gradients as these are supposed
+! to be small and not required for such as crude approxiamtion as the simplified
+! diffustion method.            
+           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2
           else
            p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
            +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*del2lnpp &
