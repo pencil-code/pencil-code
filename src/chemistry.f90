@@ -2968,9 +2968,13 @@ module Chemistry
     endsubroutine write_reactions
 !***********************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
+!
 !  This subroutine calculates forward and reverse reaction rates,
 !  if chem.inp file exists.
 !  For more details see Chemkin Theory Manual
+!
+!  NILS: This routine is by far the most CPU intencive routine in the code,
+!  NILS: so one should maybe put some effort into optimizing it more.
 !
 !  17-mar-08/natalia: coded
 !
@@ -3010,49 +3014,43 @@ module Chemistry
       if (lwrite)  write(file_id,*)'**************************'
       if (lwrite) write(file_id,*)'S0_R'
       if (lwrite)  write(file_id,*)'**************************'
+
+
+      do k=1,nchemspec
+        if (species_constants(k,imass)>0.) then
+          T_low=species_constants(k,iTemp1)
+          T_mid=species_constants(k,iTemp2)
+          T_up= species_constants(k,iTemp3)
 !
-      do i=1,nx
-        if (lpencil_check) then
-          T_loc=exp(f(l1+i-1,m,n,ilnTT))
-        else
-          T_loc=p%TT(i)
-        endif
+!  Check that we are not outside the temperture range
 !
-        do k=1,nchemspec
-          if (species_constants(k,imass)>0.) then
-            T_low=species_constants(k,iTemp1)!-10.
-            T_mid=species_constants(k,iTemp2)
-            T_up= species_constants(k,iTemp3)
-!
-            if (T_loc <= T_mid .and. T_low <= T_loc) then
-              p%S0_R(i,k)=species_constants(k,iaa2(ii1))*p%lnTT(i) &
-                  +species_constants(k,iaa2(ii2))*T_loc &
-                  +species_constants(k,iaa2(ii3))*p%TT_2(i)/2 &
-                  +species_constants(k,iaa2(ii4))*p%TT_3(i)/3 &
-                  +species_constants(k,iaa2(ii5))*p%TT_4(i)/4 &
-                  +species_constants(k,iaa2(ii7))
-            elseif (T_mid <= T_loc .and. T_loc <= T_up) then
-              p%S0_R(i,k)=species_constants(k,iaa1(ii1))*p%lnTT(i) &
-                  +species_constants(k,iaa1(ii2))*T_loc &
-                  +species_constants(k,iaa1(ii3))*p%TT_2(i)/2 &
-                  +species_constants(k,iaa1(ii4))*p%TT_3(i)/3 &
-                  +species_constants(k,iaa1(ii5))*p%TT_4(i)/4 &
-                  +species_constants(k,iaa1(ii7))
-            else
-           !   if (.not. latmchem) then
-              print*,'p%TT(i)=',p%TT(i),exp(p%lnTT(i)),i
+          if (.not. lpencil_check) then   
+            if (maxval(p%TT) > T_up .or. minval(p%TT) < T_low) then        
+              print*,'m,n=',m,n
+              print*,'p%TT=',p%TT
               call fatal_error('get_reaction_rate',&
                   'p%TT(i) is outside range')
-           !   endif
-            endif
-!
-            if (lwrite)  then
-              write(file_id,*)&
-                  varname(ichemspec(k)), maxval(p%S0_R(:,k)), &
-                  minval(p%S0_R(:,k))
             endif
           endif
-        enddo
+!
+!  Find the entropy by using fifth order temperature fitting function
+!
+          where(p%TT <= T_mid .and. T_low <= p%TT)
+            p%S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
+                  +species_constants(k,iaa2(ii2))*p%TT &
+                  +species_constants(k,iaa2(ii3))*p%TT_2/2 &
+                  +species_constants(k,iaa2(ii4))*p%TT_3/3 &
+                  +species_constants(k,iaa2(ii5))*p%TT_4/4 &
+                  +species_constants(k,iaa2(ii7))
+          elsewhere (T_mid <= p%TT .and. p%TT <= T_up) 
+            p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
+                  +species_constants(k,iaa1(ii2))*p%TT &
+                  +species_constants(k,iaa1(ii3))*p%TT_2/2 &
+                  +species_constants(k,iaa1(ii4))*p%TT_3/3 &
+                  +species_constants(k,iaa1(ii5))*p%TT_4/4 &
+                  +species_constants(k,iaa1(ii7))
+          endwhere
+        endif
       enddo
     endif
 !
@@ -3082,49 +3080,43 @@ module Chemistry
           endif
         enddo
 !
-        do i=1,nx
-!
 !  Find forward rate constant for reaction 'reac'
 !
-          if (latmchem) then
+        if (latmchem) then
+          do i=1,nx
             if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
                 .and. (E_an(reac)==0.)) then
               call calc_extra_react(f,reac,kf(i),i,m,n,p)
             else
               kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)*p%TT1(i))
             endif
-          else
-            kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1(i))
-          endif
+          enddo
+        else
+          kf=B_n(reac)*p%TT**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1)
+        endif
 !
 !  Find backward rate constant for reaction 'reac'
 !
-          if (prod2(i)>0) then
-            dSR(i)=0.
-            dHRT(i)=0.
-            sum_tmp=0.
-            do k=1,nchemspec
-              dSR(i) =dSR(i)+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(i,k)
-              dHRT(i)=dHRT(i)+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(i,k)
-              sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
-            enddo
-!
-            Kp(i)=exp(dSR(i)-dHRT(i))
-            if (sum_tmp==0.) then
-              Kc(i)=Kp(i)
-            else
-              Kc(i)=Kp(i)*(p_atm(i)*p%TT1(i)/Rgas)**sum_tmp
-            endif
-            if (Kc(i)==0. .and. (.not. latmchem)) then
-              print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
-              call fatal_error('get_reaction_rate',&
-                  'Kc(i)=0')
-            else
-              kr(i)=kf(i)/Kc(i)
-            endif
-          endif
+        dSR=0.
+        dHRT=0.
+        sum_tmp=0.
+        do k=1,nchemspec
+          dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(:,k)
+          dHRT=dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
+          sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
-!
+        Kp=exp(dSR-dHRT)
+        if (sum_tmp==0.) then
+          Kc=Kp
+        else
+          Kc=Kp*(p_atm*p%TT1/Rgas)**sum_tmp
+        endif
+!!$          if (Kc(i)==0. .and. (.not. latmchem)) then
+!!$              print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
+!!$              call fatal_error('get_reaction_rate',&
+!!$                  'Kc(i)=0')
+!!$            else
+        kr=kf/Kc
 !
 !  Multiply by third body reaction term
 !
@@ -3152,8 +3144,6 @@ module Chemistry
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*p%TT1(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(Pr/(1.+Pr))
-    !      kr(:)=kf(:)/Kc_0
-!
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
@@ -3161,8 +3151,9 @@ module Chemistry
           kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*p%TT1(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(1./(1.+Pr))
-    !      kr(:)=kf(:)/Kc_0
         endif
+!
+! The Troe approach
 !
         if (maxval(abs(troe_coeff(:,reac))) > 0.) then
          Fcent=(1.-troe_coeff(1,reac))*exp(-p%TT(:)/troe_coeff(2,reac)) &
@@ -3176,68 +3167,75 @@ module Chemistry
          FF=tmpF*log10(Fcent)
          FF=10**(FF)
          kf=kf*FF
-    !     kr(:)=kf(:)/Kc_0
         endif
 !
 !  Find forward (vreact_p) and backward (vreact_m) rate of
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-       do i=1,nx
-       if (prod1(i)>0) then
         if (Mplus_case (reac)) then
-          vreact_p(i,reac)=prod1(i)*kf(i)
+          where (prod1 > 0) 
+            vreact_p(:,reac)=prod1*kf
+          elsewhere
+            vreact_p(:,reac)=0.
+          endwhere
         else
-          vreact_p(i,reac)=prod1(i)*kf(i)*sum_sp(i)
+          where (prod1 > 0) 
+            vreact_p(:,reac)=prod1*kf*sum_sp
+          elsewhere
+            vreact_p(:,reac)=0.
+          endwhere
         endif
-       else
-          vreact_p(i,reac)=0.
-       endif
-       if (prod2(i)>0) then
-          if (latmchem) then
-            kr(i)=kf(i)!/Kc(i)
-          else
-            kr(i)=kf(i)/Kc(i)
-          endif
+!
+        if (latmchem) then
+          kr=kf!/Kc(i)
+        else
+          kr=kf/Kc
+        endif
         if (Mplus_case (reac)) then
-         vreact_m(i,reac)=prod2(i)*kr(i)
+          where (prod2 > 0) 
+            vreact_m(:,reac)=prod2*kr
+          elsewhere
+            vreact_m(:,reac)=0.
+          endwhere
         else
-         vreact_m(i,reac)=prod2(i)*kr(i)*sum_sp(i)
+          where (prod2 > 0) 
+            vreact_m(:,reac)=prod2*kr*sum_sp
+          elsewhere
+            vreact_m(:,reac)=0.
+          endwhere
         endif
-       else
-          if (latmchem) then
-            kr(i)=kf(i)!/Kc(i)
-          endif
-         vreact_m(i,reac)=0.
-       endif
-       enddo
 !
 ! This part calculates forward and reverse reaction rates
-!  for the test case R->P
+! for the test case R->P
+! For more details see Doom, et al., J. Comp. Phys., 226, 2007
 !
-!  For more details see Doom, et al., J. Comp. Phys., 226, 2007
-!
-      if (l1step_test) then
-        do i=1,nx
-         if (p%TT(i) > Tc) then
-         vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const/lambda_const*beta*(beta-1.) &
-                          *(1.-f(l1-1+i,m,n,ichemspec(ipr)))
-        else
-         vreact_p(i,reac)=0.
+        if (l1step_test) then
+          do i=1,nx
+            if (p%TT(i) > Tc) then
+              vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const &
+                  /lambda_const*beta*(beta-1.) &
+                  *(1.-f(l1-1+i,m,n,ichemspec(ipr)))
+            else
+              vreact_p(i,reac)=0.
+            endif
+          enddo
+          vreact_m(:,reac)=0.
         endif
-       enddo
-         vreact_m(:,reac)=0.
-      endif
 !
-     !  lwrite=.true.
-        if (lwrite_first) write(file_id,*) 'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
-        if (lwrite_first) write(file_id,*) 'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
-        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kf= ', kf(1), minval(kf)
-        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
-        if (lwrite_first) write(file_id,*)  'Nreact= ',reac,  'kr= ', kr(1), minval(kr)
+! Write some data to file 
+!
+        if (lwrite_first) write(file_id,*) &
+            'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
+        if (lwrite_first) write(file_id,*) &
+            'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
+        if (lwrite_first) write(file_id,*)  &
+            'Nreact= ',reac,  'kf= ', kf(1), minval(kf)
+        if (lwrite_first) write(file_id,*)  &
+            'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
+        if (lwrite_first) write(file_id,*)  &
+            'Nreact= ',reac,  'kr= ', kr(1), minval(kr)
         if (lwrite_first) write(file_id,*)'**************************'
-     ! lwrite=.false.
-!
       enddo
 !
 !  Finalize writing to file
