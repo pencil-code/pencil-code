@@ -104,10 +104,19 @@ module Dustvelocity
       integer :: k, uud_tmp
       character(len=5) :: sdust
 !
+!  Write dust index in short notation
+!
+      if (lroot .and. ndustspec/=1) then
+        open(3,file=trim(datadir)//'/index.pro', position='append')
+        call chn(ndustspec,sdust)
+        write(3,*) 'iuud=intarr('//trim(sdust)//')'
+        close(3)
+      endif
+!
       do k=1,ndustspec
-        call chn(k,sdust)
-        sdust='('//trim(sdust)//')'
-        if (ndustspec == 1) sdust = ''
+        call chn(k-1,sdust)
+        sdust='['//trim(sdust)//']'
+        if (ndustspec==1) sdust=''
         call farray_register_pde('uud'//sdust,uud_tmp,vector=3)
         iuud(k) = uud_tmp
         iudx(k) = iuud(k)
@@ -783,7 +792,7 @@ module Dustvelocity
 ! ud2
         if (lpencil(i_ud2)) call dot2_mn(p%uud(:,:,k),p%ud2(:,k))
 ! udij
-        if (lpencil(i_udij)) call gij(f,iuud(k),p%udij,1)
+        if (lpencil(i_udij)) call gij(f,iuud(k),p%udij(:,:,:,k),1)
 ! divud
         if (lpencil(i_divud)) &
             p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
@@ -1268,7 +1277,7 @@ module Dustvelocity
       integer :: iname,inamez,k
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=5) :: sdust,sdustspec,suud1,sudx1,sudy1,sudz1
+      character (len=5) :: sdust
 !
 !  Write information to index.pro that should not be repeated for i
 !
@@ -1380,20 +1389,6 @@ module Dustvelocity
 !  End loop over dust layers
 !
       enddo
-!
-!  Write dust index in short notation
-!
-      call chn(ndustspec,sdustspec)
-      call chn(iuud(1),suud1)
-      call chn(iudx(1),sudx1)
-      call chn(iudy(1),sudy1)
-      call chn(iudz(1),sudz1)
-      if (lwr) then
-        write(3,*) 'iuud=indgen('//trim(sdustspec)//')*3 + '//trim(suud1)
-        write(3,*) 'iudx=indgen('//trim(sdustspec)//')*3 + '//trim(sudx1)
-        write(3,*) 'iudy=indgen('//trim(sdustspec)//')*3 + '//trim(sudy1)
-        write(3,*) 'iudz=indgen('//trim(sdustspec)//')*3 + '//trim(sudz1)
-      endif
 !
     endsubroutine rprint_dustvelocity
 !***********************************************************************
