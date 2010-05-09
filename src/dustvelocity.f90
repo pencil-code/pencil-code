@@ -797,7 +797,7 @@ module Dustvelocity
         if (lpencil(i_divud)) &
             p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
 ! udgud
-        if (lpencil(i_udgud)) call multmv_mn(p%udij,p%uud(:,:,k),p%udgud)
+        if (lpencil(i_udgud)) call multmv_mn(p%udij(:,:,:,k),p%uud(:,:,k),p%udgud(:,:,k))
 ! ood
         if (lpencil(i_ood)) then
           p%ood(:,1,k)=p%udij(:,3,2,k)-p%udij(:,2,3,k)
