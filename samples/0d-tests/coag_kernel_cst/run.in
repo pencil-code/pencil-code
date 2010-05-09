@@ -8,7 +8,6 @@
   dsnap=10.0, dvid=10.0, dtmin=1e-9, ip=20
   bcz = 'p','p','p','p','p'
   dt=0.001
-  lpencil_check_small=F
   tmax=10000.0
   tmax=1.0 !(for testing purposes)
 /
