@@ -88,15 +88,33 @@ module Dustdensity
 !   4-jun-02/axel: adapted from hydro
 !
       use FArrayManager
+      use General, only: chn
 !
       integer :: k, ind_tmp, imd_tmp, imi_tmp
+      character (len=5) :: sdust, sdust2
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
       call farray_register_pde('nd',ind_tmp,vector=ndustspec)
+!
+!  Write dust index in short notation.
+!
+      if (lroot .and. ndustspec/=1) then
+        open(3,file=trim(datadir)//'/index.pro', position='append')
+        call chn(ndustspec,sdust)
+        write(3,*) 'ind=intarr('//trim(sdust)//')'
+        close(3)
+      endif
+      open(3,file=trim(datadir)//'/index.pro', position='append')
       do k=1,ndustspec
         ind(k)=ind_tmp+k-1
+        if (lroot) then
+          call chn(k-1,sdust)
+          call chn(ind(k),sdust2)
+          write(3,*) 'ind['//trim(sdust)//']='//trim(sdust2)
+        endif
       enddo
+      close(3)
 !
 !  Register dust mass.
 !
@@ -1502,7 +1520,7 @@ module Dustdensity
       integer :: iname,inamez,inamex,k
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=5) :: sdust,sdustspec,snd1,smd1,smi1
+      character (len=5) :: sdust,sdustspec
 !
 !  Write information to index.pro that should not be repeated for all species
 !
@@ -1582,27 +1600,6 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
         call parse_name(iname,cname(iname),cform(iname),'mdm',idiag_mdm)
       enddo
-!
-!  Write dust index in short notation
-!
-      call chn(ind(1),snd1)
-      if (lmdvar) call chn(imd(1),smd1)
-      if (lmice)  call chn(imi(1),smi1)
-      if (lwr) then
-        if (lmdvar .and. lmice) then
-          write(3,*) 'ind=indgen('//trim(sdustspec)//') + '//trim(snd1)
-          write(3,*) 'imd=indgen('//trim(sdustspec)//') + '//trim(smd1)
-          write(3,*) 'imi=indgen('//trim(sdustspec)//') + '//trim(smi1)
-        elseif (lmdvar) then
-          write(3,*) 'ind=indgen('//trim(sdustspec)//') + '//trim(snd1)
-          write(3,*) 'imd=indgen('//trim(sdustspec)//') + '//trim(smd1)
-          write(3,*) 'imi=0'
-        else
-          write(3,*) 'ind=indgen('//trim(sdustspec)//') + '//trim(snd1)
-          write(3,*) 'imd=0'
-          write(3,*) 'imi=0'
-        endif
-      endif
 !
     endsubroutine rprint_dustdensity
 !***********************************************************************
