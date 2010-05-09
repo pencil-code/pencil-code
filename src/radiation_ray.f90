@@ -75,6 +75,8 @@ module Radiation
   real :: Frad_boundary_ref=0.0
   real :: cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_Srad=1.0
+  real :: coeff_rho_opa=0.0, coeff_temp_opa=0.0
+  real :: ref_rho_opa=1.0, ref_temp_opa=1.0
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -125,7 +127,8 @@ module Radiation
       kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
-      lfix_radweight_1d
+      lfix_radweight_1d, coeff_rho_opa, coeff_temp_opa, ref_rho_opa, &
+      ref_temp_opa
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, TT_top, &
@@ -136,7 +139,8 @@ module Radiation
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, cdtrad_thin, &
       cdtrad_thick, scalefactor_Srad, angle_weight, lcheck_tau_division, &
-      lfix_radweight_1d
+      lfix_radweight_1d, coeff_rho_opa, coeff_temp_opa, ref_rho_opa, &
+      ref_temp_opa
 !
   contains
 !***********************************************************************
@@ -1472,6 +1476,14 @@ module Radiation
           f(:,m,n,ikapparho)=kapparho_cst
         enddo
         enddo
+!
+      case ('kappa_power_law')
+        do n=n1-radz,n2+radz; do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
+          f(:,m,n,ikapparho)=exp(lnrho)*kappa_cst* &
+              (exp(lnrho)/ref_rho_opa)**coeff_rho_opa* &
+              (exp(lnTT)/ref_temp_opa)**coeff_temp_opa
+        enddo; enddo
 !
       case ('Tsquare') !! Morfill et al. 1985 
         kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
