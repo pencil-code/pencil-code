@@ -4394,14 +4394,14 @@ module Chemistry
 !
     endsubroutine calc_extra_react
 !***********************************************************************
-    subroutine prerun_1D(f,directory)
+    subroutine prerun_1D(f,prerun_dir)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  11-apr-97/axel: coded
 !
       use Cdata
 !
-      character (len=*) :: directory
+      character (len=*) :: prerun_dir
       character (len=100) :: file
       character (len=10) :: processor
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4412,7 +4412,7 @@ module Chemistry
 ! NILS: Should fix this soon.
 !
       processor='proc0'
-      file=trim(directory)//'/data/'//trim(processor)//'/var.dat'
+      file=trim(prerun_dir)//'/data/'//trim(processor)//'/var.dat'
       print*,'Reading inlet data from ',file
 !
 !  Open and read data from file
