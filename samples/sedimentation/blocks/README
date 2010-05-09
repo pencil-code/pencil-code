@@ -3,7 +3,7 @@ Directory:
 SVN Id:
     $Id: README 10932 2009-05-25 03:23:08Z ajohan@strw.leidenuniv.nl $
 Maintainer:
-    Anders Johansen <ajohan@strw.leidenuniv.nl>
+    Anders Johansen <anders/astro.lu.se>
 Added:
     December 2009
 Status:
@@ -14,3 +14,7 @@ Comments:
     Sedimentation of particles in shearing box frame. This run directory
     performs the same simulation as the parent directory, but with block domain
     decomposition for the particles.
+References:
+    Johansen A., Youdin A., & Mac Low M.-M.: 2009, ``Particle clumping and
+    planetesimal formation depend strongly on metallicity'', The Astrophysical
+    Journal, vol. 704, p. L75-L79

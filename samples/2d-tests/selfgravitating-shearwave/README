@@ -3,7 +3,7 @@ Directory:
 SVN Id:
     $Id$
 Maintainer:
-    Anders Johansen <ajohan@strw.leidenuniv.nl>
+    Anders Johansen <anders/astro.lu.se>
 Added:
     07-jul-2006
 Status:
@@ -17,3 +17,7 @@ Comments:
     One can compare the numerical solution to the result of a numerical
     integration of the linearised equation system, produced by the IDL script
     shear_wave.pro (in the idl/ directory).
+References:
+    Johansen A., Oishi J., Mac Low M.-M., Klahr H., Henning Th., & Youdin A.:
+    2007, ``Rapid planetesimal formation in turbulent circumstellar discs'',
+    Nature, vol. 448, p. 1022-1025

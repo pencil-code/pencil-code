@@ -3,7 +3,7 @@ Directory:
 SVN Id:
     $Id$
 Maintainer:
-    Anders Johansen <ajohan@strw.leidenuniv.nl>
+    Anders Johansen <anders/astro.lu.se>
 Added:
     23.08.2007
 Status:
@@ -14,3 +14,7 @@ Comments:
     This sample uses a stricter version of hyperviscosity and hyperresistivity
     than ${PENCIL_HOME}/samples/MRI-turbulence_hyper, with positive definite
     kinetic energy dissipation.
+References:
+    Haugen N. & Brandenburg A.: 2004, ``Inertial range scaling in numerical
+    turbulence with hyperviscosity'', Physical Review E, vol. 70, Issue 2, id.
+    026405

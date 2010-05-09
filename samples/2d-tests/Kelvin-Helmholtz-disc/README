@@ -3,7 +3,7 @@ Directory:
 SVN Id:
     $Id$
 Maintainer:
-    Anders Johansen <ajohan@strw.leidenuniv.nl>
+    Anders Johansen <anders/astro.lu.se>
 Added:
     October 2005
 Status:
@@ -12,3 +12,7 @@ Recommended resolution:
     1x128x64 (nu_hyper3=3.0e-18)
 Comments:
     Sedimentation of dust particles in a 2-D local frame.
+References:
+    Johansen A., Henning Th., & Klahr H.: 2006, ``Dust sedimentation and
+    self-sustained Kelvin-Helmholtz turbulence in protoplanetary disc
+    mid-planes'' The Astrophysical Journal, vol. 643, p. 1219-1232
