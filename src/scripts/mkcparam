@@ -206,12 +206,22 @@ my $npencils=$#pencil_names+1;
 # More processing of dust information
 #
 ($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
+# NB: if ($ndustspec >= 1) {
 if ($ndustspec >= 1) {
+if ($mvar_per_dust > 1) {
   $mvar = $mvar - 4;
   $mvar = $mvar + $ndustspec*$mvar_per_dust;
+  if ($mvar_per_dust >= 5) {$lmdvar = '.true.';}
+  if ($mvar_per_dust == 6) {$lmice  = '.true.';}
   }
-if ($mvar_per_dust >= 5) {$lmdvar = '.true.';}
-if ($mvar_per_dust == 6) {$lmice  = '.true.';}
+ else
+ {
+  $mvar = $mvar  - 1;
+  $mvar = $mvar + $ndustspec*$mvar_per_dust;
+  $lmdvar = '.false.';
+  $lmice  = '.false.';
+  }
+}
 #
 # More processing of chemistry information
 # The -1 below (and the -4 above) look ready crazy (but are correct!)
