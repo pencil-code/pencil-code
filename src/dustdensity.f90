@@ -21,6 +21,7 @@
 ! PENCILS PROVIDED del2lnnd(ndustspec); del6nd(ndustspec); del2md(ndustspec)
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
+! PENCILS PROVIDED udrop(3,ndustspec);udropgnd(ndustspec)
 !
 !***************************************************************
 module Dustdensity
@@ -36,6 +37,7 @@ module Dustdensity
 !
   integer, parameter :: ndiffd_max=4
   real, dimension(nx,ndustspec,ndustspec) :: dkern
+  real, dimension(ndustspec) :: dsize
   real, dimension(0:5) :: coeff_smooth=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0
@@ -45,6 +47,7 @@ module Dustdensity
   real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
+  real :: dsize_min=0., dsize_max=0.
   integer :: ind_extra
   integer :: iglobal_nd=0
   character (len=labellen), dimension (ninit) :: initnd='nothing'
@@ -57,13 +60,15 @@ module Dustdensity
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
+  logical :: latm_chemistry=.false.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
-      coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed
+      coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
+      dsize_min, dsize_max, latm_chemistry
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -164,6 +169,7 @@ module Dustdensity
       use FArrayManager
 !
       integer :: i,j,k
+      real :: ddsize
       logical :: lnothing
 !
 !  Set ind requal to ilnnd if we are considering non-logarithmic density.
@@ -257,6 +263,19 @@ module Dustdensity
         call farray_register_global('nd',iglobal_nd)
       endif
 !
+! Filling the array containing the dust size 
+! if the maximum size (dsize_max) of the dust grain is nonzero
+!
+       if (latm_chemistry) then
+        if (dsize_max /=0.) then
+         ddsize=(dsize_max-dsize_min)/(ndustspec-1)
+         do i=0,(ndustspec-1)
+          dsize(i+1)=dsize_min+i*ddsize
+         enddo
+        endif
+       endif
+       
+
     endsubroutine initialize_dustdensity
 !***********************************************************************
     subroutine init_nd(f)
@@ -474,6 +493,14 @@ module Dustdensity
           enddo
           if (lroot) print*, &
               'init_nd: Test of dust coagulation with linear kernel'
+        case ('atm_droplets')
+          do k=1,ndustspec
+            f(:,:,:,ind(k)) = &
+            -(1e3-10)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/  &
+                (dsize_min-0.5*(dsize_max+dsize_min))**2+1e3
+          enddo
+          if (lroot) print*, &
+              'init_nd: Distribution of the water droplets in the atmosphere'
         case default
 !
 !  Catch unknown values.
@@ -519,7 +546,9 @@ module Dustdensity
         if (notanumber(f(l1:l2,m1:m2,n1:n2,imi(:)))) &
             call stop_it('init_nd: Imaginary ice density values')
       endif
-!
+
+  ! print*,'NAT',lmice, lmdvar
+
     endsubroutine init_nd
 !***********************************************************************
     subroutine constant_richardson(f)
@@ -725,6 +754,12 @@ module Dustdensity
       if (lmdvar .and. diffmd/=0.) lpenc_requested(i_del2md)=.true.
       if (lmice .and. diffmi/=0.) lpenc_requested(i_del2mi)=.true.
 !
+      if (latm_chemistry) then
+        lpenc_requested(i_udrop)=.true.
+        lpenc_requested(i_udropgnd)=.true.
+        lpenc_requested(i_gnd)=.true.
+      endif
+!
       lpenc_diagnos(i_nd)=.true.
       if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
       if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
@@ -777,6 +812,10 @@ module Dustdensity
       if (lpencil_in(i_sdglnnd)) then
         lpencil_in(i_sdij)=.true.
         lpencil_in(i_glnnd)=.true.
+      endif
+       if (latm_chemistry) then
+        if (lpencil_in(i_uu)) lpenc_requested(i_udrop)=.true.
+        if (lpencil_in(i_udrop)) lpenc_requested(i_udropgnd)=.true.
       endif
 !
     endsubroutine pencil_interdep_dustdensity
@@ -970,7 +1009,19 @@ module Dustdensity
 ! glnndglnrho
         if (lpencil(i_glnndglnrho)) &
             call dot_mn(p%glnnd(:,:,k),p%glnrho(:,:),p%glnndglnrho(:,k))
+    
+! udrop
+        if (lpencil(i_udrop)) then
+          p%udrop(:,:,k)=p%uu(:,:)       
+          p%udrop(:,3,k)=p%udrop(:,3,k)-1e4*dsize(k)
+        endif
+! udropgnd
+        if (lpencil(i_udropgnd)) then
+          call dot_mn(p%udrop(:,:,k),p%gnd(:,:,k),p%udropgnd(:,k))
+        endif
+ 
       enddo
+!
 !
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
@@ -1004,7 +1055,7 @@ module Dustdensity
 !
 !  Continuity equations for nd, md and mi.
 !
-      if (ldustcontinuity) then
+      if (ldustcontinuity .and. (.not. latm_chemistry)) then
         do k=1,ndustspec
           if (ldustdensity_log) then
             df(l1:l2,m,n,ilnnd(k)) = df(l1:l2,m,n,ilnnd(k)) - &
@@ -1029,6 +1080,16 @@ module Dustdensity
 !  Dust growth due to condensation on grains
 !
       if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
+!
+!  Redistribution over the size in the atmospheric physics case
+!
+      if (latm_chemistry) then
+          call droplet_redistr(f,df)
+         do k=1,ndustspec
+          df(l1:l2,m,n,ilnnd(k)) = df(l1:l2,m,n,ilnnd(k)) - &
+            p%udropgnd(:,k)*0. 
+         enddo
+      endif
 !
 !  Loop over dust layers
 !
@@ -1631,5 +1692,35 @@ module Dustdensity
       endselect
 !
     endsubroutine get_slices_dustdensity
+!***********************************************************************
+    subroutine droplet_redistr(f,df)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,ndustspec) :: dndr_dr
+      integer :: i,k
+      real :: Supersat, Aconst=1e-10
+     
+      Supersat=-0.5
+       
+       do k=1,ndustspec-1
+        dndr_dr(:,k)=1./dsize(k) &
+         *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k)) &
+         +f(l1:l2,m,n,ind(k))/dsize(k)**2
+      !  dndr_dr(i,k)= &
+      !   (f(l1+i,m,n,ind(k))/dsize(i+1)-f(l1+i-1,m,n,ind(k))/dsize(i)) &
+      !    /(dsize(i+1)-dsize(i)) 
+       enddo
+        dndr_dr(l1:l2,ndustspec)=1./dsize(ndustspec) &
+         *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(ndustspec-1))) &
+         /(dsize(ndustspec)-dsize(ndustspec-1)) &
+         +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
+       
+       do k=1,ndustspec
+        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))-Supersat*Aconst*dndr_dr(:,k)   
+       enddo  
+
+
+    endsubroutine
 !***********************************************************************
 endmodule Dustdensity
