@@ -59,10 +59,37 @@ if one wants the velocity field to be affected by the magnetic field.
 
        6-sep-09: is functional, but not at the same level of advancement as testfield_z.
        It is used for x-dependent mean fields, i.e. averaging over y and z is assumed.
+       9-may-10: seems now to produce wrong results. Is not part of auto-test.
 
      testfield_xz.f90
 
        6-sep-09: status is currently unclear. It may be redundant.
+
+     testfield_axisym.f90
+
+       Uses 3 test fields and assumes test turbulence to have one
+       preferred direction, so it is assumed to be axisymmetric.
+       9-may-10: this routine works well for periodic test fields.
+       This routine is now being superseeded by testfield_axisym2.
+
+     testfield_axisym2.f90
+
+       Uses 2 test fields and assumes test turbulence to have one
+       preferred direction, so it is assumed to be axisymmetric.
+       9-may-10: this routine works well for periodic test fields.
+       Linear test fields have not been tested yet.
+       This routine is cheaper to run than testfield_axisym and
+       has been used in recent applications with Koen and Karl-Heinz.
+
+     testfield_nonlin_z.f90
+
+       This routine has been used in the 2010 paper with Rheinhardt.
+
+     testfield_compress_z.f90
+
+       Is not ready yet. It is supposed to extend testfield_nonlin_z
+       into the case where u.gradu and gradh are included in the
+       momentum equation.
 
 The anelastic module
 --------------------
@@ -76,3 +103,8 @@ merged into the main trunk.
        but it is still experimental and should not be used for
        production runs.
 
+The coagulation module
+----------------------
+
+This module is not currently used for production runs. 2 of 3 samples in 0D
+work, but one requires the small pencil check to be turned off.
