@@ -577,7 +577,8 @@ module Chemistry
       intent(inout) :: p
       integer :: k,i,j1
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6
-      real :: T_low,T_up, T_mid, T_loc
+      real :: T_low,T_up, T_mid
+      real, dimension(nx) :: T_loc
 !
 !  Mass fraction YY
 !
@@ -644,60 +645,52 @@ module Chemistry
 !
         if (lpencil(i_H0_RT)) then
           if (.not. lT_const) then
-           do j1=1,nx
-           do k=1,nchemspec
-             T_low=species_constants(k,iTemp1)
-             T_mid=species_constants(k,iTemp2)
-             T_up= species_constants(k,iTemp3)
-             T_loc= p%TT(j1)
-             if (T_loc <= T_mid) then
-               p%H0_RT(j1,k)=species_constants(k,iaa2(ii1)) &
-                   +species_constants(k,iaa2(ii2))*T_loc/2 &
-                   +species_constants(k,iaa2(ii3))*p%TT_2(j1)/3 &
-                   +species_constants(k,iaa2(ii4))*p%TT_3(j1)/4 &
-                   +species_constants(k,iaa2(ii5))*p%TT_4(j1)/5 &
-                   +species_constants(k,iaa2(ii6))/T_loc
-             else
-               p%H0_RT(j1,k)=species_constants(k,iaa1(ii1)) &
-                   +species_constants(k,iaa1(ii2))*T_loc/2 &
-                   +species_constants(k,iaa1(ii3))*p%TT_2(j1)/3 &
-                   +species_constants(k,iaa1(ii4))*p%TT_3(j1)/4 &
-                   +species_constants(k,iaa1(ii5))*p%TT_4(j1)/5 &
-                   +species_constants(k,iaa1(ii6))/T_loc
-             endif
-           enddo
-           enddo
-         endif
+            do k=1,nchemspec
+              T_low=species_constants(k,iTemp1)
+              T_mid=species_constants(k,iTemp2)
+              T_up= species_constants(k,iTemp3)
+              T_loc= p%TT
+              where (T_loc <= T_mid)
+                p%H0_RT(:,k)=species_constants(k,iaa2(ii1)) &
+                    +species_constants(k,iaa2(ii2))*T_loc/2 &
+                    +species_constants(k,iaa2(ii3))*p%TT_2/3 &
+                    +species_constants(k,iaa2(ii4))*p%TT_3/4 &
+                    +species_constants(k,iaa2(ii5))*p%TT_4/5 &
+                    +species_constants(k,iaa2(ii6))/T_loc
+              elsewhere
+                p%H0_RT(:,k)=species_constants(k,iaa1(ii1)) &
+                    +species_constants(k,iaa1(ii2))*T_loc/2 &
+                    +species_constants(k,iaa1(ii3))*p%TT_2/3 &
+                    +species_constants(k,iaa1(ii4))*p%TT_3/4 &
+                    +species_constants(k,iaa1(ii5))*p%TT_4/5 &
+                    +species_constants(k,iaa1(ii6))/T_loc
+              endwhere
+            enddo
+          endif
 !
 !  Enthalpy flux
 !
-
-         if (lpencil(i_hhk_full) .and.lreactions) then
-         do j1=1,nx
-          do k=1,nchemspec
-          if (species_constants(k,imass)>0.)  then
-            p%hhk_full(j1,k)=p%H0_RT(j1,k)*Rgas*p%TT(j1)&
-               /species_constants(k,imass)
+          if (lpencil(i_hhk_full) .and.lreactions) then
+            do k=1,nchemspec
+              if (species_constants(k,imass)>0.)  then
+                p%hhk_full(:,k)=p%H0_RT(:,k)*Rgas*p%TT&
+                    /species_constants(k,imass)
+              endif
+            enddo
           endif
-          enddo
-         enddo
-         endif
 !
-         if (lpencil(i_ghhk) .and. lreactions) then
-         do k=1,nchemspec
-         if (species_constants(k,imass)>0.)  then
-         !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
-          do i=1,3
-           p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
-             /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
-          enddo
-         endif
-         enddo
-         endif
-!
-       endif
-!
-!
+          if (lpencil(i_ghhk) .and. lreactions) then
+            do k=1,nchemspec
+              if (species_constants(k,imass)>0.)  then
+                !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
+                do i=1,3
+                  p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
+                      /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
+                enddo
+              endif
+            enddo
+          endif
+        endif
 !
 ! Calculate the reaction term and the corresponding pencil
 !
