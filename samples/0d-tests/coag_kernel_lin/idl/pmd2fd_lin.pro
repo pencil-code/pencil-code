@@ -1,8 +1,10 @@
 ; $Id$
+pc_read_var, obj=ff, /trimall
+
 !p.charsize=1.5
 int=0.
 for k=0,ndustspec-1 do begin
-  int = int+nd(k)*md(k)
+  int = int+ff.nd(k)*ff.md(k)
 endfor
 
 fd_an = fltarr(ndustspec)

@@ -1,13 +1,13 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Initialisation parameters for disc run
+! Initialisation parameters for coagulation run.
 !
 &init_pars
   cvsid='$Id$'
   Lxyz  = 0.0, 0.0, 0.0
   xyz0  = 0.0, 0.0, 0.0 
   lperi =   T,   T,   T
-  ip=20, lwrite_ic=T
+  ip=20
 /
 &eos_init_pars
   gamma=1.0, rho0=1.0, cs0=1.0
@@ -17,7 +17,7 @@
 &density_init_pars
 /
 &dustvelocity_init_pars
-  md0=1., deltamd=1.1
+  md0=1.0, deltamd=1.1
   ldustcoagulation=T, ldustcondensation=F
 /
 &dustdensity_init_pars
