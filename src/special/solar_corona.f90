@@ -50,7 +50,7 @@ module Special
 !!
 !!   integer :: i_POSSIBLEDIAGNOSTIC=0
 !!
-    integer :: idiag_dtnewt
+    integer :: idiag_dtnewt=0
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
@@ -640,7 +640,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       integer, parameter :: prof_nz=150
-      real, dimension (nx) :: newton=0.
+      real, dimension (nx) :: newton=0.,tmp_tau
       real, dimension (prof_nz) :: prof_lnT,prof_z,prof_lnrho
       real, dimension (mz), save :: init_lnTT,init_lnrho
       real :: dummy,var1,var2
@@ -717,7 +717,8 @@ module Special
       !  Get reference temperature
       !
       newton  = exp(init_lnTT(n)-p%lnTT)-1.
-      newton  = newton  * tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
+      tmp_tau = tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
+      newton  = newton  * tmp_tau
       !
       !  Add newton cooling term to entropy
       !
@@ -726,8 +727,7 @@ module Special
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
           itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts &
-              ,idiag_dtnewt,l_dt=.true.)
+          call max_mn_name(tmp_tau        ,idiag_dtnewt,l_dt=.true.)
           dt1_max=max(dt1_max,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
         endif
       endif
