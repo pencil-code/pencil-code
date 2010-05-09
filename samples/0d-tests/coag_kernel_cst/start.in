@@ -16,8 +16,6 @@
 /
 &density_init_pars
 /
-&ionization_init_pars
-/
 &dustvelocity_init_pars
   md0=1.0, deltamd=1.2, ldustcoagulation=T
 /

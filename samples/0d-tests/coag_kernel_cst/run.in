@@ -17,8 +17,6 @@
 /
 &density_run_pars
 /
-&ionization_run_pars
-/
 &dustvelocity_run_pars
   ldragforce_dust=F
 /
