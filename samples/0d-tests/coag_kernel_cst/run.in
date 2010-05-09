@@ -17,7 +17,6 @@
 &hydro_run_pars
 /
 &density_run_pars
-  cdiffrho=1.0e-3
 /
 &ionization_run_pars
 /
@@ -25,7 +24,4 @@
   ldragforce_dust=F
 /
 &dustdensity_run_pars
-/
-&viscosity_run_pars
-  nu=1.0e-4, ivisc='0'
 /
