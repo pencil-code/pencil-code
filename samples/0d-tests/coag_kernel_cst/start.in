@@ -4,7 +4,8 @@
 !
 &init_pars
   cvsid='$Id$'
-  Lxyz=0.0,0.0,0.0, xyz0=0.0,0.0,0.0 
+  Lxyz= 0.0, 0.0, 0.0
+  xyz0= 0.0, 0.0, 0.0 
   lperi=T,T,T
   ip=20
 /
