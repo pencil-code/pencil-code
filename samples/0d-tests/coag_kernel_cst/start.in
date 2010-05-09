@@ -1,12 +1,12 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Initialisation parameters for disc run
+! Initialisation parameters for coagulation run.
 !
 &init_pars
-  ip=20,lwrite_ic=T
   cvsid='$Id$'
-  Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
+  Lxyz=0.0,0.0,0.0, xyz0=0.0,0.0,0.0 
   lperi=T,T,T
+  ip=20
 /
 &eos_init_pars
   gamma=1.0

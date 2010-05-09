@@ -1,12 +1,13 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-!  run parameters for forced helical MHD turbulence
+!  Run parameters for coagulation run.
 !
 &run_pars
   cvsid='$Id$',
   nt=10000000, it1=100, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
   dsnap=10.0, dvid=10.0, dtmin=1e-9, ip=20
-  bcz = 'p','p','p','p','p', dt=0.001
+  bcz = 'p','p','p','p','p'
+  dt=0.001
   lpencil_check_small=F
   tmax=10000.0
   tmax=1.0 !(for testing purposes)
@@ -16,7 +17,7 @@
 &hydro_run_pars
 /
 &density_run_pars
-  cdiffrho=1e-3
+  cdiffrho=1.0e-3
 /
 &ionization_run_pars
 /
@@ -26,5 +27,5 @@
 &dustdensity_run_pars
 /
 &viscosity_run_pars
-  nu=1e-4, ivisc='0'
+  nu=1.0e-4, ivisc='0'
 /
