@@ -5,11 +5,8 @@
 &run_pars
   cvsid='$Id$',
   nt=12000, it1=100, cdt=0.4, cdtv=0.4, isave=100, itorder=3,
-!AB: develops a NaN after 60 time step
-  nt=60, it1=10, cdt=0.4, cdtv=0.4, isave=100, itorder=3,
   dsnap=0.2, dvid=0.2, dtmin=1.0e-6, ip=20
   dt=0.001, tmax=12.0
-  lpencil_check_small=F
 /
 &eos_run_pars
 /
