@@ -188,17 +188,17 @@ module Dustdensity
 !
       do j=1,ninit
         select case (initnd(j))
-
+!
         case ('kernel_cst')
           dkern(:,:,:) = dkern_cst
           lcalcdkern = .false.
-
+!
         case ('kernel_lin')
           do i=1,ndustspec; do k=1,ndustspec
             dkern(:,i,k) = dkern_cst*(md(i)+md(k))
           enddo; enddo
           lcalcdkern = .false.
-
+!
         endselect
       enddo
 !
@@ -263,7 +263,7 @@ module Dustdensity
         call farray_register_global('nd',iglobal_nd)
       endif
 !
-! Filling the array containing the dust size 
+! Filling the array containing the dust size
 ! if the maximum size (dsize_max) of the dust grain is nonzero
 !
        if (latm_chemistry) then
@@ -274,8 +274,8 @@ module Dustdensity
          enddo
         endif
        endif
-       
 
+!
     endsubroutine initialize_dustdensity
 !***********************************************************************
     subroutine init_nd(f)
@@ -307,7 +307,7 @@ module Dustdensity
       lnothing=.false.
       do j=1,ninit
         select case (initnd(j))
-
+!
         case ('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_nd: nothing'
           lnothing=.true.
@@ -390,12 +390,12 @@ module Dustdensity
             endif
             rhodmt = rhodmt + f(l1,m1,n1,ind(k))*md(k)
           enddo
-
+!
           do k=1,ndustspec
             f(:,:,:,ind(k)) = &
                 f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodmt*unit_md)
           enddo
-
+!
         case ('const_epsd')
           do k=1,ndustspec
             if (ldensity_nolog) then
@@ -425,9 +425,9 @@ module Dustdensity
             endif
           enddo; enddo
           if (lroot) print*, 'init_nd: Gaussian epsd with epsd =', eps_dtog
-
+!
         case ('dragforce_equilibrium')
-
+!
           do m=m1,m2; do n=n1,n2
             if (ldensity_nolog) then
 !              if (ldustdensity_log) then
@@ -458,7 +458,7 @@ module Dustdensity
                 cs20*beta_glnrho_scaled(1)*(1+eps)/ &
                 (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
           enddo; enddo
-
+!
         case ('cosine_lnnd')
           do n=n1,n2; do k=1,ndustspec
             f(:,:,n,ind(k)) = &
@@ -508,7 +508,7 @@ module Dustdensity
           if (lroot) print*, 'init_nd: No such value for initnd: ', &
               trim(initnd(j))
           call fatal_error('initnd','')
-
+!
         endselect
 !
 !  End loop over initial conditions.
@@ -546,9 +546,9 @@ module Dustdensity
         if (notanumber(f(l1:l2,m1:m2,n1:n2,imi(:)))) &
             call stop_it('init_nd: Imaginary ice density values')
       endif
-
+!
   ! print*,'NAT',lmice, lmdvar
-
+!
     endsubroutine init_nd
 !***********************************************************************
     subroutine constant_richardson(f)
@@ -584,15 +584,15 @@ module Dustdensity
 !  Here Xi = sqrt(eps1*(2+eps1))/(1+eps1).
 !
       do while (abs(fXi)>=0.00001)
-
+!
         dfdXi=2*Xi**2/(1-Xi**2)
         Xi=Xi-0.1*fXi/dfdXi
-
+!
         fXi=-2*Xi + alog((1+Xi)/(1-Xi))-Sigmad/(Hd*rho1)
-
+!
         i=i+1
         if (i>=1000) stop
-
+!
       enddo
 !
 !  Calculate eps1 from Xi.
@@ -603,7 +603,7 @@ module Dustdensity
 !  Set gas velocity according to dust-to-gas ratio and global pressure gradient.
 !
       do imn=1,ny*nz
-
+!
         n=nn(imn); m=mm(imn)
 !
 !  Take into account drag force from falling dust on gas stratification.
@@ -622,15 +622,15 @@ module Dustdensity
 !  Isothermal stratification.
 !
         if (lentropy) f(l1:l2,m,n,iss) = (1/gamma-1.0)*lnrho
-
+!
         rho(n)=exp(lnrho)
-
+!
         if (ldensity_nolog) then
           f(l1:l2,m,n,irho)=rho(n)
         else
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
-
+!
       enddo
 !
 !  Dust-to-gas ratio
@@ -641,16 +641,16 @@ module Dustdensity
 !  function at |z|>z1. Coefficients are supplied by the user.
 !
       epsz0 = 1/sqrt(z0_smooth**2/Hd**2+1/(1+eps1)**2)-1
-
+!
       if (lroot) then
         print*, 'constant_richardson: z0, eps(z0) =', z0_smooth, epsz0
         print*, 'constant_richardson: epsz1_smooth=', epsz1_smooth
         print*, 'constant_richardson: coeff_smooth=', coeff_smooth
       endif
-
+!
       do imn=1,ny*nz
         n=nn(imn); m=mm(imn)
-
+!
         if ( abs(z(n))>=z0_smooth) then
           if (abs(z(n))<z1_smooth) then
             if (z(n)>=0.0) then
@@ -683,7 +683,7 @@ module Dustdensity
         if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
             cs20*beta_glnrho_scaled(1)*(1+eps(n))/ &
             (2*Omega*(1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2))
-
+!
       enddo
 !
     endsubroutine constant_richardson
@@ -1009,19 +1009,18 @@ module Dustdensity
 ! glnndglnrho
         if (lpencil(i_glnndglnrho)) &
             call dot_mn(p%glnnd(:,:,k),p%glnrho(:,:),p%glnndglnrho(:,k))
-    
+
 ! udrop
         if (lpencil(i_udrop)) then
-          p%udrop(:,:,k)=p%uu(:,:)       
+          p%udrop(:,:,k)=p%uu(:,:)
           p%udrop(:,3,k)=p%udrop(:,3,k)-1e4*dsize(k)
         endif
 ! udropgnd
         if (lpencil(i_udropgnd)) then
           call dot_mn(p%udrop(:,:,k),p%gnd(:,:,k),p%udropgnd(:,k))
         endif
- 
+
       enddo
-!
 !
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
@@ -1087,7 +1086,7 @@ module Dustdensity
           call droplet_redistr(f,df)
          do k=1,ndustspec
           df(l1:l2,m,n,ilnnd(k)) = df(l1:l2,m,n,ilnnd(k)) - &
-            p%udropgnd(:,k)*0. 
+            p%udropgnd(:,k)*0.
          enddo
       endif
 !
@@ -1244,7 +1243,7 @@ module Dustdensity
 !  Redistribute dust number density and dust density in mass bins
 !
       use Mpicomm, only: stop_it
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
@@ -1312,7 +1311,7 @@ module Dustdensity
 !  Calculate condensation of dust on existing dust surfaces
 !
       use Mpicomm, only: stop_it
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1364,7 +1363,7 @@ module Dustdensity
       real, save :: mu
 !
       select case (dust_chemistry)
-
+!
       case ('ice')
         if (it == 1) call getmu(f,mu)
         call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
@@ -1372,16 +1371,16 @@ module Dustdensity
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon
-
+!
         mfluxcond = vth*cc*rho*(1-supsatratio1)
         if (ldiagnos) then
           if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1(:),idiag_ssrm)
           if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1(:),idiag_ssrmax)
         endif
-
+!
       case default
         call stop_it("get_mfluxcond: No valid dust chemistry specified.")
-
+!
       endselect
 !
     endsubroutine get_mfluxcond
@@ -1510,43 +1509,41 @@ module Dustdensity
     subroutine read_dustdensity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=dustdensity_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=dustdensity_init_pars,ERR=99)
       endif
-
-
+!
 99    return
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
     subroutine write_dustdensity_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=dustdensity_init_pars)
-
+!
     endsubroutine write_dustdensity_init_pars
 !***********************************************************************
     subroutine read_dustdensity_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=dustdensity_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=dustdensity_run_pars,ERR=99)
       endif
-
-
+!
 99    return
     endsubroutine read_dustdensity_run_pars
 !***********************************************************************
     subroutine write_dustdensity_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=dustdensity_run_pars)
-
+!
     endsubroutine write_dustdensity_run_pars
 !***********************************************************************
     subroutine null_dust_vars(f)
@@ -1587,7 +1584,7 @@ module Dustdensity
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+!
       if (lwr) then
         write(3,*) 'ndustspec=',ndustspec
         write(3,*) 'nname=',nname
@@ -1601,7 +1598,7 @@ module Dustdensity
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
       endif
-
+!
       call chn(ndustspec,sdustspec)
 !
 !  Loop over dust species (for species-dependent diagnostics)
@@ -1694,33 +1691,33 @@ module Dustdensity
     endsubroutine get_slices_dustdensity
 !***********************************************************************
     subroutine droplet_redistr(f,df)
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ndustspec) :: dndr_dr
-      integer :: i,k
+      integer :: k
       real :: Supersat, Aconst=1e-10
-     
+!
       Supersat=-0.5
-       
+!
        do k=1,ndustspec-1
         dndr_dr(:,k)=1./dsize(k) &
          *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k)) &
          +f(l1:l2,m,n,ind(k))/dsize(k)**2
       !  dndr_dr(i,k)= &
       !   (f(l1+i,m,n,ind(k))/dsize(i+1)-f(l1+i-1,m,n,ind(k))/dsize(i)) &
-      !    /(dsize(i+1)-dsize(i)) 
+      !    /(dsize(i+1)-dsize(i))
        enddo
         dndr_dr(l1:l2,ndustspec)=1./dsize(ndustspec) &
          *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(ndustspec-1))) &
          /(dsize(ndustspec)-dsize(ndustspec-1)) &
          +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
-       
+!
        do k=1,ndustspec
-        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))-Supersat*Aconst*dndr_dr(:,k)   
-       enddo  
-
-
+        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))-Supersat*Aconst*dndr_dr(:,k)
+       enddo
+!
     endsubroutine
 !***********************************************************************
 endmodule Dustdensity
+
