@@ -2982,7 +2982,7 @@ module Chemistry
       real, dimension (nx) :: rho_cgs,p_atm
       real :: Rcal
       integer :: k , reac, i
-      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd, T_loc
+      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd
       logical,save :: lwrite=.true., lwrite_first=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123

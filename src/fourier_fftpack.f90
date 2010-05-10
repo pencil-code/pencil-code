@@ -916,8 +916,6 @@ module Fourier
 !
 !  28-jul-2006/anders: adapted from fourier_transform
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (:) :: a_re,a_im
       logical, optional :: linv
 !
@@ -978,8 +976,6 @@ module Fourier
 !  The routine overwrites the input data.
 !
 !  28-jul-2006/anders: adapted from fourier_transform_1
-!
-      use Mpicomm, only: stop_it
 !
       real, dimension (:,:) :: a_re,a_im
       logical, optional :: linv
@@ -1686,8 +1682,6 @@ module Fourier
 !  The routine overwrites the input data.
 !
 !  1-jul-2006/dhruba: Adapted from fourier_transform_other_1
-!
-      use Mpicomm, only: stop_it
 !
       integer, intent (in) :: na,ifirst_fft
       real, dimension (na) :: a

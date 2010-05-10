@@ -1170,7 +1170,7 @@ module Forcing
       real, dimension(nx,3,3) :: psi_ij,Tij
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: emm,l,j,jf,Legendrel,lmindex,ilread,ilm,&
-                 aindex,ckno,ilist,inx
+                 aindex,ckno,ilist
       real :: a_ell,anum,adenom,jlm,ylm,rphase1,fnorm,alphar,Balpha,&
               psilm,RYlm,IYlm
       real :: rz,rindex,ralpha,&
