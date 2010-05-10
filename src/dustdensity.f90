@@ -1711,9 +1711,9 @@ module Dustdensity
       !   (f(l1+i,m,n,ind(k))/dsize(i+1)-f(l1+i-1,m,n,ind(k))/dsize(i)) &
       !    /(dsize(i+1)-dsize(i))
        enddo
-       dndr_dr(l1:l2,ndustspec)=1./dsize(ndustspec) &
-           *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(ndustspec-1))) &
-           /(dsize(ndustspec)-dsize(ndustspec-1)) &
+       dndr_dr(:,ndustspec)=1./dsize(ndustspec) &
+           *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(max(ndustspec-1,1)))) &
+           /(dsize(ndustspec)-dsize(max(ndustspec-1,1))) &
            +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
 !
        do k=1,ndustspec
