@@ -671,8 +671,8 @@ module Testfield
           u0ref=uutest
           b0ref=bbtest
           j0ref=jjtest
-          call cross_mn(u0ref,b0ref,uxbtest)
-          call cross_mn(j0ref,b0ref,jxbtest)
+!          call cross_mn(u0ref,b0ref,uxbtest)
+!          call cross_mn(j0ref,b0ref,jxbtest)
         endif
 !
 !  do diffusion terms
@@ -697,7 +697,7 @@ module Testfield
 !
         if (lcalc_uumean) then
           do j=1,3
-            uum(:,j)=uumz(n-n1+1,j)
+            uum(:,j)=uumz(n,j)
           enddo
           call cross_mn(uum,bbtest,umxbtest)
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+umxbtest
@@ -756,21 +756,17 @@ module Testfield
         else
 !
 !  Calculate uufluct=U-Umean.
-!The following comment does not yet apply
 !-  Note that uumz has dimensions mz*3, not nz*3.
 !
           if (lcalc_uumean) then
             do j=1,3
-!--             uufluct(:,j)=p%uu(:,j)-uumz(n,j)
-!to be changed later...
-              uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)
+              uufluct(:,j)=p%uu(:,j)-uumz(n,j)
             enddo
           else
             uufluct=p%uu
           endif
 !
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
-!The following comment does not yet apply
 !-  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
 !
           if (lcalc_aamean) then
@@ -864,7 +860,7 @@ module Testfield
 !  evaluate different contributions to <jxb>
 !
         Fipq(:,:,jtest)=jxbtest*bamp1
-        if (ldiagnos) jpq(:,:,jtest)=jjtest
+        if (ldiagnos.and.(idiag_jb0m/=0.or. idiag_j11rms/=0)) jpq(:,:,jtest)=jjtest
 !
 !  enddo loop for jtest
 !
@@ -1262,21 +1258,17 @@ module Testfield
         call calc_pencils_magnetic(f,p)
 !
 !  Calculate uufluct=U-Umean.
-!The following comment does not yet apply
 !-  Note that uumz has dimensions mz*3, not nz*3.
 !
         if (lcalc_uumean) then
           do j=1,3
-!--           uufluct(:,j)=p%uu(:,j)-uumz(n,j)
-!to be changed later...
-            uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)
+            uufluct(:,j)=p%uu(:,j)-uumz(n,j)
           enddo
         else
           uufluct=p%uu
         endif
 !
 !  Calculate bbfluct=B-Bmean and jjfluct=J-Jmean.
-!The following comment does not yet apply
 !-  Note that, unlike uumz, bbmz and jjmz have dimensions nz*3.
 !
         if (lcalc_aamean) then
