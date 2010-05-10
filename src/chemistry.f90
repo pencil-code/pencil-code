@@ -1008,9 +1008,9 @@ module Chemistry
 !
        Rad=(Rad)**0.5
 !
-    !      Rad=abs(x(j1))
          if (Rad<0.2) then
-          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.2-Rad)/0.2)**2)
+!          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.06-Rad)/0.06)**2)
+           f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
          else
           f(j1,j2,j3,ilnTT)=log(init_TT1)
          endif
