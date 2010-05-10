@@ -79,6 +79,7 @@ module Sub
 !
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
+  public :: zlocation
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -5245,5 +5246,40 @@ nameloop: do
       endif
 !
     endsubroutine gij_psi_etc
+!***********************************************************************
+    subroutine zlocation(zpos,izpos,lproc)
+!
+!  if zpos lies within this processor, then lproc=T and zpos=z(izpos).
+!  Otherwise lproc=F and izpos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  03-dec-09/MR: moved here from module slices
+!
+      real :: zpos
+      integer :: izpos,n
+      logical :: lproc
+!
+!  run through all z positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do n=n1,n2
+        if (z(n)<=zpos.and.z(n+1)>zpos) then
+          izpos=n
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put izpos=1
+!
+      izpos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine zlocation
 !***********************************************************************
 endmodule Sub
