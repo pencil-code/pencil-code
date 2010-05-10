@@ -50,6 +50,7 @@ module Dustdensity
   real :: dsize_min=0., dsize_max=0.
   integer :: ind_extra
   integer :: iglobal_nd=0
+  integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   logical :: ludstickmax=.false.
@@ -61,9 +62,7 @@ module Dustdensity
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
   logical :: latm_chemistry=.false.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!atmosphere!!!!!!!!!!!!!!!
-  integer :: spot_number=1
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
@@ -265,18 +264,17 @@ module Dustdensity
         call farray_register_global('nd',iglobal_nd)
       endif
 !
-! Filling the array containing the dust size
-! if the maximum size (dsize_max) of the dust grain is nonzero
+!  Filling the array containing the dust size
+!  if the maximum size (dsize_max) of the dust grain is nonzero.
 !
-       if (latm_chemistry) then
-        if (dsize_max /=0.) then
-         ddsize=(dsize_max-dsize_min)/(ndustspec-1)
-         do i=0,(ndustspec-1)
-          dsize(i+1)=dsize_min+i*ddsize
-         enddo
+      if (latm_chemistry) then
+        if (dsize_max/=0.0) then
+          ddsize=(dsize_max-dsize_min)/(ndustspec-1)
+          do i=0,(ndustspec-1)
+            dsize(i+1)=dsize_min+i*ddsize
+          enddo
         endif
-       endif
-
+      endif
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -544,8 +542,6 @@ module Dustdensity
         if (notanumber(f(l1:l2,m1:m2,n1:n2,imi(:)))) &
             call stop_it('init_nd: Imaginary ice density values')
       endif
-!
-  ! print*,'NAT',lmice, lmdvar
 !
     endsubroutine init_nd
 !***********************************************************************
@@ -1081,17 +1077,14 @@ module Dustdensity
 !  Redistribution over the size in the atmospheric physics case
 !
       if (latm_chemistry) then
-          call droplet_redistr(f,df)
-         do k=1,ndustspec
-
-          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-            p%udropgnd(:,k) 
-           do i=1,mx
+        call droplet_redistr(f,df)
+        do k=1,ndustspec
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) 
+          do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
               df(i,m,n,ind(k))=1e-25*dt
-           enddo
-
-         enddo
+          enddo
+        enddo
       endif
 !
 !  Loop over dust layers
@@ -1511,6 +1504,7 @@ module Dustdensity
     endsubroutine dust_coagulation
 !***********************************************************************
     subroutine read_dustdensity_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -1521,6 +1515,7 @@ module Dustdensity
       endif
 !
 99    return
+!
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
     subroutine write_dustdensity_init_pars(unit)
@@ -1541,9 +1536,11 @@ module Dustdensity
       endif
 !
 99    return
+!
     endsubroutine read_dustdensity_run_pars
 !***********************************************************************
     subroutine write_dustdensity_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=dustdensity_run_pars)
@@ -1696,6 +1693,8 @@ module Dustdensity
 !***********************************************************************
     subroutine droplet_redistr(f,df)
 !
+!  DOCUMENT ME.
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ndustspec) :: dndr_dr
@@ -1705,87 +1704,80 @@ module Dustdensity
       Supersat=-0.5
 !
        do k=1,ndustspec-1
-        dndr_dr(:,k)=1./dsize(k) &
-         *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k)) &
-         +f(l1:l2,m,n,ind(k))/dsize(k)**2
+         dndr_dr(:,k)=1./dsize(k) &
+             *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k))&
+             +f(l1:l2,m,n,ind(k))/dsize(k)**2
       !  dndr_dr(i,k)= &
       !   (f(l1+i,m,n,ind(k))/dsize(i+1)-f(l1+i-1,m,n,ind(k))/dsize(i)) &
       !    /(dsize(i+1)-dsize(i))
        enddo
-        dndr_dr(l1:l2,ndustspec)=1./dsize(ndustspec) &
-         *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(ndustspec-1))) &
-         /(dsize(ndustspec)-dsize(ndustspec-1)) &
-         +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
+       dndr_dr(l1:l2,ndustspec)=1./dsize(ndustspec) &
+           *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(ndustspec-1))) &
+           /(dsize(ndustspec)-dsize(ndustspec-1)) &
+           +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
 !
        do k=1,ndustspec
-
-        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))-Supersat*Aconst*dndr_dr(:,k)   
-      
-
-    !   if (lfilter) then
-       do i=1,mx
-        if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
-              df(i,m,n,ind(k))=1e-25*dt
+!
+        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+            Supersat*Aconst*dndr_dr(:,k)   
+!      
+         do i=1,mx
+          if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
+                df(i,m,n,ind(k))=1e-25*dt
+         enddo
        enddo
-     ! endif
-       enddo  
 !
     endsubroutine
 !***********************************************************************
     subroutine droplet_init(f)
-
+!
+!  DOCUMENT ME.
+!
      use General, only: random_number_wrapper
 !
        real, dimension (mx,my,mz,mfarray) :: f
        integer :: k, j, j1,j2,j3
        real :: spot_size=.5, RR
        real, dimension (3,spot_number) :: spot_posit
-!  
-       spot_posit(:,:)=0.
 !
-          do j=1,spot_number
-            if (nxgrid/=1) then 
-               call random_number_wrapper(spot_posit(1,j))
-               print*,'posit',spot_posit(1,:)
-               spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
-            endif
-            if (nygrid/=1) then
-               call random_number_wrapper(spot_posit(2,j))
-               spot_posit(1,j)=spot_posit(1,j)*Lxyz(2)
-            endif
-            if (nzgrid/=1) then
-               call random_number_wrapper(spot_posit(3,j))
-               spot_posit(1,j)=spot_posit(1,j)*Lxyz(3)
-            endif
-          enddo
+       spot_posit(:,:)=0.0
+!
+       do j=1,spot_number
+         if (nxgrid/=1) then 
+            call random_number_wrapper(spot_posit(1,j))
+            print*,'posit',spot_posit(1,:)
+            spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
+         endif
+         if (nygrid/=1) then
+            call random_number_wrapper(spot_posit(2,j))
+            spot_posit(1,j)=spot_posit(1,j)*Lxyz(2)
+         endif
+         if (nzgrid/=1) then
+            call random_number_wrapper(spot_posit(3,j))
+            spot_posit(1,j)=spot_posit(1,j)*Lxyz(3)
+         endif
+       enddo
        print*,'posit*Lxyz',spot_posit(1,:)
 !   spot_posit=[0,0,0]
 !
-         do k=1,ndustspec
-         do j=1,spot_number
-          do j1=1,mx
-          do j2=1,my
-          do j3=1,mz
+       do k=1,ndustspec; do j=1,spot_number
+         do j1=1,mx; do j2=1,my; do j3=1,mz
 !
            RR=(x(j1)-spot_posit(1,j))**2 &
-              +(y(j2)-spot_posit(2,j))**2 &
-              +(z(j3)-spot_posit(3,j))**2
+               +(y(j2)-spot_posit(2,j))**2 &
+               +(z(j3)-spot_posit(3,j))**2
            RR=sqrt(RR)
 !
            if (RR<spot_size) then
-            f(j1,j2,j3,ind(k)) = &
-            -(1e3-10)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/  &
-                (dsize_min-0.5*(dsize_max+dsize_min))**2+1e3
+             f(j1,j2,j3,ind(k)) = &
+                 -(1e3-10)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/  &
+                 (dsize_min-0.5*(dsize_max+dsize_min))**2+1e3
            endif
 !
-          enddo
-          enddo
-          enddo
-         enddo
-         enddo
+         enddo; enddo; enddo
+       enddo; enddo
 !
     endsubroutine
 !***********************************************************************
-
 endmodule Dustdensity
 
