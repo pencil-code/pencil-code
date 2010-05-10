@@ -3603,20 +3603,20 @@ module Entropy
 !  terms involving radial gradient of s
 !
         thdiff=thdiff+chi_t*chit_aniso*(glchit_prof(:,1)*costh(m)**2 &
-                     +chit_prof*(sinth(m)**2)/x(l1:l2))*p%gss(:,1)
+                     +chit_prof/x(l1:l2))*p%gss(:,1)
 !
 !  terms involving latitudinal gradient of s
 !
         thdiff=thdiff+chi_t*chit_aniso*costh(m)*sinth(m) &
-                     *(2.*chit_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2)
+                     *(chit_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2)
 !
 !  2nd derivatives of s
 !
         call g2ij(f,iss,tmp)
         thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-                     (-sinth(m)*costh(m)*tmp(:,1,2)/x(l1:l2) &
-                      -sinth(m)*costh(m)*tmp(:,2,1)/x(l1:l2) &
-                +costh(m)**2*tmp(:,1,1)+sinth(m)**2*tmp(:,2,2)/(x(l1:l2)**2))
+                     (-sinth(m)*costh(m)*tmp(:,1,2) &
+                      -sinth(m)*costh(m)*tmp(:,2,1) &
+                +costh(m)**2*tmp(:,1,1)+sinth(m)**2*tmp(:,2,2))
 !
 !  terms involving glnr and glnT
 !
@@ -3632,23 +3632,16 @@ module Entropy
 !
 !        thdiff=thdiff+chi_t*chit_aniso*chit_prof*(1.-3.*costh(m)**2)*r1_mn*p%gss(:,1)
 !
-!  terms involving latitudinal gradient of s
-!
-!        thdiff=thdiff-chi_t*chit_aniso*costh(m)*sinth(m) &
-!                     *(chit_prof*r1_mn+glchit_prof(:,1))*p%gss(:,2)
-!
-!  2nd derivatives of s
+!  second derivatives of s
 !
 !        call g2ij(f,iss,tmp)
 !        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-!                     (-r1_mn*sinth(m)*costh(m)*tmp(:,1,2) &
-!                      -r1_mn*sinth(m)*costh(m)*tmp(:,2,1))
+!                     (-sinth(m)*costh(m)*tmp(:,1,2))
 !
 !  terms involving glnr and glnT
 !
 !        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-!          ((p%glnrho(:,1)+p%glnTT(:,1))*(-sinth(m)*costh(m)*p%gss(:,2)) + &
-!           (p%glnrho(:,2)+p%glnTT(:,2))*(-sinth(m)*costh(m)*p%gss(:,1)))
+!           ((p%glnrho(:,2)+p%glnTT(:,2))*(-sinth(m)*costh(m)*p%gss(:,1)))
 !
 !  PJK: Simplified formulation ends
 !
