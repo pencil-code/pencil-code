@@ -42,7 +42,7 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
-  real, dimension (nz,3) :: uumz,guumz=0.
+  real, dimension (mz,3) :: uumz,guumz=0.                          ! guumz contains invalid data on ghostzones
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
@@ -2220,8 +2220,7 @@ module Hydro
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
       integer :: m,n,i,j
       real :: fact
-      real, dimension (mz,3) :: uumzl=0.
-      real, dimension (nz,3) :: temp
+      real, dimension (mz,3) :: temp
 !
 !     intent(in) :: f
       intent(inout) :: f
@@ -2269,26 +2268,22 @@ module Hydro
         fact=1./nxy
         uumz = 0.
 !
-        do n=n1,n2
+        do n=1,mz
           do j=1,3
-            uumz(n-n1+1,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
+            uumz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
           enddo
         enddo
 !
-        uumzl(n1:n2,:) = uumz
+        if (nprocy>1) then
 !
-        call fill_zghostzones_3vec(uumzl,iux)      !MR: checked by numbers
+          call mpiallreduce_sum(uumz,temp,(/mz,3/),idir=2)
+          uumz = temp
 !
+        endif
+
         do j=1,3
-          call der_z(uumzl(:,j),guumz(:,j))
+          call der_z(uumz(:,j),guumz(n1:n2,j))       ! ghost zones in guumz are not filled!
         enddo
-!
-      endif
-!
-      if (nprocy>1) then
-!
-        call mpiallreduce_sum(guumz,temp,(/nz,3/),idir=2)
-        guumz = temp
 !
       endif
 !
