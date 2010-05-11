@@ -575,7 +575,7 @@ module Chemistry
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: k,i,j1
+      integer :: k,i
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6
       real :: T_low,T_up, T_mid
       real, dimension(nx) :: T_loc
