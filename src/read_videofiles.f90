@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !***********************************************************************
       program rvid_box
 !
@@ -14,7 +14,7 @@
       use General
 !
       implicit none
-
+!
 !
       real, dimension (nxgrid,nygrid) :: xy,xy2,xy3,xy4
       real, dimension (nxgrid,nzgrid) :: xz
@@ -47,7 +47,6 @@
       real :: max_xy_loc,max_xy2_loc,max_xz_loc,max_yz_loc
       real :: min_xy3_loc,min_xy4_loc
       real :: max_xy3_loc,max_xy4_loc
-      
 !
 !  initialize minimum and maximum values for each plane
 !
@@ -160,7 +159,7 @@
           xy2(:,1+ipy*ny:ny+ipy*ny)=0.
           goto 999
         endif
-        call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
+        call read_slice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
         min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
         max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
         if (eof) goto 999
@@ -170,7 +169,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1,lwrite)
+        call append_slice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -194,7 +193,7 @@
           xy(:,1+ipy*ny:ny+ipy*ny)=0.
           goto 999
         endif
-        call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
+        call read_slice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
         min_xy_loc=min(min_xy_loc,minval(xy_loc))
         max_xy_loc=max(max_xy_loc,maxval(xy_loc))
         if (eof) goto 999
@@ -204,7 +203,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2,lwrite)
+        call append_slice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -228,7 +227,7 @@
           xz(:,1+ipz*nz:nz+ipz*nz)=0.
           goto 999
         endif
-        call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
+        call read_slice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
         min_xz_loc=min(min_xz_loc,minval(xz_loc))
         max_xz_loc=max(max_xz_loc,maxval(xz_loc))
         if (eof) goto 999
@@ -238,7 +237,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3,lwrite)
+        call append_slice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -264,7 +263,7 @@
           yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=0.
           goto 999
         endif
-        call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
+        call read_slice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
         min_yz_loc=min(min_yz_loc,minval(yz_loc))
         max_yz_loc=max(max_yz_loc,maxval(yz_loc))
         if (eof) goto 999
@@ -274,7 +273,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       err_timestep=err_timestep.or.err
       if (.not.err_timestep) then
-        call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4,lwrite)
+        call append_slice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4,lwrite)
         lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
@@ -300,7 +299,7 @@
             xy3(:,1+ipy*ny:ny+ipy*ny)=0.
             goto 999
           endif
-          call rslice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
+          call read_slice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
           min_xy3_loc=min(min_xy3_loc,minval(xy3_loc))
           max_xy3_loc=max(max_xy3_loc,maxval(xy3_loc))
           if (eof) goto 999
@@ -310,7 +309,7 @@
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
         if (.not.err_timestep) then
-          call wslice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5,lwrite)
+          call append_slice(trim(wfile),xy3,slice_z3pos,nxgrid,nygrid,t,it,lun5,lwrite)
           lwritten_something=.true.
         else
           print*,'skip writing because of error; t=',t
@@ -334,7 +333,7 @@
             xy4(:,1+ipy*ny:ny+ipy*ny)=0.
             goto 999
           endif
-          call rslice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
+          call read_slice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
           min_xy4_loc=min(min_xy4_loc,minval(xy4_loc))
           max_xy4_loc=max(max_xy4_loc,maxval(xy4_loc))
           if (eof) goto 999
@@ -344,7 +343,7 @@
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
         if (.not.err_timestep) then
-          call wslice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6,lwrite)
+          call append_slice(trim(wfile),xy4,slice_z4pos,nxgrid,nygrid,t,it,lun6,lwrite)
           lwritten_something=.true.
         else
           print*,'skip writing because of error; t=',t
@@ -376,7 +375,7 @@
         print*,'-------------------------------------------------'
         print*,'finished OK'
       endif
-
+!
       select case (trim(field))
         case ('ux','uy','uz','bx','by','bz','Fradx','Frady','Fradz','ax','ay','az','ox','oy','oz')
           print*,""
@@ -393,7 +392,7 @@
           print*,"*****************************************************************************"
           print*,""
       endselect
-
+!
       end
 !***********************************************************************
     subroutine read_ipz_position(file,ipz)
@@ -421,9 +420,9 @@
 !
 99    end
 !***********************************************************************
-    subroutine rslice(file,a,pos,ndim1,ndim2,t,it,lun,eof,err)
+    subroutine read_slice(file,a,pos,ndim1,ndim2,t,it,lun,eof,err)
 !
-!  appending to an existing slice file
+! read an existing slice file
 !
 !  12-nov-02/axel: coded
 !
@@ -435,7 +434,7 @@
       real :: t,pos
 !
       if (it==1) open(lun,file=file,status='old',form='unformatted')
-
+!
       pos=0.  ! By default (i.e. if missing from record)
       read(lun,end=999,err=998) a,t,pos
       lun=lun+1
@@ -458,11 +457,11 @@
 !
 900   continue
 !
-    endsubroutine rslice
+    endsubroutine read_slice
 !***********************************************************************
-    subroutine wslice(file,a,pos,ndim1,ndim2,t,it,lun,lwrite)
+    subroutine append_slice(file,a,pos,ndim1,ndim2,t,it,lun,lwrite)
 !
-!  appending to an existing slice file
+!  append to a slice file
 !
 !  12-nov-02/axel: coded
 !
@@ -472,10 +471,9 @@
       logical :: lwrite
       integer :: it,lun
       real :: t, pos
-
 !
       if (it==1) open(lun,file=file,form='unformatted')
       if (lwrite) write(lun) a,t,pos
 !
-    endsubroutine wslice
+    endsubroutine append_slice
 !***********************************************************************

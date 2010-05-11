@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !***********************************************************************
       program combine_videofiles
 !
@@ -46,47 +46,47 @@
         lun2=20
         call safe_character_assign(rfile1,trim(dir)//trim(field)//'1'//'.xy2')
         call safe_character_assign(rfile2,trim(dir)//trim(field)//'2'//'.xy2')
-        call rslice(trim(rfile1),xy1,nxgrid,nygrid,t,it,lun1,eof); if (eof) goto 999
-        call rslice(trim(rfile2),xy2,nxgrid,nygrid,t,it,lun2,eof); if (eof) goto 999
+        call read_slice(trim(rfile1),xy1,nxgrid,nygrid,t,it,lun1,eof); if (eof) goto 999
+        call read_slice(trim(rfile2),xy2,nxgrid,nygrid,t,it,lun2,eof); if (eof) goto 999
         maxval1=max(maxval1,maxval(fac1*xy1))
         maxval2=max(maxval2,maxval(fac2*xy2))
         xy=int(16*fac1*xy1)+16*int(16*fac2*xy2)
         xy=16*int(16*fac1*xy1)+int(16*fac2*xy2)
         call safe_character_assign(wfile,trim(dir)//trim(field)//'.xy2')
-        call wslice(trim(wfile),xy,nxgrid,nygrid,t,it,lun0)
+        call append_slice(trim(wfile),xy,nxgrid,nygrid,t,it,lun0)
 !
         call safe_character_assign(rfile1,trim(dir)//trim(field)//'1'//'.xy')
         call safe_character_assign(rfile2,trim(dir)//trim(field)//'2'//'.xy')
-        call rslice(trim(rfile1),xy1,nxgrid,nygrid,t,it,lun1,eof); if (eof) goto 999
-        call rslice(trim(rfile2),xy2,nxgrid,nygrid,t,it,lun2,eof); if (eof) goto 999
+        call read_slice(trim(rfile1),xy1,nxgrid,nygrid,t,it,lun1,eof); if (eof) goto 999
+        call read_slice(trim(rfile2),xy2,nxgrid,nygrid,t,it,lun2,eof); if (eof) goto 999
         maxval1=max(maxval1,maxval(fac1*xy1))
         maxval2=max(maxval2,maxval(fac2*xy2))
         xy=int(16*fac1*xy1)+16*int(16*fac2*xy2)
         xy=16*int(16*fac1*xy1)+int(16*fac2*xy2)
         call safe_character_assign(wfile,trim(dir)//trim(field)//'.xy')
-        call wslice(trim(wfile),xy,nxgrid,nygrid,t,it,lun0)
+        call append_slice(trim(wfile),xy,nxgrid,nygrid,t,it,lun0)
 !
         call safe_character_assign(rfile1,trim(dir)//trim(field)//'1'//'.xz')
         call safe_character_assign(rfile2,trim(dir)//trim(field)//'2'//'.xz')
-        call rslice(trim(rfile1),xz1,nxgrid,nzgrid,t,it,lun1,eof); if (eof) goto 999
-        call rslice(trim(rfile2),xz2,nxgrid,nzgrid,t,it,lun2,eof); if (eof) goto 999
+        call read_slice(trim(rfile1),xz1,nxgrid,nzgrid,t,it,lun1,eof); if (eof) goto 999
+        call read_slice(trim(rfile2),xz2,nxgrid,nzgrid,t,it,lun2,eof); if (eof) goto 999
         maxval1=max(maxval1,maxval(fac1*xz1))
         maxval2=max(maxval2,maxval(fac2*xz2))
         xz=int(16*fac1*xz1)+16*int(16*fac2*xz2)
         xz=16*int(16*fac1*xz1)+int(16*fac2*xz2)
         call safe_character_assign(wfile,trim(dir)//trim(field)//'.xz')
-        call wslice(trim(wfile),xz,nxgrid,nzgrid,t,it,lun0)
+        call append_slice(trim(wfile),xz,nxgrid,nzgrid,t,it,lun0)
 !
         call safe_character_assign(rfile1,trim(dir)//trim(field)//'1'//'.yz')
         call safe_character_assign(rfile2,trim(dir)//trim(field)//'2'//'.yz')
-        call rslice(trim(rfile1),yz1,nygrid,nzgrid,t,it,lun1,eof); if (eof) goto 999
-        call rslice(trim(rfile2),yz2,nygrid,nzgrid,t,it,lun2,eof); if (eof) goto 999
+        call read_slice(trim(rfile1),yz1,nygrid,nzgrid,t,it,lun1,eof); if (eof) goto 999
+        call read_slice(trim(rfile2),yz2,nygrid,nzgrid,t,it,lun2,eof); if (eof) goto 999
         maxval1=max(maxval1,maxval(fac1*yz1))
         maxval2=max(maxval2,maxval(fac2*yz2))
         yz=int(16*fac1*yz1)+16*int(16*fac2*yz2)
         yz=16*int(16*fac1*yz1)+int(16*fac2*yz2)
         call safe_character_assign(wfile,trim(dir)//trim(field)//'.yz')
-        call wslice(trim(wfile),yz,nygrid,nzgrid,t,it,lun0)
+        call append_slice(trim(wfile),yz,nygrid,nzgrid,t,it,lun0)
 !
       enddo
 !
@@ -96,9 +96,9 @@ print*,'maxval1=',maxval1
 print*,'maxval2=',maxval2
       end
 !***********************************************************************
-    subroutine rslice(file,a,ndim1,ndim2,t,it,lun,eof)
+    subroutine read_slice(file,a,ndim1,ndim2,t,it,lun,eof)
 !
-!  appending to an existing slice file
+! read an existing slice file
 !
 !  12-nov-02/axel: coded
 !
@@ -120,11 +120,11 @@ print*,'maxval2=',maxval2
 !
 900   continue
 !
-    endsubroutine rslice
+    endsubroutine read_slice
 !***********************************************************************
-    subroutine wslice(file,a,ndim1,ndim2,t,it,lun)
+    subroutine append_slice(file,a,ndim1,ndim2,t,it,lun)
 !
-!  appending to an existing slice file
+!  append to a slice file
 !
 !  12-nov-02/axel: coded
 !
@@ -139,5 +139,5 @@ print*,'maxval2=',maxval2
       write(lun) a,t,pos
       lun=lun+1
 !
-    endsubroutine wslice
+    endsubroutine append_slice
 !***********************************************************************
