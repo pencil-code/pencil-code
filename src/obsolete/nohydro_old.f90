@@ -314,7 +314,7 @@ module Hydro
         if (lpencil(i_uu)) then
           if (headtt) print*,'Chandrasekhar-Kendall flow'
           p%uu(:,1)=ampl_kinflow*(ell*(ell+1)/Balpha*x(l1:l2))*Zl(l1:l2)*Pl(m)
-          p%uu(:,2)=ampl_kinflow*(1./Balpha*x(l1:l2))*(2*x(l1:l2)*Zl(l1:l2)+& 
+          p%uu(:,2)=ampl_kinflow*(1./Balpha*x(l1:l2))*(2*x(l1:l2)*Zl(l1:l2)+&
                          dZldr(l1:l2)*Balpha*x(l1:l2)**2)*dPldtheta(m)
           p%uu(:,3)=-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
         endif
@@ -1181,7 +1181,7 @@ kky_aa=2.*pi
    ! subroutine random_isotropic_KS_setup_abag
 !
 !  ! produces random, isotropic field from energy spectrum following the
-!  ! KS method, however this setup produces periodic velocity field 
+!  ! KS method, however this setup produces periodic velocity field
 !  ! (assuming box (-pi,pi))
 !
 !  ! 28-mar-08/abag coded
@@ -1213,14 +1213,14 @@ kky_aa=2.*pi
    ! allocate(omega(KS_modes))
    ! allocate(klengths(KS_modes))
    ! num=1
-   ! do i=1,10000   
-   !  call random_number(angle)  
+   ! do i=1,10000
+   !  call random_number(angle)
    !  if ((angle(1)-0.0 < epsilon(0.0)) .or. &
    !     (angle(2)-0.0 < epsilon(0.0)) .or. &
    !     (angle(3)-0.0 < epsilon(0.0))) then
    !     call random_number(angle)
    !  endif
-   !  angle=floor(9.*angle) 
+   !  angle=floor(9.*angle)
    !  call random_number(dir_in)
    !  direction=nint(dir_in)
    !  direction=2*direction -1  !positive or negative directions
@@ -1232,7 +1232,7 @@ kky_aa=2.*pi
    !  !find the length of the current k_option vector
    !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 
-   !  if (i==1.and.mkunit(i).gt.0.)then 
+   !  if (i==1.and.mkunit(i).gt.0.)then
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
    !  endif
@@ -1246,7 +1246,7 @@ kky_aa=2.*pi
    !        ne=.false.
    !        exit
    !      endif
-   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new......
    !        num=num+1
    !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
    !        klengths(num)=mkunit(i)  ! store the length also
@@ -1268,9 +1268,9 @@ kky_aa=2.*pi
    ! enddo
    ! do i=1,N
    ! !now we find delk as defined in Malik & Vassilicos' paper
-   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
-   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
-   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
+   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0
+   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0
+   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0
    ! enddo
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
@@ -1536,7 +1536,7 @@ kky_aa=2.*pi
     subroutine init_ck
 !
 !  8-sep-2009/dhruba: coded
-!     
+!
       integer :: l,m
       real :: Balpha,jl,jlp1,jlm1,LPl,LPlm1
       integer :: ell

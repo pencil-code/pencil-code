@@ -129,10 +129,10 @@ module Testscalar
     subroutine get_slices_testscalar(f,slices)
 !
       use Sub, only: keep_compiler_quiet
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
 !

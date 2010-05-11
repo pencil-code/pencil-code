@@ -1,6 +1,5 @@
 ! $Id$
-
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -9,28 +8,28 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Radiation
-
+!
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   include 'radiation.h'
-
+!
   ! radiation turned off
-
+!
   !namelist /radiation_init_pars/ dummyuu
   !namelist /radiation_run_pars/  dummyuu
-
+!
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_radiation()
 !
@@ -59,7 +58,7 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
-
+!
     endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
@@ -74,7 +73,7 @@ module Radiation
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine radiative_cooling(f,df,p)
-
+!
 !  dummy routine
 !
 ! 25-mar-03/axel+tobi: coded
@@ -217,7 +216,7 @@ module Radiation
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_radiation_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_radiation(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for radiative part
@@ -259,7 +258,7 @@ module Radiation
       endif
 !
       call keep_compiler_quiet(lreset)
-
+!
     endsubroutine rprint_radiation
 !***********************************************************************
     subroutine get_slices_radiation(f,slices)

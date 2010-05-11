@@ -41,7 +41,7 @@ module Cosmicrayflux
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicrayflux
-!***************************************:********************************
+!***********************************************************************
     subroutine read_cosmicrayflux_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
@@ -151,5 +151,4 @@ module Cosmicrayflux
 !
     endsubroutine rprint_cosmicrayflux
 !***********************************************************************
-
 endmodule Cosmicrayflux

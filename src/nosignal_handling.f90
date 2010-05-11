@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -17,7 +17,7 @@ module Signal_handling
   use Messages
   use Sub, only: keep_compiler_quiet
 !  Signal handling in run.f90
-
+!
   implicit none
   private
   public :: signal_prepare
@@ -27,7 +27,7 @@ module Signal_handling
 !
   logical :: emergency_stop = .false.
   contains
-!*****************************************************************************
+!***********************************************************************
 subroutine signal_prepare()
 !
 !  dummy routine
@@ -51,5 +51,5 @@ endsubroutine signal_prepare
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_signal_init_pars
-!*****************************************************************************
+!***********************************************************************
 endmodule Signal_handling

@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -27,7 +27,7 @@ module Hydro
 !
   real, dimension (mz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
-
+!
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0.
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
@@ -388,7 +388,7 @@ module Hydro
     real :: theta,phi,alpha,beta
     real :: a,mkunit
     real :: newthet,newphi  !get rid of this line if there's no change
-
+!
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))
     allocate(KS_B(3,KS_modes))
@@ -420,7 +420,7 @@ module Hydro
 !       kmin=kmin*2.*pi
        kmax=128.*pi    !nx*pi
        a=(kmax/kmin)**(1./(KS_modes-1.))
-
+!
 !
     do modeN=1,KS_modes
 !
@@ -483,7 +483,7 @@ module Hydro
                        *exp(-0.5*(k/kmax)**2.)
        energy=1.*energy
        ps=sqrt(2.*energy*dk)   !/3.0)
-
+!
        KS_A(:,modeN) = ps*e1
        KS_B(:,modeN) = ps*e2
 !
@@ -525,7 +525,7 @@ module Hydro
     real, dimension (KS_modes) :: k,dk,energy,ps
     real :: theta,phi,alpha,beta
     real :: ex,ey,ez,norm,a
-
+!
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))
     allocate(KS_B(3,KS_modes))
@@ -535,7 +535,7 @@ module Hydro
 !    kmin=kmin*2.*pi
     kmax=128.*pi    !nx*pi
     a=(kmax/kmin)**(1./(KS_modes-1.))
-
+!
 !
     do modeN=1,KS_modes
 !
@@ -550,11 +550,11 @@ module Hydro
 !weezy !
 !weezy       print *,kmin,kmax,k
 !weezy       dk=1.0*kmin
-
+!
 !weezy       if (modeN==1)dk=kmin*(a-1.)/2.
 !weezy       if (modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
 !weezy       if (modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
-
+!
 !
 !  pick 4 random angles for each mode
 !
@@ -573,7 +573,7 @@ module Hydro
       k_unit(1)=sin(theta)*cos(phi)
       k_unit(2)=sin(theta)*sin(phi)
       k_unit(3)=cos(theta)
-
+!
       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
                        *exp(-0.5*(k/kmax)**2.)
 !      energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
@@ -611,14 +611,14 @@ module Hydro
 !
 !      ps=(k**(initpower/2.))*sqrt(dk*2./3.)
 !  The factor of 2 just after the sqrt may need to be 2./3.
-
+!
 !
 !  With the `weezey' stuff above commented out, dk is currently used, but
 !  never set, so we better abort
 !
       call error('random_isotropic_KS_setup', 'Using uninitialized dk')
       dk=0.                     ! to make compiler happy
-
+!
       ps=sqrt(2.*energy*dk)   !/3.0)
 !
 !  give KS_A and KS_B length ps
@@ -740,7 +740,7 @@ module Hydro
 !
 !   form RA = RA x k_unit and RB = RB x k_unit
 !
-
+!
      do modeN=1,KS_modes
        call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
        call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
@@ -751,7 +751,7 @@ module Hydro
    ! subroutine random_isotropic_KS_setup_abag
 !
 !  ! produces random, isotropic field from energy spectrum following the
-!  ! KS method, however this setup produces periodic velocity field 
+!  ! KS method, however this setup produces periodic velocity field
 !  ! (assuming box (-pi,pi))
 !
 !  ! 28-mar-08/abag coded
@@ -783,14 +783,14 @@ module Hydro
    ! allocate(omega(KS_modes))
    ! allocate(klengths(KS_modes))
    ! num=1
-   ! do i=1,10000   
-   !  call random_number(angle)  
+   ! do i=1,10000
+   !  call random_number(angle)
    !  if ((angle(1)-0.0 < epsilon(0.0)) .or. &
    !     (angle(2)-0.0 < epsilon(0.0)) .or. &
    !     (angle(3)-0.0 < epsilon(0.0))) then
    !     call random_number(angle)
    !  endif
-   !  angle=floor(9.*angle) 
+   !  angle=floor(9.*angle)
    !  call random_number(dir_in)
    !  direction=nint(dir_in)
    !  direction=2*direction -1  !positive or negative directions
@@ -798,15 +798,15 @@ module Hydro
    !  k_option(1,i)=direction(1)*angle(1)!a possible orientation
    !  k_option(2,i)=direction(2)*angle(2)   !provided we haven't
    !  k_option(3,i)=direction(3)*angle(3)  !already got this length
-
+!
    !  !find the length of the current k_option vector
    !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
-
-   !  if (i==1.and.mkunit(i).gt.0.)then 
+!
+   !  if (i==1.and.mkunit(i).gt.0.)then
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
    !  endif
-
+!
    !  !now we check that the current length is unique (hasn't come before)
    !  if (i.gt.1.and.num.lt.KS_modes)then
    !    do s1=i-1,1,-1
@@ -816,7 +816,7 @@ module Hydro
    !        ne=.false.
    !        exit
    !      endif
-   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new......
    !        num=num+1
    !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
    !        klengths(num)=mkunit(i)  ! store the length also
@@ -838,9 +838,9 @@ module Hydro
    ! enddo
    ! do i=1,N
    ! !now we find delk as defined in Malik & Vassilicos' paper
-   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0 
-   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0 
-   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0  
+   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0
+   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0
+   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0
    ! enddo
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************
@@ -1088,9 +1088,9 @@ module Hydro
 !  32-nov-06/tobi: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       call keep_compiler_quiet(f)
-
+!
     endsubroutine remove_mean_momenta
 !***********************************************************************
     subroutine impose_velocity_ceiling(f)
@@ -1165,5 +1165,6 @@ module Hydro
       print*, 'I should not be called. '
 !
     endsubroutine kinematic_random_phase
-!*******************************************************************
+!***********************************************************************
 endmodule Hydro
+

@@ -79,7 +79,7 @@ module Particles_main
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f      
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
       character (len=*) :: chsnap,flist
       optional :: flist
@@ -292,9 +292,9 @@ module Particles_main
 !***********************************************************************
     subroutine particles_create_sinks(f)
 !
-! Fetch fp and ineargrid to create_sinks 
-! 
-! 14-mar-08/wlad: dummy 
+! Fetch fp and ineargrid to create_sinks
+!
+! 14-mar-08/wlad: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

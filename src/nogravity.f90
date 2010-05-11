@@ -345,7 +345,7 @@ module Gravity
     subroutine compute_gravity_star(f, wheat, luminosity, star_cte)
 !
 !  5-jan-10/boris: coded
-! 
+!
     real, dimension (mx,my,mz,mfarray) :: f
     real :: wheat, luminosity, star_cte
 !

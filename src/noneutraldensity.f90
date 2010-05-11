@@ -12,7 +12,7 @@
 !
 !***************************************************************
 module Neutraldensity
-! 
+!
   use Cdata
   use Cparam
   use Messages

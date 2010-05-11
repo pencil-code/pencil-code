@@ -13,8 +13,8 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
-  integer :: idiag_c_dragx=0       ! DIAG_DOC: 
-  integer :: idiag_c_dragy=0       ! DIAG_DOC: 
+  integer :: idiag_c_dragx=0       ! DIAG_DOC:
+  integer :: idiag_c_dragy=0       ! DIAG_DOC:
 !
   contains
 !***********************************************************************
@@ -31,7 +31,7 @@ module Solid_Cells
 !  Initial conditions for cases where we have solid structures in the domain.
 !  Typically the flow field is set such that we have no-slip conditions
 !  at the solid structure surface.
-! 
+!
 !  28-nov-2008/nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -39,10 +39,10 @@ module Solid_Cells
       call keep_compiler_quiet(f)
 !
     endsubroutine init_solid_cells
-!***********************************************************************  
+!***********************************************************************
     subroutine update_solid_cells(f)
 !
-!  Set the boundary values of the solid area such that we get a 
+!  Set the boundary values of the solid area such that we get a
 !  correct fluid-solid interface.
 !
 !  19-nov-08/nils: dummy
@@ -52,7 +52,7 @@ module Solid_Cells
       call keep_compiler_quiet(f)
 !
     endsubroutine update_solid_cells
-!***********************************************************************  
+!***********************************************************************
     subroutine freeze_solid_cells(df)
 !
 !  If we are in a solid cell set df=0 for all variables
@@ -60,11 +60,11 @@ module Solid_Cells
 !  19-nov-08/nils: dummy
 !
       real, dimension (mx,my,mz,mvar) :: df
-! 
+!
       call keep_compiler_quiet(df)
 !
     endsubroutine freeze_solid_cells
-!***********************************************************************  
+!***********************************************************************
     function in_solid_cell(part_pos,part_rad)
 !
 !  Check if the position px,py,pz is within a colid cell
@@ -156,9 +156,9 @@ module Solid_Cells
       if (present(lwrite)) lwr=lwrite
 !
 !  Reset everything in case of reset
-! 
+!
       if (lreset) then
-        idiag_c_dragx=0 
+        idiag_c_dragx=0
         idiag_c_dragy=0
       endif
 !
@@ -176,11 +176,11 @@ module Solid_Cells
         write(3,*) 'i_c_dragx=',idiag_c_dragx
         write(3,*) 'i_c_dragy=',idiag_c_dragy
       endif
-      
+
       call keep_compiler_quiet(lreset)
-      
+
     endsubroutine rprint_solid_cells
-!***********************************************************************  
+!***********************************************************************
     subroutine pencil_criteria_solid_cells()
 !
 !  All pencils that the Solid_Cells module depends on are specified here.
@@ -192,7 +192,7 @@ module Solid_Cells
       call keep_compiler_quiet(unit)
 !
     endsubroutine pencil_criteria_solid_cells
-!***********************************************************************  
+!***********************************************************************
     subroutine close_interpolation(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp,&
         fluid_point)
 !
@@ -213,5 +213,5 @@ module Solid_Cells
       call keep_compiler_quiet(fluid_point)
 !
     endsubroutine close_interpolation
-!***********************************************************************  
+!***********************************************************************
 endmodule Solid_Cells

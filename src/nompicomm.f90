@@ -1098,7 +1098,7 @@ module Mpicomm
 !***********************************************************************
     subroutine transp_xy_other(a)
 !
-!  Doing a transpose in x and y only 
+!  Doing a transpose in x and y only
 !  (dummy version for single processor)
 !
 !   5-oct-02/tobi: adapted from transp
@@ -1111,7 +1111,7 @@ module Mpicomm
 !
       nx_other=size(a,1); ny_other=size(a,2)
       nxgrid_other=nx_other
-      nygrid_other=ny_other*nprocy 
+      nygrid_other=ny_other*nprocy
 !
       if (ny_other/=1) then
 
@@ -1166,9 +1166,9 @@ module Mpicomm
             enddo
           enddo
           deallocate (tmp)
-          
+
         endif
-      elseif (var=='z') then 
+      elseif (var=='z') then
         if (nzgrid_other/=1) then
 !
           if (nx_other/=nz_other) then
@@ -1183,11 +1183,11 @@ module Mpicomm
             a(:,m,:)=tmp
           enddo
           deallocate (tmp)
-          
+
         endif
 !
       endif
-!      
+!
     endsubroutine transp_other
 !***********************************************************************
     subroutine transp_xz(a,b)
@@ -1257,7 +1257,7 @@ module Mpicomm
       real, dimension(nz), intent(out) :: az
       integer, intent(in) :: xi,yj,yproc_no
 !
-      az(:)=a(xi,yj,:) 
+      az(:)=a(xi,yj,:)
       if (NO_WARN) print*,yproc_no
 !
     endsubroutine z2x

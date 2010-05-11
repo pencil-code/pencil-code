@@ -90,5 +90,5 @@ module Particles_collisions
       call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_particles_collisions
-!*******************************************************************
+!***********************************************************************
 endmodule Particles_collisions

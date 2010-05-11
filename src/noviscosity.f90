@@ -84,7 +84,7 @@ module Viscosity
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_viscosity_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
       logical :: lreset

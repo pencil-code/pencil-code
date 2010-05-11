@@ -332,7 +332,7 @@ module Entropy
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
-!      
+!
       call keep_compiler_quiet(x,y,z,hcond)
 !
     endsubroutine heatcond
@@ -351,7 +351,7 @@ module Entropy
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
-! 
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_heatcond_ADI

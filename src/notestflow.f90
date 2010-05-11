@@ -128,12 +128,12 @@ module Testflow
     endsubroutine duutest_dt
 !***********************************************************************
     subroutine get_slices_testflow(f,slices)
-! 
+!
       use Sub, only: keep_compiler_quiet
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
 !

@@ -32,7 +32,7 @@ module Polymer
 !  Initialise variables which should know that we solve for the vector
 !  potential: ipp, etc; increase nvar accordingly
 !
-!  14-Aug-08 : Dhruba 
+!  14-Aug-08 : Dhruba
 !
       use Mpicomm
 !
@@ -50,7 +50,7 @@ module Polymer
       logical :: lstarting
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)      
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_polymer
 !***********************************************************************
@@ -97,7 +97,7 @@ module Polymer
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
-!       
+!
     endsubroutine calc_pencils_polymer
 !***********************************************************************
     subroutine dpp_dt(f,df,p)

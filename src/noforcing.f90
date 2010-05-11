@@ -121,11 +121,11 @@ module Forcing
     endsubroutine forcing_continuous
 !***********************************************************************
     subroutine forcing_cont(force)
-
+!
       implicit none
-
+!
       real, dimension (nx,3), intent(out) :: force
-
+!
       call keep_compiler_quiet(force)
 !
     endsubroutine forcing_cont
@@ -229,8 +229,8 @@ module Forcing
     subroutine forcing_clean_up
 !
 !   12-aug-09/dhruba: coded
-!   dummy routine. 
+!   dummy routine.
 !
     endsubroutine forcing_clean_up
-!*******************************************************************
+!***********************************************************************
 endmodule Forcing

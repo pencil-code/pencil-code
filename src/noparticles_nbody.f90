@@ -180,7 +180,7 @@ module Particles_nbody
       real, dimension(mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
-!      
+!
     endsubroutine calc_nbodygravity_particles
 !***********************************************************************
     subroutine read_particles_nbody_init_pars(unit,iostat)
@@ -253,7 +253,7 @@ module Particles_nbody
       call keep_compiler_quiet(filename)
 !
     endsubroutine particles_nbody_read_snapshot
-!************************************************************************
+!***********************************************************************
     subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
 !
 ! Input and output of information about the massive particles
@@ -263,13 +263,13 @@ module Particles_nbody
       character (len=*) :: snapbase,flist
       logical :: enum
       optional :: flist
-!          
+!
       call keep_compiler_quiet(snapbase)
       call keep_compiler_quiet(enum)
       call keep_compiler_quiet(flist)
 !
     endsubroutine particles_nbody_write_snapshot
-!************************************************************************
+!***********************************************************************
     subroutine particles_nbody_write_spdim(filename)
 !
 !  Write nspar, mspvar and mspar to file.

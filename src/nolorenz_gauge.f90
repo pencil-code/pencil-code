@@ -39,8 +39,8 @@ module Lorenz_gauge
   namelist /lorenz_gauge_run_pars/ &
     cphi,etaphi
 !
-! Declare any index variables necessary for main or 
-! 
+! Declare any index variables necessary for main or
+!
    integer :: iphi=0
 !
 ! other variables (needs to be consistent with reset list below)
@@ -185,7 +185,7 @@ module Lorenz_gauge
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_compiler_quiet(unit)      
+      call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_lorenz_gauge_run_pars
@@ -209,8 +209,8 @@ module Lorenz_gauge
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)  
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)  
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_lorenz_gauge
 !***********************************************************************

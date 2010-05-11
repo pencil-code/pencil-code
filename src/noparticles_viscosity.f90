@@ -45,7 +45,7 @@ module Particles_viscosity
 !
 !  07-oct-08/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f 
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -127,7 +127,7 @@ module Particles_viscosity
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_viscosity
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_particles_viscosity(lreset,lwrite)
 !
 !  07-oct-08/anders: dummy

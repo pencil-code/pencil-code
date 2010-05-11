@@ -74,7 +74,7 @@ module Chemistry
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_for_chem_mixture
-!**********************************************************************
+!***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -127,7 +127,8 @@ module Chemistry
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset,lwrite)
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_chemistry
 !***********************************************************************
@@ -140,7 +141,7 @@ module Chemistry
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_chemistry
-!********************************************************************
+!***********************************************************************
     subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -151,10 +152,10 @@ module Chemistry
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(val)
+      call keep_compiler_quiet(present(val))
 !
     endsubroutine bc_nscbc_subin_x
-!********************************************************************
+!***********************************************************************
     subroutine chemistry_clean_up()
 !
     endsubroutine chemistry_clean_up
@@ -184,7 +185,7 @@ module Chemistry
       call keep_compiler_quiet(index,sgn,direction)
 !
     end subroutine get_mu1_slice
-!*************************************************************
+!***********************************************************************
     subroutine get_gamma_slice(slice,index,dir)
 !
 !  Get a 2D slice of gamma
@@ -199,7 +200,7 @@ module Chemistry
       call keep_compiler_quiet(dir)
       !
     endsubroutine get_gamma_slice
-!*************************************************************
+!***********************************************************************
     subroutine get_cs2_slice(slice,index,dir)
 !
 !  Get a 2D slice of cs2
@@ -235,13 +236,13 @@ module Chemistry
 !
     endsubroutine get_gamma_full
 !***********************************************************************
-  subroutine get_RHS_Y_full(RHS_Y)
+    subroutine get_RHS_Y_full(RHS_Y)
 !
       real, dimension (mx,my,mz,nchemspec) :: RHS_Y
 !
       intent(out) :: RHS_Y
 !
-     call keep_compiler_quiet(RHS_Y)
+      call keep_compiler_quiet(RHS_Y)
 !
     endsubroutine get_RHS_Y_full
 !***********************************************************************

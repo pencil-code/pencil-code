@@ -1,12 +1,12 @@
 ! $Id$
-
+!
 !  This module calculates a divergence of u based shock finding
 !  profile used by shock viscosities and diffusion terms.
 !    eg. the total voscosity is taken as:
 !           nu_total = nu + nu_shock*dx*smooth(max5(-(div u))))
 !    where dx*smooth(max5(-(div u)))) is the profile calculated
 !    here in.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -92,7 +92,7 @@ module Shock
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_shock_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_shock(lreset,lwrite)
 !
       logical :: lreset

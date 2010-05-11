@@ -18,9 +18,9 @@
 !   Initial condition for entropy             | initial_condition_ss
 !   Initial condition for magnetic potential  | initial_condition_aa
 !
-!   And a similar subroutine for each module with an "init_XXX" call. 
-!   The subroutines are organized IN THE SAME ORDER THAT THEY ARE CALLED. 
-!   First uu, then lnrho, then ss, then aa, and so on.  
+!   And a similar subroutine for each module with an "init_XXX" call.
+!   The subroutines are organized IN THE SAME ORDER THAT THEY ARE CALLED.
+!   First uu, then lnrho, then ss, then aa, and so on.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -150,7 +150,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ss
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_aa(f)
 !
 !  Initialize the magnetic vector potential.
@@ -176,7 +176,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_aatest
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_uutest(f)
 !
 !  Initialize testflow.
@@ -188,7 +188,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_uutest
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_lncc(f)
 !
 !  Initialize passive scalar.
@@ -200,7 +200,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_lncc
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_chiral(f)
 !
 !  Initialize chiral.
@@ -212,7 +212,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_chiral
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_chemistry(f)
 !
 !  Initialize chemistry.
@@ -224,7 +224,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_chemistry
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_uud(f)
 !
 !  Initialize dust fluid velocity.
@@ -236,7 +236,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_uud
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_nd(f)
 !
 !  Initialize dust fluid density.
@@ -248,7 +248,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_nd
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_uun(f)
 !
 !  Initialize neutral fluid velocity.
@@ -260,7 +260,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_uun
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_lnrhon(f)
 !
 !  Initialize neutral fluid density.
@@ -272,7 +272,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_lnrhon
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_ecr(f)
 !
 !  Initialize cosmic rays.
@@ -284,7 +284,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ecr
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_fcr(f)
 !
 !  Initialize cosmic ray flux.
@@ -296,7 +296,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_fcr
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_solid_cells(f)
 !
 !  Initialize solid cells.
@@ -308,7 +308,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_solid_cells
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_cctest(f)
 !
 !  Initialize testscalar.
@@ -320,7 +320,7 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_cctest
-!********************************************************************
+!***********************************************************************
     subroutine initial_condition_xxp(f,fp)
 !
 !  Initialize particles' positions.

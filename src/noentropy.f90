@@ -35,7 +35,7 @@ module Entropy
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
-                                ! DIAG_DOC:   \quad(time step relative to 
+                                ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   acoustic time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ugradpm=0
@@ -59,7 +59,7 @@ module Entropy
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)     
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_entropy','there was a problem getting lpressuregradient_gas')
 !
 !  Identify version number.

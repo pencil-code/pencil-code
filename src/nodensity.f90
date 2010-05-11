@@ -236,8 +236,8 @@ module Density
     endsubroutine get_slices_pressure
 !***********************************************************************
     subroutine get_init_average_density(f,init_average_density)
-!  10-dec-09/piyali: added to pass initial average density 
-!  equ.f90 
+!  10-dec-09/piyali: added to pass initial average density
+!  equ.f90
 !
     real, dimension (mx,my,mz,mfarray):: f
     real:: init_average_density

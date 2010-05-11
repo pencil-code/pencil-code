@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Module for NSCBC boundary conditions. 
+!  Module for NSCBC boundary conditions.
 !  To be included from boundcond.f90.
 !
 module NSCBC
@@ -29,7 +29,7 @@ module NSCBC
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-!    
+!
     endsubroutine nscbc_boundtreat
 !***********************************************************************
     subroutine read_NSCBC_init_pars(unit,iostat)

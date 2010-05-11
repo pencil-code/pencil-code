@@ -45,7 +45,7 @@ module Particles_stalker
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
-!    
+!
     endsubroutine particles_stalker_sub
 !***********************************************************************
     subroutine read_pstalker_init_pars(unit,iostat)
