@@ -78,6 +78,7 @@ module Special
     integer, dimension(nxgrid,nygrid) :: avoidarr
     real, save :: tsnap_uu=0.,thresh
     integer, save :: isnap
+    integer, save, dimension(mseed) :: points_rstate
 !
   contains
 !
@@ -96,7 +97,7 @@ module Special
 !***********************************************************************
     subroutine initialize_special(f,lstarting)
 !
-!  called by run.f90 after reading parameter either at the beginning 
+!  called by run.f90 after reading parameter either at the beginning
 !  or if RELOAD is found
 !
 !  06-oct-03/tony: coded
@@ -111,8 +112,6 @@ module Special
 !
       if (lgranulation.and.ipz.eq.0) then
         call setdrparams(lstarting)
-        tsnap_uu = t + dsnap
-        isnap = int(t/dsnap)
 !
 ! if irefz is not set choose z=0 or irefz=n1
         if (irefz .eq. 0)  then
@@ -620,7 +619,7 @@ module Special
             dt*bmdi * A_init_x
         f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
             dt*bmdi * A_init_y
-
+!
         if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
       endif
 !
@@ -1211,6 +1210,7 @@ module Special
         print*,'-----------------------------------'
       endif
 !
+! Don't reset if RELOAD is used
       if (lstarting) then
         if (associated(first)) nullify(first)
         if (associated(current)) nullify(current)
@@ -1218,14 +1218,33 @@ module Special
         if (associated(firstlev)) nullify(firstlev)
         if (associated(secondlev)) nullify(secondlev)
         if (associated(thirdlev)) nullify(thirdlev)
+!
+        points_rstate(:)=0.
+!
+        tsnap_uu = t + dsnap
+        isnap = 1
+!
       endif
 !
     endsubroutine setdrparams
 !***********************************************************************
     subroutine uudriver(f)
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real
+! This routine replaces the external computing of granular velocity
+! pattern initially written by B. Gudiksen (2004)
+!
+! It is invoked by setting lgranulation=T in run.in
+! additional parameters are
+!         Bavoid =0.01 : the magn. field strenght in Tesla at which
+!                        no granule is allowed
+!         nvod = 5.    : the strength by which the vorticity is
+!                        enhanced
+!
+!  11-may-10/bing: coded
+!
       use EquationOfState, only: gamma_inv,gamma_m1,get_cp1,lnrho0,cs20
+      use Mpicomm, only: mpisend_real, mpirecv_real
+      use General, only: random_seed_wrapper
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
@@ -1234,6 +1253,12 @@ module Special
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
       real :: cp1
       integer, dimension(2) :: dims=(/nx,ny/)
+      integer, dimension(mseed) :: global_rstate
+!
+! save global random number seed, will be restored after granulation
+! is done
+      call random_seed_wrapper(GET=global_rstate)
+      call random_seed_wrapper(PUT=points_rstate)
 !
       call set_B2(f,BB2_local)
       call get_cp1(cp1)
@@ -1292,6 +1317,10 @@ module Special
       f(l1:l2,m1:m2,irefz,iuy) = uy_local*quench
       f(l1:l2,m1:m2,irefz,iuz) = 0.
       f(l1:l2,m1:m2,irefz-1,iuz) = uz_local/2.*(z(irefz)-z(irefz-1))
+!
+! restore global seed and save seed list of the granulation
+      call random_seed_wrapper(GET=points_rstate)
+      call random_seed_wrapper(PUT=global_rstate)
 !
     endsubroutine uudriver
 !***********************************************************************
@@ -1471,8 +1500,10 @@ module Special
 !
       if (t >= tsnap_uu) then
         call wrpoints(level,isnap)
-        tsnap_uu = tsnap_uu + dsnap
-        isnap  = isnap + 1
+        if (level.eq.nglevel) then
+          tsnap_uu = tsnap_uu + dsnap
+          isnap  = isnap + 1
+        endif
       endif
       if (itsub .eq. 3) &
           lstop = file_exists('STOP')
@@ -1493,7 +1524,7 @@ module Special
     subroutine rdpoints(level)
 !
       real,dimension(6) :: tmppoint
-      integer :: iost,rn
+      integer :: iost,rn,iol
       integer,intent(in) :: level
       logical :: ex
       character(len=20) :: filename
@@ -1503,9 +1534,9 @@ module Special
       inquire(file=filename,exist=ex)
 !
       if (ex) then
-        inquire(IOLENGTH=rn) dy
+        inquire(IOLENGTH=iol) dy
         print*,'Reading granule level ',level,':',filename
-        open(10,file=filename,status="unknown",access="direct",recl=6*rn)
+        open(10,file=filename,status="unknown",access="direct",recl=6*iol)
         iost=0
 !
         rn=1
@@ -1527,28 +1558,34 @@ module Special
         close(10)
         print*,'read ',rn-1,' points'
         call reset
+!
+        open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
+        read(10,rec=1) points_rstate
+        close(10)
+!
       endif
 !
     endsubroutine rdpoints
 !***********************************************************************
     subroutine wrpoints(level,issnap)
 !
-      integer :: rn=1
+      integer :: rn,iol
       integer, optional, intent(in) :: issnap
       integer,intent(in) :: level
       real,dimension(6) :: posdata
       character(len=20) :: filename
 !
-      inquire(IOLENGTH=rn) dy
+      inquire(IOLENGTH=iol) dy
 !
       if (present(issnap)) then
         write (filename,'("driver/pts_",I1.1,"_",I3.3,".dat")') level,issnap
       else
         write (filename,'("driver/pts_",I1.1,".dat")') level
       endif
-
-      open(10,file=filename,status="replace",access="direct",recl=6*rn)
 !
+      open(10,file=filename,status="replace",access="direct",recl=6*iol)
+!
+      rn=1
       do
         posdata(1:2)=real(current%pos)
         posdata(3:6)=current%data
@@ -1559,7 +1596,21 @@ module Special
         rn=rn+1
       enddo
 !
-      close (10)
+      close(10)
+!
+! save seed list if the last level is stored
+!
+      if (level.eq.nglevel) then
+        if (present(issnap)) then
+          write (filename,'("driver/seed_",I3.3,".dat")') issnap
+        else
+          write (filename,'("driver/seed.dat")')
+        endif
+!
+        open(10,file=filename,status="replace",access="direct",recl=mseed*iol)
+        write(10,rec=1) points_rstate
+        close(10)
+      endif
 !
       call reset
 !
@@ -1688,11 +1739,10 @@ module Special
       call fourier_transform_other(tmp_r,tmp_i)
       fvy= cmplx(tmp_r,tmp_i)
 !
-
       k20 = (nxgrid/4.)**2.
-
+!
       ci =  cmplx(0.,1.)
-
+!
       do j=1,nxgrid
         kx=ci*(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
 !
@@ -1701,21 +1751,21 @@ module Special
           ky=ci*(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
           if (k.eq.nygrid/2+1) ky=0.
 !
-        k2=kx**2 + ky**2 + tini
+          k2=kx**2 + ky**2 + tini
 !
-        corr=(fvx(j,k)*kx+fvy(j,k)*ky)/k2
+          corr=(fvx(j,k)*kx+fvy(j,k)*ky)/k2
 !
-        frx(j,k) = fvx(j,k) - corr*kx
-        fry(j,k) = fvy(j,k) - corr*ky
+          frx(j,k) = fvx(j,k) - corr*kx
+          fry(j,k) = fvy(j,k) - corr*ky
 !
-        filter=exp(-(k2/k20)**2)
+          filter=exp(-(k2/k20)**2)
 !
-        fvx(j,k)=fvx(j,k)*filter
-        fvy(j,k)=fvy(j,k)*filter
+          fvx(j,k)=fvx(j,k)*filter
+          fvy(j,k)=fvy(j,k)*filter
 !
-        frx(j,k)=frx(j,k)*filter
-        fry(j,k)=fry(j,k)*filter
-       enddo
+          frx(j,k)=frx(j,k)*filter
+          fry(j,k)=fry(j,k)*filter
+        enddo
       enddo
 !
       tmp_r = real(fvx)
@@ -1727,12 +1777,12 @@ module Special
       tmp_i = aimag(fvy)
       call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
       vy=tmp_r
-
+!
       tmp_r = real(frx)
       tmp_i = aimag(frx)
       call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
       rotx=tmp_r
-
+!
       tmp_r = real(fry)
       tmp_i = aimag(fry)
       call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
@@ -1779,7 +1829,7 @@ module Special
               w(i,j) =max(w(i,j),wtmp)
             end if
           endif
-          if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
+          if (w(i,j) .gt. ampl/(2*granr*(1+ig))) avoidarr(i,j)=1
         enddo
       enddo
 !
