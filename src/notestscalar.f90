@@ -19,7 +19,6 @@ module Testscalar
 !
   use Cdata
   use Cparam
-  use Messages
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -127,8 +126,6 @@ module Testscalar
     endsubroutine dcctest_dt
 !***********************************************************************
     subroutine get_slices_testscalar(f,slices)
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

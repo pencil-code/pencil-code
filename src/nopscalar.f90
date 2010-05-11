@@ -36,8 +36,6 @@ module Pscalar
 !
 !  6-jul-02/axel: coded
 !
-      use Sub
-!
       lpscalar=.false.
 !
 !  Identify version number.
@@ -174,8 +172,6 @@ module Pscalar
 !  Reads and registers print parameters relevant for passive scalar.
 !
 !   6-jul-02/axel: coded
-!
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite

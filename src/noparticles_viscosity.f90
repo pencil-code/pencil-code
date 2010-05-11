@@ -136,7 +136,7 @@ module Particles_viscosity
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_particles_viscosity
 !***********************************************************************

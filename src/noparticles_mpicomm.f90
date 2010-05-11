@@ -114,8 +114,6 @@ module Particles_mpicomm
 !
 !  11-oct-09/anders: dummy
 !
-      use Mpicomm
-!
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp

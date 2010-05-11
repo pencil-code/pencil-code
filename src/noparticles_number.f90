@@ -149,8 +149,6 @@ module Particles_number
 !
 !  24-nov-05/anders: dummy
 !
-      use Cdata
-!
       logical :: lreset
       logical, optional :: lwrite
 !

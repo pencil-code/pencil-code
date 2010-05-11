@@ -39,9 +39,6 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      use Mpicomm
-      use Sub
-!
       lchiral = .false.
 !
 !  identify version number

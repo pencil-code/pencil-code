@@ -43,8 +43,6 @@ module Dustvelocity
 !***********************************************************************
     subroutine register_dustvelocity()
 !
-      use Sub
-!
       if (lroot) call svn_id( &
           "$Id$")
 !

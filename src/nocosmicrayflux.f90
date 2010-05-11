@@ -26,9 +26,6 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine register_cosmicrayflux()
 !
-      use Mpicomm
-      use Sub
-!
       if (lroot) call svn_id( &
            "$Id$")
 !
@@ -80,8 +77,6 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine init_fcr(f)
 !
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -129,8 +124,6 @@ module Cosmicrayflux
     endsubroutine dfcr_dt
 !***********************************************************************
     subroutine rprint_cosmicrayflux(lreset,lwrite)
-!
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite

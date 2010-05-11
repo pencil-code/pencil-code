@@ -23,8 +23,6 @@ module Shear
 !
 !  2-july-02/nils: coded
 !
-      use Mpicomm
-!
       lshear = .false.
 !
 !  identify version number

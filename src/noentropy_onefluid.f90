@@ -39,8 +39,6 @@ module Entropy
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Sub
-!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -284,7 +282,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr

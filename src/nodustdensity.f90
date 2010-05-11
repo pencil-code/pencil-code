@@ -29,8 +29,6 @@ module Dustdensity
 !***********************************************************************
     subroutine register_dustdensity()
 !
-      use Sub
-!
       if (lroot) call svn_id( &
            "$Id$")
 !

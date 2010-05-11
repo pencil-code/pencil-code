@@ -53,7 +53,6 @@ module Entropy
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use SharedVariables
-      use Sub
 !
       integer :: ierr
 !
@@ -326,7 +325,7 @@ module Entropy
 !
 !  Reads and registers print parameters relevant to entropy.
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr

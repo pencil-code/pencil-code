@@ -50,9 +50,6 @@ module Gravity
 !  9-jan-02/wolf: coded
 ! 28-mar-02/axel: adapted from grav_z
 !
-      use Mpicomm
-      use Sub
-!
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
@@ -195,7 +192,7 @@ module Gravity
 !
       if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
-      pot0 = 0.
+      if (present(pot0)) pot0 = 0.
 !
     endsubroutine potential_global
 !***********************************************************************
@@ -217,11 +214,11 @@ module Gravity
       pot = 0.
       if (present(pot0)) pot0 = 0.
 !
-      call keep_compiler_quiet(xmn)
-      call keep_compiler_quiet(ymn)
-      call keep_compiler_quiet(zmn)
-      call keep_compiler_quiet(rmn)
-      call keep_compiler_quiet(grav)
+      call keep_compiler_quiet(present(xmn))
+      call keep_compiler_quiet(present(ymn))
+      call keep_compiler_quiet(present(zmn))
+      call keep_compiler_quiet(present(rmn))
+      call keep_compiler_quiet(present(grav))
 !
     endsubroutine potential_penc
 !***********************************************************************
@@ -231,8 +228,6 @@ module Gravity
 !
 !  20-dec-03/wolf: coded
 !
-      use Mpicomm, only: stop_it
-!
       real :: pot
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
@@ -240,17 +235,16 @@ module Gravity
       intent(in)  :: x,y,z,r
       intent(out) :: pot
 !
-      call stop_it("nograv: potential_point not implemented")
+      call fatal_error("nograv","potential_point not implemented")
 !
       pot = 0.
 !
-      call keep_compiler_quiet(x)
-      call keep_compiler_quiet(y)
-      call keep_compiler_quiet(z)
-      call keep_compiler_quiet(r)
-      call keep_compiler_quiet(pot)
-      call keep_compiler_quiet(pot0)
-      call keep_compiler_quiet(grav)
+      call keep_compiler_quiet(present(x))
+      call keep_compiler_quiet(present(y))
+      call keep_compiler_quiet(present(z))
+      call keep_compiler_quiet(present(r))
+      call keep_compiler_quiet(present(pot0))
+      call keep_compiler_quiet(present(grav))
 !
     endsubroutine potential_point
 !***********************************************************************
@@ -260,8 +254,6 @@ module Gravity
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
-      use Messages, only: fatal_error
-
       real, dimension (:,:), intent (out) :: gg
 !
 !  Calculate acceleration from master pencils defined in initialize_gravity.
@@ -278,8 +270,6 @@ module Gravity
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
-      use Messages, only: fatal_error
-
       real, dimension (nx), intent (out) :: gr
 !
 !  Calculate acceleration from master pencils defined in initialize_gravity.
@@ -296,8 +286,6 @@ module Gravity
 !
 !  18-nov-08/wlad: coded
 !
-      use Mpicomm, only: stop_it
-!
       real :: g_r
       real, optional :: x,y,z,r
 !
@@ -308,11 +296,10 @@ module Gravity
 !
       g_r = 0.0
 !
-      call keep_compiler_quiet(x)
-      call keep_compiler_quiet(y)
-      call keep_compiler_quiet(z)
-      call keep_compiler_quiet(r)
-      call keep_compiler_quiet(g_r)
+      call keep_compiler_quiet(present(x))
+      call keep_compiler_quiet(present(y))
+      call keep_compiler_quiet(present(z))
+      call keep_compiler_quiet(present(r))
 !
     endsubroutine acceleration_point
 !***********************************************************************

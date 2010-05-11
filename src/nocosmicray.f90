@@ -32,8 +32,6 @@ module Cosmicray
 !
 !  09-oct-03/tony: coded
 !
-      use Sub
-!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -98,8 +96,6 @@ module Cosmicray
 !  We have an init parameter (initlncc) to stear magnetic i.c. independently.
 !
 !   6-jul-02/axel: coded
-!
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -169,8 +165,6 @@ module Cosmicray
 !  Reads and registers print parameters relevant for cosmic rays.
 !
 !   09-oct-03/tony: coded
-!
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite

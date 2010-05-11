@@ -72,7 +72,7 @@ module power_spectrum
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
       call keep_compiler_quiet(ivec)
-      call keep_compiler_quiet(ivar)
+      call keep_compiler_quiet(present(ivar))
 !
     endsubroutine power_1d
 !***********************************************************************

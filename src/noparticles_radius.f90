@@ -61,7 +61,7 @@ module Particles_radius
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(npar_low)
       call keep_compiler_quiet(npar_high)
-      call keep_compiler_quiet(init)
+      call keep_compiler_quiet(present(init))
 !
     endsubroutine set_particle_radius
 !***********************************************************************

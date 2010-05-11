@@ -11,6 +11,7 @@
 !
 module Radiation
 !
+  use Cdata
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
@@ -35,10 +36,6 @@ module Radiation
 !
 !  15-jul-2002/nils: dummy routine
 !
-      use Cdata
-      use Mpicomm
-      use Sub
-!
 !  identify version number
 !
       if (lroot) call svn_id( &
@@ -51,9 +48,6 @@ module Radiation
 !  Integration radioation transfer equation along rays
 !
 !  24-mar-03/axel+tobi: coded
-!
-      use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -78,8 +72,6 @@ module Radiation
 !
 ! 25-mar-03/axel+tobi: coded
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -94,8 +86,6 @@ module Radiation
 !  dummy routine
 !
 !  25-mar-03/axel+tobi: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -118,9 +108,6 @@ module Radiation
 !
 !  initialise radiation; called from start.f90
 !  15-jul-2002/nils: dummy routine
-!
-      use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -222,9 +209,6 @@ module Radiation
 !  reads and registers print parameters relevant for radiative part
 !
 !  16-jul-02/nils: adapted from rprint_hydro
-!
-      use Cdata
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite

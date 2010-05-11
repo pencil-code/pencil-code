@@ -34,8 +34,6 @@ module Polymer
 !
 !  14-Aug-08 : Dhruba
 !
-      use Mpicomm
-!
       if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_polymer
@@ -165,8 +163,6 @@ module Polymer
     subroutine rprint_polymer(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant for polymer.
-!
-      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite

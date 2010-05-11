@@ -37,9 +37,6 @@ module Shock
 !  19-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-      use Mpicomm
-      use Sub
-!
 !  identify version number
 !
       if (lroot) call svn_id( &

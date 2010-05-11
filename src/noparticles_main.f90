@@ -87,7 +87,7 @@ module Particles_main
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(chsnap)
       call keep_compiler_quiet(enum)
-      call keep_compiler_quiet(flist)
+      call keep_compiler_quiet(present(flist))
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************

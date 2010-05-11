@@ -131,9 +131,7 @@ module Solid_Cells
 !***********************************************************************
     subroutine dsolid_dt_integrate
 !
-      integer :: unit
-!
-      call keep_compiler_quiet(unit)
+! dummy routine
 !
     endsubroutine dsolid_dt_integrate
 !***********************************************************************
@@ -144,9 +142,7 @@ module Solid_Cells
 !
 !   mar-2009/kragset: coded
 !
-      use Cdata
-      use sub
-      use diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -176,9 +172,7 @@ module Solid_Cells
         write(3,*) 'i_c_dragx=',idiag_c_dragx
         write(3,*) 'i_c_dragy=',idiag_c_dragy
       endif
-
-      call keep_compiler_quiet(lreset)
-
+!
     endsubroutine rprint_solid_cells
 !***********************************************************************
     subroutine pencil_criteria_solid_cells()
@@ -186,10 +180,6 @@ module Solid_Cells
 !  All pencils that the Solid_Cells module depends on are specified here.
 !
 !  mar-2009/kragset: dummy
-!
-      integer :: unit
-!
-      call keep_compiler_quiet(unit)
 !
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************

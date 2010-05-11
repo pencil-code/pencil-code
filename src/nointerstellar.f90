@@ -26,9 +26,6 @@ module Interstellar
 !
 !  19-nov-02/tony: coded
 !
-      use Mpicomm
-      use Sub
-!
 !  identify version number
 !
       if (lroot) call svn_id( &
@@ -79,8 +76,6 @@ module Interstellar
 !  reads and registers print parameters relevant to interstellar
 !
 !   1-jun-02/axel: adapted from magnetic fields
-!
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -147,8 +142,6 @@ module Interstellar
 !
 !  initialise magnetic field; called from start.f90
 !  30-jul-2006/tony: dummy routine
-!
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

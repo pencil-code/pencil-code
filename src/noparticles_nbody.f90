@@ -103,8 +103,6 @@ module Particles_nbody
 !
 !  27-aug-06/wlad: coded
 !
-      use Messages, only: fatal_error
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
@@ -266,7 +264,7 @@ module Particles_nbody
 !
       call keep_compiler_quiet(snapbase)
       call keep_compiler_quiet(enum)
-      call keep_compiler_quiet(flist)
+      call keep_compiler_quiet(present(flist))
 !
     endsubroutine particles_nbody_write_snapshot
 !***********************************************************************

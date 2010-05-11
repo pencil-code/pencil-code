@@ -32,9 +32,6 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
-      use Mpicomm, only: stop_it
-      use Sub
-!
       lneutralvelocity = .false.
 !
 !  Identify version number (generated automatically by SVN).
@@ -163,8 +160,6 @@ module NeutralVelocity
 !
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
-!
-      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite

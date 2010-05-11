@@ -33,8 +33,6 @@ module Density
 !***********************************************************************
     subroutine register_density()
 !
-      use Sub
-!
       if (lroot) call svn_id( &
           "$Id$")
 !

@@ -30,7 +30,7 @@ module BorderProfiles
 !  border_frac_[xyz] is a 2-D array, separately for all three directions.
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
-      use Messages
+      use Messages, only: fatal_error
 !
       if (border_frac_x(1)/=0.0.or.border_frac_x(2)/=0.0) then
         if (lroot) then
@@ -68,8 +68,6 @@ module BorderProfiles
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

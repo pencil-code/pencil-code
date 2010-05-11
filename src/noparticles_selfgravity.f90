@@ -105,9 +105,6 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: coded
 !
-      use Messages, only: fatal_error
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
@@ -130,9 +127,6 @@ module Particles_selfgravity
 !  Add self-gravity to particle equation of motion.
 !
 !  14-jun-06/anders: dummy
-!
-      use Messages, only: fatal_error
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -198,8 +192,6 @@ module Particles_selfgravity
 !  Read and register print parameters relevant for particle self-gravity.
 !
 !  14-jun-06/anders: dummy
-!
-      use Cdata
 !
       logical :: lreset
       logical, optional :: lwrite

@@ -933,7 +933,7 @@ module Hydro
 !
 !   8-jun-02/axel: adapted from hydro
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr

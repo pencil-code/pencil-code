@@ -131,8 +131,6 @@ module Testfield
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
 !
-      use Sub, only: keep_compiler_quiet
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !

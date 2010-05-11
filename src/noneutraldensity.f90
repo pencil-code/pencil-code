@@ -33,9 +33,6 @@ module Neutraldensity
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
-      use Mpicomm, only: stop_it
-      use Sub
-!
       lneutraldensity = .false.
 !
 !  Identify version number (generated automatically by SVN).
@@ -165,8 +162,6 @@ module Neutraldensity
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      use Sub
-!
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -182,6 +177,7 @@ module Neutraldensity
       endif
 !
       call keep_compiler_quiet(lreset)
+!
     endsubroutine rprint_neutraldensity
 !***********************************************************************
 endmodule Neutraldensity

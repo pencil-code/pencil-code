@@ -19,7 +19,6 @@ module Testflow
 !
   use Cdata
   use Cparam
-  use Messages
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -128,8 +127,6 @@ module Testflow
     endsubroutine duutest_dt
 !***********************************************************************
     subroutine get_slices_testflow(f,slices)
-!
-      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

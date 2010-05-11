@@ -34,9 +34,6 @@ module Forcing
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
 !
-      use Mpicomm
-      use Sub
-!
       lforcing = .false.
 !
 !  identify version number
@@ -195,7 +192,7 @@ module Forcing
 !
 !  26-jan-04/axel: coded
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr

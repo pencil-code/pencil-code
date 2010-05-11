@@ -61,8 +61,6 @@ module Lorenz_gauge
 !
 !  6-oct-03/tony: coded
 !
-      use FArrayManager
-!
       if (lroot) call svn_id( &
            "$Id$")
 !

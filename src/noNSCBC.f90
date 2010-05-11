@@ -8,7 +8,6 @@ module NSCBC
   use Cdata
   use Cparam
   use Messages
-  use Mpicomm
   use Sub, only: keep_compiler_quiet
 !
   implicit none
