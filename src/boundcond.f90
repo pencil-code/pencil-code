@@ -1788,7 +1788,9 @@ module Boundcond
 !
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+!           lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+!DM a mistake in sign ?
+           lambda_exp=-(Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
                if(Omega.eq.0) then 
@@ -1809,7 +1811,9 @@ module Boundcond
       case ('top')
         if ((llambda_effect).and.(j.eq.iuz)) then
           do iy=1,my
-            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+!            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
+!DM a mistake in sign
+            lambda_exp=- (Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
               if(Omega.eq.0) then
@@ -1971,7 +1975,7 @@ module Boundcond
               cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
               cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
             if(Omega.eq.0) then
-              f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
+             f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
                    (exp(Lambda_H1*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
                    *(exp(-Lambda_H1*cos2thmpk/(4.*nu))*sinth(m1-k))
             else

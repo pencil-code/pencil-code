@@ -1341,13 +1341,13 @@ module Viscosity
   type (pencil_case) :: p
 !
       lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))+Omega
-!DM      lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))
       dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
       dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))
-      lver = Lambda_V0 + Lambda_V1*sinth(m)*sinth(m)
-      lhor = Lambda_H1*sinth(m)*sinth(m)
+!DM there was a mistake in sign. 
+      lver = -(Lambda_V0+Lambda_V1*sinth(m)*sinth(m) )
+      lhor = -Lambda_H1*sinth(m)*sinth(m)
       dlver_dr = 0.
-      dlhor_dtheta = Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)
+      dlhor_dtheta = -Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)
 !
       div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  &
                          +3.*sinth(m)*lomega/x(l1:l2)   &
