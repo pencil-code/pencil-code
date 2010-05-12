@@ -36,9 +36,9 @@ module Testfield
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (ny,nz,3) :: bb11_xy
-  real, target, dimension (ny,nz,3) :: bb11_xy2
-  real, target, dimension (ny,nz,3) :: bb11_xz
+  real, target, dimension (nx,ny,3) :: bb11_xy
+  real, target, dimension (nx,ny,3) :: bb11_xy2
+  real, target, dimension (nx,nz,3) :: bb11_xz
   real, target, dimension (ny,nz,3) :: bb11_yz
 !
 !  cosine and sine function for setting test fields and analysis
