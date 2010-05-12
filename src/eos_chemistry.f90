@@ -15,6 +15,11 @@
 ! PENCILS PROVIDED yH; ee; ss; pp; delta; glnmumol(3); ppvap; csvap2; cs2
 ! PENCILS PROVIDED mu1; gmu1(3); rho1gpp(3); glnpp(3); del2pp
 !
+!
+! PENCILS PROVIDED  gss(3);  cp; cp1; 
+! PENCILS PROVIDED cv1;  gamma;
+! PENCILS PROVIDED del2TT; del6TT; 
+!
 !***************************************************************
 module EquationOfState
 !
@@ -306,7 +311,21 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine getmu(f,mu1_full_tmp)
+   subroutine getmu(f,mu_tmp)
+!
+!  Calculate average particle mass in the gas relative to
+!
+!   12-aug-03/tony: implemented
+!
+      real, dimension (mx,my,mz,mfarray), optional :: f
+      real, intent(out) :: mu_tmp
+!
+!    
+     call keep_compiler_quiet(present(f))
+     call keep_compiler_quiet(mu_tmp)
+    endsubroutine getmu
+!***********************************************************************
+    subroutine getmu_array(f,mu1_full_tmp)
 !
 !  Calculate  mean molecular weight
 !
@@ -332,7 +351,7 @@ module EquationOfState
     enddo
     mu1_full=mu1_full_tmp
 !
-    endsubroutine getmu
+    endsubroutine getmu_array
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
@@ -411,11 +430,18 @@ module EquationOfState
 !
    logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_lnTT))   lpencil_in(i_TT)=.true.
-      if (lpencil_in(i_TT))     lpencil_in(i_TT_2)=.true.
-      if (lpencil_in(i_TT_2))   lpencil_in(i_TT_3)=.true.
-      if (lpencil_in(i_TT_3))   lpencil_in(i_TT_4)=.true.
-      if (lpencil_in(i_TT))     lpencil_in(i_TT1)=.true.
+     
+        if (ltemperature_nolog) then
+        ! if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
+        else
+         if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
+        endif
+
+        
+       if (lpencil_in(i_TT_2))     lpencil_in(i_TT)=.true.
+       if (lpencil_in(i_TT_3))   lpencil_in(i_TT_2)=.true.
+       if (lpencil_in(i_TT_4))   lpencil_in(i_TT_2)=.true.
+       if (lpencil_in(i_TT1))     lpencil_in(i_TT)=.true.
 !
       call keep_compiler_quiet(lpencil_in)
 !

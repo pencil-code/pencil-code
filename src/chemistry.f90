@@ -549,6 +549,8 @@ module Chemistry
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_H0_RT)=.true.
+ !        lpenc_requested(i_nu)=.true.
+!         lpenc_requested(i_gradnu)=.true.
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
          if (lreactions) lpenc_requested(i_S0_R)=.true.
@@ -570,8 +572,9 @@ module Chemistry
 !
       logical, dimension(npencils) :: lpencil_in
 !
-        if (lpencil_in(i_cp))    lpencil_in(i_glncp)=.true.
-        if (lpencil_in(i_lnTT))  lpencil_in(i_S0_R)=.true.
+        if (lpencil_in(i_glncp))    lpencil_in(i_cp)=.true.
+        if (lpencil_in(i_S0_R))  lpencil_in(i_lnTT)=.true.
+!        if (lpencil_in(i_gradnu))  lpencil_in(i_nu)=.true.
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -931,7 +934,7 @@ module Chemistry
          log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
-       call getmu(f,mu1_full)
+       call getmu_array(f,mu1_full)
 !
 !  Initialize density
 !
@@ -1003,7 +1006,7 @@ module Chemistry
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
 !
-       call getmu(f,mu1_full)
+       call getmu_array(f,mu1_full)
 !
        do j3=1,mz
        do j2=1,my
@@ -1141,7 +1144,7 @@ module Chemistry
           +initial_massfractions(ichem_H2O)/(mH2O)&
           +initial_massfractions(ichem_N2)/(mN2)
 !
-       call getmu(f,mu1_full)
+       call getmu_array(f,mu1_full)
 !
        log_inlet_density=&
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
@@ -1237,7 +1240,7 @@ module Chemistry
           Rgas_unit_sys = k_B_cgs/m_u_cgs
           Rgas=Rgas_unit_sys/unit_energy
 !
-          call getmu(f,mu1_full)
+          call getmu_array(f,mu1_full)
 !
           if (l1step_test) then
              species_constants(:,imass)=1.
