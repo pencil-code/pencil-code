@@ -163,7 +163,7 @@ module Magnetic
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
   logical :: lmeanfield_theory=.false., lOmega_effect=.false.
-  logical :: lmeanfield_noalpm=.false.
+  logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false.
@@ -205,8 +205,8 @@ module Magnetic
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
-  real, dimension(mz) :: coskz,sinkz,eta_z
-  real, dimension(mz,3) :: geta_z
+  real, dimension(mz) :: coskz,sinkz,eta_z,etat_z
+  real, dimension(mz,3) :: geta_z,getat_z
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false.
@@ -233,6 +233,7 @@ module Magnetic
       alpha_eps, lmeanfield_noalpm, alpha_profile, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
+      lmeanfield_pumping, &
       lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_Qs, meanfield_Qp, meanfield_qe, meanfield_Beq, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
@@ -643,7 +644,7 @@ module Magnetic
 !
       use BorderProfiles, only: request_border_driving
       use FArrayManager
-      use SharedVariables
+      use SharedVariables, only: put_shared_variable
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -901,6 +902,35 @@ module Magnetic
       if (lmeanfield_theory) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
         call put_shared_variable('eta',eta,ierr)
+      endif
+!
+!  Compute etat profile and share with other routines
+!
+      if (meanfield_etat/=0.0) then
+        select case (meanfield_etat_profile)
+        case ('const')
+          etat_z=meanfield_etat
+          getat_z=0.
+        case ('exp(z/H)')
+          etat_z=meanfield_etat*exp(z/meanfield_etat_height)
+          getat_z(:,1:2)=0.
+          getat_z(:,3)=etat_z/meanfield_etat_height
+        case default;
+          call inevitably_fatal_error('initialize_magnetic', &
+          'no such meanfield_etat_profile profile')
+        endselect
+!
+!  share etat profile with viscosity module
+!
+        if (lviscosity) then
+          call put_shared_variable('etat_z',etat_z,ierr)
+          call put_shared_variable('getat_z',getat_z,ierr)
+          print*,'ipz,z(n),etat_z(n),getat_z(n,3)'
+          do n=n1,n2
+            print*,ipz,z(n),etat_z(n),getat_z(n,3)
+          enddo
+          print*
+        endif
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
@@ -1705,6 +1735,7 @@ module Magnetic
       use Sub
       use Deriv
       use Diagnostics, only: sum_mn_name
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1721,7 +1752,7 @@ module Magnetic
       real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb
       real :: B2_ext,c,s,kx
-      integer :: i,j,ix
+      integer :: i,j,ix,ierr
 !
       intent(inout) :: f,p
 ! aa
@@ -2139,21 +2170,8 @@ module Magnetic
 !  Compute diffusion term
 !
         if (meanfield_etat/=0.0) then
-          select case (meanfield_etat_profile)
-          case ('const')
-            meanfield_etat_tmp=1.
-            meanfield_detatdz_tmp=0.
-          case ('exp(z/H)')
-            meanfield_etat_tmp=exp(z(n)/meanfield_etat_height)
-            meanfield_detatdz_tmp=meanfield_etat_tmp/meanfield_etat_height
-          case default;
-            call inevitably_fatal_error('calc_pencils_magnetic', &
-              'no such meanfield_etat_profile profile')
-          endselect
-!
-!  Scale with meanfield_etat
-!
-          meanfield_etat_tmp=meanfield_etat*meanfield_etat_tmp
+          meanfield_etat_tmp=etat_z(n)
+          meanfield_detatdz_tmp=getat_z(n,3)
 !
 !  Magnetic etat quenching (contribution to pumping currently ignored)
 !
@@ -2164,8 +2182,10 @@ module Magnetic
 !
 !  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
 !
-          p%mf_EMF(:,1)=p%mf_EMF(:,1)+.5*meanfield_detatdz_tmp*p%bb(:,2)
-          p%mf_EMF(:,2)=p%mf_EMF(:,2)-.5*meanfield_detatdz_tmp*p%bb(:,1)
+          if (lmeanfield_pumping) then
+            p%mf_EMF(:,1)=p%mf_EMF(:,1)+.5*meanfield_detatdz_tmp*p%bb(:,2)
+            p%mf_EMF(:,2)=p%mf_EMF(:,2)-.5*meanfield_detatdz_tmp*p%bb(:,1)
+          endif
 !
 !  apply diffusion term (simple in Weyl gauge, which is not
 !  the default!), and not yet correct if not Weyl gauge.

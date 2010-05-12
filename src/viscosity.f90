@@ -32,8 +32,13 @@ module Viscosity
   real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
+  real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
+  real, dimension(:), pointer :: etat_z
+  real, dimension(:,:), pointer :: getat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
+  real, dimension(mz,3) :: gnut_z
+  real, dimension(mz) :: nut_z
 !
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
@@ -44,6 +49,7 @@ module Viscosity
   logical :: lvisc_nu_profx=.false.
   logical :: lvisc_nu_profr=.false.
   logical :: lvisc_nu_profr_powerlaw=.false.
+  logical :: lvisc_nut_from_magnetic=.false.
   logical :: lvisc_nu_shock=.false.
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
@@ -69,7 +75,7 @@ module Viscosity
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
-      lmeanfield_nu,meanfield_nuB
+      lmeanfield_nu,meanfield_nuB,PrM_turb
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -130,6 +136,7 @@ module Viscosity
       lvisc_nu_profx=.false.
       lvisc_nu_profr=.false.
       lvisc_nu_profr_powerlaw=.false.
+      lvisc_nut_from_magnetic=.false.
       lvisc_nu_shock=.false.
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
@@ -177,6 +184,10 @@ module Viscosity
           if (lroot) print*,'viscous force with a power law profile'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profr_powerlaw=.true.
+        case ('nut-from-magnetic')
+          if (lroot) print*,'nut-from-magnetic via shared variables'
+          if (PrM_turb/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_nut_from_magnetic=.true.
         case ('nu-shock','shock')
           if (lroot) print*,'viscous force: nu_shock*(XXXXXXXXXXX)'
           lvisc_nu_shock=.true.
@@ -330,6 +341,23 @@ module Viscosity
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
 !
+!  Check for possibility of getting etat  profile from magnetic
+!
+      if (PrM_turb/=0.) then
+        if (lmagnetic) then
+          call get_shared_variable('etat_z',etat_z,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_z")
+          call get_shared_variable('getat_z',getat_z,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","shared getat_z")
+          print*,'ipz,z(n),nut_z(n),gnut_z(n,3)'
+          gnut_z=PrM_turb*getat_z
+          nut_z=PrM_turb*etat_z
+          do n=n1,n2
+            print*,ipz,z(n),nut_z(n),gnut_z(n,3)
+          enddo
+        endif
+      endif
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_viscosity
@@ -450,12 +478,14 @@ module Viscosity
            lvisc_sqrtrho_nu_const .or. &
            lvisc_nu_const .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. &
-           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw))&
+           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
+           lvisc_nut_from_magnetic))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_sqrtrho_nu_const .or. &
           lvisc_nu_const .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
-          lvisc_nu_profr .or. lvisc_nu_profr_powerlaw) then
+          lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
+          lvisc_nut_from_magnetic) then
         if ((lentropy.or.ltemperature).and.lviscosity_heat) &
             lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
@@ -479,7 +509,8 @@ module Viscosity
           lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
-          lvisc_nu_profr_powerlaw .or. lvisc_nu_profr) &
+          lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
+          lvisc_nut_from_magnetic) &
           lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
@@ -503,7 +534,8 @@ module Viscosity
 !
       if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
-          lvisc_nu_profr_powerlaw .or. lvisc_nu_profr) &
+          lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
+          lvisc_nut_from_magnetic) &
           lpenc_requested(i_sglnrho)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
       if (ldensity.and.lvisc_nu_shock) then
@@ -579,7 +611,7 @@ module Viscosity
 !  Calculate Viscosity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
@@ -750,6 +782,8 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
       endif
 !
+!  radial viscosity profile from power law
+!
       if (lvisc_nu_profr_powerlaw) then
 !
 !  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
@@ -778,10 +812,23 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
       endif
 !
-      if (lvisc_nu_prof) then
+!  turbulent viscosity profile from magnetic
+!  viscous force: nu(z)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
+!
+      if (lvisc_nut_from_magnetic) then
+        pnu=nut_z(n)
+        gradnu=getat_z(n,3)
+        call multmv(p%sij,gradnu,sgradnu)
+        call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
+        p%fvisc=p%fvisc+tmp+2*sgradnu
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
+      endif
 !
 !  viscous force: nu(z)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on z; nu_jump=nu2/nu1
+!
+      if (lvisc_nu_prof) then
         pnu = nu + nu*(nu_jump-1.)*step(p%z_mn,znu,-widthnu)
 !  Write out viscosity z-profile (during first time step only)
         call write_zprof('visc',pnu)
