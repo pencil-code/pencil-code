@@ -163,6 +163,9 @@ module Chemistry
   integer :: idiag_Y7m=0        ! DIAG_DOC: $\left<Y_7\right>$
   integer :: idiag_Y8m=0        ! DIAG_DOC: $\left<Y_8\right>$
   integer :: idiag_Y9m=0        ! DIAG_DOC: $\left<Y_9\right>$
+  integer :: idiag_Y10m=0        ! DIAG_DOC: $\left<Y_10\right>$
+  integer :: idiag_Y11m=0        ! DIAG_DOC: $\left<Y_11\right>$
+  integer :: idiag_Y12m=0        ! DIAG_DOC: $\left<Y_12\right>$
   integer :: idiag_dY1m=0        ! DIAG_DOC: $\left<dY_1\right>$
   integer :: idiag_dY2m=0        ! DIAG_DOC: $\left<dY_2\right>$
   integer :: idiag_dY3m=0        ! DIAG_DOC: $\left<dY_3\right>$
@@ -172,6 +175,9 @@ module Chemistry
   integer :: idiag_dY7m=0        ! DIAG_DOC: $\left<dY_7\right>$
   integer :: idiag_dY8m=0        ! DIAG_DOC: $\left<dY_8\right>$
   integer :: idiag_dY9m=0        ! DIAG_DOC: $\left<dY_9\right>$
+  integer :: idiag_dY10m=0        ! DIAG_DOC: $\left<dY_10\right>$
+  integer :: idiag_dY11m=0        ! DIAG_DOC: $\left<dY_11\right>$
+  integer :: idiag_dY12m=0        ! DIAG_DOC: $\left<dY_12\right>$
 !
   integer :: idiag_Y1mz=0        ! DIAG_DOC: $\left<Y_1\right>_{xy}(z)$
   integer :: idiag_Y2mz=0        ! DIAG_DOC: $\left<Y_2\right>_{xy}(z)$
@@ -182,6 +188,9 @@ module Chemistry
   integer :: idiag_Y7mz=0        ! DIAG_DOC: $\left<Y_7\right>_{xy}(z)$
   integer :: idiag_Y8mz=0        ! DIAG_DOC: $\left<Y_8\right>_{xy}(z)$
   integer :: idiag_Y9mz=0        ! DIAG_DOC: $\left<Y_9\right>_{xy}(z)$
+  integer :: idiag_Y10mz=0        ! DIAG_DOC: $\left<Y_10\right>_{xy}(z)$
+  integer :: idiag_Y11mz=0        ! DIAG_DOC: $\left<Y_11\right>_{xy}(z)$
+  integer :: idiag_Y12mz=0        ! DIAG_DOC: $\left<Y_12\right>_{xy}(z)$
 !
   integer :: idiag_h1m=0
   integer :: idiag_h2m=0
@@ -192,6 +201,9 @@ module Chemistry
   integer :: idiag_h7m=0
   integer :: idiag_h8m=0
   integer :: idiag_h9m=0
+  integer :: idiag_h10m=0
+  integer :: idiag_h11m=0
+  integer :: idiag_h12m=0
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
@@ -205,6 +217,9 @@ module Chemistry
   integer :: idiag_cp7m=0
   integer :: idiag_cp8m=0
   integer :: idiag_cp9m=0
+  integer :: idiag_cp10m=0
+  integer :: idiag_cp11m=0
+  integer :: idiag_cp12m=0
   integer :: idiag_e_intm=0
 !
   integer :: idiag_lambdam=0
@@ -218,6 +233,9 @@ module Chemistry
   integer :: idiag_diff7m=0
   integer :: idiag_diff8m=0
   integer :: idiag_diff9m=0
+  integer :: idiag_diff10m=0
+  integer :: idiag_diff11m=0
+  integer :: idiag_diff12m=0
 !
   contains
 !
@@ -1889,7 +1907,7 @@ module Chemistry
 !  indices
 !
       integer :: j,k,i
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -2082,6 +2100,8 @@ module Chemistry
 !      module, for instance, has idiag_xxspar and idiag_vvspar, which
 !      allows the user to add output the positions and velocities
 !      of as many particle he/she wants.
+!  RP: Totally agree... I still have to expand manually these hard-coded
+!       Y1-Y9 and chemspec-chemspec9 when needed, but this is just work-around...
 !
         if (idiag_Y1m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1m)
         if (idiag_Y2m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2m)
@@ -2092,6 +2112,9 @@ module Chemistry
         if (idiag_Y7m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7m)
         if (idiag_Y8m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8m)
         if (idiag_Y9m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9m)
+        if (idiag_Y10m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i10)),idiag_Y10m)
+        if (idiag_Y11m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i11)),idiag_Y11m)
+        if (idiag_Y12m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i12)),idiag_Y12m)
 !
         if (idiag_cpfull/=0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         if (idiag_cvfull/=0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
@@ -2118,6 +2141,12 @@ module Chemistry
                              idiag_diff8m)
         if (idiag_diff9m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i9),&
                              idiag_diff9m)
+        if (idiag_diff10m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i10),&
+                             idiag_diff10m)
+        if (idiag_diff11m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i11),&
+                             idiag_diff11m)
+        if (idiag_diff12m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i12),&
+                             idiag_diff12m)
 !
       endif
 !
@@ -2133,6 +2162,9 @@ module Chemistry
         if (idiag_Y7mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7mz)
         if (idiag_Y8mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8mz)
         if (idiag_Y9mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9mz)
+        if (idiag_Y10mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i10)),idiag_Y10mz)
+        if (idiag_Y11mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i11)),idiag_Y11mz)
+        if (idiag_Y12mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i12)),idiag_Y12mz)
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)
 !
@@ -2205,24 +2237,26 @@ module Chemistry
       if (lreset) then
         idiag_Y1m=0; idiag_Y2m=0; idiag_Y3m=0; idiag_Y4m=0
         idiag_Y5m=0; idiag_Y6m=0; idiag_Y7m=0; idiag_Y8m=0
-        idiag_Y9m=0
+        idiag_Y9m=0; idiag_Y10m=0; idiag_Y11m=0; idiag_Y12m=0
         idiag_dY1m=0; idiag_dY2m=0; idiag_dY3m=0; idiag_dY4m=0
         idiag_dY5m=0; idiag_dY6m=0; idiag_dY7m=0; idiag_dY8m=0
-        idiag_dY9m=0
+        idiag_dY9m=0; idiag_dY10m=0; idiag_dY11m=0; idiag_dY12m=0
         idiag_h1m=0; idiag_h2m=0; idiag_h3m=0; idiag_h4m=0;
         idiag_h5m=0; idiag_h6m=0; idiag_h7m=0; idiag_h8m=0;
-        idiag_h9m=0
+        idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0; 
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0;
-        idiag_cp9m=0; idiag_cpfull=0; idiag_cvfull=0
+        idiag_cp9m=0; idiag_cp10m=0; idiag_cp11m=0; idiag_cp12m=0; 
+        idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
         idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
         idiag_Y5mz=0; idiag_Y6mz=0; idiag_Y7mz=0; idiag_Y8mz=0
-        idiag_Y9mz=0
+        idiag_Y9mz=0; idiag_Y10mz=0; idiag_Y11mz=0; idiag_Y12mz=0
 !
         idiag_diff1m=0; idiag_diff2m=0; idiag_diff3m=0; idiag_diff4m=0;
         idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0;
-        idiag_diff9m=0; idiag_lambdam=0; idiag_num=0
+        idiag_diff9m=0; idiag_diff10m=0; idiag_diff11m=0; idiag_diff12m=0; 
+        idiag_lambdam=0; idiag_num=0
 !
       endif
 !
@@ -2240,6 +2274,9 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'Y7m',idiag_Y7m)
         call parse_name(iname,cname(iname),cform(iname),'Y8m',idiag_Y8m)
         call parse_name(iname,cname(iname),cform(iname),'Y9m',idiag_Y9m)
+        call parse_name(iname,cname(iname),cform(iname),'Y10m',idiag_Y10m)
+        call parse_name(iname,cname(iname),cform(iname),'Y11m',idiag_Y11m)
+        call parse_name(iname,cname(iname),cform(iname),'Y12m',idiag_Y12m)
         call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1m)
         call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2m)
         call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3m)
@@ -2249,6 +2286,9 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'dY7m',idiag_dY7m)
         call parse_name(iname,cname(iname),cform(iname),'dY8m',idiag_dY8m)
         call parse_name(iname,cname(iname),cform(iname),'dY9m',idiag_dY9m)
+        call parse_name(iname,cname(iname),cform(iname),'dY10m',idiag_dY10m)
+        call parse_name(iname,cname(iname),cform(iname),'dY11m',idiag_dY11m)
+        call parse_name(iname,cname(iname),cform(iname),'dY12m',idiag_dY12m)
         call parse_name(iname,cname(iname),cform(iname),'h1m',idiag_h1m)
         call parse_name(iname,cname(iname),cform(iname),'h2m',idiag_h2m)
         call parse_name(iname,cname(iname),cform(iname),'h3m',idiag_h3m)
@@ -2258,6 +2298,9 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'h7m',idiag_h7m)
         call parse_name(iname,cname(iname),cform(iname),'h8m',idiag_h8m)
         call parse_name(iname,cname(iname),cform(iname),'h9m',idiag_h9m)
+        call parse_name(iname,cname(iname),cform(iname),'h10m',idiag_h10m)
+        call parse_name(iname,cname(iname),cform(iname),'h11m',idiag_h11m)
+        call parse_name(iname,cname(iname),cform(iname),'h12m',idiag_h12m)
         call parse_name(iname,cname(iname),cform(iname),'cpfull',idiag_cpfull)
         call parse_name(iname,cname(iname),cform(iname),'cvfull',idiag_cvfull)
         call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
@@ -2269,6 +2312,9 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'cp7m',idiag_cp7m)
         call parse_name(iname,cname(iname),cform(iname),'cp8m',idiag_cp8m)
         call parse_name(iname,cname(iname),cform(iname),'cp9m',idiag_cp9m)
+        call parse_name(iname,cname(iname),cform(iname),'cp10m',idiag_cp10m)
+        call parse_name(iname,cname(iname),cform(iname),'cp11m',idiag_cp11m)
+        call parse_name(iname,cname(iname),cform(iname),'cp12m',idiag_cp12m)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
         call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
@@ -2281,6 +2327,9 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'diff7m',idiag_diff7m)
         call parse_name(iname,cname(iname),cform(iname),'diff8m',idiag_diff8m)
         call parse_name(iname,cname(iname),cform(iname),'diff9m',idiag_diff9m)
+        call parse_name(iname,cname(iname),cform(iname),'diff10m',idiag_diff10m)
+        call parse_name(iname,cname(iname),cform(iname),'diff11m',idiag_diff11m)
+        call parse_name(iname,cname(iname),cform(iname),'diff12m',idiag_diff12m)
       enddo
 !
 !  xy-averages
@@ -2295,6 +2344,9 @@ module Chemistry
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y7mz',idiag_Y7mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y8mz',idiag_Y8mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y9mz',idiag_Y9mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y10mz',idiag_Y10mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y11mz',idiag_Y11mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y12mz',idiag_Y12mz)
       enddo
 !
 !  Write chemistry index in short notation
@@ -2310,6 +2362,9 @@ module Chemistry
         write(3,*) 'i_Y7m=',idiag_Y7m
         write(3,*) 'i_Y8m=',idiag_Y8m
         write(3,*) 'i_Y9m=',idiag_Y9m
+        write(3,*) 'i_Y10m=',idiag_Y10m
+        write(3,*) 'i_Y11m=',idiag_Y11m
+        write(3,*) 'i_Y12m=',idiag_Y12m
         write(3,*) 'i_dY1m=',idiag_dY1m
         write(3,*) 'i_dY2m=',idiag_dY2m
         write(3,*) 'i_dY3m=',idiag_dY3m
@@ -2319,6 +2374,9 @@ module Chemistry
         write(3,*) 'i_dY7m=',idiag_dY7m
         write(3,*) 'i_dY8m=',idiag_dY8m
         write(3,*) 'i_dY9m=',idiag_dY9m
+        write(3,*) 'i_dY10m=',idiag_dY10m
+        write(3,*) 'i_dY11m=',idiag_dY11m
+        write(3,*) 'i_dY12m=',idiag_dY12m
         write(3,*) 'i_h1m=',idiag_h1m
         write(3,*) 'i_h2m=',idiag_h2m
         write(3,*) 'i_h3m=',idiag_h3m
@@ -2328,6 +2386,9 @@ module Chemistry
         write(3,*) 'i_h7m=',idiag_h7m
         write(3,*) 'i_h8m=',idiag_h8m
         write(3,*) 'i_h9m=',idiag_h9m
+        write(3,*) 'i_h10m=',idiag_h10m
+        write(3,*) 'i_h11m=',idiag_h11m
+        write(3,*) 'i_h12m=',idiag_h12m
         write(3,*) 'i_cpfull=',idiag_cpfull
         write(3,*) 'i_cvfull=',idiag_cvfull
         write(3,*) 'i_cp1m=',idiag_cp1m
@@ -2339,6 +2400,9 @@ module Chemistry
         write(3,*) 'i_cp7m=',idiag_cp7m
         write(3,*) 'i_cp8m=',idiag_cp8m
         write(3,*) 'i_cp9m=',idiag_cp9m
+        write(3,*) 'i_cp10m=',idiag_cp10m
+        write(3,*) 'i_cp11m=',idiag_cp11m
+        write(3,*) 'i_cp12m=',idiag_cp12m
         write(3,*) 'i_e_intm=',idiag_e_intm
         write(3,*) 'i_Y1mz=',idiag_Y1mz
         write(3,*) 'i_Y2mz=',idiag_Y2mz
@@ -2349,6 +2413,9 @@ module Chemistry
         write(3,*) 'i_Y7mz=',idiag_Y7mz
         write(3,*) 'i_Y8mz=',idiag_Y8mz
         write(3,*) 'i_Y9mz=',idiag_Y9mz
+        write(3,*) 'i_Y10mz=',idiag_Y10mz
+        write(3,*) 'i_Y11mz=',idiag_Y11mz
+        write(3,*) 'i_Y12mz=',idiag_Y12mz
         write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
         write(3,*) 'i_lambdam=',idiag_lambdam
         write(3,*) 'i_num=',idiag_num
@@ -2361,6 +2428,9 @@ module Chemistry
         write(3,*) 'i_diff7m=',idiag_diff7m
         write(3,*) 'i_diff8m=',idiag_diff8m
         write(3,*) 'i_diff9m=',idiag_diff9m
+        write(3,*) 'i_diff10m=',idiag_diff10m
+        write(3,*) 'i_diff11m=',idiag_diff11m
+        write(3,*) 'i_diff12m=',idiag_diff12m
       endif
 !
     endsubroutine rprint_chemistry
@@ -2373,7 +2443,7 @@ module Chemistry
 !  16-may-09/raphael: added more slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -2471,6 +2541,36 @@ module Chemistry
           slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i9))
           if (lwrite_slice_xy4) &
           slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i9))
+          slices%ready=.true.
+        case ('chemspec10')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i10))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i10))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i10))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i10))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i10))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i10))
+          slices%ready=.true.
+        case ('chemspec11')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i11))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i11))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i11))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i11))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i11))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i11))
+          slices%ready=.true.
+        case ('chemspec12')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i12))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i12))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i12))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i12))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i12))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i12))
           slices%ready=.true.
       endselect
 !
@@ -3259,7 +3359,7 @@ module Chemistry
       real, dimension (nx) :: xdot
       type (pencil_case) :: p
       integer :: k,j
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
 !
       p%DYDt_reac=0.
 !
@@ -3337,6 +3437,9 @@ module Chemistry
         if (idiag_dY7m/=0) call sum_mn_name(p%DYDt_reac(:,i7),idiag_dY7m)
         if (idiag_dY8m/=0) call sum_mn_name(p%DYDt_reac(:,i8),idiag_dY8m)
         if (idiag_dY9m/=0) call sum_mn_name(p%DYDt_reac(:,i9),idiag_dY9m)
+        if (idiag_dY10m/=0) call sum_mn_name(p%DYDt_reac(:,i10),idiag_dY10m)
+        if (idiag_dY11m/=0) call sum_mn_name(p%DYDt_reac(:,i11),idiag_dY11m)
+        if (idiag_dY12m/=0) call sum_mn_name(p%DYDt_reac(:,i12),idiag_dY12m)
         if (idiag_h1m/=0) call sum_mn_name(p%H0_RT(:,i1)*Rgas*&
             p%TT(:)/species_constants(i1,imass),idiag_h1m)
         if (idiag_h2m/=0) call sum_mn_name(p%H0_RT(:,i2)*Rgas*&
@@ -3355,6 +3458,12 @@ module Chemistry
             p%TT(:)/species_constants(i8,imass),idiag_h8m)
         if (idiag_h9m/=0) call sum_mn_name(p%H0_RT(:,i9)*Rgas*&
             p%TT(:)/species_constants(i9,imass),idiag_h9m)
+        if (idiag_h10m/=0) call sum_mn_name(p%H0_RT(:,i10)*Rgas*&
+            p%TT(:)/species_constants(i10,imass),idiag_h10m)
+        if (idiag_h11m/=0) call sum_mn_name(p%H0_RT(:,i11)*Rgas*&
+            p%TT(:)/species_constants(i11,imass),idiag_h11m)
+        if (idiag_h12m/=0) call sum_mn_name(p%H0_RT(:,i12)*Rgas*&
+            p%TT(:)/species_constants(i12,imass),idiag_h12m)
       endif
 !
     endsubroutine calc_reaction_term
