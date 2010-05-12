@@ -8,7 +8,7 @@
   public :: ipp_ss,ipp_cs2
   public :: eosperturb
   public :: get_soundspeed
-  public :: getmu
+  public :: getmu, getmu_array
   public :: getdensity, gettemperature, getpressure
   public :: get_average_pressure
                                                                                                        
