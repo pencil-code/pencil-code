@@ -49,8 +49,10 @@ module Dustdensity
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
+  real :: rho_w=1.0, Supersat=-0.5, Aconst=1.0e-6
   integer :: ind_extra
   integer :: iglobal_nd=0
+  integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   logical :: ludstickmax=.false.
@@ -61,11 +63,8 @@ module Dustdensity
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!atmosphere!!!!!!!!!!!!!!! 
   logical :: latm_chemistry=.false.
-  integer :: spot_number=1
-  real :: rho_w=1.,   Supersat=-0.5, Aconst=1e-6
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
@@ -1736,19 +1735,20 @@ module Dustdensity
       real, dimension (nx,ndustspec) :: dndr_dr
       integer :: k,i
 !
-       do k=1,ndustspec-1
-         dndr_dr(:,k)=1./dsize(k) &
-             *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k))&
-             +f(l1:l2,m,n,ind(k))/dsize(k)**2
+      do k=1,ndustspec-1
+        dndr_dr(:,k)=1./dsize(k) &
+            *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k))&
+            +f(l1:l2,m,n,ind(k))/dsize(k)**2
       !  dndr_dr(i,k)= &
       !   (f(l1+i,m,n,ind(k))/dsize(i+1)-f(l1+i-1,m,n,ind(k))/dsize(i)) &
       !    /(dsize(i+1)-dsize(i))
-       enddo
-       dndr_dr(:,ndustspec)=1./dsize(ndustspec) &
-           *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(max(ndustspec-1,1)))) &
-           /(dsize(ndustspec)-dsize(max(ndustspec-1,1))) &
-           +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
-    endsubroutine
+      enddo
+      dndr_dr(:,ndustspec)=1./dsize(ndustspec) &
+          *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(max(ndustspec-1,1)))) &
+          /(dsize(ndustspec)-dsize(max(ndustspec-1,1))) &
+          +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
+!
+    endsubroutine droplet_redistr
 !***********************************************************************
     subroutine droplet_init(f)
 !
@@ -1756,55 +1756,54 @@ module Dustdensity
 !
 !  10-may-10/Natalia: coded
 !
-     use General, only: random_number_wrapper
+      use General, only: random_number_wrapper
 !
-       real, dimension (mx,my,mz,mfarray) :: f
-       integer :: k, j, j1,j2,j3
-       real :: spot_size=.5, RR
-       real, dimension (3,spot_number) :: spot_posit
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: k, j, j1,j2,j3
+      real :: spot_size=.5, RR
+      real, dimension (3,spot_number) :: spot_posit
 !
-       spot_posit(:,:)=0.0
+      spot_posit(:,:)=0.0
 !
-       do j=1,spot_number
-         if (nxgrid/=1) then 
-            call random_number_wrapper(spot_posit(1,j))
-            print*,'posit',spot_posit(1,:)
-            spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
-         endif
-         if (nygrid/=1) then
-            call random_number_wrapper(spot_posit(2,j))
-            spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
-         endif
-         if (nzgrid/=1) then
-            call random_number_wrapper(spot_posit(3,j))
-            spot_posit(3,j)=spot_posit(3,j)*Lxyz(3)
-         endif
-       enddo
-       print*,'posit*Lxyz',spot_posit(1,:)
+      do j=1,spot_number
+        if (nxgrid/=1) then 
+          call random_number_wrapper(spot_posit(1,j))
+          print*,'posit',spot_posit(1,:)
+          spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
+        endif
+        if (nygrid/=1) then
+          call random_number_wrapper(spot_posit(2,j))
+          spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
+        endif
+        if (nzgrid/=1) then
+          call random_number_wrapper(spot_posit(3,j))
+          spot_posit(3,j)=spot_posit(3,j)*Lxyz(3)
+        endif
+      enddo
+      print*,'posit*Lxyz',spot_posit(1,:)
 !   spot_posit=[0,0,0]
 
 !spot_posit(1,1)=2.
 !spot_posit(1,2)=4.
 !spot_posit(1,3)=7.
 !
-       do k=1,ndustspec; do j=1,spot_number
-         do j1=1,mx; do j2=1,my; do j3=1,mz
+      do k=1,ndustspec; do j=1,spot_number
+        do j1=1,mx; do j2=1,my; do j3=1,mz
 !
-           RR=(x(j1)-spot_posit(1,j))**2 &
-               +(y(j2)-spot_posit(2,j))**2 &
-               +(z(j3)-spot_posit(3,j))**2
-           RR=sqrt(RR)
+          RR=(  x(j1)-spot_posit(1,j))**2 &
+              +(y(j2)-spot_posit(2,j))**2 &
+              +(z(j3)-spot_posit(3,j))**2
+          RR=sqrt(RR)
 !
-           if (RR<spot_size) then
-             f(j1,j2,j3,ind(k)) = &
-                 -(1e3-10)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/  &
-                 (dsize_min-0.5*(dsize_max+dsize_min))**2+1e3
-           endif
+          if (RR<spot_size) then
+            f(j1,j2,j3,ind(k)) = &
+                -(1e3-10)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/ &
+                (dsize_min-0.5*(dsize_max+dsize_min))**2+1e3
+          endif
 !
-         enddo; enddo; enddo
-       enddo; enddo
+        enddo; enddo; enddo
+      enddo; enddo
 !
-    endsubroutine
+    endsubroutine droplet_init
 !***********************************************************************
 endmodule Dustdensity
-
