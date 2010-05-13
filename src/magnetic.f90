@@ -1733,7 +1733,6 @@ module Magnetic
 !  19-nov-04/anders: coded
 !
       use Sub
-      use Deriv
       use Diagnostics, only: sum_mn_name
       use SharedVariables, only: put_shared_variable
 !
@@ -1746,13 +1745,14 @@ module Magnetic
       real, dimension (nx) :: alpha_tmp, delta_tmp
       real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: jcrossb2
-      real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func, meanfield_qe_func
-      real, dimension (nx) :: meanfield_Qs_der, meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
+      real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func
+      real, dimension (nx) :: meanfield_qe_func, meanfield_Qs_der
+      real, dimension (nx) :: meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb
       real :: B2_ext,c,s,kx
-      integer :: i,j,ix,ierr
+      integer :: i,j,ix
 !
       intent(inout) :: f,p
 ! aa
@@ -2013,7 +2013,7 @@ module Magnetic
 !
 !  add -(1/2)*grad[(1-qp)B^2]
 !
-            call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb 
+            call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb
             call multmv_transp(p%bij,p%bb,Bk_Bki)
             call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
 !
