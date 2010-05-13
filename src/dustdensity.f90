@@ -834,9 +834,9 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp,  fcloud_tmp, ccondens_tmp
+      real, dimension (nx) :: tmp,fcloud_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (nx,ndustspec) :: dndr_tmp 
+      real, dimension (nx,ndustspec) :: dndr_tmp
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
@@ -1012,7 +1012,6 @@ module Dustdensity
 ! glnndglnrho
         if (lpencil(i_glnndglnrho)) &
             call dot_mn(p%glnnd(:,:,k),p%glnrho(:,:),p%glnndglnrho(:,k))
-
 ! udrop
         if (lpencil(i_udrop)) then
           p%udrop(:,:,k)=p%uu(:,:)
@@ -1023,8 +1022,7 @@ module Dustdensity
           call dot_mn(p%udrop(:,:,k),p%gnd(:,:,k),p%udropgnd(:,k))
         endif
       enddo
-
-     ! fcloud
+! fcloud
         if (lpencil(i_fcloud)) then
           fcloud_tmp=0.
           do k=1, ndustspec-1
@@ -1109,11 +1107,11 @@ module Dustdensity
 !  Redistribution over the size in the atmospheric physics case
 !
       if (latm_chemistry) then
-        
+!
         do k=1,ndustspec
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
                  -Supersat*Aconst*p%dndr(:,k)
-   
+!
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
               df(i,m,n,ind(k))=1e-25*dt
@@ -1733,7 +1731,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ndustspec) :: dndr_dr
-      integer :: k,i
+      integer :: k
 !
       do k=1,ndustspec-1
         dndr_dr(:,k)=1./dsize(k) &
@@ -1766,7 +1764,7 @@ module Dustdensity
       spot_posit(:,:)=0.0
 !
       do j=1,spot_number
-        if (nxgrid/=1) then 
+        if (nxgrid/=1) then
           call random_number_wrapper(spot_posit(1,j))
           print*,'posit',spot_posit(1,:)
           spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
@@ -1782,7 +1780,7 @@ module Dustdensity
       enddo
       print*,'posit*Lxyz',spot_posit(1,:)
 !   spot_posit=[0,0,0]
-
+!
 !spot_posit(1,1)=2.
 !spot_posit(1,2)=4.
 !spot_posit(1,3)=7.
