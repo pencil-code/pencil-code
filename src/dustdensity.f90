@@ -21,7 +21,8 @@
 ! PENCILS PROVIDED del2lnnd(ndustspec); del6nd(ndustspec); del2md(ndustspec)
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
-! PENCILS PROVIDED udrop(3,ndustspec);udropgnd(ndustspec)
+! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
+! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec)
 !
 !***************************************************************
 module Dustdensity
@@ -50,7 +51,6 @@ module Dustdensity
   real :: dsize_min=0., dsize_max=0.
   integer :: ind_extra
   integer :: iglobal_nd=0
-  integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   logical :: ludstickmax=.false.
@@ -61,8 +61,11 @@ module Dustdensity
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!atmosphere!!!!!!!!!!!!!!! 
   logical :: latm_chemistry=.false.
-!
+  integer :: spot_number=1
+  real :: rho_w=1.,   Supersat=-0.5, Aconst=1e-6
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
@@ -752,6 +755,9 @@ module Dustdensity
         lpenc_requested(i_udrop)=.true.
         lpenc_requested(i_udropgnd)=.true.
         lpenc_requested(i_gnd)=.true.
+        lpenc_requested(i_fcloud)=.true.
+        lpenc_requested(i_ccondens)=.true.
+        lpenc_requested(i_dndr)=.true.
       endif
 !
       lpenc_diagnos(i_nd)=.true.
@@ -808,8 +814,11 @@ module Dustdensity
         lpencil_in(i_glnnd)=.true.
       endif
        if (latm_chemistry) then
-        if (lpencil_in(i_uu)) lpencil_in(i_udrop)=.true.
-        if (lpencil_in(i_udrop)) lpencil_in(i_udropgnd)=.true.
+        if (lpencil_in(i_gnd)) lpencil_in(i_nd)=.true.
+        if (lpencil_in(i_udrop)) lpencil_in(i_uu)=.true.
+        if (lpencil_in(i_udropgnd)) lpencil_in(i_udrop)=.true.
+        if (lpencil_in(i_fcloud)) lpencil_in(i_nd)=.true.
+        if (lpencil_in(i_ccondens)) lpencil_in(i_nd)=.true.
       endif
 !
     endsubroutine pencil_interdep_dustdensity
@@ -826,8 +835,9 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp
+      real, dimension (nx) :: tmp,  fcloud_tmp, ccondens_tmp
       real, dimension (nx,3) :: tmp_pencil_3
+      real, dimension (nx,ndustspec) :: dndr_tmp 
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
@@ -1013,8 +1023,31 @@ module Dustdensity
         if (lpencil(i_udropgnd)) then
           call dot_mn(p%udrop(:,:,k),p%gnd(:,:,k),p%udropgnd(:,k))
         endif
-
       enddo
+
+     ! fcloud
+        if (lpencil(i_fcloud)) then
+          fcloud_tmp=0.
+          do k=1, ndustspec-1
+           fcloud_tmp=fcloud_tmp  &
+              +0.5*(p%nd(:,k+1)*dsize(k+1)**3-p%nd(:,k)*dsize(k)**3) &
+              *(dsize(k+1)-dsize(k))
+          enddo
+          p%fcloud(:)=4./3.*PI*rho_w*fcloud_tmp(:)
+        endif
+! ccondens
+        if (lpencil(i_ccondens)) then
+          do k=1, ndustspec-1
+            p%fcloud(:)=0.5*(p%nd(:,k+1)*dsize(k+1)-p%nd(:,k)*dsize(k)) &
+                        *(dsize(k+1)-dsize(k))
+          enddo
+           p%fcloud(:)=4.*PI*rho_w*Aconst*Supersat*fcloud_tmp(:)
+        endif
+! dndr
+        if (lpencil(i_dndr)) then
+          call droplet_redistr(f,dndr_tmp)
+          p%dndr=dndr_tmp
+        endif
 !
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
@@ -1077,9 +1110,11 @@ module Dustdensity
 !  Redistribution over the size in the atmospheric physics case
 !
       if (latm_chemistry) then
-        call droplet_redistr(f,df)
+        
         do k=1,ndustspec
-          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) 
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
+                 -Supersat*Aconst*p%dndr(:,k)
+   
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
               df(i,m,n,ind(k))=1e-25*dt
@@ -1691,17 +1726,15 @@ module Dustdensity
 !
     endsubroutine get_slices_dustdensity
 !***********************************************************************
-    subroutine droplet_redistr(f,df)
+    subroutine droplet_redistr(f,dndr_dr)
 !
-!  DOCUMENT ME.
+!  Redistribution over the size in the atmospheric physics case
+!
+!  10-may-10/Natalia: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ndustspec) :: dndr_dr
       integer :: k,i
-      real :: Supersat, Aconst=1e-10
-!
-      Supersat=-0.5
 !
        do k=1,ndustspec-1
          dndr_dr(:,k)=1./dsize(k) &
@@ -1715,23 +1748,13 @@ module Dustdensity
            *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(max(ndustspec-1,1)))) &
            /(dsize(ndustspec)-dsize(max(ndustspec-1,1))) &
            +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
-!
-       do k=1,ndustspec
-!
-        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-            Supersat*Aconst*dndr_dr(:,k)   
-!      
-         do i=1,mx
-          if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
-                df(i,m,n,ind(k))=1e-25*dt
-         enddo
-       enddo
-!
     endsubroutine
 !***********************************************************************
     subroutine droplet_init(f)
 !
-!  DOCUMENT ME.
+!  Initialization of the dust spot positions and dust distribution
+!
+!  10-may-10/Natalia: coded
 !
      use General, only: random_number_wrapper
 !
@@ -1750,15 +1773,19 @@ module Dustdensity
          endif
          if (nygrid/=1) then
             call random_number_wrapper(spot_posit(2,j))
-            spot_posit(1,j)=spot_posit(1,j)*Lxyz(2)
+            spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
          endif
          if (nzgrid/=1) then
             call random_number_wrapper(spot_posit(3,j))
-            spot_posit(1,j)=spot_posit(1,j)*Lxyz(3)
+            spot_posit(3,j)=spot_posit(3,j)*Lxyz(3)
          endif
        enddo
        print*,'posit*Lxyz',spot_posit(1,:)
 !   spot_posit=[0,0,0]
+
+!spot_posit(1,1)=2.
+!spot_posit(1,2)=4.
+!spot_posit(1,3)=7.
 !
        do k=1,ndustspec; do j=1,spot_number
          do j1=1,mx; do j2=1,my; do j3=1,mz
