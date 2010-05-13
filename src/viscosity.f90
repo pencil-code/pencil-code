@@ -165,9 +165,11 @@ module Viscosity
           lvisc_rho_nu_const=.true.
         case ('sqrtrho-nu-const')
           if (lroot) print*,'viscous force: mu/sqrt(rho)*(del2u+graddivu/3)'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_sqrtrho_nu_const=.true.
         case ('nu-therm')
           if (lroot) print*,'viscous force: mu*sqrt(TT)*(del2u+graddivu/3)'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_therm=.true.
         case ('nu-const')
           if (lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
@@ -706,16 +708,15 @@ module Viscosity
           ! components
           !   S_xy = S_yx = 1/2 (du_x/dy + du_y/dx + Sshear)
           ! so that one must add
-          if (.false.) then
-            p%fvisc(:,1) = p%fvisc(:,1) + Sshear*muTT*p%glnrho(:,2)
-            p%fvisc(:,2) = p%fvisc(:,2) + Sshear*muTT*p%glnrho(:,1)
-          endif
+          !if (.false.) then
+          !  p%fvisc(:,1) = p%fvisc(:,1) + Sshear*muTT*p%glnrho(:,2)
+          !  p%fvisc(:,2) = p%fvisc(:,2) + Sshear*muTT*p%glnrho(:,1)
+          !endif
         else
           if (lmeanfield_nu) then
             if (meanfield_nuB/=0.) then
-              do i=1,3
-                call multsv_mn_add(1./sqrt(1.+p%b2/meanfield_nuB**2),p%fvisc(:,i)+muTT*(p%del2u(:,i)+1./3.*p%graddivu(:,i)),p%fvisc(:,i))
-              enddo
+                call multsv_mn(muTT,p%del2u+1./3.*p%graddivu,tmp)
+                call multsv_mn_add(1./sqrt(1.+p%b2/meanfield_nuB**2),p%fvisc+tmp,p%fvisc)
             endif
           else
             do i=1,3
