@@ -11,15 +11,12 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED gamma; gamma_m1
-! PENCILS PROVIDED cp; cp1; cv; cv1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
-! PENCILS PROVIDED nu; gradnu(3), gradcp(3)
+! PENCILS PROVIDED cv; cv1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
+! PENCILS PROVIDED nu; gradnu(3); rho; 
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
-! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec)
-! PENCILS PROVIDED gmu1(3); mu1; glnpp(3); del2pp; gTT(3)
 !
 !***************************************************************
 module Chemistry
@@ -531,11 +528,9 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !
-  !    lpenc_requested(i_YY)=.true.
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_gYYk)=.true.
       lpenc_requested(i_ghhk)=.true.
- !     lpenc_requested(i_cs2)=.true.
  !
       lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
@@ -549,8 +544,8 @@ module Chemistry
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cv1)=.true.
          lpenc_requested(i_H0_RT)=.true.
- !        lpenc_requested(i_nu)=.true.
-!         lpenc_requested(i_gradnu)=.true.
+         lpenc_requested(i_nu)=.true.
+         lpenc_requested(i_gradnu)=.true.
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
          if (lreactions) lpenc_requested(i_S0_R)=.true.
@@ -568,13 +563,28 @@ module Chemistry
 !
 !  Interdependency among pencils provided by this module are specified here
 !
-!  13-aug-07/steveb: coded
+!  02-03-08/Natalia: coded
 !
       logical, dimension(npencils) :: lpencil_in
 !
-        if (lpencil_in(i_glncp))    lpencil_in(i_cp)=.true.
+        if (lpencil_in(i_cv1))    lpencil_in(i_cv)=.true.
         if (lpencil_in(i_S0_R))  lpencil_in(i_lnTT)=.true.
-!        if (lpencil_in(i_gradnu))  lpencil_in(i_nu)=.true.
+        if (lpencil_in(i_glambda))  lpencil_in(i_lambda)=.true.
+!
+         if (lpencil_in(i_H0_RT))  then
+            lpencil_in(i_TT)=.true.
+            lpencil_in(i_TT_2)=.true.
+            lpencil_in(i_TT_3)=.true.
+            lpencil_in(i_TT_4)=.true.
+         endif
+         if (lpencil_in(i_hhk_full))  then
+            lpencil_in(i_H0_RT)=.true.
+            lpencil_in(i_TT)=.true.
+         endif
+         if (lpencil_in(i_ghhk))  then
+            lpencil_in(i_glnTT)=.true.
+            lpencil_in(i_TT)=.true.
+         endif
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -623,19 +633,12 @@ module Chemistry
 !
       if (lcheminp) then
 !
-!
-        if (lpencil(i_cp)) p%cv = cp_full(l1:l2,m,n)
-!
         if (lpencil(i_glncp) .and. lThCond_simple) then
           call grad(cp_full,glncp_tmp)
           do i=1,3
            p%glncp(:,i)=glncp_tmp(:,i)/cp_full(l1:l2,m,n)
           enddo
         endif
-!
-!  Gradient of the above
-!
-!        if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
 !
 !  Specific heat at constant volume (i.e. density)
 !
@@ -3124,14 +3127,13 @@ module Chemistry
 !
 !  Check that we are not outside the temperture range
 !
-          if (.not. lpencil_check) then   
-            if (maxval(p%TT) > T_up .or. minval(p%TT) < T_low) then        
+            if ((maxval(exp(f(l1:l2,m,n,ilnTT))) > T_up)  &
+                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low)) then        
               print*,'m,n=',m,n
               print*,'p%TT=',p%TT
               call fatal_error('get_reaction_rate',&
                   'p%TT(i) is outside range')
             endif
-          endif
 !
 !  Find the entropy by using fifth order temperature fitting function
 !

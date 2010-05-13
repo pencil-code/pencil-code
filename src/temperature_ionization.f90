@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); cp1; gradcp(3);
 !
 !***************************************************************
 module Entropy
@@ -338,13 +338,13 @@ module Entropy
 !
       if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
 !
-      if (lchemistry) then
-         lpenc_requested(i_lnTT)=.true.
-         lpenc_requested(i_TT)=.true.
-         lpenc_requested(i_TT1)=.true.
-         lpenc_requested(i_glnTT)=.true.
-         lpenc_requested(i_del2lnTT)=.true.
-      endif     
+    !  if (lchemistry) then
+    !     lpenc_requested(i_lnTT)=.true.
+    !     lpenc_requested(i_TT)=.true.
+    !     lpenc_requested(i_TT1)=.true.
+    !     lpenc_requested(i_glnTT)=.true.
+    !     lpenc_requested(i_del2lnTT)=.true.
+    !  endif     
 !
 !  Diagnostics
 !
@@ -569,7 +569,7 @@ module Entropy
 !  where g2=glnrho+glnTT
 !
       use Diagnostics, only: max_mn_name
-      use Sub, only: dot,multsv
+      use Sub!, only: dot,multsv
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p

@@ -9,16 +9,14 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED lnTT; cp1tilde; glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED TT_2; TT_3; TT_4
-! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT; del6lnTT
-! PENCILS PROVIDED yH; ee; ss; pp; delta; glnmumol(3); ppvap; csvap2; cs2
-! PENCILS PROVIDED mu1; gmu1(3); rho1gpp(3); glnpp(3); del2pp
+! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
+! PENCILS PROVIDED TT_2; TT_3; TT_4; pp; del2pp; mu1; gmu1(3)
+! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
 !
+! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
+! PENCILS PROVIDED yH; ee; ss; delta; glnmumol(3); ppvap; csvap2; cs2
+! PENCILS PROVIDED cp1tilde; cp; gamma_m1; gamma
 !
-! PENCILS PROVIDED  gss(3);  cp; cp1; 
-! PENCILS PROVIDED cv1;  gamma;
-! PENCILS PROVIDED del2TT; del6TT; 
 !
 !***************************************************************
 module EquationOfState
@@ -405,18 +403,28 @@ module EquationOfState
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
 !
+      lpenc_requested(i_TT)=.true.
+      lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_TT_2)=.true.
       lpenc_requested(i_TT_3)=.true.
       lpenc_requested(i_TT_4)=.true.
-!
+      lpenc_requested(i_del2lnTT)=.true.
+      
+      if (ltemperature_nolog) then
+        lpenc_requested(i_gTT)=.true.
+      else
+        lpenc_requested(i_glnTT)=.true.
+      endif
 
-     if (lcheminp_eos) then
-      lpenc_requested(i_glnpp)=.true.
-      lpenc_requested(i_del2pp)=.true.
-      lpenc_requested(i_mu1)=.true.
-      lpenc_requested(i_gmu1)=.true.
-      lpenc_requested(i_pp)=.true.
-     endif
+   !   if (lcheminp_eos) then
+       lpenc_requested(i_glnpp)=.true.
+       lpenc_requested(i_del2pp)=.true.
+       lpenc_requested(i_mu1)=.true.
+       lpenc_requested(i_gmu1)=.true.
+       lpenc_requested(i_pp)=.true.
+       lpenc_requested(i_rho1gpp)=.true.
+   !   endif
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -430,18 +438,35 @@ module EquationOfState
 !
    logical, dimension(npencils) :: lpencil_in
 !
-     
         if (ltemperature_nolog) then
         ! if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
         else
          if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
         endif
-
-        
-       if (lpencil_in(i_TT_2))     lpencil_in(i_TT)=.true.
+!      
+       if (lpencil_in(i_TT_2))   lpencil_in(i_TT)=.true.
        if (lpencil_in(i_TT_3))   lpencil_in(i_TT_2)=.true.
        if (lpencil_in(i_TT_4))   lpencil_in(i_TT_2)=.true.
-       if (lpencil_in(i_TT1))     lpencil_in(i_TT)=.true.
+       if (lpencil_in(i_TT1))    lpencil_in(i_TT)=.true.
+!
+       if (lpencil_in(i_pp))  then
+         lpencil_in(i_mu1)=.true.
+         lpencil_in(i_rho)=.true.
+         lpencil_in(i_TT)=.true.
+       endif
+       if (lpencil_in(i_rho1gpp))  then
+         lpencil_in(i_mu1)=.true.
+         lpencil_in(i_gmu1)=.true.
+         lpencil_in(i_pp)=.true.
+         lpencil_in(i_rho)=.true.
+         lpencil_in(i_glnrho)=.true.
+         lpencil_in(i_glnTT)=.true.
+       endif
+       if (lpencil_in(i_glnpp))  then
+         lpencil_in(i_pp)=.true.
+         lpencil_in(i_rho)=.true.
+         lpencil_in(i_rho1gpp)=.true.
+       endif
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -480,6 +505,11 @@ module EquationOfState
            p%TT=exp(f(l1:l2,m,n,ilnTT))
          endif
        endif
+
+!if ((m==4) .and. (n==4)) then
+!if (p%TT(10)<300)  print*,'NAtalia', p%TT(10),exp(f(l1+10-1,m,n,ilnTT)),m,n,lpencil(i_TT)
+!endif
+
 !
        if (lpencil(i_TT_2)) p%TT_2=p%TT*p%TT
        if (lpencil(i_TT_3)) p%TT_3=p%TT_2*p%TT
@@ -510,9 +540,8 @@ module EquationOfState
         else
          if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
-        if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
 !
-       if (lcheminp_eos) then
+!       if (lcheminp_eos) then
 !
 !  Mean molecular weight
 !
@@ -531,7 +560,6 @@ module EquationOfState
 !  Logarithmic pressure gradient
 !
         if (lpencil(i_rho1gpp)) then
-!
           do i=1,3
             p%rho1gpp(:,i) = p%pp/p%rho(:) &
                *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
@@ -552,7 +580,7 @@ module EquationOfState
          call del2(pp_full(:,:,:),p%del2pp)
        endif
 
-      endif
+!      endif
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
