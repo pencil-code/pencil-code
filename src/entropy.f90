@@ -2857,7 +2857,6 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
-      real :: boost_chi
 !
       intent(out) :: df
 !
@@ -2881,10 +2880,7 @@ module Entropy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 !
-      boost_chi=1e6/unit_temperature
-      thchi=chi_th
-      where (p%lnTT .ge. log(boost_chi)) &
-      thchi=chi_th*(1+((exp(p%lnTT)-boost_chi)/boost_chi)**0.5)
+      thchi=chi_th*(exp(p%lnTT))**0.5
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)

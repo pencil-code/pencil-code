@@ -324,7 +324,7 @@ module Interstellar
   namelist /interstellar_init_pars/ &
       initinterstellar, initial_SNI, &
       ampl_SN, mass_SN, &
-      mass_width_ratio, &
+      mass_width_ratio, energy_width_ratio, &
       lSN_velocity, velocity_SN, velocity_width_ratio, &
       uniform_zdist_SNI, mass_movement, &
       width_SN, inner_shell_proportion, outer_shell_proportion, &
@@ -340,7 +340,7 @@ module Interstellar
 !
   namelist /interstellar_run_pars/ &
       ampl_SN, mass_SN, &
-      mass_width_ratio, &
+      mass_width_ratio, energy_width_ratio, &
       lSN_velocity, velocity_SN, velocity_width_ratio, &
       uniform_zdist_SNI, mass_movement, &
       width_SN, inner_shell_proportion, outer_shell_proportion, &
@@ -2526,6 +2526,7 @@ find_SN: do n=n1,n2
       elseif (thermal_profile=="gaussian2") then
         c_SN=ampl_SN/(cnorm_gaussian2_SN(dimensionality)*width_energy**dimensionality)
       elseif (thermal_profile=="gaussian") then
+!         c_SN=ampl_SN/(0.8862269254*pi*width_energy**dimensionality)
         c_SN=ampl_SN/(cnorm_gaussian_SN(dimensionality)*width_energy**dimensionality)
       elseif (thermal_profile=="quadratictanh") then
         c_SN=ampl_SN/(cnorm_para_SN(dimensionality)*width_energy**dimensionality)
@@ -2601,7 +2602,13 @@ find_SN: do n=n1,n2
         elseif (velocity_profile=="r3gaussian3") then
           cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)  
         elseif (velocity_profile=="r6gaussian3") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)  
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)
+        elseif (velocity_profile=="r8thgaussian3") then
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.3755278212)&
+                       *(1.-1.82*SNR%t_sedov/t_merge)
+        elseif (velocity_profile=="r8thgaussian") then
+          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.2906782474)&  
+                       *(1.-1.82*SNR%t_sedov/t_merge)
         else
           cvelocity_SN=uu_sedov
           if (lroot) &
@@ -3553,6 +3560,13 @@ find_SN: do n=n1,n2
 !
       elseif (velocity_profile=="r15gaussian3") then
         profile_SN=(dr2_SN(1:nx))**0.75*exp(-(dr2_SN(1:nx)/width**2)**3)
+!
+      elseif (velocity_profile=="r8thgaussian3") then
+        profile_SN=(dr2_SN(1:nx))**0.0625*exp(-(dr2_SN(1:nx)/width**2)**3)
+!
+      elseif (velocity_profile=="r8thgaussian") then
+        profile_SN=(dr2_SN(1:nx))**0.0625*exp(-(dr2_SN(1:nx)/width**2))
+!     need to eject mass from centre to maintain core temp
 !
       elseif (velocity_profile=="cubictanh") then
         profile_SN=(sqrt(dr2_SN/width)**3) &
