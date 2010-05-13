@@ -2,7 +2,7 @@
 !
 module struct_func
 !
-  use Cdata
+  use Cparam
   use Sub, only: keep_compiler_quiet
 !
   implicit none

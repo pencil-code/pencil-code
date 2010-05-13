@@ -17,7 +17,6 @@
 !***************************************************************
 module Testscalar
 !
-  use Cdata
   use Cparam
   use Sub, only: keep_compiler_quiet
 !
@@ -77,6 +76,7 @@ module Testscalar
     endsubroutine pencil_interdep_testscalar
 !***********************************************************************
     subroutine read_testscalar_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -94,6 +94,7 @@ module Testscalar
     endsubroutine write_testscalar_init_pars
 !***********************************************************************
     subroutine read_testscalar_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -103,6 +104,7 @@ module Testscalar
     endsubroutine read_testscalar_run_pars
 !***********************************************************************
     subroutine write_testscalar_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)

@@ -73,7 +73,7 @@ module Special
 !
   use Cdata
   use Cparam
-  use Messages
+  use Messages, only: svn_id, fatal_error
   use Sub, only: keep_compiler_quiet
 !
   implicit none

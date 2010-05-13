@@ -17,7 +17,6 @@
 !***************************************************************
 module Testfield
 !
-  use Cdata
   use Cparam
   use Sub, only: keep_compiler_quiet
 !

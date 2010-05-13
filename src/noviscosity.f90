@@ -1,7 +1,8 @@
 ! $Id$
 !
-!  This modules implements viscous heating and diffusion terms
-!  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and
+!  This module is the dummy for the viscosity module
+!  in which e.g the viscous force or viscous heat is
+!  computed.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +56,7 @@ module Viscosity
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
@@ -73,7 +74,7 @@ module Viscosity
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_viscosity_run_pars
 !***********************************************************************
@@ -190,8 +191,6 @@ module Viscosity
       real,intent(out) :: nu_
 !
       nu_=0.0
-!
-      call keep_compiler_quiet(nu_)
 !
     endsubroutine getnu
 !***********************************************************************
