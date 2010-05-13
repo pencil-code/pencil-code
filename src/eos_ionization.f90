@@ -477,17 +477,17 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
     endsubroutine getmu
 !***********************************************************************
-  subroutine getmu_array(f,mu1_full_tmp)
+    subroutine getmu_array(f,mu1_full_tmp)
 !
-!  Calculate  mean molecular weight
+!  dummy routine to calculate mean molecular weight
 !
-!   12-aug-03/tony: implemented
 !   16-mar-10/natalia
 !
-    real, dimension (mx,my,mz,mfarray), optional :: f
-    real, dimension (mx,my,mz) :: mu1_full_tmp
- 
-    call keep_compiler_quiet(mu1_full_tmp)
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mu1_full_tmp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(mu1_full_tmp)
 !
     endsubroutine getmu_array
 !***********************************************************************

@@ -327,29 +327,29 @@ module EquationOfState
 !***********************************************************************
     subroutine getmu_array(f,mu1_full_tmp)
 !
-!  Calculate  mean molecular weight
+!  Calculate mean molecular weight
 !
-!   12-aug-03/tony: implemented
 !   16-mar-10/natalia
 !
-    real, dimension (mx,my,mz,mfarray), optional :: f
-    real, dimension (mx,my,mz) :: mu1_full_tmp
-    integer :: k,j2,j3
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mu1_full_tmp
+      integer :: k,j2,j3
 !
 !  Mean molecular weight
 !
-    mu1_full_tmp=0.
-    do k=1,nchemspec
-     if (species_constants(k,imass)>0.) then
-      do j2=mm1,mm2
-        do j3=nn1,nn2
-          mu1_full_tmp(:,j2,j3)=mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-              /species_constants(k,imass)
-        enddo
+      mu1_full_tmp=0.
+      do k=1,nchemspec
+        if (species_constants(k,imass)>0.) then
+          do j2=mm1,mm2
+            do j3=nn1,nn2
+              mu1_full_tmp(:,j2,j3)= &
+                  mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                  /species_constants(k,imass)
+            enddo
+          enddo
+        endif
       enddo
-     endif
-    enddo
-    mu1_full=mu1_full_tmp
+      mu1_full=mu1_full_tmp
 !
     endsubroutine getmu_array
 !***********************************************************************
