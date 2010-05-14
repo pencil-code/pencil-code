@@ -4,11 +4,17 @@ SVN Id:
     $Id$
 Maintainer:
     Anders Johansen <anders/astro[dot]lu[dot]se>
+    Jeff Oishi <jsoishi/astro[dot]berkeley[dot]edu>
 Added:
     05-Sep-2008
 Status:
     succeeds
 Recommended resolution:
-    1x1x1
+    64x1x1
 Comments:
     1-D Jeans problem
+References:
+    Johansen A., Oishi J., Mac Low M.-M., Klahr H., Henning Th., & Youdin A.:
+    ``Supplementary Information for "Rapid planetesimal formation in turbulent
+    circumstellar discs"''
+    http://arxiv.org/abs/0708.3893
