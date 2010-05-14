@@ -5927,7 +5927,7 @@ the pieces in this routine.
 We quickly arrive at the following crucial part of code,
 \begin{verbatim}
 !
-!  continuity equation
+!  Continuity equation.
 !
       if (lcontinuity_gas) then
         if (ldensity_nolog) then
@@ -5963,7 +5963,7 @@ the default.
 The piece \code{divu} is calculated in \file{hydro.f90} in the line
 \begin{verbatim}
 !
-!  calculate uij and divu, if requested
+!  Calculate uij and divu, if requested.
 !
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
       if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
@@ -5993,12 +5993,12 @@ the equation is assembled in the routine
 !***********************************************************************
     subroutine daa_dt(f,df,p)
 !
-!  magnetic field evolution
+!  Magnetic field evolution.
 !
-!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
-!  for mean field calculations one can also add dA/dt=...+alpha*bb+delta*WXJ
-!  add jxb/rho to momentum equation
-!  add eta mu_0 j2/rho to entropy equation
+!  Calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J.
+!  For mean field calculations one can also add dA/dt=...+alpha*bb+delta*WXJ.
+!  Add jxb/rho to momentum equation.
+!  Add eta mu_0 j2/rho to entropy equation.
 !
 \end{verbatim}
 where the header tells you already a little bit of what comes below.
@@ -6006,7 +6006,7 @@ It is also here where ohmic heating effects and other possible effects
 on other equations are included, e.g.\
 \begin{verbatim}
 !
-!  add eta mu_0 j2/rho to entropy or temperature equation
+!  Add Ohmic heat to entropy or temperature equation.
 !
       if (lentropy .and. lohmic_heat) then
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
