@@ -6045,7 +6045,7 @@ etc., is indented be precisely 2 spaces.
 E.g.
 \begin{Verbatim}
   if (lcylindrical) then
-    call stop_it("del2fjv not implemented")
+    call fatal_error('del2fjv','del2fjv not implemented')
   endif
 \end{Verbatim}
 \item continuation lines (i.e.~the continuation part of a logical line
@@ -6053,9 +6053,22 @@ E.g.
   E.g.~(note the difference from the previous example)
 \begin{Verbatim}
   if (lcylindrical) &
-      call stop_it("del2fjv not implemented")
+      call fatal_error('del2fjv','del2fjv not implemented')
   [...]
 \end{Verbatim}
+\item there is always one space separation between 'if' and the criterion
+following in parenthesis:
+\begin{verbatim}
+  if (ldensity_nolog) then
+    rho=f(l1:l2,m,n,irho)
+  endif
+\end{verbatim}
+This is wrong:
+\begin{verbatim}
+  if(ldensity_nolog) then   ! WRONG
+    rho=f(l1:l2,m,n,irho)
+  endif
+\end{verbatim}
 \item in general all comments are placed on their own lines with the '!'
 appearing in the first column.
 \item all subroutine/functions begin with a standard comment block describing
@@ -7070,7 +7083,7 @@ below the wrapped text of the comment.
 Comments should be written in sentences using the usual capitalization
 and punctuation of English where comment text continues either side of
 actual code much as text is continued around equations in a mathematical
-document. Punctuation at the end of a \emph{short} comment may be omitted.
+document.
 
 For example:
 \begin{verbatim}
@@ -7078,13 +7091,13 @@ For example:
       some more fortran code
 !
 !  A descriptive comment explaining what the following few lines
-!  of code do.  And so it begins
+!  of code do.
 !
       the fortran code being described
       the fortran code being described
       ...
 !
-!  then just time for a final detail
+!  A final detail described here.
 !
       the final fortran code
       the final fortran code
@@ -7093,7 +7106,7 @@ For example:
 
 Subroutines and functions are started with a comment block describing
 what they do, when and by whom they were created and when and by whom any
-non-trivial modifications were made.  The layout of this comment block
+non-trivial modifications were made. The layout of this comment block
 is a standard, for example:
 \begin{verbatim}
 !***********************************************************************
@@ -7103,7 +7116,7 @@ is a standard, for example:
 !  parameters.
 !
 !  For compatibility with other applications, we keep the possibility
-!  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general
+!  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general.
 !
 !  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
