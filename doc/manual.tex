@@ -5931,7 +5931,7 @@ We quickly arrive at the following crucial part of code,
 !
       if (lcontinuity_gas) then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
+          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
         else
           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
         endif
