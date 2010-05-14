@@ -174,12 +174,11 @@ module Density
         varname(irho)='rho'
       endif
 !
-!  initialize cs2cool to cs20
+!  Initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
 !     cs2cool=cs20
 !
-!
-      if (diffrho==0.) then
+      if (diffrho==0.0) then
 !
 !  Made to work by adding diffrho + cdiffrho to the rprint reset list.
 !
@@ -200,7 +199,7 @@ module Density
         print*,'initialize_density: fargo used. turned off continuity equation'
       endif
 !
-!  Initialize mass diffusion
+!  Initialize mass diffusion.
 !
       ldiff_normal=.false.
       ldiff_shock=.false.
@@ -212,7 +211,7 @@ module Density
 !
       lnothing=.false.
 !
-!  different choices of mass diffusion (if any)
+!  Different choices of mass diffusion (if any).
 !
       do i=1,ndiff_max
         select case (idiff(i))
@@ -273,7 +272,7 @@ module Density
       if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
       if (lfreeze_lnrhosqu) lfreeze_varsquare(ilnrho) = .true.
 !
-! Tell the equation of state that we're here and what f variable we use
+!  Tell the equation of state that we're here and what f variable we use.
 !
       if (ldensity_nolog) then
         call select_eos_variable('rho',irho)
@@ -281,8 +280,8 @@ module Density
         call select_eos_variable('lnrho',ilnrho)
       endif
 !
-! Do not allow inconsistency between rho0 (from eos) and rho_const
-! or lnrho0 and lnrho_const.
+!  Do not allow inconsistency between rho0 (from eos) and rho_const
+!  or lnrho0 and lnrho_const.
 !
       if (rho0.ne.rho_const) then
         if (lroot) then
