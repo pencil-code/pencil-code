@@ -570,52 +570,13 @@ module Density
                                               *(1-exp(-grads0*z(n))) )
             enddo; enddo
           endif
-        case ('hydrostatic-r')
+        case ('hydrostatic-r');   call init_hydrostatic_r (f)
 !
 !  Hydrostatic radial density stratification for isentropic (or
 !  isothermal) sphere.
 !
-          if (lgravr) then
-            if (lroot) print*, &
-                 'init_lnrho: radial density stratification (assumes s=const)'
+        case ('sph_isoth'); call init_sph_isoth (f)
 !
-            do n=n1,n2; do m=m1,m2
-              r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-              call potential(RMN=r_mn,POT=pot)
-              call potential(R=r_ref,POT=pot0)
-!  MEMOPT/AJ: commented out, since we do not use global potential anymore.
-!            call output(trim(directory)//'/pot.dat',pot,1)
-!
-!  rho0, cs0, pot0 are the values at r=r_ref
-!
-              if (gamma/=1.0) then  ! isentropic
-                f(l1:l2,m,n,ilnrho) = lnrho0 &
-                                  + log(1 - gamma_m1*(pot-pot0)/cs20) / gamma_m1
-              else                  ! isothermal
-                f(l1:l2,m,n,ilnrho) = lnrho0 - (pot-pot0)/cs20
-              endif
-            enddo; enddo
-!
-!  The following sets gravity gg in order to achieve numerical
-!  exact equilibrium at t=0.
-!
-            if (lnumerical_equilibrium) call numerical_equilibrium(f)
-          endif
-        case ('sph_isoth')
-          if (lgravr) then
-            if (lroot) print*, 'init_lnrho: isothermal sphere'
-            haut=cs20/gamma
-            TT=spread(cs20/gamma_m1,1,nx)
-            do n=n1,n2
-            do m=m1,m2
-              r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-              f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
-              lnrho=f(l1:l2,m,n,ilnrho)
-              call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-              f(l1:l2,m,n,iss)=ss
-            enddo
-            enddo
-          endif
         case ('cylind_isoth')
           call get_shared_variable('gravx', gravx, ierr)
           if (ierr/=0) call stop_it("init_lnrho: "//&
@@ -2807,6 +2768,69 @@ module Density
       endif
 !
     endsubroutine rprint_density
+!***********************************************************************
+    subroutine init_hydrostatic_r (f)
+!
+      use Gravity, only: potential,lnumerical_equilibrium
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: pot
+      real :: pot0
+      real, dimension (nx) :: r_mn
+!
+      intent(inout) :: f
+!
+      if (lgravr) then
+         if (lroot) print*, &
+              'init_lnrho: radial density stratification (assumes s=const)'
+!
+         do n=n1,n2; do m=m1,m2
+            r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+            call potential(RMN=r_mn,POT=pot)
+            call potential(R=r_ref,POT=pot0)
+!  MEMOPT/AJ: commented out, since we do not use global potential anymore.
+!            call output(trim(directory)//'/pot.dat',pot,1)
+!
+!  rho0, cs0, pot0 are the values at r=r_ref
+!
+            if (gamma/=1.0) then  ! isentropic
+               f(l1:l2,m,n,ilnrho) = lnrho0 &
+                    + log(1 - gamma_m1*(pot-pot0)/cs20) / gamma_m1
+            else                  ! isothermal
+               f(l1:l2,m,n,ilnrho) = lnrho0 - (pot-pot0)/cs20
+            endif
+         enddo; enddo
+!
+!  The following sets gravity gg in order to achieve numerical
+!  exact equilibrium at t=0.
+!
+         if (lnumerical_equilibrium) call numerical_equilibrium(f)
+      endif
+
+    endsubroutine init_hydrostatic_r
+!***********************************************************************
+    subroutine init_sph_isoth (f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: pot0,haut
+      real, dimension (nx) :: lnrho,TT,ss,pot
+      intent(inout) :: f
+!
+      if (lgravr) then
+         if (lroot) print*, 'init_lnrho: isothermal sphere'
+         haut=cs20/gamma
+         TT=spread(cs20/gamma_m1,1,nx)
+         do n=n1,n2
+            do m=m1,m2
+               r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+               f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
+               lnrho=f(l1:l2,m,n,ilnrho)
+               call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
+               f(l1:l2,m,n,iss)=ss
+            enddo
+         enddo
+      endif
+    endsubroutine init_sph_isoth
 !***********************************************************************
     subroutine get_slices_density(f,slices)
 !
