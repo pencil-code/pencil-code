@@ -36,10 +36,10 @@
   nforcepoints=100
 /
 &NSCBC_init_pars
-  nscbc_bc = '','ref_inlet:part_ref_outlet',''
+  nscbc_bc = '','part_ref_inlet:part_ref_outlet',''
   p_infty=400
-  nscbc_sigma_in=0.0
-  nscbc_sigma_out=0.2
+  nscbc_sigma_in=4.0
+  nscbc_sigma_out=0.28
 /
 &particles_init_pars
   initxxp='random-box'
