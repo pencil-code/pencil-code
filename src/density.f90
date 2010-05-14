@@ -1266,6 +1266,7 @@ module Density
       if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
            lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
+      if (ldiff_hyper3_mesh) lpenc_requested(i_rho1)=.true.
 !
       if (lmass_source) then
         if (mass_source_profile=='bump') lpenc_requested(i_r_mn)=.true.
@@ -2806,30 +2807,36 @@ module Density
 !
          if (lnumerical_equilibrium) call numerical_equilibrium(f)
       endif
-
+!
     endsubroutine init_hydrostatic_r
 !***********************************************************************
     subroutine init_sph_isoth (f)
 !
+!  Initialize isothermal sphere
+!
+!  14-may-10/dhruba: coded
+!
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: pot0,haut
-      real, dimension (nx) :: lnrho,TT,ss,pot
+      real :: haut
+      real, dimension (nx) :: lnrho,TT,ss
+!
       intent(inout) :: f
 !
       if (lgravr) then
-         if (lroot) print*, 'init_lnrho: isothermal sphere'
-         haut=cs20/gamma
-         TT=spread(cs20/gamma_m1,1,nx)
-         do n=n1,n2
-            do m=m1,m2
-               r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-               f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
-               lnrho=f(l1:l2,m,n,ilnrho)
-               call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
-               f(l1:l2,m,n,iss)=ss
-            enddo
-         enddo
+        if (lroot) print*, 'init_lnrho: isothermal sphere'
+        haut=cs20/gamma
+        TT=spread(cs20/gamma_m1,1,nx)
+        do n=n1,n2
+          do m=m1,m2
+            r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+            f(l1:l2,m,n,ilnrho)=lnrho0-r_mn/haut
+            lnrho=f(l1:l2,m,n,ilnrho)
+            call eoscalc(ilnrho_TT,lnrho,TT,ss=ss)
+            f(l1:l2,m,n,iss)=ss
+          enddo
+        enddo
       endif
+!
     endsubroutine init_sph_isoth
 !***********************************************************************
     subroutine get_slices_density(f,slices)
