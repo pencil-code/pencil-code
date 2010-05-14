@@ -81,6 +81,7 @@ module Magnetic
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: meanfield_etat_profile='const'
+  character (len=labellen) :: meanfield_Beq_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
   character (len=labellen) :: fring_profile='tanh'
 !
@@ -114,10 +115,10 @@ module Magnetic
   real :: nu_ni=0.0, nu_ni1,hall_term=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1.
+  real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
   real :: alpha_eps=0.0
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
-  real :: meanfield_Beq=1.0
   real :: meanfield_Qs=1.0, meanfield_Qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
@@ -233,6 +234,7 @@ module Magnetic
       alpha_eps, lmeanfield_noalpm, alpha_profile, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
+      meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
       lmeanfield_pumping, &
       lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_Qs, meanfield_Qp, meanfield_qe, meanfield_Beq, &
@@ -1749,7 +1751,7 @@ module Magnetic
       real, dimension (nx) :: meanfield_qe_func, meanfield_Qs_der
       real, dimension (nx) :: meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_urms21,meanfield_etaB2
+      real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb
       real :: B2_ext,c,s,kx
       integer :: i,j,ix
@@ -2000,22 +2002,27 @@ module Magnetic
             !call dot(Bk_Bki,p%bb,BiBk_Bki)
 !           call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki*p%rho1*meanfield_urms21,p%bb,p%jxb)
           else
-            meanfield_Bs21=1./(meanfield_Bs/meanfield_Beq)**2
-            meanfield_Bp21=1./(meanfield_Bp/meanfield_Beq)**2
-            meanfield_Be21=1./(meanfield_Be/meanfield_Beq)**2
+            if (meanfield_Beq_profile=='exp(z/H)') then
+              Beq=meanfield_Beq*exp(z(n)/meanfield_Beq_height)
+            else
+              Beq=meanfield_Beq
+            endif
+            meanfield_Bs21=1./(meanfield_Bs*Beq)**2
+            meanfield_Bp21=1./(meanfield_Bp*Beq)**2
+            meanfield_Be21=1./(meanfield_Be*Beq)**2
             meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
             meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
             meanfield_qe_func=    meanfield_qe    *(1.-2*pi_1*atan(p%b2*meanfield_Be21))
             meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
             meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
             meanfield_qe_der=-2*pi_1* meanfield_qe    *meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
-!print*,'meanfield_qe_func=',meanfield_qe_func
 !
 !  add -(1/2)*grad[(1-qp)B^2]
 !
             call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb
             call multmv_transp(p%bij,p%bb,Bk_Bki)
             call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
+!           if (meanfield_Beq_height/=0.) p%jxb(:,3)=p%jxb(:,3)+p%b2**2*meanfield_Qp_der/meanfield_Beq_height
 !
 !  add B.grad[(1-qs)*B_i]
 !
