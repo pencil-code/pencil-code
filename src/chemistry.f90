@@ -16,8 +16,9 @@
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec)
+! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec); glnpp(3)
 !
+! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3) 
 !***************************************************************
 module Chemistry
 !
