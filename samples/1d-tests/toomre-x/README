@@ -1,0 +1,14 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/toomre-x
+SVN Id:
+    $Id$
+Maintainer:
+    Anders Johansen <anders/astro[dot]lu[dot]se>
+Added:
+    05-Sep-2008
+Status:
+    succeeds
+Recommended resolution:
+    1x1x1
+Comments:
+    1-D Toomre problem
