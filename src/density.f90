@@ -1388,7 +1388,6 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
@@ -1400,7 +1399,6 @@ module Density
       else
         call calc_pencils_log_density(f,p)
       endif
-
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
@@ -1440,13 +1438,12 @@ module Density
         endif
       endif
 ! uglnrho
-      if (lpencil(i_uglnrho)) & 
-         call fatal_error('calc_pencils_density', &
-           'uglnrho not available for non-logarithmic mass density')
+      if (lpencil(i_uglnrho)) call fatal_error('calc_pencils_density', &
+          'uglnrho not available for linear mass density')
 ! ugrho
       if (lpencil(i_ugrho)) then
         if (lupw_lnrho) call fatal_error('calc_pencils_density', &
-          'you switched lupw_lnrho instead of lupw_rho')
+            'you switched lupw_lnrho instead of lupw_rho')
         call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
       else
         call dot(p%uu,p%grho,p%ugrho)
@@ -1460,13 +1457,11 @@ module Density
 ! del6rho
       if (lpencil(i_del6rho)) call del6(f,irho,p%del6rho)
 ! del6lnrho
-      if (lpencil(i_del6lnrho)) &
-          call fatal_error('calc_pencils_density', &
-          'del6lnrho not available for non-logarithmic mass density')
+      if (lpencil(i_del6lnrho)) call fatal_error('calc_pencils_density', &
+          'del6lnrho not available for linear mass density')
 ! hlnrho
-      if (lpencil(i_hlnrho)) &
-          call fatal_error('calc_pencils_density', &
-          'hlnrho not available for non-logarithmic mass density')
+      if (lpencil(i_hlnrho)) call fatal_error('calc_pencils_density', &
+          'hlnrho not available for linear mass density')
 ! sglnrho
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
@@ -1494,7 +1489,7 @@ module Density
       integer :: i
 !
       intent(inout) :: f,p
-!
+! lnrho
       p%lnrho=f(l1:l2,m,n,ilnrho)
 ! rho1
       if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
@@ -1518,20 +1513,17 @@ module Density
         endif
       endif
 ! ugrho
-      if (lpencil(i_ugrho)) &
-          call fatal_error('calc_pencils_density', &
+      if (lpencil(i_ugrho)) call fatal_error('calc_pencils_density', &
           'ugrho not available for logarithmic mass density')
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
-      if (lpencil(i_del2rho)) &
-          call fatal_error('calc_pencils_density', &
+      if (lpencil(i_del2rho)) call fatal_error('calc_pencils_density', &
           'del2rho not available for logarithmic mass density')
 ! del2lnrho
       if (lpencil(i_del2lnrho)) call del2(f,ilnrho,p%del2lnrho)
 ! del6rho
-      if (lpencil(i_del6rho)) &
-          call fatal_error('calc_pencils_density', &
+      if (lpencil(i_del6rho)) call fatal_error('calc_pencils_density', &
           'del6rho not available for logarithmic mass density')
 ! del6lnrho
       if (lpencil(i_del6lnrho)) call del6(f,ilnrho,p%del6lnrho)
