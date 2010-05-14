@@ -1272,8 +1272,10 @@ module Density
           lpenc_requested(i_divu)=.true.
           if (ldensity_nolog) then
             lpenc_requested(i_ugrho)=.true.
+!            lpenc_requested(i_uglnrho)=.false.
           else
             lpenc_requested(i_uglnrho)=.true.
+!            lpenc_requested(i_ugrho)=.false.
           endif
         endif
       endif
@@ -1386,6 +1388,102 @@ module Density
 !
 !  19-11-04/anders: coded
 !
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      intent(inout) :: f,p
+
+! Differentiate between log density and linear density:
+      if (ldensity_nolog) then 
+         call calc_pencils_linear_density(f,p)
+      else
+         call calc_pencils_log_density(f,p)
+      endif
+
+!
+    endsubroutine calc_pencils_density
+!***********************************************************************
+    subroutine calc_pencils_linear_density(f,p)
+!
+!  Calculate Density pencils for linear density.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
+!
+      use WENO_transport
+      use Mpicomm, only: stop_it
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      integer :: i
+!
+      intent(inout) :: f,p
+!-----------------------------
+      p%rho = f(l1:l2,m,n,irho)
+      if (lcheck_negative_density .and. any(p%rho <= 0.)) &
+           call fatal_error_local('calc_pencils_density', 'negative density detected')
+! rho1
+      if (lpencil(i_rho1)) p%rho1=1.0/p%rho
+! lnrho
+      if (lpencil(i_lnrho))p%lnrho=log(p%rho)
+! glnrho and grho
+      if (lpencil(i_glnrho).or.lpencil(i_grho)) then
+        call grad(f,irho,p%grho)
+        if (lpencil(i_glnrho)) then
+           do i=1,3
+              p%glnrho(:,i)=p%rho1*p%grho(:,i)
+           enddo
+        endif
+     endif
+! uglnrho
+      if (lpencil(i_uglnrho)) & 
+         call fatal_error('calc_pencils_density', 'Do not use uglnrho "//&
+              "for linear density.')
+! ugrho
+      if (lpencil(i_ugrho)) then
+         if (lupw_lnrho) & 
+            call fatal_error('calc_pencils_density', 'you switched "//&
+                 "lupw_lnrho instead of lupw_rho')
+         call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+      else
+         call dot(p%uu,p%grho,p%ugrho)
+      endif
+! glnrho2
+      if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
+! del2rho
+      if (lpencil(i_del2rho)) call del2(f,irho,p%del2rho)
+! del2lnrho
+      if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
+! del6rho
+      if (lpencil(i_del6rho)) call del6(f,irho,p%del6rho)
+! del6lnrho
+      if (lpencil(i_del6lnrho)) &
+           call fatal_error('calc_pencils_density', &
+           'del6lnrho not available for non-logarithmic mass density')
+! hlnrho
+      if (lpencil(i_hlnrho)) &
+           call fatal_error('calc_pencils_density', &
+           'hlnrho not available for non-logarithmic mass density')
+! sglnrho
+      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
+! uij5glnrho
+      if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
+! transprho
+      if (lpencil(i_transprho)) &
+          call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1)
+!
+    endsubroutine calc_pencils_linear_density
+!***********************************************************************
+    subroutine calc_pencils_log_density(f,p)
+!
+!  Calculate Density pencils for logarithmic density.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!
+!  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
+!
       use WENO_transport
       use Mpicomm, only: stop_it
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
@@ -1397,129 +1495,52 @@ module Density
       integer :: i
 !
       intent(inout) :: f,p
-! lnrho
-      if (lpencil(i_lnrho)) then
-        if (ldensity_nolog) then
-          p%lnrho=log(f(l1:l2,m,n,irho))
-        else
-          p%lnrho=f(l1:l2,m,n,ilnrho)
-        endif
-      endif
+!----------------
+      p%lnrho=f(l1:l2,m,n,ilnrho)
 ! rho1 and rho
-      if (ldensity_nolog) then
-        if (lpencil(i_rho)) then
-          p%rho=f(l1:l2,m,n,irho)
-          if (lcheck_negative_density .and. any(p%rho <= 0.)) &
-            call fatal_error_local('calc_pencils_density', 'negative density detected')
-        endif
-        if (lpencil(i_rho1)) p%rho1=1.0/p%rho
-      else
-        if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
-        if (lpencil(i_rho)) p%rho=1.0/p%rho1
-      endif
+      if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
+      if (lpencil(i_rho)) p%rho=1.0/p%rho1
 ! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
-        call grad(f,ilnrho,tmp3)
-        if (ldensity_nolog) then
-          if (lpencil(i_grho)) p%grho=tmp3
-          if (lpencil(i_glnrho)) then
-            do i=1,3
-              p%glnrho(:,i)=tmp3(:,i)*p%rho1
-            enddo
-          endif
-        else
-          if (lpencil(i_glnrho)) p%glnrho=tmp3
-          if (lpencil(i_grho)) then
-            if (irho/=0) then
-              call grad(f,irho,p%grho)
-            else
-              do i=1,3
-                p%grho(:,i)=p%rho*tmp3(:,i)
-              enddo
-            endif
-          endif
+        call grad(f,ilnrho,p%glnrho)
+        if (lpencil(i_grho)) then
+           do i=1,3
+              p%grho(:,i)=p%rho*p%glnrho(:,i)
+           enddo
         endif
-      endif
+     endif
 ! uglnrho
-      if (lpencil(i_uglnrho)) then
-        if (ldensity_nolog) then
-          call dot(p%uu,p%glnrho,p%uglnrho)
+     if (lpencil(i_uglnrho)) then
+        if(lupw_lnrho) then
+           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         else
-          if (lupw_rho) call stop_it("calc_pencils_density: you switched "//&
-               "lupw_rho instead of lupw_lnrho")
-          call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
+           call dot(p%uu,p%glnrho,p%uglnrho)
         endif
-      endif
+     endif
 ! ugrho
-      if (lpencil(i_ugrho)) then
-        if (ldensity_nolog) then
-          if (lupw_lnrho) call stop_it("calc_pencils_density: you switched "//&
-               "lupw_lnrho instead of lupw_rho")
-          call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
-        else
-          call dot(p%uu,p%grho,p%ugrho)
-        endif
-      endif
+!       do i=1,npencils
+!         if (lpenc_requested(i)) write(*,*) i, pencil_names(i),lpencil(i)
+!         write(*,*)'DM', i, pencil_names(i),lpencil(i),i_ugrho,lpencil(i_ugrho)
+!       enddo
+      if (lpencil(i_ugrho)) &
+           call fatal_error('calc_pencils_density', 'Do not calculate "//&
+              "ugrho in logarithmic density.')
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
-      if (lpencil(i_del2rho)) then
-        if (ldensity_nolog) then
-          call del2(f,ilnrho,p%del2rho)
-        else
-          if (irho/=0) then
-            call del2(f,irho,p%del2rho)
-          else
-            if (headtt) &
-                call fatal_error('calc_pencils_density',&
-                'del2rho not available for logarithmic mass density')
-          endif
-        endif
-      endif
+      if (lpencil(i_del2rho)) &
+           call fatal_error('calc_pencils_density',&
+           'del2rho not available for logarithmic mass density')
 ! del2lnrho
-      if (lpencil(i_del2lnrho)) then
-        if (ldensity_nolog) then
-          p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
-        else
-          call del2(f,ilnrho,p%del2lnrho)
-        endif
-      endif
+      if (lpencil(i_del2lnrho)) call del2(f,ilnrho,p%del2lnrho)
 ! del6rho
-      if (lpencil(i_del6rho)) then
-        if (ldensity_nolog) then
-          call del6(f,ilnrho,p%del6rho)
-        else
-          if (irho/=0) then
-            call del6(f,irho,p%del6rho)
-          else
-            if (headtt) &
-                call fatal_error('calc_pencils_density',&
-                'del6rho not available for logarithmic mass density')
-          endif
-        endif
-      endif
+      if (lpencil(i_del6rho)) &
+           call fatal_error('calc_pencils_density',&
+           'del6rho not available for logarithmic mass density')
 ! del6lnrho
-      if (lpencil(i_del6lnrho)) then
-        if (ldensity_nolog) then
-          if (headtt) then
-            call fatal_error('calc_pencils_density', &
-                             'del6lnrho not available for non-logarithmic mass density')
-          endif
-        else
-          call del6(f,ilnrho,p%del6lnrho)
-        endif
-      endif
+      if (lpencil(i_del6lnrho)) call del6(f,ilnrho,p%del6lnrho)
 ! hlnrho
-      if (lpencil(i_hlnrho)) then
-        if (ldensity_nolog) then
-          if (headtt) then
-            call fatal_error('calc_pencils_density', &
-                             'hlnrho not available for non-logarithmic mass density')
-          endif
-        else
-          call g2ij(f,ilnrho,p%hlnrho)
-        endif
-      endif
+      if (lpencil(i_hlnrho))  call g2ij(f,ilnrho,p%hlnrho)
 ! sglnrho
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
@@ -1528,7 +1549,7 @@ module Density
       if (lpencil(i_transprho)) &
           call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1)
 !
-    endsubroutine calc_pencils_density
+    endsubroutine calc_pencils_log_density
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
