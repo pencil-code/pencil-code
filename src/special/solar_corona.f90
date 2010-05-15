@@ -639,7 +639,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       integer, parameter :: prof_nz=150
-      real, dimension (nx) :: newton=0.,tmp_tau
+      real, dimension (nx) :: newton,newtonr,tmp_tau
       real, dimension (prof_nz) :: prof_lnT,prof_z,prof_lnrho
       real, dimension (mz), save :: init_lnTT,init_lnrho
       real :: dummy,var1,var2
@@ -716,12 +716,18 @@ module Special
       !  Get reference temperature
       !
       newton  = exp(init_lnTT(n)-p%lnTT)-1.
+      newtonr = exp(init_lnrho(n)-p%lnrho)-1.
+!
+      tmp_tau = tdownr* (exp(-allpr*(z(n)*unit_length*1e-6)) )
+      newtonr = newtonr * tmp_tau
+!
       tmp_tau = tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
       newton  = newton  * tmp_tau
       !
       !  Add newton cooling term to entropy
       !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton
       !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
