@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -61,7 +61,7 @@ module Grid
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
       real, intent(out) :: dx,dy,dz,x00,y00,z00
-
+!
       real :: xi1lo,xi1up,g1lo,g1up
       real :: xi2lo,xi2up,g2lo,g2up
       real :: xi3lo,xi3up,g3lo,g3up
@@ -69,21 +69,21 @@ module Grid
       real, dimension(3,3) :: dxyz_step
       real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
       real :: xi1star,xi2star,xi3star,bound_prim1,bound_prim2
-
+!
       real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim2
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim2
-
+!
       real, dimension(0:2*nprocx+1) :: xi1proc,g1proc
       real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
       real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
-
+!
       real :: a,b,dummy1=0.,dummy2=0.
       integer :: i
       logical :: err
-
+!
       lequidist=(grid_func=='linear')
-
+!
       if (lperi(1)) then
         dx=Lx/nxgrid
         x00=x0+.5*dx
@@ -160,66 +160,66 @@ module Grid
         call grid_profile(dummy1,grid_func(1),dummy2,err=err)
         if (err) call &
             fatal_error('construct_grid','unknown grid_func '//grid_func(1))
-
+!
         select case (grid_func(1))
-
+!
         case ('linear','sinh')
           a=coeff_grid(1,1)*dx
           xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
-
+!
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-
+!
           if (lparticles) then
             call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
-
+!
         case ('step-linear')
-
+!
           xi_step(1,1)=xi_step_frac(1,1)*(nxgrid-1.0)
           xi_step(1,2)=xi_step_frac(1,2)*(nxgrid-1.0)
           dxyz_step(1,1)=(xyz_step(1,1)-x00)/(xi_step(1,1)-0.0)
           dxyz_step(1,2)=(xyz_step(1,2)-xyz_step(1,1))/ &
                                 (xi_step(1,2)-xi_step(1,1))
           dxyz_step(1,3)=(x00+Lx-xyz_step(1,2))/(nxgrid-1.0-xi_step(1,2))
-
+!
           call grid_profile(xi1,grid_func(1),g1,g1der1,g1der2, &
            dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
           call grid_profile(xi1lo,grid_func(1),g1lo, &
            dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
-
+!
           x     = x00 + g1-g1lo
           xprim = g1der1
           xprim2= g1der2
-          
+!
           if (lparticles) then
             g1proc=x00+g1proc-g1lo
             call grid_profile(xi1proc,grid_func(1),g1proc, &
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
           endif
-
+!
         case ('duct')
           a = pi/(max(nxgrid-1,1))
           call grid_profile(a*xi1  -pi/2,grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*xi1lo-pi/2,grid_func(1),g1lo)
           call grid_profile(a*xi1up-pi/2,grid_func(1),g1up)
-
+!
           x     =x00+Lx*(g1-g1lo)/2
           xprim =    Lx*(g1der1*a   )/2
           xprim2=    Lx*(g1der2*a**2)/2
-
+!
           if (lparticles) then
             g1proc=x00+Lx*(g1proc-g1lo)/2
             call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
             g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
             g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
           endif
-
+!
           if (ipx==0) then
             bound_prim1=x(l1+1)-x(l1)
             do i=1,nghost
@@ -232,9 +232,9 @@ module Grid
             do i=1,nghost
               x(l2+i)=x(l2)+i*bound_prim2
               xprim(l2:mx)=bound_prim2
-            enddo            
+            enddo
           endif
-
+!
         case ('squared')
           ! Grid distance increases linearily
           a=max(nxgrid,1)
@@ -243,11 +243,11 @@ module Grid
           call grid_profile(a*(xi1  -b),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-b),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-b),grid_func(1),g1up)
-
+!
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-          
+!
           if (ipx==0) then
             bound_prim1=x(l1+1)-x(l1)
             do i=1,nghost
@@ -260,9 +260,9 @@ module Grid
             do i=1,nghost
               x(l2+i)=x(l2)+i*bound_prim2
               xprim(l2:mx)=bound_prim2
-            enddo            
+            enddo
           endif
-        
+!
         case ('frozensphere')
           ! Just like sinh, except set dx constant below a certain radius, and
           ! constant for top ghost points.
@@ -271,23 +271,23 @@ module Grid
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
           call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
-
+!
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-
+!
           if (ipx==nprocx-1) then
             bound_prim2=x(l2-2)-x(l2-3)
             do i=1,nghost+2
               x(l2-2+i)=x(l2-2)+i*bound_prim2
               xprim(l2-2:mx)=bound_prim2
-            enddo            
+            enddo
           endif
         case default
           call fatal_error('construct_grid', &
                            'No such x grid function - '//grid_func(1))
         endselect
-
+!
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
       endif
@@ -307,45 +307,45 @@ module Grid
         call grid_profile(dummy1,grid_func(2),dummy2,err=err)
         if (err) &
             call fatal_error('construct_grid','unknown grid_func '//grid_func(2))
-
+!
         select case (grid_func(2))
-
+!
         case ('linear','sinh')
-
+!
           a=coeff_grid(2,1)*dy
           xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
           call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
-
+!
           y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
-
+!
           if (lparticles) then
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
-
-
+!
+!
         case ('duct')
-
+!
           a = pi/max(nygrid-1, 1)
           call grid_profile(a*xi2  -pi/2,grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*xi2lo-pi/2,grid_func(2),g2lo)
           call grid_profile(a*xi2up-pi/2,grid_func(2),g2up)
-
+!
           y     =y00+Ly*(g2-g2lo)/2
           yprim =    Ly*(g2der1*a   )/2
           yprim2=    Ly*(g2der2*a**2)/2
-
+!
           if (lparticles) then
             call grid_profile(a*xi2proc-pi/2,grid_func(2),g2proc)
             g2proc=y00+Ly*(g2proc-g2lo)/2
             g2proc(0)=g2proc(1)-y(m1+1)+y(m1)
             g2proc(2*nprocy+1)=g2proc(2*nprocy)+y(m2)-y(m2-1)
           endif
-
+!
           if (ipy==0) then
             bound_prim1=y(m1+1)-y(m1)
             do i=1,nghost
@@ -358,19 +358,19 @@ module Grid
             do i=1,nghost
               y(m2+i)=y(m2)+i*bound_prim2
               yprim(m2:my)=bound_prim2
-            enddo 
+            enddo
           endif
-        
-
+!
+!
         case ('step-linear')
-
+!
           xi_step(2,1)=xi_step_frac(2,1)*(nygrid-1.0)
           xi_step(2,2)=xi_step_frac(2,2)*(nygrid-1.0)
           dxyz_step(2,1)=(xyz_step(2,1)-y00)/(xi_step(2,1)-0.0)
           dxyz_step(2,2)=(xyz_step(2,2)-xyz_step(2,1))/ &
                                 (xi_step(2,2)-xi_step(2,1))
           dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/(nygrid-1.0-xi_step(2,2))
-
+!
           call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2, &
            dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
           call grid_profile(xi2lo,grid_func(2),g2lo, &
@@ -378,20 +378,20 @@ module Grid
           y     = y00 + g2-g2lo
           yprim = g2der1
           yprim2= g2der2
-          
+!
           if (lparticles) then
             g2proc=y00+g2proc-g2lo
             call grid_profile(xi2proc,grid_func(2),g2proc, &
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
           endif
-
+!
         case default
           call fatal_error('construct_grid', &
                            'No such y grid function - '//grid_func(2))
-
+!
         endselect
-
-! Added parts for spherical coordinates and cylindrical coordinates. 
+!
+! Added parts for spherical coordinates and cylindrical coordinates.
 ! From now on dy = d\theta but dy_1 = 1/rd\theta and similarly for \phi.
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
 ! are estimated) are removed.
@@ -414,35 +414,35 @@ module Grid
         call grid_profile(dummy1,grid_func(3),dummy2,ERR=err)
         if (err) &
             call fatal_error('construct_grid','unknown grid_func '//grid_func(3))
-
+!
         select case (grid_func(3))
-
+!
         case ('linear','sinh')
-
+!
           a=coeff_grid(3,1)*dz
           xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
           call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
-
+!
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
-
+!
           if (lparticles) then
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
           endif
 !
         case ('step-linear')
-
+!
           xi_step(3,1)=xi_step_frac(3,1)*(nzgrid-1.0)
           xi_step(3,2)=xi_step_frac(3,2)*(nzgrid-1.0)
           dxyz_step(3,1)=(xyz_step(3,1)-z00)/(xi_step(3,1)-0.0)
           dxyz_step(3,2)=(xyz_step(3,2)-xyz_step(3,1))/ &
                                 (xi_step(3,2)-xi_step(3,1))
           dxyz_step(3,3)=(z00+Lz-xyz_step(3,2))/(nzgrid-1.0-xi_step(3,2))
-
+!
           call grid_profile(xi3,grid_func(3),g3,g3der1,g3der2, &
            dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
           call grid_profile(xi3lo,grid_func(3),g3lo, &
@@ -450,18 +450,18 @@ module Grid
           z     = z00 + g3-g3lo
           zprim = g3der1
           zprim2= g3der2
-          
+!
           if (lparticles) then
             g3proc=z00+g3proc-g3lo
             call grid_profile(xi3proc,grid_func(2),g3proc, &
               dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
           endif
-
+!
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
         endselect
-
+!
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
       endif
@@ -512,10 +512,10 @@ module Grid
         dxmin_z = minval(zprim(n1:n2))
         dxmax_z = maxval(zprim(n1:n2))
       endif
-
+!
       dxmin = minval( (/dxmin_x, dxmin_y, dxmin_z, huge(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
-
+!
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
 !
@@ -559,7 +559,7 @@ module Grid
        .or. lpencil_in(i_phiy)) then
         if (lcartesian_coords) then
           lpencil_in(i_rcyl_mn1)=.true.
-        endif  
+        endif
       endif
       if (lspherical_coords.and.lpencil_in(i_phi_mn)) then
         lpencil_in(i_x_mn)=.true.
@@ -572,7 +572,6 @@ module Grid
         lpencil_in(i_z_mn)=.true.
         if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
       endif
-
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
@@ -595,7 +594,7 @@ module Grid
         if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)
         if (lpencil(i_y_mn))     p%y_mn    = spread(y(m),1,nx)
         if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
-!spherical distance  
+!spherical distance
         if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         if (lpencil(i_r_mn).and.lspherical_coords) p%r_mn=x(l1:l2)
 !cylindrical distance (pomega)
@@ -632,7 +631,7 @@ module Grid
         if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(y(m))
         if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
         if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(y(m))
-        if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx) 
+        if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx)
         if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
         if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
         if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
@@ -711,17 +710,17 @@ module Grid
 !
       intent(in)  :: xi,grid_func,dxyz,xistep,delta
       intent(out) :: g,gder1,gder2,err
-
+!
       if (present(err)) err=.false.
-
+!
       select case (grid_func)
-
+!
       case ('linear')
         ! Equidistant grid
         g=xi
         if (present(gder1)) gder1=1.0
         if (present(gder2)) gder2=0.0
-
+!
       case ('sinh')
         ! Sinh grid:
         ! Approximately equidistant near the middle, but approximately
@@ -729,32 +728,32 @@ module Grid
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
-
+!
       case ('duct')
         ! Chebyshev-type grid in all Cartesian directions:
         ! Points are much denser near the boundaries than in the middle
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
-
+!
       case ('squared')
         ! Grid distance increases linearily
         g=0.5*xi**2
         if (present(gder1)) gder1= xi
         if (present(gder2)) gder2= 0.
-
+!
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
         a1 = 4.
         if (xi<0) then
           g = a1*xi
-        else 
+        else
           g=sinh(xi)
         endif
         if (present(gder1)) then
           if (xi<0) then
             gder1 = a1
-          else 
+          else
             gder1=cosh(xi)
           endif
         endif
@@ -765,24 +764,24 @@ module Grid
             gder2=sinh(xi)
           endif
         endif
-
+!
       case ('step-linear')
        ! [Document me!
-       ! This is certainly _not_ stepwise linear as the name would suggest] 
+       ! This is certainly _not_ stepwise linear as the name would suggest]
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
         g=                                                                    &
          dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
          dxyz(2)*0.5*(delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
                          delta(2)*log(cosh(dble((xi-xistep(2))/delta(2))))) + &
          dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))))
-
+!
         if (present(gder1)) then
          gder1=                                                           &
             dxyz(1)*0.5*( 1.0 - tanh(dble((xi-xistep(1))/delta(1))) )  +  &
             dxyz(2)*0.5*( tanh(dble((xi-xistep(1))/delta(1)))  -          &
                               tanh(dble((xi-xistep(2))/delta(2))) )    +  &
             dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
-
+!
         endif
         if (present(gder2)) then
          gder2=                                                                &
@@ -790,15 +789,15 @@ module Grid
           dxyz(2)*0.5*((1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 - &
                       (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+ &
           dxyz(3)*0.5*( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
-
+!
         endif
        endif
-
+!
       case default
         if (present(err)) err=.true.
-
+!
       endselect
-
+!
     endsubroutine grid_profile_point
 !***********************************************************************
     subroutine grid_profile_1d(xi,grid_func,g,gder1,gder2,err, &
@@ -819,36 +818,36 @@ module Grid
 !
       intent(in)  :: xi,grid_func,dxyz,xistep,delta
       intent(out) :: g, gder1,gder2,err
-
+!
       if (present(err)) err=.false.
-
+!
       select case (grid_func)
-
+!
       case ('linear')
         g=xi
         if (present(gder1)) gder1=1.0
         if (present(gder2)) gder2=0.0
-
+!
       case ('sinh')
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
-
+!
       case ('duct')
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
-
+!
       case ('squared')
         ! Grid distance increases linearily
         g=0.5*xi**2
         if (present(gder1)) gder1= xi
         if (present(gder2)) gder2= 0.
-
+!
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
         a1 = 4.
-        where (xi<0) 
+        where (xi<0)
           g = a1*xi
         elsewhere
           g=sinh(xi)
@@ -856,18 +855,18 @@ module Grid
         if (present(gder1)) then
           where (xi<0)
             gder1 = a1
-          elsewhere 
+          elsewhere
             gder1=cosh(xi)
           endwhere
         endif
         if (present(gder2)) then
           where (xi<0)
             gder2 = 0.
-          elsewhere 
+          elsewhere
             gder2=sinh(xi)
           endwhere
         endif
-
+!
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
         g=                                                                     &
@@ -875,14 +874,14 @@ module Grid
          dxyz(2)*0.5*( delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
                            delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )+&
          dxyz(3)*0.5*( xi + delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )
-
+!
         if (present(gder1)) then
          gder1=                                                           &
             dxyz(1)*0.5*( 1.0 - tanh(dble((xi-xistep(1))/delta(1))) )  +  &
             dxyz(2)*0.5*( tanh(dble((xi-xistep(1))/delta(1)))  -          &
                               tanh(dble((xi-xistep(2))/delta(2))) )    +  &
             dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
-
+!
         endif
         if (present(gder2)) then
          gder2=                                                               &
@@ -890,15 +889,15 @@ module Grid
           dxyz(2)*0.5*(( 1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 -&
                        (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+&
           dxyz(3)*0.5* ( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
-
+!
         endif
        endif
-
+!
       case default
         if (present(err)) err=.true.
-
+!
       endselect
-
+!
     endsubroutine grid_profile_1d
 !***********************************************************************
     function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func) result (xi_star)
@@ -910,7 +909,7 @@ module Grid
 !
       real, intent(in) :: xi_lo,xi_up,x_lo,x_up,x_star
       character(len=*), intent(in) :: grid_func
-
+!
       real :: xi_star,dxi,tol
       real :: g_lo,gder_lo
       real :: g_up,gder_up
@@ -918,35 +917,34 @@ module Grid
       integer, parameter :: maxit=1000
       logical :: lreturn
       integer :: it
-
-
+!
       if (xi_lo>=xi_up) &
            call fatal_error('find_star','xi1 >= xi2 -- this should not happen')
-
+!
       tol=epsi*(xi_up-xi_lo)
       xi_star= (xi_up+xi_lo)/2
-
+!
       lreturn=.false.
-
+!
       do it=1,maxit
-
+!
         call grid_profile(xi_lo-xi_star,grid_func,g_lo,gder_lo)
         call grid_profile(xi_up-xi_star,grid_func,g_up,gder_up)
-
+!
         f   =-(x_up-x_star)*g_lo   +(x_lo-x_star)*g_up
         fder= (x_up-x_star)*gder_lo-(x_lo-x_star)*gder_up
-
+!
         dxi=f/fder
         xi_star=xi_star-dxi
-
+!
         if (lreturn) return
-
+!
         if (abs(dxi)<tol) lreturn=.true.
-
+!
       enddo
-
+!
       call fatal_error('find_star','maximum number of iterations exceeded')
-
+!
     endfunction find_star
 !***********************************************************************
 endmodule Grid

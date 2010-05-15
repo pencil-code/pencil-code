@@ -727,7 +727,7 @@ module Special
       !  Add newton cooling term to entropy
       !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
-      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton
+      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr
       !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then

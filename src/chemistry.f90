@@ -12,13 +12,13 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cv; cv1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
-! PENCILS PROVIDED nu; gradnu(3); rho; 
+! PENCILS PROVIDED nu; gradnu(3); rho;
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec); glnpp(3)
 !
-! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3) 
+! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3)
 !***************************************************************
 module Chemistry
 !
@@ -1036,12 +1036,12 @@ module Chemistry
        !  if (Rad<0.2) then
 !          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.06-Rad)/0.06)**2)
           ! f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
-           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/0.04)**2)+init_TT1)    
+           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/0.04)**2)+init_TT1)
        !  else
        !   f(j1,j2,j3,ilnTT)=log(init_TT1)
        !  endif
 
-         ! f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-((0.2-Rad)/0.2)**2)+init_TT1) 
+         ! f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-((0.2-Rad)/0.2)**2)+init_TT1)
           mu1(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
               +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
 !
@@ -1313,14 +1313,14 @@ module Chemistry
                           +species_constants(k,iaa2(ii3))*T_loc_2 &
                           +species_constants(k,iaa2(ii4))*T_loc_3 &
                           +species_constants(k,iaa2(ii5))*T_loc_4
-                  elsewhere (T_loc >=T_mid .and. T_loc<= T_up) 
+                  elsewhere (T_loc >=T_mid .and. T_loc<= T_up)
                    cp_R_spec=species_constants(k,iaa1(ii1)) &
                           +species_constants(k,iaa1(ii2))*T_loc &
                           +species_constants(k,iaa1(ii3))*T_loc_2 &
                           +species_constants(k,iaa1(ii4))*T_loc_3 &
                           +species_constants(k,iaa1(ii5))*T_loc_4
                  endwhere
-                 cv_R_spec_full(:,j2,j3,k)=cp_R_spec-1.                 
+                 cv_R_spec_full(:,j2,j3,k)=cp_R_spec-1.
 !
 ! Check if the temperature are within bounds
 !
@@ -1332,7 +1332,7 @@ module Chemistry
                  endif
 !
 ! Find cp and cv for the mixture for the full domain
-! 
+!
                  cp_full(:,j2,j3)=cp_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
                   *cp_R_spec/species_constants(k,imass)*Rgas
                  cv_full(:,j2,j3)=cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
@@ -1493,7 +1493,7 @@ module Chemistry
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-        if (.not. ldiff_simple) then 
+        if (.not. ldiff_simple) then
           do k=1,nchemspec
             write(file_id,'(7E12.4)')&
                 Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
@@ -1764,7 +1764,7 @@ module Chemistry
 !
       if (.not.lreloading) then
         if (.not. lfix_Sc .and. (.not. lDiff_simple)) then
-!NILS: Since Bin_diff_coeff is such a huge array we must check if it 
+!NILS: Since Bin_diff_coeff is such a huge array we must check if it
 !NILS: required to define it for the full domain!!!!!!
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
           if (stat>0) call stop_it("Couldn't allocate memory "//&
@@ -2250,10 +2250,10 @@ module Chemistry
         idiag_dY9m=0; idiag_dY10m=0; idiag_dY11m=0; idiag_dY12m=0
         idiag_h1m=0; idiag_h2m=0; idiag_h3m=0; idiag_h4m=0;
         idiag_h5m=0; idiag_h6m=0; idiag_h7m=0; idiag_h8m=0;
-        idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0; 
+        idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0;
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0;
-        idiag_cp9m=0; idiag_cp10m=0; idiag_cp11m=0; idiag_cp12m=0; 
+        idiag_cp9m=0; idiag_cp10m=0; idiag_cp11m=0; idiag_cp12m=0;
         idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
         idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
@@ -2262,7 +2262,7 @@ module Chemistry
 !
         idiag_diff1m=0; idiag_diff2m=0; idiag_diff3m=0; idiag_diff4m=0;
         idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0;
-        idiag_diff9m=0; idiag_diff10m=0; idiag_diff11m=0; idiag_diff12m=0; 
+        idiag_diff9m=0; idiag_diff10m=0; idiag_diff11m=0; idiag_diff12m=0;
         idiag_lambdam=0; idiag_num=0
 !
       endif
@@ -2592,7 +2592,7 @@ module Chemistry
 !  10-mar-08/nils: coded
 !
       logical :: IsReaction=.false.,found_new_reaction=.false.
-      logical, save :: find_specie, found_specie
+      logical, save :: find_specie,found_specie
       integer, optional :: NrOfReactions
       integer, save :: ind_glob, ind_chem
       integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add
@@ -2657,7 +2657,7 @@ module Chemistry
                photochemInd=index(ChemInpLine(StartInd:),'hv')
                if (photochemInd>0) then
                  photochem_case (k)=.true.
-              
+
                ParanthesisInd=index(ChemInpLine(photochemInd:),'(') &
                              +photochemInd-1
 !
@@ -3129,7 +3129,7 @@ module Chemistry
 !  Check that we are not outside the temperture range
 !
             if ((maxval(exp(f(l1:l2,m,n,ilnTT))) > T_up)  &
-                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low)) then        
+                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low)) then
               print*,'m,n=',m,n
               print*,'p%TT=',p%TT
               call fatal_error('get_reaction_rate',&
@@ -3145,7 +3145,7 @@ module Chemistry
                   +species_constants(k,iaa2(ii4))*p%TT_3/3 &
                   +species_constants(k,iaa2(ii5))*p%TT_4/4 &
                   +species_constants(k,iaa2(ii7))
-          elsewhere (T_mid <= p%TT .and. p%TT <= T_up) 
+          elsewhere (T_mid <= p%TT .and. p%TT <= T_up)
             p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
                   +species_constants(k,iaa1(ii2))*p%TT &
                   +species_constants(k,iaa1(ii3))*p%TT_2/2 &
@@ -3277,13 +3277,13 @@ module Chemistry
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
         if (Mplus_case (reac)) then
-          where (prod1 > 0) 
+          where (prod1 > 0)
             vreact_p(:,reac)=prod1*kf
           elsewhere
             vreact_p(:,reac)=0.
           endwhere
         else
-          where (prod1 > 0) 
+          where (prod1 > 0)
             vreact_p(:,reac)=prod1*kf*sum_sp
           elsewhere
             vreact_p(:,reac)=0.
@@ -3296,13 +3296,13 @@ module Chemistry
           kr=kf/Kc
         endif
         if (Mplus_case (reac)) then
-          where (prod2 > 0) 
+          where (prod2 > 0)
             vreact_m(:,reac)=prod2*kr
           elsewhere
             vreact_m(:,reac)=0.
           endwhere
         else
-          where (prod2 > 0) 
+          where (prod2 > 0)
             vreact_m(:,reac)=prod2*kr*sum_sp
           elsewhere
             vreact_m(:,reac)=0.
@@ -3326,7 +3326,7 @@ module Chemistry
           vreact_m(:,reac)=0.
         endif
 !
-! Write some data to file 
+! Write some data to file
 !
         if (lwrite_first) write(file_id,*) &
             'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
@@ -3819,7 +3819,7 @@ module Chemistry
 !
 ! Neglect terms including pressure gradients for the simplified diffusion
 !
-           if (.not. lDiff_simple) then 
+           if (.not. lDiff_simple) then
              call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
              do i=1,3
                gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
@@ -3835,7 +3835,7 @@ module Chemistry
           if (lDiff_simple) then
 ! Have removed all terms including pressure gradients as these are supposed
 ! to be small and not required for such as crude approxiamtion as the simplified
-! diffustion method.            
+! diffustion method.
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2
           else
            p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
@@ -4521,7 +4521,7 @@ module Chemistry
       enddo
 !
 !  Set the y and z velocities to zero in order to avoid random noise
-!    
+!
       f(:,:,:,iuy:iuz)=0
 !
     endsubroutine prerun_1D
