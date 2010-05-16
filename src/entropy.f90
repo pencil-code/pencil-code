@@ -84,7 +84,7 @@ module Entropy
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
-  logical :: lhcond_global=.false.
+  logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
   logical :: lfpres_from_pressure=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -3469,6 +3469,7 @@ module Entropy
       real, dimension (nx) :: hcond,chit_prof
       real, dimension (nx,3,3) :: tmp
       real, save :: z_prev=-1.23e20
+      real :: s2,c2,sc
       integer :: j
 !
       save :: hcond, glhc, chit_prof, glchit_prof
@@ -3596,51 +3597,34 @@ module Entropy
           endif
         endif
 !
-!  terms involving radial gradient of s
+        sc=sinth(m)*costh(m)
+        c2=costh(m)**2
+        s2=sinth(m)**2
 !
-        thdiff=thdiff+chi_t*chit_aniso*(glchit_prof(:,1)*costh(m)**2 &
-                     +chit_prof/x(l1:l2))*p%gss(:,1)
+!  possibility to use a simplified version where only chi_{theta r} is
+!  affected by rotation (cf. Brandenburg, Moss & Tuominen 1992).
 !
-!  terms involving latitudinal gradient of s
+        if (lchit_aniso_simplified) then
 !
-        thdiff=thdiff+chi_t*chit_aniso*costh(m)*sinth(m) &
-                     *(chit_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2)
+          call g2ij(f,iss,tmp)
+          thdiff=thdiff+chi_t*chit_aniso*chit_prof* &
+              ((1.-3.*c2)*r1_mn*p%gss(:,1) + &
+              (-sc*tmp(:,1,2))+(p%glnrho(:,2)+p%glnTT(:,2))*(-sc*p%gss(:,1)))
+        else
 !
-!  2nd derivatives of s
+!  otherwise use the full formulation
 !
-        call g2ij(f,iss,tmp)
-        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-                     (-sinth(m)*costh(m)*tmp(:,1,2) &
-                      -sinth(m)*costh(m)*tmp(:,2,1) &
-                +costh(m)**2*tmp(:,1,1)+sinth(m)**2*tmp(:,2,2))
+          thdiff=thdiff+chi_t*chit_aniso* &
+              ((glchit_prof(:,1)*c2+chit_prof/x(l1:l2))*p%gss(:,1)+ &
+              sc*(chit_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2))
 !
-!  terms involving glnr and glnT
+          call g2ij(f,iss,tmp)
+          thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
+              ((-sc*(tmp(:,1,2)+tmp(:,2,1))+c2*tmp(:,1,1)+s2*tmp(:,2,2))+ &
+              ((p%glnrho(:,1)+p%glnTT(:,1))*(c2*p%gss(:,1)-sc*p%gss(:,2))+ &
+              ( p%glnrho(:,2)+p%glnTT(:,2))*(s2*p%gss(:,2)-sc*p%gss(:,1))))
 !
-        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-               ((p%glnrho(:,1)+p%glnTT(:,1))*(costh(m)**2*p%gss(:,1) &
-                                    -sinth(m)*costh(m)*p%gss(:,2)) + &
-                (p%glnrho(:,2)+p%glnTT(:,2))*(sinth(m)**2*p%gss(:,2) &
-                                    -sinth(m)*costh(m)*p%gss(:,1)))
-!
-!  PJK: Simplified formulation starts
-!
-!  terms involving radial gradient of s
-!
-!        thdiff=thdiff+chi_t*chit_aniso*chit_prof*(1.-3.*costh(m)**2)*r1_mn*p%gss(:,1)
-!
-!  second derivatives of s
-!
-!        call g2ij(f,iss,tmp)
-!        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-!                     (-sinth(m)*costh(m)*tmp(:,1,2))
-!
-!  terms involving glnr and glnT
-!
-!        thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
-!           ((p%glnrho(:,2)+p%glnTT(:,2))*(-sinth(m)*costh(m)*p%gss(:,1)))
-!
-!  PJK: Simplified formulation ends
-!
+        endif
       endif
 !
 !  check for NaNs initially
