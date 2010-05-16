@@ -12,13 +12,14 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cv; cv1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
-! PENCILS PROVIDED nu; gradnu(3); rho;
+! PENCILS PROVIDED nu; gradnu(3); rho; 
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec); glnpp(3)
 !
-! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3)
+! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens
+!
 !***************************************************************
 module Chemistry
 !
@@ -80,10 +81,11 @@ module Chemistry
      real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
      character (len=30),allocatable, dimension(:) :: reaction_name
      logical :: lT_tanh=.false.
-     logical :: ldamp_zone_NSCBCx=.false.
-     logical :: ldamp_zone_NSCBCy=.false.
-     logical :: ldamp_zone_NSCBCz=.false.
-     logical :: ldamp_left=.true.,ldamp_right=.true.
+     logical :: ldamp_zone_for_NSCBC=.false.
+!     logical :: ldamp_zone_NSCBCx=.false.
+!     logical :: ldamp_zone_NSCBCy=.false.
+!     logical :: ldamp_zone_NSCBCz=.false.
+!     logical :: ldamp_left=.true.,ldamp_right=.true.
      logical :: linit_velocity=.false.
 !
 ! 1step_test case
@@ -137,8 +139,10 @@ module Chemistry
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
-      str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry,ldamp_zone_NSCBCx,&
-      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,linit_velocity, &
+      str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
+      ldamp_zone_for_NSCBC,&
+!      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,
+      linit_velocity, &
       latmchem, lcloud, prerun_directory
 !
 !
@@ -147,8 +151,7 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry,  &
-      lmobility,mobility, lfilter,lT_tanh,ldamp_zone_NSCBCx,ldamp_zone_NSCBCy,ldamp_zone_NSCBCz, &
-      ldamp_left, ldamp_right,lDiff_simple,lThCond_simple,visc_const,cp_const
+      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,visc_const,cp_const
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -360,6 +363,15 @@ module Chemistry
              call fatal_error('initialize_chemistry',&
                        'no O2N2 has been found')
          endif
+         call find_species_index('H2O',ind_glob,ind_chem,found_specie)
+         if (found_specie) then
+          index_H2O=ind_chem
+         else
+             call fatal_error('initialize_chemistry',&
+                       'no H2O has been found')
+         endif
+       endif
+       if (lcloud) then
          call find_species_index('H2O',ind_glob,ind_chem,found_specie)
          if (found_specie) then
           index_H2O=ind_chem
@@ -1036,12 +1048,12 @@ module Chemistry
        !  if (Rad<0.2) then
 !          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.06-Rad)/0.06)**2)
           ! f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
-           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/0.04)**2)+init_TT1)
+           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/0.04)**2)+init_TT1)    
        !  else
        !   f(j1,j2,j3,ilnTT)=log(init_TT1)
        !  endif
 
-         ! f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-((0.2-Rad)/0.2)**2)+init_TT1)
+         ! f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-((0.2-Rad)/0.2)**2)+init_TT1) 
           mu1(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
               +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
 !
@@ -1313,14 +1325,14 @@ module Chemistry
                           +species_constants(k,iaa2(ii3))*T_loc_2 &
                           +species_constants(k,iaa2(ii4))*T_loc_3 &
                           +species_constants(k,iaa2(ii5))*T_loc_4
-                  elsewhere (T_loc >=T_mid .and. T_loc<= T_up)
+                  elsewhere (T_loc >=T_mid .and. T_loc<= T_up) 
                    cp_R_spec=species_constants(k,iaa1(ii1)) &
                           +species_constants(k,iaa1(ii2))*T_loc &
                           +species_constants(k,iaa1(ii3))*T_loc_2 &
                           +species_constants(k,iaa1(ii4))*T_loc_3 &
                           +species_constants(k,iaa1(ii5))*T_loc_4
                  endwhere
-                 cv_R_spec_full(:,j2,j3,k)=cp_R_spec-1.
+                 cv_R_spec_full(:,j2,j3,k)=cp_R_spec-1.                 
 !
 ! Check if the temperature are within bounds
 !
@@ -1332,7 +1344,7 @@ module Chemistry
                  endif
 !
 ! Find cp and cv for the mixture for the full domain
-!
+! 
                  cp_full(:,j2,j3)=cp_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
                   *cp_R_spec/species_constants(k,imass)*Rgas
                  cv_full(:,j2,j3)=cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
@@ -1493,7 +1505,7 @@ module Chemistry
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-        if (.not. ldiff_simple) then
+        if (.not. ldiff_simple) then 
           do k=1,nchemspec
             write(file_id,'(7E12.4)')&
                 Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
@@ -1764,7 +1776,7 @@ module Chemistry
 !
       if (.not.lreloading) then
         if (.not. lfix_Sc .and. (.not. lDiff_simple)) then
-!NILS: Since Bin_diff_coeff is such a huge array we must check if it
+!NILS: Since Bin_diff_coeff is such a huge array we must check if it 
 !NILS: required to define it for the full domain!!!!!!
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
           if (stat>0) call stop_it("Couldn't allocate memory "//&
@@ -2039,12 +2051,21 @@ module Chemistry
 !
       endif
 !
+!  Atmosphere case
+!
+      if (lcloud) then
+        df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
+              - p%ccondens
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+              + 2.5e10/1.005e7*p%ccondens*p%TT1
+      endif
+!
 ! this damping zone is needed in a case of NSCBC
 !
 !
-      if (ldamp_zone_NSCBCx) call damp_zone_for_NSCBC(f,df,1)
-      if (ldamp_zone_NSCBCy) call damp_zone_for_NSCBC(f,df,2)
-      if (ldamp_zone_NSCBCz) call damp_zone_for_NSCBC(f,df,3)
+      if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
+!      if (ldamp_zone_NSCBCy) call damp_zone_for_NSCBC(f,df,2)
+!      if (ldamp_zone_NSCBCz) call damp_zone_for_NSCBC(f,df,3)
 !
 !  For the timestep calculation, need maximum diffusion
 !
@@ -2250,10 +2271,10 @@ module Chemistry
         idiag_dY9m=0; idiag_dY10m=0; idiag_dY11m=0; idiag_dY12m=0
         idiag_h1m=0; idiag_h2m=0; idiag_h3m=0; idiag_h4m=0;
         idiag_h5m=0; idiag_h6m=0; idiag_h7m=0; idiag_h8m=0;
-        idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0;
+        idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0; 
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0;
-        idiag_cp9m=0; idiag_cp10m=0; idiag_cp11m=0; idiag_cp12m=0;
+        idiag_cp9m=0; idiag_cp10m=0; idiag_cp11m=0; idiag_cp12m=0; 
         idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
         idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
@@ -2262,7 +2283,7 @@ module Chemistry
 !
         idiag_diff1m=0; idiag_diff2m=0; idiag_diff3m=0; idiag_diff4m=0;
         idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0;
-        idiag_diff9m=0; idiag_diff10m=0; idiag_diff11m=0; idiag_diff12m=0;
+        idiag_diff9m=0; idiag_diff10m=0; idiag_diff11m=0; idiag_diff12m=0; 
         idiag_lambdam=0; idiag_num=0
 !
       endif
@@ -2592,7 +2613,7 @@ module Chemistry
 !  10-mar-08/nils: coded
 !
       logical :: IsReaction=.false.,found_new_reaction=.false.
-      logical, save :: find_specie,found_specie
+      logical, save :: find_specie, found_specie
       integer, optional :: NrOfReactions
       integer, save :: ind_glob, ind_chem
       integer :: i,k,file_id=123, StartInd, StopInd, StartInd_add
@@ -2648,16 +2669,16 @@ module Chemistry
 !
                 StopIndName=index(ChemInpLine(StartInd:),' ')+StartInd-1
                 reaction_name(k)=ChemInpLine(StartInd:StopIndName)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!photochemical case
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Photochemical case
+!
                ParanthesisInd=0
                photochemInd=0
                SeparatorInd=0
                photochemInd=index(ChemInpLine(StartInd:),'hv')
                if (photochemInd>0) then
                  photochem_case (k)=.true.
-
+              
                ParanthesisInd=index(ChemInpLine(photochemInd:),'(') &
                              +photochemInd-1
 !
@@ -2683,7 +2704,8 @@ module Chemistry
                  endif
                endif
                endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!  End of the photochemical case
 !
 ! Find reactant side stoichiometric coefficients
 !
@@ -3129,7 +3151,7 @@ module Chemistry
 !  Check that we are not outside the temperture range
 !
             if ((maxval(exp(f(l1:l2,m,n,ilnTT))) > T_up)  &
-                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low)) then
+                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low)) then        
               print*,'m,n=',m,n
               print*,'p%TT=',p%TT
               call fatal_error('get_reaction_rate',&
@@ -3145,7 +3167,7 @@ module Chemistry
                   +species_constants(k,iaa2(ii4))*p%TT_3/3 &
                   +species_constants(k,iaa2(ii5))*p%TT_4/4 &
                   +species_constants(k,iaa2(ii7))
-          elsewhere (T_mid <= p%TT .and. p%TT <= T_up)
+          elsewhere (T_mid <= p%TT .and. p%TT <= T_up) 
             p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
                   +species_constants(k,iaa1(ii2))*p%TT &
                   +species_constants(k,iaa1(ii3))*p%TT_2/2 &
@@ -3277,13 +3299,13 @@ module Chemistry
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
         if (Mplus_case (reac)) then
-          where (prod1 > 0)
+          where (prod1 > 0) 
             vreact_p(:,reac)=prod1*kf
           elsewhere
             vreact_p(:,reac)=0.
           endwhere
         else
-          where (prod1 > 0)
+          where (prod1 > 0) 
             vreact_p(:,reac)=prod1*kf*sum_sp
           elsewhere
             vreact_p(:,reac)=0.
@@ -3296,13 +3318,13 @@ module Chemistry
           kr=kf/Kc
         endif
         if (Mplus_case (reac)) then
-          where (prod2 > 0)
+          where (prod2 > 0) 
             vreact_m(:,reac)=prod2*kr
           elsewhere
             vreact_m(:,reac)=0.
           endwhere
         else
-          where (prod2 > 0)
+          where (prod2 > 0) 
             vreact_m(:,reac)=prod2*kr*sum_sp
           elsewhere
             vreact_m(:,reac)=0.
@@ -3326,7 +3348,7 @@ module Chemistry
           vreact_m(:,reac)=0.
         endif
 !
-! Write some data to file
+! Write some data to file 
 !
         if (lwrite_first) write(file_id,*) &
             'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
@@ -3819,7 +3841,7 @@ module Chemistry
 !
 ! Neglect terms including pressure gradients for the simplified diffusion
 !
-           if (.not. lDiff_simple) then
+           if (.not. lDiff_simple) then 
              call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
              do i=1,3
                gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
@@ -3835,7 +3857,7 @@ module Chemistry
           if (lDiff_simple) then
 ! Have removed all terms including pressure gradients as these are supposed
 ! to be small and not required for such as crude approxiamtion as the simplified
-! diffustion method.
+! diffustion method.            
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2
           else
            p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
@@ -4127,7 +4149,7 @@ module Chemistry
        endif
       endif
 !
-        if (TT<init_TT1) then
+        if (TT<init_TT1 .and. (.not. lcloud)) then
          xx1=xyz0(1)
          xx2=xyz0(1)+Lxyz(1)*0.1
          j=4
@@ -4157,161 +4179,133 @@ module Chemistry
 !
     endsubroutine air_field
 !***********************************************************************
-!!!!!!!!!  NSCBC boundary conditions
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine damp_zone_for_NSCBC(f,df,dir)
+!          NSCBC boundary conditions
+!***********************************************************************
+  
+    subroutine damp_zone_for_NSCBC(f,df)
 !
 !   16-jul-06/natalia: coded
 !    buffer zone to damp the acustic waves!!!!!!!!!!!
-!    important for NSCBC
+!    important for NSCBC  
+!
+      use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (mx) :: func_x
-      integer :: j1,dir
+      integer :: i, j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y, sz_l_z,sz_r_z,ll1,ll2
       real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
-      real :: sz1,sz2, sz1_x,sz2_x, del
+      real :: del
       logical :: lzone_y=.false.,lzone_z=.false.
-      logical :: lzone_left=.false., lzone_right=.false.
-!
+
        dt1=1./dt
        del=0.1
-!
-       ux_ref=init_ux
+
+       ux_ref=0.
        uy_ref=0.
        uz_ref=0.
-     !  lnrho_ref=-7.73236
+!      lnTT_ref=6.39693
        lnTT_ref=log(init_TT1)
 !
       lnrho_ref=&
          log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1))
 !
-        do j1=l1,l2
-!
-       if (dir==1) then
+       sz_r_x=l2-int(del*nxgrid)
+       sz_l_x=int(del*nxgrid)+l1
+       sz_r_y=m2-int(del*nygrid)
+       sz_l_y=int(del*nygrid)+m1
+       sz_r_z=n2-int(del*nzgrid)
+       sz_l_z=int(del*nzgrid)+n1
+       ll1=l1
+       ll2=l2
+       
        if (nxgrid/=1) then
-         sz1_x=(xyz0(1)+Lxyz(1)*del)
-         sz2_x=(xyz0(1)+Lxyz(1)*(1.-del))
-!
-         if (ldamp_left .and. (x(j1)<sz1_x)) then
-          lzone_left=.true.
+
+        if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
+                  'you should increase nxgrid!')
+
+        do j=1,2
+  
+         if (j==1) then
+          ll1=sz_r_x
+          ll2=l2
+          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
+         elseif (j==2) then
+          ll1=l1+1
+          ll2=sz_l_x
+          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
          endif
-         if (ldamp_right .and. (sz2_x<x(j1))) then
-          lzone_right=.true.
-         endif
-!
-!         sz1=(xyz0(2)+Lxyz(2)*del)
-!         sz2=(xyz0(2)+Lxyz(2)*(1.-del))
-!
-!
-     !     if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
-     !               'you should increase nxgrid!')
-!
-          if (x(j1)<sz1_x) then
-           func_x(j1)=(sz1_x-x(j1))**3/(del*Lxyz(1))**3
-!
-          elseif (sz2_x<x(j1)) then
-           func_x(j1)=(x(j1)-sz2_x)**3/(del*Lxyz(1))**3
-!
-          endif
-!
-        if (lzone_left .or. lzone_right) then
- !         if (x(j1)<sz1_x) then
-          df(j1,m,n,iux)=df(j1,m,n,iux)-func_x(j1)*(f(j1,m,n,iux)-ux_ref)*dt1
-          df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_x(j1)*(f(j1,m,n,iuy)-uy_ref)*dt1
-          df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_x(j1)*(f(j1,m,n,iuz)-uz_ref)*dt1
-          df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)  &
-            -func_x(j1)*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-          df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&
-           -func_x(j1)*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
-        endif
-!        lzone_left=.false.
-!        lzone_right=.false.
+
+          df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&  
+            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iux)-ux_ref)*dt1
+          df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&  
+            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
+          df(ll1:ll2,m,n,iuz)=df(ll1:ll2,m,n,iuz)&  
+            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iuz)-uz_ref)*dt1
+          df(ll1:ll2,m,n,ilnrho)=df(ll1:ll2,m,n,ilnrho)&  
+            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnrho)-lnrho_ref)*dt1
+          df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&  
+            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1  
+
+        enddo
        endif
-!
-      elseif (dir==2) then
-!
+       
        if (nygrid/=1) then
-!
-      ! if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
-      !            'you should increase nygrid!')
-         sz1=(xyz0(2)+Lxyz(2)*del)
-         sz2=(xyz0(2)+Lxyz(2)*(1.-del))
-!         if (ldamp_left .and. (y(m)<=sz1) .and. (y(m)>=xyz0(2))) then
-           if (ldamp_left .and. (y(m)<=sz1)) then
-          lzone_left=.true.
-         endif
-!         if (ldamp_right .and. (y(m)>=sz2) .and. (y(m)<=xyz0(2)+Lxyz(2))) then
-           if (ldamp_right .and. (y(m)>=sz2)) then
-          lzone_right=.true.
-         endif
-       if (lzone_left) then
-        func_y=(sz1-y(m))**3/(Lxyz(2)*del)**3
+
+       if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
+                  'you should increase nygrid!')
+
+       if ((m<=sz_l_y) .and. (m>=m1)) then
+        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3 
         lzone_y=.true.
-       elseif (lzone_right) then
-        func_y= (y(m)-sz2)**3/(Lxyz(2)*del)**3
+       elseif ((m>=sz_r_y) .and. (m<=m2)) then 
+        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3 
         lzone_y=.true.
-       endif
-!
+       endif      
+    
        if (lzone_y) then
-!        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
-!        df(j1,m,n,iux)=df(j1,m,n,iux)-func_y*(f(j1,m,n,iux)-ux_ref)*dt1
-        df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_y*(f(j1,m,n,iuy)-uy_ref)*dt1
-        df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_y*(f(j1,m,n,iuz)-uz_ref)*dt1
-!        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho)&
-!           -func_y*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-!        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)&
-!           -func_y*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
-        endif
+        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&  
+           -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&  
+           -func_y*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&  
+           -func_y*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&  
+           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&  
+           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
         lzone_y=.false.
-!        lzone_left=.false.
-!        lzone_right=.false.
-!       endif
-        endif
-      elseif (dir==3) then
-      if (nzgrid>1) then
-!
-         sz1=(xyz0(3)+Lxyz(3)*del)
-         sz2=(xyz0(3)+Lxyz(3)*(1.-del))
-!
-!         if (ldamp_left .and. (z(n)<=sz1) .and. (z(n)>=xyz0(3))) then
-       if (ldamp_left .and. (z(n)<=sz1)) then
-          lzone_left=.true.
-         endif
-!         if (ldamp_right .and. (z(n)>=sz2) .and. (z(n)<=xyz0(3)+Lxyz(3))) then
-         if (ldamp_right .and. (z(n)>=sz2)) then
-          lzone_right=.true.
-         endif
-!
-       if (ldamp_left) then
-        func_z=(sz1-z(n))**3/(Lxyz(3)*del)**3
-        lzone_z=.true.
-       elseif (ldamp_right) then
-        func_z= (z(n)-sz2)**3/(Lxyz(3)*del)**3
-        lzone_z=.true.
        endif
-!
+       endif
+
+      if (nzgrid/=1) then
+        if (sz_r_z<=n1) call fatal_error('to use ldamp_zone_NSCBC',&
+                  'you should increase nzgrid!')
+         
+      if ((n<=sz_l_z) .and. (n>=n1)) then
+        func_z=(z(n)-z(sz_l_z))**3/(z(n1)-z(sz_l_z))**3 
+        lzone_z=.true.
+       elseif ((n>=sz_r_z) .and. (n<=n2)) then 
+        func_z= (z(n)-z(sz_r_z))**3/(z(n2)-z(sz_r_z))**3 
+        lzone_z=.true.
+       endif      
+    
        if (lzone_z) then
-!        if ((x(j1)>sz1_x) .and. (x(j1)<sz2_x)) then
-!
-!        df(j1,m,n,iux)=df(j1,m,n,iux)-func_z*(f(j1,m,n,iux)-ux_ref)*dt1
-        df(j1,m,n,iuy)=df(j1,m,n,iuy)-func_z*(f(j1,m,n,iuy)-uy_ref)*dt1
-        df(j1,m,n,iuz)=df(j1,m,n,iuz)-func_z*(f(j1,m,n,iuz)-uz_ref)*dt1
-!        df(j1,m,n,ilnrho)=df(j1,m,n,ilnrho) &
-!                -func_z*(f(j1,m,n,ilnrho)-lnrho_ref)*dt1
-!        df(j1,m,n,ilnTT)=df(j1,m,n,ilnTT)  &
-!                -func_z*(f(j1,m,n,ilnTT)-lnTT_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&  
+           -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&  
+           -func_z*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&  
+           -func_z*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&  
+           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
+        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&  
+           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
         lzone_z=.false.
-!        lzone_right=.false.
-!        lzone_left=.false.
-!        endif
-!
        endif
        endif
-       endif
-!
-       enddo
-!
+
     endsubroutine damp_zone_for_NSCBC
 !***********************************************************************
     subroutine jacobn(f,jacob)
@@ -4521,7 +4515,7 @@ module Chemistry
       enddo
 !
 !  Set the y and z velocities to zero in order to avoid random noise
-!
+!    
       f(:,:,:,iuy:iuz)=0
 !
     endsubroutine prerun_1D
