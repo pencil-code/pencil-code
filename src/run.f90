@@ -47,7 +47,7 @@ program run
 !
   use Boundcond,       only: update_ghosts
   use Cdata
-  use Chemistry,       only: chemistry_clean_up
+  use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
@@ -499,7 +499,10 @@ program run
 !
 !  Print diagnostic averages to screen and file.
 !
-    if (lout)   call prints()
+    if (lout) then
+      call prints()
+      if (lchemistry_diag) call write_net_reaction
+     endif
     if (l1davg) call write_1daverages()
     if (l2davg) call write_2daverages()
 !

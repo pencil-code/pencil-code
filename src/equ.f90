@@ -1015,7 +1015,6 @@ module Equ
 !  Diagnostics.
 !
       if (ldiagnos) call diagnostic
-      if (lchemistry_diag) call write_net_reaction
 !
 !  1-D diagnostics.
 !

@@ -157,6 +157,7 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry,  &
+      lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,visc_const,cp_const
 !
 ! diagnostic variables (need to be consistent with reset list below)
@@ -439,6 +440,12 @@ module Chemistry
           if (stat>0) call stop_it("Couldn't allocate memory for net_react_m")
           net_react_m=0.
       endif
+!
+!  write array dimension to chemistry diagnostics file
+!
+      open(1,file=trim(datadir)//'/net_reactions.dat',position='append')
+      write(1,*) nchemspec,nreactions
+      close(1)
 
     endsubroutine initialize_chemistry
 !***********************************************************************
@@ -2453,7 +2460,6 @@ module Chemistry
         write(3,*) 'i_diff11m=',idiag_diff11m
         write(3,*) 'i_diff12m=',idiag_diff12m
         write(3,*) 'nchemspec=',nchemspec
-        write(3,*) 'mreactions=',mreactions
       endif
 !
     endsubroutine rprint_chemistry
@@ -3502,7 +3508,14 @@ module Chemistry
     endsubroutine calc_reaction_term
 !***********************************************************************
     subroutine  write_net_reaction
-         write(11,*) t, net_react_p, net_react_m
+!
+!  write net reactions to file
+!
+      open(1,file=trim(datadir)//'/net_reactions.dat',position='append')
+      write(1,*) t
+      write(1,'(8e10.2)') net_react_p, net_react_m
+      close(1)
+!
     endsubroutine  write_net_reaction
 !***********************************************************************
     subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
