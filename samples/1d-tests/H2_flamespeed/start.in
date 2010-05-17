@@ -31,6 +31,7 @@ ldensity_nolog=F
   init_ux=1017.5
   init_x1=-0.1
   init_x2=0.1
+  lchemistry_diag=F
 /
 &NSCBC_init_pars
   nscbc_bc = 'subsonic_inflow:subson_nref_outflow','',''
