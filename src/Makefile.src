@@ -1245,7 +1245,7 @@ endif
 ##
 ## Dhruba's new laptop (meera) 
 ##
-#FC=gfortran  # (meera)
+#FC=gfortran -L/usr/lib -llibmpi # (meera)
 #FFLAGS_DOUBLE = -r8 # (meera)
 #F77=$(FC) #(meera)
 #FFLAGS=-O3 -fno-second-underscore  #(meera)

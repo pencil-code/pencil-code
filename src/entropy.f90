@@ -3714,158 +3714,25 @@ module Entropy
 !
 !  General spatially distributed cooling profiles (independent of gravity)
 !
-      if (lcooling_general) then
-        select case (cooling_profile)
-        case ('gaussian-z')
-          prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
-        endselect
-        select case (cooltype)
-        case ('Temp')  
-          if (headtt) print*,'calc_heat_cool: cooltype = Temp, cs20,cs2cool=',cs20,cs2cool
-          heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
-         case default
-            call fatal_error('calc_heat_cool:','please choose a cooltype')
-         endselect
-      endif
+      if (lcooling_general) call get_heat_cool_general(heat,p)
 !
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
-      if (lgravz .and. ( (luminosity/=0.) .or. (cool/=0.) ) ) then
-        zbot=xyz0(3)
-        ztop=xyz0(3)+Lxyz(3)
-!
-!  Add heat near bottom
-!
-!  Heating profile, normalised, so volume integral = 1
-        prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
-             /(sqrt(pi/2.)*wheat*Lx*Ly)
-        heat = luminosity*prof
-!  Smoothly switch on heating if required.
-        if ((ttransient>0) .and. (t<ttransient)) then
-          heat = heat * t*(2*ttransient-t)/ttransient**2
-        endif
-!
-!  Allow for different cooling profile functions.
-!  The gaussian default is rather broad and disturbs the entire interior.
-!
-        if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
-            cooling_profile, z2, wcool
-        select case (cooling_profile)
-        case ('gaussian')
-          prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
-        case ('step')
-          prof = step(spread(z(n),1,nx),z2,wcool)
-        case ('cubic_step')
-          prof = cubic_step(spread(z(n),1,nx),z2,wcool)
-        endselect
-        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
-!
-!  Write out cooling profile (during first time step only) and apply.
-!
-        call write_zprof('cooling_profile',prof)
-!
-!  Write divergence of cooling flux.
-!
-        if (l1davgfirst) then
-          if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
-        endif
-      endif
+      if (lgravz .and. ( (luminosity/=0.) .or. (cool/=0.) ) ) &
+           call get_heat_cool_gravz (heat,p)
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
 !
-      if (lgravr.and.(wheat/=0)) then
-!  normalised central heating profile so volume integral = 1
-        if (nzgrid == 1) then
-          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
-        else
-          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
-        endif
-        heat = luminosity*prof
-        if (headt .and. lfirst .and. ip<=9) &
-          call output_pencil(trim(directory)//'/heat.dat',heat,1)
-!
-!  surface cooling: entropy or temperature
-!  cooling profile; maximum = 1
-!
-!       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
-        if (rcool==0.) rcool=r_ext
-        if (lcylindrical_coords) then
-          prof = step(p%rcyl_mn,rcool,wcool)
-        else
-          prof = step(p%r_mn,rcool,wcool)
-        endif
-!
-!  pick type of cooling
-!
-        select case (cooltype)
-        case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
-          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
-        case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
-                                     ! in a more time-step neutral manner
-          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
-        case ('entropy')        ! cooling to reference entropy (currently =0)
-          heat = heat - cool*prof*(p%ss-0.)
-        case ('shell')          !  heating/cooling at shell boundaries
-!
-!  possibility of a latitudinal heating profile
-!  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
-!  Note that P2(x)=(1/2)*(3*x^2-1).
-!
-          if (deltaT_poleq/=0.) then
-            if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
-            if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
-            if (headtt) print*,'p%z_mn=',p%z_mn
-            theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
-            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
-            prof = 1. - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
-            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
-          else
-            prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
-            prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
-            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
-          endif
-!
-        case default
-          write(unit=errormsg,fmt=*) &
-               'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
-          call fatal_error('calc_heat_cool',errormsg)
-        endselect
-      endif
+      if ((lgravr.and.(wheat/=0)) .and.(.not. lspherical_coords)) &
+           call get_heat_cool_gravr (heat,p)
+! (also see the comments inside the above subroutine to apply it to 
+! spherical coordinates. 
 !
 !  Spherical gravity in spherical coordinate case:
 !           heat at centre, cool outer layers.
 !
-      if (lgravx.and.lspherical_coords) then
-        r_ext=x(l1)
-        r_int=x(l2)
-!  normalised central heating profile so volume integral = 1
-        if (nzgrid == 1) then
-          prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
-        else
-          prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
-        endif
-        heat = luminosity*prof
-        if (headt .and. lfirst .and. ip<=9) &
-          call output_pencil(trim(directory)//'/heat.dat',heat,1)
-!
-!  surface cooling: entropy or temperature
-!  cooling profile; maximum = 1
-!
-!  pick type of cooling
-!
-        select case (cooltype)
-        case ('shell')          !  heating/cooling at shell boundaries
-           if (rcool==0.) rcool=r_ext
-           prof = step(x(l1:l2),rcool,wcool)
-           heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
-        case default
-          write(unit=errormsg,fmt=*) &
-               'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
-          call fatal_error('calc_heat_cool',errormsg)
-        endselect
-      endif
+      if (lgravx.and.lspherical_coords) &
+           call get_heat_cool_gravx_spherical (heat,p)
 !
 !  Add spatially uniform heating.
 !
@@ -3879,27 +3746,18 @@ module Entropy
           heat = heat - (p%cs2-cs2cool)/cs2cool/p%rho1/tau_cool2
 !
 !  Add "coronal" heating (to simulate a hot corona).
-!  Assume a linearly increasing reference profile.
-!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
-!
-      if (tau_cor>0) then
-        if (z(n)>=z_cor) then
-          xi=(z(n)-z_cor)/(ztop-z_cor)
-          profile_cor=xi**2*(3-2*xi)
-          heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
-        endif
-      endif
+      if (tau_cor>0) call get_heat_cool_corona (heat,p) 
 !
 !  Add heating and cooling to a reference temperature in a buffer
 !  zone at the z boundaries. Only regions in |z| > zheat_buffer are affected.
 !  Inverse width of the transition is given by dheat_buffer1.
 !
       if (tauheat_buffer/=0.) then
-        profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)-zheat_buffer)))
-        !profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)**2-zheat_buffer**2)))
+         profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)-zheat_buffer)))
+!profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)**2-zheat_buffer**2)))
 !       profile_buffer=1.+0.5*(tanh(dheat_buffer1*(z(n)-z(n1)-zheat_buffer)) + tanh(dheat_buffer1*(z(n)-z(n2)-zheat_buffer)))
-        heat=heat+profile_buffer*p%ss* &
-            (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
+         heat=heat+profile_buffer*p%ss* &
+              (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
 !
 !  Add heating/cooling to entropy equation.
@@ -3910,10 +3768,244 @@ module Entropy
 !  Heating/cooling related diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
+         if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
       endif
 !
     endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine get_heat_cool_general(heat,p)
+      use messages, only: fatal_error
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: heat,prof
+      intent(in) :: p
+! subroutine to do volume heating and cooling in a layer independent of
+! gravity. 
+      select case (cooling_profile)
+      case ('gaussian-z')
+         prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
+      endselect
+!Note: the cooltype 'Temp' used below was introduced by Axel for the 
+! aerosol runs. Although this 'Temp' does not match with the cooltype
+! 'Temp' used in other parts of this subroutine. I have introduced 
+! 'Temp2' which is the same as the 'Temp' elsewhere. Later runs
+! will clarify this. - Dhruba 
+     select case (cooltype)
+      case ('Temp')
+        if (headtt) print*,'calc_heat_cool: cs20,cs2cool=',cs20,cs2cool
+        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
+     case('Temp2')
+        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+     case default
+        call fatal_error('get_heat_cool_general','please select a cooltype')
+     endselect
+!
+    endsubroutine get_heat_cool_general
+!***********************************************************************
+    subroutine get_heat_cool_gravz (heat,p)
+      use messages, only: fatal_error
+      use Diagnostics, only: sum_mn_name, xysum_mn_name_z
+      use Gravity, only: z2
+      use Sub, only: step, cubic_step, write_zprof
+!
+      type (pencil_case) :: p
+      real, dimension (nx) :: heat,prof
+      real :: zbot,ztop
+      intent(in) :: p
+! subroutine to calculate the heat/cool term for gravity along the 
+! z direction.
+      zbot=xyz0(3)
+      ztop=xyz0(3)+Lxyz(3)
+!
+!  Add heat near bottom
+!
+!  Heating profile, normalised, so volume integral = 1
+      prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
+           /(sqrt(pi/2.)*wheat*Lx*Ly)
+      heat = luminosity*prof
+!  Smoothly switch on heating if required.
+      if ((ttransient>0) .and. (t<ttransient)) then
+         heat = heat * t*(2*ttransient-t)/ttransient**2
+      endif
+!
+!  Allow for different cooling profile functions.
+!  The gaussian default is rather broad and disturbs the entire interior.
+!
+      if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
+           cooling_profile, z2, wcool
+      select case (cooling_profile)
+      case ('gaussian')
+         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
+      case ('step')
+         prof = step(spread(z(n),1,nx),z2,wcool)
+      case ('cubic_step')
+         prof = cubic_step(spread(z(n),1,nx),z2,wcool)
+     case default
+        call fatal_error('get_heat_cool_gravz','please select a cooltype')
+      endselect
+      heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+!
+!  Write out cooling profile (during first time step only) and apply.
+!
+      call write_zprof('cooling_profile',prof)
+!
+!  Write divergence of cooling flux.
+!
+      if (l1davgfirst) then
+         if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
+      endif
+!
+    endsubroutine get_heat_cool_gravz
+!***********************************************************************
+    subroutine get_heat_cool_gravr (heat,p)
+      use messages, only: fatal_error
+      use IO, only: output_pencil
+      use Sub, only: step
+!, cubic_step, write_zprof
+!
+      type (pencil_case) :: p
+      real, dimension (nx) :: heat,prof,theta_profile
+!      real :: zbot,ztop
+      intent(in) :: p
+! subroutine to calculate the heat/cool term for radial gravity
+! in cartesian and cylindrical coordinate, used in 'star-in-box' type of
+! simulations (including the sample run of geodynamo ) 
+! Note that this may actually work for the spherical coordinate too 
+! because p%r_mn is set to be the correct quantity for each coordinate 
+! system in subroutine grid. But the spherical part has not been tested
+! in spherical coordinates. At present (May 2010) get_heat_cool_gravr_spherical is 
+! recommended for the spherical coordinates. 
+!  normalised central heating profile so volume integral = 1
+      if (nzgrid == 1) then
+         prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+      else
+         prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+      endif
+      heat = luminosity*prof
+      if (headt .and. lfirst .and. ip<=9) &
+           call output_pencil(trim(directory)//'/heat.dat',heat,1)
+!
+!  surface cooling: entropy or temperature
+!  cooling profile; maximum = 1
+!
+!       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+      if (rcool==0.) rcool=r_ext
+      if (lcylindrical_coords) then
+         prof = step(p%rcyl_mn,rcool,wcool)
+      else
+         prof = step(p%r_mn,rcool,wcool)
+      endif
+!
+!  pick type of cooling
+!
+      select case (cooltype)
+      case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
+         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+      case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
+         ! in a more time-step neutral manner
+         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
+      case ('entropy')        ! cooling to reference entropy (currently =0)
+         heat = heat - cool*prof*(p%ss-0.)
+      case ('shell')          !  heating/cooling at shell boundaries
+!
+!  possibility of a latitudinal heating profile
+!  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
+!  Note that P2(x)=(1/2)*(3*x^2-1).
+!
+         if (deltaT_poleq/=0.) then
+            if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
+            if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
+            if (headtt) print*,'p%z_mn=',p%z_mn
+            theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
+            prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
+            prof = 1. - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
+         else
+            prof = step(p%r_mn,r_ext,wcool)     ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
+            prof = 1. - step(p%r_mn,r_int,wcool) ! inner heating/cooling step
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
+         endif
+!
+      case default
+         write(unit=errormsg,fmt=*) &
+              'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+         call fatal_error('calc_heat_cool',errormsg)
+      endselect
+!
+    endsubroutine get_heat_cool_gravr
+!***********************************************************************
+    subroutine get_heat_cool_gravx_spherical (heat,p)
+      use IO, only: output_pencil
+      use messages, only: fatal_error
+      use Sub, only: step
+!
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: heat,prof
+!
+      intent(in) :: p
+! subroutine to calculate the heat/cool term in spherical coordinates
+! with gravity along x direction. At present (May 2010) this is the
+! recommended routine to use heating and cooling in spherical coordinates. 
+! This is the one being used in the solar convection runs with a cooling
+! layer. 
+      r_ext=x(l2)
+      r_int=x(l1)
+! The two following lines in the earlier version of the code was wrong.
+! These were possibly introduced by me but never used so never tested.
+! If anyone has used them earlier please let me know. Otherwise I shall
+! remove this commented block in a week - DM.
+!      r_ext=x(l1)
+!      r_int=x(l2)
+!  normalised central heating profile so volume integral = 1
+      if (nzgrid == 1) then
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+      else
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+      endif
+      heat = luminosity*prof
+      if (headt .and. lfirst .and. ip<=9) &
+           call output_pencil(trim(directory)//'/heat.dat',heat,1)
+!
+!  surface cooling: entropy or temperature
+!  cooling profile; maximum = 1
+!
+!  pick type of cooling
+!
+      select case (cooltype)
+      case ('shell')          !  heating/cooling at shell boundaries
+         if (rcool==0.) rcool=r_ext
+         prof = step(x(l1:l2),rcool,wcool)
+         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+      case default
+         write(unit=errormsg,fmt=*) &
+              'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+         call fatal_error('calc_heat_cool',errormsg)
+      endselect
+!
+    endsubroutine get_heat_cool_gravx_spherical
+!***********************************************************************
+    subroutine get_heat_cool_corona(heat,p)
+      use messages, only: fatal_error
+!
+      type (pencil_case) :: p
+      real, dimension (nx) :: heat,prof
+      real :: zbot,ztop,xi,profile_cor
+      intent(in) :: p
+! subroutine to calculate the heat/cool term for hot corona
+!  Assume a linearly increasing reference profile.
+!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+      zbot=xyz0(3)
+      ztop=xyz0(3)+Lxyz(3)
+      if (z(n)>=z_cor) then
+         xi=(z(n)-z_cor)/(ztop-z_cor)
+         profile_cor=xi**2*(3-2*xi)
+         heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
+      endif
+!
+    endsubroutine get_heat_cool_corona
 !***********************************************************************
     subroutine calc_heat_cool_RTV(df,p)
 !

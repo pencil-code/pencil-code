@@ -596,7 +596,6 @@ module Grid
         if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
 !spherical distance
         if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-        if (lpencil(i_r_mn).and.lspherical_coords) p%r_mn=x(l1:l2)
 !cylindrical distance (pomega)
         if (lpencil(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
 !azimuthal angle (phi)
