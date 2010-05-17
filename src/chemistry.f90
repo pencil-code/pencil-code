@@ -819,6 +819,7 @@ module Chemistry
       call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
       call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
       call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+!
       mO2 =species_constants(ichem_O2 ,imass)
       mH2 =species_constants(ichem_H2 ,imass)
       mH2O=species_constants(ichem_H2O,imass)
@@ -875,18 +876,6 @@ module Chemistry
              f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
                 *(exp(f(k,:,:,ilnTT))-init_TT2) &
                 /(init_TT1-init_TT2)
-       !      if (final_massfrac_O2>0.) then
-       !       f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
-       !          *(exp(f(k,:,:,ilnTT))-init_TT1) &
-       !          /(init_TT2-init_TT1)
-       !      else
-       !       if (x(k)>init_x2) then
-       !       f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)
-       !      else
-       !       f(k,:,:,i_H2O)=(x(k)-init_x2)/(init_x1-init_x2) &
-       !         *(0.-(1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)))
-       !      endif
-       !     endif
 !
           endif
         endif
@@ -914,18 +903,22 @@ module Chemistry
         if (.not. lT_tanh) then
           do k=1,mx
             if (x(k)>=init_x1) then
-              if (final_massfrac_O2>0.) then
-                f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
-                    *(exp(f(k,:,:,ilnTT))-init_TT1) &
-                    /(init_TT2-init_TT1)
-              else
+!              if (final_massfrac_O2>0.) then
+!                f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+!                    *(exp(f(k,:,:,ilnTT))-init_TT1) &
+!                    /(init_TT2-init_TT1)
+!              else
+!
                 if (x(k)>=init_x2) then
                   f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)
                 else
                   f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
-                      *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2))-0.)
+                      *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2)) &
+                       -initial_massfractions(ichem_H2O)) &
+                       +initial_massfractions(ichem_H2O)
                 endif
-              endif
+!
+!              endif
             endif
           enddo
         endif
