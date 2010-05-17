@@ -675,6 +675,10 @@ module Boundcond
               case ('der')
                 ! BCZ_DOC: set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
+              case ('div')
+                ! BCZ_DOC: set the divergence of \uv to a given value
+                ! BCZ_DOC: use bc = 'div' for iuz 
+                call bc_set_div_z(f,topbot,j,fbcz12(j))
               case ('ovr')
                 ! BCZ_DOC: set boundary value
                 call bc_overshoot_z(f,fbcz12,topbot,j)
@@ -2125,6 +2129,81 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_der_z
+!***********************************************************************
+    subroutine bc_set_div_z(f,topbot,j,val)
+!
+!  Sets the derivative on the boundary to a given value
+!
+!  17-may-2010/bing: coded
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (nx,ny) :: fac,duz_dz
+      real, intent(in) :: val
+!
+      integer, intent (in) :: j
+!
+      integer :: iref,i
+!
+      if (j.ne.iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
+ 
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        iref = n1
+!
+      case ('top')               ! top boundary
+        iref = n2
+!
+      case default
+        call warning('bc_set_der_x',topbot//" should be `top' or `bot'")
+!
+      endselect
+!
+! take the x derivative of ux      
+      if (nxgrid/=1) then
+        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+        duz_dz= fac*(+45.0*(f(l1+1:l2+1,m1:m2,iref,iux)-f(l1-1:l2-1,m1:m2,iref,iux)) &
+            -  9.0*(f(l1+2:l2+2,m1:m2,iref,iux)-f(l1-2:l2-2,m1:m2,iref,iux)) &
+            +      (f(l1+3:l2+3,m1:m2,iref,iux)-f(l1-3:l2-3,m1:m2,iref,iux)))
+      else
+        if (ip<=5) print*, 'bc_set_div_z: Degenerate case in x-direction'
+      endif
+!
+! take the y derivative of uy and add to dux/dx      
+      if (nygrid/=1) then
+        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+        duz_dz=duz_dz + fac*(+45.0*(f(l1:l2,m1+1:m2+1,iref,iuy)-f(l1:l2,m1-1:m2-1,iref,iuy)) &
+            -  9.0*(f(l1:l2,m1+2:m2+2,iref,iuy)-f(l1:l2,m1-2:m2-2,iref,iuy)) &
+            +      (f(l1:l2,m1+3:m2+3,iref,iuy)-f(l1:l2,m1-3:m2-3,iref,iuy)))
+      else
+        if (ip<=5) print*, 'bc_set_div_z: Degenerate case in y-direction'
+      endif
+!
+! add given number to set div(u)=val; default val=0
+! duz/dz = val - dux/dx - duy/dy
+!
+      duz_dz = val - duz_dz
+!
+! set the derivative of uz at the boundary
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i=1,nghost
+          f(l1:l2,m1:m2,n1-i,j) = f(l1:l2,m1:m2,n1+i,j) - 2*i*dz*duz_dz
+        enddo
+!
+      case ('top')               ! top boundary
+        do i=1,nghost
+          f(l1:l2,m1:m2,n2+i,j) = f(l1:l2,m1:m2,n2-i,j) + 2*i*dz*duz_dz
+        enddo
+!
+      case default
+        call warning('bc_set_div_z',topbot//" should be `top' or `bot'")
+!
+      endselect
+!
+    endsubroutine bc_set_div_z
 !***********************************************************************
     subroutine bc_van_x(f,topbot,j)
 !

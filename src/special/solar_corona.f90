@@ -1254,8 +1254,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
-      real, dimension(nxgrid,nygrid) :: dz_uz
-      real, dimension(nx,ny) :: ux_local,uy_local,uz_local
+      real, dimension(nx,ny) :: ux_local,uy_local
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
       real :: cp1
       integer, dimension(2) :: dims=(/nx,ny/)
@@ -1276,8 +1275,6 @@ module Special
         call multi_drive3
 !
 ! compute uz to force mass conservation at the zref
-        dz_uz = (cshift(Ux,1,1)-cshift(Ux,-1,1))/dx &
-            +   (cshift(Uy,1,2)-cshift(Uy,-1,2))/dy
 !
         do i=0,nprocx-1
           do j=0,nprocy-1
@@ -1285,18 +1282,15 @@ module Special
             if (ipt.ne.0) then
               call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
               call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
-              call mpisend_real(dz_uz(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,314+ipt)
             else
               ux_local = Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
               uy_local = Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
-              uz_local = dz_uz(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
             endif
           enddo
         enddo
       else
         call mpirecv_real(ux_local,dims,0,312+iproc)
         call mpirecv_real(uy_local,dims,0,313+iproc)
-        call mpirecv_real(uz_local,dims,0,314+iproc)
       endif
 !
 ! for footpoint quenching compute pressure
@@ -1321,8 +1315,8 @@ module Special
 !
       f(l1:l2,m1:m2,irefz,iux) = ux_local*quench
       f(l1:l2,m1:m2,irefz,iuy) = uy_local*quench
+!
       f(l1:l2,m1:m2,irefz,iuz) = 0.
-      f(l1:l2,m1:m2,irefz-1,iuz) = uz_local/2.*(z(irefz)-z(irefz-1))
 !
 ! restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
