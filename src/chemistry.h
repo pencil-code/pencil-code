@@ -44,3 +44,5 @@
 ! public :: chemistry_calc_magnetic
 
 ! public :: chemistry_before_boundary
+  public :: write_net_reaction
+  public :: lchemistry_diag

@@ -132,6 +132,12 @@ module Chemistry
      logical :: lcloud=.false.
      integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
+!   Diagnostics
+!
+    real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+    logical :: lchemistry_diag=.false.
+
+!
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
@@ -143,7 +149,7 @@ module Chemistry
       ldamp_zone_for_NSCBC,&
 !      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,
       linit_velocity, &
-      latmchem, lcloud, prerun_directory
+      latmchem, lcloud, prerun_directory, lchemistry_diag
 !
 !
 ! run parameters
@@ -302,7 +308,7 @@ module Chemistry
       logical :: data_file_exit=.false.
       logical :: exist,exist1,exist2
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
-      integer :: ind_glob,ind_chem
+      integer :: ind_glob,ind_chem, stat
       logical :: found_specie=.false.
 !
 !  initialize chemistry
@@ -423,6 +429,17 @@ module Chemistry
       endif
      endif
 !
+!  allocate memory for net_reaction diagnostics
+!
+      if (lchemistry_diag) then
+        allocate(net_react_p(nchemspec,nreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for net_react_p")
+          net_react_p=0.
+        allocate(net_react_m(nchemspec,nreactions),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory for net_react_m")
+          net_react_m=0.
+      endif
+
     endsubroutine initialize_chemistry
 !***********************************************************************
     subroutine init_chemistry(f)
@@ -1559,6 +1576,7 @@ module Chemistry
       if (lroot) print*,'Number of compounds=',nchemspectemp
       if (nchemspectemp>nchemspec) call &
           stop_it("Too many chemicals! Change NCHEMSPEC in src/cparam.local")
+
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
@@ -2434,6 +2452,8 @@ module Chemistry
         write(3,*) 'i_diff10m=',idiag_diff10m
         write(3,*) 'i_diff11m=',idiag_diff11m
         write(3,*) 'i_diff12m=',idiag_diff12m
+        write(3,*) 'nchemspec=',nchemspec
+        write(3,*) 'mreactions=',mreactions
       endif
 !
     endsubroutine rprint_chemistry
@@ -3360,7 +3380,7 @@ module Chemistry
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
       real, dimension (nx) :: xdot
       type (pencil_case) :: p
-      integer :: k,j
+      integer :: k,j,i
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
 !
       p%DYDt_reac=0.
@@ -3415,6 +3435,17 @@ module Chemistry
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
       enddo
+
+      if (lchemistry_diag) then
+        do k=1,nchemspec
+        do j=1,nreactions
+          net_react_p(k,j)=net_react_p(k,j)+stoichio(k,j) &
+             *sum(vreactions_p(:,j))
+          net_react_m(k,j)=net_react_m(k,j)+stoichio(k,j) &
+             *sum(vreactions_m(:,j))
+        enddo
+        enddo
+      endif
 !
 ! NH:
 !
@@ -3470,6 +3501,9 @@ module Chemistry
 !
     endsubroutine calc_reaction_term
 !***********************************************************************
+    subroutine  write_net_reaction
+         write(11,*) t, net_react_p, net_react_m
+    endsubroutine  write_net_reaction
 !***********************************************************************
     subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
 !
@@ -4499,6 +4533,8 @@ module Chemistry
   if (allocated(a_k4))           deallocate(a_k4)
   if (allocated(Mplus_case))     deallocate(Mplus_case)
   if (allocated(photochem_case)) deallocate(photochem_case)
+  if (allocated(net_react_m))    deallocate(net_react_m)
+  if (allocated(net_react_p))    deallocate(net_react_p)
 !
   endsubroutine chemistry_clean_up
 !***********************************************************************

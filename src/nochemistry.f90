@@ -20,6 +20,7 @@ module Chemistry
   implicit none
 !
   real :: Rgas
+  logical :: lchemistry_diag=.false.
 !
   include 'chemistry.h'
 !
@@ -245,5 +246,8 @@ module Chemistry
       call keep_compiler_quiet(RHS_Y)
 !
     endsubroutine get_RHS_Y_full
+!***********************************************************************
+    subroutine  write_net_reaction
+    endsubroutine  write_net_reaction
 !***********************************************************************
 endmodule Chemistry
