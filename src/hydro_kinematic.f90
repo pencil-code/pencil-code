@@ -55,6 +55,7 @@ module Hydro
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
   real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,&
           uphi_step_width=0.
+  real :: gcs_rzero=0.,gcs_psizero=0.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
     kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -62,7 +63,8 @@ module Hydro
     ABC_A,ABC_B,ABC_C, &
     ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
     lrandom_location,lwrite_random_location,location_fixed,dtforce,&
-    radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width
+    radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
+    gcs_psizero
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -251,6 +253,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
+      real, dimension(nx) :: gcs_omega
       real, dimension(nx) :: wind_prof,div_uprof,der6_uprof
       real, dimension(nx) :: div_vel_prof
       real, dimension(nx) :: vel_prof
@@ -714,6 +717,21 @@ ky_uukin=2.*pi
           p%uu(:,3)=x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
 !              (1+stepdown(x(l1:l2),uphi_rmax,uphi_step_width))
         endif
+!
+! U_phi aped from 
+!  Ghizaru-Charbonneau-Smolarkiewicz (ApJL 715:L133-L137, 2010) 
+!
+      elseif (kinflow=='gcs') then
+        if (headtt) print*,'gcs:gcs_rzero ',gcs_rzero
+        fac=ampl_kinflow
+        p%uu(:,1)=0.
+        p%uu(:,2)=0.
+        gcs_omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- & 
+                 ((pi/2-y(m))/gcs_psizero**2))
+        p%uu(:,3)= gcs_omega*x(l1:l2)*sinth(m)
+
+        if (lpencil(i_divu)) p%divu=0.
+!
 !
 !  Vertical wind
 !
