@@ -231,6 +231,43 @@ module Grid
             enddo
           endif
 !
+! half-duct profile : like the duct above but the grid are closely spaced
+! at the outer boundary. 
+!
+        case ('half-duct')
+          a =-pi/(2.*max(nxgrid-1,1))
+          call grid_profile(pi/2+a*xi1,grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(pi/2.+a*xi1lo,grid_func(1),g1lo)
+          call grid_profile(pi/2.+a*xi1up,grid_func(1),g1up)
+!
+          x     =x00+Lx*g1
+          xprim =    Lx*(g1der1*a   )
+          xprim2=    Lx*(g1der2*a**2)
+!
+          if (lparticles) then
+             call fatal_error('construct_grid: non-equidistant grid', & 
+                  'half-duct not implemented for particles.')
+!            g1proc=x00+Lx*(g1proc-g1lo)/2
+!            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
+!            g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
+!            g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
+          endif
+!
+          if (ipx==0) then
+            bound_prim1=x(l1+1)-x(l1)
+            do i=1,nghost
+              x(l1-i)=x(l1)-i*bound_prim1
+              xprim(1:l1)=bound_prim1
+            enddo
+          endif
+          if (ipx==nprocx-1) then
+            bound_prim2=x(l2)-x(l2-1)
+            do i=1,nghost
+              x(l2+i)=x(l2)+i*bound_prim2
+              xprim(l2:mx)=bound_prim2
+            enddo
+          endif
+!
         case ('squared')
           ! Grid distance increases linearily
           a=max(nxgrid,1)
@@ -731,6 +768,13 @@ module Grid
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
 !
+      case ('half-duct')
+        ! duct, but only on one boundary:
+        ! Points are much denser near the boundaries than in the middle
+        g=cos(xi)
+        if (present(gder1)) gder1=-sin(xi)
+        if (present(gder2)) gder2=-cos(xi)
+!
       case ('squared')
         ! Grid distance increases linearily
         g=0.5*xi**2
@@ -832,6 +876,13 @@ module Grid
         g=sin(xi)
         if (present(gder1)) gder1= cos(xi)
         if (present(gder2)) gder2=-sin(xi)
+!
+      case ('half-duct')
+! duct, but only on one boundary:
+! Points are much denser near the boundaries than in the middle
+        g=cos(xi)
+        if (present(gder1)) gder1=-sin(xi)
+        if (present(gder2)) gder2=-cos(xi)
 !
       case ('squared')
         ! Grid distance increases linearily
