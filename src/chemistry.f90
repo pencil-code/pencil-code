@@ -46,7 +46,7 @@ module Chemistry
      real :: Sc_number=0.7, Pr_number=0.7
      real :: Cp_const=impossible
      real :: Cv_const=impossible
-     logical :: lfix_Sc=.false., lfix_Pr=.false.
+     logical :: lfix_Sc=.false., lfix_Pr=.false., reinitialize_chemistry=.false.
 ! parameters for initial conditions
      real :: init_x1=-0.2,init_x2=0.2
      real :: init_y1=-0.2,init_y2=0.2
@@ -158,7 +158,8 @@ module Chemistry
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry,  &
       lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,visc_const,cp_const
+      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,visc_const,cp_const, &
+      reinitialize_chemistry
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -430,6 +431,13 @@ module Chemistry
       endif
      endif
 !
+!  Reinitialize if required
+!
+      if (reinitialize_chemistry) then
+        print*,'Reinitializing chemistry.'
+        call init_chemistry(f)
+      endif
+!
 !  allocate memory for net_reaction diagnostics
 !
       if (lchemistry_diag) then
@@ -446,7 +454,7 @@ module Chemistry
       open(1,file=trim(datadir)//'/net_reactions.dat',position='append')
       write(1,*) nchemspec,nreactions
       close(1)
-
+!
     endsubroutine initialize_chemistry
 !***********************************************************************
     subroutine init_chemistry(f)
@@ -531,7 +539,7 @@ module Chemistry
           call flame_blob(f)
         case ('flame_slab')
           call flame_slab(f)
-        case ('prerun_1D')
+        case ('prerun_1D')          
           call prerun_1D(f,prerun_directory)
         case default
 !
@@ -4517,13 +4525,16 @@ module Chemistry
 !
       do j=1,my
         do k=1,mz
-          f(:,j,k,:)=a(:,m1,n1,:)
+          f(:,j,k,iux)=f(:,j,k,iux)+a(:,m1,n1,iux)
+          f(:,j,k,iuz+1:mvar)=a(:,m1,n1,iuz+1:mvar)
         enddo
       enddo
 !
 !  Set the y and z velocities to zero in order to avoid random noise
 !
-      f(:,:,:,iuy:iuz)=0
+      if (.not. reinitialize_chemistry) then
+        f(:,:,:,iuy:iuz)=0
+      endif
 !
     endsubroutine prerun_1D
 !***********************************************************************
