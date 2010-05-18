@@ -77,6 +77,7 @@ module Radiation
   real :: scalefactor_Srad=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
+  real :: knee_temp_opa=0.0, width_temp_opa=1.0
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -128,7 +129,7 @@ module Radiation
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
-      ref_temp_opa
+      ref_temp_opa, knee_temp_opa, width_temp_opa
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, TT_top, &
@@ -140,7 +141,7 @@ module Radiation
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, cdtrad_thin, &
       cdtrad_thick, scalefactor_Srad, angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
-      ref_temp_opa
+      ref_temp_opa, knee_temp_opa, width_temp_opa
 !
   contains
 !***********************************************************************
@@ -1439,7 +1440,7 @@ module Radiation
       use IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: tmp,lnrho,lnTT,yH
+      real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
       integer :: i
@@ -1480,9 +1481,26 @@ module Radiation
       case ('kappa_power_law')
         do n=n1-radz,n2+radz; do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
-          f(:,m,n,ikapparho)=exp(lnrho)*kappa_cst* &
-              (exp(lnrho)/ref_rho_opa)**expo_rho_opa* &
-              (exp(lnTT)/ref_temp_opa)**expo_temp_opa
+          rho=exp(lnrho)
+          TT=exp(lnTT)
+          if (knee_temp_opa==0.0) then
+            f(:,m,n,ikapparho)=rho*kappa_cst* &
+                (rho/ref_rho_opa)**expo_rho_opa* &
+                (TT/ref_temp_opa)**expo_temp_opa
+          else
+!
+!  Use erf profile to connect smoothly to constant opacity beyond ``knee''
+!  temperature.
+!
+            do l=1,mx
+              profile(l)=0.5*(1.0-erf((TT(l)-knee_temp_opa)/width_temp_opa))
+            enddo
+            f(:,m,n,ikapparho)=profile*rho*kappa_cst* &
+                (rho/ref_rho_opa)**expo_rho_opa* &
+                (TT/ref_temp_opa)**expo_temp_opa + &
+                (1.0-profile)*rho*kappa_cst* &
+                (knee_temp_opa/ref_temp_opa)**expo_temp_opa
+          endif
         enddo; enddo
 !
       case ('Tsquare') !! Morfill et al. 1985 
