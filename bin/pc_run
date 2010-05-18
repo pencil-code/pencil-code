@@ -714,7 +714,7 @@ sub expand_cmd_sequence {
     my @sequence;
     if (@cmds) {                # `pc_run' with subcommands
         for my $command (@cmds) {
-            if ($command =~ /^ \s* (.*) \^ ([0-9])+ \s* $/x) {
+            if ($command =~ /^ \s* (.*) \^ ([0-9]+) \s* $/x) {
                 my ($cmd, $multiplier) = ($1, $2);
                 push @sequence, ($cmd) x $multiplier;
             } else {
