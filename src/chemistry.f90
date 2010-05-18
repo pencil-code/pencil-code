@@ -146,20 +146,17 @@ module Chemistry
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
-      ldamp_zone_for_NSCBC,&
-!      ldamp_zone_NSCBCy,ldamp_zone_NSCBCz,ldamp_left,ldamp_right,
-      linit_velocity, &
-      latmchem, lcloud, prerun_directory, lchemistry_diag
+      ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
+      lchemistry_diag
 !
 !
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry,  &
-      lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,visc_const,cp_const, &
-      reinitialize_chemistry
+      lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
+      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
+      visc_const,cp_const,reinitialize_chemistry
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
