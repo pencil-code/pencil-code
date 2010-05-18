@@ -6,8 +6,8 @@ RETURN, TRANSPOSE([[x],[y]])
 END
 
 pro solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,startparam,xpos,$
-                           ypos,radius,oneradius,png,w,psym,Stokes=Stokes,$
-                           r_i=r_i,i=i
+                           ypos,radius,oneradius,png,w,psym,xp,yp,Stokes=Stokes,$
+                           r_i=r_i,i=i,solid_object=solid_object
 for i=0,n_steps-1 do begin
 ;
 ; Check if we want to plot for this time
@@ -15,15 +15,15 @@ for i=0,n_steps-1 do begin
 if ((obj.t[i] gt tmin) and (obj.t[i] lt tmax)) then begin
     titlestring='t='+str(obj.t[i])
     if (startparam.coord_system eq 'cylindric') then begin
-        xp=obj.xp(*,i)*cos(obj.yp(*,i))
-        yp=obj.xp(*,i)*sin(obj.yp(*,i))
-        plot,xp,yp,psym=psym,symsize=1,/iso,title=titlestring 
+        xpp=xp(*,i)*cos(yp(*,i))
+        ypp=xp(*,i)*sin(yp(*,i))
+        plot,xpp,ypp,psym=psym,symsize=1,/iso,title=titlestring 
         POLYFILL, CIRCLE_(xpos, $
                           ypos, $
                           radius),color=122        
     endif else begin
         if (oneradius eq 0) then begin
-            plot,obj.xp(*,i),obj.yp(*,i),psym=psym,symsize=1,/iso,$
+            plot,xp(*,i),yp(*,i),psym=psym,symsize=1,/iso,$
               title=titlestring
         endif else begin
             titlestring=titlestring+',St='+String(Stokes[r_i],$
@@ -33,14 +33,16 @@ if ((obj.t[i] gt tmin) and (obj.t[i] lt tmax)) then begin
             n_particles = n_elements(rad_indices)
             if (i eq 50) then print, 'n_particles = ', n_particles
             if (n_particles gt 1) then begin
-                plot,obj.xp(rad_indices,i),obj.yp(rad_indices,i),$
+                plot,xp(rad_indices,i),yp(rad_indices,i),$
                   psym=psym,symsize=1,/iso,title=titlestring
             endif
         endelse
-        for icyl=0,ncylinders-1 do begin
-            POLYFILL, CIRCLE_(xpos[icyl], $
-                              ypos[icyl], $
-                              radius[icyl]),color=122
+        if (solid_object) then begin
+            for icyl=0,ncylinders-1 do begin
+                POLYFILL, CIRCLE_(xpos[icyl], $
+                                  ypos[icyl], $
+                                  radius[icyl]),color=122
+            end
         end
     endelse
     ;

@@ -15,7 +15,8 @@ pro pc_visualize_particles,png=png,removed=removed,savefile=savefile,$
                                 xtrace=xtrace,ytrace=ytrace,store_vec=store_vec,$
                                 theta_arr=theta_arr,npart=npart,$
                                 noviz=noviz, oneradius=oneradius,xdir=xdir,$
-                                nopvar=nopvar,channel=channel,plotvort=plotvort
+                                nopvar=nopvar,channel=channel,plotvort=plotvort,$
+                           solid_object=solid_object,plane=plane
 ;
 ; compile needed procedures
 resolve_routine,'solid_object_findcapture',/compile_full_file
@@ -27,6 +28,7 @@ loadct,5
 ;
 ; Set defaults
 ;
+default,plane,'xy'
 default,png,0
 default,removed,0
 default,savefile,1
@@ -45,6 +47,7 @@ default,oneradius,0  ; show only one radius if more than one are present
 default,nopvar,0 ; don't read pvar to save time
 default,noread,0
 default,channel,0 ; solid walls
+default,solid_object,1
 default,plotvort,0; plot vorticity plot
 print,'noread=',noread
 ;
@@ -53,7 +56,7 @@ print,'noread=',noread
 pc_read_dim,obj=procdim
 pc_read_param, object=param
 if (nopvar eq 0) then begin
-    pc_read_pvar,obj=objpvar,/solid_object,irmv=irmv,$
+    pc_read_pvar,obj=objpvar,solid_object=solid_object,irmv=irmv,$
       savefile=savefile,trmv=trmv
 endif
 pc_read_pstalk,obj=obj
@@ -64,13 +67,13 @@ pc_read_pstalk,obj=obj
 
 if (param.coord_system eq 'cylindric') then begin
     ncylinders=1
-    solid_object=1
 endif else begin
     if(channel) then begin 
         solid_object=0
     endif else begin
-        ncylinders=param.ncylinders
-        solid_object=1
+        if (solid_object) then begin
+            ncylinders=param.ncylinders
+        endif
     endelse
 endelse
 
@@ -198,7 +201,7 @@ if (noviz eq 0) then begin
     ;
     xr=xmax-xmin
     yr=ymax-ymin
-    WINDOW,3,XSIZE=1024*xr/yr*1.6,YSIZE=1024
+    WINDOW,3;,XSIZE=1024*xr/yr*1.6,YSIZE=1024
     !x.range=[xmin,xmax]
     !y.range=[ymin,ymax]
     !x.style=1
@@ -214,10 +217,8 @@ if (noviz eq 0) then begin
    ;
    ; Show results
    ;
-   if (solid_object) then begin
-      solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,xpos,ypos,$
-        radius,oneradius,png,w,psym,Stokes=Stokes,r_i=r_i,i=i
-   endif
+;   if (solid_object) then begin
+;    endif
    if (channel) then begin
        channel_visualize,irmv,trmv,n_steps,tmin,tmax,png,w,psym,$
          obj=obj,pvar=objpvar
@@ -225,7 +226,21 @@ if (noviz eq 0) then begin
          totpar=n_parts,nts=n_steps,savefile=savefile,$
          prmv=prvm,$
          startparam=startparam,obj=obj
-   endif
+   endif else begin
+       if (plane eq 'xy') then begin
+           solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,$
+             xpos,ypos,radius,oneradius,png,w,psym,obj.xp,obj.yp,$
+             Stokes=Stokes,r_i=r_i,i=i,solid_object=solid_object
+       endif else if (plane eq 'xz') then begin
+           solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,$
+             xpos,ypos,radius,oneradius,png,w,psym,obj.xp,obj.zp,$
+             Stokes=Stokes,r_i=r_i,i=i,solid_object=solid_object
+       endif else if (plane eq 'yz') then begin
+           solid_object_visualize,ncylinders,n_steps,obj,tmin,tmax,param,$
+             xpos,ypos,radius,oneradius,png,w,psym,obj.yp,obj.zp,$
+             Stokes=Stokes,r_i=r_i,i=i,solid_object=solid_object
+       end
+   end
 
   ;
   ; Do we want to give x and y values of the trace as output?
