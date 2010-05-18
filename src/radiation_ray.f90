@@ -75,7 +75,7 @@ module Radiation
   real :: Frad_boundary_ref=0.0
   real :: cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_Srad=1.0
-  real :: coeff_rho_opa=0.0, coeff_temp_opa=0.0
+  real :: expo_rho_opa=0.0, expo_temp_opa=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
@@ -127,7 +127,7 @@ module Radiation
       kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
-      lfix_radweight_1d, coeff_rho_opa, coeff_temp_opa, ref_rho_opa, &
+      lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
       ref_temp_opa
 !
   namelist /radiation_run_pars/ &
@@ -139,7 +139,7 @@ module Radiation
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, cdtrad_thin, &
       cdtrad_thick, scalefactor_Srad, angle_weight, lcheck_tau_division, &
-      lfix_radweight_1d, coeff_rho_opa, coeff_temp_opa, ref_rho_opa, &
+      lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
       ref_temp_opa
 !
   contains
@@ -921,7 +921,7 @@ module Radiation
         endif
       enddo; endif
 !
-!  copy all heating rates at the upstream boundaries to Qrad0 which is used in
+!  Copy all heating rates at the upstream boundaries to Qrad0 which is used in
 !  Qrevision below.
 !
       if (lrad/=0) then
@@ -1481,8 +1481,8 @@ module Radiation
         do n=n1-radz,n2+radz; do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
           f(:,m,n,ikapparho)=exp(lnrho)*kappa_cst* &
-              (exp(lnrho)/ref_rho_opa)**coeff_rho_opa* &
-              (exp(lnTT)/ref_temp_opa)**coeff_temp_opa
+              (exp(lnrho)/ref_rho_opa)**expo_rho_opa* &
+              (exp(lnTT)/ref_temp_opa)**expo_temp_opa
         enddo; enddo
 !
       case ('Tsquare') !! Morfill et al. 1985 
