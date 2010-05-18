@@ -51,10 +51,6 @@ module Grid
 !    1./dx -> dx_1
 !  should suffice in most cases.
 !
-!  Currently, the only non-equidistant grid-function is sinh. Its inflection
-!  point in each direction is specified by xyz_star.
-!  (Suggestions for a better name than ``xyz_star'' are welcome.)
-!
 !  25-jun-04/tobi+wolf: coded
 !
       real, dimension(mx), intent(out) :: x

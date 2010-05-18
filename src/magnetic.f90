@@ -1869,7 +1869,7 @@ module Magnetic
 ! DM : this requires later attention
       if (lpencil(i_uga)) then
         if (.not.lcartesian_coords) then
-          call warning("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates")
+          call fatal_error("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates")
         else
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         endif
