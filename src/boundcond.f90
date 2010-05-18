@@ -4188,7 +4188,7 @@ module Boundcond
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
              "there was a problem when getting FtopKtop")
 !
-        if (headtt) print*,'bc_ss_flux_z: FtopKtop=',FtopKtop
+        if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  calculate Ftop/(K*cs2)
 !
@@ -4204,13 +4204,11 @@ module Boundcond
         do i=1,nghost
           if (ldensity_nolog) then
             f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
+                (log(f(l2-i,:,:,ilnrho))-log(f(l2+i,:,:,ilnrho))-2*i*dx*tmp_yz)
           else
             f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                (log(f(l2-i,:,:,ilnrho))-log(f(l2+i,:,:,ilnrho))-2*i*dx*tmp_yz)
+                (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
           endif
-!          f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-!              (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
         enddo
 !
       case default
