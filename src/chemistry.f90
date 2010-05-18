@@ -3386,7 +3386,7 @@ module Chemistry
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
       real, dimension (nx) :: xdot
       type (pencil_case) :: p
-      integer :: k,j,i
+      integer :: k,j
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
 !
       p%DYDt_reac=0.

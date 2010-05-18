@@ -676,7 +676,7 @@ module Boundcond
                 ! BCZ_DOC: set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
               case ('div')
-                ! BCZ_DOC: set the divergence of \uv to a given value
+                ! BCZ_DOC: set the divergence of $\uv$ to a given value
                 ! BCZ_DOC: use bc = 'div' for iuz 
                 call bc_set_div_z(f,topbot,j,fbcz12(j))
               case ('ovr')

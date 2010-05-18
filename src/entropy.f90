@@ -3695,8 +3695,8 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
 !
-      real, dimension (nx) :: heat,prof,theta_profile
-      real :: zbot,ztop,profile_buffer,xi,profile_cor
+      real, dimension (nx) :: heat
+      real :: profile_buffer
 !
       intent(in) :: p
       intent(out) :: df
@@ -3774,7 +3774,9 @@ module Entropy
     endsubroutine calc_heat_cool
 !***********************************************************************
     subroutine get_heat_cool_general(heat,p)
-      use messages, only: fatal_error
+!
+      use Messages, only: fatal_error
+!
       type (pencil_case) :: p
 !
       real, dimension (nx) :: heat,prof
@@ -3791,21 +3793,22 @@ module Entropy
 ! 'Temp2' which is the same as the 'Temp' elsewhere. Later runs
 ! will clarify this. - Dhruba 
      select case (cooltype)
-      case ('Temp')
-        if (headtt) print*,'calc_heat_cool: cs20,cs2cool=',cs20,cs2cool
-        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
+     case ('Temp')
+       if (headtt) print*,'calc_heat_cool: cs20,cs2cool=',cs20,cs2cool
+       heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
      case('Temp2')
-        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+       heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
      case default
-        call fatal_error('get_heat_cool_general','please select a cooltype')
+       call fatal_error('get_heat_cool_general','please select a cooltype')
      endselect
 !
     endsubroutine get_heat_cool_general
 !***********************************************************************
     subroutine get_heat_cool_gravz (heat,p)
-      use messages, only: fatal_error
+!
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
+      use Messages, only: fatal_error
       use Sub, only: step, cubic_step, write_zprof
 !
       type (pencil_case) :: p
@@ -3858,8 +3861,9 @@ module Entropy
     endsubroutine get_heat_cool_gravz
 !***********************************************************************
     subroutine get_heat_cool_gravr (heat,p)
-      use messages, only: fatal_error
+!
       use IO, only: output_pencil
+      use Messages, only: fatal_error
       use Sub, only: step
 !, cubic_step, write_zprof
 !
@@ -3937,8 +3941,9 @@ module Entropy
     endsubroutine get_heat_cool_gravr
 !***********************************************************************
     subroutine get_heat_cool_gravx_spherical (heat,p)
+!
       use IO, only: output_pencil
-      use messages, only: fatal_error
+      use Messages, only: fatal_error
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -3988,21 +3993,23 @@ module Entropy
     endsubroutine get_heat_cool_gravx_spherical
 !***********************************************************************
     subroutine get_heat_cool_corona(heat,p)
-      use messages, only: fatal_error
+!
+      use Messages, only:fatal_error
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat,prof
+      real, dimension (nx) :: heat
       real :: zbot,ztop,xi,profile_cor
       intent(in) :: p
+!
 ! subroutine to calculate the heat/cool term for hot corona
 !  Assume a linearly increasing reference profile.
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
       if (z(n)>=z_cor) then
-         xi=(z(n)-z_cor)/(ztop-z_cor)
-         profile_cor=xi**2*(3-2*xi)
-         heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
+        xi=(z(n)-z_cor)/(ztop-z_cor)
+        profile_cor=xi**2*(3-2*xi)
+        heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1)
       endif
 !
     endsubroutine get_heat_cool_corona
