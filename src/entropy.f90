@@ -166,14 +166,25 @@ module Entropy
   integer :: idiag_TTm=0        ! DIAG_DOC:
   integer :: idiag_TTmax=0      ! DIAG_DOC:
   integer :: idiag_TTmin=0      ! DIAG_DOC:
-  integer :: idiag_fconvm=0     ! DIAG_DOC:
-  integer :: idiag_fconvz=0     ! DIAG_DOC:
+  integer :: idiag_fconvm=0     ! DIAG_DOC: $\left<\varrho u_z T \right>$
+  integer :: idiag_fconvz=0     ! DIAG_DOC: $\left<\varrho u_z T \right>_{xy}$
+  integer :: idiag_fconvxy=0    ! DIAG_DOC: $\left<\varrho u_x T \right>_{z}$
   integer :: idiag_dcoolz=0     ! DIAG_DOC:
   integer :: idiag_fradz=0      ! DIAG_DOC:
   integer :: idiag_fradz_Kprof=0 ! DIAG_DOC:
   integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC:
-  integer :: idiag_fturbz=0     ! DIAG_DOC:
-  integer :: idiag_fturbxy=0    ! DIAG_DOC:
+  integer :: idiag_fturbz=0     ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_z
+                                ! DIAG_DOC: s\right>_{xy}$ \quad(turbulent
+                                ! DIAG_DOC: heat flux)
+  integer :: idiag_fturbxy=0    ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_x
+                                ! DIAG_DOC: s\right>_{z}$
+  integer :: idiag_fturbrxy=0   ! DIAG_DOC: $\left<\varrho T \chi_{ri} \nabla_i
+                                ! DIAG_DOC: s\right>_{z}$ \quad(radial part
+                                ! DIAG_DOC: of anisotropic turbulent heat flux)
+  integer :: idiag_fturbthxy=0  ! DIAG_DOC: $\left<\varrho T \chi_{\theta i} 
+                                ! DIAG_DOC: \nabla_i s\right>_{z}$ \quad
+                                ! DIAG_DOC: (latitudinal part of anisotropic 
+                                ! DIAG_DOC: turbulent heat flux)
   integer :: idiag_ssmx=0       ! DIAG_DOC:
   integer :: idiag_ssmy=0       ! DIAG_DOC:
   integer :: idiag_ssmz=0       ! DIAG_DOC:
@@ -2293,7 +2304,12 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fturbxy/=0) then
+      if (idiag_fconvxy/=0) then
+          lpenc_diagnos2d(i_rho)=.true.
+          lpenc_diagnos2d(i_TT)=.true.
+      endif
+      if (idiag_fturbxy/=0 .or. idiag_fturbrxy/=0 .or. &
+          idiag_fturbthxy/=0) then
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
       endif
@@ -2660,7 +2676,10 @@ module Entropy
         if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
         if (idiag_ssmxy/=0) call zsum_mn_name_xy(p%ss,idiag_ssmxy)
         if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
-        if (idiag_uxTTmxy/=0) call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
+        if (idiag_uxTTmxy/=0) &
+            call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
+        if (idiag_fconvxy/=0) &
+            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
       endif
 !
     endsubroutine dss_dt
@@ -3555,6 +3574,12 @@ module Entropy
       if (l2davgfirst) then
         if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
         if (idiag_fturbxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
+        if (idiag_fturbrxy/=0) &
+            call zsum_mn_name_xy(-chi_t*chit_prof*chit_aniso*p%rho*p%TT* &
+            (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
+        if (idiag_fturbthxy/=0) &
+            call zsum_mn_name_xy(-chi_t*chit_prof*chit_aniso*p%rho*p%TT* &
+            (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2)),idiag_fturbthxy)
       endif
 !
 !  "turbulent" entropy diffusion
@@ -4172,7 +4197,8 @@ module Entropy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
-        idiag_fturbxy=0; idiag_fradxy_Kprof=0
+        idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; 
+        idiag_fradxy_Kprof=0; idiag_fconvz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -4247,7 +4273,10 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ssmxy',idiag_ssmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uxTTmxy',idiag_uxTTmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbxy',idiag_fturbxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbrxy',idiag_fturbrxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbthxy',idiag_fturbthxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvxy',idiag_fconvxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -4288,7 +4317,10 @@ module Entropy
         write(3,*) 'i_cs2mphi=',idiag_cs2mphi
         write(3,*) 'i_fturbz=',idiag_fturbz
         write(3,*) 'i_fturbxy=',idiag_fturbxy
+        write(3,*) 'i_fturbrxy=',idiag_fturbrxy
+        write(3,*) 'i_fturbthxy=',idiag_fturbthxy
         write(3,*) 'i_fconvz=',idiag_fconvz
+        write(3,*) 'i_fconvz=',idiag_fconvxy
         write(3,*) 'i_dcoolz=',idiag_dcoolz
         write(3,*) 'i_fradz=',idiag_fradz
         write(3,*) 'i_fradz_Kprof=',idiag_fradz_Kprof
