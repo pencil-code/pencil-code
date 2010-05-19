@@ -1437,6 +1437,7 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use EquationOfState, only: eoscalc
+      use General, only: erfcc
       use IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -1492,9 +1493,7 @@ module Radiation
 !  Use erf profile to connect smoothly to constant opacity beyond ``knee''
 !  temperature.
 !
-            do l=1,mx
-              profile(l)=0.5*(1.0-erf((TT(l)-knee_temp_opa)/width_temp_opa))
-            enddo
+            profile=0.5*(1.0-erfcc((TT-knee_temp_opa)/width_temp_opa))
             f(:,m,n,ikapparho)=profile*rho*kappa_cst* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa + &
