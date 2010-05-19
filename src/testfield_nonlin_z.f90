@@ -259,11 +259,11 @@ module Testfield
 !  Put variable names in array
 !
       do j=1,ntestfield/2
-        varname(j) = 'aatest'
+        varname(iaatest-1+j) = 'aatest'
       enddo
 !
       do j=ntestfield/2+1,ntestfield
-        varname(j) = 'uutest'
+        varname(iaatest-1+j) = 'uutest'
       enddo
 !
 !  Identify version number.

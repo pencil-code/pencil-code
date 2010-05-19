@@ -234,7 +234,7 @@ module Testfield
 !
 !  Put variable names in array
 !
-      do j=1,ntestfield
+      do j=iaatest,iaztestpq
         varname(j) = 'aatest'
       enddo
 !

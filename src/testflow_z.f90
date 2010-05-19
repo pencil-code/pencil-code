@@ -167,7 +167,7 @@ module Testflow
 !
 !  Put variable names in array
 !
-      do j=1,ntestflow
+      do j=iuutest,nvar
         varname(j) = 'uutest'
       enddo
 !

@@ -601,6 +601,8 @@ module Boundcond
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
+                if (.not.lgrav) call fatal_error('boundconds_z', &
+                  'hs boundary condition requires gravity')
                 if (llocal_iso) then !non local
                   if (j==ilnrho) call bc_lnrho_hds_z_liso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)

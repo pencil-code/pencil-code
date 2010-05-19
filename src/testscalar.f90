@@ -165,7 +165,7 @@ module Testscalar
 !
 !  Put variable names in array
 !
-      do j=1,ntestscalar
+      do j=icctest,nvar
         varname(j) = 'cctest'
       enddo
 !

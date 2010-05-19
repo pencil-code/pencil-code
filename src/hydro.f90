@@ -231,6 +231,8 @@ module Hydro
                                 ! DIAG_DOC:   velocity)
   integer :: idiag_uymz=0       ! DIAG_DOC:
   integer :: idiag_uzmz=0       ! DIAG_DOC:
+  integer :: idiag_divumz=0     ! DIAG_DOC: $\left< {\rm div}\uv \right>_{xy}$
+  integer :: idiag_uzdivumz=0   ! DIAG_DOC: $\left< u_z{\rm div}\uv \right>_{xy}$
   integer :: idiag_oxmz=0       ! DIAG_DOC: $\left< \omega_x \right>_{xy}$
   integer :: idiag_oymz=0       ! DIAG_DOC: $\left< \omega_y \right>_{xy}$
   integer :: idiag_ozmz=0       ! DIAG_DOC: $\left< \omega_z \right>_{xy}$
@@ -418,6 +420,7 @@ module Hydro
   integer :: idiag_fxbzm=0      ! DIAG_DOC:
   integer :: idiag_uxglnrym=0   ! DIAG_DOC: $\left<u_x\partial_y\ln\varrho\right>$
   integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
+  integer :: idiag_uzdivum=0    ! DIAG_DOC: $\left<u_z\nabla\cdot\uv\right>$
   integer :: idiag_uxuydivum=0  ! DIAG_DOC: $\left<u_x u_y\nabla\cdot\uv\right>$
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
@@ -1795,6 +1798,7 @@ module Hydro
              idiag_totangmom,p)
         if (idiag_uxglnrym/=0)  call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
         if (idiag_uyglnrxm/=0)  call sum_mn_name(p%uu(:,2)*p%glnrho(:,1),idiag_uyglnrxm)
+        if (idiag_uzdivum/=0) call sum_mn_name(p%uu(:,3)*p%divu,idiag_uzdivum)
         if (idiag_uxuydivum/=0) call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
 !
 !  Kinetic field components at one point (=pt).
@@ -1952,6 +1956,8 @@ module Hydro
         if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
         if (idiag_uymz/=0)   call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
         if (idiag_uzmz/=0)   call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
+        if (idiag_divumz/=0) call xysum_mn_name_z(p%divu,idiag_divumz)
+        if (idiag_uzdivumz/=0) call xysum_mn_name_z(p%uu(:,3)*p%divu,idiag_uzdivumz)
         if (idiag_oxmz/=0)   call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
         if (idiag_oymz/=0)   call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
         if (idiag_ozmz/=0)   call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
@@ -3172,6 +3178,8 @@ module Hydro
         idiag_uxmz=0
         idiag_uymz=0
         idiag_uzmz=0
+        idiag_divumz=0
+        idiag_uzdivumz=0
         idiag_oxmz=0
         idiag_oymz=0
         idiag_ozmz=0
@@ -3320,6 +3328,7 @@ module Hydro
         idiag_uguzmz=0
         idiag_uxglnrym=0
         idiag_uyglnrxm=0
+        idiag_uzdivum=0
         idiag_uxuydivum=0
         idiag_urmsh=0;idiag_urmsn=0;idiag_urmss=0
         idiag_ormsh=0;idiag_ormsn=0;idiag_ormss=0
@@ -3442,6 +3451,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
         call parse_name(iname,cname(iname),cform(iname),'uxglnrym',idiag_uxglnrym)
         call parse_name(iname,cname(iname),cform(iname),'uyglnrxm',idiag_uyglnrxm)
+        call parse_name(iname,cname(iname),cform(iname),'uzdivum',idiag_uzdivum)
         call parse_name(iname,cname(iname),cform(iname),'uxuydivum',idiag_uxuydivum)
       enddo
 !
@@ -3531,6 +3541,8 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'divumz',idiag_divumz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzdivumz',idiag_uzdivumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oymz',idiag_oymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ozmz',idiag_ozmz)
@@ -3741,6 +3753,8 @@ module Hydro
         write(3,*) 'i_uxmz=',idiag_uxmz
         write(3,*) 'i_uymz=',idiag_uymz
         write(3,*) 'i_uzmz=',idiag_uzmz
+        write(3,*) 'i_divumz=',idiag_divumz
+        write(3,*) 'i_uzdivumz=',idiag_uzdivumz
         write(3,*) 'i_oxmz=',idiag_oxmz
         write(3,*) 'i_oymz=',idiag_oymz
         write(3,*) 'i_ozmz=',idiag_ozmz
@@ -3767,6 +3781,7 @@ module Hydro
         write(3,*) 'i_ruxuymxy=',idiag_ruxuymxy
         write(3,*) 'i_ruxuzmxy=',idiag_ruxuzmxy
         write(3,*) 'i_ruyuzmxy=',idiag_ruyuzmxy
+        write(3,*) 'i_uzdivum=',idiag_uzdivum
         write(3,*) 'i_uxmxz=',idiag_uxmxz
         write(3,*) 'i_uymxz=',idiag_uymxz
         write(3,*) 'i_uzmxz=',idiag_uzmxz
