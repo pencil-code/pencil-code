@@ -1,0 +1,1 @@
+/home/nilshau/numerics/pencil-code/bin/getconf.csh

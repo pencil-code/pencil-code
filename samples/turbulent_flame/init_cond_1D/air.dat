@@ -1,0 +1,6 @@
+! Initial conditions for temperature, pressure and composition 
+T=  750.000
+P=  1.013e6
+N2     74.948 ! massfraction
+O2     22.756 ! massfraction
+H2     2.2937 ! massfraction
