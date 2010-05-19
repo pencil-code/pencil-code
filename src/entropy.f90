@@ -125,7 +125,7 @@ module Entropy
       lcalc_ssmean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
       mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
-      tau_diff, lfpres_from_pressure, chit_aniso
+      tau_diff, lfpres_from_pressure, chit_aniso, lchit_aniso_simplified
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
