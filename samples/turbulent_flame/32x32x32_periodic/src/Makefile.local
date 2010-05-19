@@ -1,9 +1,0 @@
-###                             -*-Makefile-*-
-### Makefile for modular pencil code -- local part
-### Included by `Makefile'
-###
-MPICOMM=mpicomm
-FORCING=forcing
-HYDRO=hydro
-DENSITY=density
-REAL_PRECISION = double
