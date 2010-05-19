@@ -111,9 +111,9 @@ program start
 !  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
   allocate( f(mx,my,mz,mfarray),STAT=stat)
-  if (stat>0) call stop_it("Couldn't allocate memory for f ")
+  if (stat>0) call fatal_error('start','Could not allocate memory for f')
   allocate(df(mx,my,mz,mvar)   ,STAT=stat)
-  if (stat>0) call stop_it("Couldn't allocate memory for df")
+  if (stat>0) call fatal_error('start','Could not allocate memory for df')
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
 !  later use uninitialized slots of those fields).
