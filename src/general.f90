@@ -1,9 +1,8 @@
 ! $Id$
 !
-module General
+!  Module with general utility subroutines.
 !
-!  Module with general utility subroutines
-!  (Used for example in Sub and Mpicomm)
+module General
 !
   use Cparam
   use Messages
@@ -27,18 +26,18 @@ module General
 !
   include 'record_types.h'
 !
-  interface random_number_wrapper   ! Overload this function
+  interface random_number_wrapper
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
   endinterface
 !
-  interface safe_character_append   ! Overload this function
+  interface safe_character_append
     module procedure safe_character_append_2
-    module procedure safe_character_append_3 ! add more if you like..
+    module procedure safe_character_append_3
   endinterface
 !
-!  state and default generator of random numbers
+!  State and default generator of random numbers.
 !
   integer, save, dimension(mseed) :: rstate=0
   character (len=labellen) :: random_gen='min_std'
@@ -88,7 +87,7 @@ module General
         enddo
         necessary(imn)=.true.
 !
-!  do the upper stripe in the n-direction
+!  Do the upper stripe in the n-direction.
 !
         do n=max(n2i-1,n1+1),n2
           do m=m1i+2,m2i-2
@@ -101,7 +100,7 @@ module General
           enddo
         enddo
 !
-!  do the lower stripe in the n-direction
+!  Do the lower stripe in the n-direction.
 !
         do n=n1,min(n1i+1,n2)
           do m=m1i+2,m2i-2
@@ -114,7 +113,7 @@ module General
           enddo
         enddo
 !
-!  left and right hand boxes
+!  Left and right hand boxes.
 !  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
 !  instead of just m2i, to make sure the case ny=1 works ok, and
 !  also that the same m is not set in both loops.
@@ -161,7 +160,7 @@ module General
 !***********************************************************************
     subroutine input_persistent_general(id,lun,done)
 !
-! reads seed from a snapshot
+!  Reads seed from a snapshot.
 !
       use Cdata, only: seed,nseed
 !
@@ -179,7 +178,7 @@ module General
 !***********************************************************************
     subroutine output_persistent_general(lun)
 !
-! writes seed to a snapshot
+!  Writes seed to a snapshot.
 !
       use Cdata, only: seed,nseed
 !
@@ -194,7 +193,7 @@ module General
     subroutine random_number_wrapper_0(a)
 !
 !  Fills a with a random number calculated with one of the generators
-!  available with random_gen
+!  available with random_gen.
 !
       real :: a
       real, dimension(1) :: b
@@ -211,7 +210,7 @@ module General
     subroutine random_number_wrapper_1(a)
 !
 !  Fills a with an array of random numbers calculated with one of the
-!  generators available with random_gen
+!  generators available with random_gen.
 !
       use Cdata, only: lroot
 !
@@ -243,7 +242,7 @@ module General
     subroutine random_number_wrapper_3(a)
 !
 !  Fills a with a matrix of random numbers calculated with one of the
-!  generators available with random_gen
+!  generators available with random_gen.
 !
       use Cdata, only: lroot
 !
@@ -275,7 +274,7 @@ module General
     subroutine normal_deviate(a)
 !
 !  Return a normal deviate (Gaussian random number, mean=0, var=1) by means
-!  of the "Ratio-of-uniforms" method
+!  of the "Ratio-of-uniforms" method.
 !
 !  28-jul-08/kapelrud: coded
 !
@@ -294,7 +293,7 @@ module General
         q=x**2+y*(0.19600*y-0.25472*x)
         lloop=q>0.27597
         if (lloop) &
-          lloop=(q>0.27846).or.(v**2>-4.0*log(u)*u**2)
+            lloop=(q>0.27846).or.(v**2>-4.0*log(u)*u**2)
       enddo
 !
       a=v/u
@@ -303,11 +302,12 @@ module General
 !***********************************************************************
     subroutine random_seed_wrapper(size,put,get)
 !
-!  mimics the f90 random_seed routine
+!  Mimics the f90 random_seed routine.
+!
+      integer, optional :: size
+      integer, optional, dimension(:) :: put,get
 !
       real :: dummy
-      integer, optional, dimension(:) :: put,get
-      integer, optional :: size
       integer :: nseed
 !
       select case (random_gen)
@@ -356,7 +356,7 @@ module General
       dummy=ieor(dummy,mask)
       k=dummy/iq
       dummy=ia*(dummy-k*iq)-ir*k
-      if (dummy.lt.0) dummy=dummy+im
+      if (dummy<0) dummy=dummy+im
       ran0=am*dummy
       dummy=ieor(dummy,mask)
 !
@@ -364,14 +364,14 @@ module General
 !***********************************************************************
     function mars_ran(init)
 !
-! 26-sep-02/wolf: Implemented, following `Numerical Recipes for F90'
-!                 ran() routine
+!  "Minimal" random number generator of Park and Miller, combined
+!  with a Marsaglia shift sequence, with a period of supposedly
+!  ~ 3.1x10^18.
+!  Returns a uniform random number in (0, 1).
+!  Call with (INIT=ival) to initialize.
 !
-! "Minimal" random number generator of Park and Miller, combined
-! with a Marsaglia shift sequence, with a period of supposedly
-! ~ 3.1x10^18.
-! Returns a uniform random number in (0, 1).
-! Call with (INIT=ival) to initialize.
+!  26-sep-02/wolf: Implemented, following `Numerical Recipes for F90'
+!                  ran() routine
 !
       implicit none
 !
@@ -388,29 +388,29 @@ module General
         first_call=.false.
       endif
       if (present(init) .or. rstate(1)==0 .or. rstate(2)<=0) then
-        !
-        ! initialize
-        !
+!
+!  Initialize.
+!
         if (present(init)) init1 = init
         am=nearest(1.0,-1.0)/im
         rstate(1)=ieor(777755555,abs(init1))
         rstate(2)=ior(ieor(888889999,abs(init1)),1)
       endif
-      !
-      ! Marsaglia shift sequence with period 2^32-1
-      !
+!
+!  Marsaglia shift sequence with period 2^32-1.
+!
       rstate(1)=ieor(rstate(1),ishft(rstate(1),13))
       rstate(1)=ieor(rstate(1),ishft(rstate(1),-17))
       rstate(1)=ieor(rstate(1),ishft(rstate(1),5))
-      !
-      ! Park-Miller sequence by Schrage's method, period 2^31-2
-      !
+!
+!  Park-Miller sequence by Schrage's method, period 2^31-2.
+!
       k=rstate(2)/iq
       rstate(2)=ia*(rstate(2)-k*iq)-ir*k
       if (rstate(2) < 0) rstate(2)=rstate(2)+im
-      !
-      ! combine the two generators with masking to ensure nonzero value
-      !
+!
+!  Combine the two generators with masking to ensure nonzero value.
+!
       mars_ran=am*ior(iand(im,ieor(rstate(1),rstate(2))),1)
 !
     endfunction mars_ran
@@ -418,9 +418,9 @@ module General
     function ran(iseed1)
 !
 !  (More or less) original routine from `Numerical Recipes in F90'. Not
-!  sure we are allowed to distribute this
+!  sure we are allowed to distribute this.
 !
-! 28-aug-02/wolf: Adapted from Numerical Recipes
+!  28-aug-02/wolf: Adapted from Numerical Recipes
 !
       implicit none
 !
@@ -428,14 +428,14 @@ module General
       integer(ikind), intent(inout) :: iseed1
       real :: ran
 !
-      ! "Minimal" random number generator of Park and Miller combined
-      ! with a Marsaglia shift sequence. Returns a uniform random deviate
-      ! between 0.0 and 1.0 (exclusive of the endpoint values). This fully
-      ! portable, scalar generator has the "traditional" (not Fortran 90)
-      ! calling sequence with a random deviate as the returned function
-      ! value: call with iseed1 a negative integer to initialize;
-      ! thereafter, do not alter iseed1 except to reinitialize. The period
-      ! of this generator is about 3.1x10^18.
+!  "Minimal" random number generator of Park and Miller combined
+!  with a Marsaglia shift sequence. Returns a uniform random deviate
+!  between 0.0 and 1.0 (exclusive of the endpoint values). This fully
+!  portable, scalar generator has the "traditional" (not Fortran 90)
+!  calling sequence with a random deviate as the returned function
+!  value: call with iseed1 a negative integer to initialize;
+!  thereafter, do not alter iseed1 except to reinitialize. The period
+!  of this generator is about 3.1x10^18.
 !
       real, save :: am
       integer(ikind), parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
@@ -454,13 +454,14 @@ module General
       iy=ia*(iy-k*iq)-ir*k   ! period 231 - 2.
       if (iy < 0) iy=iy+im
       ran=am*ior(iand(im,ieor(ix,iy)),1)   ! Combine the two generators with
-                                           ! masking to ensure nonzero value.
+!                                          ! masking to ensure nonzero value.
     endfunction ran
 !***********************************************************************
     subroutine chn(n,ch,label)
 !
-!  make a character out of a number
-!  take care of numbers that have less than 4 digits
+!  Make a character out of a number.
+!  Take care of numbers that have less than 4 digits.
+!
 !  30-sep-97/axel: coded
 !
       character (len=5) :: ch
@@ -495,7 +496,7 @@ module General
       integer :: time1,time2,count_rate
       character (len=*) :: label
 !
-!  prints time in seconds
+!  Prints time in seconds.
 !
       call system_clock(count=time2,count_rate=count_rate)
       print*,"chk_time: ",label,(time2-time1)/real(count_rate)
@@ -528,7 +529,7 @@ module General
 !***********************************************************************
     subroutine safe_character_assign(dest,src)
 !
-!  Do character string assignement with check against overflow
+!  Do character string assignement with check against overflow.
 !
 !  08-oct-02/tony: coded
 !  25-oct-02/axel: added tag in output to give name of routine
@@ -541,12 +542,12 @@ module General
       srcLen = len(src)
 !
       if (destLen<srcLen) then
-         print *, "safe_character_assign: ", &
-              "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
-               //src//"' to '"//dest//"'"
-         dest=src(1:destLen)
+        print*, "safe_character_assign: ", &
+            "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
+             //src//"' to '"//dest//"'"
+        dest=src(1:destLen)
       else
-         dest=src
+        dest=src
       endif
 !
     endsubroutine safe_character_assign
@@ -575,7 +576,8 @@ module General
 !***********************************************************************
     subroutine input_array(file,a,dimx,dimy,dimz,dimv)
 !
-!  Generalized form of input, allows specifying dimension
+!  Generalized form of input, allows specifying dimension.
+!
 !  27-sep-03/axel: coded
 !
       character (len=*) :: file
@@ -590,7 +592,7 @@ module General
 !***********************************************************************
     subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
 !
-!  find index range (ii1,ii2) such that aa
+!  Find index range (ii1,ii2) such that aa
 !
 !   9-mar-08/axel: coded
 !
@@ -603,7 +605,7 @@ module General
       intent(in)  :: aa,naa,aa1,aa2
       intent(out) :: ii1,ii2
 !
-!  if not extent in this direction, set indices to interior values
+!  If not extent in this direction, set indices to interior values.
 !
       if (naa==2*nghost+1) then
         ii1=nghost+1
@@ -611,7 +613,7 @@ module General
         goto 99
       endif
 !
-!  find lower index
+!  Find lower index.
 !
       ii1=naa
       do ii=1,naa
@@ -621,7 +623,7 @@ module General
         endif
       enddo
 !
-!  find upper index
+!  Find upper index.
 !
 10    ii2=1
       do ii=naa,1,-1
@@ -632,11 +634,12 @@ module General
       enddo
 !
 99    continue
+!
     endsubroutine find_index_range
 !***********************************************************************
     function spline_derivative(z,f)
 !
-!  computes derivative of a given function using spline interpolation
+!  Computes derivative of a given function using spline interpolation.
 !
 !  01-apr-03/tobi: originally coded by Aake Nordlund
 !
@@ -656,7 +659,7 @@ module General
       d(1)=2.*((f(2)-f(1))/(z(2)-z(1))**3 &
                   -(f(3)-f(2))/(z(3)-z(2))**3)
 !
-! interior points
+!  Interior points.
 !
       w1(2:mz-1)=1./(z(2:mz-1)-z(1:mz-2))
       w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
@@ -665,8 +668,7 @@ module General
       d(2:mz-1)=3.*(w3(2:mz-1)**2*(f(3:mz)-f(2:mz-1)) &
            +w1(2:mz-1)**2*(f(2:mz-1)-f(1:mz-2)))
 !
-!
-! last point
+!  Last point.
 !
       w1(mz)=1./(z(mz-1)-z(mz-2))**2
       w3(mz)=-1./(z(mz)-z(mz-1))**2
@@ -674,7 +676,7 @@ module General
       d(mz)=2.*((f(mz-1)-f(mz-2))/(z(mz-1)-z(mz-2))**3 &
            -(f(mz)-f(mz-1))/(z(mz)-z(mz-1))**3)
 !
-! eliminate at first point
+!  Eliminate at first point.
 !
       c=-w3(1)/w3(2)
       w1(1)=w1(1)+c*w1(2)
@@ -683,7 +685,7 @@ module General
       w3(1)=w2(1)
       w2(1)=w1(1)
 !
-! eliminate at last point
+!  Eliminate at last point.
 !
       c=-w1(mz)/w1(mz-1)
       w2(mz)=w2(mz)+c*w2(mz-1)
@@ -692,27 +694,28 @@ module General
       w1(mz)=w2(mz)
       w2(mz)=w3(mz)
 !
-! eliminate subdiagonal
+!  Eliminate subdiagonal.
 !
       do k=2,mz
-         c=-w1(k)/w2(k-1)
-         w2(k)=w2(k)+c*w3(k-1)
-         d(k)=d(k)+c*d(k-1)
+        c=-w1(k)/w2(k-1)
+        w2(k)=w2(k)+c*w3(k-1)
+        d(k)=d(k)+c*d(k-1)
       enddo
 !
-! backsubstitute
+!  Backsubstitute.
 !
       d(mz)=d(mz)/w2(mz)
       do k=mz-1,1,-1
-         d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
+        d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
       enddo
 !
       spline_derivative=d
+!
     endfunction spline_derivative
 !***********************************************************************
     function spline_derivative_double(z,f)
 !
-!  computes derivative of a given function using spline interpolation
+!  Computes derivative of a given function using spline interpolation.
 !
 !  01-apr-03/tobi: originally coded by Aake Nordlund
 !  11-apr-03/axel: double precision version
@@ -733,7 +736,7 @@ module General
       d(1)=2.*((f(2)-f(1))/(z(2)-z(1))**3 &
                   -(f(3)-f(2))/(z(3)-z(2))**3)
 !
-! interior points
+!  Interior points.
 !
       w1(2:mz-1)=1./(z(2:mz-1)-z(1:mz-2))
       w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
@@ -742,8 +745,7 @@ module General
       d(2:mz-1)=3.*(w3(2:mz-1)**2*(f(3:mz)-f(2:mz-1)) &
            +w1(2:mz-1)**2*(f(2:mz-1)-f(1:mz-2)))
 !
-!
-! last point
+!  Last point.
 !
       w1(mz)=1./(z(mz-1)-z(mz-2))**2
       w3(mz)=-1./(z(mz)-z(mz-1))**2
@@ -751,7 +753,7 @@ module General
       d(mz)=2.*((f(mz-1)-f(mz-2))/(z(mz-1)-z(mz-2))**3 &
            -(f(mz)-f(mz-1))/(z(mz)-z(mz-1))**3)
 !
-! eliminate at first point
+!  Eliminate at first point.
 !
       c=-w3(1)/w3(2)
       w1(1)=w1(1)+c*w1(2)
@@ -760,7 +762,7 @@ module General
       w3(1)=w2(1)
       w2(1)=w1(1)
 !
-! eliminate at last point
+!  Eliminate at last point.
 !
       c=-w1(mz)/w1(mz-1)
       w2(mz)=w2(mz)+c*w2(mz-1)
@@ -769,27 +771,28 @@ module General
       w1(mz)=w2(mz)
       w2(mz)=w3(mz)
 !
-! eliminate subdiagonal
+!  Eliminate subdiagonal.
 !
       do k=2,mz
-         c=-w1(k)/w2(k-1)
-         w2(k)=w2(k)+c*w3(k-1)
-         d(k)=d(k)+c*d(k-1)
+        c=-w1(k)/w2(k-1)
+        w2(k)=w2(k)+c*w3(k-1)
+        d(k)=d(k)+c*d(k-1)
       enddo
 !
-! backsubstitute
+!  Backsubstitute.
 !
       d(mz)=d(mz)/w2(mz)
       do k=mz-1,1,-1
-         d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
+        d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
       enddo
 !
       spline_derivative_double=d
+!
     endfunction spline_derivative_double
 !***********************************************************************
     function spline_integral(z,f,q0)
 !
-!  computes integral of a given function using spline interpolation
+!  Computes integral of a given function using spline interpolation.
 !
 !  01-apr-03/tobi: originally coded by Aake Nordlund
 !
@@ -812,15 +815,16 @@ module General
               +(1./12.)*dz(2:mz)**2*(df(1:mz-1)-df(2:mz))
 !
       do k=2,mz
-         q(k)=q(k)+q(k-1)
+        q(k)=q(k)+q(k-1)
       enddo
 !
       spline_integral=q
+!
     endfunction spline_integral
 !***********************************************************************
     function spline_integral_double(z,f,q0)
 !
-!  computes integral of a given function using spline interpolation
+!  Computes integral of a given function using spline interpolation.
 !
 !  01-apr-03/tobi: originally coded by Aake Nordlund
 !  11-apr-03/axel: double precision version
@@ -845,10 +849,11 @@ module General
               +(1./12.)*dz(2:mz)**2*(df(1:mz-1)-df(2:mz))
 !
       do k=2,mz
-         q(k)=q(k)+q(k-1)
+        q(k)=q(k)+q(k-1)
       enddo
 !
       spline_integral_double=q
+!
     endfunction spline_integral_double
 !***********************************************************************
     subroutine tridag(a,b,c,r,u,err)
@@ -937,7 +942,7 @@ module General
 !
 !  Solve pentadiagonal system of M linear equations.
 !  A,B,C,D,E are the diagonals (A:subsub, B:sub, C:main, etc.).
-!  R is the rhs on input and contains the solution on output
+!  R is the rhs on input and contains the solution on output.
 !
 !  01-apr-00/John Crowe (Newcastle): written
 !
@@ -947,7 +952,7 @@ module General
       real :: x
       real, dimension (m) :: a,b,c,d,e,r
 !
-! eliminate sub-diagonals
+!  Eliminate sub-diagonals.
 !
       x    = b(2)/c(1)
       c(2) = c(2)-d(1)*x
@@ -966,7 +971,7 @@ module General
         d(i) = d(i)-e(i-1)*x
         r(i) = r(i)-r(i-1)*x
 !
-      end do
+      enddo
 !
       x    = a(m)/c(m-2)
       b(m) = b(m)-d(m-2)*x
@@ -977,31 +982,26 @@ module General
       c(m) = c(m)-d(m-1)*x
       r(m) = r(m)-r(m-1)*x
 !
-!
-! eliminate super-diagonals
+!  Eliminate super-diagonals.
 !
       r(m-1) = r(m-1) - d(m-1)*r(m)/c(m)
 !
-      do i = m-2 , 1 , -1
-!
+      do i=m-2,1 ,-1
         r(i)   = r(i) - d(i)*r(i+1)/c(i+1) - e(i)*r(i+2)/c(i+2)
+      enddo
 !
-      end do
+!  Reduce c's to unity, leaving the answers in r.
 !
-! reduce c's to unity, leaving the answers in r
-!
-      do i = 1 , m , 1
-
+      do i=1,m,1
         r(i) = r(i) / c(i)
-!
-      end do
+      enddo
 !
     endsubroutine pendag
 !***********************************************************************
     subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
 !
 !  Interpolates in x2 a natural cubic spline with knots defined by the 1d
-!  arrays arrx and arry
+!  arrays arrx and arry.
 !
 !  25-mar-05/wlad : coded
 !
@@ -1019,30 +1019,30 @@ module General
       ct1 = psize1
       ct2 = psize2
 !
-! Short-circuit if there is only 1 knot
+!  Short-circuit if there is only 1 knot.
 !
       if (ct1 == 1) then
         S = arry(1)
         return
       endif
 !
-! Breaks if x is not monotonically increasing
+!  Breaks if x is not monotonically increasing.
 !
       do i=1,ct1-1
-        if (arrx(i+1).le.arrx(i)) then
+        if (arrx(i+1)<=arrx(i)) then
           print*,'spline x:y in x2:y2 : vector x is not monotonically increasing'
           if (present(err)) err=.true.
           return
         endif
       enddo
 !
-! step h
+!  Step h.
 !
       h(1:ct1-1) = arrx(2:ct1) - arrx(1:ct1-1)
       h(ct1) = h(ct1-1)
       h1=1./h
 !
-! coefficients for tridiagonal system
+!  Coefficients for tridiagonal system.
 !
       a(2:ct1) = h(1:ct1-1)
       a(1) = a(2)
@@ -1057,38 +1057,38 @@ module General
 !
       call tridag(a,b,h,d,sol)
 !
-! interpolation formula
+!  Interpolation formula.
 !
       do j=1,ct2
-         do i=1,ct1-1
+        do i=1,ct1-1
 !
-            if ((x2(j).ge.arrx(i)).and.(x2(j).le.arrx(i+1))) then
+          if ((x2(j)>=arrx(i)).and.(x2(j)<=arrx(i+1))) then
 !
-! substitute 1/6. by 0.1666666 to avoid divisions
+!  Substitute 1/6. by 0.1666666 to avoid divisions.
 !
-               S(j) = (fac*h1(i)) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
+            S(j) = (fac*h1(i)) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
                     (x2(j) - arrx(i))*(arry(i+1)*h1(i) - h(i)*sol(i+1)*fac)                          + &
                     (arrx(i+1) - x2(j))*(arry(i)*h1(i) - h(i)*sol(i)*fac)
-            endif
+           endif
 !
-         enddo
+        enddo
 !
-! use border values beyond this interval - should perhaps allow for linear
-! interpolation
+!  Use border values beyond this interval - should perhaps allow for linear
+!  interpolation.
 !
-         if (x2(j).le.arrx(1)) then
-           S(j) = arry(1)
-         elseif (x2(j).ge.arrx(ct1)) then
-           S(j) = arry(ct1)
-         endif
-       enddo
+        if (x2(j)<=arrx(1)) then
+          S(j) = arry(1)
+        elseif (x2(j)>=arrx(ct1)) then
+          S(j) = arry(ct1)
+        endif
+      enddo
 !
     endsubroutine spline
 !***********************************************************************
     function complex_phase(z)
 !
-!  takes complex number and returns Theta where
-!  z = A*exp(i*theta)
+!  Takes complex number and returns Theta where
+!  z = A*exp(i*theta).
 !
 !  17-may-06/anders+jeff: coded
 !
@@ -1101,31 +1101,36 @@ module General
       re=real(z)
       im=aimag(z)
 ! I
-  if ( (re .ge. 0.0) .and. (im .ge. 0.0) ) complex_phase =      asin(im/c)
+      if ((re>=0.0).and.(im>=0.0)) complex_phase=     asin(im/c)
 ! II
-  if ( (re .lt. 0.0) .and. (im .ge. 0.0) ) complex_phase =   pi-asin(im/c)
+      if ((re< 0.0).and.(im>=0.0)) complex_phase=  pi-asin(im/c)
 ! III
-  if ( (re .lt. 0.0) .and. (im .lt. 0.0) ) complex_phase =   pi-asin(im/c)
+      if ((re< 0.0).and.(im< 0.0)) complex_phase=  pi-asin(im/c)
 ! IV
-  if ( (re .ge. 0.0) .and. (im .lt. 0.0) ) complex_phase = 2*pi+asin(im/c)
+      if ((re>=0.0).and.(im< 0.0)) complex_phase=2*pi+asin(im/c)
 !
-   endfunction complex_phase
+    endfunction complex_phase
 !***********************************************************************
     function erfcc(x)
-!  nr routine.
+!
+!  Numerical Recipes routine.
+!
 !  12-jul-2005/joishi: added, translated syntax to f90, and pencilized
 !  21-jul-2006/joishi: generalized.
-       real :: x(:)
-       real,dimension(size(x)) :: erfcc,t,z
 !
+       real :: x(:)
+!
+       real, dimension(size(x)) :: erfcc,t,z
 !
       z=abs(x)
-      t=1./(1.+0.5*z)
+      t=1/(1.0+0.5*z)
       erfcc=t*exp(-z*z-1.26551223+t*(1.00002368+t*(.37409196+t* &
             (.09678418+t*(-.18628806+t*(.27886807+t*(-1.13520398+t*  &
             (1.48851587+t*(-.82215223+t*.17087277)))))))))
-      where (x.lt.0.) erfcc=2.-erfcc
+      where (x<0.0) erfcc=2.0-erfcc
+!
       return
+!
     endfunction erfcc
 !***********************************************************************
     subroutine besselj_nu_int(res,nu,arg,loversample)
@@ -1159,8 +1164,8 @@ module General
       intent(in)  :: nu,arg
       intent(out) :: res
 !
-! Possibility of very high resolution
-! useful in start time, for instance
+!  Possibility of very high resolution.
+!  Useful in start time, for instance.
 !
       nnt=max(100,nygrid)
       if (present(loversample)) then
@@ -1217,8 +1222,8 @@ module General
       integer :: i,nnt
       logical, optional :: loversample
 !
-! Possibility of very high resolution
-! useful in start time, for instance
+!  Possibility of very high resolution.
+!  Useful in start time, for instance.
 !
       nnt=max(100,nygrid)
       if (present(loversample)) then
@@ -1234,7 +1239,7 @@ module General
         angle(i)=(i-1)*d_angle
       enddo
 !
-! Elliptic integral of first kind
+!  Elliptic integral of first kind.
 !
       a_K=d_angle/sqrt(1-(mu*sin(angle))**2)
       if (mu .eq. 1 ) then
@@ -1243,9 +1248,9 @@ module General
         Kappa_mu=sum(a_K(2:nnt-1)) + .5*(a_K(1)+a_K(nnt))
       endif
 !
-! Elliptic integral of second kind
+! Elliptic integral of second kind.
 !
-     if (present(E_mu)) then
+      if (present(E_mu)) then
         a_E=d_angle*sqrt(1-(mu*sin(angle))**2)
         E_mu=sum(a_E(2:nnt-1)) + .5*(a_E(1)+a_E(nnt))
       endif
@@ -1322,7 +1327,7 @@ module General
       RETURN
       ENDIF
       TOX = 2./X
-      IF (X.GT.FLOAT(N)) THEN
+      IF (X>FLOAT(N)) THEN
       BJM = BESSJ0(X)
       BJ  = BESSJ1(X)
       DO 11 J = 1,N-1
@@ -1342,7 +1347,7 @@ module General
       BJM = J*TOX*BJ-BJP
       BJP = BJ
       BJ  = BJM
-      IF (ABS(BJ).GT.BIGNO) THEN
+      IF (ABS(BJ)>BIGNO) THEN
       BJ  = BJ*BIGNI
       BJP = BJP*BIGNI
       BESSJ = BESSJ*BIGNI
@@ -1357,7 +1362,7 @@ module General
       ENDIF
       RETURN
     endfunction BESSJ
-!
+!***********************************************************************
     FUNCTION BESSJ0 (X)
       REAL :: X,BESSJ0,AX,FR,FS,Z,FP,FQ,XX
 !
@@ -1381,7 +1386,7 @@ module General
       9494680.718D0,59272.64853D0,267.8532712D0,1.D0 /
       IF(X.EQ.0.D0) GO TO 1
       AX = ABS (X)
-      IF (AX.LT.8.) THEN
+      IF (AX<8.) THEN
       Y = X*X
       FR = R1+Y*(R2+Y*(R3+Y*(R4+Y*(R5+Y*R6))))
       FS = S1+Y*(S2+Y*(S3+Y*(S4+Y*(S5+Y*S6))))
@@ -1398,9 +1403,8 @@ module General
     1 BESSJ0 = 1.D0
       RETURN
     endfunction BESSJ0
-!
-! ---------------------------------------------------------------------------
-      FUNCTION BESSJ1 (X)
+!***********************************************************************
+    FUNCTION BESSJ1 (X)
       REAL :: X,BESSJ1,AX,FR,FS,Z,FP,FQ,XX
 !     This subroutine calculates the First Kind Bessel Function of
 !     order 1, for any real number X. The polynomial approximation by
@@ -1421,7 +1425,7 @@ module General
       18583304.74D0,99447.43394D0,376.9991397D0,1.D0 /
 !
       AX = ABS(X)
-      IF (AX.LT.8.) THEN
+      IF (AX<8.) THEN
       Y = X*X
       FR = R1+Y*(R2+Y*(R3+Y*(R4+Y*(R5+Y*R6))))
       FS = S1+Y*(S2+Y*(S3+Y*(S4+Y*(S5+Y*S6))))
@@ -1437,15 +1441,15 @@ module General
       RETURN
     endfunction BESSJ1
 !
-!End of file Tbessj.f90
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
+!  Inversion of a tridiagonal matrix with periodic BC (alpha and beta
+!  coefficients in the left and right corners). Used in the ADI scheme of the
+!  implicit_physics module.
+!  Note: this subroutine is using twice the tridag one written above by tobi.
+!
 ! 08-Sep-07/gastine+dintrans: coded from numerical recipes.
-! Inversion of a tridiagonal matrix with periodic BC (alpha and beta
-! coefficients in the left and right corners). Used in the ADI scheme
-! of the implicit_physics module.
-! Note: this subroutine is using twice the tridag one written above by tobi.
 !
       implicit none
 !
@@ -1453,7 +1457,7 @@ module General
       real, dimension(n) :: a,b,c,r,x,bb,u,z
       real    :: alpha,beta,gamma,fact
 !
-      if (n <= 2) stop "cyclic in the general module: n too small"
+      if (n<=2) stop "cyclic in the general module: n too small"
       gamma=-b(1)
       bb(1)=b(1)-gamma
       bb(n)=b(n)-alpha*beta/gamma
@@ -1473,6 +1477,7 @@ module General
       enddo
 !
       return
+!
     endsubroutine cyclic
 !***********************************************************************
 endmodule General
