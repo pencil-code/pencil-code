@@ -100,7 +100,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f)
+    subroutine initialize_special(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -112,6 +112,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: cp1
+      logical :: lstarting
 !
 !  Define if we want stratification
 !
@@ -135,8 +136,11 @@ module Special
 !
 !  Get cv1
 !
-        call get_cp1(cp1)
-        cv1=gamma*cp1
+      call get_cp1(cp1)
+      cv1=gamma*cp1
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
