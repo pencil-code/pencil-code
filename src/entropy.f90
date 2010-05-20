@@ -199,10 +199,12 @@ module Entropy
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
-  integer :: idiag_uxTTmz=0     ! DIAG_DOC:
-  integer :: idiag_uyTTmz=0     ! DIAG_DOC:
-  integer :: idiag_uzTTmz=0     ! DIAG_DOC:
-  integer :: idiag_uxTTmxy=0    ! DIAG_DOC:
+  integer :: idiag_uxTTmz=0     ! DIAG_DOC: $\left< u_x T \right>_{xy}$
+  integer :: idiag_uyTTmz=0     ! DIAG_DOC: $\left< u_y T \right>_{xy}$
+  integer :: idiag_uzTTmz=0     ! DIAG_DOC: $\left< u_z T \right>_{xy}$
+  integer :: idiag_uxTTmxy=0    ! DIAG_DOC: $\left< u_x T \right>_{z}$
+  integer :: idiag_uyTTmxy=0    ! DIAG_DOC: $\left< u_y T \right>_{z}$
+  integer :: idiag_uzTTmxy=0    ! DIAG_DOC: $\left< u_z T \right>_{z}$
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
 !
@@ -2318,7 +2320,8 @@ module Entropy
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
           idiag_uzTTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
-      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0) &
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0 .or. &
+          idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0) &
           lpenc_diagnos2d(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -2678,6 +2681,10 @@ module Entropy
         if (idiag_ssmxz/=0) call ysum_mn_name_xz(p%ss,idiag_ssmxz)
         if (idiag_uxTTmxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
+        if (idiag_uyTTmxy/=0) &
+            call zsum_mn_name_xy(p%uu(:,2)*p%TT,idiag_uyTTmxy)
+        if (idiag_uzTTmxy/=0) &
+            call zsum_mn_name_xy(p%uu(:,3)*p%TT,idiag_uzTTmxy)
         if (idiag_fconvxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
       endif
@@ -4197,6 +4204,7 @@ module Entropy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
+        idiag_uyTTmxy=0; idiag_uzTTmxy=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; 
         idiag_fradxy_Kprof=0; idiag_fconvz=0
       endif
@@ -4272,6 +4280,8 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',idiag_TTmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ssmxy',idiag_ssmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uxTTmxy',idiag_uxTTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uyTTmxy',idiag_uyTTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'uzTTmxy',idiag_uzTTmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbxy',idiag_fturbxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbrxy',idiag_fturbrxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbthxy',idiag_fturbthxy)
@@ -4345,6 +4355,8 @@ module Entropy
         write(3,*) 'i_TTmxy=',idiag_TTmxy
         write(3,*) 'i_TTmxz=',idiag_TTmxz
         write(3,*) 'i_uxTTmxy=',idiag_uxTTmxy
+        write(3,*) 'i_uyTTmxy=',idiag_uyTTmxy
+        write(3,*) 'i_uzTTmxy=',idiag_uzTTmxy
         write(3,*) 'i_ssmxy=',idiag_ssmxy
         write(3,*) 'i_ssmxz=',idiag_ssmxz
       endif
