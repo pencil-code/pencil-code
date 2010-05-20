@@ -1,6 +1,8 @@
 work.pc work.pcl
 special
 initial_condition
+experimental
+inactive
 makefile Makefile
 *.d
 *.inc
