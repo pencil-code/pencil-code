@@ -323,11 +323,11 @@ module Sub
 !***********************************************************************
     subroutine mean_mn(a,res)
 !
-!  successively calculate mean of a, which is supplied at each call.
+!  Successively calculate mean of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
 !
-!   17-dec-01/wolf: coded
-!   20-jun-07/dhruba:adapted for spherical polar coordinate system
+!  17-dec-01/wolf: coded
+!  20-jun-07/dhruba:adapted for spherical polar coordinate system
 !
       real, dimension (nx) :: a
       real :: res
@@ -359,7 +359,7 @@ module Sub
 !***********************************************************************
     subroutine rms_mn(a,res)
 !
-!  successively calculate rms of a, which is supplied at each call.
+!  Successively calculate rms of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
@@ -394,7 +394,7 @@ module Sub
 !***********************************************************************
     subroutine rms2_mn(a2,res)
 !
-!  successively calculate rms of a, with a2=a^2 being supplied at each
+!  Successively calculate rms of a, with a2=a^2 being supplied at each
 !  call.
 !  Start from zero if lfirstpoint=.true.
 !
@@ -430,7 +430,7 @@ module Sub
 !***********************************************************************
     subroutine sum_mn(a,res)
 !
-!  successively calculate the sum over all points of a, which is supplied
+!  Successively calculate the sum over all points of a, which is supplied
 !  at each call.
 !  Start from zero if lfirstpoint=.true.
 !
@@ -466,7 +466,8 @@ module Sub
 !***********************************************************************
     subroutine dot_mn(a,b,c,ladd)
 !
-!  dot product, c=a.b, on pencil arrays
+!  Dot product, c=a.b, on pencil arrays
+!
 !   3-apr-01/axel+gitta: coded
 !  24-jun-08/MR: ladd added for incremental work
 !
@@ -495,9 +496,10 @@ module Sub
 !***********************************************************************
     subroutine vec_dot_3tensor(a,b,c,ladd)
 !
-!  dot product of a vector with 3 tensor,
+!  Dot product of a vector with 3 tensor,
 !   c_ij = a_k b_ijk
-!   28-aug-08/dhruba : coded
+!
+!  28-aug-08/dhruba : coded
 !
       real, dimension (nx,3) :: a
       real, dimension (nx,3,3) :: c
@@ -530,7 +532,8 @@ module Sub
 !***********************************************************************
     subroutine contract_jk3(a,c)
 !
-!  contracts the jk of a_ijk
+!  Contracts the jk of a_ijk.
+!
 !  20-aug-08/dhruba: coded
 !
       real, dimension (nx,3,3,3) :: a
@@ -541,19 +544,16 @@ module Sub
       intent(out) :: c
 !
       c=0
-      do i=1,3
-        do j=1,3
-          do k=1,3
-            c(:,i)=c(:,i)+a(:,i,j,k)
-          enddo
-      enddo
-    enddo
+      do i=1,3; do j=1,3; do k=1,3
+        c(:,i)=c(:,i)+a(:,i,j,k)
+      enddo; enddo; enddo
 !
     endsubroutine contract_jk3
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
-!  dot product, c=a.b, between non-pencilized vector and  pencil array
+!  Dot product, c=a.b, between non-pencilized vector and pencil array.
+!
 !  10-oct-06/axel: coded
 !
       real, dimension (3)    :: a
@@ -569,7 +569,8 @@ module Sub
 !***********************************************************************
     subroutine dot_mn_sm(a,b,c)
 !
-!  dot product, c=a.b, between non-pencilized vector and pencil matrix
+!  Dot product, c=a.b, between non-pencilized vector and pencil matrix.
+!
 !  10-oct-06/axel: coded
 !
       real, dimension (3)      :: a
@@ -588,7 +589,8 @@ module Sub
 !***********************************************************************
     subroutine dot_0(a,b,c)
 !
-!  dot product, c=a.b, of two simple 3-d arrays
+!  Dot product, c=a.b, of two simple 3-d arrays.
+!
 !  11-mar-04/wolf: coded
 !
       real, dimension (:) :: a,b
@@ -603,7 +605,7 @@ module Sub
 !***********************************************************************
     subroutine dot2_mn(a,b,fast_sqrt,precise_sqrt)
 !
-!  dot product with itself, to calculate max and rms values of a vector.
+!  Dot product with itself, to calculate max and rms values of a vector.
 !  FAST_SQRT is only correct for ~1e-18 < |a| < 1e18 (for single precision);
 !  PRECISE_SQRT works for full range.
 !
@@ -632,7 +634,7 @@ module Sub
         precise_sqrt1=.false.
       endif
 !
-!  rescale by factor a_max before taking sqrt.
+!  Rescale by factor a_max before taking sqrt.
 !  In single precision this increases the dynamic range from 1e18 to 1e36.
 !  To avoid division by zero when calculating a_max, we add tini.
 !
@@ -649,7 +651,8 @@ module Sub
 !***********************************************************************
     subroutine dot2_0(a,b)
 !
-!  dot product, c=a.b, of two simple 3-d arrays
+!  Dot product, c=a.b, of two simple 3-d arrays.
+!
 !  11-mar-04/wolf: coded
 !
       real, dimension (:) :: a
@@ -664,7 +667,8 @@ module Sub
 !***********************************************************************
     subroutine dot_mn_add(a,b,c)
 !
-!  dot product, add to previous value
+!  Dot product, add to previous value.
+!
 !  11-nov-02/axel: adapted from dot_mn
 !
       real, dimension (nx,3) :: a,b
@@ -679,7 +683,8 @@ module Sub
 !***********************************************************************
     subroutine dot_mn_sub(a,b,c)
 !
-!  dot product, subtract from previous value
+!  Dot product, subtract from previous value.
+!
 !  21-jul-03/axel: adapted from dot_mn_sub
 !
       real, dimension (nx,3) :: a,b
@@ -694,7 +699,7 @@ module Sub
 !***********************************************************************
     subroutine dyadic2(a,b)
 !
-!  dyadic product with itself
+!  Dyadic product with itself.
 !
 !  24-jan-09/axel: coded
 !
@@ -726,7 +731,8 @@ module Sub
 !***********************************************************************
     subroutine trace_mn(a,b)
 !
-!  trace of a matrix
+!  Trace of a matrix.
+!
 !   3-apr-01/axel+gitta: coded
 !
       real, dimension (nx,3,3) :: a
@@ -741,7 +747,8 @@ module Sub
 !***********************************************************************
     subroutine multvv_mat_mn(a,b,c)
 !
-!  vector multiplied with vector, gives matrix
+!  Vector multiplied with vector, gives matrix.
+!
 !   21-dec-01/nils: coded
 !   16-jul-02/nils: adapted from pencil_mpi
 !
@@ -749,17 +756,16 @@ module Sub
       real, dimension (nx,3,3) :: c
       integer :: i,j
 !
-      do i=1,3
-        do j=1,3
-          c(:,i,j)=a(:,j)*b(:,i)
-        enddo
-      enddo
+      do i=1,3; do j=1,3
+        c(:,i,j)=a(:,j)*b(:,i)
+      enddo; enddo
 !
     endsubroutine multvv_mat_mn
 !***********************************************************************
     subroutine multmm_sc_mn(a,b,c)
 !
-!  matrix multiplied with matrix, gives scalar
+!  Matrix multiplied with matrix, gives scalar.
+!
 !   21-dec-01/nils: coded
 !   16-jul-02/nils: adapted from pencil_mpi
 !
@@ -767,12 +773,10 @@ module Sub
       real, dimension (nx) :: c
       integer :: i,j
 !
-      c=0
-      do i=1,3
-         do j=1,3
-            c=c+a(:,i,j)*b(:,i,j)
-         enddo
-      enddo
+      c=0.0
+      do i=1,3; do j=1,3
+        c=c+a(:,i,j)*b(:,i,j)
+      enddo; enddo
 !
     endsubroutine multmm_sc_mn
 !***********************************************************************
@@ -785,19 +789,15 @@ module Sub
       integer :: i,j,k
 !
       c=0
-      do i=1,3
-        do j=1,3
-          do k=1,3
-            c(:,i,j)=c(:,i,j)+a(:,i,k)*b(:,k,j)
-          enddo
-        enddo
-      enddo
+      do i=1,3; do j=1,3; do k=1,3
+        c(:,i,j)=c(:,i,j)+a(:,i,k)*b(:,k,j)
+      enddo; enddo; enddo
 !
     endsubroutine mult_matrix
 !***********************************************************************
     subroutine multm2_mn(a,b)
 !
-!  matrix squared, gives scalar
+!  Matrix squared, gives scalar.
 !
 !  11-nov-02/axel: adapted from multmm_sc_mn
 !
@@ -806,17 +806,16 @@ module Sub
       integer :: i,j
 !
       b=0
-      do i=1,3
-         do j=1,3
-            b=b+a(:,i,j)**2
-         enddo
-      enddo
+      do i=1,3; do j=1,3
+        b=b+a(:,i,j)**2
+      enddo; enddo
 !
     endsubroutine multm2_mn
 !***********************************************************************
     subroutine multmv_mn(a,b,c,ladd)
 !
-!  matrix multiplied with vector, gives vector
+!  Matrix multiplied with vector, gives vector.
+!
 !  C_i = A_{i,j} B_j
 !
 !   3-apr-01/axel+gitta: coded
@@ -858,8 +857,9 @@ module Sub
 !***********************************************************************
     subroutine multmv_mn_transp(a,b,c,ladd)
 !
-!  transposed matrix multiplied with vector, gives vector
-!  could have called multvm_mn, but this may not be clear enough
+!  Transposed matrix multiplied with vector, gives vector.
+!  Could have called multvm_mn, but this may not be clear enough.
+!
 !  C_i = A_{j,i} B_j
 !
 !  21-jul-03/axel: adapted from multmv_mn
@@ -900,7 +900,7 @@ module Sub
 !***********************************************************************
     subroutine multsv_mn(a,b,c)
 !
-!  vector multiplied with scalar, gives vector
+!  Vector multiplied with scalar, gives vector.
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
@@ -922,7 +922,7 @@ module Sub
 !***********************************************************************
     subroutine multsv_mn_add(a,b,c)
 !
-!  vector multiplied with scalar, gives vector
+!  Vector multiplied with scalar, gives vector.
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
@@ -943,7 +943,8 @@ module Sub
 !***********************************************************************
     subroutine multsv_add_mn(a,b,c,d)
 !
-!  multiply scalar with a vector and subtract from another vector
+!  Multiply scalar with a vector and subtract from another vector.
+
 !  29-oct-97/axel: coded
 !
       real, dimension (nx,3) :: a,c,d
@@ -961,8 +962,9 @@ module Sub
 !***********************************************************************
     subroutine multvs_mn(a,b,c)
 !
-!  vector pencil multiplied with scalar pencil, gives vector pencil
-!   22-nov-01/nils erland: coded
+!  Vector pencil multiplied with scalar pencil, gives vector pencil.
+!
+!  22-nov-01/nils erland: coded
 !
       real, dimension (nx,3) :: a, c
       real, dimension (nx) :: b
@@ -976,7 +978,7 @@ module Sub
 !***********************************************************************
     subroutine cross_mn(a,b,c)
 !
-!  cross product, c = a x b, for pencil variables.
+!  Cross product, c = a x b, for pencil variables.
 !  Previously called crossp.
 !
       real, dimension (nx,3) :: a,b,c
@@ -992,8 +994,7 @@ module Sub
 !***********************************************************************
     subroutine cross_0(a,b,c)
 !
-!  cross product, c = a x b, for simple 3-d vectors
-!  (independent of position)
+!  Cross product, c = a x b, for simple 3-d vectors (independent of position).
 !
       real, dimension (3) :: a,b,c
 !
@@ -1008,7 +1009,8 @@ module Sub
 !***********************************************************************
     subroutine gij(f,k,g,nder)
 !
-!  calculate gradient of a vector, return matrix
+!  Calculate gradient of a vector, return matrix.
+!
 !   3-apr-01/axel+gitta: coded
 !
       use Deriv, only: der,der2,der3,der4,der5,der6
@@ -1022,31 +1024,31 @@ module Sub
       intent(out) :: g
 !
       k1=k-1
-      do i=1,3
-        do j=1,3
-          if (nder == 1) then
-            call der(f,k1+i,tmp,j)
-          elseif (nder == 2) then
-            call der2(f,k1+i,tmp,j)
-          elseif (nder == 3) then
-            call der3(f,k1+i,tmp,j)
-          elseif (nder == 4) then
-            call der4(f,k1+i,tmp,j)
-          elseif (nder == 5) then
-            call der5(f,k1+i,tmp,j)
-          elseif (nder == 6) then
-            call der6(f,k1+i,tmp,j)
-          endif
-          g(:,i,j)=tmp
-        enddo
-      enddo
+      do i=1,3; do j=1,3
+        if (nder == 1) then
+          call der(f,k1+i,tmp,j)
+        elseif (nder == 2) then
+          call der2(f,k1+i,tmp,j)
+        elseif (nder == 3) then
+          call der3(f,k1+i,tmp,j)
+        elseif (nder == 4) then
+          call der4(f,k1+i,tmp,j)
+        elseif (nder == 5) then
+          call der5(f,k1+i,tmp,j)
+        elseif (nder == 6) then
+          call der6(f,k1+i,tmp,j)
+        endif
+        g(:,i,j)=tmp
+      enddo; enddo
 !
     endsubroutine gij
 !***********************************************************************
     subroutine gijk_symmetric(f,k,g,nder)
 !
-!  calculate gradient of a (symmetric) second rank matrix, return 3rd rank matrix
-!   18-aug-08/dhruba: coded
+!  Calculate gradient of a (symmetric) second rank matrix, return 3rd rank
+!  matrix
+!
+!  18-aug-08/dhruba: coded
 !
       use Deriv, only: der,der2,der3,der4,der5,der6
 !
@@ -1060,27 +1062,25 @@ module Sub
       intent(out) :: g
 !
       k1=k-1
-      do i=1,2
-        do l=1,3
-          l1=l-1
-          do j=1,3
-            if (nder == 1) then
-              call der(f,k1+i+l1,tmp,j)
-            elseif (nder == 2) then
-              call der2(f,k1+i+l1,tmp,j)
-            elseif (nder == 3) then
-              call der3(f,k1+i+l1,tmp,j)
-            elseif (nder == 4) then
-              call der4(f,k1+i+l1,tmp,j)
-            elseif (nder == 5) then
-              call der5(f,k1+i+l1,tmp,j)
-            elseif (nder == 6) then
-              call der6(f,k1+i+l1,tmp,j)
-            endif
-            tmpg(:,i,l,j)=tmp
-          enddo
+      do i=1,2; do l=1,3
+        l1=l-1
+        do j=1,3
+          if (nder == 1) then
+            call der(f,k1+i+l1,tmp,j)
+          elseif (nder == 2) then
+            call der2(f,k1+i+l1,tmp,j)
+          elseif (nder == 3) then
+            call der3(f,k1+i+l1,tmp,j)
+          elseif (nder == 4) then
+            call der4(f,k1+i+l1,tmp,j)
+          elseif (nder == 5) then
+            call der5(f,k1+i+l1,tmp,j)
+          elseif (nder == 6) then
+            call der6(f,k1+i+l1,tmp,j)
+          endif
+          tmpg(:,i,l,j)=tmp
         enddo
-      enddo
+      enddo; enddo
       g(:,1,1,:) = tmpg(:,1,1,:)
       g(:,2,2,:) = tmpg(:,1,2,:)
       g(:,3,3,:) = tmpg(:,1,3,:)
@@ -1095,7 +1095,8 @@ module Sub
 !***********************************************************************
     subroutine grad_main(f,k,g)
 !
-!  calculate gradient of a scalar, get vector
+!  Calculate gradient of a scalar, get vector.
+!
 !  29-sep-97/axel: coded
 !
       use Deriv, only: der
@@ -1116,8 +1117,8 @@ module Sub
 !***********************************************************************
     subroutine grad_other(f,g)
 !
-!  FOR NON 'mvar' variable
-!  calculate gradient of a scalar, get vector
+!  For non 'mvar' variable calculate gradient of a scalar, get vector
+!
 !  26-nov-02/tony: coded
 !
       use Deriv, only: der
@@ -1129,7 +1130,7 @@ module Sub
       intent(in) :: f
       intent(out) :: g
 !
-! Uses overloaded der routine
+!  Uses overloaded der routine.
 !
       call der(f,tmp,1); g(:,1)=tmp
       call der(f,tmp,2); g(:,2)=tmp
@@ -1139,7 +1140,8 @@ module Sub
 !***********************************************************************
     subroutine grad5(f,k,g)
 !
-!  Calculate 5th order gradient of a scalar, get vector
+!  Calculate 5th order gradient of a scalar, get vector.
+!
 !  03-jun-07/anders: adapted
 !
       use Deriv, only: der5
@@ -1160,7 +1162,8 @@ module Sub
 !***********************************************************************
     subroutine div(f,k,g)
 !
-!  calculate divergence of vector, get scalar
+!  Calculate divergence of vector, get scalar.
+!
 !  13-dec-01/nils: coded
 !  16-jul-02/nils: adapted from pencil_mpi
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
@@ -1219,7 +1222,8 @@ module Sub
 !***********************************************************************
     subroutine div_mn(aij,b,a)
 !
-!  calculate divergence from derivative matrix
+!  Calculate divergence from derivative matrix.
+!
 !  18-sep-04/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates
@@ -1233,7 +1237,7 @@ module Sub
 !
       b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
 !
-!  adjustments for spherical coordinate system
+!  Adjustments for spherical coordinate system.
 !
       if (lspherical_coords) then
         b=b+2.*r1_mn*a(:,1)+r1_mn*cotth(m)*a(:,2)
@@ -1247,7 +1251,8 @@ module Sub
 !***********************************************************************
     subroutine curl_mn(aij,b,a)
 !
-!  calculate curl from derivative matrix
+!  Calculate curl from derivative matrix.
+!
 !  21-jul-03/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates
@@ -1261,7 +1266,7 @@ module Sub
       b(:,2)=aij(:,1,3)-aij(:,3,1)
       b(:,3)=aij(:,2,1)-aij(:,1,2)
 !
-!  adjustments for spherical coordinate system
+!  Adjustments for spherical coordinate system.
 !
       if (lspherical_coords) then
         if (.not. present(a)) then
@@ -1272,7 +1277,7 @@ module Sub
         b(:,3)=b(:,3)+a(:,2)*r1_mn
       endif
 !
-!  adjustments for cylindrical coordinate system
+!  Adjustments for cylindrical coordinate system.
 !  If we go all the way to the center, we need to put a regularity condition.
 !  We do this here currently up to second order, and only for curl_mn.
 !
@@ -1286,7 +1291,7 @@ module Sub
 !***********************************************************************
     subroutine curl_horizontal(f,k,g)
 !
-!  calculate curl of a vector, whose z component is given
+!  Calculate curl of a vector, whose z component is given.
 !
 !   8-oct-09/axel: adapted from
 !
@@ -1310,7 +1315,7 @@ module Sub
 !g(:,2)=0.
       g(:,3)=0.
 !
-!  adjustments for spherical corrdinate system
+!  Adjustments for spherical corrdinate system.
 !
       if (lspherical_coords) then
         g(:,1)=g(:,1)+f(l1:l2,m,n,k)*r1_mn*cotth(m)
@@ -1325,7 +1330,8 @@ module Sub
 !***********************************************************************
     subroutine curl(f,k,g)
 !
-!  calculate curl of a vector, get vector
+!  Calculate curl of a vector, get vector.
+!
 !  12-sep-97/axel: coded
 !  10-sep-01/axel: adapted for cache efficiency
 !  11-sep-04/axel: began adding spherical coordinates
@@ -1356,7 +1362,7 @@ module Sub
       call der(f,k1+1,tmp2,2)
       g(:,3)=tmp1-tmp2
 !
-!  adjustments for spherical corrdinate system
+!  Adjustments for spherical corrdinate system.
 !
       if (lspherical_coords) then
         g(:,1)=g(:,1)+f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
@@ -1372,7 +1378,8 @@ module Sub
 !***********************************************************************
     subroutine curl_other(f,g)
 !
-!  calculate curl of a non-mvar vector, get vector
+!  Calculate curl of a non-mvar vector, get vector.
+!
 !  23-june-09/wlad: adapted from curl
 !
       use Deriv, only: der
@@ -1396,7 +1403,7 @@ module Sub
       call der(f(:,:,:,1),tmp2,2)
       g(:,3)=tmp1-tmp2
 !
-!  adjustments for spherical corrdinate system
+!  Adjustments for spherical corrdinate system.
 !
       if (lspherical_coords) then
         g(:,1)=g(:,1)+f(l1:l2,m,n,3)*r1_mn*cotth(m)
@@ -1412,7 +1419,8 @@ module Sub
 !***********************************************************************
     subroutine curli(f,k,g,i)
 !
-!  calculate curl of a vector, get vector
+!  Calculate curl of a vector, get vector.
+!
 !  22-oct-02/axel+tarek: adapted from curl
 !
       use Deriv, only: der
@@ -1430,25 +1438,25 @@ module Sub
       select case (i)
 !
       case (1)
-      call der(f,k1+3,tmp1,2)
-      call der(f,k1+2,tmp2,3)
-      g=tmp1-tmp2
-      if (lspherical_coords) g=tmp1-tmp2&
-            +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
+        call der(f,k1+3,tmp1,2)
+        call der(f,k1+2,tmp2,3)
+        g=tmp1-tmp2
+        if (lspherical_coords) g=tmp1-tmp2&
+              +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
 !
       case (2)
-      call der(f,k1+1,tmp1,3)
-      call der(f,k1+3,tmp2,1)
-      g=tmp1-tmp2
-      if (lspherical_coords) g=tmp1-tmp2&
-            -f(l1:l2,m,n,k1+3)*r1_mn
+        call der(f,k1+1,tmp1,3)
+        call der(f,k1+3,tmp2,1)
+        g=tmp1-tmp2
+        if (lspherical_coords) g=tmp1-tmp2&
+              -f(l1:l2,m,n,k1+3)*r1_mn
 !
       case (3)
-      call der(f,k1+2,tmp1,1)
-      call der(f,k1+1,tmp2,2)
-      g=tmp1-tmp2
-      if (lspherical_coords) g=tmp1-tmp2&
-            +f(l1:l2,m,n,k1+2)*r1_mn
+        call der(f,k1+2,tmp1,1)
+        call der(f,k1+1,tmp2,2)
+        g=tmp1-tmp2
+        if (lspherical_coords) g=tmp1-tmp2&
+              +f(l1:l2,m,n,k1+2)*r1_mn
 !
       endselect
 !
@@ -1459,7 +1467,8 @@ module Sub
 !***********************************************************************
     subroutine del2_main(f,k,del2f)
 !
-!  calculate del2 of a scalar, get scalar
+!  Calculate del2 of a scalar, get scalar.
+!
 !  12-sep-97/axel: coded
 !   7-mar-07/wlad: added cylindrical coordinates
 !
@@ -1493,7 +1502,7 @@ module Sub
 !***********************************************************************
     subroutine del2_other(f,del2f)
 !
-!  calculate del2 of a scalar, get scalar
+!  Calculate del2 of a scalar, get scalar.
 !   8-may-09/nils: adapted from del2
 !
       use Deriv, only: der,der2
@@ -1525,7 +1534,8 @@ module Sub
 !***********************************************************************
     subroutine del2v(f,k,del2f,fij,pff)
 !
-!  calculate del2 of a vector, get vector
+!  Calculate del2 of a vector, get vector.
+!
 !  28-oct-97/axel: coded
 !  15-mar-07/wlad: added cylindrical coordinates
 !
@@ -1550,41 +1560,41 @@ module Sub
       enddo
 !
       if (lcylindrical_coords) then
-         !del2 already contains the extra term 1/r*d(uk)/dt
-         call der(f,k1+2,tmp,2)
-         del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
-         call der(f,k1+1,tmp,2)
-         del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
+        !del2 already contains the extra term 1/r*d(uk)/dt
+        call der(f,k1+2,tmp,2)
+        del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
+        call der(f,k1+1,tmp,2)
+        del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
       endif
 !
       if (lspherical_coords) then
-         if (.not. (present(fij) .and. present(pff))) then
+        if (.not. (present(fij) .and. present(pff))) then
            call fatal_error('del2v', &
                'Cannot do a spherical del2v without aij and aa')
-         endif
+        endif
 !
 ! for r component (factors of line elements are taken care of inside p%uij
-         del2f(:,1)= del2f(:,1)+&
-               r1_mn*(2.*(fij(:,1,1)-fij(:,2,2)-fij(:,3,3) &
-                             -r1_mn*pff(:,1)-cotth(m)*r1_mn*pff(:,2) ) &
-                         +cotth(m)*fij(:,1,2) )
+        del2f(:,1)= del2f(:,1)+&
+            r1_mn*(2.*(fij(:,1,1)-fij(:,2,2)-fij(:,3,3) &
+            -r1_mn*pff(:,1)-cotth(m)*r1_mn*pff(:,2) ) &
+            +cotth(m)*fij(:,1,2) )
 ! for theta component
-         del2f(:,2)=del2f(:,2)+&
-               r1_mn*(2.*(fij(:,2,1)-cotth(m)*fij(:,3,3)&
-                             +fij(:,1,2) )&
-                         +cotth(m)*fij(:,2,2)-r1_mn*sin1th(m)*sin1th(m)*pff(:,2) )
+        del2f(:,2)=del2f(:,2)+&
+            r1_mn*(2.*(fij(:,2,1)-cotth(m)*fij(:,3,3)&
+            +fij(:,1,2) )&
+            +cotth(m)*fij(:,2,2)-r1_mn*sin1th(m)*sin1th(m)*pff(:,2) )
 ! for phi component
-         del2f(:,3)=del2f(:,3)+&
-               r1_mn*(2.*(fij(:,3,1)+fij(:,1,3)&
-                             +cotth(m)*fij(:,2,3) ) &
-                         +cotth(m)*fij(:,3,2)-sin1th(m)*pff(:,3) )
+        del2f(:,3)=del2f(:,3)+&
+            r1_mn*(2.*(fij(:,3,1)+fij(:,1,3)&
+            +cotth(m)*fij(:,2,3) ) &
+            +cotth(m)*fij(:,3,2)-sin1th(m)*pff(:,3) )
       endif
 !
     endsubroutine del2v
 !***********************************************************************
     subroutine del2v_etc(f,k,del2,graddiv,curlcurl,gradcurl)
 !
-!  calculates a number of second derivative expressions of a vector
+!  Calculates a number of second derivative expressions of a vector
 !  outputs a number of different vector fields.
 !  gradcurl is not the vector gradient.
 !  Surprisingly, calling derij only if graddiv or curlcurl are present
@@ -1719,8 +1729,8 @@ module Sub
 !***********************************************************************
     subroutine del2vi_etc(f,k,ii,del2,graddiv,curlcurl)
 !
-!  calculates a number of second derivative expressions of a vector
-!  outputs a number of different vector fields.
+!  Calculates a number of second derivative expressions of a vector.
+!  Outputs a number of different vector fields.
 !  Surprisingly, calling derij only if graddiv or curlcurl are present
 !  does not speed up the code on Mephisto @ 32x32x64.
 !  Just do the ith component
@@ -1738,7 +1748,7 @@ module Sub
       intent(in) :: f,k,ii
       intent(out) :: del2,graddiv,curlcurl
 !
-!  do the del2 diffusion operator
+!  Do the del2 diffusion operator.
 !
       k1=k-1
       do i=1,3
@@ -1772,7 +1782,8 @@ module Sub
 !***********************************************************************
     subroutine del4v(f,k,del4f)
 !
-!  calculate del4 of a vector, get vector
+!  Calculate del4 of a vector, get vector.
+!
 !  09-dec-03/nils: adapted from del6v
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1783,7 +1794,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del4f
 !
-!  do the del4 diffusion operator
+!  Do the del4 diffusion operator.
 !
       k1=k-1
       do i=1,3
@@ -1801,7 +1812,8 @@ module Sub
 !***********************************************************************
     subroutine del6v(f,k,del6f)
 !
-!  calculate del6 of a vector, get vector
+!  Calculate del6 of a vector, get vector.
+!
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
 !
@@ -1813,7 +1825,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-!  do the del6 diffusion operator
+!  Do the del6 diffusion operator.
 !
       k1=k-1
       do i=1,3
@@ -1831,7 +1843,7 @@ module Sub
 !***********************************************************************
     subroutine gij_etc(f,iref,aa,aij,Bij,del2,graddiv)
 !
-!  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
+!  Calculate B_i,j = eps_ikl A_l,jk and A_l,kk.
 !
 !  21-jul-03/axel: coded
 !  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
@@ -1847,20 +1859,20 @@ module Sub
       real, dimension (nx,3), intent (out), optional :: del2,graddiv
       real, dimension (nx,3), intent (in), optional :: aa
 !
-!  locally used variables
+!  Locally used variables.
 !
       real, dimension (nx,3,3,3) :: d2A
       real, dimension (nx) :: tmp
       integer :: iref1,i,j
 !
-!  reference point of argument
+!  Reference point of argument.
 !
       iref1=iref-1
 !
-!  calculate all mixed and non-mixed second derivatives
-!  of the vector potential (A_k,ij)
+!  Calculate all mixed and non-mixed second derivatives
+!  of the vector potential (A_k,ij).
 !
-!  do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
+!  Do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx).
 !  (This wasn't spotted by me but by a guy from SGI...)
 !  Note: for non-cartesian coordinates there are different correction terms,
 !  see below.
@@ -1874,7 +1886,7 @@ module Sub
         call derij(f,iref1+i,tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
       enddo
 !
-!  corrections for spherical polars from swapping mixed derivatives:
+!  Corrections for spherical polars from swapping mixed derivatives:
 !  Psi_{,theta^ r^} = Psi_{,r^ theta^} - Psi_{,\theta^}/r
 !  Psi_{,phi^ r^} = Psi_{,r^ phi^} - Psi_{,\phi^}/r
 !  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
@@ -1887,8 +1899,8 @@ module Sub
         enddo
       endif
 !
-!  for cylindrical, only
-!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom
+!  For cylindrical, only
+!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom .
 !
       if (lcylindrical_coords) then
          do i=1,3
@@ -1896,14 +1908,14 @@ module Sub
          enddo
       endif
 !
-!  calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
-!  del2_i = A_i,jj and graddiv_i = A_j,ji
+!  Calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
+!  del2_i = A_i,jj and graddiv_i = A_j,ji .
 !
       bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
       bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
       bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
 !
-!  corrections for spherical coordinates
+!  Corrections for spherical coordinates.
 !
       if (lspherical_coords) then
         bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
@@ -1914,14 +1926,14 @@ module Sub
         bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
       endif
 !
-!  corrections for cylindrical coordinates
+!  Corrections for cylindrical coordinates.
 !
       if (lcylindrical_coords) then
         bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
         bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
       endif
 !
-!  calculate del2 and graddiv, if requested
+!  Calculate del2 and graddiv, if requested.
 !
       if (present(graddiv)) then
 !--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
@@ -1961,7 +1973,7 @@ module Sub
 !***********************************************************************
     subroutine g2ij(f,k,g)
 !
-!  calculates the Hessian, i.e. all second derivatives of a scalar
+!  Calculates the Hessian, i.e. all second derivatives of a scalar.
 !
 !  11-jul-02/axel: coded
 !
@@ -1975,7 +1987,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: g
 !
-!  run though all 9 possibilities, treat diagonals separately
+!  Run though all 9 possibilities, treat diagonals separately.
 !
       do j=1,3
         call der2 (f,k,tmp,j); g(:,j,j)=tmp
@@ -1988,10 +2000,11 @@ module Sub
 !***********************************************************************
     subroutine del4(f,k,del4f)
 !
-!  calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
-!  than del2^3) of a scalar for hyperdiffusion
-!  8-jul-02/wolf: coded
-!  9-dec-03/nils: adapted from del6
+!  Calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
+!  than del2^3) of a scalar for hyperdiffusion.
+!
+!   8-jul-02/wolf: coded
+!   9-dec-03/nils: adapted from del6
 !
       use Deriv, only: der4
 !
@@ -2017,8 +2030,9 @@ module Sub
 !***********************************************************************
     subroutine del6(f,k,del6f)
 !
-!  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
-!  than del2^3) of a scalar for hyperdiffusion
+!  Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+!  than del2^3) of a scalar for hyperdiffusion.
+!
 !  8-jul-02/wolf: coded
 !
       use Deriv, only: der6
@@ -2045,8 +2059,8 @@ module Sub
 !***********************************************************************
     subroutine del6_other(f,del6f)
 !
-!  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
-!  than del2^3) of a scalar for hyperdiffusion
+!  Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+!  than del2^3) of a scalar for hyperdiffusion.
 !
 !  13-jun-05/anders: adapted from del6
 !
@@ -2073,10 +2087,11 @@ module Sub
 !***********************************************************************
     subroutine del6_nodx(f,k,del6f)
 !
-!  calculate something similar to del6, but ignoring the steps dx, dy, dz.
+!  Calculate something similar to del6, but ignoring the steps dx, dy, dz.
 !  Useful for Nyquist filetering, where you just want to remove the
 !  Nyquist frequency fully, while retaining the amplitude in small wave
 !  numbers.
+!
 !  8-jul-02/wolf: coded
 !
       use Deriv, only: der6
@@ -2098,8 +2113,8 @@ module Sub
     subroutine del6fj(f,vec,k,del6f)
 !
 !  Calculates fj*del6 (defined here as fx*d^6/dx^6 + fy*d^6/dy^6 + fz*d^6/dz^6)
-!  needed for hyperdissipation of a scalar (diffrho) with non-cubic cells where the
-!  coefficient depends on resolution. Returns scalar.
+!  needed for hyperdissipation of a scalar (diffrho) with non-cubic cells where
+!  the coefficient depends on resolution. Returns scalar.
 !
 !  30-oct-06/wlad: adapted from del6
 !
@@ -2118,7 +2133,7 @@ module Sub
       call der6(f,k,d6fdz,3)
       del6f = vec(1)*d6fdx + vec(2)*d6fdy + vec(3)*d6fdz
 !
-!  Exit if this is requested for non-cartesian runs
+!  Exit if this is requested for non-cartesian runs.
 !
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del6fj', &
@@ -2129,8 +2144,8 @@ module Sub
     subroutine del6fjv(f,vec,k,del6f)
 !
 !  Calculates fj*del6 (defined here as fx*d^6/dx^6 + fy*d^6/dy^6 + fz*d^6/dz^6)
-!  needed for hyperdissipation of vectors (visc, res) with non-cubic cells where
-!  the coefficient depends on resolution. Returns vector.
+!  needed for hyperdissipation of vectors (visc, res) with non-cubic cells
+!  where the coefficient depends on resolution. Returns vector.
 !
 !  30-oct-06/wlad: adapted from del6v
 !
@@ -2149,7 +2164,7 @@ module Sub
         del6f(:,i)=tmp
       enddo
 !
-!  Exit if this is requested for non-cartesian runs
+!  Exit if this is requested for non-cartesian runs.
 !
       if (lcylindrical_coords.or.lspherical_coords) &
           call fatal_error('del2fjv', &
@@ -2234,7 +2249,7 @@ module Sub
     subroutine u_dot_grad_mat(f,k,gradM,u_dot_gradM)
 !
 !  u.grad(M)
-! where M is a second rank matrix
+!  where M is a second rank matrix
 !
 !  dhruba: addapted from udotgradA
 !
@@ -2247,20 +2262,20 @@ module Sub
       real, dimension (nx,3,3) :: u_dot_gradM
       integer :: k
 !
-!  upwind
+!  Upwind.
 !
       uu=f(l1:l2,m,n,k:k+2)
       call vec_dot_3tensor(uu,gradM,u_dot_gradM)
 !
-!  adjustments for spherical coordinate system.
-!  The following now works for general u.gradA
+!  Adjustments for spherical coordinate system.
+!  The following now works for general u.gradA .
 !
       if (lspherical_coords) then
           call inevitably_fatal_error('u_dot_gradM', &
             'spherical coordinates not implemented yet')
       endif
 !
-!  the following now works for general u.gradA
+!  The following now works for general u.gradA .
 !
       if (lcylindrical_coords) then
           call inevitably_fatal_error('u_dot_gradM', &
@@ -2273,11 +2288,11 @@ module Sub
 !
 !  Do advection-type term u.grad f_k.
 !  Assumes gradf to be known, but takes f and k as arguments to be able
-!  to calculate upwind correction
+!  to calculate upwind correction.
 !
-! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
-! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
-! 28-Sep-2009/MR: ladd added for incremental work
+!  28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+!  29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
+!  28-Sep-2009/MR: ladd added for incremental work
 !
       use Deriv, only: der6
 !
@@ -2346,9 +2361,9 @@ module Sub
 !  Assumes gradf to be known, but takes f and k as arguments to be able
 !  to calculate upwind correction
 !
-! 28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
-! 29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
-! 28-Sep-2009/MR: ladd added for incremental work
+!  28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+!  29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
+!  28-Sep-2009/MR: ladd added for incremental work
 !
       logical :: ladd1
 !
@@ -2367,15 +2382,15 @@ module Sub
 !
       call dot_mn(uu,gradf,ugradf,ladd1)
 !
-!  upwind correction (currently just for z-direction)
+!  Upwind correction (currently just for z-direction).
 !
       if (present(upwind)) then; if (upwind) then
 !
-!  x-direction
+!  x-direction.
 !
         ugradf=ugradf-abs(uu(:,1))*del6u(:,1)
 !
-!  y-direction
+!  y-direction.
 !
         if (lcartesian_coords) then
           ugradf=ugradf-abs(uu(:,2))*del6u(:,2)
@@ -2386,7 +2401,7 @@ module Sub
              ugradf=ugradf-r1_mn*abs(uu(:,2))*del6u(:,2)
         endif
 !
-!  z-direction
+!  z-direction.
 !
         if ((lcartesian_coords).or.(lcylindrical_coords)) then
           ugradf=ugradf-abs(uu(:,3))*del6u(:,3)
@@ -2401,7 +2416,7 @@ module Sub
 !***********************************************************************
     subroutine h_dot_grad_vec(hh,gradf,ff,hgradf)
 !
-!  h.gradf for vectors h and f
+!  h.gradf for vectors h and f.
 !
 !  23-mar-08/axel: adapted from u_dot_grad_vec
 !
@@ -2413,15 +2428,15 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j
 !
-!  dot product for each of the three components of gradf
+!  Dot product for each of the three components of gradf .
 !
       do j=1,3
         call h_dot_grad_scl(hh,gradf(:,j,:),tmp)
         hgradf(:,j)=tmp
       enddo
 !
-!  adjustments for spherical coordinate system.
-!  The following now works for general u.gradA
+!  Adjustments for spherical coordinate system.
+!  The following now works for general u.gradA .
 !
       if (lspherical_coords) then
         hgradf(:,1)=hgradf(:,1)-r1_mn*(hh(:,2)*ff(:,2)+hh(:,3)*ff(:,3))
@@ -2429,7 +2444,7 @@ module Sub
         hgradf(:,3)=hgradf(:,3)+r1_mn*(hh(:,3)*ff(:,1)+hh(:,3)*ff(:,2)*cotth(m))
       endif
 !
-!  the following now works for general u.gradA
+!  The following now works for general u.gradA .
 !
       if (lcylindrical_coords) then
         hgradf(:,1)=hgradf(:,1)-rcyl_mn1*(hh(:,2)*ff(:,2))
@@ -2440,7 +2455,7 @@ module Sub
 !***********************************************************************
     subroutine h_dot_grad_scl(hh,gradf,hgradf)
 !
-!  Do advection-type term h.grad f_k, but h is not taken from f array
+!  Do advection-type term h.grad f_k, but h is not taken from f array.
 !
 !  23-mar-08/axel: adapted from u_dot_grad_scl
 !
@@ -2475,7 +2490,8 @@ module Sub
 !***********************************************************************
     subroutine inpup(file,a,nv)
 !
-!  read particle snapshot file
+!  Read particle snapshot file.
+!
 !  11-apr-00/axel: adapted from input
 !
       integer :: nv
@@ -2485,11 +2501,13 @@ module Sub
       open(1,file=file,form='unformatted')
       read(1) a
       close(1)
+!
     endsubroutine inpup
 !***********************************************************************
     subroutine inpui(file,a,nv)
 !
-!  read data (random seed, etc.) from file
+!  Read data (random seed, etc.) from file.
+!
 !  11-apr-00/axel: adapted from input
 !
       integer :: nv,iostat
@@ -2510,7 +2528,8 @@ module Sub
 !***********************************************************************
     subroutine inpuf(file,a,nv)
 !
-!  read formatted snapshot
+!  Read formatted snapshot.
+!
 !   5-aug-98/axel: coded
 !
       integer :: nv
@@ -2529,7 +2548,8 @@ module Sub
 !***********************************************************************
     subroutine outpup(file,a,nv)
 !
-!  write snapshot file, always write mesh and time, could add other things
+!  Write snapshot file, always write mesh and time, could add other things.
+!
 !  11-apr-00/axel: adapted from output
 !
       integer :: nv
@@ -2544,7 +2564,8 @@ module Sub
 !***********************************************************************
     subroutine outpui(file,a,nv)
 !
-!  write snapshot file, always write mesh and time, could add other things
+!  Write snapshot file, always write mesh and time, could add other things.
+!
 !  11-apr-00/axel: adapted from output
 !
       integer :: nv
@@ -2559,7 +2580,8 @@ module Sub
 !***********************************************************************
     subroutine outpuf(file,a,nv)
 !
-!  write formatted snapshot, otherwise like output
+!  Write formatted snapshot, otherwise like output.
+!
 !   5-aug-98/axel: coded
 !
       integer :: nv
@@ -2578,7 +2600,7 @@ module Sub
 !***********************************************************************
     character function numeric_precision()
 !
-!  return 'S' if running in single, 'D' if running in double precsision
+!  Return 'S' if running in single, 'D' if running in double precision.
 !
 !  12-jul-06/wolf: extracted from wdim()
 !
@@ -2598,7 +2620,7 @@ module Sub
 !***********************************************************************
     subroutine wdim(file,mxout,myout,mzout)
 !
-!  write dimension to file
+!  Write dimension to file.
 !
 !   8-sep-01/axel: adapted to take myout,mzout
 !
@@ -2607,8 +2629,8 @@ module Sub
       integer, optional :: mxout,myout,mzout
       integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
 !
-!  determine whether mxout=mx (as on each processor)
-!  or whether mxout is different (eg when writing out full array)
+!  Determine whether mxout=mx (as on each processor),
+!  or whether mxout is different (e.g. when writing out full array).
 !
       if (present(mzout)) then
         mxout1=mxout
@@ -2624,19 +2646,19 @@ module Sub
         mzout1=mz
       endif
 !
-!  only root writes allprocs/dim.dat (with io_mpio.f90),
-!  but everybody writes to their procN/dim.dat (with io_dist.f90)
+!  Only root writes allprocs/dim.dat (with io_mpio.f90),
+!  but everybody writes to their procN/dim.dat (with io_dist.f90).
 !
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
         write(1,'(3i7,3i5)') mxout1,myout1,mzout1,mvar,maux,mglobal
 !
-!  check for double precision
+!  Check for double precision.
 !
         prec = numeric_precision()
         write(1,'(a)') prec
 !
-!  write number of ghost cells (could be different in x, y and z)
+!  Write number of ghost cells (could be different in x, y and z).
 !
         write(1,'(3i5)') nghost, nghost, nghost
         if (present(mzout)) then
@@ -2654,9 +2676,9 @@ module Sub
     subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
         prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
 !
-!  write dimension to file
+!  Write dimension to file.
 !
-!   15-sep-09/nils: adapted from rdim
+!  15-sep-09/nils: adapted from rdim
 !
       character (len=*) :: file
       character         :: prec_in
@@ -2664,7 +2686,7 @@ module Sub
       integer           :: mvar_in,maux_in,mglobal_in,nghost_in
       integer           :: ipx_in, ipy_in, ipz_in
 !
-!  Every processor writes to their procN/dim.dat (with io_dist.f90)
+!  Every processor writes to their procN/dim.dat (with io_dist.f90).
 !
       open(124,file=file,FORM='formatted')
       read(124,*) mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in
@@ -2678,13 +2700,13 @@ module Sub
 !***********************************************************************
     subroutine read_snaptime(file,tout,nout,dtout,t)
 !
-    use Mpicomm, only: mpibcast_real
-!
-!  Read in output time for next snapshot (or similar) from control file
+!  Read in output time for next snapshot (or similar) from control file.
 !
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
+!
+      use Mpicomm, only: mpibcast_real
 !
       character (len=*) :: file
       integer :: nout
@@ -2697,8 +2719,8 @@ module Sub
       real, dimension(nbcast_array) :: bcast_array
       logical :: exist
 !
-!  depending on whether or not file exists, we need to
-!  either read or write tout and nout from or to the file
+!  Depending on whether or not file exists, we need to
+!  either read or write tout and nout from or to the file.
 !
       if (lroot) then
         inquire(FILE=trim(file),EXIST=exist)
@@ -2708,8 +2730,8 @@ module Sub
           read(lun,*) tout,nout
         else
 !
-!  special treatment when dtout is negative
-!  now tout and nout refer to the next snapshopt to be written
+!  Special treatment when dtout is negative.
+!  Now tout and nout refer to the next snapshopt to be written.
 !
           if (dtout < 0.) then
             tout=log10(t)
@@ -2732,7 +2754,7 @@ module Sub
         bcast_array(2)=nout
       endif
 !
-!  broadcast tout and nout, botch into floating point array. Should be
+!  Broadcast tout and nout, botch into floating point array. Should be
 !  done with a special MPI datatype.
 !
       call mpibcast_real(bcast_array,nbcast_array)
@@ -2805,7 +2827,7 @@ module Sub
 !***********************************************************************
     subroutine vecout(lun,file,vv,thresh,nvec)
 !
-!  write vectors to disc if their length exceeds thresh
+!  Write vectors to disc if their length exceeds thresh.
 !
 !  22-jul-03/axel: coded
 !
@@ -2818,11 +2840,11 @@ module Sub
 !
       t_sp = t
 !
-!  return if thresh=0 (default)
+!  Return if thresh=0 (default).
 !
       if (thresh==0.) return
 !
-!  open files when first data point
+!  Open files when first data point.
 !
       if (lfirstpoint) then
         open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
@@ -2830,7 +2852,7 @@ module Sub
         nvec=0
       endif
 !
-!  write data
+!  Write data.
 !
       thresh2=thresh**2
       v2=vv(:,1)**2+vv(:,2)**2+vv(:,3)**2
@@ -2841,7 +2863,7 @@ module Sub
         endif
       enddo
 !
-!  close file, and write number of vectors to a separate file
+!  Close file, and write number of vectors to a separate file.
 !
       if (llastpoint) then
         close(lun)
@@ -2855,6 +2877,7 @@ module Sub
     subroutine despike(f,j,retval,factor)
 !
 !  Remove large spikes from
+!
 !  14-aug-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2904,7 +2927,8 @@ module Sub
 !***********************************************************************
     subroutine smooth_kernel(f,j,smth)
 !
-!  Smooth scalar field FF using predefined constant gaussian like kernel
+!  Smooth scalar field FF using predefined constant gaussian like kernel.
+!
 !  20-jul-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2919,7 +2943,7 @@ module Sub
 !***********************************************************************
     subroutine identify_bcs(varname_input,idx)
 !
-!  print boundary conditions for scalar field
+!  Print boundary conditions for scalar field.
 !
 !  19-jul-02/wolf: coded
 !  29-may-04/axel: allowed variable name to be 8 chars long
@@ -2937,8 +2961,8 @@ module Sub
 !
 !  Given a string of the form `name(format)',
 !  returns the name without format, fills empty space
-!  of correct length (depending on format) with dashes
-!  for output as legend.dat and first line of time_series.dat
+!  of correct length (depending on format) with dashes.
+!  For output as legend.dat and first line of time_series.dat.
 !
 !  22-jun-02/axel: coded
 !
@@ -2950,18 +2974,18 @@ module Sub
 !
       intent(in)  :: cname
 !
-!  fill DASHES with, well, dashes
+!  Fill DASHES with, well, dashes.
 !
       dashes = repeat('-', max_col_width)
 !
-!  find position of left bracket to isolate format, cform
+!  Find position of left bracket to isolate format, cform.
 !
       iform0=index(cname,' ')
       iform1=index(cname,'(')
       iform2=index(cname,')')
 !
-!  set format; use default if not given
-!  Here we keep the parenthesis in cform
+!  Set format; use default if not given.
+!  Here we keep the parenthesis in cform.
 !
       if (iform1>0) then
         cform=cname(iform1:iform2)
@@ -2971,9 +2995,9 @@ module Sub
         length=iform0-1
       endif
 !
-!  find length of formatted expression, examples: f10.2, e10.3, g12.1
+!  Find length of formatted expression, examples: f10.2, e10.3, g12.1 .
 !  index_1 is the position of the format type (f,e,g), and
-!  index_d is the position of the dot
+!  index_d is the position of the dot.
 !
       index_e=scan(cform,'eE')
       index_f=scan(cform,'fF')
@@ -2984,14 +3008,14 @@ module Sub
       index1=max(index_e,index_f,index_g,index_i)
       index2=index_d; if (index_d==0) index2=index_r
 !
-!  calculate the length of the format and assemble expression for legend
+!  Calculate the length of the format and assemble expression for legend.
 !
       cnumber=cform(index1+1:index2-1)
       read(cnumber,'(i4)',err=99) number
 10    number1=max(0,(number-length)/2)
       number2=max(1,number-length-number1) ! at least one separating dash
 !
-!  sanity check
+!  Sanity check.
 !
       if (number1+length+number2 > max_col_width) then
         call error("noform", &
@@ -3001,7 +3025,7 @@ module Sub
       noform=dashes(1:number1)//cname(1:length)//dashes(1:number2)
       return
 !
-! in case of errors:
+!  In case of errors.
 !
 99    print*,'noform: formatting problem'
       print*,'problematic cnumber= <',cnumber,'>'
@@ -3012,7 +3036,7 @@ module Sub
 !***********************************************************************
     function levi_civita(i,j,k)
 !
-!  totally antisymmetric tensor
+!  Totally antisymmetric tensor.
 !
 !  20-jul-03/axel: coded
 !
@@ -3039,6 +3063,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for 1d array.
+
 !  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
@@ -3059,6 +3084,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for scalar.
+!
 !  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
@@ -3079,6 +3105,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for 3d array.
+!
 !  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
@@ -3097,12 +3124,14 @@ module Sub
 !***********************************************************************
     function step_scalar(x,x0,width)
 !
-!  Smooth unit step function centred at x0; implemented as tanh profile
+!  Smooth unit step function centred at x0; implemented as tanh profile.
+!
 !  05 sept 2008/dhruba : copied from step
 !
       real :: x
       real :: step_scalar
       real :: x0,width
+!
       step_scalar = 0.5*(1+tanh((x-x0)/(width+tini)))
 !
     endfunction step_scalar
@@ -3110,6 +3139,7 @@ module Sub
     function step(x,x0,width)
 !
 !  Smooth unit step function centred at x0; implemented as tanh profile
+!
 !  23-jan-02/wolf: coded
 !
       real, dimension(:) :: x
@@ -3132,7 +3162,7 @@ module Sub
       real :: x0,width
 !
 !  Some argument gymnastics to avoid `floating overflow' for large
-!  arguments
+!  arguments.
 !
       arg = abs((x-x0)/(width+tini))
       arg = min(arg,8.)         ! cosh^2(8) = 3e+27
@@ -3143,7 +3173,7 @@ module Sub
     function der6_step(x,x0,width)
 !
 !  6th order derivative of smooth unit STEP() function given
-!   above (i.e. a bump profile).
+!  above (i.e. a bump profile).
 !  Adapt this if you change the STEP() profile, or you will run into
 !  inconsistenies.
 !
@@ -3154,7 +3184,7 @@ module Sub
       real :: x0,width
 !
 !  Some argument gymnastics to avoid `floating overflow' for large
-!  arguments
+!  arguments.
 !
       arg = abs((x-x0)/(width+tini))
       tanhx=tanh(arg)
@@ -3169,6 +3199,7 @@ module Sub
     function stepdown(x,x0,width)
 !
 !  Smooth unit step function centred at x0; implemented as tanh profile
+!
 !  23-jan-02/wolf: coded
 !
       real, dimension(:) :: x
@@ -3421,6 +3452,7 @@ module Sub
 !  optimisation is high (something like `if (any(f /= f+1))' would be
 !  optimised away).
 !  Version for scalars
+!
 !  20-Nov-03/tobi: adapted
 !
       logical :: notanumber_0
@@ -3439,6 +3471,7 @@ module Sub
 !  optimisation is high (something like `if (any(f /= f+1))' would be
 !  optimised away).
 !  Version for 1d arrays.
+!
 !  24-jan-02/wolf: coded
 !
       logical :: notanumber_1
@@ -3526,11 +3559,11 @@ module Sub
       character (len=*), optional :: region
       logical, optional :: lstop
 !
-!  Must set d2 according to whether f or df is considered
+!  Must set d2 according to whether f or df is considered.
 !
       d2 = size(f,4)
 !
-!  Set intervals for different predescribed regions
+!  Set intervals for different predescribed regions.
 !
       if (present(region)) then
 !
@@ -3547,7 +3580,7 @@ module Sub
 !
       endif
 !
-!  Overwrite with supplied intervals
+!  Overwrite with supplied intervals.
 !
       if (present(int1)) then  ! x
         a1=int1(1)
@@ -3569,27 +3602,21 @@ module Sub
         d2=int4(2)
       endif
 !
-!  Look for NaN and inf in resulting interval
+!  Look for NaN and inf in resulting interval.
 !
-      do a=a1,a2
-        do b=b1,b2
-          do c=c1,c2
-            do d=d1,d2
-              if (notanumber(f(a,b,c,d))) then
-                print*,'nan_inform: NaN with message "', msg, &
-                    '" encountered in the variable ', varname(d)
-                print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
-                print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-                print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
-                print*,'----------------------------'
-                if (present(lstop)) then
-                  if (lstop) call fatal_error('nan_stop','')
-                endif
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
+      do a=a1,a2; do b=b1,b2; do c=c1,c2; do d=d1,d2
+        if (notanumber(f(a,b,c,d))) then
+          print*,'nan_inform: NaN with message "', msg, &
+              '" encountered in the variable ', varname(d)
+          print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
+          print*,'nan_inform: t, it, itsub   = ', t, it, itsub
+          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
+          print*,'----------------------------'
+          if (present(lstop)) then
+            if (lstop) call fatal_error('nan_stop','')
+          endif
+        endif
+      enddo; enddo; enddo; enddo
 !
     endsubroutine nan_inform
 !***********************************************************************
@@ -4007,7 +4034,7 @@ module Sub
     subroutine parse_shell(strin,strout)
 !
 !  Parse strin replacing all $XXXX sequences with appropriate
-!  values from the environment.  Return the parsed result in strout
+!  values from the environment. Return the parsed result in strout.
 !
       use General, only: safe_character_assign
 !
@@ -4026,24 +4053,24 @@ module Sub
 !
 dlrloop:do
         envstart =index(strin(inptr:inlen),'$')
-        if (envstart .le. 0) exit;
+        if (envstart <= 0) exit;
         chunk = trim(strin(inptr:envstart-1))
-        if (envstart .gt. inptr) call safe_character_assign(strout,trim(strout)//trim(chunk))
+        if (envstart > inptr) call safe_character_assign(strout,trim(strout)//trim(chunk))
         inptr = envstart + 1;
-        if (inptr .gt. inlen) exit dlrloop
+        if (inptr > inlen) exit dlrloop
 !
         nameptr = inptr
 nameloop: do
           chr = trim(strin(nameptr:nameptr))
-          if (index(envnamechars,chr) .gt. 0) then
+          if (index(envnamechars,chr) > 0) then
             nameptr=nameptr+1
           else
             exit nameloop
           endif
 !
-          if (nameptr .gt. inlen) exit nameloop
+          if (nameptr > inlen) exit nameloop
         enddo nameloop
-        if ((nameptr-1) .ge. inptr) then
+        if ((nameptr-1) >= inptr) then
          envname=trim(strin(inptr:nameptr-1))
 ! Commented pending a C replacement
 !         call getenv(trim(envname),envvalue)
@@ -4051,11 +4078,11 @@ nameloop: do
         endif
 !
         inptr=nameptr
-        if (inptr .gt. inlen) exit dlrloop
+        if (inptr>inlen) exit dlrloop
 !
       enddo dlrloop
 !
-      if (inptr .le. inlen) then
+      if (inptr <= inlen) then
         chunk = trim(strin(inptr:inlen))
         call safe_character_assign(strout,trim(strout)//trim(chunk))
       endif
@@ -4064,7 +4091,8 @@ nameloop: do
 !***********************************************************************
     subroutine remove_file(fname)
 !
-!  Remove a file
+!  Remove a file.
+!
 !  5-mar-02/wolf: coded
 !
       use Syscalls, only: file_exists
@@ -4074,7 +4102,8 @@ nameloop: do
       logical :: removed = .false.
 !
       removed = file_exists(fname,DELETE=.true.)
-      if (removed .and. (ip<=6)) print*,'remove_file: Removed file <',trim(fname),'>'
+      if (removed .and. (ip<=6)) &
+          print*,'remove_file: Removed file <',trim(fname),'>'
 !
     endsubroutine remove_file
 !***********************************************************************
@@ -4086,8 +4115,6 @@ nameloop: do
 !  26-jul-09/wolf: coded
 !
       use Mpicomm, only : parallel_file_exists
-!
-      implicit none
 !
       logical :: control_file_exists,ldelete
       character (len=*) :: fname
@@ -4108,11 +4135,10 @@ nameloop: do
     function read_line_from_file(fname)
 !
 !  Read the first line from a file; return empty string if file is empty
+!
 !  4-oct-02/wolf: coded
 !
       use Syscalls, only : file_exists
-!
-      implicit none
 !
       character (len=linelen) :: read_line_from_file
       character (len=*) :: fname
@@ -4145,9 +4171,9 @@ nameloop: do
       integer :: nseed
 !
       call random_seed_wrapper(SIZE=nseed)
-      !
-      ! test whether mseed is large enough for this machine
-      !
+!
+!  Test whether mseed is large enough for this machine.
+!
       if (nseed > mseed) then
         if (lroot) print*, 'This machine requires mseed >= ', nseed, &
             ', but you have only ', mseed
@@ -4158,7 +4184,8 @@ nameloop: do
 !***********************************************************************
     subroutine write_dx_general(file,x00,y00,z00)
 !
-!  Write .general file for data explorer (aka DX)
+!  Write .general file for data explorer (aka DX).
+!
 !  04-oct-02/wolf: coded
 !  08-oct-02/tony: use safe_character_assign() to detect string overflows
 !
@@ -4171,7 +4198,7 @@ nameloop: do
 !
       call date_time_string(date)
 !
-!  accumulate a few lines
+!  Accumulate a few lines.
 !
       if (lhydro    ) then
         call safe_character_append(field,  'uu, '       )
@@ -4210,14 +4237,14 @@ nameloop: do
         call safe_character_append(dep,    'positions, ')
       endif
 !
-!  remove trailing comma
+!  Remove trailing comma.
 !
       field  = field (1:len(trim(field ))-1)
       struct = struct(1:len(trim(struct))-1)
       type   = type  (1:len(trim(type  ))-1)
       dep    = dep   (1:len(trim(dep   ))-1)
 !
-!  now write
+!  Now write.
 !
       open(1,FILE=file)
 !
@@ -4246,7 +4273,7 @@ nameloop: do
 !***********************************************************************
     subroutine write_zprof(fname,a)
 !
-!  writes z-profile to a file (if constructed for identical pencils)
+!  Writes z-profile to a file (if constructed for identical pencils).
 !
 !  10-jul-05/axel: coded
 !
@@ -4258,12 +4285,12 @@ nameloop: do
       integer :: unit=1
       character (len=120) :: wfile
 !
-!  do this only for the first step
+!  Do this only for the first step.
 !
       if (lwrite_prof) then
         if (m==m1) then
 !
-!  write zprofile file
+!  Write zprofile file.
 !
           call safe_character_assign(wfile, &
             trim(directory)//'/zprof_'//trim(fname)//'.dat')
@@ -4271,7 +4298,7 @@ nameloop: do
           write(unit,*) z(n),a(1)
           close(unit)
 !
-!  add file name to list of f zprofile files
+!  Add file name to list of f zprofile files.
 !
           if (n==n1) then
             call safe_character_assign(wfile,trim(directory)//'/zprof_list.dat')
@@ -4286,7 +4313,7 @@ nameloop: do
 !***********************************************************************
     subroutine remove_zprof()
 !
-!  remove z-profile file
+!  Remove z-profile file.
 !
 !  10-jul-05/axel: coded
 !
@@ -4295,11 +4322,11 @@ nameloop: do
       character (len=120) :: fname,wfile,listfile
       integer :: ierr, unit=2
 !
-!  do this only for the first step
+!  Do this only for the first step.
 !
       call safe_character_assign(listfile,trim(directory)//'/zprof_list.dat')
 !
-!  read list of file and remove them one by one
+!  Read list of file and remove them one by one.
 !
       open(unit,file=listfile,iostat=ierr)
       do while ((it <= nt) .and. (ierr == 0))
@@ -4312,7 +4339,7 @@ nameloop: do
       enddo
       close(unit)
 !
-!  now delete this listfile altogether
+!  Now delete this listfile altogether.
 !
       call remove_file(listfile)
 !
@@ -4368,12 +4395,11 @@ nameloop: do
 !
 !  END OF TEMPORARY DEBUGGING STUFF
 !
-!
     endsubroutine date_time_string
 !***********************************************************************
     subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
 !
-!  single  blob
+!  Single blob.
 !
 !  27-jul-02/axel: coded
 !
@@ -4382,7 +4408,7 @@ nameloop: do
       real,optional :: xblob,yblob,zblob
       real :: ampl,radius,x01=0.,y01=0.,z01=0.
 !
-!  single  blob
+!  Single  blob.
 !
       if (present(xblob)) x01=xblob
       if (present(yblob)) y01=yblob
@@ -4444,11 +4470,11 @@ nameloop: do
 !***********************************************************************
     recursive function pi_function(x) result(pi_func)
 !
-!  calculates the Pi-function using rational approximation
+!  Calculates the Pi-function using rational approximation.
 !
 !    Pi(x) = Gamma(x+1) = x!
 !
-!  coefficients were determined using maple's minimax() function
+!  Coefficients were determined using maple's minimax() function.
 !
 !  9-jun-04/tobi+wolf: coded
 !
@@ -4505,10 +4531,9 @@ nameloop: do
 !***********************************************************************
     function gamma_function(x)
 !
-!  calculates the Gamma-function as
+!  Calculates the Gamma-function as
 !
 !    Gamma(x) = Pi(x-1)
-!
 !
 !  9-jun-04/tobi+wolf: coded
 !
@@ -4521,11 +4546,12 @@ nameloop: do
 !***********************************************************************
     subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
 !
-!  calculates tensor diffusion with variable tensor (or constant tensor)
-!  calculates parts common to both variable and constant tensor first
-!  note:ecr=lnecr in the below comment
+!  Calculates tensor diffusion with variable tensor (or constant tensor).
+!  Calculates parts common to both variable and constant tensor first.
 !
-!  write diffusion tensor as K_ij = Kpara*ni*nj + (Kperp-Kpara)*del_ij.
+!  Note: ecr=lnecr in the below comment
+!
+!  Write diffusion tensor as K_ij = Kpara*ni*nj + (Kperp-Kpara)*del_ij.
 !
 !  vKperp*del2ecr + d_i(vKperp)d_i(ecr) + (vKpara-vKperp) d_i(n_i*n_j*d_j ecr)
 !      + n_i*n_j*d_i(ecr)d_j(vKpara-vKperp)
@@ -4533,12 +4559,12 @@ nameloop: do
 !  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij)
 !      + ni*nj*Gi*(vKpara_j - vKperp_j),
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
-!  diffusion coefficients
+!  diffusion coefficients.
 !
-!  calculates (K.gecr).gecr
+!  Calculates (K.gecr).gecr
 !  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
 !
-!  adds both parts into decr/dt
+!  Adds both parts into decr/dt.
 !
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
@@ -4558,14 +4584,14 @@ nameloop: do
       intent(in) :: bb,bij,gecr,ecr_ij
       intent(out) :: rhs
 !
-!  calculate unit vector of bb
+!  Calculate unit vector of bb.
 !
 !     call dot2_mn(bb,abs_b,PRECISE_SQRT=.true.)
       call dot2_mn(bb,abs_b,FAST_SQRT=.true.)
       b1=1./max(tini,abs_b)
       call multsv_mn(b1,bb,bunit)
 !
-!  calculate first H_i
+!  Calculate first H_i.
 !
       del2ecr=0.
       do i=1,3
@@ -4581,9 +4607,9 @@ nameloop: do
       enddo
       call multsv_mn(b1,hhh,tmpv)
 !
-!  limit the length of H such that dxmin*H < 1, so we also multiply
+!  Limit the length of H such that dxmin*H < 1, so we also multiply
 !  by 1/sqrt(1.+dxmin^2*H^2).
-!  and dot H with ecr gradient
+!  And dot H with ecr gradient.
 !
 !     call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
       call dot2_mn(tmpv,hhh2,FAST_SQRT=.true.)
@@ -4591,43 +4617,42 @@ nameloop: do
       call multsv_mn(quenchfactor,tmpv,hhh)
       call dot_mn(hhh,gecr,tmp)
 !
-!  dot Hessian matrix of ecr with bi*bj, and add into tmp
+!  Dot Hessian matrix of ecr with bi*bj, and add into tmp.
 !
       call multmv_mn(ecr_ij,bunit,hhh)
       call dot_mn(hhh,bunit,tmpj)
       tmp = tmp+tmpj
 !
-!  calculate (Gi*ni)^2 needed for lnecr form; also add into tmp
+!  Calculate (Gi*ni)^2 needed for lnecr form; also add into tmp.
 !
       gecr2=0.
       if (present(llog)) then
         call dot_mn(gecr,bunit,tmpi)
         tmp=tmp+tmpi**2
 !
-!  calculate gecr2 - needed for lnecr form
+!  Calculate gecr2 - needed for lnecr form.
 !
         call dot2_mn(gecr,gecr2)
       endif
 !
-!  if variable tensor, add extra terms and add result into decr/dt
+!  If variable tensor, add extra terms and add result into decr/dt.
 !
-!  set gvKpara, gvKperp
+!  Set gvKpara, gvKperp.
 !
      if (present(gvKpara)) then; gvKpara1=gvKpara; else; gvKpara1=0.; endif
      if (present(gvKperp)) then; gvKperp1=gvKperp; else; gvKperp1=0.; endif
 !
-!  put d_i ecr d_i vKperp into tmpj
+!  Put d_i ecr d_i vKperp into tmpj.
 !
       call dot_mn(gvKperp1,gecr,tmpj)
 !
-!  nonuniform conductivities, add terms into tmpj
+!  Nonuniform conductivities, add terms into tmpj.
 !
       call dot(bunit,gvKpara1-gvKperp1,tmpi)
       call dot(bunit,gecr,tmpk)
       tmpj = tmpj+tmpi*tmpk
 !
-!
-!  calculate rhs
+!  Calculate rhs.
 !
       rhs=vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
 !
@@ -4690,7 +4715,7 @@ nameloop: do
     function pencil_multiply1(s,v)
 !
 !  The `*' operator may be extended through this function to allow
-!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
+!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4707,7 +4732,7 @@ nameloop: do
     function pencil_multiply2(v,s)
 !
 !  The `*' operator may be extended through this function to allow
-!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
+!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4724,7 +4749,7 @@ nameloop: do
     function pencil_add1(s,v)
 !
 !  The `+' operator may be extended through this function to allow
-!  elementwise addition of a `pencil-scalar' to a `pencil-vector'
+!  elementwise addition of a `pencil-scalar' to a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4741,7 +4766,7 @@ nameloop: do
     function pencil_add2(v,s)
 !
 !  The `+' operator may be extended through this function to allow
-!  elementwise addition of a `pencil-scalar' to a `pencil-vector'
+!  elementwise addition of a `pencil-scalar' to a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4758,7 +4783,7 @@ nameloop: do
     function pencil_divide1(s,v)
 !
 !  The `/' operator may be extended through this function to allow
-!  elementwise division of a `pencil-scalar' by a `pencil-vector'
+!  elementwise division of a `pencil-scalar' by a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4775,7 +4800,7 @@ nameloop: do
     function pencil_divide2(v,s)
 !
 !  The `/' operator may be extended through this function to allow
-!  elementwise division of a `pencil-vector' by a `pencil-scalar'
+!  elementwise division of a `pencil-vector' by a `pencil-scalar'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4792,7 +4817,7 @@ nameloop: do
     function pencil_substract1(s,v)
 !
 !  The `-' operator may be extended through this function to allow
-!  elementwise substraction of a `pencil-vector' from a `pencil-scalar'
+!  elementwise substraction of a `pencil-vector' from a `pencil-scalar'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4809,7 +4834,7 @@ nameloop: do
     function pencil_substract2(v,s)
 !
 !  The `-' operator may be extended through this function to allow
-!  elementwise substraction of a `pencil-scalar' from a `pencil-vector'
+!  elementwise substraction of a `pencil-scalar' from a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
@@ -4825,66 +4850,64 @@ nameloop: do
 !***********************************************************************
     function erfunc_pt(x)
 !
-! Error function from Numerical Recipes.
-! erfunc(x) = 1 - erfc(x)
+!  Error function from Numerical Recipes.
+!
+!  erfunc(x) = 1 - erfc(x)
 !
 !  This version is for scalar args.
 !
-! 15-Jan-2007/dintrans: coded
+!  15-Jan-2007/dintrans: coded
 !
-    implicit none
+      real :: erfunc_pt,dumerfc,x,t,z
 !
-    real :: erfunc_pt,dumerfc,x,t,z
+      z = abs(x)
+      t = 1.0 / ( 1.0 + 0.5 * z )
 !
-    z = abs(x)
-    t = 1.0 / ( 1.0 + 0.5 * z )
+      dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
+          ( 1.00002368 + t * ( 0.37409196 + t *           &
+          ( 0.09678418 + t * (-0.18628806 + t *           &
+          ( 0.27886807 + t * (-1.13520398 + t *           &
+          ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
 !
-    dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
-        ( 1.00002368 + t * ( 0.37409196 + t *           &
-        ( 0.09678418 + t * (-0.18628806 + t *           &
-        ( 0.27886807 + t * (-1.13520398 + t *           &
-        ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
-!
-    if ( x.lt.0.0 ) dumerfc = 2.0 - dumerfc
-    erfunc_pt = 1.0 - dumerfc
+      if (x<0.0) dumerfc = 2.0 - dumerfc
+      erfunc_pt = 1.0 - dumerfc
 !
     endfunction erfunc_pt
 !***********************************************************************
     function erfunc_mn(x)
 !
-! Error function from Numerical Recipes.
-! erfunc_mn(x) = 1 - erfc(x)
+!  Error function from Numerical Recipes.
+!
+!  erfunc_mn(x) = 1 - erfc(x)
 !
 !  Version for 1d arg (in particular pencils).
 !
-! 15-Jan-2007/dintrans: coded
+!  15-Jan-2007/dintrans: coded
 !
-    implicit none
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: erfunc_mn,dumerfc,t,z
 !
-    real, dimension(:) :: x
-    real, dimension(size(x,1)) :: erfunc_mn,dumerfc,t,z
+      z = abs(x)
+      t = 1.0 / ( 1.0 + 0.5 * z )
 !
-    z = abs(x)
-    t = 1.0 / ( 1.0 + 0.5 * z )
+      dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
+          ( 1.00002368 + t * ( 0.37409196 + t *           &
+          ( 0.09678418 + t * (-0.18628806 + t *           &
+          ( 0.27886807 + t * (-1.13520398 + t *           &
+          ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
 !
-    dumerfc =  t * exp(-z * z - 1.26551223 + t *        &
-        ( 1.00002368 + t * ( 0.37409196 + t *           &
-        ( 0.09678418 + t * (-0.18628806 + t *           &
-        ( 0.27886807 + t * (-1.13520398 + t *           &
-        ( 1.48851587 + t * (-0.82215223 + t * 0.17087277 )))))))))
+      where (x<0.) dumerfc = 2.0 - dumerfc
 !
-    where ( x.lt.0. ) dumerfc = 2.0 - dumerfc
-!
-    erfunc_mn = 1.0 - dumerfc
+      erfunc_mn = 1.0 - dumerfc
 !
     endfunction erfunc_mn
 !***********************************************************************
     subroutine power_law_mn(const,dist,plaw_,output,xref)
 !
-! General distance power law initial conditions
+!  General distance power law initial conditions.
 !
-! 24-feb-05/wlad: coded
-!  4-jul-07/wlad: generalized for any power law case
+!  24-feb-05/wlad: coded
+!   4-jul-07/wlad: generalized for any power law case
 !
       real, dimension(:) :: dist,output
       real :: const,plaw_
@@ -4905,10 +4928,10 @@ nameloop: do
 !***********************************************************************
     subroutine power_law_pt(const,dist,plaw_,output,xref)
 !
-! General distance power law initial conditions
+!  General distance power law initial conditions.
 !
-! 24-feb-05/wlad: coded
-!  4-jul-07/wlad: generalized for any power law case
+!  24-feb-05/wlad: coded
+!   4-jul-07/wlad: generalized for any power law case
 !
       real :: dist,output
       real :: const,plaw_
@@ -4943,7 +4966,7 @@ nameloop: do
       integer :: tmp
       logical :: lorigin
 !
-!  Check if we are dealing with distance from the origin
+!  Check if we are dealing with distance from the origin.
 !
       tmp=0 ; lorigin=.false.
       if (present(e1_)) then;e1=e1_;tmp=tmp+1;else;e1=0.;endif
@@ -4951,7 +4974,7 @@ nameloop: do
       if (present(e3_)) then;e3=e3_;tmp=tmp+1;else;e3=0.;endif
       if (tmp==0) lorigin=.true.
 !
-!  Check if this array has size nx or mx
+!  Check if this array has size nx or mx.
 !
       select case (size(rrmn))
       case (mx)
@@ -4964,8 +4987,7 @@ nameloop: do
         call fatal_error('get_radial_distance','')
       endselect
 !
-!  Calculate the coordinate-free distance relative to the
-!  position (e1,e2,e3)
+!  Calculate the coordinate-free distance relative to the position (e1,e2,e3).
 !
       if (lorigin) then
         if (coord_system=='cartesian') then
@@ -4999,25 +5021,25 @@ nameloop: do
 !
 !  20-dec-07/dintrans: coded
 !
-    integer :: nr,istop,i,i1,i2
-    real, dimension (nr) :: r,fr
-    real    :: r0,interp1
+      integer :: nr,istop,i,i1,i2
+      real, dimension (nr) :: r,fr
+      real    :: r0,interp1
 !
-    if (r0 == r(1)) then
-      interp1=fr(1)
-      return
-    elseif (r0 > r(nr)) then
-      interp1=fr(nr)
-      return
-    else
-      istop=0 ; i=1
-      do while (istop /= 1)
-        if (r(i) >= r0) istop=1
-        i=i+1
-      enddo
-      i1=i-2 ; i2=i-1
-      interp1=(fr(i1)*(r(i2)-r0)+fr(i2)*(r0-r(i1)))/(r(i2)-r(i1))
-    endif
+      if (r0 == r(1)) then
+        interp1=fr(1)
+        return
+      elseif (r0 > r(nr)) then
+        interp1=fr(nr)
+        return
+      else
+        istop=0 ; i=1
+        do while (istop /= 1)
+          if (r(i) >= r0) istop=1
+          i=i+1
+        enddo
+        i1=i-2 ; i2=i-1
+        interp1=(fr(i1)*(r(i2)-r0)+fr(i2)*(r0-r(i1)))/(r(i2)-r(i1))
+      endif
 !
     endfunction interp1
 !***********************************************************************
@@ -5025,9 +5047,9 @@ nameloop: do
 !
 !  25-jun-09/rplasson: coded (adapted from numerical recipe)
 !
-!  Computes the LU decomposition of the matrix a
-!  The result is placed in the matrix a
-!  The row permutations are returned in indx
+!  Computes the LU decomposition of the matrix a.
+!  The result is placed in the matrix a.
+!  The row permutations are returned in indx.
 !
       real, dimension(:,:), intent(INOUT) :: a
       integer, dimension(:), intent(OUT) :: indx
@@ -5063,10 +5085,10 @@ nameloop: do
 !
 !  25-jun-09/rplasson: coded (adapted from numerical recipe)
 !
-!  Solves the equation A.X=B
-!  'a' must contain the LU decomposition of matrix A obtained by ludcmp
-!  'indx' is the permutation vector obtained by ludcmp
-!  'b' contains B, and returns the solution vector X
+!  Solves the equation A.X=B .
+!  'a' must contain the LU decomposition of matrix A obtained by ludcmp.
+!  'indx' is the permutation vector obtained by ludcmp.
+!  'b' contains B, and returns the solution vector X.
 !
       real, dimension(:,:), intent(IN) :: a
       integer, dimension(:), intent(IN) :: indx
@@ -5097,8 +5119,9 @@ nameloop: do
 !***********************************************************************
     subroutine gij_psi(psif,ee,g)
 !
-!  calculate gradient of a scalar field multiplied by a constant vector),
-!  return matrix
+!  Calculate gradient of a scalar field multiplied by a constant vector),
+!  return matrix.
+!
 !  31-jul-07/dhruba: adapted from gij
 !
       use Deriv, only: der
@@ -5112,18 +5135,16 @@ nameloop: do
       intent(in) :: psif
       intent(out) :: g
 !
-      do i=1,3
-        do j=1,3
+      do i=1,3; do j=1,3
           call der(psif*ee(i),tmp,j)
           g(:,i,j) = tmp
-        enddo
-      enddo
+      enddo; enddo
 !
     endsubroutine gij_psi
 !***********************************************************************
     subroutine gij_psi_etc(psif,ee,aa,aij,Bij,del2,graddiv)
 !
-!  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
+!  Calculate B_i,j = eps_ikl A_l,jk and A_l,kk .
 !
 !  1-aug-07/dhruba : adapted from gij_etc
 !
@@ -5136,18 +5157,16 @@ nameloop: do
       real, dimension (nx,3), intent (out), optional :: del2,graddiv
       real, dimension (nx,3), intent (in), optional :: aa
 !
-!  locally used variables
+!  Locally used variables.
 !
       real, dimension (nx,3,3,3) :: d2A
       real, dimension (nx) :: tmp
       integer :: i,j
 !
+!  Calculate all mixed and non-mixed second derivatives
+!  of the vector potential (A_k,ij).
 !
-!
-!  calculate all mixed and non-mixed second derivatives
-!  of the vector potential (A_k,ij)
-!
-!  do not calculate both d^2 A/(dx dy) and d^2 A/(d dx)
+!  Do not calculate both d^2 A/(dx dy) and d^2 A/(d dx)
 !  (This wasn't spotted by me but by a guy from SGI...)
 !  Note: for non-cartesian coordinates there are different correction terms,
 !  see below.
@@ -5162,7 +5181,7 @@ nameloop: do
         call derij(psif*ee(i),tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
       enddo
 !
-!  corrections for spherical polars from swapping mixed derivatives:
+!  Corrections for spherical polars from swapping mixed derivatives:
 !  Psi_{,theta^ r^} = Psi_{,r^ theta^} - Psi_{,\theta^}/r
 !  Psi_{,phi^ r^} = Psi_{,r^ phi^} - Psi_{,\phi^}/r
 !  Psi_{,phi^ theta^} = Psi_{,theta^ phi^} - Psi_{,\phi^}*r^{-1}*cot(theta)
@@ -5175,8 +5194,8 @@ nameloop: do
         enddo
       endif
 !
-!  for cylindrical, only
-!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom
+!  For cylindrical, only
+!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom .
 !
       if (lcylindrical_coords) then
          do i=1,3
@@ -5184,14 +5203,14 @@ nameloop: do
          enddo
       endif
 !
-!  calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
-!  del2_i = A_i,jj and graddiv_i = A_j,ji
+!  Calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
+!  del2_i = A_i,jj and graddiv_i = A_j,ji .
 !
       bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
       bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
       bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
 !
-!  corrections for spherical coordinates
+!  Corrections for spherical coordinates.
 !
       if (lspherical_coords) then
         bij(:,3,2)=bij(:,3,2)+aij(:,2,2)*r1_mn
@@ -5202,14 +5221,14 @@ nameloop: do
         bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
       endif
 !
-!  corrections for cylindrical coordinates
+!  Corrections for cylindrical coordinates.
 !
       if (lcylindrical_coords) then
         bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
         bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
       endif
 !
-!  calculate del2 and graddiv, if requested
+!  Calculate del2 and graddiv, if requested.
 !
       if (present(graddiv)) then
 !--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
@@ -5249,7 +5268,7 @@ nameloop: do
 !***********************************************************************
     subroutine zlocation(zpos,izpos,lproc)
 !
-!  if zpos lies within this processor, then lproc=T and zpos=z(izpos).
+!  If zpos lies within this processor, then lproc=T and zpos=z(izpos).
 !  Otherwise lproc=F and izpos=1.
 !
 !  18-nov-06/axel: coded
@@ -5260,7 +5279,7 @@ nameloop: do
       integer :: izpos,n
       logical :: lproc
 !
-!  run through all z positions until we hit the right interval.
+!  Run through all z positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
 !
       do n=n1,n2
@@ -5272,8 +5291,7 @@ nameloop: do
         endif
       enddo
 !
-!  if nothing is found, we set lproc=.false. and
-!  and put izpos=1
+!  If nothing is found, we set lproc=.false. and and put izpos=1
 !
       izpos=1
       lproc=.false.
