@@ -96,7 +96,7 @@ COMPILE_OPT IDL2,HIDDEN
   common pc_precision, zero, one
   common cdat_coords,coord_system
 ;
-; Default settings
+; Default settings.
 ;
   default, magic, 0
   default, trimall, 0
@@ -124,7 +124,7 @@ COMPILE_OPT IDL2,HIDDEN
     return
   endif
 ;
-; Default data directory
+; Default data directory.
 ;
   if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
@@ -134,7 +134,7 @@ COMPILE_OPT IDL2,HIDDEN
     message, 'pc_read_var: /unshear only works with /trimall'
   endif
 ;
-; Name and path of varfile to read
+; Name and path of varfile to read.
 ;
   if (n_elements(ivar) eq 1) then begin
     default, varfile_, 'VAR'
@@ -144,7 +144,7 @@ COMPILE_OPT IDL2,HIDDEN
     varfile=varfile_
   endelse
 ;
-; Get necessary dimensions quietly
+; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then $
       pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
@@ -165,7 +165,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, run2D, 0
   if (param.lwrite_2d) then run2D=1
 ;
-; Set the coordinate system
+; Set the coordinate system.
 ;  
   coord_system=param.coord_system
 ;
@@ -183,7 +183,7 @@ COMPILE_OPT IDL2,HIDDEN
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
   endelse
 ;
-; ... and check pc_precision is set for all Pencil Code tools
+; ... and check pc_precision is set for all Pencil Code tools.
 ;
   pc_set_precision, dim=dim, quiet=quiet
 ;
@@ -191,7 +191,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (trimall) then trimxyz=1
 ;
-; Local shorthand for some parameters
+; Local shorthand for some parameters.
 ;
   nx=dim.nx
   ny=dim.ny
@@ -214,7 +214,7 @@ COMPILE_OPT IDL2,HIDDEN
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
   endelse
 ;
-; Initialize / set default returns for ALL variables
+; Initialize / set default returns for ALL variables.
 ;
   t=zero
   x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
@@ -230,7 +230,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (varfile eq 'dvar.dat') then noaux=1
 ;
-;  Read meta data and set up variable/tag lists
+;  Read meta data and set up variable/tag lists.
 ;
   default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
@@ -268,7 +268,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, tags, variables
 ;
-; Sanity check for variables and tags
+; Sanity check for variables and tags.
 ;
   if (n_elements(variables) ne n_elements(tags)) then begin
     message, 'ERROR: variables and tags arrays differ in size'
@@ -283,18 +283,18 @@ COMPILE_OPT IDL2,HIDDEN
     global_names=tag_names(gg)
   endif
 ;
-; Apply "magic" variable transformations for derived quantities
+; Apply "magic" variable transformations for derived quantities.
 ;
   if (keyword_set(magic)) then $
       pc_magic_var, variables, tags, $
       param=param, par2=par2, global_names=global_names, $
       datadir=datadir, quiet=quiet
 ;
-; Get a free unit number
+; Get a free unit number.
 ;
   get_lun, file
 ;
-; Prepare for read (build read command)
+; Prepare for read (build read command).
 ;
   res=''
   content=''
@@ -306,7 +306,7 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
     content=content+', '+varcontent[iv].variable
 ;
-; Initialise read buffers
+; Initialise read buffers.
 ;
     if (varcontent[iv].variable eq 'UNKNOWN') then $
         message, 'Unknown variable at position ' + str(iv)  $
@@ -320,21 +320,28 @@ COMPILE_OPT IDL2,HIDDEN
           +' - '+ varcontent[iv].idlvarloc, /info
     endif
 ;
-; For vector quantities skip the required number of elements of the f array
+; For vector quantities skip the required number of elements of the f array.
 ;
     iv=iv+varcontent[iv].skip
   endfor
 ;
-; Display information about the files contents
+; Display information about the files contents.
 ;
   content = strmid(content,2)
-  if ( not keyword_set(quiet) ) then $
-      print,'File '+varfile+' contains: ', content
+  if (not keyword_set(quiet)) then begin
+    print, ''
+    print, 'The file '+varfile+' contains: ', content
+    print, ''
+    print, 'The grid dimension is ', my, my, mz
+    print, ''
+  endif
 ;
-; Loop over processors
+; Loop over processors.
 ;
   for i=0,nprocs-1 do begin
-    ; Build the full path and filename
+;
+; Build the full path and filename.
+;
     if (allprocs) then filename=datadir+'/allprocs/'+varfile else $
     if (n_elements(proc) eq 1) then filename=datadir+'/proc'+str(proc)+'/'+varfile $
     else begin
@@ -346,7 +353,7 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
     endelse
 ;
-; Check for existence and read the data
+; Check for existence and read the data.
 ;
     dummy=findfile(filename, count=countfile)
     if (countfile lt 1) then begin
@@ -360,14 +367,13 @@ COMPILE_OPT IDL2,HIDDEN
       endelse
     endif
 ;
-; Setup the coordinates mappings from the processor
-; to the full domain.
+; Setup the coordinates mappings from the processor to the full domain.
 ;
     if (nprocs gt 1) then begin
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
-;  diagonals)
+;  diagonals).
 ;
       if (procdim.ipx eq 0L) then begin
         i0x=0L
@@ -403,10 +409,10 @@ COMPILE_OPT IDL2,HIDDEN
         i0zloc=procdim.nghostz
         i1zloc=procdim.mz-1L
       endelse
-;;
-;; Skip this processor if it makes no contribution to the requested
-;; subset of the domain.
-;;
+;
+; Skip this processor if it makes no contribution to the requested
+; subset of the domain.
+;
 ;       if (n_elements(nxrange)==2) then begin
 ;         if ((i0x gt nxrange[1]+procdim.nghostx) or (i1x lt nxrange[0]+procdim.nghostx)) then continue
 ;         ix0=max([ix0-(nxrange[0]+procdim.nghostx),0L]
@@ -487,7 +493,7 @@ COMPILE_OPT IDL2,HIDDEN
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
 ;
-; For vector quantities skip the required number of elements
+; For vector quantities skip the required number of elements.
 ;
         iv=iv+varcontent[iv].skip
       endfor
@@ -500,7 +506,7 @@ COMPILE_OPT IDL2,HIDDEN
     endif
   endfor
 ;
-; Tidy memory a little
+; Tidy memory a little.
 ;
   if (nprocs gt 1) then begin
     undefine,xloc
@@ -544,7 +550,7 @@ COMPILE_OPT IDL2,HIDDEN
     endif
   endif
 ;
-; Save changs to the variables array (but don't include the effect of /TRIMALL)
+; Save changs to the variables array (but don't include the effect of /TRIMALL).
 ;
   variables_in=variables
 ;
@@ -585,14 +591,18 @@ COMPILE_OPT IDL2,HIDDEN
     undefine, object
   endif
 ;
-; If requested print a summary (actually the default - unless being quiet.)
+; If requested print a summary (actually the default - unless being quiet).
 ;
   if (keyword_set(stats) or $
      (not (keyword_set(nostats) or keyword_set(quiet)))) then begin
-    if (not keyword_set(quiet)) then print, ''
-    if (not keyword_set(quiet)) then print, 'VARIABLE SUMMARY:'
+    if (not keyword_set(quiet)) then begin
+      print, ''
+      print, '                             Variable summary:'
+      print, ''
+    endif
     pc_object_stats, object, dim=dim, trim=trimall, quiet=quiet
-    print,' t = ', t
+    print, ' t = ', t
+    print, ''
   endif
 ;
 end
