@@ -169,7 +169,7 @@ module Poisson
 !
 !  Break if nprocx>1
 !
-      if (nprocx.gt.1) &
+      if (nprocx>1) &
            call fatal_error("inverse_laplacian_expandgrid",&
            "Not yet implemented for nprocx > 1")
 !

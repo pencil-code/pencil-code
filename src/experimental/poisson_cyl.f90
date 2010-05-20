@@ -321,14 +321,14 @@ module Poisson
       do m=1,nny
         do i=1,nnx
           radius=sqrt(xc(i)**2+yc(m)**2)
-          if ((radius.ge.r0).and.(radius.le.rn)) then
+          if ((radius>=r0).and.(radius<=rn)) then
             ir1=floor((radius-r0)*dr1 ) +1;ir2=ir1+1
             delr=radius-rad(ir1)
 !
 ! this should never happen, but is here for warning
 !
-            if (ir1.lt.1 ) call fatal_error("cyl2cart","ir1<1")
-            if (ir2.gt.nr) call fatal_error("cyl2cart","ir2>nr")
+            if (ir1<1 ) call fatal_error("cyl2cart","ir1<1")
+            if (ir2>nr) call fatal_error("cyl2cart","ir2>nr")
 !
             theta=atan2(yc(m),xc(i))
             ip1=floor((theta - theta0)*dth1)+1;ip2=ip1+1
@@ -440,10 +440,10 @@ module Poisson
           ix1 = floor((xp-x0)*dxc1)+1 ; ix2 = ix1+1
           iy1 = floor((yp-y0)*dyc1)+1 ; iy2 = iy1+1
 !
-          if (ix1 .lt.  1)      call fatal_error("cyl2cart","ix1 lt 1")
-          if (iy1 .lt.  1)      call fatal_error("cyl2cart","iy1 lt 1")
-          if (ix2 .gt. nnxgrid) call fatal_error("cyl2cart","ix2 gt nnxgrid")
-          if (iy2 .gt. nnygrid) call fatal_error("cyl2cart","iy2 gt nnygrid")
+          if (ix1 <  1)      call fatal_error("cyl2cart","ix1 lt 1")
+          if (iy1 <  1)      call fatal_error("cyl2cart","iy1 lt 1")
+          if (ix2 > nnxgrid) call fatal_error("cyl2cart","ix2 gt nnxgrid")
+          if (iy2 > nnygrid) call fatal_error("cyl2cart","iy2 gt nnygrid")
 !
           delx=xp-     xc(ix1);fx=delx*dxc1
           dely=yp-yserial(iy1);fy=dely*dyc1
@@ -614,7 +614,7 @@ module Poisson
 ! 
 ! Upon re-starting, get the stored potential
 !
-      if ((it==1).and.(t.ne.0)) &
+      if ((it==1).and.(t/=0)) &
            phi_previous_step=f(l1:l2,m1:m2,n1:n2,ipotself)
 !
 ! Get the logical for updating the grid. Check if the quantity 
@@ -632,7 +632,7 @@ module Poisson
           norm=abs(del2phi - rhs(:,ith,iz))
           do i=l1,l2
             ir=i-nghost
-            if (abs(norm(ir)-norm0(ir))/norm(ir) .lt. 1e-3) then 
+            if (abs(norm(ir)-norm0(ir))/norm(ir) < 1e-3) then 
               lupdate_grid(ir,ith,iz)=.false.  
             else
               lupdate_grid(ir,ith,iz)=.true.  
@@ -749,13 +749,13 @@ module Poisson
       if (lverbose) &
            print*,'five_point_solver: Jacobian of the spectral matrix=',rjac
 !
-      do while (sig .gt. iteration_threshold)
+      do while (sig > iteration_threshold)
         iteration=iteration+1
-        if (mod(iteration,2).ne.0) skipped=0
+        if (mod(iteration,2)/=0) skipped=0
         do n=2,nz-1
           do i=2,nr-1
             !chebychev : odd-even ordering
-            if (mod(n+i,2) .ne. (mod(iteration,2))) then
+            if (mod(n+i,2) /= (mod(iteration,2))) then
               if (lupdate(i,n)) then
                 resid=  a_band(i)*lhs(i-1,n)+      &
                         c_band(i)*lhs(i+1,n)+      &
@@ -783,7 +783,7 @@ module Poisson
         norm=sum((lhs-lhs_old)**2)
         sig=abs(norm-norm_old)/max(norm,epsi)
 !
-        if (iteration .gt. 1000) then 
+        if (iteration > 1000) then 
           print*,'maximum number of iterations exceeded'
           call fatal_error("five_point_solver","")
         endif

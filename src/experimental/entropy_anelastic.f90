@@ -279,7 +279,7 @@ module Entropy
         if (pretend_lnTT) then
           call select_eos_variable('lnTT',iss)
         else
-          if (gamma_m1.eq.0.) then
+          if (gamma_m1==0.) then
             call fatal_error('initialize_entropy',& 
                  'Use experimental/noentropy for isothermal case')
           else
@@ -450,7 +450,7 @@ module Entropy
 !
 !  temperatures at shell boundaries
 !
-          if (initss(1) .eq. 'shell_layers') then
+          if (initss(1) == 'shell_layers') then
 !           lmultilayer=.true.   ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
@@ -1390,7 +1390,7 @@ module Entropy
 !  check convergence
 !
         crit=abs(rhotop/rt_new-1.)
-        if (crit.le.1e-4) goto 20
+        if (crit<=1e-4) goto 20
 !
         call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
@@ -1401,7 +1401,7 @@ module Entropy
         rt_new=rhotop
         rb_new=rhobot
    10 continue
-   20 if (ipz.eq.0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
+   20 if (ipz==0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 ! redefine rho0 and lnrho0 as we don't have rho0=1 at the top 
 ! (important for eoscalc!)
@@ -2771,7 +2771,7 @@ module Entropy
 !
 !     limit perpendicular diffusion
 !
-      if (maxval(abs(vKpara+vKperp)) .gt. tini) then
+      if (maxval(abs(vKpara+vKperp)) > tini) then
          quenchfactor = vKpara/(vKpara+vKperp)
          vKperp=vKperp*quenchfactor
       endif
@@ -2841,7 +2841,7 @@ module Entropy
       call dot2(p%glnTT,gT2)
       call dot2(p%bb,b2)
 !
-      where ((gT2.le.tini).or.(b2.le.tini))
+      where ((gT2<=tini).or.(b2<=tini))
          cosbgT=0.
       elsewhere 
          cosbgT=cosbgT/sqrt(gT2*b2)
@@ -3340,7 +3340,7 @@ module Entropy
 !     All is in SI units and has to be rescaled to PENCIL units
 !
       unit_lnQ=3*alog(real(unit_velocity))+5*alog(real(unit_length))+alog(real(unit_density))
-      if (unit_system .eq. 'cgs') unit_lnQ = unit_lnQ+alog(1.e13)
+      if (unit_system == 'cgs') unit_lnQ = unit_lnQ+alog(1.e13)
 !
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
@@ -3352,7 +3352,7 @@ module Entropy
 !
 ! First set of parameters
       rtv_cool=0.
-      if (cool_RTV .gt. 0.) then
+      if (cool_RTV > 0.) then
         imax = size(intlnT_1,1)
         lnQ(:)=0.0
         do i=1,imax-1
@@ -3364,7 +3364,7 @@ module Entropy
           lnQ = lnQ + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
         endwhere
         rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
-      elseif (cool_RTV .lt. 0) then
+      elseif (cool_RTV < 0) then
 ! Second set of parameters
         cool_RTV = cool_RTV*(-1.)
         imax = size(intlnT_2,1)
@@ -3819,7 +3819,7 @@ module Entropy
 !
 !  Initial temperature profile is given in ln(T) in [K] over z in [Mm]
 !
-      if (it .eq. 1) then
+      if (it == 1) then
          inquire(IOLENGTH=lend) lnTTor
          open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
          read (10) b_lnT
@@ -3836,13 +3836,13 @@ module Entropy
 !
 !  Get reference temperature
 !
-      if (z(n) .lt. b_z(1) ) then
+      if (z(n) < b_z(1) ) then
         lnTTor = b_lnT(1)
-      elseif (z(n) .ge. b_z(150)) then
+      elseif (z(n) >= b_z(150)) then
         lnTTor = b_lnT(150)
       else
         do i=1,149
-          if (z(n) .ge. b_z(i) .and. z(n) .lt. b_z(i+1)) then
+          if (z(n) >= b_z(i) .and. z(n) < b_z(i+1)) then
             !
             ! linear interpolation
             !
@@ -3853,7 +3853,7 @@ module Entropy
         enddo
       endif
 !
-      if (dt .ne. 0 )  then
+      if (dt /= 0 )  then
          newton = tdown/gamma/dt*((lnTTor - p%lnTT) )
          newton = newton * exp(allp*(-abs(p%lnrho-lnrho0)))
 !
@@ -4087,7 +4087,7 @@ module Entropy
       rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
 !
       crit=abs(rhotop/rt_new-1.)
-      if (crit.le.1e-4) goto 20
+      if (crit<=1e-4) goto 20
       call strat_heat(lnrho,temp,rhotop,rhobot)
 
 !  update new estimates
@@ -4146,7 +4146,7 @@ module Entropy
         else
           lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
         endif
-        if (r(i) .ne. 0.) then 
+        if (r(i) /= 0.) then 
           if (nzgrid == 1) then
             g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
           else

@@ -194,8 +194,8 @@ subroutine offset_name(vname,offset,offname)
      return
    endif
 
-   if (offset.gt.0) offset_sgn='+'
-   if (offset.lt.0) offset_sgn='-'
+   if (offset>0) offset_sgn='+'
+   if (offset<0) offset_sgn='-'
 
    colon=SCAN(vname, ':')
    if (colon==0) then
@@ -252,9 +252,9 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
      lskip_open_bracket=.false.
      do pnt=1,npoints
        if ( face_types(faces(pnt)) /= face_type ) cycle
-       If (      (points(dir1,pnt).lt.imin).or.(points(dir1,pnt).gt.imax)   &
-           .or. (points(dir2,pnt).lt.jmin).or.(points(dir2,pnt).gt.jmax)   &
-           .or. (points(dir3,pnt).lt.kmin).or.(points(dir3,pnt).gt.kmax) ) cycle
+       If (      (points(dir1,pnt)<imin).or.(points(dir1,pnt)>imax)   &
+           .or. (points(dir2,pnt)<jmin).or.(points(dir2,pnt)>jmax)   &
+           .or. (points(dir3,pnt)<kmin).or.(points(dir3,pnt)>kmax) ) cycle
        do comp_it=0,2
          comp=mod(comp_it+rotation,3)+1
          do mesh=1,3
@@ -262,7 +262,7 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
          enddo
          if (normals(comp,pnt)/=0) then
            ncontrib=ncontrib+1
-           if (normals(comp,pnt).gt.0) then
+           if (normals(comp,pnt)>0) then
              sgn='+'
            else
              sgn='-'
@@ -360,14 +360,14 @@ endsubroutine read_surfaceinfo
 !  30-sep-97/axel: coded
 !
       ch='    '
-      if (n.lt.0) stop 'chn: lt1'
-      if (n.lt.10) then
+      if (n<0) stop 'chn: lt1'
+      if (n<10) then
         write(ch(1:1),'(i1)') n
-      elseif (n.lt.100) then
+      elseif (n<100) then
         write(ch(1:2),'(i2)') n
-      elseif (n.lt.1000) then
+      elseif (n<1000) then
         write(ch(1:3),'(i3)') n
-      elseif (n.lt.10000) then
+      elseif (n<10000) then
         write(ch(1:4),'(i4)') n
       else
         print*,'CHN: n=',n

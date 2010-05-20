@@ -385,9 +385,9 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         if (lvideo.and.lfirst) then
           do j=1,3
             bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
-            if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
-            if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
-            if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
+            if (m==iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
+            if (n==iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
+            if (n==iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
           call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh,nbthresh)
         endif
