@@ -1037,7 +1037,7 @@ module Hydro
           call random_number_wrapper(xc0)
 ! Introduce both counter clockwise and clockwise eddies
           do ixy=1,neddy
-            if (xc0(ixy).le.0.5) then
+            if (xc0(ixy)<=0.5) then
               tmp(ixy)=-1.0
             else
               tmp(ixy)=1.0
@@ -1057,7 +1057,7 @@ module Hydro
 ! Check for nearest neighbour eddies and change their sign
             do ixy=1,neddy
               dis=sqrt((xold-xc0(ixy))**2+(yold-yc0(ixy))**2)
-              if (dis.lt.5*sqrt(1./kx_uu**2+1./ky_uu**2)) then
+              if (dis<5*sqrt(1./kx_uu**2+1./ky_uu**2)) then
                 tmp(ixy)=-tmp(ixy-1)
                 if (lroot) &
                   write(*,*) 'PC:init_uu ', 'Eddies have come very close'
@@ -1430,7 +1430,7 @@ module Hydro
       if (loutest.and.lpencil(i_ou))then
 !      write(*,*) lpencil(i_ou)
         outest = minval(p%ou)
-        if (outest.lt.(-1.0d-8))then
+        if (outest<(-1.0d-8))then
           write(*,*) m,n,outest,maxval(p%ou),lpencil(i_ou)
           write(*,*)'WARNING : hydro:ou has different sign than relhel'
         else
@@ -1696,11 +1696,11 @@ module Hydro
 !
       if (lvideo.and.lfirst) then
         divu_yz(m-m1+1,n-n1+1)=p%divu(ix_loc-l1+1)
-        if (m.eq.iy_loc)  divu_xz(:,n-n1+1)=p%divu
-        if (n.eq.iz_loc)  divu_xy(:,m-m1+1)=p%divu
-        if (n.eq.iz2_loc) divu_xy2(:,m-m1+1)=p%divu
-        if (n.eq.iz3_loc) divu_xy3(:,m-m1+1)=p%divu
-        if (n.eq.iz4_loc) divu_xy4(:,m-m1+1)=p%divu
+        if (m==iy_loc)  divu_xz(:,n-n1+1)=p%divu
+        if (n==iz_loc)  divu_xy(:,m-m1+1)=p%divu
+        if (n==iz2_loc) divu_xy2(:,m-m1+1)=p%divu
+        if (n==iz3_loc) divu_xy3(:,m-m1+1)=p%divu
+        if (n==iz4_loc) divu_xy4(:,m-m1+1)=p%divu
         do j=1,3
           oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
           if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
@@ -1722,11 +1722,11 @@ module Hydro
         if (n==iz3_loc) o2_xy3(:,m-m1+1)=p%o2
         if (n==iz4_loc) o2_xy4(:,m-m1+1)=p%o2
         if (othresh_per_orms/=0) call calc_othresh
-        if (m.eq.iy_loc)  mach_xz(:,n-n1+1)=p%Ma2
-        if (n.eq.iz_loc)  mach_xy(:,m-m1+1)=p%Ma2
-        if (n.eq.iz2_loc) mach_xy2(:,m-m1+1)=p%Ma2
-        if (n.eq.iz3_loc) mach_xy3(:,m-m1+1)=p%Ma2
-        if (n.eq.iz4_loc) mach_xy4(:,m-m1+1)=p%Ma2
+        if (m==iy_loc)  mach_xz(:,n-n1+1)=p%Ma2
+        if (n==iz_loc)  mach_xy(:,m-m1+1)=p%Ma2
+        if (n==iz2_loc) mach_xy2(:,m-m1+1)=p%Ma2
+        if (n==iz3_loc) mach_xy3(:,m-m1+1)=p%Ma2
+        if (n==iz4_loc) mach_xy4(:,m-m1+1)=p%Ma2
         mach_yz(m-m1+1,n-n1+1)=p%Ma2(ix_loc-l1+1)
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif
@@ -2469,8 +2469,8 @@ module Hydro
       if (lroot) &
            print*,'centrifugal_balance: initializing velocity field'
 !
-     if ((rsmooth.ne.0.).or.(r0_pot.ne.0)) then
-       if (rsmooth.ne.r0_pot) &
+     if ((rsmooth/=0.).or.(r0_pot/=0)) then
+       if (rsmooth/=r0_pot) &
             call stop_it("rsmooth and r0_pot must be equal")
        if (n_pot/=2) &
             call stop_it("don't you dare using less smoothing than n_pot=2")
@@ -2487,9 +2487,9 @@ module Hydro
 !
             call acceleration(g_r)
 !
-            if (any(g_r .gt. 0.)) then
+            if (any(g_r > 0.)) then
               do i=1,mx
-                if (g_r(i) .gt. 0) then
+                if (g_r(i) > 0) then
                   if ((i <= nghost).or.(i >= mx-nghost)) then
                     !ghost zones, just emit a warning
                     if (ip<=7) then
@@ -2914,7 +2914,7 @@ module Hydro
 !  With ldamp_fade=T, damping coefficient is smoothly fading out
 !
 !
-        if ((dampu .ne. 0.) .and. (t < tdamp)) then
+        if ((dampu /= 0.) .and. (t < tdamp)) then
           if (ldamp_fade) then  ! smoothly fade
             !
             ! smoothly fade out damping according to the following
@@ -4351,7 +4351,7 @@ module Hydro
         l1bc=(l1+l2)/2
         l2bc=l1bc+1
         do n=n1,n2
-          if (z(n).lt.z1_interior_bc_hydro) then
+          if (z(n)<z1_interior_bc_hydro) then
             do m=m1,m2
               f(l1bc:l2bc,m,n,iux:iuz)=0.
             enddo

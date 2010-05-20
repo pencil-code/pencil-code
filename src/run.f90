@@ -463,7 +463,7 @@ program run
 !  which should provide a far better solution to the problem.
 !
     if (iwig/=0) then
-      if (mod(it,iwig).eq.0) then
+      if (mod(it,iwig)==0) then
         if (lrmwig_xyaverage) call rmwig_xyaverage(f,ilnrho)
         if (lrmwig_full) call rmwig(f,df,ilnrho,ilnrho,awig)
         if (lrmwig_rho) call rmwig(f,df,ilnrho,ilnrho,awig,explog=.true.)

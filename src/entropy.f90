@@ -450,7 +450,7 @@ module Entropy
 !
 !  Temperatures at shell boundaries.
 !
-          if (initss(1) .eq. 'shell_layers') then
+          if (initss(1) == 'shell_layers') then
 !           lmultilayer=.true.   ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
@@ -1440,7 +1440,7 @@ module Entropy
 !  check convergence
 !
         crit=abs(rhotop/rt_new-1.)
-        if (crit.le.1e-4) goto 20
+        if (crit<=1e-4) goto 20
 !
         call strat_MLT (rhotop,mixinglength_flux,lnrhom,tempm,rhobot)
 !
@@ -1451,7 +1451,7 @@ module Entropy
         rt_new=rhotop
         rb_new=rhobot
    10 continue
-   20 if (ipz.eq.0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
+   20 if (ipz==0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 ! redefine rho0 and lnrho0 as we don't have rho0=1 at the top
 ! (important for eoscalc!)
@@ -1857,13 +1857,13 @@ module Entropy
 !  is derived
 !
 !
-        where (lambda .lt. lamstep(1)) lambda=lamstep(1)
+        where (lambda < lamstep(1)) lambda=lamstep(1)
         do j=1,9
-           if (lambda(n) .ge. lamstep(j) .and. lambda(n) .le. lamstep(j+1)) then
+           if (lambda(n) >= lamstep(j) .and. lambda(n) <= lamstep(j+1)) then
            fbeta(n)=beta(j)
            flamk(n)=lamk(j)
            end if
-       where (lambda .gt. lamstep(10))
+       where (lambda > lamstep(10))
            fbeta=beta(10)
            flamk=lamk(10)
        endwhere
@@ -3000,7 +3000,7 @@ module Entropy
 !
 !      boost_chi=1e6/unit_temperature
 !      rhochi=chi_rho
-!      where (p%lnTT .ge. log(boost_chi)) &
+!      where (p%lnTT >= log(boost_chi)) &
       rhochi=chi_rho*sqrt(p%rho1)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
@@ -3339,7 +3339,7 @@ module Entropy
 !
 !     limit perpendicular diffusion
 !
-      if (maxval(abs(vKpara+vKperp)) .gt. tini) then
+      if (maxval(abs(vKpara+vKperp)) > tini) then
          quenchfactor = vKpara/(vKpara+vKperp)
          vKperp=vKperp*quenchfactor
       endif
@@ -3402,7 +3402,7 @@ module Entropy
       vKperp(:) = Kgperp
 !
       call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
-      where (p%rho .le. tiny(0.0)) p%rho1=0.0
+      where (p%rho <= tiny(0.0)) p%rho1=0.0
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
 !
@@ -3410,7 +3410,7 @@ module Entropy
       call dot2(p%glnTT,gT2)
       call dot2(p%bb,b2)
 !
-      where ((gT2.le.tini).or.(b2.le.tini))
+      where ((gT2<=tini).or.(b2<=tini))
          cosbgT=0.
       elsewhere
          cosbgT=cosbgT/sqrt(gT2*b2)
@@ -4089,7 +4089,7 @@ module Entropy
 !     All is in SI units and has to be rescaled to PENCIL units
 !
       unit_lnQ=3*alog(real(unit_velocity))+5*alog(real(unit_length))+alog(real(unit_density))
-      if (unit_system .eq. 'cgs') unit_lnQ = unit_lnQ+alog(1.e13)
+      if (unit_system == 'cgs') unit_lnQ = unit_lnQ+alog(1.e13)
 !
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
@@ -4101,7 +4101,7 @@ module Entropy
 !
 ! First set of parameters
       rtv_cool=0.
-      if (cool_RTV .gt. 0.) then
+      if (cool_RTV > 0.) then
         imax = size(intlnT_1,1)
         lnQ(:)=0.0
         do i=1,imax-1
@@ -4113,7 +4113,7 @@ module Entropy
           lnQ = lnQ + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
         endwhere
         rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
-      elseif (cool_RTV .lt. 0) then
+      elseif (cool_RTV < 0) then
 ! Second set of parameters
         cool_RTV = cool_RTV*(-1.)
         imax = size(intlnT_2,1)
@@ -4622,7 +4622,7 @@ module Entropy
 !
 !  Initial temperature profile is given in ln(T) in [K] over z in [Mm]
 !
-      if (it .eq. 1) then
+      if (it == 1) then
         if (lroot) then
           inquire(IOLENGTH=lend) lnTTor
           open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
@@ -4643,13 +4643,13 @@ module Entropy
 !
 !  Get reference temperature
 !
-      if (z(n) .lt. prof_z(1) ) then
+      if (z(n) < prof_z(1) ) then
         lnTTor = prof_lnT(1)
-      elseif (z(n) .ge. prof_z(prof_nz)) then
+      elseif (z(n) >= prof_z(prof_nz)) then
         lnTTor = prof_lnT(prof_nz)
       else
         do i=1,prof_nz-1
-          if (z(n) .ge. prof_z(i) .and. z(n) .lt. prof_z(i+1)) then
+          if (z(n) >= prof_z(i) .and. z(n) < prof_z(i+1)) then
             !
             ! linear interpolation
             !
@@ -4660,7 +4660,7 @@ module Entropy
         enddo
       endif
 !
-      if (dt .ne. 0 )  then
+      if (dt /= 0 )  then
          newton = tdown/gamma/dt*((lnTTor - p%lnTT) )
          newton = newton * exp(allp*(-abs(p%lnrho-lnrho0)))
 !
@@ -4861,7 +4861,7 @@ module Entropy
       rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
 !
       crit=abs(rhotop/rt_new-1.)
-      if (crit.le.1e-4) goto 20
+      if (crit<=1e-4) goto 20
       call strat_heat(lnrho,temp,rhotop,rhobot)
 !
 !  update new estimates
@@ -4920,7 +4920,7 @@ module Entropy
         else
           lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
         endif
-        if (r(i) .ne. 0.) then
+        if (r(i) /= 0.) then
           if (nzgrid == 1) then
             g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
           else

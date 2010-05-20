@@ -551,7 +551,7 @@ module Testfield
           bamp1=1.
         endif
         if (delta_testfield/=0.) then
-          if (t.ge.delta_testfield_next.and.t.le.(delta_testfield_next+dt)) then
+          if (t>=delta_testfield_next.and.t<=(delta_testfield_next+dt)) then
             delta_testfield_time=t
             delta_testfield_next=t+delta_testfield
           endif

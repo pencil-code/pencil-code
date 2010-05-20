@@ -280,7 +280,7 @@ module Entropy
          enddo
        endif
 !
-      if (initlnTT(1).eq.'gaussian') then
+      if (initlnTT(1)=='gaussian') then
 !
 !  Needed when one only works with temperature_idealgas to check the radiative
 !  diffusion term, i.e. one solves d(TT)/dt=gamma*chi*del2(TT) with bcz='cT'
@@ -1268,17 +1268,17 @@ module Entropy
       call dot2(p%glnTT,gT2)
       call dot2(p%bb,b2)
 !
-      where ((gT2.le.tini).or.(b2.le.tini))
-         cosbgT=0.
+      where ((gT2<=tini).or.(b2<=tini))
+        cosbgT=0.
       elsewhere
-         cosbgT=cosbgT/sqrt(gT2*b2)
+        cosbgT=cosbgT/sqrt(gT2*b2)
       endwhere
 !
       if (lfirst.and.ldt) then
-         diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
-         if (ldiagnos.and.idiag_dtchi/=0) then
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-         endif
+        diffus_chi=diffus_chi+cosbgT*gamma*Kgpara*p%rho1*p%cp1*dxyz_2
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
       endif
 !
     endsubroutine calc_heatcond_tensor

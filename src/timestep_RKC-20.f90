@@ -76,7 +76,7 @@ contains
             dt1_local=maxval(dt1_max(1:nx))
 
             ! Timestep growth limiter
-            if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)
+            if (real(ddt) > 0.) dt1_local=max(dt1_local(1),dt1_last)
             call mpireduce_max(dt1_local,dt1,1)
             if (lroot) dt=1.0/dt1(1)
             ! Timestep growth limiter

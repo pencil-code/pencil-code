@@ -211,7 +211,7 @@ module Particles_nbody
              "one from nbody")
       endif
 !
-      if (rsmooth.ne.r_smooth(istar)) then 
+      if (rsmooth/=r_smooth(istar)) then 
         print*,'rsmooth from cdata=',rsmooth
         print*,'r_smooth(istar)=',r_smooth(istar)
         call stop_it("initialize_particles_nbody: inconsitency "//&
@@ -447,7 +447,7 @@ module Particles_nbody
           endif
         endif
         if (lcylindrical_coords.or.lspherical_coords) then
-          if (any(xsp0.lt.0)) &
+          if (any(xsp0<0)) &
                call stop_it("init_particles_nbody: in cylindrical coordinates"//&
                " all the radial positions must be positive")
         endif
@@ -478,7 +478,7 @@ module Particles_nbody
         pmass(istar)=1.- tmp;pmass1=1./max(pmass,tini);totmass=1.;totmass1=1.
 !
         parc = parc*totmass1
-        if (tmp .ge. 1.) &
+        if (tmp >= 1.) &
              call stop_it("particles_nbody,init_particles. The mass of one "//& 
              "(or more) of the particles is too big! The masses should "//&
              "never be bigger than g0. Please scale your assemble so that "//&
@@ -676,7 +676,7 @@ module Particles_nbody
 !
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn) !loop through the pencil
-            if (ipar(k).gt.mspar) then !for dust
+            if (ipar(k)>mspar) then !for dust
               !interpolate the gravity
               if (linterpolate_linear) then
                 call interpolate_linear(f,iglobal_ggp,&
@@ -868,7 +868,7 @@ module Particles_nbody
 !
         if (linterpolate_gravity) then
           !only loop through massive particles
-          if (ipar(k).le.mspar) then
+          if (ipar(k)<=mspar) then
             call loop_through_nbodies(fp,dfp,k,sq_hills,ineargrid)
           endif
         else
@@ -934,7 +934,7 @@ module Particles_nbody
 !  If there is accretion, remove the accreted particles from the 
 !  simulation
 !
-          if (laccretion(ks).and.(r2_ij.le.rs2)) then
+          if (laccretion(ks).and.(r2_ij<=rs2)) then
             call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
             !add mass of the removed particle to the accreting particle
             if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
@@ -1164,7 +1164,7 @@ module Particles_nbody
 !  Everything inside the accretion radius of the particle should
 !  not exert gravity (numerical problems otherwise)
 !
-      where (rrp.le.rp0)
+      where (rrp<=rp0)
         selfgrav = 0
       endwhere
 !
@@ -1172,11 +1172,11 @@ module Particles_nbody
 !
       if (lexclude_frozen) then
         if (lcylinder_in_a_box) then
-          where ((p%rcyl_mn.le.r_int).or.(p%rcyl_mn.ge.r_ext))
+          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
             selfgrav = 0
           endwhere
         else
-          where ((p%r_mn.le.r_int).or.(p%r_mn.ge.r_ext))
+          where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
             selfgrav = 0
           endwhere
         endif
@@ -1419,15 +1419,15 @@ module Particles_nbody
 !
 !  Exclude material from inside the Roche Lobe
 !
-        if (dist(i).ge.hills) then
+        if (dist(i)>=hills) then
 !
 !  External torque
 !
-          if (p%rcyl_mn(i).ge.rr) torqext(i) = torque(i)
+          if (p%rcyl_mn(i)>=rr) torqext(i) = torque(i)
 !
 !  Internal torque
 !
-          if (p%rcyl_mn(i).le.rr) torqint(i) = torque(i)
+          if (p%rcyl_mn(i)<=rr) torqint(i) = torque(i)
 !
         endif
 !
@@ -1444,7 +1444,7 @@ module Particles_nbody
       integer :: ks
 !
       ramping_period=2*pi*ramp_orbits
-      if (t .le. ramping_period) then
+      if (t <= ramping_period) then
         !sin ((pi/2)*(t/(ramp_orbits*2*pi))
         tmp=0.
         !just need to do that for the original masses
@@ -1658,7 +1658,7 @@ module Particles_nbody
 !  start particle counter for dust particles
 !
               do i=1,nx
-                if (prho(i).gt.rho_jeans(i)) then 
+                if (prho(i)>rho_jeans(i)) then 
 !
 !  create a new particle at the center of the grid
 !
@@ -1713,7 +1713,7 @@ module Particles_nbody
 !
               vvpm=0.0; vpm2=0.0
               do k=k1_imn(imn),k2_imn(imn)
-                if (.not.(any(ipar(k).eq.ipar_nbody))) then
+                if (.not.(any(ipar(k)==ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
                   vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
                 endif
@@ -1723,7 +1723,7 @@ module Particles_nbody
               enddo
 !  vpm2
               do k=k1_imn(imn),k2_imn(imn)
-                if (.not.(any(ipar(k).eq.ipar_nbody))) then
+                if (.not.(any(ipar(k)==ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
                   vpm2(inx0) = vpm2(inx0) + (fp(k,ivpx)-vvpm(inx0,1))**2 + &
                        (fp(k,ivpy)-vvpm(inx0,2))**2 + &
@@ -1745,7 +1745,7 @@ module Particles_nbody
 !
               npik=0.
               do k=k1_imn(imn),k2_imn(imn)
-                if (.not.(any(ipar(k).eq.ipar_nbody))) then
+                if (.not.(any(ipar(k)==ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
                   npik(inx0)=npik(inx0)+1
                   pik(inx0,npik(inx0)) = k
@@ -1755,14 +1755,14 @@ module Particles_nbody
 !  Now check for unstable particle concentrations within this pencil
 !
               do i=1,nx
-                if (prhop(i).gt.rho_jeans_dust(i)) then 
+                if (prhop(i)>rho_jeans_dust(i)) then 
 !
 !  This cell is unstable. Remove all particles from it
 !
                   if (pnp(i) > 1.0) then
                     !removing must always be done backwards 
                     do kn=pnp(i),1,-1 
-                      if (.not.(any(ipar(k).eq.ipar_nbody))) &
+                      if (.not.(any(ipar(k)==ipar_nbody))) &
                            call remove_particle(fp,ipar,pik(i,kn))
                     enddo
 !
@@ -2237,7 +2237,7 @@ module Particles_nbody
                fcsp(k,ixp:izp),fcsp(par,ixp:izp),&
                DISTANCE=dist)
 
-          if (dist.le.link_length) then 
+          if (dist<=link_length) then 
 !
 !  if so, add it to the cluster, tag it and call its friends
 !

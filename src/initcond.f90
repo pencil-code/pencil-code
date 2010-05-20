@@ -767,7 +767,7 @@ module Initcond
         do l=l1,l2
           k=nr
           do while (k>0)
-            if (x(l).le.xsteps(k)) omx(l)=om_nr(k)*omegai
+            if (x(l)<=xsteps(k)) omx(l)=om_nr(k)*omegai
             k=k-1
           enddo
         enddo
@@ -2677,7 +2677,7 @@ module Initcond
         do n=n1,n2; do m=m1,m2;do l=l1,l2
           radius= sqrt((x(l)-center1_x)**2+(z(n)-center1_z)**2)
           a_minus_r= a - radius
-          if (radius .gt. tini) then
+          if (radius > tini) then
              tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
                   radius*(1+erfunc(width*a_minus_r))/4. + &
                   2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &
@@ -3699,7 +3699,7 @@ module Initcond
       else
         call gaunoise_vect(ampl,f,i1,i2) ! which has a k^2. spectrum
 !
-        if ((initpower.ne.2.).or.(cutoff.ne.0.)) then
+        if ((initpower/=2.).or.(cutoff/=0.)) then
 !
           k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx
           k2 =      (spread(spread(k2x,2,ny),3,nz))**2
@@ -3721,7 +3721,7 @@ module Initcond
             u_re =(k2)**(.25*initpower-.5)*u_re
             u_im =(k2)**(.25*initpower-.5)*u_im
             ! cutoff (changed to hyperviscous cutoff filter)
-            if (cutoff .ne. 0.) then
+            if (cutoff /= 0.) then
               u_re = u_re*exp(-(k2/cutoff**2.)**2)
               u_im = u_im*exp(-(k2/cutoff**2.)**2)
             endif
@@ -3729,16 +3729,16 @@ module Initcond
             call fourier_transform(u_re,u_im,linv=.true.)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
 !
-            if (lroot .and. (cutoff.eq.0)) then
+            if (lroot .and. (cutoff==0)) then
               print*,'powern: k^',initpower,' spectrum : var  i=',i
             else
               print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
                      initpower,', k0 =',cutoff,' : var  i=',i
             endif
           enddo !i
-        endif !(initpower.ne.2.).or.(cutoff.ne.0.)
+        endif !(initpower/=2.).or.(cutoff/=0.)
 !
-      endif !(ampl.eq.0)
+      endif !(ampl==0)
 !
 !  Deallocate arrays.
 !
@@ -3838,14 +3838,14 @@ module Initcond
           call random_number_wrapper(r); u_re=ampl*k2**mhalf*cos(pi*(2*r-1))
           call random_number_wrapper(r); u_im=ampl*k2**mhalf*sin(pi*(2*r-1))
           ! cutoff (changed to hyperviscous cutoff filter)
-          if (cutoff .ne. 0.) then
+          if (cutoff /= 0.) then
             u_re = u_re*exp(-(k2/cutoff**2.)**2)
             u_im = u_im*exp(-(k2/cutoff**2.)**2)
           endif
           ! back to real space
           call fourier_transform(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
-          if (lroot .and. (cutoff.eq.0)) then
+          if (lroot .and. (cutoff==0)) then
             print*,'powern: k^',initpower,' spectrum : var  i=',i
           else
             print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
@@ -3853,7 +3853,7 @@ module Initcond
           endif
         enddo !i
 !
-      endif !(ampl.eq.0)
+      endif !(ampl==0)
 !
 !  Deallocate arrays.
 !
@@ -3901,9 +3901,9 @@ module Initcond
 !    enddo
 !
 !    do modeN=1,N_modes
-!       if (modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
-!       if (modeN.eq.N_modes)delk(modeN)=(k(modeN)-k(modeN-1))
-!       if (modeN.gt.1.and.modeN.lt.N_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
+!       if (modeN==1)delk(modeN)=(k(modeN+1)-K(modeN))
+!       if (modeN==N_modes)delk(modeN)=(k(modeN)-k(modeN-1))
+!       if (modeN>1.and.modeN<N_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
 !    enddo
 !          mk=(k2*k2)*((1.0 + (k2/(bk_min*bk_min)))**(0.5*initpower-2.0))
 !
@@ -3945,7 +3945,7 @@ module Initcond
 !   construct basis for plane having rr normal to it
 !   (bit of code from forcing to construct x', y')
 !
-        if ((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+        if ((k_unit(2)==0).and.(k_unit(3)==0)) then
           ex=0.; ey=1.; ez=0.
         else
           ex=1.; ey=0.; ez=0.
@@ -4194,7 +4194,7 @@ module Initcond
 !
       do j=n1,n2
          do i=1,prof_nz-1
-            if (z(j) .ge. prof_z(i) .and. z(j) .lt. prof_z(i+1) ) then
+            if (z(j) >= prof_z(i) .and. z(j) < prof_z(i+1) ) then
                f(:,:,j,ilnrho) = (prof_lnrho(i)*(prof_z(i+1) - z(j)) +   &
                     prof_lnrho(i+1)*(z(j)-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
 !
@@ -4210,7 +4210,7 @@ module Initcond
                exit
             endif
          enddo
-         if (z(j) .ge. prof_z(prof_nz)) then
+         if (z(j) >= prof_z(prof_nz)) then
             f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
 !
             tmp =  prof_lnT(prof_nz)
@@ -4228,16 +4228,16 @@ module Initcond
       zbot=xyz0(3)
 !
       do i=1,prof_nz-1
-         if (ztop .ge. prof_z(i) .and. ztop .lt. prof_z(i+1) ) then
+         if (ztop >= prof_z(i) .and. ztop < prof_z(i+1) ) then
 !
             tmp =  (prof_lnT(i)*(prof_z(i+1) - ztop) +   &
                  prof_lnT(i+1)*(ztop-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
             cs2top = gamma_m1*exp(tmp)
 !
-         elseif (ztop .ge. prof_z(prof_nz)) then
+         elseif (ztop >= prof_z(prof_nz)) then
             cs2top = gamma_m1*exp(prof_lnT(prof_nz))
          endif
-         if (zbot .ge. prof_z(i) .and. zbot .lt. prof_z(i+1) ) then
+         if (zbot >= prof_z(i) .and. zbot < prof_z(i+1) ) then
 !
             tmp =  (prof_lnT(i)*(prof_z(i+1) - zbot) +   &
                  prof_lnT(i+1)*(zbot-prof_z(i)) ) / (prof_z(i+1)-prof_z(i))
@@ -4326,7 +4326,7 @@ module Initcond
 !  Calculate transformed vector potential at "each height"
 !
         zref = z(i) - xyz0(3)
-        where (k2 .ne. 0 )
+        where (k2 /= 0 )
           A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*zref )
           A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*zref )
         elsewhere
@@ -4338,7 +4338,7 @@ module Initcond
 !
         f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        where (k2 .ne. 0 )
+        where (k2 /= 0 )
           A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*zref )
           A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*zref )
         elsewhere
@@ -4417,10 +4417,10 @@ module Initcond
          ztop=xyz0(3)+Lxyz(3)
          zbot=xyz0(3)
          !
-         do while (tmpz .le. ztop)
-            if (abs(tmpz-zbot) .lt. dz) cs2bot = (gamma-1.)*exp(tmpT)
-            if (abs(tmpz-ztop) .lt. dz) cs2top = (gamma-1.)*exp(tmpT)
-            if (abs(tmpz-z(j)) .le. dz) then
+         do while (tmpz <= ztop)
+            if (abs(tmpz-zbot) < dz) cs2bot = (gamma-1.)*exp(tmpT)
+            if (abs(tmpz-ztop) < dz) cs2top = (gamma-1.)*exp(tmpT)
+            if (abs(tmpz-z(j)) <= dz) then
                f(:,:,j,ilnrho) = tmprho
                f(:,:,j,ilnTT)  = tmpT
             endif
@@ -4428,7 +4428,7 @@ module Initcond
             tmpz = tmpz+dz
             ! get T at new z
             do i=1,prof_nz-1
-               if (tmpz .ge. prof_z(i)  .and. tmpz .lt. prof_z(i+1) ) then
+               if (tmpz >= prof_z(i)  .and. tmpz < prof_z(i+1) ) then
 !                  tmpdT = linear_inpol(prof_z(i),prof_z(i+1),prof_lnT(i),prof_lnT(i+1),tmpz)-tmpT
 !
                   tmpdT = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (tmpz-prof_z(i)) + prof_lnT(i) -tmpT
@@ -4436,7 +4436,7 @@ module Initcond
 !
                   tmpT = tmpT + tmpdT
                   !exit
-               elseif (tmpz .ge. prof_z(prof_nz)) then
+               elseif (tmpz >= prof_z(prof_nz)) then
                   tmpdT = prof_lnT(prof_nz) - tmpT
                   tmpT = tmpT + tmpdT
                   !exit
@@ -4496,7 +4496,7 @@ module Initcond
           call mpibcast_real(tmp3,1,icpu-1)
           tmp2(icpu+nprocy)=tmp3(1)
         enddo
-        if (ncpus.gt.nprocy) then
+        if (ncpus>nprocy) then
           do icpu=nprocy+1,ncpus
             sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
           enddo
@@ -4549,7 +4549,7 @@ module Initcond
           call mpibcast_real(tmp3,1,icpu-1)
           tmp2(icpu+nprocy)=tmp3(1)
         enddo
-        if (ncpus.gt.nprocy) then
+        if (ncpus>nprocy) then
           do icpu=nprocy+1,ncpus
             sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
           enddo

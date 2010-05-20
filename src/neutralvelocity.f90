@@ -713,7 +713,7 @@ module NeutralVelocity
       case ('globaldisc-strat')
          tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
          !this is also wrong!
-         where (tmp.ge.0)
+         where (tmp>=0)
             OO=sqrt(tmp)
          elsewhere
             OO=0.

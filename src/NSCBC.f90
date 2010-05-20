@@ -952,7 +952,7 @@ include 'NSCBC.h'
 !
 !  Do we want a smooth start
 !
-          if (smooth_time .gt. 0) then
+          if (smooth_time > 0) then
             smooth=min(t/smooth_time,1.)
           else
             smooth=1.

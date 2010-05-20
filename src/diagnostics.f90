@@ -1114,7 +1114,7 @@ module Diagnostics
       if (iname /= 0) then
         sum_name=0
 !
-        if (y(m).ge.yequator)then
+        if (y(m)>=yequator)then
           sum_name=fname_half(iname,2)
         else
           sum_name=fname_half(iname,1)
@@ -1141,7 +1141,7 @@ module Diagnostics
           endif
         endif
 !
-        if (y(m).ge.yequator)then
+        if (y(m)>=yequator)then
           fname_half(iname,2)=sum_name
         else
           fname_half(iname,1)=sum_name
@@ -1170,7 +1170,7 @@ module Diagnostics
 !  However, north corresponds to z < zequator,
 !  in analogy to theta < !pi/2 for north.
 !
-        if (z(n).ge.zequator) then
+        if (z(n)>=zequator) then
           sum_name=fname_half(iname,2)
         else
           sum_name=fname_half(iname,1)
@@ -1201,7 +1201,7 @@ module Diagnostics
 !  However, north corresponds to z < zequator,
 !  in analogy to theta < !pi/2 for north.
 !
-        if (z(n).ge.zequator) then
+        if (z(n)>=zequator) then
           fname_half(iname,2)=sum_name
         else
           fname_half(iname,1)=sum_name
@@ -1279,7 +1279,7 @@ module Diagnostics
          if (nzgrid/=1) dv=dv*dz
 !
          do i=1,nx
-            if ((rlim(i) .le. r_ext).and.(rlim(i) .ge. r_int)) then
+            if ((rlim(i) <= r_ext).and.(rlim(i) >= r_int)) then
                aux(i) = a(i)
             else
                aux(i) = 0.
@@ -2065,12 +2065,12 @@ module Diagnostics
 !
      integer :: lx
 !
-     if (xav_max.lt.x(l1)) loutside_avg=.true.
+     if (xav_max<x(l1)) loutside_avg=.true.
 !
      ixav_max=l1
 !
      do lx=l1,l2
-       if (x(lx).lt.xav_max) ixav_max=lx
+       if (x(lx)<xav_max) ixav_max=lx
      enddo
 !
    endsubroutine init_xaver

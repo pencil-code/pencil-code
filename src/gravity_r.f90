@@ -248,17 +248,17 @@ module Gravity
                      / poly( (/ 1., 0., cpot(4,j), cpot(5,j), &
                      cpot(3,j) /), rr_mn)**2
               else
-                if (ipotential(j) .eq. 'sph-const') then
+                if (ipotential(j) == 'sph-const') then
                   g_r=-g0
-                elseif (ipotential(j) .eq. 'no-smooth') then
+                elseif (ipotential(j) == 'no-smooth') then
                   g_r=-g0/rr_mn**2
-                elseif (ipotential(j) .eq. 'varying-q') then
+                elseif (ipotential(j) == 'varying-q') then
                   g_r=-g0/rr_mn**(2*qgshear-1)
-                elseif (ipotential(j) .eq. 'varying-q-smooth') then
+                elseif (ipotential(j) == 'varying-q-smooth') then
                   g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
-                elseif (ipotential(j) .eq. 'dark-matter-halo') then
+                elseif (ipotential(j) == 'dark-matter-halo') then
                   g_r=-g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
-                elseif (ipotential(j) .eq. 'light-matter') then
+                elseif (ipotential(j) == 'light-matter') then
                   !approximation of the bessel functions potential
                   !of Freeman 1970. Reference: Persic et al 1996
                   g_r=-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&

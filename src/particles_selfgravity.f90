@@ -295,7 +295,7 @@ module Particles_selfgravity
 !  Possibility of switching off self-gravity for the massive n-body particles.
 !
             if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then 
-              lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               if (lnbody) gpotself=0
             endif
 !

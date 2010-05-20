@@ -739,7 +739,7 @@ module Equ
 !debug     do ider=1,8                                             !DERCOUNT
 !debug     do j=1,3                                                !DERCOUNT
 !debug     do k=1,3                                                !DERCOUNT
-!debug       if (der_call_count(iv,ider,j,k) .gt. 1) then          !DERCOUNT
+!debug       if (der_call_count(iv,ider,j,k) > 1) then             !DERCOUNT
 !debug         print*,'DERCOUNT: '//varname(iv)//' derivative ', & !DERCOUNT
 !debug                                                 ider,j,k, & !DERCOUNT
 !debug                                               ' called ', & !DERCOUNT
@@ -750,7 +750,7 @@ module Equ
 !debug     enddo                                                   !DERCOUNT
 !debug     enddo                                                   !DERCOUNT
 !debug     enddo                                                   !DERCOUNT
-!debug     if (maxval(der_call_count).gt.1) call fatal_error( &        !DERCOUNT
+!debug     if (maxval(der_call_count)>1) call fatal_error( &        !DERCOUNT
 !debug      'pde','ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
 !debug   endif
 !

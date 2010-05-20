@@ -340,16 +340,16 @@ module Testflow
 !
 !  loop over different choices of initial conditions
 !
-        if ( inituutest(j)(1:15).eq.'gaussian-noise-' ) then
+        if ( inituutest(j)(1:15)=='gaussian-noise-' ) then
 !
           read( inituutest(j)(16:16), '(i1)' ) jtest
           selector='gaussian-noise'
 !
-        else if ( inituutest(j)(1:10).eq.'sinwave-x-' ) then
+        else if ( inituutest(j)(1:10)=='sinwave-x-' ) then
 !
           read( inituutest(j)(11:11), '(i1)' ) jtest
           selector='sinwave-x'
-        else if ( inituutest(j)(1:9).eq.'constant-' ) then
+        else if ( inituutest(j)(1:9)=='constant-' ) then
 !
           read( inituutest(j)(10:10), '(i1)' ) jtest
           selector='constant'
@@ -518,7 +518,7 @@ module Testflow
       !!print*, 'guumz(1):', guumz(:,1)
       endif
 !
-      if ( iuutest.eq.0 ) return
+      if ( iuutest==0 ) return
 
       U0test=0.; gU0test=0.; gH0test=0.
 !
@@ -573,7 +573,7 @@ module Testflow
 !
         uutest=f(l1:l2,m,n,iuxtest:iuztest)	! testflow solution # jtest
         hhtest=f(l1:l2,m,n,ihhtest)
-        !!if ( jtest.eq.1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
+        !!if ( jtest==1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
 !
 !  velocity gradient matrix and div u term
 !
@@ -583,7 +583,7 @@ module Testflow
 !
         call grad(f,ihhtest,ghtest)
 !
-        if (jtest.gt.0) then
+        if (jtest>0) then
 !
           select case (itestflow)                       ! get testflow U^(pq), grad U^(pq), grad H^(pq)
 !
@@ -611,7 +611,7 @@ module Testflow
 !
             case ('quadratic+G')
 !
-              if ( jtest.le.6 ) then
+              if ( jtest<=6 ) then
                 call set_U0test_quadratic(U0test,gU0test,jtest)
                 gH0test=0.
               else
@@ -636,12 +636,12 @@ module Testflow
 !
 !       testflow inhomogeneity
 !
-        if (jtest.gt.0) then
+        if (jtest>0) then
 !
           call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers
           !!call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)!!!MR: noch falsch, da unter ilnrho nicht hhfluct!!
                           !!!ilnrho
-          !!if ( jtest.eq.2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
+          !!if ( jtest==2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
             !!print*, 'U0ghtest, n, m:', n, m, ghfluct(:,2)-U0ghtest(:)
 !
           if ( .not.lburgers_testflow ) &
@@ -657,7 +657,7 @@ module Testflow
 !
 !       testflow inhomogeneity
 !
-        if ( jtest.gt.0 ) then
+        if ( jtest>0 ) then
 !
           if (lkinem_testflow) then
 !
@@ -941,7 +941,7 @@ yloop:  do m=m1,m2
 !
             uufluct=f(l1:l2,m,n,iux:iux+2)
 !
-!!            if ( n.eq.5.and.m.eq.5 ) print*,'nl:uufluct:', maxval(uufluct), minval(uufluct)
+!!            if ( n==5.and.m==5 ) print*,'nl:uufluct:', maxval(uufluct), minval(uufluct)
             do j=1,3
               uufluct(:,j)=uufluct(:,j)-uumz(n-n1+1,j)
             enddo
@@ -973,7 +973,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
             call traceless_strain( uijtest, divutest, sijtest, uutest )
                                                                ! this parameter is without meaning in Cartesian geometry
-            if ( jtest.eq.0 ) then    ! primary turbulence
+            if ( jtest==0 ) then    ! primary turbulence
 
               gh0  = ghtest           ! save primary turbulence
               uu0  = uutest
@@ -1013,7 +1013,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
             if (nutest/=0.) then
 !
-              if ( jtest.eq.0 ) then
+              if ( jtest==0 ) then
 !
                 call multmv(sijtest,ghtest,sghtest)                            ! S(u0).grad(h0)
 !
@@ -1029,7 +1029,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
             endif
 !
-            if ( jtest.eq.0 .or. .not.lsoca_testflow ) then
+            if ( jtest==0 .or. .not.lsoca_testflow ) then
 
               df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-unltest      ! nonlinear parts stored in df
 !
@@ -1038,7 +1038,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
             endif
 
-            if ( jtest.eq.0 .or. .not.lsoca_testflow .or. ldiagnos ) then  ! means of nonlinear terms always needed for 0th testflow,
+            if ( jtest==0 .or. .not.lsoca_testflow .or. ldiagnos ) then  ! means of nonlinear terms always needed for 0th testflow,
                                                                            ! if not SOCA for all testflows, except from that if the
                                                                            ! the turbulence coefficients have to be calculated
               do j=1,3
@@ -1213,14 +1213,14 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
 !  calculate gal, aka-lambda and nu tensors
 !
-      if ( idiag_aklam/=0 .and. njtestflow.lt.4 ) then
+      if ( idiag_aklam/=0 .and. njtestflow<4 ) then
 !
         print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for AKA-Lambda tensor to be calculated'
         idiag_aklam=0
 !
       endif
 !
-      if ( idiag_nu/=0 .and. njtestflow.lt.6 ) then
+      if ( idiag_nu/=0 .and. njtestflow<6 ) then
 !
         print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for viscosity tensor to be calculated'
         idiag_nu=0
@@ -1693,7 +1693,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         p=1
         do j=0,njtestflow
 !
-          if (j.eq.0) then
+          if (j==0) then
             name = '0rms'
           else
 !
@@ -1707,7 +1707,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
           ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'u'//name,idiag_upqrms(j))
           ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'h'//name,idiag_hpqrms(j))
 
-          if ( j.gt.0 ) then
+          if ( j>0 ) then
 !
             do i=1,3
               ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'F'//cind2,idiag_Fipq(i,j))
@@ -1789,7 +1789,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         p=1
         do j=0,njtestflow
 !
-          if (j.eq.0) then
+          if (j==0) then
             name = '0rms='
           else
 !
@@ -1849,7 +1849,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
           call del_elem( carray, idiag_map(ind), leng )
 !
           idiag_map(ind) = 0
-          if ( ind.lt.nname_old ) &
+          if ( ind<nname_old ) &
             idiag_map(ind+1:nname_old) = idiag_map(ind+1:nname_old)-1
 
         endif
@@ -1931,7 +1931,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
       integer :: iname, i, j, nname_form, indx
 !
-      if ( mat_diag_ind.eq.0 ) then                           ! if complete tensor was not already inquired
+      if ( mat_diag_ind==0 ) then                           ! if complete tensor was not already inquired
 !
         do iname=1,nname
         do i=1,2
@@ -1970,7 +1970,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
           enddo
         enddo
 
-        if ( mat_diag_ind.lt.nname_old ) &
+        if ( mat_diag_ind<nname_old ) &
           idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+3
 !
         cformat = cform(indx)
@@ -1993,7 +1993,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
           ind = mat_diag_indices(i,j)
 !
-          if (ind.gt.0) &
+          if (ind>0) &
             mat_diag_indices(i,j) = idiag_map(ind)
 !
         enddo
@@ -2010,7 +2010,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       INTEGER RRA,L,IR,I,J,IPA,J2,K
 !
       IP(1) = 1
-      IF (N.LE.1) GOTO 1001
+      IF (N<=1) GOTO 1001
       L = N/2+1
       IR = N
 !
@@ -2019,8 +2019,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       ENDDO
 !
    21 CONTINUE
-         IF (IR.GT.1) THEN
-            IF (L.GT.1) THEN
+         IF (IR>1) THEN
+            IF (L>1) THEN
                L = L-1
                J = L
             ELSE
@@ -2034,12 +2034,12 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             RRA = RA(IPA)
    22       CONTINUE
                J2 = J+J
-               IF (J2.LE.IR) THEN
+               IF (J2<=IR) THEN
                   K = J2
-                  IF (K.LT.IR) THEN
-                     IF ( RA(IP(K)).LT.RA(IP(K+1)) ) K = K+1
+                  IF (K<IR) THEN
+                     IF ( RA(IP(K))<RA(IP(K+1)) ) K = K+1
                   END IF
-                  IF ( RRA.LT.RA(IP(K)) ) THEN
+                  IF ( RRA<RA(IP(K)) ) THEN
                      IP(J) = IP(K)
                      J = K
                   ELSE

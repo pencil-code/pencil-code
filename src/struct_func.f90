@@ -63,31 +63,31 @@ module struct_func
       !
       if (iproc==root.and.ip<9) print*,'Doing structure functions'
       !
-      if (variabl .eq. 'u') then
+      if (variabl == 'u') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
         filetowrite='/sfu-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl .eq. 'b') then
+      elseif (variabl == 'b') then
         vect(:,:,:)=b_vec(:,:,:)
         filetowrite='/sfb-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl .eq. 'z1') then
+      elseif (variabl == 'z1') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
         filetowrite='/sfz1-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl .eq. 'z2') then
+      elseif (variabl == 'z2') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
         filetowrite='/sfz2-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl .eq. 'flux') then
+      elseif (variabl == 'flux') then
         !
         ! Here we calculate the flux like structure functions of
         ! Politano & Pouquet (1998)
@@ -113,7 +113,7 @@ module struct_func
       !  Setting some variables depending on wether we want to
       !  calculate pdf or structure functions.
       !
-      if (variabl .eq. 'pdfu') then
+      if (variabl == 'pdfu') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
         filetowrite='/pdfu-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
@@ -125,7 +125,7 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl .eq. 'pdfb') then
+      elseif (variabl == 'pdfb') then
         vect=b_vec
         filetowrite='/pdfb-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
@@ -137,7 +137,7 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl .eq. 'pdfz1') then
+      elseif (variabl == 'pdfz1') then
         filetowrite='/pdfz1-'
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
         pdf_max= 1.  !(for the time being; assumes |u|<1)
@@ -149,7 +149,7 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl .eq. 'pdfz2') then
+      elseif (variabl == 'pdfz2') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
         filetowrite='/pdfz2-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
@@ -170,14 +170,14 @@ module struct_func
           if ((iproc==root) .and. (lpostproc)) print*,'l=',l
           do lb_ll=1,lb_nxgrid*2-2
             exp2=mod((lb_ll),2)
-            if (lb_ll .eq. 1) exp2=0
+            if (lb_ll == 1) exp2=0
             exp1=int((lb_ll)/2)-exp2
             separation=(2**exp1)*(3**exp2)
             ll1=mod(l+separation-1,nx)+1
             ll2=mod(l-separation+nx-1,nx)+1
             dvect1=vect(l,:,:)-vect(ll1,:,:)
             dvect2=vect(l,:,:)-vect(ll2,:,:)
-            if (variabl .eq. 'flux') then
+            if (variabl == 'flux') then
               dvect_flux1=flux_vec(l,:,:,:)-flux_vec(ll1,:,:,:)
               dvect_flux2=flux_vec(l,:,:,:)-flux_vec(ll2,:,:,:)
             endif
@@ -203,7 +203,7 @@ module struct_func
               !
               !  Calculates sf
               !
-              if (variabl .eq. 'flux') then
+              if (variabl == 'flux') then
                 sf3_flux1= &
                      abs(dvect1(:,:))* &
                      (dvect_flux1(:,:,1)**2 &
@@ -219,7 +219,7 @@ module struct_func
               ! Loop over all q values
               !
               do q=1,qmax-1
-                if (variabl .eq. 'flux') then
+                if (variabl == 'flux') then
                   sf(lb_ll,q,direction) &
                        =sf(lb_ll,q,direction) &
                        +sum(abs(sf3_flux1(:,:))**(q/3.)) &
@@ -233,7 +233,7 @@ module struct_func
               !
               ! Do unsigned third moment (store in last slot of array)
               !
-              if (variabl .eq. 'flux') then
+              if (variabl == 'flux') then
                 sf(lb_ll,qmax,direction) &
                      =sf(lb_ll,qmax,direction) &
                      +sum(sf3_flux1(:,:)) &
@@ -246,12 +246,12 @@ module struct_func
             endif
           enddo
         enddo
-        if (nr_directions .gt. 1) then
-          if (direction .eq. 1) then
+        if (nr_directions > 1) then
+          if (direction == 1) then
             !Doing transpose of y direction
             call transp(vect,'y')
           endif
-          if (direction .eq. 2) then
+          if (direction == 2) then
             !Doing transpose of z direction
             call transp(vect,'z')
           endif

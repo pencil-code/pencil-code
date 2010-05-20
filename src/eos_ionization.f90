@@ -221,7 +221,7 @@ module EquationOfState
 !!      integer, parameter :: ieosvar_cs2   = 32
 !!      integer, parameter :: ieosvar_pp    = 64
 !!!
-!!      if (ieosvar.ge.2) &
+!!      if (ieosvar>=2) &
 !!        call fatal_error("select_eos_variable", &
 !!             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
 !!
@@ -230,34 +230,34 @@ module EquationOfState
 !!!      select case (variable)
 !!      if (variable=='ss') then
 !!          this_var=ieosvar_ss
-!!          if (findex.lt.0) then
+!!          if (findex<0) then
 !!            leos_isentropic=.true.
 !!          endif
 !!      elseif (variable=='cs2') then
 !!          this_var=ieosvar_cs2
 !!          if (findex==-2) then
 !!            leos_localisothermal=.true.
-!!          elseif (findex.lt.0) then
+!!          elseif (findex<0) then
 !!            leos_isothermal=.true.
 !!          endif
 !!      elseif (variable=='lnTT') then
 !!          this_var=ieosvar_lnTT
-!!          if (findex.lt.0) then
+!!          if (findex<0) then
 !!            leos_isothermal=.true.
 !!          endif
 !!      elseif (variable=='lnrho') then
 !!          this_var=ieosvar_lnrho
-!!          if (findex.lt.0) then
+!!          if (findex<0) then
 !!            leos_isochoric=.true.
 !!          endif
 !!      elseif (variable=='rho') then
 !!          this_var=ieosvar_rho
-!!          if (findex.lt.0) then
+!!          if (findex<0) then
 !!            leos_isochoric=.true.
 !!          endif
 !!      elseif (variable=='pp') then
 !!          this_var=ieosvar_pp
-!!          if (findex.lt.0) then
+!!          if (findex<0) then
 !!            leos_isobaric=.true.
 !!          endif
 !!      else
@@ -272,7 +272,7 @@ module EquationOfState
 !!!
 !!! Ensure the indexes are in the correct order.
 !!!
-!!      if (this_var.lt.ieosvar_selected) then
+!!      if (this_var<ieosvar_selected) then
 !!        ieosvar2=ieosvar1
 !!        ieosvar1=findex
 !!      else
@@ -1231,7 +1231,7 @@ module EquationOfState
         ee=var2
         !print*,'saha: TT_',2.0/3.0*(ee-yH*ee_ion)*fractions1
         !lnTT_=log(2.0/3.0*(ee/ee_ion-yH)*fractions1)
-      !  if (ee.lt.yH*ee_ion) then
+      !  if (ee<yH*ee_ion) then
       !    lnTT_=-25.
       !  else
         lnTT_=log(2.0/3.0*(ee-yH*ee_ion)*fractions1)

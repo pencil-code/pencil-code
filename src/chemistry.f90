@@ -1436,7 +1436,7 @@ module Chemistry
                 tmp_sum2=0.
                 do j=1,nchemspec
                  if (species_constants(k,imass)>0.) then
-                 if (j .ne. k) then
+                 if (j /= k) then
                    tmp_sum=tmp_sum &
                         +XX_full(:,j2,j3,j)/Bin_Diff_coef(:,j2,j3,j,k)
                    tmp_sum2=tmp_sum2 &

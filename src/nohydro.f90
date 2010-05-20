@@ -408,9 +408,9 @@ module Hydro
 !    enddo
 !
 !    do modeN=1,KS_modes
-!       if (modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
-!       if (modeN.eq.KS_modes)delk(modeN)=(k(modeN)-k(modeN-1))
-!       if (modeN.gt.1.and.modeN.lt.KS_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
+!       if (modeN==1)delk(modeN)=(k(modeN+1)-K(modeN))
+!       if (modeN==KS_modes)delk(modeN)=(k(modeN)-k(modeN-1))
+!       if (modeN>1.and.modeN<KS_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
 !    enddo
 !          mk=(k2*k2)*((1.0 + (k2/(bk_min*bk_min)))**(0.5*initpower-2.0))
 !
@@ -436,7 +436,7 @@ module Hydro
 !
       if (modeN==1)&
               dk=kmin*(a-1.)/2.
-      if (modeN.gt.1.and.modeN.lt.KS_modes) &
+      if (modeN>1.and.modeN<KS_modes) &
               dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
       if (modeN==KS_modes) &
               dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
@@ -552,7 +552,7 @@ module Hydro
 !weezy       dk=1.0*kmin
 !
 !weezy       if (modeN==1)dk=kmin*(a-1.)/2.
-!weezy       if (modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
+!weezy       if (modeN>1.and.modeN<KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
 !weezy       if (modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
 !
 !
@@ -588,7 +588,7 @@ module Hydro
 !  construct basis for plane having rr normal to it
 !  (bit of code from forcing to construct x', y')
 !
-      if ((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+      if ((k_unit(2)==0).and.(k_unit(3)==0)) then
         ex=0.; ey=1.; ez=0.
       else
         ex=1.; ey=0.; ez=0.
@@ -697,7 +697,7 @@ module Hydro
 !
     do modeN=1,KS_modes
       if (modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
-      if (modeN.gt.1.and.modeN.lt.KS_modes) &
+      if (modeN>1.and.modeN<KS_modes) &
                 dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
       if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
     enddo
@@ -802,15 +802,15 @@ module Hydro
    !  !find the length of the current k_option vector
    !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 !
-   !  if (i==1.and.mkunit(i).gt.0.)then
+   !  if (i==1.and.mkunit(i)>0.)then
    !    k(:,num)=k_option(:,i)
    !    klengths(num)=mkunit(i)
    !  endif
 !
    !  !now we check that the current length is unique (hasn't come before)
-   !  if (i.gt.1.and.num.lt.KS_modes)then
+   !  if (i>1.and.num<KS_modes)then
    !    do s1=i-1,1,-1
-   !      if (mkunit(i).gt.0.0D0.and.mkunit(i) /= mkunit(s1))then
+   !      if (mkunit(i)>0.0D0.and.mkunit(i) /= mkunit(s1))then
    !        ne=.true.
    !      else
    !        ne=.false.
@@ -823,7 +823,7 @@ module Hydro
    !      endif
    !    enddo
    !   endif
-   !   if (i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
+   !   if (i==10000.and.num<KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
    ! enddo
    ! do i=1,KS_modes
    !    do s1=1,KS_modes
@@ -840,7 +840,7 @@ module Hydro
    ! !now we find delk as defined in Malik & Vassilicos' paper
    !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0
    !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0
-   !    if (i.gt.1.and.i.lt.KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0
+   !    if (i>1.and.i<KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0
    ! enddo
    ! endsubroutine random_isotropic_KS_setup_abag
 !***********************************************************************

@@ -173,7 +173,7 @@ module Particles_radius
           do i=2,npart_radii
             radii_cumulative(i) = radii_cumulative(i-1) + radii_distribution(i)
           enddo
-          if (radii_cumulative(npart_radii) .ne. 1.0) then
+          if (radii_cumulative(npart_radii) /= 1.0) then
           !  renormalize
             do i=1,npart_radii
               radii_cumulative(i)=radii_cumulative(i)/radii_cumulative(npart_radii)
@@ -183,7 +183,7 @@ module Particles_radius
           do p=npar_low,npar_high
             call random_number_wrapper(radius_fraction)
             do i=1,npart_radii
-              if(radius_fraction .le. radii_cumulative(i)) then
+              if (radius_fraction <= radii_cumulative(i)) then
                 fp(p,iap)=ap0(i)
                 exit
                 endif

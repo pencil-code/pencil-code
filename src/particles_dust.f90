@@ -1250,8 +1250,8 @@ k_loop:   do while (.not. (k>npar_loc))
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep: 
         remaining_particles=avg_n_insert + remaining_particles - n_insert
-        if ((n_insert+npar_total .le. mpar_loc) &
-            .and. (t.lt.max_particle_insert_time)) then
+        if ((n_insert+npar_total <= mpar_loc) &
+            .and. (t<max_particle_insert_time)) then
           linsertmore=.true.
         else
           linsertmore=.false.
@@ -1348,7 +1348,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Redistribute particles only when t < max_particle_insert_time.
 !  Could have included some other tests here aswell......
 !
-      if (t.lt.max_particle_insert_time) then
+      if (t<max_particle_insert_time) then
 !
 !  Redistribute particles among processors.
 !
@@ -2379,7 +2379,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Exclude the massive nbody particles from the drag calculations
 !
-            lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             if (.not.lnbody) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
@@ -3149,7 +3149,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  and sigma_coll its cross section (2e-15 cm^2). 
 !  Assume that (mu/sigma_coll) is the input parameter mean_free_path_gas
 !
-        if (mean_free_path_gas.eq.0) then
+        if (mean_free_path_gas==0) then
           print*,'You want to use Stokes drag but you forgot to set '//&
                'mean_free_path_gas in the .in files. Stop and check.'
           call fatal_error("calc_draglaw_parameters","")
@@ -3615,7 +3615,7 @@ k_loop:   do while (.not. (k>npar_loc))
       if (npar_imn(imn)/=0) then 
 !
         do k=k1_imn(imn),k2_imn(imn)
-          lnbody=any(ipar(k).eq.ipar_nbody)
+          lnbody=any(ipar(k)==ipar_nbody)
           if (.not.lnbody) then
             inx0=ineargrid(k,1)-nghost
             vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
@@ -3628,7 +3628,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
 !
         do k=k1_imn(imn),k2_imn(imn)
-          lnbody=any(ipar(k).eq.ipar_nbody)
+          lnbody=any(ipar(k)==ipar_nbody)
           if (.not.lnbody) then
             inx0=ineargrid(k,1)-nghost
             dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2

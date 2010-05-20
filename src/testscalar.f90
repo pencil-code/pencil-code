@@ -540,7 +540,7 @@ module Testscalar
           camp1=1.
         endif
         if (delta_testscalar/=0.) then
-          if (t.ge.delta_testscalar_next.and.t.lt.(delta_testscalar_next+dt)) then
+          if (t>=delta_testscalar_next.and.t<(delta_testscalar_next+dt)) then
             camp=1./(dt*delta_testscalar)
             delta_testscalar_next=t+delta_testscalar
           else

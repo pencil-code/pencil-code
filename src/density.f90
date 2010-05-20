@@ -283,7 +283,7 @@ module Density
 !  Do not allow inconsistency between rho0 (from eos) and rho_const
 !  or lnrho0 and lnrho_const.
 !
-      if (rho0.ne.rho_const) then
+      if (rho0/=rho_const) then
         if (lroot) then
           print*,"WARNING!"
           print*,"inconsistency between the density constants from eos  "
@@ -1821,7 +1821,7 @@ module Density
       select case (borderlnrho)
 !
       case ('zero','0')
-        if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
+        if (plaw/=0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling zero border")
         if (ldensity_nolog) then
           f_target=0.
@@ -1830,7 +1830,7 @@ module Density
         endif
 !
       case ('constant')
-        if (plaw.ne.0) call stop_it("borderlnrho: density is not flat but "//&
+        if (plaw/=0) call stop_it("borderlnrho: density is not flat but "//&
              "you are calling constant border")
         if (ldensity_nolog) then
           f_target=rho_const
@@ -2160,8 +2160,8 @@ module Density
 !  Make sure the correction does not impede centrifugal equilibrium
 !
           do i=1,nx
-            if (tmp2(i).lt.0.) then
-              if (rr(i) .lt. r_int) then
+            if (tmp2(i)<0.) then
+              if (rr(i) < r_int) then
                 !it's inside the frozen zone, so
                 !just set tmp2 to zero and emit a warning
                 tmp2(i)=0.
@@ -2296,8 +2296,8 @@ module Density
 !  Catch negative values of phidot^2
 !
             do i=1,nx
-              if (tmp2(i).lt.0.) then
-                if (rr_cyl(i) .lt. r_int) then
+              if (tmp2(i)<0.) then
+                if (rr_cyl(i) < r_int) then
                   !it's inside the frozen zone, so
                   !just set tmp2 to zero and emit a warning
                   tmp2(i)=0.

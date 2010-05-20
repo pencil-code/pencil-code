@@ -142,7 +142,7 @@ module Particles_sub
 !
 !  Check if we are dealing with a dust or a massive particle
 !
-        lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (.not.lnbody) then
           boundx=bcpx ;boundy=bcpy ;boundz=bcpz
         else
@@ -672,7 +672,7 @@ module Particles_sub
 !
 !  Check that we are not removing massive particles.
 !
-      lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+      lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
 !
       if (lnbody) then
         if (present(ks)) then 

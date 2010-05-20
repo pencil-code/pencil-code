@@ -577,7 +577,7 @@ module Particles_map
 !  for instance). 
 !
         lspecial_boundx=.false.
-        lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (lnbody.and.bcspx=='out') lspecial_boundx=.true.
         if (.not.lspecial_boundx) then 
 !
@@ -881,7 +881,7 @@ module Particles_map
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping
-          lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
           if (.not.lnbody) then 
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
@@ -909,7 +909,7 @@ module Particles_map
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
-            lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             if (.not.lnbody) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -955,7 +955,7 @@ module Particles_map
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
-            lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             if (.not.lnbody) then 
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
@@ -1109,7 +1109,7 @@ module Particles_map
 !  Cloud In Cell (CIC) scheme.
 !
             do k=1,npar_loc
-              lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               if (.not.lnbody) then 
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -1142,7 +1142,7 @@ module Particles_map
 !  decreases with the distance from the particle centre.
 !
             do k=1,npar_loc
-              lnbody=(lparticles_nbody.and.any(ipar(k).eq.ipar_nbody))
+              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               if (.not.lnbody) then 
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 if (nxgrid/=1) then

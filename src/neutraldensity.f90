@@ -614,7 +614,7 @@ module NeutralDensity
         !smooth transition over a ramping period of 5 orbits
         if (lramp_up) then
           ramping_period=2*pi*x(lpoint) !omega=v/r; v=1; 1/omega=r
-          if (t .le. ramping_period) then
+          if (t <= ramping_period) then
             alpha_time=alpha*(sin((.5*pi)*(t/ramping_period))**2)
           else
             alpha_time=alpha

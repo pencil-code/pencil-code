@@ -4920,7 +4920,7 @@ nameloop: do
 !
       if (present(xref)) dist=dist/xref
 !
-      if (rsmooth.eq.0.) then
+      if (rsmooth==0.) then
         output = const*dist**(-plaw_)
       else
         output = const*(dist**2+rsmooth**2)**(-.5*plaw_)
@@ -4944,7 +4944,7 @@ nameloop: do
 !
       if (present(xref)) dist=dist/xref
 !
-      if (rsmooth.eq.0.) then
+      if (rsmooth==0.) then
         output = const*dist**(-plaw_)
       else
         output = const*(dist**2+rsmooth**2)**(-.5*plaw_)

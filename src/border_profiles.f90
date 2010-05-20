@@ -308,9 +308,9 @@ module BorderProfiles
       do i=1,nx
         if ( &
             !inner stripe
-             (p%rborder_mn(i).le.r_int_border+2*wborder_int).or.&
+             (p%rborder_mn(i)<=r_int_border+2*wborder_int).or.&
             !outer stripe
-             (p%rborder_mn(i).ge.r_ext_border-2*wborder_ext)) then
+             (p%rborder_mn(i)>=r_ext_border-2*wborder_ext)) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)

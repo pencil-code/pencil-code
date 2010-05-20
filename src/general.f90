@@ -1242,7 +1242,7 @@ module General
 !  Elliptic integral of first kind.
 !
       a_K=d_angle/sqrt(1-(mu*sin(angle))**2)
-      if (mu .eq. 1 ) then
+      if (mu == 1 ) then
         Kappa_mu=0
       else
         Kappa_mu=sum(a_K(2:nnt-1)) + .5*(a_K(1)+a_K(nnt))
@@ -1314,15 +1314,15 @@ module General
       real :: X,BESSJ,TOX,BJM,BJ,BJP,SUM1
       integer :: N,J,M,JSUM
 !
-      IF (N.EQ.0) THEN
+      IF (N==0) THEN
       BESSJ = BESSJ0(X)
       RETURN
       ENDIF
-      IF (N.EQ.1) THEN
+      IF (N==1) THEN
       BESSJ = BESSJ1(X)
       RETURN
       ENDIF
-      IF (X.EQ.0.) THEN
+      IF (X==0.) THEN
       BESSJ = 0.
       RETURN
       ENDIF
@@ -1353,9 +1353,9 @@ module General
       BESSJ = BESSJ*BIGNI
       SUM1 = SUM1*BIGNI
       ENDIF
-      IF (JSUM.NE.0) SUM1 = SUM1+BJ
+      IF (JSUM/=0) SUM1 = SUM1+BJ
       JSUM = 1-JSUM
-      IF (J.EQ.N) BESSJ = BJP
+      IF (J==N) BESSJ = BJP
    12 CONTINUE
       SUM1 = 2.*SUM1-BJ
       BESSJ = BESSJ/SUM1
@@ -1384,7 +1384,7 @@ module General
       651619640.7D0,-11214424.18D0,77392.33017D0,-184.9052456D0 /
       DATA S1,S2,S3,S4,S5,S6 /57568490411.D0,1029532985.D0, &
       9494680.718D0,59272.64853D0,267.8532712D0,1.D0 /
-      IF(X.EQ.0.D0) GO TO 1
+      IF(X==0.D0) GO TO 1
       AX = ABS (X)
       IF (AX<8.) THEN
       Y = X*X

@@ -480,7 +480,7 @@ module Dustdensity
                 (2*kx_nd*1.0*tausd(1))*sin(kx_nd*(x(l1:l2)))
           enddo; enddo
         case ('minimum_nd')
-          where (f(:,:,:,ind).lt.nd_const) f(:,:,:,ind)=nd_const
+          where (f(:,:,:,ind)<nd_const) f(:,:,:,ind)=nd_const
           if (lroot) print*, 'init_nd: Minimum dust density nd_const=', nd_const
         case ('constant-Ri'); call constant_richardson(f)
         case ('kernel_cst')

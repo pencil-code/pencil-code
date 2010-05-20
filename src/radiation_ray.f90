@@ -1527,9 +1527,9 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
           do i=1,mx
-            if (exp(lnTT(i)).le.150) then
+            if (exp(lnTT(i))<=150) then
               tmp(i)=2e-4*exp(lnTT(i))**2
-            elseif (exp(lnTT(i)).ge.200) then
+            elseif (exp(lnTT(i))>=200) then
               k1=0.861353*lnTT(i)-4.56372
               tmp(i)=exp(k1)
             else 

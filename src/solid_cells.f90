@@ -138,7 +138,7 @@ module Solid_Cells
           do icyl=1,ncylinders
             a2 = cylinder(icyl,1)**2
             xr=x(i)-cylinder(icyl,2)
-            if (cylinder(icyl,3) .ne. 0) then
+            if (cylinder(icyl,3) /= 0) then
               print*,'When using cylinderstream_x all cylinders must have'
               print*,'zero offset in y-direction!'
               call fatal_error('init_solid_cells:','')
@@ -154,7 +154,7 @@ module Solid_Cells
                   f(i,j,k,iux) = f(i,j,k,iux)+init_uu*&
                        (0. - a2/rr2 + 2*y(j)**2*a2/rr2**2)&
                        *wall_smoothing
-                  if (ilnTT .ne. 0) then
+                  if (ilnTT /= 0) then
                     wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
                     f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
                          +cylinder(icyl,5)*(1-wall_smoothing_temp)
@@ -176,7 +176,7 @@ module Solid_Cells
                 endif
               enddo
             else
-              if (ilnTT .ne. 0) then
+              if (ilnTT /= 0) then
                 f(i,j,k,ilnTT) = cylinder(icyl,5)
                 f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
                      *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
@@ -197,7 +197,7 @@ module Solid_Cells
           do icyl=1,ncylinders
             a2 = cylinder(icyl,1)**2
             yr=y(j)-cylinder(icyl,3)
-            if (cylinder(icyl,2) .ne. 0) then
+            if (cylinder(icyl,2) /= 0) then
               print*,'When using cylinderstream_y all cylinders must have'
               print*,'zero offset in x-direction!'
               call fatal_error('init_solid_cells:','')
@@ -213,7 +213,7 @@ module Solid_Cells
                   f(i,j,k,iuy) = f(i,j,k,iuy)+init_uu*&
                        (0. - a2/rr2 + 2*xr**2*a2/rr2**2)&
                        *wall_smoothing
-                  if (ilnTT .ne. 0) then
+                  if (ilnTT /= 0) then
                     wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
                     f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
                          +cylinder(icyl,5)*(1-wall_smoothing_temp)
@@ -235,7 +235,7 @@ module Solid_Cells
                 endif
               enddo
             else
-              if (ilnTT .ne. 0) then
+              if (ilnTT /= 0) then
                 f(i,j,k,ilnTT) = cylinder(icyl,5)
                 f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
                      *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
@@ -307,7 +307,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  Find nearest grid point in x-direction
 !          
         if (nxgrid/=1) then
-          if (fpx .ge. x(l1-1) .and. fpx .le. x(l2+1)) then
+          if (fpx >= x(l1-1) .and. fpx <= x(l2+1)) then
             if (lequidist(1)) then
               ixl = int((fpx-x(1))*dx1) + 1
               ixu = ixl+1
@@ -337,7 +337,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  Find nearest grid point in y-direction
 !          
         if (nygrid/=1) then
-          if (fpy .ge. y(m1-1) .and. fpy .le. y(m2+1)) then
+          if (fpy >= y(m1-1) .and. fpy <= y(m2+1)) then
             if (lequidist(2)) then
               iyl = int((fpy-y(1))*dy1) + 1
               iyu = iyl+1
@@ -367,7 +367,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  Find nearest grid point in z-direction
 !          
         if (nzgrid/=1) then
-          if (fpz .ge. z(n1-1) .and. fpz .le. z(n2+1)) then
+          if (fpz >= z(n1-1) .and. fpz <= z(n2+1)) then
             if (lequidist(3)) then
               izl = int((fpz-z(1))*dz1) + 1
               izu = izl+1
@@ -433,12 +433,12 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  Test if we are in a fluid cell, i.e.
 !  that mod(ba(ix,iy,iz,1),10) = 0 
             if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
-                .eq. 0 .and. inearest .eq. 0) then
+                == 0 .and. inearest == 0) then
               inearest=ipoint
             else if ( &
                 mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
-                .eq. 0 ) then
-              if (dist_to_fp2(ipoint) .le. dist_to_fp2(inearest)) then
+                == 0 ) then
+              if (dist_to_fp2(ipoint) <= dist_to_fp2(inearest)) then
                 inearest=ipoint
               endif
             endif
@@ -484,14 +484,14 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !      
 !  Reset cumulating quantities before calculations in first pencil
 !
-      if (imn .eq. 1) then
+      if (imn == 1) then
         c_dragx=0.
         c_dragy=0.
         rhosum=0
         irhocount=0
       endif
 !
-      if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0) then 
         call getnu(nu)
         twopi=2.*pi
         twonu=2.*nu
@@ -504,10 +504,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  Test: Use this pencil for force calculation?
 !
-            if (iy0 .eq. m .and. iz0 .eq. n) then
+            if (iy0 == m .and. iz0 == n) then
               ix0=fpnearestgrid(icyl,ifp,1)
               ! Test: ix0 in local domain?
-              if (ix0 .ge. l1 .and. ix0 .le. l2) then
+              if (ix0 >= l1 .and. ix0 <= l2) then
 !
 !  Acquire pressure and stress from grid point (ix0,iy0,iz0).
 !  Shifting the location of the forcpoints in the thetal direction
@@ -544,7 +544,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  solid cell regions:
 !
         do i=l1,l2
-          if (mod(ba(i,m,n,1),10) .eq. 0) then
+          if (mod(ba(i,m,n,1),10) == 0) then
             rhosum = rhosum + p%rho(i-nghost)
             irhocount = irhocount+1
           endif
@@ -574,7 +574,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
     character*500 :: solid_cell_drag
 !    
     if (ldiagnos) then
-      if (idiag_c_dragx .ne. 0 .or. idiag_c_dragy .ne. 0) then 
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0) then 
 !
 !  Collect and sum rhosum, irhocount, c_dragx and c_dragy
         call mpireduce_sum(rhosum,rhosum_all)
@@ -605,8 +605,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 82        format(2F15.8)
         endif
       endif
-      if (idiag_c_dragx .ne. 0) fname(idiag_c_dragx)=c_dragx(1)
-      if (idiag_c_dragy .ne. 0) fname(idiag_c_dragy)=c_dragy(1)
+      if (idiag_c_dragx /= 0) fname(idiag_c_dragx)=c_dragx(1)
+      if (idiag_c_dragy /= 0) fname(idiag_c_dragy)=c_dragy(1)
     endif
  !   
   endsubroutine dsolid_dt_integrate
@@ -675,8 +675,8 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
-          bax=(ba(i,j,k,1) .ne. 0).and.(ba(i,j,k,1).ne.9).and.(ba(i,j,k,1).ne.10)
-          bay=(ba(i,j,k,2) .ne. 0).and.(ba(i,j,k,2).ne.9).and.(ba(i,j,k,2).ne.10)
+          bax=(ba(i,j,k,1) /= 0).and.(ba(i,j,k,1)/=9).and.(ba(i,j,k,1)/=10)
+          bay=(ba(i,j,k,2) /= 0).and.(ba(i,j,k,2)/=9).and.(ba(i,j,k,2)/=10)
 !
 !  Check if we are in a point which must be interpolated, i.e. we are inside
 !  a solid geometry AND we are not more than three grid points from the 
@@ -729,10 +729,10 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  processor's local domain (including ghost points). Some sort
 !  communication has to be implemented!
 !
-            if (lower_i .eq. 0 .or. upper_i .eq. 0) then
+            if (lower_i == 0 .or. upper_i == 0) then
               call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
             endif
-            if (lower_j .eq. 0 .or. upper_j .eq. 0) then
+            if (lower_j == 0 .or. upper_j == 0) then
               call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
             endif            
 !
@@ -796,7 +796,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
         do j=m1,m2
         do k=n1,n2
           do idir=1,3
-            if (ba_shift(i,j,k,idir).ne.0) then
+            if (ba_shift(i,j,k,idir)/=0) then
               xind=i
               yind=j
               zind=k
@@ -816,7 +816,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !  border is two grid cells inside the solid structure, but this will 
 !  probably just have a very minor effect.
 !
-              if (xind.ne.0 .and. yind.ne.0 .and. zind.ne.0) then
+              if (xind/=0 .and. yind/=0 .and. zind/=0) then
                 icyl=ba_shift(i,j,k,4)
                 f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
                 if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
@@ -1164,7 +1164,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           rint1=xyint(dirvar)-x1
           rint2=x2-xyint(dirvar)
 !
-          if (quadratic .and. (ivar1 .ne. iuz)) then
+          if (quadratic .and. (ivar1 /= iuz)) then
             if (ivar1==iux) then
               fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
               finty=(rint1*f2y+rint2*f1y)/(x2-x1)
@@ -1256,9 +1256,9 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
       do i=l1,l2
         if (&
-            (ba(i,m,n,1).ne.0).or.&
-            (ba(i,m,n,2).ne.0).or.&
-            (ba(i,m,n,3).ne.0)) then
+            (ba(i,m,n,1)/=0).or.&
+            (ba(i,m,n,2)/=0).or.&
+            (ba(i,m,n,3)/=0)) then
 !
 !  If this is a fluid point which has to be interpolated because it is very
 !  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the 
@@ -1540,7 +1540,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
             do j=m1,m2
               r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
               dr=r_point-r_cyl
-              if ((dr .ge. 0) .and. (dr<limit_close_linear*dxmin)) then
+              if ((dr >= 0) .and. (dr<limit_close_linear*dxmin)) then
                 ba(i,j,:,1)=10
                 ba(i,j,:,4)=icyl
               endif
@@ -1558,13 +1558,13 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           do i=1,mx
             !  Lower ghost points
             r_point=sqrt((((x(i)-x_cyl)**2+(y(j)-y_cyl)**2)))
-            if (r_point .lt. r_cyl) then
+            if (r_point < r_cyl) then
               ba(i,j,:,1:3)=11
               ba(i,j,:,4)=icyl
             end if
             !  Upper ghost points
             r_point=sqrt((((x(i)-x_cyl)**2+(y(my-nghost+j)-y_cyl)**2)))
-            if (r_point .lt. r_cyl) then
+            if (r_point < r_cyl) then
               ba(i,my-nghost+j,:,1:3)=11
               ba(i,my-nghost+j,:,4)=icyl
             end if
@@ -1577,13 +1577,13 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
           do i=1,nghost
             !  Lower (left) ghost points
             r_point=sqrt((((x(i)-x_cyl)**2+(y(j)-y_cyl)**2)))
-            if (r_point .lt. r_cyl) then
+            if (r_point < r_cyl) then
               ba(i,j,:,1:3)=11
               ba(i,j,:,4)=icyl
             end if
             !  Upper (right) ghost points
             r_point=sqrt((((x(mx-nghost+i)-x_cyl)**2+(y(j)-y_cyl)**2)))
-            if (r_point .lt. r_cyl) then
+            if (r_point < r_cyl) then
               ba(mx-nghost+i,j,:,1:3)=11
               ba(mx-nghost+i,j,:,4)=icyl
             end if
@@ -1614,7 +1614,7 @@ if (ipy==nprocy-1) f(:,m2-5:m2,:,iux)=0
 !
 !  If ba is non-zero find the shift matrix
 !
-          if (ba(i,j,k,idir).ne.0 .and. ba(i,j,k,idir).ne.9) then
+          if (ba(i,j,k,idir)/=0 .and. ba(i,j,k,idir)/=9) then
             sgn=-ba(i,j,k,idir)/abs(ba(i,j,k,idir))
             ba_shift(i,j,k,idir)=2*ba(i,j,k,idir)+sgn
             ba_shift(i,j,k,4)=ba(i,j,k,4)

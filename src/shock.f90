@@ -370,9 +370,9 @@ module Shock
      call shock_divu(f,f(:,:,:,ishock))
 !
      if (lwith_extreme_div) then
-       where ((f(:,:,:,ishock) .gt. 0.) .and. (f(:,:,:,ishock) .lt. div_threshold)) &
+       where ((f(:,:,:,ishock) > 0.) .and. (f(:,:,:,ishock) < div_threshold)) &
            f(:,:,:,ishock)=0.
-       where (f(:,:,:,ishock) .gt. 0.) &
+       where (f(:,:,:,ishock) > 0.) &
            f(:,:,:,ishock)=f(:,:,:,ishock)*div_scaling
        f(:,:,:,ishock)=abs(f(:,:,:,ishock))
      else
@@ -771,7 +771,7 @@ module Shock
 !  check for degeneracy
 !
       if (nxgrid/=1) then
-         if (mx.ge.5) then
+         if (mx>=5) then
             maxf(1     ,:,:) = max(f(1     ,:,:),  &
                                      f(2     ,:,:),  &
                                      f(3     ,:,:))
@@ -791,16 +791,16 @@ module Shock
             maxf(mx  ,:,:)   = max(f(mx-2  ,:,:), &
                                      f(mx-1  ,:,:), &
                                      f(mx    ,:,:))
-         elseif (mx.eq.4) then
+         elseif (mx==4) then
             maxf(1,:,:)=max(f(1,:,:),f(2,:,:),f(3,:,:))
             maxf(2,:,:)=max(f(1,:,:),f(2,:,:),f(3,:,:),f(4,:,:))
             maxf(3,:,:)=maxf(2,:,:)
             maxf(4,:,:)=max(f(2,:,:),f(3,:,:),f(4,:,:))
-         elseif (mx.eq.3) then
+         elseif (mx==3) then
             maxf(1,:,:)=max(f(1,:,:),f(2,:,:),f(3,:,:))
             maxf(2,:,:)=maxf(1,:,:)
             maxf(3,:,:)=maxf(1,:,:)
-         elseif (mx.eq.2) then
+         elseif (mx==2) then
             maxf(1,:,:)=max(f(1,:,:),f(2,:,:))
             maxf(2,:,:)=maxf(1,:,:)
          else
@@ -814,7 +814,7 @@ module Shock
 !  check for degeneracy
 !
       if (nygrid/=1) then
-         if (my.ge.5) then
+         if (my>=5) then
             tmp(:,1     ,:) = max(maxf(:,1     ,:),  &
                                   maxf(:,2     ,:),  &
                                   maxf(:,3     ,:))
@@ -834,16 +834,16 @@ module Shock
             tmp(:,my  ,:)   = max(maxf(:,my-2  ,:), &
                                   maxf(:,my-1  ,:), &
                                   maxf(:,my    ,:))
-         elseif (my.eq.4) then
+         elseif (my==4) then
             tmp(:,1,:)=max(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
             tmp(:,2,:)=max(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
             tmp(:,3,:)=tmp(:,2,:)
             tmp(:,4,:)=max(maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
-         elseif (my.eq.3) then
+         elseif (my==3) then
             tmp(:,1,:)=max(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
             tmp(:,2,:)=f(:,1,:)
             tmp(:,3,:)=f(:,1,:)
-         elseif (my.eq.2) then
+         elseif (my==2) then
             tmp(:,1,:)=max(maxf(:,1,:),maxf(:,2,:))
             tmp(:,2,:)=tmp(:,1,:)
          else
@@ -857,7 +857,7 @@ module Shock
 !  check for degeneracy
 !
       if (nzgrid/=1) then
-         if (mz.ge.5) then
+         if (mz>=5) then
             maxf(:,:,1     ) = max(tmp(:,:,1     ),  &
                                      tmp(:,:,2     ),  &
                                      tmp(:,:,3     ))
@@ -877,16 +877,16 @@ module Shock
             maxf(:,:,mz    ) = max(tmp(:,:,mz-2  ), &
                                      tmp(:,:,mz-1  ), &
                                      tmp(:,:,mz    ))
-         elseif (mz.eq.4) then
+         elseif (mz==4) then
             maxf(:,:,1)=max(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3))
             maxf(:,:,2)=max(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3),tmp(:,:,4))
             maxf(:,:,3)=maxf(:,:,2)
             maxf(:,:,4)=max(tmp(:,:,2),tmp(:,:,3),tmp(:,:,4))
-         elseif (mz.eq.3) then
+         elseif (mz==3) then
             maxf(:,:,1)=max(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3))
             maxf(:,:,2)=maxf(:,:,1)
             maxf(:,:,3)=maxf(:,:,1)
-         elseif (mz.eq.2) then
+         elseif (mz==2) then
             maxf(:,:,1)=max(tmp(:,:,1),tmp(:,:,2))
             maxf(:,:,2)=maxf(:,:,1)
          else
@@ -914,7 +914,7 @@ module Shock
 !  check for degeneracy
 !
       if (nxgrid/=1) then
-         if (mx.ge.3) then
+         if (mx>=3) then
             maxf(1     ,:,:) = max(f(1     ,:,:), &
                                      f(2     ,:,:))
             maxf(2:mx-1,:,:) = max(f(1:mx-2,:,:), &
@@ -933,7 +933,7 @@ module Shock
 !  check for degeneracy
 !
       if (nygrid/=1) then
-         if (my.ge.3) then
+         if (my>=3) then
             tmp(:,1     ,:) = max(maxf(:,1     ,:),  &
                                     maxf(:,2     ,:))
             tmp(:,2:my-1,:) = max(maxf(:,1:my-2,:), &
@@ -952,7 +952,7 @@ module Shock
 !  check for degeneracy
 !
       if (nzgrid/=1) then
-         if (mz.ge.3) then
+         if (mz>=3) then
             maxf(:,:,1     ) = max(tmp(:,:,1     ),  &
                                      tmp(:,:,2     ))
             maxf(:,:,2:mz-1) = max(tmp(:,:,1:mz-2), &
@@ -1167,7 +1167,7 @@ module Shock
 !  check for degeneracy
 !
       if (nxgrid/=1) then
-         if (mx.ge.3) then
+         if (mx>=3) then
             smoothf(1     ,:,:) = 0.25 * (3.*f(1     ,:,:) +  &
                                              f(2     ,:,:))
 
@@ -1187,7 +1187,7 @@ module Shock
 !  check for degeneracy
 !
       if (nygrid/=1) then
-         if (my.ge.3) then
+         if (my>=3) then
             tmp(:,1     ,:) = 0.25 * (3.*smoothf(:,1     ,:) +  &
                                          smoothf(:,2     ,:))
 
@@ -1207,7 +1207,7 @@ module Shock
 !  check for degeneracy
 !
       if (nzgrid/=1) then
-         if (mz.ge.3) then
+         if (mz>=3) then
             smoothf(:,:,1     ) = 0.25 * (3.*tmp(:,:,1     ) +  &
                                              tmp(:,:,2     ))
 
@@ -1489,14 +1489,14 @@ module Shock
                     ) * fac
 
           if (lwith_extreme_div) then
-            if ((diamond .lt. 0.) .and. (diamond .gt. -div_threshold)) then
+            if ((diamond < 0.) .and. (diamond > -div_threshold)) then
               diamond=0.
-            elseif (diamond.lt.-div_threshold) then
+            elseif (diamond<-div_threshold) then
               diamond=diamond*div_scaling
             endif
-            if ((cube .lt. 0.) .and. (cube .gt. -div_threshold)) then
+            if ((cube < 0.) .and. (cube > -div_threshold)) then
               cube=0.
-            elseif (cube.lt.-div_threshold) then
+            elseif (cube<-div_threshold) then
               cube=cube*div_scaling
             endif
             df(i,j,k)=0.5*(diamond + cube)
@@ -1520,9 +1520,9 @@ module Shock
       real :: value
 !
       if (lwith_extreme_div) then
-        if ((value .lt. 0.) .and. (value .gt. -div_threshold)) then
+        if ((value < 0.) .and. (value > -div_threshold)) then
           scale_and_chop=0.
-        elseif (value.lt.-div_threshold) then
+        elseif (value<-div_threshold) then
           scale_and_chop=-value*div_scaling
         else
           scale_and_chop=value
