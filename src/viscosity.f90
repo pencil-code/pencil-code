@@ -327,12 +327,12 @@ module Viscosity
 !
 ! consistency check for Lambda effect
 !
-      if(llambda_effect) then
-        if((Lambda_V0.eq. 0).and.(Lambda_V1.eq.0).and.(Lambda_H1.eq.0)) &
+      if (llambda_effect) then
+        if ((Lambda_V0==0).and.(Lambda_V1==0).and.(Lambda_H1==0)) &
 !          call fatal_rror('initialize_viscosity', &
           call warning('initialize_viscosity', &
             'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
-        if((Lambda_V0.eq.0).and.((Lambda_V1.ne.0).or.(Lambda_H1.eq.0))) &
+        if ((Lambda_V0==0).and.((Lambda_V1/=0).or.(Lambda_H1==0))) &
           call warning('initialize_viscosity', &
             'Lambda effect: V_zero=0 but V1 or H1 nonzero')
       endif
@@ -340,7 +340,7 @@ module Viscosity
 !  Shared variables.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
-     call put_shared_variable('nu',nu,ierr)
+      call put_shared_variable('nu',nu,ierr)
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
       call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
       call put_shared_variable('Lambda_V1',Lambda_V1,ierr)
