@@ -1792,14 +1792,14 @@ module Boundcond
 ! bottom boundary
       case ('bot')
 !
-        if ((llambda_effect).and.(j.eq.iuz)) then
+        if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
 !           lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
 !DM a mistake in sign ?
            lambda_exp=-(Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
-               if(Omega.eq.0) then 
+               if (Omega==0) then 
                  f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))
                else
                  somega=lambda_exp_sinth*omega*(x(l1+k)-x(l1-k))*(x(l1-k)**(1-lambda_exp/nu))
@@ -1815,14 +1815,14 @@ module Boundcond
         endif
 ! top boundary
       case ('top')
-        if ((llambda_effect).and.(j.eq.iuz)) then
+        if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
 !            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
 !DM a mistake in sign
             lambda_exp=- (Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
-              if(Omega.eq.0) then
+              if (Omega==0) then
                 f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))
               else
                 somega=lambda_exp_sinth*omega*(x(l1-k)-x(l1+k))*(x(l1+k)**(1-lambda_exp/nu))
@@ -1976,11 +1976,11 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0.)) then
+        if ((llambda_effect).and.(j==iuz).and.(Lambda_H1/=0.)) then
           do k=1,nghost
               cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
               cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
-            if(Omega.eq.0) then
+            if (Omega==0) then
              f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
                    (exp(Lambda_H1*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
                    *(exp(-Lambda_H1*cos2thmpk/(4.*nu))*sinth(m1-k))
@@ -2002,11 +2002,11 @@ module Boundcond
           enddo
         endif
       case ('top')               ! top boundary
-        if ((llambda_effect).and.(j.eq.iuz).and.(Lambda_H1.ne.0)) then
+        if ((llambda_effect).and.(j==iuz).and.(Lambda_H1/=0)) then
           do k=1,nghost
             cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
             cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
-            if(Omega.eq.0)then
+            if (Omega==0)then
               f(:,m2+k,:,j)= f(:,m2-k,:,j)* &
                    (exp(Lambda_H1*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
                   *(exp(-Lambda_H1*cos2thm_k/(4.*nu))*sinth(m2+k))
@@ -2147,7 +2147,7 @@ module Boundcond
 !
       integer :: iref,i
 !
-      if (j.ne.iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
+      if (j/=iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
  
       select case (topbot)
 !
@@ -3758,7 +3758,7 @@ module Boundcond
        zmin = minval(abs(z(n1:n2)))
        iref = n1
        do i=n1,n2
-         if (abs(z(i)).eq.zmin) iref=i; exit
+         if (abs(z(i))==zmin) iref=i; exit
        enddo
 !
 !   Calculate B^2 for plasma beta
@@ -3847,7 +3847,7 @@ module Boundcond
 !
        f(l1:l2,m1:m2,iref,iux)=uxd*quen
        f(l1:l2,m1:m2,iref,iuy)=uyd*quen
-       if (iref.ne.n1) f(l1:l2,m1:m2,n1,iux:iuz)=0.
+       if (iref/=n1) f(l1:l2,m1:m2,n1,iux:iuz)=0.
 !
        if (allocated(uxd)) deallocate(uxd)
        if (allocated(uyd)) deallocate(uyd)
@@ -3937,7 +3937,7 @@ module Boundcond
             read (10,rec=i+1,iostat=ierr) tr
             ierr=-1
           else
-            if (tl+delta_t .lt. time_SI .and. tr+delta_t.gt.time_SI ) ierr=-1
+            if (tl+delta_t < time_SI .and. tr+delta_t>time_SI ) ierr=-1
             ! correct time step is reached
           endif
         enddo
@@ -3966,7 +3966,7 @@ module Boundcond
       call fourier_transform_other(Bz0_r,Bz0_i)
       !
       ! First the Ax component:
-      where (k2 .ne. 0 )
+      where (k2 /= 0 )
         A_r = -Bz0_i*ky/k2
         A_i =  Bz0_r*ky/k2
         !
@@ -3979,7 +3979,7 @@ module Boundcond
       f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
       !
       !  then Ay component:
-      where (k2 .ne. 0 )
+      where (k2 /= 0 )
         A_r =  Bz0_i*kx/k2
         A_i = -Bz0_r*kx/k2
       elsewhere
@@ -5186,7 +5186,7 @@ module Boundcond
 !
          if (.not.(lequidist(1) .and. lequidist(2))) &
               call stop_it("bc_wind_z:non equidistant grid in x and y not implemented")
-         if (nprocx .gt. 1)  &
+         if (nprocx > 1)  &
               call stop_it('bc_wind: nprocx > 1 not yet implemented')
 !
 !   check for warnings
@@ -5219,7 +5219,7 @@ module Boundcond
 !
 !  One  processor has to collect the data
 !
-      if (ipy .ne. 0) then
+      if (ipy /= 0) then
          ! send to first processor at given height
          !
          call mpisend_real(local_flux,1,ipz*nprocy,111+iproc)
@@ -5244,7 +5244,7 @@ module Boundcond
 !
 !  now distribute u_add
 !
-      if (ipy .eq. 0) then
+      if (ipy == 0) then
          do i=1,nprocy-1
             ipt=ipz*nprocy+i
             call mpisend_real(u_add,1,ipt,311+ipt)
@@ -5281,7 +5281,7 @@ module Boundcond
       if (headtt) print*,'bc_ADI_flux_z: Fbot, hcondADI, dz=', &
            Fbot, hcondADI, dz
 !
-      if (topbot.eq.'bot') then
+      if (topbot=='bot') then
         tmp_x=-Fbot/hcondADI
         do i=1,nghost
           f(:,4,n1-i,ilnTT)=f(:,4,n1+i,ilnTT)-2.*i*dz*tmp_x
@@ -5362,24 +5362,24 @@ module Boundcond
           'this boundary condition is not allowed for bottom boundary')
       case ('top')
         do m=m1,m2
-          if (      (y(m).ge.xyz0(2) +   Lxyz(2)/4)&
-              .and. (y(m).le.xyz0(2) + 3*Lxyz(2)/4)) then
-            if (j.eq.iux) then
+          if (      (y(m)>=xyz0(2) +   Lxyz(2)/4)&
+              .and. (y(m)<=xyz0(2) + 3*Lxyz(2)/4)) then
+            if (j==iux) then
               f(l2,m,:,j) = cos(y(m))*val(j)
               do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
-            elseif (j.eq.iuy) then
+            elseif (j==iuy) then
               f(l2,m,:,j) = -sin(y(m))*val(j)
               do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
-            elseif ((j.eq.ilnrho) .or. (j.eq.irho)) then
+            elseif ((j==ilnrho) .or. (j==irho)) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
             endif
 !
           else
-            if (j.eq.iux) then
+            if (j==iux) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
-            elseif (j.eq.iuy) then
+            elseif (j==iuy) then
               do i=1,nghost; f(l2+i,m,:,j) = f(l2-i,m,:,j); enddo
-            elseif ((j.eq.ilnrho) .or. (j.eq.irho)) then
+            elseif ((j==ilnrho) .or. (j==irho)) then
               f(l2,m,:,j) = val(j)
               do i=1,nghost; f(l2+i,m,:,j) = 2*f(l2,m,:,j) - f(l2-i,m,:,j); enddo
             endif
@@ -5408,7 +5408,7 @@ module Boundcond
       integer :: i
 !
       haut=cs20/gravz
-      if (topbot.eq.'bot') then
+      if (topbot=='bot') then
         do i=1,nghost
           f(:,:,n1-i,ipp) = f(:,:,n1+i,ipp)-2.0*i*dz*f(:,:,n1,ipp)/haut
         enddo
