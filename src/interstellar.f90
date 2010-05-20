@@ -1321,13 +1321,13 @@ module Interstellar
 !  define initial values for the Lambda(z) array from initial temerature profile
 !
 !
-        where (TT .lt. lamT(1)) TT=lamT(1)
+        where (TT < lamT(1)) TT=lamT(1)
         do j=1,9
-           if (TT(n) .ge. lamT(j) .and. TT(n) .le. lamT(j+1)) then
+           if (TT(n) >= lamT(j) .and. TT(n) <= lamT(j+1)) then
            fbeta(n)=beta(j)
            flamk(n)=lamk(j)
            end if
-        where (TT .gt. lamT(10))
+        where (TT > lamT(10))
            fbeta=beta(10)
            flamk=lamk(10)
         endwhere
@@ -1507,7 +1507,7 @@ module Interstellar
      cool=0.0
 !    cool_beta=1.0
 cool_loop: do i=1,ncool
-      if (lncoolT(i) .ge. lncoolT(i+1)) exit cool_loop
+      if (lncoolT(i) >= lncoolT(i+1)) exit cool_loop
       where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
         cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
 !        cool_beta=coolB(i)
@@ -1624,13 +1624,13 @@ cool_loop: do i=1,ncool
         endif
 !
         if (lforce_locate_SNI.and. &
-             ((SNRs(iSNR)%site%rho .lt. rho_SN_min) .or. &
-              (SNRs(iSNR)%site%TT .gt. TT_SN_max))) then
+             ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+              (SNRs(iSNR)%site%TT > TT_SN_max))) then
           call find_nearest_SNI(f,SNRs(iSNR))
         endif
 !
-        if ((SNRs(iSNR)%site%rho .lt. rho_SN_min) .or. &
-            (SNRs(iSNR)%site%TT .gt. TT_SN_max)) then
+        if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+            (SNRs(iSNR)%site%TT > TT_SN_max)) then
           cycle
         endif
 !
@@ -1642,7 +1642,7 @@ cool_loop: do i=1,ncool
         endif
       enddo
 !
-      if (try_count.eq.0) then
+      if (try_count==0) then
         if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
       endif
       call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
@@ -1722,12 +1722,12 @@ cool_loop: do i=1,ncool
           call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
                       ,yH=yH,lnTT=lnTT)
           TT(1:nx)=exp(lnTT(1:nx))
-!            if(ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
+!            if (ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
 !                               minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
           rho_cloud(1:nx)=0.
           where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
             rho_cloud(1:nx) = rho(1:nx)
-!            if(ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
+!            if (ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
 !                             ,sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
             cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
         enddo
@@ -1757,7 +1757,7 @@ cool_loop: do i=1,ncool
       call random_number_wrapper(franSN)
 !  
       if (lroot.and.ip<20) then
-        if (cloud_mass_dim .gt. 0. .and. franSN(1) <= 2.*prob_SNII) then
+        if (cloud_mass_dim > 0. .and. franSN(1) <= 2.*prob_SNII) then
           print*,'check_SNII: freq,prob,rnd,dtsn:',&
                   freq_SNII,prob_SNII,franSN(1),dtsn
           print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
@@ -1845,8 +1845,8 @@ cool_loop: do i=1,ncool
           call position_SN_gaussianz(f,h_SNII,SNRs(iSNR))
         endif
 !
-        if ((SNRs(iSNR)%site%rho .lt. rho_SN_min) .or. &
-            (SNRs(iSNR)%site%TT .gt. TT_SN_max)) then
+        if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+            (SNRs(iSNR)%site%TT > TT_SN_max)) then
           cycle
         endif
 !
@@ -1864,7 +1864,7 @@ cool_loop: do i=1,ncool
         endif
       enddo
 !
-      if (try_count.eq.0) then
+      if (try_count==0) then
         if (lroot) print*,"check_SNIIb: 500 RETRIES OCCURED - skipping SNI insertion"
       endif
       call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
@@ -1894,14 +1894,14 @@ cool_loop: do i=1,ncool
 !  Pick SN position (SNR%l,SNR%m,SNR%n)
 !
     if (lroot) then
-      if (center_SN_x.eq.impossible) then
+      if (center_SN_x==impossible) then
         i=max(int(nxgrid/2)+1,1)
       else
         i=int((center_SN_x-x00)/dx)+1
       endif
       SNR%l=i+nghost
 !
-      if (center_SN_y.eq.impossible) then
+      if (center_SN_y==impossible) then
         i=max(int(nygrid/2)+1,1)
       else
         i=int((center_SN_y-y00)/dy)+1
@@ -1909,7 +1909,7 @@ cool_loop: do i=1,ncool
       SNR%ipy=(i-1)/ny ! uses integer division
       SNR%m=i-(SNR%ipy*ny)+nghost
 !
-      if (center_SN_z.eq.impossible) then
+      if (center_SN_z==impossible) then
         i=max(int(nzgrid/2)+1,1)
       else
         i=int((center_SN_z-z00)/dz)+1
@@ -2119,7 +2119,7 @@ cool_loop: do i=1,ncool
       endif
     enddo
 !
-    if (trypsn_count.eq.0) then
+    if (trypsn_count==0) then
       if (lroot) print*,"check_SNIIb: 50 RETRIES OCCURED - skipping SNIIb insertion"
     endif
 !
@@ -2248,7 +2248,7 @@ find_SN: do n=n1,n2
 !
     call mpibcast_int(ierr,1,SNR%iproc)
     if (ierr==iEXPLOSION_TOO_HOT) then
-    if(ip<18) &
+    if (ip<18) &
     print*,'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
       return
     endif
@@ -2301,10 +2301,10 @@ find_SN: do n=n1,n2
         TT_test=exp(lnTT_test)
 !
         do ii=l1,l2
-          if ((SNR%site%rho .gt. rho_SN_min) .and. &
-              (SNR%site%TT .lt. TT_SN_max)) then
+          if ((SNR%site%rho > rho_SN_min) .and. &
+              (SNR%site%TT < TT_SN_max)) then
             deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
-            if (deltar2_test .lt. deltar2) then
+            if (deltar2_test < deltar2) then
               nfound=1
               deltar2=deltar2_test
               new_lmn=(/ nfound, ii, m, n /)
@@ -2318,7 +2318,7 @@ find_SN: do n=n1,n2
 !
       if (nfound==0) then
         new_lmn=(/ nfound, SNR%l, SNR%m, SNR%n /)
-      elseif (nfound.gt.1) then
+      elseif (nfound>1) then
         chosen_site=int(nfound*fran_location(1)+0.5)
         nfound=0
   search_two: do n=n1,n2
@@ -2328,8 +2328,8 @@ find_SN: do n=n1,n2
           TT_test=exp(lnTT_test)
 !
           do ii=l1,l2
-            if ((SNR%site%rho .gt. rho_SN_min) .and. &
-                (SNR%site%TT .lt. TT_SN_max)) then
+            if ((SNR%site%rho > rho_SN_min) .and. &
+                (SNR%site%TT < TT_SN_max)) then
               deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
               if (deltar2==deltar2_test) then
                 nfound=nfound+1
@@ -2348,7 +2348,7 @@ find_SN: do n=n1,n2
     call mpibcast_int(new_lmn,4,SNR%iproc)
     nfound=new_lmn(1)
 !
-    if (nfound.gt.0) then
+    if (nfound>0) then
       SNR%l=new_lmn(2)
       SNR%m=new_lmn(3)
       SNR%n=new_lmn(4)
@@ -2650,9 +2650,9 @@ find_SN: do n=n1,n2
            if (mass_movement=='rho-cavity') then
              call get_lowest_rho(f,SNR,r_cavity,rho_SN_lowest)
              cavity_depth=SNR%site%rho-rho_SN_new
-             if (cavity_depth .gt. rho_SN_lowest-rho_min) then
+             if (cavity_depth > rho_SN_lowest-rho_min) then
                cavity_depth=rho_SN_lowest-rho_min
-               if (cavity_depth .le. 0.) then
+               if (cavity_depth <= 0.) then
                  cavity_depth=0.
                  lmove_mass=.false.
                endif
@@ -2845,8 +2845,8 @@ find_SN: do n=n1,n2
             endif
             call eoscalc(f,nx,lnTT=lnTT,yH=yH)
             lnTT=log(TT)
-            if (lentropy.and.ilnTT.ne.0) f(l1:l2,m,n,ilnTT)=lnTT
-            if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
+            if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
+            if (iyH/=0) f(l1:l2,m,n,iyH)=yH
 !
        enddo
       enddo
@@ -2941,7 +2941,7 @@ find_SN: do n=n1,n2
 !        MOM_tot=MOM_tot+sum(sqrt(dot2(uu))*rho)
 !        MM_tot=MM_tot+sum(rho)
 !
-!        where (dr2_SN .le. radius2)
+!        where (dr2_SN <= radius2)
 !          EE_local=EE_local+sum(rho*ee)
 !          MOM_local=MOM_local+sum(sqrt(dot2(uu))*rho)
 !          MM_local=MM_local+sum(rho)
@@ -2996,10 +2996,10 @@ find_SN: do n=n1,n2
           call dot2(r_vec,r2)
 !          r_hat=r_vec/spread(sqrt(r2),2,3)
           call dot(r_vec,uu,uur)
-          where (uur .gt. 0.)
+          where (uur > 0.)
             uur=-uur/r2
           endwhere
-          where (r2 .gt. radius2)
+          where (r2 > radius2)
             uur=0.
           endwhere
           fac=max(fac,maxval(uur))
@@ -3171,7 +3171,7 @@ find_SN: do n=n1,n2
             rho=exp(f(l1:l2,m,n,ilnrho))
             call dot2(f(l1:l2,m,n,iuu:iuu+2),u2)
             tmp(3)=tmp(3)+sum(rho*u2)
-            where (dr2_SN(1:nx) .gt. radius2)
+            where (dr2_SN(1:nx) > radius2)
               rho(1:nx)=0.
               mask(1:nx)=0
             endwhere
@@ -3222,7 +3222,7 @@ find_SN: do n=n1,n2
          do m=m1,m2
             call proximity_SN(SNR)
             rho=f(l1:l2,m,n,ilnrho)
-            where (dr2_SN(1:nx) .gt. radius2) rho=1E10
+            where (dr2_SN(1:nx) > radius2) rho=1E10
             rho_lowest=min(rho_lowest,minval(rho(1:nx)))
          enddo
       enddo
@@ -3300,20 +3300,20 @@ find_SN: do n=n1,n2
 !
          dx_SN=x-SNR%x
          if (lperi(1)) then
-           where (dx_SN .gt. Lx/2.) dx_SN=dx_SN-Lx
-           where (dx_SN .lt. -Lx/2.) dx_SN=dx_SN+Lx
+           where (dx_SN > Lx/2.) dx_SN=dx_SN-Lx
+           where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
          endif
 !
          dy_SN=y(m)-SNR%y
          if (lperi(2)) then
-           if (dy_SN .gt. Ly/2.) dy_SN=dy_SN-Ly
-           if (dy_SN .lt. -Ly/2.) dy_SN=dy_SN+Ly
+           if (dy_SN > Ly/2.) dy_SN=dy_SN-Ly
+           if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
          endif
 !
          dz_SN=z(n)-SNR%z
          if (lperi(3)) then
-           if (dz_SN .gt. Lz/2.) dz_SN=dz_SN-Lz
-           if (dz_SN .lt. -Lz/2.) dz_SN=dz_SN+Lz
+           if (dz_SN > Lz/2.) dz_SN=dz_SN-Lz
+           if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
          endif
 !
          dr2_SN_mx=dx_SN**2 + dy_SN**2 + dz_SN**2
@@ -3579,7 +3579,7 @@ find_SN: do n=n1,n2
 !
       elseif (velocity_profile=="quadratic") then
         profile_SN=dr2_SN(1:nx)/width**2
-        where (dr2_SN.gt.(width**2)) profile_SN=0.
+        where (dr2_SN>(width**2)) profile_SN=0.
       endif
 !
       do j=1,3
