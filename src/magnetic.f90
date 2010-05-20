@@ -1947,7 +1947,7 @@ module Magnetic
 ! cosjb
       if (lpencil(i_cosjb)) then
         do ix=1,nx
-          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then
+          if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
             p%cosjb(ix)=0.
           else
             p%cosjb(ix)=p%jb(ix)/sqrt(p%j2(ix)*p%b2(ix))
@@ -1963,7 +1963,7 @@ module Magnetic
         p%jparallel=sqrt(p%j2)*p%cosjb
         call dot2_mn(p%jxb,jcrossb2)
         do ix=1,nx
-          if ((abs(p%j2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini))then
+          if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
             p%jperp=0
           else
             p%jperp=sqrt(jcrossb2(ix))/sqrt(p%b2(ix))
@@ -2043,7 +2043,7 @@ module Magnetic
 ! cosub
       if (lpencil(i_cosub)) then
         do ix=1,nx
-          if ((abs(p%u2(ix)).le.tini).or.(abs(p%b2(ix)).le.tini)) then
+          if ((abs(p%u2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
             p%cosub(ix)=0.
           else
             p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
@@ -2125,7 +2125,7 @@ module Magnetic
                 +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
         case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
-          if(headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
+          if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
         case ('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
@@ -2512,7 +2512,7 @@ module Magnetic
       if (lresi_smagorinsky_cross) then
         sign_jo=1.
         do i=1,nx
-          if (p%jo(i) .lt. 0) sign_jo(i)=-1.
+          if (p%jo(i) < 0) sign_jo(i)=-1.
         enddo
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
@@ -3889,7 +3889,7 @@ module Magnetic
            call stop_it("this IC assumes cylindrical coordinates")
 !
       do i=1,mx
-        if ((rcyl_mn(i).ge.r0).and.(rcyl_mn(i).le.rn)) then
+        if ((rcyl_mn(i)>=r0).and.(rcyl_mn(i)<=rn)) then
           bz(i)=ampl/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-r0))
         else
           bz(i)=0.
@@ -4809,7 +4809,7 @@ module Magnetic
           ambmz_tmp=fact*( &
              fnamez(n,iprocz,idiag_bxmz)*fnamez(n,iprocz,idiag_axmz)&
             +fnamez(n,iprocz,idiag_bymz)*fnamez(n,iprocz,idiag_aymz))
-          if (z_allprocs(n,iprocz).ge.zequator) then
+          if (z_allprocs(n,iprocz)>=zequator) then
             ambmzh(2)=ambmzh(2)+ambmz_tmp
           else
             ambmzh(1)=ambmzh(1)+ambmz_tmp
@@ -5262,7 +5262,7 @@ module Magnetic
 !
       do n=n1,n2; do m=m1,m2
         rrcyl = max(sqrt(x(l1:l2)**2 + y(m)**2),tini)
-        if (r_int.gt.0.) then
+        if (r_int>0.) then
            if (lroot .and. m==m1 .and. n==n1) then
              print*,'freezing is being used, ok to use singular potentials'
              print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
@@ -5272,7 +5272,7 @@ module Magnetic
                 B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
         else
            if (lroot .and. m==m1 .and. n==n1) print*,'Softened magnetic field in the center'
-           if (mode .lt. 5) call stop_it("put more wavelengths in the field")
+           if (mode < 5) call stop_it("put more wavelengths in the field")
            kr = 2*pi*mode/r_ext
            k1 = 1. !not tested for other values
            const=B0*exp(1.)*k1/cos(kr/k1)
@@ -5995,7 +5995,7 @@ module Magnetic
       if (.not.lspherical_coords) then
         call fatal_error("correct_lorentz_force",&
             "only implemented for spherical coordinates")
-        if ((B_ext(1).ne.0).or.(B_ext(3).ne.0)) then
+        if ((B_ext(1)/=0).or.(B_ext(3)/=0)) then
           call fatal_error("correct_lorentz_force",&
               "only implemented for polar fields")
         endif
@@ -6055,8 +6055,8 @@ module Magnetic
 !  Make sure the correction does not impede centrifugal equilibrium
 !
           do i=1,nx
-            if (tmp(i).lt.0.) then
-              if (rr_sph(i) .lt. r_int) then
+            if (tmp(i)<0.) then
+              if (rr_sph(i) < r_int) then
                 !it's inside the frozen zone, so
                 !just set tmp to zero and emit a warning
                 tmp(i)=0.
