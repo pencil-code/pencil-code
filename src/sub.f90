@@ -3145,6 +3145,7 @@ module Sub
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: step
       real :: x0,width
+!
       step = 0.5*(1+tanh((x-x0)/(width+tini)))
 !
     endfunction step
@@ -3205,6 +3206,7 @@ module Sub
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: stepdown
       real :: x0,width
+!
       stepdown = -0.5*(1+tanh((x-x0)/(width+tini)))
 !
     endfunction stepdown
@@ -3228,10 +3230,10 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       xi = (x-x0)/(width+tini) - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       cubic_step_pt = 0.5 + xi*(0.75-xi**2*0.25)
 !
     endfunction cubic_step_pt
@@ -3249,10 +3251,10 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       xi = (x-x0)/(width+tini) - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       cubic_step_mn = 0.5 + xi*(0.75-xi**2*0.25)
 !
     endfunction cubic_step_mn
@@ -3270,11 +3272,11 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       width1 = 1./(width+tini)
       xi = (x-x0)*width1 - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       cubic_der_step_pt = (0.75-xi**2*0.75) * width1
 !
     endfunction cubic_der_step_pt
@@ -3292,11 +3294,11 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       width1 = 1./(width+tini)
       xi = (x-x0)*width1 - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       cubic_der_step_mn = (0.75-xi**2*0.75) * width1
 !
     endfunction cubic_der_step_mn
@@ -3319,10 +3321,10 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       xi = (x-x0)/(width+tini) - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       quintic_step_pt = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
 !
     endfunction quintic_step_pt
@@ -3341,10 +3343,10 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       xi = (x-x0)/(width+tini) - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       quintic_step_mn = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
 !
     endfunction quintic_step_mn
@@ -3363,11 +3365,11 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       width1 = 1./(width+tini)
       xi = (x-x0)*width1 - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       quintic_der_step_pt = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
                               * width1
 !
@@ -3387,11 +3389,11 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       width1 = 1./(width+tini)
       xi = (x-x0)*width1 - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       quintic_der_step_mn = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
                               * width1
 !
@@ -3415,10 +3417,10 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       xi = (x-x0)/(width+tini) - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       sine_step_pt = 0.5*(1+sin(0.5*pi*xi))
 !
     endfunction sine_step_pt
@@ -3437,10 +3439,10 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
-      if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+      if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
       xi = (x-x0)/(width+tini) - relshift
-      xi = max(xi,-1.)
-      xi = min(xi, 1.)
+      xi = max(xi,-1.0)
+      xi = min(xi, 1.0)
       sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
 !
     endfunction sine_step_mn
