@@ -75,7 +75,7 @@ module Radiation
   real :: Frad_boundary_ref=0.0
   real :: cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_Srad=1.0
-  real :: expo_rho_opa=0.0, expo_temp_opa=0.0
+  real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
 !
@@ -128,8 +128,8 @@ module Radiation
       kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
-      lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
-      ref_temp_opa, knee_temp_opa, width_temp_opa
+      lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
+      ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, TT_top, &
@@ -141,7 +141,7 @@ module Radiation
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, cdtrad_thin, &
       cdtrad_thick, scalefactor_Srad, angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
-      ref_temp_opa, knee_temp_opa, width_temp_opa
+      expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, width_temp_opa
 !
   contains
 !***********************************************************************
@@ -1437,8 +1437,8 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use EquationOfState, only: eoscalc
-      use General, only: erfcc
       use IO, only: output
+      use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
@@ -1493,12 +1493,13 @@ module Radiation
 !  Use erf profile to connect smoothly to constant opacity beyond ``knee''
 !  temperature.
 !
-            profile=0.5*(1.0-erfcc((TT-knee_temp_opa)/width_temp_opa))
+            profile=1.0-cubic_step(TT,knee_temp_opa,width_temp_opa)
             f(:,m,n,ikapparho)=profile*rho*kappa_cst* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa + &
                 (1.0-profile)*rho*kappa_cst* &
-                (knee_temp_opa/ref_temp_opa)**expo_temp_opa
+                (knee_temp_opa/ref_temp_opa)**expo_temp_opa* &
+                (TT/knee_temp_opa)**expo_temp_opa_buff
           endif
         enddo; enddo
 !
