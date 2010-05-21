@@ -932,11 +932,11 @@ module Chemistry
         if (.not. lT_tanh) then
           do k=1,mx
             if (x(k)>=init_x1) then
-!              if (final_massfrac_O2>0.) then
-!                f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
-!                    *(exp(f(k,:,:,ilnTT))-init_TT1) &
-!                    /(init_TT2-init_TT1)
-!              else
+              if (final_massfrac_O2>0.) then
+                f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+                    *(exp(f(k,:,:,ilnTT))-init_TT1) &
+                    /(init_TT2-init_TT1)+initial_massfractions(ichem_H2O)
+              else
 !
                 if (x(k)>=init_x2) then
                   f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)
@@ -947,7 +947,7 @@ module Chemistry
                        +initial_massfractions(ichem_H2O)
                 endif
 !
-!              endif
+              endif
             endif
           enddo
         endif
@@ -3157,7 +3157,7 @@ module Chemistry
 !  Check that we are not outside the temperture range
 !
             if ((maxval(exp(f(l1:l2,m,n,ilnTT))) > T_up)  &
-                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low)) then
+                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low-10.)) then
               print*,'m,n=',m,n
               print*,'p%TT=',p%TT
               call fatal_error('get_reaction_rate',&
