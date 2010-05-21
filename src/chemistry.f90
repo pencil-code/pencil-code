@@ -3669,7 +3669,9 @@ module Chemistry
           enddo
 !
       else
-       Bin_Diff_coef=0.
+        if (.not. lDiff_simple) then
+          Bin_Diff_coef=0.
+        endif
       endif
       endif
 !
