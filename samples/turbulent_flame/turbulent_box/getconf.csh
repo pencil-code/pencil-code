@@ -1,1 +1,1 @@
-/home/nilshau/numerics/pencil-code/bin/getconf.csh
+/home/vsl175/a/nilshau/numerics/pencil-code/bin/getconf.csh
