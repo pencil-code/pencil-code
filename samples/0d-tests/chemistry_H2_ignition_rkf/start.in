@@ -19,6 +19,6 @@
 /
 &chemistry_init_pars
   initchem='air'
-  BinDif_simple=T
-  visc_simple=T
+  lDiff_simple=T
+  lThCond_simple=T 
 /
