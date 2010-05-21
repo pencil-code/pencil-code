@@ -1356,7 +1356,7 @@ module Density
       intent(inout) :: p
       integer :: i, mm, nn, ierr,l
 ! DM+PC (at present we are working only with log rho) 
-      if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
+      if (ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
       p%lnrho=f(l1:l2,m,n,ilnrho)
       p%rho=exp(p%lnrho)
 
