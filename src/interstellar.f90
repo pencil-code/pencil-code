@@ -175,7 +175,7 @@ module Interstellar
 !
   double precision, parameter :: ampl_SN_cgs=1D51
   real :: frac_ecr=0.1, frac_eth=0.9
-  real :: ampl_SN=impossible
+  real :: ampl_SN=impossible, kampl_SN=impossible
 !
 ! SNe composition
 !
@@ -323,7 +323,7 @@ module Interstellar
 !
   namelist /interstellar_init_pars/ &
       initinterstellar, initial_SNI, &
-      ampl_SN, mass_SN, &
+      ampl_SN, kampl_SN, mass_SN, &
       mass_width_ratio, energy_width_ratio, &
       lSN_velocity, velocity_SN, velocity_width_ratio, &
       uniform_zdist_SNI, mass_movement, &
@@ -339,7 +339,7 @@ module Interstellar
 ! run parameters
 !
   namelist /interstellar_run_pars/ &
-      ampl_SN, mass_SN, &
+      ampl_SN, kampl_SN, mass_SN, &
       mass_width_ratio, energy_width_ratio, &
       lSN_velocity, velocity_SN, velocity_width_ratio, &
       uniform_zdist_SNI, mass_movement, &
@@ -763,7 +763,9 @@ module Interstellar
         if (GammaUV == impossible) &
                 GammaUV=GammaUV_cgs * real(unit_length/unit_velocity**3)
         if (ampl_SN == impossible) ampl_SN=ampl_SN_cgs / unit_energy
-        if (lroot) print*,'initialize_interstellar: ampl_SN = ',ampl_SN
+        if (kampl_SN == impossible) kampl_SN=0.0
+        if (lroot) print*,'initialize_interstellar: ampl_SN, kampl_SN = '&
+                                                   ,ampl_SN, kampl_SN
         if (cloud_tau == impossible) cloud_tau=cloud_tau_cgs / unit_time
         if (mass_SN == impossible) mass_SN=mass_SN_cgs / unit_mass
         if (mass_SN_progenitor == impossible) &
@@ -1785,10 +1787,9 @@ cool_loop: do i=1,ncool
         if (ierr == iEXPLOSION_TOO_HOT) then
           call free_SNR(iSNR)
           ierr=iEXPLOSION_OK
-      return
+          return
         endif
         SNRs(iSNR)%t=t
-        SNRs(iSNR)%radius=width_SN
         SNRs(iSNR)%SN_type=2
         call explode_SN(f,SNRs(iSNR),ierr,preSN)
         if (ierr==iEXPLOSION_OK) then
@@ -2479,7 +2480,7 @@ find_SN: do n=n1,n2
 !
 !  Calculate effective Sedov evolution time
 !
-      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/(kampl_SN+ampl_SN))
       uu_sedov = 0.4*SNR%radius/SNR%t_sedov
       t_merge=4.6672803e13/unit_time
 !  29-mar-10/fred: temporary patch, t_merge time for remnant to merge with ism given rho0=1.6726,
@@ -2489,13 +2490,13 @@ find_SN: do n=n1,n2
       if ((uu_sedov_max > 0.).and.(uu_sedov > uu_sedov_max)) then
         do i=1,10
           radiusA=SNR%radius
-          radiusB=(0.16/uu_sedov_max**2*xsi_sedov**5*ampl_SN/SNR%rhom)**(1./3.)
+          radiusB=(0.16/uu_sedov_max**2*xsi_sedov**5*(kampl_SN+ampl_SN)/SNR%rhom)**(1./3.)
 !
           if (abs(radiusB-radiusA) < dxmax) then
             SNR%radius=max(radiusA,radiusB)
             call get_properties(f,SNR,rhom,ekintot)
             SNR%rhom=rhom
-            SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+            SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/(kampl_SN+ampl_SN))
             uu_sedov = 0.4*SNR%radius/SNR%t_sedov
             exit
           endif
@@ -2503,7 +2504,7 @@ find_SN: do n=n1,n2
           SNR%radius=0.5*(radiusA+radiusB)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%rhom=rhom
-          SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+          SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/(kampl_SN+ampl_SN))
           uu_sedov = 0.4*SNR%radius/SNR%t_sedov
         enddo
         if (SNR%radius>2*width_SN) then
@@ -2597,18 +2598,18 @@ find_SN: do n=n1,n2
 !
       if (lSN_velocity) then
         if (velocity_profile=="r15gaussian3") then
-          cvelocity_SN=sqrt(6.*ampl_SN/pi/SNR%rhom/width_velocity**6)&
-                       *(1.-1.82*SNR%t_sedov/t_merge) 
+          cvelocity_SN=sqrt(6.*kampl_SN/pi/SNR%rhom/width_velocity**6)&
+                       *(1.-0.91*SNR%t_sedov/t_merge) 
         elseif (velocity_profile=="r3gaussian3") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)  
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)  
         elseif (velocity_profile=="r6gaussian3") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)
         elseif (velocity_profile=="r8thgaussian3") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.3755278212)&
-                       *(1.-1.82*SNR%t_sedov/t_merge)
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.3755278212)&
+                       *(1.-0.91*SNR%t_sedov/t_merge)
         elseif (velocity_profile=="r8thgaussian") then
-          cvelocity_SN=sqrt(ampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.2906782474)&  
-                       *(1.-1.82*SNR%t_sedov/t_merge)
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.2906782474)&  
+                       *(1.-0.91*SNR%t_sedov/t_merge)
         else
           cvelocity_SN=uu_sedov
           if (lroot) &
@@ -2617,7 +2618,7 @@ find_SN: do n=n1,n2
         endif
 !
 !     11-dec-09/fred
-!     If using kinetic energy the thermal energy ampl_SN is halved
+!     If using kinetic energy the thermal energy kampl_SN subtracted from ampl_SN 
 !     E_t=E_k= 4*pi*int(0.5*rho*v^2*r^2 dr) where v = cvelocity_SN*velocity_profile
 !     to reasonable approximation rho assumed constant = SNR%rhom
 !     This enables larger width_SN without loss of velocity in snowplough
@@ -2860,7 +2861,7 @@ find_SN: do n=n1,n2
       call mpireduce_sum_double(dmpi2_tmp,dmpi2,2)
       call mpibcast_double(dmpi2,2)
       SNR%MM=dmpi2(1)*dv
-      SNR%EE=dmpi2(2)*dv
+      SNR%EE=dmpi2(2)*dv+ekintot_new-ekintot !include kinetic energy in total fred
 ! Extra debug - no longer calculated
 !      EE2_SN=fmpi2(3)*dv;
 !print*,'EE2_SN = ',EE2_SN
