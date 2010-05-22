@@ -21,14 +21,32 @@ Comments:
        1) Run the 1D initial condition setup (./init_cond_1D) in order
           to set up a good initial profile for the flame front. (This very
           run is run on only one processor and without MPI.) This takes
-          typically 10-15 minutes.
+          typically 5 minutes. The results can be visualized in IDL by
+          e.g. "temperature.pro" or "species.pro". The first script is run 
+          by typing
+          > .r temperature
+          in the IDL prompt.
        2) Run the isotropic box (./turbulent_box) to be used as 
-          inlet condition.
+          inlet condition. This is done in typically half an hour.
+          Since this is a 8 processor job (as all the remaining jobs)
+          it should normally be submitted to the que of your cluster.
+          See that it has reach statistically steady state by typing
+          > .r ts
+          in IDL.
        3) Run the 3D initial condition setup (./init_cond_3D) in order
           to fill the domain with turbulence before the flame is introduced.
-       4) Use pc_copyvar 
+          For visualizing e.g. the velocity in the y direction in a 2D
+          slice in the xy plane you must first run
+          > ./src/read_videofiles.x
+          on the linux prompt. Answer 'uu2' on the query.
+          Then open IDL and run the script "uy".
+       4) Run the startscript of the main simulation. 
+       5) When the startscript finalizes your should use pc_copyvar 
             > pc_copyvar var.dat var.dat ./init_cond_3D . -e
           in order to copy the 3D initial condition to the main simulation.
-       5) Run the main simulation.
+       6) Run the main simulation. Please remember that if you want to
+          continue running the simulation even after it has finalized 
+          once you must turn off the reinitialization of the chemistry
+          in run.in. 
 
 

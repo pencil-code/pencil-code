@@ -18,8 +18,6 @@
   lupw_lnTT=T
 /
 &chemistry_run_pars
-  ldiff_simple=T
-  lthcond_simple=T
   lfilter=T
   reinitialize_chemistry=T
 /
@@ -28,6 +26,6 @@
 /
 &NSCBC_run_pars
   inlet_from_file=T
-  turb_inlet_dir='../turbbox_64_1.5_16cores_vel10'
+  turb_inlet_dir='../turbulent_box'
   notransveral_terms=T
 /

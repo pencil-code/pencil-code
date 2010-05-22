@@ -1,8 +1,8 @@
 ;
 ; Visualize the species
 ;
-!x.style=1
-!x.title='x [cm]'
+device,decompose=0
+loadct,5
 !p.charsize=2
 !p.multi=[0,1,1]
 ;
@@ -37,9 +37,8 @@ end
 ;
 ; Show results
 ;
-!y.title='Y [-]'
 !p.title=specie
-rvid_line,variable,proc=0,/nocontour,/xgrid,/global_scaling
+rvid_plane,variable,/nocontour,/xgrid,/global_scaling
 
 
 

@@ -2,7 +2,7 @@
 #PBS -N start.x
 ##PBS -M nils.e.haugen@sintef.no
 #PBS -l walltime=1:00:00
-#PBS -l nodes=2:ppn=8
+#PBS -l nodes=1:ppn=8
 
 export MPICH_PROCESS_GROUP=yes
 

@@ -2,8 +2,8 @@
 #PBS -N run.x
 ##PBS -M nils.e.haugen@sintef.no
 #PBS -m ae
-#PBS -l walltime=100:00:00
-#PBS -l nodes=2:ppn=8
+#PBS -l walltime=10:00:00
+#PBS -l nodes=1:ppn=8
 
 export MPICH_PROCESS_GROUP=yes
 
