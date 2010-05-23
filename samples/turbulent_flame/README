@@ -48,5 +48,8 @@ Comments:
           continue running the simulation even after it has finalized 
           once you must turn off the reinitialization of the chemistry
           in run.in. 
-
+          E.g. the species can now be visualized by running
+          > pc_visualize_species
+          in IDL. (Remember to run ./src/read_videofiles.x on the
+          linux prompt first.) 
 

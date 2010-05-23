@@ -13,9 +13,9 @@
 &density_run_pars
 /
 &forcing_run_pars
-  iforce='helical', force=0.09, relhel=0.
+  iforce='helical', force=0.025, relhel=0.
   lscale_kvector_tobox=T
 /
 &viscosity_run_pars
-  nu=4., ivisc='nu-const'
+  nu=1., ivisc='nu-const'
 /

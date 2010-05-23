@@ -26,7 +26,7 @@ ldensity_nolog=F
 /
 &chemistry_init_pars
   initchem='prerun_1D'
-  prerun_directory='../init_cond_1D'
+  prerun_directory='./init_cond_1D'
 /
 &NSCBC_init_pars
   nscbc_bc = 'part_ref_inlet:part_ref_outlet','',''

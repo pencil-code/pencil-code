@@ -25,9 +25,7 @@ ldensity_nolog=F
 &entropy_init_pars
 /
 &chemistry_init_pars
-!  initchem='prerun_1D'
   initchem='air'
-!  prerun_directory='../../1d-flames/H2_6step_hightemp'
 /
 &NSCBC_init_pars
   nscbc_bc = 'part_ref_inlet:part_ref_outlet','',''

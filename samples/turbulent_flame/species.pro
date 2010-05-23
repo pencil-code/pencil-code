@@ -3,8 +3,14 @@
 ;
 device,decompose=0
 loadct,5
+!x.style=1
+!x.title='x [cm]'
 !p.charsize=2
 !p.multi=[0,1,1]
+;
+; Read in some data
+;
+pc_read_dim,obj=dim
 ;
 ; Read in data about species
 ;
@@ -14,6 +20,8 @@ print,'The available species are:',specname
 ; Set defaults
 ;
 default,specie,'H2'
+default,zoom,1
+default,tmin,0.0
 print,'specie=',specie
 ;
 ; Choose which variable to plot
@@ -37,9 +45,12 @@ end
 ;
 ; Show results
 ;
+!y.title='Y [-]'
 !p.title=specie
-rvid_plane,variable,/nocontour,/xgrid,/global_scaling
-
-
+if (dim.nygrid eq 1 and dim.nzgrid eq 1) then begin
+    rvid_line,variable,proc=0,/nocontour,/xgrid,/global_scaling,tmin=tmin,zoom=zoom
+endif else begin
+    rvid_plane,variable,/xgrid,/global_scaling,tmin=tmin,zoom=zoom
+end
 
 END

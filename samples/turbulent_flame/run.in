@@ -26,6 +26,6 @@
 /
 &NSCBC_run_pars
   inlet_from_file=T
-  turb_inlet_dir='../turbulent_box'
+  turb_inlet_dir='./turbulent_box'
   notransveral_terms=T
 /
