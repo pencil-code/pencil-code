@@ -118,6 +118,10 @@ module Entropy
   integer :: idiag_TTmz=0       ! DIAG_DOC:
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
+  integer :: idiag_ethmz=0      ! DIAG_DOC:
+  integer :: idiag_ethuxmz=0    ! DIAG_DOC:
+  integer :: idiag_ethuymz=0    ! DIAG_DOC:
+  integer :: idiag_ethuzmz=0    ! DIAG_DOC:
 !
   contains
 !***********************************************************************
@@ -308,7 +312,7 @@ module Entropy
               'Both Fbot and hcond0 are unknown')
       endif
 !
-!  Now we share several variables
+!  Now we share several variables.
 !
       call put_shared_variable('hcond0', hcond0, ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
@@ -324,7 +328,7 @@ module Entropy
           'there was a problem when putting lviscosity_heat')
 !
 !  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
-!  problem)
+!  problem).
 !
       hole_params=(/Tbump,Kmax,Kmin,hole_slope,hole_width/)
       call put_shared_variable('hole_params',hole_params,ierr)
@@ -603,15 +607,16 @@ module Entropy
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHm/=0)   lpenc_diagnos(i_yH)  =.true.
-      if (idiag_ethm/=0) then
-                          lpenc_diagnos(i_rho1)=.true.
-                          lpenc_diagnos(i_ee)  =.true.
+      if (idiag_ethm/=0.or.idiag_ethmz/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_ee)  =.true.
       endif
-      if (idiag_ssm/=0)   lpenc_diagnos(i_ss)  =.true.
-      if (idiag_dtchi/=0) then
-                          lpenc_diagnos(i_rho1)=.true.
-                          lpenc_diagnos(i_cv1) =.true.
+      if (idiag_ethuxmz/=0.or.idiag_ethuymz/=0.or.idiag_ethuzmz/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_ee) =.true.
+        lpenc_diagnos(i_uu) =.true.
       endif
+      if (idiag_ssm/=0)    lpenc_diagnos(i_ss)  =.true.
       if (idiag_dtchi/=0)  lpenc_diagnos(i_cs2)=.true.
       if (idiag_csm/=0)    lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0)    lpenc_diagnos(i_ee) =.true.
@@ -619,6 +624,10 @@ module Entropy
       if (idiag_thcool/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. idiag_TTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
+      if (idiag_dtchi/=0) then
+        lpenc_diagnos(i_rho1)=.true.
+        lpenc_diagnos(i_cv1) =.true.
+      endif
 !
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
 !
@@ -815,29 +824,41 @@ module Entropy
 !  Calculate temperature related diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
-        if (idiag_gTmax/=0) then
-           call dot2(p%glnTT,tmp)
-           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
-        endif
-        if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
+        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
+        if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
+        if (idiag_eem/=0)   call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_ppm/=0)   call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_dtc/=0) then
+          call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        endif
+        if (idiag_gTmax/=0) then
+          call dot2(p%glnTT,tmp)
+          call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
+        endif
         if (idiag_fradtop/=0.and.n==n2) then
           call heatcond_TT(p%TT,hcond)
           fradtop=sum(-hcond*p%glnTT(:,3))/nx
           call save_name(fradtop, idiag_fradtop)
         endif
-        if (idiag_ethm/=0) call sum_mn_name(p%ee/p%rho1,idiag_ethm)
-        if (idiag_ssm/=0)  call sum_mn_name(p%ss,idiag_ssm)
-        if (idiag_dtc/=0) then
-          call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        endif
-        if (idiag_eem/=0)  call sum_mn_name(p%ee,idiag_eem)
-        if (idiag_ppm/=0)  call sum_mn_name(p%pp,idiag_ppm)
-        if (idiag_csm/=0)  call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
-        if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmx)
-        if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
-        if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
+      endif
+!
+!  1-D averages.
+!
+      if (l1davgfirst) then
+        if (idiag_TTmx/=0)    call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        if (idiag_TTmy/=0)    call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        if (idiag_TTmz/=0)    call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_ethmz/=0)   call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
+        if (idiag_ethuxmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1), &
+            idiag_ethuxmz)
+        if (idiag_ethuymz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2), &
+            idiag_ethuymz)
+        if (idiag_ethuzmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3), &
+            idiag_ethuzmz)
       endif
 !
 !  2-D averages.
@@ -851,7 +872,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_lentropy_pars(f)
 !
-!  dummy routine
+!  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -1357,6 +1378,7 @@ module Entropy
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
         idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0
+        idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
       endif
 !
@@ -1397,6 +1419,14 @@ module Entropy
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_TTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethmz', &
+            idiag_ethmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuxmz', &
+            idiag_ethuxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuymz', &
+            idiag_ethuymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuzmz', &
+            idiag_ethuzmz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
@@ -1470,7 +1500,7 @@ module Entropy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
-! 04-aug-07/dintrans: a single polytrope with index mpoly0
+!  04-aug-07/dintrans: a single polytrope with index mpoly0
 !
       use Gravity, only: gravz
       use EquationOfState, only: cs20, lnrho0, gamma, gamma_m1, get_cp1, &
@@ -1509,8 +1539,9 @@ module Entropy
 !***********************************************************************
     subroutine piecew_poly(f)
 !
-!  computes piecewice polytropic and hydrostatic atmosphere
-!  adapted from singel_polytrope
+!  Computes piecewice polytropic and hydrostatic atmosphere.
+!  Adapted from singel_polytrope.
+!
 !  19-jan-10/bing: coded
 !
       use Gravity, only: gravz, z1, z2
@@ -1523,12 +1554,14 @@ module Entropy
 !
       call get_cp1(cp1)
 !
-!  top boundary values
+!  Top boundary values.
+!
       Ttop=cs2top*cp1/gamma_m1
       lnrhotop = lnrho0
       ztop=xyz0(3)+Lxyz(3)
 !
-!  temperature gradients
+!  Temperature gradients.
+!
       beta0 =-cp1*gravz/(mpoly0+1.)*gamma/gamma_m1
       beta1 =-cp1*gravz/(mpoly1+1.)*gamma/gamma_m1
       beta2 =-cp1*gravz/(mpoly2+1.)*gamma/gamma_m1
