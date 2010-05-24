@@ -3990,12 +3990,6 @@ module Entropy
 ! layer. 
       r_ext=x(l2)
       r_int=x(l1)
-! The two following lines in the earlier version of the code was wrong.
-! These were possibly introduced by me but never used so never tested.
-! If anyone has used them earlier please let me know. Otherwise I shall
-! remove this commented block in a week - DM.
-!      r_ext=x(l1)
-!      r_int=x(l2)
 !  normalised central heating profile so volume integral = 1
       if (nzgrid == 1) then
          prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
