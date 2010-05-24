@@ -118,7 +118,7 @@ module Radiation
   integer :: idiag_frms=0, idiag_fmax=0, idiag_Erad_rms=0, idiag_Erad_max=0
   integer :: idiag_Egas_rms=0, idiag_Egas_max=0
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
-  integer :: idiag_Fradzm=0, idiag_Sradm=0, idiag_xyFradzm=0
+  integer :: idiag_Fradzm=0, idiag_Sradm=0, idiag_Fradzmz=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
 !
   namelist /radiation_init_pars/ &
@@ -1345,8 +1345,8 @@ module Radiation
       endif
 !      
       if (l1davgfirst) then
-        if (idiag_xyFradzm/=0) then
-           call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
+        if (idiag_Fradzmz/=0) then
+           call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_Fradzmz)
         endif
       endif
 !
@@ -1912,7 +1912,7 @@ module Radiation
 !
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
-        idiag_xyFradzm=0
+        idiag_Fradzmz=0
         idiag_dtchi=0; idiag_dtrad=0
       endif
 !
@@ -1930,7 +1930,7 @@ module Radiation
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'xyFradzm',idiag_xyFradzm)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Fradzmz',idiag_Fradzmz)
       enddo
 !
 !  write column where which radiative variable is stored
@@ -1945,7 +1945,7 @@ module Radiation
         write(3,*) 'i_Qradrms=',idiag_Qradrms
         write(3,*) 'i_Qradmax=',idiag_Qradmax
         write(3,*) 'i_Fradzm=',idiag_Fradzm
-        write(3,*) 'i_xyFradzm=',idiag_xyFradzm
+        write(3,*) 'i_Fradzmz=',idiag_Fradzmz
         write(3,*) 'i_Sradm=',idiag_Sradm
         write(3,*) 'i_dtchi=',idiag_dtchi
         write(3,*) 'i_dtrad=',idiag_dtrad
