@@ -25,7 +25,7 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
-  real :: Bavoid=0.01,nvor=5.
+  real :: Bavoid=0.01,nvor=5.,tau_inv=1.,Bz_flux=0.
   logical :: lgranulation=.false.,lrotin=.true.
   integer :: irefz=0,nglevel=3
 !
@@ -40,7 +40,7 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
-       Bavoid,nglevel,lrotin,nvor
+       Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -79,6 +79,7 @@ module Special
     real, save :: tsnap_uu=0.,thresh
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
+    real, dimension(nx,ny), save :: ux_local,uy_local
 !
   contains
 !
@@ -511,6 +512,35 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+      use Diagnostics, only: max_mn_name
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+      real, dimension(nx) :: tmp
+!
+      if (n.eq.n1.and.ipz.eq.0) then
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
+            tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - &
+            tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
+      endif
+!
+      tmp(:)  = tau_inv
+      if (lfirst.and.ldt) then
+        if (ldiagnos.and.idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt)=ilabel_max_dt
+          call max_mn_name(tmp        ,idiag_dtnewt,l_dt=.true.)
+        endif
+        dt1_max=max(dt1_max,tmp/cdts)
+      endif
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_hydro
+!***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
 !  computes hyper diffusion for non equidistant grid
@@ -733,8 +763,8 @@ module Special
         if (ldiagnos.and.idiag_dtnewt/=0) then
           itype_name(idiag_dtnewt)=ilabel_max_dt
           call max_mn_name(tmp_tau        ,idiag_dtnewt,l_dt=.true.)
-          dt1_max=max(dt1_max,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
         endif
+        dt1_max=max(dt1_max,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
       endif
 !
     endsubroutine calc_heat_cool_newton
@@ -1037,8 +1067,8 @@ module Special
           itype_name(idiag_dtnewt)=ilabel_max_dt
           call max_mn_name(rtv_cool/cdts &
               ,idiag_dtnewt,l_dt=.true.)
-          dt1_max=max(dt1_max,rtv_cool/cdts)
         endif
+        dt1_max=max(dt1_max,rtv_cool/cdts)
       endif
 !
     endsubroutine calc_heat_cool_RTV
@@ -1254,9 +1284,8 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
-      real, dimension(nx,ny) :: ux_local,uy_local
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
-      real :: cp1
+      real :: cp1,bb_tot
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
 !
@@ -1266,6 +1295,13 @@ module Special
       call random_seed_wrapper(PUT=points_rstate)
 !
       call set_B2(f,BB2_local)
+!
+! set sum(abs(Bz)) to  a given flux
+      if (Bz_flux/=0) then
+        bb_tot = sqrt(sum(abs(BB2)))
+        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay)/bb_tot*Bz_flux
+      endif
+!
       call get_cp1(cp1)
 !
       if (lroot) then
@@ -1313,8 +1349,8 @@ module Special
 !
       quench = (beta**2+1.)/(beta**2+3.)
 !
-      f(l1:l2,m1:m2,irefz,iux) = ux_local*quench
-      f(l1:l2,m1:m2,irefz,iuy) = uy_local*quench
+!      f(l1:l2,m1:m2,irefz,iux) = ux_local*quench
+!      f(l1:l2,m1:m2,irefz,iuy) = uy_local*quench
 !
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
