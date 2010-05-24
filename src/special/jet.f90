@@ -125,6 +125,7 @@ module Special
       select case (initspecial)
       case ('nothing'); if (lroot) print*,'init_special: nothing'
       case ('coaxial_jet')      
+        if (lroot) print*,'init_special: coaxial_jet'
         velo(1)=u_t
         velo(2)=velo(1)*velocity_ratio
         velo(3)=0.04*velo(2)
@@ -154,6 +155,7 @@ module Special
         f(:,:,:,iuy:iuz)=0   
 
         case ('single_jet')
+          if (lroot) print*,'init_special: single_jet'
           velo(1)=u_t
           velo(2)=velo(1)/velocity_ratio
 !
@@ -170,6 +172,43 @@ module Special
                   momentum_thickness(1)))*0.5+velo(2)
             enddo
           enddo
+          f(:,:,:,iuy:iuz)=0
+
+        case ('single_laminar_wall_jet')
+          if (lroot) print*,'init_special: single_laminar_wall_jet'
+!
+! Set velocity profiles
+!
+!!$          do jjj=1,ny 
+!!$            do kkk=1,nz
+!!$              rad=sqrt(&
+!!$                  (y(jjj+m1-1)-jet_center(1))**2+&
+!!$                  (z(kkk+n1-1)-jet_center(1))**2)
+!!$              !Add velocity profile
+!!$              if (rad < radius(1)) then 
+!!$                f(:,jjj+m1-1,kkk+n1-1,1)=u_t*(1-(rad/radius(1))**2)
+!!$              else
+!!$                f(:,jjj+m1-1,kkk+n1-1,1)=0.
+!!$              endif
+!!$            enddo
+!!$          enddo
+
+
+
+          do jjj=1,my 
+            do kkk=1,mz
+              rad=sqrt(&
+                  (y(jjj)-jet_center(1))**2+&
+                  (z(kkk)-jet_center(1))**2)
+              !Add velocity profile
+              if (rad < radius(1)) then 
+                f(:,jjj,kkk,1)=u_t*(1-(rad/radius(1))**2)
+              else
+                f(:,jjj,kkk,1)=0.
+              endif
+            enddo
+          enddo
+
           f(:,:,:,iuy:iuz)=0
      
       case default
@@ -532,7 +571,13 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       type (boundary_condition) :: bc
+      character (len=3) :: topbot
 !
+
+
+      topbot='top'
+      if (bc%location==-1) topbot='bot'
+
       select case (bc%bcname)
       case ('tur')
         select case (bc%location)
@@ -542,6 +587,15 @@ module Special
           call bc_turb(f,bc%value1,'bot',1,bc%ivar)
           bc%done=.true.
         end select
+      case ('wi')
+        call bc_wi_x(f,+1,topbot,bc%ivar,val=bc%value1)
+        bc%done=.true.
+      case ('wip')
+        call bc_wip_x(f,+1,topbot,bc%ivar,val=bc%value1)
+        bc%done=.true.
+      case ('wo')
+        call bc_wo_x(f,+1,topbot,bc%ivar,val=bc%value1)
+        bc%done=.true.
       end select
 !
     endsubroutine special_boundconds
@@ -746,6 +800,282 @@ module Special
       endif
 !
     end subroutine read_turbulent_data
+!***********************************************************************
+    subroutine bc_wip_x(f,sgn,topbot,j,rel,val)
+!
+!
+!  23-may-10/nils+marianne: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+
+      real :: radius, rad,z0,y0,yp0,zp0,dyp,minrad,distance,yp1
+      integer :: jj,kk,nrad,irad,nb_lines,nb_colums,iz,iy
+      real, allocatable, dimension(:,:,:) :: center
+!
+! Allocate array
+!
+      dyp=0.01
+      radius=0.025
+      distance=(dyp+radius)*2.
+      yp0=xyz0(2)+radius*1.1
+      yp1=xyz1(2)-radius*1.1
+      nb_lines =floor((yp1-yp0)/(2*radius+dyp))
+      nb_colums=max(floor(Lxyz(3)/(2*radius+dyp)),1)
+      allocate(center(nb_lines,nb_colums,2))
+!
+      
+      if (Lxyz(3) > 2*radius) then
+        zp0=xyz0(3)+radius*1.3
+      else
+        zp0=xyz0(3)
+      endif
+      nrad=Lxyz(2)/(2*radius+dyp)
+      z0=0.
+!
+! Find the center position of all the holes and put in array
+!
+      do iy=1,Nb_lines
+        do iz=1,Nb_colums
+          if (mod(iz,2)==0) then
+            center(iy,iz,1)=yp0-distance/sqrt(2.)+(iy-1)*distance
+          else
+            center(iy,iz,1)=yp0+distance*(iy-1)                  
+          endif
+          center(iy,iz,2)=zp0-distance/sqrt(2.)*(iz-1)
+        enddo
+      enddo
+!
+!  Loop over all grid points
+!
+        do jj=1,my
+          do kk=1,mz
+            minrad=impossible
+            do iy=1,Nb_lines
+              do iz=1,Nb_colums
+                rad=sqrt((y(jj)-center(iy,iz,1))**2+(z(kk)-center(iy,iz,2))**2)
+                if (rad < minrad) minrad=rad
+              enddo
+            enddo
+!
+!  Zero derivative for density
+!
+            if (j == ilnrho) then
+              do i=1,nghost
+                f(l1-i,jj,kk,j)= f(l1+i,jj,kk,j)
+              enddo
+!
+!  Constant temperature
+!
+            elseif (j == ilnTT) then
+              f(l1,jj,kk,j)=val
+              do i=1,nghost
+                f(l1-i,jj,kk,j)=2*val-f(l1+i,jj,kk,j)
+              enddo
+            else
+!
+! Check if we are inside the radius if the inlet
+!
+              if (minrad > radius) then
+            ! Solid wall
+                do i=1,nghost
+                  if (j <= iuz) then
+                    f(l1,jj,kk,j)=0.
+                    f(l1-i,jj,kk,j)=-f(l1+i,jj,kk,j)
+                  else
+                    f(l1-i,jj,kk,j)= f(l1+i,jj,kk,j)
+                  endif
+                enddo
+              else
+              ! Inlet           
+                if (j == iux) then
+                  f(l1,jj,kk,j)=val*(1-(minrad/radius)**2)
+                  do i=1,nghost
+                    f(l1-i,jj,kk,j)=2*val*(1-(minrad/radius)**2)-f(l1+i,jj,kk,j)
+                  enddo
+                elseif (j == iuy .or. j == iuz) then
+                  f(l1,jj,kk,j)=0.
+                  do i=1,nghost
+                    f(l1-i,jj,kk,j)=-f(l1+i,jj,kk,j)
+                  enddo
+                else
+                  do i=1,nghost
+                    f(l1-i,jj,kk,j)=2*val-f(l1+i,jj,kk,j)
+                  enddo
+                endif
+              endif
+            endif
+         enddo
+        enddo
+!
+  endsubroutine bc_wip_x
+!***********************************************************************
+    subroutine bc_wi_x(f,sgn,topbot,j,rel,val)
+!
+!
+!  23-may-10/nils+marianne: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real  :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+      real :: radius, rad,z0,y0
+      integer :: jj,kk
+!
+!
+!
+      radius=0.015
+      z0=0.
+      y0=0.
+!
+!  Loop over all grid points
+!
+        do jj=1,my
+          do kk=1,mz
+            rad=sqrt((y(jj)-y0)**2+(z(kk)-z0)**2)
+!
+!  Zero derivative for density
+!
+            if (j == ilnrho) then
+              do i=1,nghost
+                f(l1-i,jj,kk,j)= f(l1+i,jj,kk,j)
+              enddo
+!
+!  Constant temperature
+!
+            elseif (j == ilnTT) then
+              f(l1,jj,kk,j)=val
+              do i=1,nghost
+                f(l1-i,jj,kk,j)=2*val-f(l1+i,jj,kk,j)
+              enddo
+            else
+!
+! Check if we are inside the radius if the inlet
+!
+              if (rad > radius) then
+            ! Solid wall
+                do i=1,nghost
+                  if (j <= iuz) then
+                    f(l1,jj,kk,j)=0.
+                    f(l1-i,jj,kk,j)=-f(l1+i,jj,kk,j)
+                  else
+                    f(l1-i,jj,kk,j)= f(l1+i,jj,kk,j)
+                  endif
+                enddo
+              else
+              ! Inlet           
+                if (j == iux) then
+                  f(l1,jj,kk,j)=val*(1-(rad/radius)**2)
+                  do i=1,nghost
+                    f(l1-i,jj,kk,j)=2*val*(1-(rad/radius)**2)-f(l1+i,jj,kk,j)
+                  enddo
+                elseif (j == iuy .or. j == iuz) then
+                  f(l1,jj,kk,j)=0.
+                  do i=1,nghost
+                    f(l1-i,jj,kk,j)=-f(l1+i,jj,kk,j)
+                  enddo
+                else
+                  do i=1,nghost
+                    f(l1-i,jj,kk,j)=2*val-f(l1+i,jj,kk,j)
+                  enddo
+                endif
+              endif
+            endif
+         enddo
+        enddo
+!
+  endsubroutine bc_wi_x
+!***********************************************************************
+    subroutine bc_wo_x(f,sgn,topbot,j,rel,val)
+!
+!  23-may-10/nils: coded
+!
+      use EquationOfState
+      use chemistry
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+
+      real :: radius, rad,z0,y0,T0,P0,r,mu
+      integer :: jj,kk
+!
+!
+!
+      radius=0.0
+      z0=0.
+      y0=0.
+!
+! First of all we set one-sided derivatives for all variables over the full
+! boundary. This will then mostly be overwritten later.
+
+!NILS: COmmented out the below statements for now in order to make the 
+!NILS: code compile after I moved this from the boundary module.
+!NILS: will have to duplicate whatever bc i need here since this 
+!NILS: module is used by the boundary module.....
+!
+!      call bc_onesided_x(f,topbot,j)
+!      call bc_extrap_2_1(f,topbot,j)
+!
+!  Loop over all grid points
+!
+        do jj=1,my
+          do kk=1,mz
+            rad=sqrt((y(jj)-y0)**2+(z(kk)-z0)**2)
+!
+!  Zero derivative for density
+!
+            if (j == ilnrho) then
+              do i=1,nghost
+                f(l2+i,jj,kk,j)= f(l2-i,jj,kk,j)
+              enddo
+            else
+!
+! Check if we are inside the radius if the inlet
+!
+              if (rad > radius) then
+                ! Solid wall
+                do i=1,nghost
+                  if (j <= iuz) then
+                    f(l2,jj,kk,j)=0.
+                    f(l2+i,jj,kk,j)=-f(l2-i,jj,kk,j)
+                  elseif (j == ilnTT) then
+                    f(l2,jj,kk,j)=val
+                    f(l2+i,jj,kk,j)=2*val-f(l2-i,jj,kk,j)
+                  else
+                    f(l2+i,jj,kk,j)= f(l2-i,jj,kk,j)
+                  endif
+                enddo
+              else
+                ! Outlet           
+                if (j == ilnTT) then
+                  call getmu(f,mu,l2,jj,kk)
+                  r=Rgas*mu
+                  P0=1.013e6
+                  T0=min(P0/(exp(f(l2,jj,kk,ilnrho))*r),2500.)
+                 f(l2,jj,kk,j)=log(T0)
+                  do i=1,nghost
+                    f(l2+i,jj,kk,j)=2*log(T0)-f(l2-i,jj,kk,j)
+                  enddo
+                else
+                  ! Do nothing because one sided conditions has already
+                  ! been set in the top of the rutine
+                endif
+              endif
+            endif
+         enddo
+        enddo
+!
+  endsubroutine bc_wo_x
 !***********************************************************************
 
 !********************************************************************
