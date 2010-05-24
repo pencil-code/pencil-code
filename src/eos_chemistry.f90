@@ -309,18 +309,28 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-   subroutine getmu(f,mu_tmp)
+   subroutine getmu(f,mu_tmp,i,j,k)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !   12-aug-03/tony: implemented
+!   23 may-10/nils: fleshed it up
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu_tmp
+      integer, intent(in) :: i,j,k
+      integer :: kk
 !
+!  Mean molecular weight
+!
+      mu_tmp=0.
+      do kk=1,nchemspec
+        if (species_constants(kk,imass)>0.) then
+          mu_tmp= mu_tmp+unit_mass*f(i,j,k,ichemspec(kk)) &
+              /species_constants(kk,imass)
+        endif
+      enddo
 !    
-     call keep_compiler_quiet(present(f))
-     call keep_compiler_quiet(mu_tmp)
     endsubroutine getmu
 !***********************************************************************
     subroutine getmu_array(f,mu1_full_tmp)
