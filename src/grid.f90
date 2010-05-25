@@ -236,7 +236,7 @@ module Grid
 !
         case ('half-duct')
           a =-pi/(2.*max(nxgrid-1,1))
-          call grid_profile(pi/2+a*xi1,grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(pi/2.+a*xi1,grid_func(1),g1,g1der1,g1der2)
           call grid_profile(pi/2.+a*xi1lo,grid_func(1),g1lo)
           call grid_profile(pi/2.+a*xi1up,grid_func(1),g1up)
 !
@@ -323,6 +323,8 @@ module Grid
 !
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
+!DM should this be xprim**3 ?
+!        dx_tilde=-xprim2/xprim**3
       endif
 !
 !  y coordinate

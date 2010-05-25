@@ -365,9 +365,9 @@ module Slices
 !
       if (coord_system=='spherical') then
         if (slice_position/='w'.and.slice_position/='s') &
-            call fatal_error("setup_slices",&
+            call warning("setup_slices",&
             "You are using spherical coordinates. "//&
-            "Switch slice_position='w' in run_pars")
+            "To get slices use slice_position='w' or 's' in run_pars")
       else
         lwrite_slice_xy3=.false.
         lwrite_slice_xy4=.false.
