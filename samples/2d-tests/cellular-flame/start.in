@@ -9,7 +9,7 @@
   unit_length=1.
   lperi=F,T,T
   bcx = 'wip:a2','wip:a2','wip:a2', 'wip:a2','wip:a2','wip:a2','wip:a2','wip:a2','wip:a2','wip:a2','wip:a2','wip:a2','wip:a2'
-  fbcx1 =  1200.,0.,0.,0.,6.62007,0.022937,0.22756,0.,0.,0.,0.,0.,0.74948
+  fbcx1 =  1500.,0.,0.,0.,6.62007,0.022937,0.22756,0.,0.,0.,0.,0.,0.74948
   Lxyz  =  0.4, 0.4,  0.
   xyz0  = -0.2,-0.2,  0.
 /
@@ -27,8 +27,8 @@ ldensity_nolog=F
   init_pressure=1.013e6
   init_TT1=750.
   init_TT2=2500.
-  init_x1=-0.19
-  init_x2=-0.01
+  init_x1=-0.04
+  init_x2= 0.02
   lchemistry_diag=F
 /
 &jet_init_pars
