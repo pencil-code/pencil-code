@@ -697,7 +697,6 @@ k_loop:   do while (.not. (k>npar_loc))
               else
                 fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
               endif
-              if (iproc==0) print*, k, fp(k,izp)
               if ((fp(k,izp)>=xyz0(3)).and.(fp(k,izp)<=xyz1(3))) exit
             enddo
           enddo
