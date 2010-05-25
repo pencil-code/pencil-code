@@ -1,0 +1,14 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = nompicomm
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   temperature_ionization
+CHEMISTRY =   chemistry
+EOS       =   eos_chemistry
+#TIMESTEP  =   timestep_rkf
+REAL_PRECISION=double
+NSCBC = NSCBC
