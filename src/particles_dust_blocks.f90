@@ -385,27 +385,27 @@ module Particles
 !  Initial particle position.
 !
       do j=1,ninit
-
+!
         select case (initxxp(j))
-
+!
         case ('nothing')
           if (lroot .and. j==1) print*, 'init_particles: nothing'
-
+!
         case ('origin')
           if (lroot) print*, 'init_particles: All particles at origin'
           fp(1:npar_loc,ixp:izp)=0.
-
+!
         case ('zero-z')
           if (lroot) print*, 'init_particles: Zero z coordinate'
           fp(1:npar_loc,izp)=0.
-
+!
         case ('constant')
           if (lroot) &
               print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
-
+!
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -419,7 +419,7 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
-
+!
         case ('random-circle')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -432,7 +432,7 @@ module Particles
               fp(k,iyp)=xp0*sin(2*pi*r)
             endif
           enddo
-
+!
         case ('random-hole')
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'with inner hole'
@@ -448,7 +448,7 @@ module Particles
               rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
             enddo
           enddo
-
+!
         case ('random-box')
           if (lroot) print*, 'init_particles: Random particle positions '// &
                'within a box'
@@ -469,7 +469,7 @@ module Particles
               if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
             endif
           enddo
-
+!
        case ('random-cylindrical','random-cyl')
           if (lroot) print*, 'init_particles: Random particle '//&
                'cylindrical positions with power-law pdlaw=',pdlaw
@@ -505,7 +505,7 @@ module Particles
                 fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
-
+!
         case ('np-constant')
           if (lroot) print*, 'init_particles: Constant number density'
           k=1
@@ -521,7 +521,7 @@ k_loop:   do while (.not. (k>npar_loc))
               if (k>npar_loc) exit k_loop
             enddo; enddo; enddo
           enddo k_loop
-
+!
         case ('equidistant')
           if (lroot) print*, 'init_particles: Particles placed equidistantly'
           dim1=1.0/dimensionality
@@ -682,26 +682,30 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp* &
                 sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
           enddo
-
+!
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-            call random_number_wrapper(r)
-            call random_number_wrapper(p)
-            if (nprocz==2) then
-              if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-              if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-            else
-              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
-            endif
+            do while (.true.)
+              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              if (nprocz==2) then
+                if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+                if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              else
+                fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              endif
+              if (iproc==0) print*, k, fp(k,izp)
+              if ((fp(k,izp)>=xyz0(3)).and.(fp(k,izp)<=xyz1(3))) exit
+            enddo
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-
+!
         case ('gaussian-z-pure')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
@@ -714,7 +718,7 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
             endif
           enddo
-
+!
         case ('gaussian-r')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
@@ -724,7 +728,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,ixp)= xp0*sqrt(-2*alog(r))*cos(2*pi*p)*cos(2*pi*q)
             fp(k,iyp)= yp0*sqrt(-2*alog(r))*cos(2*pi*p)*sin(2*pi*q)
           enddo
-
+!
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initxxp: ', &
@@ -732,7 +736,7 @@ k_loop:   do while (.not. (k>npar_loc))
           call fatal_error('init_particles','')
 
         endselect
-
+!
       enddo !  do j=1,ninit
 !
 !  Interface for user's own initial condition for position
