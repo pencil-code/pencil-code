@@ -5179,26 +5179,26 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,ipt,ntb
+      integer :: i,j,ipt,ntb
       real :: massflux,u_add
       real :: local_flux,local_mass
       real :: total_flux,total_mass
       real :: get_lf,get_lm
+      integer :: nroot
 !
       if (headtt) then
-         print*,'bc_wind: Massflux',massflux
+        print*,'bc_wind: Massflux',massflux
 !
 !   check wether routine can be implied
 !
-         if (.not.(lequidist(1) .and. lequidist(2))) &
-              call stop_it("bc_wind_z:non equidistant grid in x and y not implemented")
-         if (nprocx > 1)  &
-              call stop_it('bc_wind: nprocx > 1 not yet implemented')
+        if (.not.(lequidist(1) .and. lequidist(2))) &
+            call fatal_error('bc_wind_z', &
+            'non equidistant grid in x and y not implemented')
 !
 !   check for warnings
 !
-         if (.not. ldensity)  &
-              call warning('bc_wind',"no defined density, using rho=1 ?")
+        if (.not. ldensity)  &
+            call warning('bc_wind',"no defined density, using rho=1 ?")
       endif
 !
       select case (topbot)
@@ -5206,12 +5206,14 @@ module Boundcond
 !  Bottom boundary.
 !
       case ('bot')
-         ntb = n1
+        ntb = n1
+        nroot = 0
 !
 !  Top boundary.
 !
-       case ('top')
-         ntb = n2
+      case ('top')
+        ntb = n2
+        nroot = ipz*nprocx*nprocy
 !
 !  Default.
 !
@@ -5225,45 +5227,53 @@ module Boundcond
 !
 !  One  processor has to collect the data
 !
-      if (ipy /= 0) then
-         ! send to first processor at given height
-         !
-         call mpisend_real(local_flux,1,ipz*nprocy,111+iproc)
-         call mpisend_real(local_mass,1,ipz*nprocy,211+iproc)
+      if (iproc/=nroot) then
+        ! send to first processor at given height
+        !
+        call mpisend_real(local_flux,1,nroot,111+iproc)
+        call mpisend_real(local_mass,1,nroot,211+iproc)
       else
-         do i=1,nprocy-1
-            ipt=ipz*nprocy+i
-            call mpirecv_real(get_lf,1,ipt,111+ipt)
-            call mpirecv_real(get_lm,1,ipt,211+ipt)
-            total_flux=total_flux+get_lf
-            total_mass=total_mass+get_lm
-         enddo
-         total_flux=total_flux+local_flux
-         total_mass=total_mass+local_mass
+        total_flux=local_flux
+        total_mass=local_mass
+        do i=0,nprocx-1
+          do j=0,nprocy-1
+            ipt = i+nprocx*j+ipz*nprocx*nprocy
+            if (ipt/=nroot) then
+              call mpirecv_real(get_lf,1,ipt,111+ipt)
+              call mpirecv_real(get_lm,1,ipt,211+ipt)
+              total_flux=total_flux+get_lf
+              total_mass=total_mass+get_lm
+            endif
+          enddo
+        enddo
 !
 !  Get u0 addition rho*(u+u0) = wind
 !  rho*u + u0 *rho =wind
 !  u0 = (wind-rho*u)/rho
 !
-         u_add = (massflux-total_flux) / total_mass
+        u_add = (massflux-total_flux) / total_mass
       endif
 !
 !  now distribute u_add
 !
-      if (ipy == 0) then
-         do i=1,nprocy-1
-            ipt=ipz*nprocy+i
-            call mpisend_real(u_add,1,ipt,311+ipt)
-         enddo
+      if (iproc/=nroot) then
+        call mpirecv_real(u_add,1,nroot,311+iproc)
       else
-         call mpirecv_real(u_add,1,ipz*nprocy,311+iproc)
+        do i=0,nprocx-1
+          do j=0,nprocy-1
+            ipt = i+nprocx*j+ipz*nprocx*nprocy              
+            if (ipt/=nroot) then
+              call mpisend_real(u_add,1,ipt,311+ipt)
+            endif
+          enddo
+        enddo
       endif
 !
 !  Set boundary
 !
       f(l1:l2,m1:m2,ntb,iuz) =  f(l1:l2,m1:m2,ntb,iuz)+u_add
 !
-     endsubroutine bc_wind_z
+    endsubroutine bc_wind_z
 !***********************************************************************
     subroutine bc_ADI_flux_z(f,topbot)
 !
