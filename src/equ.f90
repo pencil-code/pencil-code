@@ -556,7 +556,7 @@ module Equ
 !
 !  Add and extra 'special' physics
 !
-        if (lspecial)                    call dspecial_dt(f,df,p)
+        if (lspecial) call dspecial_dt(f,df,p)
 !
 !  Add radiative cooling and radiative pressure (for ray method)
 !

@@ -689,10 +689,10 @@ module Boundcond
                 call bc_outflow_z(f,topbot,j)
               case ('win')
                 ! BCZ_DOC: forces massflux given as
-                ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0) = \textrm{fbcz1/2}(\rho)$
+                ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
                 if (j==ilnrho) then
                    call bc_wind_z(f,topbot,fbcz12(j))     !
-                   call bc_sym_z(f,-1,topbot,j,REL=.true.)!  'a2'
+                   call bc_sym_z(f,+1,topbot,j)           !  's'
                    call bc_sym_z(f,+1,topbot,iuz)         !  's'
                 endif
               case ('cop')
@@ -5166,8 +5166,9 @@ module Boundcond
 !***********************************************************************
     subroutine bc_wind_z(f,topbot,massflux)
 !
-!  Calculates u_0 so that rho*(u+u_0)=massflux
-!  massflux can be set as fbcz1/2(rho) in run.in
+!  Calculates u_0 so that rho*(u+u_0)=massflux.
+!  Set 'win' for rho and 
+!  massflux can be set as fbcz1/2(rho) in run.in.
 !
 !  18-06-2008/bing: coded
 !
