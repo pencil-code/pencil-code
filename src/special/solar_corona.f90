@@ -1109,7 +1109,8 @@ module Special
 !
       real, dimension (nx) :: lnTT,get_lnQ
       real, dimension (nx) :: slope,ordinate
-      integer :: i,cool_type=2
+      real, dimension (nx) :: logT_SI,logQ
+      integer :: i,cool_type=4
 !
 !  select type for cooling fxunction
 !  1: 10 points interpolation
@@ -1153,6 +1154,45 @@ module Special
         !
         get_lnQ = (get_lnQ +19.-32)*alog(10.)
 !
+      case(4)
+        logT_SI = lnTT*0.43429448+alog(real(unit_temperature))
+        where(logT_SI<=3.928)
+          logQ =  -7.155e1 + 9*logT_SI
+        elsewhere(logT_SI>3.93.and.logT_SI<=4.55)
+          logQ = +4.418916e+04 &
+              -5.157164e+04 * logT_SI &
+              +2.397242e+04 * logT_SI**2 &
+              -5.553551e+03 * logT_SI**3 &
+              +6.413137e+02 * logT_SI**4 &
+              -2.953721e+01 * logT_SI**5
+        elsewhere(logT_SI>4.55.and.logT_SI<=5.09)
+          logQ = +8.536577e+02 &
+              -5.697253e+02 * logT_SI &
+              +1.214799e+02 * logT_SI**2 &
+              -8.611106e+00 * logT_SI**3
+        elsewhere(logT_SI>5.09.and.logT_SI<=5.63)
+          logQ = +1.320434e+04 &
+              -7.653183e+03 * logT_SI &
+              +1.096594e+03 * logT_SI**2 &
+              +1.241795e+02 * logT_SI**3 &
+              -4.224446e+01 * logT_SI**4 &
+              +2.717678e+00 * logT_SI**5
+        elsewhere(logT_SI>5.63.and.logT_SI<=6.48)
+          logQ = -2.191224e+04 &
+              +1.976923e+04 * logT_SI &
+              -7.097135e+03 * logT_SI**2 &
+              +1.265907e+03 * logT_SI**3 &
+              -1.122293e+02 * logT_SI**4 &
+              +3.957364e+00 * logT_SI**5 
+        elsewhere(logT_SI>6.48.and.logT_SI<=6.62)
+          logQ = +9.932921e+03 &
+              -4.519940e+03 * logT_SI &
+              +6.830451e+02 * logT_SI**2 &
+              -3.440259e+01 * logT_SI**3 
+        elsewhere(logT_SI>6.62)
+          logQ = -3.991870e+01 + 6.169390e-01 * logT_SI
+        endwhere
+        get_lnQ = (logQ+19.-32)*2.30259
       case default
         call fatal_error('get_lnQ','wrong type')
       endselect
