@@ -613,7 +613,10 @@ if (par.Sshear ne 0.0) then begin
     endfor
 ;
 ;  Comove with central grid point.
-;        
+;
+   print, 'AJ/2010-05-26: the following appears to be wrong'
+   print, '               xax[0] should be xshift*dx'
+   stop
    for ix=0,nxg-1 do begin
      array2[ix,*]=pc_shift_6th(reform(array2[ix,*]),yax,-par.Sshear*(t-t0)*xax[0])
    endfor
