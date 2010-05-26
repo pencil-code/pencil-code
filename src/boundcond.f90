@@ -1766,7 +1766,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
-      real, pointer :: Lambda_V0,nu,Lambda_V1
+      real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
       integer :: ierr,k
       real :: lambda_exp,lambda_exp_sinth,somega
@@ -1779,13 +1779,20 @@ module Boundcond
       if (ierr/=0) call stop_it("bc_set_sfree_x: "//&
           "there was a problem when getting llambda_effect")
       if (llambda_effect) then
-      call get_shared_variable('Lambda_V0',Lambda_V0,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-          // "problem getting shared var Lambda_V0")
-      call get_shared_variable('Lambda_V1',Lambda_V1,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_x: " &
-          // "problem getting shared var Lambda_V1")
-      else
+         call get_shared_variable('Lambda_V0t',Lambda_V0t,ierr)
+         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+              // "problem getting shared var Lambda_V0t")
+         call get_shared_variable('Lambda_V1t',Lambda_V1t,ierr)
+         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+              // "problem getting shared var Lambda_V1t")
+         call get_shared_variable('Lambda_V0b',Lambda_V0b,ierr)
+         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+              // "problem getting shared var Lambda_V0b")
+         call get_shared_variable('Lambda_V1b',Lambda_V1b,ierr)
+         if (ierr/=0) call stop_it("bc_set_sfree_x: " &
+              // "problem getting shared var Lambda_V1b")
+b!      write(*,*)'DM bcx','Lambda_V0t,Lambda_V1t,Lambda_V0b,Lambda_V1b'
+!      write(*,*)'DM bcx',Lambda_V0t,Lambda_V1t,Lambda_V0b,Lambda_V1b
       endif
 !
       select case (topbot)
@@ -1794,9 +1801,8 @@ module Boundcond
 !
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
-!           lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
-!DM a mistake in sign ?
-           lambda_exp=-(Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
+!           lambda_exp=-(Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
+           lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
                if (Omega==0) then 
@@ -1817,9 +1823,8 @@ module Boundcond
       case ('top')
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
-!            lambda_exp=Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy)
-!DM a mistake in sign
-            lambda_exp=- (Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
+!            lambda_exp=- (Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
+            lambda_exp=- (Lambda_V0t+Lambda_V1t*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
               if (Omega==0) then

@@ -29,9 +29,12 @@ module Viscosity
 !
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
+  character (len=labellen) :: lambda_profile='uniform'
   real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
+  real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
+  real :: rzero_lambda=impossible,wlambda=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real, dimension(:), pointer :: etat_z
@@ -39,6 +42,7 @@ module Viscosity
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mz,3) :: gnut_z
   real, dimension(mz) :: nut_z
+  real, dimension(nx) :: lambda_rprof,der_lambda_rprof
 !
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
@@ -76,6 +80,7 @@ module Viscosity
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
+      lambda_profile,rzero_lambda,wlambda, &
       lmeanfield_nu,meanfield_nuB,PrM_turb
 !
 ! other variables (needs to be consistent with reset list below)
@@ -325,29 +330,22 @@ module Viscosity
         endif
       endif
 !
-! consistency check for Lambda effect
-!
-      if (llambda_effect) then
-        if ((Lambda_V0==0).and.(Lambda_V1==0).and.(Lambda_H1==0)) &
-!          call fatal_rror('initialize_viscosity', &
-          call warning('initialize_viscosity', &
-            'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
-        if ((Lambda_V0==0).and.((Lambda_V1/=0).or.(Lambda_H1==0))) &
-          call warning('initialize_viscosity', &
-            'Lambda effect: V_zero=0 but V1 or H1 nonzero')
-      endif
-!
 !  Shared variables.
 !
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict,ierr)
       call put_shared_variable('nu',nu,ierr)
-      call put_shared_variable('llambda_effect',llambda_effect,ierr)
-      call put_shared_variable('Lambda_V0',Lambda_V0,ierr)
-      call put_shared_variable('Lambda_V1',Lambda_V1,ierr)
-      call put_shared_variable('Lambda_H1',Lambda_H1,ierr)
       call get_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
+      call put_shared_variable('llambda_effect',llambda_effect,ierr)
+! DM Note: 
+! initialization of lambda should come after sharing the llambda_effect 
+! variable because even if there is no lambda_effect that has to be 
+! communicated to the boundary conditions too. In case llambda_effect is true
+! more variables are shared inside initialize_lambda. 
+! initialize lambda effect.
+!
+      if (llambda_effect) call initialize_lambda 
 !
 !  Check for possibility of getting etat  profile from magnetic
 !
@@ -369,6 +367,49 @@ module Viscosity
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_viscosity
+!***********************************************************************
+    subroutine initialize_lambda
+      use Sub, only: step,der_step
+      use SharedVariables, only: put_shared_variable,get_shared_variable
+      integer :: ierr
+!
+!DM 26-05-2010: cut out of intialize viscosity
+!
+      if ((Lambda_V0==0).and.(Lambda_V1==0).and.(Lambda_H1==0)) &
+           call warning('initialize_viscosity', &
+           'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
+      if ((Lambda_V0==0).and.((Lambda_V1/=0).or.(Lambda_H1==0))) &
+           call warning('initialize_viscosity', &
+           'Lambda effect: V_zero=0 but V1 or H1 nonzero')
+! select the profile of lambda, default is uniform. At present (May 2010) the
+! only other coded profile is radial step. 
+      select case (lambda_profile)
+      case ('radial_step')
+         if (lroot) print*,'lambda profile radial_step, rzero_lambda,wlambda:',&
+              rzero_lambda,wlambda
+         lambda_rprof=step(x(l1:l2),rzero_lambda,wlambda)
+         der_lambda_rprof=der_step(x(l1:l2),rzero_lambda,wlambda)
+      case ('uniform')
+         lambda_rprof=1.
+         der_lambda_rprof=0.
+      case default
+         call fatal_error('initialize_viscosity(lambda)',&
+              'default lambda_profile is uniform ! ')
+      endselect
+      lambda_V0t=lambda_V0*lambda_rprof(nx)
+      lambda_V1t=lambda_V1*lambda_rprof(nx)
+      lambda_V0b=lambda_V0*lambda_rprof(1)
+      lambda_V1b=lambda_V1*lambda_rprof(1)
+      call put_shared_variable('Lambda_V0t',Lambda_V0t,ierr)
+      call put_shared_variable('Lambda_V1t',Lambda_V1t,ierr)
+      call put_shared_variable('Lambda_V0b',Lambda_V0b,ierr)
+      call put_shared_variable('Lambda_V1b',Lambda_V1b,ierr)
+      call put_shared_variable('Lambda_H1',Lambda_H1,ierr)
+!      write(*,*)'DM viscosity','Lambda_V0t,Lambda_V1t,Lambda_V0b,Lambda_V1b'
+!      write(*,*)'DM viscosity',Lambda_V0t,Lambda_V1t,Lambda_V0b,Lambda_V1b
+!      write(*,*)'DM viscosity', Lambda_V0,Lambda_V1,Lambda_H1
+!
+        endsubroutine initialize_lambda
 !***********************************************************************
     subroutine read_viscosity_init_pars(unit,iostat)
 !
@@ -1438,9 +1479,9 @@ module Viscosity
       dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
       dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))
 !DM there was a mistake in sign. 
-      lver = -(Lambda_V0+Lambda_V1*sinth(m)*sinth(m) )
-      lhor = -Lambda_H1*sinth(m)*sinth(m)
-      dlver_dr = 0.
+      lver = -(Lambda_V0+Lambda_V1*sinth(m)*sinth(m) )*lambda_rprof
+      lhor = -Lambda_H1*sinth(m)*sinth(m)*lambda_rprof
+      dlver_dr = -(Lambda_V0+Lambda_V1*sinth(m)*sinth(m) )*der_lambda_rprof
       dlhor_dtheta = -Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)
 !
       div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  &
