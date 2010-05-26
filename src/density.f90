@@ -975,7 +975,7 @@ module Density
         do n=n1,n2
 
           nl = n-n1+1
-          glnrhomz(n,:)=0.
+          glnrhomz(nl,:)=0.
 
           do m=m1,m2
 
