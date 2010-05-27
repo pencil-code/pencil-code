@@ -20,7 +20,7 @@ module Sub
 !
   private
 !
-  public :: step,step_scalar,stepdown
+  public :: step,step_scalar,stepdown,der_stepdown
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
 !
@@ -3210,6 +3210,27 @@ module Sub
       stepdown = -0.5*(1+tanh((x-x0)/(width+tini)))
 !
     endfunction stepdown
+!***********************************************************************
+    function der_stepdown(x,x0,width)
+!
+!  Derivative of smooth unit STEPDOWN() function given above (i.e. a bump profile).
+!  Adapt this if you change the STEP() profile, or you will run into
+!  inconsistenies.
+!
+!  27-mar-10/dhruba: aped from der_step
+!
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: der_stepdown,arg
+      real :: x0,width
+!
+!  Some argument gymnastics to avoid `floating overflow' for large
+!  arguments.
+!
+      arg = abs((x-x0)/(width+tini))
+      arg = min(arg,8.)         ! cosh^2(8) = 3e+27
+      der_stepdown = -0.5/(width*cosh(arg)**2)
+!
+      endfunction der_stepdown
 !***********************************************************************
     function cubic_step_pt(x,x0,width,shift)
 !

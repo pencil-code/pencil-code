@@ -32,6 +32,8 @@ module Entropy
   logical :: lheatc_chiconst=.false.
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
+  logical, pointer :: lffree
+  real,pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
@@ -78,7 +80,7 @@ module Entropy
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
                                  cs0, select_eos_variable,gamma_m1
       use Mpicomm, only: stop_it
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable,get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -108,6 +110,23 @@ module Entropy
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting lviscosity_heat")
+!
+! check if we are solving the force-free equations in parts of domain
+!
+      call get_shared_variable('lffree',lffree,ierr)
+      if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+           'failed to get lffree from density')
+      if (lffree) then
+        call get_shared_variable('profx_ffree',profx_ffree,ierr)
+        if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+             'failed to get profx_ffree from density')
+        call get_shared_variable('profy_ffree',profy_ffree,ierr)
+        if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+            'failed to get profy_ffree from density')
+        call get_shared_variable('profz_ffree',profz_ffree,ierr)
+        if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+             'failed to get profz_ffree from density')
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -206,7 +225,9 @@ module Entropy
           else
             p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
           endif
+!DM the profz_eos should be changed to profz_free
           if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
+          if (lffree) p%fpres(:,j) = p%fpres(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
         enddo
       endif
 !

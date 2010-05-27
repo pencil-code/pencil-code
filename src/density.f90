@@ -52,6 +52,7 @@ module Density
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
+  real, pointer :: profx_eos(:),dprofx_eos(:)
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -74,6 +75,13 @@ module Density
   character (len=labellen) :: borderlnrho='nothing'
   character (len=labellen) :: mass_source_profile='cylindric'
   character (len=5) :: iinit_str
+! to solve the force free equation in parts of the domain
+  logical :: lffree =.false.
+  character (len=labellen) :: ffree_profile='none'
+  real,dimension(nx) :: profx_ffree,dprofx_ffree
+  real,dimension(my) :: profy_ffree,dprofy_ffree
+  real,dimension(mz) :: profz_ffree,dprofz_ffree
+  real :: rzero_ffree,wffree
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -84,7 +92,8 @@ module Density
       kyy_lnrho,  kzz_lnrho, co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, &
       lexponential_smooth, wdamp, plaw, lcontinuity_gas, density_floor, &
       lanti_shockdiffusion, rshift, lrho_as_aux, ldiffusion_nolog, &
-      lnrho_z_shift, lshare_plaw, powerlr,  zoverh,  hoverr
+      lnrho_z_shift, lshare_plaw, powerlr,zoverh,hoverr,& 
+      lffree,ffree_profile,rzero_ffree,wffree
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -95,7 +104,8 @@ module Density
       lnrho_const, plaw, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
-      lcalc_glnrhomean, ldensity_profile_masscons
+      lcalc_glnrhomean, ldensity_profile_masscons,&
+      lffree,ffree_profile,rzero_ffree,wffree
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -158,7 +168,8 @@ module Density
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
-      use SharedVariables
+      use Sub, only: stepdown,der_stepdown
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -372,6 +383,38 @@ module Density
 !  that the module can request the right pencils.
 !
       if (borderlnrho/='nothing') call request_border_driving()
+!
+! check if we are solving partially force-free equations. 
+! 
+! communicate lffree to entropy too
+      call put_shared_variable('lffree',lffree,ierr)
+      if(lffree) then 
+        select case(ffree_profile)
+        case('radial_stepdown')
+         profx_ffree=1.+stepdown(x(l1:l2),rzero_ffree,wffree)
+         dprofx_ffree=der_stepdown(x(l1:l2),rzero_ffree,wffree)
+        case('ystep')
+          call fatal_error('initialize_density',&
+             'ystep for force free not coded')
+        case('zstep')
+          call fatal_error('initialize_density',&
+             'zstep for force free, adapt from profz_eos')
+        case('none')
+          profx_ffree=1.
+          profy_ffree=1.
+          profz_ffree=1.
+          dprofx_ffree=0.
+          dprofy_ffree=0.
+          dprofz_ffree=0.
+        case default
+          call fatal_error('initialize_density:',& 
+           'you have chosen lffree=T but did not select a profile!')
+        endselect
+! and put the profiles to entropy too
+        call put_shared_variable('profx_ffree',profx_ffree,ierr)
+        call put_shared_variable('profy_ffree',profy_ffree,ierr)
+        call put_shared_variable('profz_ffree',profz_ffree,ierr)
+     endif 
 !
       call keep_compiler_quiet(f)
 !
@@ -1525,6 +1568,7 @@ module Density
       use Mpicomm, only: stop_it
       use Special, only: special_calc_density
       use Sub
+      use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1559,27 +1603,44 @@ module Density
             else
               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
             endif
-          else
+          
 !
 !  Choice of vertical profile in front of density evolution.
 !  Default is off. This is useful to simulate outer halo regions.
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
+         elseif (ieos_profile=='surface_z') then
             if (ldensity_nolog) then
-              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                  - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-              if (ldensity_profile_masscons) &
-                  df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+               df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
+                    - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+               if (ldensity_profile_masscons) &
+                    df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
                     -dprofz_eos(n)*p%rho*p%uu(:,3)
             else
-              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-                - profz_eos(n)*(p%uglnrho + p%divu)
-              if (ldensity_profile_masscons) &
-                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+                    - profz_eos(n)*(p%uglnrho + p%divu)
+               if (ldensity_profile_masscons) &
+                    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
                     -dprofz_eos(n)*p%uu(:,3)
             endif
           endif
+! if we are solving the fore-free equation in parts of our domain
+          if(lffree) then
+            if (ldensity_nolog) then
+               df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
+                 - profx_ffree*(p%ugrho + p%rho*p%divu)
+               if (ldensity_profile_masscons) &
+                    df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+                    -dprofx_ffree*p%rho*p%uu(:,3)
+            else
+               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+                    - profx_ffree*(p%uglnrho + p%divu)
+               if (ldensity_profile_masscons) &
+                    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                    -dprofx_ffree*p%uu(:,3)
+            endif
+           endif
         endif
       endif
 !
