@@ -3516,13 +3516,23 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
+      use Mpicomm, only: stop_it_if_any
+!
       logical :: notanumber_3
       real, dimension(:,:,:) :: f
-      real, dimension(size(f,1),size(f,2),size(f,3)) :: g
+      real, dimension(:,:,:), allocatable :: g
+      integer :: stat
+!
+      allocate(g(size(f,1),size(f,2),size(f,3)),stat=stat)
+!
+      call stop_it_if_any((stat>0),'notanumber_3: '// &
+          'Could not allocate memory for variables, please check')
 !
       g=f
       notanumber_3 = any&
           ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+!
+      if (allocated(g)) deallocate(g)
 !
     endfunction notanumber_3
 !***********************************************************************
@@ -3536,13 +3546,23 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
+      use Mpicomm, only: stop_it_if_any
+!
       logical :: notanumber_4
       real, dimension(:,:,:,:) :: f
-      real, dimension(size(f,1),size(f,2),size(f,3),size(f,4)) :: g
+      real, dimension(:,:,:,:), allocatable :: g
+      integer :: stat
+!
+      allocate(g(size(f,1),size(f,2),size(f,3),size(f,4)),stat=stat)
+!
+      call stop_it_if_any((stat>0),'notanumber_4: '// &
+          'Could not allocate memory for variables, please check')
 !
       g=f
       notanumber_4 = any&
           ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+!
+      if (allocated(g)) deallocate(g)
 !
     endfunction notanumber_4
 !***********************************************************************
