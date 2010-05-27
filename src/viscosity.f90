@@ -35,6 +35,7 @@ module Viscosity
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
   real :: rzero_lambda=impossible,wlambda=0.
+  real :: r1_lambda=impossible,r2_lambda=impossible
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real, dimension(:), pointer :: etat_z
@@ -80,7 +81,7 @@ module Viscosity
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
-      lambda_profile,rzero_lambda,wlambda, &
+      lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,&
       lmeanfield_nu,meanfield_nuB,PrM_turb
 !
 ! other variables (needs to be consistent with reset list below)
@@ -369,7 +370,7 @@ module Viscosity
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
-      use Sub, only: step,der_step
+      use Sub, only: step,der_step,stepdown,der_stepdown
       use SharedVariables, only: put_shared_variable,get_shared_variable
       integer :: ierr
 !
@@ -389,6 +390,22 @@ module Viscosity
               rzero_lambda,wlambda
          lambda_rprof=step(x(l1:l2),rzero_lambda,wlambda)
          der_lambda_rprof=der_step(x(l1:l2),rzero_lambda,wlambda)
+      case ('r_up_down')
+         if (lroot) print*,'lambda prof r_up_down:r1_lambda,r2_lambda,wlambda:',&
+              r1_lambda,r2_lambda,wlambda
+         lambda_rprof=stepdown(x(l1:l2),r1_lambda,wlambda)+& 
+                       step(x(l1:l2),r2_lambda,wlambda)
+         der_lambda_rprof=der_stepdown(x(l1:l2),r1_lambda,wlambda)+ & 
+                        der_step(x(l1:l2),rzero_lambda,wlambda)
+!         if (lroot) print*,lambda_rprof
+      case ('r_2down')
+         if (lroot) print*,'lambda prof r_2down:r1_lambda,r2_lambda,wlambda:',&
+              r1_lambda,r2_lambda,wlambda
+         lambda_rprof=1+stepdown(x(l1:l2),r1_lambda,wlambda)+& 
+                       stepdown(x(l1:l2),r2_lambda,wlambda)
+         der_lambda_rprof=der_stepdown(x(l1:l2),r1_lambda,wlambda)+ & 
+                        der_stepdown(x(l1:l2),rzero_lambda,wlambda)
+         if (lroot) print*,lambda_rprof
       case ('uniform')
          lambda_rprof=1.
          der_lambda_rprof=0.
@@ -397,9 +414,9 @@ module Viscosity
               'default lambda_profile is uniform ! ')
       endselect
       lambda_V0t=lambda_V0*lambda_rprof(nx)
-      lambda_V1t=lambda_V1*lambda_rprof(nx)
+      lambda_V1t=lambda_V1
       lambda_V0b=lambda_V0*lambda_rprof(1)
-      lambda_V1b=lambda_V1*lambda_rprof(1)
+      lambda_V1b=lambda_V1
       call put_shared_variable('Lambda_V0t',Lambda_V0t,ierr)
       call put_shared_variable('Lambda_V1t',Lambda_V1t,ierr)
       call put_shared_variable('Lambda_V0b',Lambda_V0b,ierr)
@@ -1479,9 +1496,9 @@ module Viscosity
       dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
       dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))
 !DM there was a mistake in sign. 
-      lver = -(Lambda_V0+Lambda_V1*sinth(m)*sinth(m) )*lambda_rprof
-      lhor = -Lambda_H1*sinth(m)*sinth(m)*lambda_rprof
-      dlver_dr = -(Lambda_V0+Lambda_V1*sinth(m)*sinth(m) )*der_lambda_rprof
+      lver = -(Lambda_V0*lambda_rprof+Lambda_V1*sinth(m)*sinth(m) ) 
+      lhor = -Lambda_H1*sinth(m)*sinth(m)
+      dlver_dr = -Lambda_V0*der_lambda_rprof 
       dlhor_dtheta = -Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)
 !
       div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  &
