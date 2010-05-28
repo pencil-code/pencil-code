@@ -1183,12 +1183,12 @@ module Special
               -7.097135e+03 * logT_SI**2 &
               +1.265907e+03 * logT_SI**3 &
               -1.122293e+02 * logT_SI**4 &
-              +3.957364e+00 * logT_SI**5 
+              +3.957364e+00 * logT_SI**5
         elsewhere(logT_SI>6.48.and.logT_SI<=6.62)
           logQ = +9.932921e+03 &
               -4.519940e+03 * logT_SI &
               +6.830451e+02 * logT_SI**2 &
-              -3.440259e+01 * logT_SI**3 
+              -3.440259e+01 * logT_SI**3
         elsewhere(logT_SI>6.62)
           logQ = -3.991870e+01 + 6.169390e-01 * logT_SI
         endwhere
@@ -1388,9 +1388,6 @@ module Special
       beta =  pp_tmp/max(tini,BB2_local)*2*mu0
 !
       quench = (beta**2+1.)/(beta**2+3.)
-!
-!      f(l1:l2,m1:m2,irefz,iux) = ux_local*quench
-!      f(l1:l2,m1:m2,irefz,iuy) = uy_local*quench
 !
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
@@ -1599,9 +1596,9 @@ module Special
 !***********************************************************************
     subroutine rdpoints(level)
 !
-      real,dimension(6) :: tmppoint
+      real, dimension(6) :: tmppoint
       integer :: iost,rn,iol
-      integer,intent(in) :: level
+      integer, intent(in) :: level
       logical :: ex
       character(len=20) :: filename
 !
@@ -1622,6 +1619,7 @@ module Special
             current%pos(:)=int(tmppoint(1:2))
             current%data(:)=tmppoint(3:6)
             call addpoint
+            call drawupdate
             rn=rn+1
           else
             nullify(previous%next)
@@ -1635,10 +1633,18 @@ module Special
         print*,'read ',rn-1,' points'
         call reset
 !
-        open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
-        read(10,rec=1) points_rstate
-        close(10)
+      endif
 !
+      if (level==nglevel) then
+        write (filename,'("driver/seed.dat")')
+        inquire(file=filename,exist=ex)
+        if (ex) then
+          open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
+          read(10,rec=1) points_rstate
+          close(10)
+        else
+          call fatal_error('rdpoints','cant find seed list for granules')
+        endif
       endif
 !
     endsubroutine rdpoints
@@ -1815,25 +1821,25 @@ module Special
       call fourier_transform_other(tmp_r,tmp_i)
       fvy= cmplx(tmp_r,tmp_i)
 !
-      k20 = (nxgrid/4.)**2.
+! Reference frequency is half the Nyquist frequency.
+      k20 = (kx_ny/2.)**2.
 !
       ci =  cmplx(0.,1.)
 !
       do j=1,nxgrid
-        kx=ci*(mod(j-2+nxgrid/2,nxgrid)-nxgrid/2+1)
-!
-        if (j.eq.nxgrid/2+1) kx=0.
+        kx=ci*kx_fft(j)
+        !
         do k=1,nygrid
-          ky=ci*(mod(k-2+nygrid/2,nygrid)-nygrid/2+1)
-          if (k.eq.nygrid/2+1) ky=0.
+          ky=ci*ky_fft(k)
 !
-          k2=kx**2 + ky**2 + tini
+          k2=kx**2. + ky**2. + tini
 !
           corr=(fvx(j,k)*kx+fvy(j,k)*ky)/k2
 !
           frx(j,k) = fvx(j,k) - corr*kx
           fry(j,k) = fvy(j,k) - corr*ky
 !
+! Filter out large wave numbers.
           filter=exp(-(k2/k20)**2)
 !
           fvx(j,k)=fvx(j,k)*filter
