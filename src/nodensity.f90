@@ -25,7 +25,6 @@ module Density
   implicit none
 !
   logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
-  logical :: lffree =.false.
   real, dimension (nz,3) :: glnrhomz
 
   include 'density.h'
@@ -47,7 +46,6 @@ module Density
 !  24-nov-02/tony: coded
 !
       use EquationOfState, only: select_eos_variable
-      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -56,8 +54,6 @@ module Density
 !  variable => isochoric (constant density).
 !
       call select_eos_variable('lnrho',-1)
-!
-      call put_shared_variable('lffree',lffree)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)

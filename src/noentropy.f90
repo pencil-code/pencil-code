@@ -33,7 +33,7 @@ module Entropy
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
   logical, pointer :: lffree
-  real,pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
+  real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
@@ -229,7 +229,9 @@ module Entropy
           endif
 !DM the profz_eos should be changed to profz_free
           if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
-          if (lffree) p%fpres(:,j) = p%fpres(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+          if (ldensity) then
+            if (lffree) p%fpres(:,j) = p%fpres(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+          endif
         enddo
       endif
 !

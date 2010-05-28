@@ -52,7 +52,6 @@ module Density
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
-  real, pointer :: profx_eos(:),dprofx_eos(:)
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
