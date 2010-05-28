@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -26,7 +26,7 @@ module Density
 !
   logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
   real, dimension (nz,3) :: glnrhomz
-
+!
   include 'density.h'
 !
   contains
@@ -69,7 +69,7 @@ module Density
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine calc_ldensity_pars(f)
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -205,7 +205,7 @@ module Density
     subroutine rprint_density(lreset,lwrite)
 !
       logical :: lreset,lwr
-      logical, optional :: lwrite
+      logical, optiona :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -234,12 +234,12 @@ module Density
     endsubroutine get_slices_pressure
 !***********************************************************************
     subroutine get_init_average_density(f,init_average_density)
+!
 !  10-dec-09/piyali: added to pass initial average density
-!  equ.f90
 !
     real, dimension (mx,my,mz,mfarray):: f
     real:: init_average_density
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(init_average_density)
 !
