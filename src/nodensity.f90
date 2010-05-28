@@ -205,7 +205,7 @@ module Density
     subroutine rprint_density(lreset,lwrite)
 !
       logical :: lreset,lwr
-      logical, optiona :: lwrite
+      logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
