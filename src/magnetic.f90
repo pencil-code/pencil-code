@@ -440,8 +440,8 @@ module Magnetic
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
                                 ! DIAG_DOC:   of $xy$-averaged mean field)
   integer :: idiag_kx_aa=0      ! DIAG_DOC: $k_x$
-  integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
-                                ! DIAG_DOC:  \left<\left<\Jv\cdot\Bv\right>_{xy}\right>$
+  integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
+                                ! DIAG_DOC:  \left<\left<\Bv\right>_{xy}^2\right>$
   integer :: idiag_bx2my=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xz}$
   integer :: idiag_by2my=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xz}$
   integer :: idiag_bz2my=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xz}$
