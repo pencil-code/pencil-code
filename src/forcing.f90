@@ -28,7 +28,7 @@ module Forcing
   include 'forcing.h'
 !
   real :: force=0.,force2=0.
-  real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
+  real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
   real :: dforce=0.,radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
@@ -89,7 +89,7 @@ module Forcing
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,crosshel,height_ff,r_ff,width_ff, &
+       iforce,force,relhel,crosshel,height_ff,r_ff,width_ff,nexp_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
@@ -251,7 +251,15 @@ module Forcing
           profz_hel(n)=(z(n)-xyz0(3))*(xyz1(3)-z(n))
         enddo
 !
-!  turn off forcing intensity above z=0
+!  power law
+!
+      elseif (iforce_profile=='(z-z0)^n') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=((z-xyz0(3))/height_ff)**nexp_ff
+        profz_hel=1.
+!
+!  exponential law
 !
       elseif (iforce_profile=='exp(z/H)') then
         profx_ampl=1.; profx_hel=1.
