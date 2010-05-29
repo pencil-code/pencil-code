@@ -1960,9 +1960,11 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, pointer :: Lambda_H1,nu
+      real, pointer :: LH1_rprof(:)
       logical, pointer :: llambda_effect
       integer :: ierr,k,ix
       real :: cos2thm_k,cos2thmpk,somega
+      real,dimension(mx):: LH1
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -1972,10 +1974,13 @@ module Boundcond
       if (ierr/=0) call stop_it("bc_set_sfree_y: "//&
           "there was a problem when getting llambda_effect")
       if (llambda_effect) then
-      call get_shared_variable('Lambda_H1',Lambda_H1,ierr)
-      if (ierr/=0) call stop_it("bc_set_sfree_y: " &
-          // "problem getting shared var Lambda_H1")
-      else
+         call get_shared_variable('Lambda_H1',Lambda_H1,ierr)
+         if (ierr/=0) call stop_it("bc_set_sfree_y: " &
+              // "problem getting shared var Lambda_H1")
+         call get_shared_variable('LH1_rprof',LH1_rprof,ierr)
+         if (ierr/=0) call stop_it("bc_set_sfree_y: " &
+              // "problem getting shared var LH1_rprof")
+         LH1=Lambda_H1*LH1_rprof
       endif
 !
       select case (topbot)
@@ -1986,17 +1991,19 @@ module Boundcond
               cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
               cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
             if (Omega==0) then
-             f(:,m1-k,:,j)= f(:,m1+k,:,j)* &
-                   (exp(Lambda_H1*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
-                   *(exp(-Lambda_H1*cos2thmpk/(4.*nu))*sinth(m1-k))
+               do ix=1,mx
+                  f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
+                       (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
+                       *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m1-k))
+               enddo
             else
               do ix=1,mx
                 somega=x(ix)*Omega*sinth(m1-k)*( &
-                   exp(2*cos2thm_k*Lambda_H1/(4.*nu))&
-                        -exp((cos2thmpk+cos2thm_k)*Lambda_H1/(4.*nu)) )
+                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
+                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
                 f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                   (exp(Lambda_H1*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
-                   *(exp(-Lambda_H1*cos2thmpk/(4.*nu))*sinth(m1-k)) &
+                   (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
+                   *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m1-k)) &
                       +somega
               enddo
             endif
@@ -2012,17 +2019,19 @@ module Boundcond
             cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
             cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
             if (Omega==0)then
-              f(:,m2+k,:,j)= f(:,m2-k,:,j)* &
-                   (exp(Lambda_H1*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
-                  *(exp(-Lambda_H1*cos2thm_k/(4.*nu))*sinth(m2+k))
+               do ix=1,mx
+                  f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
+                   (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
+                  *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m2+k))
+               enddo
              else
               do ix=1,mx
                 somega=x(ix)*Omega*sinth(m2+k)*( &
-                   exp(2*cos2thmpk*Lambda_H1/(4.*nu))&
-                        -exp((cos2thmpk+cos2thm_k)*Lambda_H1/(4.*nu)) )
+                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
+                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
                 f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
-                     (exp(Lambda_H1*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
-                    *(exp(-Lambda_H1*cos2thm_k/(4.*nu))*sinth(m2+k)) &
+                     (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
+                    *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m2+k)) &
                       +somega
               enddo
              endif
