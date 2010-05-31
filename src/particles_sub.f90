@@ -363,7 +363,7 @@ module Particles_sub
             !do nothing, the particle is happy
           elseif (boundz=='rmv') then
             if (lcartesian_coords) then
-              if (fp(k,iyp)<=xyz0(3) .or. fp(k,iyp)>=xyz1(3)) then
+              if (fp(k,izp)<=xyz0(3) .or. fp(k,izp)>=xyz1(3)) then
                 if (present(dfp)) then
                   call remove_particle(fp,ipar,k,dfp)
                 else
