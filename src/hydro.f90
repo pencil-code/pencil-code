@@ -4465,7 +4465,7 @@ module Hydro
       case ('vertical_shear_z')
       zbot=rdampint
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-        -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+        -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
 !
 !  set u_phi=0 below given radius, i.e. enforce a tachocline in
 !  spherical convection setup
