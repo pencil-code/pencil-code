@@ -662,29 +662,33 @@ program run
     print*
     print*, 'Writing final snapshot at time t =', t
   endif
+!
   call wtime(trim(directory)//'/time.dat',t)
-  if (save_lastsnap.and..not.lnowrite) then
-    if (lparticles) call particles_write_snapshot( &
-        trim(directory_snap)//'/pvar.dat',f,ENUM=.false.)
-    if (lparticles_nbody.and.lroot) &
-        call particles_nbody_write_snapshot( &
-        trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
-    call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
-    call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
+!
+  if (.not.lnowrite) then
+    if (save_lastsnap) then
+      if (lparticles) call particles_write_snapshot( &
+          trim(directory_snap)//'/pvar.dat',f,ENUM=.false.)
+      if (lparticles_nbody.and.lroot) &
+          call particles_nbody_write_snapshot( &
+          trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
+      call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
+      call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
 !
 !  dvar is written for analysis and debugging purposes only.
 !
-    if (ip<=11 .or. lwrite_dvar) then
-      call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false., &
-          noghost=.true.)
-      call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
-    endif
+      if (ip<=11 .or. lwrite_dvar) then
+        call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false., &
+            noghost=.true.)
+        call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
+      endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
 !
-  else if (save_lastsnap) then
-    call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
-    if (ip<=11) call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
+    else
+      call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
+      if (ip<=11) call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
+    endif
   endif
 !
 !  Save spectrum snapshot.
