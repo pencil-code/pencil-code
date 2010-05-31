@@ -47,7 +47,8 @@ module Particles
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
       lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
-      lcheck_exact_frontier
+      lcheck_exact_frontier, &
+      linsert_particles_continuously,dsnap_par
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -181,24 +182,24 @@ module Particles
 !
       lnothing=.false.
       do j=1,ninit
-
+!
         select case (initxxp(j))
-
+!
         case ('nothing')
           if (lroot .and. .not. lnothing) print*, 'init_particles: nothing'
           lnothing=.true.
-
+!
         case ('origin')
           if (lroot) print*, 'init_particles: All particles at origin'
           fp(1:npar_loc,ixp:izp)=0.
-
+!
         case ('constant')
           if (lroot) &
               print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
-
+!
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -212,7 +213,7 @@ module Particles
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
           if (nzgrid/=1) &
               fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
-
+!
        case ('random-cylindrical','random-cyl')
           if (lroot) print*, 'init_particles: Random particle '//&
                'cylindrical positions with power-law pdlaw=',pdlaw
@@ -248,7 +249,7 @@ module Particles
                  fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
 !
           enddo
-
+!
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
@@ -267,7 +268,7 @@ module Particles
               fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-
+!
         case ('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
@@ -299,18 +300,18 @@ module Particles
                 eps = rhop_swarm*f(l1:l2,m,n,inp)/exp(f(l1:l2,m,n,ilnrho))
               endif
             endif
-
+!
             f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
                 beta_glnrho_global(1)/(2*(1.0+eps))*cs
-
+!
           enddo; enddo
-
+!
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initxxp: ', &
               trim(initxxp(j))
           call stop_it("")
-
+!
         endselect
 !
       enddo
@@ -395,7 +396,7 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
-      use Diagnostics
+      use Diagnostics, only: max_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -742,7 +743,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -754,7 +755,7 @@ module Particles
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+!
       if (lwr) then
         write(3,*) 'ixp=', ixp
         write(3,*) 'iyp=', iyp
@@ -791,7 +792,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
-        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax) 
+        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
         call parse_name(iname,cname(iname),cform(iname),'epsmax',idiag_epsmax)
         call parse_name(iname,cname(iname),cform(iname),'epsmin',idiag_epsmin)
       enddo
