@@ -19,11 +19,15 @@ module WENO_transport
 !
 !  29-dec-09/evghenii+anders: dummy
 !
+      use Cparam, only: impossible
+!
       real, dimension(:,:,:,:), intent(in ) :: fq
       integer, intent(in) :: m, n
       integer, intent(in) :: iq, iq1, iux, iuy, iuz
       real, dimension(:), intent(out) :: dq
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
+!
+      dq = impossible
 !
       if (.false.) print*, fq
       if (.false.) print*, m
@@ -33,7 +37,6 @@ module WENO_transport
       if (.false.) print*, iux
       if (.false.) print*, iuy
       if (.false.) print*, iuz
-      if (.false.) print*, dq
       if (.false.) print*, dx_1
       if (.false.) print*, dy_1
       if (.false.) print*, dz_1

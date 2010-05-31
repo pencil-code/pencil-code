@@ -34,7 +34,7 @@ pc_set_precision, dim=dim, datadir=datadir, /quiet
 ;
 if (pdim.npar_stalk eq 0) then begin
   print, 'pc_read_pstalk: npar_stalk is zero - set it in cparam.local and rerun'
-  exit
+  return
 endif
 ;
 ; Read the number of output times from file.
