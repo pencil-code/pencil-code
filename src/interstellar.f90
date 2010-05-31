@@ -1617,6 +1617,7 @@ cool_loop: do i=1,ncool
       SNRs(iSNR)%radius=width_SN
       try_count=500
       do while (try_count>0)
+        ierr=iEXPLOSION_OK
         try_count=try_count-1
 !
         if (uniform_zdist_SNI) then
