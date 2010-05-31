@@ -49,6 +49,8 @@ dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
 ;dkz=1./16. & ex=1. & ey=1. & ez=1. & kmax=2. & k1=dkz & k2=2.0   ;(gives 460 vectors)
 ;dkx=.25  & dky=1 & dkz=1 & ex=1. & ey=1. & ez=1. & kmax=2. & k1=0 & k2=2.1   ;(gives 148 vectors)
 dkx=1. & dky=1 & dkz=1 & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.5   ;(gives 172 vectors)
+dkx=1. & dky=.25 & dkz=.25 & ex=1. & ey=1. & ez=1. & kmax=6. & k1=2.5 & k2=3.5   ;(gives 1830 vectors, for spherical shell)
+dkx=1. & dky=4. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=50. & k1=19.5 & k2=20.5  ;(gives 1216 vectors, for 2 x 1/2 x 2 box)
 ;
 kav=0.
 kmaxz=kmax
@@ -64,7 +66,7 @@ for kz=-kmaxz,kmaxz,dkz do begin
   kref=sqrt(float((kx/ex)^2+(ky/ey)^2+(kz/ez)^2))
   if kref gt k1 and kref lt k2 then begin
   kav=kav+k
-    print,kx,ky,kz,k,i
+    ;print,kx,ky,kz,k,i
     if i eq 0 then begin
       kkx=kx
       kky=ky
@@ -102,7 +104,7 @@ close,1
 ;
 ;  plot vectors in kx,kz plane for ky=0
 ;
-good=where(kky eq 0.)
+good=where(kky eq 2.)
 plot,kkx(good),kkz(good),ps=2,xr=[-1.2,1.2]*kmax,yr=[-1.2,1.2]*kmax
 ;
 END
