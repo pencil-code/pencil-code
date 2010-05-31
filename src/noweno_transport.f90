@@ -22,7 +22,7 @@ module WENO_transport
       real, dimension(:,:,:,:), intent(in ) :: fq
       integer, intent(in) :: m, n
       integer, intent(in) :: iq, iq1, iux, iuy, iuz
-      real, dimension(:), intent(in) :: dq
+      real, dimension(:), intent(out) :: dq
       real, dimension(:), intent(in)  :: dx_1, dy_1, dz_1
 !
       if (.false.) print*, fq
