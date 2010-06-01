@@ -95,7 +95,7 @@ module Boundcond
       select case (nxgrid)
 !
       case (1)
-        if (headtt) print*, 'boundconds_x: no x-boundary'
+        if (ldebug) print*, 'boundconds_x: no x-boundary'
 !
 !  Boundary conditions in x.
 !
@@ -329,7 +329,7 @@ module Boundcond
       select case (nygrid)
 !
       case (1)
-        if (headtt) print*,'boundconds_y: no y-boundary'
+        if (ldebug) print*,'boundconds_y: no y-boundary'
 !
 !  Boundary conditions in y
 !
@@ -486,7 +486,7 @@ module Boundcond
       select case (nzgrid)
 !
       case (1)
-        if (headtt) print*,'boundconds_z: no z-boundary'
+        if (ldebug) print*,'boundconds_z: no z-boundary'
 !
 !  Boundary conditions in z
 !
