@@ -1016,6 +1016,20 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine bc_ss_flux_turb
 !***********************************************************************
+    subroutine bc_ss_flux_turb_x(f,topbot)
+!
+!  dummy routine
+!
+!   31-may-2010/pete: dummy routine
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_flux_turb_x
+!***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
 !  boundary condition for entropy: constant temperature

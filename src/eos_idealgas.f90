@@ -62,6 +62,7 @@ module EquationOfState
   real :: cs2cool=0.0
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real :: width_eos_prof=0.2
+  real :: sigmaSBt=1.0
   integer :: isothtop=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   logical :: leos_isothermal=.false., leos_isentropic=.false.
@@ -75,13 +76,14 @@ module EquationOfState
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, cs2top_ini, dcs2top_ini
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, cs2top_ini, &
+      dcs2top_ini, sigmaSBt
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, ptlaw, cs2top_ini, &
-      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr
+      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt
 !
   contains
 !***********************************************************************
@@ -2230,7 +2232,8 @@ module EquationOfState
 !
 !  constant flux boundary condition for entropy (called when bcz='Fgs')
 !
-!   4-may-2009/axel: adapted from bc_ss_flux
+!   04-may-2009/axel: adapted from bc_ss_flux
+!   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
 !
       use Gravity
       use SharedVariables, only: get_shared_variable
@@ -2262,14 +2265,14 @@ module EquationOfState
       case ('bot')
 !
 !  set ghost zones such that dsdz_xy obeys
-!  - chi_t rho T dsdz_xy = sigmaSB*TT^4
+!  - chi_t rho T dsdz_xy = sigmaSBt*TT^4
 !
         cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
         rho_xy=exp(f(:,:,n1,ilnrho))
         TT_xy=cs2_xy/(gamma_m1*cp)
-        dsdz_xy=-sigmaSB*TT_xy**3/(chi_t*rho_xy)
+        dsdz_xy=-sigmaSBt*TT_xy**3/(chi_t*rho_xy)
 !
-!  enforce ds/dz = - sigmaSB*T^3/(chi_t*rho)
+!  enforce ds/dz = - sigmaSBt*T^3/(chi_t*rho)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+2*i*dz*dsdz_xy
@@ -2281,14 +2284,14 @@ module EquationOfState
       case ('top')
 !
 !  set ghost zones such that dsdz_xy obeys
-!  - chi_t rho T dsdz_xy = sigmaSB*TT^4
+!  - chi_t rho T dsdz_xy = sigmaSBt*TT^4
 !
         cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
         rho_xy=exp(f(:,:,n2,ilnrho))
         TT_xy=cs2_xy/(gamma_m1*cp)
-        dsdz_xy=-sigmaSB*TT_xy**3/(chi_t*rho_xy)
+        dsdz_xy=-sigmaSBt*TT_xy**3/(chi_t*rho_xy)
 !
-!  enforce ds/dz = - sigmaSB*T^3/(chi_t*rho)
+!  enforce ds/dz = - sigmaSBt*T^3/(chi_t*rho)
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+2*i*dz*dsdz_xy
@@ -2301,6 +2304,82 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ss_flux_turb
+!***********************************************************************
+    subroutine bc_ss_flux_turb_x(f,topbot)
+!
+!  constant flux boundary condition for entropy (called when bcz='Fgs')
+!
+!   31-may-2010/pete: adapted from bc_ss_flux_turb
+!
+      use Gravity
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: stop_it
+!
+      real, pointer :: chi_t
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,TT_yz
+      integer :: i,ierr
+!
+      if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+!  Get the shared variables
+!
+      call get_shared_variable('chi_t',chi_t,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
+           "there was a problem when getting chi_t")
+!
+      select case (topbot)
+!
+!  bottom boundary
+!  ===============
+!
+      case ('bot')
+!
+!  set ghost zones such that dsdx_yz obeys
+!  - chi_t rho T dsdx_yz = sigmaSBt*TT^4
+!
+        cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
+        rho_yz=exp(f(l1,:,:,ilnrho))
+        TT_yz=cs2_yz/(gamma_m1*cp)
+        dsdx_yz=-sigmaSBt*TT_yz**3/(chi_t*rho_yz)
+!
+!  enforce ds/dx = - sigmaSBt*T^3/(chi_t*rho)
+!
+        do i=1,nghost
+          f(l1-1,:,:,iss)=f(l1+i,:,:,iss)+2*i*dx*dsdx_yz
+        enddo
+!
+!  top boundary
+!  ============
+!
+      case ('top')
+!
+!  set ghost zones such that dsdx_yz obeys
+!  - chi_t rho T dsdx_yz = sigmaSBt*TT^4
+!
+        cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
+        rho_yz=exp(f(l2,:,:,ilnrho))
+        TT_yz=cs2_yz/(gamma_m1*cp)
+        dsdx_yz=-sigmaSBt*TT_yz**3/(chi_t*rho_yz)
+!
+!  enforce ds/dz = - sigmaSBt*T^3/(chi_t*rho)
+!
+        do i=1,nghost
+          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+2*i*dx*dsdx_yz
+        enddo
+!
+!  capture undefined entries
+!
+      case default
+        call fatal_error('bc_ss_flux_turb_x','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_flux_turb_x
 !***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !

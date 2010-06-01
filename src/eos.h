@@ -27,7 +27,8 @@
   public :: temperature_hessian
 
 ! Boundary conditions
-  public :: bc_ss_flux,bc_ss_flux_turb,bc_ss_temp_old,bc_ss_energy
+  public :: bc_ss_flux,bc_ss_flux_turb,bc_ss_flux_turb_x
+  public :: bc_ss_temp_old,bc_ss_energy
   public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z,bc_ss_temp2_z
   public :: bc_ss_stemp_x,bc_ss_stemp_y,bc_ss_stemp_z
   public :: bc_lnrho_temp_z,bc_lnrho_pressure_z
