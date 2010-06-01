@@ -43,6 +43,8 @@ module Hydro
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
   real, dimension (mz,3) :: uumz,guumz=0.                          ! guumz contains invalid data on ghostzones
+  real, dimension (mx,my,3) :: uumxy=0.
+  real, dimension (mx,mz,3) :: uumxz=0.
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
@@ -130,7 +132,8 @@ module Hydro
   logical :: lremove_mean_flow=.false.
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
-  logical :: lcalc_uumean=.false.
+  logical :: lcalc_uumean=.false.,lcalc_uumeanxy=.false.
+  logical :: lcalc_uumeanxz=.false.
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
@@ -156,7 +159,7 @@ module Hydro
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
        utop,ubot,omega_out,omega_in, &
        lprecession, omega_precession, alpha_precession, lshear_rateofstrain, &
-       lalways_use_gij_etc,lcalc_uumean, &
+       lalways_use_gij_etc,lcalc_uumean,lcalc_uumeanxy,lcalc_uumeanxz, &
        lforcing_cont_uu, &
        width_ff_uu,x1_ff_uu,x2_ff_uu, &
        luut_as_aux,loot_as_aux, &
@@ -2098,7 +2101,8 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
         if (idiag_ruyuzmxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
-        if (idiag_fkinxy/=0)  call zsum_mn_name_xy(.5*p%rho*p%u2*p%uu(:,1),idiag_fkinxy)
+        if (idiag_fkinxy/=0) &
+            call zsum_mn_name_xy(.5*p%rho*p%u2*p%uu(:,1),idiag_fkinxy)
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -2227,6 +2231,8 @@ module Hydro
       integer :: m,n,i,j
       real :: fact
       real, dimension (mz,3) :: temp
+      real, dimension (mx,my,3) :: tempxy
+      real, dimension (mx,mz,3) :: tempxz
 !
 !     intent(in) :: f
       intent(inout) :: f
@@ -2290,6 +2296,54 @@ module Hydro
         do j=1,3
           call der_z(uumz(:,j),guumz(n1:n2,j))       ! ghost zones in guumz are not filled!
         enddo
+!
+      endif
+!
+!  Do mean 2D field in (x,y)-plane for each component
+!
+      if (lcalc_uumeanxy) then
+!
+        fact=1./nzgrid
+        uumxy = 0.
+!
+        do n=1,mx
+          do m=1,my
+            do j=1,3
+              uumxy(n,m,j)=fact*sum(f(n,m,n1:n2,iux+j-1))
+            enddo
+          enddo
+        enddo
+!
+        if (nprocz>1) then
+!
+          call mpiallreduce_sum(uumxy,tempxy,(/mx,my,3/),idir=3)
+          uumxy = tempxy
+!
+        endif
+!
+      endif
+!
+!  Do mean 2D field in (x,z)-plane for each component
+!
+      if (lcalc_uumeanxz) then
+!
+        fact=1./nygrid
+        uumxz = 0.
+!
+        do n=1,mx
+          do m=1,mz
+            do j=1,3
+              uumxz(n,m,j)=fact*sum(f(n,m1:m2,m,iux+j-1))
+            enddo
+          enddo
+        enddo
+!
+        if (nprocy>1) then
+!
+          call mpiallreduce_sum(uumxz,tempxz,(/mx,mz,3/),idir=3)
+          uumxz = tempxz
+!
+        endif
 !
       endif
 !
@@ -4460,12 +4514,29 @@ module Hydro
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
         -tau_diffrot1*(f(l1:l2,m,n,iux)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
 !
-!  vertical shear profile centred around given z
+!  Vertical shear profile U_y(z) centred around given z, forcing the
+!  horizontally averaged flow.
 !
       case ('vertical_shear_z')
       zbot=rdampint
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-        -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+      if (.not.lcalc_uumean) then
+        call stop_it("vertical_shear_z: you need to set lcalc_uumean=T in hydro_run_pars")
+      else
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+             -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+      endif
+!
+!  Vertical shear profile U_y(z) centred around given z, forcing the
+!  y-averaged averaged flow.
+!
+      case ('vertical_shear_z2')
+      zbot=rdampint
+      if (.not.lcalc_uumeanxz) then
+        call stop_it("vertical_shear_z2: you need to set lcalc_uumeanxz=T in hydro_run_pars")
+      else
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+             -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+      endif
 !
 !  set u_phi=0 below given radius, i.e. enforce a tachocline in
 !  spherical convection setup
