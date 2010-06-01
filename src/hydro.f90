@@ -2340,7 +2340,7 @@ module Hydro
 !
         if (nprocy>1) then
 !
-          call mpiallreduce_sum(uumxz,tempxz,(/mx,mz,3/),idir=3)
+          call mpiallreduce_sum(uumxz,tempxz,(/mx,mz,3/),idir=2)
           uumxz = tempxz
 !
         endif
