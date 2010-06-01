@@ -43,7 +43,7 @@
 ! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
-!    SPECIAL=special/chem_stream
+!    SPECIAL=special/atmosphere
 !
 ! Where nstar it replaced by the filename of your new module
 ! upto and not including the .f90
@@ -69,15 +69,15 @@ module Special
 
   character (len=labellen) :: initstream='default'
   real :: Rgas, Rgas_unit_sys=1.
-  integer :: ind_water=0, ind_cloud=0
+  integer :: ind_water=0!, ind_cloud=0
 ! Keep some over used pencils
 !
 ! start parameters
-  namelist /chem_stream_init_pars/  &
+  namelist /atmosphere_init_pars/  &
       lbuoyancy
          
 ! run parameters
-  namelist /chem_stream_run_pars/  &
+  namelist /atmosphere_run_pars/  &
       lbuoyancy
 !!
 !! Declare any index variables necessary for main or
@@ -132,7 +132,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call svn_id( &
-           "$Id: chem_stream.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $")
+           "$Id: atmosphere.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't
@@ -170,16 +170,16 @@ module Special
       endif
 !      
       do k=1,nchemspec
-        if (trim(varname(ichemspec(k)))=='CLOUD') then
-          ind_cloud=k
-        endif
+      !  if (trim(varname(ichemspec(k)))=='CLOUD') then
+      !    ind_cloud=k
+      !  endif
         if (trim(varname(ichemspec(k)))=='H2O') then
           ind_water=k
         endif
 !        
       enddo
 !      
-      print*,'cloud index', ind_cloud
+   !   print*,'cloud index', ind_cloud
       print*,'water index', ind_water
 !
       call keep_compiler_quiet(f)
@@ -285,9 +285,9 @@ module Special
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=chem_stream_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=atmosphere_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=chem_stream_init_pars,ERR=99)
+        read(unit,NML=atmosphere_init_pars,ERR=99)
       endif
 
 99    return
@@ -296,7 +296,7 @@ module Special
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=chem_stream_init_pars)
+      write(unit,NML=atmosphere_init_pars)
 
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -305,9 +305,9 @@ module Special
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=chem_stream_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=atmosphere_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=chem_stream_run_pars,ERR=99)
+        read(unit,NML=atmosphere_run_pars,ERR=99)
       endif
 
 99    return
@@ -316,7 +316,7 @@ module Special
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=chem_stream_run_pars)
+      write(unit,NML=atmosphere_run_pars)
 
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -401,20 +401,23 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
+!
       real :: gg=9.81e2, TT0=293, qwater0=9.9e-3
       real :: eps=0.5 !!????????????????????????
- 
+      real :: rho_water=1., const_tmp=0.
+!
       if (lbuoyancy) then
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+       const_tmp=4./3.*PI*rho_water 
+!          
+       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              + gg*((p%TT(:)-TT0)/TT0 &
              + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
-             - f(l1:l2,m,n,ichemspec(ind_cloud)))
+             - const_tmp*p%fcloud(:))
       endif
+!
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)

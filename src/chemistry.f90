@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec); glnpp(3)
 !
-! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens
+! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens; ppwater
 !
 !***************************************************************
 module Chemistry
@@ -595,6 +595,10 @@ module Chemistry
            lpenc_requested(i_lambda)=.true.
            lpenc_requested(i_glambda)=.true.
          endif
+
+         if (latmchem) then
+           lpenc_requested(i_ppwater)=.true.
+         endif
        endif
 !
     endsubroutine pencil_criteria_chemistry
@@ -817,6 +821,10 @@ module Chemistry
        p%lambda=lambda_full(l1:l2,m,n)
        if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
       endif
+      endif
+!
+      if (lpencil(i_ppwater)) then
+       p%ppwater=p%rho*Rgas*p%TT*f(l1:l2,m,n,ichemspec(index_H2O))
       endif
 !
     endsubroutine calc_pencils_chemistry
@@ -2063,6 +2071,11 @@ module Chemistry
               - p%ccondens
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
               + 2.5e10/1.005e7*p%ccondens*p%TT1
+
+        do i=1,mx
+            if ((f(i,m,n,ind(index_H2O))+df(i,m,n,ind(index_H2O))*dt)>1. ) &
+              df(i,m,n,ind(index_H2O))=1.*dt
+        enddo
       endif
 !
 ! this damping zone is needed in a case of NSCBC

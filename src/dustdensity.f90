@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
-! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec)
+! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
 !
 !***************************************************************
 module Dustdensity
@@ -49,7 +49,7 @@ module Dustdensity
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
-  real :: rho_w=1.0, Supersat=-0.5, Aconst=1.0e-6
+  real :: rho_w=1.0, Aconst=1.0e-6
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
@@ -757,6 +757,7 @@ module Dustdensity
         lpenc_requested(i_fcloud)=.true.
         lpenc_requested(i_ccondens)=.true.
         lpenc_requested(i_dndr)=.true.
+        lpenc_requested(i_ppsat)=.true.
       endif
 !
       lpenc_diagnos(i_nd)=.true.
@@ -817,7 +818,12 @@ module Dustdensity
         if (lpencil_in(i_udrop)) lpencil_in(i_uu)=.true.
         if (lpencil_in(i_udropgnd)) lpencil_in(i_udrop)=.true.
         if (lpencil_in(i_fcloud)) lpencil_in(i_nd)=.true.
-        if (lpencil_in(i_ccondens)) lpencil_in(i_nd)=.true.
+        if (lpencil_in(i_ccondens)) then
+           lpencil_in(i_nd)=.true.
+           lpencil_in(i_fcloud)=.true.
+           lpencil_in(i_ppsat)=.true.
+        endif
+        if (lpencil_in(i_TT1)) lpencil_in(i_ppsat)=.true.
       endif
 !
     endsubroutine pencil_interdep_dustdensity
@@ -1027,18 +1033,27 @@ module Dustdensity
           fcloud_tmp=0.
           do k=1, ndustspec-1
            fcloud_tmp=fcloud_tmp  &
-              +0.5*(p%nd(:,k+1)*dsize(k+1)**3-p%nd(:,k)*dsize(k)**3) &
+              +0.5*(p%nd(:,k+1)*dsize(k+1)**3+p%nd(:,k)*dsize(k)**3) &
               *(dsize(k+1)-dsize(k))
           enddo
           p%fcloud(:)=4./3.*PI*rho_w*fcloud_tmp(:)
+!
+        endif
+!
+! ppsat is a  saturation pressure in cgs units
+! 
+        if (lpencil(i_ppsat)) then
+         p%ppsat(:)=6.035e12*exp(-5938*p%TT1(:))*10.
         endif
 ! ccondens
         if (lpencil(i_ccondens)) then
+          tmp=0.
           do k=1, ndustspec-1
-            p%fcloud(:)=0.5*(p%nd(:,k+1)*dsize(k+1)-p%nd(:,k)*dsize(k)) &
-                        *(dsize(k+1)-dsize(k))
+           tmp=tmp  &
+              +0.5*(p%nd(:,k+1)*dsize(k+1)+p%nd(:,k)*dsize(k)) &
+              *(dsize(k+1)-dsize(k))
           enddo
-           p%fcloud(:)=4.*PI*rho_w*Aconst*Supersat*fcloud_tmp(:)
+          p%ccondens(:)=4.*PI*rho_w*Aconst*(p%ppwater/p%ppsat-1.)*tmp(:)
         endif
 ! dndr
         if (lpencil(i_dndr)) then
@@ -1110,7 +1125,7 @@ module Dustdensity
 !
         do k=1,ndustspec
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
-                 -Supersat*Aconst*p%dndr(:,k)
+                 -Aconst*(p%ppwater/p%ppsat-1.)*p%dndr(:,k)
 !
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
@@ -1737,14 +1752,8 @@ module Dustdensity
         dndr_dr(:,k)=1./dsize(k) &
             *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k))&
             +f(l1:l2,m,n,ind(k))/dsize(k)**2
-      !  dndr_dr(i,k)= &
-      !   (f(l1+i,m,n,ind(k))/dsize(i+1)-f(l1+i-1,m,n,ind(k))/dsize(i)) &
-      !    /(dsize(i+1)-dsize(i))
+!
       enddo
-!      dndr_dr(:,ndustspec)=1./dsize(ndustspec) &
-!          *(f(l1:l2,m,n,ind(ndustspec))-f(l1:l2,m,n,ind(max(ndustspec-1,1)))) &
-!          /(dsize(ndustspec)-dsize(max(ndustspec-1,1))) &
-!          +f(l1:l2,m,n,ind(ndustspec))/dsize(ndustspec)**2
 !
     endsubroutine droplet_redistr
 !***********************************************************************
@@ -1758,7 +1767,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: k, j, j1,j2,j3
-      real :: spot_size=.5, RR
+      real :: spot_size=1., RR
       real, dimension (3,spot_number) :: spot_posit
 !
       spot_posit(:,:)=0.0
@@ -1795,8 +1804,8 @@ module Dustdensity
 !
           if (RR<spot_size) then
             f(j1,j2,j3,ind(k)) = &
-                -(1e3-10)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/ &
-                (dsize_min-0.5*(dsize_max+dsize_min))**2+1e3
+                -(1e11-1e3)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/ &
+                (dsize_min-0.5*(dsize_max+dsize_min))**2+1e11
           endif
 !
         enddo; enddo; enddo
