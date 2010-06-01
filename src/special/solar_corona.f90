@@ -1241,7 +1241,7 @@ module Special
       endif
 !
 ! Fractional difference in granule power
-      pd=0.1
+      pd=0.15
 !
 ! Gives exponential power of evolvement. Higher power faster growth/decay.
       pow=2
@@ -1633,18 +1633,18 @@ module Special
         print*,'read ',rn-1,' points'
         call reset
 !
-      endif
-!
-      if (level==nglevel) then
-        write (filename,'("driver/seed.dat")')
-        inquire(file=filename,exist=ex)
-        if (ex) then
-          open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
-          read(10,rec=1) points_rstate
-          close(10)
-        else
-          call fatal_error('rdpoints','cant find seed list for granules')
+        if (level==nglevel) then
+          write (filename,'("driver/seed.dat")')
+          inquire(file=filename,exist=ex)
+          if (ex) then
+            open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
+            read(10,rec=1) points_rstate
+            close(10)
+          else
+            call fatal_error('rdpoints','cant find seed list for granules')
+          endif
         endif
+!
       endif
 !
     endsubroutine rdpoints
@@ -1797,78 +1797,53 @@ module Special
 !
     endsubroutine driveinit
 !***********************************************************************
-    subroutine helmholtz(rotx,roty)
+    subroutine helmholtz(frx_r,fry_r)
 !
 ! extracts the rotational part of a 2d vector field
-! to increase vorticity for drive3.
+! to increase vorticity of the velocity field
 !
       use Fourier, only: fourier_transform_other
 !
-      real, dimension(nxgrid,nygrid) :: rotx,roty
-      real, dimension(nxgrid,nygrid) :: tmp_r,tmp_i
-      complex, dimension(nxgrid,nygrid) :: fvx,fvy,frx,fry
-      complex :: ci,kx,ky,corr
-      integer :: j,k
-      real :: k20,filter,k2
+      real, dimension(nxgrid,nygrid) :: kx,ky,k2,filter
+      real, dimension(nxgrid,nygrid) :: fvx_r,fvy_r,frx_r,fry_r
+      real, dimension(nxgrid,nygrid) :: fvx_i,fvy_i,frx_i,fry_i
+      real :: k20
 !
-      tmp_r=vx
-      tmp_i=0.
-      call fourier_transform_other(tmp_r,tmp_i)
-      fvx= cmplx(tmp_r,tmp_i)
+      fvx_r=vx
+      fvx_i=0.
+      call fourier_transform_other(fvx_r,fvx_i)
 !
-      tmp_r=vy
-      tmp_i=0.
-      call fourier_transform_other(tmp_r,tmp_i)
-      fvy= cmplx(tmp_r,tmp_i)
+      fvy_r=vy
+      fvy_i=0.
+      call fourier_transform_other(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
       k20 = (kx_ny/2.)**2.
 !
-      ci =  cmplx(0.,1.)
+      kx =spread(kx_fft,2,nygrid)
+      ky =spread(ky_fft,1,nxgrid)
 !
-      do j=1,nxgrid
-        kx=ci*kx_fft(j)
-        !
-        do k=1,nygrid
-          ky=ci*ky_fft(k)
+      k2 =kx**2 + ky**2 + tini
 !
-          k2=kx**2. + ky**2. + tini
-!
-          corr=(fvx(j,k)*kx+fvy(j,k)*ky)/k2
-!
-          frx(j,k) = fvx(j,k) - corr*kx
-          fry(j,k) = fvy(j,k) - corr*ky
+      frx_r = +ky*(ky*fvx_r + kx*fvy_r)/k2
+      fry_r = -kx*(ky*fvx_r + kx*fvy_r)/k2
 !
 ! Filter out large wave numbers.
-          filter=exp(-(k2/k20)**2)
+
+      filter = exp(-(k2/k20)**2)
+!      
+      frx_r = frx_r*filter
+      frx_i = frx_i*filter
+      fvx_r = fvx_r*filter
+      fvx_i = fvx_i*filter
 !
-          fvx(j,k)=fvx(j,k)*filter
-          fvy(j,k)=fvy(j,k)*filter
+      call fourier_transform_other(fvx_r,fvx_i,linv=.true.)
+      vx=fvx_r
+      call fourier_transform_other(fvy_r,fvy_i,linv=.true.)
+      vy=fvy_r
 !
-          frx(j,k)=frx(j,k)*filter
-          fry(j,k)=fry(j,k)*filter
-        enddo
-      enddo
-!
-      tmp_r = real(fvx)
-      tmp_i = aimag(fvx)
-      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
-      vx=tmp_r
-!
-      tmp_r = real(fvy)
-      tmp_i = aimag(fvy)
-      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
-      vy=tmp_r
-!
-      tmp_r = real(frx)
-      tmp_i = aimag(frx)
-      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
-      rotx=tmp_r
-!
-      tmp_r = real(fry)
-      tmp_i = aimag(fry)
-      call fourier_transform_other(tmp_r,tmp_i,linv=.true.)
-      roty=tmp_r
+      call fourier_transform_other(frx_r,frx_i,linv=.true.)
+      call fourier_transform_other(fry_r,fry_i,linv=.true.)
 !
     endsubroutine helmholtz
 !***********************************************************************
