@@ -2100,7 +2100,7 @@ module Radiation
 !
       if (lrad_cool_diffus.and.lcooling) then
         call dot(4*p%glnTT-p%glnrho,p%glnTT,g2)
-         f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
+        f(l1:l2,m,n,iQrad)=Krad*p%TT*(p%del2lnTT+g2)
       endif
 !
 !  Radiative flux, Frad = -K*gradT; note that -div(Frad)=Qrad.
