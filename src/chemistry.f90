@@ -629,6 +629,10 @@ module Chemistry
             lpencil_in(i_glnTT)=.true.
             lpencil_in(i_TT)=.true.
          endif
+         if (lpencil_in(i_ppwater))  then
+            lpencil_in(i_TT)=.true.
+            lpencil_in(i_rho)=.true.
+         endif
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -824,7 +828,9 @@ module Chemistry
       endif
 !
       if (lpencil(i_ppwater)) then
-       p%ppwater=p%rho*Rgas*p%TT*f(l1:l2,m,n,ichemspec(index_H2O))
+        if (index_H2O>0) then
+         p%ppwater=p%rho*Rgas*p%TT*f(l1:l2,m,n,ichemspec(index_H2O))
+        endif
       endif
 !
     endsubroutine calc_pencils_chemistry
