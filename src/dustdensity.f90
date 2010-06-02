@@ -50,6 +50,7 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
   real :: rho_w=1.0, Aconst=1.0e-6
+  real :: nd_reuni
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
@@ -64,6 +65,7 @@ module Dustdensity
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_shock=.false.
   logical :: latm_chemistry=.false.
+  logical :: lresetuniform_dustdensity=.false.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
@@ -77,7 +79,7 @@ module Dustdensity
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
-      diffnd_shock
+      diffnd_shock,lresetuniform_dustdensity,nd_reuni
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -162,7 +164,7 @@ module Dustdensity
 !
     endsubroutine register_dustdensity
 !***********************************************************************
-    subroutine initialize_dustdensity()
+    subroutine initialize_dustdensity(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -171,6 +173,7 @@ module Dustdensity
       use Mpicomm, only: stop_it
       use FArrayManager
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
       real :: ddsize
       logical :: lnothing
@@ -186,6 +189,14 @@ module Dustdensity
       if (ldustcondensation .and. .not. lpscalar) &
           call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar')
+!
+! reinitializing dustdensity
+!
+      if(lresetuniform_dustdensity) then
+        if(lroot) print*, &
+          'resetting dust density to uniform value=',nd_reuni
+        f(:,:,:,ind) = f(:,:,:,ind) + nd_reuni
+      endif
 !
 !  Special coagulation equation test cases require initialization of kernel.
 !

@@ -147,7 +147,7 @@ module Dustvelocity
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
-    subroutine initialize_dustvelocity()
+    subroutine initialize_dustvelocity(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -156,6 +156,7 @@ module Dustvelocity
 !
       use EquationOfState, only: cs0
 !
+      real,dimension(mx,my,mz,mfarray) :: f
       integer :: k
       real :: gsurften,Eyoung,nu_Poisson,Eyoungred
 !
