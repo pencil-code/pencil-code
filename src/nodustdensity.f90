@@ -34,8 +34,11 @@ module Dustdensity
 !
     endsubroutine register_dustdensity
 !***********************************************************************
-    subroutine initialize_dustdensity()
+    subroutine initialize_dustdensity(f)
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
     endsubroutine initialize_dustdensity
 !***********************************************************************
     subroutine init_nd(f)

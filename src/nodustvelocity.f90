@@ -48,8 +48,11 @@ module Dustvelocity
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
-    subroutine initialize_dustvelocity()
+    subroutine initialize_dustvelocity(f)
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
     endsubroutine initialize_dustvelocity
 !***********************************************************************
     subroutine copy_bcs_dust
