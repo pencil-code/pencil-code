@@ -39,6 +39,9 @@ module Density
   real, dimension (mz) :: lnrho_init_z=0.0, del2lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
+  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0
+  real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
+  real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real :: lnrho_const=0.0, rho_const=1.0
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
@@ -52,6 +55,7 @@ module Density
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
+  real :: rzero_ffree,wffree
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -68,19 +72,14 @@ module Density
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
+  logical :: lffree =.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
   character (len=labellen) :: mass_source_profile='cylindric'
   character (len=5) :: iinit_str
-! to solve the force free equation in parts of the domain
-  logical :: lffree =.false.
   character (len=labellen) :: ffree_profile='none'
-  real,dimension(nx) :: profx_ffree=1.0,dprofx_ffree=0.0
-  real,dimension(my) :: profy_ffree=1.0,dprofy_ffree=0.0
-  real,dimension(mz) :: profz_ffree=1.0,dprofz_ffree=0.0
-  real :: rzero_ffree,wffree
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -383,33 +382,35 @@ module Density
 !
       if (borderlnrho/='nothing') call request_border_driving()
 !
-! check if we are solving partially force-free equations. 
+!  Check if we are solving partially force-free equations.
 ! 
-! communicate lffree to entropy too
+!  Communicate lffree to entropy too.
+!
       call put_shared_variable('lffree',lffree,ierr)
-      if(lffree) then 
+!
+      if (lffree) then 
         select case(ffree_profile)
         case('radial_stepdown')
-           profx_ffree=1.+stepdown(x(l1:l2),rzero_ffree,wffree)
-           dprofx_ffree=der_stepdown(x(l1:l2),rzero_ffree,wffree)
+          profx_ffree=1.+stepdown(x(l1:l2),rzero_ffree,wffree)
+          dprofx_ffree=der_stepdown(x(l1:l2),rzero_ffree,wffree)
         case('y_stepdown')
-           profy_ffree=1.+stepdown(y,rzero_ffree,wffree)
-           dprofy_ffree=der_stepdown(y,rzero_ffree,wffree)
+          profy_ffree=1.+stepdown(y,rzero_ffree,wffree)
+          dprofy_ffree=der_stepdown(y,rzero_ffree,wffree)
         case('z_stepdown')
-           profz_ffree=1.+stepdown(z,rzero_ffree,wffree)
-           dprofz_ffree=der_stepdown(z,rzero_ffree,wffree)
+          profz_ffree=1.+stepdown(z,rzero_ffree,wffree)
+          dprofz_ffree=der_stepdown(z,rzero_ffree,wffree)
         case('surface_x')
-            profx_ffree=0.5*(1.0-erfunc((x(l1:l2)-rzero_ffree)/wffree))
-            dprofx_ffree=-exp(-((x(l1:l2)-rzero_ffree)/wffree)**2) &
-                 /(sqrtpi*wffree)
+          profx_ffree=0.5*(1.0-erfunc((x(l1:l2)-rzero_ffree)/wffree))
+          dprofx_ffree=-exp(-((x(l1:l2)-rzero_ffree)/wffree)**2) &
+              /(sqrtpi*wffree)
         case('surface_y')
-            profy_ffree=0.5*(1.0-erfunc((y-rzero_ffree)/wffree))
-            dprofy_ffree=-exp(-((y-rzero_ffree)/wffree)**2) &
-                 /(sqrtpi*wffree)
+          profy_ffree=0.5*(1.0-erfunc((y-rzero_ffree)/wffree))
+          dprofy_ffree=-exp(-((y-rzero_ffree)/wffree)**2) &
+              /(sqrtpi*wffree)
         case('surface_z')
-            profz_ffree=0.5*(1.0-erfunc((z-rzero_ffree)/wffree))
-            dprofz_ffree=-exp(-((z-rzero_ffree)/wffree)**2) & 
-                 /(sqrtpi*wffree)
+          profz_ffree=0.5*(1.0-erfunc((z-rzero_ffree)/wffree))
+          dprofz_ffree=-exp(-((z-rzero_ffree)/wffree)**2) & 
+              /(sqrtpi*wffree)
         case('none')
           profx_ffree=1.
           profy_ffree=1.
@@ -418,14 +419,16 @@ module Density
           dprofy_ffree=0.
           dprofz_ffree=0.
         case default
-          call fatal_error('initialize_density:',& 
-           'you have chosen lffree=T but did not select a profile!')
+          call fatal_error('initialize_density', & 
+              'you have chosen lffree=T but did not select a profile!')
         endselect
-! and put the profiles to entropy too
+!
+!  Put the profiles to entropy too.
+!
         call put_shared_variable('profx_ffree',profx_ffree,ierr)
         call put_shared_variable('profy_ffree',profy_ffree,ierr)
         call put_shared_variable('profz_ffree',profz_ffree,ierr)
-     endif 
+      endif 
 !
       call keep_compiler_quiet(f)
 !
@@ -1610,7 +1613,7 @@ module Density
         else
           if (ieos_profile=='nothing') then
             if (ldensity_nolog) then
-              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho - p%rho*p%divu
+              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
             else
               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
             endif
@@ -1619,52 +1622,54 @@ module Density
 !  Default is off. This is useful to simulate outer halo regions.
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default. 
-!                                                                                                                                                          
-         elseif (ieos_profile=='surface_z') then
+!
+          elseif (ieos_profile=='surface_z') then
+            if (ldensity_nolog) then
+              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
+                  - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+              if (ldensity_profile_masscons) &
+                  df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+                  -dprofz_eos(n)*p%rho*p%uu(:,3)
+            else
+              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+                  - profz_eos(n)*(p%uglnrho + p%divu)
+              if (ldensity_profile_masscons) &
+                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                  -dprofz_eos(n)*p%uu(:,3)
+            endif
+          endif
+!
+!  If we are solving the fore-free equation in parts of our domain.
+!
+          if (lffree) then
             if (ldensity_nolog) then
                df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                    - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+                   - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                   *(p%ugrho + p%rho*p%divu)
                if (ldensity_profile_masscons) &
-                    df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-                    -dprofz_eos(n)*p%rho*p%uu(:,3)
+                   df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+                   -dprofx_ffree*p%rho*p%uu(:,3) &
+                   -dprofy_ffree(m)*p%rho*p%uu(:,3) &
+                   -dprofz_ffree(n)*p%rho*p%uu(:,3) 
             else
-               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-                    - profz_eos(n)*(p%uglnrho + p%divu)
+              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+                  - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                  *(p%uglnrho + p%divu)
                if (ldensity_profile_masscons) &
-                    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                    -dprofz_eos(n)*p%uu(:,3)
+                   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                   -dprofx_ffree*p%uu(:,3) &
+                   -dprofy_ffree(m)*p%uu(:,3) &
+                   -dprofz_ffree(n)*p%uu(:,3)
             endif
-         endif
-  ! if we are solving the fore-free equation in parts of our domain
-         if(lffree) then
-            if (ldensity_nolog) then
-               df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                    - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                    *(p%ugrho + p%rho*p%divu)
-               if (ldensity_profile_masscons) &
-                    df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-                    -dprofx_ffree*p%rho*p%uu(:,3) &
-                    -dprofy_ffree(m)*p%rho*p%uu(:,3) &
-                    -dprofz_ffree(n)*p%rho*p%uu(:,3) 
-            else
-               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-                    - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                    *(p%uglnrho + p%divu)
-               if (ldensity_profile_masscons) &
-                    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                    -dprofx_ffree*p%uu(:,3) &
-                    -dprofy_ffree(m)*p%uu(:,3) &
-                    -dprofz_ffree(n)*p%uu(:,3)
-            endif
-         endif
+          endif
         endif
-       endif
+      endif
 !
 !  Mass sources and sinks.
 !
       if (lmass_source) call mass_source(f,df,p)
 !
-!  Mass diffusion
+!  Mass diffusion.
 !
       fdiff=0.0
 !
@@ -1682,7 +1687,7 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
-!  Hyper diffusion
+!  Hyper diffusion.
 !
       if (ldiff_hyper3) then
         if (ldensity_nolog) then
@@ -1713,10 +1718,10 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
-!  Mesh-hyperdiffusion. The parameter diffrho_hyper3_mesh has currently the unit
-!  of velocity and should later be changed to maxadvec (to be checked as disgnostics).
-!  A good value for diffrho_hyper3_mesh is 5 (which is currently the default).
-!  This method should also work in all coordinate systems.
+!  Mesh-hyperdiffusion. The parameter diffrho_hyper3_mesh has currently the
+!  unit of velocity and should later be changed to maxadvec (to be checked as
+!  disgnostics). A good value for diffrho_hyper3_mesh is 5 (which is currently
+!  the default). This method should also work in all coordinate systems.
 !
       if (ldiff_hyper3_mesh) then
         do j=1,3
