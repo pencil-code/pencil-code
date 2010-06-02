@@ -876,6 +876,11 @@ endif
 #LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(aida*)
 #MPI_LDLIBS= -lmpich #(aida*)
 ##
+## gaae1 machine (IAG/USP, Brazil)
+#FC=mpif90 #(gaae1)
+#FFLAGS= -O3 #(gaae1)
+#CC=icc #(gaae1)
+##
 ## Andrew's Laptop (wkfg)
 ##
 #FC=mpif90 #(wkfg)
