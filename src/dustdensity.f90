@@ -190,11 +190,11 @@ module Dustdensity
           call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar')
 !
-! reinitializing dustdensity
+!  Reinitializing dustdensity.
 !
-      if(lresetuniform_dustdensity) then
-        if(lroot) print*, &
-          'resetting dust density to uniform value=',nd_reuni
+      if (lresetuniform_dustdensity) then
+        if (lroot) print*, &
+            'resetting dust density to uniform value=',nd_reuni
         f(:,:,:,ind) = f(:,:,:,ind) + nd_reuni
       endif
 !
