@@ -1,0 +1,11 @@
+#!/bin/sh
+#PBS -N start.x
+#PBS -l walltime=1:00:00
+#PBS -l nodes=1:ppn=8
+
+export MPICH_PROCESS_GROUP=yes
+
+cat $PBS_NODEFILE > nodes.tmp
+env > env.tmp
+
+start.csh
