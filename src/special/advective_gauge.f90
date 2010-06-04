@@ -138,8 +138,8 @@ module Special
       endif
       lpenc_requested(i_aa)=.true.
       lpenc_requested(i_uu)=.true.
-      if (idiag_apbrms) lpenc_diagnos(i_ab)=.true.
-      if (idiag_gphibm) lpenc_diagnos(i_bb)=.true.
+      if (idiag_apbrms/=0) lpenc_diagnos(i_ab)=.true.
+      if (idiag_gphibm/=0) lpenc_diagnos(i_bb)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -242,7 +242,7 @@ module Special
         if (idiag_gphibm/=0.or.idiag_apbrms/=0) then
           call dot(gphi,p%bb,gphib)
           if (idiag_gphibm/=0) call sum_mn_name(gphib,idiag_gphibm)
-          if (idiag_apbrms/=0) call sum_mn_name((p%ab-gphib)**2,idiag_apbrms,lsqrt=.true.)
+          if (idiag_apbrms/=0) call sum_mn_name((p%ab+gphib)**2,idiag_apbrms,lsqrt=.true.)
         endif
 !
 !  check for point 1
