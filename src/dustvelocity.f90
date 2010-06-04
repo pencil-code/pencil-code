@@ -23,6 +23,7 @@ module Dustvelocity
 !
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -156,7 +157,7 @@ module Dustvelocity
 !
       use EquationOfState, only: cs0
 !
-      real,dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       integer :: k
       real :: gsurften,Eyoung,nu_Poisson,Eyoungred
@@ -314,6 +315,8 @@ module Dustvelocity
         if (lroot) print*, 'initialize_dustvelocity: Global pressure '// &
             'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_dustvelocity
 !***********************************************************************
