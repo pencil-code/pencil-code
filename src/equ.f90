@@ -294,8 +294,8 @@ module Equ
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (ltestscalar)            call calc_ltestscalar_pars(f)
       if (ltestfield)             call calc_ltestfield_pars(f,p)
-      if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (ltestflow.and.ldensity) call calc_ldensity_pars(f)
+      if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
 !
 !  Calculate quantities for a chemical mixture
