@@ -36,12 +36,34 @@ module Testflow
 !
   include 'testflow.h'
 !
-  interface insert                ! Overload the `insert' function
+  interface insert                 ! Overload the `insert' function
     module procedure insert_array
     module procedure insert_array_mult
   endinterface
 !
+  interface gen_ind                ! Overload the `gen_ind' function
+    module procedure gen_1ind
+    module procedure gen_2ind
+  endinterface
+!
+  interface mark_del_elems         ! Overload the `mark_del_elems' function
+    module procedure mark_del_elems1
+    module procedure mark_del_elems2
+  endinterface
+
+  interface correct_inds           ! Overload the `correct_inds' function
+    module procedure correct_1inds
+    module procedure correct_2inds
+  endinterface
+
+
+  interface update_diag            ! Overload the `update_diag' function
+    module procedure update_diag1
+    module procedure update_diag2
+  endinterface
+
   integer, parameter :: njtestflow=6  !obsolete, but needed for compilation (MR)
+  integer :: njtestflow_loc=6
 !
 ! Slice precalculation buffers
 !
@@ -54,11 +76,14 @@ module Testflow
 !
   real, dimension(mz) :: cz,sz,k1cz,k1sz,zq2
 !
-  real, parameter :: cs2test=1., cs2test1=1./cs2test
+  real :: cs2test=1., cs2test1=1.
 !
   logical :: ltestflow_upw_lnrho=.false., ltestflow_upw_uu=.false.
 !
   integer :: nuuinit
+
+  integer, dimension(2) :: izrange
+  real, dimension(2) :: zrange, ca, cl, cq, cqa, cqq
   real :: tuuinit=0.,duuinit=0.
 !
   ! input parameters
@@ -79,50 +104,57 @@ module Testflow
                                 lugu_as_aux      ! ??
   ! run parameters
 !
-  real :: nutest=0.,    &
-          nutest1=0.,   &
-          wamp=1.,      &
-          ktestflow=1., &
-          ktestflow1=1.
+  real :: nutest=0.,     &
+          nutest1=0.,    &
+          wamp=1.,       &
+          ktestflow=1.,  &
+          ktestflow1=1., &
+          valid_zrange=1.
 !
   logical :: reinitialize_uutest=.false., &
              lsoca_testflow=.true., &
              lkinem_testflow=.false., &
-             lburgers_testflow=.false.
+             lburgers_testflow=.false., &
+             lprescribed_velocity=.false.
 !
-  character (len=labellen) :: itestflow='U11-U21'
+  character (len=labellen) :: itestflow='W11-W22'
 !
   namelist /testflow_run_pars/ reinitialize_uutest, &    ! flag for reinitialization of testflow solution
                                zextent,             &    ! ??
                                lsoca_testflow,      &    ! flag for SOCA
                                lkinem_testflow,     &    ! flag for kinematic calculation
                                lburgers_testflow,   &    ! flag for disconnecting enthalpy(pressure) from velocity
+                               lprescribed_velocity,&    ! flag for prescribed velocity, prescription via p%fcont, only effective if lkinem_testflow=.true.
                                nutest,              &    ! viscosity in testflow equations
                                nutest1,             &    ! reciprocal viscosity
                                itestflow,           &    ! name of used testflow set, legal values
-                                                         ! 'W11-W22', 'quadratic', 'quadratic+G', 'U=0'
+                                                         ! 'W11-W22', 'quadratic', 'quadratic+G', 'none'
                                ktestflow,           &    ! wavenumber for testflow (if sinusoidal)
                                lugu_as_aux,         &    ! ??
                                duuinit,             &    !
-                               wamp                      ! amplitude of the testflows
+                               wamp,                &    ! amplitude of the testflows
+                               valid_zrange              ! relative size of z-range from which coefficients are calculated
 !
   ! diagnostic variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients, couple  $\overline F$ and $\overline U$
-  integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,     couples $\overline F$ and $\partial \overline U/\partial z$
-  integer :: idiag_aklam=0                          ! DIAG_DOC: $\lambda$-tensor, couples $\overline F$ and $\overline W$
-  integer :: idiag_chi=0                            ! DIAG_DOC: $\chi$-vector,    couples $\overline F$ and ${\overline G}_z$
-  integer :: idiag_kappa=0                          ! DIAG_DOC: $\kappa$-vector,  couples $\overline Q$ and $\overline U$
-  integer :: idiag_psi=0                            ! DIAG_DOC: $\psi$-vector,    couples $\overline Q$ and $\overline W$
-  integer :: idiag_pi=0                             ! DIAG_DOC: $\pi$-scalar,     couples $\overline Q$ and ${\overline G}_z$
+  integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients,     couple  $\overline F$ and $\overline U$ 
+  integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,         couples $\overline F$ and $\partial^2 \overline U/\partial z^2$
+  integer :: idiag_aklam=0                          ! DIAG_DOC: AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W$
+  integer :: idiag_xi=0                             ! DIAG_DOC: $\chi$-vector,        couples $\overline F$ and ${\overline G}_z$
+  integer :: idiag_kappa=0                          ! DIAG_DOC: $\kappa$-vector,      couples $\overline Q$ and $\overline U$
+  integer :: idiag_psi=0                            ! DIAG_DOC: $\psi$-vector,        couples $\overline Q$ and $\overline W$
+  integer :: idiag_phi=0                            ! DIAG_DOC: $\phi$-vector,        couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$
+  integer :: idiag_pi=0                             ! DIAG_DOC: $\pi$-scalar,         couples $\overline Q$ and ${\overline G}_z$
+  integer :: idiag_theta=0                          ! DIAG_DOC: $\theta$-scalar,      couples $\overline Q$ and $div{\overline U}=dU_z/dz$
 !
   integer, dimension(2,2) :: idiag_galij=0, &       ! DIAG_DOC: $\alpha_{K,ij}$
                              idiag_aklamij=0, &     ! DIAG_DOC: $\lambda_{ij}$
                              idiag_nuij=0           ! DIAG_DOC: $\nu_{ij}$
 !
-  integer, dimension(2) :: idiag_chii=0, &          ! DIAG_DOC: $\chi_i$
+  integer, dimension(2) :: idiag_xii=0, &           ! DIAG_DOC: $\chi_i$
                            idiag_kappai=0, &        ! DIAG_DOC: $\kappa_i$
-                           idiag_psii=0             ! DIAG_DOC: $\psi_i$
+                           idiag_psii=0, &          ! DIAG_DOC: $\psi_i$
+                           idiag_phii=0             ! DIAG_DOC: $\phi_i$
 !
   integer, dimension(3,njtestflow) :: idiag_Fipq=0      ! DIAG_DOC: ${\cal F}_i^{pq}$
   integer, dimension(njtestflow)   :: idiag_Qpq=0       ! DIAG_DOC: ${\cal Q}^{pq}$
@@ -204,12 +236,24 @@ module Testflow
       use Cdata
       use FArrayManager
       use density, only: lcalc_glnrhomean, lupw_lnrho
-      use Hydro, only: lcalc_uumean, lupw_uu
+      use Hydro, only: lcalc_uumean, lupw_uu, lforcing_cont_uu
       use Forcing, only:ltestflow_forcing, lhydro_forcing
       use Viscosity, only:getnu
       use Mpicomm, only:stop_it
+      use sub, only:zlocation
+      use EquationOfState, only : cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: range, cn
+
+      integer :: izpos
+      logical :: lproc
+!
+      if (itestflow=='W11-W22') then
+        njtestflow_loc=4                       ! noch "uberfl"ussigen Speicherplatz vermeiden
+      else
+        njtestflow_loc=njtestflow
+      endif
 !
 ! Set nutest from the value uf nu in Hydro, if not specified here
 !
@@ -224,12 +268,16 @@ module Testflow
         !!call stop_it('duutest_dt: Error - nutest==0!!!')
       endif
 !
+      if ( cs0 /= 0. ) then
+        cs2test = cs0*cs0; cs2test1=1./cs2test
+      endif
+!
 !  set to zero and then rescale the testflow
 !  (in future, could call something like init_uu_simple)
 !
      if ( itestflow=='quadratic' ) then
        zq2 = 0.5*z*z
-     else
+     elseif ( itestflow=='W11-W22' ) then
 !
 !  set cosine and sine function for setting test fields and analysis
 !
@@ -267,13 +315,103 @@ module Testflow
 !
      ltestflow_upw_uu = lupw_uu
 !
-! ensure that forcing adds (discontinuous) force in f
+! ensure that module forcing adds (discontinuous) force in f
 !
      ltestflow_forcing = .true.
 !
-     if ( lkinem_testflow ) &
-       lhydro_forcing = .false.
+     if (lkinem_testflow) &
+       lhydro_forcing = .false.			!???
+
+! ensure that lprescribed_velocity finds continuous forcing
+
+     if ( lprescribed_velocity .and. .not.lforcing_cont_uu ) &
+       lprescribed_velocity=.false.
+
+! ensure that lprescribed_velocity finds lkinem_testflow=.true.
+
+     if (lprescribed_velocity) &
+       lkinem_testflow=.true.
 !
+! calculate z-index bounds from valid_zrange for actual processor
+!
+     izrange(1)=n1
+     izrange(2)=n2
+
+     if ( itestflow=='quasi-periodic' ) then
+
+       valid_zrange = max(0.3,valid_zrange)
+       valid_zrange = min(1.0,valid_zrange)
+
+       if ( valid_zrange<1. ) then
+
+         range = Lz*valid_zrange
+
+         zrange(1) = xyz0(3) + 0.5*(Lz-range)        ! lower and upper z-limit of valid range
+         zrange(2) = zrange(1) + range
+
+         izrange(1) = n1-1
+         izrange(2) = n2+1
+
+         if ( zrange(1)<=z(n1) ) then
+           zrange(1) = z(n1)-.01
+         else
+
+           call zlocation(zrange(1),izrange(1),lproc)
+           if (.not.lproc) izrange(1)=n2+1
+
+           cn = (xyz0(3)-zrange(1))**2
+           ca(1) = -xyz0(3)*zrange(1)**2/cn           ! coefficients of periodized linear function
+           cl(1) = (xyz0(3)**2+zrange(1)**2)/cn
+           cq(1) = -xyz0(3)/cn
+
+           cqa(1) =  xyz0(3)*zrange(1)
+           cqq(1) = -zrange(1)/(xyz0(3)-zrange(1))      ! coefficients of periodized quadratic function
+
+         endif
+         
+         if ( zrange(2)>=z(n2) ) then
+           zrange(2) = z(n2)+.01
+         else
+
+           call zlocation(zrange(2),izrange(2),lproc)
+           if (.not.lproc) izrange(2)=n1-1
+
+           cn = (xyz1(3)-zrange(2))**2
+           ca(2) = -xyz1(3)*zrange(2)**2/cn           ! coefficients of periodized linear function
+           cl(2) = (xyz1(3)**2+zrange(2)**2)/cn
+           cq(2) = -xyz1(3)/cn
+
+           cqa(2) =  xyz1(3)*zrange(2)                ! coefficients of periodized quadratic function
+           cqq(2) = -zrange(2)/(xyz1(3)-zrange(2))
+
+         endif
+
+ !!        print*, 'zrange, ca, cl, cq:', xyz0(3), xyz1(3), zrange, ca, cl, cq 
+        else
+         zrange(1) = z(n1)-.01
+         zrange(2) = z(n2)+.01
+       endif
+     endif
+
+    if ( itestflow=='W11-W22' .and. idiag_gal/=0 ) then
+      idiag_gal=0
+      idiag_galij=0
+    endif
+
+    if ( idiag_aklam/=0 .and. njtestflow.lt.4 ) then
+
+      print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for AKA-Lambda tensor to be calculated'
+      idiag_aklam=0
+
+    endif
+
+    if ( idiag_nu/=0 .and. ( itestflow=='W11-W22' .and. njtestflow.lt.4 .or. itestflow=='quadratic' .and. njtestflow.lt.6) ) then
+
+      print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for viscosity tensor to be calculated'
+      idiag_nu=0
+
+    endif
+
 !  Register an extra aux slot for ugu if requested (so ugu is written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
@@ -458,6 +596,12 @@ module Testflow
 !
       write(unit,NML=testflow_run_pars)
 !
+!      if (itestflow=='W11-W22') then
+!        njtestflow=4                       ! noch ŸberflŸssigen Speicherplatz vermeiden
+!      else
+!        njtestflow= njtestflow
+!      endif
+
     endsubroutine write_testflow_run_pars
 !***********************************************************************
     subroutine duutest_dt(f,df,p)                    ! -> Standardschnittstelle
@@ -499,7 +643,7 @@ module Testflow
 !
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
-      real, dimension (nx,3) :: U0test,gU0test                      !!!MR: ŸberflŸssige x-Ausdehnung bei 0-Grš§en
+      real, dimension (nx,3) :: U0test,gU0test                      !!!MR: "uberfl"ussige x-Ausdehnung bei 0-Gr"o"sen
       real, dimension (nx)   :: hhtest,U0ghtest,upq2,divutest, divufluct
       real :: gH0test
 !
@@ -532,8 +676,8 @@ module Testflow
       ihhtest=iuutest+3
 !
       if (lkinem_testflow) then
-!
-        uufluct = f(l1:l2,n,m,iuxtest:iuztest)           ! ufluct = u0
+!        
+        uufluct = f(l1:l2,m,n,iuxtest:iuztest)           ! ufluct = u0
         call grad(f,ihhtest,ghfluct)                     ! ghfluct = grad(h0)
 !
       else
@@ -541,7 +685,7 @@ module Testflow
 !  calculate uufluct=U-Umean out of the main run
 !
         do j=1,3
-          uufluct(:,j)=p%uu(:,j)-uumz(n-n1+1,j)
+          uufluct(:,j)=p%uu(:,j)-uumz(n,j)
         enddo
 !
 ! calculate ghfluct=gh-ghmean
@@ -555,7 +699,7 @@ module Testflow
 !  do each of the njtestflow test flows at a time
 !  jtest=0  refers to primary turbulence (u^(0), h^(0))
 !
-      do jtest=0,njtestflow
+      do jtest=0,njtestflow_loc
 !
 !  identify boundary conditions
 !
@@ -571,18 +715,22 @@ module Testflow
 !
 !  velocity vector and enthalpy
 !
-        uutest=f(l1:l2,m,n,iuxtest:iuztest)	! testflow solution # jtest
-        hhtest=f(l1:l2,m,n,ihhtest)
-        !!if ( jtest==1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
+        if ( jtest>0 .or. .not.lprescribed_velocity ) then
+
+          uutest=f(l1:l2,m,n,iuxtest:iuztest)		! testflow solution # jtest
+          hhtest=f(l1:l2,m,n,ihhtest)
+          !!if ( jtest.eq.1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
 !
-!  velocity gradient matrix and div u term
+!  div u term
 !
-        call div(f,iuxtest,divutest)
+          call div(f,iuxtest,divutest)
 !
 !  gradient of (pseudo) enthalpy
 !
-        call grad(f,ihhtest,ghtest)
+          call grad(f,ihhtest,ghtest)
 !
+        endif
+
         if (jtest>0) then
 !
           select case (itestflow)                       ! get testflow U^(pq), grad U^(pq), grad H^(pq)
@@ -606,9 +754,13 @@ module Testflow
               gH0test=0.
 !
             case ('quasiperiodic')
+
               call set_U0test_quasiperiodic(U0test,gU0test,jtest)
               gH0test=0.
-!
+
+              !!if ( (jtest==3 .or. jtest==4) .and. m==5 ) &
+                 !!print*, jtest,z(n), U0test(1,jtest-2),gU0test(1,jtest-2)
+
             case ('quadratic+G')
 !
               if ( jtest<=6 ) then
@@ -618,7 +770,7 @@ module Testflow
                 U0test=0.; gU0test=0.; gH0test=wamp
               endif
 !
-            case ('U=0')
+            case ('none')
               U0test=0.; gU0test=0.; gH0test=wamp
 
             case default
@@ -631,14 +783,15 @@ module Testflow
 !  rhs of continuity equation (nonlinear terms already in df, if needed!),
 !  dh^pq/dt = n.l.Terms - cs^2*div u^pq -u.gradH^pq - U^pq.gradh
 !
-        if ( .not.lburgers_testflow ) &
+        if ( .not.lburgers_testflow .and. (jtest>0 .or. .not.lprescribed_velocity) ) &
           df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest) - cs2test*divutest
 !
 !       testflow inhomogeneity
 !
         if (jtest>0) then
 !
-          call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers
+          call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers    no upwinding!    
+
           !!call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)!!!MR: noch falsch, da unter ilnrho nicht hhfluct!!
                           !!!ilnrho
           !!if ( jtest==2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
@@ -652,7 +805,7 @@ module Testflow
 !  rhs of momentum equation (nonlinear terms already in df, if needed!),
 !  du^pq/dt = n.l.Terms - grad h^pq -u.gradU^pq - U^pq.gradu
 !
-        if ( .not.lburgers_testflow ) &
+        if ( .not.lburgers_testflow .and. (jtest>0 .or. .not.lprescribed_velocity) ) &
           df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) - ghtest
 !
 !       testflow inhomogeneity
@@ -661,14 +814,14 @@ module Testflow
 !
           if (lkinem_testflow) then
 !
-            call gij(f,iuxtest,uijfluct,1)
+            call gij(f,iuutest,uijfluct,1)
 !
           else
 !
             uijfluct = p%uij
 !
             do i=1,3                                        ! determine fluctuating part of uij
-              uijfluct(:,i,3) = uijfluct(:,i,3) - guumz(n-n1+1,i)
+              uijfluct(:,i,3) = uijfluct(:,i,3) - guumz(n,i)
             enddo
 !
           endif
@@ -678,7 +831,7 @@ module Testflow
 !
           call multsv(uufluct(:,3),gU0test,ugU0test)
 !
-          df(l1:l2,m,n,iuxtest:iuztest) = df(l1:l2,m,n,iuxtest:iuztest) - U0testgu-ugU0test
+          df(l1:l2,m,n,iuxtest:iuztest) = df(l1:l2,m,n,iuxtest:iuztest) - ugU0test - U0testgu
 !
 !         viscous contributions
 !
@@ -693,29 +846,30 @@ module Testflow
 
               uijfluct = p%sij                                               ! uijfluct now contains sij !!!
 
-              nl = n-n1+1
               do i=1,2                                                       ! determine fluctuating part
-                uijfluct(:,i,i) = uijfluct(:,i,i) + guumz(nl,3)/3.           ! ~
+                uijfluct(:,i,i) = uijfluct(:,i,i) + guumz(n,3)/3.            ! ~
               enddo
 !
-              uijfluct(:,3,3) = uijfluct(:,3,3) - 2.*guumz(nl,3)/3.          ! ~
-              uijfluct(:,1,3) = uijfluct(:,1,3) - 0.5*guumz(nl,1)            ! ~
+              uijfluct(:,3,3) = uijfluct(:,3,3) - 2.*guumz(n,3)/3.           ! ~
+              uijfluct(:,1,3) = uijfluct(:,1,3) - 0.5*guumz(n,1)             ! ~
               uijfluct(:,3,1) = uijfluct(:,1,3)                              ! ~
-              uijfluct(:,2,3) = uijfluct(:,2,3) - 0.5*guumz(nl,2)            ! ~
+              uijfluct(:,2,3) = uijfluct(:,2,3) - 0.5*guumz(n,2)             ! ~
               uijfluct(:,3,2) = uijfluct(:,2,3)                              ! of sij
 !
             endif
 !
-            U0testgu = uijfluct(:,:,3)*gH0test                               ! S(u).grad(H^T)
+            if ( .not.lburgers_testflow ) then
 !
-            call multsv(0.5*ghfluct(:,3),gU0test,ugU0test)             ! S(U^T).grad(h)        MR: checked by numbers
-            ugU0test(:,3) = ugU0test(:,3) + 0.5*ghfluct(:,3)*gU0test(:,3)    !  ~
+              U0testgu = uijfluct(:,:,3)*gH0test                             ! S(u).grad(H^T)
 !
-            call multsv(-(1./3.)*gU0test(:,3),ghfluct,ugU0test,.true.)       !  ~
+              call multsv(0.5*ghfluct(:,3),gU0test,ugU0test)                 ! S(U^T).grad(h)        MR: checked by numbers
+              ugU0test(:,3) = ugU0test(:,3) + 0.5*ghfluct(:,3)*gU0test(:,3)  !  ~
+              call multsv_mn_add(-(1./3.)*gU0test(:,3),ghfluct,ugU0test)     !  ~
 !
-            if ( .not.lburgers_testflow ) &
               df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
-                                              + 2.*nutest*cs2test1*(U0testgu+ugU0test)
+                                              + (2.*nutest*cs2test1)*(U0testgu+ugU0test)
+            endif
+
           endif
 
         endif
@@ -724,27 +878,43 @@ module Testflow
 !
         if (nutest/=0.) then
 !
-          call del2v_etc(f,iuxtest,DEL2=del2utest,GRADDIV=graddivutest)
-          df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
-                                          + nutest*(del2utest+(1./3.)*graddivutest)
+          if ( jtest>0 .or. .not.lprescribed_velocity ) then
+
+            call del2v_etc(f,iuxtest,DEL2=del2utest,GRADDIV=graddivutest)
+            if ( .false..and. m.eq.10 .and. n.eq.10 .and.jtest.eq.1) then
+              print'(14(e12.6,","))', del2utest(:,1)
+              print'(14(e12.6,","))',f(l1:l2,m,n,iuxtest)
+              print*, '================'
+            endif 
+            df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
+                                            + nutest*(del2utest+(1./3.)*graddivutest)
+
+          endif
+
         endif
 !
 ! add continuous forcing
 !
-        if ( jtest==0.and.lforcing_cont_uu) &                                 ! requires that forcing is fluctuation
-          df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+&
-                                        ampl_fcont_uu*p%fcont
+        if ( jtest==0 .and. lforcing_cont_uu ) then                      ! requires that forcing is 'fluctuation': <force>=0
+
+          if (.not.lprescribed_velocity) &
+            df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)+&
+                                          ampl_fcont_uu*p%fcont
+        endif
 !
 ! add Coriolis/centrifugal force         (MR: precession still missing!!!)
 !
-        call coriolis_cartesian(df,uutest,iuxtest)
+        if ( jtest>0 .or. .not.lprescribed_velocity ) then
+          call coriolis_cartesian(df,uutest,iuxtest)
 !
 !  check for testflow timestep
 !
-        if (lfirst.and.ldt) &
-          advec_uu=max(advec_uu,abs(uutest(:,1))*dx_1(l1:l2)+ &
-                                abs(uutest(:,2))*dy_1(  m  )+ &
-                                abs(uutest(:,3))*dz_1(  n  ))
+          if (lfirst.and.ldt) &
+            advec_uu=max(advec_uu,abs(uutest(:,1))*dx_1(l1:l2)+ &
+                                  abs(uutest(:,2))*dy_1(  m  )+ &
+                                  abs(uutest(:,3))*dz_1(  n  ))
+        endif
+
         iuxtest=iuxtest+4
         iuztest=iuztest+4
         ihhtest=ihhtest+4
@@ -773,12 +943,14 @@ module Testflow
         iuztest = iuutest+2
         ihhtest = iuutest+3
 !
-        do jtest=0,njtestflow
+        do jtest=0,njtestflow_loc
 !
           if (idiag_upqrms(jtest)/=0) then
 !
             call dot2(f(l1:l2,m,n,iuxtest:iuztest),upq2)
-            !!if (jtest==1) print*, 'upq,jtest:', jtest,minval(upq2),maxval(upq2)
+            !!if (m==5 .and. n==5.and.jtest==1) &
+              !!print*, 'upq,jtest,iuxtest,iuztest:', &    
+                  !!jtest,iuxtest,iuztest,minval(f(l1:l2,m,n,iuxtest:iuztest)),maxval(f(l1:l2,m,n,iuxtest:iuztest))
 !
             call sum_mn_name(upq2,idiag_upqrms(jtest),lsqrt=.true.)
 
@@ -894,19 +1066,20 @@ module Testflow
       use density, only: glnrhomz
       use Hydro, only: uumz, traceless_strain
       use Mpicomm, only: mpiallreduce_sum
+      use Forcing, only:forcing_cont
 !
-      real, dimension (mx,my,mz,mfarray), intent(in)    :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f 
       real, dimension (mx,my,mz,mvar),    intent(inout) :: df
 !
       real, dimension (3,0:njtestflow) :: unltestm, unltestm1      ! unltestm1, hnltestm1 local fields for MPI correspondence
       real, dimension (0:njtestflow) :: hnltestm, hnltestm1
 !
-      real, dimension (nx,3)   :: uufluct,uutest, uu0, ghfluct, ghtest, gh0, sghtest, unltest
+      real, dimension (nx,3)   :: uufluct,uutest, uu0, ghfluct, ghtest, gh0, sghtest, unltest, force
       real, dimension (nx,3,3) :: sijtest,uijtest,sij0,uij0
       real, dimension (nx)     :: divutest,hnltest, divufluct
 
-      integer :: jtest,i,j,ju,k,iii, jtesto
-      integer :: iuxtest, iuztest, ihhtest
+      integer :: jtest,i,j,ju,k,iii,jtestu,jtesto
+      integer :: iuxtest, iuztest,ihhtest
       logical :: headtt_save
       real :: fac, gal1, gal2, aklam1, aklam2
 
@@ -932,9 +1105,21 @@ yloop:  do m=m1,m2
 !
           if (lkinem_testflow) then
 !
-            uufluct = f(l1:l2,n,m,iuxtest:iuztest)           ! ufluct = u0
-            call grad(f,ihhtest,ghfluct)                     ! ghfluct = grad(h0)
+            if (lprescribed_velocity) then
 !
+              call forcing_cont(uufluct)
+              f(l1:l2,m,n,iuxtest:iuztest) = uufluct
+
+              ghfluct = 0.
+              f(l1:l2,m,n,ihhtest) = 0.
+
+            else
+
+              uufluct = f(l1:l2,m,n,iuxtest:iuztest)           ! ufluct = u0
+              call grad(f,ihhtest,ghfluct)                     ! ghfluct = grad(h0)
+
+            endif
+
           else
 !
 !  calculate uufluct=U-Umean out of the main run
@@ -943,7 +1128,7 @@ yloop:  do m=m1,m2
 !
 !!            if ( n==5.and.m==5 ) print*,'nl:uufluct:', maxval(uufluct), minval(uufluct)
             do j=1,3
-              uufluct(:,j)=uufluct(:,j)-uumz(n-n1+1,j)
+              uufluct(:,j)=uufluct(:,j)-uumz(n,j)
             enddo
 !
 ! calculate ghfluct=gh-ghmean out of the main run
@@ -957,7 +1142,7 @@ yloop:  do m=m1,m2
 !
 !  do each of the njtestflow (=2, 4, or 6) test flows at a time
 !
-testloop: do jtest=0,njtestflow                           ! jtest=0 : primary turbulence, testflow=0
+testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primary turbulence, testflow=0
 !
 !  velocity vector and enthalpy gradient of testflow solution
 !
@@ -980,15 +1165,18 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
               uij0 = uijtest
               sij0 = sijtest
 !
+              if (.not.lprescribed_velocity) then
 !  u.grad(u) term and u.grad(h) term
 !
-              !!call multmv(uijtest,uutest,unltest)
-              call u_dot_grad(f,iuxtest,uijtest,uutest,unltest,UPWIND=ltestflow_upw_uu)     ! (u0.grad)(u0)
+                !!call multmv(uijtest,uutest,unltest)
+                call u_dot_grad(f,iuxtest,uijtest,uutest,unltest,UPWIND=ltestflow_upw_uu)       ! (u0.grad)(u0)
 
-              !!call dot_mn(uutest,ghtest,hnltest)                                          ! u0.grad(h0)
-              if ( .not.lburgers_testflow ) &
-                call u_dot_grad(f,ihhtest,ghtest,uutest,hnltest,UPWIND=ltestflow_upw_lnrho)   ! u0.grad(h0)
+                !!call dot_mn(uutest,ghtest,hnltest)                                            ! u0.grad(h0)
+                if ( .not.lburgers_testflow ) &
+                  call u_dot_grad(f,ihhtest,ghtest,uutest,hnltest,UPWIND=ltestflow_upw_lnrho)   ! u0.grad(h0)
 
+              endif             
+            
             else
 !
               !!call multmv(uijtest,uufluct,unltest)                                        ! (u.grad)(utest)
@@ -1015,30 +1203,33 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
               if ( jtest==0 ) then
 !
-                call multmv(sijtest,ghtest,sghtest)                            ! S(u0).grad(h0)
-!
-              else
+                if (.not.lprescribed_velocity) &
+                  call multmv(sijtest,ghtest,sghtest)                          ! S(u0).grad(h0) 
 
+              else
+                
                 call multmv(sijtest,ghfluct,sghtest)                           ! S(utest).grad(h)
                 call multmv(sij0   ,ghtest ,sghtest,.true.)                    ! S(u0).grad(htest)
 !
               endif
 !
-              if ( .not.lburgers_testflow ) &
+              if ( .not.lburgers_testflow .and. (jtest>0 .or. .not.lprescribed_velocity) ) &
                 unltest = unltest - (2.*nutest*cs2test1)*sghtest
 !
             endif
 !
-            if ( jtest==0 .or. .not.lsoca_testflow ) then
-
-              df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-unltest      ! nonlinear parts stored in df
+            if ( jtest==0.and..not.lprescribed_velocity .or. jtest>0.and..not.lsoca_testflow ) then        
+ 
+              df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-unltest      ! nonlinear parts stored in df 
 !
               if ( .not.lburgers_testflow ) &
-                df(l1:l2,m,n,ihhtest        )=df(l1:l2,m,n,ihhtest        )-hnltest
+                df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-hnltest
 
             endif
 
-            if ( jtest==0 .or. .not.lsoca_testflow .or. ldiagnos ) then  ! means of nonlinear terms always needed for 0th testflow,
+            if ( (jtest==0.and..not.lprescribed_velocity) .or. &
+                 (jtest>0 .and.(.not.lsoca_testflow .or. ldiagnos) ) ) then                  ! means of nonlinear terms always needed for 0th testflow (if not prescribed), 
+            !!if ( jtest==0 .or. .not.lsoca_testflow.or.ldiagnos ) then
                                                                            ! if not SOCA for all testflows, except from that if the
                                                                            ! the turbulence coefficients have to be calculated
               do j=1,3
@@ -1084,13 +1275,19 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
 !  means are completely determined -> calculation of the  f l u c t u a t i o n s  of the nonlinear parts
 !
+        if (lprescribed_velocity) then
+          jtestu=1
+        else
+          jtestu=0
+        endif
+
         if ( lsoca_testflow ) then
           jtesto=0
         else
-          jtesto= njtestflow
+          jtesto=njtestflow
         endif
 !
-        do jtest=0,jtesto
+        do jtest=jtestu,jtesto
 !
           iuxtest=iuutest+4*jtest
           ihhtest=iuxtest+3
@@ -1103,7 +1300,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
           enddo
 
-          df(l1:l2,m1:m2,n,ihhtest)=df(l1:l2,m1:m2,n,ihhtest)+hnltestm(jtest)
+          if ( .not.lburgers_testflow ) &
+            df(l1:l2,m1:m2,n,ihhtest)=df(l1:l2,m1:m2,n,ihhtest)+hnltestm(jtest)
 
         enddo
 !
@@ -1115,53 +1313,41 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         lfirstpoint=.false.
 !
       enddo zloop
-!
+         !!print*,'nl:iuxtest,jtest=1', maxval(f(l1:l2,5,5,iuutest+4:iuutest+6)),&
+                                     !! minval(f(l1:l2,5,5,iuutest+4:iuutest+6))
 ! remove gal-parts from Fipq
 !
-      if (ldiagnos) then
+      if ( ldiagnos .and. itestflow/='W11-W22' ) then
 !
         do k=1,2
 
           gal1 = get_from_fname(idiag_galij(k,1))
           gal2 = get_from_fname(idiag_galij(k,2))
 
-          do n=n1,n2
+          do n=izrange(1),izrange(2)
 !
             select case (itestflow)
 
-            case ('W11-W22')
-!
-              if (idiag_aklamij(k,1)/=0) &
-                call surf_mn_name(  wamp*(-cz(n)*gal2*k1sz(n)+sz(n)*gal2*k1cz(n)),      idiag_aklamij(k,1) )
-
-              if (idiag_nuij(k,2)/=0) &
-                call surf_mn_name( ( wamp*(k1sz(n)*gal2*k1sz(n)+k1cz(n)*gal2*k1cz(n))), idiag_nuij(k,2)    )
-!
-              if (idiag_aklamij(k,2)/=0) &
-                call surf_mn_name(  wamp*(+cz(n)*gal1*k1sz(n)-sz(n)*gal1*k1cz(n)),      idiag_aklamij(k,2) )
-!
-              if (idiag_nuij(k,1)/=0) &
-                call surf_mn_name( wamp*(+k1sz(n)*gal1*k1sz(n)+k1cz(n)*gal1*k1cz(n)), idiag_nuij(k,1)    )
-
-            case ('quadratic')
+            case('quadratic','quasi-periodic') 
 !
               if (idiag_aklamij(k,1)/=0) &
                   call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
 !
               if (idiag_aklamij(k,2)/=0) &
                   call surf_mn_name(  wamp*gal1*z(n), idiag_aklamij(k,2) )
+
             case default
 !
             end select
 !
           enddo
 !
-          if ( itestflow=='quadratic') then
-
+          if ( itestflow=='quadratic' .or. itestflow=='quasi-periodic' ) then
+   
             aklam1 = get_from_fname(idiag_aklamij(k,1))
             aklam2 = get_from_fname(idiag_aklamij(k,2))
 !
-            do n=n1,n2
+            do n=izrange(1),izrange(2)
 !
               if (idiag_nuij(k,1)/=0) &
                 call surf_mn_name( wamp*(-gal1*zq2(n)+aklam2*z(n)), idiag_nuij(k,1) )
@@ -1196,12 +1382,12 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
     real, dimension (2,2) :: aklam
     integer :: i,j,i3,i4,i5,i6,k
 !
-      Fipq=Fipq/(wamp*nzgrid)
-      Qipq=Qipq/(wamp*nzgrid)                               ! factor nzgrid for averaging over z
+      Fipq=Fipq/(-wamp*valid_zrange*nzgrid)                               ! as at call Fipq, Qipq have inverted sign yet	               	
+      Qipq=Qipq/(-wamp*valid_zrange*nzgrid)                               ! factor nzgrid for averaging over z
 !
-      !!print*,'z,Fipq=', z(indz), Fipq(1:2,1), Fipq(1:2,2)
+      !!print*,'z,Fipq=', z(indz), Fipq(1:2,3), Fipq(1:2,4)
 !
-      do j=1,njtestflow
+      do j=1,njtestflow_loc
 !
         do i=1,3
           if (idiag_Fipq(i,j)/=0) call surf_mn_name( Fipq(i,j), idiag_Fipq(i,j) )   ! surf_mn_name because only simple addition needed
@@ -1210,45 +1396,21 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         if (idiag_Qpq(j)/=0) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
 !
       enddo
+! 
+      select case (itestflow)   
+        
+         case ('W11-W22')
+!
+           do k=1,2
 !
 !  calculate gal, aka-lambda and nu tensors
 !
-      if ( idiag_aklam/=0 .and. njtestflow<4 ) then
-!
-        print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for AKA-Lambda tensor to be calculated'
-        idiag_aklam=0
-!
-      endif
-!
-      if ( idiag_nu/=0 .and. njtestflow<6 ) then
-!
-        print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for viscosity tensor to be calculated'
-        idiag_nu=0
-!
-      endif
-
-      select case (itestflow)
-
-        case ('W11-W22')
-!
-          if (idiag_gal/=0) then
-!
-            do i=1,2
-            do j=1,2
-              call surf_mn_name(Fipq(i,j+4),idiag_galij(i,j))          ! \gal_{ij}
-            enddo
-            enddo
-!
-          endif
-!
-          do k=1,2
-!
             if (idiag_aklamij(k,1)/=0) &
-              call surf_mn_name( -cz(indz)*Fipq(k,1)-sz(indz)*Fipq(k,2),     idiag_aklamij(k,1) )
-!
+              call surf_mn_name(  cz(indz)*Fipq(k,1)+sz(indz)*Fipq(k,2),     idiag_aklamij(k,1) )      
+
             if (idiag_aklamij(k,2)/=0) &
-              call surf_mn_name( -cz(indz)*Fipq(k,3)-sz(indz)*Fipq(k,4),     idiag_aklamij(k,2) )
-!
+              call surf_mn_name(  cz(indz)*Fipq(k,3)+sz(indz)*Fipq(k,4),     idiag_aklamij(k,2) )      
+
             if (idiag_nuij(k,1)/=0) &
               call surf_mn_name( -k1sz(indz)*Fipq(k,3)+k1cz(indz)*Fipq(k,4), idiag_nuij(k,1)    )
 !
@@ -1256,10 +1418,28 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
               call surf_mn_name(  k1sz(indz)*Fipq(k,1)-k1cz(indz)*Fipq(k,2), idiag_nuij(k,2)    )
 !
           enddo
+
           !!print*, 'indz=', indz, -k1sz(indz)*Fipq(1,3)+k1cz(indz)*Fipq(1,4), k1sz(indz)*Fipq(2,1)-k1cz(indz)*Fipq(2,2), &
           !!                       -k1sz(indz)*Fipq(2,3)+k1cz(indz)*Fipq(2,4), k1sz(indz)*Fipq(1,1)-k1cz(indz)*Fipq(1,2)
 !
-        case ('quadratic')
+!  calculate psi and phi tensors
+!
+          if ( idiag_psii(1)/=0) &
+            call surf_mn_name( -Qipq(1)*cz(indz)-Qipq(2)*sz(indz), idiag_psii(1) )       ! \psi_1
+          if ( idiag_psii(2)/=0) &
+            call surf_mn_name( -Qipq(3)*cz(indz)-Qipq(4)*sz(indz), idiag_psii(2) )       ! \psi_2
+!
+          if ( idiag_phii(1)/=0) &
+            call surf_mn_name( -Qipq(3)*k1sz(indz)+Qipq(4)*k1cz(indz), idiag_phii(1) )   ! \phi_1
+          if ( idiag_phii(2)/=0) &
+            call surf_mn_name(  Qipq(1)*k1sz(indz)-Qipq(2)*k1cz(indz), idiag_phii(2) )   ! \phi_2
+!
+!  calculate theta-scalar
+!
+          if ( idiag_theta/=0) &
+            call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_theta )         ! \theta    !!! noch falsch
+
+        case('quadratic','quasi-periodic')
 !
           if (idiag_gal/=0) then
 !
@@ -1269,7 +1449,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             enddo
             enddo
 !
-!!            if ( indz>=n1+2 .and. indz<=n2-2 ) then
+            if ( indz>=izrange(1) .and. indz<=izrange(2) ) then
             if (idiag_aklam/=0) then
 !
               i3=3
@@ -1300,7 +1480,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
                 !!print*, 'nu11,22=', z(indz), Fipq(1,i5), Fipq(2,i6)
               endif
             endif
-!!            endif
+            endif
           endif
 
           if ( idiag_kappa/=0) then
@@ -1346,10 +1526,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             enddo
 !
           endif
-        case ('quasi-periodic')
 !
-        case ('W=0')
-
+        case ('none')
         case default
               call fatal_error('duutest_dt','undefined itestflow value')
       endselect
@@ -1450,14 +1628,14 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         gU0test(:,1)=+wamp*sz(n); gU0test(:,2)=0.; gU0test(:,3)=0.
 !
       case (5)
-        U0test(:,1)=wamp; U0test(:,2)=0.; U0test(:,3)=0.
-        gU0test=0.
+        U0test(:,1)=0.; U0test(:,2)=0.; U0test(:,3)=+wamp*k1sz(n)
+        gU0test(:,1)=0.; gU0test(:,2)=0.; gU0test(:,3)=+wamp*cz(n)
 !
       case (6)
-        U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.
-        gU0test=0.
-!
-     case default
+        U0test(:,1)=0.; U0test(:,2)=0.; U0test(:,3)=-wamp*k1cz(n)
+        gU0test(:,1)=0.; gU0test(:,2)=0.; gU0test(:,3)=+wamp*sz(n)
+
+      case default
         U0test=0.;gU0test=0.
 !
       endselect
@@ -1481,7 +1659,8 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !  p indicates component which is non-zero, q-1 indicates order of the quadratic
 !
       integer, parameter :: P1Q1=1, P2Q1=2, P1Q2=3, P2Q2=4, P1Q3=5, P2Q3=6, G=7
-!
+      integer :: comp, indx
+
       select case (jtest)
 !
       case (P1Q1)
@@ -1492,22 +1671,79 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         U0test(:,1)=0.; U0test(:,2)=wamp; U0test(:,3)=0.
         gU0test=0.
 !
-      case (P1Q2)
+      case(P1Q2,P2Q2)
 !        U0test(:,1)=wamp*(1.+z(n)-zc(n)); U0test(:,2)=0.; U0test(:,3)=0.
 !       gU0test(:,1)=wamp-...; gU0test(:,2)=0.; gU0test(:,3)=0.
 !
-      case (P2Q2)
+        comp=jtest-P1Q2+1
+  
+        if ( z(n)<zrange(1) ) then
+          indx=1
+        else if ( z(n)>zrange(2) ) then
+          indx=2
+        else
+          indx=0
+        endif
+
+!      case (P2Q2)
 !        U0test(:,1)=0.; U0test(:,2)=wamp*(1.+z(n)-zc(n)); U0test(:,3)=0.
 !        gU0test(:,1)=0.; gU0test(:,2)=wamp-...; gU0test(:,3)=0.
 !
-      case (P1Q3)
+        if (indx>0) then
+          U0test (:,comp)=wamp*(ca(indx)+cl(indx)*z(n)+   cq(indx)*z(n)*z(n))
+          gU0test(:,comp)=wamp*(         cl(indx)     +2.*cq(indx)*z(n)     )
+        else
+          U0test(:,comp)=wamp*z(n)
+          gU0test(:,comp)=wamp
+        endif
+
+!      case (P1Q3)
 !        U0test(:,1)=wamp*(1.-z(n)+zc(n)); U0test(:,2)=0.; U0test(:,3)=0.
 !        gU0test(:,1)=-wamp+...; gU0test(:,2)=0.; gU0test(:,3)=0.
 !
-      case (P2Q3)
+        !!print*, comp,indx,zu,z(n),zo,U0test(:,comp),gU0test(:,comp)
+
+!      case (P2Q3)
 !        U0test(:,1)=0.; U0test(:,2)=wamp*(1.-z(n)+zc(n)); U0test(:,3)=0.
 !        gU0test(:,1)=0.; gU0test(:,2)=-wamp+...; gU0test(:,3)=0.
 !
+        U0test(:,3-comp)=0.; U0test(:,3-comp)=0.
+        gU0test(:,3-comp)=0.; gU0test(:,3-comp)=0.
+
+      case(P1Q3,P2Q3)
+
+        comp=jtest-P1Q3+1
+  
+        if ( z(n)<zrange(1) ) then
+          indx=1
+        else if ( z(n)>zrange(2) ) then
+          indx=2
+        else
+          indx=0
+        endif
+
+        if (indx==1) then
+
+          U0test (:,comp)=0.5*wamp*(cqa(indx)+cqq(indx)*(xyz0(3)-z(n))**2)
+          gU0test(:,comp)=   -wamp*           cqq(indx)*(xyz0(3)-z(n))
+
+        else if (indx==2) then
+
+          U0test (:,comp)=0.5*wamp*(cqa(indx)+cqq(indx)*(xyz1(3)-z(n))**2)
+          gU0test(:,comp)=   -wamp*           cqq(indx)*(xyz1(3)-z(n))
+
+        else
+          U0test (:,comp)=0.5*wamp*z(n)**2
+          gU0test(:,comp)=    wamp*z(n)
+        endif
+
+        !!print*, comp,indx,zu,z(n),zo,U0test(:,comp),gU0test(:,comp)
+
+        U0test(:,3-comp)=0.; U0test(:,3-comp)=0.
+        gU0test(:,3-comp)=0.; gU0test(:,3-comp)=0.
+
+        U0test=0.;gU0test=0.	!!!!
+
       case default
         U0test=0.;gU0test=0.
 !
@@ -1643,6 +1879,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       integer           :: iname,i,j,p,ifound,ifoundold
       character         :: cind
       character(len=2)  :: cind2
+      character(len=1)  :: cind1
       character(len=20) :: name
       logical           :: lwr
 !
@@ -1656,10 +1893,17 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
         idiag_Fipq=0; idiag_Qpq=0
 !
-        idiag_gal=0; idiag_galij=0
+        idiag_gal=0  ; idiag_galij=0
         idiag_aklam=0; idiag_aklamij=0
-        idiag_nu=0 ; idiag_nuij=0
+        idiag_nu=0   ; idiag_nuij=0
 !
+        idiag_xi=0; idiag_xii=0
+
+        idiag_kappa=0; idiag_kappai=0
+        idiag_psi=0; idiag_psii=0
+        idiag_phi=0; idiag_phii=0
+
+        idiag_pi=0; idiag_theta=0
         idiag_ux0mz=0; idiag_uy0mz=0; idiag_uz0mz=0;
         idiag_upqrms=0; idiag_hpqrms=0
 !
@@ -1671,23 +1915,39 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
       do iname=1,nname
 !
+        if ( itestflow/='W11-W22' ) &
+          ifound = fparse_name(iname,cname(iname),cform(iname),'gal',idiag_gal)
 
-        ifound = fparse_name(iname,cname(iname),cform(iname),'gal',idiag_gal)
         ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam',idiag_aklam)
         ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu',idiag_nu)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi',idiag_xi)
+
         ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'kappa',idiag_kappa)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi',idiag_chi)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'psi',idiag_psi)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'phi',idiag_phi)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'pi',idiag_pi)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'theta',idiag_theta)
 !
         do i=1,2
-        do j=1,2
+          do j=1,2
 !
-          cind2 = gen_2ind(i,j)
+            cind2 = gen_ind(i,j)
 
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gal'//cind2,idiag_galij(i,j))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam'//cind2,idiag_aklamij(i,j))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu'//cind2,idiag_nuij(i,j))
+            if ( itestflow/='W11-W22' ) &
+              ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gal'//cind2,idiag_galij(i,j))
+
+            ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam'//cind2,idiag_aklamij(i,j))
+            ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu'//cind2,idiag_nuij(i,j))
 !
-        enddo
+          enddo
+
+          cind1 = gen_ind(i)
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi'//cind1,idiag_xii(i))
+
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'kappa'//cind1,idiag_kappai(i))
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'psi'//cind1,idiag_psii(i))
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'phi'//cind1,idiag_phii(i))
+
         enddo
 
         p=1
@@ -1697,7 +1957,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             name = '0rms'
           else
 !
-            cind2 = gen_2ind(p,floor((j+1)/2.))
+            cind2 = gen_ind(p,floor((j+1)/2.))
             name = cind2//'rms'
 !
             p=3-p
@@ -1736,11 +1996,22 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       call update_diag( idiag_gal, idiag_galij, 'gal' )
       call update_diag( idiag_aklam, idiag_aklamij, 'aklam' )
       call update_diag( idiag_nu, idiag_nuij, 'nu' )
+      call update_diag( idiag_xi, idiag_xii, 'xi' )
+
+      call update_diag( idiag_kappa, idiag_kappai, 'kappa' )
+      call update_diag( idiag_psi, idiag_psii, 'psi' )
+      call update_diag( idiag_phi, idiag_phii, 'phi' )
 
       if ( idiag_gal/=-1 )   call correct_inds(idiag_galij)
       if ( idiag_aklam/=-1 ) call correct_inds(idiag_aklamij)
       if ( idiag_nu/=-1 )    call correct_inds(idiag_nuij)
 !
+      if ( idiag_xi/=-1 )    call correct_inds(idiag_xii)
+
+      if ( idiag_kappa/=-1 ) call correct_inds(idiag_kappai)
+      if ( idiag_psi/=-1 )   call correct_inds(idiag_psii)
+      if ( idiag_phi/=-1 )   call correct_inds(idiag_phii)
+
       if ( idiag_nu /= 0 ) &
         idiag_aklam = -1
 !
@@ -1762,21 +2033,30 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       if (lwr) then
 !
         do i=1,2
-        do j=1,2
+          do j=1,2
 !
-          cind2 = gen_2ind(i,j)
-          write(3,*) 'idiag_gal'//cind2//'=',idiag_galij(i,j)
-          write(3,*) 'idiag_aklam'//cind2//'=',idiag_aklamij(i,j)
-          write(3,*) 'idiag_nu'//cind2//'=',idiag_nuij(i,j)
+            cind2 = gen_ind(i,j)
+            write(3,*) 'idiag_gal'//cind2//'=',idiag_galij(i,j)
+            write(3,*) 'idiag_aklam'//cind2//'=',idiag_aklamij(i,j)
+            write(3,*) 'idiag_nu'//cind2//'=',idiag_nuij(i,j)
 !
-        enddo
+          enddo
+ 
+          cind1 = gen_ind(i)
+
+          write(3,*) 'idiag_xi'//cind1//'=',idiag_xii(i)
+
+          write(3,*) 'idiag_kappa'//cind1//'=',idiag_kappai(i)
+          write(3,*) 'idiag_psi'//cind1//'=',idiag_psii(i)
+          write(3,*) 'idiag_phi'//cind1//'=',idiag_phii(i)
+
         enddo
 
         do j=1,njtestflow
 !
           do i=1,3
 
-            cind2 = gen_2ind(i,j)
+            cind2 = gen_ind(i,j)
             write(3,*) 'idiag_Fipq'//cind2//'=',idiag_Fipq(i,j)
 !
           enddo
@@ -1793,7 +2073,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
             name = '0rms='
           else
 !
-            name = gen_2ind(p,floor((j+1)/2.))//'rms='
+            name = gen_ind(p,floor((j+1)/2.))//'rms='
             p=3-p
 !
           endif
@@ -1829,7 +2109,18 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 
     endfunction gen_2ind
 !***********************************************************************
-    subroutine mark_del_elems( carray, leng, indices )
+    character(len=1) function gen_1ind(i)
+!
+      integer :: i
+!
+      character(len=20) c
+      write(c,fmt='(i19)') i
+
+      gen_1ind = trim(adjustl(c))
+
+    endfunction gen_1ind
+!***********************************************************************
+    subroutine mark_del_elems2( carray, leng, indices )
 
       integer, dimension(2,2) :: indices
       integer                 :: leng
@@ -1842,10 +2133,10 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
       do i=1,2
       do j=1,2
-        if ( indices(i,j) /= 0 ) then
-!
-          ind = indices(i,j)
 
+        ind = indices(i,j)       
+        if ( ind /= 0 ) then
+!
           call del_elem( carray, idiag_map(ind), leng )
 !
           idiag_map(ind) = 0
@@ -1856,7 +2147,35 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       enddo
       enddo
 !
-    endsubroutine mark_del_elems
+    endsubroutine mark_del_elems2
+!***********************************************************************
+    subroutine mark_del_elems1( carray, leng, indices )
+
+      integer, dimension(2) :: indices
+      integer               :: leng
+!
+      character*(*), dimension(*) :: carray
+!
+      intent(inout) :: indices, carray, leng
+!
+      integer :: i,ind
+!
+      do i=1,2
+
+        ind = indices(i)
+        if ( ind /= 0 ) then
+!
+          call del_elem( carray, idiag_map(ind), leng )
+!
+          idiag_map(ind) = 0
+          if ( ind.lt.nname_old ) &
+            idiag_map(ind+1:nname_old) = idiag_map(ind+1:nname_old)-1
+
+        endif
+
+      enddo
+!
+    endsubroutine mark_del_elems1
 !***********************************************************************
     subroutine del_elem( carray, index, leng )
 
@@ -1915,7 +2234,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
       endif
     endsubroutine insert_array_mult
 !***********************************************************************
-    subroutine update_diag( mat_diag_ind, mat_diag_indices, cdiagname )
+    subroutine update_diag2( mat_diag_ind, mat_diag_indices, cdiagname )
 !
       use Cdata
       use Diagnostics
@@ -1931,7 +2250,7 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
       integer :: iname, i, j, nname_form, indx
 !
-      if ( mat_diag_ind==0 ) then                           ! if complete tensor was not already inquired
+      if ( mat_diag_ind==0 ) then                              ! if complete tensor was not already inquired
 !
         do iname=1,nname
         do i=1,2
@@ -1980,9 +2299,72 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
 !
       endif
 !
-    endsubroutine update_diag
+    endsubroutine update_diag2
 !***********************************************************************
-    subroutine correct_inds(mat_diag_indices)
+    subroutine update_diag1( mat_diag_ind, mat_diag_indices, cdiagname )
+!
+      use Cdata
+      use Diagnostics
+!
+      integer               :: mat_diag_ind
+      integer, dimension(2) :: mat_diag_indices
+!
+      intent(inout) :: mat_diag_ind, mat_diag_indices
+!
+      character*(*), intent(in) :: cdiagname
+!
+      character(len=30) cformat
+!
+      integer :: iname, i, nname_form, indx
+!
+      if ( mat_diag_ind.eq.0 ) then                           ! if complete tensor was not already inquired
+!
+        do iname=1,nname
+        do i=1,2
+!
+          if ( mat_diag_indices(i)/=0 ) then                  ! if any of the elements is inquired
+!
+            mat_diag_ind = -2                                 ! flag the whole tensor to be calculated
+            return
+!
+          endif
+!
+        enddo
+        enddo
+!
+      else
+!
+        call mark_del_elems( cname, nname, mat_diag_indices )     ! delete inquiries for individual elements and mark them in idiag_map by 0
+!
+        indx = idiag_map(mat_diag_ind)
+        cformat = cname(indx)
+        cformat = cformat(index(cformat,'('):)
+
+        nname_form=nname
+
+        call del_elem( cname, indx, nname )                                                         ! replace inquiry for the whole tensor by inquiries for
+        call insert( cname, (/cdiagname//'1'//cformat,cdiagname//'2'//cformat/), 2, indx, nname )   ! all elements
+
+        do i=1,2
+!
+          mat_diag_indices(i) = indx
+          indx = indx+1
+!
+        enddo
+
+        if ( mat_diag_ind.lt.nname_old ) &
+          idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+1
+!
+        cformat = cform(indx)
+        call insert( cform, cformat, 1, indx+1, nname_form )
+!
+        mat_diag_ind = -1
+!
+      endif
+!
+    endsubroutine update_diag1
+!***********************************************************************
+    subroutine correct_2inds(mat_diag_indices)
 !
       integer, dimension(2,2) :: mat_diag_indices
 !
@@ -1999,7 +2381,24 @@ testloop: do jtest=0,njtestflow                           ! jtest=0 : primary tu
         enddo
       enddo
 !
-    endsubroutine correct_inds
+    endsubroutine correct_2inds
+!***********************************************************************
+    subroutine correct_1inds(mat_diag_indices)
+!
+      integer, dimension(2) :: mat_diag_indices
+!
+      integer i,ind
+!
+      do i=1,2
+!
+        ind = mat_diag_indices(i)
+!
+        if (ind.gt.0) &
+          mat_diag_indices(i) = idiag_map(ind)
+!
+      enddo
+!
+    endsubroutine correct_1inds
 !***********************************************************************
       SUBROUTINE ISORTP(N,RA,IP)
 !
