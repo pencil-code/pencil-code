@@ -404,19 +404,20 @@ module EquationOfState
       endif
 !
       call keep_compiler_quiet(present(f))
+!
     endsubroutine getmu
 !***********************************************************************
-   subroutine getmu_array(f,mu1_full_tmp)
+    subroutine getmu_array(f,mu1_full_tmp)
 !
 !  dummy routine to calculate mean molecular weight
 !
 !   16-mar-10/natalia
 !
-     real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz) :: mu1_full_tmp
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mu1_full_tmp
 !
-     call keep_compiler_quiet(f)
-     call keep_compiler_quiet(mu1_full_tmp)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(mu1_full_tmp)
 !
     endsubroutine getmu_array
 !***********************************************************************
@@ -915,7 +916,7 @@ module EquationOfState
 !
      call keep_compiler_quiet(f)
      call keep_compiler_quiet(TT_tmp)
-!  
+!
    endsubroutine gettemperature
 !***********************************************************************
  subroutine getpressure(pp_tmp)
@@ -923,7 +924,7 @@ module EquationOfState
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
-!  
+!
    endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
@@ -2160,7 +2161,7 @@ module EquationOfState
 !
 !  calculate Fbot/(K*cs2)
 !
-        
+
         if (ldensity_nolog) then
           rho_xy=f(:,:,n1,irho)
           cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n1,irho))-lnrho0)+cv1*f(:,:,n1,iss))
@@ -2206,7 +2207,7 @@ module EquationOfState
 !
 !DM+PC we think in the following top should be replaced by bot we have
 ! done one change. Axel, you introduced these lines in version 10959 could
-! please have a look. 
+! please have a look.
         if (lheatc_chiconst) then
 ! The following line may be wrong Fbot -> Ftop
           tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
@@ -2516,7 +2517,7 @@ module EquationOfState
                        'bc_ss_temp_x: cannot have cs2top<=0'
         if (lentropy .and. .not. pretend_lnTT) then
 !
-!  Distinguish cases for linear and logarithmic density 
+!  Distinguish cases for linear and logarithmic density
 !
           tmp = 2*cv*log(cs2top/cs20)
           if (ldensity_nolog) then
@@ -2639,7 +2640,7 @@ module EquationOfState
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
 !
-!  Distinguish cases for linear and logarithmic density 
+!  Distinguish cases for linear and logarithmic density
 !
            tmp = 2*cv*log(cs2bot/cs20)
            if (ldensity_nolog) then
@@ -2676,7 +2677,7 @@ module EquationOfState
                    'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
 !
-!  Distinguish cases for linear and logarithmic density 
+!  Distinguish cases for linear and logarithmic density
 !
           tmp = 2*cv*log(cs2top/cs20)
           if (ldensity_nolog) then

@@ -294,7 +294,7 @@ module EquationOfState
       if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
       if (lpencil(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
       if (lpencil(i_gTT)) then
-        do i=1,3 
+        do i=1,3
           p%gTT(:,i) =p%TT * p%glnTT(:,i)
         enddo
       endif
@@ -418,9 +418,10 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu
-
+!
       mu=0.
       call keep_compiler_quiet(present(f))
+!
     endsubroutine getmu
 !***********************************************************************
     subroutine getmu_array(f,mu1_full_tmp)
@@ -538,7 +539,7 @@ module EquationOfState
 !
      call keep_compiler_quiet(f)
      call keep_compiler_quiet(TT_tmp)
-!  
+!
    endsubroutine gettemperature
 !***********************************************************************
  subroutine getpressure(pp_tmp)
@@ -546,7 +547,7 @@ module EquationOfState
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
-!  
+!
    endsubroutine getpressure
 !***********************************************************************
 
@@ -964,7 +965,7 @@ module EquationOfState
      subroutine get_average_pressure(average_density,average_pressure)
 !   01-dec-2009/piyali+dhrube: coded
       use Cdata
-!      
+!
       real, intent(in):: average_density
       real, intent(out):: average_pressure
 !

@@ -121,6 +121,7 @@ module EquationOfState
 !
       if (xH2 < 0. .or. xH2 > 0.5) &
           call stop_it('initialize_ionization: xH2 must be <= 0.5 and >= 0.0')
+!
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
@@ -505,7 +506,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
      call keep_compiler_quiet(f)
      call keep_compiler_quiet(TT_tmp)
-!  
+!
    endsubroutine gettemperature
 !***********************************************************************
   subroutine getpressure(pp_tmp)
@@ -513,7 +514,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
-!  
+!
    endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)

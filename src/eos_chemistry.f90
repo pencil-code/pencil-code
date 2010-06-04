@@ -320,7 +320,8 @@ module EquationOfState
       real, intent(out) :: mu_tmp
 !
       call keep_compiler_quiet(mu_tmp)
-!    
+      call keep_compiler_quiet(present(f))
+!
     endsubroutine getmu
 !***********************************************************************
     subroutine getmu_array(f,mu1_full_tmp)
@@ -410,7 +411,7 @@ module EquationOfState
       lpenc_requested(i_TT_3)=.true.
       lpenc_requested(i_TT_4)=.true.
       lpenc_requested(i_del2lnTT)=.true.
-      
+
       if (ltemperature_nolog) then
         lpenc_requested(i_gTT)=.true.
       else
@@ -443,7 +444,7 @@ module EquationOfState
         else
          if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
         endif
-!      
+!
        if (lpencil_in(i_TT_2))   lpencil_in(i_TT)=.true.
        if (lpencil_in(i_TT_3))   lpencil_in(i_TT_2)=.true.
        if (lpencil_in(i_TT_4))   lpencil_in(i_TT_2)=.true.
