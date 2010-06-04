@@ -6,7 +6,7 @@
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
-! NCHEMSPEC CONTRIBUTION 8*1
+! NCHEMSPEC CONTRIBUTION 16*1
 !
 !***************************************************************
 integer, parameter :: ncpus=1,nprocy=1,nprocz=1,nprocx=1
