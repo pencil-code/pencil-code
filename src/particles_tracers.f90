@@ -33,8 +33,9 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical :: ltrace_dust=.false.
-  real :: pdlaw
+  real :: pdlaw,particles_insert_rate=0.,max_particle_insert_time=huge1
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
+  character (len=labellen), dimension (ninit) :: insertxxp='nothing'
   character (len=labellen) :: gravz_profile='zero'
   logical :: lglobalrandom=.false.
 !
@@ -47,8 +48,9 @@ module Particles
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, lquadratic_interpolation, &
       lparticlemesh_cic, lparticlemesh_tsc, ltrace_dust, &
-      lcheck_exact_frontier, &
-      linsert_particles_continuously,dsnap_par
+      lcheck_exact_frontier,particles_insert_rate, &
+      linsert_particles_continuously,dsnap_par, &
+      max_particle_insert_time,insertxxp
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -553,6 +555,7 @@ module Particles
 !
           if (lshear.and.nygrid/=1)&
               dfp(k,iyp) = dfp(k,iyp) - qshear*Omega*fp(k,ixp)
+!
         enddo
       endif
 !
@@ -639,11 +642,13 @@ module Particles
 !***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
-      real,    dimension (mpar_loc,mpvar)   :: fp, dfp
-      integer, dimension (mpar_loc,3)       :: ineargrid
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
@@ -732,19 +737,94 @@ module Particles
 ! declarations in particles_tracers to make it work here.
 !
 !
+      use General, only: random_number_wrapper
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar)   :: fp
       integer, dimension (mpar_loc,3)    :: ineargrid
+      logical :: linsertmore=.true.
+      real :: avg_n_insert,remaining_particles
+!
+      integer :: j, k, n_insert, npar_loc_old, iii
 !
       intent (inout) :: fp,ineargrid
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
+! Stop call to this routine when maximum number of particles is reached!
+! Since root inserts all new particles, make sure
+! npar_total + n_insert < mpar
+! so that a processor can not exceed its maximum number of particles.
 !
-      if (linsert_particles_continuously) then
-        call fatal_error('particles_tracers.f90',&
-            'insert_particles not yet implemented')
+      if (lroot) then
+        avg_n_insert=particles_insert_rate*dt
+        n_insert=int(avg_n_insert + remaining_particles)
+! Remaining particles saved for subsequent timestep:
+        remaining_particles=avg_n_insert + remaining_particles - n_insert
+        if ((n_insert+npar_total <= mpar_loc) &
+            .and. (t<max_particle_insert_time)) then
+          linsertmore=.true.
+        else
+          linsertmore=.false.
+        endif
+!
+        if (linsertmore) then
+! Actual (integer) number of particles to be inserted at this timestep:
+          do iii=npar_loc+1,npar_loc+n_insert
+            ipar(iii)=npar_total+iii-npar_loc
+          enddo
+          npar_total=npar_total+n_insert
+          npar_loc_old=npar_loc
+          npar_loc=npar_loc + n_insert
+!
+! Insert particles in chosen position (as in init_particles).
+!
+          do j=1,ninit
+            select case (insertxxp(j))
+            case ('nothing')
+              if (lroot.and.ip<10) print*, 'init_particles: nothing'
+            case ('random-xy')
+              if (lroot.and.ip<10) print*, 'init_particles: Random particle positions'
+              do k=1,npar_loc
+                if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+                if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              enddo
+              if (nxgrid/=1) &
+                  fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+              if (nygrid/=1) &
+                  fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+              fp(1:npar_loc,izp)=zp0
+              !
+            case default
+              if (lroot) &
+                  print*, 'insert_particles: No such such value for initxxp: ', &
+                  trim(initxxp(j))
+              call fatal_error("particles_tracers","No such insert condition")
+              !
+            endselect
+!
+          enddo ! do j=1,ninit
+          if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
+          if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
+          if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
+        endif
+      endif
+!
+!  Redistribute particles only when t < max_particle_insert_time.
+!  Could have included some other tests here aswell......
+!
+      if (t<max_particle_insert_time) then
+!
+!  Redistribute particles among processors.
+!
+        call boundconds_particles(fp,ipar,linsert=.true.)
+!
+!  Map particle positions on the grid.
+!
+        call map_nearest_grid(fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
+!
+!  Sort particles so that they can be accessed contiguously in the memory.
+!
+        call sort_particles_imn(fp,ineargrid,ipar)
       endif
 !
     endsubroutine insert_particles
