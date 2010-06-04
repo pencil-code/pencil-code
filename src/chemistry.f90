@@ -353,7 +353,7 @@ module Chemistry
              call fatal_error('initialize_chemistry',&
                        'no O2 has been found')
          endif
-         call find_species_index('O2',ind_glob,ind_chem,found_specie)
+         call find_species_index('N2',ind_glob,ind_chem,found_specie)
          if (found_specie) then
           index_N2=ind_chem
          else
@@ -842,37 +842,61 @@ module Chemistry
 ! This routine set up the initial profiles used in 1D flame speed measurments
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: k
+      integer :: i,j,k
 !
-      real :: mO2, mH2, mN2, mH2O
+      real :: mO2, mH2, mN2, mH2O, mCH4, mCO2
       real :: log_inlet_density, del
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      integer :: i_CH4, i_CO2, ichem_CH4, ichem_CO2
       real :: initial_mu1, final_massfrac_O2
-      logical :: found_specie
+      real :: init_H2,init_O2,init_N2,init_H2O,init_CO2,init_CH4
+      logical :: lH2,lO2,lN2,lH2O,lCH4,lCO2
 !
       lflame_front=.true.
 !
       call air_field(f)
 !
-   if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
+      if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
 !
 ! Initialize some indexes
 !
-      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
-      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
-      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
-!
-      mO2 =species_constants(ichem_O2 ,imass)
-      mH2 =species_constants(ichem_H2 ,imass)
-      mH2O=species_constants(ichem_H2O,imass)
-      mN2 =species_constants(ichem_N2 ,imass)
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,lH2)
+      if (lH2) then
+        mH2 =species_constants(ichem_H2 ,imass)
+        init_H2=initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,lO2)
+      if (lO2) then
+        mO2 =species_constants(ichem_O2 ,imass)
+        init_O2=initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,lN2)
+      if (lN2) then
+        mN2 =species_constants(ichem_N2 ,imass)
+        init_N2=initial_massfractions(ichem_N2)
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O =species_constants(ichem_H2O ,imass)
+        init_H2O=initial_massfractions(ichem_H2O)
+      endif
+      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
+      if (lCH4) then
+        mCH4 =species_constants(ichem_CH4 ,imass)
+        init_CH4=initial_massfractions(ichem_CH4)
+      endif
+      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
+      if (lCO2) then
+        mCO2 =species_constants(ichem_CO2 ,imass)
+        init_CO2=initial_massfractions(ichem_CO2)
+      endif
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
 !
       final_massfrac_O2&
-          =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2.*mH2))*mO2
+          =(init_O2/mO2&
+          -init_H2/(2.*mH2)&
+          -init_CH4*2/(mCH4))*mO2
 !
      if (final_massfrac_O2<0.) final_massfrac_O2=0.
 !
@@ -915,11 +939,14 @@ module Chemistry
 !
         else
           if (x(k)>init_x1) then
-!
-             f(k,:,:,i_H2)=initial_massfractions(ichem_H2) &
-                *(exp(f(k,:,:,ilnTT))-init_TT2) &
-                /(init_TT1-init_TT2)
-!
+            if (lH2) then
+              f(k,:,:,i_H2)=init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                  /(init_TT1-init_TT2)
+            endif
+            if (lCH4) then
+              f(k,:,:,i_CH4)=init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                  /(init_TT1-init_TT2)
+            endif
           endif
         endif
 !
@@ -937,11 +964,13 @@ module Chemistry
           endif
           if (x(k)>init_x1 .and. x(k)<init_x2) then
             f(k,:,:,i_O2)=(x(k)-init_x2)/(init_x1-init_x2) &
-                *(initial_massfractions(ichem_O2)-final_massfrac_O2)&
+                *(init_O2-final_massfrac_O2)&
                 +final_massfrac_O2
           endif
          endif
         enddo
+!
+! Initialize steam and CO2
 !
         if (.not. lT_tanh) then
           do k=1,mx
@@ -949,11 +978,13 @@ module Chemistry
               if (final_massfrac_O2>0.) then
                 f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
                     *(exp(f(k,:,:,ilnTT))-init_TT1) &
-                    /(init_TT2-init_TT1)+initial_massfractions(ichem_H2O)
+                    /(init_TT2-init_TT1)+init_H2O
               else
-!
                 if (x(k)>=init_x2) then
-                  f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)
+                  if (lCO2) f(k,:,:,i_CO2)=init_CO2+(init_CH4-f(k,:,:,i_CH4))
+                  f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)-f(k,:,:,i_O2)
+                  if (lCH4) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CH4)
+                  if (lCO2) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CO2)
                 else
                   f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
                       *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2)) &
@@ -974,12 +1005,14 @@ module Chemistry
 !  Find logaritm of density at inlet
 !
          initial_mu1&
-          =initial_massfractions(ichem_H2)/(mH2)&
-          +initial_massfractions(ichem_O2)/(mO2)&
-          +initial_massfractions(ichem_H2O)/(mH2O)&
-          +initial_massfractions(ichem_N2)/(mN2)
+             =initial_massfractions(ichem_H2)/(mH2)&
+             +initial_massfractions(ichem_O2)/(mO2)&
+             +initial_massfractions(ichem_H2O)/(mH2O)&
+             +initial_massfractions(ichem_N2)/(mN2)
+         if (lCO2) initial_mu1=initial_mu1+init_CO2/(mCO2)
+         if (lCH4) initial_mu1=initial_mu1+init_CH4/(mCH4)
          log_inlet_density=&
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+             log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
 !
        call getmu_array(f,mu1_full)
 !
@@ -999,6 +1032,17 @@ module Chemistry
           f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
       if (ltemperature_nolog) &
           f(l1:l2,m1:m2,n1:n2,iTT)=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+!
+! Renormalize all species too be sure that the sum of all mass fractions
+! are unity
+!
+      do i=1,mx
+      do j=1,my
+      do k=1,mz
+        f(i,j,k,ichemspec)=f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+      enddo
+      enddo      
+      enddo
 !
     endsubroutine flame_front
 !***********************************************************************
@@ -2717,7 +2761,6 @@ module Chemistry
                   SeparatorInd=SeparatorInd+ParanthesisInd-1
                   read (unit=ChemInpLine(ParanthesisInd+1:&
                                  SeparatorInd-1),fmt='(E15.8)') lamb_low
-                !    print*,'Natalia1',lamb_low
                 endif
                 ParanthesisInd=index(ChemInpLine(StopInd:),')') +StopInd-1
                 SeparatorInd=index(ChemInpLine(StopInd:ParanthesisInd),'<') &
@@ -2725,7 +2768,6 @@ module Chemistry
                  if (SeparatorInd>0) then
                    read (unit=ChemInpLine(SeparatorInd+1:&
                                   ParanthesisInd-1),fmt='(E15.8)') lamb_up
-                 !   print*,'Natalia2',lamb_up
                  endif
                endif
                endif
