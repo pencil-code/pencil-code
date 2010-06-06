@@ -73,7 +73,7 @@ module Radiation
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
-  real :: cdtrad_thin=1.0, cdtrad_thick=0.8
+  real :: cdtrad=1.0, cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_Srad=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
@@ -138,10 +138,11 @@ module Radiation
       ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
       kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
-      Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, cdtrad_thin, &
-      cdtrad_thick, scalefactor_Srad, angle_weight, lcheck_tau_division, &
-      lfix_radweight_1d, expo_rho_opa, expo_temp_opa, ref_rho_opa, &
-      expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, width_temp_opa
+      Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, &
+      cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, angle_weight, &
+      lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
+      ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
+      width_temp_opa
 !
   contains
 !***********************************************************************
@@ -1267,7 +1268,10 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: cooling,Qrad2
+!
+      real, dimension (nx) :: cooling, kappa, cv, dt1_rad, Qrad2
+      real, dimension (nx) :: dt1_rad_1, dt1_rad_2
+      integer :: l
 !
 !  Add radiative cooling, either from the intensity or in the diffusion
 !  approximation.
@@ -1293,6 +1297,28 @@ module Radiation
         endif
         if (ltemperature) then
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%rho1*p%cv1*p%TT1*cooling
+        endif
+!
+!  Time-step contribution from cooling.
+!
+        if (lfirst .and. ldt) then
+          kappa=f(l1:l2,m,n,ikapparho)*p%rho1
+          cv=1/p%cv1
+!
+!  Optically thin cooling with photon m.f.p. > d[xyz].
+!
+          dt1_rad_1=4*kappa*sigmaSB*p%TT**3/cv
+!
+!  Optically thick cooling (diffusion).
+!
+          dt1_rad_2=dt1_rad_1*(dxyz_2/f(l1:l2,m,n,ikapparho)**2)
+!
+!  Choose less stringent time-scale of optically thin or thick cooling.
+!
+          do l=1,nx
+            dt1_rad=min(dt1_rad_1(l),dt1_rad_2(l))/cdtrad
+          enddo
+          dt1_max=max(dt1_max,dt1_rad)
         endif
       endif
 !
