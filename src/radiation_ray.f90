@@ -1269,8 +1269,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: cooling, kappa, cv, dt1_rad, Qrad2
-      real, dimension (nx) :: dt1_rad_1, dt1_rad_2
+      real, dimension (nx) :: cooling, kappa, dt1_rad, Qrad2
       integer :: l
 !
 !  Add radiative cooling, either from the intensity or in the diffusion
@@ -1302,21 +1301,13 @@ module Radiation
 !  Time-step contribution from cooling.
 !
         if (lfirst .and. ldt) then
-          kappa=f(l1:l2,m,n,ikapparho)*p%rho1
-          cv=1/p%cv1
-!
-!  Optically thin cooling with photon m.f.p. > d[xyz].
-!
-          dt1_rad_1=4*kappa*sigmaSB*p%TT**3/cv
-!
-!  Optically thick cooling (diffusion).
-!
-          dt1_rad_2=dt1_rad_1*(dxyz_2/f(l1:l2,m,n,ikapparho)**2)
 !
 !  Choose less stringent time-scale of optically thin or thick cooling.
 !
+          kappa=f(l1:l2,m,n,ikapparho)*p%rho1
           do l=1,nx
-            dt1_rad=min(dt1_rad_1(l),dt1_rad_2(l))/cdtrad
+            dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
+                min(1.0,dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2)/cdtrad
           enddo
           dt1_max=max(dt1_max,dt1_rad)
         endif
