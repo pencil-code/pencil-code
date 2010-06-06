@@ -114,7 +114,7 @@ module Magnetic
   real :: rmode=1.0, rm_int=0.0, rm_ext=0.0
   real :: nu_ni=0.0, nu_ni1,hall_term=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
-  real :: meanfield_etat=0.0, meanfield_etat_height=1.
+  real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
   real :: alpha_eps=0.0
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
@@ -235,7 +235,7 @@ module Magnetic
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
-      lmeanfield_pumping, &
+      lmeanfield_pumping, meanfield_pumping, &
       lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_Qs, meanfield_Qp, meanfield_qe, meanfield_Beq, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
@@ -1383,6 +1383,15 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
+!
+!  In mean-field theory, with variable etat, need divA for resistive gauge.
+!
+      if (meanfield_etat_profile/='const') then
+        if (.not.lweyl_gauge) then
+          lpenc_requested(i_diva)=.true.
+        endif
+      endif
+!
       if (lupw_aa) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
@@ -1753,7 +1762,7 @@ module Magnetic
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb
-      real :: B2_ext,c,s,kx
+      real :: B2_ext,c,s,kx,fact
       integer :: i,j,ix
 !
       intent(inout) :: f,p
@@ -2190,17 +2199,19 @@ module Magnetic
 !  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
 !
           if (lmeanfield_pumping) then
-            p%mf_EMF(:,1)=p%mf_EMF(:,1)+.5*meanfield_detatdz_tmp*p%bb(:,2)
-            p%mf_EMF(:,2)=p%mf_EMF(:,2)-.5*meanfield_detatdz_tmp*p%bb(:,1)
+            fact=.5*meanfield_pumping
+            p%mf_EMF(:,1)=p%mf_EMF(:,1)+fact*meanfield_detatdz_tmp*p%bb(:,2)
+            p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*meanfield_detatdz_tmp*p%bb(:,1)
           endif
 !
-!  apply diffusion term (simple in Weyl gauge, which is not
-!  the default!), and not yet correct if not Weyl gauge.
+!  Apply diffusion term: simple in Weyl gauge, which is not the default!
+!  In diffusive gauge, add (divA) grad(etat) term.
 !
           if (lweyl_gauge) then
             call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
           else
             call multsv_mn_add(+meanfield_etat_tmp,p%del2a,p%mf_EMF)
+            p%mf_EMF(:,3)=p%mf_EMF(:,3)+p%diva*meanfield_detatdz_tmp
           endif
 !
 !  Allow for possibility of variable etat.

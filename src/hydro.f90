@@ -220,9 +220,15 @@ module Hydro
   integer :: idiag_uxuym=0      ! DIAG_DOC: $\left<u_x u_y\right>$
   integer :: idiag_uxuzm=0      ! DIAG_DOC: $\left<u_x u_z\right>$
   integer :: idiag_uyuzm=0      ! DIAG_DOC: $\left<u_y u_z\right>$
-  integer :: idiag_uxuymz=0     ! DIAG_DOC:
-  integer :: idiag_uxuzmz=0     ! DIAG_DOC:
-  integer :: idiag_uyuzmz=0     ! DIAG_DOC:
+  integer :: idiag_uxuymz=0     ! DIAG_DOC: $\left<u_x u_y\right>_{xy}$
+  integer :: idiag_uxuzmz=0     ! DIAG_DOC: $\left<u_x u_z\right>_{xy}$
+  integer :: idiag_uyuzmz=0     ! DIAG_DOC: $\left<u_y u_z\right>_{xy}$
+  integer :: idiag_oxuxxmz=0    ! DIAG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
+  integer :: idiag_oyuxymz=0    ! DIAG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
+  integer :: idiag_oxuyxmz=0    ! DIAG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
+  integer :: idiag_oyuyymz=0    ! DIAG_DOC: $\left<\omega_y u_{y,y}\right>_{xy}$
+  integer :: idiag_oxuzxmz=0    ! DIAG_DOC: $\left<\omega_x u_{z,x}\right>_{xy}$
+  integer :: idiag_oyuzymz=0    ! DIAG_DOC: $\left<\omega_y u_{z,y}\right>_{xy}$
   integer :: idiag_uxuymy=0     ! DIAG_DOC:
   integer :: idiag_uxuzmy=0     ! DIAG_DOC:
   integer :: idiag_uyuzmy=0     ! DIAG_DOC:
@@ -1670,8 +1676,7 @@ module Hydro
 !  adding differential rotation via a frictional term
 !
       if (tau_diffrot1/=0) then
-       call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
-      else
+        call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
@@ -1985,26 +1990,22 @@ module Hydro
         if (idiag_ox2mx/=0)  call yzsum_mn_name_x(p%oo(:,1)**2,idiag_ox2mx)
         if (idiag_oy2mx/=0)  call yzsum_mn_name_x(p%oo(:,2)**2,idiag_oy2mx)
         if (idiag_oz2mx/=0)  call yzsum_mn_name_x(p%oo(:,3)**2,idiag_oz2mx)
-        if (idiag_uxuymz/=0) &
-            call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
-        if (idiag_uxuzmz/=0) &
-            call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
-        if (idiag_uyuzmz/=0) &
-            call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
-        if (idiag_ruxuymz/=0) &
-          call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
-        if (idiag_uxuymy/=0) &
-            call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
-        if (idiag_uxuzmy/=0) &
-            call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
-        if (idiag_uyuzmy/=0) &
-            call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
-        if (idiag_uxuymx/=0) &
-            call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
-        if (idiag_uxuzmx/=0) &
-            call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
-        if (idiag_uyuzmx/=0) &
-            call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
+        if (idiag_uxuymz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
+        if (idiag_uxuzmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
+        if (idiag_uyuzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
+        if (idiag_ruxuymz/=0) call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
+        if (idiag_oxuxxmz/=0) call xysum_mn_name_z(p%oo(:,1)*p%uij(:,1,1),idiag_oxuxxmz)
+        if (idiag_oyuxymz/=0) call xysum_mn_name_z(p%oo(:,2)*p%uij(:,1,2),idiag_oyuxymz)
+        if (idiag_oxuyxmz/=0) call xysum_mn_name_z(p%oo(:,1)*p%uij(:,2,1),idiag_oxuyxmz)
+        if (idiag_oyuyymz/=0) call xysum_mn_name_z(p%oo(:,2)*p%uij(:,2,2),idiag_oyuyymz)
+        if (idiag_oxuzxmz/=0) call xysum_mn_name_z(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxmz)
+        if (idiag_oyuzymz/=0) call xysum_mn_name_z(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzymz)
+        if (idiag_uxuymy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
+        if (idiag_uxuzmy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
+        if (idiag_uyuzmy/=0) call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
+        if (idiag_uxuymx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
+        if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
+        if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
         if (idiag_ekinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
         if (idiag_oumx/=0)   call yzsum_mn_name_x(p%ou,idiag_oumx)
         if (idiag_oumy/=0)   call xzsum_mn_name_y(p%ou,idiag_oumy)
@@ -2228,7 +2229,7 @@ module Hydro
 !     real, dimension (nz*nprocz*3) :: uumz2,uumz3
       real, dimension (3) :: OO, dOO
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      integer :: m,n,i,j
+      integer :: l,m,i,j
       real :: fact
       real, dimension (mz,3) :: temp
       real, dimension (mx,my,3) :: tempxy
@@ -2306,10 +2307,10 @@ module Hydro
         fact=1./nzgrid
         uumxy = 0.
 !
-        do n=1,mx
+        do l=1,mx
           do m=1,my
             do j=1,3
-              uumxy(n,m,j)=fact*sum(f(n,m,n1:n2,iux+j-1))
+              uumxy(l,m,j)=fact*sum(f(l,m,n1:n2,iux+j-1))
             enddo
           enddo
         enddo
@@ -3244,6 +3245,12 @@ module Hydro
         idiag_uxuzmz=0
         idiag_uyuzmz=0
         idiag_uxuymz=0
+        idiag_oxuxxmz=0
+        idiag_oyuxymz=0
+        idiag_oxuyxmz=0
+        idiag_oyuyymz=0
+        idiag_oxuzxmz=0
+        idiag_oyuzymz=0
         idiag_umx=0
         idiag_umy=0
         idiag_umz=0
@@ -3614,6 +3621,12 @@ module Hydro
             'uyuzmz',idiag_uyuzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ruxuymz',idiag_ruxuymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuxxmz',idiag_oxuxxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuxymz',idiag_oyuxymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuyxmz',idiag_oxuyxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuyymz',idiag_oyuyymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuzxmz',idiag_oxuzxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuzymz',idiag_oyuzymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'fmassz',idiag_fmassz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
