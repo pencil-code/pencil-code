@@ -1064,16 +1064,14 @@ module Dustdensity
               +0.5*(p%nd(:,k+1)*dsize(k+1)+p%nd(:,k)*dsize(k)) &
               *(dsize(k+1)-dsize(k))
           enddo
-          !
-          ! (Probably) just temporarily for debugging a division-by-zero
-          ! problem:
-          !
+!
+!  (Probably) just temporarily for debugging a division-by-zero problem.
+!
           if (any(p%ppsat == 0.0)) then
             write(0,*) 'p%ppsat = ', p%ppsat
-            call inevitably_fatal_error("calc_pencils_dustdensity", &
-                                        "p%ppsat has zero value(s)")
+            call fatal_error('calc_pencils_dustdensity', &
+                'p%ppsat has zero value(s)')
           endif
-
           p%ccondens(:)=4.*PI*rho_w*Aconst*(p%ppwater/p%ppsat-1.)*tmp(:)
         endif
 ! dndr
