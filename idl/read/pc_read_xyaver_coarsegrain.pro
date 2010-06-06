@@ -13,7 +13,10 @@ z0=param1.xyz0(2)
 z1=param1.xyz1(2)
 Lz=z1-z0
 ;
+;  put isample=1 to prevent averaging between nevery intervals
+;
 default,use_grid,1
+default,isample,0
 default,nevery,50
 spawn,'touch parameters.pro'
 @parameters
@@ -42,7 +45,11 @@ openr,1,'xyaver.in'
 openw,2,'.xyaver'
 while not eof(1) do begin
   readf,1,a
-  printf,2,'pc_coarsegrain,xyaver.t,transpose(xyaver.'+a+'),nevery,t,'+a+',/aver,/first'
+  if isample eq 0 then begin
+    printf,2,'pc_coarsegrain,xyaver.t,transpose(xyaver.'+a+'),nevery,t,'+a+',/aver,/first'
+  endif else begin
+    printf,2,'pc_coarsegrain,xyaver.t,transpose(xyaver.'+a+'),nevery,t,'+a+',/first'
+  endelse
   if iread eq 0 then aa=a else aa=aa+','+a
   iread=iread+1
 endwhile
