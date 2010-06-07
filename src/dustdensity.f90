@@ -1071,8 +1071,9 @@ module Dustdensity
             write(0,*) 'p%ppsat = ', p%ppsat
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat has zero value(s)')
+          else
+            p%ccondens(:)=4.*PI*rho_w*Aconst*(p%ppwater/p%ppsat-1.)*tmp(:)
           endif
-          p%ccondens(:)=4.*PI*rho_w*Aconst*(p%ppwater/p%ppsat-1.)*tmp(:)
         endif
 ! dndr
         if (lpencil(i_dndr)) then
