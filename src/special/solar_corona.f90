@@ -521,20 +521,22 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: tmp
 !
-      if (n.eq.n1.and.ipz.eq.0) then
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
-            tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - &
-            tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
-      endif
-!
-      tmp(:)  = tau_inv
-      if (lfirst.and.ldt) then
-        if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(tmp        ,idiag_dtnewt,l_dt=.true.)
+      if (lgranulation) then
+        if (n.eq.n1.and.ipz.eq.0) then
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
+              tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - &
+              tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
         endif
-        dt1_max=max(dt1_max,tmp/cdts)
+!
+        tmp(:)  = tau_inv
+        if (lfirst.and.ldt) then
+          if (ldiagnos.and.idiag_dtnewt/=0) then
+            itype_name(idiag_dtnewt)=ilabel_max_dt
+            call max_mn_name(tmp        ,idiag_dtnewt,l_dt=.true.)
+          endif
+          dt1_max=max(dt1_max,tmp/cdts)
+        endif
       endif
 !
       call keep_compiler_quiet(p)
@@ -1235,9 +1237,9 @@ module Special
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
       if (unit_system.eq.'SI') then
-        granr=max(0.8*1.e6/unit_length,2*dx,2*dy)
+        granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
       elseif  (unit_system.eq.'cgs') then
-        granr=max(0.8*1.e8/unit_length,2*dx,2*dy)
+        granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
       endif
 !
 ! Fractional difference in granule power
@@ -1319,8 +1321,9 @@ module Special
 !  11-may-10/bing: coded
 !
       use EquationOfState, only: gamma_inv,gamma_m1,get_cp1,lnrho0,cs20
-      use Mpicomm, only: mpisend_real, mpirecv_real
       use General, only: random_seed_wrapper
+      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
@@ -1387,7 +1390,13 @@ module Special
 !
       beta =  pp_tmp/max(tini,BB2_local)*2*mu0
 !
-      quench = (beta**2+1.)/(beta**2+3.)
+!  quench velocities to one percent of the granule velocities
+      do i=1,ny 
+        quench(:,i) = cubic_step(beta(:,i),100.,100.)*0.99+0.01
+      enddo
+!
+      ux_local = ux_local * quench
+      uy_local = uy_local * quench
 !
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
@@ -1805,8 +1814,9 @@ module Special
       use Fourier, only: fourier_transform_other
 !
       real, dimension(nxgrid,nygrid) :: kx,ky,k2,filter
-      real, dimension(nxgrid,nygrid) :: fvx_r,fvy_r,frx_r,fry_r
-      real, dimension(nxgrid,nygrid) :: fvx_i,fvy_i,frx_i,fry_i
+      real, dimension(nxgrid,nygrid) :: fvx_r,fvy_r,fvx_i,fvy_i
+      real, dimension(nxgrid,nygrid) :: frx_r,fry_r,frx_i,fry_i
+      real, dimension(nxgrid,nygrid) :: fdx_r,fdy_r,fdx_i,fdy_i
       real :: k20
 !
       fvx_r=vx
@@ -1815,7 +1825,7 @@ module Special
 !
       fvy_r=vy
       fvy_i=0.
-      call fourier_transform_other(fvy_r,fvy_i)
+      call fourier_transform_other(fvy_r,fvy_i)     
 !
 ! Reference frequency is half the Nyquist frequency.
       k20 = (kx_ny/2.)**2.
@@ -1825,22 +1835,37 @@ module Special
 !
       k2 =kx**2 + ky**2 + tini
 !
-      frx_r = +ky*(ky*fvx_r + kx*fvy_r)/k2
-      fry_r = -kx*(ky*fvx_r + kx*fvy_r)/k2
+      frx_r = +ky*(ky*fvx_r - kx*fvy_r)/k2
+      frx_i = +ky*(ky*fvx_i - kx*fvy_i)/k2
+!
+      fry_r = -kx*(ky*fvx_r - kx*fvy_r)/k2
+      fry_i = -kx*(ky*fvx_i - kx*fvy_i)/k2
+!
+      fdx_r = +kx*(kx*fvx_r + ky*fvy_r)/k2
+      fdx_i = +kx*(kx*fvx_i + ky*fvy_i)/k2
+!
+      fdy_r = +ky*(kx*fvx_r + ky*fvy_r)/k2
+      fdy_i = +ky*(kx*fvx_i + ky*fvy_i)/k2
 !
 ! Filter out large wave numbers.
-
       filter = exp(-(k2/k20)**2)
 !      
       frx_r = frx_r*filter
       frx_i = frx_i*filter
-      fvx_r = fvx_r*filter
-      fvx_i = fvx_i*filter
 !
-      call fourier_transform_other(fvx_r,fvx_i,linv=.true.)
-      vx=fvx_r
-      call fourier_transform_other(fvy_r,fvy_i,linv=.true.)
-      vy=fvy_r
+      fry_r = fry_r*filter
+      fry_i = fry_i*filter
+!
+      fdx_r = fdx_r*filter
+      fdx_i = fdx_i*filter
+!
+      fdy_r = fdy_r*filter
+      fdy_i = fdy_i*filter
+!
+      call fourier_transform_other(fdx_r,fdx_i,linv=.true.)
+      vx=fdx_r
+      call fourier_transform_other(fdy_r,fdy_i,linv=.true.)
+      vy=fdy_r
 !
       call fourier_transform_other(frx_r,frx_i,linv=.true.)
       call fourier_transform_other(fry_r,fry_i,linv=.true.)
@@ -1886,7 +1911,7 @@ module Special
               w(i,j) =max(w(i,j),wtmp)
             end if
           endif
-          if (w(i,j) .gt. ampl/(2*granr*(1+ig))) avoidarr(i,j)=1
+          if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
         enddo
       enddo
 !
