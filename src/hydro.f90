@@ -415,7 +415,7 @@ module Hydro
   integer :: idiag_duydzma=0    ! DIAG_DOC:
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
-  integer :: idiag_ekinz=0      ! DIAG_DOC:
+  integer :: idiag_ekinmz=0     ! DIAG_DOC:
   integer :: idiag_totangmom=0  ! DIAG_DOC:
   integer :: idiag_fmasszmz=0   ! DIAG_DOC:
   integer :: idiag_fkinzmz=0    ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
@@ -1311,7 +1311,7 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-          idiag_ekinz/=0 .or. idiag_fkinxmxy/=0) then
+          idiag_ekinmz/=0 .or. idiag_fkinxmxy/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
@@ -2009,7 +2009,7 @@ module Hydro
         if (idiag_uxuymx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
         if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
         if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
-        if (idiag_ekinz/=0)  call xysum_mn_name_z(p%ekin,idiag_ekinz)
+        if (idiag_ekinmz/=0)  call xysum_mn_name_z(p%ekin,idiag_ekinmz)
         if (idiag_oumx/=0)   call yzsum_mn_name_x(p%ou,idiag_oumx)
         if (idiag_oumy/=0)   call xzsum_mn_name_y(p%ou,idiag_oumy)
         if (idiag_oumz/=0)   call xysum_mn_name_z(p%ou,idiag_oumz)
@@ -3366,7 +3366,7 @@ module Hydro
         idiag_ekin=0
         idiag_totangmom=0
         idiag_ekintot=0
-        idiag_ekinz=0
+        idiag_ekinmz=0
         idiag_fmasszmz=0
         idiag_fkinzmz=0
         idiag_fkinxmxy=0
@@ -3629,7 +3629,7 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'fkinzmz',idiag_fkinzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'ekinz',idiag_ekinz)
+            'ekinmz',idiag_ekinmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oumz',idiag_oumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -3813,7 +3813,7 @@ module Hydro
         write(3,*) 'i_fmasszmz=',idiag_fmasszmz
         write(3,*) 'i_fkinzmz=',idiag_fkinzmz
         write(3,*) 'i_fkinxmxy=',idiag_fkinxmxy
-        write(3,*) 'i_ekinz=',idiag_ekinz
+        write(3,*) 'i_ekinmz=',idiag_ekinmz
         write(3,*) 'i_uxmz=',idiag_uxmz
         write(3,*) 'i_uymz=',idiag_uymz
         write(3,*) 'i_uzmz=',idiag_uzmz
