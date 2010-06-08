@@ -1291,6 +1291,16 @@ endif
 #CC=gcc #(mac)
 #CFLAGS=-O3 -DFUNDERSC=1 #(mac)
 #LD_MPI= -L/usr/local/lib -lmpich -lpmpich #(mac)
+##
+## Anders's MacBook Pro
+##
+#FC=/opt/local/bin/openmpif90 # (groovy|ip237*)
+#FFLAGS=-O3 -I/opt/local/include/openmpi #(groovy|ip237*)
+#F77=$(FC) #(groovy|ip237*)
+#CC=gcc #(groovy|ip237*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(groovy|ip237*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(groovy|ip237*)
+##LD_MPI= -L/opt/local/lib/openmpi -lmpich -lpmpich #(mac)
 
 ##
 ## SunOS:
