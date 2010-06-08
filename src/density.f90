@@ -1577,7 +1577,7 @@ module Density
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      use Deriv, only:der6
+      use Deriv, only: der6
       use Diagnostics
       use Mpicomm, only: stop_it
       use Special, only: special_calc_density
