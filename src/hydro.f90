@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3)
+! PENCILS PROVIDED divu; oo(3); o2; ou; u2; ekin; uij(3,3); uu(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3); qq(3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
@@ -42,9 +42,9 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
-  real, dimension (mz,3) :: uumz,guumz=0.                          ! guumz contains invalid data on ghostzones
-  real, dimension (mx,my,3) :: uumxy=0.
-  real, dimension (mx,mz,3) :: uumxz=0.
+  real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data on ghostzones
+  real, dimension (mx,my,3) :: uumxy=0.0
+  real, dimension (mx,mz,3) :: uumxz=0.0
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
@@ -1261,7 +1261,7 @@ module Hydro
 !
 !  video pencils
 !
-      if (dvid/=0.) then
+      if (dvid/=0.0) then
         lpenc_video(i_oo)=.true.
         lpenc_video(i_o2)=.true.
         lpenc_video(i_divu)=.true.
@@ -1318,13 +1318,8 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinz/=0 .or. &
-          idiag_ekinz/=0) then
-        lpenc_diagnos(i_rho)=.true.
-        lpenc_diagnos(i_u2)=.true.
-      endif
-      if (idiag_fkinxy/=0) then
-        lpenc_diagnos2d(i_rho)=.true.
-        lpenc_diagnos2d(i_u2)=.true.
+          idiag_ekinz/=0 .or. idiag_fkinxy/=0) then
+        lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
@@ -1356,6 +1351,10 @@ module Hydro
       logical, dimension (npencils) :: lpencil_in
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
+      if (lpencil_in(i_ekin)) then
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_u2)=.true.
+      endif
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
       if (lalways_use_gij_etc) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
@@ -1417,6 +1416,8 @@ module Hydro
       if (lpencil(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
       if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
+! ekin
+      if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
 ! uij
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
 ! divu
@@ -1802,9 +1803,9 @@ module Hydro
         if (idiag_rux2m/=0)   call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0)   call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0)   call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_ekin/=0)    call sum_mn_name(0.5*p%rho*p%u2,idiag_ekin)
+        if (idiag_ekin/=0)    call sum_mn_name(p%ekin,idiag_ekin)
         if (idiag_ekintot/=0) &
-            call integrate_mn_name(0.5*p%rho*p%u2,idiag_ekintot)
+            call integrate_mn_name(p%ekin,idiag_ekintot)
         if (idiag_totangmom/=0) &
             call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
             idiag_totangmom,p)
@@ -1963,11 +1964,11 @@ module Hydro
 !
       endif
 !
-!  1d-averages. Happens at every it1d timesteps, NOT at every it1
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst) then
         if (idiag_fmassz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmassz)
-        if (idiag_fkinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinz)
+        if (idiag_fkinz/=0)  call xysum_mn_name_z(p%ekin*p%uu(:,3),idiag_fkinz)
         if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
         if (idiag_uymz/=0)   call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
         if (idiag_uzmz/=0)   call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
@@ -2013,7 +2014,7 @@ module Hydro
         if (idiag_uxuymx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
         if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
         if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
-        if (idiag_ekinz/=0)  call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
+        if (idiag_ekinz/=0)  call xysum_mn_name_z(p%ekin,idiag_ekinz)
         if (idiag_oumx/=0)   call yzsum_mn_name_x(p%ou,idiag_oumx)
         if (idiag_oumy/=0)   call xzsum_mn_name_y(p%ou,idiag_oumy)
         if (idiag_oumz/=0)   call xysum_mn_name_z(p%ou,idiag_oumz)
@@ -2110,7 +2111,7 @@ module Hydro
         if (idiag_ruyuzmxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
         if (idiag_fkinxy/=0) &
-            call zsum_mn_name_xy(.5*p%rho*p%u2*p%uu(:,1),idiag_fkinxy)
+            call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxy)
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
