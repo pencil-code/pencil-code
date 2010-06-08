@@ -1785,29 +1785,36 @@ module Hydro
         if (idiag_ux2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,1)**2,idiag_ux2ssm)
         if (idiag_uy2ccm/=0)  call sum_mn_name(c2z(n)*p%uu(:,2)**2,idiag_uy2ccm)
         if (idiag_uy2ssm/=0)  call sum_mn_name(s2z(n)*p%uu(:,2)**2,idiag_uy2ssm)
-        if (idiag_uxuycsm/=0) call sum_mn_name(cz(n)*sz(n)*p%uu(:,1)*p%uu(:,2),idiag_uxuycsm)
+        if (idiag_uxuycsm/=0) &
+            call sum_mn_name(cz(n)*sz(n)*p%uu(:,1)*p%uu(:,2),idiag_uxuycsm)
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
-        if (idiag_ruxuym/=0)  call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuym)
-        if (idiag_ruxuzm/=0)  call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzm)
-        if (idiag_ruyuzm/=0)  call sum_mn_name(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzm)
+        if (idiag_ruxuym/=0) &
+            call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuym)
+        if (idiag_ruxuzm/=0) &
+            call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzm)
+        if (idiag_ruyuzm/=0) &
+            call sum_mn_name(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzm)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
-        if (idiag_rux2m/=0)    call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
-        if (idiag_ruy2m/=0)    call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
-        if (idiag_ruz2m/=0)    call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
+        if (idiag_rux2m/=0)   call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
+        if (idiag_ruy2m/=0)   call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
+        if (idiag_ruz2m/=0)   call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
+        if (idiag_ekin/=0)    call sum_mn_name(0.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
-            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+            call integrate_mn_name(0.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_totangmom/=0) &
-             call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
-             idiag_totangmom,p)
-        if (idiag_uxglnrym/=0)  call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
-        if (idiag_uyglnrxm/=0)  call sum_mn_name(p%uu(:,2)*p%glnrho(:,1),idiag_uyglnrxm)
+            call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
+            idiag_totangmom,p)
+        if (idiag_uxglnrym/=0) &
+            call sum_mn_name(p%uu(:,1)*p%glnrho(:,2),idiag_uxglnrym)
+        if (idiag_uyglnrxm/=0) &
+            call sum_mn_name(p%uu(:,2)*p%glnrho(:,1),idiag_uyglnrxm)
         if (idiag_uzdivum/=0) call sum_mn_name(p%uu(:,3)*p%divu,idiag_uzdivum)
-        if (idiag_uxuydivum/=0) call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
+        if (idiag_uxuydivum/=0) &
+            call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
 !
 !  Kinetic field components at one point (=pt).
 !
