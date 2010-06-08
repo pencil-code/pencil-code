@@ -1300,7 +1300,6 @@ endif
 #CC=gcc #(groovy|ip237*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(groovy|ip237*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(groovy|ip237*)
-##LD_MPI= -L/opt/local/lib/openmpi -lmpich -lpmpich #(mac)
 
 ##
 ## SunOS:
