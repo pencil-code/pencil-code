@@ -1,0 +1,89 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid='$Id$',
+  nt=2000, it1=100, isave=100, itorder=3, tmax=.025
+!  cdt=0.4, cdtv=0.3, dtmin=1e-10
+  cdt=0.2, cdtv=0.1, dtmin=1e-10, cdts=0.1
+! cdtv, cdtv2, cdtv3, cdts, cdtr, cdtc
+  dsnap=0.005, dvid=0.00005, slice_position='m'
+  bcz = 's','s','ouf','a2','sT','s','s','a','a2','a2'
+!  bcz='a2','a2','a2','a2','a2','a2','a2','a2','a2','a2'
+  ip=65
+  lpencil_check=T, lread_aux=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  !diffrho=1e-1, idiff='normal'
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-therm','shock'
+  chi_th=0.02,chi_shock=10.0
+  lupw_ss=T
+/
+&magnetic_run_pars
+!  llorentzforce=F
+  iresistivity='sqrtrhoeta-const','eta-shock'
+  eta=0.000196,eta_shock=10.00
+/
+!&cosmicray_run_pars
+!  cosmicray_diff=.04
+!/
+&interstellar_run_pars
+  width_SN=0.02
+  frac_eth=1.0
+  frac_ecr=0.0
+  lSN_ecr=F
+  h_SNI=0.325
+!  h_SNI=0.15
+  lSNII=F
+!  lforce_locate_SNI=T
+  lSNI=F
+!  h_SNII=0.106
+!  t_next_SNII=0.0
+!  t_next_SNI=0.0
+  SNII_area_rate=25096.363926627693083292
+  SNI_area_rate=4182.728
+!  5th x rate in solar heighbourhood
+  TT_SN_max=7.5e5
+  rho_SN_min=0.0175
+  cloud_rho=0.7250
+  cloud_TT=1.0
+  lSN_mass=T
+  energy_width_ratio=1.
+  thermal_profile='gaussian'
+  mass_width_ratio=1.
+!  mass_profile='gaussian'
+  mass_movement='off'
+  velocity_profile='r8thgaussian'
+  lSN_velocity=T
+!  ampl_SN=3.182093016 !without kinetic energy
+  ampl_SN=2.563883714 !3.182093016 !without kinetic energy
+  kampl_SN=3.182093016e-1 !with 50% kinetic energy
+  mass_SN=6.303127e-8
+  heatcool_shock_cutoff=0.065 !0.015
+  heatcool_shock_cutoff_rate=0.005
+  cooling_select='SS-Slyzr'
+  heating_select='Gressel-hs'
+  lcooltime_smooth=T
+!  SNR_damping=0.5 !any non-zero value ldamping=T value not used
+/
+!&shear_run_pars
+!/
+&viscosity_run_pars
+  ivisc='nu-therm','nu-shock'
+  nu=0.02,nu_shock=12.0
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=T
+/

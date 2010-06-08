@@ -1,0 +1,61 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for interstellar
+!
+&init_pars
+  cvsid='$Id$'
+  unit_length=3.15570e21, unit_velocity=1.e5, unit_density=1.e-24
+  unit_temperature=1.e4, unit_magnetic=3.54491e-7
+  xyz0=-0.125,-0.125,-0.5
+  xyz1=+0.125,+0.125,+0.5
+  lperi=T,T,F
+!  bcz='a2','a2','a2','a2','a2','a2','a2','a2','a2','a2'
+  bcz = 's','s','ouf','a2','sT','s','s','a','a2','a2'
+!  lshift_origin=T,T,T
+  lwrite_aux=T
+/
+!&global_init_pars
+!/
+&eos_init_pars
+  mu=0.62
+/
+&hydro_init_pars
+  Omega=-25.
+  inituu='nothing'
+!  inituu='soundwave-x', ampluu=1., kx_uu=1.
+/
+&density_init_pars
+  initlnrho='Galactic-hs'
+!  initlnrho='const_lnrho', lnrho_const=0.514379302
+!  density 1.67262158e-24 g per cm^3
+/
+&grav_init_pars
+  gravz_profile='Ferriere'
+!  gravz_profile='Galactic-hs'
+!  cs0hs=0.090837799,H0hs=0.5
+/
+&entropy_init_pars
+!  cs0hs=0.090837799,H0hs=0.2
+!  rho0hs=2.83727192!1.67262158
+  initss='Gressel-hs'
+/
+&magnetic_init_pars
+  amplaa=0.0
+  !initaa='ferriere-uniform-By'
+  initaa='Ferriere-uniform-By'
+/
+!&cosmicray_init_pars
+!  initecr='const_ecr', ecr_const=1.
+!/
+&interstellar_init_pars
+!  initinterstellar='multiple'
+!  cooling_select='off'
+!  heating_select='off'
+  lSNII=F
+  lSNI=F
+  cooling_select='SS-Slyzr'
+  heating_select='Gressel-hs'
+/
+!&shear_init_pars
+!  Sshear=-25.0
+!/ 
