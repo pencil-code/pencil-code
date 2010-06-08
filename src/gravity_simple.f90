@@ -496,7 +496,7 @@ module Gravity
 !  12-nov-04/anders: coded
 !   5-dec-06/petri: added Boussinesq approximation
 !
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -553,10 +553,10 @@ module Gravity
 !  Gravity 1-D diagnostics.
 !
       if (l1davgfirst) then
-        if (idiag_epotmx/=0) call yz_sum_mn_name_x(p%epot,idiag_epotmx)
-        if (idiag_epotmy/=0) call xz_sum_mn_name_y(p%epot,idiag_epotmy)
-        if (idiag_epotmz/=0) call xy_sum_mn_name_z(p%epot,idiag_epotmz)
-        if (idiag_epotuzmz/=0) call xy_sum_mn_name_z(p%epot*p%uu(:,3), &
+        if (idiag_epotmx/=0) call yzsum_mn_name_x(p%epot,idiag_epotmx)
+        if (idiag_epotmy/=0) call xzsum_mn_name_y(p%epot,idiag_epotmy)
+        if (idiag_epotmz/=0) call xysum_mn_name_z(p%epot,idiag_epotmz)
+        if (idiag_epotuzmz/=0) call xysum_mn_name_z(p%epot*p%uu(:,3), &
             idiag_epotuzmz)
       endif
 !
