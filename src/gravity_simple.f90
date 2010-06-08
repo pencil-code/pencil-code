@@ -93,6 +93,10 @@ module Gravity
       reduced_top, lboussinesq, n_pot, grav_tilt
 !
   integer :: idiag_epot=0
+  integer :: idiag_epotmx=0
+  integer :: idiag_epotmy=0
+  integer :: idiag_epotmz=0
+  integer :: idiag_epotuzmz=0
 !
   contains
 !***********************************************************************
@@ -433,7 +437,12 @@ module Gravity
 !
       lpenc_requested(i_gg)=.true.
 !
-      if (idiag_epot/=0) lpenc_diagnos(i_epot)=.true.
+      if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
+          idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
+      if (idiag_epotuzmz/=0) then
+        lpenc_diagnos(i_epot)=.true.
+        lpenc_diagnos(i_uu)=.true.
+      endif
 !
     endsubroutine pencil_criteria_gravity
 !***********************************************************************
@@ -539,6 +548,16 @@ module Gravity
 !
       if (ldiagnos) then
         if (idiag_epot/=0) call sum_mn_name(p%epot,idiag_epot)
+      endif
+!
+!  Gravity 1-D diagnostics.
+!
+      if (l1davgfirst) then
+        if (idiag_epotmx/=0) call yz_sum_mn_name_x(p%epot,idiag_epotmx)
+        if (idiag_epotmy/=0) call xz_sum_mn_name_y(p%epot,idiag_epotmy)
+        if (idiag_epotmz/=0) call xy_sum_mn_name_z(p%epot,idiag_epotmz)
+        if (idiag_epotuzmz/=0) call xy_sum_mn_name_z(p%epot*p%uu(:,3), &
+            idiag_epotuzmz)
       endif
 !
       call keep_compiler_quiet(f)
@@ -806,12 +825,12 @@ module Gravity
 !
 !  12-jun-04/axel: adapted from grav_z
 !
-      use Diagnostics, only: parse_name
+      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
+      integer :: iname, inamex, inamey, inamez
       logical :: lwr
 !
       lwr = .false.
@@ -822,12 +841,37 @@ module Gravity
 !
       if (lreset) then
         idiag_epot=0
+        idiag_epotmx=0; idiag_epotmy=0; idiag_epotmz=0
+        idiag_epotuzmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
+      enddo
+!
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epotmx', &
+            idiag_epotmx)
+      enddo
+!
+!  Check for those quantities for which we want xz-averages.
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'epotmy', &
+            idiag_epotmy)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotmz', &
+            idiag_epotmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epotuzmz', &
+            idiag_epotuzmz)
       enddo
 !
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
