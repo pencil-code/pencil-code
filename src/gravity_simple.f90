@@ -98,14 +98,14 @@ module Gravity
 !***********************************************************************
     subroutine register_gravity()
 !
-!  Initialise gravity variables (currently none)
+!  Initialise gravity variables (currently none).
 !
 !  12-nov-04/anders: coded
 !
       use Mpicomm
       use Sub
 !
-!  Identify version number (generated automatically by SVN)
+!  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           '$Id$')
@@ -134,14 +134,14 @@ module Gravity
       real :: ztop
       integer :: ierr
 !
-!  Sanity check
+!  Sanity check.
 !
       if (.not. lstarting) then
         if (gravx_profile == 'zero' .and. &
             gravy_profile == 'zero' .and. &
             gravz_profile == 'zero') then
           call fatal_error('initialize_gravity', &
-              "You don't need gravity_simple for zero gravity...")
+              'You do not need gravity_simple for zero gravity...')
         endif
       endif
 !
@@ -171,9 +171,10 @@ module Gravity
         zinfty=0.
       endif
 !
-!  Different x-gravity profiles
+!  Different x-gravity profiles.
 !
       if (gravx/=0) lgravx=.true.
+!
       select case (gravx_profile)
 !
       case ('zero')
@@ -195,7 +196,7 @@ module Gravity
         potx_xpencil=-gravx*(x-xinfty)
         call put_shared_variable('gravx', gravx, ierr)
 !
-!  Linear gravity potential with additional z dependence
+!  Linear gravity potential with additional z dependence.
 !  Calculate zdep here, but don't multiply it onto gravx_xpencil
 !  or potx_xpencil, so they will not be correct yet!
 !
@@ -208,7 +209,7 @@ module Gravity
         potx_xpencil=0.5*nux_epicycle2*(x**2-xinfty**2)
 !
 !  tanh profile
-!  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
+!  For isothermal EOS, we have 0=-cs2*dlnrho+gravx.
 !  pot_ratio gives the resulting ratio in the density.
 !
       case ('tanh-pot')
@@ -236,7 +237,7 @@ module Gravity
 !
       endselect
 !
-!  Different y-gravity profiles
+!  Different y-gravity profiles.
 !
       select case (gravy_profile)
 !
@@ -266,8 +267,8 @@ module Gravity
 !
       endselect
 !
-!  Different z-gravity profiles
-!  Set lgravz=T only when gravz_profile is not zero
+!  Different z-gravity profiles.
+!  Set lgravz=T only when gravz_profile is not zero.
 !
       if (gravz_profile/='zero') lgravz=.true.
 !
@@ -363,8 +364,8 @@ module Gravity
         call fatal_error('initialize_gravity','SI unit conversions not inplemented')
       endif
 !
-!  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
-!   at solar radius.  (for interstellar runs)
+!  Gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!  at solar radius.  (for interstellar runs)
 !
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate units.
@@ -392,7 +393,7 @@ module Gravity
 !
       endselect
 !
-!  Sanity check
+!  Sanity check.
 !
       if (notanumber(gravx_xpencil)) then
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravx_xpencil')
@@ -412,7 +413,7 @@ module Gravity
 !***********************************************************************
     subroutine init_gg(f)
 !
-!  Initialise gravity; called from start.f90
+!  Initialise gravity; called from start.f90.
 !
 !  12-nov-04/anders: coded
 !
@@ -467,7 +468,8 @@ module Gravity
         p%gg(:,3) = gravz_zpencil(n)
       endif
 !
-      if (lpencil(i_epot)) p%epot = p%rho*(potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n))
+      if (lpencil(i_epot)) p%epot=p%rho* &
+          (potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n))
 !
       call keep_compiler_quiet(f)
 !
@@ -475,7 +477,7 @@ module Gravity
 !***********************************************************************
     subroutine duu_dt_grav(f,df,p)
 !
-!  Add gravitational acceleration to gas and dust
+!  Add gravitational acceleration to gas and dust.
 !
 !  The special option lboussinesq=T is applicable when |z|/H  << 1.
 !  However, in the present formulation the resulting equations,
@@ -496,7 +498,7 @@ module Gravity
       intent(in) :: f,p
       intent(out) :: df
 !
-!  Add gravity acceleration on gas
+!  Add gravity acceleration on gas.
 !
       if (lhydro) then
         if (lboussinesq) then
@@ -513,14 +515,14 @@ module Gravity
             if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)
             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*xdep(l1:l2)
           else
-            if (lgravx_gas) df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + p%gg(:,1)
-            if (lgravy_gas) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + p%gg(:,2)
-            if (lgravz_gas) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + p%gg(:,3)
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)
           endif
         endif
       endif
 !
-!  Add gravity acceleration on dust
+!  Add gravity acceleration on dust.
 !
       if (ldustvelocity) then
         do k=1,ndustspec
@@ -562,7 +564,7 @@ module Gravity
 !***********************************************************************
     subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
 !
-!  Calculates gravity potential on a pencil
+!  Calculates gravity potential on a pencil.
 !
 !  13-nov-04/anders: coded
 !
@@ -574,14 +576,14 @@ module Gravity
       intent(in) :: xmn,ymn,zmn,rmn
       intent(out) :: pot
 !
-!  Calculate potential from master pencils defined in initialize_gravity
+!  Calculate potential from master pencils defined in initialize_gravity.
 !
       if (lxyzdependence) then
-        pot = potx_xpencil(l1:l2)*zdep(n) &
-            + poty_ypencil(m) &
-            + potz_zpencil(n)*xdep(l1:l2)
+        pot=potx_xpencil(l1:l2)*zdep(n) &
+           +poty_ypencil(m) &
+           +potz_zpencil(n)*xdep(l1:l2)
       else
-        pot = potx_xpencil(l1:l2) + poty_ypencil(m) + potz_zpencil(n)
+        pot=potx_xpencil(l1:l2)+poty_ypencil(m)+potz_zpencil(n)
       endif
 !
       if (present(xmn)) call keep_compiler_quiet(xmn)
@@ -595,7 +597,7 @@ module Gravity
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
 !
-!  Calculates gravity potential in one point
+!  Calculates gravity potential in one point.
 !
 !  13-nov-04/anders: coded
 !  24-oct-06/bing: added constant gravity profiles
@@ -606,9 +608,9 @@ module Gravity
       real :: potx_xpoint,poty_ypoint,potz_zpoint
       real :: prof,xdep,zdep
 !
-      potx_xpoint=0.
-      poty_ypoint=0.
-      potz_zpoint=0.
+      potx_xpoint=0.0
+      poty_ypoint=0.0
+      potz_zpoint=0.0
 !
       if (present(x)) then
         select case (gravx_profile)
@@ -673,13 +675,13 @@ module Gravity
 !***********************************************************************
     subroutine acceleration_penc(gg)
 !
-!  Calculates gravitational acceleration on a pencil
+!  Calculates gravitational acceleration on a pencil.
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
       real, dimension (:,:), intent (out) :: gg
 !
-!  Calculate acceleration from master pencils defined in initialize_gravity
+!  Calculate acceleration from master pencils defined in initialize_gravity.
 !
       if (size(gg,2)/=3) then
         call fatal_error('acceleration_penc','Expecting a 3-vector pencil')
@@ -707,13 +709,13 @@ module Gravity
 !***********************************************************************
     subroutine acceleration_penc_1D(gr)
 !
-!  Calculates gravitational acceleration on a pencil
+!  Calculates gravitational acceleration on a pencil.
 !
 !  21-apr-07/tobi: adapted from potential_penc
 !
       real, dimension (nx), intent (out) :: gr
 !
-!  Calculate acceleration from master pencils defined in initialize_gravity
+!  Calculate acceleration from master pencils defined in initialize_gravity.
 !
       call fatal_error('acceleration_penc_1D','Not implemented')
 !
@@ -725,9 +727,7 @@ module Gravity
 !
 !  Gravity in one point
 !
-!  18-nov-08/wlad: coded
-!
-      use Mpicomm, only: stop_it
+!  18-nov-08/wlad: coded.
 !
       real :: g_r
       real, optional :: x,y,z,r
@@ -748,7 +748,7 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
 !
-!  Read gravity init parameters
+!  Read gravity init parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -765,7 +765,7 @@ module Gravity
 !***********************************************************************
     subroutine write_gravity_init_pars(unit)
 !
-!  Write gravity init parameters
+!  Write gravity init parameters.
 !
       integer, intent(in) :: unit
 !
@@ -775,7 +775,7 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_run_pars(unit,iostat)
 !
-!  Read gravity run parameters
+!  Read gravity run parameters.
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -792,7 +792,7 @@ module Gravity
 !***********************************************************************
     subroutine write_gravity_run_pars(unit)
 !
-!  Write gravity run parameters
+!  Write gravity run parameters.
 !
       integer, intent(in) :: unit
 !
@@ -824,7 +824,7 @@ module Gravity
         idiag_epot=0
       endif
 !
-!  iname runs through all possible names that may be listed in print.in
+!  iname runs through all possible names that may be listed in print.in.
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
@@ -842,15 +842,15 @@ module Gravity
 !
     endsubroutine rprint_gravity
 !***********************************************************************
-    subroutine compute_gravity_star(f, wheat, luminosity, star_cte)
+    subroutine compute_gravity_star(f,wheat,luminosity,star_cte)
 !
 !  5-jan-10/boris: coded
 !
-    real, dimension (mx,my,mz,mfarray) :: f
-    real :: wheat, luminosity, star_cte
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: wheat, luminosity, star_cte
 !
-    call keep_compiler_quiet(f)
-    call keep_compiler_quiet(wheat,luminosity,star_cte)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(wheat,luminosity,star_cte)
 !
     endsubroutine compute_gravity_star
 !***********************************************************************
