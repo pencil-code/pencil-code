@@ -417,9 +417,9 @@ module Hydro
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_ekinz=0      ! DIAG_DOC:
   integer :: idiag_totangmom=0  ! DIAG_DOC:
-  integer :: idiag_fmassz=0     ! DIAG_DOC:
-  integer :: idiag_fkinz=0      ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
-  integer :: idiag_fkinxy=0     ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
+  integer :: idiag_fmasszmz=0   ! DIAG_DOC:
+  integer :: idiag_fkinzmz=0    ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
+  integer :: idiag_fkinxmxy=0   ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
   integer :: idiag_fxbxm=0      ! DIAG_DOC:
   integer :: idiag_fxbym=0      ! DIAG_DOC:
   integer :: idiag_fxbzm=0      ! DIAG_DOC:
@@ -1292,7 +1292,7 @@ module Hydro
           idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
-      if (idiag_fmassz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
+      if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. idiag_ruxuymz/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
           idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0 .or. idiag_pvzm/=0 .or. &
           idiag_ruxtot/=0) lpenc_diagnos(i_rho)=.true.
@@ -1313,8 +1313,8 @@ module Hydro
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
-      if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinz/=0 .or. &
-          idiag_ekinz/=0 .or. idiag_fkinxy/=0) then
+      if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
+          idiag_ekinz/=0 .or. idiag_fkinxmxy/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
@@ -1963,8 +1963,10 @@ module Hydro
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst) then
-        if (idiag_fmassz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmassz)
-        if (idiag_fkinz/=0)  call xysum_mn_name_z(p%ekin*p%uu(:,3),idiag_fkinz)
+        if (idiag_fmasszmz/=0) &
+            call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmasszmz)
+        if (idiag_fkinzmz/=0)  &
+            call xysum_mn_name_z(p%ekin*p%uu(:,3),idiag_fkinzmz)
         if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
         if (idiag_uymz/=0)   call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
         if (idiag_uzmz/=0)   call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
@@ -2106,8 +2108,8 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
         if (idiag_ruyuzmxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
-        if (idiag_fkinxy/=0) &
-            call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxy)
+        if (idiag_fkinxmxy/=0) &
+            call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -3368,9 +3370,9 @@ module Hydro
         idiag_totangmom=0
         idiag_ekintot=0
         idiag_ekinz=0
-        idiag_fmassz=0
-        idiag_fkinz=0
-        idiag_fkinxy=0
+        idiag_fmasszmz=0
+        idiag_fkinzmz=0
+        idiag_fkinxmxy=0
         idiag_fxbxm=0
         idiag_fxbym=0
         idiag_fxbzm=0
@@ -3632,9 +3634,9 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuzxmz',idiag_oxuzxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuzymz',idiag_oyuzymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'fmassz',idiag_fmassz)
+            'fmasszmz',idiag_fmasszmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
-            'fkinz',idiag_fkinz)
+            'fkinzmz',idiag_fkinzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ekinz',idiag_ekinz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
@@ -3694,7 +3696,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuymxy',idiag_ruxuymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuzmxy',idiag_ruxuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruyuzmxy',idiag_ruyuzmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxy',idiag_fkinxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxmxy',idiag_fkinxmxy)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -3817,9 +3819,9 @@ module Hydro
         write(3,*) 'i_uxpt=',idiag_uxpt
         write(3,*) 'i_uypt=',idiag_uypt
         write(3,*) 'i_uzpt=',idiag_uzpt
-        write(3,*) 'i_fmassz=',idiag_fmassz
-        write(3,*) 'i_fkinz=',idiag_fkinz
-        write(3,*) 'i_fkinxy=',idiag_fkinxy
+        write(3,*) 'i_fmasszmz=',idiag_fmasszmz
+        write(3,*) 'i_fkinzmz=',idiag_fkinzmz
+        write(3,*) 'i_fkinxmxy=',idiag_fkinxmxy
         write(3,*) 'i_ekinz=',idiag_ekinz
         write(3,*) 'i_uxmz=',idiag_uxmz
         write(3,*) 'i_uymz=',idiag_uymz
