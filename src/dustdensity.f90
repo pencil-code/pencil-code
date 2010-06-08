@@ -1047,32 +1047,30 @@ module Dustdensity
               +0.5*(p%nd(:,k+1)*dsize(k+1)**3+p%nd(:,k)*dsize(k)**3) &
               *(dsize(k+1)-dsize(k))
           enddo
-          p%fcloud(:)=4./3.*PI*rho_w*fcloud_tmp(:)
+          p%fcloud(:)=4.0/3.0*pi*rho_w*fcloud_tmp(:)
 !
         endif
 !
 ! ppsat is a  saturation pressure in cgs units
 ! 
-        if (lpencil(i_ppsat)) then
-         p%ppsat(:)=6.035e12*exp(-5938*p%TT1(:))*10.
-        endif
+        if (lpencil(i_ppsat)) p%ppsat=6.035e12*exp(-5938*p%TT1)*10.0
 ! ccondens
         if (lpencil(i_ccondens)) then
-          tmp=0.
-          do k=1, ndustspec-1
+          tmp=0.0
+          do k=1,ndustspec-1
             tmp=tmp  &
-              +0.5*(p%nd(:,k+1)*dsize(k+1)+p%nd(:,k)*dsize(k)) &
-              *(dsize(k+1)-dsize(k))
+                +0.5*(p%nd(:,k+1)*dsize(k+1)+p%nd(:,k)*dsize(k)) &
+                *(dsize(k+1)-dsize(k))
           enddo
 !
 !  (Probably) just temporarily for debugging a division-by-zero problem.
 !
-          if (any(p%ppsat == 0.0)) then
-            write(0,*) 'p%ppsat = ', p%ppsat
+          if (any(p%ppsat==0.0)) then
+            if (.not.lpencil_check_at_work) write(0,*) 'p%ppsat = ', p%ppsat
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat has zero value(s)')
           else
-            p%ccondens(:)=4.*PI*rho_w*Aconst*(p%ppwater/p%ppsat-1.)*tmp(:)
+            p%ccondens(:)=4*pi*rho_w*Aconst*(p%ppwater/p%ppsat-1.0)*tmp(:)
           endif
         endif
 ! dndr
