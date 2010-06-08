@@ -420,9 +420,6 @@ module Hydro
   integer :: idiag_fmasszmz=0   ! DIAG_DOC:
   integer :: idiag_fkinzmz=0    ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
   integer :: idiag_fkinxmxy=0   ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
-  integer :: idiag_fxbxm=0      ! DIAG_DOC:
-  integer :: idiag_fxbym=0      ! DIAG_DOC:
-  integer :: idiag_fxbzm=0      ! DIAG_DOC:
   integer :: idiag_uxglnrym=0   ! DIAG_DOC: $\left<u_x\partial_y\ln\varrho\right>$
   integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
   integer :: idiag_uzdivum=0    ! DIAG_DOC: $\left<u_z\nabla\cdot\uv\right>$
@@ -3373,9 +3370,6 @@ module Hydro
         idiag_fmasszmz=0
         idiag_fkinzmz=0
         idiag_fkinxmxy=0
-        idiag_fxbxm=0
-        idiag_fxbym=0
-        idiag_fxbzm=0
         idiag_ruxuym=0
         idiag_ruxuzm=0
         idiag_ruyuzm=0
@@ -3503,9 +3497,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'duydzma',idiag_duydzma)
         call parse_name(iname,cname(iname),cform(iname),'totangmom',idiag_totangmom)
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
-        call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
-        call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
-        call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
         call parse_name(iname,cname(iname),cform(iname),'uxfampm',idiag_uxfampm)
         call parse_name(iname,cname(iname),cform(iname),'uyfampm',idiag_uyfampm)
         call parse_name(iname,cname(iname),cform(iname),'uzfampm',idiag_uzfampm)
@@ -3882,9 +3873,6 @@ module Hydro
         write(3,*) 'i_duydzma=',idiag_duydzma
         write(3,*) 'i_totangmom=',idiag_totangmom
         write(3,*) 'i_rufm=',idiag_rufm
-        write(3,*) 'i_fxbxm=',idiag_fxbxm
-        write(3,*) 'i_fxbym=',idiag_fxbym
-        write(3,*) 'i_fxbzm=',idiag_fxbzm
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
