@@ -242,7 +242,7 @@ module Interstellar
   double precision, dimension(11) :: coolT_cgs, coolH_cgs
   real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
-  real, dimension(nz) :: heat_gressel
+  real, dimension(mz) :: heat_gressel
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
@@ -411,7 +411,7 @@ module Interstellar
       logical :: lstarting
 !
       real :: mu
-      real, dimension(nz) :: heat
+!      real, dimension(nz) :: heat
 !
       f(:,:,:,icooling)=0.0
 !
@@ -724,7 +724,7 @@ module Interstellar
          coolB = (/ 2.12, &
                     1.0, &
                     0.56, &
-                    3.67, &
+                    3.21, &
                     -0.20, &
                     -3.0, &
                     -0.22, &
@@ -789,10 +789,8 @@ module Interstellar
       endif
 !
       if (heating_select == 'Gressel-hs') then
-            call gressel_interstellar(f,heat)
-            heat_gressel = heat
+            call gressel_interstellar(f,heat_gressel)
       endif
-!
 !
 !  Cooling cutoff in shocks
 !
@@ -1250,7 +1248,7 @@ module Interstellar
 !
     endsubroutine interstellar_before_boundary
 !***********************************************************************
-    subroutine gressel_interstellar(f,heat)
+    subroutine gressel_interstellar(f,zheat)
 !
 !   22-mar-10/fred adapted from galactic-hs,ferriere-hs
 !
@@ -1269,8 +1267,8 @@ module Interstellar
       use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nz) :: rho,TT,lambda,fbeta,flamk, erfz
-      real, dimension(nz), intent(out) :: heat
+      real, dimension(mz) :: rho,TT,lambda,fbeta,flamk, erfz
+      real, dimension(mz), intent(out) :: zheat
       real :: rho0ts, T0hs, muhs
       real :: g_A, g_C, T_k, erfB
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -1289,7 +1287,7 @@ module Interstellar
           g_B = g_B_cgs/unit_length
           unit_Lambda = unit_velocity**2 / unit_density / unit_time
           T0hs=7645./unit_temperature
-          rho0ts=1.83e-24/unit_density
+          rho0ts=1.836e-24/unit_density
           T_k=sqrt(2.)!
 !
 !chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
@@ -1316,7 +1314,7 @@ module Interstellar
 !
       if (lroot) print*, &
          'Gressel1-interstellar: calculating z-dependent uv-heating function for init hydrostatic & thermal equilibrium'
-      do n=n1,n2
+      do n=1,mz
         erfB=g_B
         erfz(n)=sqrt(T_k*z(n)**2+g_B**2)
 !
@@ -1347,7 +1345,7 @@ module Interstellar
         endwhere
         enddo
           lambda=real(flamk*TT**fbeta)
-          heat(n)=lambda(n)*rho(n)
+          zheat(n)=lambda(n)*rho(n)
 !
       enddo
 !
@@ -1569,9 +1567,6 @@ cool_loop: do i=1,ncool
          heat = heating_rate
 !  if using Gressel-hs in initial entropy this must also be specified for stability
       else if (heating_select == 'Gressel-hs') Then
-!        g_B=g_B_cgs/unit_length
-!        heat(1:nx) = GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
-!      else if (heating_select == 'Gressel2-hs') then
         heat = heat_gressel(n)*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
       else if (heating_select == 'off') Then
          heat = 0.
