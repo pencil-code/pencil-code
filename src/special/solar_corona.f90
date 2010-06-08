@@ -25,8 +25,8 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
-  real :: Bavoid=0.01,nvor=5.,tau_inv=1.,Bz_flux=0.
-  logical :: lgranulation=.false.,lrotin=.true.
+  real :: Bavoid=0.01,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.
+  logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   integer :: irefz=0,nglevel=3
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
@@ -40,7 +40,8 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
-       Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux
+       Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
+       lquench,q0,qw
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -1374,29 +1375,31 @@ module Special
 !
 ! for footpoint quenching compute pressure
 !
-      if (ltemperature) then
-        if (ldensity_nolog) then
-          call fatal_error('solar_corona', &
-              'uudriver only implemented for ltemperature=true')
+      if (lquench) then
+        if (ltemperature) then
+          if (ldensity_nolog) then
+            call fatal_error('solar_corona', &
+                'uudriver only implemented for ltemperature=true')
+          else
+            pp_tmp =gamma_m1*gamma_inv/cp1 * &
+                exp(f(l1:l2,m1:m2,irefz,ilnrho)+f(l1:l2,m1:m2,irefz,ilnrho))
+          endif
         else
-          pp_tmp =gamma_m1*gamma_inv/cp1 * &
-              exp(f(l1:l2,m1:m2,irefz,ilnrho)+f(l1:l2,m1:m2,irefz,ilnrho))
+          if (headt.and.lroot) call warning('solar_corona', &
+              'uudriver only implemented for ltemperature=true')
+          pp_tmp=gamma_inv*cs20*exp(lnrho0)
         endif
-      else
-        if (headt.and.lroot) call warning('solar_corona', &
-            'uudriver only implemented for ltemperature=true')
-        pp_tmp=gamma_inv*cs20*exp(lnrho0)
-      endif
 !
-      beta =  pp_tmp/max(tini,BB2_local)*2*mu0
+        beta =  pp_tmp/max(tini,BB2_local)*2*mu0
 !
 !  quench velocities to one percent of the granule velocities
-      do i=1,ny 
-        quench(:,i) = cubic_step(beta(:,i),100.,100.)*0.99+0.01
-      enddo
+        do i=1,ny 
+          quench(:,i) = cubic_step(beta(:,i),q0,qw)*0.99+0.01
+        enddo
 !
-      ux_local = ux_local * quench
-      uy_local = uy_local * quench
+        ux_local = ux_local * quench
+        uy_local = uy_local * quench
+      endif
 !
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
