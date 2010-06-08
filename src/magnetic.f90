@@ -2283,7 +2283,7 @@ module Magnetic
 !
       use Deriv, only: der6
       use Diagnostics
-      use EquationOfState, only: eoscalc,gamma_m1,cs0
+      use EquationOfState, only: eoscalc
       use Io, only: output_pencil
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic

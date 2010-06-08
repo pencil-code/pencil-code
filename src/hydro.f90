@@ -666,7 +666,7 @@ module Hydro
 !
       use Boundcond,only:update_ghosts
       use Density, only: calc_pencils_density
-      use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
+      use EquationOfState, only: cs20, beta_glnrho_scaled
       use General
       use Gravity, only: gravz_const,z1
       use Initcond
@@ -4437,7 +4437,6 @@ module Hydro
 !
 !  27-june-2007 dhruba: coded
 !
-      use Gravity, only: z1
       use Mpicomm, only: stop_it
       use Sub, only: step
 !

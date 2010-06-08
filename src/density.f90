@@ -443,8 +443,7 @@ module Density
 !  15-oct-03/dave: added spherical shell (kws)
 !
       use General, only: chn,complex_phase
-      use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
-                         lnumerical_equilibrium
+      use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
       use IO
       use Mpicomm
