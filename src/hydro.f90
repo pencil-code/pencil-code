@@ -33,7 +33,7 @@ module Hydro
 !
   include 'hydro.h'
 !
-! Slice precalculation buffers
+!  Slice precalculation buffers.
 !
   real, target, dimension (nx,ny,3) :: oo_xy,oo_xy2,oo_xy3,oo_xy4
   real, target, dimension (nx,nz,3) :: oo_xz
@@ -48,15 +48,15 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
-!  cosine and sine function for setting test fields and analysis
+!  Cosine and sine function for setting test fields and analysis.
 !
   real, dimension (mz) :: c2z,csz,s2z,cz,sz
 !
-!  precession matrices
+!  Precession matrices.
 !
   real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
 !
-! init parameters
+!  Init parameters.
 !
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: urandi=0.
@@ -99,19 +99,19 @@ module Hydro
   real :: r_cyl = 1.0, skin_depth = 1e-1
 !
   namelist /hydro_init_pars/ &
-       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
-       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
-       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
-       uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
-       u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity, lprecession, omega_precession, alpha_precession, &
-       luut_as_aux,loot_as_aux, &
-       velocity_ceiling, mu_omega, nb_rings, om_rings, gap, &
-       lscale_tobox, ampl_Omega,omega_ini, &
-       r_cyl,skin_depth, incl_alpha, rot_rr,xsphere,ysphere,zsphere,&
-       neddy,amp_meri_circ
-! run parameters
+      ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
+      inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
+      uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
+      kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, uy_left, &
+      uy_right,uu_const, Omega,  initpower, cutoff, u_out_kep, N_modes_uu, &
+      lcoriolis_force, lcentrifugal_force, ladvection_velocity, lprecession, &
+      omega_precession, alpha_precession, luut_as_aux,loot_as_aux, &
+      velocity_ceiling, mu_omega, nb_rings, om_rings, gap, lscale_tobox, &
+      ampl_Omega,omega_ini, r_cyl,skin_depth, incl_alpha, &
+      rot_rr,xsphere,ysphere,zsphere, neddy,amp_meri_circ
+!
+!  Run parameters.
+!
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
   real :: ruxm=0.,ruym=0.,ruzm=0.
@@ -139,37 +139,33 @@ module Hydro
   logical :: lno_meridional_flow=.false.
   character (len=labellen) :: uuprof='nothing'
 !
-!  parameters for interior boundary conditions
+!  Parameters for interior boundary conditions.
 !
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
 !
   namelist /hydro_run_pars/ &
-       Omega,theta, &
-       tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-       tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
-       inituu,ampluu,kz_uu, &
-       ampl1_diffrot,ampl2_diffrot,uuprof, &
-       xexp_diffrot,kx_diffrot,kz_diffrot, &
-       kz_analysis, &
-       lreinitialize_uu,lremove_mean_momenta,lremove_mean_flow, &
-       lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       borderuu, lfreeze_uint, lpressuregradient_gas, &
-       lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       utop,ubot,omega_out,omega_in, &
-       lprecession, omega_precession, alpha_precession, lshear_rateofstrain, &
-       lalways_use_gij_etc,lcalc_uumean,lcalc_uumeanxy,lcalc_uumeanxz, &
-       lforcing_cont_uu, &
-       width_ff_uu,x1_ff_uu,x2_ff_uu, &
-       luut_as_aux,loot_as_aux, &
-       loutest, ldiffrot_test,&
-       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-       velocity_ceiling,&
-       eckmann_friction, ampl_Omega, lcoriolis_xdep,&
-       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu,&
-       lno_meridional_flow
-! diagnostic variables (need to be consistent with reset list below)
+      Omega,theta, tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
+      tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
+      inituu,ampluu,kz_uu, ampl1_diffrot,ampl2_diffrot,uuprof, &
+      xexp_diffrot,kx_diffrot,kz_diffrot, kz_analysis, &
+      lreinitialize_uu,lremove_mean_momenta,lremove_mean_flow, &
+      lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
+      borderuu, lfreeze_uint, lpressuregradient_gas, &
+      lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
+      utop,ubot,omega_out,omega_in, lprecession, omega_precession, &
+      alpha_precession, lshear_rateofstrain, &
+      lalways_use_gij_etc,lcalc_uumean,lcalc_uumeanxy,lcalc_uumeanxz, &
+      lforcing_cont_uu, width_ff_uu,x1_ff_uu,x2_ff_uu, &
+      luut_as_aux,loot_as_aux, loutest, ldiffrot_test, &
+      interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
+      velocity_ceiling, eckmann_friction, ampl_Omega, lcoriolis_xdep, &
+      ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
+      lno_meridional_flow
+!
+!  Diagnostic variables (need to be consistent with reset list below).
+!
   integer :: idiag_u2tm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\uv(t')
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_uotm=0       ! DIAG_DOC: $\left<\uv(t)\cdot\int_0^t\omv(t')
@@ -469,7 +465,7 @@ module Hydro
       if (lroot) call svn_id( &
            "$Id$")
 !
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       if (lroot) then
         if (maux == 0) then
@@ -507,7 +503,7 @@ module Hydro
 !
       if (.not.lforcing_cont) lforcing_cont_uu=.false.
 !
-!  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
+!  Calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of ux2, uxuy, etc.
 !
       c=cos(kz_analysis*z)
@@ -518,7 +514,7 @@ module Hydro
       s2z=s**2
       csz=c*s
 !
-!  rescale magnetic field by a factor reinitialize_aa
+!  Rescale magnetic field by a factor reinitialize_aa.
 !
       if (lreinitialize_uu) then
         do j=1,ninit
