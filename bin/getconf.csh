@@ -1093,6 +1093,16 @@ else if ($hostname =~ jugene*) then
   setenv SSH "ssh -q -x"
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
+#---------------------------------------------------
+else if (($hostname =~ ip237*) || ($hostname =~ groovy)) then
+  echo "Anders's MacBook Pro"
+  set local_disc = 0
+  set one_local_disc = 1
+  set mpirun = /opt/local/lib/openmpi/bin/orterun
+  set npops = ''
+  setenv SSH "ssh -q -x"
+  setenv SCP "scp -q"
+  setenv SCRATCH_DIR /work/$USER
 #----------------------------------------------------
 else if ($hostname =~ jj[0-9][0-9]*) then
   echo "JuRoPA at Juelich"
