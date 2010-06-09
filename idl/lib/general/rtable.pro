@@ -1,5 +1,8 @@
 function rtable,file,ncolumn,form=form,head=head,lines=lines,debug=debug,lun=lun,noclose=noclose
 ;
+; IN: noclose - file is not closed
+; IN: lines - number of lines to be read - 1 !!!
+;
 if n_params(0) eq 0 then begin
   print,'function table,file,ncolumn,form=form,head=head,lines=lines,debug=debug,lun=lun,noclose=noclose'
   return,0
@@ -7,11 +10,10 @@ end
 ;
 ;  read header
 ; 
-if not keyword_set(lun) then lun=0
-if lun le 0 then begin
-  lun=0
-  openr,lun,/get_lun,file
-endif
+if not keyword_set(lun) then lun=-1
+if lun lt 0 then $
+  
+openr,lun,/get_lun,file
 
 if (n_elements(head) ne 0) then begin
   card=''
