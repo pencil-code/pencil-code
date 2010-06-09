@@ -4442,9 +4442,9 @@ module Boundcond
 !
       case ('bot')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n1,j)<=0.0) then  ! 's'
+          if (f(ix,iy,n1,j)<0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
-          else                          ! 'a'
+          else                         ! 'a'
             do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
             f(ix,iy,n1,j)=0.0
           endif
@@ -4454,9 +4454,9 @@ module Boundcond
 !
       case ('top')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n2,j)>=0.0) then  ! 's'
+          if (f(ix,iy,n2,j)>0.0) then  ! 's'
             do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
-          else                          ! 'a'
+          else                         ! 'a'
             do i=1,nghost; f(ix,iy,n2+i,j)=-f(ix,iy,n2-i,j); enddo
             f(ix,iy,n2,j)=0.0
           endif
