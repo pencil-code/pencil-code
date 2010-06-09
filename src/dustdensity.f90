@@ -1787,32 +1787,41 @@ module Dustdensity
       integer :: k, j, j1,j2,j3
       real :: spot_size=1., RR
       real, dimension (3,spot_number) :: spot_posit
+      logical :: spot_exist=.true.
 !
       spot_posit(:,:)=0.0
 !
       do j=1,spot_number
+        spot_exist=.true.
         if (nxgrid/=1) then
           call random_number_wrapper(spot_posit(1,j))
-          print*,'posit',spot_posit(1,:)
           spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
+!          print*,'posit',spot_posit(1,j),xyz0(1)+Lxyz(1)
+          if ((spot_posit(1,j)-1.5*spot_size<xyz0(1)) .or. &
+            (spot_posit(1,j)+1.5*spot_size>xyz0(1)+Lxyz(1)))  &
+            spot_exist=.false.
         endif
         if (nygrid/=1) then
           call random_number_wrapper(spot_posit(2,j))
           spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
+          if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
+           (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
+           spot_exist=.false.
         endif
         if (nzgrid/=1) then
           call random_number_wrapper(spot_posit(3,j))
           spot_posit(3,j)=spot_posit(3,j)*Lxyz(3)
+          if ((spot_posit(3,j)-1.5*spot_size<xyz0(3)) .or. &
+           (spot_posit(3,j)+1.5*spot_size>xyz0(3)+Lxyz(3)))  &
+           spot_exist=.false.
         endif
-      enddo
-      print*,'posit*Lxyz',spot_posit(1,:)
 !   spot_posit=[0,0,0]
 !
 !spot_posit(1,1)=2.
 !spot_posit(1,2)=4.
 !spot_posit(1,3)=7.
 !
-      do k=1,ndustspec; do j=1,spot_number
+      do k=1,ndustspec
         do j1=1,mx; do j2=1,my; do j3=1,mz
 !
           RR=(  x(j1)-spot_posit(1,j))**2 &
@@ -1820,14 +1829,15 @@ module Dustdensity
               +(z(j3)-spot_posit(3,j))**2
           RR=sqrt(RR)
 !
-          if (RR<spot_size) then
+          if ((RR<spot_size) .and. (spot_exist)) then
             f(j1,j2,j3,ind(k)) = &
                 -(1e11-1e3)*(dsize(k)-0.5*(dsize_max+dsize_min))**2/ &
                 (dsize_min-0.5*(dsize_max+dsize_min))**2+1e11
           endif
 !
         enddo; enddo; enddo
-      enddo; enddo
+      enddo
+      enddo
 !
     endsubroutine droplet_init
 !***********************************************************************

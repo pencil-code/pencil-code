@@ -68,7 +68,9 @@ include 'NSCBC.h'
   real, dimension(2) :: radius_profile=(/0.0182,0.0364/)
   real, dimension(2) :: momentum_thickness=(/0.014,0.0182/)
   real, dimension(2) :: jet_center=(/0.,0./)
-  real :: velocity_ratio=3.3
+  real :: velocity_ratio=3.3, sigma=1.
+  character (len=labellen), dimension(ninit) :: velocity_profile='nothing'
+  logical :: lfinal_velocity_profile=.false.
 !
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
@@ -79,7 +81,8 @@ include 'NSCBC.h'
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
       notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
-      jet_center,velocity_ratio,turb_inlet_file
+      jet_center,velocity_ratio,turb_inlet_file,sigma,lfinal_velocity_profile,&
+      velocity_profile
 !
   contains
 !***********************************************************************
@@ -133,6 +136,7 @@ include 'NSCBC.h'
       character (len=3) :: topbot
       character (len=60) :: turbfile
       integer i,j,k,ip_ok,ip_test
+      integer :: imin,imax,jmin,jmax,igrid,jgrid
       real, dimension(mcom) :: valx,valy,valz
       logical :: proc_at_inlet
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
@@ -146,6 +150,21 @@ include 'NSCBC.h'
       intent(in)    :: j
 !
       proc_at_inlet=.false.
+!
+!  Create the final velocity profile
+!
+      if (lfinal_velocity_profile) then
+        if (j==1) then
+          imin=m1; imax=m2; jmin=n1; jmax=n2  
+          igrid=ny; jgrid=nz  
+        elseif (j==2) then 
+          imin=l1; imax=l2; jmin=n1; jmax=n2  
+          igrid=nx; jgrid=nz
+        elseif (j==3) then
+          imin=l1; imax=l2; jmin=m1; jmax=m2  
+          igrid=nx; jgrid=ny
+        endif
+      endif
 !
       do k=1,2                ! loop over 'bot','top'
         if (k==1) then
@@ -287,6 +306,10 @@ include 'NSCBC.h'
 !
           case ('part_ref_inlet')
             call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,u_t=u_t,T_t=T_t)
+            if (lfinal_velocity_profile) then
+              call final_velocity_profile(f,j,topbot, &
+                    imin,imax,jmin,jmax,igrid,jgrid)
+            endif
 !
           case ('ref_inlet')
             call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,u_t=u_t,T_t=T_t)
@@ -842,7 +865,7 @@ include 'NSCBC.h'
       real, allocatable, dimension(:,:)   :: u_profile
       real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
-      real :: radius_mean, smooth, rad
+      real :: radius_mean, smooth, rad, rad_2
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
 !
@@ -931,6 +954,7 @@ include 'NSCBC.h'
               enddo
             enddo
             u_profile=u_in(:,:,dir)
+!
           end select
 !
         enddo
@@ -976,6 +1000,7 @@ include 'NSCBC.h'
           do i=1,3
             u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile
           enddo
+
         endif
 !
 !  Deallocate
@@ -1507,15 +1532,12 @@ include 'NSCBC.h'
       intent(inout) :: f
       intent(out) :: df
 !
-
       logical :: non_zero_transveral_velo
       integer :: dir, dir2, dir3, igrid, jgrid, imin, imax, jmin, jmax
       real, allocatable, dimension(:,:,:) :: u_in
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
 ! reading data from file
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+!
       if (inlet_from_file) then
 
         dir=1; dir2=2; dir3=3
@@ -1523,20 +1545,17 @@ include 'NSCBC.h'
         imin=m1; imax=m2
         jmin=n1; jmax=n2
         non_zero_transveral_velo=.false.
-
+!
         allocate(u_in(igrid,jgrid,3))
-
+!
         call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
               igrid,jgrid)
       endif
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
- !    if (.not.present(val)) call stop_it(&
- !          'bc_nscbc_subin_x: you must specify fbcx)')
-
+!
+!    if (.not.present(val)) call stop_it(&
+!          'bc_nscbc_subin_x: you must specify fbcx)')
+!
       u_t=val(iux)
       T_t=val(ilnTT)
       do k=1,nchemspec
@@ -1653,21 +1672,19 @@ include 'NSCBC.h'
         L_k(:,:,k)=nscbc_sigma_in*cs0_ar(m1:m2,n1:n2)/Lxyz(1) &
                 *(f(lll,m1:m2,n1:n2,ichemspec(k))-YYi(k))
        enddo
-
+!
         df(lll,m1:m2,n1:n2,iux) =  &
             -0.5/rho0(m1:m2,n1:n2)/cs0_ar(m1:m2,n1:n2)*(L_5 - L_1)
 
         df(lll,m1:m2,n1:n2,iuy) = -L_3
         df(lll,m1:m2,n1:n2,iuz) = -L_4
-
-
-
+!
         do k=1,nchemspec
          df(lll,m1:m2,n1:n2,ichemspec(k))=-L_k(:,:,k)
          f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
         enddo
          f(lll,m1:m2,n1:n2,ilnTT) = T_t
-
+!
         if (inlet_from_file) then
          f(lll,m1:m2,n1:n2,iux) = u_t + u_in(:,:,1)
          f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
@@ -1677,7 +1694,7 @@ include 'NSCBC.h'
          f(lll,m1:m2,n1:n2,iuy) = 0.
          f(lll,m1:m2,n1:n2,iuz) = 0.
         endif
-
+!
  endsubroutine bc_nscbc_subin_x_new
 !***********************************************************************
 !***********************************************************************
@@ -3009,5 +3026,87 @@ include 'NSCBC.h'
 !
 
     endsubroutine bc_nscbc_nref_subout_z
+!***********************************************************************
+    subroutine final_velocity_profile(f,dir,topbot,imin,imax,jmin,jmax,igrid,jgrid)
+!
+!  Create the final inlet velocity profile.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, allocatable, dimension(:,:)   :: u_profile
+      integer :: i,j,kkk,jjj,bound
+      integer, dimension(10) :: stat
+      real :: rad_2
+      integer, intent(in) :: dir,imin,imax,jmin,jmax,igrid,jgrid
+      character (len=3) :: topbot
+!
+      select case (topbot)
+        case ('bot')
+          if (dir==1) bound = l1
+          if (dir==2) bound = m1
+          if (dir==3) bound = n1
+        case ('top')
+          if (dir==1) bound = l2
+          if (dir==2) bound = m2
+          if (dir==3) bound = n2
+        case default
+           print*, "final_velocity_profile: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+!  Allocate allocatables
+!
+      stat=0
+      allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
+      if (maxval(stat)>0) &
+          call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")  
+!
+! Define velocity profile at inlet
+!
+        do j=1,ninit
+          select case (velocity_profile(j))
+!
+          case ('nothing')
+            if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+                print*,'velocity_profile: nothing'
+!
+          case ('gaussian')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'velocity_profile: gaussian'
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                  rad_2=((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+                elseif (dir==2) then
+                  rad_2=((x(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+                elseif (dir==3) then
+                  rad_2=((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(1))**2)
+                endif
+                  u_profile(jjj-imin+1,kkk-jmax+1)=exp(-rad_2/sigma**2)
+!print*,u_profile(jjj-imin+1,kkk-jmax+1),rad_2,sigma
+              enddo
+            enddo
+          end select
+!
+        enddo
+!
+          if (dir==1) then
+            f(bound,m1:m2,n1:n2,iux) = f(bound,m1:m2,n1:n2,iux)*u_profile
+            f(bound,m1:m2,n1:n2,iuy) = f(bound,m1:m2,n1:n2,iuy)*u_profile
+            f(bound,m1:m2,n1:n2,iuz) = f(bound,m1:m2,n1:n2,iuz)*u_profile
+          elseif (dir==2) then
+            f(l1:l2,bound,n1:n2,iux) = f(l1:l2,bound,n1:n2,iux)*u_profile
+            f(l1:l2,bound,n1:n2,iuy) = f(l1:l2,bound,n1:n2,iuy)*u_profile
+            f(l1:l2,bound,n1:n2,iuz) = f(l1:l2,bound,n1:n2,iuz)*u_profile
+          elseif (dir==3) then
+            f(l1:l2,m1:m2,bound,iux) = f(l1:l2,m1:m2,bound,iux)*u_profile
+            f(l1:l2,m1:m2,bound,iuy) = f(l1:l2,m1:m2,bound,iuy)*u_profile
+            f(l1:l2,m1:m2,bound,iuz) = f(l1:l2,m1:m2,bound,iuz)*u_profile
+          endif
+!
+!
+!  Deallocate
+!
+        deallocate(u_profile)
+!
+      endsubroutine final_velocity_profile
 !***********************************************************************
 endmodule NSCBC

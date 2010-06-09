@@ -2123,8 +2123,8 @@ module Chemistry
               + 2.5e10/1.005e7*p%ccondens*p%TT1
 
         do i=1,mx
-            if ((f(i,m,n,ind(index_H2O))+df(i,m,n,ind(index_H2O))*dt)>1. ) &
-              df(i,m,n,ind(index_H2O))=1.*dt
+            if ((f(i,m,n,ind(index_H2O))+df(i,m,n,ind(index_H2O))*dt)>=1. ) &
+              df(i,m,n,ind(index_H2O))=0.
         enddo
       endif
 !
@@ -4233,29 +4233,46 @@ module Chemistry
       endif
 !
       if (linit_velocity) then
-       if (init_ux /=0.) then
-        f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+       if (init_ux /=0.) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+       if (init_uy /=0.) then
+         do i=1,my
+           if (y(i)>0) then
+             f(:,i,:,iuy)=f(:,i,:,iuy) &
+              +init_uy*(2.*y(i)/Lxyz(2))**2
+           else
+             f(:,i,:,iuy)=f(:,i,:,iuy) &
+              -init_uy*(2.*y(i)/Lxyz(2))**2
+           endif
+         enddo
        endif
       endif
 !
-        if (TT<init_TT1 .and. (.not. lcloud)) then
-         xx1=xyz0(1)
-         xx2=xyz0(1)+Lxyz(1)*0.1
-         j=4
-        do i=1,mx
-         if (x(i)<=xx2) then
-          f(i,:,:,ilnTT)= &
-             log((TT-init_TT1)*(x(i)-xx1)/(xx2-xx1)+init_TT1)
-          if (i<=4) then
-           f(i,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-               air_mass/init_TT1)/unit_mass*unit_length**3)
-          else
-           f(i,:,:,ilnrho)=f(j,:,:,ilnrho) + f(j,:,:,ilnTT) &
-                   - f(i,:,:,ilnTT)
+      if (TT<init_TT1 .and. (.not. lcloud)) then
+        xx1=xyz0(1)
+        xx2=xyz0(1)+Lxyz(1)*0.1
+        j=4
+          do i=1,mx
+          if (x(i)<=xx2) then
+            f(i,:,:,ilnTT)= &
+            log((TT-init_TT1)*(x(i)-xx1)/(xx2-xx1)+init_TT1)
+            if (i<=4) then
+              f(i,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+              air_mass/init_TT1)/unit_mass*unit_length**3)
+            else
+              f(i,:,:,ilnrho)=f(j,:,:,ilnrho) + f(j,:,:,ilnTT) &
+                 - f(i,:,:,ilnTT)
+            endif
           endif
-         endif
+          enddo
+       elseif (lcloud) then
+        do i=1,mx
+          if (x(i)<=init_x1) then
+            f(i,:,:,ilnTT)=log(init_TT1)
+          else
+            f(i,:,:,ilnTT)=log(init_TT2)
+          endif
         enddo
-        endif
+       endif
 !
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, dyn', PP

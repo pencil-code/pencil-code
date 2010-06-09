@@ -65,7 +65,8 @@ module Special
   include '../special.h'
 
   ! input parameters
-  logical :: lbuoyancy=.true.
+  logical :: lbuoyancy_x=.false.
+  logical :: lbuoyancy_z=.false.
 
   character (len=labellen) :: initstream='default'
   real :: Rgas, Rgas_unit_sys=1.
@@ -74,11 +75,11 @@ module Special
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy
+      lbuoyancy_z,lbuoyancy_x
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
-      lbuoyancy
+      lbuoyancy_z,lbuoyancy_x
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -406,13 +407,19 @@ module Special
       real :: eps=0.5 !!????????????????????????
       real :: rho_water=1., const_tmp=0.
 !
-      if (lbuoyancy) then
        const_tmp=4./3.*PI*rho_water 
-!          
-       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+      if (lbuoyancy_z) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              + gg*((p%TT(:)-TT0)/TT0 &
              + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
-             - const_tmp*p%fcloud(:))
+          !   - const_tmp*p%fcloud(:)
+             )
+      elseif (lbuoyancy_x) then
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
+             + gg*((p%TT(:)-TT0)/TT0 &
+           !  + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
+           !  - const_tmp*p%fcloud(:)
+           )
       endif
 !
       call keep_compiler_quiet(df)
