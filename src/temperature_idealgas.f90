@@ -113,6 +113,7 @@ module Entropy
   integer :: idiag_ppmx=0       ! DIAG_DOC:
   integer :: idiag_ppmy=0       ! DIAG_DOC:
   integer :: idiag_ppmz=0       ! DIAG_DOC:
+  integer :: idiag_ppuzmz=0     ! DIAG_DOC:
   integer :: idiag_TTmx=0       ! DIAG_DOC:
   integer :: idiag_TTmy=0       ! DIAG_DOC:
   integer :: idiag_TTmz=0       ! DIAG_DOC:
@@ -849,9 +850,13 @@ module Entropy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        if (idiag_TTmx/=0)    call yzsum_mn_name_x(p%TT,idiag_TTmx)
-        if (idiag_TTmy/=0)    call xzsum_mn_name_y(p%TT,idiag_TTmy)
-        if (idiag_TTmz/=0)    call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_ppmx/=0)  call yzsum_mn_name_x(p%pp,idiag_ppmx)
+        if (idiag_ppmy/=0)  call xzsum_mn_name_y(p%pp,idiag_ppmy)
+        if (idiag_ppmz/=0)  call xysum_mn_name_z(p%pp,idiag_ppmz)
+        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_ppuzmz/=0)  call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
         if (idiag_ethmz/=0)   call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
         if (idiag_ethuxmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1), &
             idiag_ethuxmz)
@@ -1376,7 +1381,7 @@ module Entropy
         idiag_ethm=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
-        idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
+        idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0; idiag_ppuzmz=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
@@ -1410,15 +1415,17 @@ module Entropy
 !  Check for those quantities for which we want xz-averages.
 !
       do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'ppmy',idiag_TTmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'ppmy',idiag_ppmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'TTmy',idiag_TTmy)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppuzmz', &
+            idiag_ppuzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethmz', &
             idiag_ethmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuxmz', &
@@ -1432,13 +1439,15 @@ module Entropy
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy',      idiag_TTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy', &
+            idiag_TTmxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
 !
       do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz',      idiag_TTmxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz', &
+            idiag_TTmxz)
       enddo
 !
 !  Write column where which variable is stored.
