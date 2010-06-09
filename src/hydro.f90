@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu; oo(3); o2; ou; u2; ekin; uij(3,3); uu(3)
+! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3); qq(3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
@@ -1344,10 +1344,6 @@ module Hydro
       logical, dimension (npencils) :: lpencil_in
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
-      if (lpencil_in(i_ekin)) then
-        lpencil_in(i_rho)=.true.
-        lpencil_in(i_u2)=.true.
-      endif
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
       if (lalways_use_gij_etc) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
@@ -1409,8 +1405,6 @@ module Hydro
       if (lpencil(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
       if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
-! ekin
-      if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
 ! uij
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
 ! divu

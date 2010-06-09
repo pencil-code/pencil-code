@@ -12,7 +12,7 @@
 ! PENCILS PROVIDED rho; lnrho; rho1; glnrho(3); del2rho; del2lnrho
 ! PENCILS PROVIDED hlnrho(3,3); grho(3); glnrho2
 ! PENCILS PROVIDED del6lnrho; uij5glnrho(3); uglnrho; ugrho; sglnrho(3)
-! PENCILS PROVIDED transprho
+! PENCILS PROVIDED ekin; transprho
 !
 !***************************************************************
 module Density
@@ -132,6 +132,8 @@ module Density
       if (lpencil(i_ugrho)) p%ugrho=0.0
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
+! ekin
+      if (lpencil(i_ekin)) p%ekin=0.0
 !
       call keep_compiler_quiet(f)
 !

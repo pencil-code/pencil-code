@@ -15,6 +15,7 @@
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
+! PENCILS PROVIDED ekin
 !
 !***************************************************************
 module Density
@@ -1395,6 +1396,10 @@ module Density
           lpencil_in(i_glnrho2)=.true.
         endif
       endif
+      if (lpencil_in(i_ekin)) then
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_u2)=.true.
+      endif
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -1416,6 +1421,8 @@ module Density
       else
         call calc_pencils_log_density(f,p)
       endif
+! ekin
+      if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
