@@ -81,6 +81,7 @@ module Special
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
     real, dimension(nx,ny), save :: ux_local,uy_local
+    real :: Bzflux
 !
   contains
 !
@@ -1342,8 +1343,8 @@ module Special
 !
 ! set sum(abs(Bz)) to  a given flux
       if (Bz_flux/=0) then
-        bb_tot = sqrt(sum(abs(BB2)))
-        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay)/bb_tot*Bz_flux
+        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
+            Bz_flux/(Bzflux*dx*dy*unit_magnetic*unit_length**2)
       endif
 !
       call get_cp1(cp1)
@@ -2003,6 +2004,7 @@ module Special
       real, dimension(nx,ny) :: fac,BB2_local,tmp
       integer :: i,j,ipt
       integer, dimension(2) :: dims=(/nx,ny/)
+      real :: temp
 !
       intent(in) :: f
       intent(out) :: BB2_local
@@ -2060,7 +2062,7 @@ module Special
       endif
 !
       BB2_local = bbx*bbx + bby*bby + bbz*bbz
-      BB2_local = BB2_local
+      Bzflux = sum(abs(bbz))
 !
 ! communicate to root processor
 !
@@ -2072,11 +2074,14 @@ module Special
             if (ipt.ne.0) then
               call mpirecv_real(tmp,dims,ipt,555+ipt)
               BB2(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)  = tmp
+              call mpirecv_real(temp,1,ipt,556+ipt)
+              Bzflux = Bzflux+temp
             endif
           enddo
         enddo
       else
         call mpisend_real(BB2_local,dims,0,555+iproc)
+        call mpisend_real(Bzflux,1,0,556+iproc)
       endif
 !
     endsubroutine set_B2
