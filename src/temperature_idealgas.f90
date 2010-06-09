@@ -621,7 +621,8 @@ module Entropy
       if (idiag_dtchi/=0)  lpenc_diagnos(i_cs2)=.true.
       if (idiag_csm/=0)    lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0)    lpenc_diagnos(i_ee) =.true.
-      if (idiag_ppm/=0)    lpenc_diagnos(i_pp) =.true.
+      if (idiag_ppm/=0 .or. idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. &
+          idiag_ppmz/=0 .or. idiag_ppuzmz/=0) lpenc_diagnos(i_pp) =.true.
       if (idiag_thcool/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. idiag_TTmz/=0) &
           lpenc_diagnos(i_TT)=.true.
@@ -646,10 +647,8 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-!
       if (lpencil_in(i_uglnTT)) lpencil_in(i_glnTT)=.true.
       if (lpencil_in(i_ugTT))   lpencil_in(i_gTT)  =.true.
-!
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
