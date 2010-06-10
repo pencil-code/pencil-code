@@ -1417,11 +1417,11 @@ else # no MPI
 endif
 
 # Determine data directory (defaults to `data')
-#if (-r datadir.in) then
-#  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
-#else
+if (-r datadir.in) then
+  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+else
   set datadir = "data"
-#endif
+endif
 echo "datadir = $datadir"
 
 # Propagate current pid to copy-snapshots:
