@@ -3284,8 +3284,8 @@ module EquationOfState
 !
           if (bcz1(iss)/='hs') then
             call fatal_error("bc_lnrho_hydrostatic_z", &
-                             "This boundary condition for density is "// &
-                             "currently only correct for bcz1(iss)='hs'")
+                "This boundary condition for density is "// &
+                "currently only correct for bcz1(iss)='hs'")
           endif
 !
           call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
@@ -3299,7 +3299,28 @@ module EquationOfState
             f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
           enddo
 !
+        elseif (ltemperature) then
+!
+!  Energy equation formulated in logarithmic temperature.
+!
+          if (bcz1(ilntt)/='s') then
+            call fatal_error("bc_lnrho_hydrostatic_z", &
+                "This boundary condition for density is "// &
+                "currently only correct for bcz1(ilntt)='s'")
+          endif
+!
+          call eoscalc(ilnrho_lntt,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilntt), &
+              cs2=cs2_point)
+!
+          dlnrhodz =  gamma *gravz/cs2_point
+!
+          do i=1,nghost
+            f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+          enddo
+!
         else
+!
+!  Isothermal equation of state.
 !
           do i=1,nghost
             call potential(z=z(n1-i),pot=potm)
@@ -3337,11 +3358,11 @@ module EquationOfState
 !
           if (bcz2(iss)/='hs') then
             call fatal_error("bc_lnrho_hydrostatic_z", &
-                             "This boundary condition for density is "//&
-                             "currently only correct for bcz2(iss)='hs'")
+                "This boundary condition for density is "//&
+                "currently only correct for bcz2(iss)='hs'")
           endif
 !
-          call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
+          call eoscalc(ilnrho_ss,f(l2,m2,n2,ilnrho),f(l2,m2,n2,iss), &
               cs2=cs2_point)
 !
           dlnrhodz =  gamma *gravz/cs2_point
@@ -3352,7 +3373,28 @@ module EquationOfState
             f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + 2*i*dz*dssdz
           enddo
 !
+        elseif (ltemperature) then
+!
+!  Energy equation formulated in logarithmic temperature.
+!
+          if (bcz2(ilntt)/='s') then
+            call fatal_error("bc_lnrho_hydrostatic_z", &
+                "This boundary condition for density is "//&
+                "currently only correct for bcz2(ilntt)='s'")
+          endif
+!
+          call eoscalc(ilnrho_lntt,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilntt), &
+              cs2=cs2_point)
+!
+          dlnrhodz =  gamma *gravz/cs2_point
+!
+          do i=1,nghost
+            f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+          enddo
+
         else
+!
+!  Isothermal equation of state.
 !
           do i=1,nghost
             call potential(z=z(n2+i),pot=potp)
