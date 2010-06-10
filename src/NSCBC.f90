@@ -155,13 +155,13 @@ include 'NSCBC.h'
 !
       if (lfinal_velocity_profile) then
         if (j==1) then
-          imin=m1; imax=m2; jmin=n1; jmax=n2  
-          igrid=ny; jgrid=nz  
-        elseif (j==2) then 
-          imin=l1; imax=l2; jmin=n1; jmax=n2  
+          imin=m1; imax=m2; jmin=n1; jmax=n2
+          igrid=ny; jgrid=nz
+        elseif (j==2) then
+          imin=l1; imax=l2; jmin=n1; jmax=n2
           igrid=nx; jgrid=nz
         elseif (j==3) then
-          imin=l1; imax=l2; jmin=m1; jmax=m2  
+          imin=l1; imax=l2; jmin=m1; jmax=m2
           igrid=nx; jgrid=ny
         endif
       endif
@@ -287,7 +287,7 @@ include 'NSCBC.h'
             u_t=valz(j)
           endif
 !
-! Set the values of species 
+! Set the values of species
 !
 
         if (nchemspec>1) then
@@ -865,7 +865,7 @@ include 'NSCBC.h'
       real, allocatable, dimension(:,:)   :: u_profile
       real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
-      real :: radius_mean, smooth, rad, rad_2
+      real :: radius_mean, smooth, rad
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
 !
@@ -875,7 +875,7 @@ include 'NSCBC.h'
       allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
       allocate(u_turb   (igrid,jgrid,3),STAT=stat(2))
       if (maxval(stat)>0) &
-          call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")  
+          call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")
 !
 ! Define velocity profile at inlet
 !
@@ -1629,14 +1629,14 @@ include 'NSCBC.h'
           L_1 = (f(lll,m1:m2,n1:n2,iux) - cs0_ar(m1:m2,n1:n2))*&
               (dpp_dx - rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
           L_5=nscbc_sigma_in*rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2) &
-              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-(u_t+u_in(:,:,1))) 
+              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-(u_t+u_in(:,:,1)))
 
 
         case ('top')
           L_5 = (f(lll,m1:m2,n1:n2,iux) + cs0_ar(m1:m2,n1:n2))*&
               (dpp_dx + rho0(m1:m2,n1:n2)*cs0_ar(m1:m2,n1:n2)*dux_dx)
           L_1=-nscbc_sigma_in*rho0(m1:m2,n1:n2)*cs20_ar(m1:m2,n1:n2) &
-              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-(u_t+u_in(:,:,1)))  
+              *(1.-Mach_num**2)/Lxyz(1)*(f(lll,m1:m2,n1:n2,iux)-(u_t+u_in(:,:,1)))
         endselect
 
         if (ltemperature_nolog) then
@@ -1654,7 +1654,7 @@ include 'NSCBC.h'
               -1./rho0(m1:m2,n1:n2)/cs20_ar(m1:m2,n1:n2) &
               *(L_2+0.5*(L_5 + L_1)) !&
            !-1./rho0(m1:m2,n1:n2)*dmom2_dy(m1:m2,n1:n2)
-        endif        
+        endif
 
         if (ltemperature_nolog) then
             call stop_it('bc_nscbc_subin_x:ltemperature_nolog case does not work now!')
@@ -1690,7 +1690,7 @@ include 'NSCBC.h'
          f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
          f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
         else
-         f(lll,m1:m2,n1:n2,iux) = u_t 
+         f(lll,m1:m2,n1:n2,iux) = u_t
          f(lll,m1:m2,n1:n2,iuy) = 0.
          f(lll,m1:m2,n1:n2,iuz) = 0.
         endif
@@ -3033,7 +3033,7 @@ include 'NSCBC.h'
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, allocatable, dimension(:,:)   :: u_profile
-      integer :: i,j,kkk,jjj,bound
+      integer :: j,kkk,jjj,bound
       integer, dimension(10) :: stat
       real :: rad_2
       integer, intent(in) :: dir,imin,imax,jmin,jmax,igrid,jgrid
@@ -3057,7 +3057,7 @@ include 'NSCBC.h'
       stat=0
       allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
       if (maxval(stat)>0) &
-          call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")  
+          call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")
 !
 ! Define velocity profile at inlet
 !
