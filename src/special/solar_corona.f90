@@ -27,6 +27,7 @@ module Special
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
+  logical :: luse_ext_vel_field=.false.,lmassflux=.false.
   integer :: irefz=0,nglevel=3
   real :: massflux=0.,u_add
 !
@@ -42,7 +43,8 @@ module Special
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
-       lquench,q0,qw,dq,massflux
+       lquench,q0,qw,dq,massflux,luse_ext_vel_field, &
+       lmassflux
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -82,6 +84,7 @@ module Special
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
     real, dimension(nx,ny), save :: ux_local,uy_local
+    real, dimension(nx,ny), save :: ux_ext,uy_ext
     real :: Bzflux
 !
   contains
@@ -650,7 +653,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-!  Do somehow Newton cooling
+!  Do somehow Newton cooling.
 !
       if ((ipz == 0) .and. (bmdi /= 0.0)) then
         f(l1:l2,m1:m2,n1,iax)=f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
@@ -661,11 +664,15 @@ module Special
         if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
       endif
 !
+! Compute photospheric granulation.
       if (lgranulation .and. ipz.eq.0 ) then
         if (.not. lpencil_check_at_work) call uudriver(f)
       endif
 !
-      call get_wind_speed_offset(f)
+! Read external velocity file.
+      if (luse_ext_vel_field) call read_ext_vel_field()
+!
+      if (lmassflux) call get_wind_speed_offset(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1336,7 +1343,7 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
-      real :: cp1,bb_tot
+      real :: cp1
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
 !
@@ -2121,6 +2128,158 @@ module Special
       enddo
 !
     endsubroutine fill_B_avoidarr
+!***********************************************************************
+    subroutine read_ext_vel_field()
+!
+      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
+!
+      real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
+      real, dimension (:,:), allocatable :: tmp
+      integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
+      integer :: tag_tl=345,tag_tr=346,tag_dt=347
+      integer :: lend=0,ierr,i=0,stat,px,py
+      real, save :: tl=0.,tr=0.,delta_t=0.
+!
+      character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
+      character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
+      integer :: unit=1
+!
+      ierr = 0
+      stat = 0
+      if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=ierr)
+      if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
+      ierr = max(stat,ierr)
+      allocate(tmp(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+!
+      if (ierr>0) call stop_it_if_any(.true.,'uu_driver: '// &
+          'Could not allocate memory for all variable, please check')
+!
+!  Read the time table
+!
+      if ((t*unit_time<tl+delta_t) .or. (t*unit_time>=tr+delta_t)) then
+!
+        if (lroot) then
+          inquire(IOLENGTH=lend) tl
+          open (unit,file=vel_times_dat,form='unformatted',status='unknown',recl=lend,access='direct')
+!
+          ierr = 0
+          i=0
+          do while (ierr == 0)
+            i=i+1
+            read (unit,rec=i,iostat=ierr) tl
+            read (unit,rec=i+1,iostat=ierr) tr
+            if (ierr /= 0) then
+              i=1
+              delta_t = t*unit_time                  ! EOF is reached => read again
+              read (unit,rec=i,iostat=ierr) tl
+              read (unit,rec=i+1,iostat=ierr) tr
+              ierr=-1
+            else
+              if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) ierr=-1
+              ! correct time step is reached
+            endif
+          enddo
+          close (unit)
+!
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px /= 0) .or. (py /= 0)) then
+                call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
+                call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
+                call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
+              endif
+            enddo
+          enddo
+        else
+          call mpirecv_real (tl, 1, 0, tag_tl)
+          call mpirecv_real (tr, 1, 0, tag_tr)
+          call mpirecv_real (delta_t, 1, 0, tag_dt)
+        endif
+!
+! Read velocity field
+!
+        if (lroot) then
+          open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
+!
+          read (unit,rec=2*i-1) tmp
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px /= 0) .or. (py /= 0)) then
+                uxl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                call mpisend_real (uxl, (/ nx, ny /), px+py*nprocx, tag_xl)
+              endif
+            enddo
+          enddo
+          uxl = tmp(1:nx,1:ny)
+!
+          read (unit,rec=2*i)   tmp
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px /= 0) .or. (py /= 0)) then
+                uyl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                call mpisend_real (uyl, (/ nx, ny /), px+py*nprocx, tag_yl)
+              endif
+            enddo
+          enddo
+          uyl = tmp(1:nx,1:ny)
+!
+          read (unit,rec=2*i+1) tmp
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px /= 0) .or. (py /= 0)) then
+                uxr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_xr)
+              endif
+            enddo
+          enddo
+          uxr = tmp(1:nx,1:ny)
+!
+          read (unit,rec=2*i+2) tmp
+          uyr = tmp(1:nx,1:ny)
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px /= 0) .or. (py /= 0)) then
+                uyr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_yr)
+              endif
+            enddo
+          enddo
+          uyr = tmp(1:nx,1:ny)
+!
+          close (unit)
+        else
+          call mpirecv_real (uxl, (/ nx, ny /), 0, tag_xl)
+          call mpirecv_real (uyl, (/ nx, ny /), 0, tag_yl)
+          call mpirecv_real (uxr, (/ nx, ny /), 0, tag_xr)
+          call mpirecv_real (uyr, (/ nx, ny /), 0, tag_yr)
+        endif
+!
+! WE HAVE TO ASUME SOME UNIT SYSTEM HERE !!!!
+! let us asume to be in [u]=m/s
+        uxl = uxl / unit_velocity
+        uxr = uxr / unit_velocity
+        uyl = uyl / unit_velocity
+        uyr = uyr / unit_velocity
+!
+      endif
+!
+!   simple linear interploation between timesteps
+!
+      if (tr /= tl) then
+        ux_ext  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
+        uy_ext  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
+      else
+        ux_ext = uxr
+        uy_ext = uyr
+      endif
+!
+      if (allocated(tmp)) deallocate(tmp)
+!
+    endsubroutine read_ext_vel_field
 !***********************************************************************
     subroutine force_solar_wind(df)
 !
