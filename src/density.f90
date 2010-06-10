@@ -1618,10 +1618,36 @@ module Density
           endif
         else
           if (ieos_profile=='nothing') then
-            if (ldensity_nolog) then
-              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
+            
+!
+!  If we are solving the fore-free equation in parts of our domain.
+!
+            if (lffree) then
+              if (ldensity_nolog) then
+                df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
+                  - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                   *(p%ugrho + p%rho*p%divu)
+                if (ldensity_profile_masscons) &
+                  df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+                   -dprofx_ffree*p%rho*p%uu(:,3) &
+                   -dprofy_ffree(m)*p%rho*p%uu(:,3) &
+                   -dprofz_ffree(n)*p%rho*p%uu(:,3) 
+              else
+                df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+                  - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                  *(p%uglnrho + p%divu)
+                if (ldensity_profile_masscons) &
+                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                   -dprofx_ffree*p%uu(:,3) &
+                   -dprofy_ffree(m)*p%uu(:,3) &
+                   -dprofz_ffree(n)*p%uu(:,3)
+              endif
             else
-              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+              if (ldensity_nolog) then
+                df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
+              else
+                df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+              endif
             endif
 !                                                                 
 !  Choice of vertical profile in front of density evolution.      
@@ -1632,40 +1658,16 @@ module Density
           elseif (ieos_profile=='surface_z') then
             if (ldensity_nolog) then
               df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                  - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-              if (ldensity_profile_masscons) &
-                  df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+                 - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+               if (ldensity_profile_masscons) &
+                 df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
                   -dprofz_eos(n)*p%rho*p%uu(:,3)
             else
               df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
                   - profz_eos(n)*(p%uglnrho + p%divu)
               if (ldensity_profile_masscons) &
-                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                  -dprofz_eos(n)*p%uu(:,3)
-            endif
-          endif
-!
-!  If we are solving the fore-free equation in parts of our domain.
-!
-          if (lffree) then
-            if (ldensity_nolog) then
-               df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                   - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                   *(p%ugrho + p%rho*p%divu)
-               if (ldensity_profile_masscons) &
-                   df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-                   -dprofx_ffree*p%rho*p%uu(:,3) &
-                   -dprofy_ffree(m)*p%rho*p%uu(:,3) &
-                   -dprofz_ffree(n)*p%rho*p%uu(:,3) 
-            else
-              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-                  - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                  *(p%uglnrho + p%divu)
-               if (ldensity_profile_masscons) &
-                   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                   -dprofx_ffree*p%uu(:,3) &
-                   -dprofy_ffree(m)*p%uu(:,3) &
-                   -dprofz_ffree(n)*p%uu(:,3)
+                    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                    -dprofz_eos(n)*p%uu(:,3)
             endif
           endif
         endif
