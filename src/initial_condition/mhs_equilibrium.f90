@@ -154,6 +154,7 @@ module InitialCondition
 !
           call get_radial_distance(rr_sph,rr_cyl)
           lnrhomid=log(rho0)+p*log(rr_cyl) 
+          f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+lnrhomid
 !
 !  Vertical stratification
 !
@@ -161,7 +162,7 @@ module InitialCondition
           call potential(POT=tmp1,RMN=rr_sph)
           call potential(POT=tmp2,RMN=rr_cyl)
           strat=-(tmp1-tmp2)/cs2
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+lnrhomid+strat
+          f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
 !
         enddo
       enddo
@@ -183,49 +184,70 @@ module InitialCondition
 !
       use FArrayManager, only: farray_use_global
       use Sub, only: gij,curl_mn,get_radial_distance
+      use EquationOfState, only: cs20,rho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: pressure,Bphi,Atheta
       real, dimension(mx) :: rr_sph,rr_cyl,tmp,tmp2
-      real :: integral,dr
+      real :: integral,dr,ksi,B0,field_power_law
       integer, pointer :: iglobal_cs2
       integer :: ics2,irho,i
+      logical :: lintegrate_potential=.false.
+
+      if (lintegrate_potential) then 
 !
 !  Get the sound speed globals 
 !
-      nullify(iglobal_cs2)
-      call farray_use_global('cs2',iglobal_cs2)
-      ics2=iglobal_cs2 
+        nullify(iglobal_cs2)
+        call farray_use_global('cs2',iglobal_cs2)
+        ics2=iglobal_cs2 
 !
 !  Density is already in linear after init_lnrho, so
 !
-      irho=ilnrho
+        irho=ilnrho
 !
-      do n=1,mz
-        do m=1,my
+        do n=1,mz
+          do m=1,my
 !
-          pressure=f(:,m,n,irho)*f(:,m,n,ics2)
+            pressure=f(:,m,n,irho)*f(:,m,n,ics2)
 !
 !  The following line assumes mu0=1
 !
-          Bphi = sqrt(2*pressure/plasma_beta)
+            Bphi = sqrt(2*pressure/plasma_beta)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
-          call get_radial_distance(rr_sph,rr_cyl)
-          dr=rr_sph(2)-rr_sph(1)
-          tmp=Bphi*rr_sph
+            call get_radial_distance(rr_sph,rr_cyl)
+            dr=rr_sph(2)-rr_sph(1)
+            tmp=Bphi*rr_sph
 !
-          tmp2(1)=0.
-          do i=2,mx
-            tmp2(i)=tmp2(i-1) + tmp(i)*dr 
+            tmp2(1)=0.
+            do i=2,mx
+              tmp2(i)=tmp2(i-1) + tmp(i)*dr 
+            enddo
+            Atheta=tmp2/rr_sph
+!
+            f(:,m,n,iay)=f(:,m,n,iay)+Atheta
+!
           enddo
-          Atheta=tmp2/rr_sph
-!
-          f(:,m,n,iay)=f(:,m,n,iay)+Atheta
-!
         enddo
-      enddo
+!
+      else
+!
+!  Calculate the potential directly since we know the power laws
+!
+        ksi=.5*(density_power_law+temperature_power_law)
+        B0=sqrt(2*rho0*cs20/plasma_beta)
+!
+        do m=1,my
+          do n=1,mz
+            call get_radial_distance(rr_sph,rr_cyl)
+            Atheta=(B0/(2.-ksi))*rr_sph**(1.-ksi)
+            f(:,m,n,iay)=f(:,m,n,iay)+Atheta
+          enddo
+        enddo
+!
+      endif
 !
 !  All quantities are set. Enforce numerical equilibrium.
 !
