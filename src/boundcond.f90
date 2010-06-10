@@ -1482,7 +1482,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_set_der_x(f,topbot,j,val)
 !
-!  Sets the derivative on the boundary to a given value
+!  Sets the derivative on the boundary to a given value.
 !
 !  14-may-2006/tobi: coded
 !
@@ -1526,7 +1526,7 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost;f(l1-i,:,:,j)=val; enddo
+        do i=1,nghost; f(l1-i,:,:,j)=val; enddo
       case ('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j)=val; enddo
       case default
@@ -2095,7 +2095,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_set_der_y(f,topbot,j,val)
 !
-!  Sets the derivative on the boundary to a given value
+!  Sets the derivative on the boundary to a given value.
 !
 !  14-may-2006/tobi: coded
 !
@@ -2123,7 +2123,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_set_der_z(f,topbot,j,val)
 !
-!  Sets the derivative on the boundary to a given value
+!  Sets the derivative on the boundary to a given value.
 !
 !  14-may-2006/tobi: coded
 !
