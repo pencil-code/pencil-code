@@ -92,6 +92,11 @@ module Snapshot
           call update_ghosts(a)
         endif
         if (msnap==mfarray) call update_auxiliaries(a) ! Not if e.g. dvar.dat.
+        if (present(noghost)) then
+          if (.not. noghost) call update_ghosts(a)
+        else
+          call update_ghosts(a)
+        endif
         call output_snap(chsnap,a,msnap)
         if (present(flist)) call log_filename_to_file(chsnap,flist)
       endif
