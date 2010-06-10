@@ -71,17 +71,17 @@ module Register
 !
       call mpicomm_init
 !
+!  Overwrite datadir from datadir.in, if that exists.
+!
+      call get_datadir(datadir)
+      call get_snapdir(datadir_snap)
+!
 !  Initialize index.pro file.
 !
       if (lroot) then
         open(3,file=trim(datadir)//'/index.pro',status='replace')
         close(3)
       endif
-!
-!  Overwrite datadir from datadir.in, if that exists.
-!
-      call get_datadir(datadir)
-      call get_snapdir(datadir_snap)
 !
 !  Set up the ordering of the pencils.
 !
