@@ -28,6 +28,7 @@ module Special
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   integer :: irefz=0,nglevel=3
+  real :: massflux=0.,u_add
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
   real, dimension (mz) :: init_lnTT, init_lnrho
@@ -41,7 +42,7 @@ module Special
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
-       lquench,q0,qw,dq
+       lquench,q0,qw,dq,massflux
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -527,6 +528,7 @@ module Special
         if (n.eq.n1.and.ipz.eq.0) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
               tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
+!
           df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - &
               tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
         endif
@@ -540,6 +542,8 @@ module Special
           dt1_max=max(dt1_max,tmp/cdts)
         endif
       endif
+!
+      call force_solar_wind(df)
 !
       call keep_compiler_quiet(p)
 !
@@ -660,6 +664,8 @@ module Special
       if (lgranulation .and. ipz.eq.0 ) then
         if (.not. lpencil_check_at_work) call uudriver(f)
       endif
+!
+      call get_wind_speed_offset(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1394,7 +1400,7 @@ module Special
         beta =  pp_tmp/max(tini,BB2_local)*2*mu0
 !
 !  quench velocities to one percent of the granule velocities
-        do i=1,ny 
+        do i=1,ny
           quench(:,i) = cubic_step(beta(:,i),q0,qw)*(1.-dq)+dq
         enddo
 !
@@ -1402,6 +1408,8 @@ module Special
         uy_local = uy_local * quench
       endif
 !
+!      f(l1:l2,m1:m2,irefz,iux) = ux_local
+!      f(l1:l2,m1:m2,irefz,iuy) = uy_local
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
 ! restore global seed and save seed list of the granulation
@@ -1567,7 +1575,7 @@ module Special
         endif
 !
 ! Normalize to given total rms-velocity
-        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+1e-30
+        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
 !
         if (unit_system.eq.'SI') then
           vtot=3.*1e3/unit_velocity
@@ -1829,7 +1837,7 @@ module Special
 !
       fvy_r=vy
       fvy_i=0.
-      call fourier_transform_other(fvy_r,fvy_i)     
+      call fourier_transform_other(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
       k20 = (kx_ny/2.)**2.
@@ -1853,7 +1861,7 @@ module Special
 !
 ! Filter out large wave numbers.
       filter = exp(-(k2/k20)**2)
-!      
+!
       frx_r = frx_r*filter
       frx_i = frx_i*filter
 !
@@ -2113,6 +2121,86 @@ module Special
       enddo
 !
     endsubroutine fill_B_avoidarr
+!***********************************************************************
+    subroutine force_solar_wind(df)
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      if (n==n2.and.ipz==nprocz-1) then
+        df(l1:l2,m,n2,iuz) =  df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
+      endif
+!
+    endsubroutine force_solar_wind
+!***********************************************************************
+    subroutine get_wind_speed_offset(f)
+!
+!  Calculates u_0 so that rho*(u+u_0)=massflux.
+!  Set 'win' for rho and
+!  massflux can be set as fbcz1/2(rho) in run.in.
+!
+!  18-06-2008/bing: coded
+!
+      use Mpicomm, only: mpisend_real,mpirecv_real
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,ipt
+!      real :: massflux
+      real :: local_flux,local_mass
+      real :: total_flux,total_mass
+      real :: get_lf,get_lm
+      integer :: nroot
+!
+      nroot = ipz*nprocx*nprocy
+!
+      local_flux=sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
+      local_mass=sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
+!
+!  One  processor has to collect the data
+!
+      if (iproc/=nroot) then
+        ! send to first processor at given height
+        !
+        call mpisend_real(local_flux,1,nroot,111+iproc)
+        call mpisend_real(local_mass,1,nroot,211+iproc)
+      else
+        total_flux=local_flux
+        total_mass=local_mass
+        do i=0,nprocx-1
+          do j=0,nprocy-1
+            ipt = i+nprocx*j+ipz*nprocx*nprocy
+            if (ipt/=nroot) then
+              call mpirecv_real(get_lf,1,ipt,111+ipt)
+              call mpirecv_real(get_lm,1,ipt,211+ipt)
+              total_flux=total_flux+get_lf
+              total_mass=total_mass+get_lm
+            endif
+          enddo
+        enddo
+!
+!  Get u0 addition rho*(u+u0) = wind
+!  rho*u + u0 *rho =wind
+!  u0 = (wind-rho*u)/rho
+!
+        u_add = (massflux-total_flux) / total_mass
+      endif
+!
+!  now distribute u_add
+!
+      if (iproc/=nroot) then
+        call mpirecv_real(u_add,1,nroot,311+iproc)
+      else
+        do i=0,nprocx-1
+          do j=0,nprocy-1
+            ipt = i+nprocx*j+ipz*nprocx*nprocy
+            if (ipt/=nroot) then
+              call mpisend_real(u_add,1,ipt,311+ipt)
+            endif
+          enddo
+        enddo
+      endif
+!
+    endsubroutine get_wind_speed_offset
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
