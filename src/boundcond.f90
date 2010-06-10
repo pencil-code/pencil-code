@@ -410,6 +410,12 @@ module Boundcond
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
+              case ('cop')
+                ! BCY_DOC: copy value of last physical point to all ghost cells
+                call bc_copy_y(f,topbot,j)
+              case ('c+k')
+                ! BCY_DOC: copy value of last physical point to all ghost cells
+                call bc_copy_y_noinflow(f,topbot,j)
               case ('sfr')
                   ! BCY_DOC: stress-free boundary condition for spherical coordinate system.
                 call bc_set_sfree_y(f,topbot,j)
@@ -4503,6 +4509,86 @@ module Boundcond
       endselect
 !
     endsubroutine bc_copy_x
+!***********************************************************************
+    subroutine bc_copy_y(f,topbot,j)
+!
+!  Copy value in last grid point to all ghost cells.
+!
+!  08-june-2010/wlyra: implemented
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1,:,j); enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2,:,j); enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_copy_y: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_copy_y
+!***********************************************************************
+    subroutine bc_copy_y_noinflow(f,topbot,j)
+!
+!  Copy value in last grid point to all ghost cells. Set to zero if 
+!  the sign is wrong.
+!
+!  08-june-2010/wlyra: implemented
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: value
+      integer :: j,l,n
+!
+      integer :: i
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do l=1,mx; do n=1,mz
+          value=0.
+          if (f(l,m1,n,j) .lt. 0) value=f(l,m1,n,j)
+          do i=1,nghost
+            f(l,m1-i,n,j)=value
+          enddo
+        enddo;enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do l=1,mx; do n=1,mz
+          value=0.
+          if (f(l,m2,n,j) .gt. 0) value=f(l,m2,n,j)
+          do i=1,nghost
+            f(l,m2+i,n,j)=value
+          enddo
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_copy_y_noinflow: ", topbot, " should be `top' or `bot'"
+!
+      endselect
+!
+    endsubroutine bc_copy_y_noinflow
 !***********************************************************************
     subroutine bc_copy_z(f,topbot,j)
 !
