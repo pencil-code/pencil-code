@@ -553,7 +553,7 @@ module Register
         r2_weight=x(l1:l2)**2
         sinth_weight=sinth
         if (nxgrid>1) then
-          do itheta=0,nygrid-1
+          do itheta=1,nygrid
             sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
           enddo
         endif
