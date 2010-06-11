@@ -593,9 +593,9 @@ module Special
       case ('wip')
         call bc_wip_x(f,+1,topbot,bc%ivar,val=bc%value1)
         bc%done=.true.
-      case ('wo')
-        call bc_wo_x(f,+1,topbot,bc%ivar,val=bc%value1)
-        bc%done=.true.
+!!$      case ('wo')
+!!$        call bc_wo_x(f,+1,topbot,bc%ivar,val=bc%value1)
+!!$        bc%done=.true.
       end select
 !
     endsubroutine special_boundconds
@@ -991,91 +991,91 @@ module Special
         enddo
 !
   endsubroutine bc_wi_x
-!***********************************************************************
-    subroutine bc_wo_x(f,sgn,topbot,j,rel,val)
-!
-!  23-may-10/nils: coded
-!
-      use EquationOfState
-      use chemistry
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      real :: val
-      integer :: sgn,i,j
-      logical, optional :: rel
-      logical :: relative
-
-      real :: radius, rad,z0,y0,T0,P0,r,mu
-      integer :: jj,kk
-!
-!
-!
-      radius=0.0
-      z0=0.
-      y0=0.
-!
-! First of all we set one-sided derivatives for all variables over the full
-! boundary. This will then mostly be overwritten later.
-
-!NILS: COmmented out the below statements for now in order to make the 
-!NILS: code compile after I moved this from the boundary module.
-!NILS: will have to duplicate whatever bc i need here since this 
-!NILS: module is used by the boundary module.....
-!
-!      call bc_onesided_x(f,topbot,j)
-!      call bc_extrap_2_1(f,topbot,j)
-!
-!  Loop over all grid points
-!
-        do jj=1,my
-          do kk=1,mz
-            rad=sqrt((y(jj)-y0)**2+(z(kk)-z0)**2)
-!
-!  Zero derivative for density
-!
-            if (j == ilnrho) then
-              do i=1,nghost
-                f(l2+i,jj,kk,j)= f(l2-i,jj,kk,j)
-              enddo
-            else
-!
-! Check if we are inside the radius if the inlet
-!
-              if (rad > radius) then
-                ! Solid wall
-                do i=1,nghost
-                  if (j <= iuz) then
-                    f(l2,jj,kk,j)=0.
-                    f(l2+i,jj,kk,j)=-f(l2-i,jj,kk,j)
-                  elseif (j == ilnTT) then
-                    f(l2,jj,kk,j)=val
-                    f(l2+i,jj,kk,j)=2*val-f(l2-i,jj,kk,j)
-                  else
-                    f(l2+i,jj,kk,j)= f(l2-i,jj,kk,j)
-                  endif
-                enddo
-              else
-                ! Outlet           
-                if (j == ilnTT) then
-                  call getmu(f,mu,l2,jj,kk)
-                  r=Rgas*mu
-                  P0=1.013e6
-                  T0=min(P0/(exp(f(l2,jj,kk,ilnrho))*r),2500.)
-                 f(l2,jj,kk,j)=log(T0)
-                  do i=1,nghost
-                    f(l2+i,jj,kk,j)=2*log(T0)-f(l2-i,jj,kk,j)
-                  enddo
-                else
-                  ! Do nothing because one sided conditions has already
-                  ! been set in the top of the rutine
-                endif
-              endif
-            endif
-         enddo
-        enddo
-!
-  endsubroutine bc_wo_x
+!!$!***********************************************************************
+!!$    subroutine bc_wo_x(f,sgn,topbot,j,rel,val)
+!!$!
+!!$!  23-may-10/nils: coded
+!!$!
+!!$      use EquationOfState
+!!$      use chemistry
+!!$!
+!!$      character (len=3) :: topbot
+!!$      real, dimension (mx,my,mz,mfarray) :: f
+!!$      real :: val
+!!$      integer :: sgn,i,j
+!!$      logical, optional :: rel
+!!$      logical :: relative
+!!$
+!!$      real :: radius, rad,z0,y0,T0,P0,r,mu
+!!$      integer :: jj,kk
+!!$!
+!!$!
+!!$!
+!!$      radius=0.0
+!!$      z0=0.
+!!$      y0=0.
+!!$!
+!!$! First of all we set one-sided derivatives for all variables over the full
+!!$! boundary. This will then mostly be overwritten later.
+!!$
+!!$!NILS: COmmented out the below statements for now in order to make the 
+!!$!NILS: code compile after I moved this from the boundary module.
+!!$!NILS: will have to duplicate whatever bc i need here since this 
+!!$!NILS: module is used by the boundary module.....
+!!$!
+!!$!      call bc_onesided_x(f,topbot,j)
+!!$!      call bc_extrap_2_1(f,topbot,j)
+!!$!
+!!$!  Loop over all grid points
+!!$!
+!!$        do jj=1,my
+!!$          do kk=1,mz
+!!$            rad=sqrt((y(jj)-y0)**2+(z(kk)-z0)**2)
+!!$!
+!!$!  Zero derivative for density
+!!$!
+!!$            if (j == ilnrho) then
+!!$              do i=1,nghost
+!!$                f(l2+i,jj,kk,j)= f(l2-i,jj,kk,j)
+!!$              enddo
+!!$            else
+!!$!
+!!$! Check if we are inside the radius if the inlet
+!!$!
+!!$              if (rad > radius) then
+!!$                ! Solid wall
+!!$                do i=1,nghost
+!!$                  if (j <= iuz) then
+!!$                    f(l2,jj,kk,j)=0.
+!!$                    f(l2+i,jj,kk,j)=-f(l2-i,jj,kk,j)
+!!$                  elseif (j == ilnTT) then
+!!$                    f(l2,jj,kk,j)=val
+!!$                    f(l2+i,jj,kk,j)=2*val-f(l2-i,jj,kk,j)
+!!$                  else
+!!$                    f(l2+i,jj,kk,j)= f(l2-i,jj,kk,j)
+!!$                  endif
+!!$                enddo
+!!$              else
+!!$                ! Outlet           
+!!$                if (j == ilnTT) then
+!!$                  call getmu(f,mu,l2,jj,kk)
+!!$                  r=Rgas*mu
+!!$                  P0=1.013e6
+!!$                  T0=min(P0/(exp(f(l2,jj,kk,ilnrho))*r),2500.)
+!!$                 f(l2,jj,kk,j)=log(T0)
+!!$                  do i=1,nghost
+!!$                    f(l2+i,jj,kk,j)=2*log(T0)-f(l2-i,jj,kk,j)
+!!$                  enddo
+!!$                else
+!!$                  ! Do nothing because one sided conditions has already
+!!$                  ! been set in the top of the rutine
+!!$                endif
+!!$              endif
+!!$            endif
+!!$         enddo
+!!$        enddo
+!!$!
+!!$  endsubroutine bc_wo_x
 !***********************************************************************
 
 !********************************************************************
