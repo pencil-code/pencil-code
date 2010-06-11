@@ -1387,6 +1387,8 @@ module Chemistry
                     T_low=0.
                     T_up=1e10
                   endif
+!
+                  if (lcloud) T_low=0.
                   where (T_loc >=T_low .and. T_loc <= T_mid)
                    cp_R_spec=species_constants(k,iaa2(ii1)) &
                           +species_constants(k,iaa2(ii2))*T_loc &
@@ -1410,6 +1412,7 @@ module Chemistry
                    call fatal_error('calc_for_chem_mixture',&
                        'TT_full(:,j2,j3) is outside range')
                  endif
+        
 !
 ! Find cp and cv for the mixture for the full domain
 !
@@ -4108,7 +4111,7 @@ module Chemistry
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
       integer :: i,j,k=1
-      real :: xx1,xx2
+      real :: xx1,xx2,del
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
@@ -4245,6 +4248,17 @@ module Chemistry
            endif
          enddo
        endif
+       if (init_uz /=0.) then
+         do i=1,mz
+           if (z(i)>0) then
+             f(:,:,i,iuz)=f(:,:,i,iuz) &
+              +init_uz*(2.*z(i)/Lxyz(3))**2
+           else
+             f(:,:,i,iuz)=f(:,:,i,iuz) &
+              -init_uz*(2.*z(i)/Lxyz(3))**2
+           endif
+         enddo
+       endif
       endif
 !
       if (TT<init_TT1 .and. (.not. lcloud)) then
@@ -4267,11 +4281,16 @@ module Chemistry
        elseif (lcloud) then
         do i=1,mx
           if (x(i)<=init_x1) then
-            f(i,:,:,ilnTT)=log(init_TT1)
+            f(i,:,:,ilnTT)=log(init_TT1) 
           else
             f(i,:,:,ilnTT)=log(init_TT2)
           endif
+!            del=init_x2-init_x1
+!            f(i,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+!              +((init_TT2-init_TT1)*0.5)  &
+!              *(exp(x(i)/del)-exp(-x(i)/del))/(exp(x(i)/del)+exp(-x(i)/del)))
         enddo
+          
        endif
 !
       if (lroot) print*, 'Air temperature, K', TT
