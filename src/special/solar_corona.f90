@@ -2284,7 +2284,6 @@ module Special
     subroutine force_solar_wind(df)
 !
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
 !
       if (n==n2.and.ipz==nprocz-1) then
         df(l1:l2,m,n2,iuz) =  df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
