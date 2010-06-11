@@ -844,7 +844,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i,j,k
 !
-      real :: mO2, mH2, mN2, mH2O, mCH4, mCO2
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
       real :: log_inlet_density, del
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       integer :: i_CH4, i_CO2, ichem_CH4, ichem_CO2
@@ -893,10 +893,13 @@ module Chemistry
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
 !
-      final_massfrac_O2&
-          =(init_O2/mO2&
-          -init_H2/(2.*mH2)&
-          -init_CH4*2/(mCH4))*mO2
+     final_massfrac_O2=0.
+
+     if (mO2>0) final_massfrac_O2 = init_O2
+     if (mH2>0) final_massfrac_O2 = &
+                final_massfrac_O2 - init_H2/(2.*mH2)*mO2
+     if (mCH4>0) final_massfrac_O2 = &
+                 final_massfrac_O2 - init_CH4*2/(mCH4)*mO2
 !
      if (final_massfrac_O2<0.) final_massfrac_O2=0.
 !
