@@ -55,7 +55,7 @@ module Chemistry
      real :: str_thick=0.02
      real :: init_pressure=10.13e5
 !
-     logical :: lone_spec=.false.
+     logical :: lone_spec=.false., lfilter_strict=.false.
 !
 !  parameters related to chemical reactions, diffusion and advection
 !
@@ -147,7 +147,7 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
-      lchemistry_diag
+      lchemistry_diag,lfilter_strict
 !
 !
 ! run parameters
@@ -156,7 +156,7 @@ module Chemistry
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
-      visc_const,cp_const,reinitialize_chemistry
+      visc_const,cp_const,reinitialize_chemistry,lfilter_strict
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -532,6 +532,8 @@ module Chemistry
            endif
         case ('flame_front')
           call flame_front(f)
+        case ('flame')
+          call flame(f)
         case ('flame_blob')
           call flame_blob(f)
         case ('flame_slab')
@@ -1048,6 +1050,228 @@ module Chemistry
       enddo
 !
     endsubroutine flame_front
+!***********************************************************************
+      subroutine flame(f)
+!
+! 06.05.2009/Nils Erland L. Haugen: adapted from similar
+!                                   routine in special/chem_stream.f90
+! This routine set up the initial profiles used in 1D flame speed measurments
+! NILS: This routine is essentially the samw as flame_front, but I leave
+! NILS: flame_front as it is for now for backwards compatibility.
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i,j,k
+!
+      real :: mO2, mH2, mN2, mH2O, mCH4, mCO2
+      real :: log_inlet_density, del
+      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      integer :: i_CH4, i_CO2, ichem_CH4, ichem_CO2
+      real :: initial_mu1, final_massfrac_O2
+      real :: init_H2,init_O2,init_N2,init_H2O,init_CO2,init_CH4
+      logical :: lH2,lO2,lN2,lH2O,lCH4,lCO2
+!
+      lflame_front=.true.
+!
+      call air_field(f)
+!
+      if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
+!
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,lH2)
+      if (lH2) then
+        mH2 =species_constants(ichem_H2 ,imass)
+        init_H2=initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,lO2)
+      if (lO2) then
+        mO2 =species_constants(ichem_O2 ,imass)
+        init_O2=initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,lN2)
+      if (lN2) then
+        mN2 =species_constants(ichem_N2 ,imass)
+        init_N2=initial_massfractions(ichem_N2)
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O =species_constants(ichem_H2O ,imass)
+        init_H2O=initial_massfractions(ichem_H2O)
+      endif
+      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
+      if (lCH4) then
+        mCH4 =species_constants(ichem_CH4 ,imass)
+        init_CH4=initial_massfractions(ichem_CH4)
+      endif
+      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
+      if (lCO2) then
+        mCO2 =species_constants(ichem_CO2 ,imass)
+        init_CO2=initial_massfractions(ichem_CO2)
+      endif
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+      final_massfrac_O2&
+          =(init_O2/mO2&
+          -init_H2/(2.*mH2)&
+          -init_CH4*2/(mCH4))*mO2
+!
+     if (final_massfrac_O2<0.) final_massfrac_O2=0.
+!
+!  Initialize temperature and species
+!
+      do k=1,mx
+!
+!  Initialize temperature
+!
+        if (lT_tanh) then
+          del=init_x2-init_x1
+          f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
+              +((init_TT2-init_TT1)*0.5)  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+        else
+          if (x(k)<=init_x1) then
+            f(k,:,:,ilnTT)=log(init_TT1)
+          endif
+          if (x(k)>=init_x2) then
+            f(k,:,:,ilnTT)=log(init_TT2)
+          endif
+          if (x(k)>init_x1 .and. x(k)<init_x2) then
+            f(k,:,:,ilnTT)=&
+                log((x(k)-init_x1)/(init_x2-init_x1) &
+                *(init_TT2-init_TT1)+init_TT1)
+          endif
+        endif
+!
+!  Initialize steam and hydrogen
+!
+        if (lT_tanh) then
+          del=(init_x2-init_x1)
+          if (lH2) then
+            f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
+                +(0.-f(l1,:,:,i_H2))*0.5  &
+                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+            f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
+                +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
+                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+          endif
+          if (lCH4) then
+            f(k,:,:,i_CH4)=init_CH4*0.5  &
+                -init_CH4*0.5  &
+                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+            f(k,:,:,i_H2O)=init_H2O+(init_CH4-f(k,:,:,i_CH4))*2.*mH2O/mCH4
+            f(k,:,:,i_CO2)=init_CO2+(init_CH4-f(k,:,:,i_CH4))*1.*mCO2/mCH4
+            f(k,:,:,i_O2) =init_O2 -(init_CH4-f(k,:,:,i_CH4))*2.*mO2 /mCH4
+          endif
+        else
+          if (x(k)>init_x1) then
+            if (lH2) then
+              f(k,:,:,i_H2)=init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                  /(init_TT1-init_TT2)
+            endif
+            if (lCH4) then
+              f(k,:,:,i_CH4)=init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                  /(init_TT1-init_TT2)
+            endif
+          endif
+        endif
+!
+!  Initialize oxygen
+!
+        if (lT_tanh) then
+!!$          del=(init_x2-init_x1)
+!!$          f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
+!!$              +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
+!!$              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+         else
+           if (x(k)>init_x2) then
+             f(k,:,:,i_O2)=final_massfrac_O2
+           endif
+           if (x(k)>init_x1 .and. x(k)<init_x2) then
+             f(k,:,:,i_O2)=(x(k)-init_x2)/(init_x1-init_x2) &
+                 *(init_O2-final_massfrac_O2)&
+                 +final_massfrac_O2
+           endif
+         endif
+       enddo
+!
+! Initialize steam and CO2
+!
+       if (.not. lT_tanh) then
+         do k=1,mx
+           if (x(k)>=init_x1) then
+             if (final_massfrac_O2>0.) then
+               f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
+                   *(exp(f(k,:,:,ilnTT))-init_TT1) &
+                   /(init_TT2-init_TT1)+init_H2O
+             else
+               if (x(k)>=init_x2) then
+                 if (lCO2) f(k,:,:,i_CO2)=init_CO2+(init_CH4-f(k,:,:,i_CH4))
+                 f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)-f(k,:,:,i_O2)
+                 if (lCH4) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CH4)
+                 if (lCO2) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CO2)
+               else
+                 f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
+                     *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2)) &
+                     -initial_massfractions(ichem_H2O)) &
+                     +initial_massfractions(ichem_H2O)
+               endif
+              endif
+            endif
+          enddo
+        else
+!!$          if (lCH4) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CH4)
+!!$          if (lCO2) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CO2)
+        endif
+!
+         if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+         endif
+!
+!  Find logaritm of density at inlet
+!
+         initial_mu1&
+             =initial_massfractions(ichem_H2)/(mH2)&
+             +initial_massfractions(ichem_O2)/(mO2)&
+             +initial_massfractions(ichem_H2O)/(mH2O)&
+             +initial_massfractions(ichem_N2)/(mN2)
+         if (lCO2) initial_mu1=initial_mu1+init_CO2/(mCO2)
+         if (lCH4) initial_mu1=initial_mu1+init_CH4/(mCH4)
+         log_inlet_density=&
+             log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+       call getmu_array(f,mu1_full)
+!
+!  Initialize density
+!
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!
+!
+!  Check if we want nolog of density or nolog of temperature
+!
+      if (ldensity_nolog) &
+          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) &
+          f(l1:l2,m1:m2,n1:n2,iTT)=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+!
+! Renormalize all species too be sure that the sum of all mass fractions
+! are unity
+!
+      do i=1,mx
+      do j=1,my
+      do k=1,mz
+        f(i,j,k,ichemspec)=f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+      enddo
+      enddo      
+      enddo
+!
+    endsubroutine flame
 !***********************************************************************
     subroutine flame_blob(f)
 !
@@ -1998,7 +2222,7 @@ module Chemistry
       integer :: j,k,i
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
 !
-      intent(in) :: f,p
+      intent(in) :: p,f
       intent(inout) :: df
 !
 !  identify module and boundary conditions
@@ -2039,15 +2263,31 @@ module Chemistry
         if (lreactions) then
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+&
               p%DYDt_reac(:,k)
+        endif 
+!
+!  Add filter for negative consentrations
+!
+        if (lfilter .and. .not. lfilter_strict) then
+          do i=1,mx
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-25 ) df(i,m,n,ichemspec(k))=-1e-25*dt
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) df(i,m,n,ichemspec(k))=1.*dt
+          enddo
         endif
 !
-      if (lfilter) then
-       do i=1,mx
-        if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-25 ) df(i,m,n,ichemspec(k))=-1e-25*dt
-        if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) df(i,m,n,ichemspec(k))=1.*dt
-       enddo
-      endif
-     enddo
+!  Add strict filter for negative consentrations
+!
+        if (lfilter_strict) then
+          do i=1,mx
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<0.0 ) then
+              if (df(i,m,n,ichemspec(k))<0.) df(i,m,n,ichemspec(k))=0.
+            endif
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) then
+              df(i,m,n,ichemspec(k))=1.*dt
+            endif
+          enddo
+        endif
+!
+    enddo
 !
       if (ldensity .and. lcheminp) then
 !
@@ -2697,7 +2937,7 @@ module Chemistry
       integer :: PlusInd
       integer :: LastLeftCharacter,ParanthesisInd,Mplussind
       integer :: photochemInd
-      character (len=80) :: ChemInpLine, ChemInpLine_add
+      character (len=120) :: ChemInpLine, ChemInpLine_add
       character (len=*) :: input_file
 !
       if (present(NrOfReactions)) NrOfReactions=0
@@ -2918,7 +3158,6 @@ module Chemistry
                         enddo
                         i=80
                       else
-                      !  if (lroot) print*,' --------------  a_k4 coefficients-------------'
                         !                a_k4=0.
                         StartInd_add=i; StopInd_add=0; StopInd_add_=0
                         do while (ChemInpLine_add(i:i+1)/='  ')
@@ -2936,10 +3175,12 @@ module Chemistry
                               if (found_specie) then
                                 read (unit=ChemInpLine_add(StartInd_add:&
                                     StopInd_add),fmt='(E15.8)') a_k4(ind_chem,k)
-                            !    if (lroot) print*, 'a_k4(ind_chem,k)=',a_k4(ind_chem,k),&
-                            !        ind_chem,k
                               else
                                 print*,'ChemInpLine=',ChemInpLine_add
+                                print*,'Specie=',&
+                                    ChemInpLine_add(StartInd_add:StopInd_add)
+                                print*,'StartInd_add,StopInd_add=',&
+                                    StartInd_add,StopInd_add
                                 call stop_it("read_reactions: Did not find specie!")
                               endif
                             endif
