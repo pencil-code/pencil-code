@@ -62,8 +62,8 @@ module Special
                                 ! DIAG_DOC:   see \S~\ref{time-step})
 !
     TYPE point
-      integer,dimension(2) :: pos
-      real,dimension(4) :: data
+      real, dimension(2) :: pos
+      real, dimension(4) :: data
       type(point),pointer :: next
     end TYPE point
 !
@@ -77,6 +77,7 @@ module Special
     integer :: xrange,yrange,pow
     real, dimension(nxgrid,nygrid) :: w,vx,vy
     real, dimension(nxgrid,nygrid) :: Ux,Uy
+    real, dimension(nxgrid,nygrid) :: Ux_ext,Uy_ext
     real, dimension(nxgrid,nygrid) :: BB2
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
     integer, dimension(nxgrid,nygrid) :: avoidarr
@@ -84,7 +85,7 @@ module Special
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
     real, dimension(nx,ny), save :: ux_local,uy_local
-    real, dimension(nx,ny), save :: ux_ext,uy_ext
+    real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
     real :: Bzflux
 !
   contains
@@ -546,9 +547,7 @@ module Special
         endif
       endif
 !
-      call force_solar_wind(df)
-!
-      call keep_compiler_quiet(p)
+      call force_solar_wind(df,p)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -664,13 +663,14 @@ module Special
         if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
       endif
 !
+! Read external velocity file. Has to be read before the granules are 
+! calculated.
+      if (luse_ext_vel_field) call read_ext_vel_field()
+!
 ! Compute photospheric granulation.
       if (lgranulation .and. ipz.eq.0 ) then
         if (.not. lpencil_check_at_work) call uudriver(f)
       endif
-!
-! Read external velocity file.
-      if (luse_ext_vel_field) call read_ext_vel_field()
 !
       if (lmassflux) call get_wind_speed_offset(f)
 !
@@ -1415,8 +1415,11 @@ module Special
         uy_local = uy_local * quench
       endif
 !
-!      f(l1:l2,m1:m2,irefz,iux) = ux_local
-!      f(l1:l2,m1:m2,irefz,iuy) = uy_local
+      if (luse_ext_vel_field) then
+        ux_local = ux_local + ux_ext_local
+        uy_local = uy_local + uy_ext_local
+      endif
+!
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
 ! restore global seed and save seed list of the granulation
@@ -1550,7 +1553,7 @@ module Special
           else
             exit
           endif
-        end do
+        enddo
         do
           if (minval(avoidarr).eq.1) exit
           call addpoint
@@ -1559,6 +1562,10 @@ module Special
         enddo
         call reset
       endif
+!
+! Move granule centers according to external velocity
+! field. Needed to be done only once per timestep for each level
+      if (luse_ext_vel_field.and.itsub.eq.itorder) call evolve_granules()
 !
 ! Using lower boundary Uy,Uz as temp memory
       Ux = Ux+vx
@@ -1644,7 +1651,7 @@ module Special
         do
           read(10,iostat=iost,rec=rn) tmppoint
           if (iost.eq.0) then
-            current%pos(:)=int(tmppoint(1:2))
+            current%pos(:) =tmppoint(1:2)
             current%data(:)=tmppoint(3:6)
             call addpoint
             call drawupdate
@@ -1697,7 +1704,7 @@ module Special
 !
       rn=1
       do
-        posdata(1:2)=real(current%pos)
+        posdata(1:2)=current%pos
         posdata(3:6)=current%data
 !
         write(10,rec=rn) posdata
@@ -1899,12 +1906,12 @@ module Special
 !
 ! Update weight and velocity for new granule
 !
-      do jj=current%pos(2)-yrange,current%pos(2)+yrange
+      do jj=int(current%pos(2))-yrange,int(current%pos(2))+yrange
         j = 1+mod(jj-1+nygrid,nygrid)
-        do ii=current%pos(1)-xrange,current%pos(1)+xrange
+        do ii=int(current%pos(1))-xrange,int(current%pos(1))+xrange
           i = 1+mod(ii-1+nxgrid,nxgrid)
-          xdist=dx*(ii-(current%pos(1)))
-          ydist=dy*(jj-(current%pos(2)))
+          xdist=dx*(ii-current%pos(1))
+          ydist=dy*(jj-current%pos(2))
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
 !
@@ -2134,8 +2141,8 @@ module Special
       use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
 !
       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
-      real, dimension (:,:), allocatable :: tmp
-      integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
+      real, dimension (:,:), allocatable :: tmpl,tmpr
+      integer :: tag_x=321,tag_y=322
       integer :: tag_tl=345,tag_tr=346,tag_dt=347
       integer :: lend=0,ierr,i=0,stat,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
@@ -2153,7 +2160,8 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
       ierr = max(stat,ierr)
-      allocate(tmp(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+      allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+      allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
 !
       if (ierr>0) call stop_it_if_any(.true.,'uu_driver: '// &
           'Could not allocate memory for all variable, please check')
@@ -2205,85 +2213,54 @@ module Special
         if (lroot) then
           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
-          read (unit,rec=2*i-1) tmp
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px /= 0) .or. (py /= 0)) then
-                uxl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                call mpisend_real (uxl, (/ nx, ny /), px+py*nprocx, tag_xl)
-              endif
-            enddo
-          enddo
-          uxl = tmp(1:nx,1:ny)
+          read (unit,rec=2*i-1) tmpl
+          read (unit,rec=2*i+1) tmpr
+          if (tr /= tl) then
+            Ux_ext  = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
+          else
+            Ux_ext = tmpr
+          endif
+          Ux_ext = Ux_ext/unit_velocity
 !
-          read (unit,rec=2*i)   tmp
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px /= 0) .or. (py /= 0)) then
-                uyl = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                call mpisend_real (uyl, (/ nx, ny /), px+py*nprocx, tag_yl)
-              endif
-            enddo
-          enddo
-          uyl = tmp(1:nx,1:ny)
+          read (unit,rec=2*i)   tmpl
+          read (unit,rec=2*i+2) tmpr
+          if (tr /= tl) then
+            Uy_ext  = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
+          else
+            Uy_ext = tmpr
+          endif
+          Uy_ext = Uy_ext/unit_velocity
 !
-          read (unit,rec=2*i+1) tmp
           do px=0, nprocx-1
             do py=0, nprocy-1
               if ((px /= 0) .or. (py /= 0)) then
-                uxr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_xr)
+                Ux_ext_local = Ux_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                Uy_ext_local = Uy_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+                call mpisend_real (Ux_ext_local, (/ nx, ny /), px+py*nprocx, tag_x)
+                call mpisend_real (Uy_ext_local, (/ nx, ny /), px+py*nprocx, tag_y)
               endif
             enddo
           enddo
-          uxr = tmp(1:nx,1:ny)
-!
-          read (unit,rec=2*i+2) tmp
-          uyr = tmp(1:nx,1:ny)
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px /= 0) .or. (py /= 0)) then
-                uyr = tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                call mpisend_real (tmp(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny), (/ nx, ny /), px+py*nprocx, tag_yr)
-              endif
-            enddo
-          enddo
-          uyr = tmp(1:nx,1:ny)
+          Ux_ext_local = Ux_ext(1:nx,1:ny)
+          Uy_ext_local = Uy_ext(1:nx,1:ny)
 !
           close (unit)
         else
-          call mpirecv_real (uxl, (/ nx, ny /), 0, tag_xl)
-          call mpirecv_real (uyl, (/ nx, ny /), 0, tag_yl)
-          call mpirecv_real (uxr, (/ nx, ny /), 0, tag_xr)
-          call mpirecv_real (uyr, (/ nx, ny /), 0, tag_yr)
+          call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
+          call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
         endif
 !
-! WE HAVE TO ASUME SOME UNIT SYSTEM HERE !!!!
-! let us asume to be in [u]=m/s
-        uxl = uxl / unit_velocity
-        uxr = uxr / unit_velocity
-        uyl = uyl / unit_velocity
-        uyr = uyr / unit_velocity
-!
       endif
 !
-!   simple linear interploation between timesteps
-!
-      if (tr /= tl) then
-        ux_ext  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
-        uy_ext  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
-      else
-        ux_ext = uxr
-        uy_ext = uyr
-      endif
-!
-      if (allocated(tmp)) deallocate(tmp)
+      if (allocated(tmpl)) deallocate(tmpl)
+      if (allocated(tmpr)) deallocate(tmpr)
 !
     endsubroutine read_ext_vel_field
 !***********************************************************************
-    subroutine force_solar_wind(df)
+    subroutine force_solar_wind(df,p)
 !
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       if (n==n2.and.ipz==nprocz-1) then
         df(l1:l2,m,n2,iuz) =  df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
@@ -2359,6 +2336,33 @@ module Special
       endif
 !
     endsubroutine get_wind_speed_offset
+!***********************************************************************
+    subroutine evolve_granules()
+!
+      integer :: xpos,ypos
+!
+      do
+        xpos = int(current%pos(1))
+        ypos = int(current%pos(2))
+!
+        current%pos(1) =  current%pos(1) + Ux_ext(xpos,ypos)*dt
+        current%pos(2) =  current%pos(2) + Uy_ext(xpos,ypos)*dt
+!
+        if (current%pos(1)<0.5) current%pos(1) = current%pos(1) + nxgrid
+        if (current%pos(2)<0.5) current%pos(2) = current%pos(2) + nygrid
+!
+        if (current%pos(1)>nxgrid+0.5) current%pos(1) = current%pos(1) - nxgrid
+        if (current%pos(2)>nygrid+0.5) current%pos(2) = current%pos(2) - nygrid
+!
+        if (associated(current%next)) then 
+          call gtnextpoint
+        else
+          exit
+        endif
+      enddo
+      call reset
+!    
+    endsubroutine evolve_granules
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
