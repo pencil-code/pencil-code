@@ -220,27 +220,27 @@ module Viscosity
         case ('hyper3-rho-nu-const','hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
-       case ('hyper3-rho-nu-const-symm','hyper3_rho_nu-const_symm')
+        case ('hyper3-rho-nu-const-symm','hyper3_rho_nu-const_symm')
           if (lroot) print*,'viscous force(i): nu_hyper/rho*(del6ui+der5(divu,i))'
           lvisc_hyper3_rho_nu_const_symm=.true.
-       case ('hyper3-mu-const-strict','hyper3_mu-const_strict')
+        case ('hyper3-mu-const-strict','hyper3_mu-const_strict')
           if (lroot) print*, 'viscous force(i): '// &
               'nu_hyper/rho*(del2(del2(del2(u)))+del2(del2(grad(divu))))'
           if (.not.lhyperviscosity_strict) &
                call stop_it('initialize_viscosity: This viscosity type'//&
                ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
           lvisc_hyper3_mu_const_strict=.true.
-       case ('hyper3-nu-const-strict','hyper3_nu-const_strict')
+        case ('hyper3-nu-const-strict','hyper3_nu-const_strict')
           if (lroot) print*, 'viscous force(i): 1/rho*div[2*rho*nu_3*S^(3)]'
           if (.not.lhyperviscosity_strict) &
                call stop_it('initialize_viscosity: This viscosity type'//&
                ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
-          lvisc_hyper3_nu_const_strict=.true.
-       case ('hyper3-rho-nu-const-aniso','hyper3_rho_nu-const_aniso')
+           lvisc_hyper3_nu_const_strict=.true.
+        case ('hyper3-rho-nu-const-aniso','hyper3_rho_nu-const_aniso')
           if (lroot) print*,&
                'viscous force(i): 1/rho*(nu.del6)ui'
           lvisc_hyper3_rho_nu_const_aniso=.true.
-       case ('hyper3-nu-const-aniso','hyper3_nu-const_aniso')
+        case ('hyper3-nu-const-aniso','hyper3_nu-const_aniso')
           if (lroot) print*,&
                'viscous force(i): (nu.del6)ui  + ((nu.uij5).glnrho)'
           lpenc_requested(i_uij5)=.true.
@@ -371,42 +371,55 @@ module Viscosity
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
+!
+! DM 26-05-2010: cut out of intialize viscosity
+!
       use Sub, only: step,der_step,stepdown,der_stepdown
       use SharedVariables, only: put_shared_variable,get_shared_variable
+!
       integer :: ierr
 !
-!DM 26-05-2010: cut out of intialize viscosity
-!
       if ((Lambda_V0==0).and.(Lambda_V1==0).and.(Lambda_H1==0)) &
-           call warning('initialize_viscosity', &
-           'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
+        call warning('initialize_viscosity', &
+            'You have chose llambda_effect=T but, all Lambda coefficients to be zero!')
       if ((Lambda_V0==0).and.((Lambda_V1/=0).or.(Lambda_H1==0))) &
-           call warning('initialize_viscosity', &
-           'Lambda effect: V_zero=0 but V1 or H1 nonzero')
-! select the profile of lambda, default is uniform. At present (May 2010) the
+        call warning('initialize_viscosity', &
+            'Lambda effect: V_zero=0 but V1 or H1 nonzero')
+!
+! Select the profile of Lambda, default is uniform. At present (May 2010) the
 ! only other coded profile is radial step. 
+!
       select case (lambda_profile)
       case ('radial_step_V0')
-         if (lroot) print*,'lambda profile radial_step, rzero_lambda,wlambda:',&
-              rzero_lambda,wlambda
-         LV0_rprof=step(x,rzero_lambda,wlambda)
-         der_LV0_rprof=der_step(x,rzero_lambda,wlambda)
-         LV1_rprof=1.;LH1_rprof=1.
-         der_LV1_rprof=0.;der_LH1_rprof=0;
+        if (lroot) print*,'lambda profile radial_step_V0, rzero_lambda, wlambda:',&
+            rzero_lambda,wlambda
+        LV0_rprof=step(x,rzero_lambda,wlambda)
+        der_LV0_rprof=der_step(x,rzero_lambda,wlambda)
+        LV1_rprof=1.;LH1_rprof=1.
+        der_LV1_rprof=0.;der_LH1_rprof=0;
+      case ('radial_step')
+        if (lroot) print*,'lambda profile radial_step, rzero_lambda, wlambda:',&
+            rzero_lambda,wlambda
+        LV0_rprof=step(x,rzero_lambda,wlambda)
+        LV1_rprof=step(x,rzero_lambda,wlambda)
+        LH1_rprof=step(x,rzero_lambda,wlambda)
+        der_LV0_rprof=der_step(x,rzero_lambda,wlambda)
+        der_LV1_rprof=der_step(x,rzero_lambda,wlambda)
+        der_LH1_rprof=der_step(x,rzero_lambda,wlambda)
       case ('V1H1_roff')
-         LV0_rprof=1.;der_LV0_rprof=0.
-         LV1_rprof=1.+offamp_lambda*stepdown(x,rmax_lambda,wlambda)
-         LH1_rprof=1.+offamp_lambda*stepdown(x,rmax_lambda,wlambda)
-         der_LV1_rprof=offamp_lambda*der_stepdown(x,rmax_lambda,wlambda)
-         der_LH1_rprof=offamp_lambda*der_stepdown(x,rmax_lambda,wlambda)
-         if (lroot) print*,'LV1_rprof',LV1_rprof
-         if (lroot) print*,'LH1_rprof',LH1_rprof
+        LV0_rprof=1.;der_LV0_rprof=0.
+        LV1_rprof=1.+offamp_lambda*stepdown(x,rmax_lambda,wlambda)
+        LH1_rprof=1.+offamp_lambda*stepdown(x,rmax_lambda,wlambda)
+        der_LV1_rprof=offamp_lambda*der_stepdown(x,rmax_lambda,wlambda)
+        der_LH1_rprof=offamp_lambda*der_stepdown(x,rmax_lambda,wlambda)
+        if (lroot) print*,'LV1_rprof',LV1_rprof
+        if (lroot) print*,'LH1_rprof',LH1_rprof
       case ('uniform')
-         LV0_rprof=1.;LV1_rprof=1;LH1_rprof=1.
-         der_LV0_rprof=0.;der_LV1_rprof=0;der_LH1_rprof=0.
+        LV0_rprof=1.;LV1_rprof=1;LH1_rprof=1.
+        der_LV0_rprof=0.;der_LV1_rprof=0;der_LH1_rprof=0.
       case default
-         call fatal_error('initialize_viscosity(lambda)',&
-              'default lambda_profile is uniform ! ')
+        call fatal_error('initialize_viscosity(lambda)',&
+            'default lambda_profile is uniform ! ')
       endselect
       lambda_V0t=lambda_V0*LV0_rprof(nx)
       lambda_V1t=lambda_V1*LV1_rprof(nx)
