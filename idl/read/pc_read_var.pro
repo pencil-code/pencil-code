@@ -332,7 +332,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ''
     print, 'The file '+varfile+' contains: ', content
     print, ''
-    print, 'The grid dimension is ', my, my, mz
+    print, 'The grid dimension is ', mx, my, mz
     print, ''
   endif
 ;
