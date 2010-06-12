@@ -2169,7 +2169,7 @@ module Special
 !  Read the time table
 !
       if ((t*unit_time<tl+delta_t) .or. (t*unit_time>=tr+delta_t)) then
-!
+        !
         if (lroot) then
           inquire(IOLENGTH=lend) tl
           open (unit,file=vel_times_dat,form='unformatted',status='unknown',recl=lend,access='direct')
@@ -2203,14 +2203,16 @@ module Special
             enddo
           enddo
         else
-          call mpirecv_real (tl, 1, 0, tag_tl)
-          call mpirecv_real (tr, 1, 0, tag_tr)
-          call mpirecv_real (delta_t, 1, 0, tag_dt)
+          if (ipz==0) then
+            call mpirecv_real (tl, 1, 0, tag_tl)
+            call mpirecv_real (tr, 1, 0, tag_tr)
+            call mpirecv_real (delta_t, 1, 0, tag_dt)
+          endif
         endif
 !
 ! Read velocity field
-!
-        if (lroot) then
+!     
+       if (lroot) then
           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
           read (unit,rec=2*i-1) tmpl
@@ -2241,13 +2243,16 @@ module Special
               endif
             enddo
           enddo
+!
           Ux_ext_local = Ux_ext(1:nx,1:ny)
           Uy_ext_local = Uy_ext(1:nx,1:ny)
 !
           close (unit)
         else
-          call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
-          call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
+          if (ipz==0) then
+            call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
+            call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
+          endif
         endif
 !
       endif
