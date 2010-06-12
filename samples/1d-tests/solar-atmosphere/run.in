@@ -5,7 +5,7 @@
 !
 &run_pars
   cvsid='$Id$'
-  nt=250,it1=50,isave=1000,itorder=3
+  nt=250,it1=50,isave=100,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
   bcz = 's','s','a','a2','a2'
   lmaxadvec_sum=T
