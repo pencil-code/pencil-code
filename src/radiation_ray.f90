@@ -1785,31 +1785,21 @@ module Radiation
 !  21-11-04/anders: coded
 !
       if (lcooling) then
-!
-!  Need cv1 in any case for the time step calculation.
-!
-        lpenc_requested(i_cv1)=.true.
-        if (lentropy) then
-          lpenc_requested(i_TT1)=.true.
-          lpenc_requested(i_rho1)=.true.
-          lpenc_requested(i_TT)=.true.
+        if (ldt) lpenc_requested(i_cv1)=.true.
+        if (lrad_cool_diffus.or.lrad_pres_diffus) then
           lpenc_requested(i_glnrho)=.true.
-          lpenc_requested(i_cp1)=.true.
-        endif
-        if (ltemperature) then
           lpenc_requested(i_TT)=.true.
-          lpenc_requested(i_TT1)=.true.
+          lpenc_requested(i_cp1)=.true.
           lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
           lpenc_requested(i_cv1)=.true.
         endif
-      endif
-!
-      if (lrad_cool_diffus) then
+        lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
-        lpenc_requested(i_cp1)=.true.
+        if (ltemperature) then
+          lpenc_requested(i_cv1)=.true.
+        endif
       endif
 !
     endsubroutine pencil_criteria_radiation
