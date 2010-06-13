@@ -73,7 +73,7 @@ module Radiation
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
-  real :: cdtrad=1.0, cdtrad_thin=1.0, cdtrad_thick=0.8
+  real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.8
   real :: scalefactor_Srad=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
@@ -208,6 +208,13 @@ module Radiation
       if (radz>1) call fatal_error('initialize_radiation', &
           'radz currently must not be greater than 1')
 !
+!  Empirically we have found that cdtrad>0.1 is unsafe.
+!
+      if (ldt .and. cdtrad>0.1) then
+        call fatal_error('initialize_radiation', &
+            'cdtrad is larger than 0.1 - do you really want this?')
+      endif
+!
 !  Check boundary conditions.
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad =',bc_rad
@@ -308,16 +315,16 @@ module Radiation
 !  NOTE: arad is only used when S=(c/4pi)*aT^4=(sigmaSB/pi)*T^4
 !
       if (lroot.and.ip<9) then
-        print*,'initialize_radiation: arad=',arad
-        print*,'initialize_radiation: arad_normal=',arad_normal
-        print*,'initialize_radiation: sigmaSB=',sigmaSB
+        print*, 'initialize_radiation: arad=', arad
+        print*, 'initialize_radiation: arad_normal=', arad_normal
+        print*, 'initialize_radiation: sigmaSB=', sigmaSB
       endif
 !
 !  Calculate weights.
 !
       call calc_angle_weights
 !
-      if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
+      if (lroot.and.ip<14) print*, 'initialize_radiation: ndir =', ndir
 !
     endsubroutine initialize_radiation
 !***********************************************************************
