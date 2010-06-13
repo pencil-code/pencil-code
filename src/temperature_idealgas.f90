@@ -560,11 +560,16 @@ module Entropy
 !
       if (lheatc_shock) then
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_del2lnrho)=.true.
         lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
+        if (ltemperature_nolog) then
+          lpenc_requested(i_gTT)=.true.
+          lpenc_requested(i_del2TT)=.true.
+        else
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
+        endif
       endif
 !
       if (lheatc_tensordiffusion) then
@@ -887,12 +892,11 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
 !
-!  Add shock diffusion to the temperature equation.
+!  Add shock diffusion to the energy equation,
 !
-!    Ds/Dt = ... + 1/(rho*T) grad(flux)
+!    De/Dt = ... + div(K*grad(T)) = ... + div(cv*T*Xi*grad(T)) ,
 !
-!  where flux = chi_shock*rho*T*grads.
-!  (in comments we say chi_shock, but in the code this is "chi_shock*p%shock")
+!  where e=rho*cv*T and Xi is a regular shock diffusion coefficient.
 !
 !  01-aug-08/wlad: adapted from entropy
 !
@@ -902,30 +906,27 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2,gshockglnTT
+      real, dimension (nx) :: thdiff, g2, gshockgTT, gshockglnTT
 !
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
+      if (headtt) print*, 'calc_heatcond_shock: chi_shock=', chi_shock
 !
-!  Calculate terms for shock diffusion.
+!  Shock energy diffusivity.
 !
-      call dot(p%gshock,p%glnTT,gshockglnTT)
-      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-!
-!  Shock entropy diffusivity.
-!
-      if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
       if (ltemperature_nolog) then
-!  WL: can someone explain this equation?
-        thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+        call dot(p%gshock,p%gTT,gshockgTT)
+        call dot(p%glnrho,p%gTT,g2)
+        thdiff=chi_shock*(p%shock*(p%del2TT+g2)+gshockgTT)
       else
-!  D(lnTT)/Dt = ... + 1/pp*grad(shock*pp*glnTT)
+        call dot(p%gshock,p%glnTT,gshockglnTT)
+        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
       endif
 !
       df(l1:l2,m,n,ilntt) = df(l1:l2,m,n,ilntt) + thdiff
+!
       if (headtt) print*,'calc_heatcond_shock: added thdiff'
 !
       if (lfirst.and.ldt) then
