@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec); glnpp(3)
+! PENCILS PROVIDED ghhk(3,nchemspec), glnpp(3)
 !
 ! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens; ppwater
 !
@@ -590,7 +590,6 @@ module Chemistry
          lpenc_requested(i_gradnu)=.true.
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
-         if (lreactions) lpenc_requested(i_S0_R)=.true.
          if (lThCond_simple) lpenc_requested(i_glncp)=.true.
 !
          if (lheatc_chemistry) then
@@ -614,7 +613,6 @@ module Chemistry
       logical, dimension(npencils) :: lpencil_in
 !
         if (lpencil_in(i_cv1))    lpencil_in(i_cv)=.true.
-        if (lpencil_in(i_S0_R))  lpencil_in(i_lnTT)=.true.
         if (lpencil_in(i_glambda))  lpencil_in(i_lambda)=.true.
 !
          if (lpencil_in(i_H0_RT))  then
@@ -622,6 +620,18 @@ module Chemistry
             lpencil_in(i_TT_2)=.true.
             lpencil_in(i_TT_3)=.true.
             lpencil_in(i_TT_4)=.true.
+            lpencil_in(i_TT1)=.true.
+         endif
+         if (lpencil_in(i_DYDt_reac))  then
+            lpencil_in(i_TT)=.true.
+            lpencil_in(i_TT1)=.true.
+            lpencil_in(i_TT_2)=.true.
+            lpencil_in(i_TT_3)=.true.
+            lpencil_in(i_TT_4)=.true.
+            lpencil_in(i_lnTT)=.true.
+            lpencil_in(i_H0_RT)=.true.
+            lpencil_in(i_mu1)=.true.
+            lpencil_in(i_rho)=.true.
          endif
          if (lpencil_in(i_hhk_full))  then
             lpencil_in(i_H0_RT)=.true.
@@ -722,7 +732,15 @@ module Chemistry
               T_low=species_constants(k,iTemp1)
               T_mid=species_constants(k,iTemp2)
               T_up= species_constants(k,iTemp3)
-              T_loc= p%TT
+!
+! Natalia:pencil_check
+! if lpencil_check and full compiler settings then
+! the problem appears for T_loc= p%TT
+! Does anybody know why it is so?
+! While this problem is not resolved 
+! I use T_loc= exp(f(l1:l2,m,n,ilnTT))
+! 
+              T_loc= exp(f(l1:l2,m,n,ilnTT))
               where (T_loc <= T_mid)
                 p%H0_RT(:,k)=species_constants(k,iaa2(ii1)) &
                     +species_constants(k,iaa2(ii2))*T_loc/2 &
@@ -1535,8 +1553,6 @@ module Chemistry
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5
 !
 !  Density and temperature
-!AB: Note that EE, TT, and yH are used by getdensity, so
-!AB: these quantities need to be defined. For now I put 0, 0, 1.
 !
 !     call timing('calc_for_chem_mixture','entered')
       call getdensity(f,EE,TT,yH,rho_full)
@@ -2124,10 +2140,13 @@ module Chemistry
         if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
         allocate(B_n(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for B_n")
+        B_n=0.
         allocate(alpha_n(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
+        alpha_n=0.
         allocate(E_an(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for E_an")
+        E_an=0.
 !
         allocate(low_coeff(3,nreactions),STAT=stat)
         low_coeff=0.
@@ -3315,8 +3334,13 @@ module Chemistry
         if (.not. found_specie) then
           print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
           print*,'ind_glob,ind_chem=',ind_glob,ind_chem
-          call stop_it("build_stoich_matrix:Did not find specie!")
+!          if (.not. lpencil_check_small) then
+!          if (.not. lpencil_check) then
+            call stop_it("build_stoich_matrix:Did not find specie!")
+!          endif
+!          endif
         endif
+!        if (found_specie) then
         if (StartSpecie==StartInd) then
           stoi=1
         else
@@ -3327,6 +3351,7 @@ module Chemistry
         else
           Sijp(ind_chem,k)=Sijp(ind_chem,k)+stoi
         endif
+!        endif
       endif
 !
     endsubroutine build_stoich_matrix
@@ -3426,6 +3451,7 @@ module Chemistry
       real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
+      real, dimension (nx,nchemspec) :: S0_R
       real :: Rcal
       integer :: k , reac, i
       real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd
@@ -3436,6 +3462,18 @@ module Chemistry
       real :: B_n_0,alpha_n_0,E_an_0
       real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
+      real, dimension (nx) :: TT1_loc
+!
+!
+! Natalia:pencil_check
+! the same problem as in calculation of p%H0_RT:
+! if lpencil_check and full compiler settings then
+! the problem appears for TT1_loc= p%TT1
+! Does anybody know why it is so?
+! While this problem is not resolved 
+! I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
+! 
+      TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
 !
       if (lwrite_first)  open(file_id,file=input_file)
 !
@@ -3447,7 +3485,7 @@ module Chemistry
       if (lwrite)  write(file_id,*)'T= ',   p%TT
       if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
-      if (lpencil(i_S0_R)) then
+   !   if (lpencil(i_S0_R)) then
 !
 !  Dimensionless Standard-state molar entropy  S0/R
 !
@@ -3475,14 +3513,14 @@ module Chemistry
 !  Find the entropy by using fifth order temperature fitting function
 !
           where(p%TT <= T_mid .and. T_low <= p%TT)
-            p%S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
+            S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
                   +species_constants(k,iaa2(ii2))*p%TT &
                   +species_constants(k,iaa2(ii3))*p%TT_2/2 &
                   +species_constants(k,iaa2(ii4))*p%TT_3/3 &
                   +species_constants(k,iaa2(ii5))*p%TT_4/4 &
                   +species_constants(k,iaa2(ii7))
           elsewhere (T_mid <= p%TT .and. p%TT <= T_up)
-            p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
+            S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
                   +species_constants(k,iaa1(ii2))*p%TT &
                   +species_constants(k,iaa1(ii3))*p%TT_2/2 &
                   +species_constants(k,iaa1(ii4))*p%TT_3/3 &
@@ -3491,7 +3529,7 @@ module Chemistry
           endwhere
         endif
       enddo
-    endif
+!    endif
 !
 !  calculation of the reaction rate
 !
@@ -3531,7 +3569,7 @@ module Chemistry
             endif
           enddo
         else
-          kf=B_n(reac)*p%TT**alpha_n(reac)*exp(-E_an(reac)/Rcal*p%TT1)
+          kf=B_n(reac)*p%TT**alpha_n(reac)*exp(-E_an(reac)/Rcal*TT1_loc)
         endif
 !
 !  Find backward rate constant for reaction 'reac'
@@ -3540,7 +3578,7 @@ module Chemistry
         dHRT=0.
         sum_tmp=0.
         do k=1,nchemspec
-          dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(:,k)
+          dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*S0_R(:,k)
           dHRT=dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
           sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
         enddo
@@ -3550,11 +3588,6 @@ module Chemistry
         else
           Kc=Kp*(p_atm*p%TT1/Rgas)**sum_tmp
         endif
-!!$          if (Kc(i)==0. .and. (.not. latmchem)) then
-!!$              print*,'Kc(i)=',Kc(i),'i=',i,'dSR(i)-dHRT(i)=',dSR(i)-dHRT(i)
-!!$              call fatal_error('get_reaction_rate',&
-!!$                  'Kc(i)=0')
-!!$            else
         kr=kf/Kc
 !
 !  Multiply by third body reaction term
@@ -3580,14 +3613,14 @@ module Chemistry
           B_n_0=low_coeff(1,reac)
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)
-          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*p%TT1(:))
+          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*TT1_loc(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(Pr/(1.+Pr))
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
           E_an_0=high_coeff(3,reac)
-          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*p%TT1(:))
+          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*TT1_loc(:))
           Pr=kf_0/kf*mix_conc
           kf=kf*(1./(1.+Pr))
         endif

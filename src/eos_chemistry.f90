@@ -514,7 +514,7 @@ module EquationOfState
 !
        if (lpencil(i_TT_2)) p%TT_2=p%TT*p%TT
        if (lpencil(i_TT_3)) p%TT_3=p%TT_2*p%TT
-       if (lpencil(i_TT_4)) p%TT_4=p%TT_3*p%TT
+       if (lpencil(i_TT_4)) p%TT_4=p%TT_2*p%TT_2
 
        if (lpencil(i_TT1)) p%TT1=1./p%TT!
 
