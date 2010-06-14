@@ -56,7 +56,7 @@ module Density
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
-  real :: rzero_ffree,wffree
+  real :: rzero_ffree=0.,wffree=0.
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -91,7 +91,7 @@ module Density
       kyy_lnrho,  kzz_lnrho, co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, &
       lexponential_smooth, wdamp, plaw, lcontinuity_gas, density_floor, &
       lanti_shockdiffusion, rshift, lrho_as_aux, ldiffusion_nolog, &
-      lnrho_z_shift, lshare_plaw, powerlr,zoverh,hoverr,& 
+      lnrho_z_shift, lshare_plaw, powerlr,zoverh,hoverr,&
       lffree,ffree_profile,rzero_ffree,wffree
 !
   namelist /density_run_pars/ &
@@ -139,7 +139,6 @@ module Density
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use Sub
       use FArrayManager
 !
       call farray_register_pde('lnrho',ilnrho)
@@ -384,12 +383,12 @@ module Density
       if (borderlnrho/='nothing') call request_border_driving()
 !
 !  Check if we are solving partially force-free equations.
-! 
+!
 !  Communicate lffree to entropy too.
 !
       call put_shared_variable('lffree',lffree,ierr)
 !
-      if (lffree) then 
+      if (lffree) then
         select case(ffree_profile)
         case('radial_stepdown')
           profx_ffree=1.+stepdown(x(l1:l2),rzero_ffree,wffree)
@@ -410,7 +409,7 @@ module Density
               /(sqrtpi*wffree)
         case('surface_z')
           profz_ffree=0.5*(1.0-erfunc((z-rzero_ffree)/wffree))
-          dprofz_ffree=-exp(-((z-rzero_ffree)/wffree)**2) & 
+          dprofz_ffree=-exp(-((z-rzero_ffree)/wffree)**2) &
               /(sqrtpi*wffree)
         case('none')
           profx_ffree=1.
@@ -420,7 +419,7 @@ module Density
           dprofy_ffree=0.
           dprofz_ffree=0.
         case default
-          call fatal_error('initialize_density', & 
+          call fatal_error('initialize_density', &
               'you have chosen lffree=T but did not select a profile!')
         endselect
 !
@@ -429,7 +428,7 @@ module Density
         call put_shared_variable('profx_ffree',profx_ffree,ierr)
         call put_shared_variable('profy_ffree',profy_ffree,ierr)
         call put_shared_variable('profz_ffree',profz_ffree,ierr)
-      endif 
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -709,7 +708,7 @@ module Density
               endif
             enddo; enddo
           endif
-
+!
         case ('piecew-poly', '4')
 !
 !  Piecewise polytropic for stellar convection models.
@@ -971,7 +970,7 @@ module Density
           write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
                             //trim(iinit_str)//'): ',trim(initlnrho(j))
           call fatal_error('init_lnrho',errormsg)
-
+!
         endselect
 !
         if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
@@ -1027,29 +1026,29 @@ module Density
 !  Calculate mean gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
-
+!
         fact=1./nxy
         do n=n1,n2
-
+!
           nl = n-n1+1
           glnrhomz(nl,:)=0.
-
+!
           do m=m1,m2
-
+!
             call grad(f,ilnrho,gradlnrho)
-
+!
             do j=1,3
               glnrhomz(nl,j)=glnrhomz(nl,j)+sum(gradlnrho(:,j))
             enddo
           enddo
-
+!
           if (nprocy>1) then
             call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
             glnrhomz = temp
           endif
-
+!
           glnrhomz(nl,:) = fact*glnrhomz(nl,:)
-
+!
         enddo
       endif
 !
@@ -1190,7 +1189,7 @@ module Density
 !  21-aug-08/dhruba -- added spherical coordinates
 !
       use Gravity, only: g0,potential
-      use Mpicomm,only:stop_it
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: pot, r_mn
@@ -1251,28 +1250,27 @@ module Density
 !    (1/rho) grad(P) = cs20 (rho/rho0)^(gamma-2) grad(rho)
 !
       use Sub, only: grad
-      use IO
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,cs2
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
       integer :: j
-
+!
       do m=m1,m2
-      do n=n1,n2
-
-        lnrho=f(l1:l2,m,n,ilnrho)
-        cs2=cs20*exp(gamma_m1*(lnrho-lnrho0))
-        call grad(f,ilnrho,glnrho)
-        do j=1,3
-          gg_mn(:,j)=cs2*glnrho(:,j)
+        do n=n1,n2
+!
+          lnrho=f(l1:l2,m,n,ilnrho)
+          cs2=cs20*exp(gamma_m1*(lnrho-lnrho0))
+          call grad(f,ilnrho,glnrho)
+          do j=1,3
+            gg_mn(:,j)=cs2*glnrho(:,j)
+          enddo
+          f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
+!
         enddo
-        f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
-
       enddo
-      enddo
-
+!
     endsubroutine numerical_equilibrium
 !***********************************************************************
     subroutine pencil_criteria_density()
@@ -1416,7 +1414,7 @@ module Density
 !
 !  Differentiate between log density and linear density.
 !
-      if (ldensity_nolog) then 
+      if (ldensity_nolog) then
         call calc_pencils_linear_density(f,p)
       else
         call calc_pencils_log_density(f,p)
@@ -1618,7 +1616,6 @@ module Density
           endif
         else
           if (ieos_profile=='nothing') then
-            
 !
 !  If we are solving the fore-free equation in parts of our domain.
 !
@@ -1631,7 +1628,7 @@ module Density
                   df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
                    -dprofx_ffree*p%rho*p%uu(:,3) &
                    -dprofy_ffree(m)*p%rho*p%uu(:,3) &
-                   -dprofz_ffree(n)*p%rho*p%uu(:,3) 
+                   -dprofz_ffree(n)*p%rho*p%uu(:,3)
               else
                 df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
                   - profx_ffree*profy_ffree(m)*profz_ffree(n) &
@@ -1649,11 +1646,11 @@ module Density
                 df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
               endif
             endif
-!                                                                 
-!  Choice of vertical profile in front of density evolution.      
+!
+!  Choice of vertical profile in front of density evolution.
 !  Default is off. This is useful to simulate outer halo regions.
 !  There is an additional option of doing this by obeying mass
-!  conservation, which is not currently the default. 
+!  conservation, which is not currently the default.
 !
           elseif (ieos_profile=='surface_z') then
             if (ldensity_nolog) then
@@ -2333,7 +2330,7 @@ module Density
       use Mpicomm,     only:stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       real, dimension (nx,3) :: gpotself
       real, dimension (nx) :: tmp1,tmp2
       real, dimension (nx) :: gspotself,rr_cyl,rr_sph
@@ -2736,7 +2733,7 @@ module Density
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -3004,7 +3001,7 @@ module Density
 !
     real, dimension (mx,my,mz,mfarray):: f
     real:: init_average_density
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(init_average_density)
 !
