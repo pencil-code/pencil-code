@@ -547,7 +547,7 @@ module Special
         endif
       endif
 !
-      call force_solar_wind(df,p)
+      if (lmassflux) call force_solar_wind(df,p)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
