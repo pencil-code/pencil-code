@@ -10,6 +10,8 @@
 module Deriv
 
   use Messages
+  use Cparam
+  use Mpicomm, only: stop_it
 
   implicit none
 
@@ -21,6 +23,7 @@ module Deriv
   public :: der_upwind1st
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
+  public :: der_z, der2_z
 
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -130,7 +133,6 @@ module Deriv
 !  25-aug-09/axel: not yet adapted from deriv
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -189,7 +191,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (:) :: pencil,df
       integer :: j
@@ -324,7 +325,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
@@ -396,7 +396,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (:) :: pencil,df2
       integer :: j
@@ -456,7 +455,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -543,7 +541,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
@@ -639,7 +636,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -726,7 +722,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -828,7 +823,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -925,7 +919,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -1102,7 +1095,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -1287,7 +1279,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -1500,7 +1491,6 @@ module Deriv
 !  25-aug-09/axel: added stop_it, because it is not adapted yet
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
@@ -1567,7 +1557,6 @@ module Deriv
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
 !   Uses a one-sided 4th order stencil.
@@ -1633,7 +1622,6 @@ module Deriv
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
 !   Uses a one-sided 4th order stencil.
@@ -1650,7 +1638,7 @@ module Deriv
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df
       real :: fac
-      integer :: pos,k,sgn,j
+      integer :: pos,sgn,j
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
@@ -1695,5 +1683,27 @@ module Deriv
         endif
       endif
     endsubroutine
+!***********************************************************************
+    subroutine der_z(f,df)
+!
+! dummy routine
+!
+      real, dimension (mz), intent(in)  :: f
+      real, dimension (nz), intent(out) :: df
+!
+      call stop_it("deriv_2nd: der_Z not implemented yet")
+!
+    endsubroutine der_z
+!***********************************************************************
+    subroutine der2_z(f,df2)
+!
+! dummy routine
+!
+      real, dimension (mz), intent(in)  :: f
+      real, dimension (nz), intent(out) :: df2
+!
+      call stop_it("deriv_2nd: der2_z not implemented yet")
+!
+    endsubroutine der2_z
 !***********************************************************************
 endmodule Deriv
