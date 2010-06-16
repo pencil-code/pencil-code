@@ -1000,8 +1000,8 @@ endif
 ##
 #FC=ifort #(pfe?)
 #CC=icc #(pfe?)
-#FFLAGS=-O3 -axT -ip -mp1 -w -vec-report0 #(pfe?)
-#CFLAGS=-O3 -axT -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe?)
+#FFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 #(pfe?)
+#CFLAGS=-O3 -xSSE4.1 -ip -mp1 -w -vec-report0 -DFUNDERSC=1 #(pfe?)
 #FFLAGS_DOUBLE=-autodouble #(pfe?)
 #LD_MPI=-lmpi #(pfe?)
 ##

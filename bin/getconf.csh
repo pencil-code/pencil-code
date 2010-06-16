@@ -139,6 +139,7 @@ if ($?PBS_O_HOST) then
   if ("$PBS_O_HOST" =~ obelix*) set masterhost = 'obelix'
   if ("$PBS_O_HOST" =~ hyades*) set masterhost = 'hyades'
   if ("$PBS_O_HOST" =~ master.cvos.cluster) set masterhost = 'vsl176'
+  if ("$PBS_O_HOST" =~ pfe*.nas.nasa.gov) set masterhost = 'pfe'
 endif
 if ($?PBS_JOBID) then
   if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
@@ -1330,8 +1331,9 @@ else if ($hn =~ node* && $masterhost == 'vsl176') then
   set run_x=$PBS_O_WORKDIR/src/run.x
 #----------------------------------------------
 # NASA Pleiades system
-else if ($hn =~ p4fe1 || $hn =~ bridge[1,2] || $hn =~ pbspl1 || $hn =~ r{[1-9],[1-6][0-9],7[0-6],8[1-8],10[5-8],12[1-4]}i[0-3]n{[0-9],1[0-5]}) then
+else if ($masterhost =~ pfe) then
   echo "Running on NASA Pleiades system"
+  module load comp-intel mpi/mpt.1.25
   set mpirun = "mpiexec"
 
 else
