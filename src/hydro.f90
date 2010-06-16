@@ -97,6 +97,7 @@ module Hydro
   real :: omega_ini=0.0
   logical :: loutest,ldiffrot_test=.false.
   real :: r_cyl = 1.0, skin_depth = 1e-1
+  real :: rnoise_int=impossible,rnoise_ext=impossible
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -108,7 +109,8 @@ module Hydro
       omega_precession, alpha_precession, luut_as_aux,loot_as_aux, &
       velocity_ceiling, mu_omega, nb_rings, om_rings, gap, lscale_tobox, &
       ampl_Omega,omega_ini, r_cyl,skin_depth, incl_alpha, &
-      rot_rr,xsphere,ysphere,zsphere, neddy,amp_meri_circ
+      rot_rr,xsphere,ysphere,zsphere, neddy,amp_meri_circ, &
+      rnoise_int,rnoise_ext
 !
 !  Run parameters.
 !
@@ -702,7 +704,8 @@ module Hydro
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
         case ('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)
         case ('gaussian-noise-xy'); call gaunoise(ampluu(j),f,iux,iuy)
-        case ('gaussian-noise-rprof'); call gaunoise_rprof(ampluu(j),f,iux,iuz)
+        case ('gaussian-noise-rprof')
+          call gaunoise_rprof(ampluu(j),f,iux,iuz,rnoise_int,rnoise_ext)
         case ('xjump')
           call jump(f,iux,uu_left,uu_right,widthuu,'x')
           call jump(f,iuy,uy_left,uy_right,widthuu,'x')
@@ -715,7 +718,8 @@ module Hydro
         case ('trilinear-z'); call trilinear(ampluu(j),f,iuz)
         case ('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
         case ('tor_pert'); call tor_pert(ampluu(j),f,iux)
-        case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,rot_rr,xsphere,ysphere,zsphere)
+        case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,&
+                                   rot_rr,xsphere,ysphere,zsphere)
         case ('diffrot'); call diffrot(ampluu(j),f,iuy)
         case ('centrifugal-balance','global-shear'); call centrifugal_balance(f)
         case ('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)

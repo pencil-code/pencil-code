@@ -3364,7 +3364,7 @@ module Initcond
 !
     endsubroutine gaunoise_prof_scal
 !***********************************************************************
-    subroutine gaunoise_rprof_vect(ampl,f,i1,i2)
+    subroutine gaunoise_rprof_vect(ampl,f,i1,i2,rnoise_int,rnoise_ext)
 !
 !  Add Gaussian noise within r_int < r < r_ext.
 !  Use PROF as buffer variable so we don't need to allocate a large
@@ -3374,7 +3374,7 @@ module Initcond
 !
       use Sub, only: cubic_step, get_radial_distance
 !
-      real :: ampl
+      real :: ampl,rnoise_int,rnoise_ext
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i1,i2
 !
@@ -3387,15 +3387,17 @@ module Initcond
 !
 !  set up profile
 !
-      dr = r_ext-max(0.,r_int)
+      if (rnoise_int == impossible) rnoise_int=r_int
+      if (rnoise_ext == impossible) rnoise_int=r_ext
+      dr = rnoise_ext-max(0.,rnoise_int)
 !
       do n=1,mz; do m=1,my
         call get_radial_distance(rr_cyl,rr_sph)
         if (lcylindrical_coords.or.lcylinder_in_a_box) rr=rr_cyl
         if (lspherical_coords  .or.lsphere_in_a_box)   rr=rr_sph
-        prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+        prof = 1 - cubic_step(rr,rnoise_ext,0.25*dr,SHIFT=-1.)
         if (r_int>0.) then
-          prof = prof*cubic_step(rr,r_int,0.25*dr,SHIFT=1.)
+          prof = prof*cubic_step(rr,rnoise_int,0.25*dr,SHIFT=1.)
         endif
         prof = ampl*prof
 !
@@ -3415,7 +3417,7 @@ module Initcond
 !
     endsubroutine gaunoise_rprof_vect
 !***********************************************************************
-    subroutine gaunoise_rprof_scal(ampl,f,i)
+    subroutine gaunoise_rprof_scal(ampl,f,i,rnoise_int,rnoise_ext)
 !
 !  Add Gaussian noise within r_int < r < r_ext.
 !  Use PROF as buffer variable so we don't need to allocate a large
@@ -3424,13 +3426,13 @@ module Initcond
 !  18-apr-04/wolf: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl
+      real :: ampl,rnoise_int,rnoise_ext
       integer :: i
 !
       intent(in) :: ampl,i
       intent(out) :: f
 !
-      call gaunoise_rprof_vect(ampl,f,i,i)
+      call gaunoise_rprof_vect(ampl,f,i,i,rnoise_int,rnoise_ext)
 !
     endsubroutine gaunoise_rprof_scal
 !***********************************************************************
