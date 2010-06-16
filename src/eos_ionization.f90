@@ -455,7 +455,7 @@ module EquationOfState
 !*******************************************************************
     subroutine getmu(f,mu)
 !
-!  Calculate average particle mass in the gas relative to
+!  Calculate average particle mass.
 !  Note that the particles density is N = nHI + nHII + ne + nHe
 !  = (1-y)*nH + y*nH + y*nH + xHe*nH = (1 + yH + xHe) * nH, where
 !  nH is the number of protons per cubic centimeter.
@@ -1338,13 +1338,17 @@ module EquationOfState
 
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
+!
 !   01-dec-2009/piyali+dhrube: coded
+!
       use Cdata
 !
       real, intent(in):: average_density
       real, intent(out):: average_pressure
+!
       call keep_compiler_quiet(average_density)
       call keep_compiler_quiet(average_pressure)
+!
     endsubroutine get_average_pressure
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot)
