@@ -605,29 +605,38 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: hc,tmp
 !
-      hc(:) = 0.
-      call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
-      hc = hc + tmp
-      call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
-      hc = hc + tmp
-      call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc = hc + tmp
-      hc = chi_hyper3*hc
-      !
-      call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
-      hc =  hc - chi_hyper2*tmp
-      call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
-      hc =  hc - chi_hyper2*tmp
-      call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc =  hc - chi_hyper2*tmp
-!
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+      if (chi_hyper3/=0) then
+        hc(:) = 0.
+        call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
+        hc = hc + tmp
+        call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
+        hc = hc + tmp
+        call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
+        hc = hc + tmp
+        hc = chi_hyper3*hc
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-      if (lfirst.and.ldt) diffus_chi3=diffus_chi3 &
-          + chi_hyper3 &
-          + chi_hyper2
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
+            + chi_hyper3
+      endif
+!
+      if (chi_hyper2/=0) then
+        hc(:) = 0.
+        call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
+        hc =  hc - chi_hyper2*tmp
+        call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
+        hc =  hc - chi_hyper2*tmp
+        call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
+        hc =  hc - chi_hyper2*tmp
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+!
+!  due to ignoredx chi_hyperx has [1/s]
+!
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3 &
+            + chi_hyper2
+      endif
 !
       if (Kgpara/=0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
@@ -663,7 +672,7 @@ module Special
         if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
       endif
 !
-! Read external velocity file. Has to be read before the granules are 
+! Read external velocity file. Has to be read before the granules are
 ! calculated.
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
@@ -1036,6 +1045,9 @@ module Special
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heat_cool_RTV(df,p)
+!
+!  Electron Temperature should be used for the radiative loss
+!  L = n_e * n_H * Q(T_e)
 !
 !  30-jan-08/bing: coded
 !
@@ -2211,7 +2223,7 @@ module Special
         endif
 !
 ! Read velocity field
-!     
+!
        if (lroot) then
           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
@@ -2359,14 +2371,14 @@ module Special
         if (current%pos(1)>nxgrid+0.5) current%pos(1) = current%pos(1) - nxgrid
         if (current%pos(2)>nygrid+0.5) current%pos(2) = current%pos(2) - nygrid
 !
-        if (associated(current%next)) then 
+        if (associated(current%next)) then
           call gtnextpoint
         else
           exit
         endif
       enddo
       call reset
-!    
+!
     endsubroutine evolve_granules
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
