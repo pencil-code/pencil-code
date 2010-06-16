@@ -1271,20 +1271,18 @@ module Mpicomm
 !
       use Cdata
 
-      implicit none
-
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
-
+!
       integer :: j
-
+!
       do j=1,3
         if ( bcz1(ivar+j-1)=='p' ) then
           vec(1:n1-1        ,j) = vec(n2i:n2,j)
           vec(n2+1:n2+nghost,j) = vec(n1:n1i,j)
         endif
       enddo
-
+!
     endsubroutine fill_zghostzones_3vec
 !***********************************************************************
     subroutine communicate_bc_aa_pot(f,topbot)
@@ -1320,8 +1318,9 @@ module Mpicomm
 !***********************************************************************
     subroutine MPI_adi_x(tmp1, tmp2, send_buf1, send_buf2)
 !
-!  13-jan-10/dintrans+gastine: coded
 !  Communications for the ADI solver
+!
+!  13-jan-10/dintrans+gastine: coded
 !
       real, dimension(nx) :: tmp1, tmp2, send_buf1, send_buf2
 !
@@ -1332,8 +1331,9 @@ module Mpicomm
 !***********************************************************************
     subroutine MPI_adi_z(tmp1, tmp2, send_buf1, send_buf2)
 !
-!  13-jan-10/dintrans+gastine: coded
 !  Communications for the ADI solver
+!
+!  13-jan-10/dintrans+gastine: coded
 !
       real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
 !
@@ -1344,7 +1344,7 @@ module Mpicomm
 !***********************************************************************
     subroutine parallel_open(unit,file,form)
 !
-!  Read a global file
+!  Read a global file.
 !
 !  18-mar-10/Bourdin.KIS: implemented
 !
@@ -1354,11 +1354,13 @@ module Mpicomm
 !
       logical :: exists
 !
-      ! test if file exists
+!  Test if file exists.
+!
       inquire(FILE=file,exist=exists)
       if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
 !
-      ! open file
+!  Open file.
+!
       if (present(form)) then
         open(unit, FILE=file, FORM=form, STATUS='old')
       else
@@ -1369,7 +1371,7 @@ module Mpicomm
 !***********************************************************************
     subroutine parallel_close(unit)
 !
-!  Close a file unit opened by parallel_open
+!  Close a file unit opened by parallel_open.
 !
 !  18-mar-10/Bourdin.KIS: implemented
 !
@@ -1381,7 +1383,7 @@ module Mpicomm
 !***********************************************************************
     function parallel_count_lines(file)
 !
-!  Determines the number of lines in a file
+!  Determines the number of lines in a file.
 !
 !  Returns:
 !  * Integer containing the number of lines in a given file
@@ -1390,8 +1392,6 @@ module Mpicomm
 !  23-mar-10/Bourdin.KIS: implemented
 !
       use Syscalls, only: count_lines
-!
-      implicit none
 !
       character(len=*) :: file
       integer :: parallel_count_lines
@@ -1412,8 +1412,6 @@ module Mpicomm
 !  23-mar-10/Bourdin.KIS: implemented
 !
       use Syscalls, only: file_exists
-!
-      implicit none
 !
       character(len=*) :: file
       logical :: parallel_file_exists
