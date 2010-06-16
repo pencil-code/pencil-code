@@ -3214,15 +3214,16 @@ module Mpicomm
 !***********************************************************************
     subroutine fill_zghostzones_3vec(vec,ivar)
 !
-!  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of processors in z-direction.
-!  The three components of vec are supposed to be subject to the same z-boundary condiitons like the variables
+!  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of
+!  processors in z-direction.
+
+!  The three components of vec are supposed to be subject to the same
+!  z-boundary condiitons like the variables
 !  ivar, ivar+1, ivar+2
 !
 !   18-oct-2009/MR: Coded
 !
       use Cdata
-!
-      implicit none
 !
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
@@ -3254,11 +3255,13 @@ module Mpicomm
 !
           if (ipz/=0 .or. bcz1(j-1+ivar)=='p') &
             vec(1:n1-1,j)=lbufi(:,j)            
-!   read from buffer in lower ghostzones
+!
+!  Read from buffer in lower ghostzones.
 !
           if (ipz/=nprocz-1 .or. bcz2(j-1+ivar)=='p') &
             vec(n2+1:mz,j)=ubufi(:,j)          
-!   read from buffer in upper ghostzones
+!
+!  Read from buffer in upper ghostzones.
 !
         enddo
 !
@@ -3305,8 +3308,9 @@ module Mpicomm
 !***********************************************************************
     subroutine MPI_adi_x(tmp1, tmp2, send_buf1, send_buf2)
 !
+!  Communications for the ADI solver.
+!
 !  13-jan-10/dintrans+gastine: coded
-!  Communications for the ADI solver
 !
       real, dimension(nx) :: tmp1, tmp2, send_buf1, send_buf2
 !
@@ -3314,13 +3318,13 @@ module Mpicomm
 ! RECV : tmp1 = TT(:,nz+1) and tmp2 = TT(:,1-1)
 !
       call MPI_IRECV(tmp1,nx,MPI_REAL, &
-            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
+          zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
       call MPI_IRECV(tmp2,nx,MPI_REAL, &
-            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
+          zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
       call MPI_ISEND(send_buf1,nx,MPI_REAL, &
-            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
+          zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
       call MPI_ISEND(send_buf2,nx,MPI_REAL, &
-            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+          zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
       call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
       call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
       call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
@@ -3330,19 +3334,20 @@ module Mpicomm
 !***********************************************************************
     subroutine MPI_adi_z(tmp1, tmp2, send_buf1, send_buf2)
 !
+!  Communications for the ADI solver.
+!
 !  13-jan-10/dintrans+gastine: coded
-!  Communications for the ADI solver
 !
       real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
 !
       call MPI_IRECV(tmp1,nzgrid,MPI_REAL, &
-            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
+          zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
       call MPI_IRECV(tmp2,nzgrid,MPI_REAL, &
-            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
+          zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
       call MPI_ISEND(send_buf1,nzgrid,MPI_REAL, &
-            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
+          zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
       call MPI_ISEND(send_buf2,nzgrid,MPI_REAL, &
-            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+          zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
       call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
       call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
       call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
@@ -3352,13 +3357,11 @@ module Mpicomm
 !***********************************************************************
     subroutine parallel_open(unit,file,form,recl)
 !
-!  Read a global file in parallel
+!  Read a global file in parallel.
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
       use Syscalls, only: file_size
-!
-      implicit none
 !
       integer :: unit
       character (len=*) :: file
@@ -3372,37 +3375,52 @@ module Mpicomm
       character, dimension(:), allocatable :: buffer
 !
       if (lroot) then
-        ! test if file exists
+!
+!  Test if file exists.
+!
         inquire(FILE=file,exist=exists)
-        if (.not. exists) call stop_it_if_any(.true.,'parallel_open: file not found "'//trim(file)//'"')
+        if (.not. exists) call stop_it_if_any(.true., &
+            'parallel_open: file not found "'//trim(file)//'"')
         bytes=file_size(file)
-        if (bytes < 0) call stop_it_if_any(.true.,'parallel_open: could not determine file size "'//trim(file)//'"')
-        if (bytes == 0) call stop_it_if_any(.true.,'parallel_open: file is empty "'//trim(file)//'"')
+        if (bytes < 0) call stop_it_if_any(.true., &
+            'parallel_open: could not determine file size "'//trim(file)//'"')
+        if (bytes == 0) call stop_it_if_any(.true., &
+            'parallel_open: file is empty "'//trim(file)//'"')
       endif
-      ! catch conditional errors of the MPI root rank
+!
+!  Catch conditional errors of the MPI root rank.
+!
       call stop_it_if_any(.false.,'')
 !
-      ! broadcast the file size
+!  Broadcast the file size.
+!
       call mpibcast_int(bytes, 1)
 !
-      ! allocate temporary memory
+!  Allocate temporary memory.
+!
       allocate(buffer(bytes))
       buffer=char(0)
 !
       if (lroot) then
-        ! read file content into buffer
-        open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
+!
+!  Read file content into buffer.
+!
+        open(unit, FILE=file, FORM='unformatted', RECL=bytes, &
+            ACCESS='direct', STATUS='old')
         read(unit, REC=1, IOSTAT=ierr) buffer
-        call stop_it_if_any((ierr<0),'parallel_open: error reading file "'//trim(file)//'" into buffer')
+        call stop_it_if_any((ierr<0),'parallel_open: error reading file "'// &
+            trim(file)//'" into buffer')
         close(unit)
       else
         call stop_it_if_any(.false.,'')
       endif
 !
-      ! broadcast buffer to all MPI ranks
+!  Broadcast buffer to all MPI ranks.
+!
       call mpibcast_char(buffer, bytes)
 !
-      ! create unique temporary filename
+!  Create unique temporary filename.
+!
       pos=scan(file, '/')
       do while(pos /= 0)
         file(pos:pos)='_'
@@ -3410,7 +3428,8 @@ module Mpicomm
       enddo
       write(filename,'(A,A,A,I0)') '/tmp/', file, '-', iproc
 !
-      ! write temproary file into local RAM disk (/tmp)
+!  Write temporary file into local RAM disk (/tmp).
+!
 !     *** WORK HERE: THIS CODE WILL BE DELETED SOON 
 !                   (because of an ifort compiler bug)
 !      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
@@ -3421,11 +3440,13 @@ module Mpicomm
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
       endfile(unit, iostat=ierr)
-      call stop_it_if_any((ierr<0),'parallel_open: error writing EOF "'//trim(file)//'"')
+      call stop_it_if_any((ierr<0),'parallel_open: error writing EOF "'// &
+          trim(file)//'"')
       close(unit)
       deallocate(buffer)
 !
-      ! open temporary file
+!  Open temporary file.
+!
       if (present(form) .and. present(recl)) then
         open(unit, FILE=filename, FORM=form, RECL=recl, STATUS='old')
       elseif (present(recl)) then
@@ -3435,17 +3456,17 @@ module Mpicomm
       else
         open(unit, FILE=filename, STATUS='old')
       endif
-! unit is now reading from RAM and is ready to be used on all ranks in parallel
+!
+!  Unit is now reading from RAM and is ready to be used on all ranks in
+!  parallel.
 !
     endsubroutine parallel_open
 !***********************************************************************
     subroutine parallel_close(unit)
 !
-!  Close a file unit opened by parallel_open and remove temporary file
+!  Close a file unit opened by parallel_open and remove temporary file.
 !
 !  17-mar-10/Bourdin.KIS: implemented
-!
-      implicit none
 !
       integer :: unit
 !
@@ -3455,7 +3476,7 @@ module Mpicomm
 !***********************************************************************
     function parallel_count_lines(file)
 !
-!  Determines in parallel the number of lines in a file
+!  Determines in parallel the number of lines in a file.
 !
 !  Returns:
 !  * Integer containing the number of lines in a given file
@@ -3464,8 +3485,6 @@ module Mpicomm
 !  23-mar-10/Bourdin.KIS: implemented
 !
       use Syscalls, only: count_lines
-!
-      implicit none
 !
       character(len=*) :: file
       integer :: parallel_count_lines
@@ -3487,8 +3506,6 @@ module Mpicomm
 !  23-mar-10/Bourdin.KIS: implemented
 !
       use Syscalls, only: file_exists
-!
-      implicit none
 !
       character(len=*) :: file
       logical :: parallel_file_exists,ldelete
