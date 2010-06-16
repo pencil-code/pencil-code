@@ -188,9 +188,10 @@ module Register
 ! 11-sep-04/axel: began adding spherical coordinates
 !
       use Cdata
-      use Mpicomm,          only: mpireduce_sum
       use Param_IO
-      use Sub, only: remove_zprof
+      use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
+                                  mpisend_real,mpirecv_real
+      use Sub,              only: remove_zprof
       use BorderProfiles,   only: initialize_border_profiles
       use Chemistry,        only: initialize_chemistry
       use Chiral,           only: initialize_chiral
@@ -445,11 +446,6 @@ module Register
         endif
         r2_mn=r1_mn**2
 !
-!  Inner and outer radius per processor.
-!
-        r_int=x(l1)
-        r_ext=x(l2)
-!
 !  Calculate sin(theta). Make sure that sinth=1 if there is no y extent,
 !  regardless of the value of y. This is needed for correct integrations.
 !
@@ -600,8 +596,6 @@ module Register
           rcyl_mn1=1./x(l1:l2)
         endif
         rcyl_mn2=rcyl_mn1**2
-        r_int=x(l1)
-        r_ext=x(l2)
 !
 !  Box volume and volume element.
 !
@@ -653,6 +647,51 @@ module Register
         lspherical_coords=.false.
         lcylindrical_coords=.false.
 !
+      endif
+!
+!  Define inner and outer radii for non-cartesian coords. 
+!  If the user did not specify them yet (in start.in), 
+!  these are the first point of the first x-processor, 
+!  and the last point of the last x-processor. 
+!
+      if (lspherical_coords.or.lcylindrical_coords) then
+!
+        if (nprocx/=1) then 
+!
+!  The root (iproc=0) has by default the first value of x
+!
+          if (lroot) then 
+            if (r_int==0) r_int=x(l1)
+!
+!  The root should also receive the value of r_ext from
+!  from the last x-processor (which is simply nprocx-1 
+!  for iprocy=0 and iprocz=0) for broadcasting.
+!  
+            if (r_ext==impossible) &
+                 call mpirecv_real(r_ext,1,nprocx-1,111)
+          endif
+!
+!  The last x-processor knows the value of r_ext, and sends 
+!  it to root, for broadcasting.
+!
+          if ((r_ext==impossible).and.&
+               (ipx==nprocx-1.and.ipy==0.and.ipz==0)) then
+            r_ext=x(l2)
+            call mpisend_real(r_ext,1,0,111)
+          endif
+!
+!  Broadcast the values of r_int and r_ext
+!
+          call mpibcast_real(r_int,1)
+          call mpibcast_real(r_ext,1)
+        else
+!
+!  Serial-x. Just get the local grid values. 
+!
+          if (r_int == 0)         r_int=x(l1)
+          if (r_ext ==impossible) r_ext=x(l2)
+        endif
+        if (lroot) print*,'r,int,r_ext=',r_int,r_ext
       endif
 !
 !  For a non-periodic mesh, multiply boundary points by 1/2.
