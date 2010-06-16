@@ -27,10 +27,11 @@ module InitialCondition
 !
   real :: density_power_law,temperature_power_law,plasma_beta
   logical :: lnumerical_mhsequilibrium=.true.
+  logical :: lintegrate_potential=.true.
 !
   namelist /initial_condition_pars/ &
       density_power_law,temperature_power_law,plasma_beta,&
-      lnumerical_mhsequilibrium
+      lnumerical_mhsequilibrium,lintegrate_potential
 !
   contains
 !***********************************************************************
@@ -129,7 +130,7 @@ module InitialCondition
       real, dimension (mx) :: cs2,tmp1,tmp2
       real    :: p,q
       integer :: ics2
-      integer, pointer :: iglobal_cs2,iglobal_glnTT
+      integer, pointer :: iglobal_cs2
 !
       p=-density_power_law 
       q=-temperature_power_law
@@ -185,74 +186,114 @@ module InitialCondition
       use FArrayManager, only: farray_use_global
       use Sub, only: gij,curl_mn,get_radial_distance
       use EquationOfState, only: cs20,rho0
+      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: pressure,Bphi,Atheta
-      real, dimension(mx) :: rr_sph,rr_cyl,tmp,tmp2
-      real :: integral,dr,ksi,B0,field_power_law
+      real, dimension(nx) :: pressure,Bphi,Atheta
+      real, dimension(nx) :: rr_sph,rr_cyl
+      real, dimension(nx) :: tmp
+      real, dimension(0:nx) :: tmp2
+      real :: dr,psum
       integer, pointer :: iglobal_cs2
-      integer :: ics2,irho,i
-      logical :: lintegrate_potential=.false.
-
-      if (lintegrate_potential) then 
+      integer :: i,ics2,irho,iprocx,iprocy,iserial_xy
+      real, dimension(ny,nprocx*nprocy) :: procsum
+      real, dimension(ny) :: procsum_loc,tmpy
 !
 !  Get the sound speed globals 
 !
-        nullify(iglobal_cs2)
-        call farray_use_global('cs2',iglobal_cs2)
-        ics2=iglobal_cs2 
+      nullify(iglobal_cs2)
+      call farray_use_global('cs2',iglobal_cs2)
+      ics2=iglobal_cs2 
 !
 !  Density is already in linear after init_lnrho, so
 !
-        irho=ilnrho
+      irho=ilnrho
 !
-        do n=1,mz
-          do m=1,my
+      do m=m1,m2
 !
-            pressure=f(:,m,n,irho)*f(:,m,n,ics2)
+        pressure=f(l1:l2,m,npoint,irho)*f(l1:l2,m,npoint,ics2)
 !
 !  The following line assumes mu0=1
 !
-            Bphi = sqrt(2*pressure/plasma_beta)
+        Bphi = sqrt(2*pressure/plasma_beta)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
-            call get_radial_distance(rr_sph,rr_cyl)
-            dr=rr_sph(2)-rr_sph(1)
-            tmp=Bphi*rr_sph
+        call get_radial_distance(rr_sph,rr_cyl)
+        dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph
 !
-            tmp2(1)=0.
-            do i=2,mx
-              tmp2(i)=tmp2(i-1) + tmp(i)*dr 
-            enddo
-            Atheta=tmp2/rr_sph
-!
-            f(:,m,n,iay)=f(:,m,n,iay)+Atheta
-!
-          enddo
+        iserial_xy=ipx+nprocx*ipy+1
+        tmp2(0)=0.
+        do i=1,nx 
+          tmp2(i)=tmp2(i-1)+tmp(i)*dr
         enddo
+        procsum_loc(m-m1+1)=tmp2(nx)
+      enddo
 !
+      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
+!
+      if (lroot) then 
+        procsum(:,1)=procsum_loc
+        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+          iserial_xy=iprocx+nprocx*iprocy+1
+          if (iserial_xy/=1) then
+            call mpirecv_real(tmpy,ny,iserial_xy-1,111)
+            procsum(:,iserial_xy)=tmpy
+          endif
+          if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
+        enddo; enddo
       else
-!
-!  Calculate the potential directly since we know the power laws
-!
-        ksi=.5*(density_power_law+temperature_power_law)
-        B0=sqrt(2*rho0*cs20/plasma_beta)
-!
-        do m=1,my
-          do n=1,mz
-            call get_radial_distance(rr_sph,rr_cyl)
-            Atheta=(B0/(2.-ksi))*rr_sph**(1.-ksi)
-            f(:,m,n,iay)=f(:,m,n,iay)+Atheta
-          enddo
-        enddo
-!
+        call mpisend_real(procsum_loc,ny,0,111)
       endif
+!
+      call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
+!
+      do m=m1,m2;do n=n1,n2
+!
+        pressure=f(l1:l2,m,n,irho)*f(l1:l2,m,n,ics2)
+!
+!  The following line assumes mu0=1
+!
+        Bphi = sqrt(2*pressure/plasma_beta)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph
+!
+        if (nprocx==1) then 
+          tmp2(0)=0.
+          do i=1,nx 
+            tmp2(i)=tmp2(i-1)+tmp(i)*dr
+          enddo
+        else
+          if (ipx==0) then 
+            tmp2(0)=0.
+            do i=1,nx
+              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+            enddo
+          else 
+            psum=0.
+            do iprocx=0,ipx-1
+              iserial_xy=iprocx+nprocx*ipy+1
+              psum=psum+procsum(m-m1+1,iserial_xy)
+            enddo
+            tmp2(0)=psum
+            do i=1,nx
+              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+            enddo
+          endif
+        endif
+        Atheta=tmp2(1:nx)/rr_sph
+        f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
+      enddo;enddo
 !
 !  All quantities are set. Enforce numerical equilibrium.
 !
-      if (lnumerical_mhsequilibrium) &
-          call enforce_numerical_equilibrium(f,lhd=.false.)
+    if (lnumerical_mhsequilibrium) &
+         call enforce_numerical_equilibrium(f,lhd=.false.)
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
@@ -322,7 +363,7 @@ module InitialCondition
       real, dimension (nx) :: cs2,rr_sph,rr_cyl,rho1
       real, dimension (nx) :: fpres_thermal,fpres_magnetic
       integer, pointer :: iglobal_cs2, iglobal_glnTT
-      integer :: j,irho,ics2,iglnTT,i
+      integer :: j,irho,ics2,iglnTT
       logical :: lhd
 !
 !  Get the temperature globals
