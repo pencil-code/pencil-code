@@ -131,6 +131,7 @@ module Magnetic
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
   real :: eta_jump=0.0
+  real :: rnoise_int=impossible,rnoise_ext=impossible
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -184,7 +185,7 @@ module Magnetic
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
-      lpress_equil_alt
+      lpress_equil_alt,rnoise_int,rnoise_ext
 !
 ! Run parameters
 !
@@ -1111,7 +1112,7 @@ module Magnetic
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
         case ('gaussian-noise-rprof')
-          call gaunoise_rprof(amplaa(j),f,iax,iaz)
+          call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
         case ('gaussian-noise-zprof')
           tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
           call gaunoise(tmp,f,iax,iaz)

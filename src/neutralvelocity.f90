@@ -37,13 +37,15 @@ module NeutralVelocity
   logical :: lviscneutral=.true.,lelectron_pressure=.false.
   real :: colldrag=0,electron_pressure=1
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
+  real :: rnoise_int=impossible,rnoise_ext=impossible
   real, dimension (nx,3,3) :: unij5
   character (len=labellen),dimension(ninit) :: iviscn=''
 !
   namelist /neutralvelocity_init_pars/ &
       ampluun, ampl_unx, ampl_uny, ampl_unz, &
       inituun, uun_const, Omega, lcoriolis_force, lcentrifugal_force, &
-      ladvection_velocity,colldrag,csn0,kx_uun,ky_uun,kz_uun
+      ladvection_velocity,colldrag,csn0,kx_uun,ky_uun,kz_uun,&
+      rnoise_int,rnoise_ext
 !
 !  Run parameters.
 !
@@ -245,7 +247,7 @@ module NeutralVelocity
         case ('sinwave-y'); call sinwave(ampluun(j),f,iuny,ky=ky_uun)
         case ('sinwave-z'); call sinwave(ampluun(j),f,iunz,kz=kz_uun)
         case ('gaussian-noise-rprof')
-          call gaunoise_rprof(ampluun(j),f,iunx,iunz)
+          call gaunoise_rprof(ampluun(j),f,iunx,iunz,rnoise_int,rnoise_ext)
         case ('follow-ions'); f(:,:,:,iunx:iunz)=f(:,:,:,iux:iuz)
         case default
           !
