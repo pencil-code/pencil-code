@@ -691,7 +691,7 @@ module Register
           if (r_int == 0)         r_int=x(l1)
           if (r_ext ==impossible) r_ext=x(l2)
         endif
-        if (lroot) print*,'r,int,r_ext=',r_int,r_ext
+        if (lroot) print*,'initialize_modules, r_int,r_ext=',r_int,r_ext
       endif
 !
 !  For a non-periodic mesh, multiply boundary points by 1/2.

@@ -40,6 +40,9 @@ module BorderProfiles
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
 !   9-nov-09/axel: set r_int_border and r_ext_border if still impossible
+!  17-jun-10/wlad: moved r_int_border and r_ext_border to border drive
+!                  because r_int and r_ext are not set until after all
+!                  calls to initialize are done in Register.   
 !
       use Cdata
       use Messages
@@ -49,12 +52,6 @@ module BorderProfiles
       real, dimension(nz) :: zeta
       real :: border_width, lborder, uborder
       integer :: l
-!
-!  if r_int_border and/or r_ext_border are still set to impossible,
-!  then put them equal to r_int and r_ext, respectively.
-!
-      if (r_int_border==impossible) r_int_border=r_int
-      if (r_ext_border==impossible) r_ext_border=r_ext
 !
 !  x-direction
 !
@@ -299,6 +296,16 @@ module BorderProfiles
       type (pencil_case) :: p
       real :: pborder,inverse_drive_time
       integer :: i,j
+      logical :: lfirstcall=.true.
+!
+!  if r_int_border and/or r_ext_border are still set to impossible,
+!  then put them equal to r_int and r_ext, respectively.
+!
+      if (lfirstcall) then 
+        if (r_int_border==impossible) r_int_border=r_int
+        if (r_ext_border==impossible) r_ext_border=r_ext
+        lfirstcall=.false.
+      endif
 !
 !  Perform "border_driving" only if r < r_int_border or r > r_ext_border, but
 !  take into acount that the profile further inside on both ends.
