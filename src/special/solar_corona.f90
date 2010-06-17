@@ -147,8 +147,6 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-      call setup_special()
-!
     endsubroutine init_special
 !***********************************************************************
     subroutine setup_special()
@@ -285,6 +283,8 @@ module Special
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  It will be read at the beginning and then kept in memory
 !
+!  Only read in if needed, e.g. Newton cooling
+      if (tdown/=0) then
       if (lroot.and.(ltemperature.or.lentropy)) then
         ! check wether stratification.dat or b_ln*.dat should be used
         if (file_exists(stratification_dat)) then
@@ -353,6 +353,8 @@ module Special
       ! distribute stratification data
       call mpibcast_real(init_lnTT, prof_nz)
       call mpibcast_real(init_lnrho, prof_nz)
+!
+      endif
 !
     endsubroutine setup_special
 !***********************************************************************
@@ -1627,7 +1629,8 @@ module Special
       endif
       if (itsub .eq. 3) &
           lstop = file_exists('STOP')
-      if (lstop.or.t>=tmax .or. it.eq.nt.or.mod(it,isave).eq.0) &
+      if (lstop.or.t>=tmax .or. it.eq.nt.or. &
+          mod(it,isave).eq.0.or.dt<dtmin) &
           call wrpoints(level)
 !
     endsubroutine drive3
