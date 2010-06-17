@@ -99,8 +99,6 @@ module Hydro
 !  specific modes.
 !
         call random_isotropic_KS_setup_test
-        elseif (kinflow=='ck') then
-          call init_ck
       endif
 !
 !  Register an extra aux slot for uu if requested (so uu is written
@@ -1103,39 +1101,6 @@ module Hydro
 !
     endsubroutine impose_velocity_ceiling
 !***********************************************************************
-    subroutine init_ck
-!
-!  8-sep-2009/dhruba: coded
-!
-      integer :: l,m
-      real :: Balpha,jl,jlp1,jlm1,LPl,LPlm1
-      integer :: ell
-!
-      print*, 'Initializing variables from Chandrasekhar-Kendall flow'
-      print*, 'Allocating..'
-      allocate(Zl(mx),dZldr(mx))
-      allocate(Pl(my),dPldtheta(my))
-      print*, 'Allocation done'
-      ell=kinflow_ck_ell
-      Balpha=kinflow_ck_Balpha
-      print*, 'ell=,alpha=',ell,Balpha
-!
-      do l=1,mx
-        call sp_besselj_l(jl,ell,Balpha*x(l))
-        call sp_besselj_l(jlp1,ell+1,Balpha*x(l))
-        call sp_besselj_l(jlm1,ell-1,Balpha*x(l))
-        Zl(l) = jl
-        dZldr(l) = ell*jlm1-(ell+1)*jlp1
-      enddo
-      do m=1,my
-        call legendre_pl(LPl,ell,y(m))
-        call legendre_pl(LPlm1,ell-1,y(m))
-        Pl(m) = Lpl
-        dPldtheta(m) = -(1/sin(y(m)))*ell*(LPlm1-LPl)
-      enddo
-!
-    endsubroutine init_ck
-!***********************************************************************
     subroutine hydro_clean_up
 !
 !  Deallocate the variables allocated in nohydro
@@ -1143,10 +1108,7 @@ module Hydro
 !  8-sep-2009/dhruba: coded
 !
       print*, 'Deallocating some nohydro variables ...'
-      if (kinflow=='ck') then
-        deallocate(Zl,dZldr)
-        deallocate(Pl,dPldtheta)
-      elseif (kinflow=='KS') then
+      if (kinflow=='KS') then
          deallocate(KS_k)
          deallocate(KS_A)
          deallocate(KS_B)
