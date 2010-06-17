@@ -52,6 +52,7 @@ module Chemistry
      real :: init_y1=-0.2,init_y2=0.2
      real :: init_z1=-0.2,init_z2=0.2
      real :: init_TT1=400., init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+     real :: init_rho=1.
      real :: str_thick=0.02
      real :: init_pressure=10.13e5
 !
@@ -82,11 +83,8 @@ module Chemistry
      character (len=30),allocatable, dimension(:) :: reaction_name
      logical :: lT_tanh=.false.
      logical :: ldamp_zone_for_NSCBC=.false.
-!     logical :: ldamp_zone_NSCBCx=.false.
-!     logical :: ldamp_zone_NSCBCy=.false.
-!     logical :: ldamp_zone_NSCBCz=.false.
-!     logical :: ldamp_left=.true.,ldamp_right=.true.
      logical :: linit_velocity=.false.
+     logical :: linit_temperature=.false.
 !
 ! 1step_test case
 ! possible, will be removed later
@@ -143,11 +141,11 @@ module Chemistry
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, &
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const,&
-      init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,&
+      init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,init_rho,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
-      lchemistry_diag,lfilter_strict
+      lchemistry_diag,lfilter_strict,linit_temperature
 !
 !
 ! run parameters
@@ -536,8 +534,6 @@ module Chemistry
           call flame(f)
         case ('flame_blob')
           call flame_blob(f)
-        case ('flame_slab')
-          call flame_slab(f)
         case ('prerun_1D')          
           call prerun_1D(f,prerun_directory)
         case default
@@ -1428,108 +1424,6 @@ module Chemistry
       if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine flame_blob
-!***********************************************************************
-    subroutine flame_slab(f)
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
-      integer :: j1
-      real :: mO2, mH2, mN2, mH2O
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: initial_mu1, final_massfrac_O2, del=0.
-      logical :: found_specie
-      real :: Rad, log_inlet_density
-!
-     lflame_front=.true.
-!
-      call air_field(f)
-!
-! Initialize some indexes
-!
-      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
-      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
-      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
-      mO2 =species_constants(ichem_O2 ,imass)
-      mH2 =species_constants(ichem_H2 ,imass)
-      mH2O=species_constants(ichem_H2O,imass)
-      mN2 =species_constants(ichem_N2 ,imass)
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2&
-          =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
-!
-!  Initialize temperature and species in air_field(f)
-!
-      if (unit_system == 'cgs') then
-          Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys/unit_energy
-      endif
-!
-!  Find logaritm of density at inlet
-!
-      initial_mu1&
-          =initial_massfractions(ichem_H2)/(mH2)&
-          +initial_massfractions(ichem_O2)/(mO2)&
-          +initial_massfractions(ichem_H2O)/(mH2O)&
-          +initial_massfractions(ichem_N2)/(mN2)
-!
-       call getmu_array(f,mu1_full)
-!
-       log_inlet_density=&
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-!
-       do j1=1,mx
-         Rad=abs(x(j1))
-!         if (Rad<0.2) then
-!          f(j1,:,:,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
-!         else
-!          f(j1,:,:,ilnTT)=log(init_TT1)
-!         endif
-!
-        if (lT_tanh) then
-          del=init_x2-init_x1
-          f(j1,:,:,ilnTT)=f(j1,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-              +((init_TT2-init_TT1)*0.5)  &
-          *(exp(x(j1)/del)-exp(-x(j1)/del))/(exp(x(j1)/del)+exp(-x(j1)/del)))
-        else
-          if ((x(j1)<=0) .and. (x(j1)>=-0.2)) then
-           f(j1,:,:,ilnTT)=log(init_TT1)+2.1*((0.2-Rad)/0.2)**2
-          elseif (x(j1)>0) then
-           f(j1,:,:,ilnTT)=log(init_TT1)+2.1
-          elseif (x(j1)<-0.2) then
-           f(j1,:,:,ilnTT)=log(init_TT1)
-          endif
-        endif
-!
-!
-          mu1(j1,:,:)=f(j1,:,:,i_H2)/(2.*mH2)+f(j1,:,:,i_O2)/(2.*mO2) &
-              +f(j1,:,:,i_H2O)/(2.*mH2+mO2)+f(j1,:,:,i_N2)/(2.*mN2)
-!
-         f(j1,:,:,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,:,:,ilnTT)  &
-              -log(mu1_full(j1,:,:))
-!
-!
-!  Initialize velocity
-!
-            f(j1,:,:,iux)=f(j1,:,:,iux)  &
-                +init_ux*exp(log_inlet_density)/exp(f(j1,:,:,ilnrho))
-            f(j1,:,:,iuy)=f(j1,:,:,iuy)+ init_uy
-            f(j1,:,:,iuz)=f(j1,:,:,iuz)+ init_uz
-!
-           if (nxgrid==1) f(j1,:,:,iux)=0.
-           if (nygrid==1) f(j1,:,:,iuy)=0.
-           if (nzgrid==1) f(j1,:,:,iuz)=0.
-!
-      enddo
-!
-!  Check if we want nolog of density
-!
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
-!
-    endsubroutine flame_slab
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
@@ -4474,12 +4368,6 @@ module Chemistry
 !
       enddo
 !
-      !do j=1,nchemspec
-      ! if (maxval(f(:,:,:,ichemspec(j)))<1e-15) then
-      !     f(:,:,:,ichemspec(j))=1e-15
-      !  endif
-      !enddo
-!
       sum_Y=0.
 !
       do j=1,nchemspec
@@ -4494,81 +4382,68 @@ module Chemistry
         call fatal_error("air_field", "I can only set existing fields")
       endif
 !
-     if (.not. lflame_front) then
-!
-      if (ltemperature_nolog) then
-       f(:,:,:,iTT)=TT
-      else
-       f(:,:,:,ilnTT)=log(TT)!+f(:,:,:,ilnTT)
-      endif
-!
-      if (ldensity_nolog) then
-       f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-          air_mass/TT)/unit_mass*unit_length**3
-      else
-       f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-          air_mass/TT)/unit_mass*unit_length**3)
-      endif
-!
+      if (.not. lflame_front) then
+        if (ltemperature_nolog) then
+          f(:,:,:,iTT)=TT
+        else
+          f(:,:,:,ilnTT)=log(TT)!+f(:,:,:,ilnTT)
+        endif
+        if (ldensity_nolog) then
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+        else
+          f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3)
+        endif
+        f(:,:,:,iux)=f(:,:,:,iux)+init_ux
       endif
 !
       if (linit_velocity) then
-       if (init_ux /=0.) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
-       if (init_uy /=0.) then
-         do i=1,my
-           if (y(i)>0) then
-             f(:,i,:,iuy)=f(:,i,:,iuy) &
-              +init_uy*(2.*y(i)/Lxyz(2))**2
-           else
-             f(:,i,:,iuy)=f(:,i,:,iuy) &
-              -init_uy*(2.*y(i)/Lxyz(2))**2
-           endif
-         enddo
-       endif
-       if (init_uz /=0.) then
-         do i=1,mz
-           if (z(i)>0) then
-             f(:,:,i,iuz)=f(:,:,i,iuz) &
-              +init_uz*(2.*z(i)/Lxyz(3))**2
-           else
-             f(:,:,i,iuz)=f(:,:,i,iuz) &
-              -init_uz*(2.*z(i)/Lxyz(3))**2
-           endif
-         enddo
-       endif
-      endif
-!
-      if (TT<init_TT1 .and. (.not. lcloud)) then
-        xx1=xyz0(1)
-        xx2=xyz0(1)+Lxyz(1)*0.1
-        j=4
-          do i=1,mx
-          if (x(i)<=xx2) then
-            f(i,:,:,ilnTT)= &
-            log((TT-init_TT1)*(x(i)-xx1)/(xx2-xx1)+init_TT1)
-            if (i<=4) then
-              f(i,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-              air_mass/init_TT1)/unit_mass*unit_length**3)
-            else
-              f(i,:,:,ilnrho)=f(j,:,:,ilnrho) + f(j,:,:,ilnTT) &
-                 - f(i,:,:,ilnTT)
-            endif
+        if (init_ux /=0.) then
+        do i=1,mx
+         f(i,:,:,iux)= &
+          (x(i)-xyz0(1))/Lxyz(1)*(0.-init_ux)+init_ux
+        enddo
+        endif
+        if (init_uy /=0.) then
+          do i=1,my
+          if (y(i)>0) then
+            f(:,i,:,iuy)=f(:,i,:,iuy) &
+                        +init_uy*(2.*y(i)/Lxyz(2))**2
+          else
+            f(:,i,:,iuy)=f(:,i,:,iuy) &
+                        -init_uy*(2.*y(i)/Lxyz(2))**2
           endif
           enddo
-       elseif (lcloud) then
-        do i=1,mx
-          if (x(i)<=init_x1) then
-            f(i,:,:,ilnTT)=log(init_TT1) 
+        endif
+        if (init_uz /=0.) then
+          do i=1,mz
+          if (z(i)>0) then
+            f(:,:,i,iuz)=f(:,:,i,iuz) &
+                        +init_uz*(2.*z(i)/Lxyz(3))**2
           else
-            f(i,:,:,ilnTT)=log(init_TT2)
+            f(:,:,i,iuz)=f(:,:,i,iuz) &
+                        -init_uz*(2.*z(i)/Lxyz(3))**2
           endif
-!            del=init_x2-init_x1
-!            f(i,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
-!              +((init_TT2-init_TT1)*0.5)  &
-!              *(exp(x(i)/del)-exp(-x(i)/del))/(exp(x(i)/del)+exp(-x(i)/del)))
+          enddo
+        endif
+      endif
+!
+      if (linit_temperature) then
+        do i=1,mx
+        if (x(i)<=init_x1) then
+          f(i,:,:,ilnTT)=log(init_TT1)
+        endif
+        if (x(i)>=init_x2) then
+          f(i,:,:,ilnTT)=log(init_TT2)
+        endif
+        if (x(i)>init_x1 .and. x(i)<init_x2) then
+          f(i,:,:,ilnTT)=&
+             log((x(i)-init_x1)/(init_x2-init_x1) &
+             *(init_TT2-init_TT1)+init_TT1)
+        endif
         enddo
-          
-       endif
+      endif
 !
       if (lroot) print*, 'Air temperature, K', TT
       if (lroot) print*, 'Air pressure, dyn', PP

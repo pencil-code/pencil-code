@@ -306,10 +306,6 @@ include 'NSCBC.h'
 !
           case ('part_ref_inlet')
             call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,u_t=u_t,T_t=T_t)
-            if (lfinal_velocity_profile) then
-              call final_velocity_profile(f,j,topbot, &
-                    imin,imax,jmin,jmax,igrid,jgrid)
-            endif
 !
           case ('ref_inlet')
             call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,u_t=u_t,T_t=T_t)
@@ -342,8 +338,14 @@ include 'NSCBC.h'
             call fatal_error("nscbc_boundtreat_xyz",&
                 'You must specify nscbc bouncond!')
           endselect
+          if (lfinal_velocity_profile) then
+            call final_velocity_profile(f,j,topbot, &
+             imin,imax,jmin,jmax,igrid,jgrid)
+          endif
         endif
       enddo
+
+      
 !
     endsubroutine nscbc_boundtreat_xyz
 !***********************************************************************
@@ -3080,7 +3082,7 @@ include 'NSCBC.h'
                 elseif (dir==3) then
                   rad_2=((x(jjj)-jet_center(1))**2+(y(kkk)-jet_center(1))**2)
                 endif
-                  u_profile(jjj-imin+1,kkk-jmax+1)=exp(-rad_2/sigma**2)
+                  u_profile(jjj-imin+1,kkk-jmin+1)=exp(-rad_2/sigma**2)
 !print*,u_profile(jjj-imin+1,kkk-jmax+1),rad_2,sigma
               enddo
             enddo
