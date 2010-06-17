@@ -56,6 +56,8 @@ module Hydro
   real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,&
           uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
+  real :: kinflow_ck_Balpha=0.
+  integer :: kinflow_ck_ell=0.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
     kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -64,8 +66,7 @@ module Hydro
     ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
     lrandom_location,lwrite_random_location,location_fixed,dtforce,&
     radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
-    gcs_psizero
-!
+    gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell 
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
   integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0

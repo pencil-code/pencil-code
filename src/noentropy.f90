@@ -230,7 +230,8 @@ module Entropy
 !DM the profz_eos should be changed to profz_free
           if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
           if (ldensity) then
-            if (lffree) p%fpres(:,j) = p%fpres(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+!            if (lffree) p%fpres(:,j) = p%fpres(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+            if (lffree) p%fpres(:,j) = p%fpres(:,j)*profz_ffree(n)
           endif
         enddo
       endif

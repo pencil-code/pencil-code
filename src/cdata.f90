@@ -237,6 +237,7 @@ module Cdata
   logical :: lprocz_slowest=.true.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
+  integer :: poleneigh              ! `pole' processor neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
 !
 !  Variables to count the occurance of derivative calls per timestep
@@ -496,8 +497,6 @@ module Cdata
   real :: ampl_kinflow_x=0., ampl_kinflow_y=0., ampl_kinflow_z=0.
   real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.
-  real :: kinflow_ck_Balpha=0.
-  integer :: kinflow_ck_ell=0.
 ! (DM) All previous kinematic stuff can go to hydro_kinematic but I am not sure how
 ! to accomodate the following.
   real :: kinematic_phase=0.

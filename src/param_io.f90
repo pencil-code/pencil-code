@@ -94,7 +94,7 @@ module Param_IO
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
       eps_kinflow, omega_kinflow, ampl_kinflow, lkinflow_as_aux, &
       ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, kx_kinflow, ky_kinflow, &
-      kz_kinflow, dtphase_kinflow, kinflow_ck_Balpha, kinflow_ck_ell, &
+      kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       ltime_integrals, lnowrite, noghost_for_isave, lwrite_yaverages, &
       lwrite_zaverages, lwrite_phiaverages, test_nonblocking, &

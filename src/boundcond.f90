@@ -1800,8 +1800,6 @@ module Boundcond
          call get_shared_variable('Lambda_V1b',Lambda_V1b,ierr)
          if (ierr/=0) call stop_it("bc_set_sfree_x: " &
               // "problem getting shared var Lambda_V1b")
-!      write(*,*)'DM bcx','Lambda_V0t,Lambda_V1t,Lambda_V0b,Lambda_V1b'
-!      write(*,*)'DM bcx',Lambda_V0t,Lambda_V1t,Lambda_V0b,Lambda_V1b
       endif
 !
       select case (topbot)

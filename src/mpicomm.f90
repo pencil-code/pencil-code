@@ -316,6 +316,12 @@ module Mpicomm
       zlneigh = (modulo(ipz-1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
       zuneigh = (modulo(ipz+1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
 !
+! For boundary condition across the pole set up pole-neighbours
+! This assumes that the domain is equally distributed among the
+! processors in the z direction. 
+!
+       poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocx*nprocy+ipy*nprocx+ipx 
+!
 !  Set the four corners in the yz-plane (in cyclic order).
 !
       llcorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
