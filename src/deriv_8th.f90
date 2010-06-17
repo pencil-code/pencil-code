@@ -18,7 +18,7 @@ module Deriv
   public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
-  public :: der_upwind1st
+  public :: der_upwind1st, der_z, der2_z
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
 !
@@ -266,7 +266,7 @@ module Deriv
         call fatal_error('der_pencil','')
       endif
 !
-      if (lcylindrical_coords.or.lspherical_coords) & 
+      if (lcylindrical_coords.or.lspherical_coords) &
            call fatal_error("der_pencil","Not implemented for non-cartesian")
 !
     endsubroutine der_pencil
@@ -776,7 +776,7 @@ module Deriv
                'just works if upwinding is used')
         endif
      endif
-!     
+!
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -1587,12 +1587,12 @@ module Deriv
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
       use Cdata
 !
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
 !   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should 
+!   characteristic equations on boundaries (NSCBC), this sub should
 !   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
 !   scaling factors and connection terms should instead be done when
 !   solving the characteristic equations.
@@ -1650,12 +1650,12 @@ module Deriv
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
       use Cdata
 !
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
 !   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should 
+!   characteristic equations on boundaries (NSCBC), this sub should
 !   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
 !   scaling factors and connection terms should instead be done when
 !   solving the characteristic equations.
@@ -1709,5 +1709,33 @@ module Deriv
         endif
       endif
     endsubroutine
+!***********************************************************************
+    subroutine der_z(f,df)
+!
+! dummy routine
+!
+      use Cparam, only: mz, nz 
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mz), intent(in)  :: f
+      real, dimension (nz), intent(out) :: df
+!
+      call stop_it("deriv_8th: der_z not implemented yet")
+!
+    endsubroutine der_z
+!***********************************************************************
+    subroutine der2_z(f,df2)
+!
+! dummy routine
+!
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mz), intent(in)  :: f
+      real, dimension (nz), intent(out) :: df2
+!
+      call stop_it("deriv_8th: der2_z not implemented yet")
+!
+    endsubroutine der2_z
 !***********************************************************************
 endmodule Deriv
