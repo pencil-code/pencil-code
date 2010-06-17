@@ -4282,7 +4282,6 @@ module Chemistry
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
       integer :: i,j,k=1
-      real :: xx1,xx2,del
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
