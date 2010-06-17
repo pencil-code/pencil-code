@@ -157,6 +157,7 @@ module Magnetic
   logical :: lresi_smagorinsky=.false.
   logical :: lresi_smagorinsky_cross=.false.
   logical :: lresi_anomalous=.false.
+  logical :: lresi_spitzer=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
   logical :: lohmic_heat=.true., lneutralion_heat=.true.
@@ -190,7 +191,7 @@ module Magnetic
 ! Run parameters
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
-  real :: meanfield_molecular_eta=0.0
+  real :: meanfield_molecular_eta=0.0,eta_spitzer=0.
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0
   real :: z_surface=0.0
@@ -257,7 +258,7 @@ module Magnetic
       lB_ext_pot, displacement_gun, D_smag, brms_target, &
       rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
       lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
-      eta_z0, eta_z1, &
+      eta_z0, eta_z1,eta_spitzer, &
       borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
@@ -730,6 +731,7 @@ module Magnetic
       lresi_smagorinsky=.false.
       lresi_smagorinsky_cross=.false.
       lresi_anomalous=.false.
+      lresi_spitzer=.false.
 !
       do i=1,nresi_max
         select case (iresistivity(i))
@@ -805,6 +807,9 @@ module Magnetic
         case ('anomalous')
           if (lroot) print*, 'resistivity: anomalous'
           lresi_anomalous=.true.
+        case ('spitzer')
+          if (lroot) print*, 'resistivity: temperature dependent (Spitzer 1969)'
+          lresi_spitzer=.true.
         case ('none')
           ! do nothing
         case ('')
@@ -1343,7 +1348,7 @@ module Magnetic
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_const.or.lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or.lresi_zdep.or. &
-          lresi_xydep.or.lresi_smagorinsky_cross)) &
+          lresi_xydep.or.lresi_smagorinsky_cross.or.lresi_spitzer)) &
           lpenc_requested(i_del2a)=.true.
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
@@ -1384,6 +1389,17 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
+      if (lresi_spitzer) then
+        lpenc_requested(i_lnTT)=.true.
+        if (lweyl_gauge) then
+          lpenc_requested(i_jj)=.true.
+        else
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2a)=.true.
+          lpenc_requested(i_diva)=.true.
+        endif
+      endif
+        
 !
 !  In mean-field theory, with variable etat, need divA for resistive gauge.
 !
@@ -2341,6 +2357,8 @@ module Magnetic
 !    dA/dt = u x B - eta j + grad(Phi).
 !
 !  If lweyl_gauge=T, we choose Phi = const. and solve
+!    dA/dt = u x B - eta j.
+!
 !  Else, if lweyl_gauge=F, we make the gauge choice Phi = eta div(A)
 !  and thus solve
 !    dA/dt = u x B + eta laplace(A) + div(A) grad(eta).
@@ -2552,6 +2570,25 @@ module Magnetic
               diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
         endif
         where (vdrift>vcrit_anom) etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+      endif
+!
+! Temperature dependent resistivity for the solar corona (Spitzer 1969)
+!
+      if (lresi_spitzer) then
+        etatotal = etatotal + eta_spitzer*exp(-1.5*p%lnTT)
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i)=fres(:,i)-eta_spitzer*exp(-1.5*p%lnTT)*p%jj(:,i)
+          enddo
+        else
+          do i=1,3
+            fres(:,i)=fres(:,i)+eta_spitzer*(exp(-1.5*p%lnTT)*p%del2a(:,i)-&
+                1.5*p%diva*p%glnTT(:,i))
+          enddo
+        endif
+        if (lfirst.and.ldt) then
+          diffus_eta=diffus_eta+eta_spitzer*exp(-1.5*p%lnTT)
+        endif
       endif
 !
 !  Ambipolar diffusion in the strong coupling approximation.
