@@ -329,6 +329,8 @@ include 'NSCBC.h'
             elseif (j==3) then
               call bc_nscbc_nref_subout_z(f,df,topbot,nscbc_sigma_out)
             endif
+          case ('no_nscbc')
+              call no_nscbc(f,topbot,valx)
           case ('')
 !   Do nothing.
           case ('none')
@@ -1697,9 +1699,10 @@ include 'NSCBC.h'
          f(lll,m1:m2,n1:n2,iuz) = 0.
         endif
 !
+        if (allocated(u_in)) deallocate(u_in)
+!
  endsubroutine bc_nscbc_subin_x_new
-!***********************************************************************
-!***********************************************************************
+!**********************************************************************!***********************************************************************
     subroutine bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
 
 !
@@ -3029,6 +3032,91 @@ include 'NSCBC.h'
 
     endsubroutine bc_nscbc_nref_subout_z
 !***********************************************************************
+  subroutine no_nscbc(f,topbot,val)
+!
+!   nscbc case
+!   subsonic inflow boundary conditions
+!   now it is 2D case (should be corrected for 3D case)
+!    ux,uy,T are fixed, drho  is calculated
+!
+!   16-nov-08/natalia: coded.
+!
+      use EquationOfState, only: cs0, cs20
+      use Deriv, only: der_onesided_4_slice, der_pencil
+      use Chemistry
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mom2
+      character (len=3) :: topbot
+      real, dimension (mcom), optional :: val
+      integer :: lll,i, sgn,k
+      real :: u_t, T_t, lnrho_t
+      real, dimension(nchemspec) :: YYi
+!
+      intent(inout) :: f
+!
+      logical :: non_zero_transveral_velo
+      integer :: dir, dir2, dir3, igrid, jgrid, imin, imax, jmin, jmax
+      real, allocatable, dimension(:,:,:) :: u_in
+!
+! reading data from file
+!
+      if (inlet_from_file) then
+
+        dir=1; dir2=2; dir3=3
+        igrid=ny; jgrid=nz
+        imin=m1; imax=m2
+        jmin=n1; jmax=n2
+        non_zero_transveral_velo=.false.
+!
+        allocate(u_in(igrid,jgrid,3))
+!
+        call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
+              Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
+              igrid,jgrid)
+      endif
+!
+!    if (.not.present(val)) call stop_it(&
+!          'bc_nscbc_subin_x: you must specify fbcx)')
+!
+      u_t=val(iux)
+      T_t=val(ilnTT)
+      lnrho_t=val(ilnrho)
+      do k=1,nchemspec
+       YYi(k)=val(ichemspec(k))
+      enddo
+!
+      select case (topbot)
+      case ('bot')
+        lll = l1
+        sgn = 1
+      case ('top')
+        lll = l2
+        sgn = -1
+      case default
+         print*, "bc_no_nscbc: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+        do k=1,nchemspec
+         f(lll,m1:m2,n1:n2,ichemspec(k))=YYi(k)
+        enddo
+         f(lll,m1:m2,n1:n2,ilnTT)  = T_t
+!         f(lll,m1:m2,n1:n2,ilnrho) = lnrho_t
+!
+        if (inlet_from_file) then
+         f(lll,m1:m2,n1:n2,iux) = u_t + u_in(:,:,1)
+         f(lll,m1:m2,n1:n2,iuy) = u_in(:,:,2)
+         f(lll,m1:m2,n1:n2,iuz) = u_in(:,:,3)
+        else
+         f(lll,m1:m2,n1:n2,iux) = u_t
+         f(lll,m1:m2,n1:n2,iuy) = 0.
+         f(lll,m1:m2,n1:n2,iuz) = 0.
+        endif
+!
+      if (allocated(u_in)) deallocate(u_in)
+!
+ endsubroutine no_nscbc
+!**********************************************************************!**************************
     subroutine final_velocity_profile(f,dir,topbot,imin,imax,jmin,jmax,igrid,jgrid)
 !
 !  Create the final inlet velocity profile.
