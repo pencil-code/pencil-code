@@ -4376,7 +4376,7 @@ module Initcond
 !      z direction by solving hydrostatic equilibrium.
 !      dlnrho = - dlnTT + (cp-cv)/T g dz
 !
-      use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
+      use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot,gamma_m1
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real
 !
@@ -4384,7 +4384,7 @@ module Initcond
       real :: tmp,ztop,zbot
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_z
-      real :: tmprho,tmpT,tmpdT,tmpz
+      real :: tmprho,tmpT,tmpdT,tmpz,dz_step
       integer :: i,lend,j
 !
       ! file location settings
@@ -4394,7 +4394,6 @@ module Initcond
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
 !
-      ! read in temperature profile T in [K] and z in [Mm]
       if (lroot) then
         inquire(IOLENGTH=lend) tmp
         open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
@@ -4409,9 +4408,12 @@ module Initcond
       prof_z = prof_z*1.e6/unit_length
       prof_lnT = prof_lnT - alog(real(unit_temperature))
       !
-      ! simple linear interpolation
+      ! get step width
+      ! should be smaler than grid width and 
+      ! data width
       !
-      dz = (prof_z(2)-prof_z(1))/10.
+      dz_step = min((prof_z(2)-prof_z(1)),minval(1./dz_1))
+      dz_step = dz_step/100.
       !
       do j=n1,n2
          tmprho = lnrho0
@@ -4422,31 +4424,25 @@ module Initcond
          zbot=xyz0(3)
          !
          do while (tmpz <= ztop)
-            if (abs(tmpz-zbot) < dz) cs2bot = (gamma-1.)*exp(tmpT)
-            if (abs(tmpz-ztop) < dz) cs2top = (gamma-1.)*exp(tmpT)
-            if (abs(tmpz-z(j)) <= dz) then
+            if (abs(tmpz-zbot) < dz_step) cs2bot = (gamma-1.)*exp(tmpT)
+            if (abs(tmpz-ztop) < dz_step) cs2top = (gamma-1.)*exp(tmpT)
+            if (abs(tmpz-z(j)) <= dz_step) then
                f(:,:,j,ilnrho) = tmprho
                f(:,:,j,ilnTT)  = tmpT
             endif
             ! new z coord
-            tmpz = tmpz+dz
+            tmpz = tmpz+dz_step
             ! get T at new z
             do i=1,prof_nz-1
                if (tmpz >= prof_z(i)  .and. tmpz < prof_z(i+1) ) then
-!                  tmpdT = linear_inpol(prof_z(i),prof_z(i+1),prof_lnT(i),prof_lnT(i+1),tmpz)-tmpT
-!
                   tmpdT = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (tmpz-prof_z(i)) + prof_lnT(i) -tmpT
-                  !blnTT(j) = (prof_lnT(i+1)-prof_lnT(i))/(prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnT(i)
-!
                   tmpT = tmpT + tmpdT
-                  !exit
                elseif (tmpz >= prof_z(prof_nz)) then
                   tmpdT = prof_lnT(prof_nz) - tmpT
                   tmpT = tmpT + tmpdT
-                  !exit
                endif
             enddo
-            tmprho = tmprho - tmpdT + gamma*(gamma-1.)*gravz*exp(-tmpT) * dz
+            tmprho = tmprho - tmpdT + gamma/gamma_m1*gravz*exp(-tmpT) * dz_step
          enddo
       enddo
 !
