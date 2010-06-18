@@ -1315,8 +1315,11 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-          idiag_ekinmz/=0 .or. idiag_fkinxmxy/=0) then
+          idiag_ekinmz/=0) then
         lpenc_diagnos(i_ekin)=.true.
+      endif
+      if (idiag_fkinxmxy/=0) then
+        lpenc_diagnos2d(i_ekin)=.true.
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
@@ -4443,6 +4446,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: prof_amp1,prof_amp2
       real, dimension (mz) :: prof_amp3
+      real, dimension (my) :: prof_amp4
       character (len=labellen) :: prof_diffrot
       logical :: ldiffrot_test
       integer :: llx
@@ -4503,6 +4507,20 @@ module Hydro
       endif
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
         -prof_amp3(n)*cos(2.*pi*((x(l1:l2))-x0)/Lx))
+!
+!  Solar rotation profile from Dikpati & Charbonneau (1999, ApJ)
+!
+      case ('solar_DC99')
+      prof_amp1=step(x(l1:l2),rdampint,wdamp)
+      prof_amp2=1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp)
+      prof_amp4=(1.064-0.145*costh(m)**2-0.155*costh(m)**4)*ampl2_diffrot
+      if (lcalc_uumeanxy) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumxy(l1:l2,m,3) &
+            -(prof_amp1*prof_amp2*(prof_amp4(m)-ampl2_diffrot)))*x(l1:l2)*sinth(m)
+      else
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
+            -(prof_amp1*prof_amp2*(prof_amp4(m)-ampl2_diffrot)))*x(l1:l2)*sinth(m)
+      endif
 !
 !  vertical shear profile
 !
