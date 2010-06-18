@@ -32,14 +32,15 @@ module Special
   logical, pointer :: lweyl_gauge
 
   ! input parameters
-  real :: etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
+  real :: ampl=1e-3,kx=1.,ky=0.,kz=0.
+  logical :: ladvecto_resistive=T
   character(len=50) :: init='zero'
   namelist /special_init_pars/ &
-    etaphi,init,ampl,kx,ky,kz
+    ladvecto_resistive,init,ampl,kx,ky,kz
 
   ! run parameters
   namelist /special_run_pars/ &
-    etaphi
+    ladvecto_resistive
 !
 ! Declare any index variables necessary for main or 
 ! 
@@ -233,17 +234,17 @@ module Special
 !
 !  Weyl gauge?
 !
-        if (.not.lweyl_gauge) then
-          ua=ua-eta*p%diva
-        endif
+!-      if (.not.lweyl_gauge) then
+!-        ua=ua-eta*p%diva
+!-      endif
 !
 !  diffusion?
 !
-        if (etaphi/=0.) then
+        if (ladvecto_resistive) then
           call del2(f,iphi,del2phi)
-          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi-ua+etaphi*del2phi
+          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi+ua+eta*del2phi
         else
-          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi-ua
+          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi+ua
         endif
       else
         call fatal_error('dspecial_dt','no advective if no hydro')
@@ -259,7 +260,7 @@ module Special
         if (idiag_gphibm/=0.or.idiag_apbrms/=0) then
           call dot(gphi,p%bb,gphib)
           if (idiag_gphibm/=0) call sum_mn_name(gphib,idiag_gphibm)
-          if (idiag_apbrms/=0) call sum_mn_name((p%ab+gphib)**2,idiag_apbrms,lsqrt=.true.)
+          if (idiag_apbrms/=0) call sum_mn_name((p%ab-gphib)**2,idiag_apbrms,lsqrt=.true.)
         endif
 !
 !  check for point 1
