@@ -385,6 +385,9 @@ module Magnetic
   integer :: idiag_uabxmz=0     ! DIAG_DOC: $\left<(\uv \cdot \Av) B_x \right>_{xy}$
   integer :: idiag_uabymz=0     ! DIAG_DOC: $\left<(\uv \cdot \Av) B_y \right>_{xy}$
   integer :: idiag_uabzmz=0     ! DIAG_DOC: $\left<(\uv \cdot \Av) B_z \right>_{xy}$
+  integer :: idiag_bbxmz=0      ! DIAG_DOC: $\left<{\cal B}'_x\right>_{xy}$
+  integer :: idiag_bbymz=0      ! DIAG_DOC: $\left<{\cal B}'_y\right>_{xy}$
+  integer :: idiag_bbzmz=0      ! DIAG_DOC: $\left<{\cal B}'_z\right>_{xy}$
   integer :: idiag_bxmz=0       ! DIAG_DOC: $\left<{\cal B}_x\right>_{xy}$
   integer :: idiag_bymz=0       ! DIAG_DOC: $\left<{\cal B}_y\right>_{xy}$
   integer :: idiag_bzmz=0       ! DIAG_DOC: $\left<{\cal B}_z\right>_{xy}$
@@ -905,10 +908,14 @@ module Magnetic
 !
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
+!  also in advective gauge, we need to know eta
 !
       call put_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
       if (lmeanfield_theory) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
+        call put_shared_variable('eta',eta,ierr)
+      elseif (lspecial) then
+        call put_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
         call put_shared_variable('eta',eta,ierr)
       endif
 !
@@ -3302,6 +3309,9 @@ module Magnetic
         if (idiag_uabxmz/=0) call xysum_mn_name_z(p%ua*p%bb(:,1),idiag_uabxmz)
         if (idiag_uabymz/=0) call xysum_mn_name_z(p%ua*p%bb(:,2),idiag_uabymz)
         if (idiag_uabzmz/=0) call xysum_mn_name_z(p%ua*p%bb(:,3),idiag_uabzmz)
+        if (idiag_bbxmz/=0)  call xysum_mn_name_z(p%bbb(:,1),idiag_bbxmz)
+        if (idiag_bbymz/=0)  call xysum_mn_name_z(p%bbb(:,2),idiag_bbymz)
+        if (idiag_bbzmz/=0)  call xysum_mn_name_z(p%bbb(:,3),idiag_bbzmz)
         if (idiag_bxmz/=0)   call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
         if (idiag_bymz/=0)   call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
         if (idiag_bzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
@@ -6771,6 +6781,9 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uabxmz',idiag_uabxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uabymz',idiag_uabymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uabzmz',idiag_uabzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bbxmz',idiag_bbxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bbymz',idiag_bbymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bbzmz',idiag_bbzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
@@ -7007,6 +7020,9 @@ module Magnetic
         write(3,*) 'i_uabxmz=',idiag_uabxmz
         write(3,*) 'i_uabymz=',idiag_uabymz
         write(3,*) 'i_uabzmz=',idiag_uabzmz
+        write(3,*) 'i_bbxmz=',idiag_bbxmz
+        write(3,*) 'i_bbymz=',idiag_bbymz
+        write(3,*) 'i_bbzmz=',idiag_bbzmz
         write(3,*) 'i_bxmz=',idiag_bxmz
         write(3,*) 'i_bymz=',idiag_bymz
         write(3,*) 'i_bzmz=',idiag_bzmz

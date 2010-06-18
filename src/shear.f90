@@ -313,7 +313,8 @@ module Shear
         .and. ncpus/=1 .and. headt) then
         print*
         print*, 'NOTE: for Sshear > 0, MPI is not completely correct.'
-        print*, 'It is better to use lshearadvection_as_shift=T.'
+        print*, 'It is better to use lshearadvection_as_shift=T and use:'
+        print*, 'FOURIER=fourier_fftpack'
         print*
       endif
 !

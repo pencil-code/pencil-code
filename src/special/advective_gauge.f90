@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Lorenz gauge, dphi/dt = -cphi2*divA
+!  Lorenz gauge, dphi/dt = -u.gradLambda - U.A + eta*divA
 !
 !  25-feb-07/axel: adapted from nospecial.f90
 !
@@ -28,17 +28,18 @@ module Special
 !
 !  square of wave speed for gauge field
 !
-  real :: cphi2
+  real, pointer :: eta
+  logical, pointer :: lweyl_gauge
 
   ! input parameters
-  real :: cphi=1.,etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
+  real :: etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
   character(len=50) :: init='zero'
   namelist /special_init_pars/ &
-    cphi,etaphi,init,ampl,kx,ky,kz
+    etaphi,init,ampl,kx,ky,kz
 
   ! run parameters
   namelist /special_run_pars/ &
-    cphi,etaphi
+    etaphi
 !
 ! Declare any index variables necessary for main or 
 ! 
@@ -80,13 +81,23 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use SharedVariables, only : get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+      integer :: ierr
 !
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
-      cphi2=cphi**2
+      if (.not.lstarting) then
+        call get_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
+        if (.not.lweyl_gauge) then
+          call get_shared_variable('eta',eta,ierr)
+          if (ierr/=0) &
+              call fatal_error("initialize_special: ", "cannot get shared var eta")
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -133,7 +144,7 @@ module Special
 !
 !  25-feb-07/axel: adapted
 !
-      if (cphi/=0.) then
+      if (.not.lweyl_gauge) then
         lpenc_requested(i_diva)=.true.
       endif
       lpenc_requested(i_aa)=.true.
@@ -218,6 +229,12 @@ module Special
           call dot(p%uu,p%aa,ua)
         else
           ua=0.
+        endif
+!
+!  Weyl gauge?
+!
+        if (.not.lweyl_gauge) then
+          ua=ua-eta*p%diva
         endif
 !
 !  diffusion?
