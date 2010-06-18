@@ -71,15 +71,16 @@ module Special
   character (len=labellen) :: initstream='default'
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_water=0!, ind_cloud=0
+  real :: sigma=1.
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy_z,lbuoyancy_x
+      lbuoyancy_z,lbuoyancy_x, sigma
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x
+      lbuoyancy_z,lbuoyancy_x, sigma
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -384,6 +385,59 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      real, dimension (mx) :: func_x
+      integer :: j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y,ll1,ll2
+      real :: dt1, func_y,lnrho_ref
+      real :: del
+      logical :: lzone_y=.false.
+!
+       dt1=1./dt
+       del=0.1
+!
+      lnrho_ref=-6.907755279
+!
+       sz_r_x=l2-int(del*nxgrid)
+       sz_l_x=int(del*nxgrid)+l1
+       sz_r_y=m2-int(del*nygrid)
+       sz_l_y=int(del*nygrid)+m1
+!
+       ll1=l1
+       ll2=l2
+     
+ !      sz_r_x=mx
+ !      sz_l_x=1
+
+        do j=1,2
+
+         if (j==1) then
+          ll1=sz_r_x
+          ll2=l2
+          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
+         elseif (j==2) then
+          ll1=l1+1
+          ll2=sz_l_x
+          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
+         endif
+!
+!          df(ll1:ll2,m,n,ilnrho)=df(ll1:ll2,m,n,ilnrho)&
+!            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnrho)-lnrho_ref)*dt1
+!
+        enddo
+!
+
+       if ((m<=sz_l_y) .and. (m>=m1)) then
+!        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3
+        lzone_y=.true.
+       elseif ((m>=sz_r_y) .and. (m<=m2)) then
+!        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3
+        lzone_y=.true.
+       endif
+
+       if (lzone_y) then
+      !  df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
+       !    -(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1/8.
+        lzone_y=.false.
+       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
 !
@@ -528,30 +582,33 @@ module Special
     use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (my, nchemspec-1) :: mask
       integer :: sgn
       type (boundary_condition) :: bc
-      integer :: i,i1,j,vr,k
-      real :: value1, value2
-
+      integer :: i,j,vr
+      integer :: jjj,kkk
+      real :: value1, value2, rad_2
+      real, dimension (2) :: jet_center=0.
+      real, dimension (my,mz) :: u_profile
+!
+      do jjj=1,my
+      do kkk=1,mz
+         rad_2=((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+         u_profile(jjj,kkk)=exp(-rad_2/sigma**2)
+      enddo
+      enddo
+!
       vr=bc%ivar
-
       value1=bc%value1
       value2=bc%value2
-
-
-    if (bc%location==iBC_X_BOT) then
+!
+      if (bc%location==iBC_X_BOT) then
       ! bottom boundary
-
-        if (vr==4 ) then
-          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
-       endif
-
+        f(l1,m1:m2,n1:n2,vr) = value1*u_profile(m1:m2,n1:n2)
+        do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
-        do i=1,nghost
-        f(l2+i,:,:,vr)=f(l2,:,:,vr)!2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); 
-        enddo
+        f(l2,m1:m2,n1:n2,vr) = value2*u_profile(m1:m2,n1:n2)
+        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
