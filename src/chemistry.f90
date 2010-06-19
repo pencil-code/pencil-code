@@ -52,6 +52,7 @@ module Chemistry
      real :: init_y1=-0.2,init_y2=0.2
      real :: init_z1=-0.2,init_z2=0.2
      real :: init_TT1=400., init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+     real :: init_rho2=1.
      real :: init_rho=1.
      real :: str_thick=0.02
      real :: init_pressure=10.13e5
@@ -84,7 +85,7 @@ module Chemistry
      logical :: lT_tanh=.false.
      logical :: ldamp_zone_for_NSCBC=.false.
      logical :: linit_velocity=.false.
-     logical :: linit_temperature=.false.
+     logical :: linit_temperature=.false.,linit_density=.false.
 !
 ! 1step_test case
 ! possible, will be removed later
@@ -145,7 +146,7 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
-      lchemistry_diag,lfilter_strict,linit_temperature
+      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2
 !
 !
 ! run parameters
@@ -4402,10 +4403,14 @@ module Chemistry
 !
       if (linit_velocity) then
         if (init_ux /=0.) then
-        do i=1,mx
-         f(i,:,:,iux)= &
-          (x(i)-xyz0(1))/Lxyz(1)*(0.-init_ux)+init_ux
-        enddo
+!        do i=1,mx
+!         f(i,:,:,iux)= &
+!          (x(i)-xyz0(1))/Lxyz(1)*(0.-init_ux)+init_ux
+!        enddo
+         do i=1,my
+           f(:,i,:,iux)=sin(2.*PI*y(i)/Lxyz(2))*init_ux
+         enddo
+!
         endif
         if (init_uy /=0.) then
           do i=1,my
@@ -4444,6 +4449,14 @@ module Chemistry
              log((x(i)-init_x1)/(init_x2-init_x1) &
              *(init_TT2-init_TT1)+init_TT1)
         endif
+        enddo
+      endif
+!
+      if (linit_density) then
+        do i=1,mx
+          f(i,:,:,ilnrho)= &
+          (x(i)-xyz0(1))/Lxyz(1)*(alog(init_rho2)-alog(init_rho)) &
+          +alog(init_rho)
         enddo
       endif
 !
