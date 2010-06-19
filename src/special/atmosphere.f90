@@ -461,6 +461,11 @@ module Special
       real :: eps=0.5 !!????????????????????????
       real :: rho_water=1., const_tmp=0.
 !
+      real, dimension (mx) :: func_x
+      integer :: j,i
+      real :: dt1
+      real :: del,width
+!
        const_tmp=4./3.*PI*rho_water 
       if (lbuoyancy_z) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
@@ -475,6 +480,22 @@ module Special
            !  - const_tmp*p%fcloud(:)
            )
       endif
+!
+       dt1=1./dt
+       del=0.1
+!
+!
+       width=del*Lxyz(1)
+!
+         do i=1,mx 
+  !       if ((x(i)<xyz0(1)+width) .or. (x(i)>xyz0(1)+Lxyz(1)-width)) then
+         if ((x(i)<xyz0(1)+width)) then
+!           df(i,m,n,iux)=df(i,m,n,iux)-(f(i,m,n,iux)-0.)*dt1/2.
+!           df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-(f(i,m,n,ilnrho)-alog(1e-3))*dt1/8.
+         endif
+         enddo
+!
+!
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -532,10 +553,18 @@ module Special
       select case (bc%bcname)
          case ('stm')
          select case (bc%location)
-         case (iBC_X_TOP)
-           call bc_stream_x(f,-1, bc)
-         case (iBC_X_BOT)
-           call bc_stream_x(f,-1, bc)
+           case (iBC_X_TOP)
+             call bc_stream_x(f,-1, bc)
+           case (iBC_X_BOT)
+             call bc_stream_x(f,-1, bc)
+         endselect
+         bc%done=.true.
+         case ('sux')
+         select case (bc%location)
+           case (iBC_X_TOP)
+             call bc_sin_ux(f,-1, bc)
+           case (iBC_X_BOT)
+             call bc_sin_ux(f,-1, bc)
          endselect
          bc%done=.true.
       endselect
@@ -616,7 +645,43 @@ module Special
 !
     endsubroutine bc_stream_x
 !******************************************************************** 
-
+  subroutine bc_sin_ux(f,sgn,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i,j,vr
+      integer :: jjj,kkk
+      real :: value1, value2
+      real, dimension (my,mz) :: u_profile
+!
+      do jjj=1,my
+         u_profile(jjj,:)=cos(3.*PI*y(jjj)/Lxyz(2))
+      enddo
+!
+      vr=bc%ivar
+      value1=bc%value1
+      value2=bc%value2
+!
+      if (bc%location==iBC_X_BOT) then
+      ! bottom boundary
+        f(l1,m1:m2,n1:n2,vr) = value1*u_profile(m1:m2,n1:n2)
+        do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+      elseif (bc%location==iBC_X_TOP) then
+      ! top boundary
+        f(l2,m1:m2,n1:n2,vr) = value2*u_profile(m1:m2,n1:n2)
+        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
+      else
+        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_sin_ux
+!******************************************************************** 
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are
