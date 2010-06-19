@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Lorenz gauge, dphi/dt = -u.gradLambda - U.A + eta*divA
+!  Lorenz gauge, dLam/dt = -u.gradLambda - U.A + eta*divA
 !
 !  25-feb-07/axel: adapted from nospecial.f90
 !
@@ -33,7 +33,7 @@ module Special
 
   ! input parameters
   real :: ampl=1e-3,kx=1.,ky=0.,kz=0.
-  logical :: ladvecto_resistive=T
+  logical :: ladvecto_resistive=.true.
   character(len=50) :: init='zero'
   namelist /special_init_pars/ &
     ladvecto_resistive,init,ampl,kx,ky,kz
@@ -44,17 +44,17 @@ module Special
 !
 ! Declare any index variables necessary for main or 
 ! 
-   integer :: iphi=0
+   integer :: iLam=0
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_phim=0       ! DIAG_DOC: $\left<\phi\right>$
-  integer :: idiag_phipt=0      ! DIAG_DOC: $\phi(x1,y1,z1)>$
-  integer :: idiag_phip2=0      ! DIAG_DOC: $\phi(x2,y2,z2)>$
-  integer :: idiag_phirms=0     ! DIAG_DOC: $\left<\phi^2\right>^{1/2}$
-  integer :: idiag_phibzm=0     ! DIAG_DOC: $\left<\phi B_z\right>$
-  integer :: idiag_phibzmz=0    ! DIAG_DOC: $\left<\phi B_z\right>_{xy}$
-  integer :: idiag_gphibm=0     ! DIAG_DOC: $\left<\phi\Bv\right>$
+  integer :: idiag_Lamm=0       ! DIAG_DOC: $\left<\Lam\right>$
+  integer :: idiag_Lampt=0      ! DIAG_DOC: $\Lam(x1,y1,z1)>$
+  integer :: idiag_Lamp2=0      ! DIAG_DOC: $\Lam(x2,y2,z2)>$
+  integer :: idiag_Lamrms=0     ! DIAG_DOC: $\left<\Lam^2\right>^{1/2}$
+  integer :: idiag_Lambzm=0     ! DIAG_DOC: $\left<\Lam B_z\right>$
+  integer :: idiag_Lambzmz=0    ! DIAG_DOC: $\left<\Lam B_z\right>_{xy}$
+  integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\Lam\Bv\right>$
   integer :: idiag_apbrms=0     ! DIAG_DOC: $\left<(\Av'\Bv)^2\right>^{1/2}$
 !
   contains
@@ -69,7 +69,7 @@ module Special
 !
       use FArrayManager
 !
-      call farray_register_pde('phi',iphi)
+      call farray_register_pde('Lam',iLam)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -122,10 +122,10 @@ module Special
 !
       select case (init)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('zero'); f(:,:,:,iphi)=0.
-        case ('sinwave-x'); call sinwave(ampl,f,iphi,kx=kx)
-        case ('sinwave-y'); call sinwave(ampl,f,iphi,ky=ky)
-        case ('sinwave-z'); call sinwave(ampl,f,iphi,kz=kz)
+        case ('zero'); f(:,:,:,iLam)=0.
+        case ('sinwave-x'); call sinwave(ampl,f,iLam,kx=kx)
+        case ('sinwave-y'); call sinwave(ampl,f,iLam,ky=ky)
+        case ('sinwave-z'); call sinwave(ampl,f,iLam,kz=kz)
 
         case default
           !
@@ -151,7 +151,7 @@ module Special
       lpenc_requested(i_aa)=.true.
       lpenc_requested(i_uu)=.true.
       if (idiag_apbrms/=0) lpenc_diagnos(i_ab)=.true.
-      if (idiag_gphibm/=0) lpenc_diagnos(i_bb)=.true.
+      if (idiag_gLambm/=0) lpenc_diagnos(i_bb)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -207,8 +207,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: phi,del2phi,ua,ugphi,gphib
+      real, dimension (nx,3) :: gLam
+      real, dimension (nx) :: Lam,del2Lam,ua,ugLam,gLamb
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -221,8 +221,8 @@ module Special
 !  solve gauge condition
 !
       if (lhydro.or.lhydro_kinematic) then
-        call grad(f,iphi,gphi)
-        call dot(p%uu,gphi,ugphi)
+        call grad(f,iLam,gLam)
+        call dot(p%uu,gLam,ugLam)
 !
 !  U.A term
 !
@@ -241,10 +241,10 @@ module Special
 !  diffusion?
 !
         if (ladvecto_resistive) then
-          call del2(f,iphi,del2phi)
-          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi+ua+eta*del2phi
+          call del2(f,iLam,del2Lam)
+          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*del2Lam
         else
-          df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)-ugphi+ua
+          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua
         endif
       else
         call fatal_error('dspecial_dt','no advective if no hydro')
@@ -253,32 +253,32 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
-        phi=f(l1:l2,m,n,iphi)
-        if (idiag_phim/=0) call sum_mn_name(phi,idiag_phim)
-        if (idiag_phirms/=0) call sum_mn_name(phi**2,idiag_phirms,lsqrt=.true.)
-        if (idiag_phibzm/=0) call sum_mn_name(phi*p%bb(:,3),idiag_phibzm)
-        if (idiag_gphibm/=0.or.idiag_apbrms/=0) then
-          call dot(gphi,p%bb,gphib)
-          if (idiag_gphibm/=0) call sum_mn_name(gphib,idiag_gphibm)
-          if (idiag_apbrms/=0) call sum_mn_name((p%ab-gphib)**2,idiag_apbrms,lsqrt=.true.)
+        Lam=f(l1:l2,m,n,iLam)
+        if (idiag_Lamm/=0) call sum_mn_name(Lam,idiag_Lamm)
+        if (idiag_Lamrms/=0) call sum_mn_name(Lam**2,idiag_Lamrms,lsqrt=.true.)
+        if (idiag_Lambzm/=0) call sum_mn_name(Lam*p%bb(:,3),idiag_Lambzm)
+        if (idiag_gLambm/=0.or.idiag_apbrms/=0) then
+          call dot(gLam,p%bb,gLamb)
+          if (idiag_gLambm/=0) call sum_mn_name(gLamb,idiag_gLambm)
+          if (idiag_apbrms/=0) call sum_mn_name((p%ab-gLamb)**2,idiag_apbrms,lsqrt=.true.)
         endif
 !
 !  check for point 1
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_phipt/=0) call save_name(phi(lpoint-nghost),idiag_phipt)
+          if (idiag_Lampt/=0) call save_name(Lam(lpoint-nghost),idiag_Lampt)
         endif
 !
 !  check for point 2
 !
         if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_phip2/=0) call save_name(phi(lpoint2-nghost),idiag_phip2)
+          if (idiag_Lamp2/=0) call save_name(Lam(lpoint2-nghost),idiag_Lamp2)
         endif
 !
       endif
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
-        if (idiag_phibzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
+        if (idiag_Lambzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_Lambzmz)
       endif
 !
     endsubroutine dspecial_dt
@@ -353,39 +353,39 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_phim=0; idiag_phipt=0; idiag_phip2=0; idiag_phirms=0
-        idiag_gphibm=0; idiag_apbrms=0
-        idiag_phibzm=0; idiag_phibzmz=0
+        idiag_Lamm=0; idiag_Lampt=0; idiag_Lamp2=0; idiag_Lamrms=0
+        idiag_gLambm=0; idiag_apbrms=0
+        idiag_Lambzm=0; idiag_Lambzmz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'phim',idiag_phim)
-        call parse_name(iname,cname(iname),cform(iname),'phirms',idiag_phirms)
-        call parse_name(iname,cname(iname),cform(iname),'phibzm',idiag_phibzm)
-        call parse_name(iname,cname(iname),cform(iname),'phipt',idiag_phipt)
-        call parse_name(iname,cname(iname),cform(iname),'phip2',idiag_phip2)
-        call parse_name(iname,cname(iname),cform(iname),'gphibm',idiag_gphibm)
+        call parse_name(iname,cname(iname),cform(iname),'Lamm',idiag_Lamm)
+        call parse_name(iname,cname(iname),cform(iname),'Lamrms',idiag_Lamrms)
+        call parse_name(iname,cname(iname),cform(iname),'Lambzm',idiag_Lambzm)
+        call parse_name(iname,cname(iname),cform(iname),'Lampt',idiag_Lampt)
+        call parse_name(iname,cname(iname),cform(iname),'Lamp2',idiag_Lamp2)
+        call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
         call parse_name(iname,cname(iname),cform(iname),'apbrms',idiag_apbrms)
       enddo
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'phibzmz',idiag_phibzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Lambzmz',idiag_Lambzmz)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_phim=',idiag_phim
-        write(3,*) 'i_phirms=',idiag_phirms
-        write(3,*) 'i_phibzm=',idiag_phibzm
-        write(3,*) 'i_phibzmz=',idiag_phibzmz
-        write(3,*) 'i_phipt=',idiag_phipt
-        write(3,*) 'i_phip2=',idiag_phip2
-        write(3,*) 'i_gphibm=',idiag_gphibm
+        write(3,*) 'i_Lamm=',idiag_Lamm
+        write(3,*) 'i_Lamrms=',idiag_Lamrms
+        write(3,*) 'i_Lambzm=',idiag_Lambzm
+        write(3,*) 'i_Lambzmz=',idiag_Lambzmz
+        write(3,*) 'i_Lampt=',idiag_Lampt
+        write(3,*) 'i_Lamp2=',idiag_Lamp2
+        write(3,*) 'i_gLambm=',idiag_gLambm
         write(3,*) 'i_apbrms=',idiag_apbrms
-        write(3,*) 'iphi=',iphi
+        write(3,*) 'iLam=',iLam
       endif
 !
     endsubroutine rprint_special
@@ -405,13 +405,13 @@ module Special
 !
       select case (trim(slices%name))
 !
-!  phi
+!  Lam
 !
-        case ('phi')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iphi)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iphi)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iphi)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iphi)
+        case ('Lam')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iLam)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iLam)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iLam)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iLam)
           slices%ready = .true.
 !
       endselect
