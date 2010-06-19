@@ -246,6 +246,15 @@ module Special
         else
           df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua
         endif
+!DM : I am actually getting the following:
+! I am going to check in them in the document. 
+!        if (ladvecto_resistive) then
+!          call del2(f,iLam,del2Lam)
+!          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*del2Lam
+!        else
+! (for resistive gauge -> advective gauge. 
+!          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam-ua+eta*diva
+!        endif
       else
         call fatal_error('dspecial_dt','no advective if no hydro')
       endif
