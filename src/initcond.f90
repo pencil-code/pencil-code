@@ -3389,13 +3389,16 @@ module Initcond
 !
       if (rnoise_int == impossible) rnoise_int=r_int
       if (rnoise_ext == impossible) rnoise_int=r_ext
-      dr = rnoise_ext-max(0.,rnoise_int)
+!     dr = rnoise_ext-max(0.,rnoise_int)
+      dr = r_ext-max(0.,r_int)
 !
       do n=1,mz; do m=1,my
         call get_radial_distance(rr_cyl,rr_sph)
         if (lcylindrical_coords.or.lcylinder_in_a_box) rr=rr_cyl
         if (lspherical_coords  .or.lsphere_in_a_box)   rr=rr_sph
-        prof = 1 - cubic_step(rr,rnoise_ext,0.25*dr,SHIFT=-1.)
+!       prof = 1 - cubic_step(rr,rnoise_ext,0.25*dr,SHIFT=-1.)
+        rr=sqrt(x(:)**2+y(m)**2+z(n)**2)
+        prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
         if (r_int>0.) then
           prof = prof*cubic_step(rr,rnoise_int,0.25*dr,SHIFT=1.)
         endif
