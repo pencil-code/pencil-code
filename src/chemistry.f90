@@ -155,7 +155,8 @@ module Chemistry
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
-      visc_const,cp_const,reinitialize_chemistry,lfilter_strict
+      visc_const,cp_const,reinitialize_chemistry,lfilter_strict, &
+      init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -4385,7 +4386,8 @@ module Chemistry
         call fatal_error("air_field", "I can only set existing fields")
       endif
 !
-      if (.not. lflame_front) then
+      if (.not. reinitialize_chemistry) then
+      if (.not. lflame_front)  then
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
         else
@@ -4399,6 +4401,7 @@ module Chemistry
             air_mass/TT)/unit_mass*unit_length**3)
         endif
         f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+      endif
       endif
 !
       if (linit_velocity) then
