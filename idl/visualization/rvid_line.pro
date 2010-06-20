@@ -5,7 +5,8 @@ pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   squared=squared, exsquared=exsquared, against_time=against_time,func=func, $
   findmax=findmax,left_max=max_left,right_max=max_right, csection=csection, $
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
-  log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra
+  log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
+  xstyle=xstyle,ystyle=ystyle
 ;
 ; $Id$
 ;
@@ -41,6 +42,7 @@ default,extension,'xy'
 default, xgrid, 0
 default, ygrid, 0
 default, zgrid, 0
+default, psym, -2
 ;
 if (proc ge 0) then begin
   procstr=strtrim(string(proc))
@@ -216,9 +218,11 @@ while (not eof(1)) do begin
       if (istride eq stride) then begin
         if (not keyword_set(noplot)) then begin
           if (keyword_set(exponential)) then begin
-            plot, xaxisscale, exp(axz), psym=-2, yrange=[amin,amax]
+            plot, xaxisscale, exp(axz), psym=psym, yrange=[amin,amax], $
+                  xstyle=xstyle,ystyle=ystyle
           endif else begin
-            plot, xaxisscale, axz, psym=-2, yrange=[amin,amax], _extra=_extra
+            plot, xaxisscale, axz, psym=psym, yrange=[amin,amax], _extra=_extra, $
+                  xstyle=xstyle,ystyle=ystyle  
           endelse
         endif
         if (keyword_set(png)) then begin
@@ -281,9 +285,9 @@ map=reform(map,nxz,nt)
 
 if (not keyword_set(nocontour)) then begin
   if (keyword_set(against_time)) then begin
-    contour, transpose(exp(map)), tt, xaxisscale, /fill, nlev=60
+    contour, transpose(exp(map)), tt, xaxisscale, /fill, nlev=60,ys=1,xs=1
   endif else begin
-    contour, transpose(exp(map)), /fill, nlev=60
+    contour, transpose(exp(map)), /fill, nlev=60,ys=1,xs=1
   endelse
 endif
 ;
