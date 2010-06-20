@@ -4453,11 +4453,19 @@ module Chemistry
       endif
 !
       if (linit_density) then
-        do i=1,mx
-          f(i,:,:,ilnrho)= &
-          (x(i)-xyz0(1))/Lxyz(1)*(alog(init_rho2)-alog(init_rho)) &
-          +alog(init_rho)
-        enddo
+!        do i=1,mx
+!          f(i,:,:,ilnrho)= &
+!          (x(i)-xyz0(1))/Lxyz(1)*(alog(init_rho2)-alog(init_rho)) &
+!          +alog(init_rho)
+!        enddo
+        if (ldensity_nolog) then
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+        else
+          f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3)
+        endif
+!
       endif
 !
       if (lroot) print*, 'Air temperature, K', TT

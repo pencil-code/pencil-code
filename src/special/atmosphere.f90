@@ -660,7 +660,7 @@ module Special
       real, dimension (my,mz) :: u_profile
 !
       do jjj=1,my
-         u_profile(jjj,:)=cos(3.*PI*y(jjj)/Lxyz(2))
+         u_profile(jjj,:)=cos(2*PI*y(jjj)/Lxyz(2))
       enddo
 !
       vr=bc%ivar
