@@ -1,8 +1,11 @@
 #!/usr/bin/python
-from glob import glob, iglob
+try:
+    from glob import glob, iglob
+except ImportError:
+    from glob import glob
+    iglob = glob
 import os
 import sys
-import numpy as np
 
 if len(sys.argv) == 2:
     dir = sys.argv[1]
