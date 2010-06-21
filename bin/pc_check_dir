@@ -1,0 +1,28 @@
+#!/usr/bin/python
+from glob import glob, iglob
+import os
+import sys
+import numpy as np
+
+if len(sys.argv) == 2:
+    dir = sys.argv[1]
+else:
+    dir = './data'
+
+dir = os.path.join(dir,'proc[0-9]*')
+
+nvar = {}
+for p in iglob(dir):
+    k = os.path.split(p)[-1]
+    nvar[k] = len(glob(os.path.join(p,'VAR*')))
+
+max_nvar = max(nvar.values())
+warn_flag = 0
+for k,v in nvar.items():
+    if v != max_nvar:
+        warn_flag = 1
+        print "WARNING: processor %s has only %i VAR files." % (k, v)
+
+
+if warn_flag == 0:
+    print "All %s processors have %i VAR files." % (len(nvar.keys()), max_nvar)
