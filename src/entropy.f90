@@ -62,7 +62,8 @@ module Entropy
   real :: heat_uniform=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
-  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
+  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible, T0hs=impossible
+  real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=8.0e3
   real :: xbot=0.0, xtop=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -109,7 +110,7 @@ module Entropy
       center2_y, center2_z, T0, ampl_TT, kx_ss, ky_ss, kz_ss, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
       luminosity, wheat, hcond0, tau_cool, TTref_cool, lhcond_global, &
-      cool_fac, cs0hs, H0hs, rho0hs, tau_cool2
+      cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, rho0ts, T0hs
 !
 !  Run parameters.
 !
@@ -1901,7 +1902,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
-      real :: rho0ts, T0hs, muhs
+      real :: muhs
       real :: g_A, g_C, erfB, T_k, erfz
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B ,g_D
@@ -1914,8 +1915,10 @@ module Entropy
           g_C = g_C_cgs/unit_velocity*unit_time
           g_D = g_D_cgs/unit_length
           g_B = g_B_cgs/unit_length
-          T0hs=7645./unit_temperature
-          rho0ts=1.83e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
+      if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+!          T0hs=7645./unit_temperature
+      if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+!          rho0ts=1.83e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
           T_k=sqrt(2.)
 !
 !chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
@@ -2883,6 +2886,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
+      real :: thmin
 !
       intent(out) :: df
 !
@@ -2905,8 +2909,9 @@ module Entropy
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
 !
-!
-      thchi=chi_th*(exp(p%lnTT))**0.5
+!     
+      thmin=dxmax*0.5
+      thchi=max(chi_th*(exp(p%lnTT))**0.5,thmin)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
