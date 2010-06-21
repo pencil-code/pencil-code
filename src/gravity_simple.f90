@@ -227,6 +227,15 @@ module Gravity
       case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal x-grav, gravx=',gravx
         gravx_xpencil = -gravx*sin(kx_gg*x)
+
+      case ('Baker74')
+        !abag added, need to make adaptable to any width/position
+        if (lroot) print*,'initialize_gravity: Baker_74=',gravx
+        gravx_xpencil =(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
+        gravx*sin(2*(x-pi/2.))
+        potx_xpencil=(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
+        gravx*(.5*cos(2*(x-pi/2.))-0.5)
+
 !
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
