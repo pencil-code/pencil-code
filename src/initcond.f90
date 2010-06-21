@@ -4333,29 +4333,38 @@ module Initcond
 !  Calculate transformed vector potential at "each height"
 !
         zref = z(i) - xyz0(3)
-        where (k2 /= 0 )
-          A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*zref )
-          A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*zref )
-        elsewhere
-          A_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*zref )
-          A_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*zref )
-        endwhere
 !
-        call fourier_transform_other(A_r,A_i,linv=.true.)
+        if (nygrid > 1) then
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*zref )
+            A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*zref )
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*zref )
+            A_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*zref )
+          endwhere
 !
-        f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-        where (k2 /= 0 )
-          A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*zref )
-          A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*zref )
-        elsewhere
-          A_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*zref )
-          A_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*zref )
-        endwhere
+          f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        else
+          f(l1:l2,m1:m2,i,iax)=0.
+        endif
 !
-        call fourier_transform_other(A_r,A_i,linv=.true.)
+        if (nxgrid > 1) then
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*zref )
+            A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*zref )
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*zref )
+            A_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*zref )
+          endwhere
 !
-        f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+!
+          f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        else
+          f(l1:l2,m1:m2,i,iay)=0.
+        endif
 !
         f(l1:l2,m1:m2,i,iaz)=0.
       enddo
@@ -4412,11 +4421,11 @@ module Initcond
       prof_lnT = prof_lnT - alog(real(unit_temperature))
       !
       ! get step width
-      ! should be smaler than grid width and 
+      ! should be smaler than grid width and
       ! data width
       !
       dz_step = min((prof_z(2)-prof_z(1)),minval(1./dz_1))
-      dz_step = dz_step/100.
+      dz_step = dz_step/10.
       !
       do j=n1,n2
          tmprho = lnrho0
