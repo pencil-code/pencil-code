@@ -206,7 +206,8 @@ module Interstellar
 !
 ! Limit placed of minimum density resulting from cavity creation
 !
-  real, parameter :: rho_min=1.e-6
+  real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=8.0e3
+  real :: rho0ts=impossible, T0hs=impossible
 !
 ! Cooling timestep limiter coefficient
 ! (This value is overly restrictive. cdt_tauc=0.5 is a better value.)
@@ -333,7 +334,7 @@ module Interstellar
       thermal_profile,velocity_profile, mass_profile, &
       center_SN_x, center_SN_y, center_SN_z, &
       t_next_SNI, t_next_SNII, &
-      SNR_damping, uu_sedov_max, &
+      SNR_damping, uu_sedov_max, rho0ts, T0hs, &
       cooling_select, heating_select, heating_rate
 !
 ! run parameters
@@ -689,7 +690,7 @@ module Interstellar
 ! to avoid unresolvable low temperatures
 !
          if (lroot) print*,'initialize_interstellar: SS-Slyzr cooling fct'
-         coolT_cgs = (/ 100.D0, &
+         coolT_cgs = (/ 0.01D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
@@ -710,16 +711,6 @@ module Interstellar
                         1.4105221231863D44, &
                         1.48514641828986D22, &
                         8.523033057875D20, &
-!         coolH_cgs = (/ 4.00537546179383D13, &
-!                        9.45565818846489D18, &
-!                        1.18503524478334D20, &
-!                        1.9994576479D08, &
-!                        7.9599842685049D29, &
-!                        5.37631313595443D42, &
-!                        9.00265452311569D26, &
-!                        3.43459718897122D44, &
-!                        3.61630606823822D22, &
-!                        2.07534393831173D21, &
                         tiny(0D0) /)
          coolB = (/ 2.12, &
                     1.0, &
@@ -1269,7 +1260,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(mz) :: rho,TT,lambda,fbeta,flamk, erfz
       real, dimension(mz), intent(out) :: zheat
-      real :: rho0ts, T0hs, muhs
+      real :: muhs
       real :: g_A, g_C, T_k, erfB
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       real, dimension(10) :: beta
@@ -1286,8 +1277,8 @@ module Interstellar
           g_D = g_D_cgs/unit_length
           g_B = g_B_cgs/unit_length
           unit_Lambda = unit_velocity**2 / unit_density / unit_time
-          T0hs=7645./unit_temperature
-          rho0ts=1.836e-24/unit_density
+      if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+      if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
           T_k=sqrt(2.)!
 !
 !chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
@@ -1301,11 +1292,45 @@ module Interstellar
 !  requires SS-Slyz' cooling_select for similar method
 !  as O. Gressel 2008 (PhD)
 !
-      beta = (/2.12,1.0, 0.56,3.21,-0.2,-3.,-0.22,-3.,.33,.5/)
-      lamk = ((/3.420D16, 8.73275974868D18,1.094d20,10178638302.185D0,&
-                1.142D27,2.208D42,3.69d26,1.41D44,&
-          1.485d22,8.52d20/)) / unit_Lambda * unit_temperature**beta
-      lamT = ((/10.D0,141.D0,313.D0,6102.D0,1.D5,2.88D5,4.73D5,2.11D6,3.980D6,2.D7/))/unit_temperature
+      if (cooling_select == 'SS-Slyz' .or. cooling_select == 'SS-Slyzr') then
+        beta = (/2.12,1.0, 0.56,3.21,-0.2,-3.,-0.22,-3.,.33,.5/)
+        lamk = ((/3.420D16, 8.73275974868D18,1.094d20,10178638302.185D0,&
+                  1.142D27,2.208D42,3.69d26,1.41D44,&
+            1.485d22,8.52d20/)) / unit_Lambda * unit_temperature**beta
+        lamT = ((/10.D0,141.D0,313.D0,6102.D0,1.D5,2.88D5,4.73D5,2.11D6,3.980D6,2.D7/))/unit_temperature
+      else if (cooling_select == 'RBr') then
+        beta = (/ 6.0, &
+                   2.0, &
+                   1.5, &
+                   2.867, & 
+                  -0.65, &
+                   0.5, &
+                   tiny(0.), &
+                   tiny(0.), &
+                   tiny(0.), &
+                   tiny(0.) /) 
+        lamT = (/ 10.D0, &
+                       300.D0, &
+                       2000.D0, &
+                       8000.D0, &
+                       1.D5, &
+                       1.D6, &
+                       1.D9, &
+                       tiny(0D0), &
+                       tiny(0D0), &
+                       tiny(0D0) /)/unit_temperature
+        lamk = (/ 2.76296D-42, &
+                       2.2380D-32, &
+                       1.0012D-30, &
+                       4.6240D-36, &
+                       1.7800D-18, &
+                       2.240887D-25, &
+                       tiny(0.D0), &
+                       tiny(0D0), &
+                       tiny(0D0), &
+                       tiny(0.D0) &
+                     /) / ( m_p_cgs )**2/ unit_Lambda * unit_temperature**beta
+      end if
 !
       lamstep = lamk*lamT**beta
 !
@@ -1430,8 +1455,9 @@ module Interstellar
 ! Prevent unresolved heating/cooling in shocks.
 !
       if (lheatcool_shock_cutoff) then
-        damp_profile = 0.5 &
-            * (1.-tanh((p%shock-heatcool_shock_cutoff) * heatcool_shock_cutoff_rate1))
+        damp_profile = exp(-(2.0*p%shock * heatcool_shock_cutoff_rate1)**2.0)
+!        damp_profile = 0.5 &
+!            * (1.-tanh((p%shock-heatcool_shock_cutoff) * heatcool_shock_cutoff_rate1))
 !       30-dec-09/fred: changed sign to turn off cool for non-zero p%shock
 !                       other way round cooling in shock and off everywhere else
 !        damp_profile = 0.5 &
@@ -1544,8 +1570,10 @@ cool_loop: do i=1,ncool
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
 !
-      real, parameter :: g_B_cgs=6.172e20
-!      real :: g_B
+      real, parameter :: g_B_cgs=6.172e20, minTT_cgs = 0.75e2
+      real :: lnminTT
+!
+      lnminTT=log(minTT_cgs)-log(unit_temperature)
 !
       if (heating_select == 'cst') Then
          heat = heating_rate_code
@@ -1568,6 +1596,8 @@ cool_loop: do i=1,ncool
 !  if using Gressel-hs in initial entropy this must also be specified for stability
       else if (heating_select == 'Gressel-hs') Then
         heat = heat_gressel(n)*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
+        where (lnTT.lt.lnminTT) &
+          heat = heat + GammaUV**1.5*((exp(lnminTT)-exp(lnTT))/exp(lnminTT))**0.5
       else if (heating_select == 'off') Then
          heat = 0.
       endif
@@ -2398,7 +2428,11 @@ find_SN: do n=n1,n2
       !SNR%site%lnrho=alog(sum(exp(f(SNR%l:SNR%l+1,SNR%m:SNR%m+1,SNR%n:SNR%n+1,ilnrho)))/4.)
       !SNR%site%ss=sum(f(SNR%l:SNR%l+1,SNR%m:SNR%m+1,SNR%n:SNR%n+1,iss))/4.
       SNR%site%lnrho=f(SNR%l,SNR%m,SNR%n,ilnrho)
-      SNR%radius=width_SN/(exp(SNR%site%lnrho))**0.2
+!
+!  10-Jun-10/fred: adjust radius according to density of explosion site 
+!                  to concentrate energy in dense locations 
+!
+      SNR%radius=max(width_SN/(exp(SNR%site%lnrho))**0.2,3.5*dxmax)
       m=SNR%m
       n=SNR%n
       call eoscalc(f,nx,lnTT=lnTT)
@@ -2608,9 +2642,9 @@ find_SN: do n=n1,n2
       if (lSN_velocity) then
         if (velocity_profile=="r15gaussian3") then
           cvelocity_SN=sqrt(6.*kampl_SN/pi/SNR%rhom/width_velocity**6)&
-                       *(1.-0.91*SNR%t_sedov/t_merge) 
+                       *(1.-0.91*SNR%t_sedov/t_merge)
         elseif (velocity_profile=="r3gaussian3") then
-          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)  
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)
         elseif (velocity_profile=="r6gaussian3") then
           cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)
         elseif (velocity_profile=="r8thgaussian3") then
@@ -2770,7 +2804,7 @@ find_SN: do n=n1,n2
               endif
               return
             endif
-            if (maxlnTT>alog(TT_SN_max))then!.or.sqrt(TT_SN_new)>TT_SN_max) then
+            if (maxlnTT>2*alog(TT_SN_max).or.sqrt(TT_SN_new)>TT_SN_max) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_HOT
               endif
