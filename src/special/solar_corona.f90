@@ -1255,7 +1255,7 @@ module Special
       z_Mm = z(n)*unit_length*1e-6
 !
 ! Compute volumetric heating rate as found in Bingert's thesis.
-! 
+!
       heatinput=heatamp*1e3*exp(-z_Mm/0.2)+1e-4*exp(-z_Mm/10.)
 !
 ! Convert to pencil units.
@@ -1379,7 +1379,7 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
-      real :: cp1
+      real :: cp1,dA
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
 !
@@ -1392,8 +1392,15 @@ module Special
 !
 ! set sum(abs(Bz)) to  a given flux
       if (Bz_flux/=0) then
-        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
-            Bz_flux/(Bzflux*dx*dy*unit_magnetic*unit_length**2)
+        if (nxgrid/=1.and.nygrid/=1) then
+          dA=dx*dy
+        elseif (nygrid==1) then
+          dA=dx
+        elseif (nxgrid==1) then
+          dA=dy
+        endif
+       f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
+            Bz_flux/(Bzflux*dA*unit_magnetic*unit_length**2)
       endif
 !
       call get_cp1(cp1)
@@ -2151,8 +2158,16 @@ module Special
       integer :: il,ir,jl,jr
       integer :: ii,jj
 !
-      itmp  = nint(granr*(1-ig)/dx)
-      jtmp  = nint(granr*(1-ig)/dy)
+      if (nxgrid==1) then
+        itmp = 0
+      else
+        itmp = nint(granr*(1-ig)/dx)
+      endif
+      if (nygrid==1) then
+        jtmp = 0
+      else
+        jtmp = nint(granr*(1-ig)/dy)
+      endif
 !
       do i=1,nxgrid
         do j=1,nygrid
