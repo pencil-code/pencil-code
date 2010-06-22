@@ -288,6 +288,7 @@ module Interstellar
 !
   logical :: lforce_locate_SNI=.false.
   logical :: uniform_zdist_SNI = .false.
+  logical :: lSN_scale_rad=.false.
 !
 ! Requested SNe location (used for test SN)
 !
@@ -330,7 +331,7 @@ module Interstellar
       uniform_zdist_SNI, mass_movement, &
       width_SN, inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, lSN_mass, &
-      h_SNI, h_SNII, lSNII, lSNI, &
+      h_SNI, h_SNII, lSNII, lSNI, lSN_scale_rad, &
       thermal_profile,velocity_profile, mass_profile, &
       center_SN_x, center_SN_y, center_SN_z, &
       t_next_SNI, t_next_SNII, &
@@ -2432,6 +2433,7 @@ find_SN: do n=n1,n2
 !  10-Jun-10/fred: adjust radius according to density of explosion site 
 !                  to concentrate energy in dense locations 
 !
+      if (lSN_scale_rad) &
       SNR%radius=max(width_SN/(exp(SNR%site%lnrho))**0.2,3.5*dxmax)
       m=SNR%m
       n=SNR%n
