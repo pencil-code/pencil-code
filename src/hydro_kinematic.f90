@@ -37,7 +37,7 @@ module Hydro
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
-  integer :: KS_modes = 3
+  integer :: KS_modes = 25
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
   real :: ampl_fcont_uu=1.
   logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
@@ -124,12 +124,9 @@ module Hydro
 !
       kinflow=kinematic_flow
       if (kinflow=='KS') then
-!        call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.)
-!
-!  Use constant values for testing KS model code with 3
-!  specific modes.
-!
-        call random_isotropic_KS_setup_test
+        call periodic_KS_setup(-5./3.) !Kolmogorov spec. periodic KS
+        !call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.) !old form
+        !call random_isotropic_KS_setup_test !Test KS model code with 3 specific modes.
         elseif (kinflow=='ck') then
           call init_ck
       endif
@@ -1042,145 +1039,6 @@ ky_uukin=2.*pi
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
-    subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
-!
-!   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)
-!
-!   more to do; unsatisfactory so far - at least for a steep power-law
-!   energy spectrum
-!
-!   27-may-05/tony: modified from snod's KS hydro initial
-!   03-feb-06/weezy: Tony's code doesn't appear to have the
-!                    correct periodicity.
-!                    renamed from random_isotropic_KS_setup
-!
-    use Sub, only: cross
-    use General, only: random_number_wrapper
-!
-    integer :: modeN
-!
-    real, dimension (3) :: k_unit
-    real, dimension (3) :: e1,e2
-    real,dimension (6) :: r
-    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
-    real :: initpower,kmin,kmax
-    real, dimension(KS_modes) :: k,dk,energy,ps
-    real :: theta,phi,alpha,beta
-    real :: a,mkunit
-    real :: newthet,newphi  !get rid of this line if there's no change
-!
-    allocate(KS_k(3,KS_modes))
-    allocate(KS_A(3,KS_modes))
-    allocate(KS_B(3,KS_modes))
-    allocate(KS_omega(KS_modes))
-!
-!    minlen=Lxyz(1)/(nx-1)
-!    kmax=2.*pi/minlen
-!    KS_modes=int(0.5*(nx-1))
-!    hh=Lxyz(1)/(nx-1)
-!    pta=(nx)**(1.0/(nx-1))
-!    do modeN=1,KS_modes
-!       ggt=(kkmax-kkmin)/(KS_modes-1)
-!       ggt=(kkmax/kkmin)**(1./(KS_modes-1))
-!        k(modeN)=kmin+(ggt*(modeN-1))
-!        k(modeN)=(modeN+3)*2*pi/Lxyz(1)
-!       k(modeN)=kkmin*(ggt**(modeN-1)
-!    enddo
-!
-!    do modeN=1,KS_modes
-!       if (modeN==1)delk(modeN)=(k(modeN+1)-K(modeN))
-!       if (modeN==KS_modes)delk(modeN)=(k(modeN)-k(modeN-1))
-!       if (modeN>1.and.modeN<KS_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
-!    enddo
-!          mk=(k2*k2)*((1.0 + (k2/(bk_min*bk_min)))**(0.5*initpower-2.0))
-!
-!  set kmin
-!
-       kmin=2.*pi      !/(1.0*Lxyz(1))
-!       kmin=kmin*2.*pi
-       kmax=128.*pi    !nx*pi
-       a=(kmax/kmin)**(1./(KS_modes-1.))
-!
-!
-    do modeN=1,KS_modes
-!
-!  pick wavenumber
-!
-!       k=modeN*kmin
-      k=kmin*(a**(modeN-1.))
-!
-!  calculate dk
-!
-!       print *,kmin,kmax,k
-!       dk=1.0*kmin
-!
-      if (modeN==1)&
-              dk=kmin*(a-1.)/2.
-      if (modeN>1.and.modeN<KS_modes) &
-              dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
-      if (modeN==KS_modes) &
-              dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
-!
-       call random_number_wrapper(r)
-       theta=r(1)*pi
-       phi=r(2)*2.0*pi
-       alpha=r(3)*pi
-       beta=r(4)*2.0*pi
-       newthet=r(5)*pi
-       newphi=r(6)*2.0*pi
-!
-       k_unit(1)=sin(theta)*cos(phi)
-       k_unit(2)=sin(theta)*sin(phi)
-       k_unit(3)=cos(theta)
-!
-       j(1)=sin(alpha)*cos(beta)
-       j(2)=sin(alpha)*sin(beta)
-       j(3)=cos(alpha)
-!
-       l(1)=sin(newthet)*cos(newphi)
-       l(2)=sin(newthet)*sin(newphi)
-       l(3)=cos(newthet)
-!
-       KS_k(:,modeN)=k*k_unit(:)
-!
-       call cross(KS_k(:,modeN),j,e1)
-       call cross(KS_k(:,modeN),l,e2)
-!
-!  Make e1 & e2 unit vectors so that we can later make them
-!  the correct lengths
-!
-       mkunit=sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
-       e1=e1/mkunit
-!
-       mkunit=sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
-       e2=e2/mkunit
-!
-!        energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
-!                            *exp(-0.5*(k/kmax)**2.)
-!  The energy above is how this code has it. i
-!  I've changed the divisor of k.
-       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
-                       *exp(-0.5*(k/kmax)**2.)
-       energy=1.*energy
-       ps=sqrt(2.*energy*dk)   !/3.0)
-!
-       KS_A(:,modeN) = ps*e1
-       KS_B(:,modeN) = ps*e2
-!
-    enddo
-!
-!   form RA = RA x k_unit and RB = RB x k_unit
-!
-    do modeN=1,KS_modes
-      call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
-      call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
-    enddo
-!
-    call keep_compiler_quiet(initpower)
-!
-    endsubroutine random_isotropic_KS_setup_tony
-!***********************************************************************
     subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !
 !   produces random, isotropic field from energy spectrum following the
@@ -1430,101 +1288,190 @@ ky_uukin=2.*pi
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
-   ! subroutine random_isotropic_KS_setup_abag
+  subroutine periodic_KS_setup(initpower)
 !
 !  ! produces random, isotropic field from energy spectrum following the
 !  ! KS method, however this setup produces periodic velocity field
-!  ! (assuming box (-pi,pi))
+!  ! (assuming box at least (-pi,pi))
 !
-!  ! 28-mar-08/abag coded
+!  ! jun-2010/abag coded
 !
-   ! use Sub
-   ! use General
-   ! implicit none
-   ! real,allocatable,dimension(:,:) :: unit_k,k,A,B,orderK
-   ! real,allocatable,dimension(:) :: kk,delk,energy,omega,klengths
-   ! real,dimension(3) :: angle,dir_in,u
-   ! real :: k_option(3,10000),mkunit(10000)
-   ! real :: arg
-   ! real :: turn1,turnN
-   ! integer ::i,s1,num,direction(3)
-   ! logical :: ne
-!
-   ! allocate(KS_k(3,KS_modes))
-   ! allocate(KS_A(3,KS_modes))
-   ! allocate(KS_B(3,KS_modes))
-   ! allocate(unit_k(3,KS_modes))
-   ! allocate(k(3,KS_modes))
-   ! allocate(A(3,KS_modes))
-   ! allocate(B(3,KS_modes))
-   ! allocate(orderk(3,KS_modes))
-   ! allocate(KS_omega(KS_modes))
-   ! allocate(kk(KS_modes))
-   ! allocate(delk(KS_modes))
-   ! allocate(energy(KS_modes))
-   ! allocate(omega(KS_modes))
-   ! allocate(klengths(KS_modes))
-   ! num=1
-   ! do i=1,10000
-   !  call random_number(angle)
-   !  if ((angle(1)-0.0 < epsilon(0.0)) .or. &
-   !     (angle(2)-0.0 < epsilon(0.0)) .or. &
-   !     (angle(3)-0.0 < epsilon(0.0))) then
-   !     call random_number(angle)
-   !  endif
-   !  angle=floor(9.*angle)
-   !  call random_number(dir_in)
-   !  direction=nint(dir_in)
-   !  direction=2*direction -1  !positive or negative directions
-   !
-   !  k_option(1,i)=direction(1)*angle(1)!a possible orientation
-   !  k_option(2,i)=direction(2)*angle(2)   !provided we haven't
-   !  k_option(3,i)=direction(3)*angle(3)  !already got this length
-!
-   !  !find the length of the current k_option vector
-   !  mkunit(i)=dsqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
-!
-   !  if (i==1.and.mkunit(i)>0.)then
-   !    k(:,num)=k_option(:,i)
-   !    klengths(num)=mkunit(i)
-   !  endif
-!
-   !  !now we check that the current length is unique (hasn't come before)
-   !  if (i>1.and.num<KS_modes)then
-   !    do s1=i-1,1,-1
-   !      if (mkunit(i)>0.0D0.and.mkunit(i) /= mkunit(s1))then
-   !        ne=.true.
-   !      else
-   !        ne=.false.
-   !        exit
-   !      endif
-   !      if (s1==1.and.ne)then !i.e. if length of current k_option is new......
-   !        num=num+1
-   !        k(:,num)=k_option(:,i) !load current k_option into k that we keep
-   !        klengths(num)=mkunit(i)  ! store the length also
-   !      endif
-   !    enddo
-   !   endif
-   !   if (i==10000.and.num<KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
-   ! enddo
-   ! do i=1,KS_modes
-   !    do s1=1,KS_modes
-   !       if (kk(i)==klengths(s1))then
-   !          orderK(:,i)=k(:,s1)
-   !       endif
-   !    enddo
-   ! enddo
-   ! k=orderK
-   ! do i=1,KS_modes
-   !   unit_k(:,i)=k(:,i)/kk(i)
-   ! enddo
-   ! do i=1,N
-   ! !now we find delk as defined in Malik & Vassilicos' paper
-   !    if (i==1)delk(i)=(kk(i+1)-kk(i))/2.0D0
-   !    if (i==KS_modes)delk(i)=(kk(i)-kk(i-1))/2.0D0
-   !    if (i>1.and.i<KS_modes)delk(i)=(kk(i+1)-kk(i-1))/2.0D0
-   ! enddo
-   ! endsubroutine random_isotropic_KS_setup_abag
+    use Cdata, only: pi,Lxyz,nx,ny,nz
+    use Sub
+    use General
+    implicit none
+    real, intent(IN) :: initpower
+    real,allocatable,dimension(:,:) :: unit_k,k,A,B,orderK
+    real,allocatable,dimension(:) :: kk,delk,energy,omega,klengths
+    real,allocatable,dimension(:) :: ampA(:), ampB(:)
+    real,dimension(3) :: angle,dir_in,u
+    real :: k_option(3,10000),mkunit(10000)
+    real :: arg, unity
+    real :: bubble, max_box
+    real :: turn1,turnN
+    real :: j(3),l(3),newa(3),newa2(3)
+    integer ::i,s1,num,direction(3)
+    logical :: ne
+    !For the calculation of the velocity field we require
+    !KS_k, KS_A/KS_B, KS_omega
+    allocate(KS_k(3,KS_modes), KS_A(3,KS_modes),KS_B(3,KS_modes),KS_omega(KS_modes))
+    !the rest are dummy arrays used to get above
+    allocate(unit_k(3,KS_modes), k(3,KS_modes), A(3,KS_modes), B(3,KS_modes))
+    allocate(orderk(3,KS_modes), kk(KS_modes), delk(KS_modes), energy(KS_modes))
+    allocate(omega(KS_modes), klengths(KS_modes), ampA(KS_modes), ampB(KS_modes))
+    num=1 !dummyvariable
+    bubble=1. !space wavenumbers out
+    max_box=min(nxgrid,nygrid,nzgrid) !needs adapting for 2D runs
+    if (mod(max_box,4.)/=0) print*, 'warning will not be periodic'
+    print*, 'calculating KS wavenumbers'
+    do i=1,10000   
+     call random_number_wrapper(angle)  
+     if((angle(1)-0.0 < epsilon(0.0)) .or. &
+        (angle(2)-0.0 < epsilon(0.0)) .or. &
+        (angle(3)-0.0 < epsilon(0.0))) then
+        call random_number_wrapper(angle)
+     end if
+     !need 4 meshpoints to resolve a wave
+     angle=floor((max_box/4)*angle) 
+     call random_number_wrapper(dir_in)
+     direction=nint(dir_in)
+     direction=2*direction -1  !positive or negative directions
+   
+     k_option(1,i)=direction(1)*2.*pi*angle(1)!a possible orientation
+     k_option(2,i)=direction(2)*2.*pi*angle(2)   !provided we haven't
+     k_option(3,i)=direction(3)*2.*pi*angle(3)  !already got this length
+     if(i==1)then
+       k_option(1,i)=2.*pi
+       k_option(2,i)=0.
+       k_option(3,i)=0.
+     end if
+
+     !find the length of the current k_option vector
+     mkunit(i)=sqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
+
+     if(i==1.and.mkunit(i).gt.0.)then 
+       k(:,num)=k_option(:,i)
+       klengths(num)=mkunit(i)
+     end if
+
+     !now we check that the current length is unique (hasn't come before)
+     if(i>1.and.num<KS_modes)then
+       do s1=i-1,1,-1
+        if(mkunit(i).gt.0.0.and. &
+           mkunit(i)<=(mkunit(s1)-bubble).or.mkunit(i)>=(mkunit(s1)+bubble))then
+           ne=.true.
+         else
+           ne=.false.
+           exit
+         end if
+         if(s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+           num=num+1
+           k(:,num)=k_option(:,i) !load current k_option into k that we keep
+           klengths(num)=mkunit(i)  ! store the length also
+         end if
+       end do
+      end if
+      if(i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
+    end do
+
+    call KS_order(klengths,KS_modes,1,kk) !the 1 means ascending order
+
+    do i=1,KS_modes
+       do s1=1,KS_modes
+          if(kk(i)==klengths(s1))then
+             orderK(:,i)=k(:,s1)
+          end if
+       end do
+    end do
+
+    k=orderK
+    do i=1,KS_modes
+      unit_k(:,i)=k(:,i)/kk(i)
+    end do
+
+    do i=1,KS_modes
+    !now we find delk as defined in Malik & Vassilicos' paper
+       if(i==1) delk(i)=(kk(i+1)-kk(i))/2.0 
+       if(i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0 
+       if(i.gt.1.and.i.lt.KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0  
+    end do
+
+    !now find A&B that are perpendicular to each of our N wave-vectors
+    do i=1,KS_modes
+    !define "energy" - here we want k^{initpower} in the inertial range
+      energy(i)=1.0+(kk(i))**2
+      energy(i)=(kk(i)**2)*(energy(i)**((initpower-2.)/2.)) 
+      energy(i)=energy(i)*exp(-0.5*(kk(i)/kk(KS_modes))**2)
+      !set the lengths of A& B as defined in Malik & Vassilicos
+      !ampA(i)=sqrt(2.0*energy(i)*delk(i)/3.0)
+      ampA(i)=sqrt(2.0*energy(i)*delk(i))
+      ampB(i)=ampA(i)
+
+      call random_number(newa)
+      call random_number(newa2)
+      newa=2.0*newa -1.0
+      newa2=2.0*newa2 -1.0
+      j=newa
+      l=newa2
+      j=j/(sqrt(sum(newa**2)))
+      l=l/(sqrt(sum(newa2**2)))
+
+      !Now take the vector product of k with j (->A) and with l (->B)
+      A(1,i)=(j(2)*k(3,i))-(j(3)*k(2,i))
+      A(2,i)=(j(3)*k(1,i))-(j(1)*k(3,i))
+      A(3,i)=(j(1)*k(2,i))-(j(2)*k(1,i))
+      unity=sqrt((A(1,i)**2)+(A(2,i)**2)+(A(3,i)**2))
+      A(:,i)=A(:,i)/unity
+      B(1,i)=(l(2)*k(3,i))-(l(3)*k(2,i))
+      B(2,i)=(l(3)*k(1,i))-(l(1)*k(3,i))
+      B(3,i)=(l(1)*k(2,i))-(l(2)*k(1,i))
+      unity=sqrt((B(1,i)**2)+(B(2,i)**2)+(B(3,i)**2))
+      B(:,i)=B(:,i)/unity
+
+      !Now that we have our unit A's & B's we multiply them by the amplitudes
+      !we defined earlier, to create the spectrum
+      A(:,i)=ampA(i)*A(:,i)
+      B(:,i)=ampB(i)*B(:,i)
+    end do
+
+    do i=1,KS_modes
+       arg=energy(i)*(kk(i)**3)            !these are used to define omega - the
+       if(arg.gt.0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
+       if(arg==0.0)omega(i)=0.0
+    end do
+     
+    do i=1,KS_modes
+      call cross(A(:,i),unit_k(:,i),KS_A(:,i))
+      call cross(B(:,i),unit_k(:,i),KS_B(:,i))
+    enddo
+    KS_omega(:)=omega(:)
+    KS_k=k
+    !tidy up
+    deallocate(unit_k,orderk,kk,delk,energy,omega,klengths,ampA,ampB)
+    end subroutine periodic_KS_setup
+!***********************************************************************
+   subroutine KS_order(ad_, i_N, i_ord, B)
+   implicit none
+   !bubble sort algorithm
+   integer, intent(in) :: i_N, i_ord
+   real, intent(in)  :: ad_(i_N)
+   real, intent(out) :: B(i_N)
+   real :: c=1.
+   integer :: n
+   B = ad_
+   do while(c>0.0)
+      c = -1.
+      do n = 1, i_N-1
+         if(   (i_ord==1 .and. B(n)>B(n+1))  &
+          .or. (i_ord==2 .and. B(n)<B(n+1)) ) then
+            c        = B(n)
+            B(n)   = B(n+1)
+            B(n+1) = c
+            c = 1.
+         end if
+      end do
+   end do
+   end subroutine KS_order
 !***********************************************************************
     subroutine input_persistent_hydro(id,lun,done)
 !
