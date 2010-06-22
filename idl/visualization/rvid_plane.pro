@@ -252,7 +252,7 @@ slice_z2pos=0.0*one
 ;
 dev='x' ;(default)
 if (keyword_set(png)) then begin
-  Nwx=1.15*zoom*size_plane[1] & Nwy=zoom*size_plane[2]
+  Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
   print, 'z-buffer resolution in pixels '+ $
       '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)

@@ -1,7 +1,7 @@
 pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   nrepeat=nrepeat,wait=wait,stride=stride,datadir=datadir,OLDFILE=OLDFILE,$
   test=test,proc=proc,exponential=exponential,map=map,tt=tt,noplot=noplot,$
-  extension=extension, sqroot=sqroot, nocontour=nocontour, $
+  extension=extension, sqroot=sqroot, nocontour=nocontour,imgdir=imgdir, $
   squared=squared, exsquared=exsquared, against_time=against_time,func=func, $
   findmax=findmax,left_max=max_left,right_max=max_right, csection=csection, $
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
@@ -33,6 +33,7 @@ default,amax,.05
 default,amin,-amax
 default,field,'lnrho'
 default,datadir,'data'
+default,imgdir,'.'
 default,nrepeat,0
 default,stride,0
 default,tmin,0.
@@ -233,7 +234,7 @@ while (not eof(1)) do begin
 ;;
 ;          bad=where(image eq 0) & image(bad)=255
           tvlct, red, green, blue, /GET
-          imgname = 'img_'+istr2+'.png'
+          imgname = imgdir+'/img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
           itpng=itpng+1 ;(counter)
 ;;
