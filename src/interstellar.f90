@@ -361,7 +361,7 @@ module Interstellar
       lheating_UV, cdt_tauc,  &
       cooling_select, heating_select, heating_rate, &
       t_settle, cluster_factor,  &
-      lforce_locate_SNI, &
+      lforce_locate_SNI, lSN_scale_rad, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate
   contains
