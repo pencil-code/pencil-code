@@ -4463,10 +4463,10 @@ module Chemistry
 !        enddo
         if (ldensity_nolog) then
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3)
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
         endif
 !
       endif
