@@ -14,7 +14,7 @@
 ! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED der6u(3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
-!************************************************************************
+!***********************************************************************
 module Hydro
 !
   use Cparam
@@ -66,7 +66,7 @@ module Hydro
     ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
     lrandom_location,lwrite_random_location,location_fixed,dtforce,&
     radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
-    gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell 
+    gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
   integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
@@ -716,15 +716,15 @@ ky_uukin=2.*pi
 !              (1+stepdown(x(l1:l2),uphi_rmax,uphi_step_width))
         endif
 !
-! U_phi aped from 
-!  Ghizaru-Charbonneau-Smolarkiewicz (ApJL 715:L133-L137, 2010) 
+! U_phi aped from
+!  Ghizaru-Charbonneau-Smolarkiewicz (ApJL 715:L133-L137, 2010)
 !
       elseif (kinflow=='gcs') then
         if (headtt) print*,'gcs:gcs_rzero ',gcs_rzero
         fac=ampl_kinflow
         p%uu(:,1)=0.
         p%uu(:,2)=0.
-        gcs_omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- & 
+        gcs_omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- &
                  ((pi/2-y(m))/gcs_psizero**2))
         p%uu(:,3)= gcs_omega*x(l1:l2)*sinth(m)
 
@@ -1304,11 +1304,10 @@ ky_uukin=2.*pi
     real,allocatable,dimension(:,:) :: unit_k,k,A,B,orderK
     real,allocatable,dimension(:) :: kk,delk,energy,omega,klengths
     real,allocatable,dimension(:) :: ampA(:), ampB(:)
-    real,dimension(3) :: angle,dir_in,u
+    real,dimension(3) :: angle,dir_in
     real :: k_option(3,10000),mkunit(10000)
     real :: arg, unity
     real :: bubble, max_box
-    real :: turn1,turnN
     real :: j(3),l(3),newa(3),newa2(3)
     integer ::i,s1,num,direction(3)
     logical :: ne
@@ -1324,19 +1323,19 @@ ky_uukin=2.*pi
     max_box=min(nxgrid,nygrid,nzgrid) !needs adapting for 2D runs
     if (mod(max_box,4.)/=0) print*, 'warning will not be periodic'
     print*, 'calculating KS wavenumbers'
-    do i=1,10000   
-     call random_number_wrapper(angle)  
+    do i=1,10000
+     call random_number_wrapper(angle)
      if((angle(1)-0.0 < epsilon(0.0)) .or. &
         (angle(2)-0.0 < epsilon(0.0)) .or. &
         (angle(3)-0.0 < epsilon(0.0))) then
         call random_number_wrapper(angle)
      end if
      !need 4 meshpoints to resolve a wave
-     angle=floor((max_box/4)*angle) 
+     angle=floor((max_box/4)*angle)
      call random_number_wrapper(dir_in)
      direction=nint(dir_in)
      direction=2*direction -1  !positive or negative directions
-   
+
      k_option(1,i)=direction(1)*2.*pi*angle(1)!a possible orientation
      k_option(2,i)=direction(2)*2.*pi*angle(2)   !provided we haven't
      k_option(3,i)=direction(3)*2.*pi*angle(3)  !already got this length
@@ -1349,7 +1348,7 @@ ky_uukin=2.*pi
      !find the length of the current k_option vector
      mkunit(i)=sqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 
-     if(i==1.and.mkunit(i).gt.0.)then 
+     if(i==1.and.mkunit(i).gt.0.)then
        k(:,num)=k_option(:,i)
        klengths(num)=mkunit(i)
      end if
@@ -1364,7 +1363,7 @@ ky_uukin=2.*pi
            ne=.false.
            exit
          end if
-         if(s1==1.and.ne)then !i.e. if length of current k_option is new...... 
+         if(s1==1.and.ne)then !i.e. if length of current k_option is new......
            num=num+1
            k(:,num)=k_option(:,i) !load current k_option into k that we keep
            klengths(num)=mkunit(i)  ! store the length also
@@ -1391,16 +1390,16 @@ ky_uukin=2.*pi
 
     do i=1,KS_modes
     !now we find delk as defined in Malik & Vassilicos' paper
-       if(i==1) delk(i)=(kk(i+1)-kk(i))/2.0 
-       if(i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0 
-       if(i.gt.1.and.i.lt.KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0  
+       if(i==1) delk(i)=(kk(i+1)-kk(i))/2.0
+       if(i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0
+       if(i.gt.1.and.i.lt.KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
     end do
 
     !now find A&B that are perpendicular to each of our N wave-vectors
     do i=1,KS_modes
     !define "energy" - here we want k^{initpower} in the inertial range
       energy(i)=1.0+(kk(i))**2
-      energy(i)=(kk(i)**2)*(energy(i)**((initpower-2.)/2.)) 
+      energy(i)=(kk(i)**2)*(energy(i)**((initpower-2.)/2.))
       energy(i)=energy(i)*exp(-0.5*(kk(i)/kk(KS_modes))**2)
       !set the lengths of A& B as defined in Malik & Vassilicos
       !ampA(i)=sqrt(2.0*energy(i)*delk(i)/3.0)
@@ -1439,7 +1438,7 @@ ky_uukin=2.*pi
        if(arg.gt.0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
        if(arg==0.0)omega(i)=0.0
     end do
-     
+
     do i=1,KS_modes
       call cross(A(:,i),unit_k(:,i),KS_A(:,i))
       call cross(B(:,i),unit_k(:,i),KS_B(:,i))
@@ -1802,7 +1801,7 @@ ky_uukin=2.*pi
       print*, 'Done.'
 !
     endsubroutine hydro_clean_up
-!*******************************************************************
+!***********************************************************************
     subroutine kinematic_random_phase
 !
 !  Get a random phase to be used for the whole kinematic velocity field.
@@ -1837,5 +1836,5 @@ ky_uukin=2.*pi
       endif
 !
     endsubroutine kinematic_random_phase
-!*******************************************************************
+!***********************************************************************
 endmodule Hydro
