@@ -1199,6 +1199,13 @@ endif
 ##FFLAGS_DOUBLE= -fprecision=double #(dunhuang|couette|maurice)
 ##LD_MPI=-L/usr/lib/openmpi/lib -lmpi -lmpi_f77 -lmpi_f90 -lopen-rte -lopen-pal -ldl -lnsl -lutil -lm #(dunhuang|couette|maurice)
 #
+## Jan's laptop
+##
+#FC=g95 #(cleio)
+#FFLAGS=-O3#(cleio)
+#CFLAGS=-DFUNDERSC=2 #(cleio)
+#FFLAGS_DOUBLE = -r8 #(cleio)
+#
 
 
 ## Darwin:
