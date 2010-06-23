@@ -347,7 +347,7 @@ include 'NSCBC.h'
         endif
       enddo
 
-      
+
 !
     endsubroutine nscbc_boundtreat_xyz
 !***********************************************************************
@@ -1354,7 +1354,6 @@ include 'NSCBC.h'
 !
       endsubroutine transversal_terms
 !***********************************************************************
-!***********************************************************************
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !
 !   nscbc case
@@ -1702,7 +1701,7 @@ include 'NSCBC.h'
         if (allocated(u_in)) deallocate(u_in)
 !
  endsubroutine bc_nscbc_subin_x_new
-!**********************************************************************!***********************************************************************
+!***********************************************************************
     subroutine bc_nscbc_nref_subout_x(f,df,topbot,nscbc_sigma_out)
 
 !
@@ -2167,7 +2166,6 @@ include 'NSCBC.h'
       endif
 !
     endsubroutine bc_nscbc_nref_subout_x
-!***********************************************************************
 !***********************************************************************
     subroutine bc_nscbc_nref_subout_y(f,df,topbot,nscbc_sigma_out)
 !
@@ -3046,10 +3044,9 @@ include 'NSCBC.h'
       use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mom2
       character (len=3) :: topbot
       real, dimension (mcom), optional :: val
-      integer :: lll,i, sgn,k
+      integer :: lll, sgn,k
       real :: u_t, T_t, lnrho_t
       real, dimension(nchemspec) :: YYi
 !
@@ -3116,7 +3113,7 @@ include 'NSCBC.h'
       if (allocated(u_in)) deallocate(u_in)
 !
  endsubroutine no_nscbc
-!**********************************************************************!**************************
+!***********************************************************************
     subroutine final_velocity_profile(f,dir,topbot,imin,imax,jmin,jmax,igrid,jgrid)
 !
 !  Create the final inlet velocity profile.
