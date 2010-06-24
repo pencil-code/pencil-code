@@ -28,12 +28,14 @@ module Special
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
-  logical :: lartificial_heating=.false.
   integer :: irefz=0,nglevel=3
-  real :: massflux=0.,u_add
+  real :: massflux=0.,u_add,hcond2=0.,hcond3=0.
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
   real, dimension (mz) :: init_lnTT, init_lnrho
+! 
+  character (len=labellen), dimension(3) :: iheattype='nothing'
+  real :: heat_par1=0.,heat_par2=0.,heat_par3=0.
 !
 ! input parameters
 !  namelist /special_init_pars/ dumy
@@ -45,7 +47,8 @@ module Special
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field, &
-       lmassflux,lartificial_heating
+       lmassflux,hcond2,hcond3, &
+       iheattype,heat_par1,heat_par2,heat_par3
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -365,6 +368,8 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      integer :: i
+!
       if (cool_RTV/=0) then
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
@@ -384,6 +389,22 @@ module Special
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
+      if (hcond2/=0) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
+      if (hcond3/=0) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
 !
@@ -416,10 +437,13 @@ module Special
         lpenc_diagnos(i_cs2)=.true.
       endif
 !
-      if (lartificial_heating) then
-        lpenc_diagnos(i_TT1)=.true.
-        lpenc_diagnos(i_rho1)=.true.
-      endif
+      do i=1,3
+        select case(iheattype(i))
+        case ('sven')
+          lpenc_diagnos(i_TT1)=.true.
+          lpenc_diagnos(i_rho1)=.true.
+        endselect
+      enddo
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -649,10 +673,12 @@ module Special
 !
       if (Kgpara/=0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
       if (hcond1/=0) call calc_heatcond_constchi(df,p)
+      if (hcond2/=0) call calc_heatcond_glnTT(df,p)
+      if (hcond3/=0) call calc_heatcond_glnTT_iso(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tdown/=0) call calc_heat_cool_newton(df,p)
       if (K_iso/=0) call calc_heatcond_grad(df,p)
-      if (lartificial_heating) call calc_artif_heating(df,p)
+      if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -921,8 +947,9 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_grad(df,p)
 !
-!    additional heat conduction where the heat flux is
-!    is proportional to \rho abs(gradT)
+! additional heat conduction where the heat flux is
+! is proportional to \rho abs(gradT)
+! L= Div(rho |Grad(T)| Grad(T))
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot,dot2
@@ -932,7 +959,6 @@ module Special
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: tmpj,tmpi
       real, dimension (nx) :: rhs,g2,chix
-      real :: alp = 2.
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -948,9 +974,7 @@ module Special
 !
       call dot(p%glnrho,p%glnTT,g2)
 !
-      rhs=exp(alp*p%lnTT)*sqrt(tmpi)**(alp-2.)
-!
-      rhs=(tmpi*(p%del2lnTT+(alp+1)*tmpi + g2)+tmpj)
+      rhs=p%TT*(tmpi*(p%del2lnTT+2.*tmpi + g2)+tmpj)/max(tini,sqrt(tmpi))
 !
 !      if (itsub .eq. 3 .and. ip .eq. 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
@@ -958,7 +982,7 @@ module Special
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
 !
       if (lfirst.and.ldt) then
-        chix=K_iso*(p%TT*sqrt(tmpi))**alp
+        chix=K_iso*p%TT*sqrt(tmpi)        
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
@@ -968,6 +992,8 @@ module Special
     endsubroutine calc_heatcond_grad
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
+!
+! L = Div( K rho b*(b*Grad(T))
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv,cubic_step
@@ -1055,6 +1081,148 @@ module Special
       endif
 !
     endsubroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine calc_heatcond_glnTT(df,p)
+!
+!  L = Div( Grad(lnT)^2  rho b*(b*Grad(T)))
+!  => flux = T  Grad(lnT)^2  rho
+!    gflux = flux * (glnT + glnrho +Grad( Grad(lnT)^2))
+!  => chi =  Grad(lnT)^2
+!
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot2,dot,multsv,multmv,cubic_step
+      use EquationOfState, only: gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: glnT2
+      real, dimension (nx) :: tmp,rhs,chi
+      real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
+      real, dimension (nx) :: hhh2,quenchfactor
+      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: tmpj
+      integer :: i,j,k
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+!  calculate unit vector of bb
+!
+      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
+      b1=1./max(tini,abs_b)
+      call multsv(b1,p%bb,bunit)
+!
+!  calculate first H_i
+!
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv(b1,hhh,tmpv)
+!
+!  calculate abs(h) for limiting H vector
+!
+      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
+!
+!  limit the length of H
+!
+      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      call multsv(quenchfactor,tmpv,hhh)
+!
+!  dot H with Grad lnTT
+!
+      call dot(hhh,p%glnTT,tmp)
+!
+!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
+!
+      call multmv(p%hlnTT,bunit,tmpv)
+      call dot(tmpv,bunit,tmpj)
+      tmp = tmp+tmpj
+!
+      call dot2(p%glnTT,glnT2)
+!
+      tmpv = p%glnTT+p%glnrho
+!
+      call multsv(glnT2,tmpv,gflux)
+!
+      do i=1,3
+        tmpv(:,i) = 2.*(&
+            p%glnTT(:,1)*p%hlnTT(:,i,1) + &
+            p%glnTT(:,2)*p%hlnTT(:,i,2) + &
+            p%glnTT(:,3)*p%hlnTT(:,i,3) )
+      enddo
+!
+      gflux  = gflux +tmpv
+!
+      call dot(gflux,bunit,rhs)
+      call dot(p%glnTT,bunit,tmpj)
+      rhs = rhs*tmpj
+!
+      chi = glnT2*hcond2
+!
+      rhs = hcond2*(rhs + glnT2*tmp)
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
+          rhs*gamma*cubic_step(t*unit_time,300.,300.)
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_glnTT
+!***********************************************************************
+    subroutine calc_heatcond_glnTT_iso(df,p)
+!
+!  L = Div( Grad(lnT)^2 Grad(T))
+!
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: tmpv
+      real, dimension (nx) :: glnT2,glnT_glnr
+      real, dimension (nx) :: tmp,rhs,chi
+      integer :: i
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+      call dot2(p%glnTT,glnT2)
+      call dot(p%glnTT,p%glnrho,glnT_glnr)
+!
+      do i=1,3
+        tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,1,i) + &
+                    p%glnTT(:,2)*p%hlnTT(:,2,i) + &
+                    p%glnTT(:,3)*p%hlnTT(:,3,i)
+      enddo
+      call dot(p%glnTT,tmpv,tmp)
+!
+      chi = glnT2*hcond3
+!
+      rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs*gamma*hcond3
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_glnTT_iso
 !***********************************************************************
     subroutine calc_heat_cool_RTV(df,p)
 !
@@ -1245,26 +1413,49 @@ module Special
 !  30-jan-08/bing: coded
 !
       use EquationOfState, only: get_cp1, gamma
+      use Sub, only: cubic_step, notanumber
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput
       real :: z_Mm,cp1
       type (pencil_case) :: p
+      integer :: i
+!     
+      do i=1,3 
+        select case(iheattype(i))
+        case ('nothing')
+          if (headtt) print*,'iheattype:',iheattype
 !
-! Get height in Mm.
-      z_Mm = z(n)*unit_length*1e-6
+        case ('sven')
+          ! Get height in Mm.
+          z_Mm = z(n)*unit_length*1e-6
+          !
+          ! Compute volumetric heating rate in [W/m^3] as 
+          ! found in Bingert's thesis.
+          heatinput=heatamp*(1e3*exp(-z_Mm/0.2)+1e-4*exp(-z_Mm/10.))
+          !
+          ! Convert to pencil units.
+          heatinput=heatinput/unit_density/unit_velocity**3*unit_length
+          !
+          call get_cp1(cp1)
+          !
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
+              p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
 !
-! Compute volumetric heating rate as found in Bingert's thesis.
-!
-      heatinput=heatamp*1e3*exp(-z_Mm/0.2)+1e-4*exp(-z_Mm/10.)
-!
-! Convert to pencil units.
-      heatinput = heatinput*1.
-!
-      call get_cp1(cp1)
-!
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-          p%TT1*p%rho1*gamma*cp1*heatinput
+        case ('exp')
+          ! heat_par1 should be 530 w/m2
+          ! heat_par2 should be 0.3 Mm (scale height)
+          heatinput=heat_par1*exp(-z(n1:n2)/heat_par2)
+          ! Convert to pencil units if needed:
+          ! heatinput=heatinput/unit_density/unit_velocity**3*unit_length
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
+              p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+!                    
+        case default
+          if (headtt) call fatal_error('calc_artif_heating', &
+              'Please provide correct iheattype')
+        endselect
+      enddo
 !
 !      if (lfirst.and.ldt) then
 !        dt1_max=max(dt1_max,heatinput/cdts)
