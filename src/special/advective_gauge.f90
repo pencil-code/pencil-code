@@ -234,6 +234,9 @@ module Special
 !
 !  Weyl gauge?
 !
+! uncommenting the following block will be correct. 
+! Axel, is there a version in your computer that is not 
+! check in. Or did I mess things up. 
 !-      if (.not.lweyl_gauge) then
 !-        ua=ua-eta*p%diva
 !-      endif
