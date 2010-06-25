@@ -100,6 +100,7 @@ module Magnetic
   real :: fring3=0.0, Iring3=0.0, Rring3=1.0, wr3=0.3
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
+  real :: relhel_aa=1.
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
   real :: eta_shock=0.0
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., etaj20=0.
@@ -178,7 +179,9 @@ module Magnetic
       B_ext, lohmic_heat, fring1, Iring1, Rring1, wr1, axisr1, dispr1, fring2, &
       Iring2, Rring2, wr2, axisr2, dispr2, fring3, Iring3, Rring3, wr3,  &
       axisr3, dispr3, fring_profile, nrings, radius, epsilonaa, x0aa, z0aa, &
-      widthaa, by_left, by_right, bz_left, bz_right, initaa, amplaa, kx_aa, &
+      widthaa, by_left, by_right, bz_left, bz_right, &
+      relhel_aa, &
+      initaa, amplaa, kx_aa, &
       ky_aa, kz_aa, coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
@@ -298,6 +301,8 @@ module Magnetic
   integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
+  integer :: idiag_dubrms=0     ! DIAG_DOC: $\left<(\uv-\Bv)^2\right>^{1/2}$
+  integer :: idiag_dobrms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}-\Bv)^2\right>^{1/2}$
   integer :: idiag_uxbxm=0      ! DIAG_DOC: $\left<u_xB_x\right>$
   integer :: idiag_uybym=0      ! DIAG_DOC: $\left<u_yB_y\right>$
   integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
@@ -1224,6 +1229,7 @@ module Magnetic
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
+        case ('robertsflow'); call robertsflow(amplaa(j),f,iaa,relhel_aa)
         case ('tony-nohel')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*z(n))
@@ -2323,7 +2329,7 @@ module Magnetic
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: uj,aj,phi
+      real, dimension (nx) :: uj,aj,phi,dub,dob
       real, dimension (nx) :: uxj_dotB0,b3b21,b1b32,b2b13
       real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
@@ -2977,6 +2983,20 @@ module Magnetic
         if (idiag_uybym/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,2),idiag_uybym)
         if (idiag_uzbzm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,3),idiag_uzbzm)
         if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
+!
+!  compute rms value of difference between u and b
+!
+        if (idiag_dubrms/=0) then
+          call dot2(p%uu-p%bb,dub)
+          call sum_mn_name(dub,idiag_dubrms,lsqrt=.true.)
+        endif
+!
+!  compute rms value of difference between u and b
+!
+        if (idiag_dobrms/=0) then
+          call dot2(p%oo-p%bb,dob)
+          call sum_mn_name(dob,idiag_dobrms,lsqrt=.true.)
+        endif
 !
 !  Field-velocity cross helicity (linkage between velocity and magnetic tubes).
 !
@@ -6439,7 +6459,7 @@ module Magnetic
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0
-        idiag_uam=0; idiag_ubm=0; idiag_ujm=0
+        idiag_uam=0; idiag_ubm=0; idiag_dubrms=0; idiag_dobrms=0; idiag_ujm=0
         idiag_uxbxm=0; idiag_uybym=0; idiag_uzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_Expt=0
@@ -6528,6 +6548,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jbmn',idiag_jbmn)
         call parse_name(iname,cname(iname),cform(iname),'jbms',idiag_jbms)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'dubrms',idiag_dubrms)
+        call parse_name(iname,cname(iname),cform(iname),'dobrms',idiag_dobrms)
         call parse_name(iname,cname(iname),cform(iname),'uxbxm',idiag_uxbxm)
         call parse_name(iname,cname(iname),cform(iname),'uybym',idiag_uybym)
         call parse_name(iname,cname(iname),cform(iname),'uzbzm',idiag_uzbzm)
@@ -6930,6 +6952,8 @@ module Magnetic
         write(3,*) 'i_jbmn=',idiag_abmn
         write(3,*) 'i_jbms=',idiag_abms
         write(3,*) 'i_ubm=',idiag_ubm
+        write(3,*) 'i_dubrms=',idiag_dubrms
+        write(3,*) 'i_dobrms=',idiag_dobrms
         write(3,*) 'i_uxbxm=',idiag_uxbxm
         write(3,*) 'i_uybym=',idiag_uybym
         write(3,*) 'i_uzbzm=',idiag_uzbzm

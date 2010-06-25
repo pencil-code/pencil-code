@@ -1535,7 +1535,7 @@ module Initcond
 !
     endsubroutine rolls
 !***********************************************************************
-    subroutine robertsflow(ampl,f,i)
+    subroutine robertsflow(ampl,f,i,relhel)
 !
 !  Roberts Flow (as initial condition)
 !
@@ -1543,13 +1543,13 @@ module Initcond
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,k=1.,kf,fac1,fac2
+      real :: ampl,k=1.,kf,fac1,fac2,relhel
 !
 !  prepare coefficients
 !
       kf=k*sqrt(2.)
       fac1=sqrt(2.)*ampl*k/kf
-      fac2=sqrt(2.)*ampl
+      fac2=sqrt(2.)*ampl*relhel
 !
       j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
                                        *spread(spread(sin(k*y),1,mx),3,mz)

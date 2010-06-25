@@ -59,7 +59,7 @@ module Hydro
 !  Init parameters.
 !
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
-  real :: urandi=0.
+  real :: relhel_uu=1.,urandi=0.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
@@ -102,6 +102,7 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
+      relhel_uu, &
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, uy_left, &
       uy_right,uu_const, Omega,  initpower, cutoff, u_out_kep, N_modes_uu, &
@@ -768,7 +769,7 @@ module Hydro
         case ('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu)
         case ('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
         case ('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
-        case ('robertsflow'); call robertsflow(ampluu(j),f,iuu)
+        case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu)
         case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
         case ('meri_circ'); call meri_circ(f)
         case ('sound-wave', '11')
