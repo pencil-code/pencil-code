@@ -253,7 +253,7 @@ module Special
 !          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*del2Lam
 !        else
 ! (for resistive gauge -> advective gauge. 
-!          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam-ua+eta*diva
+!          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*diva
 !        endif
       else
         call fatal_error('dspecial_dt','no advective if no hydro')

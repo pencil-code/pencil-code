@@ -41,6 +41,7 @@ module Hydro
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
   real :: ampl_fcont_uu=1.
   logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
+  real, dimension(nx) :: ck_r,ck_rsqr
 !
 !
 !init parameters
@@ -58,6 +59,8 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   integer :: kinflow_ck_ell=0.
+!DM moved from cdata
+  real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
     kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -66,7 +69,8 @@ module Hydro
     ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
     lrandom_location,lwrite_random_location,location_fixed,dtforce,&
     radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
-    gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell
+    gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell,&
+    eps_kinflow,omega_kinflow,ampl_kinflow
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
   integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
@@ -351,11 +355,16 @@ module Hydro
 ! uu
         ell=kinflow_ck_ell
         Balpha=kinflow_ck_Balpha
+        ck_r = x(l1:l2)
+        ck_rsqr = x(l1:l2)*x(l1:l2)
         if (lpencil(i_uu)) then
           if (headtt) print*,'Chandrasekhar-Kendall flow'
-          p%uu(:,1)=ampl_kinflow*(ell*(ell+1)/Balpha*x(l1:l2))*Zl(l1:l2)*Pl(m)
-          p%uu(:,2)=ampl_kinflow*(1./Balpha*x(l1:l2))*(2*x(l1:l2)*Zl(l1:l2)+&
-                         dZldr(l1:l2)*Balpha*x(l1:l2)**2)*dPldtheta(m)
+          p%uu(:,1)=ampl_kinflow*Pl(m)*(  &  
+             (ell*(ell+1)/(Balpha*ck_rsqr))*Zl(l1:l2) & 
+            -(2./(Balpha*ck_r))*dZldr(l1:l2)  )
+          p%uu(:,2)=ampl_kinflow*( & 
+             dZldr(l1:l2)/Balpha- Zl(l1:l2)/(Balpha*ck_r) &
+                       )*dPldtheta(m)
           p%uu(:,3)=-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
         endif
 ! divu

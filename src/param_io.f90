@@ -92,7 +92,9 @@ module Param_IO
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, isaveglobal, lr_spec, r2u_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
-      eps_kinflow, omega_kinflow, ampl_kinflow, lkinflow_as_aux, &
+!DM moved the three to hydro_kinematic
+!      eps_kinflow, omega_kinflow, ampl_kinflow, lkinflow_as_aux, &
+      lkinflow_as_aux, &
       ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, kx_kinflow, ky_kinflow, &
       kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
