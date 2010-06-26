@@ -35,6 +35,7 @@
   nu=5e-3
 /
 &particles_run_pars
+  lcheck_exact_frontier=T
 /
 &particles_stalker_run_pars
 /
