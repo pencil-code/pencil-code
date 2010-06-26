@@ -9,7 +9,7 @@
 BORDER_PROFILES   = noborder_profiles
 BOUNDCOND         =   boundcond
 DEBUG             = nodebug
-SYSCALLS          = nosyscalls
+SYSCALLS          =   syscalls
 DERIV             =   deriv
 FOURIER           = nofourier
 GHOSTFOLD         = noghostfold
