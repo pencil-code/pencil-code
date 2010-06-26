@@ -7,7 +7,7 @@
   nt=100, it1=10, cdt=0.4, cdtv=0.4, isave=100, itorder=3,
   dsnap=6.2831853, dtmin=1.0e-6
   lbidiagonal_derij=F
-  lpencil_check=T
+  lpencil_check=F, lpencil_check_small=F
 /
 &eos_run_pars
 /
