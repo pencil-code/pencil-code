@@ -3390,6 +3390,7 @@ module Initcond
       if (rnoise_int == impossible) rnoise_int=r_int
       if (rnoise_ext == impossible) rnoise_int=r_ext
 !     dr = rnoise_ext-max(0.,rnoise_int)
+!AB: see my comments to r14162
       dr = r_ext-max(0.,r_int)
 !
       do n=1,mz; do m=1,my
@@ -3397,6 +3398,7 @@ module Initcond
         if (lcylindrical_coords.or.lcylinder_in_a_box) rr=rr_cyl
         if (lspherical_coords  .or.lsphere_in_a_box)   rr=rr_sph
 !       prof = 1 - cubic_step(rr,rnoise_ext,0.25*dr,SHIFT=-1.)
+!AB: see my comments to r14162. Need to check what is wrong with get_radial_distance.
         rr=sqrt(x(:)**2+y(m)**2+z(n)**2)
         prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
         if (r_int>0.) then
