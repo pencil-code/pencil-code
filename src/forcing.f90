@@ -256,8 +256,18 @@ module Forcing
       elseif (iforce_profile=='(z-z0)^n') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
-        profz_ampl=((z-xyz0(3))/height_ff)**nexp_ff
+        profz_ampl=(abs(z-xyz0(3))/height_ff)**nexp_ff
         profz_hel=1.
+        if (lroot) print*,'profz_ampl=',profz_ampl
+!
+!  power law with offset
+!
+      elseif (iforce_profile=='1+(z-z0)^n') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=(1.+(z-xyz0(3))/height_ff)**nexp_ff
+        profz_hel=1.
+        if (lroot) print*,'profz_ampl=',profz_ampl
 !
 !  exponential law
 !
