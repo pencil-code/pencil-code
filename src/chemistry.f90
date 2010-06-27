@@ -725,9 +725,9 @@ module Chemistry
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
         if (lpencil(i_H0_RT)) then
-!--       if (.not. lT_const) then
+!         if (.not. lT_const) then
 !AB: Natalia, maybe we should ask earlier for lentropy?
-          if (.not. lT_const.and.lentropy) then
+          if ((.not. lT_const).and.(ilnTT/=0)) then
             do k=1,nchemspec
               T_low=species_constants(k,iTemp1)
               T_mid=species_constants(k,iTemp2)
