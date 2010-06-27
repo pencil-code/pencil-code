@@ -4617,16 +4617,22 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
               y_real = y(m) - y01
               z_real = z(n) - z01
               rr_rot = sqrt((x_real)**2+(y_real)**2+(z_real)**2)
-              theta  = atan(x_real/z_real)
-              phi    = atan(-y_real/x_real)
-              vel_phi = omega*rr_rot*sin(theta)
+              theta  = atan(abs(z_real)/sqrt((x_real)**2+(y_real)**2))
+              phi    = atan(y_real/x_real)
+              vel_phi = omega*rr_rot*cos(theta)
               if (rr_rot <= radius) then
                 j = i
                 f(l,m,n,j) = vel_phi*sin(phi)
                 j = i+1
-                f(l,m,n,j) = vel_phi*cos(phi)*cos(incl_alpha)
+                f(l,m,n,j) = -vel_phi*cos(phi)*cos(incl_alpha)
                 j = i+2
                 f(l,m,n,j) = vel_phi*cos(phi)*sin(incl_alpha)
+                if (x_real < 0.0) then 
+                   j = i              
+                   f(l,m,n,j) = -f(l,m,n,j)       
+                   j = i+1          
+                   f(l,m,n,j) = -f(l,m,n,j)
+                endif           
               endif
             enddo
           enddo
