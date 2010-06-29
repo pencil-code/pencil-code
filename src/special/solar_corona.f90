@@ -1445,7 +1445,7 @@ module Special
         case ('exp')
           ! heat_par1 should be 530 w/m2
           ! heat_par2 should be 0.3 Mm (scale height)
-          heatinput=heat_par1*exp(-z(n1:n2)/heat_par2)
+          heatinput=heat_par1*exp(-z(n1)/heat_par2)
           ! Convert to pencil units if needed:
           ! heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
@@ -1584,14 +1584,14 @@ module Special
 ! set sum(abs(Bz)) to  a given flux
       if (Bz_flux/=0) then
         if (nxgrid/=1.and.nygrid/=1) then
-          dA=dx*dy
+          dA=dx*dy*unit_length**2
         elseif (nygrid==1) then
-          dA=dx
+          dA=dx*unit_length
         elseif (nxgrid==1) then
-          dA=dy
+          dA=dy*unit_length
         endif
        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
-            Bz_flux/(Bzflux*dA*unit_magnetic*unit_length**2)
+            Bz_flux/(Bzflux*dA*unit_magnetic)
       endif
 !
       call get_cp1(cp1)
