@@ -1,0 +1,31 @@
+################################################################
+################### SAMPLE CONDOR SUBMIT FILE
+#################
+###################      VANILLA UNIVERSE
+#################
+###################  Columbia University HPC
+#################
+################################################################
+## Pencil submit file for Pencil Code. Where pencil_run.sh
+## sets the pencil path and runs pc_run
+
+universe = vanilla
+#Requirements = OpSys == "LINUX"
+
+notification = Always
+notify_user = aos2112@columbia.edu
++AccountingGroup = "group_astro"
+
+#To run PENCIL you have to use start.csh and run.csh 
+#they are both called in pencil_run.sh
+#Don't forget to make it executable: chmod +x matwrap.sh
+executable =  pencil_run.sh
+
+
+output = $(Cluster).$(Process).out
+error = $(Cluster).$(Process).err
+log = $(Cluster).$(Process).logfile
+
+#Queue 
+queue
+
