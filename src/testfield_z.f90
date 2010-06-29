@@ -106,6 +106,7 @@ module Testfield
   integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
   integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
   integer :: idiag_alp32=0      ! DIAG_DOC: $\alpha_{32}$
+  !!!!
   integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$ or $\eta_{11}k$ if leta_rank2=T
   integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$ or $\eta_{21}k$ if leta_rank2=T
   integer :: idiag_eta31=0      ! DIAG_DOC: $\eta_{313}k$
@@ -165,6 +166,7 @@ module Testfield
   integer :: idiag_alp21z=0     ! DIAG_DOC: $\alpha_{21}(z,t)$
   integer :: idiag_alp12z=0     ! DIAG_DOC: $\alpha_{12}(z,t)$
   integer :: idiag_alp22z=0     ! DIAG_DOC: $\alpha_{22}(z,t)$
+  !!!!
   integer :: idiag_eta11z=0     ! DIAG_DOC: $\eta_{11}(z,t)$
   integer :: idiag_eta21z=0     ! DIAG_DOC: $\eta_{21}(z,t)$
   integer :: idiag_eta12z=0     ! DIAG_DOC: $\eta_{12}(z,t)$
@@ -908,6 +910,7 @@ module Testfield
           if (idiag_alp21z/=0) call xysum_mn_name_z(Eipq(:,2,i1),idiag_alp21z)
           if (idiag_alp12z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_alp12z)
           if (idiag_alp22z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_alp22z)
+          !!!!
           if (idiag_eta11z/=0) call xysum_mn_name_z(+(-z(n)*Eipq(:,1,i3)+Eipq(:,1,i4)),idiag_eta11z)
           if (idiag_eta21z/=0) call xysum_mn_name_z(+(-z(n)*Eipq(:,2,i3)+Eipq(:,2,i4)),idiag_eta21z)
           if (idiag_eta12z/=0) call xysum_mn_name_z(-(-z(n)*Eipq(:,1,i1)+Eipq(:,1,i2)),idiag_eta12z)
@@ -936,6 +939,7 @@ module Testfield
             if (idiag_alp11/=0) call sum_mn_name(        Eipq(:,1,1)               ,idiag_alp11)
             if (idiag_alp21/=0) call sum_mn_name(        Eipq(:,2,1)               ,idiag_alp21)
             if (idiag_alp31/=0) call sum_mn_name(        Eipq(:,3,1)               ,idiag_alp31)
+            !!!!
             if (idiag_eta12/=0) call sum_mn_name(-(-z(n)*Eipq(:,1,i1)+Eipq(:,1,i2)),idiag_eta12)
             if (idiag_eta22/=0) call sum_mn_name(-(-z(n)*Eipq(:,2,i1)+Eipq(:,2,i2)),idiag_eta22)
           else
@@ -1017,6 +1021,7 @@ module Testfield
             (leta_rank2.and.(idiag_eta11cc/=0.or.idiag_eta21sc/=0)))) then
           call stop_it('njtest is too small if alpi2 or etai2 for i=1,2,3 are needed')
         else
+        !!!!
 !
 !  Don't subtract E0 field if iE0==0
 !
@@ -1025,6 +1030,7 @@ module Testfield
               if (idiag_alp12/=0) call sum_mn_name(Eipq(:,1,i3),idiag_alp12)
               if (idiag_alp22/=0) call sum_mn_name(Eipq(:,2,i3),idiag_alp22)
               if (idiag_alp32/=0) call sum_mn_name(Eipq(:,3,i3),idiag_alp32)
+              !!!!
               if (idiag_eta11/=0) call sum_mn_name(+(-z(n)*Eipq(:,1,i3)+Eipq(:,1,i4)),idiag_eta11)
               if (idiag_eta21/=0) call sum_mn_name(+(-z(n)*Eipq(:,2,i3)+Eipq(:,2,i4)),idiag_eta21)
             else
@@ -1565,13 +1571,14 @@ module Testfield
       intent(in)  :: jtest
       intent(out) :: B0test
 !
-!  set B0test for each of the 9 cases
+!  set B0test for each of the 5 cases
 !
       select case (jtest)
       case (1); B0test(:,1)=bamp     ; B0test(:,2)=0.; B0test(:,3)=0.
       case (2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
       case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
+      !!!!case (5); 
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1602,10 +1609,12 @@ module Testfield
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
         idiag_alp11z=0; idiag_alp21z=0; idiag_alp12z=0; idiag_alp22z=0
         idiag_eta11z=0; idiag_eta21z=0; idiag_eta12z=0; idiag_eta22z=0
+        !!!!
         idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
         idiag_EBpq=0; idiag_E0Um=0; idiag_E0Wm=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
+        !!!!
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
@@ -1633,6 +1642,7 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
         call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
         call parse_name(iname,cname(iname),cform(iname),'alp32',idiag_alp32)
+        !!!!
         call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
         call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
         call parse_name(iname,cname(iname),cform(iname),'eta31',idiag_eta31)
@@ -1715,6 +1725,7 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp21z',idiag_alp21z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp12z',idiag_alp12z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp22z',idiag_alp22z)
+        !!!!
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta11z',idiag_eta11z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta21z',idiag_eta21z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta12z',idiag_eta12z)
@@ -1736,6 +1747,7 @@ module Testfield
         write(3,*) 'idiag_alp12=',idiag_alp12
         write(3,*) 'idiag_alp22=',idiag_alp22
         write(3,*) 'idiag_alp32=',idiag_alp32
+        !!!!
         write(3,*) 'idiag_eta11=',idiag_eta11
         write(3,*) 'idiag_eta21=',idiag_eta21
         write(3,*) 'idiag_eta31=',idiag_eta31
@@ -1810,6 +1822,7 @@ module Testfield
         write(3,*) 'idiag_alp21z=',idiag_alp21z
         write(3,*) 'idiag_alp12z=',idiag_alp12z
         write(3,*) 'idiag_alp22z=',idiag_alp22z
+        !!!!
         write(3,*) 'idiag_eta11z=',idiag_eta11z
         write(3,*) 'idiag_eta21z=',idiag_eta21z
         write(3,*) 'idiag_eta12z=',idiag_eta12z
