@@ -632,6 +632,15 @@ endif
 #FFLAGS_DOUBLE=-autodouble #(nl6)
 ##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
 ##
+## Axel on warp.hpc1.cs.cmu.edu (gfortran)
+##
+#FC=mpif90 #(warp.hpc1.cs.cmu.edu*)
+#FFLAGS= -O3 #(warp.hpc1.cs.cmu.edu*)
+#CC=mpicc #(warp.hpc1.cs.cmu.edu*)
+#CFLAGS=-O3 #(warp.hpc1.cs.cmu.edu*)
+#LD_MPI= #(warp.hpc1.cs.cmu.edu*)
+#LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
+##
 ## Axel on norlx55 (gfortran)
 ##
 #FC=mpif90 #(norlx55*)
