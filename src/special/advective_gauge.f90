@@ -1,6 +1,7 @@
 ! $Id$
 !
-!  Lorenz gauge, dLam/dt = -u.gradLambda - U.A + eta*divA
+!  Advecto-resistive gauge, dLam/dt = -u.gradLambda - U.A_resistive + eta*del2A_resistive
+!  A_advecto-resistive=A_resistive+grad Lambda
 !
 !  25-feb-07/axel: adapted from nospecial.f90
 !
@@ -232,32 +233,14 @@ module Special
           ua=0.
         endif
 !
-!  Weyl gauge?
-!
-! uncommenting the following block will be correct. 
-! Axel, is there a version in your computer that is not 
-! check in. Or did I mess things up. 
-!-      if (.not.lweyl_gauge) then
-!-        ua=ua-eta*p%diva
-!-      endif
-!
-!  diffusion?
+! based on resistive gauge
 !
         if (ladvecto_resistive) then
           call del2(f,iLam,del2Lam)
-          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*del2Lam
+          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam-ua+eta*del2Lam
         else
-          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua
+          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam-ua-eta*p%diva
         endif
-!DM : I am actually getting the following:
-! I am going to check in them in the document. 
-!        if (ladvecto_resistive) then
-!          call del2(f,iLam,del2Lam)
-!          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*del2Lam
-!        else
-! (for resistive gauge -> advective gauge. 
-!          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam+ua+eta*diva
-!        endif
       else
         call fatal_error('dspecial_dt','no advective if no hydro')
       endif
@@ -272,7 +255,7 @@ module Special
         if (idiag_gLambm/=0.or.idiag_apbrms/=0) then
           call dot(gLam,p%bb,gLamb)
           if (idiag_gLambm/=0) call sum_mn_name(gLamb,idiag_gLambm)
-          if (idiag_apbrms/=0) call sum_mn_name((p%ab-gLamb)**2,idiag_apbrms,lsqrt=.true.)
+          if (idiag_apbrms/=0) call sum_mn_name((p%ab+gLamb)**2,idiag_apbrms,lsqrt=.true.)
         endif
 !
 !  check for point 1
