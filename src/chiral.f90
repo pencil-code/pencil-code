@@ -46,6 +46,7 @@ module Chiral
        xposYY_chiral,yposYY_chiral,zposYY_chiral
 !
   real :: chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
+  real :: chiral_fishernu=0., chiral_fisherK=1. !fishers equation growth rate, carrying capac.
   real, dimension(3) :: gradX0=(/0.0,0.0,0.0/), gradY0=(/0.0,0.0,0.0/)
   character (len=labellen) :: chiral_reaction='BAHN_model'
   logical :: limposed_gradient=.false.
@@ -53,6 +54,7 @@ module Chiral
   namelist /chiral_run_pars/ &
        chiral_diff,chiral_crossinhibition,chiral_fidelity, &
        chiral_reaction,limposed_gradient,gradX0,gradY0, &
+       chiral_fishernu, chiral_fisherk, &
        llorentzforceEP, &
        linitialize_aa_from_EP,tinitialize_aa_from_EP, &
        linitialize_aa_from_EP_alpgrad,linitialize_aa_from_EP_betgrad
@@ -332,6 +334,16 @@ module Chiral
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
 !
+      case('fisher')
+      if (headtt) print*,"chiral_reaction='fishers equation'"
+      if (headtt) print*,"growth rate=", chiral_fishernu,"carrying capacity=",chiral_fisherK
+      XX_chiral=f(l1:l2,m,n,iXX_chiral)
+      YY_chiral=f(l1:l2,m,n,iYY_chiral)
+      dXX_chiral=(1.-XX_chiral/chiral_fisherK)*XX_chiral*chiral_fishernu
+      dYY_chiral=(1.-YY_chiral/chiral_fisherK)*YY_chiral*chiral_fishernu
+      df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
+      df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
+
       case ('nothing')
         if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
 !
