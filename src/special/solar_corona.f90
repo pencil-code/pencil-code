@@ -36,6 +36,8 @@ module Special
 ! 
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real :: heat_par1=0.,heat_par2=0.,heat_par3=0.
+  real, dimension(2) :: heat_par_exp=(/0.,1./)
+  real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
 ! input parameters
 !  namelist /special_init_pars/ dumy
@@ -47,7 +49,7 @@ module Special
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field, &
-       lmassflux,hcond2,hcond3, &
+       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
        iheattype,heat_par1,heat_par2,heat_par3
 !!
 !! Declare any index variables necessary for main or
@@ -1424,9 +1426,12 @@ module Special
       do i=1,3 
         select case(iheattype(i))
         case ('nothing')
-          if (headtt) print*,'iheattype:',iheattype
+          if (headtt) print*,'iheattype:',iheattype(i)
 !
         case ('sven')
+          ! Volumetric heating rate as it can be found
+          ! in the thesis by bingert.
+          !
           ! Get height in Mm.
           z_Mm = z(n)*unit_length*1e-6
           !
@@ -1443,14 +1448,34 @@ module Special
               p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
 !
         case ('exp')
-          ! heat_par1 should be 530 w/m2
-          ! heat_par2 should be 0.3 Mm (scale height)
-          heatinput=heat_par1*exp(-z(n1)/heat_par2)
+          ! heat_par_exp(1) should be 530 w/m2 (flux,F)
+          ! heat_par_exp(2) should be 0.3 Mm (scale height)
+          !
+          if (headtt) print*,'iheattype:',iheattype(i) 
+          z_Mm = z(n)*unit_length*1e-6
+          heatinput=heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))
           ! Convert to pencil units if needed:
-          ! heatinput=heatinput/unit_density/unit_velocity**3*unit_length
+          heatinput=heatinput/unit_density/unit_velocity**3*unit_length
+          call get_cp1(cp1)
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
               p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
 !                    
+        case ('gauss')
+          ! heat_par_gauss(1) is Center (z in Mm)
+          ! heat_par_gauss(2) is Width (sigma)
+          ! heat_par_gauss(3) is the amplitude (Flux)
+          !
+          if (headtt) print*,'iheattype:',iheattype(i) 
+          z_Mm = z(n)*unit_length*1e-6
+          !
+          heatinput=heat_par_gauss(3)*exp(-((z_Mm-heat_par_gauss(1))**2/ &
+              2*heat_par_gauss(2)**2))
+          ! Convert to pencil units if needed:
+          heatinput=heatinput/unit_density/unit_velocity**3*unit_length
+          call get_cp1(cp1)
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &              
+              p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+          !          
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
               'Please provide correct iheattype')
