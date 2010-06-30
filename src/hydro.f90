@@ -364,6 +364,7 @@ module Hydro
   integer :: idiag_oum=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC:   \cdot\uv\right>$
   integer :: idiag_fum=0        ! DIAG_DOC: $\left<\fv\cdot\uv\right>$
+  integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
   integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
@@ -1548,7 +1549,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
+      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu,odel2um
       real :: kx
       integer :: j
 !
@@ -1866,7 +1867,6 @@ module Hydro
           fname(idiag_oums)=fname_half(idiag_oumh,2)
           itype_name(idiag_oumn)=ilabel_sum
           itype_name(idiag_oums)=ilabel_sum
-        else
         endif
         if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
         if (idiag_ormsh/=0) then
@@ -1876,8 +1876,17 @@ module Hydro
           fname(idiag_ormss)=fname_half(idiag_ormsh,2)
           itype_name(idiag_ormsn)=ilabel_sum_sqrt
           itype_name(idiag_ormss)=ilabel_sum_sqrt
-        else
         endif
+!
+!  <o.del2u>
+!
+        if (idiag_odel2um/=0) then
+          call dot(p%oo,p%del2u,odel2um)
+          call sum_mn_name(odel2um,idiag_odel2um)
+        endif
+!
+!  various vorticity diagnostics
+!
         if (idiag_omax/=0) call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
         if (idiag_o2m/=0)  call sum_mn_name(p%o2,idiag_o2m)
         if (idiag_ox2m/=0) call sum_mn_name(p%oo(:,1)**2,idiag_ox2m)
@@ -3336,6 +3345,7 @@ module Hydro
         idiag_dtu=0
         idiag_oum=0
         idiag_fum=0
+        idiag_odel2um=0
         idiag_o2m=0
         idiag_orms=0
         idiag_omax=0
@@ -3409,6 +3419,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
+        call parse_name(iname,cname(iname),cform(iname),'odel2um',idiag_odel2um)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
         call parse_name(iname,cname(iname),cform(iname),'fum',idiag_fum)
@@ -3726,6 +3737,7 @@ module Hydro
         write(3,*) 'i_outm=',idiag_outm
         write(3,*) 'i_u2m=',idiag_u2m
         write(3,*) 'i_um2=',idiag_um2
+        write(3,*) 'i_odel2um=',idiag_odel2um
         write(3,*) 'i_o2m=',idiag_o2m
         write(3,*) 'i_oum=',idiag_oum
         write(3,*) 'i_fum=',idiag_fum
