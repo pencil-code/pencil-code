@@ -629,7 +629,8 @@ program run
 !  Exit do loop if wall_clock_time has exceeded max_walltime.
 !
     if (max_walltime>0.0) then
-      timeover=(wall_clock_time>max_walltime)
+      if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
+      call mpibcast_logical(timeover,1)
       if (timeover) then
         if (lroot) then
           print*
