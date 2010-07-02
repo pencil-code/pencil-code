@@ -1,0 +1,843 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   semiauto-conf
+# Author: wd (Wolfgang.Dobler@ucalgary.ca)
+# Date:   06-Nov-2006
+# Description:
+#   Help us finding out what compiler, MPI library, etc we have and give
+#   recommendations
+# Usage:
+#   make semiauto-conf
+#   [See Makefile.src for more details]
+# Options:
+#   -h, --help      This help
+#   -v, --version   Print version number
+#   -q, --quiet     Be quiet
+
+# Copyright (C) 2006  Wolfgang Dobler
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the same conditions as Perl.
+
+use strict;
+
+my $sa_workdir = 'semiauto-conf_tmp';   # name of subdirectory to work in
+my $logfile    = 'semiauto-conf.log';
+my $errfile    = 'semiauto-conf.err';
+my $makelog    = 'make.log';
+my $stumped    = 0;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);			# Options hash for GetOptions
+my $doll='\$';			# Need this to trick CVS
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --debug
+	       -q   --quiet
+               -v   --version ));
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $quiet   = ($opts{'q'} || $opts{'quiet'}   || '');
+my $setup   = ($opts{'s'} || $opts{'setup'}   || '');
+my $analyze = ($opts{'a'} || $opts{'analyze'} || '');
+
+my %make_args = parse_args(@ARGV);
+
+# Keep track of failed tests
+my %failed;
+
+# 1. Setup
+setup_files(\%make_args);
+make('sysinfo',   '', 'Sysinfo'  ); #  write $sa_workdir/sysinfo.txt
+make('variables', '', 'Variables'); #  write $sa_workdir/make_variables.txt
+
+# 2. Basic compiler tests
+make('minimal_f90.o' , 'your F90 compiler works', 'F90_comp'    );
+make('minimal_f90.x' , 'your F90 linker works'  , 'F90_link'    );
+make('minimal_f.x'   , 'your F77 compiler works', 'F77_comp'    );
+make('minimal_c.x'   , 'your C compiler works'  , 'C_comp'      );
+make('include_mpif.o', 'including mpif.h works' , 'MPIF_include');
+
+evaluate_compiler_tests();
+
+# 3. Analyze symbols in .o files
+make('minimal_iodist.o' , '', 'F90_comp2'    );
+make('minimal_mpi.o'    , '', 'F90_MPI_comp' );
+make('minimal_debug_c.o', '', 'C_debugc_comp');
+
+# 4. Try linking
+make('iodist_debug_c.x', 'we can link with C'  , 'F-C_link');
+make('minimal_mpi.x'   , 'we can link with MPI', 'MPI_link');
+
+# 5. Analyze number of underscores
+my $n_usc_f90 = count_usc('minimal_iodist.o' , 'output_penciled_scal_c');
+my $n_usc_c   = count_usc('minimal_debug_c.o', 'output_penciled_scal_c');
+my $n_usc_mpi = count_usc_mpi();
+$failed{"MPI_found"}++ unless ($n_usc_mpi >= 0);
+
+# 6. Summarize
+my $n_failed = 0 + keys(%failed);
+print "You have "
+    . "\$n_usc_c=$n_usc_c, "
+    . "\$n_usc_f90=$n_usc_f90, "
+    . "\$n_usc_mpi=$n_usc_mpi\n";
+if (%failed) {
+    print "$n_failed tests failed: ";
+    print join(', ', keys(%failed)), "\n";
+    print "Your flags:\n";
+    print_flags(\%make_args, 4);
+    print "don't work.\n";
+
+    my %new_make_args = suggest_flags(\%make_args, \%failed);
+    if ($stumped) {
+        print "This situation was never heard of...\n";
+        print "Please send the output of this script to the Pencil Code maintainers\n";
+        print "and attach the file src/$sa_workdir/log_files.tar.gz\n";
+        my @file_list = qw( make_variables.txt
+                            sysinfo.txt
+                            make.log
+                            semiauto-conf.log
+                            semiauto-conf.err
+                          );
+        system('tar', 'cf', 'log_files.tar', @file_list);
+        system('gzip', 'log_files.tar') == 0
+          or die "Couldn't gzip: $!\n";
+    } else {
+        print "Recommended flags:\n";
+        print_flags(\%new_make_args, 4, 'mark');
+    }
+} else {
+    print "All tests succeeded. Your flags:\n";
+    print_flags(\%make_args, 4);
+    print "are good\n";
+}
+
+
+# 7 Clean up
+clean_up();
+
+
+# ====================================================================== #
+
+sub setup_files {
+# Create source files, etc.
+    my $make_args_ref = shift();
+
+# Set up, and move to, temporary directory
+    if (! -d $sa_workdir) {
+        mkdir $sa_workdir or die "Couldn't mkdir $sa_workdir: $!\n";
+    } else {
+        foreach my $file (<$sa_workdir/*>) {
+            unlink $file or die "setup_files: Cannot remove $file\n";
+        }
+    }
+    chdir $sa_workdir;
+
+    # Start log
+    open(LOGFILE,   "> $logfile");
+    open(ERRORFILE, "> $errfile");
+
+    # Create Makefile and source files
+    setup_Makefile($make_args_ref);
+    setup_srcfiles();
+
+}
+# ---------------------------------------------------------------------- #
+sub fortran_header {
+# Return header common to on-the-fly generated Fortran files.
+    my $file = shift;
+
+    my $header = "!                   $file\n";
+    $header .= "! This file was automatically generated by src/scripts/semiauto-conf.\n";
+    $header .= "! If you edit it, you'll get what you deserve.\n";
+
+    return $header;
+}
+# ---------------------------------------------------------------------- #
+sub c_header {
+# Return header common to on-the-fly generated Fortran files.
+    my $file = shift;
+
+    my $header = "/*                   $file\n";
+    $header .= "  This file was automatically generated by src/scripts/semiauto-conf.\n";
+    $header .= "  If you edit it, you'll get what you deserve.\n";
+    $header .= "*/\n";
+
+    return $header;
+}
+# ---------------------------------------------------------------------- #
+sub parse_args {
+# Parse list of args
+#   (arg1=val1 arg2=val2 ...)
+# into hash
+#   (arg1 => val1, arg2 => val2, ...)
+
+    my @argv = @_;
+
+    my %hash;
+    foreach my $arg (@argv) {
+        if ($arg =~ /([^=]+)=(.*?)\s*$/) {
+            $hash{$1} = $2;
+        } else {
+            die "parse_args: Cannot parse <$arg> as <ARG>=<VAL>\n";
+        }
+    }
+
+    return %hash;
+
+}
+# ---------------------------------------------------------------------- #
+sub print_flags {
+# Print the make flags @$flagsref, indented by $n_ind.
+# If optional argument `mark' is set, mark lines different from %make_args
+# in bold face.
+    my $flags_ref = shift();
+    my $n_ind     = shift() || 0;
+    my $mark      = shift() || 0;
+
+    my $indent  = ' ' x $n_ind;
+    my $changed = 0;
+    my @output;
+
+
+    while (my ($flag,$val) = each %$flags_ref) {
+        next unless (length($val)>0
+                     || length($make_args{$flag})>0); #  skip trivial flags
+        my $line = $indent . "$flag=$val\n";
+        if ($make_args{$flag} ne $val) {
+            $changed++;
+            $line = boldface($line) if ($mark);
+        }
+        push @output, $line;
+    }
+
+    if ($mark && !$changed) {
+        print $indent . "[Don't know what to recommend]\n";
+    } else {
+        print @output;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub suggest_flags {
+# Use %$make_flags and %$failed to suggest a set of make flags that ought
+# to work
+    my $make_flags_ref = shift();
+    my $failed_ref     = shift();
+
+    my %new_flags = %$make_flags_ref;
+    my $new_n_usc_f90 = $n_usc_f90;
+
+    if ($failed_ref->{'MPI_link'}) {
+        if (($n_usc_mpi >= 0)
+            && ! $failed{'MPIF_include'}) { # Comparing underscores only
+                                            # makes sense if we have MPI
+                                            # at all
+            if      ($n_usc_f90==1 && $n_usc_mpi==2) {
+                $new_flags{'LIBMPISUFFIX'} = '';
+                $new_flags{'FFLAGS'} = '(-fsecond-underscore|-us)';
+                $new_n_usc_f90 = 2;
+            } elsif ($n_usc_f90==2 && $n_usc_mpi==1) {
+                $new_flags{'LIBMPISUFFIX'} = '';
+                $new_flags{'FFLAGS'} = '(-fno-second-underscore|-nus)';
+                $new_n_usc_f90 = 1;
+            } elsif ($n_usc_f90==2 && $n_usc_mpi==0) {
+                $new_flags{'LIBMPISUFFIX'} = '';
+                $new_flags{'FFLAGS'} = '(-fno-second-underscore|-nus)';
+                $new_n_usc_f90 = 1;
+            } elsif ($n_usc_f90==$n_usc_mpi
+                     && $new_flags{'LIBMPISUFFIX'} ne '') {
+                $new_flags{'LIBMPISUFFIX'} = '';
+            } else {
+                $stumped++;
+            }
+        }
+    }
+
+#    if ($failed_ref->{'F-C_link'}) {
+        $new_flags{'CFLAGS'} = "-O3 -DFUNDERSC=$new_n_usc_f90";
+#    }
+
+    return %new_flags;
+}
+# ---------------------------------------------------------------------- #
+sub make {
+# Call `make' and keep track of errors
+# Usage:
+#   make()
+#   make('target')
+#   make(['FFLAGS=-O5', 'target1', 'target2'])
+#   make('target', 'we can make target')
+#   make(['FFLAGS=-O5', 'target1', 'target2'], 'we can make targets 1 and 2')
+#   make('target', 'we can make target', 'Operation')
+
+    my $arg       = shift();
+    my $question  = shift();
+    my $operation = shift() || '[unknown]';
+    my $logfile   = shift();
+
+    my @args;
+    if (ref($arg) eq "ARRAY") {
+        @args = @$arg;
+    } else {
+        @args = ($arg);
+    }
+
+    open(MAKELOG, ">> $makelog")
+      or die "make: Cannot open $makelog for appending\n";
+    printf MAKELOG separator_line("make @args");
+    if ($question) {
+        my $comment = sprintf("Checking whether %-40s ", $question . '...');
+        print $comment;
+        print MAKELOG "$comment\n";
+    }
+    $| = 1, select $_ for select MAKELOG; # switch on autoflush for MAKELOG
+
+    # Before running `make', clear MAKEFLAGS since we have set `-s'
+    # (silent) in run_dir/Makefile, but we want to have all output here
+    # (we redirect to a file anyway)
+    delete $ENV{MAKEFLAGS};
+
+    my $redirect;
+    if (defined($logfile)) {
+        $redirect = "> $logfile";
+    } else {
+        $redirect = ">> $makelog";
+    }
+
+    # Run `make' only report success if `make' does, and any .o or .x
+    # targets really exist now (some mpich mpif77 script did nothing and
+    # reported sucess :-( )
+    if ((system("make @args $redirect 2>&1") == 0)
+        && (-e $arg || $arg !~ /\.[xo]$/)) {
+        log_to_file("make @args", 'Success');
+        if ($question) {
+            print "Yes\n";
+            print MAKELOG "Yes\n";
+        }
+        return 1;
+    } else {
+        log_to_file("make @args", "Failed: $?");
+        if ($question) {
+            print boldface("No"), "\n";
+            print MAKELOG "No\n";
+        }
+        $failed{$operation} = 1;
+        return 0;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub evaluate_compiler_tests {
+# Print message and die if necessary, based on results of compiler tests
+
+    if ($failed{'F90_comp'} || $failed{'F90_link'}) {
+        die boldface('Hopeless') . ": FC=<$make_args{FC}> does not work.\n"
+          . "Your FFLAGS: <"
+          . join(' ', $make_args{FFLAGS},
+                      $make_args{FFLAGS_GENERAL},
+                      $make_args{F90FLAGS})
+          . ">\n";
+    }
+    if ($failed{'C_comp'}) {
+        die boldface('Hopeless') . ": CC=<$make_args{CC}> does not work.\n"
+            . "Your CFLAGS: <"
+            . join(' ', $make_args{CFLAGS},
+                        $make_args{CFLAGS_GENERAL})
+            . ">\n";
+    }
+    if ($failed{'F77_comp'}) {
+        warn boldface('Bad') . ": F77=<$make_args{F77}> does not work.\n"
+            . "Your FFLAGS: <"
+            . join(' ', $make_args{FFLAGS},
+                        $make_args{FFLAGS_GENERAL},
+                        $make_args{F77FLAGS})
+            . ">\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub count_usc {
+# In file $objfile, look for symbol /$symbol_*/ and count the number of
+# appended underscores.
+    my $objfile = shift();
+    my $symbol  = shift();
+
+    die "count_usc: Cannot read $objfile\n" unless (-r $objfile);
+
+    my @nm_out  = `nm -P $objfile | fgrep '$symbol'`;
+    my @matched = grep /^${symbol}_*\s+[UT](\s+|$)/i, @nm_out;
+    die "Didn't find symbol $symbol in $objfile\n" unless @matched;
+
+    # Warn if there are several lines...
+    if (@matched > 1) {
+        warn "Weird: several lines referring to $symbol in $objfile\n";
+        warn "Try nm $objfile | fgrep '$symbol' to anlyze\n";
+    }
+    # ...and then just use the first one
+    my ($underscores) = ($matched[0] =~ /$symbol(_*)/);
+    my $n_usc = length($underscores);
+
+    return $n_usc;
+}
+
+# ---------------------------------------------------------------------- #
+sub count_usc_mpi {
+# Find the number of underscores in the MPI library used. Uses a C file
+# with symbols mpi_init, mpi_init_ and mpi_init__ and counts the
+# underscores of those that don't get resolved.
+
+    my %defined = (0 => 1,
+                   1 => 1,
+                   2 => 1 );
+
+    make('minimal_mpi_c.o', '', 'Make_MinimalMPI_C');
+    my @nm_out = `make minimal_mpi_c.x 2>&1`;
+
+    # Dump output to make log
+    print MAKELOG separator_line('make minimal_mpi_c.x');
+    print MAKELOG "@nm_out\n";
+
+    # Extract and clean the relevant lines
+    @nm_out = map { chomp; $_ } @nm_out; # chomp all lines
+    my @mpi_init_lines = grep /\bmpi_init_*\b/, @nm_out;
+    @mpi_init_lines = grep /undefined reference/i, @mpi_init_lines;
+
+    foreach my $line (@mpi_init_lines) {
+        my ($underscores) = ($line =~ /\bmpi_init(_*)\b/);
+        $defined{length($underscores)} = 0;
+    }
+
+    return 0 if ($defined{0});
+    return 1 if ($defined{1});
+    return 2 if ($defined{2});
+    # else
+    print boldface('Bad'), ": No MPI library found?\n";
+    return -1;
+}
+# ---------------------------------------------------------------------- #
+sub log_to_file {
+# Write operation and result to log file
+    my $op  = shift();
+    my $res = shift();
+
+    chomp($op);
+    chomp($res);
+
+    printf LOGFILE "[%-30s]: %s\n", $op, $res;
+
+    if ($res =~ 'Failed') {
+        printf ERRORFILE "[%-30s]: %s\n", $op, $res;
+    }
+}
+# ---------------------------------------------------------------------- #
+sub separator_line {
+# Construct a visual separator with some annotation in the middle
+    my $annotation = shift();
+
+    my $sep = '=' x 25;
+    sprintf "%s %-26s %s\n", $sep, $annotation, $sep;
+}
+# ---------------------------------------------------------------------- #
+sub clean_up {
+
+    close(LOGFILE);             # not strictly necessary in Perl
+    close(ERRORFILE);           # ditto
+}
+# ---------------------------------------------------------------------- #
+sub boldface {
+# Convert string argument to bold face using ANSI terminal sequence,
+# provided STDOUT is connected to a terminal. Set the second argument to
+# enforce boldfacing even for non-terminal output .
+    my $string   = shift();
+    my $force_bf = shift() || 0;
+
+    my ($bfa,$bfe);
+    my $esc = chr(0x1b);
+    if (-t STDOUT || $force_bf) {  # if STDOUT is connected to a terminal
+        $bfa = $esc . '[1m';
+        $bfe = $esc . '[0m';
+    } else {
+        $bfa = '';
+        $bfe = '';
+    }
+    return $bfa . $string . $bfe;
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+	print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "usage: Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';		# Need this to trick CVS
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.14 $';
+    my $date = '$Date: 2007-08-24 06:29:40 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+    "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+# The lengthy <<HERE document stuff comes last:
+# ---------------------------------------------------------------------- #
+sub setup_Makefile {
+# Write $sa_workdir/Makefile
+    my $make_arg_ref = shift;
+
+    my $makefile   = "Makefile";
+    open(MAKEFILE, "> $makefile")
+      or die "setup_Makefile: Cannot create $makefile\n";
+    print MAKEFILE <<'EOF1';
+# Makefile for semiauto-conf
+# NB: This file was automatically generated by src/scripts/semiauto-conf.
+#     If you edit it, you'll get what you deserve.
+#
+
+EOF1
+
+    print MAKEFILE "## Variables\n";
+    while (my ($key,$val) = each %$make_arg_ref) {
+        print MAKEFILE "$key=$val\n";
+    }
+    print MAKEFILE "\n";
+
+print MAKEFILE <<'EOF2'
+## Generic rules
+.SUFFIXES:                      # get rid of that annoying Modula rule
+.SUFFIXES: .f .f90 .c .o .x .inc .h
+
+ALL_FFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
+ALL_CFLAGS=$(CFLAGS) $(CFLAGS_GENERAL)
+
+.f90.o:
+	$(FC) $(ALL_FFLAGS) $(F90FLAGS) -o $*.o -c $*.f90
+.f.o:
+	$(FC) $(ALL_FFLAGS) $(F77FLAGS) -o $*.o -c $*.f
+.c.o:
+	$(CC) $(ALL_CFLAGS) -o $*.o -c $*.c
+
+.f90.x:
+	$(FC) $(ALL_FFLAGS) $(F90FLAGS) -o $*.x $*.f90
+.f.x:
+	$(FC) $(ALL_FFLAGS) $(F77FLAGS) -o $*.x $*.f
+.c.x:
+	$(CC) $(ALL_CFLAGS) -o $*.x $*.c
+
+
+## Specific rules
+default: variables minimal_f90 minimal_mpi.o minimal_iodist.o minimal_debug_c.o
+
+iodist_debug_c.x: minimal_iodist.o minimal_debug_c.o
+	$(LD) $(LDFLAGS) \
+	    minimal_iodist.o minimal_debug_c.o \
+	    $(LD_MPI) \
+	    -o iodist_debug_c.x
+
+MPICOMM=minimal_mpi$(LIBMPISUFFIX)
+minimal_mpi_.f90: minimal_mpi.f90
+	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' \
+	    minimal_mpi.f90 > minimal_mpi_.f90
+minimal_mpi.x: $(MPICOMM).o
+	$(LD) $(LDFLAGS) \
+	    $(MPICOMM).o \
+	    $(LD_MPI) \
+	    -o minimal_mpi.x
+
+minimal_mpi_c.x: minimal_mpi_c.o
+	$(LD) $(LDFLAGS) \
+	    minimal_mpi_c.o \
+	    $(LD_MPI) \
+	    -o minimal_mpi_c.x
+
+sysinfo:
+	@(for cmd in 'uname -a' \
+	             'hostname' \
+	             'domainname' \
+	             'dnsdomainname' \
+	             "echo USER=$${USER}" \
+	             "echo HOME=$${HOME}" \
+	             "echo PENCIL_HOME=$${PENCIL_HOME}" \
+	             'env | grep -e "LAM\|MPI" | sort' \
+	             '$(FC) -show' \
+	             '$(FC) -showme' \
+	                       ; do \
+	    echo " -----------------------------------------------"; \
+	    echo "$${cmd}:"; \
+	    (sh -c "$${cmd}" || true); \
+	done) > sysinfo.txt 2>&1; \
+	true
+
+variables:
+	@printf "%s\n" \
+	  '$$(FC)             = <$(FC)>' \
+	  '$$(FFLAGS)         = <$(FFLAGS)>' \
+	  '$$(FFLAGS_GENERAL) = <$(FFLAGS_GENERAL)>' \
+	  '$$(FFLAGS_FOURIER) = <$(FFLAGS_FOURIER)>' \
+	  '$$(F77FLAGS)       = <$(F77FLAGS)>' \
+	  '' \
+	  '$$(CC)             = <$(CC)>' \
+	  '$$(CFLAGS)         = <$(CFLAGS)>' \
+	  '$$(CFLAGS_GENERAL) = <$(CFLAGS_GENERAL)>' \
+	  '$$(CFLAGS_FOURIER) = <$(CFLAGS_FOURIER)>' \
+	  '' \
+	  '$$(LD)             = <$(LD)>' \
+	  '$$(LD_MPI)         = <$(LD_MPI)>' \
+	  '$$(LD_FOURIER)     = <$(LD_FOURIER)>' \
+	  '$$(LDFLAGS)        = <$(LDFLAGS)>' \
+	  '' \
+	  '$$(LIBMPISUFFIX)   = <$(LIBMPISUFFIX)>' \
+	  '' \
+	  > make_variables.txt
+
+clean:
+	rm -f *.o *.x *.mod g95_quickndirty.log
+
+cleanall: clean
+	rm -f make_variables.txt *.log
+
+EOF2
+}
+# ---------------------------------------------------------------------- #
+sub setup_srcfiles {
+# Write or copy basic .f90 and .c files
+
+    my $file;
+
+    # minimal_f90.f90:
+    $file = 'minimal_f90.f90';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE fortran_header($file);
+    print FILE <<"EOF";
+
+! Minimal F90 program
+
+program Minimal
+
+    call sub()
+
+contains
+
+    subroutine sub()
+        print*, "sub here -- don't optimize me away"
+    endsubroutine sub
+
+endprogram Minimal
+
+EOF
+
+    # minimal_f.f:
+    $file = 'minimal_f.f';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE fortran_header($file);
+    print FILE <<"EOF";
+
+! Minimal F77 program
+
+      program Minimal
+
+      end
+
+EOF
+
+    # minimal_c.c:
+    $file = 'minimal_c.c';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE c_header($file);
+    print FILE <<"EOF";
+
+/* Minimal C program */
+
+int main() {
+
+}
+
+EOF
+
+    # include_mpif.f90:
+    $file = 'include_mpif.f90';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE fortran_header($file);
+    print FILE <<"EOF";
+
+program Mpicomm
+
+  include 'mpif.h'
+
+endprogram Mpicomm
+
+EOF
+
+    # minimal_mpi.f90:
+    $file = 'minimal_mpi.f90';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE fortran_header($file);
+    print FILE <<"EOF";
+
+program Mpicomm
+
+  implicit none
+
+  include 'mpif.h'
+
+  call mpi_quick_tour()
+
+contains
+
+!***********************************************************************
+  subroutine mpi_quick_tour()
+!
+      integer :: ierr
+
+      call MPI_INIT(ierr)
+      call MPI_FINALIZE(ierr)
+!
+  endsubroutine mpi_quick_tour
+!***********************************************************************
+
+endprogram Mpicomm
+
+EOF
+
+    close(FILE);
+
+    # minimal_iodist.f90:
+    $file = 'minimal_iodist.f90';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE fortran_header($file);
+    print FILE <<'EOF';
+
+module IO
+
+  external output_penciled_scal_c
+  external output_penciled_vect_c
+
+contains
+
+!***********************************************************************
+  subroutine output_pencil()
+!
+!  Call C functions output_penciled_{scal,vect}_c().
+!
+      call output_penciled_scal_c()
+      call output_penciled_vect_c()
+!
+  endsubroutine output_pencil
+!***********************************************************************
+
+endmodule IO
+
+!======================================================================
+
+program Test
+
+  use IO
+
+  call output_pencil()
+
+endprogram Test
+
+EOF
+
+
+    # minimal_debug_c.c:
+    $file = 'minimal_debug_c.c';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE c_header($file);
+    print FILE <<'EOF';
+
+#if (FUNDERSC == 0)
+#  define FTNIZE(name) name
+#elif (FUNDERSC == 1)
+#  define FTNIZE(name) name##_
+#else
+#  define FTNIZE(name) name##__
+#endif
+
+int FTNIZE(output_penciled_scal_c)() { }
+int FTNIZE(output_penciled_vect_c)() { }
+
+EOF
+
+
+    # minimal_mpi_c.c:
+    $file = 'minimal_mpi_c.c';
+    open(FILE, "> $file")
+      or die "setup_srcfiles: Cannot open $file for writing\n";
+    print FILE c_header($file);
+    print FILE <<'EOF';
+
+int mpi_quick_tour() {
+
+  mpi_init();
+  mpi_init_();
+  mpi_init__();
+
+
+}
+
+int MAIN_(){
+/* Can trick at least g95 (but not so important) */
+
+}
+
+EOF
+}
+# ---------------------------------------------------------------------- #
+
+
+# End of file semiauto-conf

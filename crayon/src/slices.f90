@@ -1,0 +1,493 @@
+! $Id: slices.f90 13524 2010-03-24 08:50:28Z tavo.buk $
+!
+!  This module produces slices for animation purposes.
+!
+module Slices
+!
+  use Cdata
+  use Messages
+  use Sub
+!
+  implicit none
+!
+  private
+!
+  public :: wvid, wvid_prepare, setup_slices, wslice
+!
+  real, target, dimension (nx,ny) :: slice_xy=0.0, slice_xy2=0.0
+  real, target, dimension (nx,nz) :: slice_xz=0.0
+  real, target, dimension (ny,nz) :: slice_yz=0.0
+  real, target, dimension (nx,ny) :: slice_xy3=0.0, slice_xy4=0.0
+!
+  real, public :: tvid
+  integer, public :: nvid
+  real :: tslice
+!
+  contains
+!***********************************************************************
+    subroutine wvid_prepare
+!
+!  Prepare lvideo for writing slices into video file
+!  This is useful for visualization of scalar field (or one component
+!  of a vector field) on the perifery of a box.
+!  Can be visualized in idl using rvid_box.pro
+!
+!  20-oct-97/axel: coded
+!  08-oct-02/tony: increased size of file to handle datadir//'/tvid.dat'
+!  13-nov-02/axel: added more fields, use wslice.
+!  18-mar-03/axel: added dust velocity
+!
+      integer, save :: ifirst=0
+!
+      character (len=5) :: ch
+      character (len=130) :: file
+!
+!  Output vid-data in 'tvid' time intervals
+!
+      file = trim(datadir)//'/tvid.dat'
+      if (ifirst==0) then
+        call read_snaptime(trim(file),tvid,nvid,dvid,t)
+        ifirst=1
+      endif
+!
+!  This routine sets lvideo=T whenever its time to write a slice
+!
+      call update_snaptime(file,tvid,nvid,dvid,t,lvideo,ch,ENUM=.false.)
+!
+!  Save current time so that the time that is written out in wslice() is not
+!  from the next time step
+!
+      if (lvideo) tslice = t
+!
+    endsubroutine wvid_prepare
+!***********************************************************************
+    subroutine wvid(f,path)
+!
+!  Write slices for animation of scalar field
+!  (or one component of a vector field) on the perifery of a box.
+!  Can be visualized in idl using rvid_box.pro.
+!
+!  13-nov-02/axel: added more fields, use wslice.
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
+!
+      use Density,         only: get_slices_density
+      use EquationOfState, only: get_slices_eos
+      use Entropy,         only: get_slices_entropy
+      use General
+      use Hydro,           only: get_slices_hydro
+      use Magnetic,        only: get_slices_magnetic
+      use Shock,           only: get_slices_shock
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character(len=*) :: path
+!
+      type (slice_data) :: slices
+      character(len=5) :: sindex
+      logical, save :: lfirstloop=.true.
+      logical :: lnewfile=.true.
+      logical :: lslices_legacy=.true.
+      integer :: inamev
+!
+      slices%ix =ix_loc
+      slices%iy =iy_loc
+      slices%iz =iz_loc
+      slices%iz2=iz2_loc
+      slices%index=0
+!
+!  Loop over slices.
+!
+      inamev=1
+      do while (inamev <= nnamev)
+        slices%ready=.false.
+        slices%xy=>slice_xy
+        slices%xz=>slice_xz
+        slices%yz=>slice_yz
+        slices%xy2=>slice_xy2
+!
+        slices%name=trim(cnamev(inamev))
+!
+!  By default assume we're not using module hooks to get the slice contents
+!
+        lslices_legacy=.true.
+!
+!  Get slice information from the modules.
+!
+        lslices_legacy=.false.
+        if (ldensity)      call get_slices_density     (f,slices)
+        if (lentropy)      call get_slices_entropy     (f,slices)
+        if (leos)          call get_slices_eos         (f,slices)
+        if (lhydro)        call get_slices_hydro       (f,slices)
+        if (lmagnetic)     call get_slices_magnetic    (f,slices)
+        if (lshock)        call get_slices_shock       (f,slices)
+!
+        if (lslices_legacy) then
+          inamev=inamev+1
+          cycle
+        endif
+!
+!  Slice, or component of slice, ready for saving.
+!
+        if (slices%ready) then
+          if (slices%index==0) then    ! If this wasn't a multi slice...
+            if (associated(slices%yz)) &
+              call wslice(path//trim(slices%name)//'.yz',slices%yz, &
+                                                     x(slices%ix),ny,nz)
+            if (associated(slices%xz)) &
+              call wslice(path//trim(slices%name)//'.xz',slices%xz, &
+                                                     y(slices%iy),nx,nz)
+            if (associated(slices%xy)) &
+              call wslice(path//trim(slices%name)//'.xy',slices%xy, &
+                                                     z(slices%iz),nx,ny)
+            if (associated(slices%xy2)) &
+              call wslice(path//trim(slices%name)//'.xy2',slices%xy2, &
+                                                     z(slices%iz2),nx,ny)
+            inamev=inamev+1
+          else
+            call chn(slices%index, sindex)
+            if (associated(slices%yz)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.yz', &
+                                       slices%yz, x(slices%ix),ny,nz)
+            if (associated(slices%xz)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.xz', &
+                                       slices%xz, y(slices%iy),nx,nz)
+            if (associated(slices%xy)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.xy', &
+                                       slices%xy, z(slices%iz),nx,ny)
+            if (associated(slices%xy2)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.xy2', &
+                                       slices%xy2, z(slices%iz2),nx,ny)
+          endif
+        else
+          if (slices%index==0) then    ! If this wasn't a multi slice...
+            if (lfirstloop.and.lroot) then
+              if (lnewfile) then
+                open(1,file='video.err')
+                lnewfile=.false.
+              else
+                open(1,file='video.err',position='append')
+              endif
+              write(1,*) 'unknown slice: ',trim(cnamev(inamev))
+              close(1)
+            endif
+          else
+            slices%index=0
+          endif
+          inamev=inamev+1
+        endif
+      enddo
+!
+      lfirstloop=.false.
+!
+    endsubroutine wvid
+!***********************************************************************
+    subroutine wslice(filename,a,pos,ndim1,ndim2)
+!
+!  appending to an existing slice file
+!
+!  12-nov-02/axel: coded
+!  26-jun-06/anders: moved from Slices
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
+!
+      integer :: ndim1,ndim2
+      character (len=*) :: filename
+      real, dimension (ndim1,ndim2) :: a
+      real, intent(in) :: pos
+!
+!  check whether we want to write a slice on this processor
+!
+      if ( (lwrite_slice_xy .and.index(filename,'xy' )>0) .or. & 
+           (lwrite_slice_xy2.and.index(filename,'xy2')>0) .or. &
+           (lwrite_slice_xz .and.index(filename,'xz' )>0) .or. &
+           (lwrite_slice_yz .and.index(filename,'yz' )>0) ) then
+        open(1,file=filename,form='unformatted',position='append')
+        write(1) a,tslice,pos
+        close(1)
+      endif
+!
+    endsubroutine wslice
+!***********************************************************************
+    subroutine setup_slices()
+!
+!  Determine slice positions and whether slices are to be written on this
+!  processor.
+!
+!  29-may-06/tobi: wrapped code from param_io.f90 into this subroutine
+!
+!  set slice position. The default for slice_position is 'p' for periphery,
+!  although setting ix, iy, iz, iz2 by hand will overwrite this.
+!  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
+!
+      if (slice_position=='p' .or. slice_position=='S') then
+        ix_loc=l1; iy_loc=m1; iz_loc=n1; iz2_loc=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_yz=.true.
+!
+!  slice position in middle of the box independ of nprocy,nprocz
+!  second horizontal slice is the upper most layer
+!
+      elseif (slice_position=='m') then
+        ix_loc=(l1+l2)/2
+        if (mod(nprocy,2)==0) then; iy_loc=m1; else; iy_loc=(m1+m2)/2; endif
+        if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
+        iz2_loc=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy=(ipz==nprocz/2)
+        lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
+!
+!  slice positions for spherical coordinates
+!  w is for "wedges" since the outputs are 
+!  the midplane (rphi,theta=y(mpoint)) and four 
+!  wedges in rtheta (xy)
+!
+      elseif (slice_position=='w') then
+        !midplane slices
+        !ix_loc=nxgrid/2+nghost
+        iy = nygrid/2+nghost
+        !meridional wedges, at 4 different 
+        !equally spaced azimuthal locations
+        iz =  0*nzgrid/4+1+nghost
+        iz2=  1*nzgrid/4+1+nghost
+        !yz is not needed
+        lwrite_slice_yz =.false.        
+!
+!  Another slice positions for spherical coordinates
+!  s is for "surface" meaning theta-phi sections
+!  keep iz_loc=n1, corresponding to a meridional slice on n=n1.
+!  The lwrite_slice_xz=.true. is needed for the read_video routine.
+!
+      elseif (slice_position=='s') then
+        iz_loc=n1; iz2_loc=n2
+        call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
+        lwrite_slice_xy2=(ipz==nprocz/4)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=.true.
+!
+!  later we may also want to write other slices
+!
+        !call xlocation(xtop_slice,ix2_loc,lwrite_slice_yz2)
+        !call ylocation(ytop_slice,iy2_loc,lwrite_slice_xz2)
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+!  TH: A certain processor layout is implied here
+!
+      elseif (slice_position=='e') then
+        ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
+        if (nprocy==1) then; iy_loc=(m1+m2)/2; endif
+        if (nprocz==1) then; iz2_loc=(iz+n2)/2; endif
+        lwrite_slice_xy2=(ipz==nprocz/4)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
+!
+!  slice position similar to periphery (p), but the two z positions
+!  can now be given in terms of z (zbot_slice, ztop_slice).
+!
+      elseif (slice_position=='c') then
+        ix_loc=l1; iy_loc=m1
+        call zlocation(zbot_slice,iz_loc,lwrite_slice_xy)
+        call zlocation(ztop_slice,iz2_loc,lwrite_slice_xy2)
+        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_yz=.true.
+!
+!  periphery of the box, but the other way around
+!
+      elseif (slice_position=='q') then
+        ix_loc=l2; iy_loc=m2; iz_loc=n2; iz2_loc=n1
+        lwrite_slice_xy2=(ipz==0)
+        lwrite_slice_xy=(ipz==nprocz-1)
+        lwrite_slice_xz=(ipy==nprocy-1)
+        lwrite_slice_yz=.true.
+      else
+        if (lroot) then
+          call fatal_error('setup_slices', &
+                           'No such value for slice_position: '//slice_position)
+        endif
+      endif
+!
+!  Overwrite slice postions if any ix,iy,iz,iz2 is greater then Zero
+!
+      if (ix>0) then
+        ix_loc=ix-ipx*nx
+        if (ix_loc>=l1.and.ix_loc<=l2) then
+          lwrite_slice_yz=.true.
+        else
+          lwrite_slice_yz=.false.
+        endif
+      endif
+!
+      if (iy>0) then
+        iy_loc=iy-ipy*ny
+        if (iy_loc>=m1.and.iy_loc<=m2) then
+          lwrite_slice_xz=.true.
+        else
+          lwrite_slice_xz=.false.
+        endif
+      endif
+!
+      if (iz>0) then
+        iz_loc=iz-ipz*nz
+        if (iz_loc>=n1.and.iz_loc<=n2) then
+          lwrite_slice_xy=.true.
+        else
+          lwrite_slice_xy=.false.
+        endif
+      endif
+!
+      if (iz2>0) then
+        iz2_loc=iz2-ipz*nz
+        if (iz2_loc>=n1.and.iz2_loc<=n2) then
+          lwrite_slice_xy2=.true.
+        else
+          lwrite_slice_xy2=.false.
+        endif
+      endif
+!
+!  write slice position to a file (for convenient post-processing)
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
+        write(1,'(a)') slice_position
+        close(1)
+      endif
+!
+!  write the ipz processor numbers for the two slices
+!  The first number (=ipz) is essential, the others just for interest.
+!
+      if (lwrite_slice_xy.and.ipy==0) then
+        open(1,file=trim(directory)//'/zbot_procnum.dat',STATUS='unknown')
+        write(1,'(2i5,e12.4)') ipz,iz_loc,z(iz_loc)
+        close(1)
+      endif
+      if (lwrite_slice_xy2.and.ipy==0) then
+        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+        write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
+        close(1)
+      endif
+!
+!  make sure ix_loc,iy_loc,iz_loc,iz2_loc
+!  are not outside the boundaries
+!
+       ix_loc=min( ix_loc,l2) ;  iy_loc=min( iy_loc,m2)
+       ix_loc=max( ix_loc,l1) ;  iy_loc=max( iy_loc,m1)
+       iz_loc=min( iz_loc,n2) ; iz2_loc=min(iz2_loc,n2)
+       iz_loc=max( iz_loc,n1) ; iz2_loc=max(iz2_loc,n1)
+!
+      if (lroot) then
+        write (*,*)'read_runpars: slice_position = '//slice_position
+        write (*,'(1x,a,4i4)') &
+          'read_runpars: ix,iy,iz,iz2 (video files) =',&
+          ix,iy,iz,iz2
+      endif
+!
+    endsubroutine setup_slices
+!***********************************************************************
+    subroutine xlocation(xpos,ixpos,lproc)
+!
+!  if xpos lies within this processor, then lproc=T and xpos=x(ixpos).
+!  Otherwise lproc=F and ixpos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  20-feb-10/axel: adapted from zlocation
+!
+      real :: xpos
+      integer :: ixpos,l
+      logical :: lproc
+!
+!  run through all x positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do l=l1,l2
+        if (x(l)<=xpos.and.x(l+1)>xpos) then
+          ixpos=l
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put ixpos=1
+!
+      ixpos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine xlocation
+!***********************************************************************
+    subroutine ylocation(ypos,iypos,lproc)
+!
+!  if ypos lies within this processor, then lproc=T and ypos=y(iypos).
+!  Otherwise lproc=F and iypos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  20-feb-10/axel: adapted from xlocation
+!
+      real :: ypos
+      integer :: iypos,m
+      logical :: lproc
+!
+!  run through all y positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do m=m1,m2
+        if (y(m)<=ypos.and.y(m+1)>ypos) then
+          iypos=m
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put iypos=1
+!
+      iypos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine ylocation
+!***********************************************************************
+    subroutine zlocation(zpos,izpos,lproc)
+!
+!  if zpos lies within this processor, then lproc=T and zpos=z(izpos).
+!  Otherwise lproc=F and izpos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!
+      real :: zpos
+      integer :: izpos,n
+      logical :: lproc
+!
+!  run through all z positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do n=n1,n2
+        if (z(n)<=zpos.and.z(n+1)>zpos) then
+          izpos=n
+          lproc=.true.
+          goto 900
+        else
+        endif
+      enddo
+!
+!  if nothing is found, we set lproc=.false. and
+!  and put izpos=1
+!
+      izpos=1
+      lproc=.false.
+!
+900   continue
+!
+    endsubroutine zlocation
+!***********************************************************************
+endmodule Slices

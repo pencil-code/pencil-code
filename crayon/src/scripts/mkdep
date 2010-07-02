@@ -1,0 +1,171 @@
+#!/bin/sh
+#
+#  Author: Tony Mee.
+#
+#  CVS:
+#    $Id: mkdep 9840 2008-09-05 07:29:37Z ajohan $
+#
+#  Usage:
+#    In $PENCIL_HOME/src do 'mkdep *.f90 > Makefile.depend'
+#
+#  TODO: currently mkdep does not detect dependencies on fftpack.o or on gsl.
+#
+dollar='$'
+
+#script='
+#
+#    s/\bSELFGRAVITY\b/\$(SELFGRAVITY)\$(PC_META_TYPE).o/i;
+#    s/\bMESSAGES\b/messages\$(PC_META_TYPE).o/i;
+#    s/\bMPICOMM\b/\$(MPICOMM_FIX)\$(PC_META_TYPE).o/i;
+#    s/\bGLOBAL\b/\$(GLOBAL)\$(PC_META_TYPE).o/i;
+#    s/\bIO\b/\$(IO)\$(PC_META_TYPE).o/i;
+#    s/\bPOWER_SPECTRUM\b/\$(POWER)\$(PC_META_TYPE).o/i;
+#    s/\bPARTICLES\b/\$(PARTICLES)\$(PC_META_TYPE).o/i;
+#    s/\bPARTICLES_SUB\b/\$(PARTICLES_SUB)\$(PC_META_TYPE).o/i;
+#    s/\bPARTICLES_MAIN\b/\$(PARTICLES_MAIN)\$(PC_META_TYPE).o/i;
+#    s/\bPARTICLES_RADIUS\b/\$(PARTICLES_RADIUS)\$(PC_META_TYPE).o/i;
+#    s/\bPARTICLES_NUMBER\b/\$(PARTICLES_NUMBER)\$(PC_META_TYPE).o/i;
+#    s/\bPARTICLES_SELFGRAVITY\b/\$(PARTICLES_SELFGRAVITY)\$(PC_META_TYPE).o/i;
+#    s/\bHYDRO\b/\$(HYDRO)\$(PC_META_TYPE).o/i;
+#    s/\bVISCOSITY\b/\$(VISCOSITY)\$(PC_META_TYPE).o/i;
+#    s/\bDENSITY\b/\$(DENSITY)\$(PC_META_TYPE).o/i;
+#    s/\bENTROPY\b/\$(ENTROPY)\$(PC_META_TYPE).o/i;
+#    s/\bMAGNETIC\b/\$(MAGNETIC)\$(PC_META_TYPE).o/i;
+#    s/\bRADIATION\b/\$(RADIATION)\$(PC_META_TYPE).o/i;
+#    s/\bPSCALAR\b/\$(PSCALAR)\$(PC_META_TYPE).o/i;
+#    s/\bDUSTVELOCITY\b/\$(DUSTVELOCITY)\$(PC_META_TYPE).o/i;
+#    s/\bDUSTDENSITY\b/\$(DUSTDENSITY)\$(PC_META_TYPE).o/i;
+#    s/\bINTERSTELLAR\b/\$(INTERSTELLAR)\$(PC_META_TYPE).o/i;
+#    s/\bCOSMICRAY\b/\$(COSMICRAY)\$(PC_META_TYPE).o/i;
+#    s/\bCOSMICRAYFLUX\b/\$(COSMICRAYFLUX)\$(PC_META_TYPE).o/i;
+#    s/\bSTRUCT_FUNC\b/\$(STRUCT_FUNC)\$(PC_META_TYPE).o/i;
+#    s/\bINITCOND_SPEC\b/\$(INITCOND_SPEC)\$(PC_META_TYPE).o/i;
+#    s/\bGRAVITY\b/\$(GRAVITY)\$(PC_META_TYPE).o/i;
+#    s/\bEQUATIONOFSTATE\b/\$(EOS)\$(PC_META_TYPE).o/i;
+#    s/\bFORCING\b/\$(FORCING)\$(PC_META_TYPE).o/i;
+#    s/\bSHEAR\b/\$(SHEAR)\$(PC_META_TYPE).o/i;
+#    s/\bTESTPERTURB\b/\$(TESTPERTURB)\$(PC_META_TYPE).o/i;
+#    s/\bTIMEAVG\b/\$(TIMEAVG)\$(PC_META_TYPE).o/i;
+#    s/\bSPECIAL\b/\$(SPECIAL)\$(PC_META_TYPE).o/i;
+#    s/\bTESTFIELD\b/\$(TESTFIELD)\$(PC_META_TYPE).o/i;
+#    s/\bTESTFLOW\b/\$(TESTFLOW)\$(PC_META_TYPE).o/i;
+#    s/\bSHOCK\b/\$(SHOCK)\$(PC_META_TYPE).o/i;
+#    s/\bCHIRAL\b/\$(CHIRAL)\$(PC_META_TYPE).o/i;
+#    s/\bCHEMISTRY\b/\$(CHEMISTRY)\$(PC_META_TYPE).o/i;
+#    s/\bGRID\b/\$(GRID)\$(PC_META_TYPE).o/i;
+#    s/\bFOURIER\b/\$(FOURIER)\$(PC_META_TYPE).o/i;
+#    s/\bGHOSTFOLD\b/ghostfold_\$(MPICOMM)\$(PC_META_TYPE).o/i;
+#    s/\bBORDERPROFILES\b/\$(BORDER_PROFILES)\$(PC_META_TYPE).o/i;
+#
+#    s/\bPARTICLES_CDATA\b/\particles_cdata\$(PC_META_TYPE).o/i;
+#    s/\bCDATA\b/cdata\$(PC_META_TYPE).o/i; 
+#    s/\bPERSIST\b/persist\$(PC_META_TYPE).o/i; 
+#    s/\bCPARAM\b/cparam\$(PC_META_TYPE).o/i; 
+#    s/\bBOUNDCOND\b/boundcond\$(PC_META_TYPE).o/i;
+#    s/\bFILTER\b/filter\$(PC_META_TYPE).o/i;
+#    s/\bINITCOND\b/initcond\$(PC_META_TYPE).o/i;
+#    s/\bTIMESTEP\b/timestep\$(PC_META_TYPE).o/i;
+#    s/\bWSNAPS\b/wsnaps\$(PC_META_TYPE).o/i;
+#    s/\bSUB\b/sub\$(PC_META_TYPE).o/i;
+#    s/\bEQU\b/equ\$(PC_META_TYPE).o/i;
+#    s/\bPRINT\b/prints\$(PC_META_TYPE).o/i;
+#    s/\bREGISTER\b/register\$(PC_META_TYPE).o/i;
+#    s/\bPARAM_IO\b/param_io\$(PC_META_TYPE).o/i;
+#    s/\bDERIV\b/deriv\$(PC_META_TYPE).o/i;
+#    s/\bSLICES\b/slices\$(PC_META_TYPE).o/i;
+#    s/\bGENERAL\b/general\$(PC_META_TYPE).o/i;
+#    s/\bPRINT\b/prints\$(PC_META_TYPE).o/i;
+#    s/\bSNAPSHOT\b/snapshot\$(PC_META_TYPE).o/i;
+#    s/\bFARRAYMANAGER\b/farray\$(PC_META_TYPE).o/i;
+#    s/\bSHAREDVARIABLES\b/shared_variables\$(PC_META_TYPE).o/i;
+#'
+
+script='
+
+    s/\bBORDERPROFILES\b/\$(BORDER_PROFILES_OBJ)/i;
+    s/\bCHIRAL\b/\$(CHIRAL_OBJ)/i;
+    s/\bCHEMISTRY\b/\$(CHEMISTRY_OBJ)/i;
+    s/\bCOSMICRAY\b/\$(COSMICRAY_OBJ)/i;
+    s/\bCOSMICRAYFLUX\b/\$(COSMICRAYFLUX_OBJ)/i;
+    s/\bDENSITY\b/\$(DENSITY_OBJ)/i;
+    s/\bDUSTVELOCITY\b/\$(DUSTVELOCITY_OBJ)/i;
+    s/\bDUSTDENSITY\b/\$(DUSTDENSITY_OBJ)/i;
+    s/\bENTROPY\b/\$(ENTROPY_OBJ)/i;
+    s/\bEQUATIONOFSTATE\b/\$(EOS_OBJ)/i;
+    s/\bFORCING\b/\$(FORCING_OBJ)/i;
+    s/\bFOURIER\b/\$(FOURIER_OBJ)/i;
+    s/\bGLOBAL\b/\$(GLOBAL_OBJ)/i;
+    s/\bGRAVITY\b/\$(GRAVITY_OBJ)/i;
+    s/\bGRID\b/\$(GRID_OBJ)/i;
+    s/\bHYDRO\b/\$(HYDRO_OBJ)/i;
+    s/\bINITCOND\b/\$(INITCOND_OBJ)/i;
+    s/\bINITCOND_SPEC\b/\$(INITCOND_SPEC_OBJ)/i;
+    s/\bINTERSTELLAR\b/\$(INTERSTELLAR_OBJ)/i;
+    s/\bHYPERVISC_STRICT\b/\$(HYPERVISC_STRICT_OBJ)/i;
+    s/\bHYPERRESI_STRICT\b/\$(HYPERRESI_STRICT_OBJ)/i;
+    s/\bIO\b/\$(IO_OBJ)/i;
+    s/\bMAGNETIC\b/\$(MAGNETIC_OBJ)/i;
+    s/\bMESSAGES\b/messages.o/i;
+    s/\bMPICOMM\b/\$(MPICOMM_FIX_OBJ)/i;
+    s/\bNEUTRALDENSITY\b/\$(NEUTRALDENSITY_OBJ)/i;
+    s/\bNEUTRALVELOCITY\b/\$(NEUTRALVELOCITY_OBJ)/i;
+    s/\bPOWER_SPECTRUM\b/\$(POWER_OBJ)/i;
+    s/\bPARTICLES\b/\$(PARTICLES_OBJ)/i;
+    s/\bPARTICLES_SUB\b/\$(PARTICLES_SUB_OBJ)/i;
+    s/\bPARTICLES_MAIN\b/\$(PARTICLES_MAIN_OBJ)/i;
+    s/\bPARTICLES_RADIUS\b/\$(PARTICLES_RADIUS_OBJ)/i;
+    s/\bPARTICLES_NUMBER\b/\$(PARTICLES_NUMBER_OBJ)/i;
+    s/\bPARTICLES_SELFGRAVITY\b/\$(PARTICLES_SELFGRAVITY_OBJ)/i;
+    s/\bPARTICLES_NBODY\b/\$(PARTICLES_NBODY_OBJ)/i;
+    s/\bPOISSON\b/\$(POISSON_OBJ)/i;
+    s/\bPSCALAR\b/\$(PSCALAR_OBJ)/i;
+    s/\bRADIATION\b/\$(RADIATION_OBJ)/i;
+    s/\bSELFGRAVITY\b/\$(SELFGRAVITY_OBJ)/i;
+    s/\bSHEAR\b/\$(SHEAR_OBJ)/i;
+    s/\bTESTPERTURB\b/\$(TESTPERTURB_OBJ)/i;
+    s/\bSHOCK\b/\$(SHOCK_OBJ)/i;
+    s/\bSPECIAL\b/\$(SPECIAL_OBJ)/i;
+    s/\bSTRUCT_FUNC\b/\$(STRUCT_FUNC_OBJ)/i;
+    s/\bTESTFIELD\b/\$(TESTFIELD_OBJ)/i;
+    s/\bTESTFLOW\b/\$(TESTFLOW_OBJ)/i;
+    s/\bTIMEAVG\b/\$(TIMEAVG_OBJ)/i;
+    s/\bVISCOSITY\b/\$(VISCOSITY_OBJ)/i;
+
+    s/\bBOUNDCOND\b/boundcond.o/i;
+    s/\bCDATA\b/cdata.o/i; 
+    s/\bCPARAM\b/cparam.o/i; 
+    s/\bDERIV\b/deriv.o/i;
+    s/\bEQU\b/equ.o/i;
+    s/\bFARRAYMANAGER\b/farray.o/i;
+    s/\bFILTER\b/filter.o/i;
+    s/\bGENERAL\b/general.o/i;
+    s/\bGHOSTFOLD\b/ghostfold_\$(MPICOMM).o/i;
+    s/\bPARAM_IO\b/param_io.o/i;
+    s/\bPARTICLES_CDATA\b/\particles_cdata.o/i;
+    s/\bPERSIST\b/persist.o/i; 
+    s/\bPRINT\b/prints.o/i;
+    s/\bREGISTER\b/register.o/i;
+    s/\bSHAREDVARIABLES\b/shared_variables.o/i;
+    s/\bSLICES\b/slices.o/i;
+    s/\bSNAPSHOT\b/snapshot.o/i;
+    s/\bSUB\b/sub.o/i;
+    s/\bTIMESTEP\b/timestep.o/i;
+    s/\bWSNAPS\b/wsnaps.o/i;
+'
+
+while [ "$1" ]
+do
+  file="$1"
+  if [ -e "$file" ]; then
+    if [ "${file%.c}" != "$file" ]; then
+      echo "${file%.c}.o: $file" 
+    else
+      used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $file | tr '[:lower:]' '[:upper:]' | sort | uniq `
+      depends=`echo $used | perl -npe "$script"`
+      includes=`perl -ne "print \"${dollar}1 \" if m/^\s*include\s*\\'([\S]*\\.(inc|local))\\'/ ;" $file `
+
+      echo "${file%.f90}.o: $file $includes $depends" 
+    fi
+  fi
+  shift
+done

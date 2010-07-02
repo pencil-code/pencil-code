@@ -1,0 +1,157 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   cleanf95
+# Author: Tony Mee (A.J.Mee@ncl.ac.uk)
+# Date:   10-Oct-2002
+# CVS: $Id: cleanf95 9840 2008-09-05 07:29:37Z ajohan $
+# Description:
+#   Read standard input (piped from Intel Fortran compiler with 2>&1 | i.e.
+#   from STDERR).
+#   Strip all the subroutine / function lines and dump the rest back out
+#   to STDERR
+# Usage:
+#   make |& cleanf95 [--intel|--hitachi]     # (csh)
+#   make 2>&1 | cleanf95 [--intel|--hitachi] # (sh)
+
+use strict;
+use Getopt::Long;
+
+my $compiler='intel';		# default
+my $Identi = '[A-Za-z_0-9%]+';	# valid chars of F90 identifiers
+my $IDENTI = '[A-Z_0-9]+';	# ..as capitalized by compiler
+my $identi = '[a-z_0-9]+';	# ..as downcased by compiler
+my $fname  = '[-.a-zA-Z_0-9/]+';	# valid chars of file names
+$| = 1;         # auto-flush output
+my ($multi,$append) = (0,0);
+my $line = '';
+
+## Process arguments
+my (%opts);
+GetOptions(\%opts,
+           qw( --hitachi
+               --intel
+               -h --help
+	       --debug
+              ));
+
+die usage() if ($opts{h} || $opts{help});
+$compiler = 'hitachi' if ($opts{hitachi});
+my $debug = ($opts{debug} || 0);
+my $first = 1;
+
+while(<STDIN>)
+{
+    chomp;
+    print STDERR substr($_,0,50)," [..]\n" if ($debug);
+    if ($compiler eq 'intel') {
+	## Intel F95 compiler
+	print STDERR "Intel settings\n-------------\n" if ($debug && $first);
+	next if /^\s*(module|external)\s+(subroutine|function)\s+$IDENTI\s*$/;
+	next if /^\s*(program|module)\s+$IDENTI\s*$/;
+	next if /^[0-9]+\s*lines compiled/i;
+#	next if /^\s*$/; # handled by ship_out() now
+	ship_out($line);
+	$line = $_;
+    } elsif ($compiler eq 'hitachi') {
+	## Hitachi F90 compiler
+	print STDERR "Hitachi settings\n-------------\n" if ($debug && $first);
+	# Continuation statements
+	if ($multi && /^             ?(\S.*?)\s*$/) {
+	    $line .= $1 if $append;
+	    next;
+	} else {
+	    ($multi,$append) = (0,0);
+	}
+
+	# Single line diagnostics to skip
+	next if /^f90: compile start : $fname$/;
+	next if /^\*OFORT90 V01-04 entered.$/;
+	next if /^\*end of compilation : $Identi\s*$/;
+	next if /^\*program name = $Identi\s*$/;
+	next if /^\*program units = [0-9]+, no diagnostics generated\.$/;
+	next if /^\*program units = [0-9]+,\s*[0-9]+\s+diagnostics generated, highest severity code is  00$/;
+
+	# Multi-line diagnostics
+	if (/^(KCHF656K|   (KCHF475K|KCHF476K)  00)\s/) {
+	    ship_out($line);
+	    $multi = 1;
+	    chomp($_);
+	    $line = "$_ ";
+	    $append = 1;
+	    next;
+	}
+	ship_out($line);
+	$line = $_;
+	$multi = 0;
+    } else {
+	die "Don't know what to filter for\n";
+    }
+} continue {
+    $first = 0;
+}
+ship_out($line);		# last line
+
+# ---------------------------------------------------------------------- #
+sub ship_out {
+    my $line = join(' ', @_);
+    if ($compiler eq 'hitachi') {
+	# Skip lines starting with these diagnostic codes
+	return if ($line =~ /^KCHF656K -I the following file is/);
+    }
+    shorten($line);
+    chomp($line);		# just in case
+    return if ($line =~ /^\s*$/);
+    if ($line eq "PENCIL COMPILATION ERROR") {
+	print STDERR "cleanf95: error during compilation -- stopping\n";
+	exit(-1);
+    }
+    print STDERR "$line\n";
+}
+# ---------------------------------------------------------------------- #
+sub shorten {
+    my $line = $_[0];
+    # Shorten generically
+    $line =~ s/^\s+$/ /g;
+    # Shorten specifically
+    if ($compiler eq 'hitachi') {
+	$line =~
+	  s{\s+00\s+(\S+)\s+the variable is defined, but is never referred.}
+	   { -- var. $1 defined, but never referred};
+	$line =~
+	  s{\s+00\s+(\S+)\s+the variable is declared, but never appears in an any executablestatement.}
+	   { -- var. $1 declared, but appears in no exec. statement};
+    }
+    $_[0] = $line;
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        next unless /^\s*#\s*Usage:/m; # Paragraph _must_ contain `Usage:'
+        # Drop `Author:', etc:
+        s/.*?\n(\s*#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;
+    }
+    $_;
+}
+# ---------------------------------------------------------------------- #

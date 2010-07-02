@@ -1,0 +1,356 @@
+#!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@";     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+#
+# Name    : mkcparam
+# Author  : wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Started : 06-Jul-2002
+# CVS     : $Id: mkcparam 12878 2010-01-08 07:49:37Z ajohan@strw.leidenuniv.nl $
+#
+# Usage:
+#   mkcparam <file1> [<file2> [..]] [-o outfile]\n
+#
+# Description:
+#   Checks the headers (everything before the first non-comment non-empty
+#   line) of input files for lines of the sort
+#     ! MVAR CONTRIBUTION 3
+#     ! MAUX CONTRIBUTION 1
+#     ! MGLOBAL CONTRIBUTION 1
+#     ! MSCRATCH CONTRIBUTION 1
+#     ! COMMUNICATED AUXILIARIES 1
+#     ! NDUSTSPEC CONTRIBUTION 17
+#     ! NCHEMSPEC CONTRIBUTION 3
+#   and accumulates the numbers mvar, maux, maux_com, mglobal, mscratch,
+#   ndustspecs, etc. from these.
+#
+#   Lines of the form
+#     ! PENCILS PROVIDED   uu(3), u2, uij(3,3), gmi(3,ndustspec)
+#   accumulate lists of pencils provided by the input files. The pencils
+#   must be separated by a "," or ";", and for non-scalar pencils the
+#   dimensions must be specified in parenthesis immediately after the
+#   pencil name.
+#
+#   Output is written as a Fortran program and supposed to end up in the
+#   local file src/cparam.inc .
+#
+# Example:
+#     mkcparam entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
+#
+# History:
+#
+#   30-nov-02/tony: Modified to use makefile lines where the Make variable
+#                   and module name differ by more than just case
+#                     e.g.   VISCOSITY=visc_shock
+#                   Also count maux variables too.
+#
+#   12-oct-03/tony: Modified to use in-code declarations of f-array
+#                   contributions.
+#                   Fortran files should contain a block like the
+#                   following at the top to declare any contribution
+#                   they make to the f-array.
+#
+#   07-apr-05/tony: Added the ability to have 'communicated auxiliaries'
+#                   ie. variables which are not evolved (hence have no
+#                   part in the df array.  But which are updated at the
+#                   end of a timestep and communicated along with the mvar
+#                   variables in the f-array.
+#
+# ---------------------------------------------------------------------- #
+my $mvar_decl     = '^\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $maux_decl     = '^\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*([0-9]+)\s*$';
+my $pencils_decl  = '^\s*!\s*PENCILS\s*PROVIDED\s*(.*)\s*$';
+my $cparam_decl   = '^\s*!\s*CPARAM\s*(.*?)\s*$';
+# ---------------------------------------------------------------------- #
+#
+use strict;
+use Getopt::Long;
+#
+my $line;
+my $lmdvar='.false.';
+my $lmice ='.false.';
+my ($maux,$maux_com,$mvar,$mglobal,$mscratch) = (0) x 10;
+my @pencil_names=();
+my @pencil_sizes=();
+my @cparam_lines;
+(my $cmdname = $0) =~ s{.*/}{};
+#
+# Process command line.
+#
+my (%opts);	# Variables written by GetOptions
+GetOptions(\%opts,
+	   qw( -h   --help
+	       -o=s --output=s
+                               ));
+
+die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
+
+my $outfile = ($opts{o} || $opts{output} || "-");
+open(OUT, "> $outfile") or die "Can't open $outfile for writing";
+open(OUT_PENCIL, "> cparam_pencils.inc") or die "Can't open cparam_pencils.inc for writing";
+open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc
+ for writing";
+#
+# Cycle through files (later files will overwrite effect of earlier files)
+#
+file: foreach my $infile (@ARGV) {
+#
+# Now extract `?VAR CONTRIBUTION' info from each file
+#
+  unless (open(INPUT,"< $infile")) {
+  die "Can't open $infile for reading";
+  next file;
+  }
+#
+# Cycle through all lines up to first non-empty non-comment line in file
+#
+line: while (defined($line=<INPUT>)) {
+  next line if ($line =~ /^\s*$/); # ignore empty lines
+  last line if ($line !~ /^\s*!/); # done if non-comment line
+  extract_decl ($line, $mvar_decl    , \$mvar     );
+  extract_decl ($line, $maux_decl    , \$maux     );
+  extract_decl ($line, $mglobal_decl , \$mglobal  );
+  extract_decl ($line, $mscratch_decl, \$mscratch );
+  extract_decl ($line, $maux_com_decl, \$maux_com );
+#
+  if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
+#
+# Extract provided pencils from file headers.
+#
+  if ($line=~ /$pencils_decl/) {
+    # my @pencils = split /\s*;\s*/, $2;
+    # foreach my $pencil (@pencils) {
+      while ($line =~ s{
+                           ^                          # anchor at start
+                           (?:                        # group, don't capture
+                               !\ PENCILS\ PROVIDED   # either initial marker
+                           |                          # ..or..
+                               \s*[,;]                # separator
+                           )
+                           \s*                        # arbitrary whitespace
+                           (                          # capture as $1
+                               [a-zA-Z0-9_]+          # variable name
+                               (?:                    # group, don't capture
+                                   \(                 # (
+                                   [a-zA-Z0-9_]+      #  <dim1>
+                                   (,[a-zA-Z0-9_]+)*  # optional ,<dim2>[,<dim3>]...
+                                   \)                 # )
+                               )?                     # the (..) part is optional
+                           )
+                       }
+                       {}x) {                         # delete everything matched
+      my $pencil=$1;
+      my $pencil_name=$pencil;
+      my $pencil_size=$pencil;
+#
+# Extract name and size of pencils.
+#
+      if ($pencil =~ /\(.*\)/) {
+        $pencil_size=~ s/^.*\((.*)\)/$1/g;
+        } else {
+        $pencil_size='';
+        }
+      $pencil_name =~ s/\(.*\)//g;
+#
+# Default pencil size is (nx).
+#
+      if ($pencil_size eq '') {
+        $pencil_size='(nx)'} else {
+        $pencil_size="(nx,$pencil_size)";}
+#
+# Store pencil information in arrays.
+#
+      my $pencil_already_used=0;
+      foreach my $pencil_name_used (@pencil_names){
+        if ($pencil_name eq $pencil_name_used) {$pencil_already_used=1;}
+        }
+      if ($pencil_already_used eq 0) {
+        push (@pencil_names,$pencil_name);
+        push (@pencil_sizes,$pencil_size);
+        }
+      }
+    }
+  }
+}
+#
+# Calculate the total number of pencils.
+#
+my $npencils=$#pencil_names+1;
+#
+# Write to cparam.inc, cparam_pencils.inc and pencil_init.inc.
+#
+print OUT <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!  cparam.inc
+!
+! This file was automatically generated by $cmdname, so think twice before
+! you modify it.
+!
+! It is included by cparam.f90 and defines some constants based on the
+! settings in Makefile.local
+!
+
+integer, parameter :: mvar=$mvar, maux=$maux
+integer, parameter :: maux_com=$maux_com
+integer, parameter :: mglobal=$mglobal
+integer, parameter :: mscratch=$mscratch
+logical, parameter :: lmdvar=$lmdvar, lmice=$lmice
+
+EOF
+
+print OUT_PENCIL <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!  cparam_pencils.inc
+!
+! This file was automatically generated by $cmdname, so think twice before
+! you modify it.
+!
+! It is included by cparam.f90 and defines the pencil_case data type and
+! sets some variables related to this.
+!
+
+EOF
+#
+# Read contents of cparam.local.
+#
+my @cparam='';
+#
+open CPARAM, "cparam.local";
+  @cparam=<CPARAM>;
+close CPARAM;
+#
+# Insert all CPARAM lines, extracted from the headers of the chosen physics
+# modules.
+#
+$,="\n";
+print OUT @cparam_lines;
+#
+# Generate cparam_pencils.inc where the pencil case is defined and initialized.
+#
+print OUT_PENCIL <<"EOF";
+integer, parameter :: npencils=$npencils
+type pencil_case
+EOF
+#
+# Define pencils in pencil case.
+#
+my $i=0;
+foreach my $pencil_name (@pencil_names) {
+  print OUT_PENCIL "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
+  $i=$i+1;
+}
+print OUT_PENCIL "endtype pencil_case\n\n";
+#
+# Define pencil indices.
+#
+$i=1;
+foreach my $pencil (@pencil_names) {
+  print OUT_PENCIL "integer :: i_$pencil=$i\n";
+  $i++;
+}
+#
+# Define pencil names.
+#
+print OUT_PENCIL "character (len=15), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+$i=0;
+foreach my $pencil (@pencil_names){
+  print OUT_PENCIL ", " if ($i != 0);
+  print OUT_PENCIL "'$pencil". " "x(14-length($pencil)) ."'";
+  print OUT_PENCIL "  &\n   " if (($i % 4) == 3);
+  $i++;
+}
+print OUT_PENCIL " /)\n";
+#
+# Define pencil logicals, used by the code to distinguish between needed
+# and not needed pencils.
+#
+print OUT_PENCIL "logical, parameter, dimension(npencils):: lpenc_required  = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_diagnos   = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_diagnos2d = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_video     = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_requested = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpencil         = .false. \n\n\n";
+#
+# Generate pencil_init.inc, for initializing the pencil case.
+#
+print OUT_PENC_INIT <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!  pencil_init.inc
+!
+! This file was automatically generated by $cmdname, so think twice before
+! you modify it.
+!
+! It is included by equ.f90 and defines a subroutine to reset all pencils to
+! a reference value for pencil_consistency_check().
+!
+subroutine initialize_pencils(p,penc0)
+
+  type (pencil_case) :: p
+  real :: penc0
+
+EOF
+#
+foreach my $pencil (@pencil_names) {
+  print OUT_PENC_INIT "  p%$pencil = penc0\n";
+}
+#
+print OUT_PENC_INIT "\nendsubroutine initialize_pencils";
+#
+# Close the files.
+#
+close(OUT);
+close(OUT_PENCIL);
+close(OUT_PENC_INIT);
+#
+# ---------------------------------------------------------------------- #
+#
+sub extract_decl{
+#
+# Extract declaration of contribution to mvar and similar
+#
+    my $line = shift;
+    my $regexp = shift;
+    my $counter_ref = shift;
+
+    if ($line =~ /$regexp/) {
+	  $$counter_ref += $1;
+      }
+}
+#
+# ---------------------------------------------------------------------- #
+#
+sub usage {
+#
+# Extract description and usage information from this file's header.
+#
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+# End of file mkcparam

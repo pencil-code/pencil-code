@@ -1,0 +1,28 @@
+#!/bin/csh
+
+# Name:   check-mkfile
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   30-May-2004
+# Description:
+#   Warn about trailing spaces in assignment lines in Makefiles.
+# Usage:
+#   check-mkfile file [file2 [file3 [...]]]
+
+set trailblank =  '[ 	]$'
+set trailbline =  "^[^#]*=.*$trailblank"
+
+if ($#argv < 1) set argv=( '-' )
+
+if { grep "$trailbline" $* >& /dev/null } then
+  echo "WARNING: Found trailing space(s) in (${*})"
+  echo "WARNING: --- this can cause weird failures of 'make'."
+  echo "WARNING: --- Affected lines:"
+  grep "$trailbline" $* | sed "s/$trailblank/_REMOVE-ME-BLANK_/"
+  exit 1
+else
+  # Everything OK
+  exit 0
+endif
+
+
+# End of file check-mkfile

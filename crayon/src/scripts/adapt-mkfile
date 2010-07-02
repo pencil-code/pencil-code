@@ -1,0 +1,309 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   adapt-mkfile
+# Author: wd (Wolfgangi [.] Dobler [at] kis.uni-freiburg.de)
+# $Date: 2007-09-12 15:08:39 $
+# $Revision: 1.7 $
+# Description:
+#   Transform a makefile with machine-dependent information into one that
+#   is adapted to the machine we're running on.
+
+use strict;
+use Getopt::Long;
+
+my ($infile,$outfile);
+my ($activate,$hosttag);
+# Markers for identifying the block we are allowed to touch:
+my $start_tag = '^\s*###\s*begin\s*machine\s*dependent';
+my $end_tag =   '^\s*###\s*end\s*machine\s*dependent';
+# Files to include if present (option `-f' may add one)
+my @global_incfiles = ($ENV{ADAPT_MKFILE} ||
+		        ( "$ENV{HOME}/.adapt-mkfile.inc",
+			  "$ENV{HOME}/.adapt-mkfile.incl" )
+		      );
+my @incfiles = (@global_incfiles,
+		"./.adapt-mkfile.inc",
+		"./.adapt-mkfile.incl",
+		"./adapt-mkfile.inc",
+		"./adapt-mkfile.incl");
+
+my $os = `uname -s`; chomp($os);
+my $host = `uname -n`; chomp($host);
+my $myostag = "\#\#\\s$os:\\s*\$"; # Beginning..
+my $end_ostag = '^\s*$';	# and end of block for my OS
+my $anyhosttag = '\#\s*\(.*\)\s*$'; # ' Any explicit #(host) entry
+
+my $cmdname = (split('/', $0))[-1];
+my $usage = "Usage:  $cmdname [-h|--help] [-v|--version] [-f incfile] [file1 [file2]]
+Processes the makefile file1 (or stdin) and writes the locally adapted
+makefile to file2 (or stdout).
+`perldoc adapt-mkfile' will give you the complete documentation.
+" ;
+my $message = "
+# Caution:
+#   This file has been created from `" . ($ARGV[0] || '<stdin>') . 
+    "' and will be overwritten the
+#   next time `$cmdname' is called. If you're about to make non-trivial
+#   changes, you probably want to edit the master file instead.\n";
+
+## Process arguments
+my (%opts);
+GetOptions(\%opts,
+           qw( -h   --help
+                    --debug
+               -f=s
+               -v   --version ));
+if ($opts{'h'} || $opts{'help'}) { die $usage; }
+my $doll='\$';                  # Need this to trick CVS
+if ($opts{'v'} || $opts{'version'}) {
+    my $rev = '$Revision: 1.7 $';
+    my $date = '$Date: 2007-09-12 15:08:39 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+    die "$cmdname version $rev ($date)\n";
+}
+if (defined($opts{'f'})) {
+    if (-e "$opts{'f'}") {
+	push @incfiles, "$opts{'f'}";
+    } else {
+	warn "No such file: $opts{'f'}\n";
+    }
+}
+
+$infile = ($ARGV[0] || '-');
+$outfile = ($ARGV[1] || '- ');
+if ($infile eq $outfile) {
+    die "$cmdname: Input and output files must differ.\n";
+}
+open(INPUT,"< $infile") || die "Can't open $infile for reading";
+open(OUTPUT,"> $outfile") || die "Can't open $outfile for writing";
+
+## Collect content of @incfiles
+my ($inc,$i,$inctext) = ('',0,'');
+Include: for $inc (@incfiles) {
+    ($inc) = glob($inc) or warn "Couldn't glob() expand $inc\n";
+    local $/=undef;		# read whole files (within this block)
+    if (-r $inc) {
+	unless (open(INC, "< $inc")) {
+	    warn "Can't open file $inc\n";
+	    next Include;
+	}
+	$inctext .= <INC>;
+    }
+}
+
+## Process input file
+Line: while (<INPUT>) {
+    if ((/^\s*$/ || /$start_tag/i) && $message) { # Issue message once
+	$_ = $message . $_;
+	$message = '';
+    }
+    if (/$start_tag/i .. /$end_tag/i) {	# Modify only between these tags
+	if (/$myostag/i .. /$end_ostag/i) { # Directives for the given OS
+	    $activate = 1;
+	    if (/$anyhosttag/i) {
+		# Extract the host tag (retaining the outer brackets):
+		$hosttag = ($_ =~ /\#\s*(\(.*\))\s*$/)[0];
+		if ($host !~ /^$hosttag/i) { $activate = 0; }
+	    }
+	} else {		# Different OS
+	    $activate = 0;
+	}
+	# Uncomment singly commented lines
+	if ($activate) {
+	    $_ =~ s/^\s*\#([^\#\n])/$1/;
+	} else {		# Wrong OS or host ==> comment out
+	                        # uncommented lines
+	    $_ =~ s/^(\s*[^\#\n])/\#$1/m;
+	}
+	# Insert any include files (adapt-mkfile.incl)
+	if (/$end_tag/i) { $_ = $inctext . $_ };
+    }
+    print OUTPUT $_;
+}
+
+
+__END__
+
+=head1 NAME
+
+B<adapt-mkfile> - Transform a makefile with machine-dependent information
+into one that is adapted to the machine we're running on.
+
+=head1 SYNOPSIS
+
+B<adapt-mkfile> [B<-f> F<incfile>] [F<file1> [F<file2>]]
+
+B<adapt-mkfile> [B<-h>|B<--help>] [B<-v>|B<--version>]
+
+=head1 DESCRIPTION
+
+B<adapt-mkfile> processes a makefile and activates or deactivates lines
+depending on the operating system and the machine name. In addition, the
+contents of certain files will be appended to the adapt-mkfile block. The
+aim is to have one meta-makefile (typically `Makefile'), from which a
+machine-specific `makefile' is generated.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item F<file1>, F<file2>
+
+Input and output file names; default to standard input/output
+
+=item B<-f> F<incfile>
+
+Include the contents of file F<incfile> (see L</"FILES">)
+
+=item B<-h>, B<--help>
+
+Show usage overview
+
+=item B<-v>, B<--version>
+
+Show version number
+
+=back
+
+=head1 SYNTAX
+
+=over 4
+
+=item * The source file is copied from input to output and only the block
+between $start_tag and $end_tag (currently C<### Begin machine dependent>
+and C<### End machine dependent>) is processed.
+
+=item * A line of the form `## <OS>:' starts an OS block that ends on the
+next empty line
+
+=item * The <OS> tag is matched against the output from `uname -s'
+
+=item * Within the matching OS block,
+
+=over 8
+
+=item * Lines starting with two or more comment signs remain untouched
+
+=item * Non-comment lines and lines starting with one comment sign are
+normally activated ---
+
+=item * --- but if a line ends in `#(<HOST>)', it is only activated on a
+matching host
+
+=item * <HOST> can contain any Perl regular expression and will be matched
+against the output from `uname -n', the regexp being anchored at the
+beginning, but not at the end. Thus, C<#(mhd.)> will match mhd0, mhd1,
+mhd2, etc, and also mhd1.st-and.ac.uk Alternatively, we can use something like
+C<#(mhd0|mhd1)> or C<#(mhd[0-6])>.
+
+=back
+
+=item * Within non-matching OS blocks, non-comment lines and
+single-comment lines will be commented out (with one comment sign); all
+other lines are left untouched
+
+=back
+
+An example is probably best to illustrate how an input Makefile
+can look like:
+
+  ### Begin machine dependent
+
+  ## Linux:
+  ## This comment will always remain untouched
+  #FC=f95
+  #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
+  #FFLAGS= -O4 -C -gline -Wc,-malign-double
+
+  ## OSF1:
+  ## Compaq/HP alpha
+  #FC=f95
+  #FFLAGS=-fast -O5
+  #FFLAGS=-fast -O5 -tune ev6 -arch ev6 #(Mhd.)
+
+  ## IRIX64:
+  #FC=f90
+  #FFLAGS= -64 -O3 -C -macro_expand  #(Antares)
+  #FFLAGS= -pfalist -64 -O3 -mips4 -C -macro_expand  #(Grand)
+
+  ### End machine dependent
+
+  ## Main part of Makefile follows...
+
+
+=head1 FILES
+
+At the end of the adapt-mkfile block, i.e. just before the C<### End
+machine dependent>, the contents of the following files will be inserted
+(in this order) if present:
+
+=over 4
+
+=item 1. F<$ADAPT_MKFILE> if that environment variable exists,
+    otherwise F<~/.adapt-mkfile.incl>
+
+=item 2. F<./.adapt-mkfile.incl> (deprecated)
+
+=item 3. F<./adapt-mkfile.incl> (preferred)
+
+=item 4. The file name specified with the B<-f> option
+
+=back
+
+This allows you to enforce local settings without touching the Makefile
+itself (useful for tricky things like cross-compiling).
+
+=head2 Note:
+
+The file names F<~/.adapt-mkfile.inc>,
+F<./adapt-mkfile.inc> and F<./adapt-mkfile.inc> will also work, but the
+above forms of the file names (suffix C<.incl>) are recommended.
+
+=head1 NOTES
+
+=over 4
+
+=item * All pattern matching is case-independent, thus C<## linux:>,
+    C<## Linux:> and C<## LiNuX:> will all be matched on a GNU/Linux box.
+
+=item * One can call B<adapt-mkfile> within the F<Makefile>:
+
+  default: makefile code
+
+  makefile: Makefile
+          adapt-mkfile Makefile makefile
+  code:
+          make start.x run.x
+  ...
+
+=back
+
+=head1 AUTHOR
+
+Wolfgang Dobler  <Wolfgang [.] Dobler [at] kis.uni-freiburg.de>
+
+=head1 SEE ALSO
+
+perl(1), make(1)
+
+=head1 BUGS
+
+Too many to mention
+
+=cut

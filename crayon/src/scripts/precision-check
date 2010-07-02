@@ -1,0 +1,117 @@
+#!/usr/bin/perl -w
+
+# Name:   precision-check
+# Author: wd (Wolfgang.Dobler@ucalgary.ca)
+# Date:   26-May-2008
+# Description:
+#   Do a consistency check of desired precision vs. precision of already
+#   existing .o files.
+
+use strict;
+
+my $debug = 0;
+
+logger("debug = $debug");
+logger("\@ARGV = " . join(", ", @ARGV));
+
+die "Usage: precision-check <current-precision-file> <new-precision>\n"
+  unless (@ARGV == 2);
+my ($current_file, $desired) = @ARGV[0..1];
+
+my $current = read_precision_from($current_file);
+logger("\$current = <$current>, \$desired = <$desired>\n");
+
+if ($current ne $desired) {
+    logger("not equal");
+    if (check_for_object_files('./src')) {
+        sort_out_conflict();
+    }
+}
+
+# ---------------------------------------------------------------------- #
+sub read_precision_from {
+# Extract current precision from file, being very white-space tolerant
+    my $file = @_;
+    unless (open(CURRENT, "< $current_file")) {
+        warn "precision-check: No such file $current_file -- creating new one";
+        write_current_file($desired);
+        exit 0;                     # Don't do anything in old run dir
+    }
+    my $current = (grep /\S/, <CURRENT>)[0];
+    close(CURRENT);
+    $current =~ s/\s*(\S+).*/$1/s;
+    return $current;
+}
+# ---------------------------------------------------------------------- #
+sub sort_out_conflict {
+# We have conflicting precisions, so ask the user (if connected to a
+# terminal) or quit.
+
+    if (! (-t STDIN && -t STDOUT)) {
+        print "Conflicting precisions -- quitting\n";
+        exit 1;
+    }
+
+    print <<"BOUSTROPHEDON";
+You are about to compile for $desired precision, but the existing .o files
+appear to be for $current precision.
+BOUSTROPHEDON
+    print "Run `make clean' to start over? [Y/n]";
+    my $answer = <STDIN>;
+    chomp($answer);
+    logger("\$answer = <$answer>");
+    if ($answer !~ /^\s*[yY]/) {
+        print "Quitting\n";
+        exit 1;
+    } else {
+        logger("Running\n  system('make', 'clean');\n  system('make')");
+        system('make', 'clean') == 0
+          and system('make');
+        write_current_file($desired);
+    }
+}
+# ---------------------------------------------------------------------- #
+sub check_for_object_files {
+# Return true if any of the given directories contains .o files, flase
+# otherwise
+    my @dirs = @_;
+
+    for my $d (@dirs) {
+        unless (opendir(DIR, $d)) {
+            warn "Couldn't open $d: $!\n";
+            next;
+        }
+        if (my @found = grep m{\.o$}, readdir(DIR)) {
+            logger("Found .o files <$found[0]>");
+            return 1;
+        }
+    }
+    # Nothing found
+    logger("No *.o files in <" . join(">, <", @dirs) . ">, hence continuing");
+    return 0;
+}
+# ---------------------------------------------------------------------- #
+sub write_current_file {
+# Write the given precision to file
+    my ($pecision) = @_;
+    logger("Saving <$pecision> to file $current_file");
+    open(CURRENT, "> $current_file")
+      or die "Can't open $current_file for writing: $!\n";
+    print CURRENT "$pecision\n";
+    close CURRENT;
+}
+# ---------------------------------------------------------------------- #
+sub logger {
+# Log some diagnostics, if $debug is true
+    my @text = @_;
+    my $prefix = "precision-check: ";
+    if ($debug) {
+        for my $line (@text) {
+            chomp($line);
+            print STDERR $prefix, $line, "\n";
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+
+# End of file precision-check

@@ -1,0 +1,156 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@";     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   mkcparam
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Started:   06-Jul-2002
+# CVS: $Id: mkdot 9840 2008-09-05 07:29:37Z ajohan $
+# Usage:
+#  Hello errrr...
+
+# History:
+#   23-jun-05/tony: Created
+#
+
+# ---------------------------------------------------------------------- #
+my $use_statement  = '^\s*use\s+([A-Za-z_]+)\s*(,\s*only: ([A-Za-z0-9_,\s]+))*$';
+my $module_start  = '^\s*module\s+([A-Za-z_]+)\s*$';
+my $module_end  = '^\s*end\s*module\s+([A-Za-z_]+)\s*$';
+my $program_start  = '^\s*program\s+([A-Za-z_]+)\s*$';
+my $program_end  = '^\s*end\s*program\s+([A-Za-z_]+)\s*$';
+my $main_program_module = 'MAIN_PROGRAM';
+my $current_module = $main_program_module;
+my %unique_dep;
+# ---------------------------------------------------------------------- #
+
+use strict;
+use Getopt::Long;
+
+my $line;
+my $dust_string='1*4';
+my $lmdvar='.false.';
+my $lmice ='.false.';
+my ($maux,$maux_com,$mvar,$mpvar,$ndustspec,$mvar_per_dust) = (0) x 6;
+
+(my $cmdname = $0) =~ s{.*/}{};
+
+## Process command line
+my (%opts);	# Variables written by GetOptions
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --nono
+	       -T=s --title=s
+	       -o=s --output=s
+                               ));
+
+my $nono = $opts{nono};
+die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
+my $title = ($opts{T} || $opts{title} || 'dependencies');
+
+my $outfile = ($opts{o} || $opts{output} || "-");
+open(OUT, "> $outfile") or die "Can't open $outfile for writing";
+
+## Write output
+print OUT <<"EOF";
+//  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+//  DOT description for Module dependence
+//
+digraph "$title" {
+    rotate=90;
+    size="11,7.55";
+    ratio = fill;
+    node[width=5.5,hight=4.,fontsize=50];
+EOF
+
+# Cycle through files (later files will overwrite effect of earlier files)
+file: foreach my $infile (@ARGV) {
+# Now extract `?VAR CONTRIBUTION' info from each file
+print OUT "// Processing file: $infile\n";
+	$current_module=$main_program_module;
+    unless (open(INPUT,"< $infile")) {
+	print STDERR "Skipping $infile (not found)\n";
+	next file;
+    }
+# Cycle through all lines up to first non-empty non-comment line in file
+    line: while (defined($line=<INPUT>)) {
+	next line if ($line =~ /^\s*$/); # ignore empty lines
+#	last line if ($line !~ /^\s*!/); # done if non-comment line
+#	extract_decl ($line, $mvar_decl    , \$mvar     );
+#	extract_decl ($line, $maux_decl    , \$maux     );
+#	extract_decl ($line, $maux_com_decl, \$maux_com );
+#	extract_decl ($line, $mpvar_decl   , \$mpvar    );
+# Check for information about number of dust species and discretization type   
+	  if ($line=~ /$program_start/i) {
+        $current_module="$1";
+        $current_module =~ tr/a-z/A-Z/;
+      }
+	  if ($line=~ /$program_end/i) {$current_module=$main_program_module;}
+	  if ($line=~ /$module_start/i) {
+        $current_module=$1;
+        $current_module =~ tr/a-z/A-Z/;
+        if ($infile =~ /^no/) { print OUT "$current_module [color=blue,fontcolor=blue]\n"}
+      }
+	  if ($line=~ /$module_end/i) {$current_module=$main_program_module;}
+	  if ($line=~ /$use_statement/i) {
+        my $dependency= $1;
+        $dependency =~ tr/a-z/A-Z/;
+        if (! exists($unique_dep{"$current_module$dependency"})) {
+          $unique_dep{"$current_module$dependency"}="exists"; 
+          if (!($nono && $infile=~ /^no/)) { print OUT "  $current_module -> $dependency;\n"; }
+        }
+      }
+    }
+}
+
+## Write output
+print OUT <<"EOF";
+}
+EOF
+
+
+# ---------------------------------------------------------------------- #
+sub extract_decl{
+## Extract declaration of contribution to mvar and similar
+    my $line = shift;
+    my $regexp = shift;
+    my $counter_ref = shift;
+
+    if ($line =~ /$regexp/) {
+	  $$counter_ref += $1;
+      }
+}
+
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file mkcparam

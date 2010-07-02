@@ -1,0 +1,78 @@
+$Id: README 12697 2009-12-26 16:39:09Z AxelBrandenburg $
+
+1. You are not supposed to compile in this src directory.
+
+2. You should always compile from the run directory
+   (e.g. creacted via pc_newrun by cloning an earlier run).
+   This src directory appears then as a link in you run directory.
+   The pc_setupsrc produces a file Makefile in your run directory.
+
+3. The file src/Makefile.local indicates which files are actually used.
+   In fact, only a small fraction is used each time.
+
+4. Example: the equation-of-state module. You would only used one
+   out of several possibilities:
+
+     eos_idealgas.f90
+     eos_chemistry.f90
+     eos_ionization.f90
+     eos_fixed_ionization.f90
+     eos_temperature_ionization.f90
+
+   and runs without an equation of state you would use:
+
+     noeos.f90
+
+5. Some confusion may occur because not all modules are equally
+   frequently used, and some are more outdated and not recommended.
+   The following gives a brief status decription.
+
+Brief status description about some modules
+===========================================
+
+The EOS module
+--------------
+
+6-sep-09: For standard applications "eos_idealgas" is used routinely.
+"eos_chemistry" is only used in conjunction with the chemistry module,
+but chemistry.f90 can also be used with eos_idealgas.f90.
+"eos_ionization" calculates the degree of ionization from the Saha equation,
+"eos_fixed_ionization" is similar, but uses a fixed degree of ionization.
+
+The testfield module
+--------------------
+
+None of these modules have to run with magnetic field, but they can
+if one wants the velocity field to be affected by the magnetic field.
+
+     testfield_z.f90
+
+       6-sep-09: is used routinely. Assumes z-dependent mean magnetic fields.
+    
+     testfield.f90
+
+       6-sep-09: is not currently used, but functional and would need to be
+       checked and updated. It is used for testfields that depend on
+       x and z, so avering over y is assumed.
+
+     testfield_x.f90
+
+       6-sep-09: is functional, but not at the same level of advancement as testfield_z.
+       It is used for x-dependent mean fields, i.e. averaging over y and z is assumed.
+
+     testfield_xz.f90
+
+       6-sep-09: status is currently unclear. It may be redundant.
+
+The anelastic module
+--------------------
+
+The former anelastic branch is now inactive and all changes have been
+merged into the main trunk.
+
+     density_anelastic.f90
+
+       26-dec-09: several aspects of this module are now working,
+       but it is still experimental and should not be used for
+       production runs.
+
