@@ -1,0 +1,22 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+&init_pars
+  cvsid='$Id: start.in 12865 2010-01-07 11:09:46Z ajohan@strw.leidenuniv.nl $'
+  unit_length=3.16e21, unit_velocity=1.0e5, unit_density=1.0e-24
+  r_int=0.5, r_ext=1.0
+/
+&eos_init_pars
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&grav_init_pars
+  gravz_profile='const'
+/
+&entropy_init_pars
+/
+&magnetic_init_pars
+/
+&shear_init_pars
+  qshear=1.0
+/

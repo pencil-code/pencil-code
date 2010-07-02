@@ -1,0 +1,6 @@
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $',
+/

@@ -1,0 +1,25 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+&run_pars
+  cvsid='$Id: run.in 12867 2010-01-07 11:12:55Z ajohan@strw.leidenuniv.nl $',
+  nt=1, it1=1, itorder=1, dtmax=1.0e-20
+  dsnap=1.0, tavg=2.0
+  lpencil_check=F, lpencil_check_small=T, lrandom_f_pencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&grav_run_pars
+/
+&entropy_run_pars
+/
+&magnetic_run_pars
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+/
+&shock_run_pars
+/

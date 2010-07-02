@@ -1,0 +1,5 @@
+&run_pars
+  cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
+  nt=5, it1=1
+  dtmax=1.
+/
