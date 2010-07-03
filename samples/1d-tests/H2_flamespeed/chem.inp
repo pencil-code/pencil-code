@@ -133,7 +133,6 @@ CO2               121286C   1O   2          G  0300.00   5000.00  1000.00      1
 END
 
 REACTIONS
-
 H+O2=O+OH                 3.547e+15 -0.406  1.6599E+4
 O+H2=H+OH                 0.508E+05  2.67  0.629E+04   
 H2+OH=H2O+H               0.216E+09  1.51  0.343E+04
@@ -167,9 +166,9 @@ HO2+H=OH+OH               7.079E+13   0.00   2.95E+02
 HO2+O=O2+OH               0.325E+14  0.00   0.00E+00   
 HO2+OH=H2O+O2             2.890E+13  0.00 -4.970E+02
 HO2+HO2=H2O2+O2           4.200e+14  0.00  1.1982e+04
-  DUPLICATE
+!  DUPLICATE
 HO2+HO2=H2O2+O2           1.300e+11  0.00 -1.6293e+3
-  DUPLICATE
+!  DUPLICATE
 H2O2(+M)=OH+OH(+M)        2.951e+14   0.00  4.843E+04 
     LOW/1.202E+17  0.00  4.55E+04/
     TROE/0.5 1E-30 1E+30/
@@ -180,8 +179,7 @@ H2O2+H=H2O+OH             0.241E+14  0.00  0.397E+04
 H2O2+H=HO2+H2             0.482E+14  0.00  0.795E+04  
 H2O2+O=OH+HO2             9.550E+06  2.00  3.970E+03
 H2O2+OH=HO2+H2O           1.000E+12  0.00  0.00
-    DUPLICATE 
+!    DUPLICATE 
 H2O2+OH=HO2+H2O           5.800E+14  0.00  9.557E+03
-    DUPLICATE
-
+!    DUPLICATE
 END
