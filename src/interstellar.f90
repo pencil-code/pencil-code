@@ -163,13 +163,13 @@ module Interstellar
 ! Self regulating SNII explosion coefficients
 !
   real, parameter :: cloud_rho_cgs=1.67262158e-24,cloud_TT_cgs=4000.
-  real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs
+  real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs, minTT_cgs = 0.75e2
   double precision, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
   real, parameter :: frac_converted=0.02,frac_heavy=0.10
 !  real, parameter :: tosolarMkpc3=1.483e7
   real :: cloud_rho=impossible,cloud_TT=impossible
   real :: cloud_tau=impossible   !was =2e-2
-  real :: mass_SN_progenitor=impossible
+  real :: mass_SN_progenitor=impossible, lnminTT=impossible
 !
 ! Total SNe energy
 !
@@ -352,7 +352,7 @@ module Interstellar
       t_next_SNI, t_next_SNII, TT_SN_min, &
       SNR_damping, uu_sedov_max, &
       mass_SN_progenitor,cloud_tau, &
-      lSNI, lSNII, &
+      lSNI, lSNII, lnminTT, &
       laverage_SN_heating, coolingfunction_scalefactor, &
       lsmooth_coolingfunc, heatingfunction_scalefactor, &
       center_SN_x, center_SN_y, center_SN_z, &
@@ -750,6 +750,7 @@ module Interstellar
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         TT_SN_min=TT_SN_min_cgs / unit_temperature
         TT_cutoff=TT_cutoff_cgs / unit_temperature
+        if (lnminTT==impossible) lnminTT=log(minTT_cgs)-log(unit_temperature)
         if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
         if (SNII_area_rate==impossible) SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
@@ -1571,10 +1572,8 @@ cool_loop: do i=1,ncool
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
 !
-      real, parameter :: g_B_cgs=6.172e20, minTT_cgs = 0.75e2
-      real :: lnminTT
+      real, parameter :: g_B_cgs=6.172e20 
 !
-      lnminTT=log(minTT_cgs)-log(unit_temperature)
 !
       if (heating_select == 'cst') Then
          heat = heating_rate_code
@@ -2643,18 +2642,21 @@ find_SN: do n=n1,n2
 !
       if (lSN_velocity) then
         if (velocity_profile=="r15gaussian3") then
-          cvelocity_SN=sqrt(6.*kampl_SN/pi/SNR%rhom/width_velocity**6)&
-                       *(1.-0.91*SNR%t_sedov/t_merge)
+          cvelocity_SN=sqrt(6.*kampl_SN/pi/SNR%rhom/width_velocity**6)!&
+!                       *(1.-0.91*SNR%t_sedov/t_merge)
         elseif (velocity_profile=="r3gaussian3") then
           cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**9/0.1044428448)
         elseif (velocity_profile=="r6gaussian3") then
           cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**15/0.07832213358)
         elseif (velocity_profile=="r8thgaussian3") then
-          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.3755278212)&
-                       *(1.-0.91*SNR%t_sedov/t_merge)
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.3755278212)!&
+!                       *sqrt(1.-0.91*SNR%t_sedov/t_merge)
         elseif (velocity_profile=="r8thgaussian") then
-          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.2906782474)&  
-                       *(1.-0.91*SNR%t_sedov/t_merge)
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.2906782474)!&
+!                       *sqrt(1.-0.91*SNR%t_sedov/t_merge)
+        elseif (velocity_profile=="r16thgaussian") then
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(3.125)/0.301269172512860)!& !25/8 
+!                       *sqrt(1.-0.91*SNR%t_sedov/t_merge)
         else
           cvelocity_SN=uu_sedov
           if (lroot) &
@@ -3209,7 +3211,7 @@ find_SN: do n=n1,n2
 !
 !  Sum all points inside 1.5 * SNR radius and divide by number of points
 !
-      radius2 = (remnant%radius)**2
+      radius2 = (1.5*remnant%radius)**2
       tmp=0.
       do n=n1,n2
          do m=m1,m2
@@ -3232,7 +3234,7 @@ find_SN: do n=n1,n2
 !
       call mpireduce_sum_double(tmp,tmp2,3)
       call mpibcast_double(tmp2,3)
-      ekintot=tmp2(3)*dv
+      ekintot=0.5*tmp2(3)*dv
       if (abs(tmp2(2)) < 1e-30) then
         write(0,*) 'tmp = ', tmp
 !
@@ -3613,6 +3615,10 @@ find_SN: do n=n1,n2
 !
       elseif (velocity_profile=="r8thgaussian") then
         profile_SN=(dr2_SN(1:nx))**0.0625*exp(-(dr2_SN(1:nx)/width**2))
+!     need to eject mass from centre to maintain core temp
+!
+      elseif (velocity_profile=="r16thgaussian") then
+        profile_SN=(dr2_SN(1:nx))**0.03125*exp(-(dr2_SN(1:nx)/width**2))
 !     need to eject mass from centre to maintain core temp
 !
       elseif (velocity_profile=="cubictanh") then
