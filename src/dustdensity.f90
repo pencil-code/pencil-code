@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
-! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
+! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat; Ywater
 !
 !***************************************************************
 module Dustdensity
@@ -186,9 +186,11 @@ module Dustdensity
           'ldustcoagulation,ldustcondensation =', &
           ldustcoagulation,ldustcondensation
 !
-      if (ldustcondensation .and. .not. lpscalar) &
+      if (ldustcondensation) then
+      if (.not. lchemistry .and. .not. lpscalar) &
           call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar')
+      endif
 !
 !  Reinitializing dustdensity.
 !
@@ -287,6 +289,7 @@ module Dustdensity
             dsize(i+1)=dsize_min+i*ddsize
           enddo
         endif
+        
       endif
 !
     endsubroutine initialize_dustdensity
@@ -506,8 +509,18 @@ module Dustdensity
           enddo
           if (lroot) print*, &
               'init_nd: Test of dust coagulation with linear kernel'
-        case ('atm_droplets')
+        case ('atm_drop_spot')
           call droplet_init(f)
+          if (lroot) print*, &
+              'init_nd: Distribution of the water droplets in the atmosphere'
+        case ('atm_drop_gauss')
+          do k=1,ndustspec
+            f(:,:,:,ind(k)) = &
+              nd0*exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
+              /(0.1*(dsize_max-dsize_min)))**2)
+            md(k)=4/3.*pi*rhods*dsize(k)**3*(1.-0.3**3)
+            mi(k)=4/3.*pi*rhod0*dsize(k)**3*0.3
+          enddo
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
         case default
@@ -536,7 +549,13 @@ module Dustdensity
 !
 !  Initialize ice density.
 !
-      if (lmice) f(:,:,:,imi) = 0.0
+      if (lmice) then
+        if (latm_chemistry) then
+          do k=1,ndustspec; f(:,:,:,imi(k)) = mi(k); enddo
+        else
+          f(:,:,:,imi(k)) = 0.0
+        endif
+      endif
 !
 !  Take logarithm if necessary (remember that nd then really means ln nd).
 !
@@ -769,6 +788,8 @@ module Dustdensity
         lpenc_requested(i_ccondens)=.true.
         lpenc_requested(i_dndr)=.true.
         lpenc_requested(i_ppsat)=.true.
+        lpenc_requested(i_md)=.true.
+        lpenc_requested(i_mi)=.true.
       endif
 !
       lpenc_diagnos(i_nd)=.true.
@@ -1123,6 +1144,11 @@ module Dustdensity
           if (lmdvar) df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - p%udgmd(:,k)
           if (lmice)  df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - p%udgmi(:,k)
         enddo
+      elseif (latm_chemistry) then
+        do k=1,ndustspec
+          if (lmdvar) df(l1:l2,m,n,imd(k)) = 0.
+          if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
+        enddo
       endif
 !
 !  Calculate kernel of coagulation equation
@@ -1141,9 +1167,10 @@ module Dustdensity
 !
       if (latm_chemistry) then
 !
+
         do k=1,ndustspec
-          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
-                 -Aconst*(p%ppwater/p%ppsat-1.)*p%dndr(:,k)
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) !- p%udropgnd(:,k) &
+                 !-Aconst*(p%ppwater/p%ppsat-1.)*p%dndr(:,k)
 !
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
@@ -1377,16 +1404,21 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: mfluxcond
+      real, dimension (nx) :: mfluxcond, cc_tmp
       real :: dmdfac
       integer :: k,l
 !
       if (.not. lmdvar) call stop_it &
           ('dust_condensation: Dust condensation only works with lmdvar')
+      if (lchemistry) then
+        cc_tmp=p%Ywater
+      else
+        cc_tmp=p%cc
+      endif
 !
 !  Calculate mass flux of condensing monomers
 !
-      call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,p%cc)
+        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
 !
 !  Loop over pencil
 !
@@ -1396,9 +1428,13 @@ module Dustdensity
           if (p%mi(l,k) + dt_beta_ts(itsub)*dmdfac < 0.) then
             dmdfac = -p%mi(l,k)/dt_beta_ts(itsub)
           endif
-          if (p%cc(l) < 1e-6 .and. dmdfac > 0.) dmdfac=0.
+          if (cc_tmp(l) < 1e-6 .and. dmdfac > 0.) dmdfac=0.
           df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
           df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
+!
+! NB: it is should be changed for the chemistry case
+! one needs to make the corresponding pencil
+!
           if (lpscalar_nolog) then
             df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
                 p%rho1(l)*dmdfac*p%nd(l,k)*unit_md
@@ -1406,6 +1442,7 @@ module Dustdensity
             df(3+l,m,n,ilncc) = df(3+l,m,n,ilncc) - &
                 p%rho1(l)*dmdfac*p%nd(l,k)*unit_md*p%cc1(l)
           endif
+!
         enddo
       enddo
 !
@@ -1416,10 +1453,11 @@ module Dustdensity
 !  Calculate mass flux of condensing monomers
 !
       use Diagnostics
-      use EquationOfState, only: getmu,eoscalc,ilnrho_ss
+      use EquationOfState, only: getmu,eoscalc,ilnrho_ss,getpressure
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: pp_full
       real, dimension (nx) :: mfluxcond,rho,TT1,cc,pp,ppmon,ppsat,vth
       real, dimension (nx) :: supsatratio1
       real, save :: mu
@@ -1430,6 +1468,20 @@ module Dustdensity
         if (it == 1) call getmu(f,mu)
         call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*cc*mu/mumon
+        ppsat = 6.035e12*exp(-5938*TT1)
+        vth = (3*k_B/(TT1*mmon))**0.5
+        supsatratio1 = ppsat/ppmon
+!
+        mfluxcond = vth*cc*rho*(1-supsatratio1)
+        if (ldiagnos) then
+          if (idiag_ssrm/=0)   call sum_mn_name(1/supsatratio1(:),idiag_ssrm)
+          if (idiag_ssrmax/=0) call max_mn_name(1/supsatratio1(:),idiag_ssrmax)
+        endif
+      case ('aerosol')
+!        if (it == 1) call getmu_array(f,mu1_array)
+!        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
+        call getpressure(pp_full)
+        ppmon = pp_full(l1:l2,m,n)
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon

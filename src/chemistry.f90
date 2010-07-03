@@ -19,6 +19,7 @@
 ! PENCILS PROVIDED ghhk(3,nchemspec), glnpp(3)
 !
 ! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens; ppwater
+! PENCILS PROVIDED Ywater
 !
 !***************************************************************
 module Chemistry
@@ -597,6 +598,7 @@ module Chemistry
 
          if (latmchem) then
            lpenc_requested(i_ppwater)=.true.
+           lpenc_requested(i_Ywater)=.true.
          endif
        endif
 !
@@ -850,6 +852,11 @@ module Chemistry
       if (lpencil(i_ppwater)) then
         if (index_H2O>0) then
          p%ppwater=p%rho*Rgas*p%TT*f(l1:l2,m,n,ichemspec(index_H2O))
+        endif
+      endif
+      if (lpencil(i_Ywater)) then
+        if (index_H2O>0) then
+         p%Ywater=f(l1:l2,m,n,ichemspec(index_H2O))
         endif
       endif
 !

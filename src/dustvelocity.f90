@@ -222,8 +222,15 @@ module Dustvelocity
           mmon  = mumon*1.6733e-24
           unit_md = mmon
 
-          if (lroot) print*, &
+        case ('aerosol')
+!
+          mumon = 18.
+          mmon  = mumon*1.6733e-24
+          unit_md = mmon
+
+         if (lroot) print*, &
               'initialize_dustvelocity: mmon, surfmon = ', mmon, surfmon
+
 
         case default
           call fatal_error &

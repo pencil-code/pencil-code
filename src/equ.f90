@@ -187,8 +187,11 @@ module Equ
 !  (should consider having possibility for all modules to fiddle with the
 !   f array before boundary conditions are sent)
 !
-      if (ldustdensity) call null_dust_vars(f)
-      if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
+
+      if (.not. lchemistry) then
+        if (ldustdensity) call null_dust_vars(f)
+        if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
+      endif
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
