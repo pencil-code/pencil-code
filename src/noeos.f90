@@ -198,10 +198,10 @@ module EquationOfState
 !
       if (lpencil(i_cp1)) p%cp1=0.0
       if (lpencil(i_cs2)) p%cs2=cs20
-      if (lanelastic) then
-        p%lnrho=lnrho0
-        p%rho=exp(p%lnrho)
-      endif
+!      if (lanelastic) then
+!        p%lnrho=lnrho0
+!        p%rho=exp(p%lnrho)
+!      endif
 !
       call keep_compiler_quiet(f)
 !
