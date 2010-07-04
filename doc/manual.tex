@@ -3455,15 +3455,19 @@ package that can be found at
 \url{http://gnudatalanguage.sourceforge.net/}.
 It aims at replacing the very expensive \name{IDL} package (see
 S.~\ref{S-IDL-routines}).
-For the way the Pencil Code IDL routines, compatibility is currently not
+For the way we use IDL for the Pencil Code, compatibility is currently not
 completely sufficient, but you can use GDL for many of the visualization
 tasks.
-This section tells you how to get started.
+If you get spurious ``Error opening file'' messages, you can normally
+simply ignore them.
+
+This section tells you how to get started with using GDL for visualization.
 
 \paragraph{Setup}
 As of GDL 0.9 -- at least the version packed with Ubuntu Jaunty (9.10) --
 you will need to add GDL's \file{examples/pro/} directory to your
-\var{!PATH} variable:
+\var{!PATH} variable.
+So the first call after starting \name{GDL} should be
 \begin{alltt}
   \prompt{GDL> } .run setup_gdl
 \end{alltt}
@@ -3483,6 +3487,46 @@ To plot a time series, use
   \prompt{GDL> } plot, ts.t, ts.umax
   \prompt{GDL> } oplot, ts.t, ts.urms
 \end{alltt}
+Alternatively, you could simply use the \file{ts.pro} script:
+\begin{alltt}
+  \prompt{GDL> } .run ts
+\end{alltt}
+
+To work with data from \file{var.dat} and similar snapshot files, you can
+e.g. use the following routines:
+\begin{alltt}
+  \prompt{GDL> } pc_read_dim, OBJECT=dim
+  \prompt{GDL> } pc_read_grid, OBJECT=grid
+  \prompt{GDL> } pc_read_var, OBJECT=var
+  \prompt{GDL> } pc_read_param, OBJECT=par
+\end{alltt}
+Having thus read the data structures, we can have a look at them to see
+what information is available:
+\begin{alltt}
+  \prompt{GDL> } help, dim, /STRUCT
+  \prompt{GDL> } help, grid, /STRUCT
+  \prompt{GDL> } help, var, /STRUCT
+  \prompt{GDL> } help, par, /STRUCT
+\end{alltt}
+
+To visualize data, we can e.g. do\footnote{
+  If \code{contourfill} produces just contour lines instead of a
+  color-coded plot, your version of GDL is too old.
+  E.g. the version shipped with Ubuntu 9.10 is based on GDL 0.9rc1 and has
+  this problem.
+}
+\begin{alltt}
+  \prompt{GDL> } plot, grid.x, var.ss[*, dim.ny/2, dim.nz/2]
+  \prompt{GDL> } contourfill, var.ss[*, *, dim.nz/2], grid.x, grid.y
+
+  \prompt{GDL> } ux_slice = var.uu[*, *, dim.nz/2, 0]
+  \prompt{GDL> } uy_slice = var.uu[*, *, dim.nz/2, 1]
+  \prompt{GDL> } wdvelovect, ux_slice, uy_slice, grid.x, grid.y
+
+  \prompt{GDL> } surface, var.lnrho[*, *, dim.nz/2, 0]
+\end{alltt}
+
+See also Sect.~\ref{S-IDL-routines}.
 
 
 \subsubsection{IDL}
@@ -3657,6 +3701,9 @@ placed in the directory \cmd{\$PENCIL_HOME/idl/files}. Here is a list of files
       Read runtime parameters into structure.
 \end{itemize}
 Other options are documented in the source code of the files.
+
+For some examples on how to use these routines, see Sect.~\ref{S-GDL}.
+
 
 % ---------------------------------------------------------------------- %
 
