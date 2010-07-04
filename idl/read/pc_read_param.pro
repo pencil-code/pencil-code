@@ -89,7 +89,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     _path = !path
     !path = datadir+':'
-    resolve_routine, 'param', /is_function
+    if (not running_gdl()) then begin
+      resolve_routine, 'param', /is_function
+    endif
     object = param()
 ;
 ; Restore old path.
