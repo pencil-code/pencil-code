@@ -3448,6 +3448,43 @@ processor, so from a multi-processor run, you can only visualize one
 subregion at a time.
 
 
+\subsubsection{GDL}
+\label{S-GDL}
+\name{GDL}, also known as \name{Gnu Data Language} is a free visualization
+package that can be found at
+\url{http://gnudatalanguage.sourceforge.net/}.
+It aims at replacing the very expensive \name{IDL} package (see
+S.~\ref{S-IDL-routines}).
+For the way the Pencil Code IDL routines, compatibility is currently not
+completely sufficient, but you can use GDL for many of the visualization
+tasks.
+This section tells you how to get started.
+
+\paragraph{Setup}
+As of GDL 0.9 -- at least the version packed with Ubuntu Jaunty (9.10) --
+you will need to add GDL's \file{examples/pro/} directory to your
+\var{!PATH} variable:
+\begin{alltt}
+  \prompt{GDL> } .run setup_gdl
+\end{alltt}
+
+\paragraph{Starting visualization}
+We use the \code{pc_read} family of IDL routines to read the data.
+Try
+\begin{alltt}
+  \prompt{GDL> } pc_read
+\end{alltt}
+to get an overview.
+
+To plot a time series, use
+\begin{alltt}
+  \prompt{GDL> } pc_read_ts, OBJECT=ts
+  \prompt{GDL> } help, ts, /STRUCT  ;; (to see which slots are available)
+  \prompt{GDL> } plot, ts.t, ts.umax
+  \prompt{GDL> } oplot, ts.t, ts.urms
+\end{alltt}
+
+
 \subsubsection{IDL}
 \label{S-IDL-routines}
 
@@ -3574,7 +3611,7 @@ variable \var{datadir}:
 \end{alltt}
 will read the data written by processor 3.
 
-\subsubsection{Reading data into IDL structures}
+\paragraph{Reading data into IDL structures}
 
 As an alternative to the method described above, there is also the possibility
 to read the data into structures. This makes some more operations possible,
