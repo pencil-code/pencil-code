@@ -453,7 +453,7 @@ module Hydro
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
-!  then density is computed, i.e. not even with ldensity_anelastic.
+!  then density is computed, i.e. not even with lanelastic.
 !
       if  (.not.ldensity) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',&
@@ -469,6 +469,7 @@ module Hydro
 !  Writing files for use with IDL.
 !
       if (lroot) then
+        write(*,*) 'PC:mvar, nvar',mvar,nvar 
         if (maux == 0) then
           if (nvar < mvar) write(4,*) ',uu $'
           if (nvar == mvar) write(4,*) ',uu'
@@ -1028,7 +1029,7 @@ module Hydro
 !  compressive (non-vortical) shear wave of Johnson & Gammie (2005a)
 !
         case ('compressive-shwave')
-          if (ldensity.or.ldensity_anelastic) then
+          if (ldensity.or.lanelastic) then
             call coswave_phase(f,iux,ampl_ux(j),kx_uu,ky_uu,kz_uu,phase_ux(j))
             call coswave_phase(f,iuy,ampl_uy(j),kx_uu,ky_uu,kz_uu,phase_uy(j))
             eta_sigma = (2. - qshear)*Omega
@@ -1104,8 +1105,8 @@ module Hydro
 ! 2D curl
           do n=n1,n2;do m=m1,m2
             call grad(f,iuy,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/exp(f(l1:l2,m,n,ilnrho))
-            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/exp(f(l1:l2,m,n,ilnrho))
+            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/f(l1:l2,m,n,irho_b)
+            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/f(l1:l2,m,n,irho_b)
           enddo;enddo
           f(:,:,:,iuy)=0.
 !
@@ -1239,7 +1240,7 @@ module Hydro
           lpenc_requested(i_ugu)=.true.
         endif
       endif
-      if (ldensity_anelastic) lpenc_requested(i_rhougu)=.true.
+      if (lanelastic) lpenc_requested(i_rhougu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
       if (Omega/=0.0) lpenc_requested(i_uu)=.true.

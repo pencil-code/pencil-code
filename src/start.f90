@@ -341,7 +341,7 @@ program start
 ! so this is just a caution : Please do not modify the sequence of 
 ! calls to 'init' routines below. 
 !
-    if (ldensity_anelastic) then
+    if (lanelastic) then
       call init_lnrho     (f)
       call init_uu        (f)
     else

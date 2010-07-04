@@ -8,10 +8,10 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ldensity = .false.
-! CPARAM logical, parameter :: ldensity_anelastic = .true.
+! CPARAM logical, parameter :: lanelastic = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 5
+! MAUX CONTRIBUTION 6
 ! COMMUNICATED AUXILIARIES 5
 !
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); gpp(3); 
@@ -144,8 +144,8 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('lnrho',ilnrho,communicated=.true.)
-!      call farray_register_auxiliary('lnrho',ilnrho)
+      call farray_register_auxiliary('rho',irho,communicated=.true.)
+      call farray_register_auxiliary('rho_b',irho_b)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
@@ -911,11 +911,9 @@ module Density
           m=mm(imn)
           lfirstpoint=(imn==1)      ! true for very first m-n loop
           llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-          f(l1:l2,m,n,ilnrho)=-0.0*z(n)/cs20
-          call sum_mn(exp(f(l1:l2,m,n,ilnrho)),pres_per_proc(1))
+          f(l1:l2,m,n,irho)=0.0
+          f(l1:l2,m,n,irho_b)=exp(gamma*gravz*z(n)/cs20) ! Define the base state density
         enddo
-          call get_average_density(pres_per_proc(1),average_density)
-        write(*,*) 'PC:anelastic:den',average_density
 !
         case default
 !
@@ -1359,42 +1357,18 @@ module Density
       integer :: i, mm, nn, ierr,l
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
-      p%lnrho=f(l1:l2,m,n,ilnrho)
-      p%rho=exp(p%lnrho)
+      p%rho=f(l1:l2,m,n,irho)/f(l1:l2,m,n,irho_b)
 
-! rho and rho1
-      if (lcheck_negative_density .and. any(p%rho <= 0.)) &
-            call fatal_error_local('calc_pencils_density', 'negative density detected')
-      if (lpencil(i_rho1)) p%rho1=1.0/p%rho
-! glnrho 
-      if (lpencil(i_glnrho).or.lpencil(i_grho)) then
-        call grad(f,ilnrho,p%glnrho)
-        if (lpencil(i_glnrho)) then
-          do i=1,3
-            p%grho(:,i)=p%glnrho(:,i)*p%rho
-          enddo
-        endif
-      endif
 ! del2lnrho
-      if (lpencil(i_del2lnrho)) then
-        if (ldensity_nolog) then
-          if (headtt) then
-            call fatal_error('calc_pencils_density', &
-                'del2lnrho not available for non-logarithmic mass density')
-          endif
-        else
-          call del2(f,ilnrho,p%del2lnrho)
-        endif
-      endif
 
 ! del6lnrho
       if (lpencil(i_del6lnrho)) call fatal_error('del6lnrho','pencil not calculated') 
 ! hlnrho
       if (lpencil(i_hlnrho))  call fatal_error('hlnrho','pencil not calculated')
 ! sglnrho
-     if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho) 
+!     if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho) 
 ! uglnrho
-      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
+!      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
 ! ugrho
       if (lpencil(i_ugrho)) call fatal_error('ugrho','pencil not calculated')
 ! uij5glnrho
@@ -2560,11 +2534,6 @@ module Density
       integer :: j, ju, l
       
       if (headt) call identify_bcs('pp',ipp)
-
-        call get_average_density(mass_per_proc(1),average_density)
-        if (it==1) init_average_density=average_density
-        if (it==1) write(*,*) 'PC.anelastic:init_den',init_average_density
-        call get_average_pressure(init_average_density,average_density,average_pressure)
 !
 !  Set first the boundary conditions on rhs
 !
@@ -2604,18 +2573,18 @@ module Density
       do n=n1,n2
       do m=m1,m2
         call grad(f,ipp,gpp)
-        call calc_pencils_eos(f,p)
+!        call calc_pencils_eos(f,p)
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/p%rho
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b)
         enddo
-        f(l1:l2,m,n,ilnrho)=p%lnrho
+        f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)
       enddo
       enddo
 
-      call initiate_isendrcv_bdry(f,ilnrho)
-      call finalize_isendrcv_bdry(f,ilnrho)
-      call boundconds(f,ilnrho,ilnrho)
+!      call initiate_isendrcv_bdry(f,ilnrho)
+!      call finalize_isendrcv_bdry(f,ilnrho)
+!      call boundconds(f,ilnrho,ilnrho)
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************

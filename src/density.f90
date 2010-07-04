@@ -7,7 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ldensity = .true.
-! CPARAM logical, parameter :: ldensity_anelastic = .false.
+! CPARAM logical, parameter :: lanelastic = .false.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0

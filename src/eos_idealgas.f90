@@ -789,7 +789,7 @@ module EquationOfState
 !  Work out thermodynamic quantities for given pp and ss (anelastic case).
 !
       case (ipp_ss)
-        if (ldensity_anelastic) then
+        if (lanelastic) then
           p%pp=f(l1:l2,m,n,ipp)
         else
           call fatal_error('calc_pencils_eos', &
@@ -829,7 +829,7 @@ module EquationOfState
         endif
 !
        case (ipp_cs2)
-        if (ldensity_anelastic) then
+        if (lanelastic) then
           p%pp=f(l1:l2,m,n,ipp)
         else
           call fatal_error('calc_pencils_eos', &
@@ -1353,7 +1353,7 @@ module EquationOfState
       real, intent(out), optional :: ee,pp,cs2
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
-      if (gamma_m1==0.and..not.ldensity_anelastic) call fatal_error &
+      if (gamma_m1==0.and..not.lanelastic) call fatal_error &
         ('eoscalc_point','gamma=1 not allowed w/entropy')
 !
       select case (ivars)

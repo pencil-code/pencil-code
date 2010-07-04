@@ -318,8 +318,8 @@ module Equ
 !  Store the velocity part of df array in a temporary array 
 !  while solving the anelastic case.
 !
-        call timing('pde','before ldensity_anelastic',mnloop=.true.)
-        if (ldensity_anelastic) then 
+        call timing('pde','before lanelastic',mnloop=.true.)
+        if (lanelastic) then 
           df_iuu_pencil(1:nx,1:3) = df(l1:l2,m,n,iuu:iuu+2)
           df(l1:l2,m,n,iuu:iuu+2)=0.0
         endif
@@ -449,7 +449,7 @@ module Equ
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
-        if (.not.ldensity_anelastic)  call calc_pencils_eos(f,p)
+        if (.not.lanelastic)  call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
@@ -760,7 +760,8 @@ module Equ
 !  Fill in the rhs of the poisson equation and restore the df(:,:,:,iuu) array
 !  for anelastic case 
 !
-        if (ldensity_anelastic) then
+        if (lanelastic) then
+          call calc_pencils_density(f,p)
           f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
           f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
@@ -778,7 +779,7 @@ module Equ
 !
 !  Finish the job for the anelastic approximation
 !
-      if (ldensity_anelastic) call anelastic_after_mn(f, p, df, mass_per_proc)
+      if (lanelastic) call anelastic_after_mn(f, p, df, mass_per_proc)
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 ! 

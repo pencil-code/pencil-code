@@ -133,10 +133,9 @@ module Slices
         if (lchemistry)    call get_slices_chemistry   (f,slices)
         if (lchiral)       call get_slices_chiral      (f,slices)
         if (lcosmicray)    call get_slices_cosmicray   (f,slices)
-        if (ldensity.or.ldensity_anelastic)  &
+        if (ldensity.or.lanelastic)  &
                            call get_slices_density     (f,slices)
-        if (ldensity_anelastic)  & 
-                           call get_slices_pressure    (f,slices)
+        if (lanelastic)    call get_slices_pressure    (f,slices)
         if (ldustdensity)  call get_slices_dustdensity (f,slices)
         if (ldustvelocity) call get_slices_dustvelocity(f,slices)
         if (lentropy)      call get_slices_entropy     (f,slices)

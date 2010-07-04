@@ -222,7 +222,7 @@ module Entropy
         do j=1,3
           if (llocal_iso) then
             p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
-          elseif (ldensity_anelastic) then
+          elseif (lanelastic) then
             p%fpres(:,j)=0.0
           else
             p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
