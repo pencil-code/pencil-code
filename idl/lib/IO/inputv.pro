@@ -14,7 +14,7 @@ FUNCTION inputv, file, DOUBLE=double, ONE=one, _EXTRA=extra
   if (keyword_set(double)) then ONE=1.D0
   ;
   field=fltarr(nx,ny,nz,3)*ONE
-  if ((findfile(file))[0] ne '') then begin
+  if ((file_search(file))[0] ne '') then begin
     close,1
     openr,1,file,/f77, _EXTRA=extra
     readu,1,field

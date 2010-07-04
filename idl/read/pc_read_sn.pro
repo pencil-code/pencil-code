@@ -115,7 +115,7 @@ fullfilename=datadir+'/'+filename
 ;  read header
 ;
 ; Check for existance and read the data
-dummy=findfile(fullfilename, COUNT=found)
+dummy=file_search(fullfilename, COUNT=found)
 if (found gt 0) then begin
     if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
     openr, file, fullfilename

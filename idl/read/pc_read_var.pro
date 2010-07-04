@@ -355,7 +355,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check for existence and read the data.
 ;
-    dummy=findfile(filename, count=countfile)
+    dummy=file_search(filename, count=countfile)
     if (countfile lt 1) then begin
       if (arg_present(exit_status)) then begin
         exit_status=1

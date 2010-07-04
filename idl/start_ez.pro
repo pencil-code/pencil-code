@@ -58,7 +58,7 @@ t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gridfile=datadir+'/'+'grid.dat'
-dummy=findfile(gridfile, COUNT=cgrid)
+dummy=file_search(gridfile, COUNT=cgrid)
 if (cgrid gt 0) then begin
   print, 'Reading grid.dat..'
   openr,1, gridfile, /F77

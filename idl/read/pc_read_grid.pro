@@ -140,7 +140,7 @@ for i=0,ncpus-1 do begin
     endelse
   endelse
   ; Check for existance and read the data
-  dummy=findfile(filename, COUNT=countfile)
+  dummy=file_search(filename, COUNT=countfile)
   if (not countfile gt 0) then begin
     FREE_LUN,file
     message, 'ERROR: cannot find file '+ filename

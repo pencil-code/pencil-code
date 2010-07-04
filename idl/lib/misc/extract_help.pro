@@ -31,7 +31,7 @@ pro extract_help, name, $
   Np = n_elements(paths)
   for i=0L, Np-1 do begin
     fname = paths[i] + '/' + name + '.pro'
-    if ((findfile(fname))[0]) then begin
+    if ((file_search(fname))[0]) then begin
       i = Np                    ; stop looping
     endif else begin
       fname = ''                ; at end of loop, clear fname

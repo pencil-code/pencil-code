@@ -20,7 +20,7 @@ npar_stalk=0L
 ; Check for existence and read the data.
 ;
 filename=datadir+'/pdim.dat'
-dummy=findfile(filename, count=found)
+dummy=file_search(filename, count=found)
 if (found gt 0) then begin
   if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
   get_lun, file

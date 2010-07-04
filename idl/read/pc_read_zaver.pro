@@ -364,7 +364,7 @@ if (not quiet) then print, 'Preparing to read z-averages ', $
     arraytostring(variables,quote="'",/noleader)
 ;
 for ip=0,n_elements(filename)-1 do begin
-  dummy=findfile(filename[ip], COUNT=countfile)
+  dummy=file_search(filename[ip], COUNT=countfile)
   if (not countfile gt 0) then begin
     print, 'ERROR: cannot find file '+ filename[ip]
     stop

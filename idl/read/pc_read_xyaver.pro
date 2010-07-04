@@ -65,7 +65,7 @@ tt =fltarr(nit)*one
 GET_LUN, file
 filename=datadir+'/'+varfile 
 if (not quiet) then print, 'Reading ', filename
-dummy=findfile(filename, COUNT=countfile)
+dummy=file_search(filename, COUNT=countfile)
 if (not countfile gt 0) then begin
   print, 'ERROR: cannot find file '+ filename
   stop

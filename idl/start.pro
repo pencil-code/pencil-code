@@ -118,7 +118,7 @@ t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gridfile=datadir+'/'+'grid.dat'
-dummy=findfile(gridfile, COUNT=cgrid)
+dummy=file_search(gridfile, COUNT=cgrid)
 dummy2=zero
 if (cgrid gt 0) then begin
   if (quiet le 2) then print, 'Reading grid.dat..'
@@ -152,7 +152,7 @@ n1=nghostz & n2=mz-nghostz-1 & n12=n1+indgen(nz)
 ;  Read startup parameters
 ;
 pfile = datatopdir+'/param.nml'
-dummy = findfile(pfile, COUNT=cpar)
+dummy = file_search(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   if (quiet le 2) then print, 'Reading param.nml..'
   spawn, 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done', /SH, result

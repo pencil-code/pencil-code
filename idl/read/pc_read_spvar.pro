@@ -112,7 +112,7 @@ filename=datadir+'/proc0/'+varfile
 ;
 ;  Check if file exists.
 ;
-dummy=findfile(filename, COUNT=countfile)
+dummy=file_search(filename, COUNT=countfile)
 if (not countfile gt 0) then begin
     print, 'ERROR: cannot find file '+ filename
     stop

@@ -39,7 +39,7 @@ pc_set_precision, dim=dim, /quiet
 ;
 ;  Check if file exists.
 ;
-dummy=findfile('./data/param2.nml', COUNT=countfile)
+dummy=file_search('./data/param2.nml', COUNT=countfile)
 ;
 ; Check if we are inserting particles continuously
 ;
@@ -166,7 +166,7 @@ for i=0,ncpus-1 do begin
 ;
 ;  Check if file exists.
 ;
-  dummy=findfile(filename, COUNT=countfile)
+  dummy=file_search(filename, COUNT=countfile)
   if (not countfile gt 0) then begin
     print, 'ERROR: cannot find file '+ filename
     stop

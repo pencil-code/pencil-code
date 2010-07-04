@@ -5,7 +5,7 @@
 ;forward_function safe_get_tag
 
 pfile = datatopdir+'/'+'param2.nml'
-dummy = findfile(pfile, COUNT=cpar)
+dummy = file_search(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
 
   if (quiet le 2) then print, 'Reading param2.nml..'

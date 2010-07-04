@@ -28,9 +28,9 @@ sy1 = '!8y!6='+strtrim(y[ny1],2)
 sy2 = '!8y!6='+strtrim(y[ny2],2)
 sy3 = '!8y=!6'+strtrim(y[ny3],2)
 
-flist = findfile(datadir+"/VAR[0-9]")
-flist = [flist, findfile(datadir+"/VAR[0-9][0-9]")]
-flist = [flist, findfile(datadir+"/VAR[0-9][0-9][0-9]")]
+flist = file_search(datadir+"/VAR[0-9]")
+flist = [flist, file_search(datadir+"/VAR[0-9][0-9]")]
+flist = [flist, file_search(datadir+"/VAR[0-9][0-9][0-9]")]
 
 uu    = fltarr(nx,ny,nz,3)*one
 lnrho = fltarr(nx,ny,nz)*one
