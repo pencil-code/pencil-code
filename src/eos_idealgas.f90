@@ -828,7 +828,7 @@ module EquationOfState
           endif
         endif
 !
-       case (ipp_cs2)
+      case (ipp_cs2)
         if (lanelastic) then
           p%pp=f(l1:l2,m,n,ipp)
         else
