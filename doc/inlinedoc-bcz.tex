@@ -58,10 +58,12 @@
   \var{StS}       & solar surface boundary conditions \\
   \var{set}       & set boundary value \\
   \var{der}       & set derivative on the boundary \\
+  \var{div}       & set the divergence of $\uv$ to a given value
+                    use bc = 'div' for iuz \\
   \var{ovr}       & set boundary value \\
   \var{ouf}       & allow outflow, but no inflow (experimental) \\
   \var{win}       & forces massflux given as
-                    $\Sigma \rho_i ( u_i + u_0) = \textrm{fbcz1/2}(\rho)$ \\
+                    $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$ \\
   \var{cop}       & copy value of last physical point to all ghost cells \\
 %
 \bottomrule

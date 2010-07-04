@@ -90,9 +90,20 @@
   \var{uxuym}     & $\left<u_x u_y\right>$ \\
   \var{uxuzm}     & $\left<u_x u_z\right>$ \\
   \var{uyuzm}     & $\left<u_y u_z\right>$ \\
+  \var{uxuymz}    & $\left<u_x u_y\right>_{xy}$ \\
+  \var{uxuzmz}    & $\left<u_x u_z\right>_{xy}$ \\
+  \var{uyuzmz}    & $\left<u_y u_z\right>_{xy}$ \\
+  \var{oxuxxmz}   & $\left<\omega_x u_{x,x}\right>_{xy}$ \\
+  \var{oyuxymz}   & $\left<\omega_y u_{x,y}\right>_{xy}$ \\
+  \var{oxuyxmz}   & $\left<\omega_x u_{y,x}\right>_{xy}$ \\
+  \var{oyuyymz}   & $\left<\omega_y u_{y,y}\right>_{xy}$ \\
+  \var{oxuzxmz}   & $\left<\omega_x u_{z,x}\right>_{xy}$ \\
+  \var{oyuzymz}   & $\left<\omega_y u_{z,y}\right>_{xy}$ \\
   \var{uxmz}      & $\left< u_x \right>_{x,y}$
                     \quad(horiz. averaged $x$
                     velocity) \\
+  \var{divumz}    & $\left< {\rm div}\uv \right>_{xy}$ \\
+  \var{uzdivumz}  & $\left< u_z{\rm div}\uv \right>_{xy}$ \\
   \var{oxmz}      & $\left< \omega_x \right>_{xy}$ \\
   \var{oymz}      & $\left< \omega_y \right>_{xy}$ \\
   \var{ozmz}      & $\left< \omega_z \right>_{xy}$ \\
@@ -188,6 +199,7 @@
   \var{oum}       & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>$ \\
   \var{fum}       & $\left<\fv\cdot\uv\right>$ \\
+  \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
   \var{orms}      & $\left<\boldsymbol{\omega}^2
@@ -218,10 +230,11 @@
                     \quad(maximum Mach number) \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
-  \var{fkinz}     & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
-  \var{fkinxy}    & $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$ \\
+  \var{fkinzmz}   & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
+  \var{fkinxmxy}  & $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
   \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
+  \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
   \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
@@ -264,6 +277,27 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
+  \var{fconvm}    & $\left<\varrho u_z T \right>$ \\
+  \var{fconvz}    & $\left<\varrho u_z T \right>_{xy}$ \\
+  \var{fconvxy}   & $\left<\varrho u_x T \right>_{z}$ \\
+  \var{fturbz}    & $\left<\varrho T \chi_t \nabla_z
+                    s\right>_{xy}$ \quad(turbulent
+                    heat flux) \\
+  \var{fturbxy}   & $\left<\varrho T \chi_t \nabla_x
+                    s\right>_{z}$ \\
+  \var{fturbrxy}  & $\left<\varrho T \chi_{ri} \nabla_i
+                    s\right>_{z}$ \quad(radial part
+                    of anisotropic turbulent heat flux) \\
+  \var{fturbthxy} & $\left<\varrho T \chi_{\theta i}
+                    \nabla_i s\right>_{z}$ \quad
+                    (latitudinal part of anisotropic
+                    turbulent heat flux) \\
+  \var{uxTTmz}    & $\left< u_x T \right>_{xy}$ \\
+  \var{uyTTmz}    & $\left< u_y T \right>_{xy}$ \\
+  \var{uzTTmz}    & $\left< u_z T \right>_{xy}$ \\
+  \var{uxTTmxy}   & $\left< u_x T \right>_{z}$ \\
+  \var{uyTTmxy}   & $\left< u_y T \right>_{z}$ \\
+  \var{uzTTmxy}   & $\left< u_z T \right>_{z}$ \\
   \var{ssmxy}     & $\left< s \right>_{z}$ \\
   \var{ssmxz}     & $\left< s \right>_{y}$ \\
 \midrule
@@ -299,6 +333,8 @@
   \var{jbmn}      & $\left<\Av\cdot\Bv\right>$ (north) \\
   \var{jbms}      & $\left<\Av\cdot\Bv\right>$ (south) \\
   \var{ubm}       & $\left<\uv\cdot\Bv\right>$ \\
+  \var{dubrms}    & $\left<(\uv-\Bv)^2\right>^{1/2}$ \\
+  \var{dobrms}    & $\left<(\boldsymbol{\omega}-\Bv)^2\right>^{1/2}$ \\
   \var{uxbxm}     & $\left<u_xB_x\right>$ \\
   \var{uybym}     & $\left<u_yB_y\right>$ \\
   \var{uzbzm}     & $\left<u_zB_z\right>$ \\
@@ -367,6 +403,9 @@
   \var{uabxmz}    & $\left<(\uv \cdot \Av) B_x \right>_{xy}$ \\
   \var{uabymz}    & $\left<(\uv \cdot \Av) B_y \right>_{xy}$ \\
   \var{uabzmz}    & $\left<(\uv \cdot \Av) B_z \right>_{xy}$ \\
+  \var{bbxmz}     & $\left<{\cal B}'_x\right>_{xy}$ \\
+  \var{bbymz}     & $\left<{\cal B}'_y\right>_{xy}$ \\
+  \var{bbzmz}     & $\left<{\cal B}'_z\right>_{xy}$ \\
   \var{bxmz}      & $\left<{\cal B}_x\right>_{xy}$ \\
   \var{bymz}      & $\left<{\cal B}_y\right>_{xy}$ \\
   \var{bzmz}      & $\left<{\cal B}_z\right>_{xy}$ \\
@@ -424,8 +463,8 @@
                     \right>$ \quad(current helicity
                     of $xy$-averaged mean field) \\
   \var{kx_aa}     & $k_x$ \\
-  \var{kmz}       & $\left<\left<\Jv\cdot\Bv\right>_{xy}\right>/
-                    \left<\left<\Jv\cdot\Bv\right>_{xy}\right>$ \\
+  \var{kmz}       & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
+                    \left<\left<\Bv\right>_{xy}^2\right>$ \\
   \var{bx2my}     & $\left< B_x^2 \right>_{xz}$ \\
   \var{by2my}     & $\left< B_y^2 \right>_{xz}$ \\
   \var{bz2my}     & $\left< B_z^2 \right>_{xz}$ \\
@@ -756,19 +795,22 @@
 \midrule
   \multicolumn{2}{c}{Module \file{testflow_z.f90}} \\
 \midrule
-  \var{gal}       & GAL-coefficients, couple  $\overline F$ and $\overline U$ \\
-  \var{nu}        & $\nu$-tensor,     couples $\overline F$ and $\partial \overline U/\partial z$ \\
-  \var{aklam}     & $\lambda$-tensor, couples $\overline F$ and $\overline W$ \\
-  \var{chi}       & $\chi$-vector,    couples $\overline F$ and ${\overline G}_z$ \\
-  \var{kappa}     & $\kappa$-vector,  couples $\overline Q$ and $\overline U$ \\
-  \var{psi}       & $\psi$-vector,    couples $\overline Q$ and $\overline W$ \\
-  \var{pi}        & $\pi$-scalar,     couples $\overline Q$ and ${\overline G}_z$
+  \var{gal}       & GAL-coefficients,     couple  $\overline F$ and $\overline U$ \\
+  \var{nu}        & $\nu$-tensor,         couples $\overline F$ and $\partial^2 \overline U/\partial z^2$ \\
+  \var{aklam}     & AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W$ \\
+  \var{xi}        & $\chi$-vector,        couples $\overline F$ and ${\overline G}_z$ \\
+  \var{kappa}     & $\kappa$-vector,      couples $\overline Q$ and $\overline U$ \\
+  \var{psi}       & $\psi$-vector,        couples $\overline Q$ and $\overline W$ \\
+  \var{phi}       & $\phi$-vector,        couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$ \\
+  \var{pi}        & $\pi$-scalar,         couples $\overline Q$ and ${\overline G}_z$ \\
+  \var{theta}     & $\theta$-scalar,      couples $\overline Q$ and $div{\overline U}=dU_z/dz$
                     $\alpha_{K,ij}$
                     $\lambda_{ij}$
                     $\nu_{ij}$
                     $\chi_i$
                     $\kappa_i$
                     $\psi_i$
+                    $\phi_i$
                     ${\cal F}_i^{pq}$
                     ${\cal Q}^{pq}$
                     $\left<{u^{pq}}^2\right>$
@@ -808,6 +850,15 @@
   \var{kapPERP}   & $\kappa_\perp$ \\
   \var{kapPARA}   & $\kappa_\perp$ \\
   \var{mu}        & $\mu$ \\
+  \var{alpPERPz}  & $\alpha_\perp(z)$ \\
+  \var{alpPARAz}  & $\alpha_\perp(z)$ \\
+  \var{gamz}      & $\gamma(z)$ \\
+  \var{betPERPz}  & $\beta_\perp(z)$ \\
+  \var{betPARAz}  & $\beta_\perp(z)$ \\
+  \var{delz}      & $\delta(z)$ \\
+  \var{kapPERPz}  & $\kappa_\perp(z)$ \\
+  \var{kapPARAz}  & $\kappa_\perp(z)$ \\
+  \var{muz}       & $\mu(z)$ \\
   \var{bx1pt}     & $b_x^{1}$ \\
   \var{bx2pt}     & $b_x^{2}$ \\
   \var{bx3pt}     & $b_x^{3}$ \\
