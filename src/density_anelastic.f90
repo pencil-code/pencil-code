@@ -18,6 +18,7 @@
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
 ! PENCILS PROVIDED transprho
+! PENCILS PROVIDED ekin
 !
 !***************************************************************
 module Density
