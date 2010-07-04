@@ -1,6 +1,7 @@
 ! $Id$
 !
-!  This module takes care of the continuity equation.
+!  This module solves the Poisson equation for pressure for 
+!  the linearized density
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -18,6 +19,7 @@
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
 ! PENCILS PROVIDED transprho
+! PENCILS PROVIDED ekin
 !
 !***************************************************************
 module Density
