@@ -303,7 +303,7 @@ module Density
               'lrho_as_aux=T if already evolving non log rho'
           call fatal_error('initialize_density','')
         else
-          call farray_register_auxiliary('rho',irho,communicated=.true.)
+!          call farray_register_auxiliary('rho',irho,communicated=.true.)
         endif
       endif
 !
@@ -928,7 +928,7 @@ module Density
 !  if the ipp f-array exists (e.g. in anelastic problems), set it
 !  (for now corresponding to an isothermal eos)
 !
-        if (ipp/=0.and.leos) f(:,:,:,ipp) = exp(f(:,:,:,ilnrho))*cs20
+        if (ipp/=0.and.leos) f(:,:,:,ipp) = f(:,:,:,irho)*cs20
 !
         if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
             trim(initlnrho(j))
@@ -958,8 +958,8 @@ module Density
 !
 !  sanity check
 !
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) then
-        call error('init_lnrho', 'Imaginary density values')
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,irho))) then
+        call error('init_rho', 'Infinit density values')
       endif
 !
     endsubroutine init_lnrho
