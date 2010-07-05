@@ -1387,7 +1387,7 @@ module Density
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dlnrho_dt: not SOLVING  dlnrho_dt in anelastic'
-      if (headtt) call identify_bcs('lnrho',ilnrho)
+!      if (headtt) call identify_bcs('lnrho',ilnrho)
 !
 !
 !  Mass sources and sinks.
