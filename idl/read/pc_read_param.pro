@@ -88,8 +88,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Save old path.
 ;
     _path = !path
-    !path = datadir+':'
     if (not running_gdl()) then begin
+      !path = datadir+':'
       resolve_routine, 'param', /is_function
     endif
     object = param()
