@@ -2684,23 +2684,27 @@ module Mpicomm
 !
 !   4-jul-10/Bourdin.KIS: coded
 !
-      integer, parameter :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
+      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
       integer, parameter :: inx=nx,iny=ny
       integer, parameter :: onx=nxgrid,ony=nygrid/nprocxy
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
 !
-      integer, parameter :: bnx=nx,bny=ny/nprocx    ! transfer box size
-      real, dimension(bnx,bny) :: send_buf,recv_buf
-      integer, parameter :: ytag=105,nboxc=bnx*bny
+      integer, parameter :: bnx=nx,bny=ny/nprocx,nboxc=bnx*bny ! transfer box size
       integer :: ibox,partner
+      integer, parameter :: ytag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(bnx,bny), allocatable :: send_buf,recv_buf
 !
 !
       if (nprocx==1) then
         out=in
         return
       endif
+!
+      if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
+      if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
 !
       do ibox=0,nprocx-1
         partner=ipz*nprocxy+ipy*nprocx+ibox
@@ -2721,6 +2725,9 @@ module Mpicomm
         endif
       enddo
 !
+      if (allocated(send_buf)) deallocate(send_buf)
+      if (allocated(recv_buf)) deallocate(recv_buf)
+!
     endsubroutine remap_to_pencil_xy
 !***********************************************************************
     subroutine unmap_from_pencil_xy(in,out)
@@ -2730,23 +2737,27 @@ module Mpicomm
 !
 !   4-jul-10/Bourdin.KIS: coded
 !
-      integer, parameter :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
+      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
       integer, parameter :: inx=nxgrid,iny=nygrid/nprocxy
       integer, parameter :: onx=nx,ony=ny
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
 !
-      integer, parameter :: bnx=nx,bny=ny/nprocx    ! transfer box size
-      real, dimension(bnx,bny) :: send_buf,recv_buf
-      integer, parameter :: ytag=106,nboxc=bnx*bny
+      integer, parameter :: bnx=nx,bny=ny/nprocx,nboxc=bnx*bny ! transfer box size
       integer :: ibox,partner
+      integer, parameter :: ytag=106
       integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(bnx,bny), allocatable :: send_buf,recv_buf
 !
 !
       if (nprocx==1) then
         out=in
         return
       endif
+!
+      if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
+      if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
 !
       do ibox=0,nprocx-1
         partner=ipz*nprocxy+ipy*nprocx+ibox
@@ -2767,6 +2778,9 @@ module Mpicomm
         endif
       enddo
 !
+      if (allocated(send_buf)) deallocate(send_buf)
+      if (allocated(recv_buf)) deallocate(recv_buf)
+!
     endsubroutine unmap_from_pencil_xy
 !***********************************************************************
     subroutine transp_pencil_xy(in,out)
@@ -2777,16 +2791,17 @@ module Mpicomm
 !
 !   4-jul-10/Bourdin.KIS: coded
 !
-      integer :: inx,iny,onx,ony
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-      integer :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
-      integer :: bnx,bny                 ! destination box size
-      real, dimension(:,:), allocatable :: send_buf,recv_buf
-      integer :: ytag=101,nboxc
+      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
+      integer :: inx,iny,onx,ony ! x and y sizes of in and out arrays
+      integer :: bnx,bny,nboxc ! destination box sizes and number of elements
       integer :: ibox,partner
+      integer, parameter :: ytag=101
       integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: send_buf,recv_buf
 !
       inx=size(in,1)
       iny=size(in,2)
@@ -2847,8 +2862,8 @@ module Mpicomm
         out(bnx*ibox:(bnx+1)*ibox-1,:)=recv_buf
       enddo
 !
-      if (.not. allocated(send_buf)) deallocate(send_buf)
-      if (.not. allocated(recv_buf)) deallocate(recv_buf)
+      if (allocated(send_buf)) deallocate(send_buf)
+      if (allocated(recv_buf)) deallocate(recv_buf)
 !
     endsubroutine transp_pencil_xy
 !***********************************************************************
