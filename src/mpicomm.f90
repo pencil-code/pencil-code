@@ -2695,7 +2695,7 @@ module Mpicomm
       integer, parameter :: ytag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      real, dimension(bnx,bny), allocatable :: send_buf,recv_buf
+      real, dimension(:,:), allocatable :: send_buf,recv_buf
 !
 !
       if (nprocx==1) then
@@ -2748,7 +2748,7 @@ module Mpicomm
       integer, parameter :: ytag=106
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      real, dimension(bnx,bny), allocatable :: send_buf,recv_buf
+      real, dimension(:,:), allocatable :: send_buf,recv_buf
 !
 !
       if (nprocx==1) then
