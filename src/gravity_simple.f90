@@ -506,20 +506,15 @@ module Gravity
 !   5-dec-06/petri: added Boussinesq approximation
 !
       use Diagnostics
-      use SharedVariables, only: get_shared_variable!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, pointer :: cs20
-!
       integer :: k
 !
       intent(in) :: f,p
       intent(out) :: df
-!
-      call get_shared_variable('cs20',cs20)
 !
 !  Add gravity acceleration on gas.
 !
@@ -533,9 +528,12 @@ module Gravity
             if (headtt) print*,'duu_dt_grav: lboussinesq w/o lentropy not ok!'
           endif
         else if (lanelastic) then
-            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
-            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
-            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ &
+                p%gg(:,1)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ &
+                p%gg(:,2)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+                p%gg(:,3)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
         else
           if (lxyzdependence) then
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)
