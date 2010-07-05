@@ -506,15 +506,20 @@ module Gravity
 !   5-dec-06/petri: added Boussinesq approximation
 !
       use Diagnostics
+      use SharedVariables, only: get_shared_variable!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      real, pointer :: cs20
+!
       integer :: k
 !
       intent(in) :: f,p
       intent(out) :: df
+!
+      call get_shared_variable('cs20',cs20)
 !
 !  Add gravity acceleration on gas.
 !
