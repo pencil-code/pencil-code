@@ -2783,6 +2783,60 @@ module Mpicomm
 !
     endsubroutine unmap_from_pencil_xy
 !***********************************************************************
+    subroutine transp_unmap_from_pencil_xy(in,out)
+!
+!  First transposes pencil shaped data distributed on several processors
+!  and then unmaps the data back to normal shape (in one go) for nprocx>1.
+!  (This routine is the inverse of one remap and traspose function call.)
+!
+!   5-jul-10/Bourdin.KIS: coded
+!
+      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
+      integer, parameter :: inx=nxgrid,iny=nygrid/nprocxy
+      integer, parameter :: onx=nx,ony=ny
+      real, dimension(inx,iny), intent(in) :: in
+      real, dimension(onx,ony), intent(out) :: out
+!
+      integer, parameter :: bnx=nx/nprocx,bny=ny,nboxc=bnx*bny ! destination box sizes
+      integer :: ibox,partner
+      integer, parameter :: ytag=107
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: send_buf,recv_buf
+!
+!
+      if (nprocx==1) then
+        print*,'transp_unmap_from_pencil_xy: using this function is unnecessary'
+        call stop_it_if_any(.true.,'Inconsistency in transp_unmap_from_pencil_xy: nprocx==1')
+      endif
+!
+      if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
+      if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
+!
+      do ibox=0,nprocx-1
+        partner=ipz*nprocxy+ipy*nprocx+ibox
+        if (iproc==partner) then
+          ! data is local
+          out(bny*ibox:(bny+1)*ibox-1,:)=transpose(in(bnx*ibox:(bnx+1)*ibox-1,:))
+        else
+          ! communicate with partner
+          send_buf=transpose(in(bnx*ibox:(bnx+1)*ibox-1,:))
+          if (iproc>partner) then ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+          else                    ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+          endif
+          out(bny*ibox:(bny+1)*ibox-1,:)=recv_buf
+        endif
+      enddo
+!
+      if (allocated(send_buf)) deallocate(send_buf)
+      if (allocated(recv_buf)) deallocate(recv_buf)
+!
+    endsubroutine transp_unmap_from_pencil_xy
+!***********************************************************************
     subroutine transp_pencil_xy(in,out)
 !
 !  Transpose data distributed on several processors.
