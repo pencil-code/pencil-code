@@ -906,13 +906,11 @@ module Density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
         case ('anelastic')
 !            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
-        do imn=1,ny*nz
-          n=nn(imn)
-          m=mm(imn)
-          lfirstpoint=(imn==1)      ! true for very first m-n loop
-          llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-          f(l1:l2,m,n,irho)=0.0
-          f(l1:l2,m,n,irho_b)=exp(gamma*gravz*z(n)/cs20) ! Define the base state density
+        do m=1,my
+        do n=1,mz
+          f(1:mx,m,n,irho)=0.0
+          f(1:mx,m,n,irho_b)=exp(gamma*gravz*z(n)/cs20) ! Define the base state density
+        enddo
         enddo
 !
         case default
@@ -1294,7 +1292,8 @@ module Density
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
       if (idiag_divrhoum/=0.or.idiag_divrhourms/=0..or.idiag_divrhoumax/=0.) then
          lpenc_diagnos(i_rho)=.true.
-         lpenc_diagnos(i_uglnrho)=.true.
+!        lpenc_diagnos(i_uglnrho)=.true.
+         lpenc_diagnos(i_ugrho)=.true.
          lpenc_diagnos(i_divu)=.true.
       endif
 !
@@ -1357,22 +1356,16 @@ module Density
       integer :: i, mm, nn, ierr,l
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
-      p%rho=f(l1:l2,m,n,irho)/f(l1:l2,m,n,irho_b)
+!     p%rho=f(l1:l2,m,n,irho)/f(l1:l2,m,n,irho_b)
+      p%rho=f(l1:l2,m,n,irho_b)
 
-! del2lnrho
-
-! del6lnrho
-      if (lpencil(i_del6lnrho)) call fatal_error('del6lnrho','pencil not calculated') 
-! hlnrho
-      if (lpencil(i_hlnrho))  call fatal_error('hlnrho','pencil not calculated')
-! sglnrho
-!     if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho) 
 ! uglnrho
 !      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
 ! ugrho
-      if (lpencil(i_ugrho)) call fatal_error('ugrho','pencil not calculated')
-! uij5glnrho
-      if (lpencil(i_uij5glnrho))  call fatal_error('uij5glnrho','pencil not calculated')
+      if (lpencil(i_ugrho)) then
+        call grad(f,irho_b,p%grho)
+        call dot(p%uu,p%grho,p%ugrho)
+      endif
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
@@ -1427,7 +1420,8 @@ module Density
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
         if (idiag_ugrhom/=0)   call sum_mn_name(p%ugrho,idiag_ugrhom)
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
-        if (idiag_divrhoum/=0) call sum_mn_name(p%rho*p%divu+p%rho*p%uglnrho,idiag_divrhoum)
+        if (idiag_divrhoum/=0) &
+           call sum_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoum)
         if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%rho*p%uglnrho)**2,idiag_divrhourms,lsqrt=.true.)
         if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%rho*p%uglnrho,idiag_divrhoumax)
         if (idiag_dtd/=0) &
