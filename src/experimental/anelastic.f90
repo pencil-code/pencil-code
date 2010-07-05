@@ -14,12 +14,13 @@
 ! MAUX CONTRIBUTION 5
 ! COMMUNICATED AUXILIARIES 4
 !
-! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); gpp(3); 
+! PENCILS PROVIDED glnrho(3); grho(3); gpp(3); 
 ! PENCILS PROVIDED uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
 ! PENCILS PROVIDED transprho
 ! PENCILS PROVIDED ekin
+! PENCILS PROVIDED rho; rho1; lnrho; glnrho(3)
 !
 !***************************************************************
 module Density
@@ -390,7 +391,7 @@ module Density
         do m=1,my
         do n=1,mz
           f(1:mx,m,n,ipp)=0.0
-          f(1:mx,m,n,irho_b)=exp(gamma*gravz*z(n)/cs20) ! Define the base state density
+          f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
         enddo
         enddo
 !
@@ -837,9 +838,11 @@ module Density
       integer :: i, mm, nn, ierr,l
 ! DM+PC (at present we are working only with log rho) 
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
-!     p%rho=f(l1:l2,m,n,irho)/f(l1:l2,m,n,irho_b)
-      p%rho=f(l1:l2,m,n,irho_b)
-      if (lpencil(i_rho1)) p%rho1=1.0/p%rho
+          p%rho=f(l1:l2,m,n,irho_b)
+          p%rho1=1./p%rho
+          p%lnrho = log(p%rho)
+
+      if (lpencil(i_glnrho)) call grad(f, irho_b, p%glnrho)
 
 ! uglnrho
 !      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)

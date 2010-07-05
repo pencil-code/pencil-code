@@ -14,6 +14,7 @@
 ! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
+! PENCILS PROVIDED TTb;
 !
 !***************************************************************
 module EquationOfState
@@ -791,6 +792,8 @@ module EquationOfState
       case (ipp_ss)
         if (lanelastic) then
           p%pp=f(l1:l2,m,n,ipp)
+          p%TTb=cs20*cp1*exp(gamma*f(l1:l2,m,n,iss_b)*cp1+gamma_m1*p%lnrho)/gamma_m1
+          p%TT1=1./p%TTb
         else
           call fatal_error('calc_pencils_eos', &
               'for input pair (pp,ss) anelastic must be used')
@@ -829,16 +832,13 @@ module EquationOfState
         endif
 !
       case (ipp_cs2)
-        if (lanelastic) then
-          p%pp=f(l1:l2,m,n,ipp)
-        else
-          call fatal_error('calc_pencils_eos', &
-              'for input pair (pp,lnTT) anelastic must be used')
-        endif
         if (leos_isentropic) then
           call fatal_error('calc_pencils_eos', &
               'isentropic not implemented for (pp,lnTT)')
         elseif (leos_isothermal) then
+        if (lanelastic) then
+          p%pp=f(l1:l2,m,n,ipp)
+        else
           if (lpencil(i_cs2)) p%cs2=cs20
 !          if (lpencil(i_lnrho)) p%lnrho=log((exp(f(l1:l2,m,n,ilnrho))+p%pp/cs20)/2.0)
 !          if (lpencil(i_rho)) p%rho=(f(l1:l2,m,n,ilnrho)+p%pp/cs20)/2.0
@@ -848,6 +848,7 @@ module EquationOfState
           if (lpencil(i_glnTT)) p%glnTT=0.0
           if (lpencil(i_hlnTT)) p%hlnTT=0.0
           if (lpencil(i_del2lnTT)) p%del2lnTT=0.0
+        endif
         elseif (leos_localisothermal) then
           call fatal_error('calc_pencils_eos', &
               'Local Isothermal case not implemented for ipp_cs2')

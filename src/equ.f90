@@ -449,7 +449,7 @@ module Equ
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
-        if (.not.lanelastic)  call calc_pencils_eos(f,p)
+                              call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
