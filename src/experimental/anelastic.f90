@@ -11,8 +11,8 @@
 ! CPARAM logical, parameter :: lanelastic = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 6
-! COMMUNICATED AUXILIARIES 5
+! MAUX CONTRIBUTION 5
+! COMMUNICATED AUXILIARIES 4
 !
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); gpp(3); 
 ! PENCILS PROVIDED uglnrho; ugrho
@@ -144,7 +144,7 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('rho',irho,communicated=.true.)
+!      call farray_register_auxiliary('rho',irho,communicated=.true.)
       call farray_register_auxiliary('rho_b',irho_b)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
@@ -897,7 +897,7 @@ module Density
 !            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
         do m=1,my
         do n=1,mz
-          f(1:mx,m,n,irho)=0.0
+!          f(1:mx,m,n,irho)=0.0
           f(1:mx,m,n,irho_b)=exp(gamma*gravz*z(n)/cs20) ! Define the base state density
         enddo
         enddo
@@ -915,7 +915,7 @@ module Density
 !  if the ipp f-array exists (e.g. in anelastic problems), set it
 !  (for now corresponding to an isothermal eos)
 !
-        if (ipp/=0.and.leos) f(:,:,:,ipp) = f(:,:,:,irho)*cs20
+!        if (ipp/=0.and.leos) f(:,:,:,ipp) = f(:,:,:,irho)*cs20
 !
         if (lroot) print*,'init_lnrho: initlnrho('//trim(iinit_str)//') = ', &
             trim(initlnrho(j))
@@ -941,13 +941,13 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+!      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
 !  sanity check
 !
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,irho))) then
-        call error('init_rho', 'Infinit density values')
-      endif
+!      if (notanumber(f(l1:l2,m1:m2,n1:n2,irho))) then
+!        call error('init_rho', 'Infinit density values')
+!      endif
 !
     endsubroutine init_lnrho
 !**********************************************************************
@@ -1347,6 +1347,7 @@ module Density
       if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
 !     p%rho=f(l1:l2,m,n,irho)/f(l1:l2,m,n,irho_b)
       p%rho=f(l1:l2,m,n,irho_b)
+      if (lpencil(i_rho1)) p%rho1=1.0/p%rho
 
 ! uglnrho
 !      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
@@ -1366,8 +1367,8 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
-          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+!      if ( (.not.ldensity_nolog) .and. (irho/=0) ) &
+!          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !
     endsubroutine density_before_boundary
 !***********************************************************************
@@ -2423,51 +2424,51 @@ module Density
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+!      select case (trim(slices%name))
 !
 !  Density.
 !
-        case ('rho')
-          if (ldensity_nolog) then
-            slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
-            slices%ready=.true.
-          else
-            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
-            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
-            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
-            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
-            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnrho))
-            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnrho))
-            slices%ready=.true.
-          endif
+!        case ('rho')
+!          if (ldensity_nolog) then
+!            slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
+!            slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
+!            slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
+!            slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
+!            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
+!            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
+!            slices%ready=.true.
+!          else
+!            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
+!            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
+!            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
+!            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
+!            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnrho))
+!            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnrho))
+!            slices%ready=.true.
+!          endif
 !
 !  Logarithmic density.
 !
-        case ('lnrho')
-          if (ldensity_nolog) then
-            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,irho))
-            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,irho))
-            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,irho))
-            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,irho))
-            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,irho))
-            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,irho))
-            slices%ready=.true.
-          else
-            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
-            slices%ready=.true.
-          endif
+!        case ('lnrho')
+!          if (ldensity_nolog) then
+!            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,irho))
+!            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,irho))
+!            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,irho))
+!            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,irho))
+!            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,irho))
+!            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,irho))
+!            slices%ready=.true.
+!          else
+!            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
+!            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
+!            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
+!            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
+!            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
+!            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
+!            slices%ready=.true.
+!          endif
 !
-      endselect
+!      endselect
 !
     endsubroutine get_slices_density
 !***********************************************************************
@@ -2560,7 +2561,7 @@ module Density
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b)
         enddo
-        f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)
+!        f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)
       enddo
       enddo
 

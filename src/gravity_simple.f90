@@ -533,9 +533,9 @@ module Gravity
             if (headtt) print*,'duu_dt_grav: lboussinesq w/o lentropy not ok!'
           endif
         else if (lanelastic) then
-            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
-            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
-            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
+            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
+            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gg(:,2)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
+            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
         else
           if (lxyzdependence) then
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)
