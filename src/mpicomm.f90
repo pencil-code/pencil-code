@@ -318,9 +318,9 @@ module Mpicomm
 !
 ! For boundary condition across the pole set up pole-neighbours
 ! This assumes that the domain is equally distributed among the
-! processors in the z direction. 
+! processors in the z direction.
 !
-       poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocx*nprocy+ipy*nprocx+ipx 
+       poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocx*nprocy+ipy*nprocx+ipx
 !
 !  Set the four corners in the yz-plane (in cyclic order).
 !
@@ -2707,7 +2707,7 @@ module Mpicomm
         if (iproc==partner) then
           ! data is local
           out(:,bny*ibox:(bny+1)*ibox-1)=in(:,bny*ibox:(bny+1)*ibox-1)
-	else
+        else
           ! communicate with partner
           send_buf=in(:,bny*ibox:(bny+1)*ibox-1)
           if (iproc>partner) then ! above diagonal: send first, receive then
@@ -2753,7 +2753,7 @@ module Mpicomm
         if (iproc==partner) then
           ! data is local
           out(:,bny*ibox:(bny+1)*ibox-1)=in(bnx*ibox:(bnx+1)*ibox-1,:)
-	else
+        else
           ! communicate with partner
           send_buf=in(bnx*ibox:(bnx+1)*ibox-1,:)
           if (iproc>partner) then ! above diagonal: send first, receive then
@@ -2777,18 +2777,28 @@ module Mpicomm
 !
 !   4-jul-10/Bourdin.KIS: coded
 !
-      integer :: inx=size(in,1),iny=size(in,2)
-      integer :: onx=size(out,1),ony=size(out,2)
-      real, dimension(inx,iny), intent(in) :: in
-      real, dimension(onx,ony), intent(out) :: out
+      integer :: inx,iny,onx,ony
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
 !
-      integer, parameter :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
-      integer, parameter :: bnx=onx/nprocxy,bny=ony ! destination box size
-      real, dimension(bnx,bny) :: send_buf,recv_buf
-      integer, parameter :: ytag=101,nboxc=bnx*bny
+      integer :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
+      integer :: bnx,bny                 ! destination box size
+      real, dimension(:,:), allocatable :: send_buf,recv_buf
+      integer :: ytag=101,nboxc
       integer :: ibox,partner
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
+      inx=size(in,1)
+      iny=size(in,2)
+      onx=size(out,1)
+      ony=size(out,2)
+!
+      bnx=onx/nprocxy
+      bny=ony
+      nboxc=bnx*bny
+!
+      if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
+      if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
 !
       if (mod(nxgrid,nprocxy)/=0) then
         print*,'transp_pencil_xy: nxgrid needs to be an integer multiple of nprocx*nprocy'
@@ -2823,7 +2833,7 @@ module Mpicomm
         if (iproc==partner) then
           ! data is local
           recv_buf=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
-	else
+        else
           ! communicate with partner
           send_buf=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
           if (iproc>partner) then ! above diagonal: send first, receive then
@@ -2836,6 +2846,9 @@ module Mpicomm
         endif
         out(bnx*ibox:(bnx+1)*ibox-1,:)=recv_buf
       enddo
+!
+      if (.not. allocated(send_buf)) deallocate(send_buf)
+      if (.not. allocated(recv_buf)) deallocate(recv_buf)
 !
     endsubroutine transp_pencil_xy
 !***********************************************************************
@@ -3421,12 +3434,12 @@ module Mpicomm
         do j=1,3
 !
           if (ipz/=0 .or. bcz1(j-1+ivar)=='p') &
-            vec(1:n1-1,j)=lbufi(:,j)            
+            vec(1:n1-1,j)=lbufi(:,j)
 !
 !  Read from buffer in lower ghostzones.
 !
           if (ipz/=nprocz-1 .or. bcz2(j-1+ivar)=='p') &
-            vec(n2+1:mz,j)=ubufi(:,j)          
+            vec(n2+1:mz,j)=ubufi(:,j)
 !
 !  Read from buffer in upper ghostzones.
 !
@@ -3597,7 +3610,7 @@ module Mpicomm
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
-!     *** WORK HERE: THIS CODE WILL BE DELETED SOON 
+!     *** WORK HERE: THIS CODE WILL BE DELETED SOON
 !                   (because of an ifort compiler bug)
 !      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
 !      write(unit, REC=1) buffer
@@ -3692,4 +3705,3 @@ module Mpicomm
     endfunction
 !***********************************************************************
 endmodule Mpicomm
-
