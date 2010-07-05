@@ -295,17 +295,6 @@ module Density
         call fatal_error('','')
       endif
 !
-!  Possible to store non log rho as auxiliary variable.
-!
-      if (lrho_as_aux) then
-        if (ldensity_nolog) then
-          if (lroot) print*, 'initialize_density: makes no sense to have '// &
-              'lrho_as_aux=T if already evolving non log rho'
-          call fatal_error('initialize_density','')
-        else
-!          call farray_register_auxiliary('rho',irho,communicated=.true.)
-        endif
-      endif
 !
 !  For diffusion term with non-logarithmic density we need to save rho
 !  as an auxiliary variable.
@@ -1419,11 +1408,10 @@ module Density
         if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
         if (idiag_ugrhom/=0)   call sum_mn_name(p%ugrho,idiag_ugrhom)
-        if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (idiag_divrhoum/=0) &
            call sum_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoum)
-        if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%rho*p%uglnrho)**2,idiag_divrhourms,lsqrt=.true.)
-        if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%rho*p%uglnrho,idiag_divrhoumax)
+        if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%ugrho)**2,idiag_divrhourms,lsqrt=.true.)
+        if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoumax)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif

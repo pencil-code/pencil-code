@@ -2559,14 +2559,6 @@ module Density
       integer :: j, ju, l
       
       if (headt) call identify_bcs('pp',ipp)
-        if (lanelastic) then
-          f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
-          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
-          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
-          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
-                                    df(l1:l2,m,n,iuu:iuu+2)
-          call sum_mn(p%rho,mass_per_proc(1))
-        endif
 
         call get_average_density(mass_per_proc(1),average_density)
         if (it==1) init_average_density=average_density
