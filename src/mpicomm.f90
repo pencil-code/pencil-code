@@ -2424,7 +2424,7 @@ module Mpicomm
         if (mod(nxgrid,nygrid)/=0) then
           print*,'transp: nxgrid needs to be an integer multiple of '//&
                  'nygrid for var==y'
-          call stop_it('Inconsistency: mod(nxgrid,nygrid)/=0')
+          call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nygrid)/=0')
         endif
 !
 !  Allocate temporary scratch array
@@ -2523,7 +2523,7 @@ module Mpicomm
 !
         if (nzgrid/=nxgrid) then
           if (lroot) print*, 'transp: need to have nzgrid=nxgrid for var==z'
-          call stop_it('transp: inconsistency - nzgrid/=nxgrid')
+          call stop_it_if_any(.true.,'transp: inconsistency - nzgrid/=nxgrid')
         endif
 !
 !  Calculate the size of buffers.
@@ -2591,7 +2591,7 @@ module Mpicomm
       if (mod(nxgrid,nygrid)/=0) then
         print*,'transp: nxgrid needs to be an integer multiple of '//&
                'nygrid for var==y'
-        call stop_it('Inconsistency: mod(nxgrid,nygrid)/=0')
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nygrid)/=0')
       endif
 !
 !
@@ -2632,7 +2632,7 @@ module Mpicomm
 !  (grid point wise) and only transpose within those boxes.
 !
 !  The following communication patterns is kind of self-regulated. It
-!  avoids deadlock, because there will always be at least one matching
+!  avoids deadlocks, because there will always be at least one matching
 !  pair of processors; the others will have to wait until their partner
 !  posts the corresponding request.
 !    Doing send and recv together for a given pair of processors
@@ -2665,8 +2665,8 @@ module Mpicomm
 !  |------+------|  ->  |------+------|  ->  |------+------|
 !  | 4  5 |  6  7|      | 4  5 | 12 13|      | 1  5 |  9 13|
 !  | 0  1 |  2  3|      | 0  1 |  8  9|      | 0  4 |  8 12|
-!     original          2x2 blocks         each block
-!                       transposed         transposed
+!    original             2x2 blocks           each block
+!                         transposed           transposed
 !
       do px=0,nprocy-1
         do ibox=0,nxgrid/nygrid-1
@@ -2676,6 +2676,168 @@ module Mpicomm
       enddo
 !
     endsubroutine transp_xy
+!***********************************************************************
+    subroutine remap_to_pencil_xy(in,out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 2D arrays in x and y only for nprocx>1.
+!
+!   4-jul-10/Bourdin.KIS: coded
+!
+      integer, parameter :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
+      integer, parameter :: inx=nx,iny=ny
+      integer, parameter :: onx=nxgrid,ony=nygrid/nprocxy
+      real, dimension(inx,iny), intent(in) :: in
+      real, dimension(onx,ony), intent(out) :: out
+!
+      integer, parameter :: bnx=nx,bny=ny/nprocx    ! transfer box size
+      real, dimension(bnx,bny) :: send_buf,recv_buf
+      integer, parameter :: ytag=105,nboxc=bnx*bny
+      integer :: ibox,partner
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+!
+      if (nprocx==1) then
+        out=in
+        return
+      endif
+!
+      do ibox=0,nprocx-1
+        partner=ipz*nprocxy+ipy*nprocx+ibox
+        if (iproc==partner) then
+          ! data is local
+          out(:,bny*ibox:(bny+1)*ibox-1)=in(:,bny*ibox:(bny+1)*ibox-1)
+	else
+          ! communicate with partner
+          send_buf=in(:,bny*ibox:(bny+1)*ibox-1)
+          if (iproc>partner) then ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+          else                    ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+          endif
+          out(bnx*ibox:(bnx+1)*ibox-1,:)=recv_buf
+        endif
+      enddo
+!
+    endsubroutine remap_to_pencil_xy
+!***********************************************************************
+    subroutine unmap_from_pencil_xy(in,out)
+!
+!  Unmaps pencil shaped data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocx>1.
+!
+!   4-jul-10/Bourdin.KIS: coded
+!
+      integer, parameter :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
+      integer, parameter :: inx=nxgrid,iny=nygrid/nprocxy
+      integer, parameter :: onx=nx,ony=ny
+      real, dimension(inx,iny), intent(in) :: in
+      real, dimension(onx,ony), intent(out) :: out
+!
+      integer, parameter :: bnx=nx,bny=ny/nprocx    ! transfer box size
+      real, dimension(bnx,bny) :: send_buf,recv_buf
+      integer, parameter :: ytag=106,nboxc=bnx*bny
+      integer :: ibox,partner
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+!
+      if (nprocx==1) then
+        out=in
+        return
+      endif
+!
+      do ibox=0,nprocx-1
+        partner=ipz*nprocxy+ipy*nprocx+ibox
+        if (iproc==partner) then
+          ! data is local
+          out(:,bny*ibox:(bny+1)*ibox-1)=in(bnx*ibox:(bnx+1)*ibox-1,:)
+	else
+          ! communicate with partner
+          send_buf=in(bnx*ibox:(bnx+1)*ibox-1,:)
+          if (iproc>partner) then ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+          else                    ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+          endif
+          out(:,bny*ibox:(bny+1)*ibox-1)=recv_buf
+        endif
+      enddo
+!
+    endsubroutine unmap_from_pencil_xy
+!***********************************************************************
+    subroutine transp_pencil_xy(in,out)
+!
+!  Transpose data distributed on several processors.
+!  This routine transposes 2D arrays in x and y only.
+!  The data must be mapped in pencil shape, especially for nprocx>1.
+!
+!   4-jul-10/Bourdin.KIS: coded
+!
+      integer :: inx=size(in,1),iny=size(in,2)
+      integer :: onx=size(out,1),ony=size(out,2)
+      real, dimension(inx,iny), intent(in) :: in
+      real, dimension(onx,ony), intent(out) :: out
+!
+      integer, parameter :: nprocxy=nprocx*nprocy   ! number of procs in xy-plane
+      integer, parameter :: bnx=onx/nprocxy,bny=ony ! destination box size
+      real, dimension(bnx,bny) :: send_buf,recv_buf
+      integer, parameter :: ytag=101,nboxc=bnx*bny
+      integer :: ibox,partner
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+!
+      if (mod(nxgrid,nprocxy)/=0) then
+        print*,'transp_pencil_xy: nxgrid needs to be an integer multiple of nprocx*nprocy'
+        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(nxgrid,nprocx*nprocy)/=0')
+      endif
+      if (mod(nygrid,nprocxy)/=0) then
+        print*,'transp_pencil_xy: nygrid needs to be an integer multiple of nprocx*nprocy'
+        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(nygrid,nprocx*nprocy)/=0')
+      endif
+!
+!  Send information to different processors (x-y transpose)
+!  Divide x-range in as many boxes as we have processors in x and y.
+!  The box index counts through all of them;
+!  partner is the index of the processor we need to communicate with.
+!
+!
+!        ... |
+!          3 |  D  E  F  /
+!          2 |  B  C  /  F'
+!  iproc=  1 |  A  /  C' E'
+!          0 |  /  A' B' D'
+!            +--------------
+!   partner=    0  1  2  3 ..
+!
+!
+!  The data is expected to be already in pencil shape, especially for nprocx>1.
+!  The data is delivered again in pencil shape, but with x- and y-dimension swapped.
+!  Only restriction: nx and ny must be integer multiples of nprocx*nprocy.
+!
+      do ibox=0,nprocxy-1
+        partner=ipz*nprocxy+ibox
+        if (iproc==partner) then
+          ! data is local
+          recv_buf=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
+	else
+          ! communicate with partner
+          send_buf=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
+          if (iproc>partner) then ! above diagonal: send first, receive then
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+          else                    ! below diagonal: receive first, send then
+            call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+            call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+          endif
+        endif
+        out(bnx*ibox:(bnx+1)*ibox-1,:)=recv_buf
+      enddo
+!
+    endsubroutine transp_pencil_xy
 !***********************************************************************
     subroutine transp_xy_other(a)
 !
@@ -2702,7 +2864,7 @@ module Mpicomm
       if (mod(nxgrid_other,nygrid_other)/=0) then
         print*,'transp: nxgrid_other needs to be an integer multiple of '//&
                'nygrid_other for var==y'
-        call stop_it('Inconsistency: mod(nxgrid_other,nygrid_other)/=0')
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid_other,nygrid_other)/=0')
       endif
 !
 !  Calculate the size of buffers.
@@ -2819,7 +2981,7 @@ module Mpicomm
         if (mod(nxgrid_other,nygrid_other)/=0) then
           print*,'transp: nxgrid_other needs to be an integer multiple of '//&
                'nygrid_other for var==y'
-          call stop_it('Inconsistency: mod(nxgrid_other,nygrid_other)/=0')
+          call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid_other,nygrid_other)/=0')
         endif
 !
 !  Allocate temporary scratch array
@@ -2918,7 +3080,7 @@ module Mpicomm
         if (nzgrid_other/=nxgrid_other) then
           if (lroot) print*, 'transp_other: need to have '//&
           'nzgrid_other=nxgrid_other for var==z'
-          call stop_it('transp_other: inconsistency - nzgrid/=nxgrid')
+          call stop_it_if_any(.true.,'transp_other: inconsistency - nzgrid/=nxgrid')
         endif
 !
 !  Calculate the size of buffers.
@@ -2987,7 +3149,7 @@ module Mpicomm
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
-        call stop_it('Inconsistency: mod(nxgrid,nprocz)/=0')
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
       endif
 !
 !  Calculate the size of buffers.
@@ -3033,7 +3195,7 @@ module Mpicomm
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
-        call stop_it('Inconsistency: mod(nxgrid,nprocz)/=0')
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
       endif
 !
 !  Calculate the size of buffers.
@@ -3080,7 +3242,7 @@ module Mpicomm
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_mxmz: nxgrid needs to be an integer multiple of nprocz'
-        call stop_it('Inconsistency: mod(nxgrid,nprocz)/=0')
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
       endif
 !
 !  Calculate the size of buffers.
@@ -3128,7 +3290,7 @@ module Mpicomm
 !
       if (mod(nxgrid,nprocz)/=0) then
         print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
-        call stop_it('Inconsistency: mod(nxgrid,nprocz)/=0')
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
       endif
 !
 !  Calculate the size of buffers.
@@ -3173,8 +3335,7 @@ module Mpicomm
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
-        case default; call stop_it("communicate_bc_aa_pot: "//topbot//&
-                                   " should be either `top' or `bot'")
+        case default; call stop_it_if_any(.true.,"communicate_bc_aa_pot: "//topbot//" should be either `top' or `bot'")
       end select
 !
 !  Periodic boundaries in y -- communicate along y if necessary
@@ -3523,9 +3684,12 @@ module Mpicomm
         ldelete=.false.
       endif
 !
+      ! Let the root node do the dirty work
       if (lroot) parallel_file_exists = file_exists(file,ldelete)
+!
       call mpibcast_logical(parallel_file_exists, 1)
 !
     endfunction
 !***********************************************************************
 endmodule Mpicomm
+
