@@ -2690,7 +2690,7 @@ module Mpicomm
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
 !
-      integer, parameter :: bnx=nx,bny=ny/nprocx,nboxc=bnx*bny ! transfer box size
+      integer, parameter :: bnx=nx,bny=ny/nprocx,nboxc=bnx*bny ! transfer box sizes
       integer :: ibox,partner
       integer, parameter :: ytag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -2699,8 +2699,8 @@ module Mpicomm
 !
 !
       if (nprocx==1) then
-        out=in
-        return
+        print*,'remap_to_pencil_xy: using this function is unnecessary'
+        call stop_it_if_any(.true.,'Inconsistency in remap_to_pencil_xy: nprocx==1')
       endif
 !
       if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
@@ -2710,7 +2710,7 @@ module Mpicomm
         partner=ipz*nprocxy+ipy*nprocx+ibox
         if (iproc==partner) then
           ! data is local
-          out(:,bny*ibox:(bny+1)*ibox-1)=in(:,bny*ibox:(bny+1)*ibox-1)
+          out(bnx*ibox:(bnx+1)*ibox-1,:)=in(:,bny*ibox:(bny+1)*ibox-1)
         else
           ! communicate with partner
           send_buf=in(:,bny*ibox:(bny+1)*ibox-1)
@@ -2743,7 +2743,7 @@ module Mpicomm
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
 !
-      integer, parameter :: bnx=nx,bny=ny/nprocx,nboxc=bnx*bny ! transfer box size
+      integer, parameter :: bnx=nx,bny=ny/nprocx,nboxc=bnx*bny ! transfer box sizes
       integer :: ibox,partner
       integer, parameter :: ytag=106
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -2752,8 +2752,8 @@ module Mpicomm
 !
 !
       if (nprocx==1) then
-        out=in
-        return
+        print*,'unmap_from_pencil_xy: using this function is unnecessary'
+        call stop_it_if_any(.true.,'Inconsistency in unmap_from_pencil_xy: nprocx==1')
       endif
 !
       if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
@@ -2803,6 +2803,11 @@ module Mpicomm
 !
       real, dimension(:,:), allocatable :: send_buf,recv_buf
 !
+      if (nprocx==1) then
+        print*,'transp_pencil_xy: using this function is unnecessary'
+        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: nprocx==1')
+      endif
+!
       inx=size(in,1)
       iny=size(in,2)
       onx=size(out,1)
@@ -2847,7 +2852,7 @@ module Mpicomm
         partner=ipz*nprocxy+ibox
         if (iproc==partner) then
           ! data is local
-          recv_buf=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
+          out(bnx*ibox:(bnx+1)*ibox-1,:)=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
         else
           ! communicate with partner
           send_buf=transpose(in(bny*ibox:(bny+1)*ibox-1,:))
@@ -2858,8 +2863,8 @@ module Mpicomm
             call MPI_RECV(recv_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
             call MPI_SEND(send_buf,nboxc,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
           endif
+          out(bnx*ibox:(bnx+1)*ibox-1,:)=recv_buf
         endif
-        out(bnx*ibox:(bnx+1)*ibox-1,:)=recv_buf
       enddo
 !
       if (allocated(send_buf)) deallocate(send_buf)
