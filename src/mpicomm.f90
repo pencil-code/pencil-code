@@ -155,7 +155,113 @@ module Mpicomm
     module procedure mpireduce_and_arr
   endinterface
 !
-  interface mpireduce_sum_int
+  interface mpireduce_sum_int    subroutine transp_xy(a)
+!
+!  Doing the transpose of information distributed on several processors.
+!  This routine transposes 2D arrays in x and y only.
+!
+!   6-oct-06/tobi: Adapted from transp
+!
+! TODO: Implement nxgrid = n*nzgrid
+!
+      real, dimension(nx,ny), intent(inout) :: a
+!
+      real, dimension(ny,ny) :: send_buf_y, recv_buf_y, tmp
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: sendc_y,recvc_y,px
+      integer :: ytag=101,partner
+      integer :: ibox,iy
+!
+      if (mod(nxgrid,nygrid)/=0) then
+        print*,'transp: nxgrid needs to be an integer multiple of '//&
+               'nygrid for var==y'
+        call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nygrid)/=0')
+      endif
+!
+!
+!  Calculate the size of buffers.
+!  Buffers used for the y-transpose have the same size in y and z.
+!
+      sendc_y=ny**2
+      recvc_y=ny**2
+!
+!  Send information to different processors (x-y transpose)
+!  Divide x-range in as many intervals as we have processors in y.
+!  The index px counts through all of them; partner is the index of the
+!  processor we need to communicate with. Thus, px is the ipy of partner,
+!  but at the same time the x index of the given block.
+!
+!  Example: ipy=1, ipz=0, then partner=0,2,3, ..., nprocy-1.
+!
+!
+!        ... |
+!          3 |  D  E  F  /
+!          2 |  B  C  /  F'
+!  ipy=    1 |  A  /  C' E'
+!          0 |  /  A' B' D'
+!            +--------------
+!        px=    0  1  2  3 ..
+!
+!
+!        ipy
+!         ^
+!  C D    |
+!  A B    |      --> px
+!
+!  if ipy=1,px=0, then exchange block A with A' on partner=0
+!  if ipy=1,px=2, then exchange block C' with C on partner=2
+!
+!  if nxgrid is an integer multiple of nygrid, we divide the whole domain
+!  into nxgrid/nygrid boxes (indexed by ibox below) of unit aspect ratio
+!  (grid point wise) and only transpose within those boxes.
+!
+!  The following communication patterns is kind of self-regulated. It
+!  avoids deadlocks, because there will always be at least one matching
+!  pair of processors; the others will have to wait until their partner
+!  posts the corresponding request.
+!    Doing send and recv together for a given pair of processors
+!  (although in an order that avoids deadlocking) allows us to get away
+!  with only send_buf and recv_buf as buffers
+!
+      do px=0,nprocy-1
+        do ibox=0,nxgrid/nygrid-1
+          if (px/=ipy) then
+            partner=px+ipz*nprocy ! = iproc + (px-ipy)
+            iy=(ibox*nprocy+px)*ny
+            send_buf_y=a(iy+1:iy+ny,:)
+            if (px<ipy) then      ! above diagonal: send first, receive then
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+            elseif (px>ipy) then  ! below diagonal: receive first, send then
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+            endif
+            a(iy+1:iy+ny,:)=recv_buf_y
+          endif
+        enddo
+      enddo
+!
+!  Transposing the received data (x-y transpose)
+!  Example:
+!
+!  |12 13 | 14 15|      | 6  7 | 14 15|      | 3  7 | 11 15|
+!  | 8  9 | 10 11|      | 2  3 | 10 11|      | 2  6 | 10 14|
+!  |------+------|  ->  |------+------|  ->  |------+------|
+!  | 4  5 |  6  7|      | 4  5 | 12 13|      | 1  5 |  9 13|
+!  | 0  1 |  2  3|      | 0  1 |  8  9|      | 0  4 |  8 12|
+!    original             2x2 blocks           each block
+!                         transposed           transposed
+!
+      do px=0,nprocy-1
+        do ibox=0,nxgrid/nygrid-1
+          iy=(ibox*nprocy+px)*ny
+          tmp=transpose(a(iy+1:iy+ny,:)); a(iy+1:iy+ny,:)=tmp
+        enddo
+      enddo
+!
+    endsubroutine transp_xy
+!***********************************************************************
+
     module procedure mpireduce_sum_int_scl
     module procedure mpireduce_sum_int_arr
     module procedure mpireduce_sum_int_arr2
@@ -2589,8 +2695,7 @@ module Mpicomm
       integer :: ibox,iy
 !
       if (mod(nxgrid,nygrid)/=0) then
-        print*,'transp: nxgrid needs to be an integer multiple of '//&
-               'nygrid for var==y'
+        print*,'transp_xy: nxgrid needs to be an integer multiple of ygrid'
         call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nygrid)/=0')
       endif
 !
@@ -2682,7 +2787,7 @@ module Mpicomm
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
 !
-!   4-jul-10/Bourdin.KIS: coded
+!   4-jul-2010/Bourdin.KIS: coded
 !
       integer, parameter :: inx=nx,iny=ny
       integer, parameter :: onx=nxgrid,ony=ny/nprocx
@@ -2739,7 +2844,7 @@ module Mpicomm
 !  Unmaps pencil shaped data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
 !
-!   4-jul-10/Bourdin.KIS: coded
+!   4-jul-2010/Bourdin.KIS: coded
 !
       integer, parameter :: inx=nxgrid,iny=ny/nprocx
       integer, parameter :: onx=nx,ony=ny
@@ -2797,7 +2902,7 @@ module Mpicomm
 !  and then unmaps the data back to normal shape (in one go) for nprocx>1.
 !  (This routine is the inverse of one remap and traspose function call.)
 !
-!   5-jul-10/Bourdin.KIS: coded
+!   5-jul-2010/Bourdin.KIS: coded
 !
       integer, parameter :: inx=nygrid,iny=nx/nprocy
       integer, parameter :: onx=nx,ony=ny
@@ -2860,7 +2965,7 @@ module Mpicomm
 !  This routine transposes 2D arrays in x and y only.
 !  The data must be mapped in pencil shape, especially for nprocx>1.
 !
-!   4-jul-10/Bourdin.KIS: coded
+!   4-jul-2010/Bourdin.KIS: coded
 !
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
@@ -2874,19 +2979,14 @@ module Mpicomm
 !
       real, dimension(:,:), allocatable :: send_buf,recv_buf
 !
-      if (nprocx==1) then
-        print*,'transp_pencil_xy: using this function is unnecessary'
-        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: nprocx==1')
-      endif
-!
       inx=size(in,1)
       iny=size(in,2)
       onx=size(out,1)
       ony=size(out,2)
 !
-      if (mod(nygrid,nprocxy)/=0) then
-        print*,'transp_pencil_xy: nygrid needs to be an integer multiple of nprocx*nprocy'
-        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(nygrid,nprocx*nprocy)/=0')
+      if (mod(ny,nprocx)/=0) then
+        print*,'transp_pencil_xy: ny needs to be an integer multiple of nprocx'
+        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(ny,nprocx)/=0')
       endif
 !
       bnx=onx/nprocxy
