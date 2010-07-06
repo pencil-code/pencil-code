@@ -1240,7 +1240,6 @@ module Hydro
           lpenc_requested(i_ugu)=.true.
         endif
       endif
-      if (lanelastic) lpenc_requested(i_rhougu)=.true.
       if (lprecession) lpenc_requested(i_rr)=.true.
       if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
       if (Omega/=0.0) lpenc_requested(i_uu)=.true.
@@ -1326,7 +1325,6 @@ module Hydro
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
-          lpenc_diagnos(i_rhougu)=.true.
       if (idiag_ugu2m/=0) lpenc_diagnos(i_ugu2)=.true.
       if (idiag_uguxmx/=0 .or. idiag_uguymx/=0 .or. idiag_uguzmx/=0 .or. &
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
@@ -1373,10 +1371,6 @@ module Hydro
       if (lpencil_in(i_ugu)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
-      endif
-      if (lpencil_in(i_rhougu)) then
-        lpencil_in(i_rho)=.true.
-        lpencil_in(i_ugu)=.true.
       endif
       if (lpencil_in(i_u3u21) .or. &
           lpencil_in(i_u1u32) .or. &
@@ -1453,12 +1447,6 @@ module Hydro
           !        'Not well tested; use at own risk!'
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
-      endif
-!
-      if (lpencil(i_rhougu)) then
-       p%rhougu(:,1)=p%rho*p%ugu(:,1)
-       p%rhougu(:,2)=p%rho*p%ugu(:,2)
-       p%rhougu(:,3)=p%rho*p%ugu(:,3)
       endif
 ! ugu2
       if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
