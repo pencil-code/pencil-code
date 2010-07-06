@@ -1574,11 +1574,12 @@ module Entropy
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss & ugss_b
-      if (lpencil(i_ugss_b)) &
-          call u_dot_grad(f,iss_b,p%gss,p%uu,p%ugss_b,UPWIND=lupw_ss)
+!      if (lpencil(i_ugss_b)) &
+!          call u_dot_grad(f,iss_b,p%gss,p%uu,p%ugss_b,UPWIND=lupw_ss)
       if (lpencil(i_ugss)) &
           call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
-! for pretend_lnTT
+      if (lpencil(i_ugss_b)) &
+          call u_dot_grad(f,iss_b,p%gss,p%uu,p%ugss_b,UPWIND=lupw_ss)
       if (lpencil(i_glnTTb)) &
           p%glnTTb=gamma*p%gss*cp1+gamma_m1*p%glnrho
 

@@ -818,18 +818,19 @@ module EquationOfState
           call fatal_error('calc_pencils_eos', &
               'Local Isothermal case not implemented for ipp_ss')
         else
-          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))/gamma-p%ss*cp1
-          if (lpencil(i_rho)) p%rho=exp(p%lnrho)
-          if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
-          if (lpencil(i_lnTT)) p%lnTT=gamma_m1*p%lnrho-log(Rgas)+p%ss*cp1
-          if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-          if (lpencil(i_TT1)) p%TT1=1/p%TT
-          if (lpencil(i_cs2))  p%cs2=gamma*p%pp/p%rho
-          if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
-          if (lpencil(i_del2lnTT)) then
-              p%del2lnTT=(gamma_m1-1.0)*p%del2lnrho+cv1*p%del2ss
-          endif
+!          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))/gamma-p%ss*cp1
+!          if (lpencil(i_rho)) p%rho=exp(p%lnrho)
+!          if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
+!          if (lpencil(i_lnTT)) p%lnTT=gamma_m1*p%lnrho-log(Rgas)+p%ss*cp1
+!          if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+!          if (lpencil(i_TT1)) p%TT1=1/p%TT
+!          if (lpencil(i_cs2))  p%cs2=gamma*p%pp/p%rho
+!          if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
+!          if (lpencil(i_del2lnTT)) then
+!              p%del2lnTT=(gamma_m1-1.0)*p%del2lnrho+cv1*p%del2ss
+!          endif
         endif
+!      write(*,*) 'PC:',p%rho
 !
       case (ipp_cs2)
         if (leos_isentropic) then
