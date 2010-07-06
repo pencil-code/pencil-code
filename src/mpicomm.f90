@@ -2686,7 +2686,7 @@ module Mpicomm
 !
       integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
       integer, parameter :: inx=nx,iny=ny
-      integer, parameter :: onx=nxgrid,ony=nygrid/nprocxy
+      integer, parameter :: onx=nxgrid,ony=ny/nprocx
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
 !
@@ -2701,6 +2701,11 @@ module Mpicomm
       if (nprocx==1) then
         print*,'remap_to_pencil_xy: using this function is unnecessary'
         call stop_it_if_any(.true.,'Inconsistency in remap_to_pencil_xy: nprocx==1')
+      endif
+!
+      if (mod(ny,nprocx)/=0) then
+        print*,'remap_to_pencil_xy: ny needs to be an integer multiple of nprocx'
+        call stop_it_if_any(.true.,'Inconsistency in remap_to_pencil_xy: mod(ny,nprocx)/=0')
       endif
 !
       if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
@@ -2738,7 +2743,7 @@ module Mpicomm
 !   4-jul-10/Bourdin.KIS: coded
 !
       integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
-      integer, parameter :: inx=nxgrid,iny=nygrid/nprocxy
+      integer, parameter :: inx=nxgrid,iny=ny/nprocx
       integer, parameter :: onx=nx,ony=ny
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
@@ -2754,6 +2759,11 @@ module Mpicomm
       if (nprocx==1) then
         print*,'unmap_from_pencil_xy: using this function is unnecessary'
         call stop_it_if_any(.true.,'Inconsistency in unmap_from_pencil_xy: nprocx==1')
+      endif
+!
+      if (mod(ny,nprocx)/=0) then
+        print*,'unmap_from_pencil_xy: ny needs to be an integer multiple of nprocx'
+        call stop_it_if_any(.true.,'Inconsistency in unmap_from_pencil_xy: mod(ny,nprocx)/=0')
       endif
 !
       if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
@@ -2792,7 +2802,7 @@ module Mpicomm
 !   5-jul-10/Bourdin.KIS: coded
 !
       integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
-      integer, parameter :: inx=nxgrid,iny=nygrid/nprocxy
+      integer, parameter :: inx=nygrid,iny=nx/nprocy
       integer, parameter :: onx=nx,ony=ny
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
@@ -2808,6 +2818,16 @@ module Mpicomm
       if (nprocx==1) then
         print*,'transp_unmap_from_pencil_xy: using this function is unnecessary'
         call stop_it_if_any(.true.,'Inconsistency in transp_unmap_from_pencil_xy: nprocx==1')
+      endif
+!
+      if (mod(nx,nprocx)/=0) then
+        print*,'transp_unmap_from_pencil_xy: nx needs to be an integer multiple of nprocx'
+        call stop_it_if_any(.true.,'Inconsistency in transp_unmap_from_pencil_xy: mod(nx,nprocx)/=0')
+      endif
+!
+      if (mod(nx,nprocy)/=0) then
+        print*,'transp_unmap_from_pencil_xy: nx needs to be an integer multiple of nprocy'
+        call stop_it_if_any(.true.,'Inconsistency in transp_unmap_from_pencil_xy: mod(nx,nprocy)/=0')
       endif
 !
       if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
@@ -2867,21 +2887,17 @@ module Mpicomm
       onx=size(out,1)
       ony=size(out,2)
 !
+      if (mod(nygrid,nprocxy)/=0) then
+        print*,'transp_pencil_xy: nygrid needs to be an integer multiple of nprocx*nprocy'
+        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(nygrid,nprocx*nprocy)/=0')
+      endif
+!
       bnx=onx/nprocxy
       bny=ony
       nboxc=bnx*bny
 !
       if (.not. allocated(send_buf)) allocate(send_buf(bnx,bny))
       if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
-!
-      if (mod(nxgrid,nprocxy)/=0) then
-        print*,'transp_pencil_xy: nxgrid needs to be an integer multiple of nprocx*nprocy'
-        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(nxgrid,nprocx*nprocy)/=0')
-      endif
-      if (mod(nygrid,nprocxy)/=0) then
-        print*,'transp_pencil_xy: nygrid needs to be an integer multiple of nprocx*nprocy'
-        call stop_it_if_any(.true.,'Inconsistency in transp_pencil_xy: mod(nygrid,nprocx*nprocy)/=0')
-      endif
 !
 !  Send information to different processors (x-y transpose)
 !  Divide x-range in as many boxes as we have processors in x and y.
