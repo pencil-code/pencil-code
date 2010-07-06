@@ -2684,7 +2684,6 @@ module Mpicomm
 !
 !   4-jul-10/Bourdin.KIS: coded
 !
-      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
       integer, parameter :: inx=nx,iny=ny
       integer, parameter :: onx=nxgrid,ony=ny/nprocx
       real, dimension(inx,iny), intent(in) :: in
@@ -2712,7 +2711,7 @@ module Mpicomm
       if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
 !
       do ibox=0,nprocx-1
-        partner=ipz*nprocxy+ipy*nprocx+ibox
+        partner=ipz*nprocx*nprocy+ipy*nprocx+ibox
         if (iproc==partner) then
           ! data is local
           out(bnx*ibox:(bnx+1)*ibox-1,:)=in(:,bny*ibox:(bny+1)*ibox-1)
@@ -2742,7 +2741,6 @@ module Mpicomm
 !
 !   4-jul-10/Bourdin.KIS: coded
 !
-      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
       integer, parameter :: inx=nxgrid,iny=ny/nprocx
       integer, parameter :: onx=nx,ony=ny
       real, dimension(inx,iny), intent(in) :: in
@@ -2770,7 +2768,7 @@ module Mpicomm
       if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
 !
       do ibox=0,nprocx-1
-        partner=ipz*nprocxy+ipy*nprocx+ibox
+        partner=ipz*nprocx*nprocy+ipy*nprocx+ibox
         if (iproc==partner) then
           ! data is local
           out(:,bny*ibox:(bny+1)*ibox-1)=in(bnx*ibox:(bnx+1)*ibox-1,:)
@@ -2801,7 +2799,6 @@ module Mpicomm
 !
 !   5-jul-10/Bourdin.KIS: coded
 !
-      integer, parameter :: nprocxy=nprocx*nprocy ! number of procs in xy-plane
       integer, parameter :: inx=nygrid,iny=nx/nprocy
       integer, parameter :: onx=nx,ony=ny
       real, dimension(inx,iny), intent(in) :: in
@@ -2834,7 +2831,7 @@ module Mpicomm
       if (.not. allocated(recv_buf)) allocate(recv_buf(bnx,bny))
 !
       do ibox=0,nprocx-1
-        partner=ipz*nprocxy+ipy*nprocx+ibox
+        partner=ipz*nprocx*nprocy+ipy*nprocx+ibox
         if (iproc==partner) then
           ! data is local
           out(bny*ibox:(bny+1)*ibox-1,:)=transpose(in(bnx*ibox:(bnx+1)*ibox-1,:))
