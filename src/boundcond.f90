@@ -411,10 +411,12 @@ module Boundcond
                 ! BCY_DOC: set derivative on the boundary
                 call bc_set_der_y(f,topbot,j,fbcy12(j))
               case ('cop')
-                ! BCY_DOC: copy value of last physical point to all ghost cells
+                ! BCY_DOC: outflow: copy value of last physical point to
+                ! BCY_DOC: all ghost cells
                 call bc_copy_y(f,topbot,j)
               case ('c+k')
-                ! BCY_DOC: copy value of last physical point to all ghost cells
+                ! BCY_DOC: no-inflow: copy value of last physical point
+                ! BCY_DOC: to all ghost cells, but suppressing any inflow
                 call bc_copy_y_noinflow(f,topbot,j)
               case ('sfr')
                   ! BCY_DOC: stress-free boundary condition for spherical coordinate system.
