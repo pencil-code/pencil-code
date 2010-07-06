@@ -476,7 +476,7 @@ module Chemistry
         select case (initchem(j))
 !
         case ('nothing')
-          if (lroot .and. .not. lnothing) print*, 'init_chem: nothing '
+          if (lroot .and. .not. lnothing) print*, 'initchem: nothing '
           lnothing=.true.
         case ('constant')
           do k=1,nchemspec
@@ -534,6 +534,7 @@ module Chemistry
         case ('flame_front')
           call flame_front(f)
         case ('flame')
+          if (lroot) print*, 'initchem: flame '
           call flame(f)
         case ('flame_blob')
           call flame_blob(f)
