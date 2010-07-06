@@ -371,6 +371,16 @@ module Particles_sub
                 endif
               endif
             endif
+          elseif (boundz=='ref') then
+            if ((fp(k,izp)< xyz0(3)) .or. (fp(k,izp)>=xyz1(3))) then
+              fp(k,ivpz)=-fp(k,ivpz)
+              if (fp(k,izp)< xyz0(3)) then
+                fp(k,izp)=2*xyz0(3)-fp(k,izp)
+              endif
+              if (fp(k,izp)>=xyz1(3)) then
+                fp(k,izp)=2*xyz1(3)-fp(k,izp)
+              endif
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition=', boundz
             call stop_it('boundconds_particles')
