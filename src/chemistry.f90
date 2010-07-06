@@ -3230,8 +3230,9 @@ module Chemistry
 !
       integer, intent(in) :: StartInd,StopInd,k
       character (len=*), intent(in) :: ChemInpLine
+      logical, intent(in) :: product
       integer :: StartSpecie,ind_glob,ind_chem,stoi
-      logical :: found_specie,product
+      logical :: found_specie
 !
       if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
           .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" ))then
