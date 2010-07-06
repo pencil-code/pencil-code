@@ -4544,7 +4544,12 @@ module Boundcond
     subroutine bc_copy_y_noinflow(f,topbot,j)
 !
 !  Copy value in last grid point to all ghost cells. Set to zero if 
-!  the sign is wrong.
+!  the sign is wrong. This bc is different from outflow (cop). Outflow 
+!  just copies the last point to the ghost cells, thus permitting both 
+!  outflow (uy pointing out of the box) and inflow (uy pointing back to 
+!  the box). 'c+k' is a no-inflow, purely outflow boundary. It sets the 
+!  velocity to zero if that was pointing back to the box. The 'k' means 
+!  "kill". "copy if outflow, kill if inflow".
 !
 !  08-june-2010/wlyra: implemented
 !
