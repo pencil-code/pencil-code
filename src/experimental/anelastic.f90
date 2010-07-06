@@ -723,14 +723,7 @@ module Density
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho)=.true.
-      if (lcontinuity_gas) then
-        lpenc_requested(i_divu)=.true.
-        if (ldensity_nolog) then
-          lpenc_requested(i_ugrho)=.true.
-        else
-          lpenc_requested(i_uglnrho)=.true.
-        endif
-      endif
+      lpenc_requested(i_ugrho)=.true.
       if (ldiff_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
