@@ -128,9 +128,9 @@ module Gravity
       use Sub, only: notanumber, cubic_step
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      real, pointer :: cs20,mpoly,gamma
       logical :: lstarting
 !
-      real, pointer :: cs20,mpoly,gamma
       real, dimension (mz) :: prof
       real :: ztop
       integer :: ierr
@@ -441,6 +441,7 @@ module Gravity
 !  20-11-04/anders: coded
 !
       lpenc_requested(i_gg)=.true.
+      if (lanelastic) lpenc_requested(i_rhop)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
           idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
@@ -524,12 +525,13 @@ module Gravity
             if (headtt) print*,'duu_dt_grav: lboussinesq w/o lentropy not ok!'
           endif
         else if (lanelastic) then
-            if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ &
-                p%gg(:,1)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
-            if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ &
-                p%gg(:,2)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
-            if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-                p%gg(:,3)*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b))
+! Now works for the linear anelastic formulation only
+                if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ p%gg(:,1)*&
+                                p%rhop
+                if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ p%gg(:,2)*&
+                                p%rhop
+                if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*&
+                                p%rhop
         else
           if (lxyzdependence) then
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)

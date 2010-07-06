@@ -1650,6 +1650,18 @@ module Entropy
 !
       if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
+!  Explicit heating/cooling terms.
+!
+      if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
+          (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
+          (heat_uniform/=0.0) .or. (tau_cool/=0.0) .or. &
+          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
+          (tau_cool2 /=0)) &
+          call calc_heat_cool(df,p,Hmax)
+      if (tdown/=0.0) call newton_cool(df,p)
+      if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
+
+!
 !  Possibility of entropy relaxation in exterior region.
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(df,p)

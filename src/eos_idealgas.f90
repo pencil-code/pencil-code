@@ -14,7 +14,7 @@
 ! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED TTb;
+! PENCILS PROVIDED TTb; rhop
 !
 !***************************************************************
 module EquationOfState
@@ -583,7 +583,7 @@ module EquationOfState
         elseif (leos_isothermal) then
           if (lpencil_in(i_lnrho)) then
             lpencil_in(i_pp)=.true.
-            lpencil_in(i_TT)=.true.
+!            lpencil_in(i_TT)=.true.
           endif
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
         else
@@ -598,6 +598,10 @@ module EquationOfState
           if (lpencil_in(i_lnrho)) then
             lpencil_in(i_pp)=.true.
             lpencil_in(i_ss)=.true.
+          endif
+          if (lpencil_in(i_rhop)) then 
+              lpencil_in(i_pp)=.true.
+              lpencil_in(i_ss)=.true.
           endif
         endif
 !
@@ -792,8 +796,12 @@ module EquationOfState
       case (ipp_ss)
         if (lanelastic) then
           p%pp=f(l1:l2,m,n,ipp)
+          p%ss=f(l1:l2,m,n,iss)
           p%TTb=cs20*cp1*exp(gamma*f(l1:l2,m,n,iss_b)*cp1+gamma_m1*p%lnrho)/gamma_m1
+          p%cs2=cp*p%TTb*gamma_m1
           p%TT1=1./p%TTb
+          p%rhop=(gamma*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
+                 f(l1:l2,m,n,iss)*cp1)
         else
           call fatal_error('calc_pencils_eos', &
               'for input pair (pp,ss) anelastic must be used')
@@ -839,6 +847,7 @@ module EquationOfState
         elseif (leos_isothermal) then
         if (lanelastic) then
           p%pp=f(l1:l2,m,n,ipp)
+          p%rhop=f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
         else
           if (lpencil(i_cs2)) p%cs2=cs20
 !          if (lpencil(i_lnrho)) p%lnrho=log((exp(f(l1:l2,m,n,ilnrho))+p%pp/cs20)/2.0)
