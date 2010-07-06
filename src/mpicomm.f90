@@ -2589,7 +2589,7 @@ module Mpicomm
       integer :: ibox,iy
 !
       if (mod(nxgrid,nygrid)/=0) then
-        print*,'transp_xy: nxgrid needs to be an integer multiple of ygrid'
+        print*,'transp_xy: nxgrid needs to be an integer multiple of nygrid'
         call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nygrid)/=0')
       endif
 !
