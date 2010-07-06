@@ -2803,9 +2803,9 @@ module Mpicomm
       real, dimension(inx,iny), intent(in) :: in
       real, dimension(onx,ony), intent(out) :: out
 !
-      integer, parameter :: bnx=nx/nprocx,bny=ny,nboxc=bnx*bny ! destination box sizes
+      integer, parameter :: bnx=nx/nprocy,bny=ny,nboxc=bnx*bny ! destination box sizes
       integer :: ibox,partner
-      integer, parameter :: ytag=107
+      integer, parameter :: ytag=108
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf,recv_buf
@@ -2868,7 +2868,7 @@ module Mpicomm
       integer :: inx,iny,onx,ony ! x and y sizes of in and out arrays
       integer :: bnx,bny,nboxc ! destination box sizes and number of elements
       integer :: ibox,partner
-      integer, parameter :: ytag=101
+      integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf,recv_buf
