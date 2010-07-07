@@ -72,6 +72,7 @@ module Density
   logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
+  logical, pointer :: lanelastic_lin,lanelastic_full
 
 !
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -184,6 +185,14 @@ module Density
 !  Set irho equal to ilnrho if we are considering non-logarithmic density.
 !
       if (ldensity_nolog) irho=ilnrho
+
+        call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
+        if (ierr/=0) call stop_it("lanelastic_lin: "//&
+             "there was a problem when sharing lanelastic_lin")
+
+        call get_shared_variable('lanelastic_full',lanelastic_full,ierr)
+        if (ierr/=0) call stop_it("lanelastic_full: "//&
+             "there was a problem when sharing lanelastic_full")
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
