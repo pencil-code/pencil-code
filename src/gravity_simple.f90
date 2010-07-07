@@ -574,6 +574,8 @@ module Gravity
             idiag_epotuzmz)
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(pot,pot0)
