@@ -855,7 +855,6 @@ module EquationOfState
 !              p%del2lnTT=(gamma_m1-1.0)*p%del2lnrho+cv1*p%del2ss
 !          endif
         endif
-!      write(*,*) 'PC:',p%rho
 !
       case (ipp_cs2)
         if (leos_isentropic) then

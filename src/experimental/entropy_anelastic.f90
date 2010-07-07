@@ -79,7 +79,6 @@ module Entropy
   logical :: lupw_ss=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
-  logical, pointer :: lpressuregradient_gas ! Shared with Hydro.
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.
@@ -233,13 +232,6 @@ module Entropy
 !
       if (lroot) call svn_id( &
           "$Id: entropy_anelastic.f90 11900 2009-10-13 23:02:31Z dhruba.mitra $")
-!
-!  Get the shared variable lpressuregradient_gas from Hydro module.
-!
-      call get_shared_variable('lpressuregradient_gas',&
-               lpressuregradient_gas,ierr)     
-      if (ierr/=0) call fatal_error('register_entropy',& 
-       'there was a problem getting lpressuregradient_gas')
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -520,9 +512,7 @@ module Entropy
 !  Turn off pressure gradient term and advection for 0-D runs.
 !
       if (nxgrid*nygrid*nzgrid==1) then
-        lpressuregradient_gas=.false.
         ladvection_entropy=.false.
-        print*, 'initialize_entropy: 0-D run, turned off pressure gradient term'
         print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
       endif
 !
