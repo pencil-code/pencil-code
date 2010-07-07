@@ -197,6 +197,7 @@ module Cdata
   integer :: ipp=0,irhs=0,iTTold=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
   integer :: iox=0,ioy=0,ioz=0
+  integer :: ispecialvar=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0
   integer :: igg=0,igx=0,igy=0,igz=0,ipotself=0
@@ -405,6 +406,7 @@ module Cdata
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: lr_spec=.false.,r2u_spec=.false.,r3u_spec=.false.
   logical :: ou_spec=.false.,ab_spec=.false.,ub_spec=.false.
+  logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.

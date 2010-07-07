@@ -250,6 +250,8 @@ module Snapshot
         if (ss_spec)  call powerscl(f,'ss')
         if (cc_spec)  call powerscl(f,'cc')
         if (cr_spec)  call powerscl(f,'cr')
+        if (har_spec) call powerscl(f,'abr')
+        if (hav_spec) call powerscl(f,'aba')
         if (oned) then
           if (vel_spec) call power_1d(f,'u',1)
           if (mag_spec) call power_1d(f,'b',1)

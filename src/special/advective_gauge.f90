@@ -71,6 +71,7 @@ module Special
       use FArrayManager
 !
       call farray_register_pde('Lam',iLam)
+      ispecialvar=iLam
 !
       if (lroot) call svn_id( &
            "$Id$")
