@@ -175,12 +175,28 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
       use SharedVariables
+!     use Poisson, only: inverse_laplacian
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!     real, dimension (nx,ny,nz) :: psi
       logical :: lstarting
 !
       integer :: i,ierr
       logical :: lnothing
+!
+! Test of the Poisson solver in the periodic case
+! you must also uncomment the declarations of the psi array and 
+! the Use Poisson... module above
+!
+!      do m=m1,m2
+!      do n=n1,n2
+!        psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
+!      enddo
+!      enddo
+!      call inverse_laplacian(f, psi)
+!      open(41, file='poisson_solver.dat', form='unformatted')
+!      write(41) psi
+!      close(41)
 !
 !  Set irho equal to ilnrho if we are considering non-logarithmic density.
 !
