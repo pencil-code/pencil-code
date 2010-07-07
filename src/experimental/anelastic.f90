@@ -146,7 +146,6 @@ module Density
 !
       use FArrayManager
 !
-!      call farray_register_auxiliary('rho',irho,communicated=.true.)
       call farray_register_auxiliary('rho_b',irho_b)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
@@ -175,10 +174,10 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
       use SharedVariables
-!     use Poisson, only: inverse_laplacian
+     use Poisson, only: inverse_laplacian
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!     real, dimension (nx,ny,nz) :: psi
+     real, dimension (nx,ny,nz) :: psi
       logical :: lstarting
 !
       integer :: i,ierr
@@ -188,19 +187,18 @@ module Density
 ! you must also uncomment the declarations of the psi array and 
 ! the Use Poisson... module above
 !
-!      do m=m1,m2
-!      do n=n1,n2
-!        psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
-!      enddo
-!      enddo
-!      call inverse_laplacian(f, psi)
-!      open(41, file='poisson_solver.dat', form='unformatted')
-!      write(41) psi
-!      close(41)
+      do m=m1,m2
+      do n=n1,n2
+        psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
+      enddo
+      enddo
+      call inverse_laplacian(f, psi)
+      open(41, file='poisson_solver.dat', form='unformatted')
+      write(41) psi
+      close(41)
 !
 !  Set irho equal to ilnrho if we are considering non-logarithmic density.
 !
-      if (ldensity_nolog) irho=ilnrho
 
         call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
@@ -209,6 +207,9 @@ module Density
         call get_shared_variable('lanelastic_full',lanelastic_full,ierr)
         if (ierr/=0) call stop_it("lanelastic_full: "//&
              "there was a problem when sharing lanelastic_full")
+
+        if (lanelastic_full) & 
+           call farray_register_auxiliary('rho',irho,communicated=.true.)
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
@@ -853,20 +854,25 @@ module Density
 !
       intent(in) :: f
       intent(inout) :: p
-      integer :: i, mm, nn, ierr,l
-      if(ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
-          p%rho=f(l1:l2,m,n,irho_b)
+      integer :: i, mm, nn, ierr,l, irhoxx
+      if (ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
+      if (lanelastic_lin) then
+        irhoxx=irho_b
+      else 
+        irhoxx=irho
+      endif
+          p%rho=f(l1:l2,m,n,irhoxx)
           p%rho1=1./p%rho
           p%lnrho = log(p%rho)
-      if (lpencil(i_glnrho)) call grad(f, irho_b, p%glnrho)
+        if (lpencil(i_glnrho)) call grad(f, irhoxx, p%glnrho)
 
 ! uglnrho
 !      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
 ! ugrho
-      if (lpencil(i_ugrho)) then
-        call grad(f,irho_b,p%grho)
-        call dot(p%uu,p%grho,p%ugrho)
-      endif
+       if (lpencil(i_ugrho)) then
+         call grad(f,irhoxx,p%grho)
+         call dot(p%uu,p%grho,p%ugrho)
+       endif
 !
     endsubroutine calc_pencils_density
 !***********************************************************************
@@ -1934,53 +1940,28 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
+      if (lanelastic_full) then
 !  Loop over slices
-!
-!      select case (trim(slices%name))
-!
+      
+        select case (trim(slices%name))
+
 !  Density.
-!
-!        case ('rho')
-!          if (ldensity_nolog) then
-!            slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
-!            slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
-!            slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
-!            slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
-!            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
-!            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
-!            slices%ready=.true.
-!          else
-!            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
-!            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
-!            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
-!            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
-!            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnrho))
-!            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnrho))
-!            slices%ready=.true.
-!          endif
+
+          case ('rho')
+              slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
+              slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
+              slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
+              slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
+              if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
+              if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
+              slices%ready=.true.
 !
 !  Logarithmic density.
 !
-!        case ('lnrho')
-!          if (ldensity_nolog) then
-!            slices%yz =alog(f(ix_loc,m1:m2,n1:n2,irho))
-!            slices%xz =alog(f(l1:l2,iy_loc,n1:n2,irho))
-!            slices%xy =alog(f(l1:l2,m1:m2,iz_loc,irho))
-!            slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,irho))
-!            if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,irho))
-!            if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,irho))
-!            slices%ready=.true.
-!          else
-!            slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho)
-!            slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho)
-!            slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho)
-!            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
-!            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
-!            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
-!            slices%ready=.true.
-!          endif
-!
-!      endselect
+          case ('lnrho')
+            call fatal_error('get_slices_density','Not working with lnrho anymore')
+        endselect
+      endif
 !
     endsubroutine get_slices_density
 !***********************************************************************
@@ -2048,8 +2029,7 @@ module Density
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-        f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
-!        write(*,*) 'PC:anelastic:pres',average_density,average_pressure
+        if (lanelastic_full) f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
       else
         call inverse_laplacian_z(pold,f(l1:l2,m1:m2,n1:n2,ipp))
 !        call inverse_laplacian_semispectral(f(l1:l2,m1:m2,n1:n2,ipp))
@@ -2067,10 +2047,13 @@ module Density
       do n=n1,n2
       do m=m1,m2
         call grad(f,ipp,gpp)
-!        call calc_pencils_eos(f,p)
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b)
+          if (lanelastic_lin) then
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b)
+          else
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho)
+          endif 
         enddo
 !        f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)
       enddo
