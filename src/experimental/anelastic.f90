@@ -2034,7 +2034,11 @@ module Density
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-        if (lanelastic_full) f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
+        if (lanelastic_full) then 
+          call get_average_density(mass_per_proc(1),average_density)
+          call get_average_pressure(init_average_density,average_density,average_pressure)
+          f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
+        endif
       else
         call inverse_laplacian_z(pold,f(l1:l2,m1:m2,n1:n2,ipp))
 !        call inverse_laplacian_semispectral(f(l1:l2,m1:m2,n1:n2,ipp))
