@@ -1,5 +1,10 @@
 #!/bin/sh
-cat video.in |  sed -e 's/^bb$/bb1\nbb2\nbb3/' | sed -e 's/^uu$/uu1\nuu2\nuu3/' | sed -e 's/^aa$/aa1\naa2\naa3/' | while read variable 
+cat video.in |  sed -e 's/^bb$/bb1\nbb2\nbb3/' | \
+    sed -e 's/^uu$/uu1\nuu2\nuu3/' | \
+    sed -e 's/^aa$/aa1\naa2\naa3/' | \
+    sed -e 's/^Frad$/Frad1\nFrad2\nFrad3/' | \
+    sed -e 's/^Jrad$/Jrad1\nJrad2\nJrad3/' | \
+    while read variable 
 do
   src/read_videofiles.x << EOF
 $variable
