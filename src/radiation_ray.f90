@@ -1661,10 +1661,10 @@ module Radiation
       real, dimension(nx,3) :: uu,oo
       real, dimension(nx) :: o2
 !
-!  Check whether B-field is available, and then calculate (curlA)^2.
+!  Check whether u-field is available, and then calculate (curl u)^2.
 !
       if (iuu==0) then
-        call fatal_error('calc_Srad_W2','no magnetic field available')
+        call fatal_error('calc_Srad_W2','no velocity field available')
       else
         do n=n1,n2
         do m=m1,m2
@@ -1912,7 +1912,7 @@ module Radiation
 !
 !  16-jul-02/nils: adapted from rprint_hydro
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname,inamez
       logical :: lreset,lwr
