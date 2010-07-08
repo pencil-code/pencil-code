@@ -416,8 +416,13 @@ module Density
 !            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
         do m=1,my
         do n=1,mz
-          f(1:mx,m,n,ipp)=0.0
-          f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
+          if (lanelastic_lin) then
+            f(1:mx,m,n,ipp)=0.0
+            f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
+          else
+            f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
+            f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
+          endif
         enddo
         enddo
 !
@@ -2055,7 +2060,9 @@ module Density
             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho)
           endif 
         enddo
-!        f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)
+        if (lanelastic_full) then
+          f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)*cs20
+        endif
       enddo
       enddo
 
