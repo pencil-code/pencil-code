@@ -121,7 +121,7 @@ module EquationOfState
 !  24-jun-06/tobi: coded
 !
       if (unit_temperature==impossible) unit_temperature=1.
-
+!
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos()
@@ -197,7 +197,7 @@ module EquationOfState
       endif
 !
     endsubroutine initialize_eos
-!*******************************************************************
+!***********************************************************************
     subroutine select_eos_variable(variable,findex)
 !
 !  Calculate average particle mass in the gas relative to
@@ -293,7 +293,7 @@ module EquationOfState
 !!      endselect
 !
     endsubroutine select_eos_variable
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
 !  Writes iyH and ilnTT to index.pro file
@@ -377,7 +377,7 @@ module EquationOfState
       endif
       if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-
+!
       if (lpencil_in(i_hlnTT)) then
         lpencil_in(i_hss)=.true.
         if (.not.pretend_lnTT) lpencil_in(i_hlnrho)=.true.
@@ -452,7 +452,7 @@ module EquationOfState
       if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
 !
     endsubroutine calc_pencils_eos
-!*******************************************************************
+!***********************************************************************
     subroutine getmu(f,mu)
 !
 !  Calculate average particle mass.
@@ -543,13 +543,13 @@ module EquationOfState
 !
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
-
+!
       rho=EE/(1.5*(1.+yH+xHe)*ss_ion*TT+yH*ee_ion)
-
+!
     endsubroutine getdensity
 !***********************************************************************
   subroutine gettemperature(f,TT_tmp)
-
+!
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
@@ -559,7 +559,7 @@ module EquationOfState
    endsubroutine gettemperature
 !***********************************************************************
  subroutine getpressure(pp_tmp)
-
+!
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
@@ -783,29 +783,29 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions,exponent
 !
-
+!
       select case (psize)
-
+!
       case (nx)
         lnrho_=f(l1:l2,m,n,ilnrho)
         ss_=f(l1:l2,m,n,iss)
         yH_=f(l1:l2,m,n,iyH)
         lnTT_=f(l1:l2,m,n,ilnTT)
-
+!
       case (mx)
         lnrho_=f(:,m,n,ilnrho)
         ss_=f(:,m,n,iss)
         yH_=f(:,m,n,iyH)
         lnTT_=f(:,m,n,ilnTT)
-
+!
       case default
         call stop_it("eoscalc: no such pencil size")
-
+!
       end select
-
+!
       TT_=exp(lnTT_)
       fractions=(1+yH_+xHe)
-
+!
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=yH_
@@ -847,7 +847,7 @@ module EquationOfState
       integer :: i
 !
       select case (ivars)
-
+!
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
@@ -863,7 +863,7 @@ module EquationOfState
         rho_=exp(lnrho_)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=fractions*rho_*TT_*ss_ion
-
+!
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
@@ -878,7 +878,7 @@ module EquationOfState
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
-
+!
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
@@ -895,7 +895,7 @@ module EquationOfState
                     -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         pp_=fractions*rho_*TT_*ss_ion
-
+!
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
@@ -911,12 +911,12 @@ module EquationOfState
                    -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
-
+!
       case default
         call stop_it("eoscalc_pencil: I don't get what the independent variables are.")
-
+!
       end select
-
+!
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=yH_
@@ -925,7 +925,7 @@ module EquationOfState
       if (present(pp)) pp=pp_
 !
     endsubroutine eoscalc_pencil
-!!***********************************************************************
+!***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
@@ -947,7 +947,7 @@ module EquationOfState
       real :: fractions,rhs,sqrtrhs
 !
       select case (ivars)
-
+!
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
@@ -956,13 +956,13 @@ module EquationOfState
         lnTT_=(ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
               +yH_*(2*log(yH_)-lnrho_e-lnrho_H)+xHe_term)/(1+yH_+xHe)
         lnTT_=(2.0/3.0)*(lnTT_+lnrho_-2.5)+lnTT_ion
-
+!
         TT_=exp(lnTT_)
         rho_=exp(lnrho_)
         ee_=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*rho_*TT_*ss_ion
         cs2_=impossible
-
+!
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
@@ -979,7 +979,7 @@ module EquationOfState
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
         cs2_=impossible
-
+!
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
@@ -994,7 +994,7 @@ module EquationOfState
                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         pp_=fractions*rho_*TT_*ss_ion
         cs2_=impossible
-
+!
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
@@ -1009,12 +1009,12 @@ module EquationOfState
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         cs2_=impossible
-
+!
       case default
         call stop_it("eoscalc_point: I don't get what the independent variables are.")
-
+!
       end select
-
+!
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=yH_
@@ -1028,38 +1028,38 @@ module EquationOfState
     subroutine read_eos_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=eos_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=eos_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_eos_init_pars
 !***********************************************************************
     subroutine write_eos_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=eos_init_pars)
     endsubroutine write_eos_init_pars
 !***********************************************************************
     subroutine read_eos_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=eos_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=eos_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_eos_run_pars
 !***********************************************************************
     subroutine write_eos_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=eos_run_pars)
     endsubroutine write_eos_run_pars
 !***********************************************************************
@@ -1335,7 +1335,6 @@ module EquationOfState
       call keep_compiler_quiet(rho0)
 !
     endsubroutine isothermal_lnrho_ss
-
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
 !
@@ -1889,58 +1888,59 @@ module EquationOfState
     endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
     subroutine read_transport_data
-
+!
        real, dimension (mx,my,mz,mfarray) :: f
-
+!
        call keep_compiler_quiet(f)
-
+!
     endsubroutine read_transport_data
 !***********************************************************************
     subroutine write_thermodyn()
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-
-       call keep_compiler_quiet(f)
-
+!
+      call keep_compiler_quiet(f)
+!
     endsubroutine write_thermodyn
 !***********************************************************************
     subroutine read_thermodyn(input_file)
-
+!
       character (len=*), intent(in) :: input_file
-
+!
       call keep_compiler_quiet(input_file)
-
+!
     endsubroutine read_thermodyn
 !***********************************************************************
     subroutine read_species(input_file)
-
+!
       character (len=*) :: input_file
-
+!
       call keep_compiler_quiet(input_file)
+!
     endsubroutine read_species
 !***********************************************************************
     subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-
+!
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
       logical, intent(out) :: found_specie
-
+!
          call keep_compiler_quiet(ind_glob)
          call keep_compiler_quiet(ind_chem)
          call keep_compiler_quiet(species_name)
          call keep_compiler_quiet(found_specie)
-
+!
      endsubroutine find_species_index
 !***********************************************************************
      subroutine find_mass(element_name,MolMass)
-
+!
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
 !
        call keep_compiler_quiet(element_name)
        call keep_compiler_quiet(MolMass)
-
+!
      endsubroutine find_mass
 !***********************************************************************
 endmodule EquationOfState
