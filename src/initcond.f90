@@ -4324,7 +4324,7 @@ module Initcond
       call mpibcast_real(Bz0_r,(/nxgrid,nygrid/))
 !
       Bz0_i = 0.
-      Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
+      Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla and SI to PENCIL units
 !
 !  Fourier Transform of Bz0:
 !
@@ -4332,7 +4332,7 @@ module Initcond
 !
       do i=n1,n2
 !
-!  Calculate transformed vector potential at "each height"
+!  Calculate transformed vector potential for every z layer
 !
         zref = z(i) - xyz0(3)
 !
