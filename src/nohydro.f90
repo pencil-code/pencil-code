@@ -27,10 +27,12 @@ module Hydro
 !
   real, dimension (mz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
+  real, dimension (mx,my,3) :: uumxy=0.
 !
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0.
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
+  logical :: lcalc_uumeanxy=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
@@ -1024,11 +1026,12 @@ module Hydro
 !***********************************************************************
     subroutine kinematic_random_phase
 !
-!  dummy routine due to dhruba commit 13286
+!  This is a dummy routine.
 !
 !  16-feb-2010/bing:
 !
-      print*, 'I should not be called. '
+      call fatal_error('kinematic_random_phase', &
+          'Use HYDRO=hydro_kinematic in Makefile.local instead')
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************

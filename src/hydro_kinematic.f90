@@ -29,11 +29,13 @@ module Hydro
 !
   real, dimension (mz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
+  real, dimension (mx,my,3) :: uumxy=0.
 !
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0., dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
+  logical :: lcalc_uumeanxy=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?

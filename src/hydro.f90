@@ -42,7 +42,8 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
-  real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data on ghostzones
+  real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data 
+                                           ! on ghostzones
   real, dimension (mx,my,3) :: uumxy=0.0
   real, dimension (mx,mz,3) :: uumxz=0.0
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
@@ -493,7 +494,6 @@ module Hydro
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use Initcond
-      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -676,7 +676,6 @@ module Hydro
       use Gravity, only: gravz_const,z1
       use Initcond
       use InitialCondition, only: initial_condition_uu
-      use Mpicomm, only: stop_it
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1156,14 +1155,11 @@ module Hydro
             endif
           enddo
 !
-!
         case default
           !
           !  Catch unknown values
           !
-          if (lroot) print*, 'init_uu: No such value for inituu: ', &
-            trim(inituu(j))
-          call stop_it("")
+          call fatal_error("init_uu","No such value for inituu"//trim(inituu(j)))
 !
         endselect
 !
@@ -1227,8 +1223,6 @@ module Hydro
 !  All pencils that the Hydro module depends on are specified here.
 !
 !  20-nov-04/anders: coded
-!
-      use Mpicomm, only: stop_it
 !
       if (ladvection_velocity) then
         if (lweno_transport) then
@@ -1333,7 +1327,8 @@ module Hydro
 ! check whether right variables are set for half-box calculations.
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
-          call stop_it("You have to set either of lequatory or lequatorz to true to calculate averages over half the box")
+          call fatal_error("pencil_criteria_hydro","You have to set either of"// &
+              "lequatory or lequatorz to true to calculate averages over half the box")
         else
           if (lequatory) write(*,*) 'pencil-criteria_hydro: box divided along y dirn'
           if (lequatorz) write(*,*) 'pencil-criteria_hydro: box divided along z dirn'
@@ -1530,7 +1525,6 @@ module Hydro
 !  27-jun-07/dhruba: differential rotation as subroutine call
 !
       use Diagnostics
-      use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, identify_bcs
 !
@@ -1921,7 +1915,7 @@ module Hydro
 !  integrate velocity in time, to calculate correlation time later
 !
         if (idiag_u2tm/=0) then
-          if (iuut==0) call stop_it("Cannot calculate u2tm if iuut==0")
+          if (iuut==0) call fatal_error("duu_dt","Cannot calculate u2tm if iuut==0")
           call dot(p%uu,f(l1:l2,m,n,iuxt:iuzt),u2t)
           call sum_mn_name(u2t,idiag_u2tm)
         endif
@@ -1929,7 +1923,7 @@ module Hydro
 !  integrate velocity in time, to calculate correlation time later
 !
         if (idiag_outm/=0) then
-          if (iuut==0) call stop_it("Cannot calculate outm if iuut==0")
+          if (iuut==0) call fatal_error("duu_dt","Cannot calculate outm if iuut==0")
           call dot(p%oo,f(l1:l2,m,n,iuxt:iuzt),out)
           call sum_mn_name(out,idiag_outm)
         endif
@@ -1937,7 +1931,7 @@ module Hydro
 !  integrate velocity in time, to calculate correlation time later
 !
         if (idiag_uotm/=0) then
-          if (ioot==0) call stop_it("Cannot calculate uotm if ioot==0")
+          if (ioot==0) call fatal_error("duu_dt","Cannot calculate uotm if ioot==0")
           call dot(p%uu,f(l1:l2,m,n,ioxt:iozt),uot)
           call sum_mn_name(uot,idiag_uotm)
         endif
@@ -2296,7 +2290,7 @@ module Hydro
           uumz = temp
 !
         endif
-
+!
         do j=1,3
           call der_z(uumz(:,j),guumz(n1:n2,j))       ! ghost zones in guumz are not filled!
         enddo
@@ -2515,7 +2509,6 @@ module Hydro
 !  08-sep-07/wlad: moved here from initcond
 !
       use Gravity, only: r0_pot,n_pot,acceleration,qgshear
-      use Mpicomm, only: stop_it
       use Particles_nbody, only: get_totalmass
       use Sub,     only: get_radial_distance,power_law
 !
@@ -2529,9 +2522,9 @@ module Hydro
 !
      if ((rsmooth/=0.).or.(r0_pot/=0)) then
        if (rsmooth/=r0_pot) &
-            call stop_it("rsmooth and r0_pot must be equal")
+            call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
        if (n_pot/=2) &
-            call stop_it("don't you dare using less smoothing than n_pot=2")
+            call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
      endif
 !
      do m=1,my
@@ -2560,7 +2553,7 @@ module Hydro
                     !physical point. Break!
                     print*,"centrifugal_balance: gravity at physical point ",&
                          x(i),y(m),z(n),"is directed outwards"
-                    call stop_it("")
+                    call fatal_error("","")
                   endif
                 else !g_r ne zero
                   OO(i)=sqrt(-g_r(i)/rr_cyl(i))
@@ -2797,8 +2790,6 @@ module Hydro
 !
 !  21-feb-07/axel+dhruba: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -2831,7 +2822,7 @@ module Hydro
 !  Centrifugal force
 !
       if (lcentrifugal_force) &
-          call stop_it("duu_dt: Centrifugal force not "//&
+          call fatal_error("duu_dt","Centrifugal force not "//&
           "implemented in spherical coordinates")
 !
       call keep_compiler_quiet(f)
@@ -2945,7 +2936,6 @@ module Hydro
 !  20-nov-04/axel: added cylindrical Couette flow
 !
       use Diagnostics, only: sum_mn_name
-      use Mpicomm, only: stop_it
       use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3002,7 +2992,7 @@ module Hydro
             elseif (tau <= 0.5) then
               pfade = 0.5*(1-tau*(3-4*tau**2))
             else
-              call stop_it("UDAMPING: Never got here.")
+              call fatal_error("UDAMPING","Never got here.")
             endif
           else                ! don't fade, switch
             pfade = 1.
@@ -3018,7 +3008,7 @@ module Hydro
               df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                                       + pfade*dampu/dt*f(l1:l2,m,n,iux:iuz)
             else
-              call stop_it("UDAMP: dt <=0 -- what does this mean?")
+              call fatal_error("UDAMPING","dt <=0 -- what does this mean?")
             endif
           endif
         endif
@@ -4440,7 +4430,6 @@ module Hydro
 !
 !  27-june-2007 dhruba: coded
 !
-      use Mpicomm, only: stop_it
       use Sub, only: step
 !
       real :: slope,uinn,uext,zbot
@@ -4557,7 +4546,7 @@ module Hydro
       case ('vertical_shear_z2')
       zbot=rdampint
       if (.not.lcalc_uumeanxz) then
-        call stop_it("vertical_shear_z2: you need to set lcalc_uumeanxz=T in hydro_run_pars")
+        call fatal_error("vertical_shear_z2","you need to set lcalc_uumeanxz=T in hydro_run_pars")
       else
          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
              -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
@@ -4585,7 +4574,7 @@ module Hydro
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
           -prof_amp1*(1.5-7.5*costh(m)*costh(m)))
       elseif (lcylindrical_coords) then
-        call stop_it("solar_simple: not implemented for cylindrical coordinates")
+        call fatal_error("solar_simple","not implemented for cylindrical coordinates")
       else
         do llx=l1,l2
           df(llx,m,n,iuz)=df(llx,m,n,iuz)-tau_diffrot1*( f(llx,m,n,iuz) &
@@ -4599,7 +4588,7 @@ module Hydro
         if (lspherical_coords) then
           f(l1:l2,m,n,iuz) = prof_amp1*(1.5-7.5*costh(m)*costh(m))
         else if (lcylindrical_coords) then
-          call stop_it("diffrot_test: not implemented for cylindrical coordinates")
+          call fatal_error("diffrot_test","not implemented for cylindrical coordinates")
         else
           do llx=l1,l2
             f(llx,m,n,iuz) = prof_amp1(llx)*cos(y(m))*cos(y(m))
@@ -4678,22 +4667,23 @@ module Hydro
 !***********************************************************************
     subroutine hydro_clean_up
 !
-!  dummy routine
+!  This is a dummy routine.
 !
 !  8-sep-2009/dhruba: coded
 !
-      print*, 'I should not be called. '
+      call warning('hydro_clean_up','Nothing to do for hydro.f90')
 !
     endsubroutine hydro_clean_up
 !***********************************************************************
     subroutine kinematic_random_phase
 !
-!  dummy routine due to dhruba commit 13286
+!  This is a dummy routine.
 !
 !  16-feb-2010/bing:
 !
-      print*, 'I should not be called. '
+      call fatal_error('kinematic_random_phase', &
+          'Use HYDRO=hydro_kinematic in Makefile.local instead')
 !
     endsubroutine kinematic_random_phase
-!*******************************************************************
+!***********************************************************************
 endmodule Hydro
