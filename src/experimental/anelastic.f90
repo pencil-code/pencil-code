@@ -2040,9 +2040,15 @@ module Density
           f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
         endif
       else
-        call inverse_laplacian_z(pold,f(l1:l2,m1:m2,n1:n2,ipp))
-!        call inverse_laplacian_semispectral(f(l1:l2,m1:m2,n1:n2,ipp))
+        do n=n1,n2
+         f(l1:l2,4,n,ipp)=-2*sin(x(l1:l2))*sin(z(n))
+        enddo
+        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+        open(unit=43,file='dirichlet.dat',form='unformatted')
+        write(43) f(l1:l2,4,n1:n2,ipp)
+        close(43)
       endif
+      stop
 !
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
@@ -2076,7 +2082,7 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine inverse_laplacian_z(pold,phi)
+    subroutine inverse_laplacian_z(phi)
 !
 !  Solve the pressure equation in the anelastic case by Fourier 
 !  transforming in the xy-plane and solving the discrete matrix 
@@ -2090,9 +2096,9 @@ module Density
       use Fourier, only: fourier_transform_xy,fourier_transform_x
       use Gravity, only: gravz
 !
-      real, dimension (nx,ny,nz) :: phi, b1, pold
-      real, dimension (nzgrid,nx/nprocz) :: rhst,rhst2
-      real, dimension (nzgrid-1) :: a_tri, b_tri, c_tri, r_tri, u_tri
+      real, dimension (nx,ny,nz) :: phi, b1
+      real, dimension (nzgrid,nx/nprocz) :: rhst
+      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
       real :: k2
       integer :: ikx, iky,ikz
       logical :: err
@@ -2100,47 +2106,49 @@ module Density
 !  The right-hand-side of the pressure equation is purely real.
 !
       b1 = 0.0
+      rhst=0.0
 !
 !  Forward transform (to k-space).
 !
+        do n=1,nz
+         phi(1:nx,1,n)=x(l1:l2)
+        end do
         call fourier_transform_xy(phi,b1)
-        call fourier_transform_xy(pold,b1)
+        call fourier_transform_xy(phi,b1,linv=.true.)
+        open(unit=44,file='testfourier.dat',form='unformatted')
+        write(44) phi(1:nx,1,1:nz)
+        close(44)
+        
         
 !
 !  Solve for discrete z-direction
 !
-      do iky=1,ny
+!      do iky=1,ny
+        iky=1
         call transp_xz(phi(:,iky,:),rhst)
-        call transp_xz(pold(:,iky,:),rhst2)
         a_tri(:)=1.0/dz**2
         c_tri(:)=1.0/dz**2
-        do ikx=1,nxgrid/nprocz
-          k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          b_tri=-2.0/dz**2-k2
-          rhst2(1,ikx)=0.
-          rhst2(nzgrid,ikx)=0.
-          r_tri(1:nzgrid-1)=rhst(2:nzgrid,ikx)
-          r_tri(1)=rhst(2,ikx)-rhst2(1,ikx)/dz**2
-          r_tri(nzgrid-1)=rhst(nzgrid,ikx)-rhst2(nzgrid,ikx)/dz**2
+          do ikx=1,nxgrid/nprocz
+            k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+            if (k2.ne.0.) then
+              b_tri=-2.0/dz**2-k2
+              r_tri(1)=0.0
+              r_tri(2:nzgrid-1)=rhst(2:nzgrid-1,ikx)
+              r_tri(nzgrid)=0.0
 !
 !  Boundary conditions in the z-direction
-! dP_1/dz=0
-!         b_tri(1)=1.0
-!         c_tri(1)=0.0
-!         a_tri(nzgrid)=0.0
-!         b_tri(nzgrid)=1.0
-!         r_tri(1)=0.0*u_tri(2)
-!         r_tri(nzgrid)=0.0*u_tri(nzgrid-1)
-!          c_tri(1)=2.0/dz**2
-!          a_tri(nzgrid)=2.d0/dz**2
+! P_1=0
+              b_tri(1)=1.0
+              c_tri(1)=0.0
+              a_tri(nzgrid-1)=0.0
+              b_tri(nzgrid)=1.0
 !
-          call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-          rhst(2:nzgrid,ikx)=u_tri(1:nzgrid-1)
-          rhst(1,ikx)=0.
-          rhst(nzgrid,ikx)=0.
-        enddo
+            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+            rhst(1:nzgrid,ikx)=u_tri(1:nzgrid)
+           endif
+         enddo
         call transp_zx(rhst,phi(:,iky,:))
-      enddo
+!      enddo
 !
 !  Inverse transform (to real space).
 !
