@@ -6418,7 +6418,7 @@ module Magnetic
 !
       integer :: lun
 !
-      if (lroot.and.ip<14) then
+      if (lroot.and.ip<14.and.lforcing_cont_aa_local) then
         if (phase_beltrami>=0.0) print*, 'output_persistent_magnetic: ', &
             phase_beltrami, ampl_beltrami
       endif
