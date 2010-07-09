@@ -4677,7 +4677,7 @@ module Boundcond
       character (len=3), intent (in) :: topbot
 !
       real, dimension (:,:,:), allocatable :: aa_re,aa_im
-      real, dimension (:,:), allocatable :: kx,ky,kappa,kappa1,exp_fact
+      real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact
       real, dimension (:,:), allocatable :: tmp_re,tmp_im
       real    :: delta_z
       integer :: i,j,stat
@@ -4699,9 +4699,6 @@ module Boundcond
       allocate(kappa(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for kappa',.true.)
-      allocate(kappa1(nx,ny),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for kappa1',.true.)
       allocate(exp_fact(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for exp_fact',.true.)
@@ -4720,11 +4717,6 @@ module Boundcond
 !  Calculate 1/k^2, zero mean
 !
       kappa = sqrt(kx**2 + ky**2)
-      where (kappa > 0)
-        kappa1 = 1/kappa
-      elsewhere
-        kappa1 = 0
-      endwhere
 !
 !  Fourier transforms of x- and y-components on the boundary
 !  Check whether we want to do top or bottom (this is precessor dependent)
@@ -4799,7 +4791,6 @@ module Boundcond
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(kappa)) deallocate(kappa)
-      if (allocated(kappa1)) deallocate(kappa1)
       if (allocated(exp_fact)) deallocate(exp_fact)
       if (allocated(tmp_re)) deallocate(tmp_re)
       if (allocated(tmp_im)) deallocate(tmp_im)
@@ -4818,7 +4809,7 @@ module Boundcond
       character (len=3), intent (in) :: topbot
 !
       real, dimension (:,:,:), allocatable :: aa_re,aa_im
-      real, dimension (:,:), allocatable :: kx,ky,kappa,kappa1
+      real, dimension (:,:), allocatable :: kx,ky,kappa
       real, dimension (:,:), allocatable :: tmp_re,tmp_im,fac
       integer :: i,j,stat
 !
@@ -4839,9 +4830,6 @@ module Boundcond
       allocate(kappa(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for kappa',.true.)
-      allocate(kappa1(nx,ny),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for kappa1',.true.)
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for tmp_im',.true.)
@@ -4862,11 +4850,6 @@ module Boundcond
 !  Calculate 1/k^2, zero mean
 !
       kappa = sqrt(kx**2 + ky**2)
-      where (kappa > 0)
-        kappa1 = 1/kappa
-      elsewhere
-        kappa1 = 0
-      endwhere
 !
 !  Fourier transforms of x- and y-components on the boundary
 !  Check whether we want to do top or bottom (this is precessor dependent)
@@ -4945,7 +4928,6 @@ module Boundcond
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(kappa)) deallocate(kappa)
-      if (allocated(kappa1)) deallocate(kappa1)
       if (allocated(tmp_re)) deallocate(tmp_re)
       if (allocated(tmp_im)) deallocate(tmp_im)
       if (allocated(fac)) deallocate(fac)
