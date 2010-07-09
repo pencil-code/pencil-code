@@ -287,9 +287,6 @@ module Fourier
       real, dimension (4*nx+15) :: wsavex
       integer :: l,m,n
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_xz','Must have nprocx=1!')
-!
       if (present(linv)) then
         if (linv) then
           if (lroot) print*, 'fourier_transform_xz: only implemented for '// &
@@ -297,6 +294,9 @@ module Fourier
           call fatal_error('fourier_transform_xz','')
         endif
       endif
+!
+      if (nprocx>1) &
+          call fatal_error('fourier_transform_xz','Must have nprocx=1!')
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
@@ -358,6 +358,9 @@ module Fourier
       integer :: m,n
       logical :: lforward
 !
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
+!
       if (nprocx>1) &
           call fatal_error('fourier_transform_x','Must have nprocx=1!')
 !
@@ -369,9 +372,6 @@ module Fourier
             print*, 'fourier_transform_x: must have nxgrid=nygrid=nzgrid!'
         call fatal_error('fourier_transform_x','')
       endif
-!
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
 !
 !  need to initialize cfft only once, because nxgrid=nygrid
 !
@@ -458,6 +458,12 @@ module Fourier
       logical, optional :: linv
       logical, optional :: lnorm
 !
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
+!
+      lnormalize=.true.
+      if (present(lnorm)) lnormalize=lnorm
+!
       if (nprocx>1) &
           call fatal_error('fourier_transform_y','Must have nprocx=1!')
 !
@@ -471,12 +477,6 @@ module Fourier
           call fatal_error('fourier_transform_y','mod(nxgrid,nygrid)/=0')
         endif
       endif
-!
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
-!
-      lnormalize=.true.
-      if (present(lnorm)) lnormalize=lnorm
 !
 !  initialize cfft (coefficients for fft?)
 !
@@ -625,26 +625,26 @@ module Fourier
       integer :: l,m,n,two
       logical :: lforward
 !
+      two = 2         ! avoid 'array out of bounds' below for nygrid=1
+!
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
+!
       if (nprocx>1) &
           call fatal_error('fourier_transform_shear','Must have nprocx=1!')
 !
 !  If nxgrid/=nygrid/=nzgrid, stop.
 !
-      if (nygrid/=nxgrid .and. nygrid /= 1) then
+      if (nygrid/=nxgrid .and. nygrid/=1) then
         print*, 'fourier_transform_shear: '// &
             'need to have nygrid=nxgrid if nygrid/=1.'
         call fatal_error('fourier_transform_shear','')
       endif
-      if (nzgrid/=nxgrid .and. nzgrid /= 1) then
+      if (nzgrid/=nxgrid .and. nzgrid/=1) then
         print*,'fourier_transform_shear: '// &
             'need to have nzgrid=nxgrid if nzgrid/=1.'
         call fatal_error('fourier_transform_shear','')
       endif
-!
-      two = 2         ! avoid `array out of bounds' below for nygrid=1
-!
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
 !
@@ -793,21 +793,21 @@ module Fourier
       integer :: l,m,n,two
       logical :: lforward
 !
+      two = 2         ! avoid 'array out of bounds' below for nygrid=1
+!
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
+!
       if (nprocx>1) &
           call fatal_error('fourier_transform_shear_xy','Must have nprocx=1!')
 !
 !  If nxgrid/=nygrid/=nzgrid, stop.
 !
-      if (nygrid/=nxgrid .and. nygrid /= 1) then
+      if (nygrid/=nxgrid .and. nygrid/=1) then
         print*, 'fourier_transform_shear_xy: '// &
             'need to have nygrid=nxgrid if nygrid/=1.'
         call fatal_error('fourier_transform_shear','')
       endif
-!
-      two = 2         ! avoid `array out of bounds' below for nygrid=1
-!
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
 !
@@ -910,10 +910,10 @@ module Fourier
       integer :: nx_other
       logical :: lforward
 !
+      nx_other=size(a_re,1)
+!
       lforward=.true.
       if (present(linv)) lforward=.not.linv
-!
-      nx_other=size(a_re,1)
 !
 !  Initialize fftpack.
 !
@@ -971,10 +971,10 @@ module Fourier
       integer :: l, m, nx_other, ny_other
       logical :: lforward
 !
+      nx_other=size(a_re,1); ny_other=size(a_re,2)
+!
       lforward=.true.
       if (present(linv)) lforward=.not.linv
-!
-      nx_other=size(a_re,1); ny_other=size(a_re,2)
 !
       if (lforward) then
 !
@@ -1065,14 +1065,14 @@ module Fourier
       integer :: l,m,ibox
       logical :: lforward
 !
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
+!
       if (nprocx>1) &
           call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!',lleading_xy)
 !
       if (mod(nxgrid,nygrid)/=0) call fatal_error('fourier_transform_xy_xy', &
           'nxgrid needs to be an integer multiple of nygrid.',lleading_xy)
-!
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
 !
       if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
 !
@@ -1193,12 +1193,12 @@ module Fourier
       integer :: nxgrid_other,nygrid_other
       logical :: lforward
 !
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
-!
       nx_other=size(a_re,1); ny_other=size(a_re,2)
       nxgrid_other=nx_other
       nygrid_other=ny_other*nprocy     
+!
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
 !
       if (nxgrid_other/=nygrid_other) &
         call fatal_error('fourier_transform_xy_xy_other', &
@@ -1596,11 +1596,11 @@ module Fourier
       real, dimension (4*nx+15) :: wsave
       integer :: l,n,two
 !
-      two = 2         ! avoid `array out of bounds' below for nygrid=1
+      two = 2         ! avoid 'array out of bounds' below for nygrid=1
 !
 !  if nxgrid/=nygrid, then stop.
 !
-      if (nygrid/=nxgrid .and. nygrid /= 1) then
+      if (nygrid/=nxgrid .and. nygrid/=1) then
         print*, 'fourier_shift_y: need to have nygrid=nxgrid if nygrid/=1'
         call fatal_error('fourier_transform_shear','')
       endif
@@ -1661,14 +1661,14 @@ module Fourier
 !
       logical :: lforward
 !
+      lforward=.true.
+      if (present(linv)) lforward=.not.linv
+!
       if (ifirst_fft==1) then
 ! Initialize fftpack
         call rffti(na,wsavex_temp)
       else
       endif
-!
-      lforward=.true.
-      if (present(linv)) lforward=.not.linv
 !
 !  Transform x-direction.
 !
