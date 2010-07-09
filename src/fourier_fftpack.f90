@@ -1318,7 +1318,7 @@ module Fourier
 !
 !  Transform y-direction.
 !
-          if (ipy==0) then
+          if (lleading_y) then
             a_re_full(1:ny)=a_re
             a_im_full(1:ny)=a_im
             do ipy_send=1,nprocy-1
@@ -1332,7 +1332,7 @@ module Fourier
             call mpisend_real(a_im,ny,iproc-ipy,itag2)
           endif
 !
-          if (ipy==0) then
+          if (lleading_y) then
 !
             call cffti(nygrid,wsavey)
 !
@@ -1362,7 +1362,7 @@ module Fourier
 !  Transform y-direction back.
 !
         if (nygrid>1) then
-          if (ipy==0) then
+          if (lleading_y) then
             a_re_full(1:ny)=a_re
             a_im_full(1:ny)=a_im
             do ipy_send=1,nprocy-1
@@ -1376,7 +1376,7 @@ module Fourier
             call mpisend_real(a_im,ny,iproc-ipy,itag2)
           endif
 !
-          if (ipy==0) then
+          if (lleading_y) then
 !
             call cffti(nygrid,wsavey)
 !
@@ -1472,7 +1472,7 @@ module Fourier
 !  nygrid pencil.
 !
           do ipy_from=1,nprocy-1
-            if (ipy==0) then
+            if (lleading_y) then
               call mpirecv_real( &
                   a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,1), &
                   ny,ipy_from*nprocx+ipx,itag)
@@ -1482,7 +1482,7 @@ module Fourier
                   call mpisend_real(a_re(:,1),ny,ipy_to*nprocx+ipx,itag)
             endif
           enddo
-          if (ipy==0) a_re_new(1:ny,1)=a_re(:,1)
+          if (lleading_y) a_re_new(1:ny,1)=a_re(:,1)
         else
 !
 !  Present z-direction. If nz<nprocy we have less y-pencils to shift than
@@ -1544,17 +1544,16 @@ module Fourier
       if (nprocy/=1) then
         if (nzgrid==1) then
 !  No z-direction.
-          if (ipy/=0) then
-            ipy_from=0
-            call mpirecv_real(a_re(:,1),ny,ipy_from*nprocx+ipx,itag)
-          else
+          if (lleading_y) then
             do ipy_to=1,nprocy-1
               call mpisend_real( &
                   a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,1), &
                   ny,ipy_to*nprocx+ipx,itag)
             enddo
+          else
+            call mpirecv_real(a_re(:,1),ny,ipx,itag)
           endif
-          if (ipy==0) a_re(:,1)=a_re_new(1:ny,1)
+          if (lleading_y) a_re(:,1)=a_re_new(1:ny,1)
         else
 !  Present z-direction.
           do ipy_from=0,nprocy_used-1

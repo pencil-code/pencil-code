@@ -4784,7 +4784,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error('bc_aa_pot3', 'invalid argument', (ipx==0).and.(ipy==0))
+        call fatal_error('bc_aa_pot3', 'invalid argument', lleading_xy)
 !
       endselect
 !
@@ -4930,7 +4930,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error('bc_aa_pot2', 'invalid argument', (ipx==0).and.(ipy==0))
+        call fatal_error('bc_aa_pot2', 'invalid argument', lleading_xy)
 !
       endselect
 !
@@ -4990,7 +4990,7 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (mod(nxgrid,nygrid)/=0) &
              call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
-                 "with mod(nxgrid,nygrid)/=1", (ipx==0).and.(ipy==0))
+                 "with mod(nxgrid,nygrid)/=1", lleading_xy)
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -5009,7 +5009,7 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
         if (mod(nxgrid,nygrid)/=0) &
              call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
-                 "with mod(nxgrid,nygrid)/=1", (ipx==0).and.(ipy==0))
+                 "with mod(nxgrid,nygrid)/=1", lleading_xy)
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
@@ -5022,7 +5022,7 @@ module Boundcond
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
       case default
-        call fatal_error('bc_aa_pot', 'invalid argument', (ipx==0).and.(ipy==0))
+        call fatal_error('bc_aa_pot', 'invalid argument', lleading_xy)
       endselect
 !
       call communicate_bc_aa_pot(f,topbot)

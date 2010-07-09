@@ -873,8 +873,8 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(r)
             call random_number_wrapper(p)
             if (nprocz==2) then
-              if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-              if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (lleading_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (ltrailing_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
             else
               fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
             endif
@@ -890,8 +890,8 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(r)
             call random_number_wrapper(p)
             if (nprocz==2) then
-              if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-              if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (lleading_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (ltrailing_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
             else
               fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
             endif

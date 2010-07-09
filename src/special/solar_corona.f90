@@ -188,7 +188,7 @@ module Special
 !
       inquire(IOLENGTH=lend) dummy
 !
-      if ((ipz /= 0) .or. (bmdi == 0.0)) then
+      if (.not. lleading_z .or. (bmdi == 0.0)) then
         A_init_x = 0.0
         A_init_y = 0.0
       else
@@ -2449,29 +2449,29 @@ module Special
             read (unit,rec=i,iostat=ierr) tl
             read (unit,rec=i+1,iostat=ierr) tr
             if (ierr /= 0) then
+              ! EOF is reached => read again
               i=1
-              delta_t = t*unit_time                  ! EOF is reached => read again
+              delta_t = t*unit_time
               read (unit,rec=i,iostat=ierr) tl
               read (unit,rec=i+1,iostat=ierr) tr
               ierr=-1
             else
+              ! test if correct time step is reached
               if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) ierr=-1
-              ! correct time step is reached
             endif
           enddo
           close (unit)
 !
           do px=0, nprocx-1
             do py=0, nprocy-1
-              if ((px /= 0) .or. (py /= 0)) then
-                call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
-                call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
-                call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
-              endif
+              if ((px == 0) .and. (py == 0)) continue
+              call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
+              call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
+              call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
             enddo
           enddo
         else
-          if (ipz==0) then
+          if (lleading_z) then
             call mpirecv_real (tl, 1, 0, tag_tl)
             call mpirecv_real (tr, 1, 0, tag_tr)
             call mpirecv_real (delta_t, 1, 0, tag_dt)
@@ -2503,12 +2503,11 @@ module Special
 !
           do px=0, nprocx-1
             do py=0, nprocy-1
-              if ((px /= 0) .or. (py /= 0)) then
-                Ux_ext_local = Ux_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                Uy_ext_local = Uy_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                call mpisend_real (Ux_ext_local, (/ nx, ny /), px+py*nprocx, tag_x)
-                call mpisend_real (Uy_ext_local, (/ nx, ny /), px+py*nprocx, tag_y)
-              endif
+              if ((px == 0) .and. (py == 0)) continue
+              Ux_ext_local = Ux_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+              Uy_ext_local = Uy_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
+              call mpisend_real (Ux_ext_local, (/ nx, ny /), px+py*nprocx, tag_x)
+              call mpisend_real (Uy_ext_local, (/ nx, ny /), px+py*nprocx, tag_y)
             enddo
           enddo
 !
@@ -2517,7 +2516,7 @@ module Special
 !
           close (unit)
         else
-          if (ipz==0) then
+          if (lleading_z) then
             call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
             call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
           endif
@@ -2535,9 +2534,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (n==n2.and.ipz==nprocz-1) then
-        df(l1:l2,m,n2,iuz) =  df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
-      endif
+      if (n==n2.and.ltrailing_z) &
+          df(l1:l2,m,n2,iuz) = df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
 !
     endsubroutine force_solar_wind
 !***********************************************************************
@@ -2557,32 +2555,23 @@ module Special
       real :: local_flux,local_mass
       real :: total_flux,total_mass
       real :: get_lf,get_lm
-      integer :: nroot
-!
-      nroot = ipz*nprocx*nprocy
 !
       local_flux=sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
       local_mass=sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
 !
 !  One  processor has to collect the data
 !
-      if (iproc/=nroot) then
-        ! send to first processor at given height
-        !
-        call mpisend_real(local_flux,1,nroot,111+iproc)
-        call mpisend_real(local_mass,1,nroot,211+iproc)
-      else
+      if (lleading_xy) then
         total_flux=local_flux
         total_mass=local_mass
         do i=0,nprocx-1
           do j=0,nprocy-1
+            if ((i==0).and.(j==0)) continue
             ipt = i+nprocx*j+ipz*nprocx*nprocy
-            if (ipt/=nroot) then
-              call mpirecv_real(get_lf,1,ipt,111+ipt)
-              call mpirecv_real(get_lm,1,ipt,211+ipt)
-              total_flux=total_flux+get_lf
-              total_mass=total_mass+get_lm
-            endif
+            call mpirecv_real(get_lf,1,ipt,111+ipt)
+            call mpirecv_real(get_lm,1,ipt,211+ipt)
+            total_flux=total_flux+get_lf
+            total_mass=total_mass+get_lm
           enddo
         enddo
 !
@@ -2591,21 +2580,25 @@ module Special
 !  u0 = (wind-rho*u)/rho
 !
         u_add = (massflux-total_flux) / total_mass
+      else
+        ! send to first processor at given height
+        !
+        call mpisend_real(local_flux,1,ipz*nprocx*nprocy,111+iproc)
+        call mpisend_real(local_mass,1,ipz*nprocx*nprocy,211+iproc)
       endif
 !
 !  now distribute u_add
 !
-      if (iproc/=nroot) then
-        call mpirecv_real(u_add,1,nroot,311+iproc)
-      else
+      if (lleading_xy) then
         do i=0,nprocx-1
           do j=0,nprocy-1
+            if ((i==0).and.(j==0)) continue
             ipt = i+nprocx*j+ipz*nprocx*nprocy
-            if (ipt/=nroot) then
-              call mpisend_real(u_add,1,ipt,311+ipt)
-            endif
+            call mpisend_real(u_add,1,ipt,311+ipt)
           enddo
         enddo
+      else
+        call mpirecv_real(u_add,1,ipz*nprocx*nprocy,311+iproc)
       endif
 !
     endsubroutine get_wind_speed_offset

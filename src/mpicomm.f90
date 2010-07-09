@@ -477,7 +477,7 @@ module Mpicomm
 !  communication sample
 !  (commented out, because compiler does like this for 0-D runs)
 !
-!     if (ip<7.and.ipy==0.and.ipz==3) &
+!     if (ip<7.and.lleading_y.and.ipz==3) &
 !       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
 !
     endsubroutine initiate_isendrcv_bdry
@@ -511,10 +511,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
-          if (ipy/=0 .or. bcy1(j)=='p') then
+          if (.not. lleading_y .or. bcy1(j)=='p') then
             f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (ipy/=nprocy-1 .or. bcy2(j)=='p') then
+          if (.not. ltrailing_y .or. bcy2(j)=='p') then
             f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -528,10 +528,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
-          if (ipz/=0 .or. bcz1(j)=='p') then
+          if (.not. lleading_z .or. bcz1(j)=='p') then
             f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (ipz/=nprocz-1 .or. bcz2(j)=='p') then
+          if (.not. ltrailing_z .or. bcz2(j)=='p') then
             f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -547,19 +547,19 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
         do j=ivar1,ivar2
-          if (ipz/=0 .or. bcz1(j)=='p') then
-            if (ipy/=0 .or. bcy1(j)=='p') then
+          if (.not. lleading_z .or. bcz1(j)=='p') then
+            if (.not. lleading_y .or. bcy1(j)=='p') then
               f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
             endif
-            if (ipy/=nprocy-1 .or. bcy2(j)=='p') then
+            if (.not. ltrailing_y .or. bcy2(j)=='p') then
               f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
             endif
           endif
-          if (ipz/=nprocz-1 .or. bcz2(j)=='p') then
-            if (ipy/=nprocy-1 .or. bcy2(j)=='p') then
+          if (.not. ltrailing_z .or. bcz2(j)=='p') then
+            if (.not. ltrailing_y .or. bcy2(j)=='p') then
               f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
             endif
-            if (ipy/=0 .or. bcy1(j)=='p') then
+            if (.not. lleading_y .or. bcy1(j)=='p') then
               f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
             endif
           endif
@@ -573,7 +573,7 @@ module Mpicomm
 !  communication sample
 !  (commented out, because compiler does like this for 0-D runs)
 !
-!     if (ip<7.and.ipy==3.and.ipz==0) &
+!     if (ip<7.and.ipy==3.and.lleading_z) &
 !       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
 !                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
 !
@@ -618,11 +618,11 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
         do j=ivar1,ivar2
-          if (ipx/=0 .or. bcx1(j)=='p' .or. &
+          if (.not. lleading_x .or. bcx1(j)=='p' .or. &
               (bcx1(j)=='she'.and.nygrid==1)) then
             f( 1:l1-1,m1:m2,n1:n2,j)=lbufxi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (ipx/=nprocx-1 .or. bcx2(j)=='p' .or. &
+          if (.not. ltrailing_x .or. bcx2(j)=='p' .or. &
               (bcx2(j)=='she'.and.nygrid==1)) then
             f(l2+1:mx,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
           endif
@@ -688,7 +688,7 @@ module Mpicomm
 !  interpolate over data from two different CPUs. Likewise two different
 !  CPUs will require data from this CPU.
 !
-        if (ipx==0 .or. ipx==nprocx-1) then
+        if (lleading_x .or. ltrailing_x) then
           ipx_partner=(nprocx-ipx-1)
           ystep = displs/ny
           if (deltay>=0) then
@@ -780,7 +780,7 @@ module Mpicomm
 !  Some special cases have already finished in initiate_shearing.
 !
       if (nygrid/=1 .and. (nprocx>1 .or. nprocy>1) .and. &
-          (ipx==0 .or. ipx==nprocx-1)) then
+          (lleading_x .or. ltrailing_x)) then
 !
 !  Need to wait till all communication has been recived.
 !
@@ -3533,12 +3533,12 @@ module Mpicomm
 !
         do j=1,3
 !
-          if (ipz/=0 .or. bcz1(j-1+ivar)=='p') &
+          if (.not. lleading_z .or. bcz1(j-1+ivar)=='p') &
             vec(1:n1-1,j)=lbufi(:,j)
 !
 !  Read from buffer in lower ghostzones.
 !
-          if (ipz/=nprocz-1 .or. bcz2(j-1+ivar)=='p') &
+          if (.not. ltrailing_z .or. bcz2(j-1+ivar)=='p') &
             vec(n2+1:mz,j)=ubufi(:,j)
 !
 !  Read from buffer in upper ghostzones.

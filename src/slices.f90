@@ -266,9 +266,9 @@ module Slices
 !
       if (slice_position=='p' .or. slice_position=='S') then
         ix_loc=l1; iy_loc=m1; iz_loc=n1; iz2_loc=n2
-        lwrite_slice_xy2=(ipz==nprocz-1)
-        lwrite_slice_xy=(ipz==0)
-        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_xy2=ltrailing_z
+        lwrite_slice_xy=lleading_z
+        lwrite_slice_xz=lleading_y
         lwrite_slice_yz=.true.
 !
 !  slice position in middle of the box independ of nprocy,nprocz
@@ -279,7 +279,7 @@ module Slices
         if (mod(nprocy,2)==0) then; iy_loc=m1; else; iy_loc=(m1+m2)/2; endif
         if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
         iz2_loc=n2
-        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy2=ltrailing_z
         lwrite_slice_xy=(ipz==nprocz/2)
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=.true.
@@ -311,7 +311,7 @@ module Slices
         iz_loc=n1; iz2_loc=n2
         call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
         lwrite_slice_xy2=(ipz==nprocz/4)
-        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xy=lleading_z
         lwrite_slice_xz=.true.
 !
 !  later we may also want to write other slices
@@ -329,7 +329,7 @@ module Slices
         if (nprocy==1) then; iy_loc=(m1+m2)/2; endif
         if (nprocz==1) then; iz2_loc=(iz+n2)/2; endif
         lwrite_slice_xy2=(ipz==nprocz/4)
-        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xy=lleading_z
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=.true.
 !
@@ -340,16 +340,16 @@ module Slices
         ix_loc=l1; iy_loc=m1
         call zlocation(zbot_slice,iz_loc,lwrite_slice_xy)
         call zlocation(ztop_slice,iz2_loc,lwrite_slice_xy2)
-        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_xz=lleading_y
         lwrite_slice_yz=.true.
 !
 !  periphery of the box, but the other way around
 !
       elseif (slice_position=='q') then
         ix_loc=l2; iy_loc=m2; iz_loc=n2; iz2_loc=n1
-        lwrite_slice_xy2=(ipz==0)
-        lwrite_slice_xy=(ipz==nprocz-1)
-        lwrite_slice_xz=(ipy==nprocy-1)
+        lwrite_slice_xy2=lleading_z
+        lwrite_slice_xy=ltrailing_z
+        lwrite_slice_xz=ltrailing_y
         lwrite_slice_yz=.true.
       else
         if (lroot) then
@@ -439,22 +439,22 @@ module Slices
 !  write the ipz processor numbers for the two slices
 !  The first number (=ipz) is essential, the others just for interest.
 !
-      if (lwrite_slice_xy.and.ipy==0) then
+      if (lwrite_slice_xy.and.lleading_y) then
         open(1,file=trim(directory)//'/zbot_procnum.dat',STATUS='unknown')
         write(1,'(2i5,e12.4)') ipz,iz_loc,z(iz_loc)
         close(1)
       endif
-      if (lwrite_slice_xy2.and.ipy==0) then
+      if (lwrite_slice_xy2.and.lleading_y) then
         open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
         write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
         close(1)
       endif
-      if (lwrite_slice_xy3.and.ipy==0) then
+      if (lwrite_slice_xy3.and.lleading_y) then
         open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
         write(1,'(2i5,e12.4)') ipz,iz3_loc,z(iz3_loc)
         close(1)
       endif
-      if (lwrite_slice_xy4.and.ipy==0) then
+      if (lwrite_slice_xy4.and.lleading_y) then
         open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
         write(1,'(2i5,e12.4)') ipz,iz4_loc,z(iz4_loc)
         close(1)

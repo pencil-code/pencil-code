@@ -662,8 +662,8 @@ endif
         endif
         !
       enddo
-      if (ipy==0)        f(l1:l2,m1,n1:n2,iux)=0
-      if (ipy==nprocy-1) f(l1:l2,m2,n1:n2,iux)=0
+      if (lleading_y)  f(l1:l2,m1,n1:n2,iux)=0.0
+      if (ltrailing_y) f(l1:l2,m2,n1:n2,iux)=0.0
       !
     endsubroutine velocity_defect_flowx_wally
 !***********************************************************************
@@ -722,12 +722,12 @@ endif
                (f(l1:l2,j,n1:n2,iux)/central_vel+1)*min(u_log,u_lam)
         endif
       enddo
-      if (ipy==0) then
-        f(l1:l2,m1,n1:n2,iux)  =0
+      if (lleading_y) then
+        f(l1:l2,m1,n1:n2,iux)=0.0
         f(l1:l2,m1+1,n1:n2,iux)=(y(m1+1)-xyz0(2))/lw*utau
       endif
-      if (ipy==nprocy-1) then
-        f(l1:l2,m2,n1:n2,iux)=0
+      if (ltrailing_y) then
+        f(l1:l2,m2,n1:n2,iux)=0.0
         f(l1:l2,m2-1,n1:n2,iux)=-(y(m2-1)-xyz0(2)-Lxyz(2))/lw*utau
       endif
       !

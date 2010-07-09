@@ -568,11 +568,11 @@ module Register
 !
 !  Trapezoidal rule
 !
-        if (ipx==0       ) r2_weight( 1)=.5*r2_weight( 1)
-        if (ipx==nprocx-1) r2_weight(nx)=.5*r2_weight(nx)
+        if (lleading_x)  r2_weight( 1)=.5*r2_weight( 1)
+        if (ltrailing_x) r2_weight(nx)=.5*r2_weight(nx)
 !
-        if (ipy==0       ) sinth_weight(m1)=.5*sinth_weight(m1)
-        if (ipy==nprocy-1) sinth_weight(m2)=.5*sinth_weight(m2)
+        if (lleading_y)  sinth_weight(m1)=.5*sinth_weight(m1)
+        if (ltrailing_y) sinth_weight(m2)=.5*sinth_weight(m2)
         sinth_weight_across_proc(1)=0.5*sinth_weight_across_proc(1)
         sinth_weight_across_proc(nygrid)=0.5*sinth_weight_across_proc(nygrid)
 !
@@ -637,8 +637,8 @@ module Register
 !  Trapezoidal rule
 !
         rcyl_weight=rcyl_mn
-        if (ipx==0       ) rcyl_weight( 1)=.5*rcyl_weight( 1)
-        if (ipx==nprocx-1) rcyl_weight(nx)=.5*rcyl_weight(nx)
+        if (lleading_x)  rcyl_weight( 1)=.5*rcyl_weight( 1)
+        if (ltrailing_x) rcyl_weight(nx)=.5*rcyl_weight(nx)
 !
 !  Lobachevskii space
 !
@@ -675,7 +675,7 @@ module Register
 !  it to root, for broadcasting.
 !
           if ((r_ext==impossible).and.&
-               (ipx==nprocx-1.and.ipy==0.and.ipz==0)) then
+               (ltrailing_x.and.lleading_y.and.lleading_z)) then
             r_ext=x(l2)
             call mpisend_real(r_ext,1,0,111)
           endif
@@ -700,18 +700,18 @@ module Register
 !  and the corresponding step is therefore not called.
 !
       if (.not.lperi(1)) then
-        if (ipx==0) dVol1(1)=.5*dVol1(1)
-        if (ipx==nprocx-1) dVol1(nx)=.5*dVol1(nx)
+        if (lleading_x) dVol1(1)=.5*dVol1(1)
+        if (ltrailing_x) dVol1(nx)=.5*dVol1(nx)
       endif
 !
       if (.not.lperi(2)) then
-        if (ipy==0.and.m==m1) dVol2=.5*dVol2
-        if (ipy==nprocy-1.and.m==m2) dVol2=.5*dVol2
+        if (lleading_y.and.m==m1) dVol2=.5*dVol2
+        if (ltrailing_y.and.m==m2) dVol2=.5*dVol2
       endif
 !
       if (.not.lperi(3)) then
-        if (ipz==0.and.n==n1) dVol3=.5*dVol3
-        if (ipz==nprocz-1.and.n==n2) dVol3=.5*dVol3
+        if (lleading_z.and.n==n1) dVol3=.5*dVol3
+        if (ltrailing_z.and.n==n2) dVol3=.5*dVol3
       endif
 !
 !  Print the value for which output is being produced.

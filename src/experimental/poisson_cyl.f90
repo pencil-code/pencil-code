@@ -660,9 +660,9 @@ module Poisson
 ! updated boundaries
 !
         if (nprocz >= 2) then 
-          if (ipz==0) then 
+          if (lleading_z) then 
             phi(2:nr-1,:,2:nz)=phi_previous_step(2:nr-1,:,2:nz)
-          elseif (ipz==nprocz-1) then 
+          elseif (ltrailing_z) then 
             phi(2:nr-1,:,1:nz-1)=phi_previous_step(2:nr-1,:,1:nz-1)
           else
             phi(2:nr-1,:,:)=phi_previous_step(2:nr-1,:,:)
@@ -871,7 +871,7 @@ module Poisson
 ! for the first and last z-processor. Start with z=1 for the
 ! first processor.
 !
-      if (ipz==0) then 
+      if (lleading_z) then 
         do ir=2,nr-1;do ith=1,nth
           if (lupdate_grid(ir,ith,1)) then 
             call integrate_border(rhs_serial,ir,ith,1,potential)
@@ -884,7 +884,7 @@ module Poisson
       endif
       if (lverbose) print*,'done for iz=1'
 ! z=nz for the last processor
-      if (ipz==nprocz-1) then 
+      if (ltrailing_z) then 
         do ir=2,nr-1;do ith=1,nth
           if (lupdate_grid(ir,ith,nz)) then 
             call integrate_border(rhs_serial,ir,ith,nz,potential)

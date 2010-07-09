@@ -738,22 +738,22 @@ module Special
         nprocy_in=nprocy
         nprocz_in=nprocz
         if (j==1) then
-          if ((topbot=='bot'.and.ipx==0).or.&
-              (topbot=='top'.and.ipx==nprocx-1)) then
+          if ((topbot=='bot'.and.lleading_x).or.&
+              (topbot=='top'.and.ltrailing_x)) then
             proc_at_inlet=.true.
             ipx_in=0
             nprocx_in=1
           endif
         elseif (j==2) then
-          if ((topbot=='bot'.and.ipy==0).or.&
-              (topbot=='top'.and.ipy==nprocy-1)) then
+          if ((topbot=='bot'.and.lleading_y).or.&
+              (topbot=='top'.and.ltrailing_y)) then
             proc_at_inlet=.true.
             ipy_in=0
             nprocy_in=1
           endif
         elseif (j==3) then
-          if ((topbot=='bot'.and.ipz==0).or.&
-              (topbot=='top'.and.ipz==nprocz-1)) then
+          if ((topbot=='bot'.and.lleading_z).or.&
+              (topbot=='top'.and.ltrailing_z)) then
             proc_at_inlet=.true.
             ipz_in=0
             nprocz_in=1

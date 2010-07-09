@@ -1712,7 +1712,7 @@ module Entropy
 !  radiative heat flux at the top (assume here that hcond=hcond0=const)
 !
         if (idiag_fradtop/=0) then
-          if (ipz==nprocz-1.and.n==n2) then
+          if (ltrailing_z.and.n==n2) then
             fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradz=0.
@@ -1723,7 +1723,7 @@ module Entropy
 !  mean temperature at the top
 !
         if (idiag_TTtop/=0) then
-          if (ipz==nprocz-1.and.n==n2) then
+          if (ltrailing_z.and.n==n2) then
             TTtop=sum(p%TT*dsurfxy)
           else
             TTtop=0.
