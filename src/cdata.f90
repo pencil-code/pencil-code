@@ -172,8 +172,8 @@ module Cdata
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lleading_x=.true.,lleading_y=.true.,lleading_z=.true.
   logical :: lleading_xy=.true.,lleading_yz=.true.,lleading_xz=.true.
-  logical :: ltrailing_x=.false.,ltrailing_y=.false.,ltrailing_z=.false.
-  logical :: ltrailing_xy=.false.,ltrailing_yz=.false.,ltrailing_xz=.false.
+  logical :: ltrailing_x=.true.,ltrailing_y=.true.,ltrailing_z=.true.
+  logical :: ltrailing_xy=.true.,ltrailing_yz=.true.,ltrailing_xz=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
   logical :: lalpm=.false.
   logical :: lchiral=.false.
