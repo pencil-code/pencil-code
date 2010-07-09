@@ -2041,11 +2041,11 @@ module Density
         endif
       else
         do n=n1,n2
-         f(l1:l2,4,n,ipp)=-2*sin(x(l1:l2))*sin(z(n))
+         pold(1:nx,1,n-nghost)=-2*sin(x(l1:l2))*sin(z(n))
         enddo
-        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+        call inverse_laplacian_z(pold)
         open(unit=43,file='dirichlet.dat',form='unformatted')
-        write(43) f(l1:l2,4,n1:n2,ipp)
+        write(43) pold
         close(43)
       endif
       stop
@@ -2106,12 +2106,11 @@ module Density
 !  The right-hand-side of the pressure equation is purely real.
 !
       b1 = 0.0
-      rhst=0.0
 !
 !  Forward transform (to k-space).
 !
-!        do n=1,nz
-!         phi(1:nx,1,n)=x(l1:l2)
+!        do n=n1,n2
+!         phi(1:nx,1,n-nghost)=sin(x(l1:l2))*sin(z(n))
 !        end do
         call fourier_transform_xy(phi,b1)
 !        call fourier_transform_xy(phi,b1,linv=.true.)
@@ -2129,20 +2128,20 @@ module Density
         a_tri(:)=1.0/dz**2
         c_tri(:)=1.0/dz**2
           do ikx=1,nxgrid/nprocz
-            k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+            k2=(kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2)
             write(*,*)'PC:k2',ikx,kx_fft(ikx+nz*ipz),ky_fft(iky)
             if (k2.ne.0) then
-              b_tri=-2.0/dz**2-k2
+              b_tri(:)=-2.0/dz**2-k2
               r_tri(1)=0.0
               r_tri(2:nzgrid-1)=rhst(2:nzgrid-1,ikx)
               r_tri(nzgrid)=0.0
 !
 !  Boundary conditions in the z-direction
 ! P_1=0
-              b_tri(1)=1.0
+              b_tri(1)=1.0/dz**2
               c_tri(1)=0.0
               a_tri(nzgrid-1)=0.0
-              b_tri(nzgrid)=1.0
+              b_tri(nzgrid)=1.0/dz**2
 !
              call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
              rhst(1:nzgrid,ikx)=u_tri(1:nzgrid)
