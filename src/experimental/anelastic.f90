@@ -2143,8 +2143,10 @@ module Density
               a_tri(nzgrid-1)=0.0
               b_tri(nzgrid)=1.0
 !
-            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-            rhst(1:nzgrid,ikx)=u_tri(1:nzgrid)
+             call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+             rhst(1:nzgrid,ikx)=u_tri(1:nzgrid)
+           else
+             rhst(1:nzgrid,ikx)=0.0
            endif
          enddo
         call transp_zx(rhst,phi(:,iky,:))
