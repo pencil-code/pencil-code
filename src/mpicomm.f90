@@ -307,6 +307,15 @@ module Mpicomm
         ipz = modulo(iproc/nprocx, nprocy)
       endif
 !
+!  Set up flags for leading processors in each direction and plane
+!
+      lleading_x = (ipx==0)
+      lleading_y = (ipy==0)
+      lleading_z = (ipz==0)
+      lleading_xy = lleading_x.and.lleading_y
+      lleading_yz = lleading_y.and.lleading_z
+      lleading_xz = lleading_x.and.lleading_z
+!
 !  Set up `lower' and `upper' neighbours.
 !
       xlneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx-1,nprocx))
