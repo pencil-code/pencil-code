@@ -40,9 +40,7 @@ module Fourier
       if (nprocx>1) call fatal_error('fourier_transform','Must have nprocx=1!')
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid
 !
@@ -193,9 +191,7 @@ module Fourier
           call fatal_error('fourier_transform_xy','Must have nprocx=1!')
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid.
 !
@@ -375,9 +371,7 @@ module Fourier
       endif
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
 !  need to initialize cfft only once, because nxgrid=nygrid
 !
@@ -479,14 +473,10 @@ module Fourier
       endif
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
       lnormalize=.true.
-      if (present(lnorm)) then
-        if (.not.lnorm) lnormalize=.false.
-      endif
+      if (present(lnorm)) lnormalize=lnorm
 !
 !  initialize cfft (coefficients for fft?)
 !
@@ -654,9 +644,7 @@ module Fourier
       two = 2         ! avoid `array out of bounds' below for nygrid=1
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
 !
@@ -819,9 +807,7 @@ module Fourier
       two = 2         ! avoid `array out of bounds' below for nygrid=1
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
 !
@@ -925,9 +911,7 @@ module Fourier
       logical :: lforward
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
       nx_other=size(a_re,1)
 !
@@ -988,9 +972,7 @@ module Fourier
       logical :: lforward
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
       nx_other=size(a_re,1); ny_other=size(a_re,2)
 !
@@ -1081,20 +1063,16 @@ module Fourier
       real, dimension (4*nygrid+15) :: wsavey
       real, dimension (ny) :: deltay_x
       integer :: l,m,ibox
-      logical :: lforward,lleading
-!
-      lleading=(ipx==0).and.(ipy==0)
+      logical :: lforward
 !
       if (nprocx>1) &
-          call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!',lleading)
+          call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!',lleading_xy)
 !
       if (mod(nxgrid,nygrid)/=0) call fatal_error('fourier_transform_xy_xy', &
-          'nxgrid needs to be an integer multiple of nygrid.',lleading)
+          'nxgrid needs to be an integer multiple of nygrid.',lleading_xy)
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
       if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
 !
@@ -1213,14 +1191,10 @@ module Fourier
       real, dimension (4*nprocy*size(a_re,2)+15) :: wsavey
       integer :: l,m,nx_other,ny_other
       integer :: nxgrid_other,nygrid_other
-      logical :: lforward,lleading
-!
-      lleading=(ipx==0).and.(ipy==0)
+      logical :: lforward
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
       nx_other=size(a_re,1); ny_other=size(a_re,2)
       nxgrid_other=nx_other
@@ -1228,7 +1202,7 @@ module Fourier
 !
       if (nxgrid_other/=nygrid_other) &
         call fatal_error('fourier_transform_xy_xy_other', &
-             'nxgrid_other needs to be equal to nygrid_other.',lleading)
+             'nxgrid_other needs to be equal to nygrid_other.',lleading_xy)
 !
       if (lforward) then
         if (nygrid_other > 1) then
@@ -1336,9 +1310,7 @@ module Fourier
       logical :: lforward
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
       if (lforward) then
 !
@@ -1697,9 +1669,7 @@ module Fourier
       endif
 !
       lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
+      if (present(linv)) lforward=.not.linv
 !
 !  Transform x-direction.
 !
