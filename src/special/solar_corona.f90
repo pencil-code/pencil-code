@@ -700,7 +700,7 @@ module Special
 !
 !  Do somehow Newton cooling.
 !
-      if ((ipz == 0) .and. (bmdi /= 0.0)) then
+      if (lleading_z .and. (bmdi /= 0.0)) then
         f(l1:l2,m1:m2,n1,iax)=f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
             dt*bmdi * A_init_x
         f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
