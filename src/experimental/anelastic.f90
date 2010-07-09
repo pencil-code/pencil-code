@@ -2110,14 +2110,14 @@ module Density
 !
 !  Forward transform (to k-space).
 !
-        do n=1,nz
-         phi(1:nx,1,n)=x(l1:l2)
-        end do
+!        do n=1,nz
+!         phi(1:nx,1,n)=x(l1:l2)
+!        end do
         call fourier_transform_xy(phi,b1)
-        call fourier_transform_xy(phi,b1,linv=.true.)
-        open(unit=44,file='testfourier.dat',form='unformatted')
-        write(44) phi(1:nx,1,1:nz)
-        close(44)
+!        call fourier_transform_xy(phi,b1,linv=.true.)
+!        open(unit=44,file='testfourier.dat',form='unformatted')
+!        write(44) phi(1:nx,1,1:nz)
+!        close(44)
         
         
 !
@@ -2130,7 +2130,8 @@ module Density
         c_tri(:)=1.0/dz**2
           do ikx=1,nxgrid/nprocz
             k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-            if (k2.ne.0.) then
+            write(*,*)'PC:k2',ikx,kx_fft(ikx+nz*ipz),ky_fft(iky)
+            if (k2.ne.0) then
               b_tri=-2.0/dz**2-k2
               r_tri(1)=0.0
               r_tri(2:nzgrid-1)=rhst(2:nzgrid-1,ikx)
