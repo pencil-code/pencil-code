@@ -5306,8 +5306,7 @@ module Magnetic
           f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
         enddo; enddo
 !
-        call correct_lorentz_force(f,&
-            lfield=.true.,const=B0,pblaw=pblaw)
+        call correct_lorentz_force(f,.true.,B0,pblaw)
 !
       endif
 !
@@ -6047,7 +6046,7 @@ module Magnetic
       endselect
 !
     endsubroutine eta_zdep
-!************************************************************************
+!***********************************************************************
     subroutine correct_lorentz_force(f,lfield,const,pblaw)
 !
 !  Correct for the magnetic term in the centrifugal force. The
@@ -6056,7 +6055,6 @@ module Magnetic
 !
 !  13-nov-08/wlad : coded
 !
-      use FArrayManager
       use Sub,      only: get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -6065,8 +6063,8 @@ module Magnetic
       real, dimension (mx)   :: rho1,rho1_jxb
       integer                :: i
       logical                :: lheader
-      logical, optional      :: lfield
-      real, optional :: const,pblaw
+      logical                :: lfield
+      real :: const,pblaw
 !
       if (lroot) print*,'Correcting magnetic terms on the '//&
            'centrifugal force'
@@ -6087,14 +6085,8 @@ module Magnetic
 !
           lheader=((m==1).and.(n==1).and.lroot)
 !
-          if (present(lfield).and.&
-              present(const).and.&
-              (present(pblaw))) then
-            !this field also has a magnetic pressure gradient
-            Btheta=const*rr_sph**pblaw/sin(y(m))
-          else
-            Btheta=0.
-          endif
+          !this field also has a magnetic pressure gradient          
+          Btheta=const*rr_sph**pblaw/sin(y(m))
 !
           rho1=1./f(:,m,n,ilnrho)
 !
@@ -6162,7 +6154,7 @@ module Magnetic
       enddo
 !
     endsubroutine correct_lorentz_force
-!*************************************************************************
+!***********************************************************************
     subroutine remove_mean_emf(f,df)
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
@@ -6183,7 +6175,7 @@ module Magnetic
       endif
 !
     endsubroutine remove_mean_emf
-!************************************************************************
+!***********************************************************************
     subroutine remove_mean_emf_cylindrical(f,df)
 !
 !  Substract mean emf from the radial component of the induction
@@ -6235,7 +6227,7 @@ module Magnetic
       enddo
 !
     endsubroutine remove_mean_emf_cylindrical
-!************************************************************************
+!***********************************************************************
     subroutine remove_mean_emf_spherical(f,df)
 !
 !  Substract mean emf from the radial component of the induction
@@ -6310,7 +6302,7 @@ module Magnetic
       enddo
 !
     endsubroutine remove_mean_emf_spherical
-!************************************************************************
+!***********************************************************************
     subroutine bb_unitvec_shock(f,bb_hat)
 !
 !  Compute unit vector along the magnetic field.
@@ -7180,4 +7172,4 @@ module Magnetic
     endsubroutine rprint_magnetic
 !***********************************************************************
 endmodule Magnetic
-!
+
