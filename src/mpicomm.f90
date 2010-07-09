@@ -319,12 +319,12 @@ module Mpicomm
 !  Set up flags for trailing processors in each possible direction and plane
 !  One processor should not be leading and trailing at the same time
 !
-      ltrailing_x = (ipx == nprocx-1) .and. .not. lleading_x
-      ltrailing_y = (ipy == nprocy-1) .and. .not. lleading_y
-      ltrailing_z = (ipz == nprocz-1) .and. .not. lleading_z
-      ltrailing_xy = (ltrailing_x .and. ltrailing_y) .and. .not. lleading_xy
-      ltrailing_yz = (ltrailing_y .and. ltrailing_z) .and. .not. lleading_yz
-      ltrailing_xz = (ltrailing_x .and. ltrailing_z) .and. .not. lleading_xz
+      ltrailing_x = (ipx == nprocx-1)
+      ltrailing_y = (ipy == nprocy-1)
+      ltrailing_z = (ipz == nprocz-1)
+      ltrailing_xy = (ltrailing_x .and. ltrailing_y)
+      ltrailing_yz = (ltrailing_y .and. ltrailing_z)
+      ltrailing_xz = (ltrailing_x .and. ltrailing_z)
 !
 !  Set up `lower' and `upper' neighbours.
 !
