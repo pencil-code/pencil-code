@@ -307,14 +307,24 @@ module Mpicomm
         ipz = modulo(iproc/nprocx, nprocy)
       endif
 !
-!  Set up flags for leading processors in each direction and plane
+!  Set up flags for leading processors in each possible direction and plane
 !
-      lleading_x = (ipx==0)
-      lleading_y = (ipy==0)
-      lleading_z = (ipz==0)
-      lleading_xy = lleading_x.and.lleading_y
-      lleading_yz = lleading_y.and.lleading_z
-      lleading_xz = lleading_x.and.lleading_z
+      lleading_x = (ipx == 0)
+      lleading_y = (ipy == 0)
+      lleading_z = (ipz == 0)
+      lleading_xy = lleading_x .and. lleading_y
+      lleading_yz = lleading_y .and. lleading_z
+      lleading_xz = lleading_x .and. lleading_z
+!
+!  Set up flags for trailing processors in each possible direction and plane
+!  One processor should not be leading and trailing at the same time
+!
+      ltrailing_x = (ipx == nprocx-1) .and. .not. lleading_x
+      ltrailing_y = (ipy == nprocy-1) .and. .not. lleading_y
+      ltrailing_z = (ipz == nprocz-1) .and. .not. lleading_z
+      ltrailing_xy = (ltrailing_x .and. ltrailing_y) .and. .not. lleading_xy
+      ltrailing_yz = (ltrailing_y .and. ltrailing_z) .and. .not. lleading_yz
+      ltrailing_xz = (ltrailing_x .and. ltrailing_z) .and. .not. lleading_xz
 !
 !  Set up `lower' and `upper' neighbours.
 !
