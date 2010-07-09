@@ -435,6 +435,7 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Diagnostics, only: max_mn_name,sum_mn_name
+      use Special, only: special_calc_entropy
       use Sub, only: cubic_step,identify_bcs
       use Viscosity, only: calc_viscous_heat
 !
@@ -526,6 +527,8 @@ module Entropy
    !      f(l1:l2,m,n,ilnTT)*p%cv1(:)*sum_DYDt(:)
        endif
       endif
+!
+      if (lspecial) call special_calc_entropy(f,df,p)
 !
 !  Calculate temperature related diagnostics
 !
