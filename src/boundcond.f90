@@ -575,7 +575,7 @@ module Boundcond
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
-                ! BCZ_DOC: a variant of `pot'
+                ! BCZ_DOC: a variant of 'pot'
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
                 ! BCZ_DOC:
