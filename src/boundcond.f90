@@ -81,7 +81,8 @@ module Boundcond
 !
       real, dimension (mcom) :: fbcx12
       real, dimension (mcom) :: fbcx2_12
-      integer :: ivar1, ivar2, j, k, ip_ok, one
+      integer :: ivar1, ivar2, j, k, one
+      logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
       type (boundary_condition) :: bc
@@ -108,16 +109,17 @@ module Boundcond
         if (any(bcx1(1:one)=='she')) then
           call boundcond_shear(f,ivar1,ivar2)
         else
-          do k=1,2                ! loop over 'bot','top'
+          do k=1,2
+            ! loop over 'bot','top'
             if (k==1) then
-              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; fbcx2_12=fbcx1_2; ip_ok=0
+              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; fbcx2_12=fbcx1_2; ip_ok=lleading_x
             else
-              topbot='top'; bc12=bcx2; fbcx12=fbcx2; fbcx2_12=fbcx2_2; ip_ok=nprocx-1
+              topbot='top'; bc12=bcx2; fbcx12=fbcx2; fbcx2_12=fbcx2_2; ip_ok=ltrailing_x
             endif
 !
             do j=ivar1,ivar2
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
-              if (ipx==ip_ok) then
+              if (ip_ok) then
                 select case (bc12(j))
                 case ('0')
                   ! BCX_DOC: zero value in ghost zones, free value on boundary
@@ -315,7 +317,8 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real, dimension (mcom) :: fbcy12
-      integer :: ivar1, ivar2, j, k, ip_ok
+      integer :: ivar1, ivar2, j, k
+      logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
       type (boundary_condition) :: bc
@@ -336,14 +339,14 @@ module Boundcond
       case default
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
-            topbot='bot'; bc12=bcy1; fbcy12=fbcy1; ip_ok=0
+            topbot='bot'; bc12=bcy1; fbcy12=fbcy1; ip_ok=lleading_y
           else
-            topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=nprocy-1
+            topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=ltrailing_y
           endif
 !
           do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
-            if (ipy==ip_ok) then
+            if (ip_ok) then
               select case (bc12(j))
               case ('p')
                 ! BCY_DOC: periodic
@@ -480,7 +483,8 @@ module Boundcond
 !
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2, fbcz_zero=0.
       !real :: Ftopbot,FtopbotK
-      integer :: ivar1, ivar2, j, k, ip_ok
+      integer :: ivar1, ivar2, j, k
+      logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
       type (boundary_condition) :: bc
@@ -506,7 +510,7 @@ module Boundcond
             fbcz12=fbcz1
             fbcz12_1=fbcz1_1
             fbcz12_2=fbcz1_2
-            ip_ok=0
+            ip_ok=lleading_z
             !Ftopbot=Fbot
             !FtopbotK=FbotKbot
           else
@@ -515,14 +519,14 @@ module Boundcond
             fbcz12=fbcz2
             fbcz12_1=fbcz2_1
             fbcz12_2=fbcz2_2
-            ip_ok=nprocz-1
+            ip_ok=ltrailing_z
             !Ftopbot=Ftop
             !FtopbotK=FtopKtop
           endif
 !
           do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
-            if (ipz==ip_ok) then
+            if (ip_ok) then
               select case (bc12(j))
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
