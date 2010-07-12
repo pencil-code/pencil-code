@@ -579,7 +579,7 @@ module Boundcond
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
-                ! BCZ_DOC: a variant of 'pot'
+                ! BCZ_DOC: a variant of `pot' for nprocx=1
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
                 ! BCZ_DOC:
@@ -4048,7 +4048,7 @@ module Boundcond
           'Could not allocate memory for tmp_yz')
 !
 !  Do the `c1' boundary condition (constant heat flux) for lnTT.
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       call get_shared_variable('hcond0',hcond0,ierr)
       if (ierr/=0) call stop_it("bc_lnTT_flux_x: "//&
@@ -4708,7 +4708,7 @@ module Boundcond
           'Could not allocate memory for exp_fact',.true.)
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for tmp_im',.true.)
+          'Could not allocate memory for tmp_re',.true.)
       allocate(tmp_im(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot3', &
           'Could not allocate memory for tmp_im',.true.)
@@ -4723,7 +4723,7 @@ module Boundcond
       kappa = sqrt(kx**2 + ky**2)
 !
 !  Fourier transforms of x- and y-components on the boundary
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4836,6 +4836,9 @@ module Boundcond
           'Could not allocate memory for kappa',.true.)
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
+          'Could not allocate memory for tmp_re',.true.)
+      allocate(tmp_im(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_aa_pot2', &
           'Could not allocate memory for tmp_im',.true.)
       allocate(fac(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_aa_pot2', &
@@ -4856,7 +4859,7 @@ module Boundcond
       kappa = sqrt(kx**2 + ky**2)
 !
 !  Fourier transforms of x- and y-components on the boundary
-!  Check whether we want to do top or bottom (this is precessor dependent)
+!  Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4966,7 +4969,7 @@ module Boundcond
           'Could not allocate memory for fz',.true.)
 !
 !  potential field condition
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
