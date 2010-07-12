@@ -66,7 +66,7 @@ module Boundcond
 !  boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
-!  (yz-`corners').
+!  (yz-'corners').
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
@@ -182,13 +182,13 @@ module Boundcond
                   ! BCX_DOC:
                   call bc_db_x(f,topbot,j)
                 case ('f')
-                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
+                  ! BCX_DOC: "freeze" value, i.e. maintain initial
                   !  value at boundary
                   call bc_freeze_var_x(topbot,j)
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                   ! antisymm wrt boundary
                 case ('fg')
-                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
+                  ! BCX_DOC: "freeze" value, i.e. maintain initial
                   !  value at boundary, also mantaining the
                   !  ghost zones at the initial coded value, i.e.,
                   !  keep the gradient frozen as well
@@ -236,7 +236,7 @@ module Boundcond
                   call bc_set_sfree_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
+                  ! BCX_DOC: Some people call this the "(angry) hedgehog bc".
                   call bc_set_nfr_x(f,topbot,j)
                 case ('sa2')
                   ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes
@@ -305,7 +305,7 @@ module Boundcond
 !  boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
-!  (yz-`corners').
+!  (yz-'corners').
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
@@ -390,7 +390,7 @@ module Boundcond
                 call bc_freeze_var_y(topbot,j)
                 call bc_sym_y(f,+1,topbot,j) ! symm wrt boundary
               case ('fg')
-                ! BCY_DOC: ``freeze'' value, i.e. maintain initial
+                ! BCY_DOC: "freeze" value, i.e. maintain initial
                 !  value at boundary, also mantaining the
                 !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
@@ -426,7 +426,7 @@ module Boundcond
                 call bc_set_sfree_y(f,topbot,j)
               case ('nfr')
                   ! BCY_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
+                  ! BCY_DOC: Some people call this the "(angry) hedgehog bc".
                 call bc_set_nfr_y(f,topbot,j)
               case ('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
@@ -465,7 +465,7 @@ module Boundcond
 !  boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
-!  (yz-`corners').
+!  (yz-'corners').
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
@@ -559,7 +559,7 @@ module Boundcond
                 ! BCZ_DOC: one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('fg')
-                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial
+                ! BCZ_DOC: "freeze" value, i.e. maintain initial
                 !  value at boundary, also mantaining the
                 !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
@@ -579,7 +579,7 @@ module Boundcond
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('pwd')
-                ! BCZ_DOC: a variant of `pot' for nprocx=1
+                ! BCZ_DOC: a variant of 'pot' for nprocx=1
                 if (j==iaa) call bc_aa_pot3(f,topbot)
               case ('d2z')
                 ! BCZ_DOC:
@@ -761,7 +761,7 @@ module Boundcond
         if (nprocx==1) f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
 !
       case default
-        print*, "bc_per_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_per_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -785,7 +785,7 @@ module Boundcond
         if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
 !
       case default
-        print*, "bc_per_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_per_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -809,7 +809,7 @@ module Boundcond
         if (nprocz==1) f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
 !
       case default
-        print*, "bc_per_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_per_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -855,7 +855,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_sym_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_sym_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -898,7 +898,7 @@ module Boundcond
         i=3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
 !
       case default
-        print*, "bc_cpc_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_cpc_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -946,7 +946,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_symset_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_symset_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -989,7 +989,7 @@ module Boundcond
         do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j); enddo
 !
       case default
-        print*, "bc_symset0der_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_symset0der_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1046,7 +1046,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_slope_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_slope_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1115,7 +1115,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_slope_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_slope_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1154,7 +1154,7 @@ module Boundcond
 !  default
 !
       case default
-        print*, "bc_overshoot_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_overshoot_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1193,7 +1193,7 @@ module Boundcond
 !  default
 !
       case default
-        print*, "bc_overshoot_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_overshoot_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1255,7 +1255,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_antis_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_antis_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1302,7 +1302,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_sym_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_sym_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1353,7 +1353,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_symset_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_symset_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1396,7 +1396,7 @@ module Boundcond
         do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j); enddo
 !
       case default
-        print*, "bc_symset0der_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_symset0der_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1443,7 +1443,7 @@ module Boundcond
         endif
 !
       case default
-        print*, "bc_sym_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_sym_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1486,7 +1486,7 @@ module Boundcond
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
 !
       case default
-        print*, "bc_symset0der_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_symset0der_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -1514,7 +1514,7 @@ module Boundcond
         do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j) + 2*i*dx*val; enddo
 !
       case default
-        call warning('bc_set_der_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_der_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1542,7 +1542,7 @@ module Boundcond
       case ('top')               ! top boundary
         do i=1,nghost; f(l2+i,:,:,j)=val; enddo
       case default
-        call warning('bc_fix_x',topbot//" should be `top' or `bot'")
+        call warning('bc_fix_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1608,7 +1608,7 @@ module Boundcond
                            +frac*bc_file_x_array(lbc2,:,:,j)
         enddo
       case default
-        call warning('bc_fix_x',topbot//" should be `top' or `bot'")
+        call warning('bc_fix_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1651,7 +1651,7 @@ module Boundcond
         enddo
 !
       case default
-        call warning('bc_set_spder_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_spder_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
     else
@@ -1689,7 +1689,7 @@ module Boundcond
         f(l2+3,:,:,j)= f(l2-3,:,:,j) -  2.*60.*f(l2,:,:,j)*dx/(x(l2))
 !
       case default
-        call warning('bc_set_pfc_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_pfc_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1723,7 +1723,7 @@ module Boundcond
        enddo
 !
       case default
-        call warning('bc_set_nfr_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_nfr_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1757,7 +1757,7 @@ module Boundcond
        enddo
 !
       case default
-        call warning('bc_set_sa2_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_sa2_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1856,7 +1856,7 @@ module Boundcond
         endif
 !
       case default
-        call warning('bc_set_sfree_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_sfree_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -1915,7 +1915,7 @@ module Boundcond
           enddo
 !
         case default
-          call warning('bc_set_jethat_x',topbot//" should be `top' or `bot'")
+          call warning('bc_set_jethat_x',topbot//" should be 'top' or 'bot'")
         endselect
 !
       else
@@ -1951,7 +1951,7 @@ module Boundcond
          enddo
 !
       case default
-        call warning('bc_set_nfr_y',topbot//" should be `top' or `bot'")
+        call warning('bc_set_nfr_y',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2056,7 +2056,7 @@ module Boundcond
         endif
 !
      case default
-        call warning('bc_set_sfree_y',topbot//" should be `top' or `bot'")
+        call warning('bc_set_sfree_y',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2097,7 +2097,7 @@ module Boundcond
         f(:,m2+3,:,j)= f(:,m2-3,:,j) -  60.*dy*cottheta*f(:,m2,:,j)
 !
       case default
-        call warning('bc_set_pfc_y',topbot//" should be `top' or `bot'")
+        call warning('bc_set_pfc_y',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2125,7 +2125,7 @@ module Boundcond
         do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j) + 2*i*dy*val; enddo
 !
       case default
-        call warning('bc_set_der_y',topbot//" should be `top' or `bot'")
+        call warning('bc_set_der_y',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2153,7 +2153,7 @@ module Boundcond
         do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j) + 2*i*dz*val; enddo
 !
       case default
-        call warning('bc_set_der_z',topbot//" should be `top' or `bot'")
+        call warning('bc_set_der_z',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2185,7 +2185,7 @@ module Boundcond
         iref = n2
 !
       case default
-        call warning('bc_set_der_x',topbot//" should be `top' or `bot'")
+        call warning('bc_set_der_x',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2228,7 +2228,7 @@ module Boundcond
         enddo
 !
       case default
-        call warning('bc_set_div_z',topbot//" should be `top' or `bot'")
+        call warning('bc_set_div_z',topbot//" should be 'top' or 'bot'")
 !
       endselect
 !
@@ -2258,7 +2258,7 @@ module Boundcond
           enddo
 !
       case default
-        print*, "bc_van_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_van_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2288,7 +2288,7 @@ module Boundcond
           enddo
 !
       case default
-        print*, "bc_van_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_van_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2318,7 +2318,7 @@ module Boundcond
           enddo
 !
       case default
-        print*, "bc_van_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_van_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2452,7 +2452,7 @@ module Boundcond
                    +10*f(k-9,:,:,j)
 !
       case default
-        print*, "bc_onesided_x ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_x ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2497,7 +2497,7 @@ module Boundcond
         enddo
 !
       case default
-        print*, "bc_onesided_x_old ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_x_old ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2578,7 +2578,7 @@ module Boundcond
                    +10*f(:,k-9,:,j)
 !
       case default
-        print*, "bc_onesided_7 ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_7 ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2623,7 +2623,7 @@ module Boundcond
         enddo
 !
       case default
-        print*, "bc_onesided_z ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_z ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2703,7 +2703,7 @@ module Boundcond
                    +10*f(:,:,k-9,j)
 !
       case default
-        print*, "bc_onesided_z ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_z ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2734,7 +2734,7 @@ module Boundcond
         f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
 !
       case default
-        print*, "bc_extrap_2_1: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap_2_1: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2765,7 +2765,7 @@ module Boundcond
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
 !
       case default
-        print*, "bcx_extrap_2_1: ", topbot, " should be `top' or `bot'"
+        print*, "bcx_extrap_2_1: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2796,7 +2796,7 @@ module Boundcond
         f(:,m2+3,:,j)=0.05*(127*f(:,m2,:,j)-81*f(:,m2-1,:,j)-99*f(:,m2-2,:,j)+73*f(:,m2-3,:,j))
 !
       case default
-        print*, "bcy_extrap_2_1: ", topbot, " should be `top' or `bot'"
+        print*, "bcy_extrap_2_1: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2834,7 +2834,7 @@ module Boundcond
         f(:,:,n2+3,j)=1./35.*(157*f(:,:,n2,j)-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
 !
       case default
-        print*, "bc_extrap_2_2: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap_2_2: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2872,7 +2872,7 @@ module Boundcond
         f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
 !
       case default
-        print*, "bcx_extrap_2_2: ", topbot, " should be `top' or `bot'"
+        print*, "bcx_extrap_2_2: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2910,7 +2910,7 @@ module Boundcond
         f(:,m2+3,:,j)=1./35.*(157*f(:,m2,:,j)-33*f(:,m2-1,:,j)-108*f(:,m2-2,:,j)-68*f(:,m2-3,:,j)+87*f(:,m2m4,:,j))
 !
       case default
-        print*, "bcy_extrap_2_2: ", topbot, " should be `top' or `bot'"
+        print*, "bcy_extrap_2_2: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -2956,7 +2956,7 @@ module Boundcond
         enddo
 !
       case default
-        print*, "bcy_extrap_2_3: ", topbot, " should be `top' or `bot'"
+        print*, "bcy_extrap_2_3: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3015,7 +3015,7 @@ module Boundcond
 !         f(:,:,n2+3,j)=         - 7*f(:,:,n2-1,j)- 4*f(:,:,n2-2,j)+ 4*f(:,:,n2-3,j)
 !
       case default
-        print*, "bc_extrap0_2_0: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap0_2_0: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3050,7 +3050,7 @@ module Boundcond
         f(:,:,n2+3,j)=0.05*(-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
 !
       case default
-        print*, "bc_extrap0_2_1: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap0_2_1: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3091,7 +3091,7 @@ module Boundcond
         f(:,:,n2+3,j)=1./35.*(-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
 !
       case default
-        print*, "bc_extrap0_2_2: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap0_2_2: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3137,7 +3137,7 @@ module Boundcond
         enddo
 !
       case default
-        print*, "bcx_extrap_2_3: ", topbot, " should be `top' or `bot'"
+        print*, "bcx_extrap_2_3: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3145,7 +3145,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
-!  ``One-sided'' boundary condition for density.
+!  "One-sided" boundary condition for density.
 !  Set ghost zone to reproduce one-sided boundary condition
 !  (2nd order):
 !  Finding the derivatives on the boundary using a one
@@ -3198,7 +3198,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_db_x(f,topbot,j)
 !
-!  ``One-sided'' boundary condition for density.
+!  "One-sided" boundary condition for density.
 !  Set ghost zone to reproduce one-sided boundary condition
 !  (2nd order):
 !  Finding the derivatives on the boundary using a one
@@ -3476,7 +3476,7 @@ module Boundcond
           f(l2+1:mx,:,:,j)=1.
 !
       case default
-        print*, "bc_one_x: ",topbot, " should be `top' or `bot'"
+        print*, "bc_one_x: ",topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3501,7 +3501,7 @@ module Boundcond
           f(:,m2+1:my,:,j)=1.
 !
       case default
-        print*, "bc_one_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_one_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3526,7 +3526,7 @@ module Boundcond
           f(:,:,n2+1:mz,j)=1.
 !
       case default
-        print*, "bc_one_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_one_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -3548,7 +3548,7 @@ module Boundcond
       case ('top')               ! top boundary
         lfrozen_top_var_x(j) = .true.
       case default
-        print*, "bc_freeze_var_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_freeze_var_x: ", topbot, " should be 'top' or 'bot'"
       endselect
 !
     endsubroutine bc_freeze_var_x
@@ -3569,7 +3569,7 @@ module Boundcond
       case ('top')               ! top boundary
         lfrozen_top_var_y(j) = .true.
       case default
-        print*, "bc_freeze_var_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_freeze_var_y: ", topbot, " should be 'top' or 'bot'"
       endselect
 !
     endsubroutine bc_freeze_var_y
@@ -3590,7 +3590,7 @@ module Boundcond
       case ('top')               ! top boundary
         lfrozen_top_var_z(j) = .true.
       case default
-        print*, "bc_freeze_var_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_freeze_var_z: ", topbot, " should be 'top' or 'bot'"
       endselect
 !
     endsubroutine bc_freeze_var_z
@@ -4047,7 +4047,7 @@ module Boundcond
       if (stat>0) call fatal_error('bc_lnTT_flux_x', &
           'Could not allocate memory for tmp_yz')
 !
-!  Do the `c1' boundary condition (constant heat flux) for lnTT.
+!  Do the 'c1' boundary condition (constant heat flux) for lnTT.
 !  check whether we want to do top or bottom (this is processor dependent)
 !
       call get_shared_variable('hcond0',hcond0,ierr)
@@ -4107,7 +4107,7 @@ module Boundcond
       if (stat>0) call fatal_error('bc_lnTT_flux_x', &
           'Could not allocate memory for tmp_yz')
 !
-!  Do the `c1' boundary condition (constant heat flux) for lnTT or TT (if
+!  Do the 'c1' boundary condition (constant heat flux) for lnTT or TT (if
 !  ltemperature_nolog=.true.) at the bottom _only_.
 !  lnTT version: enforce dlnT/dz = - Fbot/(K*T)
 !    TT version: enforce   dT/dz = - Fbot/K
@@ -4167,7 +4167,7 @@ module Boundcond
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for cs2_yz')
 !
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  Do the 'c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is processor dependent)
 !
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
@@ -4394,7 +4394,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_zero_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_zero_x: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4425,7 +4425,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_zero_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_zero_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4475,7 +4475,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_outflow_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_outflow_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4508,7 +4508,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_copy_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_copy_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4541,7 +4541,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_copy_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_copy_y: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4593,7 +4593,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_copy_y_noinflow: ", topbot, " should be `top' or `bot'"
+        print*, "bc_copy_y_noinflow: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4626,7 +4626,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_copy_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_copy_z: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
@@ -4662,7 +4662,7 @@ module Boundcond
       case ('top')               ! top boundary
         lfrozen_bb_top(j-iax+1) = .true.    ! set flag
       case default
-        print*, "bc_frozen_in_bb: ", topbot, " should be `top' or `bot'"
+        print*, "bc_frozen_in_bb: ", topbot, " should be 'top' or 'bot'"
       endselect
 !
       lfirstcall=.false.
@@ -5310,7 +5310,7 @@ module Boundcond
 !  Default.
 !
       case default
-        print*, "bc_wind: ", topbot, " should be `top' or `bot'"
+        print*, "bc_wind: ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
