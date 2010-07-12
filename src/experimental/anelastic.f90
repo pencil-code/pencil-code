@@ -174,32 +174,14 @@ module Density
       use Gravity, only: lnumerical_equilibrium
       use Mpicomm
       use SharedVariables
-     use Poisson, only: inverse_laplacian
 !
       real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (nx,ny,nz) :: psi
       logical :: lstarting
-!
       integer :: i,ierr
       logical :: lnothing
 !
-! Test of the Poisson solver in the periodic case
-! you must also uncomment the declarations of the psi array and 
-! the Use Poisson... module above
-!
-      do m=m1,m2
-      do n=n1,n2
-        psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
-      enddo
-      enddo
-      call inverse_laplacian(f, psi)
-      open(41, file='poisson_solver.dat', form='unformatted')
-      write(41) psi
-      close(41)
-!
 !  Set irho equal to ilnrho if we are considering non-logarithmic density.
 !
-
         call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
              "there was a problem when sharing lanelastic_lin")
@@ -362,9 +344,11 @@ module Density
       use Selfgravity, only: rhs_poisson_const
       use InitialCondition, only: initial_condition_lnrho
       use SharedVariables, only: get_shared_variable
+      use Poisson, only: inverse_laplacian
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,prof
+      real, dimension (nx,ny,nz) :: psi
       real, dimension (ninit) :: lnrho_left,lnrho_right
       real :: lnrhoint,cs2int,pot0
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
@@ -414,17 +398,31 @@ module Density
 !
         case ('anelastic')
 !            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
-        do m=1,my
-        do n=1,mz
-          if (lanelastic_lin) then
-            f(1:mx,m,n,ipp)=0.0
-            f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
-          else
-            f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
-            f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
-          endif
-        enddo
-        enddo
+          do m=1,my
+          do n=1,mz
+            if (lanelastic_lin) then
+              f(1:mx,m,n,ipp)=0.0
+              f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
+            else
+              f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
+              f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
+            endif
+          enddo
+          enddo
+          !
+          ! test of the Poisson solver
+          !
+          do m=m1,m2
+          do n=n1,n2
+            psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
+          enddo
+          enddo
+!         call inverse_laplacian(f, psi)
+          call inverse_laplacian_z(psi)
+          print*, '--> write test_poisson.dat file'
+          open(41, file='test_poisson.dat', form='unformatted')
+          write(41) psi
+          close(41)
 !
         case default
 !
@@ -2040,15 +2038,8 @@ module Density
           f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
         endif
       else
-        do n=n1,n2
-         pold(1:nx,1,n-nghost)=-2*sin(x(l1:l2))*sin(z(n))
-        enddo
-        call inverse_laplacian_z(pold)
-        open(unit=43,file='dirichlet.dat',form='unformatted')
-        write(43) pold
-        close(43)
+        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
       endif
-      stop
 !
 !  Update the boundary conditions for the new pressure (needed to
 !  compute grad(P)
@@ -2091,16 +2082,13 @@ module Density
 !
 !  16-dec-09/dintrans+piyali: coded
 !
-      use General, only: tridag
-      use Mpicomm, only: transp_xz, transp_zx
-      use Fourier, only: fourier_transform_xy,fourier_transform_x
-      use Gravity, only: gravz
+      use Fourier, only: fourier_transform_xy
 !
       real, dimension (nx,ny,nz) :: phi, b1
-      real, dimension (nzgrid,nx/nprocz) :: rhst
-      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
-      real :: k2
-      integer :: ikx, iky,ikz
+      real, dimension (nz)       :: a_tri, b_tri, c_tri
+      complex, dimension (nz)    :: r_tri, u_tri
+      real    :: k2
+      integer :: ikx
       logical :: err
 !
 !  The right-hand-side of the pressure equation is purely real.
@@ -2108,54 +2096,78 @@ module Density
       b1 = 0.0
 !
 !  Forward transform (to k-space).
-!
-!        do n=n1,n2
-!         phi(1:nx,1,n-nghost)=sin(x(l1:l2))*sin(z(n))
-!        end do
-        call fourier_transform_xy(phi,b1)
-!        call fourier_transform_xy(phi,b1,linv=.true.)
-!        open(unit=44,file='testfourier.dat',form='unformatted')
-!        write(44) phi(1:nx,1,1:nz)
-!        close(44)
-        
-        
+      call fourier_transform_xy(phi, b1)
 !
 !  Solve for discrete z-direction
 !
-!      do iky=1,ny
-        iky=1
-        call transp_xz(phi(:,iky,:),rhst)
-        a_tri(:)=1.0/dz**2
-        c_tri(:)=1.0/dz**2
-          do ikx=1,nxgrid/nprocz
-            k2=(kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2)
-            write(*,*)'PC:k2',ikx,kx_fft(ikx+nz*ipz),ky_fft(iky)
-            if (k2.ne.0) then
-              b_tri(:)=-2.0/dz**2-k2
-              r_tri(1)=0.0
-              r_tri(2:nzgrid-1)=rhst(2:nzgrid-1,ikx)
-              r_tri(nzgrid)=0.0
+      a_tri=1./dz**2
+      c_tri=1./dz**2
+      do ikx=1,nx
+        k2=kx_fft(ikx)**2
+        print*, 'ikx, kx_fft=', ikx, kx_fft(ikx)
+        b_tri=-2./dz**2-k2
+        r_tri=cmplx(phi(ikx,1,:), b1(ikx,1,:))
+! Dirichlet BC
+        b_tri(1)=1.
+        c_tri(1)=0.
+        r_tri(1)=cmplx(0.,0.)
 !
-!  Boundary conditions in the z-direction
-! P_1=0
-              b_tri(1)=1.0/dz**2
-              c_tri(1)=0.0
-              a_tri(nzgrid-1)=0.0
-              b_tri(nzgrid)=1.0/dz**2
+        b_tri(nz)=1.
+        a_tri(nz-1)=0.
+        r_tri(nz)=cmplx(0.,0.)
 !
-             call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-             rhst(1:nzgrid,ikx)=u_tri(1:nzgrid)
-           else
-             rhst(1:nzgrid,ikx)=0.0
-           endif
-         enddo
-        call transp_zx(rhst,phi(:,iky,:))
-!      enddo
+        call tridag_complex(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+        phi(ikx,1,:)=real(u_tri)
+        b1(ikx,1,:)=aimag(u_tri)
+      enddo
 !
 !  Inverse transform (to real space).
 !
-        call fourier_transform_xy(phi,b1,linv=.true.)
+      call fourier_transform_xy(phi, b1, linv=.true.)
 !
     endsubroutine inverse_laplacian_z
+!***********************************************************************
+    subroutine tridag_complex(a,b,c,r,u,err)
+!
+!  Solves tridiagonal system.
+!
+!  01-apr-03/tobi: from numerical recipes
+!  12-jui-2010/dintrans: complex version
+!
+      implicit none
+      real, dimension(:), intent(in) :: a,b,c
+      complex, dimension(:), intent(in) :: r
+      complex, dimension(:), intent(out) :: u
+      real, dimension(size(b)) :: gam
+      logical, intent(out), optional :: err
+      integer :: n,j
+      real :: bet
+!
+      if (present(err)) err=.false.
+      n=size(b)
+      bet=b(1)
+      if (bet==0.0) then
+        print*,'tridag_complex: Error at code stage 1'
+        if (present(err)) err=.true.
+        return
+      endif
+!
+      u(1)=r(1)/bet
+      do j=2,n
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        if (bet==0.0) then
+          print*,'tridag_complex: Error at code stage 2'
+          if (present(err)) err=.true.
+          return
+        endif
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+      enddo
+!
+      do j=n-1,1,-1
+        u(j)=u(j)-gam(j+1)*u(j+1)
+      enddo
+!
+    endsubroutine tridag_complex
 !***********************************************************************
 endmodule Density
