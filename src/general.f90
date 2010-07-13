@@ -858,9 +858,16 @@ module General
 !***********************************************************************
     subroutine tridag(a,b,c,r,u,err)
 !
-!  Solves tridiagonal system.
+!  Solves a tridiagonal system.
 !
-!  01-apr-03/tobi: from numerical recipes
+!  01-apr-03/tobi: from Numerical Recipes (p42-43).
+!    
+!  | b1 c1 0  ...            | | u1   |   | r1   |
+!  | a2 b2 c2 ...            | | u2   |   | r2   |
+!  | 0  a3 b3 c3             | | u3   | = | r3   |
+!  |          ...            | | ...  |   | ...  |
+!  |          an-1 bn-1 cn-1 | | un-1 |   | rn-1 |
+!  |          0    a_n  b_n  | | un   |   | rn   |
 !
       implicit none
       real, dimension(:), intent(in) :: a,b,c,r
@@ -901,8 +908,15 @@ module General
 !
 !  Solves tridiagonal system.
 !
-!  01-apr-03/tobi: from numerical recipes
-!  11-apr-03/axel: double precision version
+!  01-apr-03/tobi: from Numerical Recipes (p42-43).
+!  11-apr-03/axel: double precision version.
+!    
+!  | b1 c1 0  ...            | | u1   |   | r1   |
+!  | a2 b2 c2 ...            | | u2   |   | r2   |
+!  | 0  a3 b3 c3             | | u3   | = | r3   |
+!  |          ...            | | ...  |   | ...  |
+!  |          an-1 bn-1 cn-1 | | un-1 |   | rn-1 |
+!  |          0    a_n  b_n  | | un   |   | rn   |
 !
       implicit none
       double precision, dimension(:), intent(in) :: a,b,c,r
@@ -1444,12 +1458,19 @@ module General
 !***********************************************************************
     subroutine cyclic(a,b,c,alpha,beta,r,x,n)
 !
-!  Inversion of a tridiagonal matrix with periodic BC (alpha and beta
+!  Inversion of a tridiagonal system with periodic BC (alpha and beta
 !  coefficients in the left and right corners). Used in the ADI scheme of the
 !  implicit_physics module.
 !  Note: this subroutine is using twice the tridag one written above by tobi.
 !
-! 08-Sep-07/gastine+dintrans: coded from numerical recipes.
+!  | b1 c1 0  ...       beta | | x1   |   | r1   |
+!  | a2 b2 c2 ...            | | x2   |   | r2   |
+!  | 0  a3 b3 c3             | | x3   | = | r3   |
+!  |          ...            | | ...  |   | ...  |
+!  |          an-1 bn-1 cn-1 | | xn-1 |   | rn-1 |
+!  | alpha    0    a_n  b_n  | | xn   |   | rn   |
+!
+! 08-Sep-07/gastine+dintrans: coded from Numerical Recipes (p67-68).
 !
       implicit none
 !
