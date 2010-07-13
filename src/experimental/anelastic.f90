@@ -417,8 +417,11 @@ module Density
             psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
           enddo
           enddo
-!         call inverse_laplacian(f, psi)
-          call inverse_laplacian_z(psi)
+          if (lperi(3)) then
+            call inverse_laplacian(f, psi)
+          else
+            call inverse_laplacian_z(psi)
+          endif
           print*, '--> write test_poisson.dat file'
           open(41, file='test_poisson.dat', form='unformatted')
           write(41) psi
@@ -2105,20 +2108,25 @@ module Density
       do ikx=1,nx
         k2=kx_fft(ikx)**2
         print*, 'ikx, kx_fft=', ikx, kx_fft(ikx)
-        b_tri=-2./dz**2-k2
-        r_tri=cmplx(phi(ikx,1,:), b1(ikx,1,:))
+        if (k2==0.) then
+          phi(ikx,1,:)=0.
+          b1(ikx,1,:)=0.
+        else
+          b_tri=-2./dz**2-k2
+          r_tri=cmplx(phi(ikx,1,:), b1(ikx,1,:))
 ! Dirichlet BC
-        b_tri(1)=1.
-        c_tri(1)=0.
-        r_tri(1)=cmplx(0.,0.)
+          b_tri(1)=1.
+          c_tri(1)=0.
+          r_tri(1)=cmplx(0.,0.)
 !
-        b_tri(nz)=1.
-        a_tri(nz-1)=0.
-        r_tri(nz)=cmplx(0.,0.)
+          b_tri(nz)=1.
+          a_tri(nz-1)=0.
+          r_tri(nz)=cmplx(0.,0.)
 !
-        call tridag_complex(a_tri, b_tri, c_tri, r_tri, u_tri, err)
-        phi(ikx,1,:)=real(u_tri)
-        b1(ikx,1,:)=aimag(u_tri)
+          call tridag_complex(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+          phi(ikx,1,:)=real(u_tri)
+          b1(ikx,1,:)=aimag(u_tri)
+        endif
       enddo
 !
 !  Inverse transform (to real space).
