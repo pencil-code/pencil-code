@@ -4305,8 +4305,8 @@ module Initcond
       mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
-      kx =spread(kx_fft,2,nygrid)
-      ky =spread(ky_fft,1,nxgrid)
+      kx = spread(kx_fft,2,nygrid)
+      ky = spread(ky_fft,1,nxgrid)
 !
       k2 = kx*kx + ky*ky
 !
