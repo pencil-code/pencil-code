@@ -2086,10 +2086,11 @@ module Density
 !  16-dec-09/dintrans+piyali: coded
 !
       use Fourier, only: fourier_transform_xy
+      use General, only: tridag
 !
       real, dimension (nx,ny,nz) :: phi, b1
       real, dimension (nz)       :: a_tri, b_tri, c_tri
-      complex, dimension (nz)    :: r_tri, u_tri
+      real, dimension (nz)       :: r_tri, u_tri
       real    :: k2
       integer :: ikx
       logical :: err
@@ -2102,6 +2103,7 @@ module Density
       call fourier_transform_xy(phi, b1)
 !
 !  Solve for discrete z-direction
+!  First the real part
 !
       a_tri=1./dz**2
       c_tri=1./dz**2
@@ -2110,22 +2112,44 @@ module Density
         print*, 'ikx, kx_fft=', ikx, kx_fft(ikx)
         if (k2==0.) then
           phi(ikx,1,:)=0.
-          b1(ikx,1,:)=0.
         else
           b_tri=-2./dz**2-k2
-          r_tri=cmplx(phi(ikx,1,:), b1(ikx,1,:))
+          r_tri=phi(ikx,1,:)
 ! Dirichlet BC
           b_tri(1)=1.
           c_tri(1)=0.
-          r_tri(1)=cmplx(0.,0.)
+          r_tri(1)=0.
 !
           b_tri(nz)=1.
           a_tri(nz)=0.
-          r_tri(nz)=cmplx(0.,0.)
+          r_tri(nz)=0.
 !
-          call tridag_complex(a_tri, b_tri, c_tri, r_tri, u_tri, err)
-          phi(ikx,1,:)=real(u_tri)
-          b1(ikx,1,:)=aimag(u_tri)
+          call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+          phi(ikx,1,:)=u_tri
+        endif
+      enddo
+!
+!  Second the imaginary part
+!
+      do ikx=1,nx
+        k2=kx_fft(ikx)**2
+        print*, 'ikx, kx_fft=', ikx, kx_fft(ikx)
+        if (k2==0.) then
+          b1(ikx,1,:)=0.
+        else
+          b_tri=-2./dz**2-k2
+          r_tri=b1(ikx,1,:)
+! Dirichlet BC
+          b_tri(1)=1.
+          c_tri(1)=0.
+          r_tri(1)=0.
+!
+          b_tri(nz)=1.
+          a_tri(nz)=0.
+          r_tri(nz)=0.
+!
+          call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+          b1(ikx,1,:)=u_tri
         endif
       enddo
 !
@@ -2134,48 +2158,5 @@ module Density
       call fourier_transform_xy(phi, b1, linv=.true.)
 !
     endsubroutine inverse_laplacian_z
-!***********************************************************************
-    subroutine tridag_complex(a,b,c,r,u,err)
-!
-!  Solves tridiagonal system.
-!
-!  01-apr-03/tobi: from numerical recipes
-!  12-jui-2010/dintrans: complex version
-!
-      implicit none
-      real, dimension(:), intent(in) :: a,b,c
-      complex, dimension(:), intent(in) :: r
-      complex, dimension(:), intent(out) :: u
-      real, dimension(size(b)) :: gam
-      logical, intent(out), optional :: err
-      integer :: n,j
-      real :: bet
-!
-      if (present(err)) err=.false.
-      n=size(b)
-      bet=b(1)
-      if (bet==0.0) then
-        print*,'tridag_complex: Error at code stage 1'
-        if (present(err)) err=.true.
-        return
-      endif
-!
-      u(1)=r(1)/bet
-      do j=2,n
-        gam(j)=c(j-1)/bet
-        bet=b(j)-a(j)*gam(j)
-        if (bet==0.0) then
-          print*,'tridag_complex: Error at code stage 2'
-          if (present(err)) err=.true.
-          return
-        endif
-        u(j)=(r(j)-a(j)*u(j-1))/bet
-      enddo
-!
-      do j=n-1,1,-1
-        u(j)=u(j)-gam(j+1)*u(j+1)
-      enddo
-!
-    endsubroutine tridag_complex
 !***********************************************************************
 endmodule Density
