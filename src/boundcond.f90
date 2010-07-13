@@ -148,7 +148,7 @@ module Boundcond
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                 case ('cpc')
                   ! BCX_DOC: cylindrical perfect conductor
-                  ! BCX_DOC: implies $f"+f'/R=0$
+                  ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpc_x(f,topbot,j)
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
@@ -182,13 +182,13 @@ module Boundcond
                   ! BCX_DOC:
                   call bc_db_x(f,topbot,j)
                 case ('f')
-                  ! BCX_DOC: "freeze" value, i.e. maintain initial
+                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   !  value at boundary
                   call bc_freeze_var_x(topbot,j)
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                   ! antisymm wrt boundary
                 case ('fg')
-                  ! BCX_DOC: "freeze" value, i.e. maintain initial
+                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
                   !  value at boundary, also mantaining the
                   !  ghost zones at the initial coded value, i.e.,
                   !  keep the gradient frozen as well
@@ -236,7 +236,7 @@ module Boundcond
                   call bc_set_sfree_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCX_DOC: Some people call this the "(angry) hedgehog bc".
+                  ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
                   call bc_set_nfr_x(f,topbot,j)
                 case ('sa2')
                   ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes
@@ -390,7 +390,7 @@ module Boundcond
                 call bc_freeze_var_y(topbot,j)
                 call bc_sym_y(f,+1,topbot,j) ! symm wrt boundary
               case ('fg')
-                ! BCY_DOC: "freeze" value, i.e. maintain initial
+                ! BCY_DOC: ``freeze'' value, i.e. maintain initial
                 !  value at boundary, also mantaining the
                 !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
@@ -426,7 +426,7 @@ module Boundcond
                 call bc_set_sfree_y(f,topbot,j)
               case ('nfr')
                   ! BCY_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCY_DOC: Some people call this the "(angry) hedgehog bc".
+                  ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
                 call bc_set_nfr_y(f,topbot,j)
               case ('pfc')
                   !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
@@ -559,7 +559,7 @@ module Boundcond
                 ! BCZ_DOC: one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('fg')
-                ! BCZ_DOC: "freeze" value, i.e. maintain initial
+                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial
                 !  value at boundary, also mantaining the
                 !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
