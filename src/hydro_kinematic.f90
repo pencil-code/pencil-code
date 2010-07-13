@@ -61,6 +61,8 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   integer :: kinflow_ck_ell=0.
+  real, dimension (mx,my,3) :: uumxy=0.0
+  logical :: lcalc_uumean=.false.,lcalc_uumeanxy=.false.
 !DM moved from cdata
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
   character (len=labellen) :: wind_profile='none'
