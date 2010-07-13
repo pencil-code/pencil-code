@@ -216,14 +216,14 @@ module Grid
             g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
           endif
 !
-          if (lleading_x) then
+          if (lfirst_proc_x) then
             bound_prim1=x(l1+1)-x(l1)
             do i=1,nghost
               x(l1-i)=x(l1)-i*bound_prim1
               xprim(1:l1)=bound_prim1
             enddo
           endif
-          if (ltrailing_x) then
+          if (llast_proc_x) then
             bound_prim2=x(l2)-x(l2-1)
             do i=1,nghost
               x(l2+i)=x(l2)+i*bound_prim2
@@ -253,14 +253,14 @@ module Grid
 !            g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
           endif
 !
-          if (lleading_x) then
+          if (lfirst_proc_x) then
             bound_prim1=x(l1+1)-x(l1)
             do i=1,nghost
               x(l1-i)=x(l1)-i*bound_prim1
               xprim(1:l1)=bound_prim1
             enddo
           endif
-          if (ltrailing_x) then
+          if (llast_proc_x) then
             bound_prim2=x(l2)-x(l2-1)
             do i=1,nghost
               x(l2+i)=x(l2)+i*bound_prim2
@@ -281,14 +281,14 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
-          if (lleading_x) then
+          if (lfirst_proc_x) then
             bound_prim1=x(l1+1)-x(l1)
             do i=1,nghost
               x(l1-i)=x(l1)-i*bound_prim1
               xprim(1:l1)=bound_prim1
             enddo
           endif
-          if (ltrailing_x) then
+          if (llast_proc_x) then
             bound_prim2=x(l2)-x(l2-1)
             do i=1,nghost
               x(l2+i)=x(l2)+i*bound_prim2
@@ -309,7 +309,7 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
-          if (ltrailing_x) then
+          if (llast_proc_x) then
             bound_prim2=x(l2-2)-x(l2-3)
             do i=1,nghost+2
               x(l2-2+i)=x(l2-2)+i*bound_prim2
@@ -381,14 +381,14 @@ module Grid
             g2proc(2*nprocy+1)=g2proc(2*nprocy)+y(m2)-y(m2-1)
           endif
 !
-          if (lleading_y) then
+          if (lfirst_proc_y) then
             bound_prim1=y(m1+1)-y(m1)
             do i=1,nghost
               y(m1-i)=y(m1)-i*bound_prim1
               yprim(1:m1)=bound_prim1
             enddo
           endif
-          if (ltrailing_y) then
+          if (llast_proc_y) then
             bound_prim2=y(m2)-y(m2-1)
             do i=1,nghost
               y(m2+i)=y(m2)+i*bound_prim2

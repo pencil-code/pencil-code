@@ -1452,7 +1452,7 @@ module Entropy
         rt_new=rhotop
         rb_new=rhobot
    10 continue
-   20 if (lleading_z) print*,'- iteration completed: rhotop,crit=',rhotop,crit
+   20 if (lfirst_proc_z) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 ! redefine rho0 and lnrho0 as we don't have rho0=1 at the top
 ! (important for eoscalc!)
@@ -2615,7 +2615,7 @@ module Entropy
 !  radiative heat flux at the bottom (assume here that hcond=hcond0=const)
 !
         if (idiag_fradbot/=0) then
-          if (lleading_z.and.n==n1) then
+          if (lfirst_proc_z.and.n==n1) then
             fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradz=0.
@@ -2626,7 +2626,7 @@ module Entropy
 !  radiative heat flux at the top (assume here that hcond=hcond0=const)
 !
         if (idiag_fradtop/=0) then
-          if (ltrailing_z.and.n==n2) then
+          if (llast_proc_z.and.n==n2) then
             fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradz=0.
@@ -2637,7 +2637,7 @@ module Entropy
 !  mean temperature at the top
 !
         if (idiag_TTtop/=0) then
-          if (ltrailing_z.and.n==n2) then
+          if (llast_proc_z.and.n==n2) then
             TTtop=sum(p%TT*dsurfxy)
           else
             TTtop=0.

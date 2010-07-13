@@ -112,9 +112,9 @@ module Boundcond
           do k=1,2
             ! loop over 'bot','top'
             if (k==1) then
-              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; fbcx2_12=fbcx1_2; ip_ok=lleading_x
+              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; fbcx2_12=fbcx1_2; ip_ok=lfirst_proc_x
             else
-              topbot='top'; bc12=bcx2; fbcx12=fbcx2; fbcx2_12=fbcx2_2; ip_ok=ltrailing_x
+              topbot='top'; bc12=bcx2; fbcx12=fbcx2; fbcx2_12=fbcx2_2; ip_ok=llast_proc_x
             endif
 !
             do j=ivar1,ivar2
@@ -339,9 +339,9 @@ module Boundcond
       case default
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
-            topbot='bot'; bc12=bcy1; fbcy12=fbcy1; ip_ok=lleading_y
+            topbot='bot'; bc12=bcy1; fbcy12=fbcy1; ip_ok=lfirst_proc_y
           else
-            topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=ltrailing_y
+            topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=llast_proc_y
           endif
 !
           do j=ivar1,ivar2
@@ -510,7 +510,7 @@ module Boundcond
             fbcz12=fbcz1
             fbcz12_1=fbcz1_1
             fbcz12_2=fbcz1_2
-            ip_ok=lleading_z
+            ip_ok=lfirst_proc_z
             !Ftopbot=Fbot
             !FtopbotK=FbotKbot
           else
@@ -519,7 +519,7 @@ module Boundcond
             fbcz12=fbcz2
             fbcz12_1=fbcz2_1
             fbcz12_2=fbcz2_2
-            ip_ok=ltrailing_z
+            ip_ok=llast_proc_z
             !Ftopbot=Ftop
             !FtopbotK=FtopKtop
           endif
@@ -4780,7 +4780,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error('bc_aa_pot3', 'invalid argument', lleading_xy)
+        call fatal_error('bc_aa_pot3', 'invalid argument', lfirst_proc_xy)
 !
       endselect
 !
@@ -4920,7 +4920,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error('bc_aa_pot2', 'invalid argument', lleading_xy)
+        call fatal_error('bc_aa_pot2', 'invalid argument', lfirst_proc_xy)
 !
       endselect
 !
@@ -4979,7 +4979,7 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (mod(nxgrid,nygrid)/=0) &
              call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
-                 "with mod(nxgrid,nygrid)/=1", lleading_xy)
+                 "with mod(nxgrid,nygrid)/=1", lfirst_proc_xy)
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -4998,7 +4998,7 @@ module Boundcond
         if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
         if (mod(nxgrid,nygrid)/=0) &
              call fatal_error("bc_aa_pot", "pot-field doesn't work "//&
-                 "with mod(nxgrid,nygrid)/=1", lleading_xy)
+                 "with mod(nxgrid,nygrid)/=1", lfirst_proc_xy)
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
@@ -5011,7 +5011,7 @@ module Boundcond
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
       case default
-        call fatal_error('bc_aa_pot', 'invalid argument', lleading_xy)
+        call fatal_error('bc_aa_pot', 'invalid argument', lfirst_proc_xy)
       endselect
 !
       call communicate_bc_aa_pot(f,topbot)

@@ -245,7 +245,7 @@ module Solid_Cells
         enddo
         enddo
         enddo
-if (ltrailing_y) f(:,m2-5:m2,:,iux)=0
+if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       case default
 !
 !  Catch unknown values

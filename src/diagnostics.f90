@@ -487,7 +487,7 @@ module Diagnostics
 !
       if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,(/nx,nz,nnamexz/),idir=2)
-        if (lleading_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
+        if (lfirst_proc_y) fnamexz(:,:,1:nnamexz)=fsumxz(:,:,1:nnamexz)/nygrid
       endif
 !
     endsubroutine yaverages_xz
@@ -505,7 +505,7 @@ module Diagnostics
 !
       if (nnamexy>0) then
         call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nnamexy/),idir=3)
-        if (lleading_z) fnamexy(:,:,1:nnamexy)=fsumxy(:,:,1:nnamexy)/nzgrid
+        if (lfirst_proc_z) fnamexy(:,:,1:nnamexy)=fsumxy(:,:,1:nnamexy)/nzgrid
       endif
 !
     endsubroutine zaverages_xy
@@ -673,7 +673,7 @@ module Diagnostics
 !
 !   7-jun-05/axel: adapted from write_zaverages
 !
-      if (lleading_y.and.nnamexz>0) then
+      if (lfirst_proc_y.and.nnamexz>0) then
         open(1, file=trim(directory_snap)//'/yaverages.dat', &
             form='unformatted', position='append')
         write(1) t2davgfirst
@@ -689,7 +689,7 @@ module Diagnostics
 !
 !  19-jun-02/axel: adapted from write_xyaverages
 !
-      if (lleading_z.and.nnamexy>0) then
+      if (lfirst_proc_z.and.nnamexy>0) then
         open(1, file=trim(directory_snap)//'/zaverages.dat', &
             form='unformatted', position='append')
         write(1) t2davgfirst
@@ -1524,7 +1524,7 @@ module Diagnostics
 !
       fac=1.0
 !
-      if ((m==m1.and.lleading_y).or.(m==m2.and.ltrailing_y)) then
+      if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
         if (.not.lperi(2)) fac = .5*fac
       endif
 !
@@ -1558,7 +1558,7 @@ module Diagnostics
 !
       fac = 1.
 !
-      if ((n==n1.and.lleading_z).or.(n==n2.and.ltrailing_z)) then
+      if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) then
         if (.not.lperi(3)) fac = .5*fac
       endif
 !
@@ -1591,11 +1591,11 @@ module Diagnostics
 !
       fac=1.0
 !
-      if ((m==m1.and.lleading_y).or.(m==m2.and.ltrailing_y)) then
+      if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
         if (.not.lperi(2)) fac = .5*fac
       endif
 !
-      if ((n==n1.and.lleading_z).or.(n==n2.and.ltrailing_z)) then
+      if ((n==n1.and.lfirst_proc_z).or.(n==n2.and.llast_proc_z)) then
         if (.not.lperi(3)) fac = .5*fac
       endif
 !

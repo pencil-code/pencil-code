@@ -209,22 +209,22 @@ include 'NSCBC.h'
               nprocy_in=nprocy
               nprocz_in=nprocz
               if (j==1) then
-                if ((topbot=='bot'.and.lleading_x).or. &
-                    (topbot=='top'.and.ltrailing_x)) then
+                if ((topbot=='bot'.and.lfirst_proc_x).or. &
+                    (topbot=='top'.and.llast_proc_x)) then
                   proc_at_inlet=.true.
                   ipx_in=0
                   nprocx_in=1
                 endif
               elseif (j==2) then
-                if ((topbot=='bot'.and.lleading_y).or. &
-                    (topbot=='top'.and.ltrailing_y)) then
+                if ((topbot=='bot'.and.lfirst_proc_y).or. &
+                    (topbot=='top'.and.llast_proc_y)) then
                   proc_at_inlet=.true.
                   ipy_in=0
                   nprocy_in=1
                 endif
               elseif (j==3) then
-                if ((topbot=='bot'.and.lleading_z).or. &
-                    (topbot=='top'.and.ltrailing_z)) then
+                if ((topbot=='bot'.and.lfirst_proc_z).or. &
+                    (topbot=='top'.and.llast_proc_z)) then
                   proc_at_inlet=.true.
                   ipz_in=0
                   nprocz_in=1

@@ -188,7 +188,7 @@ module Special
 !
       inquire(IOLENGTH=lend) dummy
 !
-      if (.not. lleading_z .or. (bmdi == 0.0)) then
+      if (.not. lfirst_proc_z .or. (bmdi == 0.0)) then
         A_init_x = 0.0
         A_init_y = 0.0
       else
@@ -700,7 +700,7 @@ module Special
 !
 !  Do somehow Newton cooling.
 !
-      if (lleading_z .and. (bmdi /= 0.0)) then
+      if (lfirst_proc_z .and. (bmdi /= 0.0)) then
         f(l1:l2,m1:m2,n1,iax)=f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
             dt*bmdi * A_init_x
         f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
@@ -2471,7 +2471,7 @@ module Special
             enddo
           enddo
         else
-          if (lleading_z) then
+          if (lfirst_proc_z) then
             call mpirecv_real (tl, 1, 0, tag_tl)
             call mpirecv_real (tr, 1, 0, tag_tr)
             call mpirecv_real (delta_t, 1, 0, tag_dt)
@@ -2516,7 +2516,7 @@ module Special
 !
           close (unit)
         else
-          if (lleading_z) then
+          if (lfirst_proc_z) then
             call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
             call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
           endif
@@ -2534,7 +2534,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if (n==n2.and.ltrailing_z) &
+      if (n==n2.and.llast_proc_z) &
           df(l1:l2,m,n2,iuz) = df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
 !
     endsubroutine force_solar_wind
@@ -2561,7 +2561,7 @@ module Special
 !
 !  One  processor has to collect the data
 !
-      if (lleading_xy) then
+      if (lfirst_proc_xy) then
         total_flux=local_flux
         total_mass=local_mass
         do i=0,nprocx-1
@@ -2589,7 +2589,7 @@ module Special
 !
 !  now distribute u_add
 !
-      if (lleading_xy) then
+      if (lfirst_proc_xy) then
         do i=0,nprocx-1
           do j=0,nprocy-1
             if ((i==0).and.(j==0)) continue

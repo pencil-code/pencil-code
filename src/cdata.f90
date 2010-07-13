@@ -170,10 +170,12 @@ module Cdata
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
-  logical :: lleading_x=.true.,lleading_y=.true.,lleading_z=.true.
-  logical :: lleading_xy=.true.,lleading_yz=.true.,lleading_xz=.true.
-  logical :: ltrailing_x=.true.,ltrailing_y=.true.,ltrailing_z=.true.
-  logical :: ltrailing_xy=.true.,ltrailing_yz=.true.,ltrailing_xz=.true.
+  logical :: lfirst_proc_x=.true.,lfirst_proc_y=.true.,lfirst_proc_z=.true.
+  logical :: lfirst_proc_xy=.true.,lfirst_proc_yz=.true.,lfirst_proc_xz=.true.
+  logical :: lfirst_proc_xyz=.true.
+  logical :: llast_proc_x=.true.,llast_proc_y=.true.,llast_proc_z=.true.
+  logical :: llast_proc_xy=.true.,llast_proc_yz=.true.,llast_proc_xz=.true.
+  logical :: llast_proc_xyz=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
   logical :: lalpm=.false.
   logical :: lchiral=.false.

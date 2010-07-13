@@ -4010,7 +4010,7 @@ module Hydro
                   "calc_mflow:      We proceed, but you'll get umx=0"
           umx=0.
         else
-          if (lleading_z) then
+          if (lfirst_proc_z) then
             call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=2)
             uxmx=sum(fsumxy,dim=2)/nygrid
             call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=2)
@@ -4018,7 +4018,7 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lleading_xz) then
+          if (lfirst_proc_xz) then
             call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=2)
           endif
           umx=sqrt(sum(umx2)/nxgrid)
@@ -4037,7 +4037,7 @@ module Hydro
                   "calc_mflow:       We proceed, but you'll get umy=0"
           umy=0.
         else
-          if (lleading_z) then
+          if (lfirst_proc_z) then
             call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=1)
             uxmy=sum(fsumxy,dim=1)/nxgrid
             call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=1)
@@ -4045,7 +4045,7 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lleading_xz) then
+          if (lfirst_proc_xz) then
             call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,nx,idir=2)
           endif
           umy=sqrt(sum(umy2)/nxgrid)

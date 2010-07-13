@@ -1190,7 +1190,7 @@ module Particles_nbody
         !take proper care of the trapezoidal rule
         !in the case of non-periodic boundaries
         fac = 1.
-        if ((m==m1.and.lleading_y).or.(m==m2.and.ltrailing_y)) then
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
           if (.not.lperi(2)) fac = .5*fac
         endif
 !

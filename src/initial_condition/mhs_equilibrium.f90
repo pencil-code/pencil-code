@@ -269,7 +269,7 @@ module InitialCondition
             tmp2(i)=tmp2(i-1)+tmp(i)*dr
           enddo
         else
-          if (lleading_x) then 
+          if (lfirst_proc_x) then 
             tmp2(0)=0.
             do i=1,nx
               tmp2(i)=tmp2(i-1)+tmp(i)*dr

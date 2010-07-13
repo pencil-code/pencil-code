@@ -2681,8 +2681,8 @@ module Magnetic
 !  and in bottommost (topmost) pencils.
 !
       do j=1,3
-        if (lfrozen_bb_bot(j).and.lleading_z .and.n==n1) fres(:,j)=0.
-        if (lfrozen_bb_top(j).and.ltrailing_z.and.n==n2) fres(:,j)=0.
+        if (lfrozen_bb_bot(j).and.lfirst_proc_z .and.n==n1) fres(:,j)=0.
+        if (lfrozen_bb_top(j).and.llast_proc_z.and.n==n2) fres(:,j)=0.
       enddo
 !
 !  Induction equation.
@@ -4017,8 +4017,8 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FH=FHx(nx)-FHx(1)
-      if (lleading_z .and.n==n1) FH=FH-sum(FHz)
-      if (ltrailing_z.and.n==n2) FH=FH+sum(FHz)
+      if (lfirst_proc_z .and.n==n1) FH=FH-sum(FHz)
+      if (llast_proc_z.and.n==n2) FH=FH+sum(FHz)
       call surf_mn_name(FH,idiag_exaym2)
 !
     endsubroutine helflux
@@ -4048,8 +4048,8 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FC=FCx(nx)-FCx(1)
-      if (lleading_z .and.n==n1) FC=FC-sum(FCz)
-      if (ltrailing_z.and.n==n2) FC=FC+sum(FCz)
+      if (lfirst_proc_z .and.n==n1) FC=FC-sum(FCz)
+      if (llast_proc_z.and.n==n2) FC=FC+sum(FCz)
       call surf_mn_name(FC,idiag_exjm2)
 !
     endsubroutine curflux_dS
@@ -4418,13 +4418,13 @@ module Magnetic
         endif
         bmx2=0.0
       else
-        if (lleading_z) then
+        if (lfirst_proc_z) then
           call mpireduce_sum(fnamexy(:,:,idiag_bymxy),fsumxy,(/nx,ny/),idir=2)
           bymx=sum(fsumxy,dim=2)/nygrid
           call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=2)
           bzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (lleading_yz) then
+        if (lfirst_proc_yz) then
           call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=1)
         endif
       endif
@@ -4467,13 +4467,13 @@ module Magnetic
         endif
         bmy2=0.0
       else
-        if (lleading_z) then
+        if (lfirst_proc_z) then
           call mpireduce_sum(fnamexy(:,:,idiag_bxmxy),fsumxy,(/nx,ny/),idir=1)
           bxmy=sum(fsumxy,dim=1)/nxgrid
           call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=1)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (lleading_xz) then
+        if (lfirst_proc_xz) then
           call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=2)
         endif
       endif
@@ -4634,13 +4634,13 @@ module Magnetic
         endif
         jmx2=0.
       else
-        if (lleading_z) then
+        if (lfirst_proc_z) then
           call mpireduce_sum(fnamexy(:,:,idiag_jymxy),fsumxy,(/nx,ny/),idir=2)
           jymx=sum(fsumxy,dim=2)/nygrid
           call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=2)
           jzmx=sum(fsumxy,dim=2)/nygrid
         endif
-        if (lleading_yz) then
+        if (lfirst_proc_yz) then
           call mpireduce_sum(jymx**2+jzmx**2,jmx2,nx,idir=1)
         endif
       endif
@@ -4683,13 +4683,13 @@ module Magnetic
         endif
         jmy2=0.
       else
-        if (lleading_z) then
+        if (lfirst_proc_z) then
           call mpireduce_sum(fnamexy(:,:,idiag_jxmxy),fsumxy,(/nx,ny/),idir=1)
           jxmy=sum(fsumxy,dim=1)/nxgrid
           call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=1)
           jzmy=sum(fsumxy,dim=1)/nxgrid
         endif
-        if (lleading_xz) then
+        if (lfirst_proc_xz) then
           call mpireduce_sum(jxmy**2+jzmy**2,jmy2,ny,idir=2)
         endif
       endif
@@ -4972,7 +4972,7 @@ module Magnetic
              call stop_it("bmxy_rms not yet implemented for cylindrical")
 ! The following calculation is done only for ipz=0
       bmxy_rms=0
-      if (.not.lleading_z) return
+      if (.not.lfirst_proc_z) return
       if (idiag_bxmxy==0.or.idiag_bymxy==0.or.idiag_bzmxy==0) then
         if (first) then
           print*,"calc_mfield: WARNING"
@@ -4982,7 +4982,7 @@ module Magnetic
         bmxy_rms=0.
       else
 !DM: we dont really need the following if, I am going to test
-!        if (lleading_z) then
+!        if (lfirst_proc_z) then
           b2mxy_local=0
           do l=1,nx
             do m=1,ny
@@ -4999,7 +4999,7 @@ module Magnetic
           enddo
           call mpireduce_sum(b2mxy_local(:),b2mxy,2,idir=2)
 !        endif
-        if (lleading_x) then
+        if (lfirst_proc_x) then
           if (lcartesian_coords) bmxy_rms=sqrt(b2mxy(1)/(nxgrid*nygrid))
           if (lspherical_coords) bmxy_rms=sqrt(b2mxy(1)/b2mxy(2))
         endif

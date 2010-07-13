@@ -284,8 +284,8 @@ module Particles
             call random_number_wrapper(r)
             call random_number_wrapper(p)
             if (nprocz==2) then
-              if (lleading_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-              if (ltrailing_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
             else
               fp(k,izp)=zp0*sqrt(-2*alog(r))*cos(2*pi*p)
             endif

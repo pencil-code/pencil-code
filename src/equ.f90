@@ -926,12 +926,12 @@ module Equ
 !  processor and in left/right--most pencils
 !
           if (.not. lperi(1)) then
-            if (lleading_x) then
+            if (lfirst_proc_x) then
               do iv=1,nvar
                 if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
               enddo
             endif
-            if (ltrailing_x) then
+            if (llast_proc_x) then
               do iv=1,nvar
                 if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
               enddo
@@ -948,12 +948,12 @@ module Equ
 !  processor and in bottom/top-most pencils.
 !
           if (.not. lperi(2)) then
-            if (lleading_y .and. (m == m1)) then
+            if (lfirst_proc_y .and. (m == m1)) then
               do iv=1,nvar
                 if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
               enddo
             endif
-            if (ltrailing_y .and. (m == m2)) then
+            if (llast_proc_y .and. (m == m2)) then
               do iv=1,nvar
                 if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
               enddo
@@ -969,12 +969,12 @@ module Equ
 !  processor and in bottom/top-most pencils.
 !
           if (.not. lperi(3)) then
-            if (lleading_z .and. (n == n1)) then
+            if (lfirst_proc_z .and. (n == n1)) then
               do iv=1,nvar
                 if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
               enddo
             endif
-            if (ltrailing_z .and. (n == n2)) then
+            if (llast_proc_z .and. (n == n2)) then
               do iv=1,nvar
                 if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
               enddo

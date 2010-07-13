@@ -1616,7 +1616,7 @@ module Initcond
 !
 !  sets up a nearly force-free bipolar region
 !
-      if (lleading_z) then
+      if (lfirst_proc_z) then
         j=i+1; f(:,:,n1,j)=f(:,:,n1,j)+ampl &
           *spread(exp(-(kx*x)**2),2,my) &
           *spread(exp(-(ky*y)**2),1,mx)
