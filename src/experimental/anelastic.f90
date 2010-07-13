@@ -2120,7 +2120,7 @@ module Density
           r_tri(1)=cmplx(0.,0.)
 !
           b_tri(nz)=1.
-          a_tri(nz-1)=0.
+          a_tri(nz)=0.
           r_tri(nz)=cmplx(0.,0.)
 !
           call tridag_complex(a_tri, b_tri, c_tri, r_tri, u_tri, err)
