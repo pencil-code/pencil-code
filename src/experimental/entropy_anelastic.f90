@@ -661,9 +661,13 @@ module Entropy
           do m=1,my
             do n=1,mz
               f(1:mx,m,n,iss)=0.0
+! Base state for isothermal case
               f(1:mx,m,n,iss_b)=-z(n)*gamma_m1*gravz/cs20
             end do
           end do
+         case ('polytropic_simple')
+           f(:,:,:,iss)=0.0
+           print *, 'init_ss: Base entropy defined in density module'
 
  
           case default

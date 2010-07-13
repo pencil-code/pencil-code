@@ -409,23 +409,13 @@ module Density
             endif
           enddo
           enddo
-          !
-          ! test of the Poisson solver
-          !
-          do m=m1,m2
-          do n=n1,n2
-            psi(:,m-nghost,n-nghost)=-2.*sin(x(l1:l2))*sin(z(n))
-          enddo
-          enddo
-          if (lperi(3)) then
-            call inverse_laplacian(f, psi)
+        case ('polytropic_simple')
+          if (lanelastic_lin) then
+          call polytropic_simple(f)
+          f(1:mx,m,n,ipp)=0.0
           else
-            call inverse_laplacian_z(psi)
+          call fatal_error('init_lnrho','Not coded yet')
           endif
-          print*, '--> write test_poisson.dat file'
-          open(41, file='test_poisson.dat', form='unformatted')
-          write(41) psi
-          close(41)
 !
         case default
 !
@@ -1611,20 +1601,20 @@ module Density
 !  these formulae assume lnrho0=0 and cs0=1
 !
           where (r_mn > r_ext)
-            f(l1:l2,m,n,ilnrho)=lnrho_ref-gamma*pot/cs2top
+            f(l1:l2,m,n,irho_b)=exp(lnrho_ref-gamma*pot/cs2top)
           elsewhere
             dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-            f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
+            f(l1:l2,m,n,irho_b)=exp(lnrho0+mpoly*dlncs2)
           endwhere
 !
 !  entropy
 !
           if (lentropy) then
             where (r_mn > r_ext)
-              f(l1:l2,m,n,iss)=-(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
+              f(l1:l2,m,n,iss_b)=-(1.-1./gamma)*log(f(l1:l2,m,n,irho_b))+log(cs2top)/gamma
             elsewhere
               dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-              f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+              f(l1:l2,m,n,iss_b)=mpoly*(ggamma/gamma-1.)*dlncs2
             endwhere
           endif
         enddo; enddo
@@ -1635,10 +1625,8 @@ module Density
         do n=n1,n2; do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
-          if (lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
-!         if (ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma_m1)
-          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma_m1)
+          f(l1:l2,m,n,irho_b)=exp(lnrho0+mpoly*dlncs2)
+          if (lentropy) f(l1:l2,m,n,iss_b)=mpoly*(ggamma/gamma-1.)*dlncs2
         enddo; enddo
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
@@ -2087,12 +2075,15 @@ module Density
 !
       use Fourier, only: fourier_transform_xy
       use General, only: tridag, cyclic
+      use Mpicomm, only: transp_xz, transp_zx
+      use Sub,     only: max_mn
 !
       real, dimension (nx,ny,nz) :: phi, b1
+      real, dimension (nx,nz)    :: rhst, rhst2
       real, dimension (nz)       :: a_tri, b_tri, c_tri
       real, dimension (nz)       :: r_tri, u_tri
       real    :: dz_2, k2, aalpha, bbeta
-      integer :: ikx
+      integer :: ikx, iky
       logical :: err
 !
 !  The right-hand-side of the pressure equation is purely real.
@@ -2108,53 +2099,62 @@ module Density
       dz_2=1./dz**2
       a_tri=dz_2
       c_tri=dz_2
-      do ikx=1,nx
-        k2=kx_fft(ikx)**2
-        if (k2==0.) then
-          phi(ikx,1,:)=0.
-        else
-          b_tri=-2.*dz_2-k2
-          r_tri=phi(ikx,1,:)
+      do iky=1,ny
+        call transp_xz(phi(:,iky,:),rhst)
+        do ikx=1,nx/nprocz
+          k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          if (k2==0.) then
+            rhst(:,ikx)=0.
+          else
+            b_tri=-2.*dz_2-k2
+            r_tri=rhst(:,ikx)
 ! Dirichlet BC
-          b_tri(1)=1.
-          c_tri(1)=0.
-          r_tri(1)=0.
-          b_tri(nz)=1.
-          a_tri(nz)=0.
-          r_tri(nz)=0.
+            b_tri(1)=1.
+            c_tri(1)=0.
+            r_tri(1)=0.
+            b_tri(nz)=1.
+            a_tri(nz)=0.
+            r_tri(nz)=0.
           call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
 ! Periodic BC
 !          bbeta=dz_2   ! right corner
 !          aalpha=dz_2  ! left corner
 !          call cyclic(a_tri, b_tri, c_tri, aalpha, bbeta, r_tri, u_tri, nz)
-          phi(ikx,1,:)=u_tri
-        endif
+           rhst(:,ikx)=u_tri
+          endif
+        enddo
+          call transp_zx(rhst,phi(:,iky,:))
       enddo
 !
 !  Second the imaginary part
 !
-      do ikx=1,nx
-        k2=kx_fft(ikx)**2
-        if (k2==0.) then
-          b1(ikx,1,:)=0.
-        else
-          b_tri=-2.*dz_2-k2
-          r_tri=b1(ikx,1,:)
+      do iky=1,ny
+        call transp_xz(b1(:,iky,:),rhst2)
+        do ikx=1,nx/nprocz
+        k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
+          if (k2==0.) then
+            rhst2(:,ikx)=0.
+          else
+            b_tri=-2.*dz_2-k2
+            r_tri=rhst2(:,ikx)
 ! Dirichlet BC
-          b_tri(1)=1.
-          c_tri(1)=0.
-          r_tri(1)=0.
-          b_tri(nz)=1.
-          a_tri(nz)=0.
-          r_tri(nz)=0.
-          call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+            b_tri(1)=1.
+            c_tri(1)=0.
+            r_tri(1)=0.
+            b_tri(nz)=1.
+            a_tri(nz)=0.
+            r_tri(nz)=0.
+            call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
 ! Periodic BC
 !          bbeta=dz_2   ! right corner
 !          aalpha=dz_2  ! left corner
 !          call cyclic(a_tri, b_tri, c_tri, aalpha, bbeta, r_tri, u_tri, nz)
-          b1(ikx,1,:)=u_tri
-        endif
+            rhst2(:,ikx)=u_tri
+          endif
+        enddo
+          call transp_zx(rhst2,b1(:,iky,:))
       enddo
+
 !
 !  Inverse transform (to real space).
 !
