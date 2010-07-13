@@ -1071,8 +1071,8 @@ module Fourier
       if (nprocx>1) &
           call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!',lfirst_proc_xy)
 !
-      if (mod(nxgrid,nygrid)/=0) call fatal_error('fourier_transform_xy_xy', &
-          'nxgrid needs to be an integer multiple of nygrid.',lfirst_proc_xy)
+      if (nxgrid/=nygrid) call fatal_error('fourier_transform_xy_xy', &
+          'nxgrid needs to be equal to nygrid.',lfirst_proc_xy)
 !
       if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
 !
