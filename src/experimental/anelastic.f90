@@ -2086,12 +2086,12 @@ module Density
 !  16-dec-09/dintrans+piyali: coded
 !
       use Fourier, only: fourier_transform_xy
-      use General, only: tridag
+      use General, only: tridag, cyclic
 !
       real, dimension (nx,ny,nz) :: phi, b1
       real, dimension (nz)       :: a_tri, b_tri, c_tri
       real, dimension (nz)       :: r_tri, u_tri
-      real    :: k2
+      real    :: dz_2, k2, aalpha, bbeta
       integer :: ikx
       logical :: err
 !
@@ -2105,26 +2105,28 @@ module Density
 !  Solve for discrete z-direction
 !  First the real part
 !
-      a_tri=1./dz**2
-      c_tri=1./dz**2
+      dz_2=1./dz**2
+      a_tri=dz_2
+      c_tri=dz_2
       do ikx=1,nx
         k2=kx_fft(ikx)**2
-        print*, 'ikx, kx_fft=', ikx, kx_fft(ikx)
         if (k2==0.) then
           phi(ikx,1,:)=0.
         else
-          b_tri=-2./dz**2-k2
+          b_tri=-2.*dz_2-k2
           r_tri=phi(ikx,1,:)
 ! Dirichlet BC
           b_tri(1)=1.
           c_tri(1)=0.
           r_tri(1)=0.
-!
           b_tri(nz)=1.
           a_tri(nz)=0.
           r_tri(nz)=0.
-!
           call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+! Periodic BC
+!          bbeta=dz_2   ! right corner
+!          aalpha=dz_2  ! left corner
+!          call cyclic(a_tri, b_tri, c_tri, aalpha, bbeta, r_tri, u_tri, nz)
           phi(ikx,1,:)=u_tri
         endif
       enddo
@@ -2133,22 +2135,23 @@ module Density
 !
       do ikx=1,nx
         k2=kx_fft(ikx)**2
-        print*, 'ikx, kx_fft=', ikx, kx_fft(ikx)
         if (k2==0.) then
           b1(ikx,1,:)=0.
         else
-          b_tri=-2./dz**2-k2
+          b_tri=-2.*dz_2-k2
           r_tri=b1(ikx,1,:)
 ! Dirichlet BC
           b_tri(1)=1.
           c_tri(1)=0.
           r_tri(1)=0.
-!
           b_tri(nz)=1.
           a_tri(nz)=0.
           r_tri(nz)=0.
-!
           call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
+! Periodic BC
+!          bbeta=dz_2   ! right corner
+!          aalpha=dz_2  ! left corner
+!          call cyclic(a_tri, b_tri, c_tri, aalpha, bbeta, r_tri, u_tri, nz)
           b1(ikx,1,:)=u_tri
         endif
       enddo
