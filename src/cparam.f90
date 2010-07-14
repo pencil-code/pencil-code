@@ -18,6 +18,7 @@ module Cparam
 
 ! Need this kinda urgently!!
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
+  integer, parameter :: nprocxy=nprocx*nprocy,nprocyz=nprocy*nprocz,nprocxz=nprocx*nprocz
 
   include 'cparam.inc'
 
