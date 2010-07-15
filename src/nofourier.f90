@@ -182,7 +182,7 @@ module Fourier
 !***********************************************************************
     subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
 !
-!  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
+! Subroutine to do Fourier transform of a 2-D array of arbitrary size.
 !
       real, dimension(:,:) :: a_re,a_im
       logical, optional :: linv
@@ -198,7 +198,8 @@ module Fourier
 !***********************************************************************
     subroutine fourier_transform_xy_xy_flexible_multi_ghost(in_re,out_re,factor)
 !
-!  Subroutine to do multi functional Fourier transform of a 2-D array under MPI in parallel for ghost cells.
+! Subroutine to do multi functional Fourier transform of a 2-D
+! array under MPI in parallel for ghost cells.
 !
       real, dimension(:,:,:) :: in_re,factor
       real, dimension(:,:,:,:) :: out_re
