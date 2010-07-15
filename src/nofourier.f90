@@ -196,6 +196,21 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
+    subroutine fourier_transform_xy_xy_flexible_mutli_ghost(in_re,out_re,factor)
+!
+!  Subroutine to do multi functional Fourier transform of a 2-D array under MPI in parallel for ghost cells.
+!
+      real, dimension(:,:,:) :: in_re,out_re,factor
+!
+      call fatal_error('fourier_transform_xy_xy_flexible_mutli_ghost', &
+          'this sub is not available in nofourier.f90!')
+!
+      call keep_compiler_quiet(in_re)
+      call keep_compiler_quiet(out_re)
+      call keep_compiler_quiet(factor)
+!
+    endsubroutine fourier_transform_xy_xy_flexible_mutli_ghost
+!***********************************************************************
     subroutine fourier_transform_y_y(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform of a 1-D array under MPI.
