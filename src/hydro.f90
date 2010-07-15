@@ -4610,6 +4610,27 @@ module Hydro
        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
              - prof_amp1)
 !
+!  Radial shear profile
+!
+      case ('radial_shear')
+      zbot=rdampint
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("radial_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+      else
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot*tanh((x(l1:l2)-zbot)/wdamp))
+      endif
+!
+!  Latitudinal shear profile
+!
+      case ('latitudinal_shear')
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("latitudinal_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+      else
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot*cos(2.*pi*(y(m)-y0)/Ly))
+      endif
+!
 !  no profile matches
 !
       case default
