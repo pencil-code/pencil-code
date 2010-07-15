@@ -184,14 +184,6 @@ varcontent[iuut].idlvarloc  = 'uut_loc'
 varcontent[iuut].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iuut].skip       = 2
 ;
-;default, iglobal_gg, 0
-;varcontent[iglobal_gg].variable   = 'Gravity (global_gg)'
-;varcontent[iglobal_gg].idlvar     = 'global_gg'
-;varcontent[iglobal_gg].idlinit    = INIT_3VECTOR
-;varcontent[iglobal_gg].idlvarloc  = 'global_gg_loc'
-;varcontent[iglobal_gg].idlinitloc = INIT_3VECTOR_LOC
-;varcontent[iglobal_gg].skip       = 2
-;
 default, iaatest, 0
 default, ntestfield, 0
 varcontent[iaatest].variable   = 'Testfield vector potential (aatest)'
@@ -360,6 +352,20 @@ varcontent[ietat].idlvar     = 'etat'
 varcontent[ietat].idlinit    = INIT_SCALAR
 varcontent[ietat].idlvarloc  = 'etat_loc'
 varcontent[ietat].idlinitloc = INIT_SCALAR_LOC
+;
+default, ieta, 0
+varcontent[ieta].variable   = 'Dust resistivity'
+varcontent[ieta].idlvar     = 'eta'
+varcontent[ieta].idlinit    = INIT_SCALAR
+varcontent[ieta].idlvarloc  = 'eta_loc'
+varcontent[ieta].idlinitloc = INIT_SCALAR_LOC
+;
+default, izeta, 0
+varcontent[izeta].variable   = 'Ionization rate'
+varcontent[izeta].idlvar     = 'zeta'
+varcontent[izeta].idlinit    = INIT_SCALAR
+varcontent[izeta].idlvarloc  = 'zeta_loc'
+varcontent[izeta].idlinitloc = INIT_SCALAR_LOC
 ;
 default, ichemspec, 0
 chemcount=n_elements(ichemspec)
