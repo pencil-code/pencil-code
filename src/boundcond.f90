@@ -575,6 +575,9 @@ module Boundcond
               case ('c3')
                 ! BCZ_DOC: constant flux at the bottom with a variable hcond
                 if (j==ilnTT) call bc_ADI_flux_z(f,topbot)
+              case ('pfe')
+                ! BCZ_DOC: potential field extrapolation
+                if (j==iaa) call bc_aa_pot_field_extra(f,topbot)
               case ('pot')
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
@@ -4668,6 +4671,70 @@ module Boundcond
       lfirstcall=.false.
 !
     endsubroutine bc_frozen_in_bb
+!***********************************************************************
+    subroutine bc_aa_pot_field_extra(f,topbot)
+!
+!  Potential field extrapolation in z-direction for three ghost cells
+!
+!  9-jul-2010/Bourdin.KIS: coded
+!
+      use Fourier, only: fourier_transform_xy_xy_flexible_multi_ghost
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+!
+      real, dimension (:,:,:), allocatable, save :: exp_fact
+      integer, parameter :: bnx=nygrid, bny=nx/nprocy
+      integer :: kx_start, stat, delta_z, pos_z
+!
+      if (nprocy == 1) &
+          call fatal_error ('bc_aa_pot_field_extra', 'nprocy must be greater than 1.', lfirst_proc_xy)
+!
+      if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
+          call fatal_error ('bc_aa_pot_field_extra', 'Only implemented for topmost or downmost z-layer.', lfirst_proc_xy)
+!
+      if (mod (nx, nprocy) /= 0) &
+          call fatal_error ('bc_aa_pot_field_extra', 'nx needs to be an integer multiple of nprocy.', lfirst_proc_xy)
+!
+!  Allocate memory for large arrays.
+!
+      if (.not. allocated (exp_fact)) then
+        allocate (exp_fact(bnx,bny,3), stat=stat)
+        if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact', .true.)
+        ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
+        kx_start = (ipx+ipy*nprocx)*bny
+        exp_fact = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
+                                      spread (kx_fft (kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, 3)
+      endif
+!
+!  Check whether we want to do top or bottom z boundary
+!
+      select case (topbot)
+      case ('bot')
+        do pos_z = 1, nghost
+          delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
+          ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
+          exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
+        enddo
+        call fourier_transform_xy_xy_flexible_multi_ghost &
+             (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact)
+      case ('top')
+        do pos_z = 1, nghost
+          delta_z = z(n2) - z(n2+pos_z) ! dz is negative => decay
+          ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
+          exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
+        enddo
+        call fourier_transform_xy_xy_flexible_multi_ghost &
+             (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact)
+      case default
+        call fatal_error ('bc_aa_pot_field_extra', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+!  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
+!
+        call communicate_bc_aa_pot(f,topbot)
+!
+    endsubroutine bc_aa_pot_field_extra
 !***********************************************************************
     subroutine bc_aa_pot3(f,topbot)
 !
