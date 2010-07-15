@@ -179,6 +179,15 @@ varcontent[igg].idlvarloc  = 'gg_loc'
 varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
 varcontent[igg].skip       = 2
 ;
+default, iglobal_gg, 0
+if (iglobal_gg ne 0) then iglobal_gg=iglobal_gg-dim.mvar-dim.maux
+varcontent[iglobal_gg].variable   = 'Gravitational acceleration'
+varcontent[iglobal_gg].idlvar     = 'gg'
+varcontent[iglobal_gg].idlinit    = INIT_3VECTOR
+varcontent[iglobal_gg].idlvarloc  = 'gg_loc'
+varcontent[iglobal_gg].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iglobal_gg].skip       = 2
+;
 ;  Zero out default definition in case it has been set by mistake.
 ;
 varcontent[0].variable = 'UNKNOWN'
