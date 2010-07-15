@@ -16,7 +16,7 @@
   public :: mpiallreduce_max, mpiallreduce_sum, mpiallreduce_sum_int
   public :: mpiallreduce_sum_arr, mpiallreduce_sum_arr2
   public :: mpireduce_or, mpireduce_and
-  public :: mpibcast_real,mpibcast_logical
+  public :: mpibcast_real, mpibcast_logical
   public :: mpibcast_real_arr
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char, mpireduce_max_scl_int
@@ -27,12 +27,16 @@
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: initiate_shearing, finalize_shearing
 
-  public :: transp,transp_xy,transp_xz,transp_zx
-  public :: transp_mxmz, transp_mzmx
-  public :: z2x
-  public :: communicate_bc_aa_pot,transp_xy_other,transp_other
+  public :: transp, transp_xy, transp_xy_other, transp_other
+  public :: transp_xz, transp_zx, transp_mxmz, transp_mzmx
 
-  public :: fill_zghostzones_3vec
+  public :: communicate_bc_aa_pot, fill_zghostzones_3vec
+
+  public :: remap_to_pencil_xy, unmap_from_pencil_xy
+  public :: transp_remap_to_pencil_xy, transp_unmap_from_pencil_xy
+  public :: transp_pencil_xy
+
+  public :: z2x
   public :: MPI_adi_x, MPI_adi_z
 
   public :: parallel_open, parallel_close
@@ -40,10 +44,13 @@
   public :: parallel_count_lines
   
 ! Radiation ray routines
-  public :: radboundary_xy_recv,radboundary_xy_send
-  public :: radboundary_zx_recv,radboundary_zx_send
+  public :: radboundary_xy_recv, radboundary_xy_send
+  public :: radboundary_zx_recv, radboundary_zx_send
   public :: radboundary_zx_sendrecv
   public :: radboundary_zx_periodic_ray
 
 ! Variables
-  public :: ipx,ipy,ipz,lroot,iproc
+  public :: ipx, ipy, ipz, lroot, iproc
+  public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
+  public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, lfirst_proc_xyz
+
