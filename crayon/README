@@ -1,0 +1,21 @@
+ Crayon, for those not familiar with the concept, is a
+ Lite version of the Pencil code. Its purpose is mainly
+ educational, but also to allow new users to get the
+ "feeling" of the code before embarking on the task
+ of programming the main code.
+
+ Crayon will be kept out of the sync of the repository, and
+ perhaps incorporate just major changes (something similar to
+ the pencil case of years ago).
+
+ The pencil check is still complaining (though no-modules pass the
+ test). The relevant bin commands only change "pc" for "cr". So, the
+ setup is
+
+   cr_setupsrc
+
+ Users are welcome to take a look and comment on what they like/dislike. 
+ This version (July 2010) is not yet a last version, and input will be 
+ highly welcomed.
+
+ Maintainer: Wladimir Lyra
