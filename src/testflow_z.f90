@@ -171,7 +171,7 @@ module Testflow
   contains
 !
 !***********************************************************************
-    subroutine register_testflow()          ! -> Standardschnittstelle
+    subroutine register_testflow()          ! -> Default interface
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iuutest, etc; increase nvar accordingly
@@ -227,7 +227,7 @@ module Testflow
 !
     endsubroutine register_testflow
 !***********************************************************************
-    subroutine initialize_testflow(f)           ! -> Standardschnittstelle
+    subroutine initialize_testflow(f)           ! -> Default interface
 !
 !  Perform any post-parameter-read initialization
 !
@@ -250,7 +250,7 @@ module Testflow
       logical :: lproc
 !
       if (itestflow=='W11-W22') then
-        njtestflow_loc=4                       ! noch "uberfl"ussigen Speicherplatz vermeiden
+        njtestflow_loc=4                       ! remove unnecessary memory consumption
       else
         njtestflow_loc=njtestflow
       endif
@@ -449,7 +449,7 @@ module Testflow
 !
     endsubroutine initialize_testflow
 !***********************************************************************
-    subroutine init_uutest(f)          ! -> Standardschnittstelle
+    subroutine init_uutest(f)          ! -> Default interface
 !
 !  initialise testflow-solutions; called from start.f90
 !
@@ -528,7 +528,7 @@ module Testflow
 !
     endsubroutine init_uutest
 !***********************************************************************
-    subroutine pencil_criteria_testflow()          ! -> Standardschnittstelle
+    subroutine pencil_criteria_testflow()          ! -> Default interface
 !
 !   All pencils that the Testflow module depends on are specified here.
 !
@@ -543,7 +543,7 @@ module Testflow
 !
     endsubroutine pencil_criteria_testflow
 !***********************************************************************
-    subroutine pencil_interdep_testflow(lpencil_in)         ! -> Standardschnittstelle
+    subroutine pencil_interdep_testflow(lpencil_in)         ! -> Default interface
 !
 !  Interdependency among pencils from the Testflow module is specified here.
 !
@@ -555,7 +555,7 @@ module Testflow
 !
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
-    subroutine read_testflow_init_pars(unit,iostat)     ! -> Standardschnittstelle
+    subroutine read_testflow_init_pars(unit,iostat)     ! -> Default interface
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -569,7 +569,7 @@ module Testflow
 99    return
     endsubroutine read_testflow_init_pars
 !***********************************************************************
-    subroutine write_testflow_init_pars(unit)         ! -> Standardschnittstelle
+    subroutine write_testflow_init_pars(unit)         ! -> Default interface
 !
       integer, intent(in) :: unit
 !
@@ -577,7 +577,7 @@ module Testflow
 !
     endsubroutine write_testflow_init_pars
 !***********************************************************************
-    subroutine read_testflow_run_pars(unit,iostat)    ! -> Standardschnittstelle
+    subroutine read_testflow_run_pars(unit,iostat)    ! -> Default interface
 !
       integer, intent(in)              :: unit
       integer, intent(inout), optional :: iostat
@@ -591,20 +591,20 @@ module Testflow
 99    return
     endsubroutine read_testflow_run_pars
 !***********************************************************************
-    subroutine write_testflow_run_pars(unit)          ! -> Standardschnittstelle
+    subroutine write_testflow_run_pars(unit)          ! -> Default interface
       integer, intent(in) :: unit
 !
       write(unit,NML=testflow_run_pars)
 !
 !      if (itestflow=='W11-W22') then
-!        njtestflow=4                       ! noch ŸberflŸssigen Speicherplatz vermeiden
+!        njtestflow=4                       ! remove unnecessary memory consumption
 !      else
 !        njtestflow= njtestflow
 !      endif
 
     endsubroutine write_testflow_run_pars
 !***********************************************************************
-    subroutine duutest_dt(f,df,p)                    ! -> Standardschnittstelle
+    subroutine duutest_dt(f,df,p)                    ! -> Default interface
 !
 !  testflow evolution:
 !
@@ -643,7 +643,7 @@ module Testflow
 !
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
-      real, dimension (nx,3) :: U0test,gU0test                      !!!MR: "uberfl"ussige x-Ausdehnung bei 0-Gr"o"sen
+      real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-sizes
       real, dimension (nx)   :: hhtest,U0ghtest,upq2,divutest, divufluct
       real :: gH0test
 !
@@ -792,7 +792,7 @@ module Testflow
 !
           call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers    no upwinding!    
 
-          !!call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)!!!MR: noch falsch, da unter ilnrho nicht hhfluct!!
+          !!call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)!!!MR: still wrong, because under ilnrho and not hhfluct!!
                           !!!ilnrho
           !!if ( jtest==2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
             !!print*, 'U0ghtest, n, m:', n, m, ghfluct(:,2)-U0ghtest(:)
@@ -1010,7 +1010,7 @@ module Testflow
 !
     endsubroutine duutest_dt
 !***********************************************************************
-    subroutine get_slices_testflow(f,slices)          ! -> Standardschnittstelle
+    subroutine get_slices_testflow(f,slices)          ! -> Default interface
 !
 !  Write slices for animation of velocity variables.
 !
@@ -1040,7 +1040,7 @@ module Testflow
 !
     endsubroutine get_slices_testflow
 !***********************************************************************
-    subroutine calc_ltestflow_nonlin_terms(f,df)          ! -> Standardschnittstelle (als do_prepencilstep oder so)
+    subroutine calc_ltestflow_nonlin_terms(f,df)          ! -> Default interface (as do_prepencilstep or so)
 !
 !  calculates < -u0.grad(u0) + (2nu/cs^2)*grad(h0).Sij(u0) >, < u0.gradh0 >,
 !             < -u0.grad(utest) - utest.grad(u) + (2nu/cs^2)*( grad(h0).Sij(utest) + grad(htest).Sij(u) ) >,
@@ -1248,7 +1248,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
 !  reset headtt
 !
-          headtt=.false.           !???MR: richtige Stelle?
+          headtt=.false.           !???MR: right place?
 !
         enddo yloop
 !
@@ -1437,7 +1437,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !  calculate theta-scalar
 !
           if ( idiag_theta/=0) &
-            call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_theta )         ! \theta    !!! noch falsch
+            call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_theta )         ! \theta    !!! still wrong
 
         case('quadratic','quasi-periodic')
 !
@@ -1864,7 +1864,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
     endsubroutine set_U0test_quadratic
 !***********************************************************************
-    subroutine rprint_testflow(lreset,lwrite)                   ! -> Standardschnittstelle
+    subroutine rprint_testflow(lreset,lwrite)                   ! -> Default interface
 !
 !  reads and registers print parameters relevant for testflow fields
 !
