@@ -164,7 +164,7 @@ module Gravity
             call get_shared_variable('gamma',gamma,ierr)
             if (ierr/=0) call fatal_error('initialize_gravity','getting gamma')
 !
-            zinfty=zref+cs20*(mpoly+1)/gamma
+            zinfty=zref+cs20*(mpoly+1)/(-gamma*gravz)
             if (lroot) print*,'initialize_gravity: computed zinfty=',zinfty
           endif
         endif
