@@ -224,8 +224,6 @@ module Mpicomm
 !
 !  Apply boundary conditions.
 !
-      use Cparam
-!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
@@ -888,7 +886,6 @@ module Mpicomm
       double precision, dimension(nreduce(1),nreduce(2),nreduce(3)) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
-
 !
     endsubroutine mpireduce_sum_double_arr3
 !***********************************************************************
@@ -964,7 +961,7 @@ module Mpicomm
 !
       call system_clock(COUNT_RATE=count_rate)
       call system_clock(COUNT=time)
-
+!
       if (count_rate /= 0) then
         mpiwtime = (time*1.)/count_rate
       else                      ! occurs with ifc 6.0 after long (> 2h) runs
@@ -1075,7 +1072,7 @@ module Mpicomm
                  'multiple of ny!'
             call stop_it('transp')
           endif
-
+!
           allocate (tmp(nx,ny))
           do n=1,nz
             do ibox=0,nx/nygrid-1
@@ -1085,7 +1082,7 @@ module Mpicomm
             enddo
           enddo
           deallocate (tmp)
-
+!
         endif
 !
 !  Doing x-z transpose if var='z'
@@ -1104,7 +1101,7 @@ module Mpicomm
             a(:,m,:)=tmp
           enddo
           deallocate (tmp)
-
+!
         endif
 !
       endif
@@ -1119,25 +1116,25 @@ module Mpicomm
 !   5-oct-02/tobi: adapted from transp
 !
       real, dimension(nx,ny), intent(inout) :: a
-
+!
       real, dimension(:,:), allocatable :: tmp
       integer :: ibox,iy
-
+!
       if (ny/=1) then
-
+!
         if (mod(nx,ny)/=0) then
           call stop_it('transp: nxgrid must be an integer multiple of nygrid')
         endif
-
+!
         allocate (tmp(ny,ny))
         do ibox=0,nxgrid/nygrid-1
           iy=ibox*ny
           tmp=transpose(a(iy+1:iy+ny,:)); a(iy+1:iy+ny,:)=tmp
         enddo
         deallocate (tmp)
-
+!
       endif
-
+!
     endsubroutine transp_xy
 !***********************************************************************
     subroutine transp_xy_other(a)
@@ -1148,7 +1145,7 @@ module Mpicomm
 !   5-oct-02/tobi: adapted from transp
 !
       real, dimension(:,:), intent(inout) :: a
-
+!
       real, dimension(:,:), allocatable :: tmp
       integer :: ibox,iy,ny_other,nx_other
       integer :: nxgrid_other,nygrid_other
@@ -1158,20 +1155,20 @@ module Mpicomm
       nygrid_other=ny_other*nprocy
 !
       if (ny_other/=1) then
-
+!
         if (mod(nx_other,ny_other)/=0) then
           call stop_it('transp: nxgrid must be an integer multiple of nygrid')
         endif
-
+!
         allocate (tmp(ny_other,ny_other))
         do ibox=0,nxgrid_other/nygrid_other-1
           iy=ibox*ny_other
           tmp=transpose(a(iy+1:iy+ny_other,:)); a(iy+1:iy+ny_other,:)=tmp
         enddo
         deallocate (tmp)
-
+!
       endif
-
+!
     endsubroutine transp_xy_other
 !***********************************************************************
     subroutine transp_other(a,var)
@@ -1195,12 +1192,12 @@ module Mpicomm
       if (var=='y') then
 !
         if (ny_other/=1) then
-
+!
           if (mod(nx_other,ny_other)/=0) then
             call stop_it('transp_other: nxgrid must be an integer'//&
                  'multiple of nygrid')
           endif
-
+!
           allocate (tmp(ny_other,ny_other))
           do ibox=0,nxgrid_other/nygrid_other-1
             iy=ibox*ny_other
@@ -1210,7 +1207,7 @@ module Mpicomm
             enddo
           enddo
           deallocate (tmp)
-
+!
         endif
       elseif (var=='z') then
         if (nzgrid_other/=1) then
@@ -1227,7 +1224,7 @@ module Mpicomm
             a(:,m,:)=tmp
           enddo
           deallocate (tmp)
-
+!
         endif
 !
       endif
@@ -1298,8 +1295,6 @@ module Mpicomm
 !
 !  20-oct-09/MR: coded
 !
-      use Cdata
-
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
 !
