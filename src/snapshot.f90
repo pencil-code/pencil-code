@@ -239,6 +239,8 @@ module Snapshot
         if (r3u_spec) call power(f,'r3u')
         if (mag_spec) call power(f,'b')
         if (vec_spec) call power(f,'a')
+        if (j_spec)   call power_vec(f,'j')            
+!         if (jb_spec)   call powerhel(f,'jb')            
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
         if (ab_spec)  call powerhel(f,'mag')
