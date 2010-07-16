@@ -1163,7 +1163,7 @@ endsubroutine pdf
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz,3) :: a1,b1
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
