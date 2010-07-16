@@ -2,4 +2,4 @@
  private
 
  public :: power, powerhel, powerscl, power_1d, power_2d, power_xy, pdf
- public :: power_phi,powerhel_phi
+ public :: power_phi,powerhel_phi, power_vec
