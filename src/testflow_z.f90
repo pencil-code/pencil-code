@@ -36,28 +36,28 @@ module Testflow
 !
   include 'testflow.h'
 !
-  interface insert                 ! Overload the `insert' function
+  interface insert                 ! Overload the 'insert' function
     module procedure insert_array
     module procedure insert_array_mult
   endinterface
 !
-  interface gen_ind                ! Overload the `gen_ind' function
+  interface gen_ind                ! Overload the 'gen_ind' function
     module procedure gen_1ind
     module procedure gen_2ind
   endinterface
 !
-  interface mark_del_elems         ! Overload the `mark_del_elems' function
+  interface mark_del_elems         ! Overload the 'mark_del_elems' function
     module procedure mark_del_elems1
     module procedure mark_del_elems2
   endinterface
 
-  interface correct_inds           ! Overload the `correct_inds' function
+  interface correct_inds           ! Overload the 'correct_inds' function
     module procedure correct_1inds
     module procedure correct_2inds
   endinterface
 
 
-  interface update_diag            ! Overload the `update_diag' function
+  interface update_diag            ! Overload the 'update_diag' function
     module procedure update_diag1
     module procedure update_diag2
   endinterface
