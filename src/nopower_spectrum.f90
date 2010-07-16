@@ -108,4 +108,14 @@ module power_spectrum
 !
     endsubroutine powerhel_phi
 !***********************************************************************
+  subroutine power_vec(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine power_vec
+!***********************************************************************
 endmodule power_spectrum
