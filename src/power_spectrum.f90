@@ -1155,4 +1155,91 @@ endsubroutine pdf
   !
  endsubroutine powerhel_phi
 !***********************************************************************
+    subroutine power_vec(f,sp)
+!
+!  Calculate power spectra (on shperical shells) of the variable
+!  specified by `sp'.
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+  integer, parameter :: nk=nx/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz,3) :: a1,b1
+  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=*) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  spectrum=0
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
+  !
+  if (trim(sp)=='j') then
+     ! compute j = curl(curl(x))
+     call del2v_etc(f,iaa,curlcurl=a1)
+  else
+     print*,'There are no such sp=',trim(sp)
+  endif
+  b1=0
+!
+!  Doing the Fourier transform
+!
+  do ivec=1,3
+     call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec))
+!
+!  integration over shells
+!
+     if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+     do ikz=1,nz
+        do iky=1,ny
+           do ikx=1,nx
+              k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                   +a1(ikx,iky,ikz,ivec)**2+b1(ikx,iky,ikz,ivec)**2
+           enddo
+        enddo
+     enddo
+     !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !
+!
+!  append to diagnostics file
+!
+  if (iproc==root) then
+     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
+     spectrum_sum=.5*spectrum_sum
+     open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+     write(1,*) t
+     write(1,'(1p,8e10.2)') spectrum_sum
+     close(1)
+  endif
+  !
+  endsubroutine power_vec
+!***********************************************************************
 endmodule power_spectrum
