@@ -12,9 +12,10 @@
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 1
+! COMMUNICATED AUXILIARIES 1
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT
-! PENCILS PROVIDED ugss_b; gss(3); del2ss; glnTTb(3)
+! PENCILS PROVIDED ugss_b; gss(3); del2ss; glnTTb(3) ; gss_b(3)
 !
 !***************************************************************
 module Entropy
@@ -226,7 +227,7 @@ module Entropy
       integer :: ierr
 !
       call farray_register_pde('ss',iss)
-      call farray_register_auxiliary('ss_b',iss_b)
+      call farray_register_auxiliary('ss_b',iss_b,communicated=.true.)
 !
 !  identify version number
 !
@@ -1523,12 +1524,12 @@ module Entropy
 !
       if (lpencil_in(i_ugss_b)) then
         lpencil_in(i_uu)=.true.
-        lpencil_in(i_gss)=.true.
+        lpencil_in(i_gss_b)=.true.
       endif
 !
       if (lpencil_in(i_glnTTb)) then
-        lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_gss)=.true.
+        lpencil_in(i_grho)=.true.
+        lpencil_in(i_gss_b)=.true.
       endif
 
       if (lpencil_in(i_uglnTT)) then
@@ -1563,19 +1564,20 @@ module Entropy
 ! ss
       if (lpencil(i_ss)) p%ss = f(l1:l2,m,n,iss)
       if (lpencil(i_gss)) call grad(f,iss,p%gss) 
+      if (lpencil(i_gss_b)) call grad(f,iss_b,p%gss_b) 
       if (lpencil(i_del2ss)) call del2(f,iss,p%del2ss) 
 !
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss & ugss_b
-!      if (lpencil(i_ugss_b)) &
-!          call u_dot_grad(f,iss_b,p%gss,p%uu,p%ugss_b,UPWIND=lupw_ss)
       if (lpencil(i_ugss)) &
           call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
       if (lpencil(i_ugss_b)) &
-          call u_dot_grad(f,iss_b,p%gss,p%uu,p%ugss_b,UPWIND=lupw_ss)
+          call u_dot_grad(f,iss_b,p%gss_b,p%uu,p%ugss_b,UPWIND=lupw_ss)
       if (lpencil(i_glnTTb)) &
-          p%glnTTb=gamma*p%gss*cp1+gamma_m1*p%glnrho
+          p%glnTTb(:,1)=gamma*p%gss_b(:,1)*cp1+gamma_m1*p%grho(:,1)*p%rho1
+          p%glnTTb(:,2)=gamma*p%gss_b(:,2)*cp1+gamma_m1*p%grho(:,2)*p%rho1
+          p%glnTTb(:,3)=gamma*p%gss_b(:,3)*cp1+gamma_m1*p%grho(:,3)*p%rho1
 
 !    
     endsubroutine calc_pencils_entropy
@@ -1608,6 +1610,7 @@ module Entropy
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
+      if (headtt) call identify_bcs('ss_b',iss_b)
       if (headtt) print*,'dss_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
 !
 !  ``cs2/dx^2'' for timestep

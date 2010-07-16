@@ -12,7 +12,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 5
-! COMMUNICATED AUXILIARIES 4
+! COMMUNICATED AUXILIARIES 5
 !
 ! PENCILS PROVIDED glnrho(3); grho(3); gpp(3); 
 ! PENCILS PROVIDED uglnrho; ugrho
@@ -146,7 +146,7 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('rho_b',irho_b)
+      call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
@@ -411,10 +411,10 @@ module Density
           enddo
         case ('polytropic_simple')
           if (lanelastic_lin) then
-          call polytropic_simple(f)
-          f(1:mx,m,n,ipp)=0.0
+            call polytropic_simple(f)
+            f(:,:,:,ipp)=0.0
           else
-          call fatal_error('init_lnrho','Not coded yet')
+            call fatal_error('init_lnrho','Not coded yet')
           endif
 !
         case default
@@ -860,7 +860,7 @@ module Density
           p%rho=f(l1:l2,m,n,irhoxx)
           p%rho1=1./p%rho
           p%lnrho = log(p%rho)
-        if (lpencil(i_glnrho)) call grad(f, irhoxx, p%glnrho)
+        if (lpencil(i_grho)) call grad(f, irhoxx, p%grho)
 
 ! uglnrho
 !      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
@@ -902,6 +902,9 @@ module Density
       if (headtt.or.ldebug) print*,'dlnrho_dt: not SOLVING  dlnrho_dt in anelastic'
 !      if (headtt) call identify_bcs('lnrho',ilnrho)
       if (headtt) call identify_bcs('pp',ipp)
+      if (headtt) call identify_bcs('rhs',irhs)
+      if (headtt) call identify_bcs('rhs',irhs+1)
+      if (headtt) call identify_bcs('rhs',irhs+2)
 !
 !
 !  Mass sources and sinks.
@@ -1625,9 +1628,13 @@ module Density
         do n=n1,n2; do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-          f(l1:l2,m,n,irho_b)=exp(lnrho0+mpoly*dlncs2)
-          if (lentropy) f(l1:l2,m,n,iss_b)=mpoly*(ggamma/gamma-1.)*dlncs2
+          f(l1:l2,m,n,irho_b)=rho0*exp(mpoly*dlncs2)
+!          if (lentropy) f(l1:l2,m,n,iss_b)=mpoly*(ggamma/gamma-1.)*dlncs2
+          if (lentropy) f(l1:l2,m,n,iss_b)=(ggamma/gamma-1.)*log(f(l1:l2,m,n,irho_b)/rho0)
         enddo; enddo
+              do n=n1,n2
+              write(*,*) f(l1,m1,n,irho_b)
+              end do
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  In spherical geometry, ztop is z at the outer edge of the box,
@@ -2029,7 +2036,7 @@ module Density
           f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
         endif
       else
-        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))       
       endif
 !
 !  Update the boundary conditions for the new pressure (needed to
