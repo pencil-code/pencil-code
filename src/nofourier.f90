@@ -196,7 +196,7 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fourier_transform_xy_xy_flexible_multi_ghost(in_re,out_re,factor)
+    subroutine fourier_transform_xy_xy_wrapper(in_re,out_re,factor)
 !
 ! Subroutine to do multi functional Fourier transform of a 2-D
 ! array under MPI in parallel for ghost cells.
@@ -211,7 +211,7 @@ module Fourier
       call keep_compiler_quiet(out_re)
       call keep_compiler_quiet(factor)
 !
-    endsubroutine fourier_transform_xy_xy_flexible_multi_ghost
+    endsubroutine fourier_transform_xy_xy_wrapper
 !***********************************************************************
     subroutine fourier_transform_y_y(a_re,a_im,linv)
 !

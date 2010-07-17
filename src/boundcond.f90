@@ -4678,7 +4678,7 @@ module Boundcond
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !
-      use Fourier, only: fourier_transform_xy_xy_flexible_multi_ghost
+      use Fourier, only: fourier_transform_xy_xy_wrapper
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -4716,7 +4716,7 @@ module Boundcond
           ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
           exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
         enddo
-        call fourier_transform_xy_xy_flexible_multi_ghost &
+        call fourier_transform_xy_xy_wrapper &
              (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact)
       case ('top')
         do pos_z = 1, nghost
@@ -4724,7 +4724,7 @@ module Boundcond
           ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
           exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
         enddo
-        call fourier_transform_xy_xy_flexible_multi_ghost &
+        call fourier_transform_xy_xy_wrapper &
              (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact)
       case default
         call fatal_error ('bc_aa_pot_field_extra', 'invalid argument', lfirst_proc_xy)
