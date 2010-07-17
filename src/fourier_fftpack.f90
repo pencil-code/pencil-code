@@ -418,25 +418,25 @@ module Fourier
 !
 !  Subroutine to do Fourier transform in the y-direction.
 !  As it is not cache efficient to Fourier transform in other
-!  direction than x, we transpose the array. The original array 
-!  and the transposed one are shown below in the left and right 
-!  sides, respectively 
+!  direction than x, we transpose the array. The original array
+!  and the transposed one are shown below in the left and right
+!  sides, respectively
 !
-! 
-!    ---------------  ^ nygrid     ----------------  ^ nygrid  
-!   |x z Q W E R T Y| |           |r s m W |i h c Y| |        
-!   |j k l m n b v c| |           |e a l Q |u g v T| |        
-!   |---------------| | ^         |----------------| | ^       
-!   |o p a s d f g h| | | ny      |w p k z |y f b R| | | ny    
-!   |q w e r t y u i| | |         |q o j x |t d n E| | |       
-!    ---------------               ----------------          
-!    --------------->              <nygrid><nygrid>           
-!                   nx             ----------------> nx       
 !
-!  The transposed array has the elements in the correct order, but 
-!  for obvious book-keeping reasons, the dimension is still (nx,ny), 
-!  instead of (nygrid,nx). The fourier transform then can be done, but 
-!  the calculation has to be split into boxes of dimension (nygrid,ny). 
+!    ---------------  ^ nygrid     ----------------  ^ nygrid
+!   |x z Q W E R T Y| |           |r s m W |i h c Y| |
+!   |j k l m n b v c| |           |e a l Q |u g v T| |
+!   |---------------| | ^         |----------------| | ^
+!   |o p a s d f g h| | | ny      |w p k z |y f b R| | | ny
+!   |q w e r t y u i| | |         |q o j x |t d n E| | |
+!    ---------------               ----------------
+!    --------------->              <nygrid><nygrid>
+!                   nx             ----------------> nx
+!
+!  The transposed array has the elements in the correct order, but
+!  for obvious book-keeping reasons, the dimension is still (nx,ny),
+!  instead of (nygrid,nx). The fourier transform then can be done, but
+!  the calculation has to be split into boxes of dimension (nygrid,ny).
 !  Therefore, it only works when nx is a multiple of nygrid.
 !
 !  For the case nx<nygrid, interpolate the x-values to the dimension of
@@ -470,7 +470,7 @@ module Fourier
 ! Separate the problem in two cases. nxgrid>= nygrid and its
 ! opposite
 !
-      if (nxgrid >= nygrid) then 
+      if (nxgrid >= nygrid) then
         if (mod(nxgrid,nygrid)/=0) then
           print*,'fourier_transform_y: when nxgrid>= nygrid, '//&
                'nxgrid needs to be an integer multiple of nygrid.'
@@ -486,7 +486,7 @@ module Fourier
 !
 !  Transform differently according to sizes of x and y
 !
-      if (nxgrid>=nygrid) then 
+      if (nxgrid>=nygrid) then
 !
 !  Transpose, transform and transpose back
 !
@@ -499,7 +499,7 @@ module Fourier
           do iarr=0,nxgrid/nygrid-1
             ix=iarr*nygrid ; ido=ix+1 ; iup=ix+nygrid
             ay=cmplx(a_re(ido:iup,l,n),a_im(ido:iup,l,n))
-            if (lforward) then 
+            if (lforward) then
               call cfftf(nygrid,ay,wsave)
             else
               call cfftb(nygrid,ay,wsave)
@@ -513,7 +513,7 @@ module Fourier
 ! Normalize if forward
 !
         if (lforward) then
-          if (lnormalize) then 
+          if (lnormalize) then
             a_re=a_re/nygrid
             a_im=a_im/nygrid
           endif
@@ -528,13 +528,13 @@ module Fourier
 !
         if (lfirstcall) then
           dnx=Lxyz(1)/(nygrid-1)
-          do i=0,nygrid-1 
-            xnyg(i+1)=x(l1)+i*dnx 
+          do i=0,nygrid-1
+            xnyg(i+1)=x(l1)+i*dnx
           enddo
           lfirstcall=.false.
         endif
 !
-! Interpolate nx to the same dimension as nygrid, so we 
+! Interpolate nx to the same dimension as nygrid, so we
 ! can transpose
 !
         do n=1,nz;do m=1,ny
@@ -547,7 +547,7 @@ module Fourier
         call transp_other(tmp_re,'y') ; call transp_other(tmp_im,'y')
         do n=1,nz;do l=1,ny
           ay=cmplx(tmp_re(:,l,n),tmp_im(:,l,n))
-          if (lforward) then 
+          if (lforward) then
             call cfftf(nygrid,ay,wsave)
           else
             call cfftb(nygrid,ay,wsave)
@@ -560,7 +560,7 @@ module Fourier
 ! Normalize if forward
 !
         if (lforward) then
-          if (lnormalize) then 
+          if (lnormalize) then
             tmp_re=tmp_re/nygrid
             tmp_im=tmp_im/nygrid
           endif
@@ -1173,7 +1173,7 @@ module Fourier
 !***********************************************************************
     subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
 !
-!  Subroutine to do Fourier transform of a 2-D array 
+!  Subroutine to do Fourier transform of a 2-D array
 !  of arbitrary size under MPI.
 !  The routine overwrites the input data.
 !
@@ -1195,7 +1195,7 @@ module Fourier
 !
       nx_other=size(a_re,1); ny_other=size(a_re,2)
       nxgrid_other=nx_other
-      nygrid_other=ny_other*nprocy     
+      nygrid_other=ny_other*nprocy
 !
       lforward=.true.
       if (present(linv)) lforward=.not.linv
@@ -1211,38 +1211,38 @@ module Fourier
 !
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
-
+!
           call cffti(nygrid_other,wsavey)
-
+!
           do l=1,ny_other
             ay=cmplx(a_re(:,l),a_im(:,l))
             call cfftf(nygrid_other,ay,wsavey)
             a_re(:,l)=real(ay)
             a_im(:,l)=aimag(ay)
           enddo
-
+!
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
-
+!
       endif
-      
+!
       if (nxgrid > 1) then
 !
 !  Transform x-direction
 !
         call cffti(nxgrid_other,wsavex)
-
+!
         do m=1,ny_other
           ax=cmplx(a_re(:,m),a_im(:,m))
           call cfftf(nxgrid_other,ax,wsavex)
           a_re(:,m)=real(ax)
           a_im(:,m)=aimag(ax)
         enddo
-        
+!
       endif
-
+!
     else
-
+!
         if (nxgrid_other>1) then
 !
 !  Transform x-direction back.
@@ -1264,16 +1264,16 @@ module Fourier
 !
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
-
+!
           call cffti(nygrid_other,wsavey)
-
+!
           do l=1,ny_other
             ay=cmplx(a_re(:,l),a_im(:,l))
             call cfftb(nygrid_other,ay,wsavey)
             a_re(:,l)=real(ay)
             a_im(:,l)=aimag(ay)
           enddo
-
+!
           call transp_xy_other(a_re)
           call transp_xy_other(a_im)
 !
@@ -1290,10 +1290,12 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fourier_transform_xy_xy_flexible_multi_ghost(in,out,factor)
+    subroutine fourier_transform_xy_xy_wrapper(in,out,factor)
 !
-!  Subroutine to do multi functional Fourier transform of a 2-D array under MPI in parallel for ghost cells.
-!  factor is to be multiplied to the extrapolated fourier components, which are then backtransformed.
+!  Subroutine to do multi functional Fourier transform of a 2-D array
+!  under MPI in parallel for ghost cells.
+!  factor is to be multiplied to the extrapolated fourier components,
+!  which are then backtransformed.
 !  nx is restricted to be an integer multiple of nprocx and of nprocy.
 !  ny is restricted to be an integer multiple of nprocx.
 !
@@ -1319,53 +1321,52 @@ module Fourier
       integer :: onz, ona ! number of ghost cells and components in the output data (usually 3)
       integer :: l, m, stat, pos_a, pos_z
 !
-!
       ina = size (in, 3)
       onz = size (out, 3)
       ona = size (out, 4)
 !
       if (ina /= ona) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', &
+          call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'number of components is different for input and ouput arrays', lfirst_proc_xy)
 !
       if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (factor, 1) /= pnx) .or. (size (factor, 2) /= pny)) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
       if (size (factor, 3) /= onz) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', &
+          call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
       if (mod (nx, nprocx) /= 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', &
+          call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'nx needs to be an integer multiple of nprocx', lfirst_proc_xy)
       if (mod (nx, nprocy) /= 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', &
+          call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'nx needs to be an integer multiple of nprocy', lfirst_proc_xy)
       if (mod (ny, nprocx) /= 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', &
+          call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'ny needs to be an integer multiple of nprocx', lfirst_proc_xy)
 !
       if (lshear) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', &
+          call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
 !  Allocate memory for large arrays.
 !
       allocate (p_re(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for p_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_re', lfirst_proc_xy)
       allocate (p_im(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for p_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_im', lfirst_proc_xy)
       allocate (t_re(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for t_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_re', lfirst_proc_xy)
       allocate (t_im(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for t_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_im', lfirst_proc_xy)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -1392,11 +1393,11 @@ module Fourier
 !
       allocate (e_re(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for e_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_re', lfirst_proc_xy)
 !
       allocate (e_im(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for e_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_im', lfirst_proc_xy)
 !
       do pos_a = 1, ona
         do l = 1, tny
@@ -1419,11 +1420,11 @@ module Fourier
 !
       allocate (b_re(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for b_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_re', lfirst_proc_xy)
 !
       allocate (b_im(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_flexible_multi_ghost', 'Could not allocate memory for b_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_im', lfirst_proc_xy)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
@@ -1452,7 +1453,7 @@ module Fourier
       if (allocated (b_re)) deallocate (b_re)
       if (allocated (b_im)) deallocate (b_im)
 !
-    endsubroutine fourier_transform_xy_xy_flexible_multi_ghost
+    endsubroutine fourier_transform_xy_xy_wrapper
 !***********************************************************************
     subroutine fourier_transform_y_y(a_re,a_im,linv)
 !
@@ -1784,7 +1785,7 @@ module Fourier
           call cfftf(nygrid,ay,wsave)
 !
 !  Shift all modes by the amount shift_y(x).
-!          
+!
           ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*shift_y(l+ipy*ny)))
           a_re(:,l,n)=real(ay)
           a_im(:,l,n)=aimag(ay)
@@ -1821,7 +1822,7 @@ module Fourier
       integer, intent (in) :: na,ifirst_fft
       real, dimension (na) :: a
       logical, optional :: linv
-      real, dimension (2*na+15) :: wsavex_temp  
+      real, dimension (2*na+15) :: wsavex_temp
 !
       logical :: lforward
 !

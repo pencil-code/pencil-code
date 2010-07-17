@@ -10,5 +10,5 @@
   public :: fourier_transform_y_y
   public :: fourier_shift_yz_y, fourier_shift_y
   public :: fourier_transform_xy_xy_other
-  public :: fourier_transform_xy_xy_flexible_multi_ghost
+  public :: fourier_transform_xy_xy_wrapper
   public :: fourier_transform_real_1
