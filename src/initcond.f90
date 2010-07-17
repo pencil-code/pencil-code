@@ -4384,14 +4384,14 @@ module Initcond
 !
     endsubroutine mdi_init
 !***********************************************************************
-    subroutine temp_hydrostatic(f)
+    subroutine temp_hydrostatic(f,rho0)
 !
 ! 07-dec-05/bing : coded.
 !      intialize the density for given temperprofile in vertical
 !      z direction by solving hydrostatic equilibrium.
 !      dlnrho = - dlnTT + (cp-cv)/T g dz
 !
-      use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot,gamma_m1
+      use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real
 !
@@ -4399,7 +4399,7 @@ module Initcond
       real :: tmp,ztop,zbot
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_z
-      real :: tmprho,tmpT,tmpdT,tmpz,dz_step
+      real :: tmprho,tmpT,tmpdT,tmpz,dz_step,lnrho_0,rho0
       integer :: i,lend,j
 !
       ! file location settings
@@ -4408,6 +4408,13 @@ module Initcond
       ! temperature given as function lnT(z) in SI units
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
+!
+      if (lnrho0 > 0.99*alog(impossible)) then 
+        call warning("lnrho0 from eos module not useful","use rho_const from density instead")
+        lnrho_0 = alog(rho0)
+      else
+        lnrho_0 = lnrho0
+      endif
 !
       if (lroot) then
         inquire(IOLENGTH=lend) tmp
@@ -4431,7 +4438,7 @@ module Initcond
       dz_step = dz_step/10.
       !
       do j=n1,n2
-         tmprho = lnrho0
+         tmprho = lnrho_0
          tmpT = prof_lnT(1)
          tmpz = prof_z(1)
          !
@@ -4457,7 +4464,7 @@ module Initcond
                   tmpT = tmpT + tmpdT
                endif
             enddo
-            tmprho = tmprho - tmpdT + gamma/gamma_m1*gravz*exp(-tmpT) * dz_step
+            tmprho = tmprho - tmpdT + gamma/(gamma-1.)*gravz*exp(-tmpT) * dz_step
          enddo
       enddo
 !

@@ -516,7 +516,7 @@ module Density
         case ('stratification'); call stratification(f,strati_type)
         case ('stratification-x'); call stratification_x(f,strati_type)
         case ('polytropic_simple'); call polytropic_simple(f)
-        case ('hydrostatic_TT'); call temp_hydrostatic(f)
+        case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const)
         case ('hydrostatic-z', '1')
           print*, 'init_lnrho: use polytropic_simple instead!'
         case ('xjump')

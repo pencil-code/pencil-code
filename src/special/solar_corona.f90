@@ -442,6 +442,7 @@ module Special
       do i=1,3
         select case(iheattype(i))
         case ('sven')
+          lpenc_diagnos(i_cp1)=.true.
           lpenc_diagnos(i_TT1)=.true.
           lpenc_diagnos(i_rho1)=.true.
         endselect
@@ -1414,12 +1415,12 @@ module Special
 !
 !  30-jan-08/bing: coded
 !
-      use EquationOfState, only: get_cp1, gamma
+      use EquationOfState, only: gamma
       use Sub, only: cubic_step, notanumber
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput
-      real :: z_Mm,cp1
+      real :: z_Mm
       type (pencil_case) :: p
       integer :: i
 !     
@@ -1442,10 +1443,8 @@ module Special
           ! Convert to pencil units.
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           !
-          call get_cp1(cp1)
-          !
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput*cubic_step(t*unit_time,300.,300.)
 !
         case ('exp')
           ! heat_par_exp(1) should be 530 w/m2 (flux,F)
@@ -1456,9 +1455,8 @@ module Special
           heatinput=heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))
           ! Convert to pencil units if needed:
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
-          call get_cp1(cp1)
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput*cubic_step(t*unit_time,300.,300.)
 !                    
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
@@ -1472,9 +1470,8 @@ module Special
               2*heat_par_gauss(2)**2))
           ! Convert to pencil units if needed:
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
-          call get_cp1(cp1)
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &              
-              p%TT1*p%rho1*gamma*cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput*cubic_step(t*unit_time,300.,300.)
           !          
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
@@ -1587,7 +1584,7 @@ module Special
 !
 !  11-may-10/bing: coded
 !
-      use EquationOfState, only: gamma_inv,gamma_m1,get_cp1,lnrho0,cs20
+      use EquationOfState, only: gamma_inv,get_cp1,gamma_m1,lnrho0,cs20
       use General, only: random_seed_wrapper
       use Mpicomm, only: mpisend_real, mpirecv_real
       use Sub, only: cubic_step
@@ -1619,8 +1616,6 @@ module Special
             Bz_flux/(Bzflux*dA*unit_magnetic)
       endif
 !
-      call get_cp1(cp1)
-!
       if (lroot) then
         Ux=0.0
         Uy=0.0
@@ -1647,6 +1642,8 @@ module Special
       endif
 !
 ! for footpoint quenching compute pressure
+!
+      call get_cp1(cp1)
 !
       if (lquench) then
         if (ltemperature) then
