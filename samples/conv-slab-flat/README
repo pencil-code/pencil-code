@@ -1,0 +1,14 @@
+Directory:
+    ${PENCIL_HOME}/samples/conv-slab
+SVN Id:
+    $Id$
+Maintainer:
+    Wolfgang Dobler <wdobler/gmail[dot]com>
+Added:
+    24-Sep-2002
+Status:
+    has been working since August 2003
+Recommended resolution:
+    64x64x16 (nu=eta=1e-3)
+Comments:
+References:
