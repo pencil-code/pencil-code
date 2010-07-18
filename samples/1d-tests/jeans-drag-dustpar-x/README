@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/jeans-drag-dustpar-x
+SVN Id:
+    $Id$
+Maintainer:
+    Anders Johansen <anders/astro[dot]lu[dot]se>
+Added:
+    05-Sep-2008
+Status:
+    succeeds
+Recommended resolution:
+    64x1x1
+Comments:
+    1-D Jeans problem
+References:
+    Johansen A., Oishi J., Mac Low M.-M., Klahr H., Henning Th., & Youdin A.:
+    2007, ``Supplementary Information for "Rapid planetesimal formation in
+    turbulent circumstellar discs"'', http://arxiv.org/abs/0708.3893
