@@ -1307,8 +1307,8 @@ module Fourier
       real, dimension (:,:,:,:), intent(out) :: out
       real, dimension (:,:,:), intent(in) :: factor
 !
-      integer, parameter :: pnx=nxgrid, pny=ny/nprocx ! pencil shaped data sizes
-      integer, parameter :: tnx=nygrid, tny=nx/nprocx ! pencil shaped transposed data sizes
+      integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
+      integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
       real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
       real, dimension (:,:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
       real, dimension (:,:,:,:), allocatable :: e_re, e_im ! extrapolated data in transposed pencil shape
@@ -1339,15 +1339,12 @@ module Fourier
           call fatal_error ('fourier_transform_xy_xy_wrapper', &
                             'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
-      if (mod (nx, nprocx) /= 0) &
+      if (mod (nxgrid, nprocxy) /= 0) &
           call fatal_error ('fourier_transform_xy_xy_wrapper', &
-                            'nx needs to be an integer multiple of nprocx', lfirst_proc_xy)
-      if (mod (nx, nprocy) /= 0) &
+                            'nxgrid needs to be an integer multiple of nprocxy', lfirst_proc_xy)
+      if (mod (nygrid, nprocxy) /= 0) &
           call fatal_error ('fourier_transform_xy_xy_wrapper', &
-                            'nx needs to be an integer multiple of nprocy', lfirst_proc_xy)
-      if (mod (ny, nprocx) /= 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', &
-                            'ny needs to be an integer multiple of nprocx', lfirst_proc_xy)
+                            'nygrid needs to be an integer multiple of nprocxy', lfirst_proc_xy)
 !
       if (lshear) &
           call fatal_error ('fourier_transform_xy_xy_wrapper', &
