@@ -19,13 +19,20 @@ $Id$
      eos_fixed_ionization.f90
      eos_temperature_ionization.f90
 
-   and runs without an equation of state you would use:
+   For runs without an equation of state (e.g. isothermal runs) you would use:
 
      noeos.f90
 
 5. Some confusion may occur because not all modules are equally
-   frequently used, and some are more outdated and not recommended.
+   frequently used, and some are more outdated and/or not recommended.
    The following gives a brief status decription.
+   Experimental files are supposed to be in the experimental directory.
+   Obsolete files that may still be useful for inspection are in obsolete.
+   Modules that still work, but are not used, are in inactive.
+   On the other hand, the special directory should only contain modules
+   that connect to the "special" interface. Examples include advective_gauge
+   and gross_pitaevskii. Even some 0D modules such as oscillation_0D_Lorenz
+   for solving the Lorenz attractor equations can be found for test purposes.
 
 Brief status description about some modules
 ===========================================
@@ -57,9 +64,11 @@ if one wants the velocity field to be affected by the magnetic field.
 
      testfield_x.f90
 
-       6-sep-09: is functional, but not at the same level of advancement as testfield_z.
-       It is used for x-dependent mean fields, i.e. averaging over y and z is assumed.
+       6-sep-09: is functional, but not at the same level of advancement
+       as testfield_z. It is used for x-dependent mean fields,
+       i.e. averaging over y and z is assumed.
        9-may-10: seems now to produce wrong results. Is not part of auto-test.
+       17-may-10: seems now to produce *correct* results. Not sure what's up.
 
      testfield_xz.f90
 
@@ -70,7 +79,9 @@ if one wants the velocity field to be affected by the magnetic field.
        Uses 3 test fields and assumes test turbulence to have one
        preferred direction, so it is assumed to be axisymmetric.
        9-may-10: this routine works well for periodic test fields.
-       This routine is now being superseeded by testfield_axisym2.
+       For periodic test fields it is better to use testfield_axisym2.
+       17-jul-10: works also  for linear test field. Currently only
+       the z-dependent output is correct, not the command-line output.
 
      testfield_axisym2.f90
 
@@ -84,6 +95,7 @@ if one wants the velocity field to be affected by the magnetic field.
      testfield_nonlin_z.f90
 
        This routine has been used in the 2010 paper with Rheinhardt.
+       On 17-jul-10, minor problems with subtracting uumz have been corrected.
 
      testfield_compress_z.f90
 
