@@ -12,7 +12,7 @@
 !  Example:
 !  ! MVAR CONTRIBUTION 24
 !  ! MAUX CONTRIBUTION 24
-!  integer, parameter :: njtest=4
+!  integer, parameter :: njtest=5
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -645,7 +645,8 @@ module Testfield
         if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
       endif
 !
-!  loop over all fields
+!  loop over all fields, but do it backwards,
+!  so we compute the zero field first
 !
       do jtest=njtest,1,-1
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
@@ -723,7 +724,7 @@ module Testfield
           endif
 !
 !  subtract average jxb, unless we ignore the <jxb> term (lignore_jxbtestm=T)
-
+!
           if (ijxb/=0.and..not.ltest_jxb) then
             jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
             if (lignore_jxbtestm) then
@@ -752,7 +753,7 @@ module Testfield
               +ampl_fcont_aatest*p%fcont
           if (lforcing_cont_uutest) &
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
-            +ampl_fcont_uutest*p%fcont
+              +ampl_fcont_uutest*p%fcont
         else
 !
 !  Calculate uufluct=U-Umean.
@@ -812,7 +813,7 @@ module Testfield
 !
         if ((ldiagnos.or.l1davgfirst).and. &
           (lsoca.or.ltest_uxb.or.idiag_b0rms/=0.or. &
-           idiag_j11rms/=0 .or. idiag_b11rms/=0 .or. idiag_b21rms/=0.or. &
+           idiag_j11rms/=0.or.idiag_b11rms/=0.or.idiag_b21rms/=0.or. &
            idiag_b12rms/=0.or.idiag_b22rms/=0.or. &
            idiag_s2kzDFm/=0.or. &
            idiag_M11cc/=0.or.idiag_M11ss/=0.or. &
@@ -845,22 +846,17 @@ module Testfield
         upq(:,:,jtest)=uutest
 !
 !  Restore uxbtest and jxbtest from f-array, and compute uxbtestK for alpK
-!  computation for comparison.
+!  computation for comparison. Do the same for jxb.
 !
         uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
-!
-!  Do the same for jxb.
-!
         jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
 !
-!  evaluate different contributions to <uxb>
+!  evaluate different contributions to <uxb> and <jxb>
 !
         Eipq(:,:,jtest)=uxbtest*bamp1
-!
-!  evaluate different contributions to <jxb>
-!
         Fipq(:,:,jtest)=jxbtest*bamp1
-        if (ldiagnos.and.(idiag_jb0m/=0.or. idiag_j11rms/=0)) jpq(:,:,jtest)=jjtest
+        if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) &
+            jpq(:,:,jtest)=jjtest
 !
 !  enddo loop for jtest
 !
@@ -940,7 +936,8 @@ module Testfield
         if (idiag_eta12cs/=0) call sum_mn_name(-csz(n)*(-sz(n)*Eipq(:,1,i1)+cz(n)*Eipq(:,1,i2))*ktestfield1,idiag_eta12cs)
         if (idiag_eta22ss/=0) call sum_mn_name(-s2z(n)*(-sz(n)*Eipq(:,2,i1)+cz(n)*Eipq(:,2,i2))*ktestfield1,idiag_eta22ss)
 !
-!  Compute kinetic, magnetic, and magneto-kinetic contributions with imposed-field method
+!  Compute kinetic, magnetic, and magneto-kinetic contributions with
+!  imposed-field method
 !
         if (idiag_alpK/=0) call sum_mn_name(alpK,idiag_alpK)
         if (idiag_alpM/=0) call sum_mn_name(alpM,idiag_alpM)

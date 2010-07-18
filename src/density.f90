@@ -1026,24 +1026,20 @@ module Density
 !  Calculate mean gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
-!
         fact=1./nxy
         do n=n1,n2
-!
           nl = n-n1+1
           glnrhomz(nl,:)=0.
 !
           do m=m1,m2
-!
             call grad(f,ilnrho,gradlnrho)
-!
             do j=1,3
               glnrhomz(nl,j)=glnrhomz(nl,j)+sum(gradlnrho(:,j))
             enddo
           enddo
 !
-          if (nprocy>1) then
-            call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
+          if (nprocx>1.or.nprocy>1) then
+            call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=12)
             glnrhomz = temp
           endif
 !

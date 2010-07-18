@@ -59,7 +59,7 @@ module Entropy
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
   real :: zheat_buffer=0.0, dheat_buffer1=0.0
-  real :: heat_uniform=0.0, cool_RTV=0.0
+  real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible, T0hs=impossible
@@ -120,7 +120,8 @@ module Entropy
       wcool, Fbot, lcooling_general, chi_t, chi_th, chi_rho, chit_prof1, chit_prof2, chi_shock, &
       chi, iheatcond, Kgperp, Kgpara, cool_RTV, tau_ss_exterior, lmultilayer, &
       Kbot, tau_cor, TT_cor, z_cor, tauheat_buffer, TTheat_buffer, &
-      zheat_buffer, dheat_buffer1, heat_uniform, lupw_ss, cool_int, cool_ext, &
+      zheat_buffer, dheat_buffer1, heat_uniform, cool_uniform, cool_newton, &
+      lupw_ss, cool_int, cool_ext, &
       chi_hyper3, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
       lcalc_ssmean, &
@@ -162,18 +163,23 @@ module Entropy
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ssmphi=0     ! PHIAVG_DOC: $\left<s\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
-  integer :: idiag_yHm=0        ! DIAG_DOC:
-  integer :: idiag_yHmax=0      ! DIAG_DOC:
-  integer :: idiag_TTm=0        ! DIAG_DOC:
-  integer :: idiag_TTmax=0      ! DIAG_DOC:
-  integer :: idiag_TTmin=0      ! DIAG_DOC:
+  integer :: idiag_yHm=0        ! DIAG_DOC: mean hydrogen ionization
+  integer :: idiag_yHmax=0      ! DIAG_DOC: max of hydrogen ionization
+  integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
+  integer :: idiag_TTmax=0      ! DIAG_DOC: $T_{\max}$
+  integer :: idiag_TTmin=0      ! DIAG_DOC: $T_{\min}$
+  integer :: idiag_ssmax=0      ! DIAG_DOC: $s_{\max}$
+  integer :: idiag_ssmin=0      ! DIAG_DOC: $s_{\min}$
+  integer :: idiag_gTrms=0      ! DIAG_DOC: $(\nabla T)_{\rm rms}$
+  integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
+  integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
   integer :: idiag_fconvm=0     ! DIAG_DOC: $\left<\varrho u_z T \right>$
   integer :: idiag_fconvz=0     ! DIAG_DOC: $\left<\varrho u_z T \right>_{xy}$
   integer :: idiag_fconvxy=0    ! DIAG_DOC: $\left<\varrho u_x T \right>_{z}$
-  integer :: idiag_dcoolz=0     ! DIAG_DOC:
-  integer :: idiag_fradz=0      ! DIAG_DOC:
-  integer :: idiag_fradz_Kprof=0 ! DIAG_DOC:
-  integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC:
+  integer :: idiag_dcoolz=0     ! DIAG_DOC: surface cooling flux
+  integer :: idiag_fradz=0      ! DIAG_DOC: $F_{\rm rad}$
+  integer :: idiag_fradz_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kprof)
+  integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, from Kprof)
   integer :: idiag_fturbz=0     ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! DIAG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! DIAG_DOC: heat flux)
@@ -2139,6 +2145,7 @@ module Entropy
           lpenc_requested(i_cs2)=.true.
       if (luminosity/=0 .or. cool/=0 .or. tau_cor/=0 .or. &
           tauheat_buffer/=0 .or. heat_uniform/=0 .or. &
+          cool_uniform/=0 .or. cool_newton/=0 .or. &
           (cool_ext/=0 .and. cool_int /= 0) .or. lturbulent_heat) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT1)=.true.
@@ -2275,11 +2282,13 @@ module Entropy
         lpenc_requested(i_z_mn)=.true.
         lpenc_requested(i_rcyl_mn)=.true.
       endif
-      if (tau_cool/=0.0) then
+      if (tau_cool/=0.0 .or. cool_uniform/=0.0) then
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_rho)=.true.
       endif
+      if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
+      if (cool_newton/=0.0) lpenc_requested(i_TT)=.true.
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
@@ -2334,6 +2343,11 @@ module Entropy
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
       if (idiag_cs2mphi/=0) lpenc_diagnos(i_cs2)=.true.
+!
+!  diagnostics for baroclinic term
+!
+      if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gTT)=.true.
+      if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -2446,7 +2460,8 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax
+      real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
+      real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
       integer :: j,ju
 !
@@ -2555,7 +2570,8 @@ module Entropy
 !
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
-          (heat_uniform/=0.0) .or. (tau_cool/=0.0) .or. &
+          heat_uniform/=0.0 .or. tau_cool/=0.0 .or. &
+          cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
           (tau_cool2 /=0)) &
           call calc_heat_cool(df,p,Hmax)
@@ -2590,6 +2606,8 @@ module Entropy
       if (ldiagnos) then
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
+        if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
+        if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
         if (idiag_TTm/=0)    call sum_mn_name(p%TT*uT,idiag_TTm)
@@ -2611,6 +2629,24 @@ module Entropy
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_fconvm/=0) &
             call sum_mn_name(p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
+!
+!  analysis for the baroclinic term
+!
+        if (idiag_gTrms/=0) then
+          call dot2(p%gTT,gT2)
+          call sum_mn_name(gT2,idiag_gTrms,lsqrt=.true.)
+        endif
+!
+        if (idiag_gsrms/=0) then
+          call dot2(p%gss,gs2)
+          call sum_mn_name(gs2,idiag_gsrms,lsqrt=.true.)
+        endif
+!
+        if (idiag_gTxgsrms/=0) then
+          call cross(p%gTT,p%gss,gTxgs)
+          call dot2(gTxgs,gTxgs2)
+          call sum_mn_name(gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
+        endif
 !
 !  radiative heat flux at the bottom (assume here that hcond=hcond0=const)
 !
@@ -3756,12 +3792,12 @@ module Entropy
 !  Vertical gravity case: Heat at bottom, cool top layers
 !
       if (lgravz .and. ( (luminosity/=0.) .or. (cool/=0.) ) ) &
-           call get_heat_cool_gravz (heat,p)
+          call get_heat_cool_gravz (heat,p)
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
 !
       if ((lgravr.and.(wheat/=0)) .and.(.not. lspherical_coords)) &
-           call get_heat_cool_gravr (heat,p)
+          call get_heat_cool_gravr (heat,p)
 ! (also see the comments inside the above subroutine to apply it to 
 ! spherical coordinates. 
 !
@@ -3769,20 +3805,27 @@ module Entropy
 !           heat at centre, cool outer layers.
 !
       if (lgravx.and.lspherical_coords) &
-           call get_heat_cool_gravx_spherical (heat,p)
+          call get_heat_cool_gravx_spherical (heat,p)
 !
 !  Add spatially uniform heating.
 !
       if (heat_uniform/=0.) heat=heat+heat_uniform
+!
+!  Add spatially uniform cooling in Ds/Dt equation.
+!
+      if (cool_uniform/=0.) heat=heat-cool_uniform*p%rho*p%cp*p%TT
+      if (cool_newton/=0.) heat=heat-cool_newton*p%TT**4
 !
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) &
           heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
       if (tau_cool2/=0.0) &
-          heat = heat - (p%cs2-cs2cool)/cs2cool/p%rho1/tau_cool2
+!--       heat = heat - (p%cs2-cs2cool)/cs2cool/p%rho1/tau_cool2
+          heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
 !
 !  Add "coronal" heating (to simulate a hot corona).
+!
       if (tau_cor>0) call get_heat_cool_corona (heat,p) 
 !
 !  Add heating and cooling to a reference temperature in a buffer
@@ -3790,10 +3833,10 @@ module Entropy
 !  Inverse width of the transition is given by dheat_buffer1.
 !
       if (tauheat_buffer/=0.) then
-         profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)-zheat_buffer)))
+        profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)-zheat_buffer)))
 !profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)**2-zheat_buffer**2)))
 !       profile_buffer=1.+0.5*(tanh(dheat_buffer1*(z(n)-z(n1)-zheat_buffer)) + tanh(dheat_buffer1*(z(n)-z(n2)-zheat_buffer)))
-         heat=heat+profile_buffer*p%ss* &
+        heat=heat+profile_buffer*p%ss* &
               (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
 !
@@ -3805,7 +3848,7 @@ module Entropy
 !  Heating/cooling related diagnostics.
 !
       if (ldiagnos) then
-         if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
+        if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
       endif
 !
     endsubroutine calc_heat_cool
@@ -3818,17 +3861,21 @@ module Entropy
 !
       real, dimension (nx) :: heat,prof
       intent(in) :: p
+!
 ! subroutine to do volume heating and cooling in a layer independent of
-! gravity. 
+! gravity.
+!
       select case (cooling_profile)
       case ('gaussian-z')
          prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
       endselect
+!
 !Note: the cooltype 'Temp' used below was introduced by Axel for the 
 ! aerosol runs. Although this 'Temp' does not match with the cooltype
 ! 'Temp' used in other parts of this subroutine. I have introduced 
 ! 'Temp2' which is the same as the 'Temp' elsewhere. Later runs
 ! will clarify this. - Dhruba 
+!
      select case (cooltype)
      case ('Temp')
        if (headtt) print*,'calc_heat_cool: cs20,cs2cool=',cs20,cs2cool
@@ -4197,6 +4244,8 @@ module Entropy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
+        idiag_ssmax=0; idiag_ssmin=0
+        idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
         idiag_ssmx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ssmr=0; idiag_TTmr=0
@@ -4232,6 +4281,11 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
+        call parse_name(iname,cname(iname),cform(iname),'ssmin',idiag_ssmin)
+        call parse_name(iname,cname(iname),cform(iname),'ssmax',idiag_ssmax)
+        call parse_name(iname,cname(iname),cform(iname),'gTrms',idiag_gTrms)
+        call parse_name(iname,cname(iname),cform(iname),'gsrms',idiag_gsrms)
+        call parse_name(iname,cname(iname),cform(iname),'gTxgsrms',idiag_gTxgsrms)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
       enddo
@@ -4347,6 +4401,11 @@ module Entropy
         write(3,*) 'i_yHm=',idiag_yHm
         write(3,*) 'i_TTmax=',idiag_TTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
+        write(3,*) 'i_ssmax=',idiag_ssmax
+        write(3,*) 'i_ssmin=',idiag_ssmin
+        write(3,*) 'i_gTrms=',idiag_gTrms
+        write(3,*) 'i_gsrms=',idiag_gsrms
+        write(3,*) 'i_gTxgsrms=',idiag_gTxgsrms
         write(3,*) 'i_TTm=',idiag_TTm
         write(3,*) 'i_TTp=',idiag_TTp
         write(3,*) 'iyH=',iyH

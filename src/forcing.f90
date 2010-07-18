@@ -1913,7 +1913,8 @@ module Forcing
 !
 !  gradient of gaussians as forcing function
 !
-!  19-dec-05/tony: coded
+!  19-dec-05/tony: coded, adapted from forcing_nocos
+!  14-jul-10/axel: in less then 3-D, project forcing to computational domain
 !
       use Mpicomm
       use General
@@ -1951,11 +1952,21 @@ module Forcing
           location=location_fixed
         endif
 !
+!  reset location(i) to x, y, or z
+!
+        if (.not.extent(1)) location(1)=x(1)
+        if (.not.extent(2)) location(2)=y(1)
+        if (.not.extent(3)) location(3)=z(1)
+!
+!  write location to file
+!
         if (lroot .and. lwrite_gausspot_to_file) then
           open(1,file=trim(datadir)//'/gaussian_pot_forcing.dat',status='unknown',position='append')
             write(1,'(4f14.7)') t, location
           close (1)
         endif
+!
+!  set next forcing time
 !
         tsforce=t+dtforce
         if (ip<=6) print*,'forcing_gaussianpot: location=',location
@@ -2003,6 +2014,8 @@ module Forcing
               if (.not.extent(j)) delta(:,j)=0.
             enddo
 !
+!  compute gaussian blob and set to forcing function
+!
             radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
             gaussian=fact*exp(-radius2*width_ff21)
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
@@ -2043,7 +2056,7 @@ module Forcing
         endif
       endif
 !
-      if (ip<=9) print*,'forcing_nocos: forcing OK'
+      if (ip<=9) print*,'forcing_gaussianpot: forcing OK'
 !
     endsubroutine forcing_gaussianpot
 !***********************************************************************

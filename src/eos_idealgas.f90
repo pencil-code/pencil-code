@@ -471,7 +471,8 @@ module EquationOfState
 !  Interdependency among pencils from the EquationOfState module is specified
 !  here.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
+!  15-jul-10/axel: added gTT calculation for ilnrho_ss,irho_ss case
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -511,6 +512,10 @@ module EquationOfState
         if (lpencil_in(i_glnTT)) then
           lpencil_in(i_glnrho)=.true.
           lpencil_in(i_gss)=.true.
+        endif
+        if (lpencil_in(i_gTT)) then
+          lpencil_in(i_glnTT)=.true.
+          lpencil_in(i_TT)=.true.
         endif
         if (lpencil_in(i_del2lnTT)) then
           lpencil_in(i_del2lnrho)=.true.
@@ -699,6 +704,9 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
+        if (lpencil(i_gTT)) then
+          do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
+        endif
         if (lpencil(i_del2lnTT)) p%del2lnTT=gamma_m1*p%del2lnrho+cv1*p%del2ss
         if (lpencil(i_hlnTT)) p%hlnTT=gamma_m1*p%hlnrho+cv1*p%hss
 !

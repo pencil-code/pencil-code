@@ -291,13 +291,15 @@ module Equ
 !  in hydro of the testfield procedure (only when lsoca=.false.)
 !
       call timing('pde','before calc_lhydro_pars')
-      if (lhydro.and.ldensity)    call calc_lhydro_pars(f)
+!AB-- if (lhydro.and.ldensity)    call calc_lhydro_pars(f)
+      if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
       if (lentropy)               call calc_lentropy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (ltestscalar)            call calc_ltestscalar_pars(f)
       if (ltestfield)             call calc_ltestfield_pars(f,p)
-      if (ltestflow.and.ldensity) call calc_ldensity_pars(f)
+!AB-- if (ltestflow.and.ldensity) call calc_ldensity_pars(f)
+      if (ldensity)               call calc_ldensity_pars(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
 !
@@ -357,6 +359,9 @@ module Equ
           if (lmagnetic) then
             advec_va2=0.0; advec_hall=0.0
             diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
+          endif
+          if (ltestfield) then
+            diffus_eta=0.0; diffus_eta3=0.0
           endif
           if (ltestscalar) then
             diffus_eta=0.0
@@ -663,6 +668,7 @@ module Equ
           if (lviscosity) maxdiffus3=max(diffus_nu3,maxdiffus3)
           if (ldensity) maxdiffus3=max(diffus_diffrho3,maxdiffus3)
           if (lmagnetic) maxdiffus3=max(diffus_eta3,maxdiffus3)
+          if (ltestfield) maxdiffus3=max(diffus_eta3,maxdiffus3)
           if (lentropy) maxdiffus3=max(diffus_chi3,maxdiffus3)
           if (ltemperature) maxdiffus3=max(diffus_chi3,maxdiffus3)
           if (ldustvelocity) maxdiffus3=max(diffus_nud3,maxdiffus3)

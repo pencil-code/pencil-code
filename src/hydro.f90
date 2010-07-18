@@ -251,7 +251,7 @@ module Hydro
   integer :: idiag_uxmy=0       ! DIAG_DOC: $\left< u_x \right>_{y}$
   integer :: idiag_uymy=0       ! DIAG_DOC: $\left< u_y \right>_{y}$
   integer :: idiag_uzmy=0       ! DIAG_DOC: $\left< u_z \right>_{y}$
-  integer :: idiag_u2mz=0       ! DIAG_DOC: $\left< \uv^2 \right>_{y}$
+  integer :: idiag_u2mz=0       ! DIAG_DOC: $\left< \uv^2 \right>_{xy}$
   integer :: idiag_omumz=0      ! DIAG_DOC: $\left<\left<\Wv\right>_{xy}
                                 ! DIAG_DOC:   \cdot\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
@@ -429,6 +429,12 @@ module Hydro
   integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
   integer :: idiag_uzdivum=0    ! DIAG_DOC: $\left<u_z\nabla\cdot\uv\right>$
   integer :: idiag_uxuydivum=0  ! DIAG_DOC: $\left<u_x u_y\nabla\cdot\uv\right>$
+  integer :: idiag_divuHrms=0   ! DIAG_DOC: $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$
+  integer :: idiag_uxxrms=0     ! DIAG_DOC: $u_{x,x}^{\rm rms}$
+  integer :: idiag_uyyrms=0     ! DIAG_DOC: $u_{y,y}^{\rm rms}$
+  integer :: idiag_uxzrms=0     ! DIAG_DOC: $u_{x,z}^{\rm rms}$
+  integer :: idiag_uyzrms=0     ! DIAG_DOC: $u_{y,z}^{\rm rms}$
+  integer :: idiag_uzyrms=0     ! DIAG_DOC: $u_{z,y}^{\rm rms}$
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
@@ -1437,9 +1443,6 @@ module Hydro
       if (lpencil(i_ugu)) then
         if (headtt.and.lupw_uu) then
           print *,'calc_pencils_hydro: upwinding advection term'
-          !AB: I think this cautious comment is now obsolete.
-          !print *,'calc_pencils_hydro: upwinding advection term. '//&
-          !        'Not well tested; use at own risk!'
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
       endif
@@ -1776,6 +1779,12 @@ module Hydro
             call sum_mn_name(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzm)
         if (idiag_ruyuzm/=0) &
             call sum_mn_name(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzm)
+        if (idiag_divuHrms/=0) call sum_mn_name((p%uij(:,1,1)+p%uij(:,2,2))**2,idiag_divuHrms,lsqrt=.true.)
+        if (idiag_uxxrms/=0) call sum_mn_name(p%uij(:,1,1)**2,idiag_uxxrms,lsqrt=.true.)
+        if (idiag_uyyrms/=0) call sum_mn_name(p%uij(:,2,2)**2,idiag_uyyrms,lsqrt=.true.)
+        if (idiag_uxzrms/=0) call sum_mn_name(p%uij(:,1,3)**2,idiag_uxzrms,lsqrt=.true.)
+        if (idiag_uyzrms/=0) call sum_mn_name(p%uij(:,2,3)**2,idiag_uyzrms,lsqrt=.true.)
+        if (idiag_uzyrms/=0) call sum_mn_name(p%uij(:,3,2)**2,idiag_uzyrms,lsqrt=.true.)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
@@ -2274,22 +2283,22 @@ module Hydro
 !  do mean field for each component
 !
       if (lcalc_uumean) then
-!
         fact=1./nxy
         uumz = 0.
-!
         do n=1,mz
           do j=1,3
             uumz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
           enddo
         enddo
 !
-        if (nprocy>1) then
+!  communicate over x and y directions
 !
-          call mpiallreduce_sum(uumz,temp,(/mz,3/),idir=2)
-          uumz = temp
-!
+        if (nprocx>1.or.nprocy>1) then
+          call mpiallreduce_sum(uumz,temp,(/mz,3/),idir=12)
+          uumz=temp
         endif
+!
+!AB: it would be better to define guumz without ghost zones
 !
         do j=1,3
           call der_z(uumz(:,j),guumz(n1:n2,j))       ! ghost zones in guumz are not filled!
@@ -3352,6 +3361,12 @@ module Hydro
         idiag_Mamax=0
         idiag_fintm=0
         idiag_fextm=0
+        idiag_divuHrms=0
+        idiag_uxxrms=0
+        idiag_uyyrms=0
+        idiag_uxzrms=0
+        idiag_uyzrms=0
+        idiag_uzyrms=0
         idiag_duxdzma=0
         idiag_duydzma=0
         idiag_ekin=0
@@ -3485,6 +3500,12 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
         call parse_name(iname,cname(iname),cform(iname),'fintm',idiag_fintm)
         call parse_name(iname,cname(iname),cform(iname),'fextm',idiag_fextm)
+        call parse_name(iname,cname(iname),cform(iname),'divuHrms',idiag_divuHrms)
+        call parse_name(iname,cname(iname),cform(iname),'uxxrms',idiag_uxxrms)
+        call parse_name(iname,cname(iname),cform(iname),'uyyrms',idiag_uyyrms)
+        call parse_name(iname,cname(iname),cform(iname),'uxzrms',idiag_uxzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uyzrms',idiag_uyzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uzyrms',idiag_uzyrms)
         call parse_name(iname,cname(iname),cform(iname),'duxdzma',idiag_duxdzma)
         call parse_name(iname,cname(iname),cform(iname),'duydzma',idiag_duydzma)
         call parse_name(iname,cname(iname),cform(iname),'totangmom',idiag_totangmom)

@@ -255,6 +255,11 @@ module Shear
         do j=iaatest,iaxtestpq,3
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
         enddo
+        if (iuutest/=0) then
+          do j=iuutest,iuztestpq,3
+            df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear*f(l1:l2,m,n,j)
+          enddo
+        endif
       endif
 !
 !  Testflow stretching term.

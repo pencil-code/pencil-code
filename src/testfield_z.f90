@@ -34,6 +34,10 @@ module Testfield
 
   include 'testfield.h'
 !
+! Parameters
+!
+  integer, parameter :: nresitest_max=4
+!
 ! Slice precalculation buffers
 !
   real, target, dimension (nx,ny,3) :: bb11_xy
@@ -49,6 +53,8 @@ module Testfield
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
+  character (len=labellen), dimension(nresitest_max) :: iresistivity_test=''
+!
   real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.
@@ -62,6 +68,8 @@ module Testfield
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
+  logical :: lresitest_eta_const=.false.
+  logical :: lresitest_hyper3=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
@@ -76,7 +84,7 @@ module Testfield
        luxb_as_aux,ljxb_as_aux
 
   ! run parameters
-  real :: etatest=0.,etatest1=0.
+  real :: etatest=0.,etatest1=0.,etatest_hyper3=0.
   real :: tau_aatest=0.,tau1_aatest=0.
   real :: ampl_fcont_aatest=1.
   real, dimension(njtest) :: rescale_aatest=0.
@@ -89,7 +97,8 @@ module Testfield
   logical :: ltestfield_profile_eta_z=.false.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
-       lset_bbtest2,etatest,etatest1,itestfield,ktestfield, &
+       etatest,etatest1,etatest_hyper3,iresistivity_test, &
+       lset_bbtest2,itestfield,ktestfield, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
        ltestfield_taver,llorentzforce_testfield, &
@@ -278,7 +287,7 @@ module Testfield
       real, dimension(mz) :: ztestfield, c, s
       real :: ktestfield_effective
       logical, intent(in) :: lstarting
-      integer :: jtest, ierr
+      integer :: i, jtest, ierr
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
@@ -286,6 +295,29 @@ module Testfield
         etatest=1./etatest1
       endif
       if (lroot) print*,'initialize_testfield: etatest=',etatest
+!
+      if (iresistivity_test(1)=='') iresistivity_test(1)='etatest-const'
+      lresitest_eta_const=.false.
+      lresitest_hyper3=.false.
+!
+      do i=1,nresitest_max
+        select case (iresistivity_test(i))
+        case ('etatest-const')
+          if (lroot) print*, 'resistivity: constant eta'
+          lresitest_eta_const=.true.
+        case ('hyper3')
+          if (lroot) print*, 'resistivity: hyper3'
+          lresitest_hyper3=.true.
+        case ('none')
+          ! do nothing
+        case ('')
+          ! do nothing
+        case default
+          if (lroot) print*, 'No such value for iresistivity_test(',i,'): ', &
+              trim(iresistivity_test(i))
+          call fatal_error('initialize_testfield','')
+        endselect
+      enddo
 !
 !  set cosine and sine function for setting test fields and analysis
 !  Choice of using rescaled z-array or original z-array
@@ -599,7 +631,7 @@ module Testfield
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
-      real, dimension (nx,3) :: del2Atest,uufluct
+      real, dimension (nx,3) :: del2Atest,del6Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.
@@ -703,8 +735,16 @@ module Testfield
               +eta_z(n)*etatest*del2Atest(:,j)+geta_z(n,j)*divatest
           enddo
         else
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +etatest*del2Atest
+          if (lresitest_eta_const) then
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+              +etatest*del2Atest
+          endif
+          if (lresitest_hyper3) then
+            call del6v(f,iaxtest,del6Atest)
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+              +etatest_hyper3*del6Atest
+            if (lfirst.and.ldt) diffus_eta3=diffus_eta3+etatest_hyper3
+          endif
         endif
 !
 !  Compute u=U-Ubar

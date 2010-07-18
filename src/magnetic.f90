@@ -823,7 +823,7 @@ module Magnetic
         case ('')
           ! do nothing
         case default
-          if (lroot) print*, 'No such such value for iresistivity(',i,'): ', &
+          if (lroot) print*, 'No such value for iresistivity(',i,'): ', &
               trim(iresistivity(i))
           call fatal_error('initialize_magnetic','')
         endselect
