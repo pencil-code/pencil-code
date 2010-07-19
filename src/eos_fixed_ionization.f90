@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
-! PENCILS PROVIDED glnTT(3); TT; TT1; yH; hss(3,3); hlnTT(3,3)
+! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; glnmumol(3); ppvap; csvap2
 !
 !***************************************************************
@@ -386,6 +386,10 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_gTT)) then
+        lpencil_in(i_glnTT)=.true.
+        lpencil_in(i_TT)=.true.
+      endif
       if (lpencil_in(i_del2lnTT)) then
         lpencil_in(i_del2lnrho)=.true.
         lpencil_in(i_del2ss)=.true.
@@ -415,6 +419,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer :: i
 !
       intent(in) :: f
       intent(inout) :: p
@@ -446,6 +451,10 @@ module EquationOfState
 ! glnTT
       if (lpencil(i_glnTT)) then
         call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
+      endif
+! gTT
+      if (lpencil(i_gTT)) then
+        do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
       endif
 ! hss
       if (lpencil(i_hss)) then
