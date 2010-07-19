@@ -1354,16 +1354,16 @@ module Fourier
 !
       allocate (p_re(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_re', .true.)
       allocate (p_im(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_im', .true.)
       allocate (t_re(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_re', .true.)
       allocate (t_im(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_im', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -1390,11 +1390,11 @@ module Fourier
 !
       allocate (e_re(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_re', .true.)
 !
       allocate (e_im(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_im', .true.)
 !
       do pos_a = 1, ona
         do l = 1, tny
@@ -1417,11 +1417,11 @@ module Fourier
 !
       allocate (b_re(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_re', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_re', .true.)
 !
       allocate (b_im(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_im', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_im', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
