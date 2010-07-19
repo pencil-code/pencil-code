@@ -1445,9 +1445,9 @@ module EquationOfState
 
       case (ipp_cs2)
         if (lanelastic_lin) then
-          rho_=var1
+          lnrho_=log(var1)
           TT_=exp(lnTT0)
-          pp_=rho_*cs20/gamma
+          pp_=exp(lnrho_)*cs20/gamma
         elseif (lanelastic_full) then  
           if (leos_isothermal) then
           pp_=var1
@@ -1457,16 +1457,16 @@ module EquationOfState
        endif
       case (ipp_ss)
         if (lanelastic_lin) then
-          rho_=var1
+          lnrho_=log(var1)
           ss_=var2
-          cs2_=exp(gamma*ss_*cp1+gamma_m1*log(rho_/rho0))*cs20
+          cs2_=exp(gamma*ss_*cp1+gamma_m1*(lnrho_-lnrho0))*cs20
           TT_=cs2_/(gamma_m1*cp)
         else if (lanelastic_full) then
           pp_=var1
           ss_=var2
           cs2_=exp(ss_*cp1+gamma_inv*gamma_m1*log(pp_/pp0))*cs20
           TT_=cs2_/(gamma_m1*cp)
-          lnrho_=gamma*pp_/cs2_
+          lnrho_=log(gamma*pp_/cs2_)
         endif
       case default
         call not_implemented('eoscalc_point')
