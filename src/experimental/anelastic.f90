@@ -20,7 +20,7 @@
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
 ! PENCILS PROVIDED transprho
 ! PENCILS PROVIDED ekin
-! PENCILS PROVIDED rho; rho1; lnrho; glnrho(3)
+! PENCILS PROVIDED rho; rho1; lnrho
 !
 !***************************************************************
 module Density
@@ -860,15 +860,22 @@ module Density
           p%rho=f(l1:l2,m,n,irhoxx)
           p%rho1=1./p%rho
           p%lnrho = log(p%rho)
+! glnrho and grho
         if (lpencil(i_grho)) call grad(f, irhoxx, p%grho)
-
+      if (lpencil(i_glnrho)) then 
+        p%glnrho(:,1)=p%grho(:,1)*p%rho1
+        p%glnrho(:,2)=p%grho(:,2)*p%rho1
+        p%glnrho(:,3)=p%grho(:,3)*p%rho1
+      endif
 ! uglnrho
-!      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
+      if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
 ! ugrho
        if (lpencil(i_ugrho)) then
          call grad(f,irhoxx,p%grho)
          call dot(p%uu,p%grho,p%ugrho)
        endif
+! sglnrho
+      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************

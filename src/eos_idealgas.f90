@@ -822,7 +822,7 @@ module EquationOfState
           p%TTb=cs20*cp1*exp(gamma*f(l1:l2,m,n,iss_b)*cp1+gamma_m1*p%lnrho)/gamma_m1
           p%cs2=cp*p%TTb*gamma_m1
           p%TT1=1./p%TTb
-          p%rhop=(gamma*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
+          p%rhop=(f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
                  f(l1:l2,m,n,iss)*cp1)
         elseif (lanelastic_full) then
           call fatal_error('calc_pencils_eos', &
