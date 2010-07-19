@@ -1622,8 +1622,8 @@ module Density
                    *(p%ugrho + p%rho*p%divu)
                 if (ldensity_profile_masscons) &
                   df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-                   -dprofx_ffree*p%rho*p%uu(:,3) &
-                   -dprofy_ffree(m)*p%rho*p%uu(:,3) &
+                   -dprofx_ffree   *p%rho*p%uu(:,1) &
+                   -dprofy_ffree(m)*p%rho*p%uu(:,2) &
                    -dprofz_ffree(n)*p%rho*p%uu(:,3)
               else
                 df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
@@ -1631,8 +1631,8 @@ module Density
                   *(p%uglnrho + p%divu)
                 if (ldensity_profile_masscons) &
                   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                   -dprofx_ffree*p%uu(:,3) &
-                   -dprofy_ffree(m)*p%uu(:,3) &
+                   -dprofx_ffree   *p%uu(:,1) &
+                   -dprofy_ffree(m)*p%uu(:,2) &
                    -dprofz_ffree(n)*p%uu(:,3)
               endif
             else
