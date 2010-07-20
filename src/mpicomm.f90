@@ -3482,7 +3482,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_xy_3D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:,:) = in(:,bny*ibox+1:bny*(ibox+1),:)
@@ -3555,7 +3555,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_xy_4D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = in(:,bny*ibox+1:bny*(ibox+1),:,:)
@@ -3619,7 +3619,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_xy_2D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1)) = in(bnx*ibox+1:bnx*(ibox+1),:)
@@ -3688,7 +3688,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_xy_3D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1),:) = in(bnx*ibox+1:bnx*(ibox+1),:,:)
@@ -3761,7 +3761,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_xy_4D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = in(bnx*ibox+1:bnx*(ibox+1),:,:,:)
@@ -3818,7 +3818,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_2D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocx*nprocy + ipx*nprocy + ibox
+        partner = ipz*nprocxy + ipx*nprocy + ibox
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:) = transpose (in(bny*ibox+1:bny*(ibox+1),:))
@@ -3886,7 +3886,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_3D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocx*nprocy + ipx*nprocy + ibox
+        partner = ipz*nprocxy + ipx*nprocy + ibox
         if (iproc == partner) then
           ! data is local
           do pos_z = 1, onz
@@ -3962,7 +3962,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_4D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocy-1
-        partner = ipz*nprocx*nprocy + ipx*nprocy + ibox
+        partner = ipz*nprocxy + ipx*nprocy + ibox
         if (iproc == partner) then
           ! data is local
           do pos_z = 1, onz
@@ -4027,7 +4027,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_2D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(bny*ibox+1:bny*(ibox+1),:) = transpose (in(bnx*ibox+1:bnx*(ibox+1),:))
@@ -4095,7 +4095,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_3D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           do pos_z = 1, onz
@@ -4171,7 +4171,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_4D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           do pos_z = 1, onz
@@ -4213,7 +4213,6 @@ module Mpicomm
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-      integer, parameter :: nprocxy = nprocx*nprocy ! number of procs in xy-plane
       integer :: inx, iny, onx, ony ! sizes of in and out arrays
       integer :: bnx, bny, nboxc ! destination box sizes and number of elements
       integer :: ibox, partner, alloc_stat
@@ -4352,7 +4351,6 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
-      integer, parameter :: nprocxy = nprocx*nprocy ! number of procs in xy-plane
       integer :: inx, iny, inz, ina, onx, ony, onz, ona ! sizes of in and out arrays
       integer :: bnx, bny, nboxc ! destination box sizes and number of elements
       integer :: ibox, partner, alloc_stat, pos_z, pos_a
