@@ -229,14 +229,11 @@ module Register
       use Timeavg,          only: initialize_timeavg
       use Viscosity,        only: initialize_viscosity
       use ImplicitPhysics,  only: initialize_implicit_physics
+      use Grid,             only: initialize_grid
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(my) :: lat
-      real, dimension (nz,nprocz) :: z_allprocs_tmp
-      real :: sinth_min=1e-5,costh_min=1e-5 !(to avoid axis)
       logical :: lstarting
-      integer :: xj,yj,zj,ivar
-      integer :: itheta
+      integer :: ivar
 !
 !  Defaults for some logicals; will later be set to true if needed
 !
@@ -305,6 +302,52 @@ module Register
          endif
       endif
 !
+!  initialize time integrals
+!  (leads to linker problem)
+!
+!---  call initialize_time_integrals(f)
+!
+! Store the value of impossible for use in IDL
+!
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,*) 'impossible=',impossible
+        close (1)
+      endif
+!
+!  print summary of variable names
+!
+      if (lroot) then
+        open(3,file=trim(datadir)//'/varname.dat',status='replace')
+        do ivar=1,nvar
+          write(3,"(i4,2x,a)") ivar,varname(ivar)
+        enddo
+        close(3)
+      endif
+!
+!  Coordinate-related issues, initialize specific grid variables
+!
+      call initialize_grid()
+!
+!  timestep: distinguish two cases,
+!  (a) dt explicitly given in run.in -> ldt=.false.
+!  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
+!  Note that ldt will not change unless you RELOAD parameters.
+!
+! Why is this here?...
+!   ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
+!   AB   maybe not, because initialize_modules can also be run from start.f90,
+!   AB   which has no knowledge of timestep.f90
+!
+      ldt = (dt==0.)            ! need to calculate dt dynamically?
+      if (lroot .and. ip<14) then
+        if (ldt) then
+          print*,'timestep based on CFL cond; cdt=',cdt
+        else
+          print*, 'absolute timestep dt=', dt
+        endif
+      endif
+!
 !  Run rest of initialization of individual modules.
 !
       call initialize_deriv()
@@ -344,414 +387,6 @@ module Register
       call initialize_border_profiles()
       call initialize_solid_cells()
       call initialize_implicit_physics(f)
-!
-!  initialize time integrals
-!  (leads to linker problem)
-!
-!---  call initialize_time_integrals(f)
-!
-! Store the value of impossible for use in IDL
-!
-      if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-        write (1,*) 'impossible=',impossible
-        close (1)
-      endif
-!
-!  print summary of variable names
-!
-      if (lroot) then
-        open(3,file=trim(datadir)//'/varname.dat',status='replace')
-        do ivar=1,nvar
-          write(3,"(i4,2x,a)") ivar,varname(ivar)
-        enddo
-        close(3)
-      endif
-!
-!----------------------------------------------------------------------------
-!  Coordinate-related issues: nonuniform meshes, different corrdinate systems
-!
-!  Set z_allprocs, which contains the z values from all processors
-!  ignore the ghost zones.
-!
-        z_allprocs(:,ipz+1)=z(n1:n2)
-!
-!  Communicate z_allprocs over all processors (if there are more than 1)
-!  the final result is only present on the root processor.
-!
-      if (nprocz>1) then
-        z_allprocs_tmp=z_allprocs
-        call mpireduce_sum(z_allprocs_tmp,z_allprocs,(/nz,nprocz/))
-      endif
-!
-!  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
-!  Introduce new names (spherical_coords), in addition to the old ones.
-!
-      if (coord_system=='cartesian') then
-        lcartesian_coords=.true.
-        lspherical_coords=.false.
-        lcylindrical_coords=.false.
-!
-!  Box volume and volume element.
-!  x-extent
-!
-        box_volume=1.;dvolume=1.;dvolume_1=1.
-        if (nxgrid/=1) then
-          box_volume = box_volume*Lxyz(1)
-          dvolume    = dvolume   *dx
-          dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dVol1=xprim
-        else
-          dVol1=1.
-        endif
-!
-!  y-extent
-!
-        if (nygrid/=1) then
-          box_volume = box_volume*Lxyz(2)
-          dvolume    = dvolume   *dy
-          dvolume_1  = dvolume_1 *dy_1(mpoint)
-          dVol2=yprim
-        else
-          dVol2=1.
-        endif
-!
-!  z-extent
-!
-        if (nzgrid/=1) then
-          box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *dz
-          dvolume_1  = dvolume_1 *dz_1(npoint)
-          dVol3=zprim
-        else
-          dVol3=1.
-        endif
-!
-!  Spherical coordinate system
-!
-      elseif (coord_system=='spherical' &
-        .or.coord_system=='spherical_coords') then
-        lcartesian_coords=.false.
-        lspherical_coords=.true.
-        lcylindrical_coords=.false.
-!
-! For spherical coordinates
-!
-        r_mn=x(l1:l2)
-        if (x(l1)==0.) then
-          r1_mn(2:)=1./x(l1+1:l2)
-          r1_mn(1)=0.
-        else
-          r1_mn=1./x(l1:l2)
-        endif
-        r2_mn=r1_mn**2
-!
-!  Calculate sin(theta). Make sure that sinth=1 if there is no y extent,
-!  regardless of the value of y. This is needed for correct integrations.
-!
-        if (ny==1) then
-          sinth=1.
-        else
-          sinth=sin(y)
-        endif
-!
-!  Calculate cos(theta) via latitude, which allows us to ensure
-!  that sin(lat(midpoint)) = 0 exactly.
-!
-        if (luse_latitude) then
-          lat=pi/2-y
-          costh=sin(lat)
-        else
-          costh=cos(y)
-        endif
-!
-!  Calculate 1/sin(theta). To avoid the axis we check that sinth
-!  is always larger than a minmal value, sinth_min. The problem occurs
-!  on theta=pi, because the theta range is normally only specified
-!  with no more than 6 digits, e.g. theta = 0., 3.14159.
-!
-        where(abs(sinth)>sinth_min)
-          sin1th=1./sinth
-        elsewhere
-          sin1th=0.
-        endwhere
-        sin2th=sin1th**2
-!
-!  Calculate cot(theta).
-!
-        cotth=costh*sin1th
-!
-!  Calculate 1/cos(theta). To avoid the axis we check that costh
-!  is always larger than a minmal value, costh_min. The problem occurs
-!  on theta=pi, because the theta range is normally only specified
-!  with no more than 6 digits, e.g. theta = 0., 3.14159.
-!
-        where(abs(costh)>costh_min)
-          cos1th=1./costh
-        elsewhere
-          cos1th=0.
-        endwhere
-!
-!  Calculate tan(theta).
-!
-        tanth=sinth*cos1th
-!
-!  Box volume and volume element - it is wrong for spherical, since
-!  sinth also changes with y-position.
-!
-!  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
-!  and assume that sinth=1 if there is no theta extent.
-!  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
-!  r extent:
-!
-        box_volume=1.;dvolume=1.;dvolume_1=1.
-        if (nxgrid/=1) then
-          box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
-          dvolume    = dvolume   *dx
-          dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dVol1=x**2*xprim
-        else
-          dVol1=1./3.*(xyz1(1)**3-xyz0(1)**3)
-        endif
-!
-!  Theta extent (if non-radially symmetric)
-!
-        if (nygrid/=1) then
-          box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
-          dvolume    = dvolume   *x(l1:l2)*dy
-          dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
-          dVol2=sinth*yprim
-        else
-          box_volume = box_volume*2.
-          dvolume    = dvolume   *x(l1:l2)*2.
-          dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)*.5
-          dVol2=2.
-        endif
-!
-!  phi extent (if non-axisymmetry)
-!
-        if (nzgrid/=1) then
-          box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*dz
-          dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
-          dVol3=zprim
-        else
-          box_volume = box_volume*2.*pi
-          dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*2.*pi
-          dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)*.5*pi_1
-          dVol3=2.*pi
-        endif
-!
-!  weighted coordinates for integration purposes
-!  Need to modify for 2-D and 1-D cases!
-!AB: for now, allow only if nxgrid>1. Dhruba, please check
-!
-        r2_weight=x(l1:l2)**2
-        sinth_weight=sinth
-        if (nxgrid>1) then
-          do itheta=1,nygrid
-            sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
-          enddo
-        endif
-!
-!  Calculate the volume of the box, for non-cartesian coordinates.
-!
-        nVol=0.
-        do xj=l1,l2
-          do yj=m1,m2
-            do zj=n1,n2
-              nVol=nVol+x(xj)*x(xj)*sinth(yj)
-            enddo
-          enddo
-        enddo
-        nVol1=1./nVol 
-!
-!  Trapezoidal rule
-!
-        if (lfirst_proc_x)  r2_weight( 1)=.5*r2_weight( 1)
-        if (llast_proc_x) r2_weight(nx)=.5*r2_weight(nx)
-!
-        if (lfirst_proc_y)  sinth_weight(m1)=.5*sinth_weight(m1)
-        if (llast_proc_y) sinth_weight(m2)=.5*sinth_weight(m2)
-        sinth_weight_across_proc(1)=0.5*sinth_weight_across_proc(1)
-        sinth_weight_across_proc(nygrid)=0.5*sinth_weight_across_proc(nygrid)
-!
-!  End of coord_system=='spherical_coords' query.
-!  Introduce new names (cylindrical_coords), in addition to the old ones.
-!
-      elseif (coord_system=='cylindric' &
-          .or.coord_system=='cylindrical_coords') then
-        lcartesian_coords=.false.
-        lspherical_coords=.false.
-        lcylindrical_coords=.true.
-!
-!  Note: for consistency with spherical, 1/rcyl should really be rcyl1_mn,
-!  not rcyl_mn1.
-!
-        rcyl_mn=x(l1:l2)
-        if (x(l1)==0.) then
-          rcyl_mn1(2:)=1./x(l1+1:l2)
-          rcyl_mn1(1)=0.
-        else
-          rcyl_mn1=1./x(l1:l2)
-        endif
-        rcyl_mn2=rcyl_mn1**2
-!
-!  Box volume and volume element.
-!
-        box_volume=1.;dvolume=1.;dvolume_1=1.
-        if (nxgrid/=1) then
-          box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
-          dvolume    = dvolume   *dx
-          dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dVol1=x*xprim
-        else
-          dVol1=1./2.*(xyz1(1)**2-xyz0(1)**2)
-        endif
-!
-!  theta extent (non-cylindrically symmetric)
-!
-        if (nygrid/=1) then
-          box_volume = box_volume*Lxyz(2)
-          dvolume    = dvolume   *rcyl_mn*dy
-          dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
-          dVol2=yprim
-        else
-          box_volume = box_volume*2.*pi
-          dvolume    = dvolume   *rcyl_mn*2.*pi
-          dvolume_1  = dvolume_1 *rcyl_mn1*.5*pi_1
-          dVol2=2.*pi
-        endif
-!
-!  z extent (vertically extended)
-!
-        if (nzgrid/=1) then
-          box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *dz
-          dvolume_1  = dvolume_1 *dz_1(npoint)
-          dVol3=zprim
-        else
-          dVol3=1.
-        endif
-!
-!  Trapezoidal rule
-!
-        rcyl_weight=rcyl_mn
-        if (lfirst_proc_x)  rcyl_weight( 1)=.5*rcyl_weight( 1)
-        if (llast_proc_x) rcyl_weight(nx)=.5*rcyl_weight(nx)
-!
-!  Lobachevskii space
-!
-      elseif (coord_system=='Lobachevskii') then
-        lcartesian_coords=.false.
-        lspherical_coords=.false.
-        lcylindrical_coords=.false.
-!
-      endif
-!
-!  Define inner and outer radii for non-cartesian coords. 
-!  If the user did not specify them yet (in start.in), 
-!  these are the first point of the first x-processor, 
-!  and the last point of the last x-processor. 
-!
-      if (lspherical_coords.or.lcylindrical_coords) then
-!
-        if (nprocx/=1) then 
-!
-!  The root (iproc=0) has by default the first value of x
-!
-          if (lroot) then 
-            if (r_int==0) r_int=x(l1)
-!
-!  The root should also receive the value of r_ext from
-!  from the last x-processor (which is simply nprocx-1 
-!  for iprocy=0 and iprocz=0) for broadcasting.
-!  
-            if (r_ext==impossible) &
-                 call mpirecv_real(r_ext,1,nprocx-1,111)
-          endif
-!
-!  The last x-processor knows the value of r_ext, and sends 
-!  it to root, for broadcasting.
-!
-          if ((r_ext==impossible).and.&
-               (llast_proc_x.and.lfirst_proc_y.and.lfirst_proc_z)) then
-            r_ext=x(l2)
-            call mpisend_real(r_ext,1,0,111)
-          endif
-!
-!  Broadcast the values of r_int and r_ext
-!
-          call mpibcast_real(r_int,1)
-          call mpibcast_real(r_ext,1)
-        else
-!
-!  Serial-x. Just get the local grid values. 
-!
-          if (r_int == 0)         r_int=x(l1)
-          if (r_ext ==impossible) r_ext=x(l2)
-        endif
-        if (lroot) print*,'initialize_modules, r_int,r_ext=',r_int,r_ext
-      endif
-!
-!  For a non-periodic mesh, multiply boundary points by 1/2.
-!  Do it for each direction in turn.
-!  If a direction has no extent, it is automatically periodic
-!  and the corresponding step is therefore not called.
-!
-      if (.not.lperi(1)) then
-        if (lfirst_proc_x) dVol1(1)=.5*dVol1(1)
-        if (llast_proc_x) dVol1(nx)=.5*dVol1(nx)
-      endif
-!
-      if (.not.lperi(2)) then
-        if (lfirst_proc_y.and.m==m1) dVol2=.5*dVol2
-        if (llast_proc_y.and.m==m2) dVol2=.5*dVol2
-      endif
-!
-      if (.not.lperi(3)) then
-        if (lfirst_proc_z.and.n==n1) dVol3=.5*dVol3
-        if (llast_proc_z.and.n==n2) dVol3=.5*dVol3
-      endif
-!
-!  Print the value for which output is being produced.
-!  (Have so far only bothered about single processor output.)
-!
-      if (lroot) then
-        lpoint=min(max(l1,lpoint),l2)
-        mpoint=min(max(m1,mpoint),m2)
-        npoint=min(max(n1,npoint),n2)
-        lpoint2=min(max(l1,lpoint2),l2)
-        mpoint2=min(max(m1,mpoint2),m2)
-        npoint2=min(max(n1,npoint2),n2)
-        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
-        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
-      endif
-!
-!  Clean up profile files.
-!
-      call remove_zprof()
-      lwrite_prof=.true.
-!
-!----------------------------------------------------------------------------
-!  timestep: distinguish two cases,
-!  (a) dt explicitly given in run.in -> ldt=.false.
-!  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
-!  Note that ldt will not change unless you RELOAD parameters.
-!
-! Why is this here?...
-!   ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
-!   AB   maybe not, because initialize_modules can also be run from start.f90,
-!   AB   which has no knowledge of timestep.f90
-!
-      ldt = (dt==0.)            ! need to calculate dt dynamically?
-      if (lroot .and. ip<14) then
-        if (ldt) then
-          print*,'timestep based on CFL cond; cdt=',cdt
-        else
-          print*, 'absolute timestep dt=', dt
-        endif
-      endif
 !
     endsubroutine initialize_modules
 !***********************************************************************
