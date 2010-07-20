@@ -2461,7 +2461,7 @@ module Special
 !
           do px=0, nprocx-1
             do py=0, nprocy-1
-              if ((px == 0) .and. (py == 0)) continue
+              if ((px == 0) .and. (py == 0)) cycle
               call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
               call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
               call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
@@ -2500,7 +2500,7 @@ module Special
 !
           do px=0, nprocx-1
             do py=0, nprocy-1
-              if ((px == 0) .and. (py == 0)) continue
+              if ((px == 0) .and. (py == 0)) cycle
               Ux_ext_local = Ux_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
               Uy_ext_local = Uy_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
               call mpisend_real (Ux_ext_local, (/ nx, ny /), px+py*nprocx, tag_x)
@@ -2563,7 +2563,7 @@ module Special
         total_mass=local_mass
         do i=0,nprocx-1
           do j=0,nprocy-1
-            if ((i==0).and.(j==0)) continue
+            if ((i==0).and.(j==0)) cycle
             ipt = i+nprocx*j+ipz*nprocx*nprocy
             call mpirecv_real(get_lf,1,ipt,111+ipt)
             call mpirecv_real(get_lm,1,ipt,211+ipt)
@@ -2589,7 +2589,7 @@ module Special
       if (lfirst_proc_xy) then
         do i=0,nprocx-1
           do j=0,nprocy-1
-            if ((i==0).and.(j==0)) continue
+            if ((i==0).and.(j==0)) cycle
             ipt = i+nprocx*j+ipz*nprocx*nprocy
             call mpisend_real(u_add,1,ipt,311+ipt)
           enddo
