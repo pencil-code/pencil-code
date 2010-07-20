@@ -1292,11 +1292,13 @@ module Fourier
 !***********************************************************************
     subroutine fourier_transform_xy_xy_wrapper(in,out,factor)
 !
-!  Subroutine to do multi functional Fourier transform of a 2-D array
-!  under MPI in parallel for ghost cells.
-!  factor is to be multiplied to the extrapolated fourier components,
-!  which are then backtransformed.
-!  nx is restricted to be an integer multiple of nprocx and of nprocy.
+!  Subroutine to do an extrapolation of 2D 'in' data into 'out' using
+!  'factor' as a multiplication factor to the Fourier coefficients.
+!  The normalization factor need to be already included in 'factor'.
+!  Backwards and forwards transforms are done efficiently in one go.
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the current xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
 !  ny is restricted to be an integer multiple of nprocx.
 !
 !   7-jul-2010/Bourdin.KIS: coded, adapted parts of bc_aa_pot2 and mdi_init
@@ -1320,6 +1322,7 @@ module Fourier
       integer :: ina ! number of components in the output data (usually 3)
       integer :: onz, ona ! number of ghost cells and components in the output data (usually 3)
       integer :: l, m, stat, pos_a, pos_z
+!
 !
       ina = size (in, 3)
       onz = size (out, 3)
