@@ -99,6 +99,7 @@ module Gravity
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
       use FArrayManager
+      use InitialCondition, only: initial_condition_gg
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
@@ -313,6 +314,8 @@ module Gravity
 !
       endselect
 !
+      if (linitial_condition) call initial_condition_gg(f)
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_gravity
@@ -363,13 +366,9 @@ module Gravity
 !  10-jan-02/wolf: coded
 !  24-nov-02/tony: renamed from init_grav for consistancy (i.e. init_[variable name])
 !
-      use InitialCondition, only: initial_condition_gg
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
-!
-      if (linitial_condition) call initial_condition_gg(f)
 !
       call keep_compiler_quiet(f)
 !
