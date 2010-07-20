@@ -3218,8 +3218,10 @@ module Mpicomm
       character (len=3), intent (in) :: topbot
 !
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
-      integer :: nbufy,nn1,nn2
+      real, dimension (nghost,ny+2*nghost,nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
+      integer :: nbufx,nbufy,nn1,nn2
 !
+      nn1=-1; nn2=-1
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
@@ -3262,8 +3264,37 @@ module Mpicomm
 !
 !  Periodic boundaries in x
 !
-      f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
-      f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
+      if (nprocx>1) then
+!
+        lbufxo = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
+        ubufxo = f( l1:l1i,:,nn1:nn2,iax:iaz)
+!
+        nbufx=nghost*(ny+2*nghost)*(nghost+1)*3
+!
+        call MPI_IRECV(ubufxi,nbufx,MPI_REAL,xuneigh,tolowx, &
+                       MPI_COMM_WORLD,irecv_rq_fromuppx,mpierr)
+        call MPI_IRECV(lbufxi,nbufx,MPI_REAL,xlneigh,touppx, &
+                       MPI_COMM_WORLD,irecv_rq_fromlowx,mpierr)
+        call MPI_ISEND(lbufxo,nbufx,MPI_REAL,xlneigh,tolowx, &
+                       MPI_COMM_WORLD,isend_rq_tolowx,mpierr)
+        call MPI_ISEND(ubufxo,nbufx,MPI_REAL,xuneigh,touppx, &
+                       MPI_COMM_WORLD,isend_rq_touppx,mpierr)
+!
+        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
+        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
+!
+        f(   1:l1-1,:,nn1:nn2,iax:iaz) = lbufxi
+        f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = ubufxi
+!
+        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
+        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
+!
+      else
+!
+        f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
+        f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
+!
+      endif
 !
     endsubroutine communicate_bc_aa_pot
 !***********************************************************************
