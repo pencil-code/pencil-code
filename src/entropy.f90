@@ -50,6 +50,7 @@ module Entropy
   real :: cool_fac=1.0, chiB=0.0
   real, dimension(3) :: chi_hyper3_aniso=0.0
   real, target :: hcond0=impossible, hcond1=impossible
+  real, target :: hcondxbot=impossible, hcondxtop=impossible
   real, target :: Fbot=impossible, FbotKbot=impossible
   real, target :: Ftop=impossible, FtopKtop=impossible
   real :: Kbot=impossible, Ktop=impossible
@@ -668,28 +669,32 @@ module Entropy
         call farray_register_auxiliary("glhc",iglobal_glhc,vector=3)
         if (coord_system=='spherical')then
           do q=n1,n2
-          do m=m1,m2
-          call read_hcond(hcond,glhc)
-          f(l1:l2,m,q,iglobal_hcond)=hcond
-          f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
-          enddo
+            do m=m1,m2
+              call read_hcond(hcond,glhc)
+              f(l1:l2,m,q,iglobal_hcond)=hcond
+              f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
+            enddo
           enddo
           FbotKbot=Fbot/hcond(1)
           FtopKtop=Ftop/hcond(nx)
+          hcondxbot=hcond(1)
+          hcondxtop=hcond(nx)
         else
           do n=n1,n2
-          do m=m1,m2
-          if (lgravz) then
-            p%z_mn=spread(z(n),1,nx)
-          else
-            p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-          endif
-          call heatcond(hcond,p)
-          call gradloghcond(glhc,p)
-          f(l1:l2,m,n,iglobal_hcond)=hcond
-          f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
+            do m=m1,m2
+              if (lgravz) then
+                p%z_mn=spread(z(n),1,nx)
+              else
+                p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              endif
+              call heatcond(hcond,p)
+              call gradloghcond(glhc,p)
+              f(l1:l2,m,n,iglobal_hcond)=hcond
+              f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
+            enddo
           enddo
-          enddo
+          hcondxbot=hcond(1)
+          hcondxtop=hcond(nx)
         endif
       endif
 !
@@ -706,6 +711,12 @@ module Entropy
       call put_shared_variable('hcond1',hcond1,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting hcond1")
+      call put_shared_variable('hcondxbot',hcondxbot,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting hcondxbot")
+      call put_shared_variable('hcondxtop',hcondxtop,ierr)
+      if (ierr/=0) call stop_it("initialize_entropy: "//&
+           "there was a problem when putting hcondxtop")
       call put_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call stop_it("initialize_entropy: "//&
            "there was a problem when putting Fbot")

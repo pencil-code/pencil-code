@@ -2366,21 +2366,23 @@ module EquationOfState
 !  constant flux boundary condition for entropy (called when bcz='Fgs')
 !
 !   31-may-2010/pete: adapted from bc_ss_flux_turb
+!   20-jul-2010/pete: expanded to take into account hcond/=0
 !
       use Gravity
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
 !
-      real, pointer :: chi_t
+      real, pointer :: chi_t,hcondxbot,hcondxtop
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,TT_yz
+      real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
+      real :: fac
       integer :: i,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  Do the `Fgs' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
 !  Get the shared variables
@@ -2388,6 +2390,12 @@ module EquationOfState
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
            "there was a problem when getting chi_t")
+      call get_shared_variable('hcondxbot',hcondxbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
+           "there was a problem when getting hcondxbot")
+      call get_shared_variable('hcondxtop',hcondxtop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb_x: "//&
+           "there was a problem when getting hcondxtop")
 !
       select case (topbot)
 !
@@ -2397,14 +2405,19 @@ module EquationOfState
       case ('bot')
 !
 !  set ghost zones such that dsdx_yz obeys
-!  - chi_t rho T dsdx_yz = sigmaSBt*TT^4
+!  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
         cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
-        rho_yz=exp(f(l1,:,:,ilnrho))
         TT_yz=cs2_yz/(gamma_m1*cp)
-        dsdx_yz=-sigmaSBt*TT_yz**3/(chi_t*rho_yz)
+        rho_yz=exp(f(l1,:,:,ilnrho))
+        fac=(1./60)*dx_1(l1)
+        dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
+                         -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
+                         +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
+        dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
+            (chi_t*rho_yz+hcondxbot/cv)
 !
-!  enforce ds/dx = - sigmaSBt*T^3/(chi_t*rho)
+!  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost
           f(l1-1,:,:,iss)=f(l1+i,:,:,iss)+2*i*dx*dsdx_yz
@@ -2416,14 +2429,19 @@ module EquationOfState
       case ('top')
 !
 !  set ghost zones such that dsdx_yz obeys
-!  - chi_t rho T dsdx_yz = sigmaSBt*TT^4
+!  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
         cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
-        rho_yz=exp(f(l2,:,:,ilnrho))
         TT_yz=cs2_yz/(gamma_m1*cp)
-        dsdx_yz=-sigmaSBt*TT_yz**3/(chi_t*rho_yz)
+        rho_yz=exp(f(l2,:,:,ilnrho))
+        fac=(1./60)*dx_1(l2)
+        dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
+                         -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
+                         +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
+        dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
+            (chi_t*rho_yz+hcondxtop/cv)
 !
-!  enforce ds/dz = - sigmaSBt*T^3/(chi_t*rho)
+!  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost
           f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+2*i*dx*dsdx_yz
