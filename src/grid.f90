@@ -233,7 +233,7 @@ module Grid
           endif
 !
 ! half-duct profile : like the duct above but the grid are closely spaced
-! at the outer boundary. 
+! at the outer boundary.
 !
         case ('half-duct')
           a =-pi/(2.*max(nxgrid-1,1))
@@ -246,7 +246,7 @@ module Grid
           xprim2=    Lx*(g1der2*a**2)
 !
           if (lparticles) then
-             call fatal_error('construct_grid: non-equidistant grid', & 
+             call fatal_error('construct_grid: non-equidistant grid', &
                   'half-duct not implemented for particles.')
 !            g1proc=x00+Lx*(g1proc-g1lo)/2
 !            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
@@ -564,6 +564,7 @@ module Grid
 !  20-jul-10/wlad: moved here from register
 !
       use Sub, only: remove_zprof
+      use Mpicomm
 !
       real, dimension(my) :: lat
       real, dimension (nz,nprocz) :: z_allprocs_tmp
@@ -763,7 +764,7 @@ module Grid
             enddo
           enddo
         enddo
-        nVol1=1./nVol 
+        nVol1=1./nVol
 !
 !  Trapezoidal rule
 !
@@ -848,29 +849,29 @@ module Grid
 !
       endif
 !
-!  Define inner and outer radii for non-cartesian coords. 
-!  If the user did not specify them yet (in start.in), 
-!  these are the first point of the first x-processor, 
-!  and the last point of the last x-processor. 
+!  Define inner and outer radii for non-cartesian coords.
+!  If the user did not specify them yet (in start.in),
+!  these are the first point of the first x-processor,
+!  and the last point of the last x-processor.
 !
       if (lspherical_coords.or.lcylindrical_coords) then
 !
-        if (nprocx/=1) then 
+        if (nprocx/=1) then
 !
 !  The root (iproc=0) has by default the first value of x
 !
-          if (lroot) then 
+          if (lroot) then
             if (r_int==0) r_int=x(l1)
 !
 !  The root should also receive the value of r_ext from
-!  from the last x-processor (which is simply nprocx-1 
+!  from the last x-processor (which is simply nprocx-1
 !  for iprocy=0 and iprocz=0) for broadcasting.
-!  
+!
             if (r_ext==impossible) &
                  call mpirecv_real(r_ext,1,nprocx-1,111)
           endif
 !
-!  The last x-processor knows the value of r_ext, and sends 
+!  The last x-processor knows the value of r_ext, and sends
 !  it to root, for broadcasting.
 !
           if ((r_ext==impossible).and.&
@@ -885,7 +886,7 @@ module Grid
           call mpibcast_real(r_ext,1)
         else
 !
-!  Serial-x. Just get the local grid values. 
+!  Serial-x. Just get the local grid values.
 !
           if (r_int == 0)         r_int=x(l1)
           if (r_ext ==impossible) r_ext=x(l2)
@@ -931,7 +932,7 @@ module Grid
 !
       call remove_zprof()
       lwrite_prof=.true.
-
+!
     endsubroutine initialize_grid
 !***********************************************************************
     subroutine pencil_criteria_grid()
