@@ -1457,7 +1457,7 @@ module EquationOfState
        endif
       case (ipp_ss)
         if (lanelastic_lin) then
-          lnrho_=log(var1)
+          lnrho_=(var1)
           ss_=var2
           cs2_=exp(gamma*ss_*cp1+gamma_m1*(lnrho_-lnrho0))*cs20
           TT_=cs2_/(gamma_m1*cp)
@@ -3347,6 +3347,7 @@ module EquationOfState
       real :: potp,potm
       integer :: i
 
+            write(*,*), 'PC: cs2_point'
       select case (topbot)
 !
 !  Bottom boundary
@@ -3355,22 +3356,40 @@ module EquationOfState
 !
         if (lentropy) then
 !
-          if (bcz1(iss)/='hs') then
-            call fatal_error("bc_lnrho_hydrostatic_z", &
+          if (ldensity) then
+            if (bcz1(iss)/='hs') then
+              call fatal_error("bc_lnrho_hydrostatic_z", &
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
-          endif
+            endif
 !
-          call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
-              cs2=cs2_point)
+            call eoscalc(ilnrho_ss,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iss), &
+                cs2=cs2_point)
 !
-          dlnrhodz =  gamma *gravz/cs2_point
-          dssdz    = -gamma_m1*gravz/cs2_point
+            dlnrhodz =  gamma *gravz/cs2_point
+            dssdz    = -gamma_m1*gravz/cs2_point
 !
-          do i=1,nghost
-            f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
-            f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
-          enddo
+            do i=1,nghost
+              f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+              f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
+            enddo
+          else if (lanelastic) then
+            if (bcz1(iss_b)/='hs') then
+              call fatal_error("bc_lnrho_hydrostatic_z", &
+                "This boundary condition for density is "// &
+                "currently only correct for bcz1(iss)='hs'")
+            endif
+            call eoscalc(ipp_ss,log(f(l1,m1,n1,irho_b)),f(l1,m1,n1,iss_b), &
+                cs2=cs2_point)
+!
+            dlnrhodz =  gamma *gravz/cs2_point
+            dssdz    = gamma_m1*gravz/cs2_point
+!
+            do i=1,nghost
+              f(:,:,n1-i,irho_b) = f(:,:,n1+i,irho_b) - 2*i*dz*dlnrhodz*f(:,:,n1+1,irho_b)
+              f(:,:,n1-i,iss_b   ) = f(:,:,n1+i,iss_b   ) - 2*i*dz*dssdz
+            enddo
+         endif
 !
         elseif (ltemperature) then
 !

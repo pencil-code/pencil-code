@@ -531,7 +531,8 @@ module Gravity
                 if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ p%gg(:,2)*&
                                 p%rhop
                 if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*&
-                                p%rhop
+                                 (-p%ss)                                
+!                                p%rhop
         else
           if (lxyzdependence) then
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)

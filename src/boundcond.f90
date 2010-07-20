@@ -626,6 +626,7 @@ module Boundcond
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 else
                   if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
+                  if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
                   if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
 !                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
                 endif

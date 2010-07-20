@@ -2043,7 +2043,7 @@ module Density
           f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
         endif
       else
-        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))       
+        call inverse_laplacian_z(f,f(l1:l2,m1:m2,n1:n2,ipp))       
       endif
 !
 !  Update the boundary conditions for the new pressure (needed to
@@ -2061,7 +2061,8 @@ module Density
         do j=1,3
           ju=j+iuu-1
           if (lanelastic_lin) then
-            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b)
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b) &
+                              + gamma*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)*p%gg(:,j)
           else
             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho)
           endif 
@@ -2078,7 +2079,7 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine inverse_laplacian_z(phi)
+    subroutine inverse_laplacian_z(f,phi)
 !
 !  Solve the pressure equation in the anelastic case by Fourier 
 !  transforming in the xy-plane and solving the discrete matrix 
@@ -2092,17 +2093,27 @@ module Density
       use Mpicomm, only: transp_xz, transp_zx
       use Sub,     only: max_mn
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi, b1
       real, dimension (nx,nz)    :: rhst, rhst2
       real, dimension (nz)       :: a_tri, b_tri, c_tri
       real, dimension (nz)       :: r_tri, u_tri
-      real    :: dz_2, k2, aalpha, bbeta
+      real    :: dz_2, dz_1, k2, aalpha, bbeta
+      real, dimension (mx, my, mz)       :: Hp, dHp
+      real, dimension (nx,3)       :: g
       integer :: ikx, iky
       logical :: err
 !
 !  The right-hand-side of the pressure equation is purely real.
 !
       b1 = 0.0
+      Hp=cs20*(f(:,:,:,irho_b)/rho0)**(gamma_m1)* & 
+               exp(gamma*f(:,:,:,iss_b)*1.)/(-0.1*gamma)
+      do n=n1,n2; do m=m1,m2
+      call grad(Hp, g)
+      dHp(l1:l2,m,n)=g(1:nx,3)
+      enddo; enddo
+
 !
 !  Forward transform (to k-space).
       call fourier_transform_xy(phi, b1)
@@ -2110,9 +2121,10 @@ module Density
 !  Solve for discrete z-direction
 !  First the real part
 !
+      dz_1=1./dz
       dz_2=1./dz**2
-      a_tri=dz_2
-      c_tri=dz_2
+      a_tri(1:nz)=dz_2-0.5*dz_1/Hp(l1,m1,n1:n2)
+      c_tri(1:nz)=dz_2+0.5*dz_1/Hp(l1,m1,n1:n2)
       do iky=1,ny
         call transp_xz(phi(:,iky,:),rhst)
         do ikx=1,nx/nprocz
@@ -2120,7 +2132,7 @@ module Density
           if (k2==0.) then
             rhst(:,ikx)=0.
           else
-            b_tri=-2.*dz_2-k2
+            b_tri=-2.*dz_2-dHp(l1,m1,n1:n2)/Hp(l1,m1,n1:n2)**2-k2
             r_tri=rhst(:,ikx)
 ! Dirichlet BC
             b_tri(1)=1.
