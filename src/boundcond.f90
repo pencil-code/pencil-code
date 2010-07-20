@@ -4685,7 +4685,8 @@ module Boundcond
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
-      integer :: kx_start, stat, delta_z, pos_z
+      integer :: kx_start, stat, pos_z
+      real :: delta_z
 !
       if (nprocy == 1) &
           call fatal_error ('bc_aa_pot_field_extra', 'nprocy must be greater than 1.', lfirst_proc_xy)
@@ -4699,12 +4700,12 @@ module Boundcond
 !  Allocate memory for large arrays.
 !
       if (.not. allocated (exp_fact)) then
-        allocate (exp_fact(bnx,bny,3), stat=stat)
+        allocate (exp_fact(bnx,bny,nghost), stat=stat)
         if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact', .true.)
         ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
         kx_start = (ipx+ipy*nprocx)*bny
         exp_fact = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
-                                      spread (kx_fft (kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, 3)
+                                      spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
       endif
 !
 !  Check whether we want to do top or bottom z boundary
