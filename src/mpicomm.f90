@@ -2629,7 +2629,7 @@ module Mpicomm
 !
 !   6-oct-06/tobi: Adapted from transp
 !
-! TODO: Implement nxgrid = n*nzgrid
+! TODO: Implement nygrid = n*nxgrid
 !
       real, dimension(nx,ny), intent(inout) :: a
 !
