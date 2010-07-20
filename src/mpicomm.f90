@@ -2639,6 +2639,11 @@ module Mpicomm
       integer :: ytag=101,partner
       integer :: ibox,iy
 !
+      if (nprocx>1) then
+        print*,'transp_xy: nprocx must be equal to 1'
+        call stop_it_if_any(.true.,'Inconsistency: nprocx>1')
+      endif
+!
       if (mod(nxgrid,nygrid)/=0) then
         print*,'transp_xy: nxgrid needs to be an integer multiple of nygrid'
         call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nygrid)/=0')
@@ -2734,7 +2739,7 @@ module Mpicomm
 !
 !   6-oct-06/tobi: Adapted from transp
 !
-! TODO: Implement nxgrid = n*nzgrid
+! TODO: Implement nygrid = n*nxgrid
 !
       real, dimension(:,:), intent(inout) :: a
 !
@@ -3374,11 +3379,11 @@ module Mpicomm
 !
 !   4-jul-2010/Bourdin.KIS: coded
 !
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
       integer, parameter :: inx=nx, iny=ny
       integer, parameter :: onx=nxgrid, ony=ny/nprocx
-      real, dimension(inx,iny), intent(in) :: in
-      real, dimension(onx,ony), intent(out) :: out
-!
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nboxc, alloc_stat
       integer, parameter :: ytag=105
@@ -3387,13 +3392,20 @@ module Mpicomm
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
 !
-      nboxc = bnx*bny
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
 !
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'remap_to_pencil_xy_2D: nprocx==1 - using this function is unnecessary')
+      nboxc = bnx*bny
 !
       if (mod (ny, nprocx) /= 0) &
           call stop_it_if_any (.true., 'remap_to_pencil_xy_2D: ny needs to be an integer multiple of nprocx')
+!
+      if ((size (in, 1) /= inx) .or. ((size (in, 2) /= iny))) &
+          call stop_it_if_any (.true., 'remap_to_pencil_xy_2D: input array size mismatch /= nx,ny')
+      if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
+          call stop_it_if_any (.true., 'remap_to_pencil_xy_2D: output array size mismatch /= nxgrid,ny/nprocx')
 !
       allocate (send_buf(bnx,bny), stat=alloc_stat)
       if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_xy_2D: not enough memory for send_buf!')
@@ -3401,7 +3413,7 @@ module Mpicomm
       if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_xy_2D: not enough memory for recv_buf!')
 !
       do ibox = 0, nprocx-1
-        partner = ipz*nprocx*nprocy + ipy*nprocx + ibox
+        partner = ipz*nprocxy + ipy*nprocx + ibox
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:) = in(:,bny*ibox+1:bny*(ibox+1))
@@ -3445,12 +3457,14 @@ module Mpicomm
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
 !
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
+!
       inz = size (in, 3)
       onz = size (out, 3)
       nboxc = bnx*bny*onz
-!
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'remap_to_pencil_xy_3D: nprocx==1 - using this function is unnecessary')
 !
       if (mod (ny, nprocx) /= 0) &
           call stop_it_if_any (.true., 'remap_to_pencil_xy_3D: ny needs to be an integer multiple of nprocx')
@@ -3512,14 +3526,16 @@ module Mpicomm
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
 !
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
+!
       inz = size (in, 3)
       ina = size (in, 4)
       onz = size (out, 3)
       ona = size (out, 4)
       nboxc = bnx*bny*onz*ona
-!
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'remap_to_pencil_xy_4D: nprocx==1 - using this function is unnecessary')
 !
       if (mod (ny, nprocx) /= 0) &
           call stop_it_if_any (.true., 'remap_to_pencil_xy_4D: ny needs to be an integer multiple of nprocx')
@@ -3569,11 +3585,11 @@ module Mpicomm
 !
 !   4-jul-2010/Bourdin.KIS: coded
 !
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
       integer, parameter :: inx=nxgrid, iny=ny/nprocx
       integer, parameter :: onx=nx, ony=ny
-      real, dimension(inx,iny), intent(in) :: in
-      real, dimension(onx,ony), intent(out) :: out
-!
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nboxc, alloc_stat
       integer, parameter :: ytag=106
@@ -3582,13 +3598,20 @@ module Mpicomm
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
 !
-      nboxc = bnx*bny
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
 !
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'unmap_from_pencil_xy_2D: nprocx==1 - using this function is unnecessary')
+      nboxc = bnx*bny
 !
       if (mod (ny, nprocx) /= 0) &
           call stop_it_if_any (.true., 'unmap_from_pencil_xy_2D: ny needs to be an integer multiple of nprocx')
+!
+      if ((size (in, 1) /= inx) .or. ((size (in, 2) /= iny))) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_xy_2D: input array size mismatch /= nxgrid,ny/nprocx')
+      if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_xy_2D: output array size mismatch /= nx,ny')
 !
       allocate (send_buf(bnx,bny), stat=alloc_stat)
       if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_xy_2D: not enough memory for send_buf!')
@@ -3640,12 +3663,14 @@ module Mpicomm
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
 !
 !
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
+!
       inz = size (in, 3)
       onz = size (out, 3)
       nboxc = bnx*bny*onz
-!
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'unmap_from_pencil_xy_3D: nprocx==1 - using this function is unnecessary')
 !
       if (mod (ny, nprocx) /= 0) &
           call stop_it_if_any (.true., 'unmap_from_pencil_xy_3D: ny needs to be an integer multiple of nprocx')
@@ -3707,14 +3732,16 @@ module Mpicomm
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
 !
 !
+      if (nprocx == 1) then
+        out = in
+        return
+      endif
+!
       inz = size (in, 3)
       ina = size (in, 4)
       onz = size (out, 3)
       ona = size (out, 4)
       nboxc = bnx*bny*onz*ona
-!
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'unmap_from_pencil_xy_4D: nprocx==1 - using this function is unnecessary')
 !
       if (mod (ny, nprocx) /= 0) &
           call stop_it_if_any (.true., 'unmap_from_pencil_xy_4D: ny needs to be an integer multiple of nprocx')
@@ -3780,11 +3807,6 @@ module Mpicomm
 !
       nboxc = bnx*bny
 !
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_2D: nprocx==1 - using this function is unnecessary')
-      if (nprocy == 1) &
-          call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_2D: nprocy==1 - using this function is unnecessary')
-!
       if (mod (nx, nprocx) /= 0) &
           call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_2D: nx needs to be an integer multiple of nprocx')
       if (mod (nx, nprocy) /= 0) &
@@ -3845,11 +3867,6 @@ module Mpicomm
       inz = size (in, 3)
       onz = size (out, 3)
       nboxc = bnx*bny*onz
-!
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_3D: nprocx==1 - using this function is unnecessary')
-      if (nprocy == 1) &
-          call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_3D: nprocy==1 - using this function is unnecessary')
 !
       if (mod (nx, nprocx) /= 0) &
           call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_3D: nx needs to be an integer multiple of nprocx')
@@ -3925,11 +3942,6 @@ module Mpicomm
       ona = size (out, 4)
       nboxc = bnx*bny*onz*ona
 !
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_4D: nprocx==1 - using this function is unnecessary')
-      if (nprocy == 1) &
-          call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_4D: nprocy==1 - using this function is unnecessary')
-!
       if (mod (nx, nprocx) /= 0) &
           call stop_it_if_any (.true., 'transp_remap_to_pencil_xy_4D: nx needs to be an integer multiple of nprocx')
       if (mod (nx, nprocy) /= 0) &
@@ -4004,11 +4016,6 @@ module Mpicomm
 !
       nboxc = bnx*bny
 !
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_2D: nprocx==1 - using this function is unnecessary')
-      if (nprocy == 1) &
-          call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_2D: nprocy==1 - using this function is unnecessary')
-!
       if (mod (nx, nprocx) /= 0) &
           call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_2D: nx needs to be an integer multiple of nprocx')
       if (mod (nx, nprocy) /= 0) &
@@ -4069,11 +4076,6 @@ module Mpicomm
       inz = size (in, 3)
       onz = size (out, 3)
       nboxc = bnx*bny*onz
-!
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_3D: nprocx==1 - using this function is unnecessary')
-      if (nprocy == 1) &
-          call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_3D: nprocy==1 - using this function is unnecessary')
 !
       if (mod (nx, nprocx) /= 0) &
           call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_3D: nx needs to be an integer multiple of nprocx')
@@ -4149,11 +4151,6 @@ module Mpicomm
       ona = size (out, 4)
       nboxc = bnx*bny*onz*ona
 !
-      if (nprocx == 1) &
-          call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_4D: nprocx==1 - using this function is unnecessary')
-      if (nprocy == 1) &
-          call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_4D: nprocy==1 - using this function is unnecessary')
-!
       if (mod (nx, nprocx) /= 0) &
           call stop_it_if_any (.true., 'transp_unmap_from_pencil_xy_4D: nx needs to be an integer multiple of nprocx')
       if (mod (nx, nprocy) /= 0) &
@@ -4225,6 +4222,7 @@ module Mpicomm
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
 !
+!
       inx = size (in, 1)
       iny = size (in, 2)
       onx = size (out, 1)
@@ -4288,6 +4286,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+!
 !
       inx = size (in, 1)
       iny = size (in, 2)
@@ -4361,6 +4360,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+!
 !
       inx = size (in, 1)
       iny = size (in, 2)
