@@ -63,8 +63,6 @@ program run
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
-  use NeutralDensity,  only: init_lnrhon
-  use NeutralVelocity, only: init_uun
   use NSCBC,           only: NSCBC_clean_up
   use Param_IO
   use Particles_main
