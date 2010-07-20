@@ -4689,8 +4689,6 @@ module Boundcond
       integer :: kx_start, stat, pos_z
       real :: delta_z
 !
-      if (nprocy == 1) &
-          call fatal_error ('bc_aa_pot_field_extra', 'nprocy must be greater than 1.', lfirst_proc_xy)
 !
       if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
           call fatal_error ('bc_aa_pot_field_extra', 'Only implemented for topmost or downmost z-layer.', lfirst_proc_xy)
