@@ -1,0 +1,30 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id$',
+  ip=14,
+  nt=100, it1=10,  isave=90, itorder=3, ialive=1
+  cdt=0.4, 
+  cdtv=0.4, 
+  dtmin=1e-6,
+  dsnap=1. !8.04
+  tmax=20. !40.2
+  lisotropic_advection=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lpressuregradient_gas=T
+/
+&density_run_pars
+  lupw_rho=T
+/
+&grav_run_pars
+  lgravity_gas=T
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=0.00015
+/
