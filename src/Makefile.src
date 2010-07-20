@@ -1104,7 +1104,8 @@ endif
 ##FFLAGS=-O3 -OPT:Ofast  -fno-math-errno  -ffast-math -mcmodel=medium #(louhi)
 #FFLAGS=-O3 -OPT:Ofast  -fno-math-errno  -ffast-math #(louhi)
 #FFLAGS_DOUBLE=-r8 #(louhi)
-#CFLAGS=-DFUNDERSC=2 -O3 #(louhi)
+##CFLAGS=-DFUNDERSC=2 -O3 #(louhi)
+#CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
 ##
 ##HP CP4000 BL Proliant supercluster
