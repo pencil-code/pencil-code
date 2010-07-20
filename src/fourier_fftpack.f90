@@ -1317,7 +1317,7 @@ module Fourier
       complex, dimension (nygrid) :: ay, ay_extra
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
-      integer :: ina ! number components in the output data (usually 3)
+      integer :: ina ! number of components in the output data (usually 3)
       integer :: onz, ona ! number of ghost cells and components in the output data (usually 3)
       integer :: l, m, stat, pos_a, pos_z
 !
