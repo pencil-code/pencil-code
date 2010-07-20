@@ -1,9 +1,15 @@
 !  $Id: mhs_equilibrium.f90 14134 2010-06-16 18:21:01Z wladimir.lyra $
 !
-!  Initial condition (density, magnetic field, velocity) 
-!  for magnetohydrostatical equilibrium in a global accretion
-!  disk with an imposed (cylindrically symmetric) sound speed 
-!  profile in spherical coordinates. 
+!  Initial condition for spherical viscous ring, according 
+!  to the test of Frederic Masset, 
+!
+!    2D 1/2 thick off-centered Keplerian viscous ring spread. 
+!    http://www.maths.qmul.ac.uk/~masset/hd/tests.html
+!
+!  The original files can be found at at:  
+!
+!   http://www.maths.qmul.ac.uk/~masset/hd/tests/vkoffring2d.ini
+!   http://www.maths.qmul.ac.uk/~masset/hd/tests/vkoffring2d.pot
 !
 !  07-may-09/wlad: adapted from noinitial_condition.f90
 !
@@ -19,7 +25,7 @@ module InitialCondition
   use Cdata
   use Cparam
   use Messages
-  use Sub !, only: keep_compiler_quiet
+  use Sub
 !
   implicit none
 !
@@ -54,7 +60,6 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use Sub,            only: get_radial_distance
-      !use EquationOfState,only: cs20
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: rr_sph,rr_cyl,urad,uphi
@@ -99,7 +104,6 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use Sub, only: get_radial_distance
-      !use EquationOfState, only:cs20
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,z_mn
@@ -135,7 +139,6 @@ module InitialCondition
 !
       use Messages,      only: fatal_error
       use FArrayManager, only: farray_use_global
-      use Deriv,         only: der
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl,z_mn
@@ -144,7 +147,8 @@ module InitialCondition
       integer, pointer :: iglobal_gg
       integer :: ipotential
 !
-!  Use the free slot of azimuthal gravity
+!  Use the slot of density for the potential. Reset 
+!  the density after using it. 
 !
       call farray_use_global('global_gg',iglobal_gg)
       ipotential=ilnrho
@@ -158,19 +162,6 @@ module InitialCondition
           elseif (lcylindrical_coords) then 
             z_mn=z(n)
           endif
-
-          !if (coord_system=='spherical') then 
-          !  rr_sph = x
-          !  rr_cyl = rr_sph*sin(y(m))
-          !  z_mn   = rr_sph*cos(y(m))
-          !elseif (coord_system=='cylindric') then
-          !  rr_cyl=x
-          !  z_mn = z(n)
-          !else 
-          !  if (lroot) print*,'coord_system=',coord_system
-          !  call fatal_error("initial_condition_gg",&
-          !       "coordinate system not valid")
-          !endif
           f(:,m,n,ipotential) = -1.0/rr_cyl + cs20/sigmaz*(z_mn-1.0)**2
         enddo
       enddo
