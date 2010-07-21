@@ -27,7 +27,7 @@
 %%   nolorenz_gauge.f90
 %%   magnetic_axisym.f90
 %%   testscalar.f90
-%%   density_anelastic.f90
+%%   testfield_meri.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -113,7 +113,7 @@
   \var{uxmy}      & $\left< u_x \right>_{y}$ \\
   \var{uymy}      & $\left< u_y \right>_{y}$ \\
   \var{uzmy}      & $\left< u_z \right>_{y}$ \\
-  \var{u2mz}      & $\left< \uv^2 \right>_{y}$ \\
+  \var{u2mz}      & $\left< \uv^2 \right>_{xy}$ \\
   \var{omumz}     & $\left<\left<\Wv\right>_{xy}
                     \cdot\left<\Uv\right>_{xy}
                     \right>$ \quad($xy$-averaged
@@ -236,6 +236,12 @@
   \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
   \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
   \var{uxuydivum} & $\left<u_x u_y\nabla\cdot\uv\right>$ \\
+  \var{divuHrms}  & $(\nabla_{\rm H}\cdot\uv_{\rm H})^{\rm rms}$ \\
+  \var{uxxrms}    & $u_{x,x}^{\rm rms}$ \\
+  \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
+  \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
+  \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -277,9 +283,23 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
+  \var{yHm}       & mean hydrogen ionization \\
+  \var{yHmax}     & max of hydrogen ionization \\
+  \var{TTm}       & $\left<T\right>$ \\
+  \var{TTmax}     & $T_{\max}$ \\
+  \var{TTmin}     & $T_{\min}$ \\
+  \var{ssmax}     & $s_{\max}$ \\
+  \var{ssmin}     & $s_{\min}$ \\
+  \var{gTrms}     & $(\nabla T)_{\rm rms}$ \\
+  \var{gsrms}     & $(\nabla s)_{\rm rms}$ \\
+  \var{gTxgsrms}  & $(\nabla T\times\nabla s)_{\rm rms}$ \\
   \var{fconvm}    & $\left<\varrho u_z T \right>$ \\
   \var{fconvz}    & $\left<\varrho u_z T \right>_{xy}$ \\
   \var{fconvxy}   & $\left<\varrho u_x T \right>_{z}$ \\
+  \var{dcoolz}    & surface cooling flux \\
+  \var{fradz}     & $F_{\rm rad}$ \\
+  \var{fradz_Kprof} & $F_{\rm rad}$ (from Kprof) \\
+  \var{fradxy_Kprof} & $F_{\rm rad}$ ($xy$-averaged, from Kprof) \\
   \var{fturbz}    & $\left<\varrho T \chi_t \nabla_z
                     s\right>_{xy}$ \quad(turbulent
                     heat flux) \\
@@ -578,26 +598,9 @@
   \var{eta21}     & $\eta_{21}k$ \\
   \var{eta12}     & $\eta_{12}k$ \\
   \var{eta22}     & $\eta_{22}k$ \\
-  \var{alpK11}    & $\alpha_{11}^K$ \\
-  \var{alpK21}    & $\alpha_{21}^K$ \\
-  \var{alpK31}    & $\alpha_{31}^K$ \\
-  \var{alpK12}    & $\alpha_{12}^K$ \\
-  \var{alpK22}    & $\alpha_{22}^K$ \\
-  \var{alpK32}    & $\alpha_{32}^K$ \\
-  \var{etaK11}    & $\eta_{11}^Kk$ \\
-  \var{etaK21}    & $\eta_{21}^Kk$ \\
-  \var{etaK12}    & $\eta_{12}^Kk$ \\
-  \var{etaK22}    & $\eta_{22}^Kk$ \\
-  \var{alpM11}    & $\alpha_{11}^M$ \\
-  \var{alpM21}    & $\alpha_{21}^M$ \\
-  \var{alpM31}    & $\alpha_{31}^M$ \\
-  \var{alpM12}    & $\alpha_{12}^M$ \\
-  \var{alpM22}    & $\alpha_{22}^M$ \\
-  \var{alpM32}    & $\alpha_{32}^M$ \\
-  \var{etaM11}    & $\eta_{11}^Mk$ \\
-  \var{etaM21}    & $\eta_{21}^Mk$ \\
-  \var{etaM12}    & $\eta_{12}^Mk$ \\
-  \var{etaM22}    & $\eta_{22}^Mk$ \\
+  \var{alpK}      & $\alpha^K$ \\
+  \var{alpM}      & $\alpha^K$ \\
+  \var{alpMK}     & $\alpha^{MK}$ \\
   \var{phi11}     & $\phi_{11}$ \\
   \var{phi21}     & $\phi_{21}$ \\
   \var{phi12}     & $\phi_{12}$ \\
@@ -607,6 +610,9 @@
   \var{psi21}     & $\psi_{21}k$ \\
   \var{psi12}     & $\psi_{12}k$ \\
   \var{psi22}     & $\psi_{22}k$ \\
+  \var{phiK}      & $\phi^K$ \\
+  \var{phiM}      & $\phi^M$ \\
+  \var{phiMK}     & $\phi^{MK}$ \\
   \var{alp11cc}   & $\alpha_{11}\cos^2 kz$ \\
   \var{alp21sc}   & $\alpha_{21}\sin kz\cos kz$ \\
   \var{alp12cs}   & $\alpha_{12}\cos kz\sin kz$ \\
@@ -615,22 +621,6 @@
   \var{eta21sc}   & $\eta_{21}\sin kz\cos kz$ \\
   \var{eta12cs}   & $\eta_{12}\cos kz\sin kz$ \\
   \var{eta22ss}   & $\eta_{22}\sin^2 kz$ \\
-  \var{alpK11cc}  & $\alpha_{11}^{\rm K}\cos^2 kz$ \\
-  \var{alpK21sc}  & $\alpha_{21}^{\rm K}\sin kz\cos kz$ \\
-  \var{alpK12cs}  & $\alpha_{12}^{\rm K}\cos kz\sin kz$ \\
-  \var{alpK22ss}  & $\alpha_{22}^{\rm K}\sin^2 kz$ \\
-  \var{etaK11cc}  & $\eta_{11}^{\rm K}\cos^2 kz$ \\
-  \var{etaK21sc}  & $\eta_{21}^{\rm K}\sin kz\cos kz$ \\
-  \var{etaK12cs}  & $\eta_{12}^{\rm K}\cos kz\sin kz$ \\
-  \var{etaK22ss}  & $\eta_{22}^{\rm K}\sin^2 kz$ \\
-  \var{alpM11cc}  & $\alpha_{11}^{\rm M}\cos^2 kz$ \\
-  \var{alpM21sc}  & $\alpha_{21}^{\rm M}\sin kz\cos kz$ \\
-  \var{alpM12cs}  & $\alpha_{12}^{\rm M}\cos kz\sin kz$ \\
-  \var{alpM22ss}  & $\alpha_{22}^{\rm M}\sin^2 kz$ \\
-  \var{etaM11cc}  & $\eta_{11}^{\rm M}\cos^2 kz$ \\
-  \var{etaM21sc}  & $\eta_{21}^{\rm M}\sin kz\cos kz$ \\
-  \var{etaM12cs}  & $\eta_{12}^{\rm M}\cos kz\sin kz$ \\
-  \var{etaM22ss}  & $\eta_{22}^{\rm M}\sin^2 kz$ \\
   \var{s2kzDFm}   & $\left<\sin2kz\nabla\cdot F\right>$ \\
   \var{M11}       & ${\cal M}_{11}$ \\
   \var{M22}       & ${\cal M}_{22}$ \\
@@ -654,10 +644,15 @@
   \var{u21rms}    & $\left<u_{21}^2\right>^{1/2}$ \\
   \var{u12rms}    & $\left<u_{12}^2\right>^{1/2}$ \\
   \var{u22rms}    & $\left<u_{22}^2\right>^{1/2}$ \\
+  \var{j11rms}    & $\left<j_{11}^2\right>^{1/2}$ \\
   \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
   \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
   \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
   \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
+  \var{ux0m}      & $\left<u_{0_x}\right>$ \\
+  \var{uy0m}      & $\left<u_{0_y}\right>$ \\
+  \var{ux11m}     & $\left<u_{11_x}\right>$ \\
+  \var{uy11m}     & $\left<u_{11_y}\right>$ \\
   \var{u0rms}     & $\left<u_{0}^2\right>^{1/2}$ \\
   \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
   \var{jb0m}      & $\left<jb_{0}\right>$ \\
@@ -1209,15 +1204,62 @@
   \var{F22z}      & ${\cal F}_2^{2}$ \\
   \var{F32z}      & ${\cal F}_3^{2}$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{density_anelastic.f90}} \\
+  \multicolumn{2}{c}{Module \file{testfield_meri.f90}} \\
 \midrule
-  \var{rhom}      & $\left<\varrho\right>$
-                    \quad(mean density) \\
-  \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
-  \var{mass}      & $\int\varrho\,dV$ \\
-  \var{divrhoum}  & $\left<\nabla\cdot(\varrho\uv)\right>$ \\
-  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
-  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
+  \var{E11xy}     & $E_{11xy}$ \\
+  \var{E12xy}     & $E_{12xy}$ \\
+  \var{E13xy}     & $E_{13xy}$ \\
+  \var{E21xy}     & $E_{21xy}$ \\
+  \var{E22xy}     & $E_{22xy}$ \\
+  \var{E23xy}     & $E_{23xy}$ \\
+  \var{E31xy}     & $E_{31xy}$ \\
+  \var{E32xy}     & $E_{32xy}$ \\
+  \var{E33xy}     & $E_{33xy}$ \\
+  \var{E41xy}     & $E_{41xy}$ \\
+  \var{E42xy}     & $E_{42xy}$ \\
+  \var{E43xy}     & $E_{43xy}$ \\
+  \var{E51xy}     & $E_{51xy}$ \\
+  \var{E52xy}     & $E_{52xy}$ \\
+  \var{E53xy}     & $E_{53xy}$ \\
+  \var{E61xy}     & $E_{61xy}$ \\
+  \var{E62xy}     & $E_{62xy}$ \\
+  \var{E63xy}     & $E_{63xy}$ \\
+  \var{E71xy}     & $E_{71xy}$ \\
+  \var{E72xy}     & $E_{72xy}$ \\
+  \var{E73xy}     & $E_{73xy}$ \\
+  \var{E81xy}     & $E_{81}$ \\
+  \var{E82xy}     & $E_{82}$ \\
+  \var{E83xy}     & $E_{83}$ \\
+  \var{E91xy}     & $E_{91}$ \\
+  \var{E92xy}     & $E_{92}$ \\
+  \var{E93xy}     & $E_{93}$ \\
+  \var{a11xy}     & $\alpha_{11}$ \\
+  \var{a12xy}     & $\alpha_{12}$ \\
+  \var{a13xy}     & $\alpha_{13}$ \\
+  \var{a21xy}     & $\alpha_{21}$ \\
+  \var{a22xy}     & $\alpha_{22}$ \\
+  \var{a23xy}     & $\alpha_{23}$ \\
+  \var{a31xy}     & $\alpha_{31}$ \\
+  \var{a32xy}     & $\alpha_{32}$ \\
+  \var{a33xy}     & $\alpha_{33}$ \\
+  \var{b111xy}    & $\b_{111}$ \\
+  \var{b121xy}    & $\b_{121}$ \\
+  \var{b131xy}    & $\b_{131}$ \\
+  \var{b211xy}    & $\b_{211}$ \\
+  \var{b221xy}    & $\b_{221}$ \\
+  \var{b231xy}    & $\b_{231}$ \\
+  \var{b311xy}    & $\b_{311}$ \\
+  \var{b321xy}    & $\b_{321}$ \\
+  \var{b331xy}    & $\b_{331}$ \\
+  \var{b112xy}    & $\b_{112}$ \\
+  \var{b122xy}    & $\b_{122}$ \\
+  \var{b132xy}    & $\b_{132}$ \\
+  \var{b212xy}    & $\b_{212}$ \\
+  \var{b222xy}    & $\b_{222}$ \\
+  \var{b232xy}    & $\b_{232}$ \\
+  \var{b312xy}    & $\b_{312}$ \\
+  \var{b322xy}    & $\b_{322}$ \\
+  \var{b332xy}    & $\b_{332}$ \\
 %
 \bottomrule
 \end{longtable}

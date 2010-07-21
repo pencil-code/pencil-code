@@ -4426,8 +4426,9 @@ which is positive definite.
 \subsubsection{Alternative description}
 \index{pretend_lnTT}
 
-By setting \code{pretend_lnTT=T} the logarithmic temperature is used
-instead of the entropy.
+By setting \code{pretend_lnTT=T} in \code{init_pars} or
+\code{run_pars} (i.e.\ the general part of the name list)
+the logarithmic temperature is used instead of the entropy.
 This has computational advantages when heat conduction
 (proportional to $K\grad T$) is important.
 Another alternative is to use another module, i.e.\ set
