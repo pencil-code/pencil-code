@@ -32,9 +32,7 @@
 
   public :: communicate_bc_aa_pot, fill_zghostzones_3vec
 
-  public :: remap_to_pencil_xy, unmap_from_pencil_xy
-  public :: transp_remap_to_pencil_xy, transp_unmap_from_pencil_xy
-  public :: transp_pencil_xy
+  public :: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
 
   public :: z2x
   public :: MPI_adi_x, MPI_adi_z

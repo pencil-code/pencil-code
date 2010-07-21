@@ -147,18 +147,6 @@ module Mpicomm
     module procedure unmap_from_pencil_xy_4D
   endinterface
 !
-  interface transp_remap_to_pencil_xy
-    module procedure transp_remap_to_pencil_xy_2D
-    module procedure transp_remap_to_pencil_xy_3D
-    module procedure transp_remap_to_pencil_xy_4D
-  endinterface
-!
-  interface transp_unmap_from_pencil_xy
-    module procedure transp_unmap_from_pencil_xy_2D
-    module procedure transp_unmap_from_pencil_xy_3D
-    module procedure transp_unmap_from_pencil_xy_4D
-  endinterface
-!
   interface transp_pencil_xy
     module procedure transp_pencil_xy_2D
     module procedure transp_pencil_xy_3D
@@ -1423,116 +1411,6 @@ module Mpicomm
       out = in
 !
     endsubroutine unmap_from_pencil_xy_4D
-!***********************************************************************
-    subroutine transp_remap_to_pencil_xy_2D (in, out)
-!
-!  Transposes and remaps 2D data distributed on several processors into pencil shape.
-!  This routine remaps arrays in x and y only for nprocx>1.
-!  (One transpose and unmap function call would be the inverse of this function.)
-!
-!   6-jul-2010/Bourdin.KIS: coded
-!
-      real, dimension(:,:), intent(in) :: in
-      real, dimension(:,:), intent(out) :: out
-!
-      out = transpose (in)
-!
-    endsubroutine transp_remap_to_pencil_xy_2D
-!***********************************************************************
-    subroutine transp_remap_to_pencil_xy_3D (in, out)
-!
-!  Transposes and remaps 3D data distributed on several processors into pencil shape.
-!  This routine remaps arrays in x and y only for nprocx>1.
-!  (One transpose and unmap function call would be the inverse of this function.)
-!
-!  14-jul-2010/Bourdin.KIS: coded
-!
-      real, dimension(:,:,:), intent(in) :: in
-      real, dimension(:,:,:), intent(out) :: out
-!
-      integer :: pos_z
-!
-      do pos_z = 1, size (in, 3)
-        out(:,:,pos_z) = transpose (in(:,:,pos_z))
-      enddo
-!
-    endsubroutine transp_remap_to_pencil_xy_3D
-!***********************************************************************
-    subroutine transp_remap_to_pencil_xy_4D (in, out)
-!
-!  Transposes and remaps 4D data distributed on several processors into pencil shape.
-!  This routine remaps arrays in x and y only for nprocx>1.
-!  (One transpose and unmap function call would be the inverse of this function.)
-!
-!  14-jul-2010/Bourdin.KIS: coded
-!
-      real, dimension(:,:,:,:), intent(in) :: in
-      real, dimension(:,:,:,:), intent(out) :: out
-!
-      integer :: pos_z, pos_a
-!
-      do pos_z = 1, size (in, 3)
-        do pos_a = 1, size (in, 4)
-          out(:,:,pos_z,pos_a) = transpose (in(:,:,pos_z,pos_a))
-        enddo
-      enddo
-!
-    endsubroutine transp_remap_to_pencil_xy_4D
-!***********************************************************************
-    subroutine transp_unmap_from_pencil_xy_2D (in, out)
-!
-!  First transposes pencil shaped 2D data distributed on several processors
-!  and then unmaps the data back to normal shape (in one go) for nprocx>1.
-!  (This routine is the inverse of one remap and traspose function call.)
-!
-!   5-jul-2010/Bourdin.KIS: coded
-!
-      real, dimension(:,:), intent(in) :: in
-      real, dimension(:,:), intent(out) :: out
-!
-      out = transpose (in)
-!
-    endsubroutine transp_unmap_from_pencil_xy_2D
-!***********************************************************************
-    subroutine transp_unmap_from_pencil_xy_3D (in, out)
-!
-!  First transposes pencil shaped 3D data distributed on several processors
-!  and then unmaps the data back to normal shape (in one go) for nprocx>1.
-!  (This routine is the inverse of one remap and traspose function call.)
-!
-!  14-jul-2010/Bourdin.KIS: coded
-!
-      real, dimension(:,:,:), intent(in) :: in
-      real, dimension(:,:,:), intent(out) :: out
-!
-      integer :: pos_z
-!
-      do pos_z = 1, size (in, 3)
-        out(:,:,pos_z) = transpose (in(:,:,pos_z))
-      enddo
-!
-    endsubroutine transp_unmap_from_pencil_xy_3D
-!***********************************************************************
-    subroutine transp_unmap_from_pencil_xy_4D (in, out)
-!
-!  First transposes pencil shaped 4D data distributed on several processors
-!  and then unmaps the data back to normal shape (in one go) for nprocx>1.
-!  (This routine is the inverse of one remap and traspose function call.)
-!
-!  14-jul-2010/Bourdin.KIS: coded
-!
-      real, dimension(:,:,:,:), intent(in) :: in
-      real, dimension(:,:,:,:), intent(out) :: out
-!
-      integer :: pos_z, pos_a
-!
-      do pos_z = 1, size (in, 3)
-        do pos_a = 1, size (in, 4)
-          out(:,:,pos_z,pos_a) = transpose (in(:,:,pos_z,pos_a))
-        enddo
-      enddo
-!
-    endsubroutine transp_unmap_from_pencil_xy_4D
 !***********************************************************************
     subroutine transp_pencil_xy_2D (in, out)
 !
