@@ -3259,8 +3259,8 @@ module Mpicomm
 !
       if (nprocx>1) then
 !
-        lbufxo = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
-        ubufxo = f( l1:l1i,:,nn1:nn2,iax:iaz)
+        lbufxo = f( l1:l1i,:,nn1:nn2,iax:iaz)
+        ubufxo = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
 !
         nbufx=nghost*(ny+2*nghost)*(nghost+1)*3
 !
