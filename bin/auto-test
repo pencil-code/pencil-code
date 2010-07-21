@@ -26,7 +26,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   matching to extract the relevant output lines.
 # To Do:
 # - Add an option to exclude those tests that use MPI
-# - Remove directory from /var/tmp when encountering Ctl-c
+# - Remove directory from /tmp when encountering Ctl-c
 # - Treat `svn update' as separate stage that can be `OK' or not
 
 BEGIN {
@@ -195,8 +195,8 @@ my $reference_out = 'reference.out'; # automatically changed to
                                      # reference.out.double below for
                                      # double precision runs
 my $user        = $ENV{USER} || $ENV{LOGNAME} || 'unknown';
-my $tmpdir      = "/var/tmp/pencil-tmp-$user-$$";
-my $lockdir     = '/var/tmp';     # put / check for lock file here
+my $tmpdir      = "/tmp/pencil-tmp-$user-$$";
+my $lockdir     = '/tmp';     # put / check for lock file here
 my $lockfile    = "$lockdir/pencil-auto-test-$user.pid";
 my $headerpat   = '^-*\s*(-+\s*[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $noheader    = "Couldn't find header line";
@@ -237,7 +237,7 @@ Options:
   -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
   -N,  --nice=<n>          \tRun tests with nice value <n>
   -j,  --jobs=<n>          \tPass through -j option to make
-  -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /var/tmp
+  -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /tmp
   -s,  --short             \tPrint short directory names only
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
