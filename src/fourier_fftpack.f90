@@ -1290,11 +1290,11 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fourier_transform_xy_xy_wrapper(in,out,factor)
+    subroutine fourier_transform_xy_xy_parallel(in,out,factor)
 !
 !  Subroutine to do an extrapolation of 2D 'in' data into 'out' using
 !  'factor' as a multiplication factor to the Fourier coefficients.
-!  The normalization factor need to be already included in 'factor'.
+!  The normalization factor needs to be already included in 'factor'.
 !  Backwards and forwards transforms are done efficiently in one go.
 !  For x- and/or y-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the current xy-plane.
@@ -1329,44 +1329,44 @@ module Fourier
       ona = size (out, 4)
 !
       if (ina /= ona) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', &
+          call fatal_error ('fourier_transform_xy_xy_parallel', &
                             'number of components is different for input and ouput arrays', lfirst_proc_xy)
 !
       if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (factor, 1) /= pnx) .or. (size (factor, 2) /= pny)) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
       if (size (factor, 3) /= onz) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', &
+          call fatal_error ('fourier_transform_xy_xy_parallel', &
                             'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
       if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', &
+          call fatal_error ('fourier_transform_xy_xy_parallel', &
                             'nxgrid needs to be an integer multiple of nprocxy', lfirst_proc_xy)
       if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', &
+          call fatal_error ('fourier_transform_xy_xy_parallel', &
                             'nygrid needs to be an integer multiple of nprocxy', lfirst_proc_xy)
 !
       if (lshear) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', &
+          call fatal_error ('fourier_transform_xy_xy_parallel', &
                             'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
 !  Allocate memory for large arrays.
 !
       allocate (p_re(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_re', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for p_re', .true.)
       allocate (p_im(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for p_im', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for p_im', .true.)
       allocate (t_re(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_re', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for t_re', .true.)
       allocate (t_im(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for t_im', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for t_im', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -1393,11 +1393,11 @@ module Fourier
 !
       allocate (e_re(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_re', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for e_re', .true.)
 !
       allocate (e_im(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for e_im', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for e_im', .true.)
 !
       do pos_a = 1, ona
         do l = 1, tny
@@ -1420,11 +1420,11 @@ module Fourier
 !
       allocate (b_re(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_re', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for b_re', .true.)
 !
       allocate (b_im(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_xy_wrapper', 'Could not allocate memory for b_im', .true.)
+          call fatal_error ('fourier_transform_xy_xy_parallel', 'Could not allocate memory for b_im', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
@@ -1453,7 +1453,7 @@ module Fourier
       if (allocated (b_re)) deallocate (b_re)
       if (allocated (b_im)) deallocate (b_im)
 !
-    endsubroutine fourier_transform_xy_xy_wrapper
+    endsubroutine fourier_transform_xy_xy_parallel
 !***********************************************************************
     subroutine fourier_transform_y_y(a_re,a_im,linv)
 !
