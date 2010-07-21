@@ -566,7 +566,7 @@ module ImplicitPhysics
 !
 ! top boundary condition z=z(n2): always constant temperature
 !
-      if (ltrailing_z) then
+      if (llast_proc_z) then
         f_2d(:,n2+1)=2.*f_2d(:,n2)-f_2d(:,n2-1)
       endif
 !
