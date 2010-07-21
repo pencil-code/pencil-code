@@ -5043,61 +5043,56 @@ For technical details, see also Sect.~\ref{RestartingFromLessPhysics}.
 
 \medskip
 
-{\em
+{\bf A}: This sounds like a buggy shell setup, either by yourself or your
+system administrator --- or a shell that is even more idiosyncratic than the
+ones we have been working with.
 
-  This sounds like a buggy shell setup, either by yourself or your system
-  administrator --- or a shell that is even more idiosyncratic than the ones
-  we have been working with.
+To better diagnose the problem, collect the following information before
+filing a bug report to us:
 
-  To better diagnose the problem, collect the following information before
-  filing a bug report to us:
+\begin{enumerate}
 
+\item \code{uname -a}
+
+\item \code{/bin/csh -v}
+
+\item \code{echo \$version}
+
+\item \code{echo \$SHELL}
+
+\item \code{ps -p \$\$}
+
+\item If you have problems while sourcing the \file{sourceme} script,
   \begin{enumerate}
-
-  \item \code{uname -a}
-
-  \item \code{/bin/csh -v}
-
-  \item \code{echo \$version}
-
-  \item \code{echo \$SHELL}
-
-  \item \code{ps -p \$\$}
-
-  \item If you have problems while sourcing the \file{sourceme} script,
-    \begin{enumerate}
-    \item unset the \env{PENCIL_HOME} variable:
-      \begin{description}
-      \item[for \name{csh} and similar:]
-        \code{unsetenv PENCIL_HOME}
-      \item[for \name{bash} and similar:]
-        \code{unexport PENCIL_HOME; unset PENCIL_HOME}
-      \end{description}
-    \item switch your shell in verbose mode,
-      \begin{description}
-      \item[for \name{csh} and similar:]
-        \code{set verbose; set echo}
-      \item[for \name{bash} and similar:]
-        \code{set -v; set -x}
-      \item then source again.
-      \end{description}
-    \end{enumerate}
-
-  \item If you have problems with \cmd{pc_setupsrc},
-    run it with \cmd{csh} in verbose mode:
-    \begin{alltt}
-      \code{/bin/csh -v -x \$PENCIL_HOME/bin/pc_setupsrc}
-    \end{alltt}
+  \item unset the \env{PENCIL_HOME} variable:
+    \begin{description}
+    \item[for \name{csh} and similar:]
+      \code{unsetenv PENCIL_HOME}
+    \item[for \name{bash} and similar:]
+      \code{unexport PENCIL_HOME; unset PENCIL_HOME}
+    \end{description}
+  \item switch your shell in verbose mode,
+    \begin{description}
+    \item[for \name{csh} and similar:]
+      \code{set verbose; set echo}
+    \item[for \name{bash} and similar:]
+      \code{set -v; set -x}
+    \item then source again.
+    \end{description}
   \end{enumerate}
-}
 
+\item If you have problems with \cmd{pc_setupsrc},
+  run it with \cmd{csh} in verbose mode:
+  \begin{alltt}
+    \code{/bin/csh -v -x \$PENCIL_HOME/bin/pc_setupsrc}
+  \end{alltt}
+\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Compilation}
 
-%%%
-\subsubsection[Unable to open include file: chemistry.h]%
+\subsubsection[Unable to open include file: chemistry.h]
               {Make gives the following error now:}
 \begin{Verbatim}
 PGF90-S-0017-Unable to open include file: chemistry.h (nochemistry.f90: 43)
@@ -5108,84 +5103,74 @@ Line 43 of the nochemistry routine, only has 'contains'.
 
 \medskip
 
-{\em
-This is because somebody added a new module (together with a corresponding
-\name{nomodule.f90} and a \name{module.h} file (chemistry in this case).
-These files didn't exist before, so you need to say:
+{\bf A}: This is because somebody added a new module (together with a
+corresponding \name{nomodule.f90} and a \name{module.h} file (chemistry in this
+case). These files didn't exist before, so you need to say:
 \begin{Verbatim}
       pc_setupsrc
 \end{Verbatim}
 If this does not help, say first \cmd{make clean} and then \cmd{pc_setupsrc}.
-}
 
-%%%
-\subsubsection[Compiling with \name{ifc} under Linux]%
+\subsubsection[Compiling with \name{ifc} under Linux]
               {How do I compile the {\sc Pencil Code} with  the Intel
   (\name{ifc}) compiler under \name{Linux}?}
 
 \medskip
 
-{\em
-  The {\sc Pencil Code} should compile successfully with \name{ifc}~6.x,
-  \name{ifc}~7.0, sufficiently recent versions of \name{ifc} 7.1 (you
-  should get the latest version; if yours is too old, you will typically
-  get an `internal compiler error' during compilation of
-  \file[hydro.f90]{src/hydro.f90}), as well as with recent versions of
-  \name{ifort} 8.1 (8.0 may also work).
+{\bf A}: The {\sc Pencil Code} should compile successfully with \name{ifc}~6.x,
+\name{ifc}~7.0, sufficiently recent versions of \name{ifc} 7.1 (you
+should get the latest version; if yours is too old, you will typically
+get an `internal compiler error' during compilation of
+\file[hydro.f90]{src/hydro.f90}), as well as with recent versions of
+\name{ifort} 8.1 (8.0 may also work).
 
-  You can find the \name{ifort} compiler at
-  \url{ftp://download.intel.com/software/products/compilers/downloads}.
+You can find the \name{ifort} compiler at
+\url{ftp://download.intel.com/software/products/compilers/downloads}.
 
-  On many current (as of November 2003) Linux systems, there is a mismatch
-  between the \name{glibc} versions used by the compiler and the linker.
-  To work around this, use the following flag for compiling
-  \begin{Verbatim}
-    FC=ifc -i_dynamic
-  \end{Verbatim}
-  and set the environment variable
-  \begin{Verbatim}
-    LD_ASSUME_KERNEL=2.4.1; export LD_ASSUME_KERNEL
-  \end{Verbatim}
-  or
-  \begin{Verbatim}
-    setenv LD_ASSUME_KERNEL 2.4.1
-  \end{Verbatim}
-  This has solved the problems e.g.~on a system with \emph{glibc-2.3.2}
-  and kernel \emph{2.4.22}.
+On many current (as of November 2003) Linux systems, there is a mismatch
+between the \name{glibc} versions used by the compiler and the linker.
+To work around this, use the following flag for compiling
+\begin{Verbatim}
+  FC=ifc -i_dynamic
+\end{Verbatim}
+and set the environment variable
+\begin{Verbatim}
+  LD_ASSUME_KERNEL=2.4.1; export LD_ASSUME_KERNEL
+\end{Verbatim}
+or
+\begin{Verbatim}
+  setenv LD_ASSUME_KERNEL 2.4.1
+\end{Verbatim}
+This has solved the problems e.g.~on a system with \emph{glibc-2.3.2}
+and kernel \emph{2.4.22}.
 
-  Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
-  this info.
-}
+Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
+this info.
 
-%%%
-\subsubsection[Segmentation fault with \name{ifort} 8.0 under Linux]%
+\subsubsection[Segmentation fault with \name{ifort} 8.0 under Linux]
               {I keep getting segmentation faults with \file{start.x} when
                 compiling with \name{ifort} 8.0}
 
 \medskip
 
-{\em
-  There was/is a number of issues with \name{ifort} 8.0.
-  Make sure you have the latest patches applied to the compiler.
-  A number of things to consider or try are:
-  \begin{enumerate}
-  \item Compile with the the \option[-nothreads]{-static -nothreads} flags.
-  \item Set your stacksize to a large value (but a far too large value may
-    be problematic, too), e.\,g.
-    \begin{Verbatim}
-  limit stacksize 256m
-  ulimit -s 256000
-    \end{Verbatim}
-  \item Set the environment variable KMP_STACKSIZE to a large value (like
-    \code{100M})
-  \end{enumerate}
+{\bf A}: There was/is a number of issues with \name{ifort} 8.0.
+Make sure you have the latest patches applied to the compiler.
+A number of things to consider or try are:
+\begin{enumerate}
+\item Compile with the the \option[-nothreads]{-static -nothreads} flags.
+\item Set your stacksize to a large value (but a far too large value may
+  be problematic, too), e.\,g.
+  \begin{Verbatim}
+limit stacksize 256m
+ulimit -s 256000
+  \end{Verbatim}
+\item Set the environment variable KMP_STACKSIZE to a large value (like
+  \code{100M})
+\end{enumerate}
 
 See also \url{http://softwareforums.intel.com/ids/board/message?board.id=11&message.id=1375}
 
-}
-
-%%%
-\subsubsection[The underscore problem: linking with \name{MPI}]%
+\subsubsection[The underscore problem: linking with \name{MPI}]
               {When compiling with MPI on a Linux system, the linker
                complains:}
 \label{Sec-underscore-problem}
@@ -5199,26 +5184,22 @@ See also \url{http://softwareforums.intel.com/ids/board/message?board.id=11&mess
 
 \medskip
 
-{\em
-  This is the infamous \name{underscore problem}.
-  Your \name{MPI} libraries have been compiled with \name{G77} without the
-  option \option{-fno-second-underscore}, which makes the \name{MPI}
-  symbol names incompatible with other Fortran compilers.
+{\bf A}: This is the infamous \name{underscore problem}.
+Your \name{MPI} libraries have been compiled with \name{G77} without the
+option \option{-fno-second-underscore}, which makes the \name{MPI}
+symbol names incompatible with other Fortran compilers.
 
-  As a workaround, use
-  \begin{Verbatim}
-  MPICOMM = mpicomm_
-  \end{Verbatim}
-  in \file{Makefile.local}.
-  Or, even better, you can set this globally (for the given computer) by
-  inserting  that line into the file
-  \file[.adapt-mkfile.inc]{\~{}/.adapt-mkfile.inc}
-  (see \code{perldoc adapt-mkfile} for more details).
-  \index{adapt-mkfile}
-}
+As a workaround, use
+\begin{Verbatim}
+MPICOMM = mpicomm_
+\end{Verbatim}
+in \file{Makefile.local}.
+Or, even better, you can set this globally (for the given computer) by
+inserting  that line into the file
+\file[.adapt-mkfile.inc]{\~{}/.adapt-mkfile.inc}
+(see \code{perldoc adapt-mkfile} for more details).
+\index{adapt-mkfile}
 
-
-%%%
 \subsubsection{Compilation stops with the cryptic error message:}
 \begin{Verbatim}
   f95  -O3 -u -c .f90.f90
@@ -5230,40 +5211,37 @@ What is the problem?
 
 \medskip
 
-{\em
-  There are two possibilities:
-  \begin{enumerate}
-  \item One of the variables for \name{make} has not been set, so
-    \name{make} expands it to the empty string.
-    Most probably you forgot to specify a module in
-    \file[Makefile.local]{src/Makefile.local}.
-    One possibility is that you have upgraded
-    from an older version of the code that did not have some of the modules
-    the new version has.
+{\bf A}: There are two possibilities:
+\begin{enumerate}
+\item One of the variables for \name{make} has not been set, so
+  \name{make} expands it to the empty string.
+  Most probably you forgot to specify a module in
+  \file[Makefile.local]{src/Makefile.local}.
+  One possibility is that you have upgraded
+  from an older version of the code that did not have some of the modules
+  the new version has.
 
-    Compare your \file[Makefile.local]{src/Makefile.local} to one of the
-    examples that work.
+  Compare your \file[Makefile.local]{src/Makefile.local} to one of the
+  examples that work.
 
-  \item One of the variables for \name{make} has a space appended to it,
-    e.\,g.~if you use the line
-    \begin{quote}
-      \upshape\ttfamily
-      MPICOMM = mpicomm_\textvisiblespace
-    \end{quote}
-    (see \S~\ref{Sec-underscore-problem}) with a trailing blank, you will
-    encounter this error message.
-    Remove the blank.
-    This problem can also occur if you added a new
-    module (and have an empty space after the module
-    name in \file[Makefile.src]{src/Makefile.src}, i.e.\
-    \cmd{CHIRAL=nochiral\textvisiblespace}), in which case the compiler
-    will talk about ``circular dependence'' for the file \file{nochiral}.
+\item One of the variables for \name{make} has a space appended to it,
+  e.\,g.~if you use the line
+  \begin{quote}
+    \upshape\ttfamily
+    MPICOMM = mpicomm_\textvisiblespace
+  \end{quote}
+  (see \S~\ref{Sec-underscore-problem}) with a trailing blank, you will
+  encounter this error message.
+  Remove the blank.
+  This problem can also occur if you added a new
+  module (and have an empty space after the module
+  name in \file[Makefile.src]{src/Makefile.src}, i.e.\
+  \cmd{CHIRAL=nochiral\textvisiblespace}), in which case the compiler
+  will talk about ``circular dependence'' for the file \file{nochiral}.
 
-  \end{enumerate}
-}
+\end{enumerate}
 
 
-%%%
 \subsubsection{The code doesn't compile,}
 \ldots there is a problem with \var{mvar}:
 \begin{Verbatim}
@@ -5277,17 +5255,14 @@ What is the problem?
 
 \medskip
 
-{\em
-  Check and make sure that \file{mkcparam} (directory
-  \file[bin/]{\$PENCIL_HOME/bin}) is in your path.
-  If this doesn't help, there may be an {\it empty} \file{cparam.inc}
-  file in your \file[src/]{src} directory.
-  Remove \file{cparam.inc} and try again
-  (Note that \file{cparam.inc} is automatically generated from the
-  \file{Makefile}).
-}
+{\bf A}: Check and make sure that \file{mkcparam} (directory
+\file[bin/]{\$PENCIL_HOME/bin}) is in your path.
+If this doesn't help, there may be an {\it empty} \file{cparam.inc}
+file in your \file[src/]{src} directory.
+Remove \file{cparam.inc} and try again
+(Note that \file{cparam.inc} is automatically generated from the
+\file{Makefile}).
 
-%%%
 \subsubsection{Some samples don't even compile,}
 as you can see on the web,
 \url{http://www.nordita.org/software/pencil-code/tests.html}.
@@ -5312,14 +5287,11 @@ make: *** [code] Error 2
 
 \medskip
 
-{\em
-  Somebody may have checked in something without having
-  run auto-test beforehand. The problem here is that something has been added in
-  one module, but not in the corresponding no-module. You can of course check
-  with \name{svn} who it was\ldots
-}
+{\bf A}: Somebody may have checked in something without having
+run auto-test beforehand. The problem here is that something has been added in
+one module, but not in the corresponding no-module. You can of course check
+with \name{svn} who it was\ldots
 
-%%%
 \subsubsection{Internal compiler error with Compaq/Dec F90}
 The Dec Fortran optimizer has occasional problems with
 \file{nompicomm.f90}:
@@ -5341,27 +5313,23 @@ The Dec Fortran optimizer has occasional problems with
 
 \medskip
 
-{\em
-  The occurrence of this problem depends upon the grid size;
-  and the problem never seems to occur with \file{mpicomm.f90},
-  except when \code{ncpus=1}.
-  The problem can be avoided by switching off the loop transformation
-  optimization (part of the \option{-O5} optimization), via:
-  \begin{Verbatim}
-    #OPTFLAGS=-fast -O5 -notransform_loops
-  \end{Verbatim}
-%   This has not been made standard in \file{Makefile},
-%   as it can cause some slowdown: e.g.
-%   an increase from 2.67 to 2.89 ${\mu\rm s}\,/\,{\rm pt}\,/\,{\rm step}$,
-%   for \file{runs/forced/hel128f}
-%   with \code{nxgrid=nygrid=nzgrid=128}, \code{ncpus=16}, \code{nt=100},
-%   on the Mhd machine.
-  This is currently the default compiler setting in \file{Makefile},
-  although it has a measurable performance impact (some 8\% slowdown).
-}
+{\bf A}: The occurrence of this problem depends upon the grid size;
+and the problem never seems to occur with \file{mpicomm.f90},
+except when \code{ncpus=1}.
+The problem can be avoided by switching off the loop transformation
+optimization (part of the \option{-O5} optimization), via:
+\begin{Verbatim}
+  #OPTFLAGS=-fast -O5 -notransform_loops
+\end{Verbatim}
+% This has not been made standard in \file{Makefile},
+% as it can cause some slowdown: e.g.
+% an increase from 2.67 to 2.89 ${\mu\rm s}\,/\,{\rm pt}\,/\,{\rm step}$,
+% for \file{runs/forced/hel128f}
+% with \code{nxgrid=nygrid=nzgrid=128}, \code{ncpus=16}, \code{nt=100},
+% on the Mhd machine.
+This is currently the default compiler setting in \file{Makefile},
+although it has a measurable performance impact (some 8\% slowdown).
 
-
-%%%
 \subsubsection{Assertion failure under SunOS}
 Under SunOS, I get an error message like
 \begin{Verbatim}
@@ -5373,16 +5341,13 @@ Under SunOS, I get an error message like
 
 \medskip
 
-{\em
-  This is a compiler bug that we find at least with Sun's
-  WorkShop Compiler version `5.0 00/05/17 FORTRAN 90 2.0 Patch 107356-05'.
-  Upgrade the compiler version (and possibly also the operating system):
-  we find that the code compiles and works with version
-  `Sun WorkShop 6 update 2 Fortran 95 6.2 Patch 111690-05 2002/01/17' under
-  SunOS version `5.8 Generic_108528-11'.
-}
+{\bf A}: This is a compiler bug that we find at least with Sun's
+WorkShop Compiler version `5.0 00/05/17 FORTRAN 90 2.0 Patch 107356-05'.
+Upgrade the compiler version (and possibly also the operating system):
+we find that the code compiles and works with version
+`Sun WorkShop 6 update 2 Fortran 95 6.2 Patch 111690-05 2002/01/17' under
+SunOS version `5.8 Generic_108528-11'.
 
-%%%
 \subsubsection{After some dirty tricks I got pencil code to compile with
 MPI, but it doesn't work}
 
@@ -5394,11 +5359,9 @@ Goodness gracious me, you shouldn't have to compile your own MPI library.
 
 \medskip
 
-{\em
-Then don't use the old LAM-MPI. It is long superseded by open-mpi now.
+{\bf A}: Then don't use the old LAM-MPI. It is long superseded by open-mpi now.
 Open-mpi doesn't need a daemon to be running. I am using the version that
 ships with Ubuntu (e.g. 9.04):
-}
 
 \begin{Verbatim}
   frenesi:~> aptitude -w 210 search openmpi | grep '^i'
@@ -5410,12 +5373,9 @@ i A openmpi-common - high performance message passing library -- common files
 i   openmpi-doc    - high performance message passing library -- man pages
 \end{Verbatim}
 
-{\em
 Install that and keep your configuration (Makefile.src and getconf.csh)
 close to that for `frenesi' or `norlx50'. That should work.
-}
 
-%%%
 \subsubsection{Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type}
 
 \begin{Verbatim}
@@ -5442,8 +5402,7 @@ Will it be OK? Or, how can I fix this?
 
 \medskip
 
-{\em
-Thanks for letting me know about the status, and congratulations
+{\bf A}: Thanks for letting me know about the status, and congratulations
 on your progress! Those tests that fail are those that use MPI.
 If your machine is a dual or multi core machine, you could run
 faster by running under MPI. But this is probably not crucial for
@@ -5451,7 +5410,6 @@ you at this point. (I just noticed that there is a ToDo listed
 in the auto-test command to implement the option not to run the
 MPI tests, but this hasn't been done yet. So I guess you can start
 with the science next.
-}
 
 %%%
 \subsubsection{Error: Can't open included file 'mpif.h'}
@@ -5470,35 +5428,100 @@ But since I use \cmd{FC=mpif90} I thought I don't need to worry.
 
 \medskip
 
-{\em
-Since you use \cmd{FC=mpif90} there must definitely be something
+{\bf A}: Since you use \cmd{FC=mpif90} there must definitely be something
 wrong with their setup.
 Try \cmd{mpif90 -showme} or \cmd{mpif90 -show}; the `-I' option
 should say where it looks for 'mpif.h'.
 If those directories don't exist, it's no wonder that it doesn't work,
 and it is time to complain.
-}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Pencil check}
+
+\subsubsection{The pencil check complains for no reason.}
+
+\medskip
+
+{\bf A}: The pencil check only complains for a reason.
+
+\subsubsection{The pencil check reports MISSING PENCILS and quits}
+
+\medskip
+
+{\bf A}: This could point to a serious problem in the code. Check where the
+missing pencil is used in the code. Request the right pencils, likely based on
+input parameters, by adapting one or more of the \code{pencil_criteria_MODULE}
+subroutines.
+
+\subsubsection{The pencil check reports unnecessary pencils}
+
+The pencil check reports
+\code{possible overcalculation... pencil rho (  43) is requested, but does not
+appear to be required!}
+
+\medskip
+
+{\bf A}: Such warnings show that your simulation is possibly running too slowly
+because it is calculating pencils that are not actually needed. Check in the
+code where the unnecessary pencils are used and adapt one or more of the
+\code{pencil_criteria_MODULE} subroutines to request pencils only when they are
+actually needed.
+
+\subsubsection{The pencil check reports that most or all pencils are missing}
+
+\medskip
+
+{\bf A}: This is typically a thing that can happen when testing new code
+development for the first time. It is usually an indication that the reference
+\code{df} changes every time you call \code{pde}. Check whether any newly
+implemented subroutines or functionality has a ``memory'', i.e. if calling the
+subroutine twice with the same \code{f} gives different output \code{df}.
+
+\subsubsection{Running the pencil check triggers mathematical errors in the code}
+
+{\bf A}: The pencil check puts random numbers in \code{f} before checking the
+dependence of \code{df} on the chosen set of pencils. Sometimes these random
+numbers are inconsistent with the physics and cause errors. In that case you
+can set \code{lrandom_f_pencil_check=F} in \code{\&run_pars} in \file{run.in}.
+The initial condition may contain many idealised states (zeros or ones) which
+then do not trigger pencil check errors when \code{lrandom_f_pencil_check=F},
+even if pencils are missing. But it does prevent mathematical inconsistencies.
+
+\subsubsection{The pencil check still complains}
+
+\medskip
+
+{\bf A}: Then you need to look into the how the code and the pencil check
+operate.  Reduce the problem in size and dimensions to find the smallest
+problem that makes the pencil check fail (e.g. 1x1x8 grid points). At the line
+of \file{pencil_check.f90} when a difference is found between \code{df_ref} and
+\code{df}, add some debug lines telling you which variable is inconsistent and
+in what place. Often you will be surprised that the pencil check has correctly
+found a problem in the simulation.
+
+\subsubsection{The pencil check is annoying so I turned it off}
+
+\medskip
+
+{\bf A}: Then you are taking a major risk. If one or more pencils are not
+calculated properly, then the results will be wrong.
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Running}
 
-%%%
 \subsubsection[Periodic boundary conditions in \file{start.x}]%
               {Why does \file{start.x} / \file{start.csh} write data with
   periodic boundary conditions?}
 
 \medskip
 
-{\em
+{\bf A}: Because you are setting the boundary conditions in \file{run.in}, not
+in \file{start.in}; see Sect.~\ref{S-boundconds-where}.  There is nothing wrong
+with the initial data --- the ghost-zone values will be re-calculated during
+the very first time step.
 
-  Because you are setting the boundary conditions in \file{run.in}, not in
-  \file{start.in}; see Sect.~\ref{S-boundconds-where}.
-  There is nothing wrong with the initial data --- the ghost-zone values
-  will be re-calculated during the very first time step.
-}
-
-%%%
 \subsubsection{\file{run.csh} doesn't work:}
 \begin{Verbatim}
   Invalid character ''' in NAMELIST input
@@ -5506,13 +5529,10 @@ and it is time to complain.
   Abort
 \end{Verbatim}
 
-{\em
-  The string array for the boundary condition, e.g.\ \var{bcx} or
-  \var{bcz} is too long. Make sure it has exactly as many elements
-  as \var{nvar} is big.
-}
+{\bf A}: The string array for the boundary condition, e.g.\ \var{bcx} or
+\var{bcz} is too long. Make sure it has exactly as many elements as \var{nvar}
+is big.
 
-%%%
 \subsubsection{Namelist problem under IRIX}
 Under IRIX, I get
 \begin{Verbatim}
@@ -5526,25 +5546,21 @@ Under IRIX, I get
 
 \medskip
 
-{\em
-  This is a compiler bug that has been found at least with the MIPSpro F90
-  compiler version 7.3.1.3m. The problem seems to have been fixed in  version
-  7.4.20m.
+{\bf A}: This is a compiler bug that has been found at least with the MIPSpro
+F90 compiler version 7.3.1.3m. The problem seems to have been fixed in  version
+7.4.20m.
 
 %  It has been reported to SGI in mid-2002; you should complain to SGI if a
 %  patch is still not available.
 
-  The error comes and goes, depending on the configuration (and possibly
-  even the input parameters) you are using.
-  Until SGI fix their compiler, you can experiment with adding new variables
-  to the module \name{Param_IO}; this has solved the problem once for us.
-  If this trick does not help,
-  you will need to turn your namelist input (at least
-  \file{run.in} into Fortran statements, include them into a replacement
-  version of \file{param_io.f90}, and recompile each time you make changes.
-}
+The error comes and goes, depending on the configuration (and possibly even the
+input parameters) you are using.  Until SGI fix their compiler, you can
+experiment with adding new variables to the module \name{Param_IO}; this has
+solved the problem once for us.  If this trick does not help, you will need to
+turn your namelist input (at least \file{run.in} into Fortran statements,
+include them into a replacement version of \file{param_io.f90}, and recompile
+each time you make changes.
 
-%%%
 \subsubsection{Code crashes after restarting}
 
 \begin{Verbatim}
@@ -5557,13 +5573,11 @@ Under IRIX, I get
 
 \medskip
 
-{\em
+{\bf A}: In the current implementation, without a corresponding cleaning
+procedure, unfortunately yes.
 
-  In the current implementation, without a corresponding cleaning procedure,
-  unfortunately yes.
-
-  Of course, this does not affect users' private changes outside the
-  central svn tree.
+Of course, this does not affect users' private changes outside the central svn
+tree.
 
 %   My experience of some 5 days ago was quite enormous. It started
 %   with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
@@ -5595,7 +5609,6 @@ Under IRIX, I get
 %   So, those people who checked in changes where already working with buggy
 %   codes and checked on even further bugs. As I said, I was worried that
 %   it was all my fault, but buggy codes are potentially bad for others too.
-}
 
 \subsubsection{auto-test gone mad...?}
 
@@ -5618,12 +5631,10 @@ Under IRIX, I get
 \end{Verbatim}
 
 {\bf A}:
-{\em
-  You are running on a RedHat 8 or 9 system, right?
+You are running on a RedHat 8 or 9 system, right?
 
-  Set \cmd{LANG=POSIX} in your shell's startup script and life will be
-  much better.
-}
+Set \cmd{LANG=POSIX} in your shell's startup script and life will be much
+better.
 
 % ---------------------------------------------------------------------- %
 
@@ -5641,12 +5652,9 @@ Under IRIX, I get
 
 \medskip
 
-{\em
-  You don't have the subdirectory \file[data/]{data} in your IDL variable
-  \var{!path}.
-  Make sure you source \file{sourceme.csh}/\file{sourceme.sh}
-  or set a sufficient IDL path otherwise.
-}
+{\bf A}: You don't have the subdirectory \file[data/]{data} in your IDL
+variable \var{!path}. Make sure you source
+\file{sourceme.csh}/\file{sourceme.sh} or set a sufficient IDL path otherwise.
 
 %%%
 \subsubsection{\file{start.pro} doesn't work:}
@@ -5660,20 +5668,17 @@ this time it was IECR, IGG, and ILNTT that I had to circumvent\ldots
 \medskip
 \index{NOERASE file}
 
-{\em
-  The simplest solution is to invoke \file{NOERASE}, i.e.\ say
-  \begin{Verbatim}
-  touch NOERASE
-  start.csh
-  \end{Verbatim}
-  or, alternatively, \code{start_run.csh}.
-  What it does is that it reruns \code{src/start.x} with a new version of
-  the code; this then produces all the necessary auxiliary files, but it
-  doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
-  \file{slice} files.
-}
+{\bf A}: The simplest solution is to invoke \file{NOERASE}, i.e.\ say
+\begin{Verbatim}
+touch NOERASE
+start.csh
+\end{Verbatim}
+or, alternatively, \code{start_run.csh}.
+What it does is that it reruns \code{src/start.x} with a new version of
+the code; this then produces all the necessary auxiliary files, but it
+doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
+\file{slice} files.
 
-%%%
 \subsubsection{Something about tag name undefined:}
 
 {\bf Q}:
@@ -5688,14 +5693,9 @@ Reading param.nml..
 
 \medskip
 
-{\bf A}:
-{\em
-  Go into \file{data/param.nml}
-  and add \code{, LEQUIDIST=T} anywhere in the file (but before the
-  last slash).
-}
+{\bf A}: Go into \file{data/param.nml} and add \code{, LEQUIDIST=T} anywhere in
+the file (but before the last slash).
 
-%%%
 \subsubsection{Something INC in start.pro}
 
 {\bf Q}:
@@ -5711,11 +5711,8 @@ BEGIN failed--compilation aborted at /home/brandenb/pencil-code/bin/nl2idl line 
 
 \medskip
 
-{\bf A}:
-{\em
-  Go into \file{\$PENCIL_HOME} and say \cmd{cvs up source.csh}
-  and/or \cmd{cvs up source.sh}. (They were just out of date.)
-}
+{\bf A}: Go into \file{\$PENCIL_HOME} and say \cmd{svn up sourceme.csh} and/or
+\cmd{svn up sourceme.sh}. (They were just out of date.)
 
 
 \subsubsection{nl2idl problem when reading param2.nml}
@@ -5741,16 +5738,12 @@ namelist file:
   COOLING_PROFILE='gaussian                 ',COOLTYPE='Temp
   'COOL= 0.0,CS2COOL= 0.0,RCOOL= 1.000000,WCOOL= 0.1000000,FBOT= 0.0,CHI_T= 0.0
 \end{Verbatim}
-{\em
 If you add a comma after the closing quote:
-}
 \begin{Verbatim}
   COOLING_PROFILE='gaussian                 ',COOLTYPE='Temp
   ',COOL= 0.0,CS2COOL= 0.0,RCOOL= 1.000000,WCOOL= 0.1000000,FBOT= 0.0,CHI_T= 0.0
 \end{Verbatim}
-{\em
 things will work.
-}
 
 Note that ifc cannot even itself read what it is writing here, so if this
 happened to occur in param.nml, the code would require manual intervention
@@ -5789,32 +5782,27 @@ Why don't you use GNU \name{autoconf/automake} for installation of the
 
 \medskip
 
-{\em
-  What do you mean by ``installation''?
-  Unlike the applications that normally use \name{autoconf}, the
-  \name{Pencil Code} is neither a binary executable, nor a library that
-  you compile once and then dump somewhere in the system tree.
-  \name[autoconf]{Autoconf} is the right tool for these applications, but
-  not for numerical codes, where the typical compilation and usage pattern
-  is very different:
+{\bf A}: What do you mean by ``installation''?  Unlike the applications that
+normally use \name{autoconf}, the \name{Pencil Code} is neither a binary
+executable, nor a library that you compile once and then dump somewhere in the
+system tree.  \name[autoconf]{Autoconf} is the right tool for these
+applications, but not for numerical codes, where the typical compilation and
+usage pattern is very different:
 
-  You have different directories with different \file{Makefile.local}
-  settings, recompile after introducing that shiny new term in your
-  equations, etc.
-  Moreover, you want to sometimes switch to a different compiler (but just
-  for that run directory) or another \name{MPI} implementation.
-  Our \cmd{adapt-mkfile} approach gives you this flexibility in a
-  reasonably convenient way, while doing the same thing with
-  \name{autoconf} would be using that system against most of its design
-  principles.
+You have different directories with different \file{Makefile.local} settings,
+recompile after introducing that shiny new term in your equations, etc.
+Moreover, you want to sometimes switch to a different compiler (but just for
+that run directory) or another \name{MPI} implementation.  Our
+\cmd{adapt-mkfile} approach gives you this flexibility in a reasonably
+convenient way, while doing the same thing with \name{autoconf} would be using
+that system against most of its design principles.
 
-  Besides, it would really get on my (WD's) nerves if I had to wait two
-  minutes for \name{autoconf} to finish before I can start compiling
-  (or maybe 5--10 minutes if I worked on a NEC machine\ldots).
+Besides, it would really get on my (WD's) nerves if I had to wait two minutes
+for \name{autoconf} to finish before I can start compiling (or maybe 5--10
+minutes if I worked on a NEC machine\ldots).
 
-  Finally, if you have ever tried to figure out what a \file{configure}
-  script does, you will appreciate a comprehensible configuration system.
-}
+Finally, if you have ever tried to figure out what a \file{configure} script
+does, you will appreciate a comprehensible configuration system.
 
 %%%
 \subsubsection{Small numbers in the code}
@@ -5822,7 +5810,8 @@ Why don't you use GNU \name{autoconf/automake} for installation of the
 
 \medskip
 
-\begin{Verbatim}
+{\bf A}:
+\begin{verbatim}
 F90 has two functions epsilon() and tiny(), with
 
   epsilon(x) = 1.1920929e-07
@@ -5847,18 +5836,17 @@ So in sub.f90,
 did (minimally) affect the result for r_mn=O(1), while the correct version
   +      evr = evr / spread(r_mn+tini,2,3)
 only avoids overflow.
-\end{Verbatim}
+\end{verbatim}
 
-%%%
 \subsubsection{Can I run the code on a Mac?}
 
 \medskip
 
-Macs work well for Linux stuff, except that the file structure is slightly
-different. Problems when following Linux installs can usually be traced to
-the PATH. For general reference, if you need to set an environment variable
-for an entire OS-X login session, google environment.plist. That won't be
-needed here.
+{\bf A}: Macs work well for Linux stuff, except that the file structure is
+slightly different. Problems when following Linux installs can usually be
+traced to the PATH. For general reference, if you need to set an environment
+variable for an entire OS-X login session, google environment.plist. That won't
+be needed here.
 
 For a Mac install, the following should work:
 
@@ -5890,27 +5878,26 @@ Note: the above way to get svn works. It takes a while however, so there
 are certainly faster ways out there. If you already have a non-obsolete svn
 version, use that instead.
 
-%%%
 \subsubsection{Pencil Code discussion forum}
-  Do I just need to send an email somewhere to subscribe or what?
+
+Do I just need to send an email somewhere to subscribe or what?
 
 \medskip
 
-The answer is yes; just go to:
+{\bf A}" The answer is yes; just go to:
 \begin{Verbatim}
    http://groups.google.com/group/pencil-code-discuss
 \end{Verbatim}
 
-%%%
 \subsubsection{The manual}
 \index{Manual}
 
-  It would be a good idea to add this useful information in the manual, no?
+It would be a good idea to add this useful information in the manual, no?
 
 \medskip
 
-When you have added new stuff to the code, don't forget to mention this
-in the \file{pencil-code/doc/manual.tex} file.
+{\bf A}: When you have added new stuff to the code, don't forget to mention
+this in the \file{pencil-code/doc/manual.tex} file.
 
 Again, the answer is yes; just go to:
 \begin{Verbatim}
