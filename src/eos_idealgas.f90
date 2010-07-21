@@ -2216,7 +2216,6 @@ module EquationOfState
 !
 !  calculate Fbot/(K*cs2)
 !
-
         if (ldensity_nolog) then
           rho_xy=f(:,:,n1,irho)
           cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n1,irho))-lnrho0)+cv1*f(:,:,n1,iss))
@@ -2404,48 +2403,64 @@ module EquationOfState
 !
       case ('bot')
 !
+! For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
+!
+        if (pretend_lnTT) then
+            f(l1-1,:,:,iss)=f(l1+i,:,:,iss) + &
+                2*i*dx*sigmaSBt*exp(f(l1,:,:,iss))**3/hcondxbot
+        else
+!
 !  set ghost zones such that dsdx_yz obeys
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
-        cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
-        TT_yz=cs2_yz/(gamma_m1*cp)
-        rho_yz=exp(f(l1,:,:,ilnrho))
-        fac=(1./60)*dx_1(l1)
-        dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
-                         -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
-                         +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
-        dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
-            (chi_t*rho_yz+hcondxbot/cv)
+          cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
+          TT_yz=cs2_yz/(gamma_m1*cp)
+          rho_yz=exp(f(l1,:,:,ilnrho))
+          fac=(1./60)*dx_1(l1)
+          dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
+                           -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
+                           +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
+          dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
+              (chi_t*rho_yz+hcondxbot/cv)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
-        do i=1,nghost
-          f(l1-1,:,:,iss)=f(l1+i,:,:,iss)+2*i*dx*dsdx_yz
-        enddo
+          do i=1,nghost
+            f(l1-1,:,:,iss)=f(l1+i,:,:,iss)-2*i*dx*dsdx_yz
+          enddo
+        endif
 !
 !  top boundary
 !  ============
 !
       case ('top')
 !
+! For the case of pretend_lnTT=T, set glnTT=-sigma*T^3/hcond
+!
+        if (pretend_lnTT) then
+            f(l2-1,:,:,iss)=f(l2+i,:,:,iss) - &
+                2*i*dx*sigmaSBt*exp(f(l2,:,:,iss))**3/hcondxtop
+        else
+!
 !  set ghost zones such that dsdx_yz obeys
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
-        cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
-        TT_yz=cs2_yz/(gamma_m1*cp)
-        rho_yz=exp(f(l2,:,:,ilnrho))
-        fac=(1./60)*dx_1(l2)
-        dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
-                         -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
-                         +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
-        dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
-            (chi_t*rho_yz+hcondxtop/cv)
+          cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
+          TT_yz=cs2_yz/(gamma_m1*cp)
+          rho_yz=exp(f(l2,:,:,ilnrho))
+          fac=(1./60)*dx_1(l2)
+          dlnrhodx_yz=fac*(+ 45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
+                           -  9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
+                           +      (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
+          dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*(gamma_m1)*dlnrhodx_yz)/ &
+              (chi_t*rho_yz+hcondxtop/cv)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
-        do i=1,nghost
-          f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+2*i*dx*dsdx_yz
-        enddo
+          do i=1,nghost
+            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+2*i*dx*dsdx_yz
+          enddo
+        endif
 !
 !  capture undefined entries
 !

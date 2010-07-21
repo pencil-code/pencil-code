@@ -4171,8 +4171,9 @@ module Boundcond
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for cs2_yz')
 !
-!  Do the 'c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is processor dependent)
+!  Do the 'c1' boundary condition (constant heat flux) for entropy and 
+!  pretend_lnTT. Check whether we want to do top or bottom (this is
+!  processor dependent)
 !
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
@@ -4186,31 +4187,41 @@ module Boundcond
       case ('bot')
         if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
+!  Deal with the simpler pretend_lnTT=T case first. Now ss is actually 
+!  lnTT and the boundary condition reads glnTT=FbotKbot/T
+!
+        if (pretend_lnTT) then
+          do i=1,nghost
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+2*i*dx*FbotKbot/exp(f(l1,:,:,iss))
+          enddo
+        else
+!
 !  calculate Fbot/(K*cs2)
 !
 !       cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+cv1*f(l1,:,:,iss))
 !
 !  Both, bottom and top boundary conditions are corrected for linear density
 !
-        if (ldensity_nolog) then
-          cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,ilnrho))-lnrho0)+gamma*f(l1,:,:,iss))
-        else
-          cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
-        endif
-        tmp_yz=FbotKbot/cs2_yz
+          if (ldensity_nolog) then
+            cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,ilnrho))-lnrho0)+gamma*f(l1,:,:,iss))
+          else
+            cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
+          endif
+          tmp_yz=FbotKbot/cs2_yz
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !
-        do i=1,nghost
-!         f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
-          if (ldensity_nolog) then
-            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-                (log(f(l1+i,:,:,ilnrho))-log(f(l1-i,:,:,ilnrho))+2*i*dx*tmp_yz)
-          else
-            f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-                (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
-          endif
-        enddo
+          do i=1,nghost
+!           f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
+            if (ldensity_nolog) then
+              f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
+                  (log(f(l1+i,:,:,ilnrho))-log(f(l1-i,:,:,ilnrho))+2*i*dx*tmp_yz)
+            else
+              f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
+                  (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
+            endif
+          enddo
+        endif
 !
 !  top boundary
 !  ============
@@ -4223,31 +4234,42 @@ module Boundcond
 !
         if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
+!  Deal with the simpler pretend_lnTT=T case first. Now ss is actually 
+!  lnTT and the boundary condition reads glnTT=FtopKtop/T
+!
+        if (pretend_lnTT) then
+          do i=1,nghost
+            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)-2*i*dx*FtopKtop/exp(f(l2,:,:,iss))
+          enddo
+        else
+!
 !  calculate Ftop/(K*cs2)
 !
-        if (ldensity_nolog) then
-          cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,ilnrho))-lnrho0)+gamma*f(l2,:,:,iss))
-        else
-          cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
-        endif
-        tmp_yz=FtopKtop/cs2_yz
+          if (ldensity_nolog) then
+            cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,ilnrho))-lnrho0)+gamma*f(l2,:,:,iss))
+          else
+            cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
+          endif
+          tmp_yz=FtopKtop/cs2_yz
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Ftop/(K*cs2)
 !
-        do i=1,nghost
-          if (ldensity_nolog) then
-            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                (log(f(l2-i,:,:,ilnrho))-log(f(l2+i,:,:,ilnrho))-2*i*dx*tmp_yz)
-          else
-            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
-          endif
-        enddo
+          do i=1,nghost
+            if (ldensity_nolog) then
+              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
+                  (log(f(l2-i,:,:,ilnrho))-log(f(l2+i,:,:,ilnrho))-2*i*dx*tmp_yz)
+            else
+              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
+                  (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
+            endif
+          enddo
 !
-      case default
-        call fatal_error('bc_ss_flux_x','invalid argument')
+        endif
 !
-      endselect
+        case default
+          call fatal_error('bc_ss_flux_x','invalid argument')
+!
+        endselect
 !
 !  Deallocate large arrays.
 !

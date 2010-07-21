@@ -3555,7 +3555,8 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (pretend_lnTT) call fatal_error("calc_heatcond","not implemented when pretend_lnTT = T")
+!PJK: tentatively allowed lnTT to be used
+!      if (pretend_lnTT) call fatal_error("calc_heatcond","not implemented when pretend_lnTT = T")
 !
 !  Heat conduction / entropy diffusion
 !
@@ -3614,7 +3615,11 @@ module Entropy
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
 !       glnThcond = p%glnTT + glhc*spread(1./hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
-        thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+        if (pretend_lnTT) then
+          thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+        else
+          thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+        endif
       endif  ! hcond0/=0
 !
 !  Write out hcond z-profile (during first time step only)
