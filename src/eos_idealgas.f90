@@ -3347,7 +3347,6 @@ module EquationOfState
       real :: potp,potm
       integer :: i
 
-            write(*,*), 'PC: cs2_point'
       select case (topbot)
 !
 !  Bottom boundary
