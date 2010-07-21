@@ -4688,6 +4688,7 @@ module Boundcond
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
       integer :: kx_start, stat, pos_z
       real :: delta_z
+      logical :: lfirst_call
 !
 !
       if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
@@ -4698,7 +4699,9 @@ module Boundcond
 !
 !  Allocate memory for large arrays.
 !
+      lfirst_call = .false.
       if (.not. allocated (exp_fact)) then
+        lfirst_call = .true.
         allocate (exp_fact(bnx,bny,nghost), stat=stat)
         if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact', .true.)
         ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
@@ -4711,19 +4714,23 @@ module Boundcond
 !
       select case (topbot)
       case ('bot')
-        do pos_z = 1, nghost
-          delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
-          ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
-          exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
-        enddo
+        if (lfirst_call) then
+          do pos_z = 1, nghost
+            delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
+            ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
+            exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
+          enddo
+        endif
         call fourier_transform_xy_xy_wrapper &
              (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact)
       case ('top')
-        do pos_z = 1, nghost
-          delta_z = z(n2) - z(n2+pos_z) ! dz is negative => decay
-          ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
-          exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
-        enddo
+        if (lfirst_call) then
+          do pos_z = 1, nghost
+            delta_z = z(n2) - z(n2+pos_z) ! dz is negative => decay
+            ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
+            exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
+          enddo
+        endif
         call fourier_transform_xy_xy_wrapper &
              (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact)
       case default
@@ -4732,7 +4739,7 @@ module Boundcond
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
-        call communicate_bc_aa_pot(f,topbot)
+      call communicate_bc_aa_pot(f,topbot)
 !
     endsubroutine bc_aa_pot_field_extra
 !***********************************************************************
