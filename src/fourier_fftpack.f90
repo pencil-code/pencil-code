@@ -1344,10 +1344,10 @@ module Fourier
 !
       if (mod (nxgrid, nprocxy) /= 0) &
           call fatal_error ('fourier_transform_xy_parallel', &
-                            'nxgrid needs to be an integer multiple of nprocxy', lfirst_proc_xy)
+                            'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
       if (mod (nygrid, nprocxy) /= 0) &
           call fatal_error ('fourier_transform_xy_parallel', &
-                            'nygrid needs to be an integer multiple of nprocxy', lfirst_proc_xy)
+                            'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       if (lshear) &
           call fatal_error ('fourier_transform_xy_parallel', &
