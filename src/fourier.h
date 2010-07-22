@@ -10,5 +10,5 @@
   public :: fourier_transform_y_y
   public :: fourier_shift_yz_y, fourier_shift_y
   public :: fourier_transform_xy_xy_other
-  public :: fourier_transform_xy_parallel
+  public :: vect_pot_extrapol_z_parallel,field_extrapol_z_parallel
   public :: fourier_transform_real_1

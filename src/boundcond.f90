@@ -4701,16 +4701,15 @@ module Boundcond
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !
-      use Fourier, only: fourier_transform_xy_parallel
+      use Fourier, only: vect_pot_extrapol_z_parallel
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 !
-      real, dimension (:,:,:), allocatable, save :: exp_fact
+      real, dimension (:,:,:), allocatable, save :: exp_fact_top, exp_fact_bot
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
       integer :: kx_start, stat, pos_z
       real :: delta_z
-      logical :: lfirst_call
 !
 !
       if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
@@ -4719,42 +4718,43 @@ module Boundcond
       if (mod (nx, nprocy) /= 0) &
           call fatal_error ('bc_aa_pot_field_extra', 'nx needs to be an integer multiple of nprocy.', lfirst_proc_xy)
 !
-!  Allocate memory for large arrays.
-!
-      lfirst_call = .false.
-      if (.not. allocated (exp_fact)) then
-        lfirst_call = .true.
-        allocate (exp_fact(bnx,bny,nghost), stat=stat)
-        if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact', .true.)
-        ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
-        kx_start = (ipx+ipy*nprocx)*bny
-        exp_fact = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
-                                      spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
-      endif
-!
 !  Check whether we want to do top or bottom z boundary
 !
       select case (topbot)
       case ('bot')
-        if (lfirst_call) then
+        if (.not. allocated (exp_fact_bot)) then
+          ! Setup exponential factor for bottom boundary
+          allocate (exp_fact_bot(bnx,bny,nghost), stat=stat)
+          if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact_bot', .true.)
+          ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
+          kx_start = (ipx+ipy*nprocx)*bny
+          exp_fact_bot = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
+                                            spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
           do pos_z = 1, nghost
             delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
             ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
-            exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
+            exp_fact_bot(:,:,pos_z) = exp_fact_bot(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
         endif
-        call fourier_transform_xy_parallel &
-             (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact)
+        call vect_pot_extrapol_z_parallel &
+             (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact_bot)
       case ('top')
-        if (lfirst_call) then
+        if (.not. allocated (exp_fact_top)) then
+          ! Setup exponential factor for top boundary
+          allocate (exp_fact_top(bnx,bny,nghost), stat=stat)
+          if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact_top', .true.)
+          ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
+          kx_start = (ipx+ipy*nprocx)*bny
+          exp_fact_top = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
+                                            spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
           do pos_z = 1, nghost
             delta_z = z(n2) - z(n2+pos_z) ! dz is negative => decay
             ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
-            exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
+            exp_fact_top(:,:,pos_z) = exp_fact_top(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
         endif
-        call fourier_transform_xy_parallel &
-             (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact)
+        call vect_pot_extrapol_z_parallel &
+             (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact_top)
       case default
         call fatal_error ('bc_aa_pot_field_extra', 'invalid argument', lfirst_proc_xy)
       endselect

@@ -1290,11 +1290,11 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fourier_transform_xy_parallel(in,out,factor)
+    subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
-!  Subroutine to do an extrapolation of 2D 'in' data into 'out' using
+!  Subroutine to do a z-extrapolation of a vector potential using
 !  'factor' as a multiplication factor to the Fourier coefficients.
-!  The normalization factor needs to be already included in 'factor'.
+!  The normalization needs to be already included in 'factor'.
 !  Backwards and forwards transforms are done efficiently in one go.
 !  For x- and/or y-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the current xy-plane.
@@ -1329,44 +1329,44 @@ module Fourier
       ona = size (out, 4)
 !
       if (ina /= ona) &
-          call fatal_error ('fourier_transform_xy_parallel', &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
                             'number of components is different for input and ouput arrays', lfirst_proc_xy)
 !
       if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
-          call fatal_error ('fourier_transform_xy_parallel', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
-          call fatal_error ('fourier_transform_xy_parallel', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (factor, 1) /= pnx) .or. (size (factor, 2) /= pny)) &
-          call fatal_error ('fourier_transform_xy_parallel', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
       if (size (factor, 3) /= onz) &
-          call fatal_error ('fourier_transform_xy_parallel', &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
                             'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
       if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('fourier_transform_xy_parallel', &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
                             'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
       if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('fourier_transform_xy_parallel', &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
                             'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       if (lshear) &
-          call fatal_error ('fourier_transform_xy_parallel', &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
                             'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
 !  Allocate memory for large arrays.
 !
       allocate (p_re(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for p_re', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for p_re', .true.)
       allocate (p_im(pnx,pny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for p_im', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for p_im', .true.)
       allocate (t_re(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for t_re', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for t_re', .true.)
       allocate (t_im(tnx,tny,ona), stat=stat)
       if (stat > 0) &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for t_im', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for t_im', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -1393,11 +1393,11 @@ module Fourier
 !
       allocate (e_re(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for e_re', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for e_re', .true.)
 !
       allocate (e_im(tnx,tny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for e_im', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for e_im', .true.)
 !
       do pos_a = 1, ona
         do l = 1, tny
@@ -1420,11 +1420,11 @@ module Fourier
 !
       allocate (b_re(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for b_re', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for b_re', .true.)
 !
       allocate (b_im(pnx,pny,onz,ona), stat=stat)
       if (stat > 0)  &
-          call fatal_error ('fourier_transform_xy_parallel', 'Could not allocate memory for b_im', .true.)
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for b_im', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
@@ -1453,7 +1453,170 @@ module Fourier
       if (allocated (b_re)) deallocate (b_re)
       if (allocated (b_im)) deallocate (b_im)
 !
-    endsubroutine fourier_transform_xy_parallel
+    endsubroutine vect_pot_extrapol_z_parallel
+!***********************************************************************
+    subroutine field_extrapol_z_parallel(in,out,factor)
+!
+!  Subroutine to do a z-extrapolation of a fields z-component using
+!  'factor' as a multiplication factor to the Fourier coefficients.
+!  The normalization needs to be already included in 'factor'.
+!  Backwards and forwards transforms are done efficiently in one go.
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the current xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!
+!   7-jul-2010/Bourdin.KIS: coded, adapted parts of bc_aa_pot2 and mdi_init
+!
+      use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
+!
+      real, dimension (:,:), intent(in) :: in
+      real, dimension (:,:,:,:), intent(out) :: out
+      real, dimension (:,:,:), intent(in) :: factor
+!
+      integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
+      integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
+      real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
+      real, dimension (:,:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
+      real, dimension (:,:,:,:), allocatable :: e_re, e_im ! extrapolated data in transposed pencil shape
+      real, dimension (:,:,:,:), allocatable :: b_re, b_im ! backtransformed data in pencil shape
+      complex, dimension (nxgrid) :: ax
+      complex, dimension (nygrid) :: ay, ay_extra
+      real, dimension (4*nxgrid+15) :: wsavex
+      real, dimension (4*nygrid+15) :: wsavey
+      integer :: onz, ona ! number of ghost cells and components in the output data (usually 3)
+      integer :: l, m, stat, pos_a, pos_z
+!
+!
+      onz = size (out, 3)
+      ona = size (out, 4)
+!
+      if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
+          call fatal_error ('field_extrapol_z_parallel', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
+      if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
+          call fatal_error ('field_extrapol_z_parallel', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
+      if (ona /= 3) &
+          call fatal_error ('field_extrapol_z_parallel', 'output array must have three components', lfirst_proc_xy)
+      if ((size (factor, 1) /= pnx) .or. (size (factor, 2) /= pny)) &
+          call fatal_error ('field_extrapol_z_parallel', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
+      if (size (factor, 3) /= onz) &
+          call fatal_error ('field_extrapol_z_parallel', &
+                            'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
+!
+      if (mod (nxgrid, nprocxy) /= 0) &
+          call fatal_error ('field_extrapol_z_parallel', &
+                            'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+      if (mod (nygrid, nprocxy) /= 0) &
+          call fatal_error ('field_extrapol_z_parallel', &
+                            'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+!
+      if (lshear) &
+          call fatal_error ('field_extrapol_z_parallel', &
+                            'shearing is not implemented in this routine!', lfirst_proc_xy)
+!
+!  Allocate memory for large arrays.
+!
+      allocate (p_re(pnx,pny,ona), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p_re', .true.)
+      allocate (p_im(pnx,pny,ona), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p_im', .true.)
+      allocate (t_re(tnx,tny,ona), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for t_re', .true.)
+      allocate (t_im(tnx,tny,ona), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for t_im', .true.)
+!
+      call cffti (nxgrid, wsavex)
+      call cffti (nygrid, wsavey)
+!
+      ! collect the data we need
+!      call remap_to_pencil_xy (in, p_re)
+! *** WORK HERE *** (Bourdin.KIS)
+  p_re = 0.0
+      p_im = 0.0
+!
+      do pos_a = 1, ona
+        do m = 1, pny
+          ! transform x-direction
+          ax = cmplx (p_re(:,m,pos_a), p_im(:,m,pos_a))
+          call cfftf (nxgrid, ax, wsavex)
+          p_re(:,m,pos_a) = real (ax)
+          p_im(:,m,pos_a) = aimag (ax)
+        enddo
+      enddo
+!
+      call transp_pencil_xy (p_re, t_re)
+      call transp_pencil_xy (p_im, t_im)
+!
+      if (allocated (p_re)) deallocate (p_re)
+      if (allocated (p_im)) deallocate (p_im)
+!
+      allocate (e_re(tnx,tny,onz,ona), stat=stat)
+      if (stat > 0)  &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e_re', .true.)
+!
+      allocate (e_im(tnx,tny,onz,ona), stat=stat)
+      if (stat > 0)  &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e_im', .true.)
+!
+      do pos_a = 1, ona
+        do l = 1, tny
+          ! transform y-direction
+          ay = cmplx (t_re(:,l,pos_a), t_im(:,l,pos_a))
+          call cfftf (nygrid, ay, wsavey)
+!
+          do pos_z = 1, onz
+            ! apply factor to fourier coefficients and transform y-direction back
+            ay_extra = ay * factor(:,l,pos_z)
+            call cfftb (nygrid, ay_extra, wsavey)
+            e_re(:,l,pos_z,pos_a) = real (ay_extra)
+            e_im(:,l,pos_z,pos_a) = aimag (ay_extra)
+          enddo
+        enddo
+      enddo
+!
+      if (allocated (t_re)) deallocate (t_re)
+      if (allocated (t_im)) deallocate (t_im)
+!
+      allocate (b_re(pnx,pny,onz,ona), stat=stat)
+      if (stat > 0)  &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b_re', .true.)
+!
+      allocate (b_im(pnx,pny,onz,ona), stat=stat)
+      if (stat > 0)  &
+          call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b_im', .true.)
+!
+      call transp_pencil_xy (e_re, b_re)
+      call transp_pencil_xy (e_im, b_im)
+!
+      if (allocated (e_re)) deallocate (e_re)
+      if (allocated (e_im)) deallocate (e_im)
+!
+      do pos_a = 1, ona
+        do pos_z = 1, onz
+          do m = 1, pny
+            ! transform x-direction back
+            ax = cmplx (b_re(:,m,pos_z,pos_a), b_im(:,m,pos_z,pos_a))
+            call cfftb (nxgrid, ax, wsavex)
+            b_re(:,m,pos_z,pos_a) = real (ax)
+          enddo
+        enddo
+      enddo
+!
+      if (allocated (b_im)) deallocate (b_im)
+!
+      ! distribute the results
+      call unmap_from_pencil_xy (b_re, out)
+!
+!  Deallocate large arrays.
+!
+      if (allocated (b_re)) deallocate (b_re)
+      if (allocated (b_im)) deallocate (b_im)
+!
+    endsubroutine field_extrapol_z_parallel
 !***********************************************************************
     subroutine fourier_transform_y_y(a_re,a_im,linv)
 !

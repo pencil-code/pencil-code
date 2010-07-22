@@ -196,22 +196,39 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fourier_transform_xy_parallel(in_re,out_re,factor)
+    subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
-! Subroutine to do Fourier transform and extraploation of a 2-D
-! array under MPI in parallel for ghost cells.
+!  Subroutine to do a z-extrapolation of a vector potential using
+!  'factor' as a multiplication factor to the Fourier coefficients.
 !
       real, dimension(:,:,:) :: in_re,factor
       real, dimension(:,:,:,:) :: out_re
 !
-      call fatal_error('fourier_transform_xy_parallel', &
+      call fatal_error('vect_pot_extrapol_z_parallel', &
           'this sub is not available in nofourier.f90!')
 !
-      call keep_compiler_quiet(in_re)
-      call keep_compiler_quiet(out_re)
+      call keep_compiler_quiet(in)
+      call keep_compiler_quiet(out)
       call keep_compiler_quiet(factor)
 !
-    endsubroutine fourier_transform_xy_parallel
+    endsubroutine vect_pot_extrapol_z_parallel
+!***********************************************************************
+    subroutine field_extrapol_z_parallel(in,out,factor)
+!
+!  Subroutine to do a z-extrapolation of a fields z-component using
+!  'factor' as a multiplication factor to the Fourier coefficients.
+!
+      real, dimension(:,:,:) :: in,factor
+      real, dimension(:,:,:,:) :: out
+!
+      call fatal_error('field_extrapol_z_parallel', &
+          'this sub is not available in nofourier.f90!')
+!
+      call keep_compiler_quiet(in)
+      call keep_compiler_quiet(out)
+      call keep_compiler_quiet(factor)
+!
+    endsubroutine field_extrapol_z_parallel
 !***********************************************************************
     subroutine fourier_transform_y_y(a_re,a_im,linv)
 !
