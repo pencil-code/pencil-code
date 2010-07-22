@@ -95,6 +95,7 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.
   logical :: ltestfield_artifric=.false.
   logical :: ltestfield_profile_eta_z=.false.
+  !!!! new input pars
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        etatest,etatest1,etatest_hyper3,iresistivity_test, &
@@ -115,7 +116,8 @@ module Testfield
   integer :: idiag_alp12=0      ! DIAG_DOC: $\alpha_{12}$
   integer :: idiag_alp22=0      ! DIAG_DOC: $\alpha_{22}$
   integer :: idiag_alp32=0      ! DIAG_DOC: $\alpha_{32}$
-  !!!!
+  integer :: idiag_alp13=0      ! DIAG_DOC: $\alpha_{13}$
+  integer :: idiag_alp23=0      ! DIAG_DOC: $\alpha_{23}$
   integer :: idiag_eta11=0      ! DIAG_DOC: $\eta_{113}k$ or $\eta_{11}k$ if leta_rank2=T
   integer :: idiag_eta21=0      ! DIAG_DOC: $\eta_{213}k$ or $\eta_{21}k$ if leta_rank2=T
   integer :: idiag_eta31=0      ! DIAG_DOC: $\eta_{313}k$
@@ -175,7 +177,8 @@ module Testfield
   integer :: idiag_alp21z=0     ! DIAG_DOC: $\alpha_{21}(z,t)$
   integer :: idiag_alp12z=0     ! DIAG_DOC: $\alpha_{12}(z,t)$
   integer :: idiag_alp22z=0     ! DIAG_DOC: $\alpha_{22}(z,t)$
-  !!!!
+  integer :: idiag_alp13z=0     ! DIAG_DOC: $\alpha_{13}(z,t)$
+  integer :: idiag_alp23z=0     ! DIAG_DOC: $\alpha_{23}(z,t)$
   integer :: idiag_eta11z=0     ! DIAG_DOC: $\eta_{11}(z,t)$
   integer :: idiag_eta21z=0     ! DIAG_DOC: $\eta_{21}(z,t)$
   integer :: idiag_eta12z=0     ! DIAG_DOC: $\eta_{12}(z,t)$
@@ -626,7 +629,7 @@ module Testfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx,3) :: uxB,B0test=0,bbtest
+      real, dimension (nx,3) :: uxB,B0test,bbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
@@ -636,7 +639,7 @@ module Testfield
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.
       integer :: jtest, j, jaatest, iuxtest, iuytest, iuztest
-      integer :: i1=1, i2=2, i3=3, i4=4
+      integer :: i1=1, i2=2, i3=3, i4=4, i5=5
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -703,6 +706,7 @@ module Testfield
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
         call del2v(f,iaxtest,del2Atest)
+!!!!
         select case (itestfield)
           case ('Beltrami'); call set_bbtest_Beltrami(B0test,jtest)
           case ('B11-B22_lin'); call set_bbtest_B11_B22_lin(B0test,jtest)
@@ -749,6 +753,7 @@ module Testfield
 !
 !  Compute u=U-Ubar
 !
+!!!!
         call cross_mn(uufluct,B0test,uxB)
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxB
 !
@@ -783,6 +788,7 @@ module Testfield
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
+!!!!
       if (lforcing_cont_aatest) &
         df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
             +ampl_fcont_aatest*p%fcont
@@ -950,7 +956,10 @@ module Testfield
           if (idiag_alp21z/=0) call xysum_mn_name_z(Eipq(:,2,i1),idiag_alp21z)
           if (idiag_alp12z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_alp12z)
           if (idiag_alp22z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_alp22z)
-          !!!!
+          if (njtest >= 5) then  
+            if (idiag_alp13z/=0) call xysum_mn_name_z(Eipq(:,1,i5),idiag_alp13z)
+            if (idiag_alp23z/=0) call xysum_mn_name_z(Eipq(:,2,i5),idiag_alp23z)
+          endif
           if (idiag_eta11z/=0) call xysum_mn_name_z(+(-z(n)*Eipq(:,1,i3)+Eipq(:,1,i4)),idiag_eta11z)
           if (idiag_eta21z/=0) call xysum_mn_name_z(+(-z(n)*Eipq(:,2,i3)+Eipq(:,2,i4)),idiag_eta21z)
           if (idiag_eta12z/=0) call xysum_mn_name_z(-(-z(n)*Eipq(:,1,i1)+Eipq(:,1,i2)),idiag_eta12z)
@@ -979,7 +988,10 @@ module Testfield
             if (idiag_alp11/=0) call sum_mn_name(        Eipq(:,1,1)               ,idiag_alp11)
             if (idiag_alp21/=0) call sum_mn_name(        Eipq(:,2,1)               ,idiag_alp21)
             if (idiag_alp31/=0) call sum_mn_name(        Eipq(:,3,1)               ,idiag_alp31)
-            !!!!
+            if (njtest >= 5) then
+              if (idiag_alp13/=0) call sum_mn_name(        Eipq(:,1,i5)               ,idiag_alp13)
+              if (idiag_alp23/=0) call sum_mn_name(        Eipq(:,2,i5)               ,idiag_alp23)
+            endif
             if (idiag_eta12/=0) call sum_mn_name(-(-z(n)*Eipq(:,1,i1)+Eipq(:,1,i2)),idiag_eta12)
             if (idiag_eta22/=0) call sum_mn_name(-(-z(n)*Eipq(:,2,i1)+Eipq(:,2,i2)),idiag_eta22)
           else
@@ -1052,16 +1064,17 @@ module Testfield
         if (idiag_EBpq/=0) call sum_mn_name(cz(n)*Eipq(:,1,1) &
                                            +sz(n)*Eipq(:,2,1),idiag_EBpq)
 !
-!  print warning if alp12 and alp12 are needed, but njtest is too small XX
-!
+!  print warning if alpi2 or etai2 or alpi3 are needed, but njtest is too small
+!  
         if (njtest<=2 .and. &
             (idiag_alp12/=0.or.idiag_alp22/=0.or.idiag_alp32/=0.or. &
             (leta_rank2.and.(idiag_eta11/=0.or.idiag_eta21/=0)).or. &
             (.not.leta_rank2.and.(idiag_eta12/=0.or.idiag_eta22/=0.or.idiag_eta32/=0)).or. &
             (leta_rank2.and.(idiag_eta11cc/=0.or.idiag_eta21sc/=0)))) then
           call stop_it('njtest is too small if alpi2 or etai2 for i=1,2,3 are needed')
+        else if (njtest < 5 .and. (idiag_alp13/=0 .or. idiag_alp23/=0)) then
+          call stop_it('njtest is too small if alpi3 for i=1,2,3 are needed')
         else
-        !!!!
 !
 !  Don't subtract E0 field if iE0==0
 !
@@ -1070,7 +1083,6 @@ module Testfield
               if (idiag_alp12/=0) call sum_mn_name(Eipq(:,1,i3),idiag_alp12)
               if (idiag_alp22/=0) call sum_mn_name(Eipq(:,2,i3),idiag_alp22)
               if (idiag_alp32/=0) call sum_mn_name(Eipq(:,3,i3),idiag_alp32)
-              !!!!
               if (idiag_eta11/=0) call sum_mn_name(+(-z(n)*Eipq(:,1,i3)+Eipq(:,1,i4)),idiag_eta11)
               if (idiag_eta21/=0) call sum_mn_name(+(-z(n)*Eipq(:,2,i3)+Eipq(:,2,i4)),idiag_eta21)
             else
@@ -1482,6 +1494,7 @@ module Testfield
 !  Also: reset nuxb=0, which is used for time-averaged testfields
 !  Do this for the full nuxb array.
 !
+!!!!
         if (t >= taainit) then
           if (ltestfield_taver) nuxb=0
           do jtest=1,njtest
@@ -1602,6 +1615,8 @@ module Testfield
 !  set testfield
 !
 !  25-Mar-09/axel: adapted from set_bbtest_B11_B22
+!  22-Juil-10/emeric: added the fifth testfield to mesure alpi3
+!                     done only for linear testfields, should also be done for the other cases
 !
       use Cdata
 !
@@ -1618,7 +1633,7 @@ module Testfield
       case (2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
       case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
-      !!!!case (5); 
+      case (5); B0test(:,1)=0. ; B0test(:,2)=0 ; B0test(:,3)=bamp 
       case default; B0test(:,:)=0.
       endselect
 !
@@ -1647,14 +1662,13 @@ module Testfield
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
-        idiag_alp11z=0; idiag_alp21z=0; idiag_alp12z=0; idiag_alp22z=0
+        idiag_alp11z=0; idiag_alp21z=0; idiag_alp12z=0; idiag_alp22z=0; idiag_alp13z=0; idiag_alp23z=0
         idiag_eta11z=0; idiag_eta21z=0; idiag_eta12z=0; idiag_eta22z=0
-        !!!!
         idiag_E10z=0; idiag_E20z=0; idiag_E30z=0
         idiag_EBpq=0; idiag_E0Um=0; idiag_E0Wm=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
-        !!!!
+        idiag_alp13=0; idiag_alp23=0 
         idiag_eta11=0; idiag_eta21=0; idiag_eta31=0
         idiag_eta12=0; idiag_eta22=0; idiag_eta32=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
@@ -1682,7 +1696,8 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
         call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
         call parse_name(iname,cname(iname),cform(iname),'alp32',idiag_alp32)
-        !!!!
+        call parse_name(iname,cname(iname),cform(iname),'alp13',idiag_alp13)
+        call parse_name(iname,cname(iname),cform(iname),'alp23',idiag_alp23)
         call parse_name(iname,cname(iname),cform(iname),'eta11',idiag_eta11)
         call parse_name(iname,cname(iname),cform(iname),'eta21',idiag_eta21)
         call parse_name(iname,cname(iname),cform(iname),'eta31',idiag_eta31)
@@ -1765,7 +1780,8 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp21z',idiag_alp21z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp12z',idiag_alp12z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp22z',idiag_alp22z)
-        !!!!
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp13z',idiag_alp13z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp23z',idiag_alp23z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta11z',idiag_eta11z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta21z',idiag_eta21z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta12z',idiag_eta12z)
@@ -1787,7 +1803,8 @@ module Testfield
         write(3,*) 'idiag_alp12=',idiag_alp12
         write(3,*) 'idiag_alp22=',idiag_alp22
         write(3,*) 'idiag_alp32=',idiag_alp32
-        !!!!
+        write(3,*) 'idiag_alp13=',idiag_alp13
+        write(3,*) 'idiag_alp23=',idiag_alp23
         write(3,*) 'idiag_eta11=',idiag_eta11
         write(3,*) 'idiag_eta21=',idiag_eta21
         write(3,*) 'idiag_eta31=',idiag_eta31
@@ -1862,7 +1879,8 @@ module Testfield
         write(3,*) 'idiag_alp21z=',idiag_alp21z
         write(3,*) 'idiag_alp12z=',idiag_alp12z
         write(3,*) 'idiag_alp22z=',idiag_alp22z
-        !!!!
+        write(3,*) 'idiag_alp13z=',idiag_alp13z
+        write(3,*) 'idiag_alp23z=',idiag_alp23z
         write(3,*) 'idiag_eta11z=',idiag_eta11z
         write(3,*) 'idiag_eta21z=',idiag_eta21z
         write(3,*) 'idiag_eta12z=',idiag_eta12z
