@@ -1374,58 +1374,6 @@ module Fourier
       call cffti (nygrid, wsavey)
 !
       ! collect the data we need
-  do pos_x = 1, nx
-    do pos_y = 1, ny
-      do pos_a = 1, 3
-        in(pos_x,pos_y,pos_a) = ipx*nx + (ipy*ny+pos_y-1)*nxgrid + pos_x-1 + (pos_a-1)*nxgrid*nygrid + 1
-      enddo
-    enddo
-  enddo
-  write (1+iproc,*) 'iproc, ipx, ipy, ipz=', iproc, ipx, ipy, ipz
-  do pos_a = 1, 3
-    write (1+iproc,*) 'in(a)', pos_a
-    do pos_y = 1, ny
-      write (1+iproc,*) pos_y, in(:,pos_y,pos_a)
-    enddo
-  enddo
-  call remap_to_pencil_xy (in, p_re)
-  do pos_a = 1, 3
-    write (1+iproc,*) 'p_re(a)', pos_a
-    do pos_y = 1, ny/nprocx
-      write (1+iproc,*) pos_y, p_re(:,pos_y,pos_a)
-    enddo
-  enddo
-  call transp_pencil_xy (p_re, t_re)
-  do pos_a = 1, 3
-    write (1+iproc,*) 't_re(a)', pos_a
-    do pos_y = 1, pny
-      write (1+iproc,*) pos_y, t_re(:,pos_y,pos_a)
-    enddo
-  enddo
-  call transp_pencil_xy (t_re, p_re)
-  do pos_a = 1, 3
-    write (1+iproc,*) 'p_re(a)', pos_a
-    do pos_y = 1, tny
-      write (1+iproc,*) pos_y, p_re(:,pos_y,pos_a)
-    enddo
-  enddo
-  call unmap_from_pencil_xy (p_re, test_out)
-  do pos_a = 1, 3
-    write (1+iproc,*) 'test_out(a)', pos_a
-    do pos_y = 1, ny
-      write (1+iproc,*) pos_y, test_out(:,pos_y,pos_a)
-    enddo
-  enddo
-  do pos_a = 1, 3
-    write (1+iproc,*) '== (a)', pos_a
-    do pos_y = 1, ny
-      write (1+iproc,*) pos_y, (in(:,pos_y,pos_a)==test_out(:,pos_y,pos_a))
-    enddo
-  enddo
-  call flush (1+iproc)
-  call sleep (10)
-  stop
-!
       call remap_to_pencil_xy (in, p_re)
       p_im = 0.0
 !
