@@ -1305,7 +1305,7 @@ module Fourier
 !
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
-  real, dimension (:,:,:), intent(inout) :: in
+      real, dimension (:,:,:), intent(in) :: in
       real, dimension (:,:,:,:), intent(out) :: out
       real, dimension (:,:,:), intent(in) :: factor
 !
@@ -1322,8 +1322,6 @@ module Fourier
       integer :: ina ! number of components in the output data (usually 3)
       integer :: onz, ona ! number of ghost cells and components in the output data (usually 3)
       integer :: l, m, stat, pos_a, pos_z
-  integer :: pos_x, pos_y
-  real, dimension (nx,ny,3) :: test_out
 !
 !
       ina = size (in, 3)
