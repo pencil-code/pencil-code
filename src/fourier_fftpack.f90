@@ -1460,6 +1460,7 @@ module Fourier
 !  Subroutine to do a z-extrapolation of a fields z-component using
 !  'factor' as a multiplication factor to the Fourier coefficients.
 !  The normalization needs to be already included in 'factor'.
+!  'in' and 'factor' are assumed to be already in pencil shape.
 !  Backwards and forwards transforms are done efficiently in one go.
 !  For x- and/or y-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the current xy-plane.
@@ -1476,8 +1477,8 @@ module Fourier
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
-      real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
-      real, dimension (:,:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
+      real, dimension (:,:), allocatable :: p_re, p_im     ! data in pencil shape
+      real, dimension (:,:), allocatable :: t_re, t_im     ! data in transposed pencil shape
       real, dimension (:,:,:,:), allocatable :: e_re, e_im ! extrapolated data in transposed pencil shape
       real, dimension (:,:,:,:), allocatable :: b_re, b_im ! backtransformed data in pencil shape
       complex, dimension (nxgrid) :: ax
@@ -1491,8 +1492,8 @@ module Fourier
       onz = size (out, 3)
       ona = size (out, 4)
 !
-      if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
-          call fatal_error ('field_extrapol_z_parallel', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
+      if ((size (in, 1) /= pnx) .or. (size (in, 2) /= pny)) &
+          call fatal_error ('field_extrapol_z_parallel', 'input array size mismatch /= pnx,pny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
           call fatal_error ('field_extrapol_z_parallel', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
       if (ona /= 3) &
@@ -1502,6 +1503,9 @@ module Fourier
       if (size (factor, 3) /= onz) &
           call fatal_error ('field_extrapol_z_parallel', &
                             'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
+      if (ona < 2) &
+          call fatal_error ('field_extrapol_z_parallel', &
+                            'output array needs to have at least an x and y component', lfirst_proc_xy)
 !
       if (mod (nxgrid, nprocxy) /= 0) &
           call fatal_error ('field_extrapol_z_parallel', &
@@ -1516,16 +1520,16 @@ module Fourier
 !
 !  Allocate memory for large arrays.
 !
-      allocate (p_re(pnx,pny,ona), stat=stat)
+      allocate (p_re(pnx,pny), stat=stat)
       if (stat > 0) &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny,ona), stat=stat)
+      allocate (p_im(pnx,pny), stat=stat)
       if (stat > 0) &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny,ona), stat=stat)
+      allocate (t_re(tnx,tny), stat=stat)
       if (stat > 0) &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny,ona), stat=stat)
+      allocate (t_im(tnx,tny), stat=stat)
       if (stat > 0) &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for t_im', .true.)
 !
@@ -1533,19 +1537,15 @@ module Fourier
       call cffti (nygrid, wsavey)
 !
       ! collect the data we need
-!      call remap_to_pencil_xy (in, p_re)
-! *** WORK HERE *** (Bourdin.KIS)
-  p_re = 0.0
+      p_re = in
       p_im = 0.0
 !
-      do pos_a = 1, ona
-        do m = 1, pny
-          ! transform x-direction
-          ax = cmplx (p_re(:,m,pos_a), p_im(:,m,pos_a))
-          call cfftf (nxgrid, ax, wsavex)
-          p_re(:,m,pos_a) = real (ax)
-          p_im(:,m,pos_a) = aimag (ax)
-        enddo
+      do m = 1, pny
+        ! transform x-direction
+        ax = cmplx (p_re(:,m), p_im(:,m))
+        call cfftf (nxgrid, ax, wsavex)
+        p_re(:,m) = real (ax)
+        p_im(:,m) = aimag (ax)
       enddo
 !
       call transp_pencil_xy (p_re, t_re)
@@ -1554,20 +1554,20 @@ module Fourier
       if (allocated (p_re)) deallocate (p_re)
       if (allocated (p_im)) deallocate (p_im)
 !
-      allocate (e_re(tnx,tny,onz,ona), stat=stat)
+      allocate (e_re(tnx,tny,onz,2), stat=stat)
       if (stat > 0)  &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e_re', .true.)
 !
-      allocate (e_im(tnx,tny,onz,ona), stat=stat)
+      allocate (e_im(tnx,tny,onz,2), stat=stat)
       if (stat > 0)  &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e_im', .true.)
 !
-      do pos_a = 1, ona
-        do l = 1, tny
-          ! transform y-direction
-          ay = cmplx (t_re(:,l,pos_a), t_im(:,l,pos_a))
-          call cfftf (nygrid, ay, wsavey)
+      do l = 1, tny
+        ! transform y-direction
+        ay = cmplx (t_re(:,l), t_im(:,l))
+        call cfftf (nygrid, ay, wsavey)
 !
+        do pos_a = 1, 2
           do pos_z = 1, onz
             ! apply factor to fourier coefficients and transform y-direction back
             ay_extra = ay * factor(:,l,pos_z)
@@ -1581,11 +1581,11 @@ module Fourier
       if (allocated (t_re)) deallocate (t_re)
       if (allocated (t_im)) deallocate (t_im)
 !
-      allocate (b_re(pnx,pny,onz,ona), stat=stat)
+      allocate (b_re(pnx,pny,onz,2), stat=stat)
       if (stat > 0)  &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b_re', .true.)
 !
-      allocate (b_im(pnx,pny,onz,ona), stat=stat)
+      allocate (b_im(pnx,pny,onz,2), stat=stat)
       if (stat > 0)  &
           call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b_im', .true.)
 !
@@ -1610,6 +1610,7 @@ module Fourier
 !
       ! distribute the results
       call unmap_from_pencil_xy (b_re, out)
+      if (ona > 2) out(:,:,:,3:ona) = 0.0
 !
 !  Deallocate large arrays.
 !
