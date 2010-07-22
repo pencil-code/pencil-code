@@ -179,6 +179,14 @@ module Mpicomm
     module procedure mpireduce_sum_double_arr4
   endinterface
 !
+  interface distribute_to_pencil_xy
+    module procedure distribute_to_pencil_xy_2D
+  endinterface
+!
+  interface collect_from_pencil_xy
+    module procedure collect_from_pencil_xy_2D
+  endinterface
+!
   interface remap_to_pencil_xy
     module procedure remap_to_pencil_xy_2D
     module procedure remap_to_pencil_xy_3D
@@ -3359,6 +3367,124 @@ module Mpicomm
       endif
 !
     endsubroutine fill_zghostzones_3vec
+!***********************************************************************
+    subroutine distribute_to_pencil_xy_2D (in, out, broadcaster)
+!
+!  Distribute data to several processors and reform into pencil shape.
+!  This routine divides global data and distributes it in the xy-plane.
+!
+!  22-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+      integer, intent(in) :: broadcaster
+!
+      integer :: bnx, bny ! transfer box sizes
+      integer :: ibox, partner, nboxc, alloc_stat
+      integer, parameter :: ytag=113
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: buffer
+!
+!
+      if ((nprocx == 1) .and. (nprocy == 1)) then
+        out = in
+        return
+      endif
+!
+      bnx = size (in, 1)
+      bny = size (in, 2) / nprocxy
+      nboxc = bnx*bny
+!
+      if (mod (size (in, 2), nprocxy) /= 0) &
+          call stop_it_if_any (.true., 'distribute_to_pencil_xy_2D: input y size needs to be an integer multiple of nprocx*nprocy')
+!
+      if ((size (out, 1) /= bnx) .or. ((size (out, 2) /= bny))) &
+          call stop_it_if_any (.true., 'distribute_to_pencil_xy_2D: output array size mismatch /= bnx,bny')
+!
+      allocate (buffer(bnx,bny), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'distribute_to_pencil_xy_2D: not enough memory for buffer!')
+!
+      if (iproc == broadcaster) then
+        do ibox = 0, nprocxy-1
+          partner = ipz*nprocxy + ipy*nprocx + ibox
+          if (iproc == partner) then
+            ! data is local
+            out = in(:,bny*ibox+1:bny*(ibox+1))
+          else
+            ! send to partner
+            buffer = in(:,bny*ibox+1:bny*(ibox+1))
+            call MPI_SEND (buffer, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (buffer, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+        out = buffer
+      endif
+!
+      if (allocated (buffer)) deallocate (buffer)
+!
+    endsubroutine distribute_to_pencil_xy_2D
+!***********************************************************************
+    subroutine collect_from_pencil_xy_2D (in, out, collector)
+!
+!  Gather 2D data from several processors and combine into global shape.
+!  This routine collects 2D pencil shaped data distributed in the xy-plane.
+!
+!  22-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+      integer, intent(in) :: collector
+!
+      integer :: bnx, bny ! transfer box sizes
+      integer :: ibox, partner, nboxc, alloc_stat
+      integer, parameter :: ytag=114
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: buffer
+!
+!
+      if ((nprocx == 1) .and. (nprocy == 1)) then
+        out = in
+        return
+      endif
+!
+      bnx = size (out, 1)
+      bny = size (out, 2) / nprocxy
+      nboxc = bnx*bny
+!
+      if (mod (size (out, 2), nprocxy) /= 0) &
+          call stop_it_if_any (.true., 'collect_from_pencil_xy_2D: output y size needs to be an integer multiple of nprocx*nprocy')
+!
+      if ((size (in, 1) /= bnx) .or. ((size (in, 2) /= bny))) &
+          call stop_it_if_any (.true., 'collect_from_pencil_xy_2D: input array size mismatch /= bnx,bny')
+!
+      allocate (buffer(bnx,bny), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'collect_from_pencil_xy_2D: not enough memory for buffer!')
+!
+      if (iproc == collector) then
+        do ibox = 0, nprocxy-1
+          partner = ipz*nprocxy + ipy*nprocx + ibox
+          if (iproc == partner) then
+            ! data is local
+            out(:,bny*ibox+1:bny*(ibox+1)) = in
+          else
+            ! receive from partner
+            call MPI_RECV (buffer, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            out(:,bny*ibox+1:bny*(ibox+1)) = buffer
+          endif
+        enddo
+      else
+        ! send to collector
+        buffer = in
+        call MPI_SEND (buffer, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      if (allocated (buffer)) deallocate (buffer)
+!
+    endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
     subroutine remap_to_pencil_xy_2D (in, out)
 !

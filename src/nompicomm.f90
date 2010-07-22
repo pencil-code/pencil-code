@@ -135,6 +135,14 @@ module Mpicomm
     module procedure mpireduce_and_arr
   endinterface
 !
+  interface distribute_to_pencil_xy
+    module procedure distribute_to_pencil_xy_2D
+  endinterface
+!
+  interface collect_from_pencil_xy
+    module procedure collect_from_pencil_xy_2D
+  endinterface
+!
   interface remap_to_pencil_xy
     module procedure remap_to_pencil_xy_2D
     module procedure remap_to_pencil_xy_3D
@@ -1327,6 +1335,34 @@ module Mpicomm
       f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
 !
     endsubroutine communicate_bc_aa_pot
+!***********************************************************************
+    subroutine distribute_to_pencil_xy_2D (in, out)
+!
+!  Distribute 2D data to several processors and reform into pencil shape.
+!  This routine divides global 2D data and distributes it in the xy-plane.
+!
+!  22-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine distribute_to_pencil_xy_2D
+!***********************************************************************
+    subroutine collect_from_pencil_xy_2D (in, out)
+!
+!  Gather 2D data from several processors and combine into global shape.
+!  This routine collects 2D pencil shaped data distributed in the xy-plane.
+!
+!  22-jul-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
     subroutine remap_to_pencil_xy_2D (in, out)
 !
