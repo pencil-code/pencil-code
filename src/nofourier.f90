@@ -201,8 +201,8 @@ module Fourier
 !  Subroutine to do a z-extrapolation of a vector potential using
 !  'factor' as a multiplication factor to the Fourier coefficients.
 !
-      real, dimension(:,:,:) :: in_re,factor
-      real, dimension(:,:,:,:) :: out_re
+      real, dimension(:,:,:) :: in,factor
+      real, dimension(:,:,:,:) :: out
 !
       call fatal_error('vect_pot_extrapol_z_parallel', &
           'this sub is not available in nofourier.f90!')
