@@ -555,6 +555,17 @@ module Grid
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
 !
+! Identify whether you are a processor at the pole or not
+!
+      if(nprocz>0) then
+         if ((coord_system.eq.'spherical').and.(y(m1).eq.xyz0(2)).and.(y(m1).lt.pi/4.)) &
+              lnorth_pole=.true.
+         if ((coord_system.eq.'spherical').and.(y(m2).eq.xyz1(2)).and.(y(m2).gt.3*pi/4.)) &
+              lsouth_pole=.true.
+         write(*,*)'DM,lnorth_pole,lsouth_pole,iproc'
+         write(*,*)'DM',lnorth_pole,lsouth_pole,iproc,y(m1),xyz0(2),pi/2,y(m2)
+      endif
+!
     endsubroutine construct_grid
 !***********************************************************************
     subroutine initialize_grid

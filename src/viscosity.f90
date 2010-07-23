@@ -36,6 +36,7 @@ module Viscosity
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
   real :: rzero_lambda=impossible,wlambda=0.,rmax_lambda=impossible
   real :: offamp_lambda=1.,r1_lambda=impossible,r2_lambda=impossible
+  real :: lambda_jump=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real, dimension(:), pointer :: etat_z
@@ -83,7 +84,7 @@ module Viscosity
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
-      offamp_lambda,lmeanfield_nu,meanfield_nuB,PrM_turb
+      offamp_lambda,lambda_jump,lmeanfield_nu,meanfield_nuB,PrM_turb
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -415,8 +416,16 @@ module Viscosity
         if (lroot) print*,'LV1_rprof',LV1_rprof
         if (lroot) print*,'LH1_rprof',LH1_rprof
       case ('uniform')
+        if (lroot) print*,'lambda profile :',lambda_profile
         LV0_rprof=1.;LV1_rprof=1;LH1_rprof=1.
         der_LV0_rprof=0.;der_LV1_rprof=0;der_LH1_rprof=0.
+      case ('V0jump')
+        if (lroot) print*,'lambda_profile, radial_step, rzero_lambda, wlambda:',&
+            lambda_profile,rzero_lambda,wlambda
+        LV0_rprof=1.+(lambda_jump/Lambda_V0)*step(x,rzero_lambda,wlambda)
+        der_LV0_rprof=(lambda_jump/Lambda_V0)*der_step(x,rzero_lambda,wlambda)
+        LV1_rprof=1;LH1_rprof=1.
+        der_LV1_rprof=0;der_LH1_rprof=0.
       case default
         call fatal_error('initialize_viscosity(lambda)',&
             'default lambda_profile is uniform ! ')

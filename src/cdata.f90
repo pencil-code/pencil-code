@@ -176,6 +176,7 @@ module Cdata
   logical :: llast_proc_x=.true.,llast_proc_y=.true.,llast_proc_z=.true.
   logical :: llast_proc_xy=.true.,llast_proc_yz=.true.,llast_proc_xz=.true.
   logical :: llast_proc_xyz=.true.
+  logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
   logical :: lalpm=.false.
   logical :: lchiral=.false.

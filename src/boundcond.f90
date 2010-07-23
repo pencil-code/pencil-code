@@ -351,6 +351,12 @@ module Boundcond
               case ('p')
                 ! BCY_DOC: periodic
                 call bc_per_y(f,topbot,j)
+              case ('pp')
+                ! BCY_DOC: periodic across the pole
+                call bc_pper_y(f,topbot,j)
+              case ('ap')
+                ! BCY_DOC: anti-periodic across the pole
+                call bc_aper_y(f,topbot,j)
               case ('s')
                 ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
@@ -794,6 +800,74 @@ module Boundcond
       endselect
 !
     endsubroutine bc_per_y
+!***********************************************************************
+    subroutine bc_pper_y(f,topbot,j)
+!
+!  periodic boundary condition across the pole
+!  15-june-10/dhruba: aped
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,nhalf
+      character (len=3) :: topbot
+!
+      nhalf=(n1+n2)/2
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        if (nprocz==1) then
+           f(:,1,n1:nhalf,j) = f(:,m1+2,nhalf+1:n2,j)
+           f(:,2,n1:nhalf,j) = f(:,m1+1,nhalf+1:n2,j)
+           f(:,3,n1:nhalf,j) = f(:,m1,nhalf+1:n2,j)
+!
+           f(:,1,nhalf+1:n2,j) = f(:,m1+2,n1:nhalf,j)
+           f(:,2,nhalf+1:n2,j) = f(:,m1+1,n1:nhalf,j)
+           f(:,3,nhalf+1:n2,j) = f(:,m1,n1:nhalf,j)
+        endif
+      case ('top')               ! top boundary
+        if (nprocz==1) then
+           f(:,m2+1,n1:nhalf,j) = f(:,m2,nhalf+1:n2,j)
+           f(:,m2+2,n1:nhalf,j) = f(:,m2-1,nhalf+1:n2,j)
+           f(:,m2+3,n1:nhalf,j) = f(:,m2-2,nhalf+1:n2,j)
+!
+           f(:,m2+1,nhalf+1:n2,j) = f(:,m2,n1:nhalf,j)
+           f(:,m2+2,nhalf+1:n2,j) = f(:,m2-1,n1:nhalf,j)
+           f(:,m2+3,nhalf+1:n2,j) = f(:,m2-2,n1:nhalf,j)
+        endif
+      case default
+        print*, "bc_pper_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_pper_y
+!***********************************************************************
+    subroutine bc_aper_y(f,topbot,j)
+!
+!  anti-periodic boundary condition across the pole
+!  15-june-10/dhruba: aped
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,nhalf
+      character (len=3) :: topbot
+!
+      nhalf=(n1+n2)/2
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        if (nprocz==1) then 
+           f(:,1:m1-1,n1:nhalf,j) = -f(:,m1:m1i,nhalf+1:n2,j)
+           f(:,1:m1-1,nhalf+1:n2,j) = -f(:,m1:m1i,n1:nhalf,j)
+        endif
+      case ('top')               ! top boundary
+        if (nprocz==1) then
+           f(:,m2+1:my,n1:nhalf,j) = -f(:,m2i:m2,nhalf+1:n2,j)
+           f(:,m2+1:my,nhalf+1:n2,j) = -f(:,m2i:m2,n1:nhalf,j)
+        endif
+      case default
+        print*, "bc_aper_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_aper_y
 !***********************************************************************
     subroutine bc_per_z(f,topbot,j)
 !

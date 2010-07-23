@@ -57,6 +57,7 @@ module Density
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
+  real :: rho_top=1.,rho_bottom=1.
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -92,7 +93,7 @@ module Density
       lexponential_smooth, wdamp, plaw, lcontinuity_gas, density_floor, &
       lanti_shockdiffusion, rshift, lrho_as_aux, ldiffusion_nolog, &
       lnrho_z_shift, lshare_plaw, powerlr,zoverh,hoverr,&
-      lffree,ffree_profile,rzero_ffree,wffree
+      lffree,ffree_profile,rzero_ffree,wffree,rho_top,rho_bottom
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -461,7 +462,7 @@ module Density
       real, dimension (nx) :: r_mn,lnrho,TT,ss
       real, pointer :: gravx
       complex :: omega_jeans
-      integer :: j, ierr
+      integer :: j, ierr,ix,iy
       logical :: lnothing
 !
       intent(inout) :: f
@@ -962,6 +963,13 @@ module Density
         case ('compressive-shwave')
 !  Should be consistent with density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
+!
+        case ('linz')
+! linearly increasing with z 
+          do ix=l1,l2;do iy=m1,m2 
+            f(ix,iy,1:mz,ilnrho) = log(rho_bottom+ & 
+                    ((rho_top-rho_bottom)/(Lxyz(3)))*(z(1:mz)-xyz0(3)) )
+          enddo;enddo
 !
         case default
 !

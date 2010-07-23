@@ -214,6 +214,7 @@ module Mpicomm
 !  For f-array processor boundaries
 !
   real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
+  real, dimension (nx,nghost,nz,mcom) :: npbufyi,npbufyo,spbufyi,spbufyo
   real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
@@ -229,6 +230,7 @@ module Mpicomm
   integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
+  integer :: npole_tag=15,spole_tag=16 
 !
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
@@ -245,6 +247,8 @@ module Mpicomm
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
+  integer :: isend_rq_spole,isend_rq_npole 
+  integer :: irecv_rq_spole,irecv_rq_npole
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
@@ -256,10 +260,14 @@ module Mpicomm
 !
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
+  integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_np,irecv_stat_sp,&
+                                          isend_stat_np,isend_stat_sp
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
+  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, & 
+                                          isend_stat_npole,irecv_stat_npole
 !
   contains
 !
@@ -473,6 +481,8 @@ module Mpicomm
             zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
             zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+        if(lnorth_pole) call isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
+        if(lsouth_pole) call isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
       endif
 !
 !  The four corners (in counter-clockwise order).
@@ -660,6 +670,86 @@ module Mpicomm
       endif
 !
     endsubroutine isendrcv_bdry_x
+!***********************************************************************
+    subroutine isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
+!
+!  Isend and Irecv boundary values for pole.
+!
+!   18-june-10/dhruba: aped
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, nbuf_pole, j
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+!
+! The following is not a typo, it must be nprocz although the boundary 
+! is the pole (i.e., along the y direction). 
+      if (nprocz>1) then
+        npbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m1:m1i,n1:n2,ivar1:ivar2) !!(north pole)
+        nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
+        call MPI_IRECV(npbufyi(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
+             poleneigh,npole_tag,MPI_COMM_WORLD,irecv_rq_npole,mpierr)
+        call MPI_ISEND(npbufyo(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
+             poleneigh,npole_tag,MPI_COMM_WORLD,isend_rq_npole,mpierr)
+        call MPI_WAIT(irecv_rq_npole,irecv_stat_np,mpierr)
+        do j=ivar1,ivar2
+          if (bcy1(j).eq.'pp') then
+             f(l1:l2,1,n1:n2,j)=npbufyi(:,3,:,j) 
+             f(l1:l2,2,n1:n2,j)=npbufyi(:,2,:,j) 
+             f(l1:l2,3,n1:n2,j)=npbufyi(:,1,:,j) 
+          endif
+          if (bcy1(j).eq.'ap') then 
+             f(l1:l2,1,n1:n2,j)=-npbufyi(:,3,:,j) 
+             f(l1:l2,2,n1:n2,j)=-npbufyi(:,2,:,j) 
+             f(l1:l2,3,n1:n2,j)=-npbufyi(:,1,:,j)  
+          endif
+        enddo
+        call MPI_WAIT(isend_rq_npole,isend_stat_np,mpierr)
+      endif
+!
+    endsubroutine isendrcv_bdry_npole
+!***********************************************************************
+    subroutine isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
+!
+!  Isend and Irecv boundary values for pole.
+!
+!   18-june-10/dhruba: aped
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, nbuf_pole, j
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+!
+! The following is not a typo, it must be nprocz although the boundary 
+! is the pole (i.e., along the y direction). 
+      if (nprocz>1) then
+        spbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2) !!(south pole)
+        nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
+        call MPI_IRECV(spbufyi(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
+             poleneigh,spole_tag,MPI_COMM_WORLD,irecv_rq_spole,mpierr)
+        call MPI_ISEND(spbufyo(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
+             poleneigh,spole_tag,MPI_COMM_WORLD,isend_rq_spole,mpierr)
+        call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
+        do j=ivar1,ivar2
+          if (bcy2(j).eq.'pp') & 
+               f(l1:l2,m2+1:my,n1:n2,j)=npbufyi(:,:,:,j) 
+          if (bcy2(j).eq.'ap') & 
+               f(l1:l2,m2+1:my,n1:n2,j)=-npbufyi(:,:,:,j) 
+        enddo
+        call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
+      endif
+!
+    endsubroutine isendrcv_bdry_spole
 !***********************************************************************
    subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
