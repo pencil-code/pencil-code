@@ -156,7 +156,7 @@ module Particles_number
 !
       real, dimension (nx) :: dt1_fragmentation
       real :: deltavp, sigma_jk, cdot, deltavp_sum, npswarm_sum, np2swarm_sum
-      integer :: j, k, l, ncoll
+      integer :: j, k, l, ncoll=-1
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp

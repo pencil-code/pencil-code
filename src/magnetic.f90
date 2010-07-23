@@ -5451,7 +5451,7 @@ module Magnetic
       real, dimension(3) :: axis,disp
       real :: ampl,phi,theta,ct,st,cp,sp
       real :: fring,Iring,R0,width
-      integer :: i,ivar,ivar1,ivar2,ivar3
+      integer :: i,ivar=-1,ivar1,ivar2,ivar3
       character (len=*), optional :: profile
       character (len=labellen) :: prof
 !
