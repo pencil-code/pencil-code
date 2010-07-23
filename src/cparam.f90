@@ -68,12 +68,29 @@ module Cparam
 !    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
   integer, parameter :: mseed=256
 !
-!  a marker value that is highly unlikely (``impossible'') to ever occur
-!  during a meaningful run.
-!  Maybe using NaN (how do you set this in F90?) would be better..
+!  Predefine maximum possible numbers
 !
-  real, parameter :: impossible=3.9085e37
-  integer, parameter :: impossible_int= 1000000000
+  integer, parameter :: max_int=huge(0)
+  real, parameter :: max_real=huge(0.0)
+!
+!  Predefine NaN (works with 4- and 8-byte floating point numbers)
+!  ATTENTION: g95 does not comply with IEEE 754 and will have some other
+!             value for NaN. Anyways, 1.E-45 should be pretty unique, too.
+!             (Bourdin.KIS)
+!
+  integer*8, parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
+  real, parameter :: NaN=transfer(NaN_bits,0.0)
+!
+!  a marker value that is highly unlikely ("impossible") to ever occur
+!  during a meaningful run: use the highest possible number.
+!  TODO: 'impossible' should be converted to NaN, but testing for NaNs has to
+!        be implemented by using 'isnan(...)' instead of '(...==impossible)'.
+!        This will require many changes in many files. Any current usage of
+!        '...=-impossible' must be replaced eg. by '...=-max_int'.
+!        (Bourdin.KIS)
+!
+  real, parameter :: impossible=max_real
+  integer, parameter :: impossible_int=max_int
 !
 ! Diagnostic variable types
 !
