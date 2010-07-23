@@ -282,7 +282,7 @@ module EquationOfState
 !
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
-      integer :: this_var
+      integer :: this_var=-1
       integer, save :: ieosvar_selected=0
       integer, parameter :: ieosvar_lnrho = 2**0
       integer, parameter :: ieosvar_rho   = 2**1
@@ -2377,7 +2377,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       real :: fac
-      integer :: i,ierr
+      integer :: i=0,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
 !

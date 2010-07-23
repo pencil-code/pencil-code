@@ -2250,7 +2250,7 @@ module Boundcond
 !
       integer, intent (in) :: j
 !
-      integer :: iref,i
+      integer :: iref=-1,i
 !
       if (j/=iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
  
@@ -5441,7 +5441,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,ipt,ntb
+      integer :: i,j,ipt,ntb=-1
       real :: massflux,u_add
       real :: local_flux,local_mass
       real :: total_flux,total_mass

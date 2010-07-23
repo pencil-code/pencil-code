@@ -1111,6 +1111,8 @@ module General
       real :: c,re,im,complex_phase
       complex :: z
 !
+      complex_phase=NaN
+!
       c=abs(z)
       re=real(z)
       im=aimag(z)

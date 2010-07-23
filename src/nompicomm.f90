@@ -1317,6 +1317,9 @@ module Mpicomm
 !
       integer :: nn1,nn2
 !
+      nn1=-1
+      nn2=-1
+!
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
