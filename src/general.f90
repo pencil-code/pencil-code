@@ -415,7 +415,7 @@ module General
 !
     endfunction mars_ran
 !***********************************************************************
-    function ran(iseed1)
+    function nr_ran(iseed1)
 !
 !  (More or less) original routine from `Numerical Recipes in F90'. Not
 !  sure we are allowed to distribute this.
@@ -426,7 +426,7 @@ module General
 !
       integer, parameter :: ikind=kind(888889999)
       integer(ikind), intent(inout) :: iseed1
-      real :: ran
+      real :: nr_ran
 !
 !  "Minimal" random number generator of Park and Miller combined
 !  with a Marsaglia shift sequence. Returns a uniform random deviate
@@ -453,9 +453,9 @@ module General
       k=iy/iq   ! Park-Miller sequence by Schrage's method,
       iy=ia*(iy-k*iq)-ir*k   ! period 231 - 2.
       if (iy < 0) iy=iy+im
-      ran=am*ior(iand(im,ieor(ix,iy)),1)   ! Combine the two generators with
-!                                          ! masking to ensure nonzero value.
-    endfunction ran
+      nr_ran=am*ior(iand(im,ieor(ix,iy)),1) ! Combine the two generators with
+!                                           ! masking to ensure nonzero value.
+    endfunction nr_ran
 !***********************************************************************
     subroutine chn(n,ch,label)
 !
