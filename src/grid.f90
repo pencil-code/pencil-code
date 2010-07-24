@@ -562,8 +562,6 @@ module Grid
               lnorth_pole=.true.
          if ((coord_system.eq.'spherical').and.(y(m2).eq.xyz1(2)).and.(y(m2).gt.3*pi/4.)) &
               lsouth_pole=.true.
-         write(*,*)'DM,lnorth_pole,lsouth_pole,iproc'
-         write(*,*)'DM',lnorth_pole,lsouth_pole,iproc,y(m1),xyz0(2),pi/2,y(m2)
       endif
 !
     endsubroutine construct_grid
