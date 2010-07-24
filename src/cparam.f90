@@ -78,10 +78,8 @@ module Cparam
 !             value for NaN. Anyways, 1.E-45 should be pretty unique, too.
 !             (Bourdin.KIS)
 !
-!AB: the following leads to problems with the auto-test
-!--  integer*8, parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
-!--  real, parameter :: NaN=transfer(NaN_bits,0.0)
-     real, parameter :: NaN=max_real
+  integer(KIND=ikind8), parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
+  real, parameter :: NaN=transfer(NaN_bits,0.0)
 !
 !  a marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use the highest possible number.
