@@ -1111,7 +1111,7 @@ module General
       real :: c,re,im,complex_phase
       complex :: z
 !
-      complex_phase=impossible
+      complex_phase=0.0
 !
       c=abs(z)
       re=real(z)
