@@ -89,8 +89,8 @@ module Cparam
 !        '...=-impossible' must be replaced eg. by '...=-max_int'.
 !        (Bourdin.KIS)
 !
-  real, parameter :: impossible=0.1*huge(0.0)
-  integer, parameter :: impossible_int=max_int
+  real, parameter :: impossible=0.01*huge(0.0)
+  integer, parameter :: impossible_int=max_int/100
 !
 ! Diagnostic variable types
 !
