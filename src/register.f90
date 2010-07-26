@@ -259,9 +259,14 @@ module Register
         if (lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
           //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
-        k_B=k_B_cgs/(unit_energy/unit_temperature)
         mu0=mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
-        sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
+        if (unit_temperature/=impossible) then
+          sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
+          k_B=k_B_cgs/(unit_energy/unit_temperature)
+        else
+          sigmaSB=impossible
+          k_B=impossible
+        endif
         m_u=m_u_cgs/unit_mass
         m_p=m_p_cgs/unit_mass
         m_e=m_e_cgs/unit_mass
@@ -274,14 +279,19 @@ module Register
         if (lroot.and.leos_ionization) print*,&
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
-        k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         mu0=1e-7*mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
+        if (unit_temperature/=impossible) then
+          sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
+          k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
+        else
+          sigmaSB=impossible
+          k_B=impossible
+        endif
         m_u=m_u_cgs*1e-3/unit_mass
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass
         eV=eV_cgs*1e-7/unit_energy
         sigmaH_=sigmaH_cgs*1e-4/unit_length**2
-        sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs*1e-1/(unit_length**2/unit_mass)
         c_light=c_light_cgs*1e-2/unit_velocity
         G_Newton=G_Newton_cgs*1e-3*unit_length**2*unit_density/unit_velocity**2
