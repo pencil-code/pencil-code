@@ -348,7 +348,11 @@ module Particles
 !  Set minimum collisional time-scale so that time-step is not affected.
 !
       if ((.not. lstarting) .and. ltau_coll_min_courant) then
-        tau_coll_min=2*dx/cs0
+        if (cs0==impossible) then
+          tau_coll_min=impossible
+        else
+          tau_coll_min=2*dx/cs0
+        endif
         if (lroot) print*, 'initialize particles: set minimum collisional '// &
             'time-scale equal to two times the Courant time-step.'
       endif
