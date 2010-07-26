@@ -63,8 +63,6 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
-      use Sub
-!
       leos=.false.
 !
       iyH=0
@@ -81,9 +79,6 @@ module EquationOfState
 !
 !  Dummy.
 !
-      gamma_m1=gamma-1.0
-      gamma_inv=1/gamma
-!
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos()
@@ -93,8 +88,6 @@ module EquationOfState
     endsubroutine initialize_eos
 !***********************************************************************
     subroutine select_eos_variable(variable,findex)
-!
-!  Calculate average particle mass in the gas relative to
 !
 !   02-apr-06/tony: dummy
 !
@@ -108,12 +101,14 @@ module EquationOfState
 !***********************************************************************
     subroutine getmu(f,mu)
 !
-!  Calculate average particle mass in the gas relative to
+!  Calculate mean molecular weight.
 !
 !   12-aug-03/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
       real, dimension (mx,my,mz), intent(out) :: mu
+!
+      call fatal_error('getmu','SHOULD NOT BE CALLED WITH NOEOS')
 !
       mu=0.0
 !
@@ -127,11 +122,14 @@ module EquationOfState
 !
 !   16-mar-10/natalia
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz), intent(out) :: mu1_full_tmp
+!
+      call fatal_error('getmu_array','SHOULD NOT BE CALLED WITH NOEOS')
+
+      mu1_full_tmp=0.0
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
 !
     endsubroutine getmu_array
 !***********************************************************************
@@ -186,8 +184,6 @@ module EquationOfState
 !
 !  02-apr-06/tony: dummy
 !
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -196,6 +192,7 @@ module EquationOfState
 !
 !  Set default values.
 !
+! SVEN: results should not depend on the values set here!!!
       if (lpencil(i_cp1)) p%cp1=0.0
       if (lpencil(i_cs2)) p%cs2=cs20
 !      if (lanelastic) then
@@ -223,18 +220,17 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine getdensity(f,EE,TT,yH,rho)
+    subroutine getdensity(f,ee,TT,yH,rho)
 !
-      real, intent(in), optional :: EE,TT,yH
+      real, intent(in), optional :: ee,TT,yH
       real, dimension (mx,my,mz), intent(inout) :: rho
       real, dimension (mx,my,mz,mfarray), optional :: f
 !
       call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
 !
-      rho = 0.0
-!
+      call keep_compiler_quiet(rho)
       call keep_compiler_quiet(present(yH))
-      call keep_compiler_quiet(present(EE))
+      call keep_compiler_quiet(present(ee))
       call keep_compiler_quiet(present(TT))
       call keep_compiler_quiet(present(f))
 !
@@ -245,6 +241,8 @@ module EquationOfState
      real, dimension (mx,my,mz,mfarray), optional :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
+     call fatal_error('gettemperature','Should not be called with noeos.')
+!
      call keep_compiler_quiet(present(f))
      call keep_compiler_quiet(TT_tmp)
 !
@@ -254,6 +252,8 @@ module EquationOfState
 
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
+     call fatal_error('getpressure','Should not be called with noeos.')
+!
      call keep_compiler_quiet(pp_tmp)
 !
     endsubroutine getpressure
@@ -262,7 +262,9 @@ module EquationOfState
 !
       real, intent(out) :: cp1_
 !
-      cp1_=impossible
+      call fatal_error('get_cp1','cp1 is not defined with noeos.f90')
+!
+      cp1_=0.0
 !
     endsubroutine get_cp1
 !***********************************************************************
@@ -272,11 +274,17 @@ module EquationOfState
 !
       real, intent(out) :: ptlaw_
 !
-      ptlaw_=impossible
+      call fatal_error('get_ptlaw','ptlaw is not defined with noeos.f90')
+!
+      ptlaw_=0.0
 !
     endsubroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
+!
+! bing: This dummy routine is not called from anywhere
+!       and is not even implemented in eos_temperature_idealgas.
+!       It should be deleted
 !
       real, dimension (nx), intent(in) :: pot
       real, dimension (nx), intent(out) :: tmp
@@ -299,10 +307,8 @@ module EquationOfState
       call fatal_error('pressure_gradient_farray', &
           'should not be called with noeos')
 !
-      cs2=impossible
-      cp1tilde=impossible
-!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(cs2,cp1tilde)
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -316,11 +322,8 @@ module EquationOfState
       call fatal_error('pressure_gradient_point', &
           'should not be called with noeos')
 !
-      cs2=impossible
-      cp1tilde=impossible
-!
-      call keep_compiler_quiet(lnrho)
-      call keep_compiler_quiet(ss)
+      call keep_compiler_quiet(lnrho,ss)
+      call keep_compiler_quiet(cs2,cp1tilde)
 !
     endsubroutine pressure_gradient_point
 !***********************************************************************
@@ -334,10 +337,8 @@ module EquationOfState
 !
       call fatal_error('temperature_gradient','should not be called with noeos')
 !
-      glnTT=0.0
-!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(glnrho)
+      call keep_compiler_quiet(glnrho,glnTT)
       call keep_compiler_quiet(gss)
 !
     endsubroutine temperature_gradient
@@ -404,14 +405,16 @@ module EquationOfState
 !
       call fatal_error('eoscalc_farray','should not be called with noeos')
 !
-      lnrho=0.0
-      ss=0.0
-      yH=0.0
-      mu1=0.0
-      lnTT=0.0
-      ee=0.0
-      pp=0.0
-      kapparho=0.0
+! To keep compiler quiet set variables with intent(out) to zero
+!
+      if (present(lnrho)) lnrho = 0.0
+      if (present(ss)) ss = 0.0
+      if (present(yH)) yH = 0.0
+      if (present(lnTT)) lnTT = 0.0
+      if (present(mu1)) mu1 = 0.0
+      if (present(ee)) ee = 0.0
+      if (present(pp)) pp = 0.0
+      if (present(kapparho)) kapparho = 0.0
 !
       call keep_compiler_quiet(f)
 !
@@ -431,14 +434,13 @@ module EquationOfState
 !
       if (present(lnrho)) lnrho=0.0
       if (present(ss)) ss=0.0
-      if (present(yH)) yH=impossible
+      if (present(yH)) yH=0.0
       if (present(lnTT)) lnTT=0.0
       if (present(ee)) ee=0.0
       if (present(pp)) pp=0.0
 !
       call keep_compiler_quiet(ivars)
-      call keep_compiler_quiet(var1)
-      call keep_compiler_quiet(var2)
+      call keep_compiler_quiet(var1,var2)
 !
     endsubroutine eoscalc_point
 !***********************************************************************
@@ -454,14 +456,13 @@ module EquationOfState
 !
       if (present(lnrho)) lnrho=0.0
       if (present(ss)) ss=0.0
-      if (present(yH)) yH=impossible
+      if (present(yH)) yH=0.0
       if (present(lnTT)) lnTT=0.0
       if (present(ee)) ee=0.0
       if (present(pp)) pp=0.0
 !
       call keep_compiler_quiet(ivars)
-      call keep_compiler_quiet(var1)
-      call keep_compiler_quiet(var2)
+      call keep_compiler_quiet(var1,var2)
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
@@ -562,9 +563,11 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
+      call fatal_error('isothermal_lnrho_ss', &
+          'should not be called with noeos')
+!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(T0)
-      call keep_compiler_quiet(rho0)
+      call keep_compiler_quiet(T0,rho0)
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
@@ -589,9 +592,7 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
       use SharedVariables,only: get_shared_variable
-      use Mpicomm,        only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -759,10 +760,8 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      character (len=3), intent(in) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_xy
       integer :: i, stat
@@ -836,8 +835,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
@@ -897,8 +894,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
@@ -956,8 +951,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
@@ -1013,7 +1006,7 @@ module EquationOfState
 !  27-sep-2002/axel: coded
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Gravity
+      use Gravity, only: gravz
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1192,8 +1185,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
@@ -1247,8 +1238,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
@@ -1295,8 +1284,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1345,8 +1332,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1444,6 +1429,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call fatal_error('bc_stellar_surface','not implemented in eos_idealgas')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
