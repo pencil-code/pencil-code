@@ -7,6 +7,6 @@
 #  This script is used by auto-test and pc_auto-test.
 #
 if [ $PC_SET_VALIDATED ]; then
-  cd $PENCIL_HOME
+  cd $PENCIL_HOME/src
   svn info |grep Revision > /tmp/pc_current_revision.dat
 fi
