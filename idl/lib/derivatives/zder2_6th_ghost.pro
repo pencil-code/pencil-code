@@ -16,19 +16,27 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-;  Calculate nx, ny, and nz, based on the input array size.
+;  Assume nghost=3 for now.
+;
+  default, nghost, 3
+;
+;  Calculate mx, my, and mz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
-  nx=s[1] & ny=s[2] & nz=s[3]
+  mx=s[1] & my=s[2] & mz=s[3]
 ;
-;  Check for degenerate case (no x-extension).
+;  Check for degenerate case (no x-extension)
 ;
-  if (n_elements(lequidist) ne 3) then lequidist=[-1,-1,-1]
-  if (nz eq 1) then return, fltarr(nx,ny,nz)
+  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
+  if (mz eq 1) then return, fltarr(mx,my,mz)
 ;
-;  Determine location of ghost zones, assume nghost=3 for now.
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
 ;
-  l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
+  nx = mx - 2*nghost
+  ny = my - 2*nghost
+  nz = mz - 2*nghost
 ;
   if (lequidist[2]) then begin
     dz2=1./(180.*(z[4]-z[3])^2)
@@ -41,14 +49,11 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     d1=zder(f)
   endelse
 ;
-  if (s[0] eq 2) then begin
-    d[l1:l2,m1:m2]=0.
-;
-  endif else if (s[0] eq 3) then begin
+  if (s[0] eq 3) then begin
     if (n2 gt n1) then begin
       if (lequidist[2] eq 0) then begin
-        dz2 =    spread(dz2,     [0,0],[s[2],s[1]])
-        dd  = d1*spread(dz_tilde,[0,0],[s[2],s[1]])
+        dz2 =    spread(dz2,     [0,1],[nx,ny])
+        dd  = d1*spread(dz_tilde,[0,1],[mx,my])
         ; will also work on slices like zder2(ss[10,20,*])
       endif
       d[l1:l2,m1:m2,n1:n2]=dz2* $
@@ -64,8 +69,8 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
     if (n2 gt n1) then begin
       if (lequidist[2] eq 0) then begin
-        dz2 =    spread(dz2,     [0,0,3],[s[2],s[1],s[4]])
-        dd  = d1*spread(dz_tilde,[0,0,3],[s[2],s[1],s[4]])
+        dz2 =    spread(dz2,     [0,1,3],[nx,ny,s[4]])
+        dd  = d1*spread(dz_tilde,[0,1,3],[mx,my,s[4]])
         ; will also work on slices like zder2(uu[10,20,*,*])
       endif
       d[l1:l2,m1:m2,n1:n2,*]=dz2* $

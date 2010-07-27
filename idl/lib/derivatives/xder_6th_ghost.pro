@@ -16,21 +16,27 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-;  Calculate nx, ny, and nz, based on the input array size.
+;  Assume nghost=3 for now.
+;
+  default, nghost, 3
+;
+;  Calculate mx, my, and mz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
-  nx=s[1] & ny=s[2] & nz=s[3]
-; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
-  if (s[0] eq 2) then nz=s[2]
+  mx=s[1] & my=s[2] & mz=s[3]
 ;
-;  Check for degenerate case (no x-extension).
+;  Check for degenerate case (no x-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (nx eq 1) then return,fltarr(nx,ny,nz)
+  if (mx eq 1) then return, fltarr(mx,my,mz)
 ;
-;  Determine location of ghost zones, assume nghost=3 for now.
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
 ;
-   l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
+  nx = mx - 2*nghost
+  ny = my - 2*nghost
+  nz = mz - 2*nghost
 ;
   if (lequidist[0]) then begin
     dx2=1./(60.*(x[4]-x[3]))
@@ -41,7 +47,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (s[0] eq 2) then begin
 ;
     if (l2 gt l1) then begin
-      if (lequidist[0] eq 0) then dx2=spread(dx2,1,s[2])
+      if (lequidist[0] eq 0) then dx2=spread(dx2,1,ny)
       d[l1:l2,m1:m2]=dx2* $
           ( +45.*(f[l1+1:l2+1,m1:m2]-f[l1-1:l2-1,m1:m2]) $
              -9.*(f[l1+2:l2+2,m1:m2]-f[l1-2:l2-2,m1:m2]) $
@@ -50,8 +56,8 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   endif else if (s[0] eq 3) then begin
     if (l2 gt l1) then begin
-      if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2],[s[2],s[3]])
-      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
+      if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2],[ny,nz])
+      d[l1:l2,m1:m2,n1:n2]=dx2* $
           ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2]-f[l1-1:l2-1,m1:m2,n1:n2]) $
              -9.*(f[l1+2:l2+2,m1:m2,n1:n2]-f[l1-2:l2-2,m1:m2,n1:n2]) $
                 +(f[l1+3:l2+3,m1:m2,n1:n2]-f[l1-3:l2-3,m1:m2,n1:n2]) )
@@ -62,7 +68,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (l2 gt l1) then begin
-      if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2,3],[s[2],s[3],s[4]])
+      if (lequidist[0] eq 0) then dx2=spread(dx2,[1,2,3],[ny,nz,s[4]])
       d[l1:l2,m1:m2,n1:n2,*]=dx2* $
           ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2,*]-f[l1-1:l2-1,m1:m2,n1:n2,*]) $
              -9.*(f[l1+2:l2+2,m1:m2,n1:n2,*]-f[l1-2:l2-2,m1:m2,n1:n2,*]) $

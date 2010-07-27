@@ -17,21 +17,29 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-;  Calculate nx, ny, and nz, based on the input array size.
+;  Assume nghost=3 for now.
+;
+  default, nghost, 3
+;
+;  Calculate mx, my, and mz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
-  nx=s[1] & ny=s[2] & nz=s[3]
+  mx=s[1] & my=s[2] & mz=s[3]
 ;
-  xx=spread(x,[1,2],[ny,nz])
-;
-;  Check for degenerate case (no y-extension).
+;  Check for degenerate case (no x-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (ny eq 1) then return,fltarr(nx,ny,nz)
+  if (my eq 1) then return, fltarr(mx,my,mz)
 ;
-;  Determine location of ghost zones, assume nghost=3 for now.
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
 ;
-  l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
+  nx = mx - 2*nghost
+  ny = my - 2*nghost
+  nz = mz - 2*nghost
+;
+  xx=spread(x,[1,2],[my,mz])
 ;
   if (lequidist[1]) then begin
     dy2=1./(60.*(y[4]-y[3]))
@@ -41,13 +49,13 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 3) then begin
     if (m2 gt m1) then begin
-      if (lequidist[1] eq 0) then dy2=spread(dy2,[0,2],[s[1],s[3]])
+      if (lequidist[1] eq 0) then dy2=spread(dy2,[0,2],[nx,nz])
       ; will also work on slices like yder(ss[10,*,n1:n2])
       d[l1:l2,m1:m2,n1:n2]=dy2* $
           ( +45.*(f[l1:l2,m1+1:m2+1,n1:n2]-f[l1:l2,m1-1:m2-1,n1:n2]) $
              -9.*(f[l1:l2,m1+2:m2+2,n1:n2]-f[l1:l2,m1-2:m2-2,n1:n2]) $
                 +(f[l1:l2,m1+3:m2+3,n1:n2]-f[l1:l2,m1-3:m2-3,n1:n2]) )
-      if (not(coord_system eq 'cartesian')) then d=d/xx
+      if (coord_system ne 'cartesian') then d=d/xx
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -56,14 +64,14 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
     if (m2 gt m1) then begin
 
-      if (lequidist[1] eq 0) then dy2=spread(dy2,[0,2,3],[s[1],s[3],s[4]])
+      if (lequidist[1] eq 0) then dy2=spread(dy2,[0,2,3],[nx,nz,s[4]])
       ; will also work on slices like yder(uu[10,*,*,*,])
       d[l1:l2,m1:m2,n1:n2,*]=dy2* $
           ( +45.*(f[l1:l2,m1+1:m2+1,n1:n2,*]-f[l1:l2,m1-1:m2-1,n1:n2,*]) $
              -9.*(f[l1:l2,m1+2:m2+2,n1:n2,*]-f[l1:l2,m1-2:m2-2,n1:n2,*]) $
                 +(f[l1:l2,m1+3:m2+3,n1:n2,*]-f[l1:l2,m1-3:m2-3,n1:n2,*]) )
-      if (not(coord_system eq 'cartesian')) then $
-          d[l1:l2,n1:n2,*,0:s[4]-1]=d[l1:l2,n1:n2,*,0:s[4]-1]/xx
+      if (coord_system ne 'cartesian') then $
+         for i=0,s[4]-1 do d[*,*,*,i]=d[*,*,*,i]/xx
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse

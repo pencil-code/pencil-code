@@ -17,29 +17,33 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-;  Calculate nx, ny, and nz, based on the input array size.
+;  Assume nghost=3 for now.
+;
+  default, nghost, 3
+;
+;  Calculate mx, my, and mz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
-  nx=s[1] & ny=s[2] & nz=s[3]
+  mx=s[1] & my=s[2] & mz=s[3]
 ;
-  xx=spread(x,[1,2],[ny,nz])
-  yy=spread(y,[0,2],[nx,nz])
+;  Check for degenerate case (no x-extension)
+;
+  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
+  if (mz eq 1) then return, fltarr(mx,my,mz)
+;
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
+;
+  nx = mx - 2*nghost
+  ny = my - 2*nghost
+  nz = mz - 2*nghost
+;
+  xx=spread(x,[1,2],[my,mz])
+  yy=spread(y,[0,2],[mx,mz])
   sin1th=1./sin(yy)
   i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
   if (i_sin[0] ne -1) then sin1th[i_sin]=0.
-;
-
-; 26-jun-2007/dintrans: 2-D case only means (x,z) for the moment
-  if (s[0] eq 2) then nz=s[2]
-;
-;  Check for degenerate case (no z-extension).
-;
-  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (nz eq 1) then return,fltarr(nx,ny,nz)
-;
-;  Determine location of ghost zones, assume nghost=3 for now.
-;
-  l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
 ;
   if (lequidist[2]) then begin
     dz2=1./(60.*(z[4]-z[3])) 
@@ -49,17 +53,17 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 2) then begin
     if (n2 gt n1) then begin
-      if (lequidist[2] eq 0) then dz2=spread(dz2,0,s[2])
+      if (lequidist[2] eq 0) then dz2=spread(dz2,0,nx)
       d[l1:l2,n1:n2]=dz2* $
           ( +45.*(f[l1:l2,n1+1:n2+1]-f[l1:l2,n1-1:n2-1]) $
              -9.*(f[l1:l2,n1+2:n2+2]-f[l1:l2,n1-2:n2-2]) $
                 +(f[l1:l2,n1+3:n2+3]-f[l1:l2,n1-3:n2-3]) )
-      if (coord_system eq 'spherical') then d=d/xx*sin1th
+      if (coord_system eq 'spherical') then d=d/xx[*,nghost,*]*sin1th[*,nghost,*]
     endif else d[l1:l2,n1:n2]=0.
 ;
   endif else if (s[0] eq 3) then begin
     if (n2 gt n1) then begin
-      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0],[s[2],s[1]])
+      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0],[ny,nx])
       ; will also work on slices like zder(ss[10,20,*])
       d[l1:l2,m1:m2,n1:n2]=dz2* $
           ( +45.*(f[l1:l2,m1:m2,n1+1:n2+1]-f[l1:l2,m1:m2,n1-1:n2-1]) $
@@ -73,14 +77,14 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (n2 gt n1) then begin
-      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0,3],[s[2],s[1],s[4]])
+      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0,3],[nx,ny,s[4]])
       ; will also work on slices like zder(uu[10,20,*,*])
       d[l1:l2,m1:m2,n1:n2,*]=dz2* $
           ( +45.*(f[l1:l2,m1:m2,n1+1:n2+1,*]-f[l1:l2,m1:m2,n1-1:n2-1,*]) $
              -9.*(f[l1:l2,m1:m2,n1+2:n2+2,*]-f[l1:l2,m1:m2,n1-2:n2-2,*]) $
                 +(f[l1:l2,m1:m2,n1+3:n2+3,*]-f[l1:l2,m1:m2,n1-3:n2-3,*]) )
       if (coord_system eq 'spherical') then $
-        d[l1:l2,m1:m2,*,0:s[4]-1]=d[l1:l2,m1:m2,*,0:s[4]-1]/xx*sin1th
+         for i=0,s[4]-1 do d[*,*,*,i]=d[*,*,*,i]/xx*sin1th
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse

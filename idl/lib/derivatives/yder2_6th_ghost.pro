@@ -16,19 +16,27 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-;  Calculate nx, ny, and nz, based on the input array size.
+;  Assume nghost=3 for now.
+;
+  default, nghost, 3
+;
+;  Calculate mx, my, and mz, based on the input array size.
 ;
   s=size(f) & d=make_array(size=s)
-  nx=s[1] & ny=s[2] & nz=s[3]
+  mx=s[1] & my=s[2] & mz=s[3]
 ;
-;  Check for degenerate case (no x-extension).
+;  Check for degenerate case (no x-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (ny eq 1) then return, fltarr(nx,ny,nz)
+  if (my eq 1) then return, fltarr(mx,my,mz)
 ;
-;  Determine location of ghost zones, assume nghost=3 for now.
+  l1=nghost & l2=mx-nghost-1
+  m1=nghost & m2=my-nghost-1
+  n1=nghost & n2=mz-nghost-1
 ;
-  l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
+  nx = mx - 2*nghost
+  ny = my - 2*nghost
+  nz = mz - 2*nghost
 ;
   if (lequidist[1]) then begin
     dy2=1./(180.*(y[4]-y[3])^2)
@@ -44,8 +52,8 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (s[0] eq 2) then begin
     if (m2 gt m1) then begin
       if (lequidist[1] eq 0) then begin
-        dy2 =    spread(dy2,     [0,2],[s[1],s[3]])
-        dd  = d1*spread(dy_tilde,[0,2],[s[1],s[3]])
+        dy2 =    spread(dy2,     0,nx)
+        dd  = d1*spread(dy_tilde,0,mx)
         ; will also work on slices like yder2(ss[10,*,*])
       endif
       d[l1:l2,m1:m2]=dy2* $
@@ -60,8 +68,8 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 3) then begin
     if (m2 gt m1) then begin
       if (lequidist[1] eq 0) then begin
-        dy2 =    spread(dy2,     [0,2],[s[1],s[3]])
-        dd  = d1*spread(dy_tilde,[0,2],[s[1],s[3]])
+        dy2 =    spread(dy2,     [0,2],[nx,nz])
+        dd  = d1*spread(dy_tilde,[0,2],[mx,mz])
         ; will also work on slices like yder2(ss[10,*,*])
       endif
       d[l1:l2,m1:m2,n1:n2]=dy2* $
@@ -77,8 +85,8 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
     if (m2 gt m1) then begin
       if (lequidist[1] eq 0) then begin
-        dy2 =    spread(dy2,     [0,2,3],[s[1],s[3],s[4]])
-        dd  = d1*spread(dy_tilde,[0,2,3],[s[1],s[3],s[4]])
+        dy2 =    spread(dy2,     [0,2,3],[nx,nz,s[4]])
+        dd  = d1*spread(dy_tilde,[0,2,3],[mx,mz,s[4]])
         ; will also work on slices like yder2(uu[10,*,*,*])
       endif
       d[l1:l2,m1:m2,n1:n2,*]=dy2* $
