@@ -1,0 +1,23 @@
+The folder 'pencil-code/config/hosts' contains templates for local 
+configuration files using the new configuration method presented in the 
+manual. Please indicate for what machine your configuration is 
+implemeted.  
+
+Examples:
+
+ajohan   -  GNU_Linux-Ubuntu, MacBook Pro
+dhruba   -  GNU_Linux-Ubuntu ?
+mps      -  GNU_Linux-Ubuntu ?
+piyali   -  Dell GNU_Linux 
+sintef   -  Dell GNU_Linux
+Toulouse -  LATT/LMTG cluster, 8 core Linux
+andreas  -  Configuration for condor queing program
+kis      -  ?
+nordita  -  Pencil Code server
+RZG      -
+sven     -
+wdobler  -
+
+
+
+Andreas Svedin 2010
