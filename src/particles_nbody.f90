@@ -330,7 +330,7 @@ module Particles_nbody
 !
       use General, only: random_number_wrapper
       use Sub
-      use Mpicomm
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
@@ -849,7 +849,10 @@ module Particles_nbody
             rr= fsp(ks,ixp)
             if (nzgrid/=1) rr=sqrt(fsp(ks,ixp)**2+fsp(ks,izp)**2)
           elseif (lspherical_coords) then
-           rr= fsp(ks,ixp)
+            rr= fsp(ks,ixp)
+          else
+            call fatal_error("dvvp_dt_nbody","wrong coord system")
+            rr=0.
           endif
           !particle velocities are non-coordinate (linear)
           w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
@@ -1139,8 +1142,12 @@ module Particles_nbody
       elseif (coord_system=='spherical') then
         call stop_it("integrate_selfgravity: "//&
              " not yet implemented for spherical polars")
+      else
+        call fatal_error("integrate_selfgravity: ",&
+            "wrong coord_system")
+        dqx=0.;dqy=0.;dqz=0.
       endif
-
+!
       if (nzgrid==1) then
         dv=dqx*dqy
       else
