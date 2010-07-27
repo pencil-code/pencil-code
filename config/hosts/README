@@ -12,10 +12,12 @@ piyali   -  Dell GNU_Linux
 sintef   -  Dell GNU_Linux
 Toulouse -  LATT/LMTG cluster, 8 core Linux
 andreas  -  Configuration for condor queing program
-kis      -  ?
+kis      -  Suse Linux MPI cluster
+kis      -  Sun Solaris with shared memory and MPI
+mps      -  GNU_Linux-Ubuntu desktops
 nordita  -  Pencil Code server
 RZG      -
-sven     -
+sven     -  GNU_Linux-Ubuntu
 wdobler  -
 wlyra    - GNU/Linux - Ubuntu, Suse
 
