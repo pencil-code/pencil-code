@@ -1251,8 +1251,8 @@ module Chemistry
         endif
 !
          if (unit_system == 'cgs') then
-          Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys/unit_energy
+           Rgas_unit_sys = k_B_cgs/m_u_cgs
+           Rgas=Rgas_unit_sys/unit_energy
          endif
 !
 !  Find logaritm of density at inlet
