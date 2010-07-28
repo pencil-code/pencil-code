@@ -1410,12 +1410,12 @@ preprocess=$(BORDER_PROFILES).f90 $(CHEMISTRY).f90 $(CHIRAL).f90 $(COSMICRAY).f9
 #  Short hand for physics modules used by Register, Param_io, Equ.
 #  Please use alphabetical order.
 #
-physics=$(CHEMISTRY).o $(CHIRAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(DENSITY).o $(DUSTDENSITY).o $(DUSTVELOCITY).o $(ENTROPY).o $(EOS).o $(FORCING).o $(GRAVITY).o $(HYDRO).o $(HYPERRESI_STRICT).o $(HYPERVISC_STRICT).o $(IMPLICIT_PHYSICS).o $(INTERSTELLAR).o $(LORENZ_GAUGE).o $(MAGNETIC).o $(NEUTRALDENSITY).o $(NEUTRALVELOCITY).o $(PARTICLES).o $(PARTICLES_COLLISIONS).o $(PARTICLES_NBODY).o $(PARTICLES_NUMBER).o $(PARTICLES_RADIUS).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_SPIN).o $(PARTICLES_STALKER).o $(PARTICLES_VISCOSITY).o $(POISSON).o $(POLYMER).o $(PSCALAR).o $(RADIATION).o $(SELFGRAVITY).o $(SHEAR).o $(SHOCK).o $(SPECIAL).o $(TESTFIELD).o $(TESTFLOW).o $(TESTSCALAR).o $(VISCOSITY).o
+physics=$(CHEMISTRY).o $(CHIRAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(DENSITY).o $(DUSTDENSITY).o $(DUSTVELOCITY).o $(ENTROPY).o $(EOS).o $(FORCING).o $(GRAVITY).o $(HYDRO).o $(HYPERRESI_STRICT).o $(HYPERVISC_STRICT).o $(IMPLICIT_PHYSICS).o $(INTERSTELLAR).o $(LORENZ_GAUGE).o $(MAGNETIC).o $(NEUTRALDENSITY).o $(NEUTRALVELOCITY).o $(POISSON).o $(POLYMER).o $(PSCALAR).o $(RADIATION).o $(SELFGRAVITY).o $(SHEAR).o $(SHOCK).o $(SPECIAL).o $(TESTFIELD).o $(TESTFLOW).o $(TESTSCALAR).o $(VISCOSITY).o
 #
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(PARTICLES_MAIN).o $(PARTICLES_MAP).o $(PARTICLES_MPICOMM).o $(PARTICLES_SUB).o $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o particles_cdata.o persist.o register.o shared_variables.o snapshot.o sub.o
+technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(PARTICLES_MAIN).a $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -1428,11 +1428,11 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
 start.o: $(start) Makefile.local
-start.x: $(start) start.o Makefile.local
+start.x: start.o
 	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 # 
 run.o: $(run) Makefile.local
-run.x: $(run) run.o Makefile.local
+run.x: run.o
 	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
