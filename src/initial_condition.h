@@ -7,7 +7,6 @@
   public ::  initial_condition_lnrho
   public ::  initial_condition_ss
   public ::  initial_condition_aa
-  public ::  initial_condition_gg
   public ::  initial_condition_aatest
   public ::  initial_condition_uutest
   public ::  initial_condition_lncc
