@@ -6,7 +6,6 @@
 module Particles_main
 !
   use Cdata
-  use Particles_cdata
   use Sub, only: keep_compiler_quiet
 !
   implicit none

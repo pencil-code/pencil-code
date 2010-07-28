@@ -14,7 +14,6 @@ module Particles_nbody
 !
   use Cdata
   use Messages
-  use Particles_cdata
   use Sub, only: keep_compiler_quiet
 !
   implicit none
