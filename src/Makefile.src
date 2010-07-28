@@ -1397,51 +1397,63 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
+# 
+#  Default target (start.x and run.x are compiled in "code").
 #
-#  Rules for creating images of dot dependency diagrams.
+default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
 #
-.dot.ps:
-	cat $*.dot | dot -Tps -o $*.ps
-.dot.svg:
-	cat $*.dot | dot -Tsvg -o $*.svg
+#  Short hand for modules that must be preprocessed with mkcparam.
+#  Please use alphabetical order.
 #
-#  Technical modules (cannot add to cparam.inc).
+preprocess=$(BORDER_PROFILES).f90 $(CHEMISTRY).f90 $(CHIRAL).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(DENSITY).f90 $(DERIV).f90 $(DUSTDENSITY).f90 $(DUSTVELOCITY).f90 $(ENTROPY).f90 $(EOS).f90 $(FORCING).f90 $(GRAVITY).f90 $(HYDRO).f90 $(HYPERRESI_STRICT).f90 $(HYPERVISC_STRICT).f90 $(IMPLICIT_PHYSICS).f90 $(INITIAL_CONDITION).f90 $(INTERSTELLAR).f90 $(LORENZ_GAUGE).f90 $(MAGNETIC).f90 $(NEUTRALDENSITY).f90 $(NEUTRALVELOCITY).f90 $(PARTICLES).f90 $(PARTICLES_COLLISIONS).f90 $(PARTICLES_MAP).f90 $(PARTICLES_NBODY).f90 $(PARTICLES_NUMBER).f90 $(PARTICLES_RADIUS).f90 $(PARTICLES_SELFGRAVITY).f90 $(PARTICLES_SPIN).f90 $(PARTICLES_STALKER).f90 $(PARTICLES_VISCOSITY).f90 $(POISSON).f90 $(POLYMER).f90 $(PSCALAR).f90 $(RADIATION).f90 $(SELFGRAVITY).f90 $(SHEAR).f90 $(SHOCK).f90 $(SIGNAL_HANDLING).f90 $(SPECIAL).f90 $(TESTFIELD).f90 $(TESTFLOW).f90 $(TESTSCALAR).f90 $(VISCOSITY).f90 cparam.local grid.f90
 #
-technical=cparam.o cdata.o particles_cdata.o messages.o general.o farray.o shared_variables.o $(FOURIER).o $(SLICES).o $(DERIV).o $(BOUNDCOND).o filter.o initcond.o register.o diagnostics.o $(TIMEAVG).o persist.o $(GRID).o $(SOLID_CELLS).o $(NSCBC).o $(WENO_TRANSPORT).o
+#  Short hand for physics modules used by Register, Param_io, Equ.
+#  Please use alphabetical order.
 #
-#  Switchable physics modules.
+physics=$(CHEMISTRY).o $(CHIRAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(DENSITY).o $(DUSTDENSITY).o $(DUSTVELOCITY).o $(ENTROPY).o $(EOS).o $(FORCING).o $(GRAVITY).o $(HYDRO).o $(HYPERRESI_STRICT).o $(HYPERVISC_STRICT).o $(IMPLICIT_PHYSICS).o $(INTERSTELLAR).o $(LORENZ_GAUGE).o $(MAGNETIC).o $(NEUTRALDENSITY).o $(NEUTRALVELOCITY).o $(POISSON).o $(POLYMER).o $(PSCALAR).o $(RADIATION).o $(SELFGRAVITY).o $(SHEAR).o $(SHOCK).o $(SPECIAL).o $(TESTFIELD).o $(TESTFLOW).o $(TESTSCALAR).o $(VISCOSITY).o
 #
-physics=$(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(IMPLICIT_PHYSICS).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(LORENZ_GAUGE).o $(POLYMER).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(CHEMISTRY).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTSCALAR).o $(TESTFIELD).o $(TESTFLOW).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_SPIN).o $(PARTICLES_NUMBER).o $(PARTICLES_SELFGRAVITY).o $(PARTICLES_NBODY).o $(PARTICLES_VISCOSITY).o $(PARTICLES_COLLISIONS).o $(PARTICLES_STALKER).o $(NEUTRALVELOCITY).o $(NEUTRALDENSITY).o $(HYPERVISC_STRICT).o $(HYPERRESI_STRICT).o  $(SIGNAL_HANDLING).o
+#  Short hand for technical modules.
+#  Please use alphabetical order.
 #
-#  Add switchable non-physics modules.
+technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(PARTICLES_MAIN).a $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o
 #
-switchable=$(physics) $(BORDER_PROFILES).o $(INITIAL_CONDITION).o
+#  Short hand notation for start.o dependencies.
 #
-comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o  $(MPICOMM_FIX).o $(GHOSTFOLD).o $(switchable) $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o $(PARTICLES_MAP).o $(PARTICLES_MPICOMM).o
+start=$(physics) $(technical)
 #
-start_deps=$(comm_deps) $(TESTPERTURB).o $(DEBUG).o $(GSL).o $(SYSCALLS).o $(SYSCALLS)_ansi.o
+#  Short hand notation for run.o dependencies.
 #
-run_deps_f90=$(comm_deps) pencil_check.o equ.o $(TIMESTEP).o $(TESTPERTURB).o
+run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
+# 
+#  Rules for compiling start.o, start.x, run.o, run.x.
 #
-run_deps=$(run_deps_f90) $(DEBUG).o $(GSL).o $(SYSCALLS).o $(SYSCALLS)_ansi.o
+start.o: $(start) Makefile.local
+start.x: start.o
+	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
+# 
+run.o: $(run) Makefile.local
+run.x: run.o
+	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
-start=start.o $(start_deps)
+#  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-run=run.o $(run_deps)
+combine_videofiles.o: cparam.o cdata.o general.o
+combine_videofiles.x: combine_videofiles.o cparam.o cdata.o general.o
+	$(LD) $(LDFLAGS) combine_videofiles.o cparam.o cdata.o general.o $(LD_MPI) -o combine_videofiles.x
+# 
+read_videofiles.o: cparam.o cdata.o general.o
+read_videofiles.x: read_videofiles.o cparam.o cdata.o general.o
+	$(LD) $(LDFLAGS) read_videofiles.o cparam.o cdata.o general.o $(LD_MPI) -o read_videofiles.x
+# 
+read_vectorfiles.o: cparam.o cdata.o general.o
+read_vectorfiles.x: read_vectorfiles.o cparam.o cdata.o general.o
+	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o $(LD_MPI) -o read_vectorfiles.x
 #
-combine_videofiles_deps=cparam.o cdata.o general.o
-combine_videofiles=combine_videofiles.o $(combine_videofiles_deps)
-read_videofiles_deps=cparam.o cdata.o general.o
-read_videofiles=read_videofiles.o $(read_videofiles_deps)
-read_vectorfiles_deps=cparam.o cdata.o general.o
-read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # 
-# Symbolic targets
+#  Symbolic targets
 #
-default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
-# 
 pacx: pacx-makefile cparam.inc code
 # 
 Makefile: Makefile.src
@@ -1511,68 +1523,9 @@ buildinfo:
 	                       -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
 	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';INITIAL_CONDITION='$(INITIAL_CONDITION)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
 	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
-# 
-#  Dot diagrams.
-#
-all.dot: Makefile.src Makefile.local scripts/mkdot
-	scripts/mkdot -T "All f90 dependencies" *.f90 | grep -v "RVID_BOX" | grep -v "SURFACEDATA" | grep -v "MAIN_PROGRAM" | grep -v "WRITE_DEFAULT_NAMELISTS" > all.dot
-# 
-all_nocdata.dot: all.dot
-	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" > all_nocdata.dot
-# 
-all_nocdataexe.dot: all.dot
-	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" | grep -v "RUN" | grep -v "START"| grep -v "READ_VIDEOFILES" | grep -v "READ_VECTORFILES" > all_nocdataexe.dot
-# 
-switchable.dot: Makefile.src Makefile.local scripts/mkdot
-	scripts/mkdot -T "Switchable Module Dependencies" $(switchable:.o=.f90) > switchable.dot
-# 
-run.dot: Makefile.src Makefile.local scripts/mkdot 
-	scripts/mkdot -T "Run Dependencies" $(run:.o=.f90) > run.dot
-# 
-start.dot: Makefile.src Makefile.local scripts/mkdot
-	scripts/mkdot -T "Start Dependencies" $(start:.o=.f90) > start.dot
-# 
-run_nocdata.dot: run.dot
-	cat run.dot | grep -v "CDATA" | grep -v "CPARAM" > run_nocdata.dot
-# 
-start_nocdata.dot: start.dot
-	cat start.dot | grep -v "CDATA" | grep -v "CPARAM" > start_nocdata.dot
-# 
-switchable_nocdata.dot: switchable.dot
-	cat switchable.dot | grep -v "CDATA" | grep -v "CPARAM" > switchable_nocdata.dot
-#
-all.ps: all.dot
-run.ps: run.dot
-start.ps: start.dot
-#
-switchable.ps: switchable_nocdata.dot
-all_nocdata.ps: all_nocdata.dot
-run_nocdata.ps: run_nocdata.dot
-start_nocdata.ps: start_nocdata.dot
-switchable_nocdata.ps: switchable_nocdata.dot
-#
-all_nocdataexe.ps: all_nocdataexe.dot
-#
-diagrams: run.ps run_nocdata.ps start.ps start_nocdata.ps switchable.ps switchable_nocdata.ps all.ps all_nocdata.ps all_nocdataexe.ps
-#
-all.svg: all.dot
-run.svg: run.dot
-start.svg: start.dot
-#
-switchable.svg: switchable_nocdata.dot
-all_nocdata.svg: all_nocdata.dot
-run_nocdata.svg: run_nocdata.dot
-start_nocdata.svg: start_nocdata.dot
-switchable_nocdata.svg: switchable_nocdata.dot
-#
-all_nocdataexe.svg: all_nocdataexe.dot
-#
-diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg switchable_nocdata.svg all.svg all_nocdata.svg all_nocdataexe.svg
-#
-#  Compilation rules.
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
-	scripts/mkcparam $(switchable:.o=.f90) grid.f90 $(DERIV).f90 $(PARTICLES_MAP).f90 cparam.local -o cparam.inc
+	scripts/mkcparam $(preprocess) -o cparam.inc
 # 
 cparam.o:  cparam.f90 cparam.local cparam.inc
 	if [ "" ]; then \
@@ -1641,17 +1594,6 @@ debug:
 	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
 # 
-start.x: $(start) Makefile.local
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
-# 
-run.x: $(run) Makefile.local
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
-# 
-#  Testing spatial differential operators 
-#
-optest.x: $(optest) Makefile.local
-	$(LD) $(LDFLAGS) $(optest) $(LD_MPI) $(LD_FOURIER) -o optest.x
-# 
 #  Handy for debugging; just compile by hand what is changed.
 #  When you use this you must be certain that everying is consistent.
 #
@@ -1659,16 +1601,16 @@ linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 # 
-# Needed for the underscore trick:
+#  Needed for the underscore trick.
 #
-mpicomm_.f90:      mpicomm.f90
+mpicomm_.f90: mpicomm.f90
 # 
-# Use sloppier compiler for MPICOMM and fftpack if specified:
-# If set, FFLAGS_SLOPPY overrides '$(FFLAGS) $(F90FLAGS)'. Use like this:
-#   FFLAGS_SLOPPY=-O4 -Wall
-#   F90FLAGS=$(FFLAGS_SLOPPY) -Werror
-#   F77FLAGS=$(FFLAGS_SLOPPY)
-# to restrict `-Werror' to F90 files other than MPICOMM.
+#  Use sloppier compiler for MPICOMM and fftpack if specified:
+#  If set, FFLAGS_SLOPPY overrides '$(FFLAGS) $(F90FLAGS)'. Use like this:
+#    FFLAGS_SLOPPY=-O4 -Wall
+#    F90FLAGS=$(FFLAGS_SLOPPY) -Werror
+#    F77FLAGS=$(FFLAGS_SLOPPY)
+#  to restrict `-Werror' to F90 files other than MPICOMM.
 #
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	@fflags="$(FFLAGS_SLOPPY)"; \
@@ -1684,42 +1626,29 @@ fftpack.o: fftpack.f90
 	    -o fftpack.o -c fftpack.f90; \
 	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
 	    -o fftpack.o -c fftpack.f90
-
-#
-# Shortcut for debugging radiation
-#
-rad:
-	ifc -c radiation_exp.f90
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 # 
-# Remove all build files, but keep executables (misleading name..)
+#  Remove all build files, but keep executables (misleading name..)
 #
 run:
 	rm -f *.o *.mod *.d
 	rm -f work.pc work.pcl
 # 
-# Alternative to make run. To copy executables to parent directory. Make
-# clean(n) could then be run on the source. (misleading name..)
+#  Alternative to make run. To copy executables to parent directory. Make
+#  clean(n) could then be run on the source. (misleading name..)
 #
 install:
 	cp *.x ../
 # 
-# nofft.f90:
-#     @ touch nofft.f90
-# nofftpack.f90:
-#     @ touch nofftpack.f90
-# 
-# TAGS file for Emacs.
-# $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
-# temporarily create them
+#  TAGS file for Emacs.
+#  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
+#  temporarily create them
 #
 TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
 	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
 # 
-# Clean up, but leave makefile and TAGS
+#  Clean up, but leave makefile and TAGS.
 #
 clean:
 	rm -f *.x *.o *.mod *.d cparam*.inc cparam_pencils*.inc *.il
@@ -1730,8 +1659,8 @@ clean:
 	rm -f work.pc work.pcl .build*
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 # 
-# Clean up all
-# (there should be no Makefile_inc; but if there is, `make' just does nothing)
+#  Clean up all
+#  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
 	rm -f Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
@@ -1739,34 +1668,23 @@ cleann: clean
 	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 # 
-# same thing
+#  sAme thing.
 #
 cleanall: cleann
 # 
-# Try to remove everything generated by pc_setupsrc, compilation, etc.
+#  Try to remove everything generated by pc_setupsrc, compilation, etc.
 #
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
 	rm -rf special initial_condition Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
-#
-#  Code targets
-#
-combine_videofiles.x: $(combine_videofiles)
-	$(LD) $(LDFLAGS) $(combine_videofiles) $(LD_MPI) -o combine_videofiles.x
-# 
-read_videofiles.x: $(read_videofiles)
-	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles.x
-# 
-read_vectorfiles.x: $(read_vectorfiles)
-	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles.x
 # 
 #  Non-F90 / undetectable dependencies
 #
-fft.o:	     fft.f Makefile.src
-nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
+fft.o: fft.f Makefile.src
+nodebug.o: nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #
-# Dependencies
+#  Dependencies.
 #
 include Makefile.depend
 
