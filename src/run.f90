@@ -97,25 +97,27 @@ program run
 !
   lrun=.true.
 !
-!  Initialize the message subsystem, eg. color setting etc.
+!  Get processor numbers and define whether we are root.
 !
-  call initialize_messages()
-!
-!  Initialize MPI and register physics modules.
-!  (must be done before lroot can be used, for example)
-!
-  call register_modules()
-  if (lparticles) call particles_register_modules()
+  call mpicomm_init
 !
 !  Identify version.
 !
   if (lroot) call svn_id( &
       '$Id$')
 !
+!  Initialize the message subsystem, eg. color setting etc.
+!
+  call initialize_messages()
+!
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
   call rparam()
+!
+!  Read parameters and output parameter list.
+!
+  call read_runpars()
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in rparam or
@@ -135,6 +137,16 @@ program run
   xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
   xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
   xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
+!
+!  Register physics modules.
+!
+  call register_modules()
+  if (lparticles) call particles_register_modules()
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(LRESET=.false.)
+  if (lparticles) call particles_rprint_list(.false.)
 !
 !  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
 !
@@ -162,17 +174,12 @@ program run
     kz_ny =0.0
   endif
 !
-!  Read parameters and output parameter list.
-!
-  call read_runpars()
-  call rprint_list(LRESET=.false.)
-!
 !  Position of equator (if any).
 !
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-! and limits to xaveraging.
+!  Limits to xaveraging.
 !
   if (lav_smallx) call init_xaver
 !

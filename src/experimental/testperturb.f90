@@ -1,9 +1,16 @@
 ! $Id$
-
+!
 !  test perturbation method
-
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: ltestperturb = .true.
+!
+!***************************************************************
 module TestPerturb
-
+!
   use Sub
   use Cdata
   use Messages
@@ -21,16 +28,15 @@ module TestPerturb
   integer :: nt_testperturb=0, it_testperturb_finalize=0
   real :: ktestfield=1., ktestfield1=1., Btest0=1.
   real :: dummy
-
+!
   include 'testperturb.h'
-
+!
   namelist /testperturb_init_pars/ &
       dummy
-
+!
   namelist /testperturb_run_pars/ &
-      ltestperturb,itestfield,ktestfield,Btest0,nt_testperturb
-
-  ! other variables (needs to be consistent with reset list below)
+      itestfield,ktestfield,Btest0,nt_testperturb
+!
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
   integer :: idiag_alp21=0      ! DIAG_DOC: $\alpha_{21}$
   integer :: idiag_alp31=0      ! DIAG_DOC: $\alpha_{31}$
@@ -43,9 +49,8 @@ module TestPerturb
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{123}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{223}k$
   integer :: idiag_eta32=0      ! DIAG_DOC: $\eta_{323}k$
-
+!
   contains
-
 !***********************************************************************
     subroutine register_testperturb()
 !
@@ -477,4 +482,4 @@ module TestPerturb
 !
     endsubroutine rprint_testperturb
 !***********************************************************************
-  endmodule TestPerturb
+endmodule TestPerturb

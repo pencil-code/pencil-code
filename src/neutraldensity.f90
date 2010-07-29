@@ -7,6 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lneutraldensity = .true.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -91,8 +92,6 @@ module NeutralDensity
            'not yet implemented in the neutrals module')
 !
       call farray_register_pde('lnrhon',ilnrhon)
-!
-      lneutraldensity=.true.
 !
 !  Identify version number (generated automatically by SVN).
 !

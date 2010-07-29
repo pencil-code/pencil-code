@@ -7,6 +7,13 @@
 ! 2009.09.09 (Nils Erland) : Moved all NSCBC stuff from boundcond.f90 to
 !                            this module.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lnscbc = .true.
+!
+!***************************************************************
 module NSCBC
 !
   use Cdata
@@ -700,19 +707,16 @@ include 'NSCBC.h'
     endsubroutine bc_nscbc_prf
 !***********************************************************************
     subroutine read_NSCBC_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
       integer :: i
-
+!
       if (present(iostat)) then
         read(unit,NML=NSCBC_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=NSCBC_init_pars,ERR=99)
       endif
-!
-      do i=1,3
-        if (nscbc_bc(i) /= '') lnscbc = .true.
-      enddo
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !

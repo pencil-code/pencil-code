@@ -3,16 +3,22 @@
 !  This module add solid (as in no-fluid) cells in the domain.
 !  This can be used e.g. in order to simulate a cylinder in a cross flow.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lsolid_cells = .true.
+!
+!***************************************************************
 module Solid_Cells
-
+!
   use Cparam
   use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
-  implicit none
-  
+!  
   include 'solid_cells.h'
-
+!
   integer, parameter            :: max_items=10
   integer                       :: ncylinders,nrectangles,dummy
   integer                       :: nforcepoints=300
@@ -43,12 +49,14 @@ module Solid_Cells
        interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear,&
        limit_close_linear,lnointerception
 !
-!  diagnostic variables (need to be consistent with reset list below)
+!  Diagnostic variables (need to be consistent with reset list below).
+!
   integer :: idiag_c_dragx=0       ! DIAG_DOC: 
   integer :: idiag_c_dragy=0       ! DIAG_DOC: 
 !
   integer, allocatable :: fpnearestgrid(:,:,:)
   real, allocatable    :: c_dragx(:), c_dragy(:)
+!
   contains
 !***********************************************************************
     subroutine initialize_solid_cells
@@ -60,8 +68,6 @@ module Solid_Cells
 !  19-nov-2008/nils: coded
 !
       integer :: icyl
-!
-      lsolid_cells=.true.
 !
 !  Define the geometry of the solid object.
 !  For more complex geometries (i.e. for objects different than cylinders or
@@ -1752,6 +1758,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_sij)=.true.
       lpenc_requested(i_rho)=.true.
+!
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************  
 endmodule Solid_Cells

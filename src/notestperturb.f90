@@ -1,25 +1,31 @@
 ! $Id$
-
+!
 !  test perturbation method
-
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: ltestperturb = .false.
+!
+!***************************************************************
 module TestPerturb
-
+!
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   real :: dummy
-
+!
   include 'testperturb.h'
-
+!
   namelist /testperturb_init_pars/ &
       dummy
-
+!
   namelist /testperturb_run_pars/ &
       dummy
-
+!
   contains
-
 !***********************************************************************
     subroutine register_testperturb()
 !
@@ -114,4 +120,4 @@ module TestPerturb
 !
     endsubroutine rprint_testperturb
 !***********************************************************************
-  endmodule TestPerturb
+endmodule TestPerturb

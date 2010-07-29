@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lpscalar = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 ! PENCILS PROVIDED cc; cc1; gcc(3)
@@ -35,8 +37,6 @@ module Pscalar
 !  scalar: ilncc; increase nvar accordingly.
 !
 !  6-jul-02/axel: coded
-!
-      lpscalar=.false.
 !
 !  Identify version number.
 !

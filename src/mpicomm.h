@@ -3,7 +3,7 @@
 !
   private
 
-  public :: mpicomm_init, mpifinalize
+  public :: mpicomm_init, initialize_mpicomm, mpifinalize
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
   public :: die_gracefully, die_immediately

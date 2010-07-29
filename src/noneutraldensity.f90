@@ -7,6 +7,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lneutraldensity = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -32,8 +34,6 @@ module Neutraldensity
 !  compressible hydro equations: ilnrhon; increase nvar accordingly.
 !
 !  18-mar-03/axel: adapted from neutraldensity
-!
-      lneutraldensity = .false.
 !
 !  Identify version number (generated automatically by SVN).
 !

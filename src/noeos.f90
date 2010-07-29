@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: leos = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -62,8 +64,6 @@ module EquationOfState
     subroutine register_eos()
 !
 !  14-jun-03/axel: adapted from register_eos
-!
-      leos=.false.
 !
       iyH=0
       ilnTT=0

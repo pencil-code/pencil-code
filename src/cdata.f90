@@ -165,7 +165,7 @@ module Cdata
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
   logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
-  logical :: lgrav=.false.,lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
+  logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
@@ -177,20 +177,17 @@ module Cdata
   logical :: llast_proc_xy=.true.,llast_proc_yz=.true.,llast_proc_xz=.true.
   logical :: llast_proc_xyz=.true.
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
-  logical :: lpscalar=.false.,lpscalar_nolog=.false.
+  logical :: lpscalar_nolog=.false.
   logical :: lalpm=.false.
-  logical :: lchiral=.false.
-  logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
+  logical :: lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity_log=.false.
-  logical :: lneutraldensity=.false.,lneutraldensity_nolog=.false.
-  logical :: lneutralvelocity=.false.
+  logical :: lneutraldensity_nolog=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.
-  logical :: lselfgravity=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
-  logical :: leos=.false., leos_idealgas=.false., leos_chemistry=.false.
+  logical :: leos_idealgas=.false., leos_chemistry=.false.
   logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
   logical :: ltestperturb=.false.
   logical :: lweno_transport=.false.
@@ -404,6 +401,12 @@ module Cdata
   logical, parameter :: lcosmicray_var=lcosmicray
   logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
   logical, parameter :: lshear_var=lshear
+  logical, parameter :: lpscalar_var=lpscalar
+  logical, parameter :: lradiation_var=lradiation
+  logical, parameter :: leos_var=leos
+  logical, parameter :: lchiral_var=lchiral
+  logical, parameter :: lneutralvelocity_var=lneutralvelocity
+  logical, parameter :: lneutraldensity_var=lneutraldensity
 !
 !  Variables related to Fourier spectra and structure functions.
 !

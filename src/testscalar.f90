@@ -1,10 +1,10 @@
 ! $Id$
-
+!
 !  This modules deals with all aspects of testscalar fields; if no
 !  testscalar fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  testscalar relevant subroutines listed in here.
-
+!
 !  Note: this routine requires that MVAR and MAUX contributions
 !  together with njtestscalar are set correctly in the cparam.local file.
 !  njtestscalar must be set at the end of the file such that njtestscalar=MVAR.
@@ -13,7 +13,7 @@
 !  ! MVAR CONTRIBUTION 2
 !  ! MAUX CONTRIBUTION 2
 !  integer, parameter :: njtestscalar=2
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -24,14 +24,13 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
 module Testscalar
-
+!
   use Cparam
   use Messages
-
+!
   implicit none
-
+!
   include 'testscalar.h'
 !
 !  cosine and sine function for setting test fields and analysis
@@ -62,6 +61,7 @@ module Testscalar
   integer :: jtestz1=1,jtestz2=2,jtestx1=3,jtestx2=4,jtesty1=5,jtesty2=6
   integer :: nccinit
   real :: camp=1.,camp1=1.
+!
   namelist /testscalar_init_pars/ &
        zextent,initcctest, &
        amplcctest,kx_cctest,ky_cctest,kz_cctest, &
@@ -1099,5 +1099,5 @@ module Testscalar
       endif
 !
     endsubroutine rprint_testscalar
-
+!***********************************************************************
 endmodule Testscalar

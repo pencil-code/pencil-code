@@ -10,6 +10,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lgrav = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -110,10 +112,6 @@ module Gravity
 !
       if (lroot) call svn_id( &
           '$Id$')
-!
-!  Set lgrav.
-!
-      lgrav=.true.
 !
     endsubroutine register_gravity
 !***********************************************************************

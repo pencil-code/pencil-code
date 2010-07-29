@@ -8,6 +8,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lselfgravity = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1
@@ -66,10 +68,6 @@ module Selfgravity
 !
       if (lroot) call svn_id( &
           "$Id$")
-!
-!  Set lselfgravity.
-!
-      lselfgravity=.true.
 !
     endsubroutine register_selfgravity
 !***********************************************************************

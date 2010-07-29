@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lpscalar = .true.
+!
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
@@ -91,8 +93,6 @@ module Pscalar
 !  6-jul-02/axel: coded
 !
       use FArrayManager
-!
-      lpscalar = .true.
 !
       call farray_register_pde('lncc',ilncc)
 !

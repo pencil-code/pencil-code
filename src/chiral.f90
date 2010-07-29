@@ -3,10 +3,12 @@
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
 !  right handed aminoacids.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lchiral = .true.
 !
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
@@ -76,8 +78,6 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       use FArrayManager
-!
-      lchiral = .true.
 !
       call farray_register_pde('XX_chiral',iXX_chiral)
       call farray_register_pde('YY_chiral',iYY_chiral)

@@ -100,6 +100,15 @@ program start
 !
   lstart=.true.
 !
+!  Get processor numbers and define whether we are root.
+!
+  call mpicomm_init
+!
+!  Identify version.
+!
+  if (lroot) call svn_id( &
+      '$Id$')
+!
 !  Initialize the message subsystem, eg. color setting etc.
 !
   call initialize_messages()
@@ -121,21 +130,6 @@ program start
   f =huge(1.0)
   df=huge(1.0)
 !
-!  Register variables in the f array.
-!
-  call register_modules()
-  call particles_register_modules()
-!
-!  The logical headtt is sometimes referred to in start.x, even though it is
-!  not yet defined. So we set it simply to lroot here.
-!
-  headtt=lroot
-!
-!  Identify version.
-!
-  if (lroot) call svn_id( &
-      '$Id$')
-!
 !  Set default values: box of size (2pi)^3.
 !
   xyz0=(/       -pi,        -pi,       -pi /) ! first corner
@@ -146,11 +140,23 @@ program start
   lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
 !
 !  Read parameters from start.in.
-!  Call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
 !
   call read_startpars(FILE=.true.)
+!
+!  Register variables in the f array.
+!
+  call register_modules()
+  if (lparticles) call particles_register_modules()
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
   call rprint_list(.false.)
-  call particles_rprint_list(.false.)
+  if (lparticles) call particles_rprint_list(.false.)
+!
+!  The logical headtt is sometimes referred to in start.x, even though it is
+!  not yet defined. So we set it simply to lroot here.
+!
+  headtt=lroot
 !
 !  Initialize start time.
 !

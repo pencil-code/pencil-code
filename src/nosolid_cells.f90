@@ -3,6 +3,13 @@
 !  This module add solid (as in no-fluid) cells in the domain.
 !  This can be used e.g. in order to simulate a cylinder in a cross flow.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lsolid_cells = .false.
+!
+!***************************************************************
 module Solid_Cells
 !
   use Cdata
@@ -21,8 +28,6 @@ module Solid_Cells
     subroutine initialize_solid_cells
 !
 !  19-nov-08/nils: dummy
-!
-      lsolid_cells=.false.
 !
     endsubroutine initialize_solid_cells
 !***********************************************************************

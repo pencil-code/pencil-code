@@ -7,6 +7,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: leos = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
 !
@@ -86,7 +88,6 @@ module EquationOfState
       use FArrayManager
       use Sub
 !
-      leos=.true.
       leos_ionization=.true.
 !
 !  Set indices for auxiliary variables.

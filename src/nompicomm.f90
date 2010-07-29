@@ -165,10 +165,16 @@ module Mpicomm
 !***********************************************************************
     subroutine mpicomm_init()
 !
+!  29-jul-2010/anders: dummy
+!
+    endsubroutine mpicomm_init
+!***********************************************************************
+    subroutine initialize_mpicomm()
+!
 !  Make a quick consistency check.
 !
-      if (ncpus > 1) then
-        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus >= 2')
+      if (ncpus>1) then
+        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2')
       endif
 !
 !  For a single CPU run, set processor to zero.
@@ -202,7 +208,7 @@ module Mpicomm
       uucorn = 0
       ulcorn = 0
 !
-    endsubroutine mpicomm_init
+    endsubroutine initialize_mpicomm
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !

@@ -8,6 +8,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lchiral = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -39,9 +41,7 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      lchiral = .false.
-!
-!  identify version number
+!  Identify version number.
 !
       if (lroot) call svn_id( &
           "$Id$")

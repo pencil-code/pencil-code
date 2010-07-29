@@ -274,6 +274,21 @@ module Mpicomm
 !***********************************************************************
     subroutine mpicomm_init()
 !
+!  Get processor number, number of procs, and whether we are root.
+!
+!  20-aug-01/wolf: coded
+!  29-jul-2010/anders: separate subroutine
+!
+      lmpicomm = .true.
+      call MPI_INIT(mpierr)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , mpierr)
+      lroot = (iproc==root)
+!
+    endsubroutine mpicomm_init
+!***********************************************************************
+    subroutine initialize_mpicomm()
+!
 !  Initialise MPI communication and set up some variables.
 !  The arrays leftneigh and rghtneigh give the processor numbers
 !  to the left and to the right.
@@ -285,13 +300,6 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
-!  Get processor number, number of procs, and whether we are root.
-!
-      lmpicomm = .true.
-      call MPI_INIT(mpierr)
-      call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
-      call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , mpierr)
-      lroot = (iproc==root)
 !
 !  Check consistency in processor layout.
 !

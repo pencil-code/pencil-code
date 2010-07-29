@@ -548,10 +548,7 @@ module Param_IO
 !
       integer :: ierr, unit=1
 !
-!  Reset some parameters, in particular those where we play tricks with
-!  `impossible' values
-!
-!  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
+!  Set default to shearing sheet if lshear=.true. (even when Sshear==0).
 !
       if (lshear) bcx(:)='she'
 !
@@ -695,10 +692,6 @@ module Param_IO
       rewind(unit)
 !
       call parallel_close(unit)
-!
-!  Copy boundary conditions on first dust species to all others.
-!
-      call copy_bcs_dust
 !
 !  Print cvs id from first line.
 !
@@ -976,21 +969,27 @@ module Param_IO
 !
 !  21-jan-02/wolf: coded
 !
-      logical :: lhydro         = lhydro_var
-      logical :: ldensity       = ldensity_var
-      logical :: lentropy       = lentropy_var
-      logical :: lshock         = lshock_var
-      logical :: lmagnetic      = lmagnetic_var
-      logical :: llorenz_gauge  = llorenz_gauge_var
-      logical :: ldustvelocity  = ldustvelocity_var
-      logical :: ldustdensity   = ldustdensity_var
-      logical :: ltestscalar    = ltestscalar_var
-      logical :: ltestfield     = ltestfield_var
-      logical :: ltestflow      = ltestflow_var
-      logical :: linterstellar  = linterstellar_var
-      logical :: lcosmicray     = lcosmicray_var
-      logical :: lcosmicrayflux = lcosmicrayflux_var
-      logical :: lshear         = lshear_var
+      logical :: lhydro           = lhydro_var
+      logical :: ldensity         = ldensity_var
+      logical :: lentropy         = lentropy_var
+      logical :: lshock           = lshock_var
+      logical :: lmagnetic        = lmagnetic_var
+      logical :: llorenz_gauge    = llorenz_gauge_var
+      logical :: ldustvelocity    = ldustvelocity_var
+      logical :: ldustdensity     = ldustdensity_var
+      logical :: ltestscalar      = ltestscalar_var
+      logical :: ltestfield       = ltestfield_var
+      logical :: ltestflow        = ltestflow_var
+      logical :: linterstellar    = linterstellar_var
+      logical :: lcosmicray       = lcosmicray_var
+      logical :: lcosmicrayflux   = lcosmicrayflux_var
+      logical :: lshear           = lshear_var
+      logical :: lpscalar         = lpscalar_var
+      logical :: lchiral          = lchiral_var
+      logical :: leos             = leos_var
+      logical :: lradiation       = lradiation_var
+      logical :: lneutralvelocity = lneutralvelocity_var
+      logical :: lneutraldensity  = lneutraldensity_var
       integer :: unit=1
 !
       namelist /lphysics/ &

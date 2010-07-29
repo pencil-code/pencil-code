@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lselfgravity = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -30,8 +32,6 @@ module Selfgravity
 !  Register self gravity variables.
 !
 !  15-may-06/anders+jeff: dummy
-!
-      lselfgravity=.false.
 !
     endsubroutine register_selfgravity
 !***********************************************************************

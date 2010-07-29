@@ -28,7 +28,7 @@ module Register
       use Cdata
       use General,          only: setup_mm_nn
       use Io,               only: register_io
-      use Mpicomm,          only: mpicomm_init,stop_it
+      use Mpicomm,          only: stop_it
       use Param_Io,         only: get_datadir,get_snapdir
       use Sub
       use Chemistry,        only: register_chemistry
@@ -66,10 +66,6 @@ module Register
       use ImplicitPhysics,  only: register_implicit_physics
 !
       integer :: ierr
-!
-!  Initialize all mpi stuff.
-!
-      call mpicomm_init
 !
 !  Overwrite datadir from datadir.in, if that exists.
 !
@@ -189,7 +185,8 @@ module Register
 !
       use Cdata
       use Param_IO
-      use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
+      use Mpicomm,          only: initialize_mpicomm, &
+                                  mpireduce_sum,mpibcast_real,&
                                   mpisend_real,mpirecv_real
       use Sub,              only: remove_zprof
       use BorderProfiles,   only: initialize_border_profiles
@@ -235,13 +232,12 @@ module Register
       logical :: lstarting
       integer :: ivar
 !
-!  Defaults for some logicals; will later be set to true if needed
+!  Defaults for some logicals; will later be set to true if needed.
 !
       lpenc_requested(:) = .false.
 !
-!  Evaluate physical units.
-!  Used currently only in eos, but later also in
-!  the interstellar and radiation modules, for example.
+!  Evaluate physical units. Used currently only in eos, but later also
+!  in the interstellar and radiation modules, for example.
 !
       call units_general()
       call units_eos()
@@ -360,6 +356,7 @@ module Register
 !
 !  Run rest of initialization of individual modules.
 !
+      call initialize_mpicomm()
       call initialize_deriv()
       call initialize_prints()
       call initialize_timeavg(f)

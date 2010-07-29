@@ -6,6 +6,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lneutralvelocity = .true.
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
@@ -100,9 +101,7 @@ module NeutralVelocity
       if (.not.lcartesian_coords) call fatal_error('register_neutralvelocity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !
-      lneutralvelocity=.true.
-!
-!  indices to access uu
+!  Indices to access uun.
 !
       call farray_register_pde('uun',iuun,vector=3)
       iunx = iuun; iuny = iuun+1; iunz = iuun+2
@@ -112,7 +111,7 @@ module NeutralVelocity
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       if (lroot) then
         if (maux == 0) then

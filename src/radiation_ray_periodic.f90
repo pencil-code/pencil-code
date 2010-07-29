@@ -11,6 +11,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lradiation = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 5
 !
@@ -125,7 +127,6 @@ module Radiation
       use FArrayManager
       use Mpicomm, only: stop_it
 !
-      lradiation=.true.
       lradiation_ray=.true.
 !
 !  Set indices for auxiliary variables

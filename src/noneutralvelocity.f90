@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lneutralvelocity = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -31,8 +33,6 @@ module NeutralVelocity
 !  equations: iuu, etc; increase nvar accordingly.
 !
 !  18-mar-03/axel: dummy routine
-!
-      lneutralvelocity = .false.
 !
 !  Identify version number (generated automatically by SVN).
 !
