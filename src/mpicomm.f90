@@ -308,7 +308,7 @@ module Mpicomm
           print*, 'Compiled with ncpus = ', ncpus, &
               ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
         endif
-        call stop_it('mpicomm_init')
+        call stop_it('initialize_mpicomm')
       endif
 !
 !  Check total number of processors.
@@ -318,7 +318,7 @@ module Mpicomm
           print*, 'Compiled with ncpus = ', ncpus, &
               ', but running on ', nprocs, ' processors'
         endif
-        call stop_it('mpicomm_init')
+        call stop_it('initialize_mpicomm')
       endif
 !
 !  Warn the user if using nprocx>1 (this warning should eventually be deleted).
@@ -413,7 +413,7 @@ module Mpicomm
 !  Therefore it must be invoked by resetting ldebug_mpi appropriately.
 !
       if (ldebug_mpi) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
-        'mpicomm_init: MPICOMM neighbors ', &
+        'initialize_mpicomm: MPICOMM neighbors ', &
         iproc,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
