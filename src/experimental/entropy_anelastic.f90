@@ -1556,20 +1556,28 @@ module Entropy
     subroutine calc_pencils_entropy(f,p)
 !
 !  Calculate all entropy pencils except the pressure gradient
+!
 !  08-dec-2009/piyali:adapted 
+!
       use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
       use Sub
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
 ! ss
+!
       if (lpencil(i_ss)) p%ss = f(l1:l2,m,n,iss)
       if (lpencil(i_gss)) call grad(f,iss,p%gss) 
       if (lpencil(i_gss_b)) call grad(f,iss_b,p%gss_b) 
       if (lpencil(i_del2ss)) call del2(f,iss,p%del2ss) 
 !
 ! Ma2
+!
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+!
 ! ugss & ugss_b
+!
       if (lpencil(i_ugss)) &
           call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
       if (lpencil(i_ugss_b)) &
@@ -1626,9 +1634,8 @@ module Entropy
 !  NOTE: in the entropy module is it lnTT that is advanced, so
 !  there are additional cv1 terms on the right hand side.
 !
-      if (ladvection_entropy) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss-p%ugss_b
-      endif
+      if (ladvection_entropy) &
+           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss - p%ugss_b
 !
 !  Calculate viscous contribution to entropy
 !
