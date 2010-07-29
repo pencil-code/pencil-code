@@ -177,7 +177,7 @@ module Cdata
   logical :: llast_proc_xy=.true.,llast_proc_yz=.true.,llast_proc_xz=.true.
   logical :: llast_proc_xyz=.true.
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
-  logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
+  logical :: lpscalar=.false.,lpscalar_nolog=.false.
   logical :: lalpm=.false.
   logical :: lchiral=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
@@ -403,6 +403,7 @@ module Cdata
   logical, parameter :: linterstellar_var=linterstellar
   logical, parameter :: lcosmicray_var=lcosmicray
   logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
+  logical, parameter :: lshear_var=lshear
 !
 !  Variables related to Fourier spectra and structure functions.
 !
