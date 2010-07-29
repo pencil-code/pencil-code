@@ -1065,6 +1065,11 @@ module Param_IO
       call keep_compiler_quiet(linterstellar,lshock)
       call keep_compiler_quiet(ldustdensity,ldustvelocity)
       call keep_compiler_quiet(llorenz_gauge)
+      call keep_compiler_quiet(lshear)
+      call keep_compiler_quiet(leos)
+      call keep_compiler_quiet(lchiral)
+      call keep_compiler_quiet(lneutralvelocity)
+      call keep_compiler_quiet(lneutraldensity)
 !
     endsubroutine wparam
 !***********************************************************************
@@ -1238,4 +1243,3 @@ module Param_IO
    endsubroutine write_pencil_info
 !***********************************************************************
 endmodule Param_IO
-
