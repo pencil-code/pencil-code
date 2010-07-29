@@ -32,3 +32,5 @@
 &grav_init_pars
   ipotential='zero'
 /
+&special_init_pars
+/
