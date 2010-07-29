@@ -9,6 +9,7 @@
   lread_aux=T
 /
 &eos_run_pars
+  lanelastic_lin=F,lanelastic_full=T
 /
 &hydro_run_pars
 /

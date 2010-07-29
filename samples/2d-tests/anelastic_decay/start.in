@@ -9,10 +9,10 @@
 ! bcz   = 's','s','a','a2','a'
 /
 &eos_init_pars
-  gamma=1.
+  gamma=1.,lanelastic_full=T,lanelastic_lin=F
 /
 &hydro_init_pars
-  inituu='anelastic-2dxz', ampl_uy=-1.0e-1,kx_uu=1.0,kz_uu=1.0
+  inituu='anelastic-nlin', ampl_uy=-1.0e-1,kx_uu=2.0,kz_uu=2.0
 /
 &density_init_pars
   initlnrho='anelastic'
