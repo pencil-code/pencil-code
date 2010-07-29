@@ -142,7 +142,12 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_pde('lnrho',ilnrho)
+      if (ldensity_nolog) then
+        call farray_register_pde('irho',irho)
+        ilnrho=irho
+      else
+        call farray_register_pde('lnrho',ilnrho)
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -175,14 +180,6 @@ module Density
 !
       integer :: i,ierr
       logical :: lnothing
-!
-!  Set irho equal to ilnrho if we are considering non-logarithmic density.
-!  Also reset the corresponding slot in varname.
-!
-      if (ldensity_nolog) then
-        irho=ilnrho
-        varname(irho)='rho'
-      endif
 !
 !  Initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
@@ -2834,29 +2831,14 @@ module Density
 !  Write column where which density variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_rhom=',idiag_rhom
-        write(3,*) 'i_rho2m=',idiag_rho2m
-        write(3,*) 'i_drho2m=',idiag_drho2m
-        write(3,*) 'i_drhom=',idiag_drhom
-        write(3,*) 'i_rhomin=',idiag_rhomin
-        write(3,*) 'i_rhomax=',idiag_rhomax
-        write(3,*) 'i_lnrho2m=',idiag_lnrho2m
-        write(3,*) 'i_ugrhom=',idiag_ugrhom
-        write(3,*) 'i_uglnrhom=',idiag_uglnrhom
-        write(3,*) 'i_rhomz=',idiag_rhomz
-        write(3,*) 'i_rhomy=',idiag_rhomy
-        write(3,*) 'i_rhomx=',idiag_rhomx
-        write(3,*) 'i_rhomxy=',idiag_rhomxy
-        write(3,*) 'i_rhomxz=',idiag_rhomxz
         write(3,*) 'nname=',nname
-        write(3,*) 'ilnrho=',ilnrho
-        write(3,*) 'irho=',irho
-        write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
-        write(3,*) 'i_rhomphi=',idiag_rhomphi
-        write(3,*) 'i_rhomr=',idiag_rhomr
-        write(3,*) 'i_dtd=',idiag_dtd
-        write(3,*) 'i_totmass=',idiag_totmass
-        write(3,*) 'i_mass=',idiag_mass
+        if (ldensity_nolog) then
+          write(3,*) 'ilnrho=0'
+          write(3,*) 'irho=', irho
+        else
+          write(3,*) 'ilnrho=', ilnrho
+          write(3,*) 'irho=', 0
+        endif
       endif
 !
     endsubroutine rprint_density
