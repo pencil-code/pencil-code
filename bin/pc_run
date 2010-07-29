@@ -624,7 +624,7 @@ sub local_settings {
 
     # Compiled with MPI?
     $settings{'mpi'}
-      = `fgrep -c 'mpicomm_init: MPICOMM neighbors' src/start.x` + 0;
+      = `fgrep -c 'initialize_mpicomm: MPICOMM neighbors' src/start.x` + 0;
     unless ($quiet) {
         if ($settings{'mpi'} + 0) {
             print "MPI run\n"
@@ -674,6 +674,7 @@ sub get_setting {
     my ($settings_ref, $key) = @_;
 
     my $setting = $settings_ref->{$key};
+
     if (defined $setting) {
         return $setting;
     } else {
