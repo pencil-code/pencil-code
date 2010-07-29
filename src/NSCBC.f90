@@ -744,10 +744,6 @@ include 'NSCBC.h'
         read(unit,NML=NSCBC_run_pars,ERR=99)
       endif
 !
-      do i=1,3
-        if (nscbc_bc(i) /= '') lnscbc = .true.
-      enddo
-!
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
 ! Check if we will read turbulent inlet data from data file
