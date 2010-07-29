@@ -145,6 +145,28 @@ varcontent[iss].idlinit    = INIT_SCALAR
 varcontent[iss].idlvarloc  = 'ss_loc'
 varcontent[iss].idlinitloc = INIT_SCALAR_LOC
 ;
+default, irho_b, 0
+varcontent[irho_b].variable   = 'Base density (rho_b)'
+varcontent[irho_b].idlvar     = 'rho_b'
+varcontent[irho_b].idlinit    = INIT_SCALAR
+varcontent[irho_b].idlvarloc  = 'rho_b_loc'
+varcontent[irho_b].idlinitloc = INIT_SCALAR_LOC
+;
+default, irhs, 0
+varcontent[irhs].variable   = 'RHS (NS)'
+varcontent[irhs].idlvar     = 'rhs'
+varcontent[irhs].idlinit    = INIT_3VECTOR
+varcontent[irhs].idlvarloc  = 'rhs_loc'
+varcontent[irhs].idlinitloc = INIT_3VECTOR_LOC
+varcontent[irhs].skip       = 2
+;
+default, iss_b, 0
+varcontent[iss_b].variable   = 'Base Entropy (ss_b)'
+varcontent[iss_b].idlvar     = 'ss_b'
+varcontent[iss_b].idlinit    = INIT_SCALAR
+varcontent[iss_b].idlvarloc  = 'ss_b_loc'
+varcontent[iss_b].idlinitloc = INIT_SCALAR_LOC
+;
 default, iaa, 0
 varcontent[iaa].variable   = 'Magnetic vector potential (aa)'
 varcontent[iaa].idlvar     = 'aa'
