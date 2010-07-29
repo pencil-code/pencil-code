@@ -2988,26 +2988,26 @@ module Hydro
 !
         if ((dampu /= 0.) .and. (t < tdamp)) then
           if (ldamp_fade) then  ! smoothly fade
-            !
-            ! smoothly fade out damping according to the following
-            ! function of time:
-            !
-            !    ^
-            !    |
-            !  1 +**************
-            !    |              ****
-            !    |                  **
-            !    |                    *
-            !    |                     **
-            !    |                       ****
-            !  0 +-------------+-------------**********---> t
-            !    |             |             |
-            !    0          Tdamp/2        Tdamp
-            !
-            ! i.e. for 0<t<Tdamp/2, full damping is applied, while for
-            ! Tdamp/2<t<Tdamp, damping goes smoothly (with continuous
-            ! derivatives) to zero.
-            !
+!
+!  smoothly fade out damping according to the following
+!  function of time:
+!
+!    ^
+!    |
+!  1 +**************
+!    |              ****
+!    |                  **
+!    |                    *
+!    |                     **
+!    |                       ****
+!  0 +-------------+-------------**********---> t
+!    |             |             |
+!    0          Tdamp/2        Tdamp
+!
+!  i.e. for 0<t<Tdamp/2, full damping is applied, while for
+!  Tdamp/2<t<Tdamp, damping goes smoothly (with continuous
+!  derivatives) to zero.
+!
             t_infl = 0.75*tdamp ! position of inflection point
             t_span = 0.5*tdamp   ! width of transition (1->0) region
             tau = (t-t_infl)/t_span ! normalized t, tr. region is [-0.5,0.5]
@@ -3021,9 +3021,9 @@ module Hydro
           else                ! don't fade, switch
             pfade = 1.
           endif
-          !
-          ! damp absolutely or relative to time step
-          !
+!
+! damp absolutely or relative to time step
+!
           if (dampu > 0) then   ! absolutely
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                                     - pfade*dampu*f(l1:l2,m,n,iux:iuz)
