@@ -21,7 +21,9 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # CVS: $Id$
 # Usage:
 #  Hello errrr...
-
+#  WL: I guess we need a more descriptive usage than "Hello errrr..."
+#      The way to use this file should be in the manual, right?
+#
 # History:
 #   23-jun-05/tony: Created
 #
