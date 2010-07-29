@@ -581,18 +581,6 @@ module Chiral
 !  write column where which chiral variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_XX_chiralm=',idiag_XX_chiralm
-        write(3,*) 'i_YY_chiralm=',idiag_YY_chiralm
-        write(3,*) 'i_XX_chiralmax=',idiag_XX_chiralmax
-        write(3,*) 'i_YY_chiralmax=',idiag_YY_chiralmax
-        write(3,*) 'i_QQm_chiral=',idiag_QQm_chiral
-        write(3,*) 'i_QQ21m_chiral=',idiag_QQ21m_chiral
-        write(3,*) 'i_QQ21QQm_chiral=',idiag_QQ21QQm_chiral
-        write(3,*) 'i_brmsEP=',idiag_brmsEP
-        write(3,*) 'i_bmaxEP=',idiag_bmaxEP
-        write(3,*) 'i_jrmsEP=',idiag_jrmsEP
-        write(3,*) 'i_jmaxEP=',idiag_jmaxEP
-        write(3,*) 'i_jbmEP=',idiag_jbmEP
         write(3,*) 'iXX_chiral=',iXX_chiral
         write(3,*) 'iYY_chiral=',iYY_chiral
       endif

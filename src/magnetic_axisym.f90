@@ -3285,7 +3285,6 @@ module Magnetic
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_aphi2m=',idiag_aphi2m
         write(3,*) 'nname=',nname
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz

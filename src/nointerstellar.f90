@@ -80,16 +80,8 @@ module Interstellar
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  write column where which interstellar variable is stored
-!
-      if (lwr) then
-        write(3,*) 'i_taucmin=0'
-      endif
-!
       call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_interstellar
 !***********************************************************************

@@ -171,7 +171,6 @@ module Neutraldensity
 !  Write column where which neutral density variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_rhonm=',idiag_rhonm
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrhon=',ilnrhon
       endif

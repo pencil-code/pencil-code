@@ -1310,16 +1310,6 @@ module Radiation
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_frms=',idiag_frms
-        write(3,*) 'i_fmax=',idiag_fmax
-        write(3,*) 'i_Erad_rms=',idiag_Erad_rms
-        write(3,*) 'i_Erad_max=',idiag_Erad_max
-        write(3,*) 'i_Egas_rms=',idiag_Egas_rms
-        write(3,*) 'i_Egas_max=',idiag_Egas_max
-        write(3,*) 'i_Qradrms=',idiag_Qradrms
-        write(3,*) 'i_Qradmax=',idiag_Qradmax
-        write(3,*) 'i_Fradzm=',idiag_Fradzm
-        write(3,*) 'i_xyFradzm=',idiag_xyFradzm
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx

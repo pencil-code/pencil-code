@@ -652,8 +652,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
     if (lwr) then
-      write(3,*) 'i_c_dragx=',idiag_c_dragx
-      write(3,*) 'i_c_dragy=',idiag_c_dragy
+!
     endif
 !    
   endsubroutine rprint_solid_cells

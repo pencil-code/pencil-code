@@ -1040,27 +1040,8 @@ module Entropy
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_ethtot=',idiag_ethtot
-        write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
-        write(3,*) 'i_ssmphi=',idiag_ssmphi
-        write(3,*) 'i_fturbz=',idiag_fturbz
-        write(3,*) 'i_fconvz=',idiag_fconvz
-        write(3,*) 'i_dcoolz=',idiag_dcoolz
-        write(3,*) 'i_fradz=',idiag_fradz
-        write(3,*) 'i_ssmz=',idiag_ssmz
-        write(3,*) 'i_TTmz=',idiag_TTmz
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
-        write(3,*) 'i_yHmax=',idiag_yHmax
-        write(3,*) 'i_yHm=',idiag_yHm
-        write(3,*) 'i_TTmax=',idiag_TTmax
-        write(3,*) 'i_TTmin=',idiag_TTmin
-        write(3,*) 'i_TTm=',idiag_TTm
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
       endif

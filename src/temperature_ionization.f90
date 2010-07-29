@@ -717,22 +717,6 @@ module Entropy
         write(3,*) 'ilnTT=',ilnTT
         write(3,*) 'iyH=',iyH
         write(3,*) 'iss=',iss
-        write(3,*) 'i_TTmax=',idiag_TTmax
-        write(3,*) 'i_TTmin=',idiag_TTmin
-        write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_yHmax=',idiag_yHmax
-        write(3,*) 'i_yHmin=',idiag_yHmin
-        write(3,*) 'i_yHm=',idiag_yHm
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_cv=',idiag_cv
-        write(3,*) 'i_cp=',idiag_cp
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_eem=',idiag_eem
-        write(3,*) 'i_ppm=',idiag_ppm
-        write(3,*) 'i_csm=',idiag_csm
-        write(3,*) 'i_mum=',idiag_mum
       endif
 !
     endsubroutine rprint_entropy

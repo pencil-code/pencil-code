@@ -949,22 +949,8 @@ module NeutralDensity
 !  write column where which density variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rhonm=',idiag_rhonm
-        write(3,*) 'i_rhon2m=',idiag_rhon2m
-        write(3,*) 'i_rhonmin=',idiag_rhonmin
-        write(3,*) 'i_rhonmax=',idiag_rhonmax
-        write(3,*) 'i_lnrhon2m=',idiag_lnrhon2m
-        write(3,*) 'i_unglnrhonm=',idiag_unglnrhonm
-        write(3,*) 'i_rhonmz=',idiag_rhonmz
-        write(3,*) 'i_rhonmy=',idiag_rhonmy
-        write(3,*) 'i_rhonmx=',idiag_rhonmx
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrhon=',ilnrhon
-        write(3,*) 'i_lnrhonmphi=',idiag_lnrhonmphi
-        write(3,*) 'i_rhonmphi=',idiag_rhonmphi
-        write(3,*) 'i_rhonmr=',idiag_rhonmr
-        write(3,*) 'i_dtnd=',idiag_dtnd
-        write(3,*) 'i_neutralmass=',idiag_neutralmass
       endif
 !
     endsubroutine rprint_neutraldensity

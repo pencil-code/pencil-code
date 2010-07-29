@@ -261,7 +261,6 @@ module Shock
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_shockmax=',idiag_shockmax
           write(3,*) 'ishock=',ishock
         endif
       endif

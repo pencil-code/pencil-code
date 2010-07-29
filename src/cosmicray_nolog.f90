@@ -450,11 +450,6 @@ module Cosmicray
 !  write column where which cosmic ray variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ecrm=',idiag_ecrm
-        write(3,*) 'i_ecrdivum=',idiag_ecrdivum
-        write(3,*) 'i_ecrmax=',idiag_ecrmax
-        write(3,*) 'i_ecrpt=',idiag_ecrpt
-        write(3,*) 'i_kmax=',idiag_kmax
         write(3,*) 'iecr=',iecr
       endif
 !

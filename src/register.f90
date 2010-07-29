@@ -991,26 +991,6 @@ module Register
         enddo
       endif
 !
-!  Write column where which variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'i_t=',idiag_t
-        write(3,*) 'i_it=',idiag_it
-        write(3,*) 'i_dt=',idiag_dt
-        write(3,*) 'i_walltime=',idiag_walltime
-        write(3,*) 'i_timeperstep=',idiag_timeperstep
-        write(3,*) 'i_rcylmphi=',idiag_rcylmphi
-        write(3,*) 'i_phimphi=',idiag_phimphi
-        write(3,*) 'i_zmphi=',idiag_zmphi
-        write(3,*) 'i_rmphi=',idiag_rmphi
-        write(3,*) 'i_dtv=',idiag_dtv
-        write(3,*) 'i_dtdiffus=',idiag_dtdiffus
-        write(3,*) 'i_Rmesh=',idiag_Rmesh
-        write(3,*) 'i_Rmesh3=',idiag_Rmesh3
-        write(3,*) 'i_maxadvec=',idiag_maxadvec
-        write(3,*) 'nname=',nname
-      endif
-!
     endsubroutine rprint_general
 !***********************************************************************
 endmodule Register

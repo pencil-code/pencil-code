@@ -743,43 +743,6 @@ module Pscalar
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_Qpsclm=',idiag_Qpsclm
-        write(3,*) 'i_Qrhoccm=',idiag_Qrhoccm
-        write(3,*) 'i_rhoccm=',idiag_rhoccm
-        write(3,*) 'i_mcct=',idiag_mcct
-        write(3,*) 'i_ccmax=',idiag_ccmax
-        write(3,*) 'i_ccmin=',idiag_ccmin
-        write(3,*) 'i_ccm=',idiag_ccm
-        write(3,*) 'i_ucm=',idiag_ucm
-        write(3,*) 'i_uxcm=',idiag_uxcm
-        write(3,*) 'i_uycm=',idiag_uycm
-        write(3,*) 'i_uzcm=',idiag_uzcm
-        write(3,*) 'i_uudcm=',idiag_uudcm
-        write(3,*) 'i_ccmz=',idiag_ccmz
-        write(3,*) 'i_Cz2m=',idiag_Cz2m
-        write(3,*) 'i_Cz4m=',idiag_Cz4m
-        write(3,*) 'i_Crmsm=',idiag_Crmsm
-        write(3,*) 'i_cc1m=',idiag_cc1m
-        write(3,*) 'i_cc2m=',idiag_cc2m
-        write(3,*) 'i_cc3m=',idiag_cc3m
-        write(3,*) 'i_cc4m=',idiag_cc4m
-        write(3,*) 'i_cc5m=',idiag_cc5m
-        write(3,*) 'i_cc6m=',idiag_cc6m
-        write(3,*) 'i_cc7m=',idiag_cc7m
-        write(3,*) 'i_cc8m=',idiag_cc8m
-        write(3,*) 'i_cc9m=',idiag_cc9m
-        write(3,*) 'i_cc10m=',idiag_cc10m
-        write(3,*) 'i_gcc1m=',idiag_gcc1m
-        write(3,*) 'i_gcc2m=',idiag_gcc2m
-        write(3,*) 'i_gcc3m=',idiag_gcc3m
-        write(3,*) 'i_gcc4m=',idiag_gcc4m
-        write(3,*) 'i_gcc5m=',idiag_gcc5m
-        write(3,*) 'i_gcc6m=',idiag_gcc6m
-        write(3,*) 'i_gcc7m=',idiag_gcc7m
-        write(3,*) 'i_gcc8m=',idiag_gcc8m
-        write(3,*) 'i_gcc9m=',idiag_gcc9m
-        write(3,*) 'i_gcc10m=',idiag_gcc10m
-        write(3,*) 'i_ccglnrm=',idiag_ccglnrm
         write(3,*) 'ilncc=0'
         write(3,*) 'icc=',icc
       endif

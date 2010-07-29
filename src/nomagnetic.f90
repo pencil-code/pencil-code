@@ -249,39 +249,8 @@ module Magnetic
       if (present(lwrite)) lwr=lwrite
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_abm=',idiag_abm
-        write(3,*) 'i_jbm=',idiag_jbm
-        write(3,*) 'i_b2m=',idiag_b2m
-        write(3,*) 'i_bm2=',idiag_bm2
-        write(3,*) 'i_j2m=',idiag_j2m
-        write(3,*) 'i_jm2=',idiag_jm2
-        write(3,*) 'i_epsM=',idiag_epsM
-        write(3,*) 'i_brms=',idiag_brms
-        write(3,*) 'i_bmax=',idiag_bmax
-        write(3,*) 'i_jrms=',idiag_jrms
-        write(3,*) 'i_jmax=',idiag_jmax
-        write(3,*) 'i_vArms=',idiag_vArms
-        write(3,*) 'i_vAmax=',idiag_vAmax
-        write(3,*) 'i_bx2m=',idiag_bx2m
-        write(3,*) 'i_by2m=',idiag_by2m
-        write(3,*) 'i_bz2m=',idiag_bz2m
-        write(3,*) 'i_uxbm=',idiag_uxbm
-        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
-        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
-        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
-        write(3,*) 'i_bxmz=',idiag_bxmz
-        write(3,*) 'i_bymz=',idiag_bymz
-        write(3,*) 'i_bzmz=',idiag_bzmz
-        write(3,*) 'i_bmx=',idiag_bmx
-        write(3,*) 'i_bmy=',idiag_bmy
-        write(3,*) 'i_bmz=',idiag_bmz
-        write(3,*) 'i_bxmxy=',idiag_bxmxy
-        write(3,*) 'i_bymxy=',idiag_bymxy
-        write(3,*) 'i_bzmxy=',idiag_bzmxy
-        write(3,*) 'i_b2mphi=',idiag_b2mphi
         write(3,*) 'nname=',nname
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamez=',nnamez

@@ -109,7 +109,7 @@ module Viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_nu_LES=',idiag_nu_LES
+!
         endif
       endif
 !

@@ -532,17 +532,7 @@ module Viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_dtnu=',idiag_dtnu
-          write(3,*) 'i_nu_LES=',idiag_nu_LES
-          write(3,*) 'i_epsK=',idiag_epsK
-          write(3,*) 'i_epsK2=',idiag_epsK2
-          write(3,*) 'i_epsK_LES=',idiag_epsK_LES
-          write(3,*) 'i_meshRemax=',idiag_meshRemax
-          write(3,*) 'i_nuD2uxbxm=',idiag_nuD2uxbxm
-          write(3,*) 'i_nuD2uxbym=',idiag_nuD2uxbym
-          write(3,*) 'i_nuD2uxbzm=',idiag_nuD2uxbzm
           write(3,*) 'ihypvis=',ihypvis
-          write(3,*) 'itest=',0
         endif
       endif
 !

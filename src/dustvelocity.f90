@@ -162,6 +162,10 @@ module Dustvelocity
       integer :: k
       real :: gsurften,Eyoung,nu_Poisson,Eyoungred
 !
+!  Copy boundary condition on first dust species to all others.
+!
+      call copy_bcs_dust
+!
 !  Output grain mass discretization type
 !
       if (lroot .and. ldustcoagulation) then
@@ -333,20 +337,7 @@ module Dustvelocity
 !
 !  27-feb-04/anders: Copied from initialize_dustvelocity
 !
-      if (lmdvar .and. lmice) then
-!
-!  Copy boundary conditions after dust conditions to end of array
-!
-        bcx(imi(ndustspec)+1:)  = bcx(iudz(1)+4:)
-        bcy(imi(ndustspec)+1:)  = bcy(iudz(1)+4:)
-        bcz(imi(ndustspec)+1:)  = bcz(iudz(1)+4:)
-        bcx1(imi(ndustspec)+1:)  = bcx1(iudz(1)+4:)
-        bcy1(imi(ndustspec)+1:)  = bcy1(iudz(1)+4:)
-        bcz1(imi(ndustspec)+1:)  = bcz1(iudz(1)+4:)
-        bcx2(imi(ndustspec)+1:)  = bcx2(iudz(1)+4:)
-        bcy2(imi(ndustspec)+1:)  = bcy2(iudz(1)+4:)
-        bcz2(imi(ndustspec)+1:)  = bcz2(iudz(1)+4:)
-      elseif (lmdvar) then
+      if (lmdvar) then
 !
 !  Copy boundary conditions after dust conditions to end of array
 !
@@ -384,11 +375,6 @@ module Dustvelocity
         bcx1(imd(1)) = bcx1(iudz(1)+2)
         bcx2(imd(1)) = bcx2(iudz(1)+2)
       endif
-      if (lmice) then
-        bcx(imi(1))  = bcx(iudz(1)+3)
-        bcx1(imi(1))  = bcx1(iudz(1)+3)
-        bcx2(imi(1))  = bcx2(iudz(1)+3)
-      endif
 
       bcy(ind(1))  = bcy(iudz(1)+1)
       bcy1(ind(1)) = bcy1(iudz(1)+1)
@@ -398,11 +384,6 @@ module Dustvelocity
         bcy1(imd(1)) = bcy1(iudz(1)+2)
         bcy2(imd(1)) = bcy2(iudz(1)+2)
       endif
-      if (lmice) then
-        bcy(imi(1))  = bcy(iudz(1)+3)
-        bcy1(imi(1)) = bcy1(iudz(1)+3)
-        bcy2(imi(1)) = bcy2(iudz(1)+3)
-      endif
 
       bcz(ind(1))  = bcz(iudz(1)+1)
       bcz1(ind(1)) = bcz1(iudz(1)+1)
@@ -411,11 +392,6 @@ module Dustvelocity
         bcz(imd(1))  = bcz(iudz(1)+2)
         bcz1(imd(1)) = bcz1(iudz(1)+2)
         bcz2(imd(1)) = bcz2(iudz(1)+2)
-      endif
-      if (lmice) then
-        bcz(imi(1))  = bcz(iudz(1)+3)
-        bcz1(imi(1)) = bcz1(iudz(1)+3)
-        bcz2(imi(1)) = bcz2(iudz(1)+3)
       endif
 !
 !  Copy boundary conditions on first dust species to all species
@@ -437,11 +413,6 @@ module Dustvelocity
         bcx1(imd) = bcx1(imd(1))
         bcx2(imd) = bcx2(imd(1))
       endif
-      if (lmice) then
-        bcx(imi)  = bcx(imi(1))
-        bcx1(imi) = bcx1(imi(1))
-        bcx2(imi) = bcx2(imi(1))
-      endif
 
       bcy(iudx)  = bcy(iudx(1))
       bcy1(iudx) = bcy1(iudx(1))
@@ -460,11 +431,6 @@ module Dustvelocity
         bcy1(imd) = bcy1(imd(1))
         bcy2(imd) = bcy2(imd(1))
       endif
-      if (lmice) then
-        bcy(imi)  = bcy(imi(1))
-        bcy1(imi) = bcy1(imi(1))
-        bcy2(imi) = bcy2(imi(1))
-      endif
 
       bcz(iudx)  = bcz(iudx(1))
       bcz1(iudx) = bcz1(iudx(1))
@@ -482,11 +448,6 @@ module Dustvelocity
         bcz(imd) = bcz(imd(1))
         bcz1(imd) = bcz1(imd(1))
         bcz2(imd) = bcz2(imd(1))
-      endif
-      if (lmice) then
-        bcz(imi) = bcz(imi(1))
-        bcz1(imi) = bcz1(imi(1))
-        bcz2(imi) = bcz2(imi(1))
       endif
 !
       if (ndustspec>1 .and. lroot) then

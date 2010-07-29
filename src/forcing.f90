@@ -3307,13 +3307,7 @@ module Forcing
 !  write column where which forcing variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rufm=',idiag_rufm
-        write(3,*) 'i_ufm=',idiag_ufm
-        write(3,*) 'i_ofm=',idiag_ofm
-        write(3,*) 'i_ffm=',idiag_ffm
-        write(3,*) 'i_fxbxm=',idiag_fxbxm
-        write(3,*) 'i_fxbym=',idiag_fxbym
-        write(3,*) 'i_fxbzm=',idiag_fxbzm
+!
       endif
 !
     endsubroutine rprint_forcing

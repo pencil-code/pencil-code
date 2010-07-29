@@ -205,8 +205,6 @@ module Chiral
 !  write column where which chiral variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_XX_chiralmax=',idiag_XX_chiralmax
-        write(3,*) 'i_YY_chiralmax=',idiag_YY_chiralmax
         write(3,*) 'iXX_chiral=0'
         write(3,*) 'iYY_chiral=0'
       endif

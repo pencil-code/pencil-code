@@ -334,11 +334,6 @@ module Lorenz_gauge
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_phim=',idiag_phim
-        write(3,*) 'i_phibzm=',idiag_phibzm
-        write(3,*) 'i_phibzmz=',idiag_phibzmz
-        write(3,*) 'i_phipt=',idiag_phipt
-        write(3,*) 'i_phip2=',idiag_phip2
         write(3,*) 'iphi=',iphi
       endif
 !

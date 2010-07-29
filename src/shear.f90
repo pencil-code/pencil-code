@@ -454,8 +454,7 @@ module Shear
 !  Write column where which shear variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_dtshear=',idiag_dtshear
-        write(3,*) 'i_deltay=',idiag_deltay
+!
       endif
 !
     endsubroutine rprint_shear

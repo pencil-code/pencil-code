@@ -490,17 +490,6 @@ module Pscalar
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_rhoccm=',idiag_rhoccm
-        write(3,*) 'i_ccmax=',idiag_ccmax
-        write(3,*) 'i_ccmin=',idiag_ccmin
-        write(3,*) 'i_lnccm=',idiag_lnccm
-        write(3,*) 'i_ucm=',idiag_ucm
-        write(3,*) 'i_uudcm=',idiag_uudcm
-        write(3,*) 'i_lnccmz=',idiag_lnccmz
-        write(3,*) 'i_Cz2m=',idiag_Cz2m
-        write(3,*) 'i_Cz4m=',idiag_Cz4m
-        write(3,*) 'i_Crmsm=',idiag_Crmsm
-        write(3,*) 'i_ccglnrm=',idiag_ccglnrm
         write(3,*) 'ilncc=',ilncc
         write(3,*) 'icc=0'
       endif

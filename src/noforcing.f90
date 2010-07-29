@@ -215,12 +215,6 @@ module Forcing
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
       enddo
 !
-!  write column where which forcing variable is stored
-!
-      if (lwr) then
-        write(3,*) 'i_rufm=',idiag_rufm
-      endif
-!
     endsubroutine rprint_forcing
 !***********************************************************************
     subroutine forcing_clean_up

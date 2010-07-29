@@ -4375,64 +4375,10 @@ module Entropy
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_ethtot=',idiag_ethtot
-        write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_ss2m=',idiag_ss2m
-        write(3,*) 'i_eem=',idiag_eem
-        write(3,*) 'i_ppm=',idiag_ppm
-        write(3,*) 'i_pdivum=',idiag_pdivum
-        write(3,*) 'i_heatm=',idiag_heatm
-        write(3,*) 'i_csm=',idiag_csm
-        write(3,*) 'i_fconvm=',idiag_fconvm
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
-        write(3,*) 'i_fradbot=',idiag_fradbot
-        write(3,*) 'i_fradtop=',idiag_fradtop
-        write(3,*) 'i_TTtop=',idiag_TTtop
-        write(3,*) 'i_ssmphi=',idiag_ssmphi
-        write(3,*) 'i_cs2mphi=',idiag_cs2mphi
-        write(3,*) 'i_fturbz=',idiag_fturbz
-        write(3,*) 'i_fturbxy=',idiag_fturbxy
-        write(3,*) 'i_fturbrxy=',idiag_fturbrxy
-        write(3,*) 'i_fturbthxy=',idiag_fturbthxy
-        write(3,*) 'i_fconvz=',idiag_fconvz
-        write(3,*) 'i_fconvz=',idiag_fconvxy
-        write(3,*) 'i_dcoolz=',idiag_dcoolz
-        write(3,*) 'i_fradz=',idiag_fradz
-        write(3,*) 'i_fradz_Kprof=',idiag_fradz_Kprof
-        write(3,*) 'i_fradxy_Kprof=',idiag_fradxy_Kprof
-        write(3,*) 'i_ssmz=',idiag_ssmz
-        write(3,*) 'i_TTmz=',idiag_TTmz
-        write(3,*) 'i_uxTTmz=',idiag_uxTTmz
-        write(3,*) 'i_uyTTmz=',idiag_uyTTmz
-        write(3,*) 'i_uzTTmz=',idiag_uzTTmz
-        write(3,*) 'i_ssmr=',idiag_ssmr
-        write(3,*) 'i_TTmr=',idiag_TTmr
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
-        write(3,*) 'i_yHmax=',idiag_yHmax
-        write(3,*) 'i_yHm=',idiag_yHm
-        write(3,*) 'i_TTmax=',idiag_TTmax
-        write(3,*) 'i_TTmin=',idiag_TTmin
-        write(3,*) 'i_ssmax=',idiag_ssmax
-        write(3,*) 'i_ssmin=',idiag_ssmin
-        write(3,*) 'i_gTrms=',idiag_gTrms
-        write(3,*) 'i_gsrms=',idiag_gsrms
-        write(3,*) 'i_gTxgsrms=',idiag_gTxgsrms
-        write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_TTp=',idiag_TTp
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
-        write(3,*) 'i_TTmxy=',idiag_TTmxy
-        write(3,*) 'i_TTmxz=',idiag_TTmxz
-        write(3,*) 'i_uxTTmxy=',idiag_uxTTmxy
-        write(3,*) 'i_uyTTmxy=',idiag_uyTTmxy
-        write(3,*) 'i_uzTTmxy=',idiag_uzTTmxy
-        write(3,*) 'i_ssmxy=',idiag_ssmxy
-        write(3,*) 'i_ssmxz=',idiag_ssmxz
       endif
 !
     endsubroutine rprint_entropy

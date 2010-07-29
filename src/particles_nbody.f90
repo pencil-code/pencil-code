@@ -2503,8 +2503,7 @@ module Particles_nbody
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_totenergy=',idiag_totenergy
-        write(3,*) 'i_totangmom=',idiag_totangmom
+!
       endif
 !
     endsubroutine rprint_particles_nbody

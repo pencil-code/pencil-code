@@ -182,10 +182,6 @@ module Pscalar
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_rhoccm=0'
-        write(3,*) 'i_ccmax=0'
-        write(3,*) 'i_lnccm=0'
-        write(3,*) 'i_lnccmz=0'
         write(3,*) 'ilncc=0'
         write(3,*) 'icc=0'
       endif

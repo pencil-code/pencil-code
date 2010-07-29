@@ -375,10 +375,6 @@ module Entropy
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
-        write(3,*) 'i_TTp=',idiag_thermalpressure
-        write(3,*) 'i_ethm=',idiag_ethm
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'iyH=0'

@@ -171,11 +171,9 @@ module Solid_Cells
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_c_dragx=',idiag_c_dragx
-        write(3,*) 'i_c_dragy=',idiag_c_dragy
+!
       endif
 !
     endsubroutine rprint_solid_cells

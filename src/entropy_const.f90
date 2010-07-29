@@ -261,16 +261,8 @@ module Entropy
 !  write column where which entropy variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_ethtot=',idiag_ethtot
-        write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
-        write(3,*) 'i_ssmphi=',idiag_ssmphi
       endif
 !
     endsubroutine rprint_entropy

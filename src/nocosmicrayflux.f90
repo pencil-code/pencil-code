@@ -125,22 +125,11 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine rprint_cosmicrayflux(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-!
-      endif
-!
-      if (lwr) then
-!        write(3,*) 'i_lnccmz=',idiag_lnccmz
-      endif
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_cosmicrayflux
 !***********************************************************************

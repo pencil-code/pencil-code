@@ -942,12 +942,6 @@ module Interstellar
 !  write column where which interstellar variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_taucmin=',idiag_taucmin
-        write(3,*) 'i_Hmax=',idiag_Hmax
-        write(3,*) 'i_Lamm=',idiag_Lamm
-        write(3,*) 'i_nrhom=',idiag_nrhom
-        write(3,*) 'i_rhoLm=',idiag_rhoLm
-        write(3,*) 'i_Gamm=',idiag_Gamm
         write(3,*) 'icooling=',icooling
         write(3,*) 'icooling2=',icooling2
       endif
