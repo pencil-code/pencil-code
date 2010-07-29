@@ -1427,25 +1427,25 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 # 
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
-start.o: $(start) Makefile.local
+start.o: $(start) start.f90 Makefile.local
 start.x: start.o
 	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 # 
-run.o: $(run) Makefile.local
+run.o: $(run) run.f90 Makefile.local
 run.x: run.o
 	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-combine_videofiles.o: cparam.o cdata.o general.o
+combine_videofiles.o: combine_videofiles.f90 cparam.o cdata.o general.o
 combine_videofiles.x: combine_videofiles.o cparam.o cdata.o general.o
 	$(LD) $(LDFLAGS) combine_videofiles.o cparam.o cdata.o general.o $(LD_MPI) -o combine_videofiles.x
 # 
-read_videofiles.o: cparam.o cdata.o general.o
+read_videofiles.o: read_videofiles.f90 cparam.o cdata.o general.o
 read_videofiles.x: read_videofiles.o cparam.o cdata.o general.o
 	$(LD) $(LDFLAGS) read_videofiles.o cparam.o cdata.o general.o $(LD_MPI) -o read_videofiles.x
 # 
-read_vectorfiles.o: cparam.o cdata.o general.o
+read_vectorfiles.o: read_vectorfiles.f90 cparam.o cdata.o general.o
 read_vectorfiles.x: read_vectorfiles.o cparam.o cdata.o general.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o $(LD_MPI) -o read_vectorfiles.x
 #

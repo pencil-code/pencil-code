@@ -1415,7 +1415,7 @@ physics=$(CHEMISTRY).o $(CHIRAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(DENSITY).
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(PARTICLES_MAIN).a $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o
+technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
