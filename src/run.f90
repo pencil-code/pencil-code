@@ -119,6 +119,10 @@ program run
 !
   call read_runpars()
 !
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm()
+!
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in rparam or
 !  read_runpars]

@@ -185,8 +185,7 @@ module Register
 !
       use Cdata
       use Param_IO
-      use Mpicomm,          only: initialize_mpicomm, &
-                                  mpireduce_sum,mpibcast_real,&
+      use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
                                   mpisend_real,mpirecv_real
       use Sub,              only: remove_zprof
       use BorderProfiles,   only: initialize_border_profiles
@@ -356,7 +355,6 @@ module Register
 !
 !  Run rest of initialization of individual modules.
 !
-      call initialize_mpicomm()
       call initialize_deriv()
       call initialize_prints()
       call initialize_timeavg(f)

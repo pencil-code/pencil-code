@@ -143,6 +143,10 @@ program start
 !
   call read_startpars(FILE=.true.)
 !
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm()
+!
 !  Register variables in the f array.
 !
   call register_modules()
