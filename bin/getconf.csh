@@ -67,7 +67,7 @@ if (! -e "NEVERLOCK") touch LOCK
 
 # Are we running the MPI version?
 #set mpi = `egrep -c '^[        ]*MPICOMM[      ]*=[    ]*mpicomm' src/Makefile`
-set mpi = `fgrep -c 'mpicomm_init: MPICOMM neighbors' src/start.x`
+set mpi = `fgrep -c 'initialize_mpicomm: MPICOMM neighbors' src/start.x`
 # Determine number of CPUS
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 echo "$ncpus CPUs"
