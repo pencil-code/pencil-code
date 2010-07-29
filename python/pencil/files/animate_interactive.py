@@ -169,14 +169,14 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
     # create the time slider
     if interactive == True:
-        fig.subplots_adjust(bottom=0.5)
+        fig.subplots_adjust(bottom=0.2)
         #fig.axes.append(plt.axes([0.2, 0.1, 0.6, 0.03], axisbg='lightgoldenrodyellow'))
-        #sliderTimeAxes = plt.axes([0.2, 0.1, 0.6, 0.03], axisbg='lightgoldenrodyellow')
-        sliderTimeAxes = fig.add_axes([0.2, 0.1, 0.6, 0.03], axisbg='lightgoldenrodyellow')
+        sliderTimeAxes = plt.axes([0.2, 0.1, 0.6, 0.03], axisbg='lightgoldenrodyellow')
+        #sliderTimeAxes = fig.add_axes([0.2, 0.1, 0.6, 0.03], axisbg='lightgoldenrodyellow')
         #sliderTimeAxes = fig.gca()
         #sliderTimeAxes = fig.axes[-1]
         sliderTime = plt.Slider(sliderTimeAxes, 'time', t[0], t[-1], valinit = 0.0)
-        sliderTimeAxes.set_figure(fig)
+        #sliderTimeAxes.set_figure(fig)
         def update(val):
             global tStep
             # find the closest time step to the slider time value
