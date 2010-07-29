@@ -410,7 +410,6 @@ module Register
       use Cdata, only: unit_system,G_Newton,c_light,hbar,lroot, &
         unit_length,unit_velocity,unit_density,unit_magnetic
       use Cparam, only: G_Newton_cgs,c_light_cgs,hbar_cgs,impossible
-      use Mpicomm, only: stop_it
 !
 !  Unless G_Newton,c_light,hbar are all set,
 !  unit_velocity,unit_density,unit_length will be calculated
