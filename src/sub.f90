@@ -3993,7 +3993,6 @@ module Sub
       intent(in) :: bc
       intent(out) :: bc1,bc2
 !
-print*,'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE',mcom
       do j=1,mcom
         if (bc(j) == '') then ! will probably never happen due to default='p'
           if (lroot) print*, 'Empty boundary condition No. ', &
