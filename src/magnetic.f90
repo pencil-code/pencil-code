@@ -6930,4 +6930,3 @@ module Magnetic
     endsubroutine rprint_magnetic
 !***********************************************************************
 endmodule Magnetic
-
