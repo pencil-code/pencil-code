@@ -5,6 +5,13 @@
 !  routine is used instead which absorbs all the calls to the
 !  shear relevant subroutines listed in here.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lshear = .false.
+!
+!***************************************************************
 module Shear
 !
   use Cdata
@@ -19,13 +26,9 @@ module Shear
 !***********************************************************************
     subroutine register_shear()
 !
-!  Initialise variables
+!  Initialise variables.
 !
 !  2-july-02/nils: coded
-!
-      lshear = .false.
-!
-!  identify version number
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -179,7 +182,7 @@ module Shear
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
-!  dummy routine
+!  Dummy routine.
 !
 !  02-jul-04/tobi: coded
 !

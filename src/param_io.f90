@@ -990,17 +990,17 @@ module Param_IO
       logical :: linterstellar  = linterstellar_var
       logical :: lcosmicray     = lcosmicray_var
       logical :: lcosmicrayflux = lcosmicrayflux_var
+      logical :: lshear         = lshear_var
       integer :: unit=1
 !
       namelist /lphysics/ &
-          lhydro,ldensity,lentropy,lmagnetic, llorenz_gauge, &
-          ltestscalar,ltestfield,ltestflow, &
-          lpscalar,lradiation,ldustvelocity,ldustdensity, &
-          lforcing,lgravz,lgravr,lshear,ltestperturb,linterstellar,lcosmicray, &
-          lcosmicrayflux, &
-          lshock,lradiation_fld, &
-          leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-          leos,leos_temperature_ionization,lneutralvelocity,lneutraldensity
+          lhydro, ldensity, lentropy, lmagnetic, lshear, llorenz_gauge,  &
+          ltestscalar, ltestfield, ltestflow, lpscalar, lradiation, &
+          ldustvelocity, ldustdensity, lforcing, lgravz, lgravr, &
+          ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, &
+          lshock, lradiation_fld, leos_ionization, leos_fixed_ionization, &
+          lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
+          lneutralvelocity, lneutraldensity
 !
 !  Write the param.nml file only from root processor.
 !  However, for pacx-MPI (grid-style computations across different platforms)

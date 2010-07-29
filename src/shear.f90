@@ -7,6 +7,13 @@
 !  Shear can either be given relative to Omega (using qshear),
 !  or in absolute fashion via the parameters Sshear.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lshear = .true.
+!
+!***************************************************************
 module Shear
 !
   use Cdata
@@ -39,10 +46,6 @@ module Shear
 !  Initialise variables.
 !
 !  2-july-02/nils: coded
-!
-      lshear=.true.
-!
-!  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
