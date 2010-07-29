@@ -92,7 +92,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-           "$Id$")
+	   "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -164,6 +164,20 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_aa
+!***********************************************************************
+    subroutine initial_condition_gg(f)
+!
+!  Initialize gravity.
+!
+!  07-may-09/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  SAMPLE IMPLEMENTATION
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initial_condition_gg
 !***********************************************************************
     subroutine initial_condition_aatest(f)
 !
@@ -357,7 +371,7 @@ module InitialCondition
       integer, intent(inout), optional :: iostat
 !
       call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(present(iostat))
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************

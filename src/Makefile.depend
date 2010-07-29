@@ -317,7 +317,7 @@ $(DERIV).o: deriv.f90 $(CDATA_OBJ) $(MESSAGES_OBJ)
 #
 $(FARRAY_OBJ): farray.f90 $(CDATA_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ)
 #
-$(SHARED_VARIABLES_OBJ): shared_variables.f90 $(MESSAGES_OBJ) 
+$(SHARED_VARIABLES_OBJ): shared_variables.f90 $(MESSAGES_OBJ)
 #
 $(BORDER_PROFILES_OBJ): $(CDATA_OBJ) $(BORDER_PROFILES_SRC) $(SUB_OBJ)
 #
@@ -339,7 +339,7 @@ $(BOUNDCOND_OBJ): $(BOUNDCOND_SRC) cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIE
 #
 $(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) sub.o
 #
-$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) farray.o general.o 
+$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) farray.o general.o
 #
 $(TIMESTEP_OBJ): $(TIMESTEP).f90 $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROFILES_OBJ)
 #
@@ -357,11 +357,11 @@ filter.o: filter.f90 $(CDATA_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ)
 #
 $(MPICOMM_OBJ): mpicomm.h $(SYSCALLS).o $(MPICOMM_SRC) $(CDATA_OBJ)
 #
-$(VISCOSITY_OBJ): viscosity.h $(VISCOSITY_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(INTERSTELLAR_OBJ) 
+$(VISCOSITY_OBJ): viscosity.h $(VISCOSITY_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(INTERSTELLAR_OBJ)
 #
 $(SHEAR_OBJ): shear.h $(SHEAR_SRC) cdata.o $(DERIV).o messages.o $(FOURIER_OBJ) $(MPICOMM_FIX_OBJ) sub.o
 #
-$(GRAVITY_OBJ): gravity.h $(GRAVITY_SRC) $(COMMON_DEPS) $(SHARED_VARIABLES_OBJ)
+$(GRAVITY_OBJ): gravity.h $(GRAVITY_SRC) $(COMMON_DEPS) $(SHARED_VARIABLES_OBJ) $(INITIAL_CONDITION_OBJ)
 #
 $(SELFGRAVITY_OBJ): selfgravity.h $(SELFGRAVITY_SRC) $(CDATA_OBJ) $(SUB_OBJ) $(POISSON_OBJ) $(PARTICLES_MAIN_OBJ) $(SHARED_VARIABLES_OBJ)
 #
