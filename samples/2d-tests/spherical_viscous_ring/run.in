@@ -28,3 +28,5 @@
   ivisc='nu-const'
   nu=0.00015
 /
+&special_run_pars
+/
