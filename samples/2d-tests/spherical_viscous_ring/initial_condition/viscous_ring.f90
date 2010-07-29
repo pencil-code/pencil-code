@@ -132,65 +132,6 @@ module InitialCondition
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
-    subroutine initial_condition_gg(f)
-!
-!  By some weird reason, I cannot use Sub's grad_other, or 
-!  EquationOfState's cs20 in this subroutine...
-!
-      use Messages,      only: fatal_error
-      use FArrayManager, only: farray_use_global
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: rr_sph,rr_cyl,z_mn
-      real, dimension (nx,3) :: grav
-!
-      integer, pointer :: iglobal_gg
-      integer :: ipotential
-!
-!  Use the slot of density for the potential. Reset 
-!  the density after using it. 
-!
-      call farray_use_global('global_gg',iglobal_gg)
-      ipotential=ilnrho
-!
-      do n=1,mz
-        do m=1,my
-
-          call get_radial_distance(rr_sph,rr_cyl)
-          if (lspherical_coords) then 
-            z_mn=rr_sph*costh(m)
-          elseif (lcylindrical_coords) then 
-            z_mn=z(n)
-          endif
-          f(:,m,n,ipotential) = -1.0/rr_cyl + cs20/sigmaz*(z_mn-1.0)**2
-        enddo
-      enddo
-!
-      f(:,:,:,iglobal_gg:iglobal_gg+2)   = 0.
-!
-      do n=n1,n2
-        do m=m1,m2
-          call grad(f,ipotential,grav)
-          f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)   = -grav
-        enddo
-      enddo
-!
-      if (associated(iglobal_gg)) then
-        print*,"Min global gg = ",&
-             minval(f(l1:l2,m1:m2,n1:n2,iglobal_gg))
-        print*,"Max global gg = ",&
-             maxval(f(l1:l2,m1:m2,n1:n2,iglobal_gg))
-        print*,"Sum global gg = ",&
-             sum(f(l1:l2,m1:m2,n1:n2,iglobal_gg))
-      endif
-!
-!  Reset the density
-!
-      call initial_condition_lnrho(f)
-      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
-!
-    endsubroutine initial_condition_gg
-!***********************************************************************
     subroutine read_initial_condition_pars(unit,iostat)
 !
 !  07-may-09/wlad: coded
