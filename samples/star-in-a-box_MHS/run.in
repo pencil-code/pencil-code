@@ -1,0 +1,42 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
+  ip=13,
+  nt=50, it1=20, isave=200, itorder=3,
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,
+  dsnap=2., d2davg=.5, ! time intervals for writing snapshots and phi-averages
+  dvid=1000., slice_position='m' ! time interval and position for slices
+  bcx = 'a','s','s','a2','sT','a','s','s',
+  bcy = 's','a','s','a2','sT','s','a','s',
+  bcz = 's','s','a','a2','sT','s','s','a',
+  tavg = 10.,                   ! time constant for time averaging
+!  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
+  random_gen='nr_f90'
+  lpencil_check=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  dampuext=5, rdampext=1.1, wdamp=0.1,
+  Omega=0.5, theta=0.           ! amount and direction of angular velocity
+/
+&density_run_pars
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-const'
+  chi=10e-4,
+  luminosity=.01, wheat=0.18,
+  cooltype='cs2-rho', cool=5., rcool=1.1, wcool=0.1,
+/
+&magnetic_run_pars
+  eta=6.e-4
+/
+&viscosity_run_pars
+  nu=10.e-4, ivisc='nu-const',
+/
