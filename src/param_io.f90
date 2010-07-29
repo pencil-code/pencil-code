@@ -1154,8 +1154,6 @@ module Param_IO
 !
       call parallel_close(unit)
 !
-      if (lroot.and.ip<14) print*, "rho0,gamma=", rho0, gamma
-!
     endsubroutine rparam
 !***********************************************************************
     subroutine wparam2 ()
