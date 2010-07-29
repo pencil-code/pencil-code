@@ -375,7 +375,7 @@ module Mpicomm
 ! This assumes that the domain is equally distributed among the
 ! processors in the z direction.
 !
-       poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocx*nprocy+ipy*nprocx+ipx
+      poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocx*nprocy+ipy*nprocx+ipx
 !
 !  Set the four corners in the yz-plane (in cyclic order).
 !
