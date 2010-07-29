@@ -131,6 +131,13 @@ varcontent[ilnrho].idlinit    = INIT_SCALAR
 varcontent[ilnrho].idlvarloc  = 'lnrho_loc'
 varcontent[ilnrho].idlinitloc = INIT_SCALAR_LOC
 ;
+default, irho, 0
+varcontent[irho].variable   = 'Density (rho)'
+varcontent[irho].idlvar     = 'rho'
+varcontent[irho].idlinit    = INIT_SCALAR
+varcontent[irho].idlvarloc  = 'rho_loc'
+varcontent[irho].idlinitloc = INIT_SCALAR_LOC
+;
 default, iss, 0
 varcontent[iss].variable   = 'Entropy (ss)'
 varcontent[iss].idlvar     = 'ss'
