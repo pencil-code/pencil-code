@@ -434,7 +434,7 @@ module Mpicomm
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx, ipy+nprocy*ipz, &
           MPI_COMM_YZPLANE, mpierr)
 !
-    endsubroutine mpicomm_init
+    endsubroutine initialize_mpicomm
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
