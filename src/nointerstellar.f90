@@ -77,7 +77,7 @@ module Interstellar
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset)
