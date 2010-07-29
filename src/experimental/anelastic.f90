@@ -146,7 +146,6 @@ module Density
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
@@ -192,6 +191,8 @@ module Density
 
         if (lanelastic_full) & 
            call farray_register_auxiliary('rho',irho,communicated=.true.)
+        if (lanelastic_lin) &
+           call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
@@ -2123,7 +2124,7 @@ module Density
 !
       dz_1=1./dz
       dz_2=1./dz**2
-      a_tri(1:nz)=dz_2-0.5*dz_1/Hp(l1,m1,n1:n2)
+      a_tri(1:nz)=dz_2-0.5*dz_1/Hp(l1,m1,n1-1:n2-1)
       c_tri(1:nz)=dz_2+0.5*dz_1/Hp(l1,m1,n1:n2)
       do iky=1,ny
         call transp_xz(phi(:,iky,:),rhst)
