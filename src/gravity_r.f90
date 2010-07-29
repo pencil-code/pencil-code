@@ -97,7 +97,6 @@ module Gravity
       use Sub, only: poly, step, get_radial_distance
       use Mpicomm
       use FArrayManager
-      use InitialCondition, only: initial_condition_gg
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gg_mn=0.0
@@ -311,8 +310,6 @@ module Gravity
 	call fatal_error('initialize_gravity','chosen gravz_profile not valid')
 !
       endselect
-!
-      if (linitial_condition) call initial_condition_gg(f)
 !
       call keep_compiler_quiet(lstarting)
 !

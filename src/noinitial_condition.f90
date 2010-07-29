@@ -165,20 +165,6 @@ module InitialCondition
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
-    subroutine initial_condition_gg(f)
-!
-!  Initialize gravity.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-!  SAMPLE IMPLEMENTATION
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_gg
-!***********************************************************************
     subroutine initial_condition_aatest(f)
 !
 !  Initialize testfield.
