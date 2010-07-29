@@ -1,26 +1,22 @@
-##                             -*-Makefile-*-
+###                             -*-Makefile-*-
 ### Makefile for modular pencil code -- local part
 ### Included by `Makefile'
 ###
-
-LIBSIG=-L$(HOME)/f90/lib
-LDMPI=-lmpi
 
 MPICOMM   = nompicomm
 IO        =   io_dist
 
 HYDRO     =   hydro
 DENSITY   =   density
-ENTROPY   =   entropy
+ENTROPY   = noentropy
 MAGNETIC  =   magnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 EOS       =   eos_idealgas
 
-GRAVITY   =   gravity_r
-FORCING   = noforcing
-SHEAR     = noshear
-TIMEAVG   =   timeavg
 
-POWER_SPECTRUM=power_spectrum
-INITIAL_CONDITION=non-force-free
+INITIAL_CONDITION = initial_condition/non_force_free_init
+SPECIAL           =           special/non_force_free_run
+
+POISSON = poisson
+FOURIER = fourier_fftpack

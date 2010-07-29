@@ -7,34 +7,21 @@
   ip = 14,                      ! debugging parameter
   xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
   Lxyz  =  3. , 3. , 3.,        ! box size
-  lperi =  F  , F  , F,         ! periodic direction?
-  random_gen = 'nr_f90'
-  lsphere_in_a_box = T
-  r_ext = 1.
+  lperi =  T  , T  , T,         ! periodic direction?
 /
 &eos_init_pars
-  cs0 = 1.5, rho0 = 1.,         ! values at r=0
 /
 &hydro_init_pars
- inituu = 'gaussian-noise-rprof',
-  ampluu = 3e-2
-/
-&hydro_run_pars
- lcentrifugal_force=F
- Omega [0.]
- theta [0.] 
 /
 &density_init_pars
-  initlnrho = 'polytropic',
 /
 &grav_init_pars
-  ipotential = 'M5-dwarf'
+/
+&poisson_init_pars
 /
 &entropy_init_pars
-  initss = 'polytropic'
-  mpoly0 [3.]
 /
 &magnetic_init_pars
-  initaa = 'gaussian-noise-rprof'
-  amplaa = 1.e-6
+/
+&initial_condition_init_pars
 /

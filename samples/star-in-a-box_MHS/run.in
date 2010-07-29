@@ -40,3 +40,6 @@
 &viscosity_run_pars
   nu=10.e-4, ivisc='nu-const',
 /
+&special_run_pars
+  term_that_vincent_needs=2.
+/
