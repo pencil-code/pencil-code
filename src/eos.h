@@ -3,7 +3,7 @@
   private
                                                                                                        
   public :: eoscalc,pressure_gradient,temperature_gradient,get_cp1
-  public :: temperature_laplacian,get_ptlaw
+  public :: temperature_laplacian
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
   public :: ipp_ss,ipp_cs2
   public :: eosperturb
@@ -34,7 +34,6 @@
   public :: bc_lnrho_temp_z,bc_lnrho_pressure_z
   public :: bc_stellar_surface
   public :: bc_lnrho_hds_z_iso,bc_lnrho_hdss_z_iso
-  public :: bc_lnrho_hds_z_liso,bc_lnrho_hdss_z_liso
   public :: bc_lnrho_cfb_r_iso
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
