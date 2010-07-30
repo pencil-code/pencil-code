@@ -715,12 +715,18 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0, hcond, thdiff=0.0, tmp
+      real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp
       real :: fradtop
       integer :: j
 !
       intent(inout) :: f,p
       intent(out) :: df
+!
+! Initialization of thdiff in the declaration the 
+! variable gets the SAVE attribute,
+! so in the next call thdiff is not initialized anymore.
+!
+      thdiff = 0.0
 !
 !  Identify module and boundary conditions.
 !
