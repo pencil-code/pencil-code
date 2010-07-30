@@ -4883,7 +4883,7 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray) :: f
 !
       real, dimension(nx) :: Aphi, rr
-      real, pointer :: plaw
+      !real, pointer :: plaw
       real :: B0,pblaw
       integer :: ierr
 !
@@ -4900,10 +4900,10 @@ module Magnetic
             "not implemented for cylindrical coordinates")
       elseif (lspherical_coords) then
         B0=Lxyz(2)/(2*zmode*pi)
-        call get_shared_variable('plaw',plaw,ierr)
-        if (ierr/=0) call stop_it("alfven_zconst: "//&
-            "there was a problem when getting plaw")
-        pblaw=1-qgshear-plaw/2.
+        !call get_shared_variable('plaw',plaw,ierr)
+        !if (ierr/=0) call stop_it("alfven_zconst: "//&
+        !    "there was a problem when getting plaw")
+        pblaw=1-qgshear!-plaw/2.
         do n=n1,n2; do m=m1,m2
           rr=x(l1:l2)
           Aphi=-B0/(pblaw+2)*rr**(pblaw+1)*1
