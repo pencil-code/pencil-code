@@ -703,7 +703,8 @@ module NeutralVelocity
             f_target(:,j) = uun_const(j)
          enddo
       case ('initial-condition')
-         f_target=f(l1:l2,mcount,ncount,iunx:iunz)
+        call fatal_error("set_border_neutralvelocity","please set mcount/ncount")
+        !f_target=f(l1:l2,mcount,ncount,iunx:iunz)
       case ('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_neutralvelocity: borderuu='nothing'"
