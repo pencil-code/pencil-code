@@ -683,14 +683,11 @@ module NeutralVelocity
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving
-      use EquationOfState, only: cs0,cs20
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
-      real, dimension(nx) :: OO,tmp
-      real :: g0=1.,ptlaw=1.
       integer :: ju,j
 !
 ! these tmps and where's are needed because these square roots
@@ -705,25 +702,8 @@ module NeutralVelocity
          do j=1,3
             f_target(:,j) = uun_const(j)
          enddo
-      case ('globaldisc')
-         tmp = max(p%rcyl_mn**(-3) - ptlaw*cs20/p%rcyl_mn**(ptlaw+2),0.)
-         OO = sqrt(tmp)
-         f_target(:,1) = -y(  m  )*OO
-         f_target(:,2) =  x(l1:l2)*OO
-         f_target(:,3) =  0.
-      case ('globaldisc-strat')
-         tmp = g0*(p%r_mn**(-3) - cs20*p%rcyl_mn**(-4))
-         !this is also wrong!
-         where (tmp>=0)
-            OO=sqrt(tmp)
-         elsewhere
-            OO=0.
-         endwhere
-         f_target(:,1) = -y(  m  )*OO
-         f_target(:,2) =  x(l1:l2)*OO
-         f_target(:,3) =  0.
-      !case ('initial-condition')
-      !   f_target=f(l1:l2,mcount,ncount,iunx:iunz)
+      case ('initial-condition')
+         f_target=f(l1:l2,mcount,ncount,iunx:iunz)
       case ('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_neutralvelocity: borderuu='nothing'"

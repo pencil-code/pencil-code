@@ -324,10 +324,6 @@ module NeutralDensity
             case ('gaussian-noise')
                if (lnrhon_left /= 0.) f(:,:,:,ilnrhon)=lnrhon_left
                call gaunoise(ampllnrhon,f,ilnrhon,ilnrhon)
-               !case ('globaldisc')
-               !minimum mass solar nebula
-               !  if (lroot)  print*,'init_lnrhon: initialize initial condition for Keplerian global disc'
-               !  call power_law(f,iglobal_gg,plaw,ptlaw,lstratified)
             case default
                !
                !  Catch unknown values
