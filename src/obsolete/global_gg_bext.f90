@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext.f90 9840 2008-09-05 07:29:37Z ajohan $
+ ! $Id$
 
 module Global
 

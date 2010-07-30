@@ -1,4 +1,4 @@
-! $Id: nohydro.f90 12197 2009-11-22 14:25:06Z ajohan@strw.leidenuniv.nl $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call svn_id( &
-           "$Id: nohydro.f90 12197 2009-11-22 14:25:06Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
 !  pressure gradient or not.
