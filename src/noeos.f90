@@ -51,7 +51,7 @@ module EquationOfState
   real :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma_inv=3.0/5.0
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1.0, cs2top=1.0
-  real :: cs2cool=0.0, ptlaw=impossible
+  real :: cs2cool=0.0
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=1
   logical :: lcalc_cp=.false.
@@ -267,18 +267,6 @@ module EquationOfState
       cp1_=0.0
 !
     endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-!  04-jul-07/wlad: dummy
-!
-      real, intent(out) :: ptlaw_
-!
-      call fatal_error('get_ptlaw','ptlaw is not defined with noeos.f90')
-!
-      ptlaw_=0.0
-!
-    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !
