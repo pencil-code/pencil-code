@@ -423,13 +423,10 @@ module Special
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
 !
