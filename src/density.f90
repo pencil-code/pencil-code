@@ -2025,7 +2025,7 @@ module Density
       use Sub,         only:get_radial_distance,grad,power_law
       use Selfgravity, only:calc_selfpotential
       use Boundcond,   only:update_ghosts
-      use Particles_nbody, only:get_totalmass
+!      use Particles_nbody, only:get_totalmass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
@@ -2129,7 +2129,7 @@ module Density
               if (lgrav) then
                 call acceleration(tmp1)
               elseif (lparticles_nbody) then
-                call get_totalmass(g0) ; tmp1=-g0/rr_sph**2
+!                call get_totalmass(g0) ; tmp1=-g0/rr_sph**2
               else
                 print*,"both gravity and particles_nbody are switched off"
                 print*,"there is no gravity to determine the stratification"
@@ -2151,7 +2151,7 @@ module Density
                 call potential(POT=tmp1,RMN=rr_sph)
                 call potential(POT=tmp2,RMN=rr_cyl)
               elseif (lparticles_nbody) then
-                call get_totalmass(g0)
+!                call get_totalmass(g0)
                 tmp1=-g0/rr_sph ; tmp2=-g0/rr_cyl
               else
                 print*,"both gravity and particles_nbody are switched off"

@@ -2533,7 +2533,7 @@ module Hydro
 !  08-sep-07/wlad: moved here from initcond
 !
       use Gravity, only: r0_pot,n_pot,acceleration,qgshear
-      use Particles_nbody, only: get_totalmass
+!      use Particles_nbody, only: get_totalmass
       use Sub,     only: get_radial_distance,power_law
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2596,7 +2596,7 @@ module Hydro
 !
 ! Nbody gravity with a dominating but dynamical central body
 !
-            call get_totalmass(g0_)
+!            call get_totalmass(g0_)
             call power_law(sqrt(g0_),rr_sph,qgshear,tmp)
 !
             if (lcartesian_coords.or.&
