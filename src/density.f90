@@ -52,8 +52,6 @@ module Density
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
   real :: wdamp=0.0, density_floor=-1.0
   real :: mass_source_Mdot=0.0, mass_source_sigma=0.0
-  real :: radial_percent_smooth=10.0, rshift=0.0
-  real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
@@ -68,9 +66,9 @@ module Density
   logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
   logical :: ldiff_hyper3_mesh=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
-  logical :: lfreeze_lnrhosqu=.false.,lexponential_smooth=.false.
+  logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
-  logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
+  logical :: lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
@@ -87,13 +85,12 @@ module Density
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
       rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, yblob, &
       zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
-      strati_type, beta_glnrho_global, radial_percent_smooth, kx_lnrho, &
-      ky_lnrho, kz_lnrho, amplrho, phase_lnrho, coeflnrho, kxx_lnrho, &
-      kyy_lnrho,  kzz_lnrho, co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, &
-      lexponential_smooth, wdamp, plaw, lcontinuity_gas, density_floor, &
-      lanti_shockdiffusion, rshift, lrho_as_aux, ldiffusion_nolog, &
-      lnrho_z_shift, lshare_plaw, powerlr,zoverh,hoverr,&
-      lffree,ffree_profile,rzero_ffree,wffree,rho_top,rho_bottom
+      strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
+      amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
+      co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
+      density_floor, lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
+      lnrho_z_shift, powerlr, zoverh, hoverr, lffree, ffree_profile, &
+      rzero_ffree,wffree,rho_top,rho_bottom
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -101,7 +98,7 @@ module Density
       lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
       mass_source_Mdot,  mass_source_sigma, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
-      lnrho_const, plaw, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
+      lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons,&
@@ -304,15 +301,6 @@ module Density
       if (lnumerical_equilibrium) then
          if (lroot) print*,'initializing global gravity in density'
          call farray_register_global('gg',iglobal_gg,vector=3)
-      endif
-!
-!  For backward compatibility, set lshare_plaw=T if llocal_iso is used.
-!
-      if (llocal_iso) lshare_plaw=.true.
-      if (lshare_plaw) then
-        call put_shared_variable('plaw',plaw,ierr)
-        if (ierr/=0) call stop_it("local_isothermal_density: "//&
-             "there was a problem when sharing plaw")
       endif
 !
 !  Possible to read initial stratification from file.
@@ -1905,8 +1893,6 @@ module Density
       select case (borderlnrho)
 !
       case ('zero','0')
-        if (plaw/=0) call stop_it("borderlnrho: density is not flat but "//&
-             "you are calling zero border")
         if (ldensity_nolog) then
           f_target=0.
         else
@@ -1914,8 +1900,6 @@ module Density
         endif
 !
       case ('constant')
-        if (plaw/=0) call stop_it("borderlnrho: density is not flat but "//&
-             "you are calling constant border")
         if (ldensity_nolog) then
           f_target=rho_const
         else
