@@ -798,7 +798,7 @@ module Deriv
           else if (upwnd) then
             fac=(1.0/60)*dx_1(l1:l2)
           else
-            fac=1/dx**6
+            fac=dx_1(l1:l2)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m,n,k) &
                   + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
@@ -814,7 +814,7 @@ module Deriv
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
-            fac=1/dy**6
+            fac=dy_1(m)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
@@ -830,7 +830,7 @@ module Deriv
           else if (upwnd) then
             fac=(1.0/60)*dz_1(n)
           else
-            fac=1/dz**6
+            fac=dz_1(n)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
