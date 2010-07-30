@@ -1,6 +1,5 @@
 ! $Id$
 !
-!  This module adds evolution terms to the dynamical equations, calling
 !  subroutines in the chosen set of physics modules.  
 !
 module Equ
@@ -302,6 +301,8 @@ module Equ
       if (ldensity)               call calc_ldensity_pars(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
+!AB: could be renamed to special_after_boundary etc
+      !if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
 !

@@ -119,15 +119,15 @@ module Register
       call register_initial_condition
       call register_eos
       call register_shock
-      call register_viscosity
+      call register_viscosity             !(should go under hydro)
       call register_hydro
       call register_gravity
-      call register_selfgravity
+      call register_selfgravity           !(why not connected with gravity)
       call register_density
       call register_forcing
       call register_entropy
       call register_magnetic
-      call register_lorenz_gauge
+      call register_lorenz_gauge          !(should go under magnetic)
       call register_polymer
       call register_testscalar
       call register_testfield

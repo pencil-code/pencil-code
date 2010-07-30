@@ -20,7 +20,7 @@
 ! PENCILS PROVIDED uxj(3); beta; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
-! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
+! PENCILS PROVIDED jij(3,3); sj; ss12
 ! PENCILS PROVIDED etava, etaj, etaj2, etajrho
 ! PENCILS PROVIDED cosjb,jparallel;jperp
 ! PENCILS PROVIDED cosub
@@ -30,6 +30,7 @@ module Magnetic
 !
   use Cdata
   use Cparam
+  use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use Sub, only: keep_compiler_quiet
 !
@@ -66,10 +67,6 @@ module Magnetic
   real, dimension (mz,3) :: aamz
   real, dimension (nz,3) :: bbmz,jjmz
 !
-!  array for inputting alpha profile
-!
-  real, dimension (mx,my) :: alpha_input
-!
 ! Parameters
 !
   integer, parameter :: nresi_max=4
@@ -79,10 +76,6 @@ module Magnetic
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
-  character (len=labellen) :: meanfield_etat_profile='const'
-  character (len=labellen) :: meanfield_Beq_profile='const'
-  character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
 !
 ! Input parameters
 !
@@ -104,19 +97,8 @@ module Magnetic
   real :: mu012=0.5 !(=1/2mu0)
   real :: rescale_aa=0.0
   real :: ampl_B0=0.0, D_smag=0.17, B_ext21, B_ext11
-  real :: Omega_ampl=0.0
   real :: rmode=1.0, rm_int=0.0, rm_ext=0.0
   real :: nu_ni=0.0, nu_ni1,hall_term=0.0
-  real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
-  real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
-  real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
-  real :: alpha_eps=0.0
-  real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
-  real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
-  real :: meanfield_Qs=1.0, meanfield_Qp=1.0, meanfield_qe=1.0
-  real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
-  real :: meanfield_kf=1.0, meanfield_etaB=0.0
-  real :: displacement_gun=0.0
   real :: initpower_aa=0.0, cutoff_aa=0.0, brms_target=1.0
   real :: rescaling_fraction=1.0
   real :: phase_beltrami=0.0, ampl_beltrami=0.0
@@ -159,9 +141,7 @@ module Magnetic
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lmeanfield_theory=.false., lOmega_effect=.false.
-  logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
-  logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
+  logical :: lmeanfield_theory=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false.
@@ -184,15 +164,13 @@ module Magnetic
 ! Run parameters
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
-  real :: meanfield_molecular_eta=0.0,eta_spitzer=0.
+  real :: eta_spitzer=0.
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0
   real :: z_surface=0.0
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: alphaSSm=0.0
-  real :: alpha_rmax=0.0, alpha_width=0.0
-  real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
@@ -201,8 +179,8 @@ module Magnetic
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
-  real, dimension(mz) :: coskz,sinkz,eta_z,etat_z
-  real, dimension(mz,3) :: geta_z,getat_z
+  real, dimension(mz) :: coskz,sinkz,eta_z
+  real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false.
@@ -213,11 +191,7 @@ module Magnetic
   logical :: lkinematic=.false.
   logical :: luse_Bext_in_b2=.false.
   logical :: lmean_friction=.false.
-  logical :: llarge_scale_velocity=.false.
-  logical :: lEMF_profile=.false.
   logical :: lhalox=.false.
-  logical :: lalpha_profile_total=.false.
-  logical :: ldelta_profile=.false.
   logical :: lrun_initaa=.false.
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: eta_xy_profile='schnack89'
@@ -225,17 +199,7 @@ module Magnetic
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, omega_Bz_ext, nu_ni, &
-      hall_term, lmeanfield_theory, alpha_effect, alpha_quenching, &
-      alpha_eps, lmeanfield_noalpm, alpha_profile, &
-      ldelta_profile, delta_effect, delta_profile, &
-      meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
-      meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
-      lmeanfield_pumping, meanfield_pumping, &
-      lohmic_heat, lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      meanfield_Qs, meanfield_Qp, meanfield_qe, meanfield_Beq, &
-      meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
-      meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
-      alpha_cutoff_up, alpha_cutoff_down, height_eta, eta_out, &
+      hall_term, lmeanfield_theory, &
       z_surface, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
       lcalc_aamean, &
@@ -244,20 +208,20 @@ module Magnetic
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
       lweyl_gauge, ladvective_gauge, lupw_aa, &
-      alphaSSm, alpha_rmax, alpha_width, eta_int, &
+      alphaSSm, &
       eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
       wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
-      lB_ext_pot, displacement_gun, D_smag, brms_target, &
-      rescaling_fraction, lOmega_effect, Omega_profile, Omega_ampl, &
+      lB_ext_pot, D_smag, brms_target, &
+      rescaling_fraction, &
       lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
       eta_z0, eta_z1,eta_spitzer, &
       borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
-      luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
-      lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump,&
-      Omega_rmax,Omega_rwidth,lrun_initaa
+      luse_Bext_in_b2, ampl_fcont_aa, &
+      lhalox, vcrit_anom, eta_jump,&
+      lrun_initaa
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -343,9 +307,6 @@ module Magnetic
   integer :: idiag_azm=0        ! DIAG_DOC:
   integer :: idiag_arms=0       ! DIAG_DOC:
   integer :: idiag_amax=0       ! DIAG_DOC:
-  integer :: idiag_Qsm=0        ! DIAG_DOC: $\left<Q_p(\overline{B})\right>$
-  integer :: idiag_Qpm=0        ! DIAG_DOC: $\left<Q_p(\overline{B})\right>$
-  integer :: idiag_qem=0        ! DIAG_DOC: $\left<q_e(\overline{B})\right>$
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
@@ -457,9 +418,6 @@ module Magnetic
   integer :: idiag_examz1=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
   integer :: idiag_examz2=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_y$
   integer :: idiag_examz3=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_z$
-  integer :: idiag_EMFmz1=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_x$
-  integer :: idiag_EMFmz2=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_y$
-  integer :: idiag_EMFmz3=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_z$
   integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{xy}$
   integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{xy}$
   integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{xy}$
@@ -494,8 +452,6 @@ module Magnetic
   integer :: idiag_b3b21m=0     ! DIAG_DOC: $\left<B_3 B_{2,1} \right>$
   integer :: idiag_b1b32m=0     ! DIAG_DOC: $\left<B_1 B_{3,2} \right>$
   integer :: idiag_b2b13m=0     ! DIAG_DOC: $\left<B_2 B_{1,3} \right>$
-  integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
-  integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
   integer :: idiag_udotxbm=0    ! DIAG_DOC:
   integer :: idiag_uxbdotm=0    ! DIAG_DOC:
   integer :: idiag_uxbmx=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_x\right>$
@@ -644,6 +600,7 @@ module Magnetic
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !
+      use Magnetic_meanfield, only: initialize_magnetic_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: put_shared_variable
@@ -823,10 +780,10 @@ module Magnetic
 !  corresponds to the chosen resistivity type is not set.
 !
       if (lrun) then
-        if (lresi_eta_const.and.(eta==0.0.and.meanfield_etat==0.0)) &
+        if (lresi_eta_const.and.(eta==0.0)) &
             call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
-        if (lresi_sqrtrhoeta_const.and.(eta==0.0.and.meanfield_etat==0.0)) &
+        if (lresi_sqrtrhoeta_const.and.(eta==0.0)) &
             call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
         if (lresi_hyper2.and.eta_hyper2==0.0) &
@@ -877,15 +834,6 @@ module Magnetic
             'Timestep is currently only sensitive to fourth order.')
       endif
 !
-!  check for alpha profile
-!
-      if (alpha_profile=='read') then
-        print*,'read alpha profile'
-        open(1,file='alpha_input.dat',form='unformatted')
-        read(1) alpha_input
-        close(1)
-      endif
-!
 !  write profile (uncomment for debugging)
 !
 !     if (lroot) then
@@ -901,46 +849,13 @@ module Magnetic
         call put_shared_variable('geta_z',geta_z,ierr)
       endif
 !
-!  if meanfield theory is invoked, we want to send meanfield_etat to
-!  other subroutines
-!  also in advective gauge, we need to know eta
+!  if meanfield theory is invoked, we need to tell the other routines
 !
       call put_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
       if (lmeanfield_theory) then
-        call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
         call put_shared_variable('eta',eta,ierr)
       elseif (lspecial) then
-        call put_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
         call put_shared_variable('eta',eta,ierr)
-      endif
-!
-!  Compute etat profile and share with other routines
-!
-      if (meanfield_etat/=0.0) then
-        select case (meanfield_etat_profile)
-        case ('const')
-          etat_z=meanfield_etat
-          getat_z=0.
-        case ('exp(z/H)')
-          etat_z=meanfield_etat*exp(z/meanfield_etat_height)
-          getat_z(:,1:2)=0.
-          getat_z(:,3)=etat_z/meanfield_etat_height
-        case default;
-          call inevitably_fatal_error('initialize_magnetic', &
-          'no such meanfield_etat_profile profile')
-        endselect
-!
-!  share etat profile with viscosity module
-!
-        if (lviscosity) then
-          call put_shared_variable('etat_z',etat_z,ierr)
-          call put_shared_variable('getat_z',getat_z,ierr)
-          print*,'ipz,z(n),etat_z(n),getat_z(n,3)'
-          do n=n1,n2
-            print*,ipz,z(n),etat_z(n),getat_z(n,3)
-          enddo
-          print*
-        endif
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
@@ -1034,6 +949,10 @@ module Magnetic
           close(3)
         endif
       endif
+!
+!  Initialize individual modules.
+!
+      call initialize_magnetic_mf (f,lstarting)
 !
       if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)
@@ -1343,7 +1262,7 @@ module Magnetic
           lweyl_gauge.or.lspherical_coords) &
 !  WL: but doesn't seem to be needed for the cylindrical case
           lpenc_requested(i_jj)=.true.
-      if ((.not.lweyl_gauge).and.(meanfield_etat/=0.0.or.ietat/=0)) &
+      if (.not.lweyl_gauge) &
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_const.or.lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or.lresi_zdep.or. &
@@ -1398,15 +1317,6 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
-        
-!
-!  In mean-field theory, with variable etat, need divA for resistive gauge.
-!
-      if (meanfield_etat_profile/='const') then
-        if (.not.lweyl_gauge) then
-          lpenc_requested(i_diva)=.true.
-        endif
-      endif
 !
       if (lupw_aa) then
         lpenc_requested(i_uu)=.true.
@@ -1432,16 +1342,11 @@ module Magnetic
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-      if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
+!     if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
+!AB: why should ldt require rho1?
+      if (lentropy .or. ltemperature) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
-!
-!  for mean-field modelling
-!
-      if (lmeanfield_jxb) then
-        lpenc_requested(i_va2)=.true.
-        lpenc_requested(i_rho1)=.true.
-      endif
 !
 !  ambipolar diffusion
 !
@@ -1453,16 +1358,10 @@ module Magnetic
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
       if ((lhydro .and. llorentzforce) .or. nu_ni/=0.0) &
           lpenc_requested(i_jxbr)=.true.
-      if (lresi_smagorinsky_cross &
-          .or. (delta_effect/=0.0.and..not.ldelta_profile)) &
-          lpenc_requested(i_oo)=.true.
+      if (lresi_smagorinsky_cross) lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.0) lpenc_requested(i_va2)=.true.
-      if (lmeanfield_theory) then
-        if (meanfield_etat/=0.0 .or. ietat/=0 .or. &
-            alpha_effect/=0.0 .or. delta_effect/=0.0) &
-            lpenc_requested(i_mf_EMF)=.true.
-        if (delta_effect/=0.0) lpenc_requested(i_oxj)=.true.
-      endif
+!
+!  diagnostics pencils
 !
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
@@ -1565,7 +1464,6 @@ module Magnetic
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
       if (idiag_bthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
-      if (idiag_EMFdotBm/=0.or.idiag_EMFdotB_int/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
       if (idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
           .or. idiag_abuxmz/=0 .or. idiag_abuymz/=0 .or. idiag_abuzmz/=0) &
@@ -1584,13 +1482,17 @@ module Magnetic
       else
       endif
 !
+!  check for pencil_criteria_magnetic_mf
+!
+      if (lmeanfield_theory) call pencil_criteria_magnetic_mf()
+!
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
     subroutine pencil_interdep_magnetic(lpencil_in)
 !
 !  Interdependency among pencils from the Magnetic module is specified here.
 !
-!  19-11-04/anders: coded
+!  19-nov-04/anders: coded
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -1705,26 +1607,6 @@ module Magnetic
         lpencil_in(i_jij)=.true.
       endif
       if (lpencil_in(i_ss12)) lpencil_in(i_sij)=.true.
-      if (lpencil_in(i_mf_EMFdotB)) then
-        lpencil_in(i_mf_EMF)=.true.
-        lpencil_in(i_bb)=.true.
-      endif
-      if (lpencil_in(i_mf_EMF)) then
-        if (lspherical_coords) then
-          lpencil_in(i_jj)=.true.
-          lpencil_in(i_graddivA)=.true.
-        endif
-        lpencil_in(i_b2)=.true.
-        lpencil_in(i_bb)=.true.
-        if (delta_effect/=0.0) lpencil_in(i_oxJ)=.true.
-        if (meanfield_etat/=0.0 .or. ietat/=0) then
-          if (lweyl_gauge) then
-            lpencil_in(i_jj)=.true.
-          else
-            lpencil_in(i_del2a)=.true.
-          endif
-        endif
-      endif
       if (lpencil_in(i_del2A)) then
         if (lspherical_coords) then
 !WL: for the cylindrical case, lpencil_check says these pencils are not needed
@@ -1738,6 +1620,9 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
+!
+!AB: do we still need these following out-commented lines?
+!
 !  Pencils bij, del2a and graddiva come in a bundle.
 !     if ( lpencil_in(i_bij) .and. &
 !         (lpencil_in(i_del2a).or.lpencil_in(i_graddiva)) ) then
@@ -1749,6 +1634,10 @@ module Magnetic
 !       lpencil_in(i_bij)=.false.
 !       lpencil_in(i_graddiva)=.false.
 !     endif
+!
+!  check for pencil_interdep_magnetic_mf
+!
+      if (lmeanfield_theory) call pencil_interdep_magnetic_mf(lpencil_in)
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -1767,16 +1656,8 @@ module Magnetic
       type (pencil_case) :: p
 !
 !      real, dimension (nx,3) :: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb,alpha_total
-      real, dimension (nx) :: meanfield_etat_tmp, meanfield_detatdz_tmp
-      real, dimension (nx) :: alpha_tmp, delta_tmp
-      real, dimension (nx) :: EMF_prof
+      real, dimension (nx) :: rho1_jxb
       real, dimension (nx) :: jcrossb2
-      real, dimension (nx) :: meanfield_Qs_func, meanfield_Qp_func
-      real, dimension (nx) :: meanfield_qe_func, meanfield_Qs_der
-      real, dimension (nx) :: meanfield_Qp_der, meanfield_qe_der, BiBk_Bki
-      real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb
       real :: B2_ext,c,s,kx,fact
       integer :: i,j,ix
@@ -1884,11 +1765,7 @@ module Magnetic
       endif
 ! exa
       if (lpencil(i_exa)) then
-        if (lmeanfield_theory) then
-          call cross_mn(-p%uxb-p%mf_EMF+eta*p%jj,p%aa,p%exa)
-        else
-          call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
-        endif
+        call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
       endif
 ! uga
 ! DM : this requires later attention
@@ -2009,56 +1886,6 @@ module Magnetic
           rho1_jxb = rho1_jxb &
                    * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
-        if (lmeanfield_jxb) then
-          if (lmeanfield_jxb_with_vA2) then
-            meanfield_urms21=1./(3.*meanfield_kf*meanfield_etat)**2
-            meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
-            meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
-            meanfield_qe_func=    meanfield_qe    *(1.-2*pi_1*atan(p%b2*meanfield_Be21))
-            meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)/(1.+(p%vA2*meanfield_urms21)**2)
-            meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)/(1.+(p%vA2*meanfield_urms21)**2)
-            meanfield_qe_der=-2*pi_1* meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
-            call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb
-!
-!           call multmv_transp(p%bij,p%bb,Bk_Bki)
-            !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
-            !call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%vA2*meanfield_urms21/meanfield_Bp2*meanfield_Qp_der,Bk_Bki,p%jxb)
-!           call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func,Bk_Bki,p%jxb)
-            !call dot(Bk_Bki,p%bb,BiBk_Bki)
-!           call multsv_mn_add(2*meanfield_Qp_der*BiBk_Bki*p%rho1*meanfield_urms21,p%bb,p%jxb)
-          else
-            if (meanfield_Beq_profile=='exp(z/H)') then
-              Beq=meanfield_Beq*exp(z(n)/meanfield_Beq_height)
-            else
-              Beq=meanfield_Beq
-            endif
-            meanfield_Bs21=1./(meanfield_Bs*Beq)**2
-            meanfield_Bp21=1./(meanfield_Bp*Beq)**2
-            meanfield_Be21=1./(meanfield_Be*Beq)**2
-            meanfield_Qs_func=1.+(meanfield_Qs-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
-            meanfield_Qp_func=1.+(meanfield_Qp-1.)*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
-            meanfield_qe_func=    meanfield_qe    *(1.-2*pi_1*atan(p%b2*meanfield_Be21))
-            meanfield_Qs_der=-2*pi_1*(meanfield_Qs-1.)*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
-            meanfield_Qp_der=-2*pi_1*(meanfield_Qp-1.)*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
-            meanfield_qe_der=-2*pi_1* meanfield_qe    *meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
-!
-!  add -(1/2)*grad[(1-qp)B^2]
-!
-            call multsv_mn(meanfield_Qs_func,p%jxb,tmp_jxb); p%jxb=tmp_jxb
-            call multmv_transp(p%bij,p%bb,Bk_Bki)
-            call multsv_mn_add(meanfield_Qs_func-meanfield_Qp_func-p%b2*meanfield_Qp_der,Bk_Bki,p%jxb)
-!           if (meanfield_Beq_height/=0.) p%jxb(:,3)=p%jxb(:,3)+p%b2**2*meanfield_Qp_der/meanfield_Beq_height
-!
-!  add B.grad[(1-qs)*B_i]
-!
-            call dot(Bk_Bki,p%bb,BiBk_Bki)
-            call multsv_mn_add(2*meanfield_Qs_der*BiBk_Bki,p%bb,p%jxb)
-!
-!  add e_z*grad(qe*B^2)
-!
-            p%jxb(:,3)=p%jxb(:,3)+2*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
-          endif
-        endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
 ! jxbr2
@@ -2120,149 +1947,6 @@ module Magnetic
 ! ss12
       if (lpencil(i_ss12)) p%ss12=sqrt(abs(p%sj))
 !
-! mf_EMF
-! needed if a mean field (mf) model is calculated
-!
-      if (lpencil(i_mf_EMF)) then
-        kx=2*pi/Lx
-        select case (alpha_profile)
-        case ('const'); alpha_tmp=1.
-        case ('siny'); alpha_tmp=sin(y(m))
-        case ('sinz'); alpha_tmp=sin(z(n))
-        case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
-        case ('cos(z/2)_with_halo'); alpha_tmp=max(cos(.5*z(n)),0.)
-        case ('z'); alpha_tmp=z(n)
-        case ('z/H'); alpha_tmp=z(n)/xyz1(3)
-        case ('z/H_0'); alpha_tmp=z(n)/xyz1(3); if (z(n)==xyz1(3)) alpha_tmp=0.
-        case ('y/H'); alpha_tmp=y(m)/xyz1(3)
-        case ('cosy'); alpha_tmp=cos(y(m))
-        case ('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
-        case ('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
-        case ('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
-        case ('stepz'); alpha_tmp=-tanh((z(n)-zequator)/alpha_gap_step)
-        case ('ystep-xcutoff')
-           alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)&
-             *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
-        case ('step-drop'); alpha_tmp=(1. &
-                -step_scalar(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
-                -step_scalar(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &
-                -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
-                +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
-        case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
-        case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
-          if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
-        case ('read'); alpha_tmp=alpha_input(l1:l2,m)
-        case ('nothing');
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'alpha_profile="nothing" has been renamed to "const", please update your run.in')
-        case default;
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'alpha_profile no such alpha profile')
-        endselect
-!
-!  delta effect
-!
-        select case (delta_profile)
-        case ('const'); delta_tmp=1.
-        case ('cos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)
-        case ('sincos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)*sin(.5*z(n))
-        case default;
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'delta_profile no such delta profile')
-        endselect
-!
-!  Possibility of dynamical alpha.
-!
-        if (lalpm.and..not.lmeanfield_noalpm) then
-          if (lalpha_profile_total) then
-             alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
-           else
-             alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
-           endif
-        else
-          alpha_total=alpha_effect*alpha_tmp
-        endif
-!
-!  Possibility of conventional alpha quenching (rescales alpha_total).
-!  Initialize EMF with alpha_total*bb.
-!
-        if (alpha_quenching/=0.0) &
-            alpha_total=alpha_total/(1.+alpha_quenching*p%b2)
-        call multsv_mn(alpha_total,p%bb,p%mf_EMF)
-!
-!  Add possible delta x J effect and turbulent diffusion to EMF.
-!
-        if (ldelta_profile) then
-          p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
-        else
-          p%mf_EMF(:,1)=p%mf_EMF(:,1)-delta_effect*delta_tmp*p%jj(:,2)
-          p%mf_EMF(:,2)=p%mf_EMF(:,2)+delta_effect*delta_tmp*p%jj(:,1)
-        endif
-!
-!  Compute diffusion term
-!
-        if (meanfield_etat/=0.0) then
-          meanfield_etat_tmp=etat_z(n)
-          meanfield_detatdz_tmp=getat_z(n,3)
-!
-!  Magnetic etat quenching (contribution to pumping currently ignored)
-!
-          if (meanfield_etaB/=0.0) then
-            meanfield_etaB2=meanfield_etaB**2
-            meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
-          endif
-!
-!  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
-!
-          if (lmeanfield_pumping) then
-            fact=.5*meanfield_pumping
-            p%mf_EMF(:,1)=p%mf_EMF(:,1)+fact*meanfield_detatdz_tmp*p%bb(:,2)
-            p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*meanfield_detatdz_tmp*p%bb(:,1)
-          endif
-!
-!  Apply diffusion term: simple in Weyl gauge, which is not the default!
-!  In diffusive gauge, add (divA) grad(etat) term.
-!
-          if (lweyl_gauge) then
-            call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
-          else
-            call multsv_mn_add(+meanfield_etat_tmp,p%del2a,p%mf_EMF)
-            p%mf_EMF(:,3)=p%mf_EMF(:,3)+p%diva*meanfield_detatdz_tmp
-          endif
-!
-!  Allow for possibility of variable etat.
-!
-          if (ietat/=0) then
-            call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
-          endif
-        endif
-!
-!  Possibility of adding contribution from large-scale-velocity.
-!
-        if (llarge_scale_velocity) p%mf_EMF=p%mf_EMF+p%uxb
-!
-!  Possibility of turning EMF to zero in a certain region.
-!
-        if (lEMF_profile) then
-          select case (EMF_profile)
-          case ('xcutoff');
-            EMF_prof= 1+stepdown(x(l1:l2),alpha_rmax,alpha_width)
-          case ('surface_z');
-            EMF_prof=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
-          case ('nothing');
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'lEMF_profile=T, but no profile selected !')
-          endselect
-            p%mf_EMF(:,1)=p%mf_EMF(:,1)*EMF_prof(:)
-            p%mf_EMF(:,2)=p%mf_EMF(:,2)*EMF_prof(:)
-            p%mf_EMF(:,3)=p%mf_EMF(:,3)*EMF_prof(:)
-        endif
-      endif
-!
-! EMFdotB
-!
-      if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
-!
 !  Store bb in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
@@ -2270,13 +1954,10 @@ module Magnetic
      if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
      if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
 !
-!  Calculate diagnostics.
+!  Calculate magnetic mean-field pencils.
+!  This should always be done after calculating magnetic pencils.
 !
-      if (ldiagnos) then
-        if (idiag_Qsm/=0) call sum_mn_name(meanfield_Qs_func,idiag_Qsm)
-        if (idiag_Qpm/=0) call sum_mn_name(meanfield_Qp_func,idiag_Qpm)
-        if (idiag_qem/=0) call sum_mn_name(meanfield_qe_func,idiag_qem)
-      endif
+      if (lmeanfield_theory) call calc_pencils_magnetic_mf(f,p)
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
@@ -2285,7 +1966,6 @@ module Magnetic
 !  Magnetic field evolution.
 !
 !  Calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J.
-!  For mean field calculations one can also add dA/dt=...+alpha*bb+delta*WXJ.
 !  Add jxb/rho to momentum equation.
 !  Add eta mu_0 j2/rho to entropy equation.
 !
@@ -2622,12 +2302,9 @@ module Magnetic
       if (lspecial) call special_calc_magnetic(f,df,p)
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
-!  We include possible contribution from meanfield_etat, which is however
-!  only invoked in mean field models.
-!  Allow for variable etat (mean field theory).
 !
       if (lfirst.and.ldt) then
-        diffus_eta =(diffus_eta+meanfield_etat)*dxyz_2
+        diffus_eta =diffus_eta *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
         diffus_eta3=diffus_eta3*dxyz_6
         if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
@@ -2773,16 +2450,6 @@ module Magnetic
                                      maxval(advec_hall)
       endif
 !
-!  Alpha effect.
-!  Additional terms if Mean Field Theory is included.
-!
-      if (lmeanfield_theory.and. &
-        (meanfield_etat/=0.0 .or. ietat/=0 .or. &
-        alpha_effect/=0.0.or.delta_effect/=0.0)) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
-        if (lOmega_effect) call Omega_effect(f,df,p)
-      endif
-!
 !  Possibility of adding extra diffusivity in some halo of given geometry.
 !  Note that eta_out is total eta in halo (not eta_out+eta).
 !
@@ -2857,6 +2524,10 @@ module Magnetic
 !  Apply border profiles.
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
+!
+!  Call right-hand side for mean-field stuff (do this just before ldiagnos)
+!
+      if (lmeanfield_theory) call daa_dt_meanfield(f,df,p)
 !
 !  Calculate diagnostic quantities.
 !
@@ -3283,10 +2954,6 @@ module Magnetic
           call sum_mn_name(b2b13,idiag_b2b13m)
         endif
 !
-!  Diagnostic output for mean field dynamos.
-!
-        if (idiag_EMFdotBm/=0) call sum_mn_name(p%mf_EMFdotB,idiag_EMFdotBm)
-        if (idiag_EMFdotB_int/=0) call integrate_mn_name(p%mf_EMFdotB,idiag_EMFdotB_int)
       endif ! endif (ldiagnos)
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
@@ -3344,9 +3011,6 @@ module Magnetic
         if (idiag_examz1/=0) call xysum_mn_name_z(p%exa(:,1),idiag_examz1)
         if (idiag_examz2/=0) call xysum_mn_name_z(p%exa(:,2),idiag_examz2)
         if (idiag_examz3/=0) call xysum_mn_name_z(p%exa(:,3),idiag_examz3)
-        if (idiag_EMFmz1/=0) call xysum_mn_name_z(p%mf_EMF(:,1),idiag_EMFmz1)
-        if (idiag_EMFmz2/=0) call xysum_mn_name_z(p%mf_EMF(:,2),idiag_EMFmz2)
-        if (idiag_EMFmz3/=0) call xysum_mn_name_z(p%mf_EMF(:,3),idiag_EMFmz3)
 !
 !  Maxwell stress components.
 !
@@ -3867,65 +3531,6 @@ module Magnetic
 !
     endsubroutine calc_tau_aa_exterior
 !***********************************************************************
-    subroutine Omega_effect(f,df,p)
-!
-!  Omega effect coded (normally used in context of mean field theory)
-!  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
-!  In most cases the Omega effect can be modeled using hydro_kinematic,
-!  but this is not possible when the flow varies in a direction that
-!  is not a coordinate direction, e.g. when U=(0,Sx,0) and A=A(z,t).
-!  In such cases the Omega effect must be rewritten in terms of
-!  velocity gradients operating on A, i.e. (gradU)^T.A, instead of UxB.
-!
-!  30-apr-05/axel: coded
-!
-  use Sub, only: stepdown
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real kx
-!
-      intent(in) :: f,p
-      intent(inout) :: df
-!
-!  use gauge transformation, uxB = -Ay*grad(Uy) + gradient-term
-!
-      select case (Omega_profile)
-      case ('nothing'); print*,'Omega_profile=nothing'
-      case ('(0,Sx,0)')
-        if (headtt) print*,'Omega_effect: uniform shear in x, S=',Omega_ampl
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iay)
-      case ('(Sz,0,0)')
-        if (headtt) print*,'Omega_effect: uniform shear in z, S=',Omega_ampl
-        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iax)
-        if (lhydro) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Omega_ampl*f(l1:l2,m,n,iuz)
-      case ('(0,cosx*cosz,0)')
-        if (headtt) print*,'Omega_effect: solar shear, S=',Omega_ampl
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iay) &
-            *sin(x(l1:l2))*cos(z(n))
-        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+Omega_ampl*f(l1:l2,m,n,iay) &
-            *cos(x(l1:l2))*sin(z(n))
-      case ('(0,0,cosx)')
-        kx=2*pi/Lx
-        if (headtt) print*,'Omega_effect: (0,0,cosx), S,kx=',Omega_ampl,kx
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
-            *kx*sin(kx*x(l1:l2))
-      case ('(0,0,siny)')
-        if (headtt) print*,'Omega_effect: (0,0,siny), Omega_ampl=',Omega_ampl
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iaz) &
-            *sin(y(m))
-      case('rcutoff_sin_theta')
-        if (headtt) print*,'Omega_effect: r cutoff sin(theta), Omega_ampl=',Omega_ampl
-!        df(l1:l2,m,n,iax)=Omega_ampl*df(l1:l2,m,n,iax)
-        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*p%bb(:,2) &
-            *sin(y(m))*x(l1:l2)*(1+stepdown(x(l1:l2),Omega_rmax,Omega_rwidth))
-        df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+Omega_ampl*p%bb(:,1) &
-            *sin(y(m))*x(l1:l2)*(1+stepdown(x(l1:l2),Omega_rmax,Omega_rwidth))
-      case default; print*,'Omega_profile=unknown'
-      endselect
-!
-    endsubroutine Omega_effect
-!***********************************************************************
     subroutine sine_avoid_boundary(ampl,f,kr,r0,rn)
 !
 ! Sine field in cylindrical coordinates, used in Armitage 1998
@@ -4073,6 +3678,10 @@ module Magnetic
         read(unit,NML=magnetic_init_pars,ERR=99)
       endif
 !
+!  read namelist for mean-field theory (if invoked)
+!
+      if (lmeanfield_theory) call read_magnetic_mf_init_pars(unit,iostat)
+!
 99    return
 !
     endsubroutine read_magnetic_init_pars
@@ -4082,6 +3691,10 @@ module Magnetic
       integer, intent(in) :: unit
 !
       write(unit,NML=magnetic_init_pars)
+!
+!  write namelist for mean-field theory (if invoked)
+!
+      if (lmeanfield_theory) call write_magnetic_mf_init_pars(unit)
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
@@ -4096,6 +3709,10 @@ module Magnetic
         read(unit,NML=magnetic_run_pars,ERR=99)
       endif
 !
+!  read namelist for mean-field theory (if invoked)
+!
+      if (lmeanfield_theory) call read_magnetic_mf_run_pars(unit,iostat)
+!
 99    return
 !
     endsubroutine read_magnetic_run_pars
@@ -4105,6 +3722,10 @@ module Magnetic
       integer, intent(in) :: unit
 !
       write(unit,NML=magnetic_run_pars)
+!
+!  write namelist for mean-field theory (if invoked)
+!
+      if (lmeanfield_theory) call write_magnetic_mf_run_pars(unit)
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
@@ -6288,7 +5909,7 @@ module Magnetic
         idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
-        idiag_arms=0; idiag_amax=0; idiag_Qsm=0; idiag_Qpm=0; idiag_qem=0; idiag_beta1m=0
+        idiag_arms=0; idiag_amax=0; idiag_beta1m=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
@@ -6319,12 +5940,10 @@ module Magnetic
         idiag_uxbcmx=0; idiag_uxbsmx=0
         idiag_uxbcmy=0; idiag_uxbsmy=0; idiag_examz1=0; idiag_examz2=0
         idiag_examz3=0; idiag_examx=0; idiag_examy=0; idiag_examz=0
-        idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
         idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
-        idiag_EMFdotBm=0; idiag_EMFdotB_int=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
         idiag_bzmphi=0; idiag_b2mphi=0; idiag_jbmphi=0; idiag_uxbrmphi=0
         idiag_uxbpmphi=0; idiag_uxbzmphi=0; idiag_jxbrmphi=0; idiag_jxbpmphi=0
@@ -6412,13 +6031,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
         call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
-        call parse_name(iname,cname(iname),cform(iname),'Qsm',idiag_Qsm)
-        call parse_name(iname,cname(iname),cform(iname),'Qpm',idiag_Qpm)
-        call parse_name(iname,cname(iname),cform(iname),'qem',idiag_qem)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'beta1m',idiag_beta1m)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'beta1max',idiag_beta1max)
+        call parse_name(iname,cname(iname),cform(iname),'beta1m',idiag_beta1m)
+        call parse_name(iname,cname(iname),cform(iname),'beta1max',idiag_beta1max)
         call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
         call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
         call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
@@ -6429,8 +6043,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
         call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
         call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'djuidjbim',idiag_djuidjbim)
+        call parse_name(iname,cname(iname),cform(iname),'djuidjbim',idiag_djuidjbim)
         call parse_name(iname,cname(iname),cform(iname),'jxbrxm',idiag_jxbrxm)
         call parse_name(iname,cname(iname),cform(iname),'jxbrym',idiag_jxbrym)
         call parse_name(iname,cname(iname),cform(iname),'jxbrzm',idiag_jxbrzm)
@@ -6470,8 +6083,6 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
         call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
         call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
-        call parse_name(iname,cname(iname),cform(iname),'EMFdotBm',idiag_EMFdotBm)
-        call parse_name(iname,cname(iname),cform(iname),'EMFdotB_int',idiag_EMFdotB_int)
         call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
@@ -6663,9 +6274,6 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz1',idiag_examz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz2',idiag_examz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz3',idiag_examz3)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz1',idiag_EMFmz1)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz2',idiag_EMFmz2)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz3',idiag_EMFmz3)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'etatotalmz',idiag_etatotalmz)
       enddo
@@ -6755,6 +6363,10 @@ module Magnetic
         write(3,*) 'iaz=',iaz
         write(3,*) 'ihypres=',ihypres
       endif
+!
+!  call corresponding mean-field routine
+!
+      call rprint_magnetic_mf(lreset,lwrite)
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
