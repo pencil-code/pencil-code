@@ -55,7 +55,6 @@ module EquationOfState
   real :: mu=1.
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
-  real :: ptlaw=3./4.
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
   real :: gamma_m1    !(=gamma-1)
@@ -89,9 +88,9 @@ module EquationOfState
 !NILS: Why do we spend a lot of memory allocating these variables here????
  real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full, rho_full, TT_full
 !
-  namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp, ptlaw
+  namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp
 !
-  namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp, ptlaw
+  namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp
 !
   contains
 !***********************************************************************
@@ -673,18 +672,6 @@ module EquationOfState
 !
 !
     endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-!  04-jul-07/wlad: return the value of ptlaw to outside modules
-!                  ptlaw is temperature gradient in accretion disks
-!
-      real, intent(out) :: ptlaw_
-!
-      call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_chemistry')
-      ptlaw_=impossible
-!
-    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !

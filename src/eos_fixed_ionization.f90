@@ -67,7 +67,7 @@ module EquationOfState
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma_m1,gamma_inv, nabla_ad
   !real :: cp=impossible, cp1=impossible
-  real :: cp1=impossible, ptlaw=impossible
+  real :: cp1=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
@@ -541,18 +541,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       cp1_=impossible
 !
     endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-!  04-jul-07/wlad: return the value of ptlaw to outside modules
-!                  ptlaw is temperature gradient in accretion disks
-!
-      real, intent(out) :: ptlaw_
-!
-      call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_fixed_ion...')
-      ptlaw_=impossible
-!
-    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

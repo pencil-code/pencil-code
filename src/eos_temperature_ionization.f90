@@ -72,7 +72,7 @@ module EquationOfState
   real :: gamma=5./3., gamma_m1=impossible, gamma_inv=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=impossible, ptlaw=impossible
+  real :: cs2cool=impossible
   real :: mpoly=impossible, mpoly0=impossible
   real :: mpoly1=impossible, mpoly2=impossible
   integer :: isothtop=0
@@ -558,18 +558,6 @@ module EquationOfState
       cp1_=impossible
 !
     endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-!  04-jul-07/wlad: return the value of ptlaw to outside modules
-!                  ptlaw is temperature gradient in accretion disks
-!
-      real, intent(out) :: ptlaw_
-!
-      call fatal_error('get_ptlaw',"SHOULDN'T BE CALLED WITH eos_temperature_...")
-      ptlaw_=impossible
-!
-    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !

@@ -2796,14 +2796,11 @@ module Entropy
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving,set_border_initcond
-      use EquationOfState, only: cs20,get_ptlaw,get_cp1,lnrho0
-      use Sub, only: power_law
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target,cs2
-      real :: ptlaw,cp1
+      real, dimension(nx) :: f_target
 !
       select case (borderss)
 !
@@ -2811,12 +2808,6 @@ module Entropy
          f_target=0.
       case ('constant')
          f_target=ss_const
-      case ('power-law')
-        call get_ptlaw(ptlaw)
-        call get_cp1(cp1)
-        call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
-        f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
-         !f_target= gamma_inv*log(cs2_0) !- gamma_m1*gamma_inv*lnrho
       case ('initial-condition')
         call set_border_initcond(f,iss,f_target)
       case ('nothing')

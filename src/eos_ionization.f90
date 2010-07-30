@@ -61,7 +61,7 @@ module EquationOfState
 !ajwm  can't use impossible else it breaks reading param.nml
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=impossible, rho0=impossible, cp=impossible
-  real :: cs20=impossible, lnrho0=impossible, ptlaw=impossible
+  real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp = .false.
   real :: gamma=impossible, gamma_m1=impossible,gamma_inv=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
@@ -592,18 +592,6 @@ module EquationOfState
       cp1_=impossible
 !
     endsubroutine get_cp1
-!***********************************************************************
-    subroutine get_ptlaw(ptlaw_)
-!
-!  04-jul-07/wlad: return the value of ptlaw to outside modules
-!                  ptlaw is temperature gradient in accretion disks
-!
-      real, intent(out) :: ptlaw_
-!
-      call fatal_error('get_ptlaw','SHOULD NOT BE CALLED WITH eos_ionization')
-      ptlaw_=impossible
-!
-    endsubroutine get_ptlaw
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
