@@ -892,6 +892,8 @@ endif
 #FFLAGS= -O3 #(gaae1)
 #CC=icc #(gaae1)
 ##
+##
+##
 ## Andrew's Laptop (wkfg)
 ##
 #FC=mpif90 #(wkfg)
@@ -1251,6 +1253,12 @@ endif
 #FC=mpif90 #(Chandrasekhar)
 #FFLAGS= -O3 #(Chandrasekhar)
 #CFLAGS=-DFUNDERSC=1 #(Chandrasekhar)
+##
+## Gustavo's laptop
+#FC=mpif90 #(Plato)
+#FFLAGS= -O0 #(Plato)
+#CFLAGS=-DFUNDERSC=1 #(Plato)
+##
 ##
 ## norosx52 (Mac Pro, 8 cores)
 ##
