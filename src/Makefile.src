@@ -1420,12 +1420,12 @@ preprocess=$(BORDER_PROFILES).f90 $(CHEMISTRY).f90 $(CHIRAL).f90 $(COSMICRAY).f9
 #  Short hand for physics modules used by Register, Param_io, Equ.
 #  Please use alphabetical order.
 #
-physics=$(CHEMISTRY).o $(CHIRAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(DENSITY).o $(DUSTDENSITY).o $(DUSTVELOCITY).o $(ENTROPY).o $(EOS).o $(FORCING).o $(GRAVITY).o $(HYDRO).o $(HYPERRESI_STRICT).o $(HYPERVISC_STRICT).o $(IMPLICIT_PHYSICS).o $(INTERSTELLAR).o $(LORENZ_GAUGE).o $(MAGNETIC).o $(MAGNETIC_MEANFIELD).o $(NEUTRALDENSITY).o $(NEUTRALVELOCITY).o $(POISSON).o $(POLYMER).o $(PSCALAR).o $(RADIATION).o $(SELFGRAVITY).o $(SHEAR).o $(SHOCK).o $(SPECIAL).o $(TESTFIELD).o $(TESTFLOW).o $(TESTSCALAR).o $(VISCOSITY).o
+physics=$(CHEMISTRY).o $(CHIRAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(DENSITY).o $(DUSTDENSITY).o $(DUSTVELOCITY).o $(ENTROPY).o $(EOS).o $(FORCING).o $(GRAVITY).o $(HYDRO).o $(HYPERRESI_STRICT).o $(HYPERVISC_STRICT).o $(IMPLICIT_PHYSICS).o $(INTERSTELLAR).o $(LORENZ_GAUGE).o $(NEUTRALDENSITY).o $(NEUTRALVELOCITY).o $(POISSON).o $(POLYMER).o $(PSCALAR).o $(RADIATION).o $(SELFGRAVITY).o $(SHEAR).o $(SHOCK).o $(SPECIAL).o $(TESTFIELD).o $(TESTFLOW).o $(TESTSCALAR).o $(VISCOSITY).o
 #
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o $(PARTICLES_MAIN).a
+technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o $(MAGNETIC).a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
