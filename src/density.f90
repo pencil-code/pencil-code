@@ -1987,9 +1987,17 @@ module Density
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           tmp=-gamma*pot/cs20
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrho0 + tmp
-          if (lentropy) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
-              (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
-          if (ltemperature) f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
+          if (lentropy.and..not.pretend_lnTT) then
+            f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
+                (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          elseif (lentropy.and.pretend_lnTT) then
+            f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
+          elseif (ltemperature.and..not.ltemperature_nolog) then
+            f(l1:l2,m,n,iTT)=log(cs20*cp1/gamma_m1)
+          elseif (ltemperature.and.ltemperature_nolog) then
+            call fatal_error("isothermal_density", &
+                "not implemented for ltemperature_nolog")
+          endif
         enddo
       enddo
 !
