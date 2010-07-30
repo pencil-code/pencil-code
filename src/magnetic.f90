@@ -4874,7 +4874,7 @@ module Magnetic
       real, dimension(nx) :: Aphi, rr
       !real, pointer :: plaw
       real :: B0,pblaw
-      integer :: ierr
+      !integer :: ierr
 !
       if (lcartesian_coords) then
         B0=Lxyz(3)/(2*zmode*pi)
