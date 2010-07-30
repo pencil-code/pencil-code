@@ -4945,7 +4945,7 @@ nameloop: do
 !
     endfunction erfunc_mn
 !***********************************************************************
-    subroutine power_law_mn(const,dist,plaw_,output,xref)
+    subroutine power_law_mn(const,dist,power_law_index,output,xref)
 !
 !  General distance power law initial conditions.
 !
@@ -4953,23 +4953,23 @@ nameloop: do
 !   4-jul-07/wlad: generalized for any power law case
 !
       real, dimension(:) :: dist,output
-      real :: const,plaw_
+      real :: const,power_law_index
       real, optional :: xref
 !
-      intent(in)  :: const,plaw_
+      intent(in)  :: const,power_law_index
       intent(out) :: output
 !
       if (present(xref)) dist=dist/xref
 !
       if (rsmooth==0.) then
-        output = const*dist**(-plaw_)
+        output = const*dist**(-power_law_index)
       else
-        output = const*(dist**2+rsmooth**2)**(-.5*plaw_)
+        output = const*(dist**2+rsmooth**2)**(-.5*power_law_index)
       endif
 !
     endsubroutine power_law_mn
 !***********************************************************************
-    subroutine power_law_pt(const,dist,plaw_,output,xref)
+    subroutine power_law_pt(const,dist,power_law_index,output,xref)
 !
 !  General distance power law initial conditions.
 !
@@ -4977,18 +4977,18 @@ nameloop: do
 !   4-jul-07/wlad: generalized for any power law case
 !
       real :: dist,output
-      real :: const,plaw_
+      real :: const,power_law_index
       real, optional :: xref
 !
-      intent(in)  :: const,plaw_
+      intent(in)  :: const,power_law_index
       intent(out) :: output
 !
       if (present(xref)) dist=dist/xref
 !
       if (rsmooth==0.) then
-        output = const*dist**(-plaw_)
+        output = const*dist**(-power_law_index)
       else
-        output = const*(dist**2+rsmooth**2)**(-.5*plaw_)
+        output = const*(dist**2+rsmooth**2)**(-.5*power_law_index)
       endif
 !
     endsubroutine power_law_pt
