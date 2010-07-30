@@ -177,6 +177,8 @@ module Entropy
   integer :: idiag_fconvm=0     ! DIAG_DOC: $\left<\varrho u_z T \right>$
   integer :: idiag_fconvz=0     ! DIAG_DOC: $\left<\varrho u_z T \right>_{xy}$
   integer :: idiag_fconvxy=0    ! DIAG_DOC: $\left<\varrho u_x T \right>_{z}$
+  integer :: idiag_fconvyxy=0   ! DIAG_DOC: $\left<\varrho u_y T \right>_{z}$
+  integer :: idiag_fconvzxy=0   ! DIAG_DOC: $\left<\varrho u_z T \right>_{z}$
   integer :: idiag_dcoolz=0     ! DIAG_DOC: surface cooling flux
   integer :: idiag_fradz=0      ! DIAG_DOC: $F_{\rm rad}$
   integer :: idiag_fradz_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kprof)
@@ -2329,7 +2331,7 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fconvxy/=0) then
+      if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
       endif
@@ -2737,6 +2739,10 @@ module Entropy
             call zsum_mn_name_xy(p%uu(:,3)*p%TT,idiag_uzTTmxy)
         if (idiag_fconvxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
+        if (idiag_fconvyxy/=0) &
+            call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%TT,idiag_fconvyxy)
+        if (idiag_fconvzxy/=0) &
+            call zsum_mn_name_xy(p%rho*p%uu(:,3)*p%TT,idiag_fconvzxy)
       endif
 !
     endsubroutine dss_dt
@@ -4270,7 +4276,8 @@ module Entropy
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
         idiag_uyTTmxy=0; idiag_uzTTmxy=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; 
-        idiag_fradxy_Kprof=0; idiag_fconvz=0
+        idiag_fradxy_Kprof=0; idiag_fconvxy=0; 
+        idiag_fconvyxy=0; idiag_fconvzxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -4356,6 +4363,8 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbthxy',idiag_fturbthxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvxy',idiag_fconvxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvyxy',idiag_fconvyxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvzxy',idiag_fconvzxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
