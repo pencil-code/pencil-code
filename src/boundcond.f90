@@ -598,11 +598,7 @@ module Boundcond
               case ('hds')
                 ! BCZ_DOC: hydrostatic equilibrium with
                 !          a high-frequency filter
-                if (llocal_iso) then
-                  call bc_lnrho_hdss_z_liso(f,topbot)
-                else
-                  call bc_lnrho_hdss_z_iso(f,topbot)
-                endif
+                call bc_lnrho_hdss_z_iso(f,topbot)
               case ('cT')
                 ! BCZ_DOC: constant temp.
                 ! BCZ_DOC:
@@ -629,15 +625,10 @@ module Boundcond
                 ! BCZ_DOC: hydrostatic equilibrium
                 if (.not.lgrav) call fatal_error('boundconds_z', &
                   'hs boundary condition requires gravity')
-                if (llocal_iso) then !non local
-                  if (j==ilnrho) call bc_lnrho_hds_z_liso(f,topbot)
-!                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
-                else
-                  if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
-                  if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
-                  if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
-!                 if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
-                endif
+                if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
+                if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
+                if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
+                !if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
               case ('cp')
                 ! BCZ_DOC: constant pressure
                 ! BCZ_DOC:
