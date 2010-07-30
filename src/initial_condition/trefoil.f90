@@ -81,18 +81,20 @@ module InitialCondition
 !  a linking number 3.
 !
 !  Created 2009-06-05 by Simon Candelaresi (Iomsn)
-!  Last modified
-!
-!  WARNING: DO NOT USE THIS SUBROUTINE, THIS IS STILL WORK IN PROGRESS
 !
       use Mpicomm, only: stop_it
-!
+      use Poisson
+      use Sub
+      
       real, dimension (mx,my,mz,mfarray) :: f
       real :: knot_param, circle_param, circle_radius
       real :: delta_knot_param, delta_circle_param, delta_circle_radius
       real, dimension(3) :: knot_pos, circle_pos, tangent, normal
       integer :: domain_width, domain_depth, domain_height
-      integer :: l 
+      integer :: l, j, ju
+      ! The next 2 variables are used for the uncurling.
+      real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
+      
 !
 !  initialize the magnetic flux tube
 !
@@ -221,6 +223,29 @@ module InitialCondition
           circle_radius = circle_radius + delta_circle_radius
         enddo
         knot_param = knot_param + delta_knot_param
+      enddo
+      
+!
+!  Transform the magnetic field into a vector potential
+!
+
+!  Compute curl(B) = J for th ePoisson solver
+
+      do m=m1,m2
+         do n=n1,n2
+            call curl(f,iaa,jj(:,m-nghost,n-nghost,:))
+         enddo
+      enddo
+      tmpJ = -jj
+!  Use the Poisson solver to solve \nabla^2 A = -J for A
+      do j=1,3
+        call inverse_laplacian(f,tmpJ(:,:,:,j))
+      enddo
+      
+!  Overwrite the f-array with the correct vector potential A
+      do j=1,3
+          ju=iaa-1+j
+          f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
       enddo
 !
     endsubroutine initial_condition_aa
