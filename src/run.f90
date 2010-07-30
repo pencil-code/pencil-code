@@ -66,8 +66,8 @@ program run
   use NSCBC,           only: NSCBC_clean_up
   use Param_IO
   use Particles_main
-  use Particles_nbody, only: particles_nbody_read_snapshot, &
-                             particles_nbody_write_snapshot
+  !use Particles_nbody, only: particles_nbody_read_snapshot, &
+  !                           particles_nbody_write_snapshot
   use Pencil_check,    only: pencil_consistency_check
   use Register
   use SharedVariables, only: sharedvars_clean_up
@@ -254,9 +254,9 @@ program run
   call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
   if (lparticles) &
       call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
-  if (lparticles_nbody) &
-      call particles_nbody_read_snapshot(&
-      trim(datadir)//'/proc0/spvar.dat')
+  !if (lparticles_nbody) &
+  !    call particles_nbody_read_snapshot(&
+  !    trim(datadir)//'/proc0/spvar.dat')
   call get_nseed(nseed)
 !
 !  Read time and global variables (if any).
@@ -578,10 +578,10 @@ program run
         ENUM=.true.,FLIST='pvarN.list')
 !  This is weird... if I write only to the root,
 !  the other processors complain...
-    if (lparticles_nbody) &
-        call particles_nbody_write_snapshot(&
-        trim(directory_snap)//'/SPVAR',&
-        ENUM=.true.,FLIST='spvarN.list')
+    !if (lparticles_nbody) &
+    !    call particles_nbody_write_snapshot(&
+    !    trim(directory_snap)//'/SPVAR',&
+    !    ENUM=.true.,FLIST='spvarN.list')
     call wsnap(trim(directory_snap)//'/VAR',f, &
         mvar_io,ENUM=.true.,FLIST='varN.list')
     call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
@@ -599,9 +599,9 @@ program run
         if (lparticles) &
             call particles_write_snapshot( &
             trim(directory_snap)//'/pvar.dat',f,ENUM=.false.)
-        if (lparticles_nbody.and.lroot) &
-            call particles_nbody_write_snapshot( &
-            trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
+        !if (lparticles_nbody.and.lroot) &
+        !    call particles_nbody_write_snapshot( &
+        !    trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
         call wsnap(trim(directory_snap)//'/var.dat', &
                    f,mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
@@ -679,9 +679,9 @@ program run
     if (save_lastsnap) then
       if (lparticles) call particles_write_snapshot( &
           trim(directory_snap)//'/pvar.dat',f,ENUM=.false.)
-      if (lparticles_nbody.and.lroot) &
-          call particles_nbody_write_snapshot( &
-          trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
+      !if (lparticles_nbody.and.lroot) &
+      !    call particles_nbody_write_snapshot( &
+      !    trim(datadir)//'/proc0/spvar.dat',ENUM=.false.)
       call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
 !
