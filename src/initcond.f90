@@ -50,7 +50,6 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: set_thermodynamical_quantities
   public :: const_lou
   public :: corona_init,mdi_init,temp_hydrostatic
   public :: innerbox
