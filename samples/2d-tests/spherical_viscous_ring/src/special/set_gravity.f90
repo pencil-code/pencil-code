@@ -148,6 +148,7 @@ module Special
       print*,"Sum global gg = ",sum(gravity) 
 !
       call keep_compiler_quiet(lstarting)
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -200,6 +201,9 @@ module Special
 !
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) & 
            + gravity(:,m-m1+1,n-n1+1,:)
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
