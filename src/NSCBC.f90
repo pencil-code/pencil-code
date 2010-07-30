@@ -710,7 +710,6 @@ include 'NSCBC.h'
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      integer :: i
 !
       if (present(iostat)) then
         read(unit,NML=NSCBC_init_pars,ERR=99, IOSTAT=iostat)
@@ -730,7 +729,7 @@ include 'NSCBC.h'
 
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-      integer :: i,stat
+      integer :: stat
       logical :: exist
       character (len=500) :: file
 !
