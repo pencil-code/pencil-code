@@ -24,7 +24,7 @@ module Magnetic_meanfield
 !
   implicit none
 !
-  include './meanfield.h'
+  include 'meanfield.h'
 !
 !  array for inputting alpha profile
 !

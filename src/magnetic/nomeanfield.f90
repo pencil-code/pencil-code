@@ -22,7 +22,7 @@ module Magnetic_meanfield
 !
   implicit none
 !
-  include './meanfield.h'
+  include 'meanfield.h'
 !
   contains
 !***********************************************************************
