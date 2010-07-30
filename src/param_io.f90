@@ -61,8 +61,6 @@ module Param_IO
 ! under IRIX -- at least for the moment
 !
   character (len=labellen) :: mips_is_buggy='system'
-!AB/15-Mar-07: the lcylindrical is kept to produce a warning: outdated
-  logical :: lcylindrical
 !
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, coord_system, &
@@ -77,7 +75,7 @@ module Param_IO
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       tstart, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, fbcz1_1, fbcz1_2, &
       fbcz2_1, fbcz2_2, fbcx1_2, fbcx2_2, xyz_step, xi_step_frac, &
-      xi_step_width, niter_poisson, lcylindrical, lcylinder_in_a_box, &
+      xi_step_width, niter_poisson, lcylinder_in_a_box, &
       lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, border_frac_x, border_frac_y, border_frac_z, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
@@ -191,6 +189,13 @@ module Param_IO
     subroutine read_startpars(print,file)
 !
 !  read input parameters (done by each processor)
+!
+!  Now no warning is produced when somebody sets lcylindrical.
+!  read_startpars: lcylindrical=T is now outdated'
+!  use instead: lcylinder_in_a_box=T'
+!  This renaming became necessary with the development of'
+!  cylindrical coordinates which led to very similar names'
+!  (coord_system="cylindrical_coords")'
 !
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
@@ -392,21 +397,6 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_startpars')
-!
-!  Produce a warning when somebody still sets lcylindrical.
-!
-      if (lcylindrical) then
-        if (lroot) then
-          print*
-          print*,'read_startpars: lcylindrical=T is now outdated'
-          print*,'use instead: lcylinder_in_a_box=T'
-          print*,'This renaming became necessary with the development of'
-          print*,'cylindrical coordinates which led to very similar names'
-          print*,'(coord_system="cylindrical_coords")'
-          print*
-        endif
-        call fatal_error('read_startpars','')
-      endif
 !
     endsubroutine read_startpars
 !***********************************************************************

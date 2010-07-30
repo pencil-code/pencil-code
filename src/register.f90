@@ -339,12 +339,14 @@ module Register
 !  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
 !  Note that ldt will not change unless you RELOAD parameters.
 !
-! Why is this here?...
-!   ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
-!   AB   maybe not, because initialize_modules can also be run from start.f90,
-!   AB   which has no knowledge of timestep.f90
+!  Note that this should this should not be moved to timestep.f90 as
+!  run_hooks_timestep(), because maybe not, because initialize_modules
+!  can also be run from start.f90, which has no knowledge of timestep.f90
 !
-      ldt = (dt==0.)            ! need to calculate dt dynamically?
+!  The calculation of ldt needs to be done calculate dt dynamically,
+!  because the time step can be changed after a reload.
+!
+      ldt = (dt==0.)
       if (lroot .and. ip<14) then
         if (ldt) then
           print*,'timestep based on CFL cond; cdt=',cdt

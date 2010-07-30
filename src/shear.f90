@@ -60,8 +60,6 @@ module Shear
 !  Calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
 !  is calculated. Otherwise Sshear keeps its value from the input list.
 !
-!AB:  use SharedVariables, only: put_shared_variable
-!
       if (qshear/=0.0) Sshear=-qshear*Omega
       if (lroot .and. ip<=12) &
           print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
