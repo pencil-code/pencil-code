@@ -1275,40 +1275,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hdss_z_liso(f,topbot)
-!
-!  Potential field boundary condition
-!
-!  02-jul-07/wlad: Adapted from Tobi's bc_aa_pot2
-!  Does the same thing as bc_lnrho_hdss_z_iso, but for a local isothermal
-!  equation of state (as opposed to strictly isothermal).
-!
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hdss_z_liso
-!***********************************************************************
-    subroutine bc_lnrho_hds_z_liso(f,topbot)
-!
-!  Boundary condition for density
-!
-!  12-Jul-2006/dintrans: coded
-!  18-Jul-2007/wlad: adapted for local isothermal equation of state
-!
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_liso
-!***********************************************************************
-!0000000000000000000000000000000000000000000000000000000000000000000000000
-! moved form chemistry module
-!000000000000000000000000000000000000000000000000000000000000000000000000
     subroutine find_mass(element_name,MolMass)
 !
 !  Find mass of element

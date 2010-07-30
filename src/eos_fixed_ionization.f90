@@ -1249,18 +1249,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hds_z_liso(f,topbot)
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call stop_it("bc_lnrho_hds_z_liso: NOT IMPLEMENTED IN NOEOS")
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_liso
-!***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
       character (len=3) :: topbot
@@ -1272,18 +1260,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_iso
-!***********************************************************************
-    subroutine bc_lnrho_hdss_z_liso(f,topbot)
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call stop_it("bc_lnrho_hdss_z_liso: NOT IMPLEMENTED IN NOEOS")
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
     subroutine read_transport_data
 

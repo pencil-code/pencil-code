@@ -1447,18 +1447,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hds_z_iso
 !***********************************************************************
-    subroutine bc_lnrho_hds_z_liso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_lnrho_hds_z_liso','not implemented in noeos')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hds_z_liso
-!***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1470,18 +1458,6 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_iso
-!***********************************************************************
-    subroutine bc_lnrho_hdss_z_liso(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_lnrho_hdss_z_liso','not implemented in noeos')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_lnrho_hdss_z_liso
 !***********************************************************************
     subroutine read_transport_data
 
