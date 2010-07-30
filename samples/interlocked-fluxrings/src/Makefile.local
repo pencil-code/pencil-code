@@ -18,3 +18,4 @@ RADIATION=   radiation_ray
 GRAVITY  = nogravity
 FORCING  = noforcing
 
+INITIAL_CONDITION = initial_condition/fluxrings

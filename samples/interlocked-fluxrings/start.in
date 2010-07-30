@@ -6,6 +6,14 @@
   cvsid='$Id$'
   lwrite_aux=T                  ! write out auxiliary variables
 /
+&initial_condition_pars
+   amplaa=1.0
+   initring='fluxrings'
+   fring1=1e-0, Iring1=0., Rring1=1., wr1=0.3,
+   axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
+   fring2=1e-0, Iring2=0., Rring2=1., wr2=0.3,
+   axisr2=1.,0.,0., dispr2=0.,0.5,0.,
+/
 &eos_init_pars
   gamma=1. ! isothermal
 /
@@ -14,11 +22,6 @@
 &density_init_pars
 /
 &magnetic_init_pars
-  initaa='fluxrings', amplaa=1e-0
-  fring1=1e-0, Iring1=0., Rring1=1., wr1=0.3,
-    axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
-  fring2=1e-0, Iring2=0., Rring2=1., wr2=0.3,
-    axisr2=1.,0.,0., dispr2=0.,0.5,0.,
 /
 &radiation_init_pars
   radx=0,rady=0,radz=1,rad2max=1     ! use only one horizontal ray
