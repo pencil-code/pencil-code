@@ -327,7 +327,7 @@ module Dustdensity
 !
       real, dimension (nx) :: eps
       real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt
-      real :: water_ice=1.
+      !real :: water_ice=1.
       integer :: j,k,l
       logical :: lnothing
 !
