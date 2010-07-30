@@ -1095,7 +1095,7 @@ else if ($hostname =~ jugene*) then
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
 #---------------------------------------------------
-else if (($hostname =~ ip237*) || ($hostname =~ groovy)) then
+else if (($hostname =~ ip237*) || ($hostname =~ groovy.local)) then
   echo "Anders's MacBook Pro"
   set local_disc = 0
   set one_local_disc = 1
