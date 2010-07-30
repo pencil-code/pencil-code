@@ -1658,8 +1658,7 @@ module Magnetic
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb
       real, dimension (nx) :: jcrossb2
-      real, dimension (nx,3) :: Bk_Bki,tmp_jxb
-      real :: B2_ext,c,s,kx,fact
+      real :: B2_ext,c,s
       integer :: i,j,ix
 !
       intent(inout) :: f,p
