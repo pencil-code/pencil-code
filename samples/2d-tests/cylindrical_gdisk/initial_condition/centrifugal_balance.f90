@@ -135,7 +135,6 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: rr_cyl,rr_sph,OO,g_r,tmp
-      real :: g0_
       integer :: i
 !
       if (lroot) &
