@@ -730,8 +730,6 @@ module Hydro
         case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,&
                                    rot_rr,xsphere,ysphere,zsphere)
         case ('diffrot'); call diffrot(ampluu(j),f,iuy)
-!--     case ('centrifugal-balance','global-shear'); call centrifugal_balance(f)
-!--Wlad to fix this
         case ('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
         case ('sinwave-phase')
           call sinwave_phase(f,iux,ampl_ux(j),kx_ux(j),ky_ux(j),kz_ux(j),phase_ux(j))
