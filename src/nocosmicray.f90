@@ -91,8 +91,6 @@ module Cosmicray
     subroutine init_ecr(f)
 !
 !  initialise magnetic field; called from start.f90
-!  AB: maybe we should here call different routines (such as rings)
-!  AB: and others, instead of accummulating all this in a huge routine.
 !  We have an init parameter (initlncc) to stear magnetic i.c. independently.
 !
 !   6-jul-02/axel: coded

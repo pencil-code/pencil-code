@@ -626,8 +626,6 @@ module Equ
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)
 !
-! WL: why isn't advec_uud in this calculation?
-!
           maxadvec=0.0
           maxdiffus=0.0
           maxdiffus2=0.0

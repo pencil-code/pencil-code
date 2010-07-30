@@ -683,9 +683,7 @@ module Particles_nbody
                     iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),0,ipar(k))
               else if (linterpolate_quadratic_spline) then
 !
-! WL: I am not sure if this interpolation
-!     works for cylindrical coordinates, so
-!     beware
+!  This interpolation works also for cylindrical coordinates.
 !
                 call interpolate_quadratic_spline(f,iglobal_ggp,&
                     iglobal_ggp+2,fp(k,ixp:izp),accg,ineargrid(k,:),0,ipar(k))

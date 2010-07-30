@@ -209,16 +209,6 @@ module NeutralDensity
 !
       if (borderlnrhon/='nothing') call request_border_driving()
 !
-! Tell the equation of state that we're here and what f variable we use
-!
-! WL: need an equation of state!!
-!
-        !if (lneutraldensity_nolog) then
-        !  call select_eos_variable('rhon',ilnrhon)
-        !else
-        !  call select_eos_variable('lnrhon',ilnrhon)
-        !endif
-!
     endsubroutine initialize_neutraldensity
 !***********************************************************************
     subroutine read_neutraldensity_init_pars(unit,iostat)

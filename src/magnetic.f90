@@ -997,8 +997,6 @@ module Magnetic
     subroutine init_aa(f)
 !
 !  initialise magnetic field; called from start.f90
-!  AB: maybe we should here call different routines (such as rings)
-!  AB: and others, instead of accummulating all this in a huge routine.
 !  We have an init parameter (initaa) to stear magnetic i.c. independently.
 !
 !   7-nov-2001/wolf: coded
@@ -1332,7 +1330,11 @@ module Magnetic
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
-!WL: for the cylindrical case, lpencil_check says graddiva is not needed
+!
+!  Note that for the cylindrical case, according to lpencil_check,
+!  graddiva is not needed. We still need it for the lspherical_coords
+!  case, although we should check this.
+!
       if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
@@ -1342,13 +1344,14 @@ module Magnetic
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-!     if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
-!AB: why should ldt require rho1?
+!
+!  Other necessary pencils.
+!
       if (lentropy .or. ltemperature) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
 !
-!  ambipolar diffusion
+!  Ambipolar diffusion.
 !
       if (nu_ni/=0.0) then
         lpenc_requested(i_va2)=.true.
@@ -1620,20 +1623,6 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
-!
-!AB: do we still need these following out-commented lines?
-!
-!  Pencils bij, del2a and graddiva come in a bundle.
-!     if ( lpencil_in(i_bij) .and. &
-!         (lpencil_in(i_del2a).or.lpencil_in(i_graddiva)) ) then
-!       lpencil_in(i_del2a)=.false.
-!       lpencil_in(i_graddiva)=.false.
-!     endif
-!     if (lpencil_in(i_del2a) .and. &
-!         (lpencil_in(i_bij).or.lpencil_in(i_graddiva)) ) then
-!       lpencil_in(i_bij)=.false.
-!       lpencil_in(i_graddiva)=.false.
-!     endif
 !
 !  check for pencil_interdep_magnetic_mf
 !

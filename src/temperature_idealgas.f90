@@ -174,7 +174,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
-      logical :: lnothing
+!AB?  logical :: lnothing
       integer :: i, ierr
       real, dimension(5) :: hole_params
 !
@@ -212,7 +212,7 @@ module Entropy
       lheatc_hyper3=.false.
       lheatc_hyper3_polar=.false.
 !
-      lnothing = .false.
+!AB?  lnothing = .false.
 !
       do i=1,nheatc_max
       select case (iheatcond(i))
@@ -257,7 +257,8 @@ module Entropy
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
         case ('nothing')
-          if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
+!AB?      if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
+          if (lroot) print*,'heat conduction: nothing'
         case default
           if (lroot) then
             write(unit=errormsg,fmt=*)  &
@@ -267,7 +268,7 @@ module Entropy
        endselect
        enddo
 ! WL: is this correct? In density, lnothing=.true. is inside the do-loop
-       lnothing=.true.
+!AB?   lnothing=.true.
 !
 !  Compute and store hcond and dhcond if hcond_global=.true.
 !
@@ -391,14 +392,14 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       integer :: j
-      logical :: lnothing=.true.
+!AB?  logical :: lnothing=.true.
       real :: haut, Rgas, cp1, Ttop, alpha, beta, expo
 !
       do j=1,ninit
 !
         if (initlnTT(j)/='nothing') then
 !
-          lnothing=.false.
+!AB?      lnothing=.false.
 !
           call chn(j,iinit_str)
 !
@@ -491,7 +492,7 @@ module Entropy
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
-      if (lnothing.and.lroot) print*,'init_ss: nothing'
+!AB?  if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
       if (ltemperature_nolog.and.linitial_log) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
 !

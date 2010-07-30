@@ -247,7 +247,6 @@
 !  need data where ipx=0
 !
       if (slice_position/='w') then 
-      !WL's ugly hack: no yz for spherical coordinates 
       ipx=0
       do ipz=0,nprocz-1
       do ipy=0,nprocy-1

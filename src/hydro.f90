@@ -1492,8 +1492,10 @@ module Hydro
           p%del2u=p%graddivu-p%qq
        endif
 !
-!   Avoid warnings from pencil consistency check...
-!   WL: WHY SHOULD WE WANT TO AVOID WARNINGS FROM THE PENCIL CHECK??
+!  Avoid warnings from pencil consistency check...
+!  WL: WHY SHOULD WE WANT TO AVOID WARNINGS FROM THE PENCIL CHECK??
+!  AB: should return to this problem when we have a good spherical
+!  problem at hand.
 !
         !if (.not. lpencil(i_uij)) p%uij=0.0
         !if (.not. lpencil(i_graddivu)) p%graddivu=0.0
@@ -1640,11 +1642,12 @@ module Hydro
         endif
       endif
 !
-!WL: don't know if this is correct, but it's the only way I can make
-!    some 1D and 2D samples work when the non-existent direction has the
-!    largest velocity (like a 2D rz slice of a Keplerian disk that rotates
-!    on the phi direction)
-!    Please check
+!  Empirically, it turns out that we need to take the full 3-D velocity
+!  into account for computing the time step. It is not clear why.
+!  Wlad finds that, otherwise, the code blows up for 2-D disk problem.
+!  Some 1D and 2D samples work when the non-existent direction has the
+!  largest velocity (like a 2D rz slice of a Keplerian disk that rotates
+!  on the phi direction).
 !
       if (lisotropic_advection) then
          if (lfirst.and.ldt) then
