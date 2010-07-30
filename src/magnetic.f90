@@ -83,21 +83,14 @@ module Magnetic
   character (len=labellen) :: meanfield_etat_profile='const'
   character (len=labellen) :: meanfield_Beq_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
-  character (len=labellen) :: fring_profile='tanh'
 !
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: eta_aniso_hyper3
-  real, dimension(3) :: axisr1=(/0,0,1/), dispr1=(/0.0,0.5,0.0/)
-  real, dimension(3) :: axisr2=(/1,0,0/), dispr2=(/0.0,-0.5,0.0/)
-  real, dimension(3) :: axisr3=(/1,0,0/), dispr3=(/0.0,-0.5,0.0/)
   real, dimension(nx,3) :: uxbb
   real, target :: zmode=1.0 !(temporary)
-  real :: fring1=0.0, Iring1=0.0, Rring1=1.0, wr1=0.3
-  real :: fring2=0.0, Iring2=0.0, Rring2=1.0, wr2=0.3
-  real :: fring3=0.0, Iring3=0.0, Rring3=1.0, wr3=0.3
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
@@ -145,6 +138,7 @@ module Magnetic
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
   logical :: lresi_hyper3_polar=.false.
+  logical :: lresi_hyper3_mesh=.false.
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep=.false., lresi_dust=.false., lresi_xydep=.false.
   logical :: lresi_hyper3_aniso=.false.
@@ -176,12 +170,9 @@ module Magnetic
   logical :: lreset_aa=.false.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, lohmic_heat, fring1, Iring1, Rring1, wr1, axisr1, dispr1, fring2, &
-      Iring2, Rring2, wr2, axisr2, dispr2, fring3, Iring3, Rring3, wr3,  &
-      axisr3, dispr3, fring_profile, nrings, radius, epsilonaa, x0aa, z0aa, &
+      B_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, &
       widthaa, by_left, by_right, bz_left, bz_right, &
-      relhel_aa, &
-      initaa, amplaa, kx_aa, &
+      relhel_aa, initaa, amplaa, kx_aa, &
       ky_aa, kz_aa, coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
@@ -194,6 +185,7 @@ module Magnetic
 ! Run parameters
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
+  real :: eta_hyper3_mesh=5.0
   real :: meanfield_molecular_eta=0.0,eta_spitzer=0.
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0
@@ -267,7 +259,7 @@ module Magnetic
       lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, llarge_scale_velocity, EMF_profile, &
       lEMF_profile, lhalox, vcrit_anom, lalpha_profile_total, eta_jump,&
-      Omega_rmax,Omega_rwidth,lrun_initaa
+      Omega_rmax,Omega_rwidth,lrun_initaa,eta_hyper3_mesh
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -728,6 +720,7 @@ module Magnetic
       lresi_hyper2=.false.
       lresi_hyper3=.false.
       lresi_hyper3_polar=.false.
+      lresi_hyper3_mesh=.false.
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
@@ -761,6 +754,9 @@ module Magnetic
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*, 'resistivity: hyper3 curvilinear'
           lresi_hyper3_polar=.true.
+        case ('hyper3_mesh','hyper3-mesh')
+          if (lroot) print*, 'resistivity: resolution-independent hyper resistivity'
+          lresi_hyper3_mesh=.true.
         case ('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
@@ -848,6 +844,9 @@ module Magnetic
         if (lresi_hyper3_polar.and.eta_hyper3==0.0) &
              call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
+        if (lresi_hyper3_mesh.and.eta_hyper3_mesh==0.0) &
+             call fatal_error('initialize_magnetic', &
+             'Resistivity coefficient eta_hyper3_mesh is zero!')
         if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
@@ -1179,10 +1178,6 @@ module Magnetic
         case ('bipolar_restzero'); call bipolar_restzero(amplaa(j),f,iaa,kx_aa(j),ky_aa(j))
         case ('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
-        case ('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa,fring_profile)
-        case ('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa,fring_profile)
-        case ('fluxrings_BW'); call fluxrings(amplaa(j),f,iaa,iuu,fring_profile)
-        case ('fluxrings_WW'); call fluxrings(amplaa(j),f,iuu,iuu,fring_profile)
         case ('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case ('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
@@ -2465,6 +2460,18 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) &
              diffus_eta3=diffus_eta3+eta_hyper3*pi4_1/dxyz_4
+      endif
+!
+      if (lresi_hyper3_mesh) then
+        do j=1,3
+          ju=j+iaa-1
+          do i=1,3
+            call der6(f,ju,tmp1,i,IGNOREDX=.true.)
+            fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1*tmp1*dline_1(:,i)
+          enddo
+        enddo
+        if (lfirst.and.ldt) &
+             diffus_eta3=diffus_eta3+eta_hyper3_mesh*pi5_1/dxyz_5
       endif
 !
       if (lresi_hyper3_strict) then
@@ -5429,163 +5436,6 @@ module Magnetic
       enddo; enddo
 !
     endsubroutine alfvenz_rot_shear
-!***********************************************************************
-    subroutine fluxrings(ampl,f,ivar1,ivar2,profile)
-!
-!  Magnetic flux rings. Constructed from a canonical ring which is the
-!  rotated and translated:
-!    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
-!  where AA0(xxx) is the canonical ring and D the rotation matrix
-!  corresponding to a rotation by phi around z, followed by a
-!  rotation by theta around y.
-!  The array was already initialized to zero before calling this
-!  routine.
-!  Optional argument `profile' allows to choose a different profile (see
-!  norm_ring())
-!
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: xx1,yy1,zz1
-      real, dimension(3) :: axis,disp
-      real :: ampl,phi,theta,ct,st,cp,sp
-      real :: fring,Iring,R0,width
-      integer :: i,ivar=-1,ivar1,ivar2,ivar3
-      character (len=*), optional :: profile
-      character (len=labellen) :: prof
-!
-      if (present(profile)) then
-        prof = profile
-      else
-        prof = 'tanh'
-      endif
-!
-!  fix ivar3=ivar1 (for now)
-!
-      ivar3=ivar1
-!
-!  initialize each ring
-!
-      if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
-        ! fringX is the magnetic flux, IringX the current
-        if (lroot) then
-          print*, 'fluxrings: Initialising magnetic flux rings'
-        endif
-        do i=1,nrings
-          if (i==1) then
-            fring = fring1      ! magnetic flux along ring
-            Iring = Iring1      ! current along ring (for twisted flux tube)
-            R0    = Rring1      ! radius of ring
-            width = wr1         ! ring thickness
-            axis  = axisr1      ! orientation
-            disp  = dispr1      ! position
-            ivar  = ivar1
-          elseif (i==2) then
-            fring = fring2
-            Iring = Iring2
-            R0    = Rring2
-            width = wr2
-            axis  = axisr2
-            disp  = dispr2
-            ivar  = ivar2
-          elseif (i==3) then
-            fring = fring3
-            Iring = Iring3
-            R0    = Rring3
-            width = wr3
-            axis  = axisr3
-            disp  = dispr3
-            ivar  = ivar3
-          else
-            call stop_it('fluxrings: nrings is too big')
-          endif
-          phi   = atan2(axis(2),axis(1)+epsi)
-          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
-          ct = cos(theta); st = sin(theta)
-          cp = cos(phi)  ; sp = sin(phi)
-          ! Calculate D^(-1)*(xxx-disp)
-          do n=n1,n2; do m=m1,m2
-            xx1= ct*cp*(x(l1:l2)-disp(1))+ct*sp*(y(m)-disp(2))-st*(z(n)-disp(3))
-            yy1=-   sp*(x(l1:l2)-disp(1))+   cp*(y(m)-disp(2))
-            zz1= st*cp*(x(l1:l2)-disp(1))+st*sp*(y(m)-disp(2))+ct*(z(n)-disp(3))
-            call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
-            ! calculate D*tmpv
-            f(l1:l2,m,n,ivar  ) = f(l1:l2,m,n,ivar  ) + ampl*( &
-                 + ct*cp*tmpv(:,1) - sp*tmpv(:,2) + st*cp*tmpv(:,3))
-            f(l1:l2,m,n,ivar+1) = f(l1:l2,m,n,ivar+1) + ampl*( &
-                 + ct*sp*tmpv(:,1) + cp*tmpv(:,2) + st*sp*tmpv(:,3))
-            f(l1:l2,m,n,ivar+2) = f(l1:l2,m,n,ivar+2) + ampl*( &
-                 - st   *tmpv(:,1)                + ct   *tmpv(:,3))
-          enddo; enddo
-        enddo
-      endif
-      if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
-!
-    endsubroutine fluxrings
-!***********************************************************************
-    subroutine norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,vv,profile)
-!
-!  Generate vector potential for a flux ring of magnetic flux FRING,
-!  current Iring (not correctly normalized), radius R0 and thickness
-!  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
-!
-!   1-may-02/wolf: coded (see the manual, Section C.3)
-!   7-jun-09/axel: added gaussian and constant (or box) profiles
-!
-      use Mpicomm, only: stop_it
-      use Sub
-!
-      real, dimension (nx,3) :: vv
-      real, dimension (nx) :: xx1,yy1,zz1,phi,tmp
-      real :: fring,Iring,R0,width
-      character (len=*) :: profile
-!
-!  magnetic ring, define r-R
-!
-      tmp = sqrt(xx1**2+yy1**2)-R0
-!
-!  choice of different profile functions
-!
-      select case (profile)
-!
-!  gaussian profile, exp(-.5*(x/w)^2)/(sqrt(2*pi)*eps),
-!  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
-!
-      case ('gaussian')
-        vv(:,3) = - fring * .5*(1.+erfunc(tmp/(sqrt(2.)*width))) &
-                          * exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
-!
-!  tanh profile, so the delta function is approximated by 1/cosh^2.
-!  The name tanh is misleading, because the actual B frofile is
-!  1./cosh^2, but this is harder to write.
-!
-      case ('tanh')
-        vv(:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
-                          * 0.5/width/cosh(zz1/width)**2
-!
-!  constant profile, so the delta function is approximated by the function
-!  delta(x) = 1/2w, if -w < x < w.
-!
-      case ('const')
-        vv(:,3) = - fring * 0.5*(1.+max(-1.,min(tmp/width,1.))) &
-                          * 0.25/width*(1.-sign(1.,abs(zz1)-width))
-!
-!  there is no default option here
-!
-      case default
-        call stop_it('norm_ring: No such fluxtube profile')
-      endselect
-!
-!  current ring (to twist the B-lines)
-!
-      tmp = width - sqrt(tmp**2 + zz1**2)
-      tmp = Iring*0.5*(1+tanh(tmp/width))     ! Now the A_phi component
-      phi = atan2(yy1,xx1)
-      vv(:,1) = - tmp*sin(phi)
-      vv(:,2) =   tmp*cos(phi)
-!
-    endsubroutine norm_ring
 !***********************************************************************
     subroutine torus_test(ampl,f)
 !
