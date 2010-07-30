@@ -10,8 +10,10 @@
 /
 &magnetic_run_pars
   lmeanfield_theory=T
-  meanfield_etat=1.
   eta=1e-2
+/
+&magnetic_mf_run_pars
+  meanfield_etat=1.
 /
 &special_run_pars
   kf_alpm=10., alpmdiff=1.

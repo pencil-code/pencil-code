@@ -9,6 +9,7 @@ DENSITY   = nodensity
 EOS       = noeos
 ENTROPY   = noentropy
 MAGNETIC  =   magnetic
+MAGNETIC_MEANFIELD=   magnetic/meanfield
 VISCOSITY = noviscosity
 SPECIAL   =   special/meanfield_alpm
 REAL_PRECISION=double
