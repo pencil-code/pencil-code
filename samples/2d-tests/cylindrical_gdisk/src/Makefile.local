@@ -17,3 +17,5 @@ FORCING   = noforcing
 SHEAR     = noshear
 
 REAL_PRECISION=double
+
+INITIAL_CONDITION = initial_condition/centrifugal_balance
