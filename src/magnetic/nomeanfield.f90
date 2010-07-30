@@ -1,4 +1,4 @@
-! $Id: magnetic.f90 14421 2010-07-23 23:55:02Z Bourdin.KIS $
+! $Id$
 !
 !  This modules solves mean-field contributions to both the
 !  induction and the momentum equations.

@@ -1,4 +1,4 @@
-! $Id: magnetic.h 14416 2010-07-23 15:13:00Z Bourdin.KIS $
+! $Id$
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !
   private
