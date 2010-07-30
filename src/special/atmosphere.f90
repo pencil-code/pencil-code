@@ -71,12 +71,12 @@ module Special
   character (len=labellen) :: initstream='default'
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_water=0!, ind_cloud=0
-  real :: sigma=1.
+  real :: sigma=1., Period=1.
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma
+      lbuoyancy_z,lbuoyancy_x, sigma, Period
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -471,14 +471,14 @@ module Special
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              + gg*((p%TT(:)-TT0)/TT0 &
              + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
-          !   - const_tmp*p%fcloud(:)
-             )
+             - p%fcloud(:) &
+            )
       elseif (lbuoyancy_x) then
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
              + gg*((p%TT(:)-TT0)/TT0 &
-           !  + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
-           !  - const_tmp*p%fcloud(:)
-           )
+             + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
+             - p%fcloud(:) &
+            )
       endif
 !
        dt1=1./dt
@@ -559,12 +559,16 @@ module Special
              call bc_stream_x(f,-1, bc)
          endselect
          bc%done=.true.
-         case ('sux')
+         case ('cou')
          select case (bc%location)
            case (iBC_X_TOP)
-             call bc_sin_ux(f,-1, bc)
+             call bc_cos_ux(f,bc)
            case (iBC_X_BOT)
-             call bc_sin_ux(f,-1, bc)
+             call bc_cos_ux(f,bc)
+           case (iBC_Y_TOP)
+             call bc_cos_uy(f,bc)
+           case (iBC_Y_BOT)
+             call bc_cos_uy(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -645,14 +649,13 @@ module Special
 !
     endsubroutine bc_stream_x
 !******************************************************************** 
-  subroutine bc_sin_ux(f,sgn,bc)
+  subroutine bc_cos_ux(f,bc)
 !
 ! Natalia
 !
     use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: sgn
       type (boundary_condition) :: bc
       integer :: i,j,vr
       integer :: jjj,kkk
@@ -660,7 +663,7 @@ module Special
       real, dimension (my,mz) :: u_profile
 !
       do jjj=1,my
-         u_profile(jjj,:)=cos(PI*y(jjj)/Lxyz(2))
+         u_profile(jjj,:)=cos(Period*PI*y(jjj)/Lxyz(2))
       enddo
 !
       vr=bc%ivar
@@ -670,18 +673,54 @@ module Special
       if (bc%location==iBC_X_BOT) then
       ! bottom boundary
         f(l1,m1:m2,n1:n2,vr) = value1*u_profile(m1:m2,n1:n2)
-        do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+        do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
       elseif (bc%location==iBC_X_TOP) then
       ! top boundary
         f(l2,m1:m2,n1:n2,vr) = value2*u_profile(m1:m2,n1:n2)
-        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
+        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
       endif
 !
-    endsubroutine bc_sin_ux
+    endsubroutine bc_cos_ux
 !******************************************************************** 
+ subroutine bc_cos_uy(f,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (boundary_condition) :: bc
+      integer :: i,j,vr
+      integer :: jjj,kkk
+      real :: value1, value2
+      real, dimension (mx,mz) :: u_profile
+!
+      do jjj=1,mx
+         u_profile(jjj,:)=cos(PI*x(jjj)/Lxyz(1))
+      enddo
+!
+      vr=bc%ivar
+      value1=bc%value1
+      value2=bc%value2
+!
+      if (bc%location==iBC_Y_BOT) then
+      ! bottom boundary
+        f(l1:l2,m1,n1:n2,vr) = value1*u_profile(l1:l2,n1:n2)
+        do i=0,nghost; f(:,m1-i,:,vr)=2*f(:,m1,:,vr)-f(:,m1+i,:,vr); enddo
+      elseif (bc%location==iBC_Y_TOP) then
+      ! top boundary
+        f(l1:l2,m2,n1:n2,vr) = value2*u_profile(l1:l2,n1:n2)
+        do i=1,nghost; f(:,m2+i,:,vr)=2*f(:,m2,:,vr)-f(:,m2-i,:,vr); enddo
+      else
+        print*, "bc_BL_y: ", bc%location, " should be `top(", &
+                        iBC_Y_TOP,")' or `bot(",iBC_Y_BOT,")'"
+      endif
+!
+    endsubroutine bc_cos_uy
+!********************************************************************
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are

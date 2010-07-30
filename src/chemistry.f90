@@ -597,7 +597,7 @@ module Chemistry
            lpenc_requested(i_glambda)=.true.
          endif
 
-         if (latmchem) then
+         if (latmchem .or. lcloud) then
            lpenc_requested(i_ppwater)=.true.
            lpenc_requested(i_Ywater)=.true.
          endif
@@ -2291,13 +2291,15 @@ module Chemistry
 !
 ! commented for the testing. Sould be used later
 !
-!          df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
-!              - p%ccondens
-!          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-!              + 2.5e10/1.005e7*p%ccondens*p%TT1
+          df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
+              - p%ccondens
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+              + 2.5e10/1.005e7*p%ccondens*p%TT1
 
         do i=1,mx
             if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)>=1. ) &
+              df(i,m,n,ichemspec(index_H2O))=0.
+            if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)<0. ) &
               df(i,m,n,ichemspec(index_H2O))=0.
         enddo
       endif

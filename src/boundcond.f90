@@ -442,6 +442,8 @@ module Boundcond
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
+                bc%value1=fbcy12(j)
+                bc%value2=fbcy12(j)
                 bc%location=(((k-1)*4)-2)   ! -2/2 for y bot/top
                 bc%done=.false.
 !

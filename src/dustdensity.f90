@@ -22,7 +22,8 @@
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
-! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat; Ywater
+! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
+! PENCILS PROVIDED ppsf(ndustspec)
 !
 !***************************************************************
 module Dustdensity
@@ -49,7 +50,8 @@ module Dustdensity
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
-  real :: rho_w=1.0, Aconst=1.0e-6
+  real :: rho_w=1.0, Aconst=1.0e-6, Dwater=22.0784e-2
+  real :: Rgas, Rgas_unit_sys,Nion=0., m_w=18.
   real :: nd_reuni
   integer :: ind_extra
   integer :: iglobal_nd=0
@@ -73,7 +75,7 @@ module Dustdensity
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
-      dsize_min, dsize_max, latm_chemistry, spot_number
+      dsize_min, dsize_max, latm_chemistry, spot_number, Nion
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -289,7 +291,18 @@ module Dustdensity
             dsize(i+1)=dsize_min+i*ddsize
           enddo
         endif
-        
+!
+!  calculate universal gas constant based on Boltzmann constant
+!  and the proton mass
+!
+        if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+        else
+          call fatal_error('initialize_dustdensity', &
+              'this case works only for cgs units!')
+        endif
+!
       endif
 !
     endsubroutine initialize_dustdensity
@@ -314,6 +327,7 @@ module Dustdensity
 !
       real, dimension (nx) :: eps
       real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt
+      real :: water_ice=1.
       integer :: j,k,l
       logical :: lnothing
 !
@@ -518,8 +532,8 @@ module Dustdensity
             f(:,:,:,ind(k)) = &
               nd0*exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
               /(0.1*(dsize_max-dsize_min)))**2)
-            md(k)=4/3.*pi*rhods*dsize(k)**3*(1.-0.3**3)
-            mi(k)=4/3.*pi*rhod0*dsize(k)**3*0.3
+            md(k)=0.!4/3.*pi*rhods*dsize(k)**3*(1.-water_ice**3)
+            mi(k)=0.!4/3.*pi*rhod0*dsize(k)**3*water_ice**3
           enddo
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
@@ -788,6 +802,7 @@ module Dustdensity
         lpenc_requested(i_ccondens)=.true.
         lpenc_requested(i_dndr)=.true.
         lpenc_requested(i_ppsat)=.true.
+        lpenc_requested(i_ppsf)=.true.
         lpenc_requested(i_md)=.true.
         lpenc_requested(i_mi)=.true.
       endif
@@ -854,8 +869,10 @@ module Dustdensity
            lpencil_in(i_nd)=.true.
            lpencil_in(i_fcloud)=.true.
            lpencil_in(i_ppsat)=.true.
+           lpencil_in(i_ppsf)=.true.
         endif
         if (lpencil_in(i_TT1)) lpencil_in(i_ppsat)=.true.
+        if (lpencil_in(i_TT1)) lpencil_in(i_ppsf)=.true.
       endif
 !
     endsubroutine pencil_interdep_dustdensity
@@ -1065,39 +1082,51 @@ module Dustdensity
           fcloud_tmp=0.
           do k=1, ndustspec-1
            fcloud_tmp=fcloud_tmp  &
-              +0.5*(p%nd(:,k+1)*dsize(k+1)**3+p%nd(:,k)*dsize(k)**3) &
+              +0.5*(p%nd(:,k+1)*dsize(k+1)**3*p%md(:,k+1) &
+                 +p%nd(:,k)*dsize(k)**3*p%md(:,k)) &
               *(dsize(k+1)-dsize(k))
           enddo
-          p%fcloud(:)=4.0/3.0*pi*rho_w*fcloud_tmp(:)
+          p%fcloud(:)=4.0/3.0*pi*m_w*m_u_cgs*fcloud_tmp(:)
 !
         endif
 !
 ! ppsat is a  saturation pressure in cgs units
 ! 
-        if (lpencil(i_ppsat)) p%ppsat=6.035e12*exp(-5938*p%TT1)*10.0
+        if (lpencil(i_ppsf)) then
+!          p%ppsat=6.035e12*exp(-5938*p%TT1)*10.0
+          do k=1, ndustspec
+            p%ppsf(:,k)=p%ppwater(:)*exp(2.*Sigmad/Rgas*p%md(:,k) &
+                      *p%TT1(:)/dsize(k))*(p%ppwater/k_B_cgs*p%TT1)&
+                      /(p%ppwater/k_B_cgs*p%TT1+Nion)
+          enddo
+        endif
 ! ccondens
         if (lpencil(i_ccondens)) then
-          tmp=0.0
-          do k=1,ndustspec-1
-            tmp=tmp  &
-                +0.5*(p%nd(:,k+1)*dsize(k+1)+p%nd(:,k)*dsize(k)) &
-                *(dsize(k+1)-dsize(k))
-          enddo
 !
 !  (Probably) just temporarily for debugging a division-by-zero problem.
 !
-          if (any(p%ppsat==0.0)) then
-            if (.not.lpencil_check_at_work) write(0,*) 'p%ppsat = ', p%ppsat
+          if (any(p%ppsat==0.0) .and. any(p%ppsf(:,:)==0.)) then
+            if (.not.lpencil_check_at_work) then
+              write(0,*) 'p%ppsat = ', p%ppsat
+              write(0,*) 'p%ppsf = ', p%ppsf
+            endif
             call fatal_error('calc_pencils_dustdensity', &
-                'p%ppsat has zero value(s)')
+                'p%ppsat or p%ppsf has zero value(s)')
           else
-            p%ccondens(:)=4*pi*rho_w*Aconst*(p%ppwater/p%ppsat-1.0)*tmp(:)
+            tmp=0.0
+            do k=1,ndustspec-1
+              tmp=tmp  &
+                +0.5*(p%nd(:,k+1)*dsize(k+1)*(p%ppwater/p%ppsf(:,k+1)-1) &
+                 +p%nd(:,k)*dsize(k)*(p%ppwater/p%ppsf(:,k)-1)) &
+                 *(dsize(k+1)-dsize(k))
+            enddo
+            p%ccondens(:)=4*pi*rho_w*Aconst*tmp(:)
           endif
         endif
 ! dndr
         if (lpencil(i_dndr)) then
-          call droplet_redistr(f,dndr_tmp)
-          p%dndr=dndr_tmp
+          call droplet_redistr(f,p,dndr_tmp)
+          p%dndr=4*PI*Aconst*dndr_tmp
         endif
 !
     endsubroutine calc_pencils_dustdensity
@@ -1146,7 +1175,13 @@ module Dustdensity
         enddo
       elseif (latm_chemistry) then
         do k=1,ndustspec
-          if (lmdvar) df(l1:l2,m,n,imd(k)) = 0.
+          if (lmdvar) then
+            df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
+                 *(p%ppwater-p%ppsf(:,k))/(Rgas*p%TT*m_w*m_u_cgs)*p%rho
+!print*,maxval(df(l1:l2,m,n,imd(k))),minval(df(l1:l2,m,n,imd(k)))
+!print*,maxval(p%ppwater),maxval(p%ppsf(:,k))
+          endif
+                    
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo
       endif
@@ -1167,10 +1202,9 @@ module Dustdensity
 !
       if (latm_chemistry) then
 !
-
         do k=1,ndustspec
-          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) !- p%udropgnd(:,k) &
-                 !-Aconst*(p%ppwater/p%ppsat-1.)*p%dndr(:,k)
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
+                 -p%dndr(:,k)
 !
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
@@ -1410,11 +1444,11 @@ module Dustdensity
 !
       if (.not. lmdvar) call stop_it &
           ('dust_condensation: Dust condensation only works with lmdvar')
-      if (lchemistry) then
-        cc_tmp=p%Ywater
-      else
-        cc_tmp=p%cc
-      endif
+!      if (lchemistry) then
+!        cc_tmp=p%Ywater
+!      else
+!        cc_tmp=p%cc
+!      endif
 !
 !  Calculate mass flux of condensing monomers
 !
@@ -1808,21 +1842,32 @@ module Dustdensity
 !
     endsubroutine get_slices_dustdensity
 !***********************************************************************
-    subroutine droplet_redistr(f,dndr_dr)
+    subroutine droplet_redistr(f,p,dndr_dr)
 !
 !  Redistribution over the size in the atmospheric physics case
 !
 !  10-may-10/Natalia: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ndustspec) :: dndr_dr
+      type (pencil_case) :: p
+      real, dimension (nx,ndustspec) :: dndr_dr, pp_ratio
       integer :: k
 !
+      if (any(p%ppsf(:,1)==0.)) then
+        pp_ratio(:,1)=0.
+      else
+        pp_ratio(:,1)=p%ppwater(:)/p%ppsf(:,1)-1
+      endif
       do k=1,ndustspec-1
-        dndr_dr(:,k)=1./dsize(k) &
-            *(f(l1:l2,m,n,ind(k+1))-f(l1:l2,m,n,ind(k)))/(dsize(k+1)-dsize(k))&
-            +f(l1:l2,m,n,ind(k))/dsize(k)**2
-!
+      if (any(p%ppsf(:,k+1)==0.)) then
+        pp_ratio(:,k+1)=0.
+      else
+        pp_ratio(:,k+1)=p%ppwater(:)/p%ppsf(:,k+1)-1
+      endif
+        dndr_dr(:,k)= &
+                (f(l1:l2,m,n,ind(k+1))*pp_ratio(:,k+1)/dsize(k+1) &
+               -f(l1:l2,m,n,ind(k))*pp_ratio(:,k)/dsize(k))    &
+                 /(dsize(k+1)-dsize(k))
       enddo
 !
     endsubroutine droplet_redistr
