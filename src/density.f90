@@ -564,7 +564,9 @@ module Density
         case ('corona'); call corona_init(f)
         case ('gaussian3d')
           call gaussian3d(ampllnrho(j),f,ilnrho,radius_lnrho(j))
-        case ('plaw_gauss_disk'); call power_law_gaussian_disk(f)
+!--     case ('plaw_gauss_disk'); call power_law_gaussian_disk(f)
+!-- this was an old initial condition by Steve Berkoff and will soon
+!-- be checked in under cylindrical disc.
         case ('gaussian-z')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) - &
