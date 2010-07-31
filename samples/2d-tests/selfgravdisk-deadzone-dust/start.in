@@ -21,17 +21,17 @@
 &eos_init_pars
   cs0=0.05
   rho0=1
-  ptlaw=1
+  !-- ptlaw=1
   gamma=1
 /
 &hydro_init_pars
-  inituu='centrifugal-balance'
+  !-- inituu='centrifugal-balance'
 /
 &density_init_pars
-  initlnrho='local-isothermal'
+  !-- initlnrho='local-isothermal'
   lnrho_const=0
   ldensity_nolog=T
-  plaw=0.5
+  !-- plaw=0.5
   density_floor=-100
 /
 &grav_init_pars
@@ -48,7 +48,7 @@
 /
 &particles_init_pars
   initxxp='random-cylindrical', initvvp='Keplerian'
-  pdlaw=0.5
+  !-- pdlaw=0.5
 !  bcpx='flk',bcpy='out',bcpz='p'
   bcpx='rmv',bcpy='out',bcpz='p'
   lparticlemesh_tsc=T
