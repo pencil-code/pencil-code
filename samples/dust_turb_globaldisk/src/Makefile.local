@@ -24,3 +24,5 @@ SPECIAL = special/rtime_phiavg
 PARTICLES = particles_dust
 
 REAL_PRECISION = double
+
+INITIAL_CONDITION = initial_condition/centrifugal_balance

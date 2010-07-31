@@ -16,21 +16,22 @@
   lcylindrical_gravity=T
   random_gen='nr_f90'
 /
+&initial_condition_pars
+  ptlaw=2
+  plaw=0
+/
 &eos_init_pars
   cs0=0.1 
   rho0 = 1.
-  !-- ptlaw=2.
   gamma=1.
 /
 &hydro_init_pars
-  !-- inituu='centrifugal-balance','gaussian-noise'
-  ampluu=0,1e-4
+  inituu='gaussian-noise'
+  ampluu=1e-4
 /
 &density_init_pars
-  !-- initlnrho='local-isothermal' 
   lnrho_const=0.  
   ldensity_nolog=T
-  !-- plaw=0.
 /
 &grav_init_pars
   ipotential='no-smooth'
