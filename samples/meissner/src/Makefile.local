@@ -3,8 +3,6 @@
 ### Included by `Makefile'
 ###
 
-LDMPI     = -lmpi
-
 MPICOMM   = nompicomm
 IO        =   io_dist
 TIMEAVG   = notimeavg
