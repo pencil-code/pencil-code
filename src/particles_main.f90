@@ -210,7 +210,7 @@ module Particles_main
       call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
       if (lparticles_nbody) & 
            call particles_nbody_read_snapshot(&
-           trim(snap_directory)//'/proc0/spvar.dat')       
+           trim(snap_directory)//'/spvar.dat')       
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
