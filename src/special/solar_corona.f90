@@ -176,8 +176,8 @@ module Special
 !
       real :: dummy,var1,var2
       integer :: idx2,idy2,lend,ierr
-      integer :: i,j,px,py,unit=1
-      integer :: Ax_tag=366,Ay_tag=367
+      integer :: i,j,px,py
+      integer, parameter :: unit=1,Ax_tag=366,Ay_tag=367
 !
       ! file location settings
       character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
