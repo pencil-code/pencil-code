@@ -272,8 +272,7 @@ program start
 !  Write grid.dat file.
 !
   call wgrid(trim(directory)//'/grid.dat')
-  if (lparticles) &
-    call wproc_bounds(trim(directory)//'/proc_bounds.dat')
+  if (lparticles) call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
 !  Write .general file for data explorer.
 !
@@ -432,9 +431,8 @@ program start
 !  Write initial condition to disk.
 !
   if (lwrite_ic) then
-    if (lparticles) then
-      call write_snapshot_particles(directory_snap,f,ENUM=.false.)
-    endif
+    if (lparticles) &
+        call write_snapshot_particles(directory_snap,f,ENUM=.false.)
 !
     call wsnap(trim(directory_snap)//'/VAR0',f, &
         mvar_io,ENUM=.false.,FLIST='varN.list')
@@ -448,7 +446,7 @@ program start
   if (.not.lnowrite .and. .not.lnoerase) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
-         call write_snapshot_particles(directory_snap,f,ENUM=.false.)
+        call write_snapshot_particles(directory_snap,f,ENUM=.false.)
     call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
     call wtime(trim(directory)//'/time.dat',t)
   endif
@@ -459,8 +457,7 @@ program start
   if (lroot) then
     call wdim(trim(datadir)//'/dim.dat', &
         nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
-    if (lparticles) &
-         call write_dim_particles(trim(datadir))
+    if (lparticles) call write_dim_particles(trim(datadir))
   endif
 !
 !  Write global variables.

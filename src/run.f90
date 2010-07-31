@@ -250,8 +250,7 @@ program run
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
   call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
-  if (lparticles) & 
-    call read_snapshot_particles(directory_snap)
+  if (lparticles) call read_snapshot_particles(directory_snap)
 !
   call get_nseed(nseed)
 !
@@ -570,7 +569,7 @@ program run
           spread(it,1,1) ,1) ! (all procs alive?)
     endif
     if (lparticles) &
-         call write_snapshot_particles(directory_snap,f,ENUM=.true.)
+        call write_snapshot_particles(directory_snap,f,ENUM=.true.)
 !
     call wsnap(trim(directory_snap)//'/VAR',f, &
         mvar_io,ENUM=.true.,FLIST='varN.list')
@@ -587,7 +586,7 @@ program run
     if (isave/=0.and..not.lnowrite) then
       if (mod(it,isave)==0) then
         if (lparticles) &
-             call write_snapshot_particles(directory_snap,f,ENUM=.false.)
+            call write_snapshot_particles(directory_snap,f,ENUM=.false.)
 !
         call wsnap(trim(directory_snap)//'/var.dat', &
                    f,mvar_io,ENUM=.false.,noghost=noghost_for_isave)
@@ -665,7 +664,7 @@ program run
   if (.not.lnowrite) then
     if (save_lastsnap) then
       if (lparticles) &
-           call write_snapshot_particles(directory_snap,f,ENUM=.false.)
+          call write_snapshot_particles(directory_snap,f,ENUM=.false.)
 !
       call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
