@@ -433,7 +433,7 @@ program start
 !
   if (lwrite_ic) then
     if (lparticles) then
-      call write_snapshot_particles(trim(directory_snap),f,ENUM=.false.)
+      call write_snapshot_particles(directory_snap,f,ENUM=.false.)
     endif
 !
     call wsnap(trim(directory_snap)//'/VAR0',f, &
