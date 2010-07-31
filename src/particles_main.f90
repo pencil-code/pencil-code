@@ -203,6 +203,28 @@ module Particles_main
 !
     endsubroutine particles_init
 !***********************************************************************
+    subroutine read_snapshot_particles(snap_directory)
+!
+      character (len=*) :: snap_directory
+!
+      call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
+      if (lparticles_nbody) & 
+           call particles_nbody_read_snapshot(&
+           trim(snap_directory)//'/proc0/spvar.dat')       
+!
+    endsubroutine read_snapshot_particles
+!***********************************************************************
+    subroutine write_dim_particles(datadir)
+!
+      character (len=*) :: datadir
+!
+      call particles_write_pdim(trim(datadir)//'/pdim.dat')                
+      call particles_write_block(trim(datadir)//'/bdim.dat')     
+      if (lparticles_nbody) &                                                    
+           call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')    
+!
+    endsubroutine write_dim_particles
+!***********************************************************************
     subroutine particles_read_snapshot(filename)
 !
 !  Read particle snapshot from file.
@@ -214,6 +236,32 @@ module Particles_main
       call input_particles(filename,fp,ipar)  
 !
     endsubroutine particles_read_snapshot
+!***********************************************************************
+    subroutine write_snapshot_particles(snap_directory,f,enum)
+!
+      character (len=*) :: snap_directory
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical :: enum
+!
+      if (enum.eqv..true.) then 
+        call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
+             ENUM=.true.,FLIST='pvarN.list')
+!
+        if (lparticles_nbody) &
+             call particles_nbody_write_snapshot(&
+             trim(snap_directory)//'/SPVAR',&
+             ENUM=.true.,FLIST='spvarN.list')
+      else
+        call particles_write_snapshot( &
+             trim(snap_directory)//'/pvar.dat',f,ENUM=.false.)
+        
+        if (lparticles_nbody.and.lroot) then
+          call particles_nbody_write_snapshot( & 
+               trim(snap_directory)//'/spvar.dat',ENUM=.false.)  
+        endif
+      endif
+!      
+    endsubroutine write_snapshot_particles
 !***********************************************************************
     subroutine particles_write_snapshot(chsnap,f,enum,flist)
 !

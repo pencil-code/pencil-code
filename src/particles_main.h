@@ -16,3 +16,5 @@
   public :: particles_read_runpars, particles_wparam2
   public :: particles_powersnap, get_slices_particles
   public :: particles_doprepencil_calc, particles_insert_continuously
+  public :: write_snapshot_particles,read_snapshot_particles
+  public :: write_dim_particles

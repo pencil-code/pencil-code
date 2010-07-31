@@ -76,8 +76,6 @@ program start
   use NeutralVelocity,  only: init_uun
   use Param_IO
   use Particles_main
-!  use Particles_nbody,  only: particles_nbody_write_snapshot, &
-!                              particles_nbody_write_spdim
   use Polymer, only: init_pp
   use PScalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
@@ -434,13 +432,10 @@ program start
 !  Write initial condition to disk.
 !
   if (lwrite_ic) then
-    if (lparticles) &
-        call particles_write_snapshot(trim(directory_snap)//'/PVAR0',f, &
-        ENUM=.false.,FLIST='pvarN.list')
-!    if (lparticles_nbody.and.lroot) &
-!        call particles_nbody_write_snapshot(&
-!        trim(datadir)//'/proc0/SPVAR0', &
-!        ENUM=.false.,FLIST='spvarN.list')
+    if (lparticles) then
+      call write_snapshot_particles(trim(directory_snap),f,ENUM=.false.)
+    endif
+!
     call wsnap(trim(directory_snap)//'/VAR0',f, &
         mvar_io,ENUM=.false.,FLIST='varN.list')
   endif
@@ -453,11 +448,7 @@ program start
   if (.not.lnowrite .and. .not.lnoerase) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
-        call particles_write_snapshot(trim(directory_snap)//'/pvar.dat',f, &
-        ENUM=.false.)
-!    if (lparticles_nbody.and.lroot) &
-!        call particles_nbody_write_snapshot(&
-!        trim(datadir)//'/proc0/spvar.dat', ENUM=.false.)
+         call write_snapshot_particles(directory_snap,f,ENUM=.false.)
     call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
     call wtime(trim(directory)//'/time.dat',t)
   endif
@@ -468,10 +459,8 @@ program start
   if (lroot) then
     call wdim(trim(datadir)//'/dim.dat', &
         nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
-    if (lparticles) call particles_write_pdim(trim(datadir)//'/pdim.dat')
-    if (lparticles) call particles_write_block(trim(datadir)//'/bdim.dat')
-!    if (lparticles_nbody) &
-!        call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
+    if (lparticles) &
+         call write_dim_particles(trim(datadir))
   endif
 !
 !  Write global variables.
