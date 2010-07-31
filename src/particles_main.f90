@@ -220,8 +220,8 @@ module Particles_main
 !
       call particles_write_pdim(trim(datadir)//'/pdim.dat')                
       call particles_write_block(trim(datadir)//'/bdim.dat')     
-      if (lparticles_nbody) &                                                    
-           call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')    
+      if (lparticles_nbody) &
+          call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')    
 !
     endsubroutine write_dim_particles
 !***********************************************************************
@@ -245,19 +245,19 @@ module Particles_main
 !
       if (enum.eqv..true.) then 
         call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
-             ENUM=.true.,FLIST='pvarN.list')
+            ENUM=.true.,FLIST='pvarN.list')
 !
         if (lparticles_nbody) &
-             call particles_nbody_write_snapshot(&
-             trim(snap_directory)//'/SPVAR',&
-             ENUM=.true.,FLIST='spvarN.list')
+            call particles_nbody_write_snapshot(&
+            trim(snap_directory)//'/SPVAR',&
+            ENUM=.true.,FLIST='spvarN.list')
       else
         call particles_write_snapshot( &
-             trim(snap_directory)//'/pvar.dat',f,ENUM=.false.)
+            trim(snap_directory)//'/pvar.dat',f,ENUM=.false.)
         
         if (lparticles_nbody.and.lroot) then
           call particles_nbody_write_snapshot( & 
-               trim(snap_directory)//'/spvar.dat',ENUM=.false.)  
+              trim(snap_directory)//'/spvar.dat',ENUM=.false.)  
         endif
       endif
 !      
