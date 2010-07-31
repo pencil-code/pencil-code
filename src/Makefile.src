@@ -88,6 +88,7 @@ REAL_PRECISION = default
 # 
 # Default compiler settings.
 #
+AR           = ar
 FC           = f90
 FFLAGS       =
 F90FLAGS     =
@@ -497,16 +498,21 @@ endif
 ##
 #FC=mpif90 #(damaskus|n00)
 #FFLAGS=-xT -ipo -O3 #(damaskus|n00)
+#AR=xiar #(damaskus|n00)
 #FC=mpif90 #(ui.bfg.uni-freiburg.de)
 #FFLAGS=-O3 #(ui.bfg.uni-freiburg.de)
 #FFLAGS_DOUBLE=-r8 #(ui.bfg.uni-freiburg.de)
+#AR=xiar #(ui.bfg.uni-freiburg.de)
 #FC=mpif90 #(bwui|bwui.bfg.uni-freiburg.de)
 #FFLAGS=-xT -ipo -O3 #(bwui|bwui.bfg.uni-freiburg.de)
 #FFLAGS_DOUBLE=-r8 #(bwui|bwui.bfg.uni-freiburg.de)
+#AR=xiar #(bwui|bwui.bfg.uni-freiburg.de)
 ##
 ## FZ Juelich:
 ##
 #FC=mpif90 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
+#CC=icc -ipo #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
+#AR=xiar #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 #FFLAGS=-xsse4.2 -axsse4.2 -ipo -O3 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 #FFLAGS_DOUBLE=-r8 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 ##For single processor runs on the JUGENE frontend:
