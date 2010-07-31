@@ -1,4 +1,4 @@
-!                           -*-f90-*-     (for Emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 !  Initialisation parameters
 !
@@ -23,17 +23,17 @@
 &eos_init_pars
   cs0=0.05 
   rho0 = 1.
-  ptlaw=1.
+  !-- ptlaw=1.
   gamma=1.
 /
 &hydro_init_pars
-  inituu='global-shear'
+  !-- inituu='global-shear'
 /
 &density_init_pars
-  initlnrho='local-isothermal' 
+  !-- initlnrho='local-isothermal' 
   lnrho_const=0.  
   ldensity_nolog=T
-  plaw=0.
+  !-- plaw=0.
 /
 &grav_init_pars
  ipotential='no-smooth'
