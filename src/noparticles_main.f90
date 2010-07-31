@@ -398,4 +398,32 @@ module Particles_main
 !
     endsubroutine particles_insert_continuously
 !***********************************************************************
+    subroutine write_dim_particles(datadir)
+!
+      character (len=*) :: datadir
+!
+      call keep_compiler_quiet(datadir)
+!
+    endsubroutine write_dim_particles
+!***********************************************************************
+    subroutine write_snapshot_particles(snap_directory,f,enum)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical :: enum
+      character (len=*) :: snap_directory
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(snap_directory)
+      call keep_compiler_quiet(enum)
+!
+    endsubroutine write_snapshot_particles
+!***********************************************************************
+    subroutine read_snapshot_particles(snap_directory)
+!
+      character (len=*) :: snap_directory
+!
+     call keep_compiler_quiet(snap_directory)
+!
+    endsubroutine read_snapshot_particles
+!***********************************************************************
 endmodule Particles_main
