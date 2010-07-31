@@ -176,7 +176,7 @@ module Density
       logical :: lstarting
 !
       integer :: i,ierr
-!AB?  logical :: lnothing
+      logical :: lnothing
 !
 !  Initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
@@ -213,7 +213,9 @@ module Density
       ldiff_hyper3_polar=.false.
       ldiff_hyper3_mesh=.false.
 !
-!AB?  lnothing=.false.
+!  initialize lnothing. It is needed to prevent multiple output.
+!
+      lnothing=.false.
 !
 !  Different choices of mass diffusion (if any).
 !
@@ -241,14 +243,13 @@ module Density
           if (lroot) print*,'diffusion: shock diffusion'
           ldiff_shock=.true.
         case ('','none')
-!AB?      if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
-          if (lroot) print*,'diffusion: nothing'
+          if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
           write(unit=errormsg,fmt=*) 'initialize_density: ', &
               'No such value for idiff(',i,'): ', trim(idiff(i))
           call fatal_error('initialize_density',errormsg)
         endselect
-!AB?    lnothing=.true.
+        lnothing=.true.
       enddo
 !
 !  If we're timestepping, die or warn if the the diffusion coefficient that
@@ -449,7 +450,7 @@ module Density
       real, pointer :: gravx
       complex :: omega_jeans
       integer :: j, ierr,ix,iy
-!AB?  logical :: lnothing
+      logical :: lnothing
 !
       intent(inout) :: f
 !
@@ -469,13 +470,14 @@ module Density
       lnrho_left  = log(rho_left)
       lnrho_right = log(rho_right)
 !
-!AB?  lnothing=.true.
+!  Initialize lnothing and cycle ninit (=4) times through the list of
+!  initial conditions with the various options.
 !
+      lnothing=.true.
       do j=1,ninit
 !
         if (initlnrho(j)=='nothing') cycle
-!
-!AB?    lnothing=.false.
+        lnothing=.false.
 !
         call chn(j,iinit_str)
 !
@@ -972,7 +974,7 @@ module Density
 !
       if (linitial_condition) call initial_condition_lnrho(f)
 !
-!AB?  if (lnothing.and.lroot) print*,'init_lnrho: nothing'
+      if (lnothing.and.lroot) print*,'init_lnrho: nothing'
 !
 !  check that cs2bot,cs2top are ok
 !  for runs with ionization or fixed ionization, don't print them

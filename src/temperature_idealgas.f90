@@ -174,7 +174,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
-!AB?  logical :: lnothing
+      logical :: lnothing
       integer :: i, ierr
       real, dimension(5) :: hole_params
 !
@@ -212,7 +212,11 @@ module Entropy
       lheatc_hyper3=.false.
       lheatc_hyper3_polar=.false.
 !
-!AB?  lnothing = .false.
+!  initialize lnothing. It is needed to prevent multiple output.
+!
+      lnothing = .false.
+!
+!  Different choices of heat conduction (if any).
 !
       do i=1,nheatc_max
       select case (iheatcond(i))
@@ -257,34 +261,32 @@ module Entropy
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
         case ('nothing')
-!AB?      if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
-          if (lroot) print*,'heat conduction: nothing'
+          if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
           if (lroot) then
             write(unit=errormsg,fmt=*)  &
                 'No such value iheatcond = ', trim(iheatcond(i))
             call fatal_error('initialize_entropy',errormsg)
           endif
-       endselect
-       enddo
-! WL: is this correct? In density, lnothing=.true. is inside the do-loop
-!AB?   lnothing=.true.
+        endselect
+        lnothing=.true.
+      enddo
 !
 !  Compute and store hcond and dhcond if hcond_global=.true.
 !
-       if (lhcond_global) then
-         call farray_register_global("hcond",iglobal_hcond)
-         call farray_register_global("glhc",iglobal_glhc)
-         do n=n1,n2
-         do m=m1,m2
-           hcond = 1. + (hcond1-1.)*step(x(l1:l2),r_bcz,-widthlnTT)
-           hcond = hcond0*hcond
-           dhcond = hcond0*(hcond1-1.)*der_step(x(l1:l2),r_bcz,-widthlnTT)
-           f(l1:l2,m,n,iglobal_hcond)=hcond
-           f(l1:l2,m,n,iglobal_glhc)=dhcond
-         enddo
-         enddo
-       endif
+      if (lhcond_global) then
+        call farray_register_global("hcond",iglobal_hcond)
+        call farray_register_global("glhc",iglobal_glhc)
+        do n=n1,n2
+        do m=m1,m2
+          hcond = 1. + (hcond1-1.)*step(x(l1:l2),r_bcz,-widthlnTT)
+          hcond = hcond0*hcond
+          dhcond = hcond0*(hcond1-1.)*der_step(x(l1:l2),r_bcz,-widthlnTT)
+          f(l1:l2,m,n,iglobal_hcond)=hcond
+          f(l1:l2,m,n,iglobal_glhc)=dhcond
+        enddo
+        enddo
+      endif
 !
       if (initlnTT(1)=='gaussian') then
 !
@@ -392,14 +394,14 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       integer :: j
-!AB?  logical :: lnothing=.true.
+      logical :: lnothing=.true.
       real :: haut, Rgas, cp1, Ttop, alpha, beta, expo
 !
       do j=1,ninit
 !
         if (initlnTT(j)/='nothing') then
 !
-!AB?      lnothing=.false.
+          lnothing=.false.
 !
           call chn(j,iinit_str)
 !
@@ -492,7 +494,7 @@ module Entropy
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
-!AB?  if (lnothing.and.lroot) print*,'init_ss: nothing'
+      if (lnothing.and.lroot) print*,'init_ss: nothing'
 !
       if (ltemperature_nolog.and.linitial_log) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
 !
