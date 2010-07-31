@@ -208,7 +208,7 @@ module Magnetic
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
       lweyl_gauge, ladvective_gauge, lupw_aa, &
-      alphaSSm, &
+      alphaSSm,eta_int, &
       eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
       wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &

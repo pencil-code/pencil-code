@@ -838,7 +838,8 @@ module Special
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv,cubic_step
-      use Io,              only : output_pencil
+!--   use Io,              only : output_pencil
+!AB: output_pencil is not currently used and breaks the auto-test
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
