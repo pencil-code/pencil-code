@@ -1,4 +1,4 @@
-! $Id: noinitial_condition.f90 14530 2010-07-30 09:14:42Z Bourdin.KIS $
+! $Id$
 !
 !  This module provide a way for users to specify custom initial
 !  conditions.
@@ -99,7 +99,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-         "$Id: noinitial_condition.f90 14530 2010-07-30 09:14:42Z Bourdin.KIS $")
+         "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
