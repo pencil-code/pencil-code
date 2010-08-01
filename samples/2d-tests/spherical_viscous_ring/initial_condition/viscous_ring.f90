@@ -31,11 +31,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: nu,cs20
+  real :: nu, cs20
   real :: time0=0.018
   real :: sigmaz=0.3
 !
-  namelist /initial_condition_pars/ nu,cs20
+  namelist /initial_condition_pars/ nu, cs20
 !
   contains
 !***********************************************************************
