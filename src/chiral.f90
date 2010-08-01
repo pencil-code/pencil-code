@@ -287,8 +287,10 @@ module Chiral
       if (llorentzforceEP) then
         if (lhydro) then
           call cross(gXX_chiral,gYY_chiral,bbEP)
-          jjEP(:,j)=gXX_chiral(:,j)*del2YY_chiral &
-                   -gYY_chiral(:,j)*del2XX_chiral
+          do j=1,3
+            jjEP(:,j)=gXX_chiral(:,j)*del2YY_chiral &
+                     -gYY_chiral(:,j)*del2XX_chiral
+          enddo
           call cross(jjEP,bbEP,jxbEP)
           if (ldensity) call multsv_mn(p%rho1,jxbEP,jxbEP)
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+jxbEP
