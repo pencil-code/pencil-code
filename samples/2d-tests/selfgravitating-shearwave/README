@@ -9,14 +9,14 @@ Added:
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    None. Going to lower resolution would be a good test of how many grid
-    points the code needs to resolve a self-gravitating shear wave.
+    None. Varying the resolution is a good test of how many grid points the
+    code needs to resolve a self-gravitating shear wave.
 Comments:
-    Linear test problem for self-gravity in the shearing sheet. A leading shear
-    wave is swung around by the Keplerian shear and amplified by self-gravity.
-    One can compare the numerical solution to the result of a numerical
-    integration of the linearised equation system, produced by the IDL script
-    shear_wave.pro (in the idl/ directory).
+    Linear test problem for gas self-gravity in the shearing sheet. A leading
+    shear wave is swung around by the Keplerian shear and amplified by
+    self-gravity.  One can compare the numerical solution to the result of a
+    numerical integration of the linearised equation system, produced by the
+    IDL script shear_wave.pro (in the idl/ directory).
 References:
     Johansen A., Oishi J., Mac Low M.-M., Klahr H., Henning Th., & Youdin A.:
     2007, ``Rapid planetesimal formation in turbulent circumstellar discs'',
