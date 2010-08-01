@@ -783,6 +783,8 @@ module Special
             prof_z = prof_z * 1.e6 / unit_length
           elseif (unit_system == 'cgs') then
             prof_z = prof_z * 1.e8 / unit_length
+          else 
+            call fatal_error("newton cooling","no valid unit system")
           endif
           !
           do j=n1,n2
@@ -887,7 +889,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * p%rho1 * p%TT**expo*cubic_step(t*unit_time,300.,300.)
+      chi_1 =  Kpara * p%rho1 * p%TT**expo*cubic_step(real(t*unit_time),300.,300.)
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -1068,7 +1070,7 @@ module Special
 !
 !  calculate rhs
 !
-      chix = hcond1*cubic_step(t*unit_time,300.,300.)
+      chix = hcond1*cubic_step(real(t*unit_time),300.,300.)
 !
       rhs = gamma*chix*tmp
 !
@@ -1176,7 +1178,7 @@ module Special
       rhs = hcond2*(rhs + glnT2*tmp)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*cubic_step(t*unit_time,300.,300.)
+          rhs*gamma*cubic_step(real(t*unit_time),300.,300.)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -1262,7 +1264,7 @@ module Special
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-      rtv_cool = rtv_cool*cool_RTV *cubic_step(t*unit_time,300.,300.)
+      rtv_cool = rtv_cool*cool_RTV *cubic_step(real(t*unit_time),300.,300.)
 !     for adjusting by setting cool_RTV in run.in
 !
       rtv_cool=rtv_cool &
@@ -1447,7 +1449,8 @@ module Special
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           !
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*p%cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput* &
+              cubic_step(real(t*unit_time),300.,300.)
 !
         case ('exp')
           ! heat_par_exp(1) should be 530 w/m2 (flux,F)
@@ -1459,7 +1462,8 @@ module Special
           ! Convert to pencil units if needed:
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*p%cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput* &
+              cubic_step(real(t*unit_time),300.,300.)
 !                    
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
@@ -1474,7 +1478,8 @@ module Special
           ! Convert to pencil units if needed:
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &              
-              p%TT1*p%rho1*gamma*p%cp1*heatinput*cubic_step(t*unit_time,300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput* &
+              cubic_step(real(t*unit_time),300.,300.)
           !          
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
@@ -1792,7 +1797,7 @@ module Special
       xrange=xrangearr(k)
       yrange=yrangearr(k)
 !
-      if (iproc==k.or.iproc==0) call drive3(k)
+      if (iproc==nprocxy-1+k.or.iproc==0) call drive3(k)
 !
       select case (k)
       case (1)
