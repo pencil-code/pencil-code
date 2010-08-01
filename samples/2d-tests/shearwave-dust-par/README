@@ -12,6 +12,14 @@ Recommended resolution:
     None. Going to lower resolution would be a good test of how many grid
     points the code needs to resolve a self-gravitating shear wave.
 Comments:
-    Another shear wave test, this time without gravity but with drag force, used to
-    test drag force assignment over the shear-periodic boundary.
+    Another shear wave test, this time without gravity but with drag force,
+    used to test drag force assignment over the shear-periodic boundary.
 References:
+    Youdin A., & Johansen A.: 2007, ``Protoplanetary disc turbulence driven by
+    the streaming instability: Linear evolution and numerical methods'', The
+    Astrophysical Journal, vol. 662, p. 613-626, astro-ph/0702625
+
+    Johansen A., & Youdin A.: 2007, ``Protoplanetary disc turbulence driven by
+    the streaming instability: Non-linear saturation and particle
+    concentration'', The Astrophysical Journal, vol. 662, p. 627-641,
+    astro-ph/0702626
