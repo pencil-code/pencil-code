@@ -296,6 +296,8 @@
   \var{fconvm}    & $\left<\varrho u_z T \right>$ \\
   \var{fconvz}    & $\left<\varrho u_z T \right>_{xy}$ \\
   \var{fconvxy}   & $\left<\varrho u_x T \right>_{z}$ \\
+  \var{fconvyxy}  & $\left<\varrho u_y T \right>_{z}$ \\
+  \var{fconvzxy}  & $\left<\varrho u_z T \right>_{z}$ \\
   \var{dcoolz}    & surface cooling flux \\
   \var{fradz}     & $F_{\rm rad}$ \\
   \var{fradz_Kprof} & $F_{\rm rad}$ (from Kprof) \\
@@ -396,9 +398,6 @@
                     \quad(time step relative to
                     resistive time step;
                     see \S~\ref{time-step}) \\
-  \var{Qsm}       & $\left<Q_p(\overline{B})\right>$ \\
-  \var{Qpm}       & $\left<Q_p(\overline{B})\right>$ \\
-  \var{qem}       & $\left<q_e(\overline{B})\right>$ \\
   \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
                     \quad(mean inverse plasma beta) \\
   \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
@@ -500,9 +499,6 @@
   \var{examz1}    & $\left<\Ev\times\Av\right>_{xy}|_x$ \\
   \var{examz2}    & $\left<\Ev\times\Av\right>_{xy}|_y$ \\
   \var{examz3}    & $\left<\Ev\times\Av\right>_{xy}|_z$ \\
-  \var{EMFmz1}    & $\left<{\cal E}\right>_{xy}|_x$ \\
-  \var{EMFmz2}    & $\left<{\cal E}\right>_{xy}|_y$ \\
-  \var{EMFmz3}    & $\left<{\cal E}\right>_{xy}|_z$ \\
   \var{bxmxy}     & $\left< B_x \right>_{xy}$ \\
   \var{bymxy}     & $\left< B_y \right>_{xy}$ \\
   \var{bzmxy}     & $\left< B_z \right>_{xy}$ \\
@@ -532,8 +528,6 @@
   \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
   \var{b1b32m}    & $\left<B_1 B_{3,2} \right>$ \\
   \var{b2b13m}    & $\left<B_2 B_{1,3} \right>$ \\
-  \var{EMFdotBm}  & $\left<{\cal E}\cdot\Bv \right>$ \\
-  \var{EMFdotB_int} & $\int{\cal E}\cdot\Bv dV$ \\
   \var{uxbmx}     & $\left<(\uv\times\Bv)_x\right>$ \\
   \var{uxbmy}     & $\left<(\uv\times\Bv)_y\right>$ \\
   \var{uxbmz}     & $\left<(\uv\times\Bv)_z\right>$ \\
@@ -877,6 +871,8 @@
   \var{alp12}     & $\alpha_{12}$ \\
   \var{alp22}     & $\alpha_{22}$ \\
   \var{alp32}     & $\alpha_{32}$ \\
+  \var{alp13}     & $\alpha_{13}$ \\
+  \var{alp23}     & $\alpha_{23}$ \\
   \var{eta11}     & $\eta_{113}k$ or $\eta_{11}k$ if leta_rank2=T \\
   \var{eta21}     & $\eta_{213}k$ or $\eta_{21}k$ if leta_rank2=T \\
   \var{eta31}     & $\eta_{313}k$ \\
@@ -936,6 +932,8 @@
   \var{alp21z}    & $\alpha_{21}(z,t)$ \\
   \var{alp12z}    & $\alpha_{12}(z,t)$ \\
   \var{alp22z}    & $\alpha_{22}(z,t)$ \\
+  \var{alp13z}    & $\alpha_{13}(z,t)$ \\
+  \var{alp23z}    & $\alpha_{23}(z,t)$ \\
   \var{eta11z}    & $\eta_{11}(z,t)$ \\
   \var{eta21z}    & $\eta_{21}(z,t)$ \\
   \var{eta12z}    & $\eta_{12}(z,t)$ \\
