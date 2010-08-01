@@ -84,7 +84,7 @@ module InitialCondition
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0, rshift=0.0
 !
-  namelist /initial_condition_pars/
+  namelist /initial_condition_pars/ &
       g0, plaw, ptlaw, lexponential_smooth, radial_percent_smooth, rshift
 !
   contains
