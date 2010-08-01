@@ -33,7 +33,7 @@ module Special
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
   real, dimension (mz) :: init_lnTT, init_lnrho
-! 
+!
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real :: heat_par1=0.,heat_par2=0.,heat_par3=0.
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -783,7 +783,7 @@ module Special
             prof_z = prof_z * 1.e6 / unit_length
           elseif (unit_system == 'cgs') then
             prof_z = prof_z * 1.e8 / unit_length
-          else 
+          else
             call fatal_error("newton cooling","no valid unit system")
           endif
           !
@@ -990,7 +990,7 @@ module Special
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
 !
       if (lfirst.and.ldt) then
-        chix=K_iso*p%TT*sqrt(tmpi)        
+        chix=K_iso*p%TT*sqrt(tmpi)
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
@@ -1428,8 +1428,8 @@ module Special
       real :: z_Mm
       type (pencil_case) :: p
       integer :: i
-!     
-      do i=1,3 
+!
+      do i=1,3
         select case(iheattype(i))
         case ('nothing')
           if (headtt) print*,'iheattype:',iheattype(i)
@@ -1441,7 +1441,7 @@ module Special
           ! Get height in Mm.
           z_Mm = z(n)*unit_length*1e-6
           !
-          ! Compute volumetric heating rate in [W/m^3] as 
+          ! Compute volumetric heating rate in [W/m^3] as
           ! found in Bingert's thesis.
           heatinput=heatamp*(1e3*exp(-z_Mm/0.2)+1e-4*exp(-z_Mm/10.))
           !
@@ -1456,7 +1456,7 @@ module Special
           ! heat_par_exp(1) should be 530 w/m2 (flux,F)
           ! heat_par_exp(2) should be 0.3 Mm (scale height)
           !
-          if (headtt) print*,'iheattype:',iheattype(i) 
+          if (headtt) print*,'iheattype:',iheattype(i)
           z_Mm = z(n)*unit_length*1e-6
           heatinput=heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))
           ! Convert to pencil units if needed:
@@ -1464,23 +1464,23 @@ module Special
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
               p%TT1*p%rho1*gamma*p%cp1*heatinput* &
               cubic_step(real(t*unit_time),300.,300.)
-!                    
+!
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
           ! heat_par_gauss(2) is Width (sigma)
           ! heat_par_gauss(3) is the amplitude (Flux)
           !
-          if (headtt) print*,'iheattype:',iheattype(i) 
+          if (headtt) print*,'iheattype:',iheattype(i)
           z_Mm = z(n)*unit_length*1e-6
           !
           heatinput=heat_par_gauss(3)*exp(-((z_Mm-heat_par_gauss(1))**2/ &
               2*heat_par_gauss(2)**2))
           ! Convert to pencil units if needed:
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &              
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
               p%TT1*p%rho1*gamma*p%cp1*heatinput* &
               cubic_step(real(t*unit_time),300.,300.)
-          !          
+          !
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
               'Please provide correct iheattype')
@@ -1610,7 +1610,7 @@ module Special
       call random_seed_wrapper(PUT=points_rstate)
 !
 ! Get magnetic field energy for footpoint quenching.
-! If ncpu > 3 then let the first proc do the job. 
+! The lower level prozessor have to take part
       if (ipz == 0) then
         call set_B2(f,BB2_local)
 !
@@ -1635,8 +1635,11 @@ module Special
         Ux=0.0
         Uy=0.0
 !
+! Either root processor or three procs with ipz>0 compute
+! velocities for different levels in driver3().
         call multi_drive3()
 !
+! One proc has to collect the levels.
         if (lgran_parallel) then
           if (iproc>nprocxy) then
             call mpisend_real(Ux,(/nxgrid,nygrid/),nprocxy,iproc)
@@ -1646,12 +1649,13 @@ module Special
             enddo
           endif
         endif
-!        
+!
+! Increase vorticity and normalize to given vrms.
         if (lgran_parallel.and.iproc==nprocxy &
             .or.iproc==0.and..not.lgran_parallel) call enhance_vorticity()
       endif
 !
-! Distribute results
+! Distribute results, first select the proc which collected the data.
 !
       if (lgran_parallel) then
         main_proc = nprocxy
@@ -1659,6 +1663,7 @@ module Special
         main_proc = 0
       endif
 !
+! Then distribute.
       if (iproc==main_proc) then
         do i=0,nprocx-1
           do j=0,nprocy-1
@@ -1684,7 +1689,7 @@ module Special
       call get_cp1(cp1)
 !
       if (lquench) then
-        if (ltemperature) then
+        if (ltemperature.and..not.ltemperature_nolog) then
           if (ldensity_nolog) then
             call fatal_error('solar_corona', &
                 'uudriver only implemented for ltemperature=true')
