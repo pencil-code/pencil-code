@@ -21,7 +21,7 @@
   coord_system='cylindrical'
   lcylindrical_gravity=T
 /
-&initial_condition_pars/
+&initial_condition_pars
   plaw=0.0 !density power-law
   ptlaw=1. !ptlaw= 1. !temperature power-law
 /
