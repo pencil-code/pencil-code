@@ -23,6 +23,8 @@ BORDER_PROFILES = border_profiles
 
 SPECIAL         = special/rtime_phiavg
 
+INITIAL_CONDITION = initial_condition/centrifugal_balance
+
 # Use double precision
 REAL_PRECISION = double
 
