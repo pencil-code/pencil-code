@@ -80,15 +80,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-!!  integer :: dummy
-!
-  real :: g0=1.,plaw=0.,ptlaw=1.
+  real :: g0=1.0, plaw=0.0, ptlaw=1.0
   logical :: lexponential_smooth=.false.
-  real :: radial_percent_smooth=10.0,rshift=0.0
-
-
-  namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
-       radial_percent_smooth,rshift
+  real :: radial_percent_smooth=10.0, rshift=0.0
+!
+  namelist /initial_condition_pars/
+      g0, plaw, ptlaw, lexponential_smooth, radial_percent_smooth, rshift
 !
   contains
 !***********************************************************************
