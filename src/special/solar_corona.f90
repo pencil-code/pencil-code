@@ -93,6 +93,7 @@ module Special
     real, dimension(nx,ny), save :: ux_local,uy_local
     real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
     real :: Bzflux
+    logical :: lgran_parallel=.false.
 !
   contains
 !
@@ -139,6 +140,10 @@ module Special
       endif
 !
       call setup_special()
+!
+! We need at least 4 procs above the ipz=0 for computing
+! granular velocities in parallel
+      if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .true.
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -712,7 +717,7 @@ module Special
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
 ! Compute photospheric granulation.
-      if (lgranulation .and. ipz.eq.0 ) then
+      if (lgranulation) then
         if (.not. lpencil_check_at_work) call uudriver(f)
       endif
 !
@@ -1588,44 +1593,72 @@ module Special
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i,j,ipt
+      integer :: i,j,ipt,main_proc
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
       real :: cp1,dA
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
 !
-! save global random number seed, will be restored after granulation
+! Save global random number seed, will be restored after granulation
 ! is done
       call random_seed_wrapper(GET=global_rstate)
       call random_seed_wrapper(PUT=points_rstate)
 !
-      call set_B2(f,BB2_local)
+! Get magnetic field energy for footpoint quenching.
+! If ncpu > 3 then let the first proc do the job. 
+      if (ipz == 0) then
+        call set_B2(f,BB2_local)
 !
-! set sum(abs(Bz)) to  a given flux
-      if (Bz_flux/=0) then
-        if (nxgrid/=1.and.nygrid/=1) then
-          dA=dx*dy*unit_length**2
-        elseif (nygrid==1) then
-          dA=dx*unit_length
-        elseif (nxgrid==1) then
-          dA=dy*unit_length
+! Set sum(abs(Bz)) to  a given flux.
+        if (Bz_flux/=0) then
+          if (nxgrid/=1.and.nygrid/=1) then
+            dA=dx*dy*unit_length**2
+          elseif (nygrid==1) then
+            dA=dx*unit_length
+          elseif (nxgrid==1) then
+            dA=dy*unit_length
+          endif
+          f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
+              Bz_flux/(Bzflux*dA*unit_magnetic)
         endif
-       f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
-            Bz_flux/(Bzflux*dA*unit_magnetic)
       endif
 !
-      if (lroot) then
+! Compute granular velocities. We use three levels.
+!
+      if ((lgran_parallel.and.iproc>=nprocxy.and.iproc<=nprocxy+2) &
+          .or.(iproc==0 .and..not.lgran_parallel)) then
         Ux=0.0
         Uy=0.0
 !
-        call multi_drive3
+        call multi_drive3()
 !
-! compute uz to force mass conservation at the zref
+        if (lgran_parallel) then
+          if (iproc>nprocxy) then
+            call mpisend_real(Ux,(/nxgrid,nygrid/),nprocxy,iproc)
+          else
+            do i=1,2
+              call mpirecv_real(Ux,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
+            enddo
+          endif
+        endif
+!        
+        if (lgran_parallel.and.iproc==nprocxy &
+            .or.iproc==0.and..not.lgran_parallel) call enhance_vorticity()
+      endif
 !
+! Distribute results
+!
+      if (lgran_parallel) then
+        main_proc = nprocxy
+      else
+        main_proc = 0
+      endif
+!
+      if (iproc==main_proc) then
         do i=0,nprocx-1
           do j=0,nprocy-1
             ipt = i+nprocx*j
-            if (ipt.ne.0) then
+            if (ipt.ne.main_proc) then
               call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
               call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
             else
@@ -1635,8 +1668,10 @@ module Special
           enddo
         enddo
       else
-        call mpirecv_real(ux_local,dims,0,312+iproc)
-        call mpirecv_real(uy_local,dims,0,313+iproc)
+        if (ipz==0) then
+          call mpirecv_real(ux_local,dims,main_proc,312+iproc)
+          call mpirecv_real(uy_local,dims,main_proc,313+iproc)
+        endif
       endif
 !
 ! for footpoint quenching compute pressure
@@ -1684,10 +1719,10 @@ module Special
 !***********************************************************************
   subroutine multi_drive3
 !
-    integer,parameter :: gg=3
-    real,parameter :: ldif=2.0
-    real,dimension(gg),save :: amplarr,granrarr,life_tarr
-    integer,dimension(gg),save :: xrangearr,yrangearr
+    integer, parameter :: gg=3
+    real, parameter :: ldif=2.0
+    real, dimension(gg), save :: amplarr,granrarr,life_tarr
+    integer, dimension(gg), save :: xrangearr,yrangearr
     integer :: k
 !
     if (.not.associated(firstlev)) then
@@ -1757,7 +1792,7 @@ module Special
       xrange=xrangearr(k)
       yrange=yrangearr(k)
 !
-      call drive3(k)
+      if (iproc==k.or.iproc==0) call drive3(k)
 !
       select case (k)
       case (1)
@@ -1782,8 +1817,6 @@ module Special
 !
       use Syscalls, only: file_exists
 !
-      real :: vrms,vtot
-      real,dimension(nxgrid,nygrid) :: wscr,wscr2
       integer, intent(in) :: level
       logical :: lstop=.false.
 !
@@ -1817,48 +1850,15 @@ module Special
         call reset
       endif
 !
+      Ux = Ux + vx
+      Uy = Uy + vy
+!
 ! Move granule centers according to external velocity
-! field. Needed to be done only once per timestep for each level
-      if (luse_ext_vel_field.and.itsub.eq.itorder) call evolve_granules()
+! field. Needed to be done for each level
 !
-! Using lower boundary Uy,Uz as temp memory
-      Ux = Ux+vx
-      Uy = Uy+vy
+      if (luse_ext_vel_field) call evolve_granules()
 !
-! When last level is done normalize to given rms velocity and
-! enhance the vorticity of the flow
-      if (level.eq.nglevel) then
-!
-! Putting sum of velocities back into vx,vy
-        vx=Ux
-        vy=Uy
-!
-! Calculating and enhancing rotational part by factor 5
-        if (lrotin) then
-          call helmholtz(wscr,wscr2)
-          !* war vorher 5 ; zum testen auf  50
-          ! nvor is now keyword !!!
-          vx=(vx+nvor*wscr )
-          vy=(vy+nvor*wscr2)
-        endif
-!
-! Normalize to given total rms-velocity
-        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
-!
-        if (unit_system.eq.'SI') then
-          vtot=3.*1e3/unit_velocity
-        elseif (unit_system.eq.'cgs') then
-          vtot=3.*1e5/unit_velocity
-        else
-          vtot=0.
-          call fatal_error('solar_corona','define a valid unit system')
-        endif
-!
-! Reinserting rotationally enhanced velocity field
-!
-        Ux=vx*vtot/vrms
-        Uy=vy*vtot/vrms
-      endif
+! Save granules to file.
 !
       if (t >= tsnap_uu) then
         call wrpoints(level,isnap)
@@ -1990,7 +1990,7 @@ module Special
 !***********************************************************************
     subroutine addpoint
 !
-      type(point),pointer :: newpoint
+      type(point), pointer :: newpoint
 !
       allocate(newpoint)
 !
@@ -2405,9 +2405,9 @@ module Special
 !
       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
       real, dimension (:,:), allocatable :: tmpl,tmpr
-      integer :: tag_x=321,tag_y=322
-      integer :: tag_tl=345,tag_tr=346,tag_dt=347
-      integer :: lend=0,ierr,i=0,stat,px,py
+      integer, parameter :: tag_x=321,tag_y=322
+      integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
+      integer :: lend=0,ierr,i,stat,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
       character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -2546,7 +2546,6 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,ipt
-!      real :: massflux
       real :: local_flux,local_mass
       real :: total_flux,total_mass
       real :: get_lf,get_lm
@@ -2624,6 +2623,43 @@ module Special
       call reset
 !
     endsubroutine evolve_granules
+!***********************************************************************
+    subroutine enhance_vorticity()
+!
+      real,dimension(nxgrid,nygrid) :: wscr,wscr2
+      real :: vrms,vtot
+!
+! Putting sum of velocities back into vx,vy
+        vx=Ux
+        vy=Uy
+!
+! Calculating and enhancing rotational part by factor 5
+        if (lrotin) then
+          call helmholtz(wscr,wscr2)
+          !* war vorher 5 ; zum testen auf  50
+          ! nvor is now keyword !!!
+          vx=(vx+nvor*wscr )
+          vy=(vy+nvor*wscr2)
+        endif
+!
+! Normalize to given total rms-velocity
+        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
+!
+        if (unit_system.eq.'SI') then
+          vtot=3.*1e3/unit_velocity
+        elseif (unit_system.eq.'cgs') then
+          vtot=3.*1e5/unit_velocity
+        else
+          vtot=0.
+          call fatal_error('solar_corona','define a valid unit system')
+        endif
+!
+! Reinserting rotationally enhanced velocity field
+!
+        Ux=vx*vtot/vrms
+        Uy=vy*vtot/vrms
+!
+    endsubroutine enhance_vorticity
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
