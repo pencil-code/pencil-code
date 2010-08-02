@@ -112,7 +112,9 @@ module Special
 !***********************************************************************
     subroutine initialize_special(f,lstarting)
 !
-!  called by run.f90 after reading parameters, but before the time loop
+!  Called by start.f90 together with lstarting=.true.   and then
+!  called by run.f90   together with lstarting=.false.  after reading
+!  parameters, but before the time loop.
 !
 !  06-oct-03/tony: coded
 !
