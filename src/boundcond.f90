@@ -478,19 +478,12 @@ module Boundcond
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
-!!      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
-!!                         lmultilayer,lheatc_chiconst
       use Special, only: special_boundconds
-      !use Density
       use EquationOfState
-      !use SharedVariables, only : get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-      !real, pointer :: Fbot, Ftop, FbotKbot, FtopKtop
-!
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2, fbcz_zero=0.
-      !real :: Ftopbot,FtopbotK
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
@@ -519,8 +512,6 @@ module Boundcond
             fbcz12_1=fbcz1_1
             fbcz12_2=fbcz1_2
             ip_ok=lfirst_proc_z
-            !Ftopbot=Fbot
-            !FtopbotK=FbotKbot
           else
             topbot='top'
             bc12=bcz2
@@ -528,8 +519,6 @@ module Boundcond
             fbcz12_1=fbcz2_1
             fbcz12_2=fbcz2_2
             ip_ok=llast_proc_z
-            !Ftopbot=Ftop
-            !FtopbotK=FtopKtop
           endif
 !
           do j=ivar1,ivar2
@@ -604,19 +593,6 @@ module Boundcond
                 ! BCZ_DOC:
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 call bc_ss_temp_z(f,topbot)
-                !if (j==iss) then
-                !   if (pretend_lnTT) then
-                !       force_lower_bound='cT'
-                !       force_upper_bound='cT'
-                !      call bc_force_z(f,-1,topbot,j)
-                !   else
-                ! endif
-                !endif
-                !if (j==ilnTT)  then
-                !   force_lower_bound='cT'
-                !   force_upper_bound='cT'
-                !  call bc_force_z(f,-1,topbot,j)
-                !endif
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
                 ! BCZ_DOC:
@@ -628,7 +604,6 @@ module Boundcond
                 if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
                 if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
                 if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
-                !if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
               case ('cp')
                 ! BCZ_DOC: constant pressure
                 ! BCZ_DOC:
@@ -739,16 +714,18 @@ module Boundcond
         enddo
       endselect
 !
-      ! Catch any 'stop_it_if_any' calls from single MPI ranks that may
-      ! have occured inside the above select statement. This final call
-      ! for all MPI ranks is necessary to prevent dead-lock situations.
+! Catch any 'stop_it_if_any' calls from single MPI ranks that may
+! have occured inside the above select statement. This final call
+! for all MPI ranks is necessary to prevent dead-lock situations.
+!
       call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_z
 !***********************************************************************
     subroutine bc_per_x(f,topbot,j)
 !
-!  periodic boundary condition
+!  Periodic boundary condition
+!
 !  11-nov-02/wolf: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -772,7 +749,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_per_y(f,topbot,j)
 !
-!  periodic boundary condition
+!  Periodic boundary condition
+!
 !  11-nov-02/wolf: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -796,7 +774,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_pper_y(f,topbot,j)
 !
-!  periodic boundary condition across the pole
+!  Periodic boundary condition across the pole
+!
 !  15-june-10/dhruba: aped
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -835,7 +814,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_aper_y(f,topbot,j)
 !
-!  anti-periodic boundary condition across the pole
+!  Anti-periodic boundary condition across the pole
+!
 !  15-june-10/dhruba: aped
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -864,7 +844,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_per_z(f,topbot,j)
 !
-!  periodic boundary condition
+!  Periodic boundary condition
+!
 !  11-nov-02/wolf: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1733,12 +1714,12 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_pfc_x(f,topbot,j)
 !
-! In spherical polar coordinate system,
-! at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
-! and demand $div A = 0$ gives the condition on $A_r$ to be
-! $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
-! $j$ the component of f. As this is related to setting the
-! perfect conducting boundary condition we call this "pfc".
+!  In spherical polar coordinate system,
+!  at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
+!  and demand $div A = 0$ gives the condition on $A_r$ to be
+!  $d/dr( A_r) + 2/r = 0$ . This subroutine sets this condition of
+!  $j$ the component of f. As this is related to setting the
+!  perfect conducting boundary condition we call this "pfc".
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -1768,11 +1749,11 @@ module Boundcond
 !***********************************************************************
     subroutine bc_set_nfr_x(f,topbot,j)
 !
-! Normal-field (or angry-hedgehog) boundary condition for spherical
-! coordinate system.
-! d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
-! in spherical coordinate system.
-! (compare with next subroutine sfree )
+!  Normal-field (or angry-hedgehog) boundary condition for spherical
+!  coordinate system.
+!  d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
+!  in spherical coordinate system.
+!  (compare with next subroutine sfree )
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -1801,12 +1782,13 @@ module Boundcond
     endsubroutine bc_set_nfr_x
 ! **********************************************************************
     subroutine bc_set_sa2_x(f,topbot,j)
-! To set the boundary condition:
-! d_r(r B_{\phi} = 0 we need to se
-! (d_r)^2(r A_{\theta}) = 0 which sets the condition 'a2'
-! on r A_{\theta} and vice-versa for A_{\phi}
 !
-!  3-Dec-2009/dhruba: coded
+!  To set the boundary condition:
+!  d_r(r B_{\phi} = 0 we need to se
+!  (d_r)^2(r A_{\theta}) = 0 which sets the condition 'a2'
+!  on r A_{\theta} and vice-versa for A_{\phi}
+!
+!  03-Dec-2009/dhruba: coded
 !
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -1836,12 +1818,12 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_sfree_x(f,topbot,j)
 !
-! Details are given in an appendix in the manual.
-! Lambda effect : stresses due to Lambda effect are added to the stress-tensor.
-! For rotation along the z direction and also for not very strong rotation such
-! that the breaking of rotational symmetry is only due to gravity, the only
-! new term is appears in the r-phi component. This implies that this term
-! affects only the boundary condition of u_{\phi} for the radial boundary.
+!  Details are given in an appendix in the manual.
+!  Lambda effect : stresses due to Lambda effect are added to the stress-tensor.
+!  For rotation along the z direction and also for not very strong rotation such
+!  that the breaking of rotational symmetry is only due to gravity, the only
+!  new term is appears in the r-phi component. This implies that this term
+!  affects only the boundary condition of u_{\phi} for the radial boundary.
 !
 !  25-Aug-2007/dhruba: coded
 !  21-Mar-2009/axel: get llambda_effect using get_shared_variable
@@ -1935,9 +1917,9 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_jethat_x(f,jj,topbot,fracall,uzeroall)
 !
-! Sets tophat velocity profile at the inner (bot) boundary
+!  Sets tophat velocity profile at the inner (bot) boundary
 !
-!  3-jan-2008/dhruba: coded
+!  03-jan-2008/dhruba: coded
 !
       use Sub, only: step
 !
@@ -1951,12 +1933,13 @@ module Boundcond
       real, parameter :: width_hat=0.01
       real, dimension (ny) :: hatprofy
       real, dimension (nz) :: hatprofz
+!
       y1 = xyz1(2)
       z1 = xyz1(3)
       frac = fracall(jj)
       uzero = uzeroall(jj)
-!      write(*,*) frac,uzero,y0,z0,y1,z1
-     if (lspherical_coords)then
+!
+      if (lspherical_coords)then
 !
         select case (topbot)
         case ('bot')               ! bottom boundary
@@ -1997,11 +1980,11 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_nfr_y(f,topbot,j)
 !
-! Stress-free boundary condition for spherical coordinate system.
-! d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets
-! B_{\theta}=0 in spherical polar
-! coordinate system. This subroutine sets only the first part of this
-! boundary condition for 'j'-th component of f.
+!  Stress-free boundary condition for spherical coordinate system.
+!  d_{\theta}(A_{\phi}) = -A_{\phi}cot(\theta)/r  with A_{\theta} = 0 sets
+!  B_{\theta}=0 in spherical polar
+!  coordinate system. This subroutine sets only the first part of this
+!  boundary condition for 'j'-th component of f.
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -2030,11 +2013,11 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_sfree_y(f,topbot,j)
 !
-! Stress-free boundary condition for spherical coordinate system.
-! d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)  with u_{\theta} = 0 sets
-! S_{\theta \phi} component of the strain matrix to be zero in spherical
-! coordinate system. This subroutine sets only the first part of this
-! boundary condition for 'j'-th component of f.
+!  Stress-free boundary condition for spherical coordinate system.
+!  d_{\theta}(u_{\phi}) = u_{\phi}cot(\theta)  with u_{\theta} = 0 sets
+!  S_{\theta \phi} component of the strain matrix to be zero in spherical
+!  coordinate system. This subroutine sets only the first part of this
+!  boundary condition for 'j'-th component of f.
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -2135,13 +2118,13 @@ module Boundcond
 ! **********************************************************************
     subroutine bc_set_pfc_y(f,topbot,j)
 !
-! In spherical polar coordinate system,
-! at a theta boundary set : $A_{r} = 0$ and $A_{\phi} = 0$,
-! and demand $div A = 0$ gives the condition on $A_{\theta}$ to be
-! $d/d{\theta}( A_{\theta}) + \cot(\theta)A_{\theta} = 0$ .
-! This subroutine sets this condition on
-! $j$ the component of f. As this is related to setting the
-! perfect conducting boundary condition we call this "pfc".
+!  In spherical polar coordinate system,
+!  at a theta boundary set : $A_{r} = 0$ and $A_{\phi} = 0$,
+!  and demand $div A = 0$ gives the condition on $A_{\theta}$ to be
+!  $d/d{\theta}( A_{\theta}) + \cot(\theta)A_{\theta} = 0$ .
+!  This subroutine sets this condition on
+!  $j$ the component of f. As this is related to setting the
+!  perfect conducting boundary condition we call this "pfc".
 !
 !  25-Aug-2007/dhruba: coded
 !
@@ -2154,8 +2137,8 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
 !
-! The coding assumes we are using 6-th order centered finite difference for our
-! derivatives.
+!  The coding assumes we are using 6-th order centered finite difference for our
+!  derivatives.
 !
         cottheta= cotth(m1)
         f(:,m1-1,:,j)= f(:,m1+1,:,j) +  60.*dy*cottheta*f(:,m1,:,j)/45.
@@ -2455,8 +2438,8 @@ module Boundcond
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
-!   5-apr-03/axel: coded
-!   7-jan-09/axel: corrected
+!  05-apr-03/axel: coded
+!  07-jan-09/axel: corrected
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2535,7 +2518,7 @@ module Boundcond
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
-!   5-apr-03/axel: coded
+!  05-apr-03/axel: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2580,9 +2563,9 @@ module Boundcond
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
-!   5-apr-03/axel: coded
-!   7-jan-09/axel: corrected
-!   26-jan-09/nils: adapted from bc_onesided_x
+!  05-apr-03/axel: coded
+!  07-jan-09/axel: corrected
+!  26-jan-09/nils: adapted from bc_onesided_x
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2661,7 +2644,7 @@ module Boundcond
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
-!   5-apr-03/axel: coded
+!  05-apr-03/axel: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2706,7 +2689,7 @@ module Boundcond
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
 !  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
 !
-!   5-apr-03/axel: coded
+!  05-apr-03/axel: coded
 !  10-mar-09/axel: corrected
 !
       character (len=3) :: topbot
@@ -2786,7 +2769,7 @@ module Boundcond
 !  Correct for polynomials up to 2nd order, determined 1 further degree
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
-!   19-jun-03/wolf: coded
+!  19-jun-03/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2817,7 +2800,7 @@ module Boundcond
 !  Correct for polynomials up to 2nd order, determined 1 further degree
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
-!   19-jun-03/wolf: coded
+!  19-jun-03/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2848,7 +2831,7 @@ module Boundcond
 !  Correct for polynomials up to 2nd order, determined 1 further degree
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
-!   19-jun-03/wolf: coded
+!  19-jun-03/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2879,8 +2862,8 @@ module Boundcond
 !  Correct for polynomials up to 2nd order, determined 2 further degrees
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
-!   19-jun-03/wolf: coded
-!    1-jul-03/axel: introduced abbreviations n1p4,n2m4
+!  19-jun-03/wolf: coded
+!  01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2917,8 +2900,8 @@ module Boundcond
 !  Correct for polynomials up to 2nd order, determined 2 further degrees
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
-!   19-jun-03/wolf: coded
-!    1-jul-03/axel: introduced abbreviations n1p4,n2m4
+!  19-jun-03/wolf: coded
+!  01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2956,7 +2939,7 @@ module Boundcond
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
 !   19-jun-03/wolf: coded
-!    1-jul-03/axel: introduced abbreviations n1p4,n2m4
+!   01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2992,7 +2975,7 @@ module Boundcond
 !  Extrapolation boundary condition in logarithm:
 !  It maintains a power law
 !
-!   18-dec-08/wlad: coded
+!  18-dec-08/wlad: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3039,7 +3022,7 @@ module Boundcond
 !  Correct for polynomials up to 2nd order, determined no further degree
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
-!    9-oct-03/wolf: coded
+!  09-oct-03/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3047,43 +3030,27 @@ module Boundcond
 !
       select case (topbot)
 !
-!       case ('bot')               ! bottom boundary
-!         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
-!         f(:,:,n1-1,j)=- 3*f(:,:,n1+1,j)+  f(:,:,n1+2,j)
-!         f(:,:,n1-2,j)=- 8*f(:,:,n1+1,j)+3*f(:,:,n1+2,j)
-!         f(:,:,n1-3,j)=-15*f(:,:,n1+1,j)+6*f(:,:,n1+2,j)
+! Nyquist-filtering
 !
-!       case ('top')               ! top boundary
-!         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
-!         f(:,:,n2+1,j)=- 3*f(:,:,n2-1,j)+  f(:,:,n2-2,j)
-!         f(:,:,n2+2,j)=- 8*f(:,:,n2-1,j)+3*f(:,:,n2-2,j)
-!         f(:,:,n2+3,j)=-15*f(:,:,n2-1,j)+6*f(:,:,n2-2,j)
-!
-!! Nyquist-filtering
-      case ('bot')               ! bottom boundary
+      case ('bot')               
+! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
-        f(:,:,n1-1,j)=(1/11.)*(-17*f(:,:,n1+1,j)- 9*f(:,:,n1+2,j)+ 8*f(:,:,n1+3,j))
-        f(:,:,n1-2,j)=      2*(- 2*f(:,:,n1+1,j)-   f(:,:,n1+2,j)+   f(:,:,n1+3,j))
-        f(:,:,n1-3,j)=(3/11.)*(-27*f(:,:,n1+1,j)-13*f(:,:,n1+2,j)+14*f(:,:,n1+3,j))
+        f(:,:,n1-1,j)=(1/11.)*&
+             (-17*f(:,:,n1+1,j)- 9*f(:,:,n1+2,j)+ 8*f(:,:,n1+3,j))
+        f(:,:,n1-2,j)=      2*&
+             (- 2*f(:,:,n1+1,j)-   f(:,:,n1+2,j)+   f(:,:,n1+3,j))
+        f(:,:,n1-3,j)=(3/11.)*&
+             (-27*f(:,:,n1+1,j)-13*f(:,:,n1+2,j)+14*f(:,:,n1+3,j))
 !
-      case ('top')               ! top boundary
+      case ('top')               
+! top boundary
         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
-        f(:,:,n2+1,j)=(1/11.)*(-17*f(:,:,n2-1,j)- 9*f(:,:,n2-2,j)+ 8*f(:,:,n2-3,j))
-        f(:,:,n2+2,j)=      2*(- 2*f(:,:,n2-1,j)-   f(:,:,n2-2,j)+   f(:,:,n2-3,j))
-        f(:,:,n2+3,j)=(3/11.)*(-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
-!
-! !! Nyquist-transparent
-!       case ('bot')               ! bottom boundary
-!         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
-!         f(:,:,n1-1,j)=(1/11.)*(-13*f(:,:,n1+1,j)-14*f(:,:,n1+2,j)+10*f(:,:,n1+3,j))
-!         f(:,:,n1-2,j)=(1/11.)*(-48*f(:,:,n1+1,j)-17*f(:,:,n1+2,j)+20*f(:,:,n1+3,j))
-!         f(:,:,n1-3,j)=         - 7*f(:,:,n1+1,j)- 4*f(:,:,n1+2,j)+ 4*f(:,:,n1+3,j)
-!
-!       case ('top')               ! top boundary
-!         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
-!         f(:,:,n2+1,j)=(1/11.)*(-13*f(:,:,n2-1,j)-14*f(:,:,n2-2,j)+10*f(:,:,n2-3,j))
-!         f(:,:,n2+2,j)=(1/11.)*(-48*f(:,:,n2-1,j)-17*f(:,:,n2-2,j)+20*f(:,:,n2-3,j))
-!         f(:,:,n2+3,j)=         - 7*f(:,:,n2-1,j)- 4*f(:,:,n2-2,j)+ 4*f(:,:,n2-3,j)
+        f(:,:,n2+1,j)=(1/11.)*&
+             (-17*f(:,:,n2-1,j)- 9*f(:,:,n2-2,j)+ 8*f(:,:,n2-3,j))
+        f(:,:,n2+2,j)=      2*&
+             (- 2*f(:,:,n2-1,j)-   f(:,:,n2-2,j)+   f(:,:,n2-3,j))
+        f(:,:,n2+3,j)=(3/11.)*&
+             (-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
 !
       case default
         print*, "bc_extrap0_2_0: ", topbot, " should be 'top' or 'bot'"
@@ -3100,7 +3067,7 @@ module Boundcond
 !
 !  NOTE: This is not the final formula, but just bc_extrap_2_1() with f(bdry)=0
 !
-!    9-oct-03/wolf: coded
+!  09-oct-03/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3135,7 +3102,7 @@ module Boundcond
 !
 !  NOTE: This is not the final formula, but just bc_extrap_2_2() with f(bdry)=0
 !
-!    9-oct-03/wolf: coded
+!  09-oct-03/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3149,13 +3116,15 @@ module Boundcond
 !
       select case (topbot)
 !
-      case ('bot')               ! bottom boundary
+      case ('bot')               
+! bottom boundary
         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=0.2   *(                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
         f(:,:,n1-2,j)=0.2   *(- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
         f(:,:,n1-3,j)=1./35.*(-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 !
-      case ('top')               ! top boundary
+      case ('top')               
+! top boundary
         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=0.2   *(                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
         f(:,:,n2+2,j)=0.2   *(- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j)+ 7*f(:,:,n2m4,j))
@@ -3173,7 +3142,7 @@ module Boundcond
 !  Extrapolation boundary condition in logarithm:
 !  It maintains a power law
 !
-!   18-dec-08/wlad: coded
+!  18-dec-08/wlad: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3963,7 +3932,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_force_aa_time(f)
 !
-!  reads in time series of magnetograms
+!  Reads in time series of magnetograms
+!
 !  17-feb-10/bing: coded
 !
       use Fourier, only : fourier_transform_other
@@ -4100,7 +4070,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_lnTT_flux_x(f,topbot)
 !
-!  constant flux boundary condition for temperature (called when bcx='c1')
+!  Constant flux boundary condition for temperature (called when bcx='c1')
+!
 !  12-Mar-2007/dintrans: coded
 !
       use SharedVariables, only: get_shared_variable
@@ -4160,7 +4131,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_lnTT_flux_z(f,topbot)
 !
-!  constant flux boundary condition for temperature (called when bcz='c1')
+!  Constant flux boundary condition for temperature (called when bcz='c1')
+!
 !  12-May-07/dintrans: coded
 !
       use SharedVariables, only: get_shared_variable
@@ -4216,7 +4188,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_ss_flux_x(f,topbot)
 !
-!  constant flux boundary condition for entropy (called when bcx='c1')
+!  Constant flux boundary condition for entropy (called when bcx='c1')
+
 !  17-mar-07/dintrans: coded
 !
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
