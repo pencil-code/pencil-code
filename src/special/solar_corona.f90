@@ -126,7 +126,7 @@ module Special
       call keep_compiler_quiet(f)
 !
       if (lgranulation.and.ipz.eq.0) then
-        call setdrparams(lstarting)
+        call setdrparams()
 !
 ! if irefz is not set choose z=0 or irefz=n1
         if (irefz .eq. 0)  then
@@ -144,6 +144,8 @@ module Special
 ! We need at least 4 procs above the ipz=0 for computing
 ! granular velocities in parallel
       if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .true.
+!
+      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -1561,7 +1563,7 @@ module Special
       endif
 !
 ! Don't reset if RELOAD is used
-      if (lstarting) then
+      if (.not.lreloading) then
         if (associated(first)) nullify(first)
         if (associated(current)) nullify(current)
         if (associated(previous)) nullify(previous)
