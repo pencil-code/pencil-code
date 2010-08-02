@@ -576,6 +576,7 @@ module InitialCondition
       use Sub,         only:get_radial_distance,grad
       use Poisson,     only:inverse_laplacian
       use Mpicomm,     only:stop_it
+      use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -612,6 +613,9 @@ module InitialCondition
         call inverse_laplacian(f,&
              selfpotential(l1:l2,m1:m2,n1:n2))
 !
+        f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
+        call update_ghosts(f)
+!
 !  update the boundaries for the self-potential
 !
         do n=n1,n2
@@ -622,7 +626,7 @@ module InitialCondition
 !  Get the potential gradient
 !
             call get_radial_distance(rr_sph,rr_cyl)
-            call grad(selfpotential,gpotself)
+            call grad(f,ipotself,gpotself)
 !
 !  correct the angular frequency phidot^2
 !
