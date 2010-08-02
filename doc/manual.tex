@@ -6433,7 +6433,8 @@ modules.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Adding new physics modules}
+\subsection{Adding new physics: the Special module}
+\index{Special module}
 
 If you want to add new physics to the code, you will in many cases want to
 add a new Special module.  Doing so is relatively straight forward and
@@ -6487,6 +6488,39 @@ The grep command
   \prompt{unix> } grep -i pscalar src/*
 \end{alltt}
 gives you a good overview of which files you need to edit or add.
+
+\subsection{Adding your initial conditions: the InitialCondition module}
+\index{InitialCondition module}
+
+Although the code has many initial conditions implemented, we 
+now {\it discourage} such practice. We aim to eventually removed 
+most of them. The recommended course of action is to make use of 
+the InitialCondition module. 
+
+InitialCondition works pretty much like the Special module. To implement your 
+own custom initial conditions, create a \file{initial\_condition} directory in 
+your run directory, and copy the file \file{noinitialcondition.f90} from the 
+src/ to it, with a new, descriptive, name.   
+
+The first thing to do in your new module is to change the 
+linitialcondition=.false. header to say linitialcondition=.true.
+
+This file has hooks to implement a custom initial condition to 
+most variables. After implementing your initial condition, 
+add INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90, 
+which ``myinitialcondition'' is the name you gave to the file. 
+Add also ``initial\_condition\_pars'' to the start.in file, just 
+below ``init\_pars''. This is 
+a namelist, which you can use to add whichever quantity your 
+initial condition need defined, or passed. You must also un-comment the 
+relevant lines in the subroutines of namelist that read and write the 
+namelist since, for compiling reasons, these subroutines in 
+\file{noinitialcondition.f90} are dummies. The lines are easily identifiable 
+in the code. 
+
+Check e.g. the samples \file{2d-tests/baroclinic}, 
+\file{2d-tests/spherical\_viscous\_ring}, or \file{interlocked-fluxrings}, 
+for examples of how the module is used. 
 
 % ====================================================================== %
 
