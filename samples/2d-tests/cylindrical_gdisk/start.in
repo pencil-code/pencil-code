@@ -23,7 +23,7 @@
 /
 &initial_condition_pars
   plaw=0.0 !density power-law
-  ptlaw=1. !ptlaw= 1. !temperature power-law
+  ptlaw=1. !temperature power-law
 /
 &eos_init_pars
   cs0  = 0.05 
