@@ -26,3 +26,5 @@ FOURIER              =   fourier_fftpack
 BORDER_PROFILES      =   border_profiles
 
 REAL_PRECISION = double
+
+INITIAL_CONDITION = initial_condition/centrifugal_balance
