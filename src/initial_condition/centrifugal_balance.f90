@@ -85,10 +85,11 @@ module InitialCondition
   real :: g0=1.,plaw=0.,ptlaw=1.
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
-
+  logical :: lcorrect_selfgravity=.false.
+  real :: gravitational_const
 
   namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
-       radial_percent_smooth,rshift
+       radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const
 !
   contains
 !***********************************************************************
@@ -232,12 +233,10 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use FArrayManager
-      use Mpicomm,     only:stop_it
-      use Gravity,     only:potential,acceleration
-      use Sub,         only:get_radial_distance,grad,power_law
-      !use Selfgravity, only:calc_selfpotential
+      use Mpicomm,         only: stop_it
+      use Gravity,         only: potential,acceleration
+      use Sub,             only: get_radial_distance,grad,power_law
       use EquationOfState, only: rho0
-!      use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
@@ -389,7 +388,7 @@ module InitialCondition
 !
 !  Correct the velocities for self-gravity
 !
-      !call correct_for_selfgravity(f)
+      call correct_for_selfgravity(f)
 !
 !  Set the thermodynamical variable
 !
@@ -563,163 +562,122 @@ module InitialCondition
 !
 !  Add self-gravity's contribution to the centrifugal force
 !
-      !call correct_for_selfgravity(f)
+      call correct_for_selfgravity(f)
 !
     endsubroutine exponential_fall
 !***********************************************************************
-!    subroutine correct_for_selfgravity(f)
-!!
-!!  Correct for the fluid's self-gravity in the
-!!  centrifugal force
-!!
-!!  03-dec-07/wlad: coded
-!!
-!      use Sub,         only:get_radial_distance,grad
-!      use Selfgravity, only:calc_selfpotential
-!      !use Boundcond,   only:update_ghosts
-!      use Mpicomm,     only:stop_it
-!!
-!      real, dimension (mx,my,mz,mfarray) :: f
-!!
-!      real, dimension (nx,3) :: gpotself
-!      real, dimension (nx) :: tmp1,tmp2
-!      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
-!      logical :: lheader
-!      integer :: i
-!!
-!!  Do nothing if self-gravity is not called
-!!
-!      if (lselfgravity) then
-!!
-!        if (lroot) print*,'Correcting for self-gravity on the '//&
-!             'centrifugal force'
-!!
-!!  feed linear density into the poisson solver
-!!
-!        f(:,:,:,ilnrho) = exp(f(:,:,:,ilnrho))
-!        call calc_selfpotential(f)
-!        f(:,:,:,ilnrho) = alog(f(:,:,:,ilnrho))
-!!
-!!  update the boundaries for the self-potential
-!!
-!        !call update_ghosts(f)
-!!
-!        do n=n1,n2
-!          do m=m1,m2
-!!
-!            lheader=(lfirstpoint.and.lroot)
-!!
-!!  Get the potential gradient
-!!
-!            call get_radial_distance(rr_sph,rr_cyl)
-!            call grad(f,ipotself,gpotself)
-!!
-!!  correct the angular frequency phidot^2
-!!
-!            if (lcartesian_coords) then
-!              gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-!              tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-!              tmp2=tmp1+gspotself/rr_cyl
-!            elseif (lcylindrical_coords) then
-!              gspotself=gpotself(:,1)
-!              tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-!              tmp2=tmp1+gspotself/rr_cyl
-!            elseif (lspherical_coords) then
-!              gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
-!              tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
-!              tmp2=tmp1 + gspotself/(rr_sph*sinth(m)**2)
-!            endif
-!!
-!!  Catch negative values of phidot^2
-!!
-!            do i=1,nx
-!              if (tmp2(i)<0.) then
-!                if (rr_cyl(i) < r_int) then
-!                  !it's inside the frozen zone, so
-!                  !just set tmp2 to zero and emit a warning
-!                  tmp2(i)=0.
-!                  if ((ip<=10).and.lheader) &
-!                       call warning('correct_for_selfgravity','Cannot '//&
-!                       'have centrifugal equilibrium in the inner '//&
-!                       'domain. Just warning...')
-!                else
-!                  print*,'correct_for_selfgravity: ',&
-!                       'cannot have centrifugal equilibrium in the inner ',&
-!                       'domain. The offending point is ',&
-!                       'x,y,z=',x(i+nghost),y(m),z(n)
-!                  print*,'the angular frequency here is ',tmp2(i)
-!                  call stop_it("")
-!                endif
-!              endif
-!            enddo
-!!
-!!  Correct the velocities
-!!
-!            if (lcartesian_coords) then
-!              f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-!              f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-!            elseif (lcylindrical_coords) then
-!              f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-!            elseif (lspherical_coords) then
-!              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
-!            endif
-!          enddo
-!        enddo
-!      endif ! if (lselfgravity)
-!!
-!    endsubroutine correct_for_selfgravity
-!***********************************************************************
-    subroutine power_law_gaussian_disk(f)
+    subroutine correct_for_selfgravity(f)
 !
-!  power-law with gaussian z
+!  Correct for the fluid's self-gravity in the
+!  centrifugal force
 !
-!  18/04/08/steveb: coded
+!  03-dec-07/wlad: coded
 !
-      use Sub, only: get_radial_distance
-      use EquationOfState, only: cs20,lnrho0
+      use Sub,         only:get_radial_distance,grad
+      use Poisson,     only:inverse_laplacian
+      use Mpicomm,     only:stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: rr_sph,rr_cyl
 !
-      if (lroot) print*,'setting density gradient of power '//&
-          'law=',plaw
+      real, dimension (mx,my,mz) :: selfpotential
+      real, dimension (nx,3) :: gpotself
+      real, dimension (nx) :: tmp1,tmp2
+      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
+      real :: rhs_poisson_const
+      logical :: lheader
+      integer :: i
 !
-      do m=1,my
-        do n=1,mz
-          call get_radial_distance(rr_sph,rr_cyl)
-          f(:,m,n,ilnrho) = & ! f(:,m,n,ilnrho) + &
-              lnrho0+0.5*log(r_ref/rr_cyl) &
-              - z(n)**2.*g0/(2.*cs20*rr_cyl*3.)
+!  Do nothing if self-gravity is not called
+!
+      if (lcorrect_selfgravity) then
+!
+        if (lroot) print*,'Correcting for self-gravity on the '//&
+             'centrifugal force'
+        if (.not.lpoisson) then 
+          print*,"You want to correct for selfgravity but you "
+          print*,"are using POISSON=nopoisson in src/Makefile.local. "
+          print*,"Please use a poisson solver."
+          call stop_it("")
+        endif
+!
+!  Poisson constant is 4piG, this has to be consistent with the 
+!  constant in poisson_init_pars
+!
+        rhs_poisson_const=4*pi*gravitational_const
+!
+!  feed linear density into the poisson solver
+!
+        selfpotential(l1:l2,m1:m2,n1:n2)=&
+             rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        call inverse_laplacian(f,&
+             selfpotential(l1:l2,m1:m2,n1:n2))
+!
+!  update the boundaries for the self-potential
+!
+        do n=n1,n2
+          do m=m1,m2
+!
+            lheader=(lfirstpoint.and.lroot)
+!
+!  Get the potential gradient
+!
+            call get_radial_distance(rr_sph,rr_cyl)
+            call grad(selfpotential,gpotself)
+!
+!  correct the angular frequency phidot^2
+!
+            if (lcartesian_coords) then
+              gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
+              tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+              tmp2=tmp1+gspotself/rr_cyl
+            elseif (lcylindrical_coords) then
+              gspotself=gpotself(:,1)
+              tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+              tmp2=tmp1+gspotself/rr_cyl
+            elseif (lspherical_coords) then
+              gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
+              tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
+              tmp2=tmp1 + gspotself/(rr_sph*sinth(m)**2)
+            endif
+!
+!  Catch negative values of phidot^2
+!
+            do i=1,nx
+              if (tmp2(i)<0.) then
+                if (rr_cyl(i) < r_int) then
+                  !it's inside the frozen zone, so
+                  !just set tmp2 to zero and emit a warning
+                  tmp2(i)=0.
+                  if ((ip<=10).and.lheader) &
+                       call warning('correct_for_selfgravity','Cannot '//&
+                       'have centrifugal equilibrium in the inner '//&
+                       'domain. Just warning...')
+                else
+                  print*,'correct_for_selfgravity: ',&
+                       'cannot have centrifugal equilibrium in the inner ',&
+                       'domain. The offending point is ',&
+                       'x,y,z=',x(i+nghost),y(m),z(n)
+                  print*,'the angular frequency here is ',tmp2(i)
+                  call stop_it("")
+                endif
+              endif
+            enddo
+!
+!  Correct the velocities
+!
+            if (lcartesian_coords) then
+              f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+              f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+            elseif (lcylindrical_coords) then
+              f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+            elseif (lspherical_coords) then
+              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+            endif
+          enddo
         enddo
-      enddo
+      endif ! if (lcorrect_selfgravity)
 !
-    endsubroutine power_law_gaussian_disk
-!***********************************************************************
-    subroutine power_law_disk(f)
-!
-!  Simple power-law disk. It sets only the density, whereas
-!  local_isothermal sets the density and thermodynamical
-!  quantities
-!
-!  19-sep-07/wlad: coded
-!
-      use Sub, only: get_radial_distance
-      use EquationOfState, only: rho0
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: rr_sph,rr_cyl
-!
-      if (lroot) print*,'setting density gradient of power '//&
-           'law=',plaw
-!
-      do m=1,my
-        do n=1,mz
-          call get_radial_distance(rr_sph,rr_cyl)
-          f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
-        enddo
-      enddo
-!
-    endsubroutine power_law_disk
+    endsubroutine correct_for_selfgravity
 !***********************************************************************
     subroutine set_thermodynamical_quantities&
          (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
