@@ -356,6 +356,16 @@ module InitialCondition
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+!  Uncomment these lines back in when you turn 
+!  this file into an initial condition, so it 
+!  is able to read the namelist.  
+!
+!!      if (present(iostat)) then
+!!        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
+!!      else
+!!        read(unit,NML=initial_condition_pars,ERR=99)
+!!      endif
+!
       call keep_compiler_quiet(unit)
       call keep_compiler_quiet(present(iostat))
 !
@@ -366,6 +376,12 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       integer, intent(in) :: unit
+!
+!  Uncomment this line back in when you turn 
+!  this file into an initial condition, so it 
+!  is able to write the namelist.  
+!
+!!      write(unit,NML=initial_condition_pars)
 !
       call keep_compiler_quiet(unit)
 !
