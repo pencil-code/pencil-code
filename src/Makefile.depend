@@ -338,11 +338,11 @@ $(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OB
 #
 $(PENCIL_CHECK_OBJ): $(PENCIL_CHECK_SRC) $(EQU_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(SUB_OBJ)
 #
-$(BOUNDCOND_OBJ): $(BOUNDCOND_SRC) cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ) $(CHEMISTRY_OBJ) $(VISCOSITY_OBJ)
+$(BOUNDCOND_OBJ): $(BOUNDCOND_SRC) cdata.o cparam.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) messages.o $(MPICOMM_FIX_OBJ) $(SHEAR_OBJ) $(SPECIAL_OBJ)
 #
 $(INITCOND_OBJ): initcond.f90 cdata.o $(EOS_OBJ) farray.o $(FOURIER_OBJ) general.o $(GRAVITY_OBJ) messages.o $(MPICOMM_FIX_OBJ) sub.o 
 #
-$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) farray.o general.o $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ)
+$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) farray.o general.o $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) boundcond.o
 #
 $(TIMESTEP_OBJ): $(TIMESTEP).f90 $(CDATA_OBJ) $(MPICOMM_OBJ) equ.o $(FORCING_OBJ) $(BORDER_PROFILES_OBJ)
 #
