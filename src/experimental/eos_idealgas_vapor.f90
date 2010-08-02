@@ -653,17 +653,6 @@ module EquationOfState
 !
     endsubroutine get_ptlaw
 !***********************************************************************
-    subroutine isothermal_density_ion(pot,tmp)
-!
-      real, dimension (nx) :: pot, tmp
-!
-      call fatal_error('isothermal_density_ion','not implemented')
-!
-      call keep_compiler_quiet(pot)
-      call keep_compiler_quiet(tmp)
-!
-    endsubroutine isothermal_density_ion
-!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
       real, dimension(mx,my,mz,mfarray) :: f

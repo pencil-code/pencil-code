@@ -673,18 +673,6 @@ module EquationOfState
 !
     endsubroutine get_cp1
 !***********************************************************************
-    subroutine isothermal_density_ion(pot,tmp)
-!
-      real, dimension (nx), intent(in) :: pot
-      real, dimension (nx), intent(out) :: tmp
-!
-      call fatal_error('isothermal_density_ion','SHOULD NOT BE CALLED WITH eos_chemistry')
-      tmp=impossible
-!
-      call keep_compiler_quiet(pot)
-!
-    endsubroutine isothermal_density_ion
-!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde

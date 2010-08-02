@@ -268,23 +268,6 @@ module EquationOfState
 !
     endsubroutine get_cp1
 !***********************************************************************
-    subroutine isothermal_density_ion(pot,tmp)
-!
-! bing: This dummy routine is not called from anywhere
-!       and is not even implemented in eos_temperature_idealgas.
-!       It should be deleted
-!
-      real, dimension (nx), intent(in) :: pot
-      real, dimension (nx), intent(out) :: tmp
-!
-      call fatal_error('isothermal_density_ion', &
-          'should not be called with noeos')
-!
-      call keep_compiler_quiet(pot)
-      call keep_compiler_quiet(tmp)
-!
-    endsubroutine isothermal_density_ion
-!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   02-apr-04/tony: dummy
