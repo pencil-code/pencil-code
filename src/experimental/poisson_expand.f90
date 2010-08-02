@@ -589,7 +589,7 @@ module Poisson
 !
 99    return
 !
-    endsubroutine read_Poisson_run_pars
+    endsubroutine read_poisson_run_pars
 !***********************************************************************
     subroutine write_poisson_run_pars(unit)
 !
