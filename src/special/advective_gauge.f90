@@ -95,10 +95,12 @@ module Special
 !
       if (.not.lstarting) then
         call get_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
+        if (ierr/=0) &
+            call fatal_error("initialize_special: ", "cannot get lweyl_gauge")
         if (.not.lweyl_gauge) then
           call get_shared_variable('eta',eta,ierr)
           if (ierr/=0) &
-              call fatal_error("initialize_special: ", "cannot get shared var eta")
+              call fatal_error("initialize_special: ", "cannot get shared eta")
         endif
       endif
 !
