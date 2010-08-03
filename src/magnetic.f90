@@ -842,6 +842,14 @@ module Magnetic
 !       enddo
 !     endif
 !
+!  Share lweyl_gauge
+!
+      if (lspecial) then
+        call put_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
+        if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'there was a problem when sharing lweyl_gauge')
+      endif
+!
 !  share eta profile with test-field procedure
 !
       if (ltestfield) then
@@ -852,10 +860,10 @@ module Magnetic
 !  if meanfield theory is invoked, we need to tell the other routines
 !
       call put_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
-      if (lmeanfield_theory) then
+      if (lmeanfield_theory.or.lspecial) then
         call put_shared_variable('eta',eta,ierr)
-      elseif (lspecial) then
-        call put_shared_variable('eta',eta,ierr)
+        if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'there was a problem when sharing eta')
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so

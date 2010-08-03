@@ -218,7 +218,8 @@ module Special
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!!      if (headtt) call identify_bcs('ss',iss)
+!
+      if (headtt) call identify_bcs('Lam',iLam)
 !
 !  solve gauge condition
 !
