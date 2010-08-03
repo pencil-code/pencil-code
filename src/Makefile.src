@@ -872,17 +872,18 @@ endif
 #MAKEOPTS=-j 3 #(starlink)
 ##
 ##   Triton - Wlad's laptop
-## + Titan  - Wlad's stationary
 ##
-#FC =ifort #(triton)
-#F77=$(FC) #(triton|titan)
-#CC = gcc #(triton|titan)
-#MPI_HOME=/usr/local#(triton|titan)
-#FFLAGS=-O3 -I$(MPI_HOME)/include #(triton|titan)
-#LD_MPI=-L$(MPI_HOME)/lib -pthread $(MPI_LDLIBS) #(triton|titan)
-#MPI_LDLIBS= -llammpi++ -llammpio -llamf77mpi -lmpi -llam #(triton|titan)
-#FFLAGS_DOUBLE = -r8 #(triton|titan)
-#CFLAGS_DOUBLE = -DDOUBLE_PRECISION #(triton|titan)
+## ifort
+##FC = /opt/intel/Compiler/11.1/069/bin/ia32/ifort#(triton)
+##FFLAGS=-O3 -ftrapuv -WB -check -I /usr/include/mpich2#(triton)
+###FFLAGS=-O3 -I /usr/include/mpich2#(triton)
+##FFLAGS_DOUBLE = -r8 #(triton)
+## gfortran
+#FFLAGS=-O3 -fbounds-check -Wall -Wsurprising -Wunused -I /usr/include/mpich2#(triton)
+## general
+#LD_MPI=-L /usr/lib -pthread $(MPI_LDLIBS) #(triton)
+#MPI_LDLIBS= -lmpich #(triton)
+#CFLAGS_DOUBLE = -DDOUBLE_PRECISION #(triton)
 ##
 ##  Aida workstations at MPIA-Heidelberg
 ##
