@@ -29,7 +29,6 @@ module Hypervisc_strict
   use Cparam
   use Cdata
   use Messages
-  use Density
 !
   implicit none
 !
@@ -72,11 +71,9 @@ module Hypervisc_strict
 !
 !  24-nov-03/nils: coded
 !
-      use Cdata, only: lfirst
-      use Io
-      use Mpicomm
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -203,8 +200,6 @@ module Hypervisc_strict
 !
 !  13-sep-07/anders: adapted from div_2nd
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       integer :: j,k
@@ -238,8 +233,6 @@ module Hypervisc_strict
 !  Calculate divergence of a vector, accurate to 2nd order.
 !
 !  23-nov-02/tony: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
@@ -275,8 +268,6 @@ module Hypervisc_strict
 !
 !  13-sep-07/anders: adapted from div_2nd
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: df
       integer :: k
@@ -305,8 +296,6 @@ module Hypervisc_strict
     subroutine der_2nd_nof(var,tmp,j)
 !
 !  24-nov-03/nils: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz) :: var
       real, dimension (mx,my,mz) :: tmp
@@ -358,8 +347,6 @@ module Hypervisc_strict
 !
 !  24-nov-03/nils: adapted from del2v
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: del2f 
       real, dimension (mx,my,mz) :: tmp
@@ -387,11 +374,9 @@ module Hypervisc_strict
 !
 !  24-nov-03/nils: adapted from del2
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: del2f,d2fd
-      integer :: i,k,k1
+      integer :: k,k1
 !
       intent (in) :: f, k
       intent (out) :: del2f
@@ -412,11 +397,8 @@ module Hypervisc_strict
 !
 !  24-nov-03/nils: adapted from del2_2nd
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: del2f,d2fd
-      integer :: i
 !
       intent (in) :: f
       intent (out) :: del2f
@@ -436,8 +418,6 @@ module Hypervisc_strict
 !  Accurate to second order.
 !
 !  24-nov-03/nils: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: der2f
@@ -475,8 +455,6 @@ module Hypervisc_strict
 !
 !  07-jan-04/nils: adapted from der2_2nd
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: der2f
       integer :: j
@@ -512,8 +490,6 @@ module Hypervisc_strict
 !  Accurate to second order.
 !
 !  24-nov-03/nils: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: graddivuf

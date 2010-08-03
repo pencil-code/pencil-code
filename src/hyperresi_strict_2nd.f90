@@ -21,7 +21,7 @@ module Hyperresi_strict
   use Cparam
   use Cdata
   use Messages
-  use Density
+!  use Density
 !
   implicit none
 !
@@ -56,11 +56,6 @@ module Hyperresi_strict
 !
 !  23-aug-07/anders: adapted from hyperviscosity_strict
 !
-      use Cdata, only: lfirst
-      use Io
-      use Mpicomm
-      use Sub
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (mx,my,mz,3) :: tmp
@@ -83,8 +78,6 @@ module Hyperresi_strict
 !  Calculate Laplacian of a vector, accurate to second order.
 !
 !  24-nov-03/nils: adapted from del2v
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: del2f
@@ -113,11 +106,9 @@ module Hyperresi_strict
 !
 !  24-nov-03/nils: adapted from del2
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: del2f,d2fd
-      integer :: i,k,k1
+      integer :: k,k1
 !
       intent (in) :: f, k
       intent (out) :: del2f
@@ -138,8 +129,6 @@ module Hyperresi_strict
 !  Accurate to second order.
 !
 !  24-nov-03/nils: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: der2f
@@ -170,5 +159,4 @@ module Hyperresi_strict
 !
     endsubroutine der2_2nd
 !***********************************************************************
-
 endmodule Hyperresi_strict
