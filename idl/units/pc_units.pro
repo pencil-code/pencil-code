@@ -49,13 +49,14 @@ density=param.unit_density*1D0
 velocity=param.unit_velocity*1D0
 
 if param.unit_system eq "cgs" then begin
-  object=create_struct(['temperature',       $
-                        'density',           $
-                        'length',            $
-                        'velocity',          $
-                        'time',              $
-                        'energy',            $
-                        'specific_energy',   $
+
+  object=create_struct(['temperature',         $
+                        'density',             $
+                        'length',              $
+                        'velocity',            $
+                        'time',                $
+                        'energy',              $
+                        'specific_energy',     $
                         'magnetic_field'],     $
                         temperature,           $
                         density,               $
@@ -68,26 +69,67 @@ if param.unit_system eq "cgs" then begin
                       )
   pc_check_math,location='pc_units - cgs unit calculation'
   tex=texsyms()
-  symbols=create_struct(['temperature',       $
-                        'density',           $
-                        'length',            $
-                        'velocity',          $
-                        'time',              $
-                        'energy',            $
-                        'specific_energy',   $
-                        'magnetic_field'],     $
-                        'T',           $
-                        tex.varrho,               $
-                        'cm',                $
-                        'cm/s',              $
-                        's',       $
-                        'ergs', $
-                        'ergs/g',            $
-                        'G'   $
+  symbols=create_struct(['temperature',        $
+                         'density',            $
+                         'length',             $
+                         'velocity',           $
+                         'time',               $
+                         'energy',             $
+                         'specific_energy',    $
+                         'magnetic_field'],    $
+                         'T',                  $
+                         tex.varrho,           $
+                         'cm',                 $
+                         'cm/s',               $
+                         's',                  $
+                         'ergs',               $
+                         'ergs/g',             $
+                         'G'                   $
                       )
   
+end else if param.unit_system eq "SI" then begin
+
+  object=create_struct(['temperature',         $
+                        'density',             $
+                        'length',              $
+                        'velocity',            $
+                        'time',                $
+                        'energy',              $
+                        'specific_energy',     $
+                        'magnetic_field'],     $
+                        temperature,           $
+                        density,               $
+                        length,                $
+                        velocity,              $
+                        length/velocity,       $
+                        1D0*density*velocity^2*length^3, $
+                        velocity^2,            $
+                        density*length*velocity^2   $
+                      )
+  pc_check_math,location='pc_units - cgs unit calculation'
+  tex=texsyms()
+  symbols=create_struct(['temperature',        $
+                         'density',            $
+                         'length',             $
+                         'velocity',           $
+                         'time',               $
+                         'energy',             $
+                         'specific_energy',    $
+                         'magnetic_field'],    $
+                         'K',                  $
+                         tex.varrho,           $
+                         'm',                  $
+                         's',                  $
+                         'm/s',                $
+                         'J',                  $
+                         'J/kg',               $
+                         'T'                   $
+                      )
+
 end else begin
-  print,"pc_units: Unit system tranformations for unit_system=",param.unit_system,"are not implemented."
+
+  print,"pc_units: Unit system tranformations for unit_system=",param.unit_system," are not implemented."
+
 end
 
 
