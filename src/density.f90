@@ -236,7 +236,7 @@ module Density
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
           ldiff_hyper3_polar=.true.
-        case ('hyper3_mesh')
+        case ('hyper3_mesh','hyper3-mesh')
           if (lroot) print*,'diffusion: mesh hyperdiffusion'
           ldiff_hyper3_mesh=.true.
         case ('shock','diff-shock','diffrho-shock')
