@@ -107,42 +107,53 @@ module Dustdensity
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
-      call farray_register_pde('nd',ind_tmp,vector=ndustspec)
-!
-!  Write dust index in short notation.
-!
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
         call chn(ndustspec,sdust)
         write(3,*) 'ind=intarr('//trim(sdust)//')'
         close(3)
       endif
-      open(3,file=trim(datadir)//'/index.pro', position='append')
       do k=1,ndustspec
-        ind(k)=ind_tmp+k-1
-        if (lroot) then
-          call chn(k-1,sdust)
-          call chn(ind(k),sdust2)
-          write(3,*) 'ind['//trim(sdust)//']='//trim(sdust2)
-        endif
+        call chn(k-1,sdust)
+        sdust='['//trim(sdust)//']'
+        if (ndustspec==1) sdust=''
+        call farray_register_pde('nd'//sdust,ind_tmp)
+        ind(k) = ind_tmp
       enddo
-      close(3)
 !
 !  Register dust mass.
 !
       if (lmdvar) then
-        call farray_register_pde('md',imd_tmp,vector=ndustspec)
+        if (lroot .and. ndustspec/=1) then
+          open(3,file=trim(datadir)//'/index.pro', position='append')
+          call chn(ndustspec,sdust)
+          write(3,*) 'imd=intarr('//trim(sdust)//')'
+          close(3)
+        endif
         do k=1,ndustspec
-          imd(k)=imd_tmp+k-1
+          call chn(k-1,sdust)
+          sdust='['//trim(sdust)//']'
+          if (ndustspec==1) sdust=''
+          call farray_register_pde('md'//sdust,imd_tmp)
+          imd(k) = imd_tmp
         enddo
       endif
 !
 !  Register ice mass.
 !
       if (lmice) then
-        call farray_register_pde('mi',imi_tmp,vector=ndustspec)
+        if (lroot .and. ndustspec/=1) then
+          open(3,file=trim(datadir)//'/index.pro', position='append')
+          call chn(ndustspec,sdust)
+          write(3,*) 'imi=intarr('//trim(sdust)//')'
+          close(3)
+        endif
         do k=1,ndustspec
-          imi(k)=imi_tmp+k-1
+          call chn(k-1,sdust)
+          sdust='['//trim(sdust)//']'
+          if (ndustspec==1) sdust=''
+          call farray_register_pde('mi'//sdust,imi_tmp)
+          imd(k) = imi_tmp
         enddo
       endif
 !
@@ -150,19 +161,6 @@ module Dustdensity
 !
       if (lroot) call svn_id( &
           "$Id$")
-!
-!  Ensure dust density variables are contiguous with dust velocity.
-!
-      if (ldustvelocity) then
-        if ((iudz(ndustspec)+1)/=ind(1)) then
-          call fatal_error('register_dustdensity','uud and ind are NOT '// &
-              'contiguous in the f-array - as required by copy_bcs_dust')
-        endif
-      endif
-!
-!  Default dust density non zero.
-!
-      initnd(1)='const_nd'
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -579,14 +577,14 @@ module Dustdensity
 !  Sanity check.
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ind(:)))) &
-          call stop_it('init_nd: Imaginary dust number density values')
+          call fatal_error('init_nd','Imaginary dust number density values')
       if (lmdvar) then
         if (notanumber(f(l1:l2,m1:m2,n1:n2,imd(:)))) &
-            call stop_it('init_nd: Imaginary dust density values')
+            call fatal_error('init_nd','Imaginary dust density values')
       endif
       if (lmice) then
         if (notanumber(f(l1:l2,m1:m2,n1:n2,imi(:)))) &
-            call stop_it('init_nd: Imaginary ice density values')
+            call fatal_error('init_nd','Imaginary ice density values')
       endif
 !
     endsubroutine init_nd
