@@ -249,6 +249,7 @@ module Magnetic
   integer :: idiag_abmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_abms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_abrms=0      ! DIAG_DOC: $\left<(\Av\cdot\Bv)^2\right>^{1/2}$
+  integer :: idiag_jbrms=0      ! DIAG_DOC: $\left<(\jv\cdot\Bv)^2\right>^{1/2}$
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
@@ -1425,7 +1426,9 @@ module Magnetic
           idiag_ajm/=0 ) &
           lpenc_diagnos(i_j2)=.true.
       if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
-      if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0) lpenc_diagnos(i_jb)=.true.
+      if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
+          .or. idiag_jbrms/=0 &
+         ) lpenc_diagnos(i_jb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
@@ -2592,6 +2595,7 @@ module Magnetic
         if (idiag_abumy/=0) call sum_mn_name(p%uu(:,2)*p%ab,idiag_abumy)
         if (idiag_abumz/=0) call sum_mn_name(p%uu(:,3)*p%ab,idiag_abumz)
         if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
+        if (idiag_jbrms/=0) call sum_mn_name(p%jb**2,idiag_jbrms,lsqrt=.true.)
 !
 !  Hemispheric magnetic helicity of total field.
 !  North means 1 and south means 2.
@@ -5893,7 +5897,7 @@ module Magnetic
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
         idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0; idiag_b1m=0; idiag_b2m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
-        idiag_abm=0; idiag_abrms=0; idiag_abmh=0
+        idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0
@@ -5976,6 +5980,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'abmn',idiag_abmn)
         call parse_name(iname,cname(iname),cform(iname),'abms',idiag_abms)
         call parse_name(iname,cname(iname),cform(iname),'abrms',idiag_abrms)
+        call parse_name(iname,cname(iname),cform(iname),'jbrms',idiag_jbrms)
         call parse_name(iname,cname(iname),cform(iname),'abumx',idiag_abumx)
         call parse_name(iname,cname(iname),cform(iname),'abumy',idiag_abumy)
         call parse_name(iname,cname(iname),cform(iname),'abumz',idiag_abumz)
