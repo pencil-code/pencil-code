@@ -44,7 +44,7 @@ pro precalc, i, number=number, varfile=varfile, show_aver=show_aver, vars=vars
 		default, varfile, "var.dat"
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
-			pc_read_var, variables=pencil_quantities, varfile=varfile, object=vars, /quiet
+			pc_read_var, variables=sources, varfile=varfile, object=vars, /quiet
 		end
 		varfiles[i].title = varfile
 		varfiles[i].loaded = 1

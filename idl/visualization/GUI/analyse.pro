@@ -26,24 +26,27 @@ quantities = { temperature:'Temp', currentdensity:'j',            $
 ; Quantities to be overplotted (calculated in 'precalc_data'):
 overplot_quantities = { magnetic_field:'b', velocities:'u' }
 
+; initial varfile
+default, varfile, 'var.dat'
+
+; default data directory
+default, datadir, './data/'
+
 ; stepping for varfiles
 default, stepping, 1
 
 ; skipping of first n varfiles
 default, skipping, 0
 
-; scaling factor for visualisation
-default, scaling, fix (256 / max ([nx, ny, nz]))
-if (n_elements (scaling) eq 1) then if (scaling lt 1) then scaling = 1
-
 
 default, analyse_loaded, 0
 
 if (not analyse_loaded) then BEGIN
 
-	lmn12 = l1+spread(indgen(nx),[1,2],[ny,nz]) + mx*(m1+spread(indgen(ny),[0,2],[nx,nz])) + mx*my*(n1+spread(indgen(nz),[0,1],[nx,ny]))
+	pc_read_dim, obj=dim
+	lmn12 = dim.l1+spread(indgen(dim.nx),[1,2],[dim.ny,dim.nz]) + dim.mx*(dim.m1+spread(indgen(dim.ny),[0,2],[dim.nx,dim.nz])) + dim.mx*dim.my*(dim.n1+spread(indgen(dim.nz),[0,1],[dim.nx,dim.ny]))
 
-	time_series = file_search (datadir+"/../", "time_series.dat")
+	time_series = file_search (datadir, "time_series.dat")
 	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then begin
 		@time_series
 
@@ -52,24 +55,26 @@ if (not analyse_loaded) then BEGIN
 	default, umax, [0, 0]
 	default, TTmax, [0, 0]
 	default, rhomin, [0, 0]
+	if (n_elements (dt) eq 1) then dt = [0, 0]
 
-	u_max = umax * unit_velocity * 1e-3
-	Temp_max = TTmax * unit_temperature
-	rho_min = rhomin * unit_density
+	pc_units, obj=unit
+	u_max = umax * unit.velocity * 1e-3
+	Temp_max = TTmax * unit.temperature
+	rho_min = rhomin * unit.density
 
 
-	file_struct = file_info (datadir+"/var.dat")
+	file_struct = file_info (datadir+"/proc0/var.dat")
 	subdomains = n_elements (file_search (datadir, "../proc*"))
 	gb_per_file = (file_struct.size * subdomains) / 1024. / 1024. / 1024.
 
-	snapshots = file_search (datadir, "VAR?")
-	add = file_search (datadir, "VAR??")
+	snapshots = file_search (datadir+"/proc0/", "VAR?")
+	add = file_search (datadir+"/proc0/", "VAR??")
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir, "VAR???")
+	add = file_search (datadir+"/proc0/", "VAR???")
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir, "VAR????")
+	add = file_search (datadir+"/proc0/", "VAR????")
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir, "VAR?????")
+	add = file_search (datadir+"/proc0/", "VAR?????")
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
 	num_snapshots = n_elements (snapshots)
 	files_total = num_snapshots
@@ -157,11 +162,12 @@ if (not analyse_loaded) then BEGIN
 
 	resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
-	units = { velocity:unit_velocity, temperature:unit_temperature, length:unit_length, density:unit_density }
+	units = { velocity:unit.velocity, temperature:unit.temperature, length:unit.length, density:unit.density }
 	Mm_SI = 1.e6
-	coords = { x:reform (xx[l1:l2,m1,n1])/Mm_SI, y:reform (yy[l1,m1:m2,n1])/Mm_SI, z:reform (zz[l1,m1,n1:n2])/Mm_SI }
-	dummy = dindgen (mx, my, mz)
-	dummy_3D = findgen (mx, my, mz, 3)
+	pc_read_grid, obj=grid, /trim
+	coords = { x:grid.x/Mm_SI, y:grid.y/Mm_SI, z:grid.z/Mm_SI }
+	dummy = dindgen (dim.mx, dim.my, dim.mz)
+	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
 
 	; Create varset dummy
 	exec_str = "varset = { "
@@ -191,21 +197,8 @@ if (not analyse_loaded) then BEGIN
 
 	prepare_varset, num_selected+1, units, coords, varset, overplot, var_source
 
-	; Create variable source structure
-	exec_str = "vars = { "
-	for i = 0, n_elements (var_source) - 1 do begin
-		if (i gt 0) then exec_str += ", "
-		exec_str += var_source[i]+":"+var_source[i]
-	end
-	exec_str += " }"
-	res = execute (exec_str)
-	if (not res) then begin
-		print, "Could not create variable source structure!"
-		stop
-	end
-
 	; Precalculate initial timestep
-	precalc, 0, varfile='var.dat', vars=vars
+	precalc, 0, varfile=varfile
 
 	if (num_selected gt 0) then begin
 		for i = 1, num_selected do begin
@@ -219,6 +212,11 @@ if (not analyse_loaded) then BEGIN
 	analyse_loaded = 1
 
 END
+
+; scaling factor for visualisation
+default, scaling, fix (256 / max ([dim.nx, dim.ny, dim.nz]))
+if (n_elements (scaling) eq 1) then if (scaling lt 1) then scaling = 1
+
 
 cmp_cslice_cache, quantities, lmn12, scaling=scaling, overplots=overplot_quantities
 
