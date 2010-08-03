@@ -1495,9 +1495,7 @@ module Special
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
-    subroutine setdrparams(lstarting)
-!
-      logical :: lstarting
+    subroutine setdrparams()
 !
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain,  x-position, y-position,
