@@ -412,89 +412,44 @@ endif
 default, iuud, 0
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin
-  if (keyword_set(scalar)) then begin
-    for i=0,dustcount-1 do begin
-     istr=strcompress(string(i),/remove_all)
-     varcontent[iuud[i]].variable   = 'Dust velocity  (uud['+istr+'])'
-     varcontent[iuud[i]].idlvar     = 'uud'+istr
-     varcontent[iuud[i]].idlinit    = 'fltarr(mx,my,mz,3)*one' 
-     varcontent[iuud[i]].idlvarloc  = 'uud'+istr+'_loc'
-     varcontent[iuud[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3)*one'
-    endfor
-  endif else begin
-    varcontent[iuud[0]].variable   = 'Dust velocity  (uud)'
-    varcontent[iuud[0]].idlvar     = 'uud'
-    varcontent[iuud[0]].idlinit    = 'fltarr(mx,my,mz,3,'+str(dustcount)+')*one' 
-    varcontent[iuud[0]].idlvarloc  = 'uud_loc'
-    varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')*one'
-    varcontent[iuud[0]].skip       = (dustcount * 3) - 1
-  endelse
+  varcontent[iuud[0]].variable   = 'Dust velocity  (uud)'
+  varcontent[iuud[0]].idlvar     = 'uud'
+  varcontent[iuud[0]].idlinit    = 'fltarr(mx,my,mz,3,'+str(dustcount)+')*one' 
+  varcontent[iuud[0]].idlvarloc  = 'uud_loc'
+  varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')*one'
+  varcontent[iuud[0]].skip       = (dustcount * 3) - 1
 endif
 ;
 default, ind, 0
 dustcount=n_elements(ind)
 if (dustcount gt 0L) then begin
-  if (keyword_set(scalar)) then begin
-    for i=0,dustcount-1 do begin
-      istr=strcompress(string(i),/remove_all)
-      varcontent[ind[i]].variable   = 'Dust number density (nd'+istr+')'
-      varcontent[ind[i]].idlvar     = 'nd'+istr
-      varcontent[ind[i]].idlinit    = 'fltarr(mx,my,mz)*one' 
-      varcontent[ind[i]].idlvarloc  = 'nd'+istr+'_loc'
-      varcontent[ind[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
-    endfor
-  endif else begin
-    varcontent[ind[0]].variable   = 'Dust number density (nd)'
-    varcontent[ind[0]].idlvar     = 'nd'
-    varcontent[ind[0]].idlinit    = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
-    varcontent[ind[0]].idlvarloc  = 'nd_loc'
-    varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
-    varcontent[ind[0]].skip       = dustcount - 1
-  endelse
+  varcontent[ind[0]].variable   = 'Dust number density (nd)'
+  varcontent[ind[0]].idlvar     = 'nd'
+  varcontent[ind[0]].idlinit    = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
+  varcontent[ind[0]].idlvarloc  = 'nd_loc'
+  varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
+  varcontent[ind[0]].skip       = dustcount - 1
 endif
 ;
 default, imd, 0
 dustcount=n_elements(imd)
 if (dustcount gt 0L) then begin
-  if (keyword_set(scalar)) then begin
-    for i=0,dustcount-1 do begin
-     istr=strcompress(string(i),/remove_all)
-      varcontent[imd[i]].variable   = 'Dust density (md'+istr+')'
-      varcontent[imd[i]].idlvar     = 'md'+istr
-      varcontent[imd[i]].idlinit    = 'fltarr(mx,my,mz)*one' 
-      varcontent[imd[i]].idlvarloc  = 'md'+istr+'_loc'
-      varcontent[imd[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
-    endfor
-  endif else begin
-    varcontent[imd[0]].variable   = 'Dust density (md)'
-    varcontent[imd[0]].idlvar     = 'md'
-    varcontent[imd[0]].idlinit    = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
-    varcontent[imd[0]].idlvarloc  = 'md_loc'
-    varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
-    varcontent[imd[0]].skip       = dustcount - 1
-  endelse
+  varcontent[imd[0]].variable   = 'Dust density (md)'
+  varcontent[imd[0]].idlvar     = 'md'
+  varcontent[imd[0]].idlinit    = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
+  varcontent[imd[0]].idlvarloc  = 'md_loc'
+  varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
+  varcontent[imd[0]].skip       = dustcount - 1
 endif
 ;
 default, imi, 0
 dustcount=n_elements(imi)
 if (dustcount gt 0L) then begin
-  if (keyword_set(scalar)) then begin
-    for i=0,dustcount-1 do begin
-      istr=strcompress(string(i),/remove_all)
-      varcontent[imi[i]].variable   = 'Ice density (mi'+istr+')'
-      varcontent[imi[i]].idlvar     = 'mi'+istr
-      varcontent[imi[i]].idlinit    = 'fltarr(mx,my,mz)*one' 
-      varcontent[imi[i]].idlvarloc  = 'mi'+istr+'_loc'
-      varcontent[imi[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
-    endfor
-  endif else begin
-    varcontent[imi[0]].variable = 'Ice density (mi)'
-    varcontent[imi[0]].idlvar   = 'mi'
-    varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
-    varcontent[imi[0]].idlvarloc= 'mi_loc'
-    varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
-    varcontent[imi[0]].skip     = dustcount - 1
-  endelse
+  varcontent[imi[0]].idlvar   = 'mi'
+  varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
+  varcontent[imi[0]].idlvarloc= 'mi_loc'
+  varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
+  varcontent[imi[0]].skip     = dustcount - 1
 endif
 ;
 ; Special condition as can be maux or mvar variable
