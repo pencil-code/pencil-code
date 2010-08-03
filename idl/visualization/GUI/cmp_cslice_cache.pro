@@ -354,14 +354,14 @@ pro draw_averages, number
 	if (n_tags (varsets[number]) eq 1) then begin
 		window, 2, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 1, 1]
-		vert_prof, varsets[number].cube, title = 'horizontal averages'
+		vert_prof, varsets[number].cube, coord=coord.z, title = 'horizontal averages'
 	end else begin
 		window, 2, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
 		vert_prof, exp (varsets[number].ln_rho), coord=coord.z, title = 'rho', log=1
-		vert_prof, varsets[number].u_abs, title = 'u_abs [km/s]'
-		vert_prof, varsets[number].Temp, title = 'Temp [K]', log=1
-		vert_prof, varsets[number].j, title = 'j', log=1
+		vert_prof, varsets[number].u_abs, coord=coord.z, title = 'u_abs [km/s]'
+		vert_prof, varsets[number].Temp, coord=coord.z, title = 'Temp [K]', log=1
+		vert_prof, varsets[number].j, coord=coord.z, title = 'j', log=1
 	end
 end
 
