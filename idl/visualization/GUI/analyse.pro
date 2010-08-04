@@ -204,7 +204,7 @@ if (not analyse_loaded) then BEGIN
 		for i = 1, num_selected do begin
 			; Precalculate selected timesteps
 			pos = (num_snapshots - ignore_end) - (i - 1) * stepping - 1
-			precalc, i, show_aver=1, varfile=strmid (snapshots[pos], strpos (snapshots[pos], "VAR"))
+			precalc, i, varfile=strmid (snapshots[pos], strpos (snapshots[pos], "VAR"))
 		end
 	end
 
