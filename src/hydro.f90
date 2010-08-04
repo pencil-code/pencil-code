@@ -2606,9 +2606,14 @@ module Hydro
 !
           if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
 !
-          c2=2*Omega
-          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
-          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
+           if (lgravz) then
+            c2=2*Omega
+            df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
+            df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
+           elseif (lgravx) then
+            df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,3)
+            df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)+c2*uu(:,2)   
+           endif
 !
         endif
 !
@@ -2635,12 +2640,21 @@ module Hydro
           if (headtt) &
             print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
 !
+         if (lgravz) then
           c2= 2*Omega*cos(theta*pi/180.)
           s2=-2*Omega*sin(theta*pi/180.)
 !
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)+s2*uu(:,3)
           df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           -s2*uu(:,2)
+         elseif (lgravx) then
+          c2= 2*Omega*cos(theta*pi/180.)
+          s2= 2*Omega*sin(theta*pi/180.)
+!
+          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )-s2*uu(:,2) 
+          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,3)+s2*uu(:,1)
+          df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           +c2*uu(:,2)
+         endif
 !
         endif
 !

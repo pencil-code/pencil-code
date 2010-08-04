@@ -88,6 +88,7 @@ module Entropy
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
   logical :: lfpres_from_pressure=.false.
+  logical :: lconvection_gravx=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -111,7 +112,7 @@ module Entropy
       center2_y, center2_z, T0, ampl_TT, kx_ss, ky_ss, kz_ss, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
       luminosity, wheat, hcond0, tau_cool, TTref_cool, lhcond_global, &
-      cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, rho0ts, T0hs
+      cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, rho0ts, T0hs,lconvection_gravx,Fbot
 !
 !  Run parameters.
 !
@@ -128,7 +129,7 @@ module Entropy
       lcalc_ssmean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
       mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
-      tau_diff, lfpres_from_pressure, chit_aniso, lchit_aniso_simplified
+      tau_diff, lfpres_from_pressure, chit_aniso, lchit_aniso_simplified, lconvection_gravx
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -681,11 +682,24 @@ module Entropy
           hcondxbot=hcond(1)
           hcondxtop=hcond(nx)
         else
-          do n=n1,n2
-            do m=m1,m2
-              if (lgravz) then
-                p%z_mn=spread(z(n),1,nx)
-              else
+          if (lconvection_gravx) then
+            do q=n1,n2
+             do m=m1,m2
+               call read_hcond(hcond,glhc)
+               f(l1:l2,m,q,iglobal_hcond)=hcond
+               f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
+             enddo
+            enddo
+           FbotKbot=Fbot/hcond(1)
+           FtopKtop=Ftop/hcond(nx)
+           hcondxbot=hcond(1)
+           hcondxtop=hcond(nx)
+           else
+            do n=n1,n2
+              do m=m1,m2
+               if (lgravz) then
+                 p%z_mn=spread(z(n),1,nx)
+               else
                 p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               endif
               call heatcond(hcond,p)
@@ -694,8 +708,11 @@ module Entropy
               f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
             enddo
           enddo
+          FbotKbot=Fbot/hcond(1)
+          FtopKtop=Ftop/hcond(nx)
           hcondxbot=hcond(1)
           hcondxtop=hcond(nx)
+         endif
         endif
       endif
 !
@@ -3818,6 +3835,10 @@ module Entropy
 !
       if (lgravx.and.lspherical_coords) &
           call get_heat_cool_gravx_spherical (heat,p)
+! In Cartesian coordinates, but with the gravity in the 
+! x-direction the same module may be used (GG) 
+      if (lconvection_gravx) &
+          call get_heat_cool_gravx_cartesian (heat,p)      
 !
 !  Add spatially uniform heating.
 !
@@ -4081,6 +4102,51 @@ module Entropy
       endselect
 !
     endsubroutine get_heat_cool_gravx_spherical
+!***********************************************************************
+    subroutine get_heat_cool_gravx_cartesian (heat,p)
+!
+      use IO, only: output_pencil
+      use Messages, only: fatal_error
+      use Sub, only: step
+!
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: heat,prof
+!
+      intent(in) :: p
+! subroutine to calculate the heat/cool term in cartesian coordinates
+! with gravity along x direction. 
+! This is equivalent to the revious rutine (GG) 
+      r_ext=x(l2)
+      r_int=x(l1)
+!  normalised central heating profile so volume integral = 1
+      if (nzgrid == 1) then
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+      else
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+      endif
+      heat = luminosity*prof
+      if (headt .and. lfirst .and. ip<=9) &
+           call output_pencil(trim(directory)//'/heat.dat',heat,1)
+!
+!  surface cooling: entropy or temperature
+!  cooling profile; maximum = 1
+!
+!  pick type of cooling
+!
+      select case (cooltype)
+      case ('top_layer')          !  heating/cooling at shell boundaries
+         if (rcool==0.) rcool=r_ext
+         prof = step(x(l1:l2),rcool,wcool)
+         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+      case default
+         write(unit=errormsg,fmt=*) &
+              'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+         call fatal_error('calc_heat_cool',errormsg)
+      endselect
+!
+    endsubroutine get_heat_cool_gravx_cartesian
+!
 !***********************************************************************
     subroutine get_heat_cool_corona(heat,p)
 !
