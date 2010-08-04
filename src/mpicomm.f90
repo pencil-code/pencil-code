@@ -4295,7 +4295,8 @@ module Mpicomm
 !
 !  17-mar-10/Bourdin.KIS: implemented
 !
-      use Syscalls, only: file_size
+      use Cparam, only: fnlen
+      use Syscalls, only: file_size, get_tmp_prefix
 !
       integer :: unit
       character (len=*) :: file
@@ -4304,7 +4305,7 @@ module Mpicomm
 !
       logical :: exists
       integer :: ierr, bytes, pos
-      integer, parameter :: buf_len=128
+      integer, parameter :: buf_len=fnlen
       character (len=buf_len) :: filename
       character, dimension(:), allocatable :: buffer
 !
@@ -4360,7 +4361,7 @@ module Mpicomm
         file(pos:pos)='_'
         pos=scan(file, '/')
       enddo
-      write(filename,'(A,A,A,I0)') '/tmp/', file, '-', iproc
+      write(filename,'(A,A,A,I0)') trim(get_tmp_prefix()), file, '-', iproc
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
@@ -4369,12 +4370,14 @@ module Mpicomm
 !      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
 !      write(unit, REC=1) buffer
 !     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
-      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct')
+      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct', IOSTAT=ierr)
+      call stop_it_if_any((ierr/=0),'parallel_open: error opening temporary file "'// &
+          trim(file)//'"')
       do pos=1,bytes
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
       endfile(unit, iostat=ierr)
-      call stop_it_if_any((ierr<0),'parallel_open: error writing EOF "'// &
+      call stop_it_if_any((ierr<0),'parallel_open: error writing temporary file "'// &
           trim(file)//'"')
       close(unit)
       deallocate(buffer)
