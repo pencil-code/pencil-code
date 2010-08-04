@@ -279,7 +279,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
-			plot, cube[px,*,pz], title = 'horizontal cut', xrange=[0,num_y], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[px,*,pz], title = 'horizontal x-cut', xrange=[0,num_y], yrange=[cut_min,cut_max], /xstyle, /ystyle
 		end
 	end
 
@@ -309,7 +309,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
-			plot, cube[*,py,pz], title = 'horizontal cut', xrange=[0,num_x], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[*,py,pz], title = 'horizontal y-cut', xrange=[0,num_x], yrange=[cut_min,cut_max], /xstyle, /ystyle
 		end
 	end
 
@@ -339,7 +339,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
 			wset, wcut_z
-			plot, cube[px,py,*], title = 'vertical cut', xrange=[0,num_z], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[px,py,*], title = 'vertical z-cut', xrange=[0,num_z], yrange=[cut_min,cut_max], /xstyle, /ystyle
 		end
 	end
 end
@@ -600,11 +600,11 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	TOP     = WIDGET_BASE (BASE, /row)
 	scol    = WIDGET_BASE (top, /col)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=num_x-1, xsize=num_x, /drag)
+	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=num_x-1, xsize=(num_x>128)+10, /drag)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=num_y-1, xsize=num_y, /drag)
+	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=num_y-1, xsize=(num_y>128)+10, /drag)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=num_z-1, xsize=num_z, /drag)
+	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=num_z-1, xsize=(num_z>128)+10, /drag)
 	bcol    = WIDGET_BASE (top, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCL', set_value=abs_scale)
 	b_sub   = CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
