@@ -47,21 +47,9 @@ if (not analyse_loaded) then BEGIN
 	lmn12 = dim.l1+spread(indgen(dim.nx),[1,2],[dim.ny,dim.nz]) + dim.mx*(dim.m1+spread(indgen(dim.ny),[0,2],[dim.nx,dim.nz])) + dim.mx*dim.my*(dim.n1+spread(indgen(dim.nz),[0,1],[dim.nx,dim.ny]))
 
 	time_series = file_search (datadir, "time_series.dat")
-	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then begin
-		@time_series
-
-	default, tt, [0, 0]
-	default, dt, [0, 0]
-	default, umax, [0, 0]
-	default, TTmax, [0, 0]
-	default, rhomin, [0, 0]
-	if (n_elements (dt) eq 1) then dt = [0, 0]
+	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts
 
 	pc_units, obj=unit
-	u_max = umax * unit.velocity * 1e-3
-	Temp_max = TTmax * unit.temperature
-	rho_min = rhomin * unit.density
-
 
 	file_struct = file_info (datadir+"/proc0/var.dat")
 	subdomains = n_elements (file_search (datadir, "../proc*"))
@@ -128,37 +116,59 @@ if (not analyse_loaded) then BEGIN
 	window, 1, xsize=1000, ysize=800, title = 'time series analysis', retain=2
 	!P.MULTI = [0, 2, 2]
 
-	default, dtu, dt[0:1]
-	default, dtnu, dt[0:1]
-	default, dtb, dt[0:1]
-	default, dteta, dt[0:1]
-	default, dtc, dt[0:1]
-	default, dtchi, dt[0:1]
-	default, dtchi2, dt[0:1]
+	tags = tag_names (ts)
+	y_minmax = minmax (ts.dt)
+	if (any (strcmp (tags, 'dtu', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtu])
+	if (any (strcmp (tags, 'dtnu', /fold_case)))   then y_minmax = minmax ([y_minmax, ts.dtnu])
+	if (any (strcmp (tags, 'dtb', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtb])
+	if (any (strcmp (tags, 'dteta', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dteta])
+	if (any (strcmp (tags, 'dtc', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtc])
+	if (any (strcmp (tags, 'dtchi', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dtchi])
+	if (any (strcmp (tags, 'dtchi2', /fold_case))) then y_minmax = minmax ([y_minmax, ts.dtchi2])
 
 	print, "starting values:"
-	print, "dt    :", dt[0]
-	print, "dtu   :", dtu[0]
-	print, "dtnu  :", dtnu[0]
-	print, "dtb   :", dtb[0]
-	print, "dteta :", dteta[0]
-	print, "dtc   :", dtc[0]
-	print, "dtchi :", dtchi[0]
-	print, "dtchi2:", dtchi2[0]
-
-	plot, dt, title = 'dt', yrange=[min([dt,dtb,dteta,dtchi]),max([dt,dtb,dteta,dtchi])], /yl
-	plot, tt, dt, title = 'dt(tt) u{-t} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', yrange=[min([dt,dtu,dtnu,dtb,dteta,dtc,dtchi,dtchi2]),max([dt,dtu,dtnu,dtb,dteta,dtc,dtchi,dtchi2])], /yl
-	oplot, tt, dtu, linestyle=2, color=11061000
-	oplot, tt, dtnu, linestyle=1, color=128000128
-	oplot, tt, dtb, linestyle=1, color=200
-	oplot, tt, dteta, linestyle=2, color=220200200
-	oplot, tt, dtc, linestyle=1, color=61695
-	oplot, tt, dtchi, linestyle=3, color=115100200
-	oplot, tt, dtchi2, linestyle=3, color=41215
-	plot, tt, Temp_max, title = 'Temp_max(tt) [K]', /yl
-;	plot, tt, u_max, title = 'u_max(tt)'
-	plot, tt, rho_min, title = 'rho_min(tt)', /yl
-
+	print, "dt    :", ts.dt[0]
+	plot, ts.dt, title = 'dt', yrange=y_minmax, /yl
+	plot, ts.t, ts.dt, title = 'dt(tt) u{-t} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', yrange=y_minmax, /yl
+	if (any (strcmp (tags, 'dtu', /fold_case))) then begin
+		oplot, ts.t, ts.dtu, linestyle=2, color=11061000
+		print, "dtu   :", ts.dtu[0]
+	end
+	if (any (strcmp (tags, 'dtnu', /fold_case))) then begin
+		oplot, ts.t, ts.dtnu, linestyle=1, color=128000128
+		print, "dtnu  :", ts.dtnu[0]
+	end
+	if (any (strcmp (tags, 'dtb', /fold_case))) then begin
+		oplot, ts.t, ts.dtb, linestyle=1, color=200
+		print, "dtb   :", ts.dtb[0]
+	end
+	if (any (strcmp (tags, 'dteta', /fold_case))) then begin
+		oplot, ts.t, ts.dteta, linestyle=2, color=220200200
+		print, "dteta :", ts.dteta[0]
+	end
+	if (any (strcmp (tags, 'dtc', /fold_case))) then begin
+		oplot, ts.t, ts.dtc, linestyle=1, color=61695
+		print, "dtc   :", ts.dtc[0]
+	end
+	if (any (strcmp (tags, 'dtchi', /fold_case))) then begin
+		oplot, ts.t, ts.dtchi, linestyle=3, color=115100200
+		print, "dtchi :", ts.dtchi[0]
+	end
+	if (any (strcmp (tags, 'dtchi2', /fold_case))) then begin
+		oplot, ts.t, ts.dtchi2, linestyle=3, color=41215
+		print, "dtchi2:", ts.dtchi2[0]
+	end
+	if (any (strcmp (tags, 'TTmax', /fold_case))) then begin
+		Temp_max = ts.TTmax * unit.temperature
+		plot, ts.t, Temp_max, title = 'Temp_max(tt) [K]', /yl
+	end else if (any (strcmp (tags, 'umax', /fold_case))) then begin
+		u_max = ts.umax * unit.velocity * 1e-3
+		plot, ts.t, u_max, title = 'u_max(tt)'
+	end
+	if (any (strcmp (tags, 'rhomin', /fold_case))) then begin
+		rho_min = ts.rhomin * unit.density
+		plot, ts.t, rho_min, title = 'rho_min(tt)', /yl
+	end
 
 	resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
