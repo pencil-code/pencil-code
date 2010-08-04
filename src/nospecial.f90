@@ -379,7 +379,31 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
-!***********************************************************************
+!**************************************************  
+   subroutine special_calc_dustdensity(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  continuity equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_dustdensity
+!********************************************************************************************
+
     subroutine special_calc_entropy(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the

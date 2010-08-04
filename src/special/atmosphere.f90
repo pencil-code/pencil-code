@@ -1,15 +1,8 @@
 ! $Id: atmosphere.f90 12795 2010-04-14 17:03:07 ajohan@strw.leidenuniv.nl $
 !
 !  This module incorporates all the modules used for Natalia's
-!  neutron star -- disk coupling simulations (referred to as nstar)
+!  aerosol simulations 
 !
-!  This sample modules solves a special set of problems related
-!  to computing the accretion through a thin disk onto a rigid surface
-!  and the spreading of accreted material along the neutron star's surface.
-!  One-dimensional problems along the disc and perpendicular to it
-!  can also be considered.
-!
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -69,14 +62,17 @@ module Special
   logical :: lbuoyancy_z=.false.
 
   character (len=labellen) :: initstream='default'
+  real, dimension(ndustspec) :: dsize
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_water=0!, ind_cloud=0
   real :: sigma=1., Period=1.
+  real :: dsize_max=0.,dsize_min=0.
+  
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma, Period
+      lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min 
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -162,7 +158,8 @@ module Special
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
-      integer :: k
+      integer :: k,i
+      real :: ddsize
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -180,7 +177,14 @@ module Special
         endif
 !        
       enddo
-!      
+!    
+      if (dsize_max/=0.0) then
+          ddsize=(dsize_max-dsize_min)/(ndustspec-1)
+          do i=0,(ndustspec-1)
+            dsize(i+1)=dsize_min+i*ddsize
+          enddo
+        endif
+!
    !   print*,'cloud index', ind_cloud
       print*,'water index', ind_water
 !
@@ -448,7 +452,6 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!
 !   16-jul-06/natalia: coded
 !
       use Cdata
@@ -550,6 +553,8 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
+
+
       select case (bc%bcname)
          case ('stm')
          select case (bc%location)
@@ -569,6 +574,22 @@ module Special
              call bc_cos_uy(f,bc)
            case (iBC_Y_BOT)
              call bc_cos_uy(f,bc)
+         endselect
+         bc%done=.true.
+         case ('aer')
+         select case (bc%location)
+           case (iBC_Y_TOP)
+             call bc_aerosol(f,bc)
+           case (iBC_Y_BOT)
+             call bc_aerosol(f,bc)
+         endselect
+         bc%done=.true.
+         case ('')
+         select case (bc%location)
+           case (iBC_Y_TOP)
+             call bc_aerosol(f,bc)
+           case (iBC_Y_BOT)
+             call bc_aerosol(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -607,7 +628,7 @@ module Special
 !
 !**************************************************************************
 !       BOUNDARY CONDITIONS
-!*88888888888888888888888888888888888888888888888888888888888888888888888888
+!**************************************************************************
   subroutine bc_stream_x(f,sgn,bc)
 !
 ! Natalia
@@ -720,6 +741,72 @@ module Special
       endif
 !
     endsubroutine bc_cos_uy
+!********************************************************************
+ subroutine bc_aerosol(f,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (boundary_condition) :: bc
+      integer :: i,j,vr,k
+      integer :: jjj,kkk
+      real :: value1, value2
+!
+      vr=bc%ivar
+      value1=bc%value1
+      value2=bc%value2
+!
+      if (bc%location==iBC_Y_BOT) then
+      ! bottom boundary
+!        f(l1:l2,m1,n1:n2,vr) = value1
+!        do i=0,nghost; f(:,m1-i,:,vr)=2*f(:,m1,:,vr)-f(:,m1+i,:,vr); enddo
+
+      if (vr==iuud(1)+3) then 
+        do k=1,ndustspec
+          f(l1:l2,m1,n1:n2,ind(k))=value1  &
+              *exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
+              /(0.1*(dsize_max-dsize_min)))**2)
+        enddo
+        do i=0,nghost; f(:,m1-i,:,ind)=2*f(:,m1,:,ind)-f(:,m1+i,:,ind); enddo
+      endif
+      if (vr==iuud(1)+4) then 
+         f(l1:l2,m1,n1:n2,imd)=value1
+      endif
+
+      elseif (bc%location==iBC_Y_TOP) then
+
+
+      ! top boundary
+ !       f(l1:l2,m2,n1:n2,ind) = value2
+
+!print*,f(l2,m2,n1,ind(2))
+!        do i=1,nghost; f(:,m2+i,:,vr)=2*f(:,m2,:,vr)-f(:,m2-i,:,vr); enddo
+        if (vr>=iuud(1)+3) then 
+!          do i=0,nghost; f(:,m2+i,:,ind)=2*f(:,m2,:,ind)-f(:,m2-i,:,ind); enddo
+        f(:,m2+1,:,ind)=0.2   *(  9*f(:,m2,:,ind)-  4*f(:,m2-2,:,ind) &
+                       - 3*f(:,m2-3,:,ind)+ 3*f(:,m2-4,:,ind))
+        f(:,m2+2,:,ind)=0.2   *( 15*f(:,m2,:,ind)- 2*f(:,m2-1,:,ind)  &
+                 -  9*f(:,m2-2,:,ind)- 6*f(:,m2-3,:,ind)+ 7*f(:,m2-4,:,ind))
+        f(:,m2+3,:,ind)=1./35.*(157*f(:,m2,:,ind)-33*f(:,m2-1,:,ind)  &
+                       -108*f(:,m2-2,:,ind) -68*f(:,m2-3,:,ind)+87*f(:,m2-4,:,ind))
+        endif
+        if (vr==iuud(1)+4) then 
+!         do i=0,nghost;  f(:,m2+i,:,imd)=2*f(:,m2,:,imd)-f(:,m2-i,:,imd); enddo
+        f(:,m2+1,:,imd)=0.2   *(  9*f(:,m2,:,imd)-  4*f(:,m2-2,:,imd) &
+                       - 3*f(:,m2-3,:,imd)+ 3*f(:,m2-4,:,imd))
+        f(:,m2+2,:,imd)=0.2   *( 15*f(:,m2,:,imd)- 2*f(:,m2-1,:,imd)  &
+                 -  9*f(:,m2-2,:,imd)- 6*f(:,m2-3,:,imd)+ 7*f(:,m2-4,:,imd))
+        f(:,m2+3,:,imd)=1./35.*(157*f(:,m2,:,imd)-33*f(:,m2-1,:,imd)  &
+                       -108*f(:,m2-2,:,imd) -68*f(:,m2-3,:,imd)+87*f(:,m2-4,:,imd))
+        endif
+      else
+        print*, "bc_BL_y: ", bc%location, " should be `top(", &
+                        iBC_Y_TOP,")' or `bot(",iBC_Y_BOT,")'"
+      endif
+!
+    endsubroutine bc_aerosol
 !********************************************************************
     subroutine special_before_boundary(f)
 !

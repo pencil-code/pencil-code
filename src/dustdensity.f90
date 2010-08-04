@@ -32,6 +32,7 @@ module Dustdensity
   use Cparam
   use Dustvelocity
   use Messages
+  use Special
 !
   implicit none
 !
@@ -1146,6 +1147,7 @@ module Dustdensity
       use Diagnostics
       use Mpicomm, only: stop_it
       use Sub
+      use Special, only: special_calc_dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1183,10 +1185,7 @@ module Dustdensity
           if (lmdvar) then
             df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
                  *(p%ppwater-p%ppsf(:,k))/(Rgas*p%TT*m_w*m_u_cgs)*p%rho
-!print*,maxval(df(l1:l2,m,n,imd(k))),minval(df(l1:l2,m,n,imd(k)))
-!print*,maxval(p%ppwater),maxval(p%ppsf(:,k))
           endif
-                    
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo
       endif
@@ -1363,6 +1362,9 @@ module Dustdensity
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
       endif
+!
+      if (lspecial) call special_calc_dustdensity(f,df,p)
+
 !
     endsubroutine dndmd_dt
 !***********************************************************************
