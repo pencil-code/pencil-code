@@ -4059,6 +4059,14 @@ module Entropy
 !***********************************************************************
     subroutine get_heat_cool_gravx_spherical (heat,p)
 !
+!  Subroutine to calculate the heat/cool term in spherical coordinates
+!  with gravity along x direction. At present (May 2010) this is the
+!  recommended routine to use heating and cooling in spherical coordinates. 
+!  This is the one being used in the solar convection runs with a cooling
+!  layer. 
+!
+!  DOCUMENT ME!
+!
       use IO, only: output_pencil
       use Messages, only: fatal_error
       use Sub, only: step
@@ -4068,30 +4076,37 @@ module Entropy
       real, dimension (nx) :: heat,prof
 !
       intent(in) :: p
-! subroutine to calculate the heat/cool term in spherical coordinates
-! with gravity along x direction. At present (May 2010) this is the
-! recommended routine to use heating and cooling in spherical coordinates. 
-! This is the one being used in the solar convection runs with a cooling
-! layer. 
+!
       r_ext=x(l2)
       r_int=x(l1)
-!  normalised central heating profile so volume integral = 1
+!
+!  Normalised central heating profile so volume integral = 1
+!
       if (nzgrid == 1) then
-         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+!
+!  2-D heating profile
+!
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  
       else
-         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) 
+!
+!  3-D heating profile
+!
       endif
       heat = luminosity*prof
       if (headt .and. lfirst .and. ip<=9) &
            call output_pencil(trim(directory)//'/heat.dat',heat,1)
 !
-!  surface cooling: entropy or temperature
-!  cooling profile; maximum = 1
+!  Surface cooling: entropy or temperature
+!  Cooling profile; maximum = 1
 !
-!  pick type of cooling
+!  Pick type of cooling
 !
       select case (cooltype)
-      case ('shell')          !  heating/cooling at shell boundaries
+!
+!  Heating/cooling at shell boundaries
+!
+      case ('shell')          
          if (rcool==0.) rcool=r_ext
          prof = step(x(l1:l2),rcool,wcool)
          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -4105,6 +4120,12 @@ module Entropy
 !***********************************************************************
     subroutine get_heat_cool_gravx_cartesian (heat,p)
 !
+!  Subroutine to calculate the heat/cool term in cartesian coordinates
+!  with gravity along x direction. 
+!  This is equivalent to the revious rutine (GG) 
+!
+!  DOCUMENT ME!
+!
       use IO, only: output_pencil
       use Messages, only: fatal_error
       use Sub, only: step
@@ -4114,28 +4135,37 @@ module Entropy
       real, dimension (nx) :: heat,prof
 !
       intent(in) :: p
-! subroutine to calculate the heat/cool term in cartesian coordinates
-! with gravity along x direction. 
-! This is equivalent to the revious rutine (GG) 
+!
       r_ext=x(l2)
       r_int=x(l1)
-!  normalised central heating profile so volume integral = 1
+!
+!  Normalised central heating profile so volume integral = 1
+!
       if (nzgrid == 1) then
-         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  
+!
+!  2-D heating profile
+!
       else
-         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+!
+!  3-D heating profile
+!
+         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) 
       endif
       heat = luminosity*prof
       if (headt .and. lfirst .and. ip<=9) &
            call output_pencil(trim(directory)//'/heat.dat',heat,1)
 !
-!  surface cooling: entropy or temperature
-!  cooling profile; maximum = 1
+!  Surface cooling: entropy or temperature
+!  Cooling profile; maximum = 1
 !
-!  pick type of cooling
+!  Pick type of cooling
 !
       select case (cooltype)
-      case ('top_layer')          !  heating/cooling at shell boundaries
+!
+!  Heating/cooling at shell boundaries
+!
+      case ('top_layer')          
          if (rcool==0.) rcool=r_ext
          prof = step(x(l1:l2),rcool,wcool)
          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -4146,9 +4176,14 @@ module Entropy
       endselect
 !
     endsubroutine get_heat_cool_gravx_cartesian
-!
 !***********************************************************************
     subroutine get_heat_cool_corona(heat,p)
+!
+!  Subroutine to calculate the heat/cool term for hot corona
+!  Assume a linearly increasing reference profile.
+!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+!
+!  DOCUMENT ME!
 !
       use Messages, only:fatal_error
 !
@@ -4157,9 +4192,6 @@ module Entropy
       real :: zbot,ztop,xi,profile_cor
       intent(in) :: p
 !
-! subroutine to calculate the heat/cool term for hot corona
-!  Assume a linearly increasing reference profile.
-!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
       if (z(n)>=z_cor) then
