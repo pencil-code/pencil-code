@@ -927,7 +927,7 @@ module Dustdensity
           else
             call grad(f,ind(k),tmp_pencil_3)
             do i=1,3
-              p%glnnd(:,i,k)=tmp_pencil_3(:,i)/p%nd(:,k)
+              if (p%nd(:,k)/=0.0) p%glnnd(:,i,k)=tmp_pencil_3(:,i)/p%nd(:,k)
             enddo
           endif
         endif
