@@ -20,10 +20,11 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Started:   06-Jul-2002
 # CVS: $Id$
 # Usage:
-#  Hello errrr...
-#  WL: I guess we need a more descriptive usage than "Hello errrr..."
-#      The way to use this file should be in the manual, right?
-#
+#  cd src
+#  scripts/mkdot *.f90 -o dependencies.dot
+#  dot -Tps dependencies.dot -o dependencies.ps
+# Note: The `dot' command is part of the graphviz package
+
 # History:
 #   23-jun-05/tony: Created
 #
