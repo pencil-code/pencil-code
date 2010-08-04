@@ -28,3 +28,29 @@ void FTNIZE(file_size_c)
 
 /* ---------------------------------------------------------------------- */
 
+void FTNIZE(get_pid_c)
+     (FINT *pid)
+/* Determines the PID of the current process.
+   Returns:
+   * integer containing the PID of the current process
+   * -1 if retrieving the PID failed
+*/
+{
+  *pid=-1;
+  printf("NoSysCalls: get_pid_c is not available\n");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FTNIZE(get_env_var_c)
+     (char *name, char *value)
+/* Gets the content of an environment variable.
+   Returns:
+   * unchanged input string, if retrieving the environment variable failed
+*/
+{
+  printf("NoSysCalls: get_env_var_c is not available\n");
+}
+
+/* ---------------------------------------------------------------------- */
+

@@ -142,4 +142,64 @@ module Syscalls
 !
     endfunction count_lines
 !***********************************************************************
+    function get_PID()
+!
+!  The Fortran95 standard has no means to fetch the real PID.
+!  If one need the real PID, please use the 'syscalls' module.
+!
+!   4-aug-10/Bourdin.KIS: coded
+!
+      implicit none
+!
+      integer :: get_PID
+!
+      get_PID = -1
+!
+      print *, 'get_PID: Not available in the F95 standard, please use the syscalls module.'
+      stop
+!
+    endfunction get_PID
+!***********************************************************************
+    subroutine get_env_var(name,value)
+!
+!  Reads in an environment variable.
+!
+!  Returns:
+!  * String containing the content of a given environment variable name
+!  * Empty string, if the variable doesn't exist
+!
+!   4-aug-10/Bourdin.KIS: implemented
+!
+      implicit none
+!
+      character(len=*) :: name
+      character(len=*) :: value
+!
+      value = char(0)
+!
+      print *, 'get_env_var('//name//'): Not available in the F95 standard, please use the syscalls module.'
+      stop
+!
+    endsubroutine get_env_var
+!***********************************************************************
+    function get_tmp_prefix()
+!
+!  Determines the proper temp directory and adds a unique prefix.
+!
+!  Returns:
+!  * String containing the location of a usable temp directory
+!  * Default is '/tmp'
+!
+!   4-aug-10/Bourdin.KIS: coded
+!
+      use Cparam, only: fnlen
+!
+      implicit none
+!
+      character(len=fnlen) :: get_tmp_prefix
+!
+      get_tmp_prefix = '/tmp/pencil-'
+!
+    endfunction get_tmp_prefix
+!***********************************************************************
 endmodule Syscalls

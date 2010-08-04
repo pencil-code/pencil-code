@@ -7,6 +7,9 @@ module Syscalls
   implicit none
 !
   external file_size_c
+  external get_pid_c
+  external get_env_var_c
+  external get_tmp_dir_c
 !
   contains
 !***********************************************************************
@@ -109,5 +112,76 @@ module Syscalls
       close(unit)
 !
     endfunction count_lines
+!***********************************************************************
+    function get_PID()
+!
+!  Determines the PID of the current process.
+!
+!  Returns:
+!  * Integer containing the PID of the current process
+!  * -1 if retrieving of the PID failed
+!
+!   4-aug-10/Bourdin.KIS: coded
+!
+      implicit none
+!
+      integer :: get_PID
+!
+      integer, save :: my_PID = -1
+!
+      if (my_PID == -1) call get_PID_c(my_PID)
+      get_PID = my_PID
+!
+    endfunction get_PID
+!***********************************************************************
+    subroutine get_env_var(name,value)
+!
+!  Reads in an environment variable.
+!
+!  Returns:
+!  * String containing the content of a given environment variable name
+!  * Empty string, if the variable doesn't exist
+!
+!   4-aug-10/Bourdin.KIS: coded
+!
+      implicit none
+!
+      character(len=*) :: name
+      character(len=*) :: value
+!
+      value = ' '
+      call get_env_var_c(trim(name)//char(0), value)
+      value = trim(value)
+!
+    endsubroutine get_env_var
+!***********************************************************************
+    function get_tmp_prefix()
+!
+!  Determines the proper temp directory and adds a unique prefix.
+!
+!  Returns:
+!  * String containing the location of a usable temp directory
+!  * Default is '/tmp'
+!
+!   4-aug-10/Bourdin.KIS: coded
+!
+      use Cparam, only: fnlen
+!
+      implicit none
+!
+      character(len=fnlen) :: get_tmp_prefix
+      character(len=fnlen) :: tmp_dir
+!
+      call get_env_var('TMPDIR', tmp_dir)
+      if (len(trim(tmp_dir)) <= 0) call get_env_var('TEMP', tmp_dir)
+      if (len(trim(tmp_dir)) <= 0) call get_env_var('TMP', tmp_dir)
+      if (len(trim(tmp_dir)) <= 0) call get_env_var('TMP_DIR', tmp_dir)
+      if (len(trim(tmp_dir)) <= 0) call get_env_var('PBS_TEMP', tmp_dir)
+      if (len(trim(tmp_dir)) <= 0) call get_env_var('PBS_O_LOCAL', tmp_dir)
+      if (len(trim(tmp_dir)) <= 0) tmp_dir = '/tmp'
+!
+      write (get_tmp_prefix,'(A,A,I0,A)') trim(tmp_dir), '/pencil-', get_PID(), '-'
+!
+    endfunction get_tmp_prefix
 !***********************************************************************
 endmodule Syscalls
