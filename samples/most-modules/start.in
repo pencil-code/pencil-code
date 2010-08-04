@@ -34,6 +34,7 @@
 &dustvelocity_init_pars
 /
 &dustdensity_init_pars
+  initnd='const_nd'
 /
 &cosmicray_init_pars
 /
