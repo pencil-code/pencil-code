@@ -2593,7 +2593,8 @@ module Hydro
       integer,                         intent(in)  :: velind
 !
 ! velind is start index for velocity variable to which Coriolis force corresponds
-! x,y,z -components referred to by velind, velind+1, velind+2      (MR:IMMER ERF†LLT?)
+! x,y,z -components referred to by velind, velind+1, velind+2
+! (MR: always the case?)
 !
       real :: c2, s2
 !
