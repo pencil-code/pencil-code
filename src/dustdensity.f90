@@ -103,7 +103,7 @@ module Dustdensity
       use General, only: chn
 !
       integer :: k, ind_tmp, imd_tmp, imi_tmp
-      character (len=5) :: sdust, sdust2
+      character (len=5) :: sdust
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
@@ -927,7 +927,9 @@ module Dustdensity
           else
             call grad(f,ind(k),tmp_pencil_3)
             do i=1,3
-              p%glnnd(:,i,k)=tmp_pencil_3(:,i)/p%nd(:,k)
+              where (p%nd(:,k)/=0.0)
+                p%glnnd(:,i,k)=tmp_pencil_3(:,i)/p%nd(:,k)
+              endwhere
             enddo
           endif
         endif
