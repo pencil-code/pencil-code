@@ -16,7 +16,7 @@ pro prepare_varset, num, units, coords, varset, overset, var_source
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 
-	unit = { velocity:units.velocity, temperature:units.temperature, length:units.length, density:units.density }
+	unit = units
 	coord = { x:coords.x*unit.length, y:coords.y*unit.length, z:coords.z*unit.length }
 
 	varfiles = { title:"-", loaded:0, number:0, precalc_done:0 }
@@ -72,11 +72,11 @@ pro precalc_data, i, vars
 	; Compute all desired quantities from available source data
 	if (any (strcmp (tags, 'u_abs', /fold_case))) then begin
 		; Absolute velocity
-		varsets[i].u_abs = sqrt (dot2 (vars.uu)) * unit.velocity * 1e-3
+		varsets[i].u_abs = sqrt (dot2 (vars.uu)) * unit.velocity / unit.default_velocity
 	end
 	if (any (strcmp (tags, 'u_z', /fold_case))) then begin
 		; Vertical velocity component
-		varsets[i].u_z = vars.uu[*,*,*,2] * unit.velocity * 1e-3
+		varsets[i].u_z = vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
 	end
 	if (any (strcmp (tags, 'Temp', /fold_case))) then begin
 		; Temperature
@@ -118,7 +118,7 @@ pro precalc_data, i, vars
 
 	over_tags = tag_names (oversets[i])
 	if (any (strcmp (over_tags, 'u', /fold_case))) then begin
-		oversets[i].u = float (vars.uu * unit.velocity * 1e-3)
+		oversets[i].u = float (vars.uu * unit.velocity / unit.default_velocity)
 	end
 	if (any (strcmp (over_tags, 'b', /fold_case))) then begin
 		oversets[i].b = float (bb)

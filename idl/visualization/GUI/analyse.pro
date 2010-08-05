@@ -15,6 +15,7 @@
 
 ;;; Settings:
 
+; Available data in the varfiles
 var_source = ['uu', 'lnrho', 'lnTT', 'aa']
 
 ; Quantities to be visualized (calculated in 'precalc_data'):
@@ -25,6 +26,12 @@ quantities = { temperature:'Temp', currentdensity:'j',            $
 
 ; Quantities to be overplotted (calculated in 'precalc_data'):
 overplot_quantities = { magnetic_field:'b', velocities:'u' }
+
+; Preferred units for display
+default_length        = 1.e6
+default_length_str    = 'Mm'
+default_velocity      = 1.e3
+default_velocity_str  = 'km/s'
 
 ; initial varfile
 default, varfile, 'var.dat'
@@ -158,24 +165,29 @@ if (not analyse_loaded) then BEGIN
 		oplot, ts.t, ts.dtchi2, linestyle=3, color=41215
 		print, "dtchi2:", ts.dtchi2[0]
 	end
-	if (any (strcmp (tags, 'TTmax', /fold_case))) then begin
+	max_subplots = 2
+	num_subplots = 0
+	if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		num_subplots += 1
 		Temp_max = ts.TTmax * unit.temperature
 		plot, ts.t, Temp_max, title = 'Temp_max(tt) [K]', /yl
-	end else if (any (strcmp (tags, 'umax', /fold_case))) then begin
-		u_max = ts.umax * unit.velocity * 1e-3
-		plot, ts.t, u_max, title = 'u_max(tt)'
 	end
-	if (any (strcmp (tags, 'rhomin', /fold_case))) then begin
+	if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		num_subplots += 1
+		u_max = ts.umax * unit.velocity / default_velocity
+		plot, ts.t, u_max, title = 'u_max(tt) ['+default_velocity_str+']'
+	end
+	if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		num_subplots += 1
 		rho_min = ts.rhomin * unit.density
 		plot, ts.t, rho_min, title = 'rho_min(tt)', /yl
 	end
 
 	resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
-	units = { velocity:unit.velocity, temperature:unit.temperature, length:unit.length, density:unit.density }
-	Mm_SI = 1.e6
+	units = { velocity:unit.velocity, temperature:unit.temperature, length:unit.length, density:unit.density, default_length:default_length, default_velocity:default_velocity, default_length_str:default_length_str, default_velocity_str:default_velocity_str }
 	pc_read_grid, obj=grid, /trim
-	coords = { x:grid.x/Mm_SI, y:grid.y/Mm_SI, z:grid.z/Mm_SI }
+	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
 	dummy = dindgen (dim.mx, dim.my, dim.mz)
 	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
 
