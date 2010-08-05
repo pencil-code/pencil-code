@@ -279,7 +279,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
-			plot, cube[px,*,pz], title = 'horizontal x-cut', xrange=[0,num_y], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[px,*,pz], title = 'horizontal y-cut', xrange=[0,num_y], yrange=[cut_min,cut_max], /xstyle, /ystyle
 		end
 	end
 
@@ -309,7 +309,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
-			plot, cube[*,py,pz], title = 'horizontal y-cut', xrange=[0,num_x], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[*,py,pz], title = 'horizontal x-cut', xrange=[0,num_x], yrange=[cut_min,cut_max], /xstyle, /ystyle
 		end
 	end
 
@@ -359,7 +359,7 @@ pro draw_averages, number
 		window, 2, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
 		vert_prof, exp (varsets[number].ln_rho), coord=coord.z, title = 'rho', log=1
-		vert_prof, varsets[number].u_abs, coord=coord.z, title = 'u_abs [km/s]'
+		vert_prof, varsets[number].u_abs, coord=coord.z, title = 'u_abs ['+unit.default_velocity_str+']'
 		vert_prof, varsets[number].Temp, coord=coord.z, title = 'Temp [K]', log=1
 		vert_prof, varsets[number].j, coord=coord.z, title = 'j', log=1
 	end
@@ -642,14 +642,15 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
 
+	cut_height = max([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
 	LOW     = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT1', xsize=num_y*bin_y, ysize=num_z*bin_z)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT1', xsize=num_y*bin_y, ysize=cut_height)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_x  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT2', xsize=num_x*bin_x, ysize=num_z*bin_z)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT2', xsize=num_x*bin_x, ysize=cut_height)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_y  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_x*bin_x, ysize=num_y*bin_y)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_z*bin_z, ysize=cut_height)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_z  = !d.window
 
