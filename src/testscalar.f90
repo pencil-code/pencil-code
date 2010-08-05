@@ -497,9 +497,9 @@ module Testscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx) :: cc,cctest,del2ctest,ug
+      real, dimension (nx) :: cc,cctest,C0test,del2ctest,ug
       real, dimension (nx,3) :: ggtest, G0test=0.,uctest
-      real, dimension (nx) :: ugtest,dugtest
+      real, dimension (nx) :: ugtest,dugtest,divuc
       real, dimension (nx,3,njtestscalar) :: Fipq,Gipq
       real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
@@ -559,13 +559,21 @@ module Testscalar
         call del2(f,jcctest,del2ctest)
         call grad(f,jcctest,ggtest)
         select case (itestscalar)
-          case ('G1-G2'); call set_ggtest_G1_G2(G0test,jtest)
+          case ('G1-G2'); call set_ggtest_G1_G2(C0test,G0test,jtest)
+          case ('G1-G2+const'); call set_ggtest_G1_G2_const(C0test,G0test,jtest)
           case ('G=0') !(don't do anything)
         case default
           call fatal_error('dcctest_dt','undefined itestscalar value')
         endselect
 !
+!  Prepare all the SOCA terms
+!  Assume no mean flow (for now)
+!
         call dot_mn(uufluct,G0test,ug)
+        if (ltestscalar_per_unitvolume) ug=ug+p%divu*C0test
+!
+!  SOCA terms
+!
         if (lsoca_ug) then
           df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest) &
             +ug+kappatest*del2ctest
@@ -577,7 +585,7 @@ module Testscalar
           if (iug/=0.and..not.ltest_ug) then
             ugtest=f(l1:l2,m,n,iug+(jtest-1))
           else
-            call dot_mn(p%uu,ggtest,ugtest)
+            call dot_mn(uufluct,ggtest,ugtest)
           endif
 !
 !  subtract average flux, unless we ignore the <ug> term (lignore_ugtestm=T)
@@ -605,7 +613,7 @@ module Testscalar
         if (ldiagnos.or.l1davgfirst) then
           cctest=f(l1:l2,m,n,jcctest)
           do j=1,3
-            uctest(:,j)=p%uu(:,j)*cctest
+            uctest(:,j)=uufluct(:,j)*cctest
           enddo
         endif
         cpq(:,jtest)=cctest
@@ -641,13 +649,13 @@ module Testscalar
 !  check whether njtestscalar is large enough
 !
         if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0) then
-          if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
+          if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
         endif
         if (idiag_kap12/=0.or.idiag_kap22/=0.or.idiag_kap32/=0) then
           if (njtestscalar<6) call stop_it('dcctest_dt: njtestscalar < 6 is insufficient')
         endif
         if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0) then
-          if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
+          if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
         endif
 !
 !  averages of kappa
@@ -803,51 +811,55 @@ module Testscalar
 !
 !  Now do x-dependent mean fields
 !
-      do jtest=jtestx1,jtestx2
-        jcctest=icctest+(jtest-1)
-        if (lsoca_ug) then
-          ugtestmx(:,jtest)=0.
-        else
-          ugtestmx(:,jtest)=0.
-          do n=n1,n2
-            do m=m1,m2
-              cctest=f(l1:l2,m,n,jcctest)
-              call calc_pencils_hydro(f,p)
-              call grad(f,jcctest,ggtest)
-              call dot_mn(p%uu,ggtest,ugtest)
-              jug=iug+(jtest-1)
-              if (iug/=0) f(l1:l2,m,n,jug)=ugtest
-              ugtestmx(:,jtest)=ugtestmx(:,jtest)+fac_yz*ugtest
-              headtt=.false.
+      if (njtestscalar>=jtestx2) then
+        do jtest=jtestx1,jtestx2
+          jcctest=icctest+(jtest-1)
+          if (lsoca_ug) then
+            ugtestmx(:,jtest)=0.
+          else
+            ugtestmx(:,jtest)=0.
+            do n=n1,n2
+              do m=m1,m2
+                cctest=f(l1:l2,m,n,jcctest)
+                call calc_pencils_hydro(f,p)
+                call grad(f,jcctest,ggtest)
+                call dot_mn(p%uu,ggtest,ugtest)
+                jug=iug+(jtest-1)
+                if (iug/=0) f(l1:l2,m,n,jug)=ugtest
+                ugtestmx(:,jtest)=ugtestmx(:,jtest)+fac_yz*ugtest
+                headtt=.false.
+              enddo
             enddo
-          enddo
-          ugtestmx1(:,ipy+1,ipz+1,jtest)=ugtestmx(:,jtest)
-        endif
-      enddo
+            ugtestmx1(:,ipy+1,ipz+1,jtest)=ugtestmx(:,jtest)
+          endif
+        enddo
+      endif
 !
 !  Finally do y-dependent mean fields
 !
-      do jtest=jtesty1,jtesty2
-        jcctest=icctest+(jtest-1)
-        if (lsoca_ug) then
-          ugtestmy(:,jtest)=0.
-        else
-          ugtestmy(:,jtest)=0.
-          do m=m1,m2
-            do n=n1,n2
-              cctest=f(l1:l2,m,n,jcctest)
-              call calc_pencils_hydro(f,p)
-              call grad(f,jcctest,ggtest)
-              call dot_mn(p%uu,ggtest,ugtest)
-              jug=iug+(jtest-1)
-              if (iug/=0) f(l1:l2,m,n,jug)=ugtest
-              ugtestmy(m,jtest)=ugtestmy(m,jtest)+fac_xz*sum(ugtest)
-              headtt=.false.
+      if (njtestscalar>=jtesty2) then
+        do jtest=jtesty1,jtesty2
+          jcctest=icctest+(jtest-1)
+          if (lsoca_ug) then
+            ugtestmy(:,jtest)=0.
+          else
+            ugtestmy(:,jtest)=0.
+            do m=m1,m2
+              do n=n1,n2
+                cctest=f(l1:l2,m,n,jcctest)
+                call calc_pencils_hydro(f,p)
+                call grad(f,jcctest,ggtest)
+                call dot_mn(p%uu,ggtest,ugtest)
+                jug=iug+(jtest-1)
+                if (iug/=0) f(l1:l2,m,n,jug)=ugtest
+                ugtestmy(m,jtest)=ugtestmy(m,jtest)+fac_xz*sum(ugtest)
+                headtt=.false.
+              enddo
+              ugtestmy1(m-m1+1,ipy+1,jtest)=ugtestmy(m,jtest)
             enddo
-            ugtestmy1(m-m1+1,ipy+1,jtest)=ugtestmy(m,jtest)
-          enddo
-        endif
-      enddo
+          endif
+        enddo
+      endif
 !
 !  do communication for array of size nz*nprocz*3*njtestscalar
 !  Do this first for z-dependent mean fields
@@ -942,7 +954,7 @@ module Testscalar
 !
     endsubroutine rescaling_testscalar
 !***********************************************************************
-    subroutine set_ggtest_G1_G2(G0test,jtest)
+    subroutine set_ggtest_G1_G2(C0test,G0test,jtest)
 !
 !  set testscalar
 !
@@ -952,24 +964,58 @@ module Testscalar
       use Cdata
 !
       real, dimension (nx,3) :: G0test
+      real, dimension (nx) :: C0test
       integer :: jtest
 !
       intent(in)  :: jtest
-      intent(out) :: G0test
+      intent(out) :: C0test,G0test
+!
+!  set G0test for each of the 2+2 cases
+!
+      select case (jtest)
+      case (1); C0test=+camp*sz(n); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*cz(n)
+      case (2); C0test=-camp*cz(n); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
+      case (3); C0test=+camp*sx(:); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (4); C0test=-camp*cx(:); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (5); C0test=+camp*sy(m); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
+      case (6); C0test=-camp*cy(m); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
+      case default; C0test(:)=0.; G0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_ggtest_G1_G2
+!***********************************************************************
+    subroutine set_ggtest_G1_G2_const(C0test,G0test,jtest)
+!
+!  set testscalar
+!
+!  26-nov-08/axel: adapted from testfield_z.f90
+!  27-dec-08/axel: extended to x-dependent mean fields
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: G0test
+      real, dimension (nx) :: C0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: C0test,G0test
 !
 !  set G0test for each of the 2+2 cases
 !
       select case (jtest)
       case (1); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*cz(n)
       case (2); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
-      case (3); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case (4); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case (5); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
-      case (6); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
-      case default; G0test(:,:)=0.
+      case (3); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp
+      case (4); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (5); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (6); G0test(:,1)=camp      ; G0test(:,2)=0.; G0test(:,3)=0.
+      case (7); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
+      case (8); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
+      case (9); G0test(:,1)=0.; G0test(:,2)=camp      ; G0test(:,3)=0.
+      case default; C0test(:)=0.; G0test(:,:)=0.
       endselect
 !
-    endsubroutine set_ggtest_G1_G2
+    endsubroutine set_ggtest_G1_G2_const
 !***********************************************************************
     subroutine rprint_testscalar(lreset,lwrite)
 !

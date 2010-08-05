@@ -1980,7 +1980,8 @@ module Forcing
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
 !
-!  need to multiply by dt (for Euler step), but it also needs to be
+!  We multiply the forcing term by dt and add to the right-hand side
+!  of the momentum equation for an Euler step, but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference.
 !  When dtforce is finite, take dtforce+.5*dt.
