@@ -664,7 +664,7 @@ module Entropy
       endif
 !
 !  Heat conduction calculated globally: if lhcond_global=.true., we
-!  compute hcond and glhc and put the results in global arrays
+!  compute hcond and glhc and put the results in global arrays.
 !
       if (lhcond_global) then
         call farray_register_auxiliary("hcond",iglobal_hcond)
@@ -683,36 +683,32 @@ module Entropy
           hcondxtop=hcond(nx)
         else
           if (lconvection_gravx) then
-            do q=n1,n2
-             do m=m1,m2
-               call read_hcond(hcond,glhc)
-               f(l1:l2,m,q,iglobal_hcond)=hcond
-               f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
-             enddo
-            enddo
-           FbotKbot=Fbot/hcond(1)
-           FtopKtop=Ftop/hcond(nx)
-           hcondxbot=hcond(1)
-           hcondxtop=hcond(nx)
-           else
-            do n=n1,n2
-              do m=m1,m2
-               if (lgravz) then
-                 p%z_mn=spread(z(n),1,nx)
-               else
+            do q=n1,n2; do m=m1,m2
+              call read_hcond(hcond,glhc)
+              f(l1:l2,m,q,iglobal_hcond)=hcond
+              f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
+            enddo; enddo
+            FbotKbot=Fbot/hcond(1)
+            FtopKtop=Ftop/hcond(nx)
+            hcondxbot=hcond(1)
+            hcondxtop=hcond(nx)
+          else
+            do n=n1,n2; do m=m1,m2
+              if (lgravz) then
+                p%z_mn=spread(z(n),1,nx)
+              else
                 p%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               endif
               call heatcond(hcond,p)
               call gradloghcond(glhc,p)
               f(l1:l2,m,n,iglobal_hcond)=hcond
               f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)=glhc
-            enddo
-          enddo
-          FbotKbot=Fbot/hcond(1)
-          FtopKtop=Ftop/hcond(nx)
-          hcondxbot=hcond(1)
-          hcondxtop=hcond(nx)
-         endif
+            enddo; enddo
+            FbotKbot=Fbot/hcond(1)
+            FtopKtop=Ftop/hcond(nx)
+            hcondxbot=hcond(1)
+            hcondxtop=hcond(nx)
+          endif
         endif
       endif
 !
@@ -3835,10 +3831,11 @@ module Entropy
 !
       if (lgravx.and.lspherical_coords) &
           call get_heat_cool_gravx_spherical (heat,p)
-! In Cartesian coordinates, but with the gravity in the 
-! x-direction the same module may be used (GG) 
-      if (lconvection_gravx) &
-          call get_heat_cool_gravx_cartesian (heat,p)      
+!
+!  In Cartesian coordinates, but with the gravity in the 
+!  x-direction the same module may be used.
+!
+      if (lconvection_gravx) call get_heat_cool_gravx_cartesian(heat,p)
 !
 !  Add spatially uniform heating.
 !
@@ -4118,11 +4115,12 @@ module Entropy
 !
     endsubroutine get_heat_cool_gravx_spherical
 !***********************************************************************
-    subroutine get_heat_cool_gravx_cartesian (heat,p)
+    subroutine get_heat_cool_gravx_cartesian(heat,p)
 !
 !  Subroutine to calculate the heat/cool term in cartesian coordinates
 !  with gravity along x direction. 
-!  This is equivalent to the revious rutine (GG) 
+!
+!  This is equivalent to the revious rutine.
 !
 !  DOCUMENT ME!
 !
@@ -4139,40 +4137,40 @@ module Entropy
       r_ext=x(l2)
       r_int=x(l1)
 !
-!  Normalised central heating profile so volume integral = 1
+!  Normalised central heating profile so volume integral = 1.
 !
       if (nzgrid == 1) then
-         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  
+        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  
 !
-!  2-D heating profile
+!  2-D heating profile.
 !
       else
 !
-!  3-D heating profile
+!  3-D heating profile.
 !
-         prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) 
+        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) 
       endif
       heat = luminosity*prof
       if (headt .and. lfirst .and. ip<=9) &
-           call output_pencil(trim(directory)//'/heat.dat',heat,1)
+          call output_pencil(trim(directory)//'/heat.dat',heat,1)
 !
 !  Surface cooling: entropy or temperature
 !  Cooling profile; maximum = 1
 !
-!  Pick type of cooling
+!  Pick type of cooling.
 !
       select case (cooltype)
 !
-!  Heating/cooling at shell boundaries
+!  Heating/cooling at shell boundaries.
 !
       case ('top_layer')          
-         if (rcool==0.) rcool=r_ext
-         prof = step(x(l1:l2),rcool,wcool)
-         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+        if (rcool==0.) rcool=r_ext
+        prof = step(x(l1:l2),rcool,wcool)
+        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
       case default
-         write(unit=errormsg,fmt=*) &
-              'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
-         call fatal_error('calc_heat_cool',errormsg)
+        write(unit=errormsg,fmt=*) &
+            'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+        call fatal_error('calc_heat_cool',errormsg)
       endselect
 !
     endsubroutine get_heat_cool_gravx_cartesian
