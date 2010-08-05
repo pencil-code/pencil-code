@@ -15,9 +15,6 @@
 
 ;;; Settings:
 
-; Available data in the varfiles
-var_source = ['uu', 'lnrho', 'lnTT', 'aa']
-
 ; Quantities to be visualized (calculated in 'precalc_data'):
 quantities = { temperature:'Temp', currentdensity:'j',            $
                magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
@@ -50,11 +47,11 @@ default, analyse_loaded, 0
 
 if (not analyse_loaded) then BEGIN
 
-	pc_read_dim, obj=dim
+	pc_read_dim, obj=dim, /quiet
 	lmn12 = dim.l1+spread(indgen(dim.nx),[1,2],[dim.ny,dim.nz]) + dim.mx*(dim.m1+spread(indgen(dim.ny),[0,2],[dim.nx,dim.nz])) + dim.mx*dim.my*(dim.n1+spread(indgen(dim.nz),[0,1],[dim.nx,dim.ny]))
 
 	time_series = file_search (datadir, "time_series.dat")
-	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts
+	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts, /quiet
 
 	pc_units, obj=unit
 
@@ -186,7 +183,7 @@ if (not analyse_loaded) then BEGIN
 	resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 	units = { velocity:unit.velocity, temperature:unit.temperature, length:unit.length, density:unit.density, default_length:default_length, default_velocity:default_velocity, default_length_str:default_length_str, default_velocity_str:default_velocity_str }
-	pc_read_grid, obj=grid, /trim
+	pc_read_grid, obj=grid, /trim, /quiet
 	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
 	dummy = dindgen (dim.mx, dim.my, dim.mz)
 	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
@@ -217,7 +214,7 @@ if (not analyse_loaded) then BEGIN
 		stop
 	end
 
-	prepare_varset, num_selected+1, units, coords, varset, overplot, var_source
+	prepare_varset, num_selected+1, units, coords, varset, overplot
 
 	; Precalculate initial timestep
 	precalc, 0, varfile=varfile

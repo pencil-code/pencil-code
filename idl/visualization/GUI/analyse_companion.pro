@@ -12,7 +12,7 @@
 
 
 ; Prepares the varset
-pro prepare_varset, num, units, coords, varset, overset, var_source
+pro prepare_varset, num, units, coords, varset, overset
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 
@@ -24,8 +24,6 @@ pro prepare_varset, num, units, coords, varset, overset, var_source
 
 	varsets = replicate (varset, num)
 	oversets = replicate (overset, num)
-
-	sources = var_source
 end
 
 
@@ -44,7 +42,8 @@ pro precalc, i, number=number, varfile=varfile, show_aver=show_aver, vars=vars
 		default, varfile, "var.dat"
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
-			pc_read_var, variables=sources, varfile=varfile, object=vars, /quiet
+			pc_read_var, varfile=varfile, object=vars, /quiet
+			sources = tag_names (vars)
 		end
 		varfiles[i].title = varfile
 		varfiles[i].loaded = 1
@@ -70,13 +69,15 @@ pro precalc_data, i, vars
 	tags = tag_names (varsets[i])
 
 	; Compute all desired quantities from available source data
-	if (any (strcmp (tags, 'u_abs', /fold_case))) then begin
-		; Absolute velocity
-		varsets[i].u_abs = sqrt (dot2 (vars.uu)) * unit.velocity / unit.default_velocity
-	end
-	if (any (strcmp (tags, 'u_z', /fold_case))) then begin
-		; Vertical velocity component
-		varsets[i].u_z = vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
+	if (any (strcmp (sources, 'uu', /fold_case))) then begin
+		if (any (strcmp (tags, 'u_abs', /fold_case))) then begin
+			; Absolute velocity
+			varsets[i].u_abs = sqrt (dot2 (vars.uu)) * unit.velocity / unit.default_velocity
+		end
+		if (any (strcmp (tags, 'u_z', /fold_case))) then begin
+			; Vertical velocity component
+			varsets[i].u_z = vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
+		end
 	end
 	if (any (strcmp (tags, 'Temp', /fold_case))) then begin
 		; Temperature
@@ -86,19 +87,21 @@ pro precalc_data, i, vars
 			varsets[i].Temp = vars.TT * unit.temperature
 		end
 	end
-	; Magnetic field
-	bb = curl (vars.aa) / unit.length
-	if (any (strcmp (tags, 'bz', /fold_case))) then begin
-		; Vertical magnetic field component
-		varsets[i].bz = bb[*,*,*,2]
-	end
-	if (any (strcmp (tags, 'rho_mag', /fold_case))) then begin
-		; Magnetic energy density
-		varsets[i].rho_mag = dot2 (bb)
-	end
-	if (any (strcmp (tags, 'j', /fold_case))) then begin
-		; Current density
-		varsets[i].j = sqrt (sqrt (dot2 (curlcurl (vars.aa))) / unit.length^2)
+	if (any (strcmp (sources, 'aa', /fold_case))) then begin
+		; Magnetic field
+		bb = curl (vars.aa) / unit.length
+		if (any (strcmp (tags, 'bz', /fold_case))) then begin
+			; Vertical magnetic field component
+			varsets[i].bz = bb[*,*,*,2]
+		end
+		if (any (strcmp (tags, 'rho_mag', /fold_case))) then begin
+			; Magnetic energy density
+			varsets[i].rho_mag = dot2 (bb)
+		end
+		if (any (strcmp (tags, 'j', /fold_case))) then begin
+			; Current density
+			varsets[i].j = sqrt (sqrt (dot2 (curlcurl (vars.aa))) / unit.length^2)
+		end
 	end
 	if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
 		; Logarithmic density
@@ -117,11 +120,15 @@ pro precalc_data, i, vars
 	end
 
 	over_tags = tag_names (oversets[i])
-	if (any (strcmp (over_tags, 'u', /fold_case))) then begin
-		oversets[i].u = float (vars.uu * unit.velocity / unit.default_velocity)
+	if (any (strcmp (sources, 'uu', /fold_case))) then begin
+		if (any (strcmp (over_tags, 'u', /fold_case))) then begin
+			oversets[i].u = float (vars.uu * unit.velocity / unit.default_velocity)
+		end
 	end
-	if (any (strcmp (over_tags, 'b', /fold_case))) then begin
-		oversets[i].b = float (bb)
+	if (any (strcmp (sources, 'aa', /fold_case))) then begin
+		if (any (strcmp (over_tags, 'b', /fold_case))) then begin
+			oversets[i].b = float (bb)
+		end
 	end
 end
 
