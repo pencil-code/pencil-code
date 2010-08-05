@@ -162,7 +162,6 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
           trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (ip<8) print*,'Reading '//trim(file)
       open(1,file=file,form='unformatted')
-      lshear=.false.
       !
       ! Possibility to jump here from below
       !
@@ -457,7 +456,7 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
 !
       goto 998
 991   continue
-      lshear=.false.
+!--   lshear=.false.
       rewind(1)
       goto 992
 
