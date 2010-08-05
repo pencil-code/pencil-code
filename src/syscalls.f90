@@ -9,7 +9,6 @@ module Syscalls
   external file_size_c
   external get_pid_c
   external get_env_var_c
-  external get_tmp_dir_c
 !
   contains
 !***********************************************************************
