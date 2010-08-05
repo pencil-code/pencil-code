@@ -14,9 +14,19 @@ pro cslice, cube, limits, units=units, coords=coords, scaling=scaling
 
 	resolve_routine, "analyse_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
-	; scaling factor for visualisation
+	; some error checking
+	if (n_elements (cube) le 0) then begin
+		print, "Sorry, the data is undefined."
+		return
+	end
+	if (size (cube, /n_dimensions) ne 3) then begin
+		print, "Sorry, this is not a 3D data cube."
+		return
+	end
+
+	; setup a scaling factor to have a minimum size, if necessary
 	dim = size (cube)
-	default, scaling, fix (128 / max (dim[1:3]))
+	default, scaling, fix (256 / max (dim[1:3]))
 	if (n_elements (scaling) eq 1) then if (scaling lt 1) then scaling = 1
 
 	; setup limits, if necessary

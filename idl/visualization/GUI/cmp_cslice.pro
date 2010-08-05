@@ -16,11 +16,6 @@ pro cmp_cslice, sets, limits, units=units, scaling=scaling
 
 	resolve_routine, "analyse_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
-	; scaling factor for visualisation
-	dim = size (cube)
-	default, scaling, fix (128 / max (dim[1:3]))
-	if (n_elements (scaling) eq 1) then if (scaling lt 1) then scaling = 1
-
 	set_names = tag_names (sets)
 	num_names = n_elements (set_names)
 
