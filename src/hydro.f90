@@ -2583,18 +2583,17 @@ module Hydro
 !***********************************************************************
    subroutine coriolis_cartesian(df,uu,velind)
 !
-!  coriolis terms for cartesian geometry
+!  Coriolis terms for cartesian geometry.
 !
 !  30-oct-09/MR: outsourced, parameter velind added
-!  checked to be an equivalent change by auot-test conv-slab-noequi, mdwarf
 !
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
-! velind is start index for velocity variable to which Coriolis force corresponds
-! x,y,z -components referred to by velind, velind+1, velind+2
-! (MR: always the case?)
+!  velind is start index for velocity variable to which Coriolis force
+!  corresponds
+!  x,y,z components are referred to by velind, velind+1, velind+2
 !
       real :: c2, s2
 !
@@ -2606,18 +2605,13 @@ module Hydro
 !
           if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
 !
-           if (lgravz) then
-            c2=2*Omega
-            df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
-            df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
-           elseif (lgravx) then
-            df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,3)
-            df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)+c2*uu(:,2)   
-           endif
+          c2=2*Omega
+          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
+          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
 !
         endif
 !
-!  add centrifugal force (doing this with periodic boundary
+!  Add centrifugal force (doing this with periodic boundary
 !  conditions in x and y would not be compatible, so it is
 !  therefore usually ignored in those cases!)
 !
@@ -2631,7 +2625,7 @@ module Hydro
 !
       else
 !
-!  add Coriolis force with an angle (defined such that theta=60,
+!  Add Coriolis force with an angle (defined such that theta=60,
 !  for example, would correspond to 30 degrees latitude).
 !  Omega=(-sin_theta, 0, cos_theta).
 !
@@ -2640,21 +2634,12 @@ module Hydro
           if (headtt) &
             print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
 !
-         if (lgravz) then
           c2= 2*Omega*cos(theta*pi/180.)
           s2=-2*Omega*sin(theta*pi/180.)
 !
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)+s2*uu(:,3)
           df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           -s2*uu(:,2)
-         elseif (lgravx) then
-          c2= 2*Omega*cos(theta*pi/180.)
-          s2= 2*Omega*sin(theta*pi/180.)
-!
-          df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )-s2*uu(:,2) 
-          df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,3)+s2*uu(:,1)
-          df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)           +c2*uu(:,2)
-         endif
 !
         endif
 !
