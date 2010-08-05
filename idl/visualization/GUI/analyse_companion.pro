@@ -125,3 +125,10 @@ pro precalc_data, i, vars
 	end
 end
 
+
+; Dummy routine
+pro analyse_companion
+
+	analyse_companion_loaded = 1
+end
+
