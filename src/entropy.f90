@@ -282,7 +282,7 @@ module Entropy
             'EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
       endif
 !
-!  Tell the equation of state that we're here and what f variable we use.
+!  Tell the equation of state that we are here and what f variable we use.
 !
       if (pretend_lnTT) then
         call select_eos_variable('lnTT',iss)
@@ -295,7 +295,7 @@ module Entropy
       hcond=0.0
 !
 !  Kbot and hcond0 are used interchangibly, so if one is
-!  =impossible, set it to the other's value
+!  =impossible, set it to the other's value.
 !
       if (hcond0==impossible) then
         if (Kbot==impossible) then
@@ -392,8 +392,7 @@ module Entropy
             FtopKtop=0.0
           endif
 !
-        else
-! lmultilayer=False
+        else  ! lmultilayer=.false.
 !
 !  NOTE: in future we should define chiz=chi(z) or Kz=K(z) here.
 !  Calculate hcond and FbotKbot=Fbot/K
@@ -405,12 +404,12 @@ module Entropy
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
-                   'initialize_entropy: Calculated Fbot = ', Fbot
+                  'initialize_entropy: Calculated Fbot = ', Fbot
 !
               Kbot=gamma_m1/gamma*(mpoly+1.)*Fbot
               FbotKbot=gamma/gamma_m1/(mpoly+1.)
-              if (lroot) print*,'initialize_entropy: Calculated Fbot,Kbot=', &
-                   Fbot,Kbot
+              if (lroot) print*, 'initialize_entropy: Calculated Fbot,Kbot=', &
+                  Fbot, Kbot
             ! else
             !! Don't need Fbot in this case (?)
             !  Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
@@ -418,7 +417,9 @@ module Entropy
             !       'initialize_entropy: Calculated Fbot = ', Fbot
             endif
           else
-            ! define hcond0 from the given value of Fbot
+!
+!  Define hcond0 from the given value of Fbot.
+!
             if (bcz1(iss)=='c1') then
               hcond0=gamma_m1/gamma*(mpoly0+1.)*Fbot
               Kbot=hcond0
@@ -452,7 +453,8 @@ module Entropy
       select case (initss(1))
         case ('geo-kws','geo-benchmark','shell_layers')
           if (lroot) then
-            print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
+            print*, 'initialize_entropy: '// &
+                'set boundary temperatures for spherical shell problem'
           endif
 !
 !  Calculate temperature gradient from polytropic index.
@@ -463,7 +465,6 @@ module Entropy
 !  Temperatures at shell boundaries.
 !
           if (initss(1) == 'shell_layers') then
-!           lmultilayer=.true.   ! this is the default...
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
             beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
@@ -475,7 +476,7 @@ module Entropy
             cs2top=cs20
             cs2bot=gamma_m1*TT_int
           else
-            lmultilayer=.false.  ! to ensure that hcond=cte
+            lmultilayer=.false.    ! to ensure that hcond=cte
             if (T0/=0.0) then
               TT_ext=T0            ! T0 defined in start.in for geodynamo
             else
@@ -527,7 +528,7 @@ module Entropy
       endselect
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
-!  gradient dlnrho/dr = beta/H
+!  gradient dlnrho/dr = beta/H.
 !
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
@@ -875,32 +876,34 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-!          case('Gressel-hs'); call gressel_hs(f,rho0hs)
           case('Gressel-hs'); call gressel_entropy(f)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
           case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
-        case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
+          case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
-            call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss,center1_x,center1_z)
+            call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss, &
+                center1_x,center1_z)
           case ('hor-tube')
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
              if (ampl_ss/=0.0) &
-                 call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+                 call blob(ampl_ss,f,iss,radius_ss, &
+                 center1_x,center1_y,center1_z)
              hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
              print*,'init_ss: Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-          call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
-!  f(:,:,:,iss) = f(:,:,:,iss) + (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
+            call blob(thermal_peak,f,iss,radius_ss, &
+                center1_x,center1_y,center1_z)
           case ('sedov-dual')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-          call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
-          call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
-!  f(:,:,:,iss) = (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma
+            call blob(thermal_peak,f,iss,radius_ss, &
+                center1_x,center1_y,center1_z)
+            call blob(thermal_peak,f,iss,radius_ss, &
+                center2_x,center2_y,center2_z)
           case ('shock2d')
             call shock2d(f)
           case ('isobaric')
@@ -925,10 +928,12 @@ module Entropy
             if (lroot) print*,'init_ss: isentropic stratification'
             f(:,:,:,iss)=0.
             if (ampl_ss/=0.) then
-              print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
+              print*, 'init_ss: put bubble: radius_ss,ampl_ss=', &
+                  radius_ss, ampl_ss
               do n=n1,n2; do m=m1,m2
                 tmp=x(l1:l2)**2+y(m)**2+z(n)**2
-                f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
+                f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ &
+                    ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
               enddo; enddo
             endif
           case ('linprof', '2')
@@ -941,11 +946,11 @@ module Entropy
             enddo; enddo
           case ('isentropic-star')
 !
-!  Isentropic/isothermal hydrostatic sphere"
+!  Isentropic/isothermal hydrostatic sphere:
 !    ss  = 0       for r<R,
 !    cs2 = const   for r>R
 !
-!  Only makes sense if both initlnrho=initss='isentropic-star'
+!  Only makes sense if both initlnrho=initss='isentropic-star'.
 !
             if (.not. ldensity) &
                 call fatal_error('isentropic-star','requires density.f90')
@@ -956,15 +961,17 @@ module Entropy
                 r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
                 call potential(POT=pot,POT0=pot0,RMN=r_mn) ! gravity potential
 !
-!  rho0, cs0,pot0 are the values in the centre
+!  rho0, cs0,pot0 are the values in the centre.
 !
-                if (gamma /= 1) then
+                if (gamma/=1.0) then
+!
 !  Note:
 !  (a) `where' is expensive, but this is only done at
 !      initialization.
 !  (b) Comparing pot with pot_ext instead of r with r_ext will
 !      only work if grav_r<=0 everywhere -- but that seems
 !      reasonable.
+!
                   call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
                   cs2_ext   = cs20*(1 - gamma_m1*(pot_ext-pot0)/cs20)
 !
@@ -975,10 +982,10 @@ module Entropy
                   ss_ext = 0.0 + log(cs2cool/cs2_ext)
                   where (pot <= pot_ext) ! isentropic for r<r_ext
                     f(l1:l2,m,n,iss) = 0.0
-                  elsewhere           ! isothermal for r>r_ext
+                  elsewhere              ! isothermal for r>r_ext
                     f(l1:l2,m,n,iss) = ss_ext + gamma_m1*(pot-pot_ext)/cs2cool
                   endwhere
-                else                  ! gamma=1 --> simply isothermal (I guess [wd])
+                else         ! gamma=1 --> simply isothermal (I guess [wd])
                   ! [NB: Never tested this..]
                   f(l1:l2,m,n,iss) = -gamma_m1/gamma*(f(l1:l2,m,n,ilnrho)-lnrho0)
                 endif
@@ -990,16 +997,7 @@ module Entropy
 !  cs0, rho0 and ss0=0 refer to height z=zref
 !
             if (lroot) print*, &
-                   'init_ss: piecewise polytropic vertical stratification (ss)'
-!
-!         !  override hcond1,hcond2 according to polytropic equilibrium
-!         !  solution
-!         !
-!         hcond1 = (mpoly1+1.)/(mpoly0+1.)
-!         hcond2 = (mpoly2+1.)/(mpoly0+1.)
-!         if (lroot) &
-!              print*, &
-!              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+                'init_ss: piecewise polytropic vertical stratification (ss)'
 !
             cs2int = cs0**2
             ss0 = 0.              ! reference value ss0 is zero
@@ -1014,19 +1012,10 @@ module Entropy
             call polytropic_ss_z(f,mpoly1,z1,z0,z1,0,cs2int,ssint)
           case ('piecew-disc', '41')
 !
-!  piecewise polytropic convective disc
-!  cs0, rho0 and ss0=0 refer to height z=zref
+!  Piecewise polytropic convective disc.
+!  cs0, rho0 and ss0=0 refer to height z=zref.
 !
-            if (lroot) print*,'init_ss: piecewise polytropic disc'
-!
-!         !  override hcond1,hcond2 according to polytropic equilibrium
-!         !  solution
-!         !
-!         hcond1 = (mpoly1+1.)/(mpoly0+1.)
-!         hcond2 = (mpoly2+1.)/(mpoly0+1.)
-!         if (lroot) &
-!              print*, &
-!        'init_ss: Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+            if (lroot) print*, 'init_ss: piecewise polytropic disc'
 !
             ztop = xyz0(3)+Lxyz(3)
             cs2int = cs0**2
@@ -1043,13 +1032,13 @@ module Entropy
                                  isothtop,cs2int,ssint)
           case ('polytropic', '5')
 !
-!  polytropic stratification
-!  cs0, rho0 and ss0=0 refer to height z=zref
+!  Polytropic stratification.
+!  cs0, rho0 and ss0=0 refer to height z=zref.
 !
             if (lroot) print*,'init_ss: polytropic vertical stratification'
 !
             cs20 = cs0**2
-            ss0 = 0.              ! reference value ss0 is zero
+            ss0 = 0.             ! reference value ss0 is zero
             f(:,:,:,iss) = ss0   ! just in case
             cs2int = cs20
             ssint = ss0
@@ -1068,19 +1057,22 @@ module Entropy
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
+            if (lroot) print*, 'init_ss: '// &
+                'benchmark temperature in spherical shell'
             call shell_ss(f)
           case ('shell_layers')
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            call information('init_ss',' two polytropic layers in a spherical shell')
+            call information('init_ss', &
+                'two polytropic layers in a spherical shell')
             call shell_ss_layers(f)
           case ('star_heat')
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            call information('init_ss',' two polytropic layers with a central heating')
+            call information('init_ss', &
+                'two polytropic layers with a central heating')
             call star_heat(f)
           case ('cylind_layers')
             call cylind_layers(f)
@@ -1090,70 +1082,57 @@ module Entropy
 !
             call layer_ss(f)
           case ('blob_hs')
-            print*,'init_ss: put blob in hydrostatic equilibrium: radius_ss,ampl_ss=',radius_ss,ampl_ss
+            print*, 'init_ss: put blob in hydrostatic equilibrium: '// &
+                'radius_ss,ampl_ss=', radius_ss, ampl_ss
             call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
             call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
           case ('single_polytrope')
             call single_polytrope(f)
           case default
 !
-!  Catch unknown values
+!  Catch unknown values.
 !
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
-                             //trim(iinit_str)//'): ',trim(initss(j))
+                //trim(iinit_str)//'): ',trim(initss(j))
             call fatal_error('init_ss',errormsg)
         endselect
 !
-        if (lroot) print*,'init_ss: initss('//trim(iinit_str)//') = ', &
+        if (lroot) print*, 'init_ss: initss('//trim(iinit_str)//') = ', &
             trim(initss(j))
 !
       enddo
 !
-      if (lnothing.and.lroot) print*,'init_ss: nothing'
+      if (lnothing.and.lroot) print*, 'init_ss: nothing'
 !
-!  if ss_const/=0, add this constant to entropy
-!  (ss_const is already taken care of)
-!
-!     if (ss_const/=0) f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-!
-!  no entropy initialization when lgravr=.true.
-!  why?
-!
-!  The following seems insane, so I comment this out.
-!     if (lgravr) then
-!       f(:,:,:,iss) = -0.
-!     endif
-!
-!  Add perturbation(s)
+!  Add perturbation(s).
 !
       select case (pertss)
 !
       case ('zero', '0')
 !
-!  Don't perturb
+!  Do not perturb.
 !
       case ('hexagonal', '1')
 !
 !  Hexagonal perturbation.
 !
-        if (lroot) print*,'init_ss: adding hexagonal perturbation to ss'
+        if (lroot) print*, 'init_ss: adding hexagonal perturbation to ss'
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
-                          + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*x(l1:l2)) &
-                                      *cos(0.5*khor_ss*y(m)) &
-                                     + cos(khor_ss*y(m)) &
-                                    ) * cos(pi*z(n))
+              + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*x(l1:l2)) &
+                          *cos(0.5*khor_ss*y(m)) &
+                         + cos(khor_ss*y(m))) * cos(pi*z(n))
         enddo; enddo
       case default
 !
-!  Catch unknown values
+!  Catch unknown values.
 !
         write (unit=errormsg,fmt=*) 'No such value for pertss:', pertss
         call fatal_error('init_ss',errormsg)
 !
       endselect
 !
-!  Interface fow user's own initial condition
+!  Interface fow user's own initial condition.
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
@@ -1202,9 +1181,9 @@ module Entropy
       else
         if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
         f(:,:,:,i)=f(:,:,:,i)+ampl*(&
-           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
-          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
-          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+             spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
+            *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
+            *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
       endif
 !
     endsubroutine blob_radeq
@@ -1639,14 +1618,16 @@ module Entropy
 !***********************************************************************
     subroutine ferriere(f)
 !
-!  density profile from K. Ferriere, ApJ 497, 759, 1998,
+!  Density profile from K. Ferriere, ApJ 497, 759, 1998,
 !   eqns (6), (7), (9), (13), (14) [with molecular H, n_m, neglected]
 !   at solar radius.  (for interstellar runs)
-!  entropy is set via pressure, assuming a constant T for each gas component
+!  Entropy is set via pressure, assuming a constant T for each gas component
 !   (cf. eqn 15) and crudely compensating for non-thermal sources.
-!  [an alternative treatment of entropy, based on hydrostatic equilibrium,
+!  [An alternative treatment of entropy, based on hydrostatic equilibrium,
 !   might be preferable. This was implemented in serial (in e.g. r1.59)
 !   but abandoned as overcomplicated to adapt for nprocz /= 0.]
+!
+!  AJ: PLEASE IDENTIFY AUTHOR
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_pp, getmu, eosperturb
@@ -1659,13 +1640,9 @@ module Entropy
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6
       real :: T_c,T_w,T_i,T_h
       real, dimension(nx) :: rho,pp,lnrho,ss
-!      real, dimension(nx) :: pp
-!     double precision :: pp0
-!      real, dimension(2) :: fmpi2
       real, dimension(1) :: fmpi1
       real :: kpc
       double precision ::  rhoscale
-!      integer :: iproctop
 !
       if (lroot) print*,'ferriere: Ferriere density and entropy profile'
 !
@@ -1673,47 +1650,50 @@ module Entropy
 !  Pressure is set to 6 times thermal pressure, this factor roughly
 !  allowing for other sources, as modelled by Ferriere.
 !
-  !    call getmu(mu)
       kpc = 3.086D21 / unit_length
       rhoscale = 1.36 * m_p * unit_length**3
-      print *,'ferrier: kpc, rhoscale =',kpc,rhoscale !,mu
+      print*, 'ferrier: kpc, rhoscale =', kpc, rhoscale
       T_c=T_c_cgs/unit_temperature
       T_w=T_w_cgs/unit_temperature
       T_i=T_i_cgs/unit_temperature
       T_h=T_h_cgs/unit_temperature
 !
-!      pp0=6.0*k_B*(rho0/1.38) *                                               &
-!       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
-!      pp0=k_B*unit_length**3*                                               &
-!       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
-!      cs20=gamma*pp0/rho0
-!      cs0=sqrt(cs20)
-!      ss0=log(gamma*pp0/cs20/rho0)/gamma   !ss0=zero  (not needed)
-!
       do n=n1,n2            ! nb: don't need to set ghost-zones here
       absz=abs(z(n))
       do m=m1,m2
-!  cold gas profile n_c (eq 6)
+!
+!  Cold gas profile n_c (eq 6).
+!
         n_c=0.340*(0.859*exp(-(z(n)/(0.127*kpc))**2) +         &
                    0.047*exp(-(z(n)/(0.318*kpc))**2) +         &
                    0.094*exp(-absz/(0.403*kpc)))
-!  warm gas profile n_w (eq 7)
+!
+!  Warm gas profile n_w (eq 7).
+!
         n_w=0.226*(0.456*exp(-(z(n)/(0.127*kpc))**2) +  &
                    0.403*exp(-(z(n)/(0.318*kpc))**2) +  &
                    0.141*exp(-absz/(0.403*kpc)))
-!  ionized gas profile n_i (eq 9)
+!
+!  Ionized gas profile n_i (eq 9).
+!
         n_i=0.0237*exp(-absz/kpc) + 0.0013* exp(-absz/(0.150*kpc))
-!  hot gas profile n_h (eq 13)
+!
+!  Hot gas profile n_h (eq 13).
+!
         n_h=0.00048*exp(-absz/(1.5*kpc))
-!  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
-        !rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)*rhoscale
+!
+!  Normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3).
+!
         rho=real((n_c+n_w+n_i+n_h)*rhoscale)
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
 !
-!  define entropy via pressure, assuming fixed T for each component
+!  Define entropy via pressure, assuming fixed T for each component.
+!
         if (lentropy) then
-!  thermal pressure (eq 15)
+!
+!  Thermal pressure (eq 15).
+!
           pp=real(k_B*unit_length**3 * &
              (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 !
@@ -1728,20 +1708,22 @@ module Entropy
           cs2top=fmpi1(1)
 !
         endif
-       enddo
+      enddo
       enddo
 !
-      if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
+      if (lroot) print*, 'ferriere: cs2bot=', cs2bot, ' cs2top=', cs2top
 !
     endsubroutine ferriere
 !***********************************************************************
     subroutine ferriere_hs(f,rho0hs)
 !
-!   Density and isothermal entropy profile in hydrostatic equilibrium
-!   with the Ferriere profile set in gravity_simple.f90
-!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
-!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
-!   equilibrium. Constants g_A..D from gravz_profile.
+!  Density and isothermal entropy profile in hydrostatic equilibrium
+!  with the Ferriere profile set in gravity_simple.f90.
+!  Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
+!  both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
+!  equilibrium. Constants g_A..D from gravz_profile.
+!
+!  AJ: PLEASE IDENTIFY AUTHOR
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eosperturb, getmu
@@ -1773,8 +1755,8 @@ module Entropy
       call getmu(f,muhs)
 !
       if (lroot) print*, &
-         'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
-      T0=0.8!cs20/gamma_m1
+          'Ferriere-hs: hydrostatic equilibrium density and entropy profiles'
+      T0=0.8    ! cs20/gamma_m1
       do n=n1,n2
       do m=m1,m2
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
@@ -1802,8 +1784,6 @@ module Entropy
 !***********************************************************************
     subroutine gressel_hs(f,rho0hs)
 !
-!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
-!
 !   Density and isothermal entropy profile in hydrostatic equilibrium
 !   with the Ferriere profile set in gravity_simple.f90
 !   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
@@ -1812,29 +1792,27 @@ module Entropy
 !   the cooling function with uv-heating/rho for thermal equilibrium. Use
 !   heating_select='Gressel-hs' in interstellar init & runpars
 !
+!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
+!
       use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eoscalc, ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,lnrho,ss,heat,TT,lambda,fbeta,flamk,lnTT
       real :: rho0hs, GammaUV
-!      real :: g_A, g_C
-      real, parameter :: GammaUV_cgs=0.0147 !, g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      real, parameter :: GammaUV_cgs=0.0147
       real, dimension(10) :: beta
       double precision,dimension(10) :: lamk,lamstep,lamT
-      double precision :: g_B, unit_Lambda !,g_D
-      double precision, parameter :: g_B_cgs=6.172D20 !, g_D_cgs=3.086D21
+      double precision :: g_B, unit_Lambda
+      double precision, parameter :: g_B_cgs=6.172D20
       integer :: j
 !
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-!          g_A = g_A_cgs/unit_velocity*unit_time
-!          g_C = g_C_cgs/unit_velocity*unit_time
-!          g_D = g_D_cgs/unit_length
-          g_B = g_B_cgs/unit_length
-          GammaUV = GammaUV_cgs * real(unit_length/unit_velocity**3)
-          unit_Lambda = unit_velocity**2 / unit_density / unit_time
+        g_B = g_B_cgs/unit_length
+        GammaUV = GammaUV_cgs * real(unit_length/unit_velocity**3)
+        unit_Lambda = unit_velocity**2 / unit_density / unit_time
       else if (unit_system=='SI') then
         call fatal_error('initialize_gravity', &
             'SI unit conversions not inplemented')
@@ -1875,15 +1853,15 @@ module Entropy
 !
         where (lambda < lamstep(1)) lambda=lamstep(1)
         do j=1,9
-           if (lambda(n) >= lamstep(j) .and. lambda(n) <= lamstep(j+1)) then
-           fbeta(n)=beta(j)
-           flamk(n)=lamk(j)
-           end if
-       where (lambda > lamstep(10))
-           fbeta=beta(10)
-           flamk=lamk(10)
-       endwhere
-       enddo
+          if (lambda(n) >= lamstep(j) .and. lambda(n) <= lamstep(j+1)) then
+          fbeta(n)=beta(j)
+          flamk(n)=lamk(j)
+          endif
+          where (lambda > lamstep(10))
+            fbeta=beta(10)
+            flamk=lamk(10)
+          endwhere
+        enddo
           TT=real((lambda/lamk(4))**(1./beta(4)))
           lnTT=log(TT)
 !
@@ -1892,7 +1870,7 @@ module Entropy
           f(l1:l2,m,n,iss)=ss
 !
       enddo
-     enddo
+      enddo
 !
       if (lroot) print*, 'Gressel-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
@@ -1900,15 +1878,15 @@ module Entropy
 !***********************************************************************
     subroutine gressel_entropy(f)
 !
-!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
-!
 !   Density and isothermal entropy profile in hydrostatic equilibrium
-!   with the Ferriere profile set in gravity_simple.f90
-!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
+!   with the Ferriere profile set in gravity_simple.f90.
+!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'.
 !   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
 !   equilibrium. Constants g_A..D from gravz_profile. In addition equating
 !   the cooling function with uv-heating/rho for thermal equilibrium. Use
-!   heating_select='Gressel-hs' in interstellar init & runpars
+!   heating_select='Gressel-hs' in interstellar init & runpars.
+!
+!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
@@ -1930,13 +1908,11 @@ module Entropy
         g_D = g_D_cgs/unit_length
         g_B = g_B_cgs/unit_length
         if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-!          T0hs=7645./unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-!          rho0ts=1.83e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
         T_k=sqrt(2.0)
 !
 !  Chosen to keep TT as low as possible up to boundary matching rho for hs
-!  equilibrium
+!  equilibrium.
 !
       else if (unit_system=='SI') then
         call fatal_error('initialize_gravity', &
@@ -1961,11 +1937,9 @@ module Entropy
 !  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
 !                  require initial profile to produce finite Lambda between lamstep(3) and
 !                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                  !
-        TT =T0hs!*exp((T_k*z(n))**2)
+        TT =T0hs
         rho = rho0ts*exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)&
                          -0.5*g_C*(z(n))**2/g_D))
-!        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
-!            *(erfunc(erfz)-erfunc(erfB)) + g_C/g_D*(1.-exp(-(T_k*z(n))**2))))
 !
         lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
@@ -1977,7 +1951,6 @@ module Entropy
 !
       enddo
       enddo
-!
 !
     endsubroutine gressel_entropy
 !***********************************************************************
@@ -2032,7 +2005,6 @@ module Entropy
 !  AJ: DOCUMENT ME!
 !  AJ: MOVE ME TO SUBMODULE OR SPECIAL OR INITIAL CONDITION!
 !
-!
 !  shock2d
 !
 ! taken from clawpack:
@@ -2060,25 +2032,29 @@ module Entropy
 !
       if (lroot) print*,'shock2d: initial condition, gamma=',gamma
 !
-!      # First quadrant:
+!  First quadrant:
+!
         rpp(1) = 1.5d0
         rpr(1) = 1.5d0
         rpu(1) = 0.d0
         rpv(1) = 0.d0
 !
-!      # Second quadrant:
+!  Second quadrant:
+!
         rpp(2) = 0.3d0
         rpr(2) = 0.532258064516129d0
         rpu(2) = 1.206045378311055d0
         rpv(2) = 0.0d0
 !
-!      # Third quadrant:
+!  Third quadrant:
+!
         rpp(3) = 0.029032258064516d0
         rpr(3) = 0.137992831541219d0
         rpu(3) = 1.206045378311055d0
         rpv(3) = 1.206045378311055d0
 !
-!      # Fourth quadrant:
+!  Fourth quadrant:
+!
         rpp(4) = 0.3d0
         rpr(4) = 0.532258064516129d0
         rpu(4) = 0.0d0
@@ -2170,7 +2146,6 @@ module Entropy
          lpenc_requested(i_cp1)=.true.
       endif
       if (lgravr) then
-! spherical case (cylindrical case also included)
         if (lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
         else
@@ -2920,7 +2895,8 @@ module Entropy
 !  flux = chi_th*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
-!  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test physics
+!  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
+!                  physics
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Diagnostics, only: max_mn_name
@@ -2964,7 +2940,6 @@ module Entropy
         endif
       else
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-        !thdiff=cp*chi*(p%del2lnTT+g2)
 !AB:  divide by p%cp1, since we don't have cp here.
         thdiff=thchi*(p%del2lnTT+g2)/p%cp1
         if (chi_t/=0.) then
@@ -3013,7 +2988,8 @@ module Entropy
 !  flux = chi_th*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
-!  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test physics
+!  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
+!                  physics
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Diagnostics, only: max_mn_name
@@ -3022,7 +2998,6 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,rhochi
-!      real :: boost_chi
 !
       intent(out) :: df
 !
@@ -3045,10 +3020,6 @@ module Entropy
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
 !
-!
-!      boost_chi=1e6/unit_temperature
-!      rhochi=chi_rho
-!      where (p%lnTT >= log(boost_chi)) &
       rhochi=chi_rho*sqrt(p%rho1)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
@@ -3059,7 +3030,6 @@ module Entropy
         endif
       else
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-        !thdiff=cp*chi*(p%del2lnTT+g2)
 !AB:  divide by p%cp1, since we don't have cp here.
         thdiff=rhochi*(p%del2lnTT+g2)/p%cp1
         if (chi_t/=0.) then
@@ -3320,7 +3290,7 @@ module Entropy
 !
 ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
 !
-!  put empirical heat transport suppression by the B-field
+!  Put empirical heat transport suppression by the B-field.
 !
       if (chiB==0.) then
         chix = p%rho1*hcond*p%cp1
@@ -3413,8 +3383,8 @@ module Entropy
       call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
       if (lfirst .and. ip == 13) then
-         call output_pencil(trim(directory)//'/spitzer.dat',thdiff,1)
-         call output_pencil(trim(directory)//'/viscous.dat',p%visc_heat*exp(p%lnrho),1)
+        call output_pencil(trim(directory)//'/spitzer.dat',thdiff,1)
+        call output_pencil(trim(directory)//'/viscous.dat',p%visc_heat*exp(p%lnrho),1)
       endif
 !
       thdiff = thdiff*exp(-p%lnrho-p%lnTT)
@@ -3423,8 +3393,8 @@ module Entropy
 !
       if (lfirst.and.ldt) then
 !
-         dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
-         diffus_chi=diffus_chi+gamma*Kgpara*exp(2.5*p%lnTT-p%lnrho)/p%cp*dxyz_2
+        dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
+        diffus_chi=diffus_chi+gamma*Kgpara*exp(2.5*p%lnTT-p%lnrho)/p%cp*dxyz_2
       endif
 !
     endsubroutine calc_heatcond_spitzer
@@ -3464,10 +3434,10 @@ module Entropy
       endwhere
 !
       if (lfirst.and.ldt) then
-         diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
-         if (ldiagnos.and.idiag_dtchi/=0) then
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-         endif
+        diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
       endif
 !
     endsubroutine calc_heatcond_tensor
@@ -3538,7 +3508,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof,gss1 !,glnT
+      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof,gss1
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: hcond,chit_prof
@@ -3723,7 +3693,7 @@ module Entropy
 !
 !  Check for NaNs initially.
 !
-      if (headt .and. (hcond0 /= 0)) then
+      if (headt .and. (hcond0/=0.0)) then
         if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
         if (notanumber(p%rho1))    print*,'calc_heatcond: NaNs in rho1'
         if (notanumber(hcond))     print*,'calc_heatcond: NaNs in hcond'
@@ -3800,11 +3770,13 @@ module Entropy
 !
 !  Vertical gravity determines some heat/cool models.
 !
-      if (headtt) print*, 'calc_heat_cool: lgravz, lgravr= lgravx= lspherical_coords=', lgravz, lgravr,lgravx,lspherical_coords
+      if (headtt) print*, 'calc_heat_cool: '// &
+          'lgravz, lgravr, lgravx, lspherical_coords=', &
+          lgravz, lgravr, lgravx, lspherical_coords
 !
 !  Initialize heating/cooling term.
 !
-      heat=0.
+      heat=0.0
 !
 !  General spatially distributed cooling profiles (independent of gravity).
 !
@@ -3848,7 +3820,6 @@ module Entropy
       if (tau_cool/=0.0) &
           heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
       if (tau_cool2/=0.0) &
-!--       heat = heat - (p%cs2-cs2cool)/cs2cool/p%rho1/tau_cool2
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
 !
 !  Add "coronal" heating (to simulate a hot corona).
@@ -3861,10 +3832,8 @@ module Entropy
 !
       if (tauheat_buffer/=0.) then
         profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)-zheat_buffer)))
-!profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)**2-zheat_buffer**2)))
-!       profile_buffer=1.+0.5*(tanh(dheat_buffer1*(z(n)-z(n1)-zheat_buffer)) + tanh(dheat_buffer1*(z(n)-z(n2)-zheat_buffer)))
         heat=heat+profile_buffer*p%ss* &
-              (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
+            (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
 !
 !  Add heating/cooling to entropy equation.
@@ -3882,8 +3851,6 @@ module Entropy
 !***********************************************************************
     subroutine get_heat_cool_general(heat,p)
 !
-      use Messages, only: fatal_error
-!
       type (pencil_case) :: p
 !
       real, dimension (nx) :: heat,prof
@@ -3898,10 +3865,10 @@ module Entropy
       endselect
 !
 !  Note: the cooltype 'Temp' used below was introduced by Axel for the 
-!   aerosol runs. Although this 'Temp' does not match with the cooltype
-!   'Temp' used in other parts of this subroutine. I have introduced 
-!   'Temp2' which is the same as the 'Temp' elsewhere. Later runs
-!   will clarify this. - Dhruba 
+!  aerosol runs. Although this 'Temp' does not match with the cooltype
+!  'Temp' used in other parts of this subroutine. I have introduced 
+!  'Temp2' which is the same as the 'Temp' elsewhere. Later runs
+!  will clarify this. - Dhruba 
 !
      select case (cooltype)
      case ('Temp')
@@ -3923,7 +3890,6 @@ module Entropy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use Messages, only: fatal_error
       use Sub, only: step, cubic_step, write_zprof
 !
       type (pencil_case) :: p
@@ -3938,7 +3904,7 @@ module Entropy
 !
 !  Add heat near bottom.
 !
-!  Heating profile, normalised, so volume integral = 1
+!  Heating profile, normalised, so volume integral = 1.
 !
       prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
            /(sqrt(pi/2.)*wheat*Lx*Ly)
@@ -3954,14 +3920,14 @@ module Entropy
 !  The gaussian default is rather broad and disturbs the entire interior.
 !
       if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
-           cooling_profile, z2, wcool
+          cooling_profile, z2, wcool
       select case (cooling_profile)
       case ('gaussian')
-         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
+        prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
       case ('step')
-         prof = step(spread(z(n),1,nx),z2,wcool)
+        prof = step(spread(z(n),1,nx),z2,wcool)
       case ('cubic_step')
-         prof = cubic_step(spread(z(n),1,nx),z2,wcool)
+        prof = cubic_step(spread(z(n),1,nx),z2,wcool)
       case default
         call fatal_error('get_heat_cool_gravz','please select a cooltype')
       endselect
@@ -3994,7 +3960,6 @@ module Entropy
 !  13-sep-07/boris: coded
 !
       use IO, only: output_pencil
-      use Messages, only: fatal_error
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -4073,7 +4038,6 @@ module Entropy
 !   1-sep-08/dhruba: coded
 !
       use IO, only: output_pencil
-      use Messages, only: fatal_error
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -4133,7 +4097,6 @@ module Entropy
 !   4-aug-10/gustavo: coded
 !
       use IO, only: output_pencil
-      use Messages, only: fatal_error
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -4190,8 +4153,6 @@ module Entropy
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
 !  18-may-10/bing: coded
-!
-      use Messages, only:fatal_error
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat
@@ -4256,11 +4217,9 @@ module Entropy
 !
       lnTT_SI = p%lnTT + alog(real(unit_temperature))
 !
-!     calculate ln(ne*ni) :
-!          ln(ne*ni) = ln( 1.2*rho^2/(1.4*mp)^2)
-      lnneni = 2*p%lnrho + alog(1.2) - 2*alog(1.4*real(m_p))
+!  Calculate ln(ne*ni) : ln(ne*ni) = ln( 1.2*rho^2/(1.4*mp)^2)
 !
-!     rtv_cool=exp(lnneni+lnQ-unit_lnQ-lnrho-lnTT)
+      lnneni = 2*p%lnrho + alog(1.2) - 2*alog(1.4*real(m_p))
 !
 !  First set of parameters.
 !
@@ -4628,12 +4587,12 @@ module Entropy
 !
       if (lgravz) then
         if (lmultilayer) then
-          glhc(:,1:2) = 0.
+          glhc(:,1:2) = 0.0
           glhc(:,3) = (hcond1-1.)*der_step(p%z_mn,z1,-widthss) &
                       + (hcond2-1.)*der_step(p%z_mn,z2,widthss)
           glhc(:,3) = hcond0*glhc(:,3)
         else
-          glhc = 0.
+          glhc = 0.0
         endif
       else
         if (lmultilayer) then
@@ -4643,12 +4602,12 @@ module Entropy
           glhc(:,1) = x(l1:l2)/p%r_mn*dhcond
           glhc(:,2) = y(m)/p%r_mn*dhcond
           if (lcylinder_in_a_box) then
-            glhc(:,3) = 0.
+            glhc(:,3) = 0.0
           else
             glhc(:,3) = z(n)/p%r_mn*dhcond
           endif
         else
-          glhc = 0.
+          glhc = 0.0
         endif
       endif
 !
@@ -5167,17 +5126,15 @@ module Entropy
 !
 !  Find the value of rhobot at the bottom of convection zone.
 !
-!   lnrhobot=interp1(r,lnrho,nr,r_max)
-!   lnrhobot=interp1(r,lnrho,nr,r_ext)
     lnrhobot=interp1(r,lnrho,nr,r_bcz)
     rhobot=exp(lnrhobot)
-    print*,'find rhobot=',rhobot
+    print*, 'find rhobot=', rhobot
 !
     endsubroutine strat_heat
 !***********************************************************************
     subroutine cylind_layers(f)
 !
-!  Initialise ss in a cylindrical ring using 2 superposed polytropic layers
+!  Initialise ss in a cylindrical ring using 2 superposed polytropic layers.
 !
 !  17-mar-07/dintrans: coded
 !
@@ -5232,8 +5189,9 @@ module Entropy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
-!  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !  Note: both entropy and density are initialized there (compared to layer_ss)
+!
+!  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !
       use Gravity, only: gravz, g0
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
