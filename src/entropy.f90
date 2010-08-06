@@ -3447,7 +3447,6 @@ module Entropy
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines
 !
-!
 !  24-aug-09/bing: moved from dss_dt to here
 !
       use Diagnostics, only: max_mn_name
@@ -3537,7 +3536,7 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  heat conduction
+!  In this routine general heat conduction profiles are being provided.
 !
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
@@ -3920,6 +3919,10 @@ module Entropy
 !***********************************************************************
     subroutine get_heat_cool_gravz (heat,p)
 !
+!  Subroutine to calculate the heat/cool term for gravity along the z direction.
+!
+!  17-jul-07/axel: coded
+!
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
       use Messages, only: fatal_error
@@ -3929,8 +3932,9 @@ module Entropy
       real, dimension (nx) :: heat,prof
       real :: zbot,ztop
       intent(in) :: p
-! subroutine to calculate the heat/cool term for gravity along the 
-! z direction.
+!
+!  Define top and bottom positions of the box
+!
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
 !
@@ -3940,7 +3944,9 @@ module Entropy
       prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
            /(sqrt(pi/2.)*wheat*Lx*Ly)
       heat = luminosity*prof
+!
 !  Smoothly switch on heating if required.
+!
       if ((ttransient>0) .and. (t<ttransient)) then
          heat = heat * t*(2*ttransient-t)/ttransient**2
       endif
@@ -3976,6 +3982,18 @@ module Entropy
 !***********************************************************************
     subroutine get_heat_cool_gravr (heat,p)
 !
+!  Subroutine to calculate the heat/cool term for radial gravity
+!  in cartesian and cylindrical coordinate, used in 'star-in-box' type of
+!  simulations (including the sample run of geodynamo).
+!  Note that this may actually work for the spherical coordinate too 
+!  because p%r_mn is set to be the correct quantity for each coordinate 
+!  system in subroutine grid. But the spherical part has not been tested
+!  in spherical coordinates. At present (May 2010) get_heat_cool_gravr_spherical is 
+!  recommended for the spherical coordinates. 
+!  normalised central heating profile so volume integral = 1
+!
+!  13-sep-07/boris: coded
+!
       use IO, only: output_pencil
       use Messages, only: fatal_error
       use Sub, only: step
@@ -3985,15 +4003,7 @@ module Entropy
       real, dimension (nx) :: heat,prof,theta_profile
 !      real :: zbot,ztop
       intent(in) :: p
-! subroutine to calculate the heat/cool term for radial gravity
-! in cartesian and cylindrical coordinate, used in 'star-in-box' type of
-! simulations (including the sample run of geodynamo ) 
-! Note that this may actually work for the spherical coordinate too 
-! because p%r_mn is set to be the correct quantity for each coordinate 
-! system in subroutine grid. But the spherical part has not been tested
-! in spherical coordinates. At present (May 2010) get_heat_cool_gravr_spherical is 
-! recommended for the spherical coordinates. 
-!  normalised central heating profile so volume integral = 1
+!
       if (nzgrid == 1) then
          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
       else
@@ -4062,7 +4072,7 @@ module Entropy
 !  This is the one being used in the solar convection runs with a cooling
 !  layer. 
 !
-!  DOCUMENT ME!
+!   1-sep-08/dhruba: coded
 !
       use IO, only: output_pencil
       use Messages, only: fatal_error
@@ -4122,7 +4132,7 @@ module Entropy
 !
 !  This is equivalent to the revious rutine.
 !
-!  DOCUMENT ME!
+!   4-aug-10/gustavo: coded
 !
       use IO, only: output_pencil
       use Messages, only: fatal_error
@@ -4181,7 +4191,7 @@ module Entropy
 !  Assume a linearly increasing reference profile.
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
-!  DOCUMENT ME!
+!  18-may-10/bing: coded
 !
       use Messages, only:fatal_error
 !
