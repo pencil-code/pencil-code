@@ -1992,9 +1992,9 @@ module Entropy
           call mpibcast_real(fmpi1,1,ncpus-1)
           cs2top=fmpi1(1)
 !
-         endif
-       enddo
-     enddo
+        endif
+      enddo
+      enddo
 !
       if (lroot) print*, 'Galactic-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
@@ -3252,7 +3252,6 @@ module Entropy
 !
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      !real, dimension (nx,3) :: glnT,glnThcond !,glhc
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond
