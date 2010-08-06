@@ -244,7 +244,8 @@ module Entropy
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_entropy','there was a problem getting lpressuregradient_gas')
+      if (ierr/=0) call fatal_error('register_entropy', &
+          'there was a problem getting lpressuregradient_gas')
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -262,7 +263,6 @@ module Entropy
       use FArrayManager
       use Initcond
       use Gravity, only: gravz, g0, compute_gravity_star
-      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -369,10 +369,10 @@ module Entropy
               Fbot=0.
             endif
           endif
-          if (hcond0*hcond1 /= 0.) then
+          if (hcond0*hcond1/=0.0) then
             FbotKbot=Fbot/(hcond0*hcond1)
           else
-            FbotKbot=0.
+            FbotKbot=0.0
           endif
 !
 !  Calculate Ftop if it has not been set in run.in.
@@ -386,10 +386,10 @@ module Entropy
               Ftop=0.
             endif
           endif
-          if (hcond0*hcond2 /= 0.) then
+          if (hcond0*hcond2/=0.0) then
             FtopKtop=Ftop/(hcond0*hcond2)
           else
-            FtopKtop=0.
+            FtopKtop=0.0
           endif
 !
         else
@@ -488,8 +488,9 @@ module Entropy
             endif
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
-!         set up cooling parameters for spherical shell in terms of
-!         sound speeds
+!
+!  Set up cooling parameters for spherical shell in terms of sound speeds
+!
           call get_soundspeed(log(TT_ext),cs2_ext)
           call get_soundspeed(log(TT_int),cs2_int)
           cs2cool=cs2_ext
@@ -506,7 +507,9 @@ module Entropy
           cs2cool=cs20
           cs2_ext=cs20
           if (rcool==0.) rcool=r_ext
-          ! compute the gravity profile inside the star
+!
+!  Compute the gravity profile inside the star.
+!
           star_cte=(mpoly0+1.)/hcond0*gamma_m1/gamma
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
@@ -567,7 +570,7 @@ module Entropy
 !
       lnothing=.false.
 !
-!  select which radiative heating we are using
+!  Select which radiative heating we are using.
 !
       if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
@@ -668,8 +671,8 @@ module Entropy
 !  compute hcond and glhc and put the results in global arrays.
 !
       if (lhcond_global) then
-        call farray_register_auxiliary("hcond",iglobal_hcond)
-        call farray_register_auxiliary("glhc",iglobal_glhc,vector=3)
+        call farray_register_auxiliary('hcond',iglobal_hcond)
+        call farray_register_auxiliary('glhc',iglobal_glhc,vector=3)
         if (coord_system=='spherical' .or. lconvection_gravx) then
           do q=n1,n2; do m=m1,m2
             call read_hcond(hcond,glhc)
@@ -702,59 +705,59 @@ module Entropy
 !
       if (borderss/='nothing') call request_border_driving()
 !
-! Shared variables
+!  Shared variables.
 !
       call put_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting hcond0")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcond0')
       call put_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting hcond1")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcond1')
       call put_shared_variable('hcondxbot',hcondxbot,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting hcondxbot")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcondxbot')
       call put_shared_variable('hcondxtop',hcondxtop,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting hcondxtop")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcondxtop')
       call put_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting Fbot")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting Fbot')
       call put_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting Ftop")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting Ftop')
       call put_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting FbotKbot")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting FbotKbot')
       call put_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting FtopKtop")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting FtopKtop')
       call put_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting chi")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting chi')
       call put_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting chi_t")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting chi_t')
       call put_shared_variable('chi_th',chi_th,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting chi_th")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting chi_th')
       call put_shared_variable('chi_rho',chi_rho,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting chi_rho")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting chi_rho')
       call put_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting lmultilayer")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lmultilayer')
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting lcalc_heatcond_constchi")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lcalc_heatcond_constchi')
       call put_shared_variable('lheatc_chitherm',lheatc_chitherm,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting lcalc_heatcond_chitherm")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lcalc_heatcond_chitherm')
       call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting lcalc_heatcond_sqrtrhochiconst")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lcalc_heatcond_sqrtrhochiconst')
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
-           "there was a problem when putting lviscosity_heat")
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lviscosity_heat')
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -945,11 +948,10 @@ module Entropy
 !  Only makes sense if both initlnrho=initss='isentropic-star'
 !
             if (.not. ldensity) &
-!  BEWARNED: isentropic star requires initlnrho=initss=isentropic-star
-                 call fatal_error('isentropic-star','requires density.f90')
+                call fatal_error('isentropic-star','requires density.f90')
             if (lgravr) then
               if (lroot) print*, &
-                   'init_lnrho: isentropic star with isothermal atmosphere'
+                  'init_lnrho: isentropic star with isothermal atmosphere'
               do n=n1,n2; do m=m1,m2
                 r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
                 call potential(POT=pot,POT0=pot0,RMN=r_mn) ! gravity potential
@@ -966,13 +968,13 @@ module Entropy
                   call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
                   cs2_ext   = cs20*(1 - gamma_m1*(pot_ext-pot0)/cs20)
 !
-!  Make sure init_lnrho (or start.in) has already set cs2cool:
+!  Make sure init_lnrho (or start.in) has already set cs2cool.
 !
-                  if (cs2cool == 0) &
-                       call fatal_error('init_ss',"inconsistency - cs2cool can't be 0")
-                  ss_ext = 0. + log(cs2cool/cs2_ext)
+                  if (cs2cool==0.0) call fatal_error('init_ss', &
+                      'inconsistency - cs2cool ca not be 0')
+                  ss_ext = 0.0 + log(cs2cool/cs2_ext)
                   where (pot <= pot_ext) ! isentropic for r<r_ext
-                    f(l1:l2,m,n,iss) = 0.
+                    f(l1:l2,m,n,iss) = 0.0
                   elsewhere           ! isothermal for r>r_ext
                     f(l1:l2,m,n,iss) = ss_ext + gamma_m1*(pot-pot_ext)/cs2cool
                   endwhere
@@ -1169,7 +1171,7 @@ module Entropy
 !***********************************************************************
     subroutine blob_radeq(ampl,f,i,radius,xblob,yblob,zblob)
 !
-!  add blob-like perturbation in radiative pressure equilibrium
+!  Add blob-like perturbation in radiative pressure equilibrium.
 !
 !   6-may-07/axel: coded
 !
@@ -1178,7 +1180,7 @@ module Entropy
       real :: ampl,radius,x01,y01,z01
       integer :: i
 !
-!  single  blob
+!  Single blob.
 !
       if (present(xblob)) then
         x01 = xblob
@@ -1252,8 +1254,8 @@ module Entropy
           tmp = ssint + (1-mpoly*gamma_m1)/gamma*log(tmp)
         endif
 !
-! smoothly blend the old value (above zblend) and the new one (below
-! zblend) for the two regions:
+!  Smoothly blend the old value (above zblend) and the new one (below
+!  zblend) for the two regions.
 !
         f(l1:l2,m,n,iss) = stp(n)*f(l1:l2,m,n,iss)  + (1-stp(n))*tmp
 !
@@ -1295,7 +1297,7 @@ module Entropy
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
       integer :: isoth
 !
-!  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+!  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz.
 !
       stp = step(z,zblend,widthss)
       nu_epicycle2 = nu_epicycle**2
@@ -1315,8 +1317,8 @@ module Entropy
           tmp = ssint + (1-mpoly*gamma_m1)/gamma*log(tmp)
         endif
 !
-! smoothly blend the old value (above zblend) and the new one (below
-! zblend) for the two regions:
+!  Smoothly blend the old value (above zblend) and the new one (below
+!  zblend) for the two regions.
 !
         f(l1:l2,m,n,iss) = stp(n)*f(l1:l2,m,n,iss)  + (1-stp(n))*tmp
       enddo; enddo
@@ -1355,7 +1357,8 @@ module Entropy
       real :: cs2_,lnrho,lnrho_m
 !
       if (.not. lgravz) then
-        call fatal_error("hydrostatic_isentropic","Currently only works for vertical gravity field")
+        call fatal_error('hydrostatic_isentropic', &
+            'Currently only works for vertical gravity field')
       endif
 !
 !  In case this processor is not located at the very bottom perform
@@ -1417,7 +1420,7 @@ module Entropy
 !
       if (headtt) print*,'init_ss : mixinglength stratification'
       if (.not.lgravz) then
-        call fatal_error("mixinglength","works only for vertical gravity")
+        call fatal_error('mixinglength','works only for vertical gravity')
       endif
 !
 !  Do the calculation on all processors, and then put the relevant piece
@@ -1504,7 +1507,6 @@ module Entropy
 !
       use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
-      use Mpicomm, only:stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
@@ -1535,7 +1537,7 @@ module Entropy
 !
         enddo
       elseif (lcylindrical_coords) then
-        call stop_it('shell_ss:not valid in cylindrical coordinates')
+        call fatal_error('shell_ss','not valid in cylindrical coordinates')
       else
         do imn=1,ny*nz
           n=nn(imn)
@@ -1761,7 +1763,8 @@ module Entropy
           g_C = g_C_cgs/unit_velocity*unit_time
           g_D = g_D_cgs/unit_length
       else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+        call fatal_error('initialize_gravity', &
+            'SI unit conversions not inplemented')
       endif
 !
 !  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
@@ -1833,7 +1836,8 @@ module Entropy
           GammaUV = GammaUV_cgs * real(unit_length/unit_velocity**3)
           unit_Lambda = unit_velocity**2 / unit_density / unit_time
       else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+        call fatal_error('initialize_gravity', &
+            'SI unit conversions not inplemented')
       endif
 !
 !  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
@@ -1921,21 +1925,22 @@ module Entropy
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-          g_A = g_A_cgs/unit_velocity*unit_time
-          g_C = g_C_cgs/unit_velocity*unit_time
-          g_D = g_D_cgs/unit_length
-          g_B = g_B_cgs/unit_length
-      if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        g_A = g_A_cgs/unit_velocity*unit_time
+        g_C = g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_cgs/unit_length
+        g_B = g_B_cgs/unit_length
+        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
 !          T0hs=7645./unit_temperature
-      if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
 !          rho0ts=1.83e-24/unit_density! chosen to match GammaUV=0.015cgs z=0
-          T_k=sqrt(2.)
+        T_k=sqrt(2.0)
 !
 !  Chosen to keep TT as low as possible up to boundary matching rho for hs
 !  equilibrium
 !
       else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+        call fatal_error('initialize_gravity', &
+            'SI unit conversions not inplemented')
       endif
 !
 !  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
@@ -1946,8 +1951,8 @@ module Entropy
 !
       call getmu(f,muhs)
 !
-      if (lroot) print*, &
-         'Gressel-hs: hydrostatic & thermal equilibrium density and entropy profiles'
+      if (lroot) print*, 'Gressel-hs: '// &
+          'hydrostatic thermal equilibrium density and entropy profiles'
       do n=n1,n2
       do m=m1,m2
         erfB=g_B
@@ -2801,22 +2806,21 @@ module Entropy
       select case (borderss)
 !
       case ('zero','0')
-         f_target=0.
+        f_target=0.0
       case ('constant')
-         f_target=ss_const
+        f_target=ss_const
       case ('initial-condition')
         call set_border_initcond(f,iss,f_target)
       case ('nothing')
-         if (lroot.and.ip<=5) &
-              print*,"set_border_entropy: borderss='nothing'"
+        if (lroot.and.ip<=5) &
+            print*, "set_border_entropy: borderss='nothing'"
       case default
-         write(unit=errormsg,fmt=*) &
-              'set_border_entropy: No such value for borderss: ', &
-              trim(borderss)
-         call fatal_error('set_border_entropy',errormsg)
+        write(unit=errormsg,fmt=*) &
+            'set_border_entropy: No such value for borderss: ', trim(borderss)
+        call fatal_error('set_border_entropy',errormsg)
       endselect
 !
-      if (borderss /= 'nothing') then
+      if (borderss/='nothing') then
         call border_driving(f,df,p,f_target,iss)
       endif
 !
@@ -3489,9 +3493,10 @@ module Entropy
 !
       if (headtt) print*,'enter heatcond hubeny'
 !
-      if (pretend_lnTT) call fatal_error("calc_heatcond_hubeny","not implemented when pretend_lnTT = T")
+      if (pretend_lnTT) call fatal_error('calc_heatcond_hubeny', &
+          'not implemented when pretend_lnTT = T')
 !
-      kappa0_cgs=2e-6  !cm2/g
+      kappa0_cgs=2.0e-6  !cm2/g
       kappa0=kappa0_cgs*unit_density/unit_length
       kappa=kappa0*p%TT**2
 !
@@ -3500,9 +3505,10 @@ module Entropy
 !  sigma, the column density, sigma=rho*2*H.
 !
       if (nzgrid==1) then
-         tau = .5*kappa*p%rho
+        tau = 0.5*kappa*p%rho
       else
-         call fatal_error("calc_heat_hubeny","opacity not yet implemented for 3D")
+        call fatal_error('calc_heat_hubeny', &
+            'opacity not yet implemented for 3D')
       endif
 !
 !  Analytical gray description of Hubeny (1990).
@@ -3547,15 +3553,15 @@ module Entropy
       intent(out) :: df
 !
 !PJK: tentatively allowed lnTT to be used
-!      if (pretend_lnTT) call fatal_error("calc_heatcond","not implemented when pretend_lnTT = T")
+!      if (pretend_lnTT) call fatal_error('calc_heatcond','not implemented when pretend_lnTT = T')
 !
 !  Heat conduction / entropy diffusion
 !
       if (hcond0 == 0) then
-        chix = 0
-        thdiff = 0
-        hcond = 0
-        glhc = 0
+        chix = 0.0
+        thdiff = 0.0
+        hcond = 0.0
+        glhc = 0.0
       else
         if (headtt) then
           print*,'calc_heatcond: hcond0=',hcond0
@@ -3570,7 +3576,7 @@ module Entropy
 !  For vertical geometry, we only need to calculate this
 !  for each new value of z -> speedup by about 8% at 32x32x64.
 !
-          if (z(n) /= z_prev) then
+          if (z(n)/=z_prev) then
             if (lhcond_global) then
               hcond=f(l1:l2,m,n,iglobal_hcond)
               glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
@@ -3578,7 +3584,7 @@ module Entropy
               call heatcond(hcond,p)
               call gradloghcond(glhc,p)
             endif
-            if (chi_t/=0) then
+            if (chi_t/=0.0) then
               call chit_profile(chit_prof)
               call gradlogchit_profile(glchit_prof)
             endif
@@ -3592,7 +3598,7 @@ module Entropy
             call heatcond(hcond,p)
             call gradloghcond(glhc,p)
           endif
-          if (chi_t/=0) then
+          if (chi_t/=0.0) then
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
@@ -3649,7 +3655,8 @@ module Entropy
         if (headtt) then
           print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
           if (hcond0 /= 0) then
-            call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
+            call warning('calc_heatcond', &
+                'hcond0 and chi_t combined do not seem to make sense')
           endif
         endif
 !
@@ -3673,11 +3680,14 @@ module Entropy
 !  in spherical coordinates. Here we assume axisymmetry so all off-diagonals
 !  involving phi-indices are neglected.
 !
-      if (chit_aniso/=0. .and. lspherical_coords) then
+      if (chit_aniso/=0.0 .and. lspherical_coords) then
         if (headtt) then
-          print*,'calc_headcond: anisotropic "turbulent" entropy diffusion: chit_aniso=',chit_aniso
-          if (hcond0 /= 0) then
-            call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
+          print*, 'calc_headcond: '// &
+              'anisotropic "turbulent" entropy diffusion: chit_aniso=', &
+               chit_aniso
+          if (hcond0/=0.0) then
+            call warning('calc_heatcond', &
+                'hcond0 and chi_t combined do not seem to make sense')
           endif
         endif
 !
@@ -3730,7 +3740,7 @@ module Entropy
 !  Most of these should trigger the following trap.
 !
         if (notanumber(thdiff)) then
-          print*, 'calc_heatcond: m,n,y(m),z(n)=',m,n,y(m),z(n)
+          print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
           call fatal_error('calc_heatcond','NaNs in thdiff')
         endif
       endif
@@ -3785,8 +3795,8 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (pretend_lnTT) call fatal_error( &
-          'calc_heat_cool','not implemented when pretend_lnTT = T')
+      if (pretend_lnTT) call fatal_error('calc_heat_cool', &
+          'not implemented when pretend_lnTT = T')
 !
 !  Vertical gravity determines some heat/cool models.
 !
@@ -3952,7 +3962,7 @@ module Entropy
          prof = step(spread(z(n),1,nx),z2,wcool)
       case ('cubic_step')
          prof = cubic_step(spread(z(n),1,nx),z2,wcool)
-     case default
+      case default
         call fatal_error('get_heat_cool_gravz','please select a cooltype')
       endselect
       heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -4236,7 +4246,8 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (pretend_lnTT) call fatal_error("calc_heat_cool_RTV","not implemented when pretend_lnTT = T")
+      if (pretend_lnTT) call fatal_error('calc_heat_cool_RTV', &
+          'not implemented when pretend_lnTT = T')
 !
 !     All is in SI units and has to be rescaled to PENCIL units.
 !
@@ -4317,7 +4328,8 @@ module Entropy
       intent(in) :: p
       intent(out) :: df
 !
-      if (pretend_lnTT) call fatal_error("calc_tau_ss_exterior","not implemented when pretend_lnTT = T")
+      if (pretend_lnTT) call fatal_error('calc_tau_ss_exterior', &
+          'not implemented when pretend_lnTT = T')
 !
       if (headtt) print*,'calc_tau_ss_exterior: tau=',tau_ss_exterior
       if (z(n)>zgrav) then
@@ -4732,7 +4744,8 @@ module Entropy
 !
       character (len=*), parameter :: lnT_dat = 'driver/b_lnT.dat'
 !
-      if (pretend_lnTT) call fatal_error("newton_cool","not implemented when pretend_lnTT = T")
+      if (pretend_lnTT) call fatal_error('newton_cool', &
+          'not implemented when pretend_lnTT = T')
 !
 !  Initial temperature profile is given in ln(T) in [K] over z in [Mm].
 !
@@ -5226,7 +5239,6 @@ module Entropy
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
                                  gamma_m1, lnrho0
       use SharedVariables, only: get_shared_variable
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss, z_mn
@@ -5240,8 +5252,8 @@ module Entropy
       call get_cp1(cp1)
       if (lcylindrical_coords) then
         call get_shared_variable('gravx', gravx, ierr)
-        if (ierr/=0) call stop_it("single_polytrope: "//&
-           "there was a problem when getting gravx")
+        if (ierr/=0) call fatal_error('single_polytrope', &
+            'there was a problem when getting gravx')
         beta=cp1*gamma/gamma_m1*gravx/(mpoly0+1)
       else
         beta=cp1*gamma/gamma_m1*gravz/(mpoly0+1)
@@ -5281,8 +5293,6 @@ module Entropy
 !
 !  11-jun-09/pjk: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension(nx) :: hcond
       real, dimension(nx,3) :: glhc
       integer, parameter :: ntotal=nx*nprocx
@@ -5302,7 +5312,7 @@ module Entropy
         if (exist) then
           open(31,file=trim(directory)//'/hcond_glhc.ascii')
         else
-          call stop_it('read_hcond: *** error *** - no input file')
+          call fatal_error('read_hcond','*** error *** - no input file')
         endif
       endif
 !
@@ -5311,7 +5321,7 @@ module Entropy
       do n=1,ntotal
         read(31,*,iostat=stat) var1,var2
         if (stat>=0) then
-          if (ip<5) print*,"hcond, glhc: ",var1,var2
+          if (ip<5) print*,'hcond, glhc: ',var1,var2
           tmp1(n)=var1
           tmp2(n)=var2
         else
