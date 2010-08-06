@@ -642,7 +642,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
 
-	cut_height = max([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
+	cut_height = min([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
 	LOW     = WIDGET_BASE (BASE, /row)
 	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT1', xsize=num_y*bin_y, ysize=cut_height)
 	WIDGET_CONTROL, tmp, /REALIZE
@@ -650,7 +650,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT2', xsize=num_x*bin_x, ysize=cut_height)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_y  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_z*bin_z, ysize=cut_height)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_z*bin_z>128, ysize=cut_height)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_z  = !d.window
 
