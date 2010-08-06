@@ -1996,7 +1996,7 @@ module Entropy
       enddo
       enddo
 !
-      if (lroot) print*, 'Galactic-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
+      if (lroot) print*, 'Galactic-hs: cs2bot=', cs2bot, ' cs2top=', cs2top
 !
     endsubroutine galactic_hs
 !***********************************************************************
