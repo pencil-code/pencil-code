@@ -22,10 +22,8 @@ module Entropy
   use EquationOfState, only: gamma, gamma_m1, gamma_inv, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
-  use Interstellar
   use Messages
   use Sub, only: keep_compiler_quiet
-  use Viscosity
 !
   implicit none
 !
@@ -193,9 +191,9 @@ module Entropy
   integer :: idiag_fturbrxy=0   ! DIAG_DOC: $\left<\varrho T \chi_{ri} \nabla_i
                                 ! DIAG_DOC: s\right>_{z}$ \quad(radial part
                                 ! DIAG_DOC: of anisotropic turbulent heat flux)
-  integer :: idiag_fturbthxy=0  ! DIAG_DOC: $\left<\varrho T \chi_{\theta i} 
+  integer :: idiag_fturbthxy=0  ! DIAG_DOC: $\left<\varrho T \chi_{\theta i}
                                 ! DIAG_DOC: \nabla_i s\right>_{z}$ \quad
-                                ! DIAG_DOC: (latitudinal part of anisotropic 
+                                ! DIAG_DOC: (latitudinal part of anisotropic
                                 ! DIAG_DOC: turbulent heat flux)
   integer :: idiag_ssmx=0       ! DIAG_DOC:
   integer :: idiag_ssmy=0       ! DIAG_DOC:
@@ -229,8 +227,8 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager
-      use SharedVariables
+      use FArrayManager, only: farray_register_pde
+      use SharedVariables, only: get_shared_variable
 !
       integer :: ierr
 !
@@ -261,8 +259,8 @@ module Entropy
                                  mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma_m1
       use FArrayManager
-      use Initcond
       use Gravity, only: gravz, g0, compute_gravity_star
+      use Initcond
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -817,16 +815,16 @@ module Entropy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use Sub
-      use Gravity
-      use Initcond
-      use General, only: chn
-      use InitialCondition, only: initial_condition_ss
       use EquationOfState,  only: isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
                                 eosperturb
+      use General, only: chn
+      use Gravity
+      use Initcond
+      use InitialCondition, only: initial_condition_ss
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1204,8 +1202,8 @@ module Entropy
 !             bottom on exit
 !  cs2int  -- same for cs2
 !
-      use Sub, only: step
       use Gravity, only: gravz
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: stp
@@ -1268,8 +1266,8 @@ module Entropy
 !
 !  24-jun-03/ulf:  coded
 !
-      use Sub, only: step
       use Gravity, only: gravz, nu_epicycle
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: stp
@@ -1328,7 +1326,7 @@ module Entropy
 !
 !  20-feb-04/tobi: coded
 !
-      use EquationOfState, only: eoscalc,ilnrho_ss
+      use EquationOfState, only: eoscalc, ilnrho_ss
       use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1384,10 +1382,10 @@ module Entropy
 !  12-jul-05/axel: coded
 !  17-Nov-05/dintrans: updated using strat_MLT
 !
-      use Gravity, only: z1
-      use General, only: safe_character_assign
       use EquationOfState, only: gamma_m1, rho0, lnrho0, &
                                  cs20, cs2top, eoscalc, ilnrho_lnTT
+      use General, only: safe_character_assign
+      use Gravity, only: z1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: tempm,lnrhom
@@ -1484,8 +1482,8 @@ module Entropy
 !  20-oct-03/dave -- coded
 !  21-aug-08/dhruba: added spherical coordinates
 !
-      use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT,r_mn
@@ -1583,8 +1581,8 @@ module Entropy
 !  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
 !  generalised for cp/=1.
 !
-      use Gravity, only: gravz, zinfty
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use Gravity, only: gravz, zinfty
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -1629,8 +1627,8 @@ module Entropy
 !
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
-      use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_pp, getmu, eosperturb
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
@@ -1725,8 +1723,8 @@ module Entropy
 !
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
-      use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eosperturb, getmu
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp,lnrho,ss
@@ -1794,8 +1792,8 @@ module Entropy
 !
 !   22-mar-10/fred adapted from galactic-hs,ferriere-hs
 !
-      use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eoscalc, ilnrho_lnTT
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,lnrho,ss,heat,TT,lambda,fbeta,flamk,lnTT
@@ -1888,8 +1886,8 @@ module Entropy
 !
 !   22-mar-10/fred adapted from galactic-hs,ferriere-hs
 !
-      use Mpicomm, only: mpibcast_real
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
+      use Mpicomm, only: mpibcast_real
       use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1964,8 +1962,8 @@ module Entropy
 !
 !   22-jan-10/fred
 !
-      use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eosperturb
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp,lnrho,ss
@@ -2383,9 +2381,9 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState
-      use Sub
-      use WENO_transport
+      use EquationOfState, only: gamma_inv
+      use Sub, only: u_dot_grad, grad
+      use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2440,9 +2438,12 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma_inv, cs0
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
+                                 gamma_inv, cs0
+      use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_entropy
       use Sub
+      use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2728,8 +2729,8 @@ module Entropy
 !
 !  17-apr-10/axel: adapted from calc_lmagnetic_pars
 !
+      use Deriv, only: der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
-      use Deriv, only: der_z,der2_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: nxy=nxgrid*nygrid
@@ -2771,7 +2772,7 @@ module Entropy
 !
 !  28-jul-06/wlad: coded
 !
-      use BorderProfiles, only: border_driving,set_border_initcond
+      use BorderProfiles, only: border_driving, set_border_initcond
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2928,7 +2929,7 @@ module Entropy
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
 !
-!     
+!
       thmin=dxmax*0.5
       thchi=max(chi_th*(exp(p%lnTT))**0.5,thmin)
       if (pretend_lnTT) then
@@ -3331,9 +3332,9 @@ module Entropy
 !
 !  10-feb-04/bing: coded
 !
-      use EquationOfState, only: gamma,gamma_m1
-      use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
+      use EquationOfState, only: gamma, gamma_m1
       use IO, only: output_pencil
+      use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
@@ -3406,7 +3407,7 @@ module Entropy
 !  24-aug-09/bing: moved from dss_dt to here
 !
       use Diagnostics, only: max_mn_name
-      use Sub, only: tensor_diffusion_coef,dot,dot2
+      use Sub, only: tensor_diffusion_coef, dot, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: cosbgT,gT2,b2,rhs
@@ -3449,7 +3450,7 @@ module Entropy
 !
 !  07-feb-07/wlad+heidar : coded
 !
-      use EquationOfState, only: gamma,gamma_m1
+      use EquationOfState, only: gamma, gamma_m1
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
@@ -3791,8 +3792,8 @@ module Entropy
       if ((lgravr.and.(wheat/=0)) .and.(.not. lspherical_coords)) &
           call get_heat_cool_gravr(heat,p)
 !
-!  (also see the comments inside the above subroutine to apply it to 
-!  spherical coordinates.) 
+!  (also see the comments inside the above subroutine to apply it to
+!  spherical coordinates.)
 !
 !  Spherical gravity in spherical coordinate case:
 !  heat at centre, cool outer layers.
@@ -3800,7 +3801,7 @@ module Entropy
       if (lgravx.and.lspherical_coords) &
           call get_heat_cool_gravx_spherical(heat,p)
 !
-!  In Cartesian coordinates, but with the gravity in the 
+!  In Cartesian coordinates, but with the gravity in the
 !  x-direction the same module may be used.
 !
       if (lconvection_gravx) call get_heat_cool_gravx_cartesian(heat,p)
@@ -3823,7 +3824,7 @@ module Entropy
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !
-      if (tau_cor>0) call get_heat_cool_corona(heat,p) 
+      if (tau_cor>0) call get_heat_cool_corona(heat,p)
 !
 !  Add heating and cooling to a reference temperature in a buffer
 !  zone at the z boundaries. Only regions in |z| > zheat_buffer are affected.
@@ -3863,11 +3864,11 @@ module Entropy
         prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
       endselect
 !
-!  Note: the cooltype 'Temp' used below was introduced by Axel for the 
+!  Note: the cooltype 'Temp' used below was introduced by Axel for the
 !  aerosol runs. Although this 'Temp' does not match with the cooltype
-!  'Temp' used in other parts of this subroutine. I have introduced 
+!  'Temp' used in other parts of this subroutine. I have introduced
 !  'Temp2' which is the same as the 'Temp' elsewhere. Later runs
-!  will clarify this. - Dhruba 
+!  will clarify this. - Dhruba
 !
      select case (cooltype)
      case ('Temp')
@@ -3949,11 +3950,11 @@ module Entropy
 !  Subroutine to calculate the heat/cool term for radial gravity
 !  in cartesian and cylindrical coordinate, used in 'star-in-box' type of
 !  simulations (including the sample run of geodynamo).
-!  Note that this may actually work for the spherical coordinate too 
-!  because p%r_mn is set to be the correct quantity for each coordinate 
+!  Note that this may actually work for the spherical coordinate too
+!  because p%r_mn is set to be the correct quantity for each coordinate
 !  system in subroutine grid. But the spherical part has not been tested
 !  in spherical coordinates. At present (May 2010)
-!  get_heat_cool_gravr_spherical is recommended for the spherical coordinates. 
+!  get_heat_cool_gravr_spherical is recommended for the spherical coordinates.
 !  Normalised central heating profile so volume integral = 1
 !
 !  13-sep-07/boris: coded
@@ -4030,9 +4031,9 @@ module Entropy
 !
 !  Subroutine to calculate the heat/cool term in spherical coordinates
 !  with gravity along x direction. At present (May 2010) this is the
-!  recommended routine to use heating and cooling in spherical coordinates. 
+!  recommended routine to use heating and cooling in spherical coordinates.
 !  This is the one being used in the solar convection runs with a cooling
-!  layer. 
+!  layer.
 !
 !   1-sep-08/dhruba: coded
 !
@@ -4054,9 +4055,9 @@ module Entropy
 !
 !  2-D heating profile
 !
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  
+        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)
       else
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) 
+        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5)
 !
 !  3-D heating profile
 !
@@ -4074,7 +4075,7 @@ module Entropy
 !
 !  Heating/cooling at shell boundaries.
 !
-      case ('shell')          
+      case ('shell')
         if (rcool==0.0) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -4089,7 +4090,7 @@ module Entropy
     subroutine get_heat_cool_gravx_cartesian(heat,p)
 !
 !  Subroutine to calculate the heat/cool term in cartesian coordinates
-!  with gravity along x direction. 
+!  with gravity along x direction.
 !
 !  This is equivalent to the revious rutine.
 !
@@ -4110,7 +4111,7 @@ module Entropy
 !  Normalised central heating profile so volume integral = 1.
 !
       if (nzgrid == 1) then
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)  
+        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.)
 !
 !  2-D heating profile.
 !
@@ -4118,7 +4119,7 @@ module Entropy
 !
 !  3-D heating profile.
 !
-        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5) 
+        prof = exp(-0.5*(x(l1:l2)/wheat)**2) * (2*pi*wheat**2)**(-1.5)
       endif
       heat = luminosity*prof
       if (headt .and. lfirst .and. ip<=9) &
@@ -4133,7 +4134,7 @@ module Entropy
 !
 !  Heating/cooling at shell boundaries.
 !
-      case ('top_layer')          
+      case ('top_layer')
         if (rcool==0.) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -4331,8 +4332,8 @@ module Entropy
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
         idiag_uyTTmxy=0; idiag_uzTTmxy=0;
-        idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; 
-        idiag_fradxy_Kprof=0; idiag_fconvxy=0; 
+        idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
+        idiag_fradxy_Kprof=0; idiag_fconvxy=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0
       endif
 !
@@ -4510,8 +4511,8 @@ module Entropy
 !
 !  12-jul-05/axel: coded
 !
-      use Sub, only: cubic_step, cubic_der_step
       use Gravity, only: z1, z2
+      use Sub, only: cubic_step, cubic_der_step
 !
       real, dimension (nz,3) :: zprof_glhc
       real, dimension (nz) :: zprof_hcond
@@ -4544,8 +4545,8 @@ module Entropy
 !  18-sep-2002/axel: added lmultilayer switch
 !  09-aug-2006/dintrans: added a radial profile hcond(r)
 !
-      use Sub, only: step
       use Gravity, only: z1, z2
+      use Sub, only: step
 !
       real, dimension (nx) :: hcond
       type (pencil_case)   :: p
@@ -4577,8 +4578,8 @@ module Entropy
 !
 !  23-jan-2002/wolf: coded
 !
-      use Sub, only: der_step
       use Gravity, only: z1, z2
+      use Sub, only: der_step
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx)   :: dhcond
@@ -4623,8 +4624,8 @@ module Entropy
 !  23-jan-2002/wolf: coded
 !  18-sep-2002/axel: added lmultilayer switch
 !
-      use Sub, only: step
       use Gravity, only: z1, z2
+      use Sub, only: step
 !
       real, dimension (nx) :: chit_prof,z_mn
 !
@@ -4652,8 +4653,8 @@ module Entropy
 !
 !  23-jan-2002/wolf: coded
 !
-      use Sub, only: der_step
       use Gravity, only: z1, z2
+      use Sub, only: der_step
 !
       real, dimension (nx,3) :: glchit_prof
       real, dimension (nx) :: z_mn
@@ -4685,7 +4686,7 @@ module Entropy
 !  15-dec-2004/bing: coded
 !  25-sep-2006/bing: updated, using external data
 !
-      use EquationOfState, only: lnrho0,gamma
+      use EquationOfState, only: lnrho0, gamma
       use Io, only:  output_pencil
       use Mpicomm, only: mpibcast_real
 !
@@ -4769,8 +4770,8 @@ module Entropy
 !  equations until rho=1 at the bottom of convection zone (z=z1)
 !  see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
-      use Gravity, only: z1,z2,gravz
       use EquationOfState, only: gamma, gamma_m1
+      use Gravity, only: z1, z2, gravz
 !
       real, dimension (nzgrid) :: zz, lnrhom, tempm
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
@@ -4841,9 +4842,9 @@ module Entropy
 !
 !  09-aug-06/dintrans: coded
 !
-      use Gravity, only: g0
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
                                  mpoly1, lnrho0, get_cp1
+      use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
@@ -5137,9 +5138,9 @@ module Entropy
 !
 !  17-mar-07/dintrans: coded
 !
+      use EquationOfState, only: lnrho0, cs20, gamma, gamma_m1, cs2top, &
+                                 cs2bot, get_cp1, eoscalc, ilnrho_TT
       use Gravity, only: gravz, g0
-      use EquationOfState, only: lnrho0,cs20,gamma,gamma_m1,cs2top,cs2bot, &
-                                 get_cp1,eoscalc,ilnrho_TT
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
@@ -5192,9 +5193,9 @@ module Entropy
 !
 !  06-sep-07/dintrans: coded a single polytrope of index mpoly0
 !
-      use Gravity, only: gravz, g0
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
                                  gamma_m1, lnrho0
+      use Gravity, only: gravz, g0
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
