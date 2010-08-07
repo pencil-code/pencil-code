@@ -76,7 +76,7 @@ program start
   use NeutralVelocity,  only: init_uun
   use Param_IO
   use Particles_main
-  use Polymer, only: init_pp
+  use Polymer,          only: init_poly
   use PScalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
   use Register
@@ -358,7 +358,7 @@ program start
     call init_ss        (f)
     call init_aa        (f)
     call init_lorenz_gauge (f)
-    call init_pp        (f)
+    call init_poly      (f)
     call init_aatest    (f)
     call init_uutest    (f)
     call init_rad       (f)

@@ -501,7 +501,7 @@ module Equ
 !
 !  Polymer evolution 
 !
-        if (lpolymer) call dpp_dt(f,df,p)
+        if (lpolymer) call dpoly_dt(f,df,p)
 !
 !  Testscalar evolution
 !

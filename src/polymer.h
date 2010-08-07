@@ -6,9 +6,9 @@
   public :: read_polymer_run_pars,  write_polymer_run_pars
   public :: rprint_polymer
   public :: get_slices_polymer
-  public :: init_pp
+  public :: init_poly
 
-  public :: dpp_dt
+  public :: dpoly_dt
 
   public :: calc_pencils_polymer
   public :: pencil_criteria_polymer

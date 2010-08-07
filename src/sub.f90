@@ -50,6 +50,7 @@ module Sub
   public :: gradf_upw1st
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
+  public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
   public :: dyadic2
   public :: cross, cross_mn
   public :: sum_mn, max_mn
@@ -494,6 +495,26 @@ module Sub
 !
     endsubroutine dot_mn
 !***********************************************************************
+    subroutine transpose_mn(a,b)
+!
+!  Transpose 3x3 pencil array, b=transpose(a), on pencil arrays
+!
+!   18-aug-10/dhruba: coded 
+!
+      real, dimension (nx,3,3) :: a,b
+!
+      intent(in) :: a
+      intent(out) :: b
+      integer :: i,j
+!
+      do i=1,3
+         do j=1,3
+            b(:,i,j) = a(:,j,i)
+         enddo
+      enddo
+!
+    endsubroutine transpose_mn
+!***********************************************************************
     subroutine vec_dot_3tensor(a,b,c,ladd)
 !
 !  Dot product of a vector with 3 tensor,
@@ -586,6 +607,26 @@ module Sub
       enddo
 !
     endsubroutine dot_mn_sm
+!***********************************************************************
+    subroutine dot_mn_vm(a,b,c)
+!
+!  Dot product, c=a.b, between pencil vector and pencil matrix.
+!
+!  10-oct-06/axel: coded
+!
+      real, dimension (nx,3)      :: a
+      real, dimension (nx,3,3) :: b
+      real, dimension (nx,3)   :: c
+      integer :: i
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        c(:,i)=a(:,1)*b(:,i,1)+a(:,2)*b(:,i,2)+a(:,3)*b(:,i,3)
+      enddo
+!
+    endsubroutine dot_mn_vm
 !***********************************************************************
     subroutine dot_0(a,b,c)
 !
@@ -1248,6 +1289,38 @@ module Sub
       endif
 !
     endsubroutine div_mn
+!***********************************************************************
+    subroutine div_mn_2tensor(aijk,bi,aij)
+!
+!  Calculate divergence from derivative matrix.
+!
+!  18-sep-04/axel: coded
+!  21-feb-07/axel: corrected spherical coordinates
+!  14-mar-07/wlad: added cylindrical coordinates
+!
+      real, dimension (nx,3,3,3) :: aijk
+      real, dimension (nx,3,3) :: aij
+      real, dimension (nx,3) :: bi
+!
+      intent(in) :: aijk,aij
+      intent(out) :: bi
+      integer :: i,j
+!
+      do i=1,3
+         bi(:,i)=aijk(:,i,1,1)+aijk(:,i,2,2)+aijk(:,i,3,3)
+      enddo
+!
+!  Adjustments for spherical coordinate system.
+!
+      if (lspherical_coords) then
+         call fatal_error('div_mn_2tensor','not impelmented in sph-coordinate')
+      endif
+!
+      if (lcylindrical_coords) then
+         call fatal_error('div_mn_2tensor','not impelmented in cyl-coordinate')
+      endif
+!
+    endsubroutine div_mn_2tensor
 !***********************************************************************
     subroutine curl_mn(aij,b,a)
 !
@@ -2246,7 +2319,7 @@ module Sub
 !
     endsubroutine u_dot_grad_vec
 !***********************************************************************
-    subroutine u_dot_grad_mat(f,k,gradM,u_dot_gradM)
+    subroutine u_dot_grad_mat(f,k,gradM,uu,ugradM,upwind)
 !
 !  u.grad(M)
 !  where M is a second rank matrix
@@ -2254,35 +2327,49 @@ module Sub
 !  dhruba: addapted from udotgradA
 !
       intent(in) :: f,k,gradM
-      intent(out) :: u_dot_gradM
+      intent(out) :: ugradM
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
-      real, dimension (nx,3,3) :: u_dot_gradM
+      real, dimension (nx,3,3) :: ugradM
       integer :: k
+      real, dimension (nx) :: tmp
+      integer :: i,j
+      logical, optional :: upwind
+!
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_mat','variable index is out of bounds')
+        return
+      endif
 !
 !  Upwind.
 !
-      uu=f(l1:l2,m,n,k:k+2)
-      call vec_dot_3tensor(uu,gradM,u_dot_gradM)
+      if (present(upwind)) then
+        call fatal_error('u_dot_grad_mat','unwinding not implemented')
+      else
+         do i=1,3
+            do j=1,3
+               call dot_mn(uu,gradM(:,i,j,:),tmp)
+               ugradM(:,i,j)=tmp
+            enddo
+         enddo
+      endif
 !
 !  Adjustments for spherical coordinate system.
-!  The following now works for general u.gradA .
+!  not implemented
 !
       if (lspherical_coords) then
-          call inevitably_fatal_error('u_dot_gradM', &
-            'spherical coordinates not implemented yet')
+         call fatal_error('u_dot_grad_mat','not implemented in sph-coordinates')
       endif
 !
-!  The following now works for general u.gradA .
+!  Cylindrical coordinates: not implemented
 !
       if (lcylindrical_coords) then
-          call inevitably_fatal_error('u_dot_gradM', &
-            'cylindrical coordinates not implemented yet')
+         call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
       endif
 !
-    endsubroutine u_dot_grad_mat
+   endsubroutine u_dot_grad_mat
 !***********************************************************************
     subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind,ladd)
 !

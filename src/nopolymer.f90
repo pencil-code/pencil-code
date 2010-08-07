@@ -30,7 +30,7 @@ module Polymer
     subroutine register_polymer()
 !
 !  Initialise variables which should know that we solve for the vector
-!  potential: ipp, etc; increase nvar accordingly
+!  potential: ipoly, etc; increase nvar accordingly
 !
 !  14-Aug-08 : Dhruba
 !
@@ -52,7 +52,7 @@ module Polymer
 !
     endsubroutine initialize_polymer
 !***********************************************************************
-    subroutine init_pp(f)
+    subroutine init_poly(f)
 !
 !  Initialise polymer field; called from start.f90
 !
@@ -62,7 +62,7 @@ module Polymer
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine init_pp
+    endsubroutine init_poly
 !***********************************************************************
     subroutine pencil_criteria_polymer()
 !
@@ -98,7 +98,7 @@ module Polymer
 !
     endsubroutine calc_pencils_polymer
 !***********************************************************************
-    subroutine dpp_dt(f,df,p)
+    subroutine dpoly_dt(f,df,p)
 !
 !  Polymer evolution.
 !
@@ -110,7 +110,7 @@ module Polymer
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine dpp_dt
+    endsubroutine dpoly_dt
 !***********************************************************************
     subroutine read_polymer_init_pars(unit,iostat)
 !

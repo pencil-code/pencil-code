@@ -198,7 +198,12 @@ module Cdata
   integer :: nvar,naux,naux_com
   integer :: ilnrho=0, irho=0
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
-  integer :: ipp=0,irhs=0,iTTold=0
+  integer :: ipp,irhs=0,iTTold=0
+  integer :: ipoly=0
+  integer :: ip11=0,ip12=0,ip13=0
+  integer :: ip21=0,ip22=0,ip23=0
+  integer :: ip31=0,ip32=0,ip33=0
+  integer :: ipoly_fr=0
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
   integer :: iox=0,ioy=0,ioz=0
   integer :: ispecialvar=0
