@@ -67,7 +67,7 @@ module Polymer
       ipoly_fr=ipoly+6
 !
       if (lroot) call svn_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_polymer
 !***********************************************************************
@@ -164,19 +164,19 @@ module Polymer
 !
 !  If we consider backreaction from the polymer to the fluid.
 !
-      if(lpolyback)  then
-         lpenc_requested(i_div_frC)=.true.
-         lpenc_requested(i_divC)=.true.
-         lpenc_requested(i_grad_fr)=.true.
+      if (lpolyback) then
+        lpenc_requested(i_div_frC)=.true.
+        lpenc_requested(i_divC)=.true.
+        lpenc_requested(i_grad_fr)=.true.
       endif
 !
 !  If advection by the velocity is turned on.
 !
-      if (lpolyadvect)  lpenc_requested(i_u_dot_gradC)=.true.
+      if (lpolyadvect) lpenc_requested(i_u_dot_gradC)=.true.
 !
 !  If a diffusive term in the polymer equation is not included: (not default)
 !
-      if (eta_poly/=0) lpenc_requested(i_del2poly)=.true.
+      if (eta_poly/=0.0) lpenc_requested(i_del2poly)=.true.
 !
 !  Different pencils are chosen depending on different algorithms applied.
 !
@@ -184,11 +184,12 @@ module Polymer
         case('simple')
           write(*,*) 'no pencils needed now'
         case('cholesky')
-          call inevitably_fatal_error('pencil_criteria_polymer', &
-              'poly_algo: cholesky decomposition is not implemented yet ')
+          call fatal_error('pencil_criteria_polymer', &
+              'poly_algo: cholesky decomposition is not implemented yet')
         case('nothing')
-          call inevitably_fatal_error('pencil_criteria_polymer', &
-              'poly_algo: please chosse an algorithm to solve the polymer equations. ')
+          call fatal_error('pencil_criteria_polymer', &
+              'poly_algo: please chosse an algorithm to solve the '// &
+              'polymer equations')
       endselect
 !
     endsubroutine pencil_criteria_polymer
@@ -242,7 +243,8 @@ module Polymer
       if (lpencil(i_Cijk)) call gijk_symmetric(f,ipoly,p%Cijk,1)
 ! u_dot_gradC
       if (lpencil(i_u_dot_gradC)) & 
-          call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC,UPWIND=lupw_poly)
+          call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, &
+          UPWIND=lupw_poly)
       select case (poly_model)
         case ('oldroyd-B')
           call calc_pencils_oldroyd_b(f,p)
@@ -250,9 +252,9 @@ module Polymer
           call calc_pencils_fene_p(f,p)
         case default
           call fatal_error('init_poly','no such polymer model')
-       endselect
+      endselect
 !
-     endsubroutine calc_pencils_polymer
+    endsubroutine calc_pencils_polymer
 !***********************************************************************
     subroutine calc_pencils_fene_p(f,p)
 !
@@ -277,13 +279,13 @@ module Polymer
       if (lpencil(i_grad_fr)) call  grad(f,ipoly_fr,p%grad_fr)
       call dot_mn_vm(p%grad_fr,p%poly,grad_fr_dotC)
 ! div_frC
-       if (lpencil(i_div_frC)) then
-         do j=1,3
-           p%div_frC(:,j)=p%fr(:)*p%divC(:,j)+grad_fr_dotC(:,j)
-         enddo
-       endif
+      if (lpencil(i_div_frC)) then
+        do j=1,3
+          p%div_frC(:,j)=p%fr(:)*p%divC(:,j)+grad_fr_dotC(:,j)
+        enddo
+      endif
 !
-     endsubroutine calc_pencils_fene_p
+    endsubroutine calc_pencils_fene_p
 !***********************************************************************
     subroutine calc_pencils_oldroyd_b(f,p)
 !
@@ -358,30 +360,30 @@ module Polymer
 !
       select case(poly_algo)
         case('simple')
-          df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)+& 
+          df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)+ & 
             CdotGradu(:,1,1)+CdotGraduT(:,1,1)
-          df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)+& 
+          df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)+ & 
             CdotGradu(:,1,2)+CdotGraduT(:,1,2)
-          df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)+& 
+          df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)+ & 
             CdotGradu(:,1,3)+CdotGraduT(:,1,3)
-          df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)+& 
+          df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)+ & 
             CdotGradu(:,2,2)+CdotGraduT(:,2,2)
-          df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)+& 
+          df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)+ & 
             CdotGradu(:,2,3)+CdotGraduT(:,2,3)
-          df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)+& 
+          df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)+ & 
             CdotGradu(:,3,3)+CdotGraduT(:,3,3)
           if (tau_poly/=0.0) then
-            df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)-&
+            df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)- &
                          tau_poly1*(p%frC(:,1,1)-1.)
-            df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)-&
+            df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)- &
                          tau_poly1*(p%frC(:,2,2)-1.)
-            df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)-&
+            df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)- &
                          tau_poly1*(p%frC(:,3,3)-1.)
-            df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)-&
+            df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)- &
                          tau_poly1*(p%frC(:,1,2))
-            df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)-&
+            df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)- &
                          tau_poly1*(p%frC(:,1,3))
-            df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)-&
+            df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)- &
                          tau_poly1*(p%frC(:,2,3))
 
           endif
@@ -390,11 +392,12 @@ module Polymer
 !            if(eta_poly/=0) df(l1:l2,m,n,ip11:ip23)=&
 !              df(l1:l2,m,n,ip11:ip23)-eta_poly*p%del2poly
         case('cholesky')
-          call inevitably_fatal_error('pencil_criteria_polymer', &
-              'poly_algo: cholesky decomposition is not implemented yet '
+          call fatal_error('pencil_criteria_polymer', &
+              'poly_algo: cholesky decomposition is not implemented yet'
         case('nothing')
-          call inevitably_fatal_error('pencil_criteria_polymer', &
-              'poly_algo: please chosse an algorithm to solve the polymer equations. ')
+          call fatal_error('pencil_criteria_polymer', &
+              'poly_algo: please chosse an algorithm to solve '// &
+              'the polymer equations')
         endselect
 !
     endsubroutine dpoly_dt
