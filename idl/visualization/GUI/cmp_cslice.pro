@@ -46,6 +46,12 @@ pro cmp_cslice, sets, limits, units=units, scaling=scaling
 
 	varfiles = { title:"N/A", loaded:1, number:0, precalc_done:1 }
 
+	; setup limits, if necessary
+	if (n_elements (limits) eq 0) then begin
+		dims = size (varsets.(0))
+		limits = lindgen (dims[1], dims[2], dims[3])
+	end
+
 	cmp_cslice_cache, set, limits, units=units, coords=coords, scaling=scaling
 
 	return
