@@ -3863,10 +3863,10 @@ module Entropy
       case ('gaussian-z')
         prof=spread(exp(-0.5*((zcool-z(n))/wcool)**2), 1, l2-l1+1)
 !
-! Cooling with a profile linear in z (unstable)
+!  Cooling with a profile linear in z (unstable).
 !
       case ('lin-z')
-         prof=spread(z(n)/wcool, 1, l2-l1+1)
+        prof=spread(z(n)/wcool,1,l2-l1+1)
       endselect
 !
 !  Note: the cooltype 'Temp' used below was introduced by Axel for the
@@ -3934,10 +3934,10 @@ module Entropy
       case ('cubic_step')
          prof = cubic_step(spread(z(n),1,nx),z2,wcool)
 !
-! Cooling with a profile linear in z (unstable)
+!  Cooling with a profile linear in z (unstable).
 !
       case ('lin-z')
-         prof=spread(z(n)/wcool, 1, l2-l1+1)
+        prof=spread(z(n)/wcool, 1, l2-l1+1)
       case default
         call fatal_error('get_heat_cool_gravz','please select a cooltype')
       endselect
