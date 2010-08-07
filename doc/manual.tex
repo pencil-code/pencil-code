@@ -6148,7 +6148,8 @@ This is wrong:
   endif
 \end{verbatim}
 \item relational operators are written with symbols (==,/=,$<$,$<$=,$>$,$>$=),
-{\it not} with characters (.eq.,.ne.,.lt.,.le.,.gt.,.ge.).
+{\it not} with characters
+(\code{.eq.},\code{.ne.},\code{.lt.},\code{.le.},\code{.gt.},\code{.ge.}).
 \item in general all comments are placed on their own lines with the '!'
 appearing in the first column.
 \item all subroutine/functions begin with a standard comment block describing
@@ -6156,7 +6157,8 @@ what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
 \item lines longer that 78 characters should be explicitly wrapped using
   the \& character, unless there is a block of longer lines that can only
-  be read easily when they are not wrapped.
+  be read easily when they are not wrapped. Always add one whitespace before
+  the \& character.
 \end{itemize}
 
 These and other issues are discussed in more depth and with examples in
@@ -7165,39 +7167,48 @@ them do so as an extension.
 
 All lines are kept to be not more than 78 characters long. Where
 lines are longer they must be explicitly wrapped using the
-Fortran continuation character `\&'
+Fortran continuation character `\&'.
 
 Code in syntactic blocks such as \code{if}--\code{endif}, \code{do}--\code{enddo},
 \code{subroutine}--\code{endsubroutine} etc. is always indented by precisely two spaces.
 The exception to this is that nested loops where only the innermost loop
 contains executable code should be written with the \code{do}--\code{enddo}
-pairs at the same level of indentation.
-
-\begin{itemize}
-\item in general all comments are placed on their own lines with the '!'
-appearing in the first column.
-\item all subroutine/functions begin with a standard comment block describing
-what they do, when and by whom they were created and when and by whom any
-non-trivial modifications were made.
-\item lines longer that 78 characters must be explicitly wrapped.
-\end{itemize}
+pairs at the same level of indentation,
+\begin{verbatim}
+  do n=n1,n2
+  do m=m1,m2
+    [...]
+  enddo
+  enddo
+\end{verbatim}
+Alternatively nested loops may be written on a single line, i.e.
+\begin{verbatim}
+  do n=n1,n2; do m=m1,m2
+    [...]
+  enddo; enddo
+\end{verbatim}
 
 \subsubsection{Comments}
-Descriptive comments are written on their own lines unless there is a
-strong reason to do otherwise.  Comments are not normally indented
-and the `!' should appear in the first column followed by two spaces
-and then the text of the comment.
 
-Comments also must not exceed the 78 character line length and should
-be wrapped onto more lines as needed.
+Descriptive comments are written on their own lines unless there is a strong
+reason to do otherwise. Comments are never indented and the `!' should appear
+in the first column followed by two spaces and then the text of the comment.
+Extremely short comments may follow at the end of a line of code, provided
+there is space.
 
-Typically comments should appear with a blank commented line above and
-below the wrapped text of the comment.
+Comments also must not exceed the 78 character line length and should be
+wrapped onto more lines as needed.
 
-Comments should be written in sentences using the usual capitalization
-and punctuation of English where comment text continues either side of
-actual code much as text is continued around equations in a mathematical
-document.
+Typically comments should appear with a blank commented line above and below
+the wrapped text of the comment.
+
+All subroutine/functions begin with a standard comment block describing what
+they do, when and by whom they were created and when and by whom any
+non-trivial modifications were made.
+
+Comments should be written in sentences using the usual capitalization and
+punctuation of English, similar to how text is formatted in an e-mail or a
+journal article.
 
 For example:
 \begin{verbatim}
@@ -7247,7 +7258,7 @@ of each word and the multiple words written consecutively without
 any separator.
 
 \subsubsection{Variable names}
-Variable are given short but meaning full names and written
+Variable are given short but meaningful names and written
 in all lowercase.  Single character names are avoided except
 for commonly used loop indices and the two code data structures
 of the {\sc Pencil Code}: `f' the main state array (see \ref{f-array}) and `p' the pencil case
