@@ -7,12 +7,7 @@
   public :: rprint_polymer
   public :: get_slices_polymer
   public :: init_poly
-
   public :: dpoly_dt
-
   public :: calc_pencils_polymer
   public :: pencil_criteria_polymer
   public :: pencil_interdep_polymer
-
-
-
