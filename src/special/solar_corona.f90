@@ -25,7 +25,7 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
-  real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1
+  real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.0
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
   integer :: irefz=0,nglevel=3
@@ -50,7 +50,7 @@ module Special
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
-       iheattype,heat_par1,heat_par2,heat_par3
+       iheattype,heat_par1,heat_par2,heat_par3,dt_gran
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -144,6 +144,9 @@ module Special
 ! We need at least 4 procs above the ipz=0 for computing
 ! granular velocities in parallel
       if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .true.
+! *** WORK HERE *** Disabled parallel calculation of granulation driver,
+! because it seems to hang for my runs somewhere in diver3 (Bourdin.KIS)
+  lgran_parallel = .false.
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -476,6 +479,9 @@ module Special
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
+!
+      ! Default value for granulation driver update interval in seconds
+      dt_gran = 0.5
 !
       if (present(iostat)) then
         read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
@@ -1551,12 +1557,15 @@ module Special
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
+      dt_gran = dt_gran / unit_time
+!
       if (lroot) then
         print*,'| solar_corona: settings for granules'
         print*,'-----------------------------------'
         print*,'| radius [Mm]:',granr*unit_length*1e-6
         print*,'| lifetime [min]',life_t*unit_time/60.
         print*,'| amplitude [km/s]',ampl*unit_velocity*1e-3
+        print*,'| update interval [s]',dt_gran*unit_time
         print*,'-----------------------------------'
       endif
 !
@@ -1603,6 +1612,11 @@ module Special
       real :: cp1,dA
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
+      real, save :: next_time = 0.0
+!
+! Update velocity field only every dt_gran after the first iteration
+      if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
+      next_time = t + dt_gran
 !
 ! Save global random number seed, will be restored after granulation
 ! is done
@@ -2475,17 +2489,9 @@ module Special
               call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
             enddo
           enddo
-        else
-          if (lfirst_proc_z) then
-            call mpirecv_real (tl, 1, 0, tag_tl)
-            call mpirecv_real (tr, 1, 0, tag_tr)
-            call mpirecv_real (delta_t, 1, 0, tag_dt)
-          endif
-        endif
 !
 ! Read velocity field
 !
-       if (lroot) then
           open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
           read (unit,rec=2*i-1) tmpl
@@ -2522,6 +2528,9 @@ module Special
           close (unit)
         else
           if (lfirst_proc_z) then
+            call mpirecv_real (tl, 1, 0, tag_tl)
+            call mpirecv_real (tr, 1, 0, tag_tr)
+            call mpirecv_real (delta_t, 1, 0, tag_dt)
             call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
             call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
           endif
@@ -2615,8 +2624,8 @@ module Special
         xpos = int(current%pos(1))
         ypos = int(current%pos(2))
 !
-        current%pos(1) =  current%pos(1) + Ux_ext(xpos,ypos)*dt
-        current%pos(2) =  current%pos(2) + Uy_ext(xpos,ypos)*dt
+        current%pos(1) =  current%pos(1) + Ux_ext(xpos,ypos)*dt_gran
+        current%pos(2) =  current%pos(2) + Uy_ext(xpos,ypos)*dt_gran
 !
         if (current%pos(1)<0.5) current%pos(1) = current%pos(1) + nxgrid
         if (current%pos(2)<0.5) current%pos(2) = current%pos(2) + nygrid
