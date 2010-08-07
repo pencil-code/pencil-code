@@ -5918,10 +5918,6 @@ Again, the answer is yes; just go to:
 % ====================================================================== %
 
 \part{Programming the {\sc Pencil Code}}
-\label{ProgrammingStyle}
-\index{Programming style}
-\index{Coding standards}
-\index{Style}
 
 The {\sc Pencil Code} has expanded approximately linearly in the number of
 lines of code and the number of subroutines (Fig.~\ref{pfile-size}).
@@ -5988,6 +5984,43 @@ that the users are able to understand and modify (program!) the code.
 In this section we explain first how to orient yourself in the code
 and to understand what is in it, and then to modify it according to
 your needs.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.85\textwidth,keepaspectratio]%
+    {CheckIns}
+  \caption{Number of check-ins since 2002.
+  Note again the linear increase with time, although in the last part
+  of the time series there is a notable speed-up.}
+  \label{CheckIns}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.85\textwidth,keepaspectratio]%
+    {UserCheckIns}
+  \caption{Check-ins since 2002 per user.
+  Users with more than 100 check-ins are color coded.}
+  \label{UserCheckIns}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+The Pencil Code check ins occur regularly all the time.
+By the Pencil Code User Meeting 2010 we have arrived at a revision 
+number of 15,000.
+The increase of the revision number with time is depicted in
+Figure~\ref{CheckIns}.
+The number of Pencil Code developers increases too
+(Figure~\ref{UserCheckIns}), but the really active ones are getting rare.
+This may indicate that new users can produce new science with the
+code as it is, but it may also indicate that it is getting harder
+to understand the code.
+This will be discussed in the next section.
 
 \section{Understanding the code}
 
@@ -6109,6 +6142,7 @@ You can of course also repair it!
 \section{Adapting the code}
 
 \subsection{The {\sc Pencil Code} coding standard}
+\label{ProgrammingStyle}
 \index{Programming style}
 \index{Coding standards}
 \index{Style}
@@ -7381,7 +7415,7 @@ It is sometimes necessary to do major changes to the code.
 Since this may affect many people and may even be controversial
 among the developers, such changes are restricted to the time
 of the next Pencil Code User Meeting.
-Such meetings are adversed on \url{http://www.nordita.org/software/pencil-code/}
+Such meetings are advertised on \url{http://www.nordita.org/software/pencil-code/}
 under the news section.
 Notes about previous such meetings can be found under
 \url{http://www.nordita.org/software/pencil-code/UserMeetings/}.
@@ -7393,7 +7427,7 @@ who have contributed to the latest developments on that module.
 If it is not functional or otherwise in bad shape, it should be
 moved to \file{experimental}, i.e.\ one says
 \cmd{svn mv file.f90 experimental/file.f90}.
-However, any such directory changes constitute a major change in
+However, any such directory change constitutes a major change in
 itself and should be performed in agreement with those involved in
 the development.
 Otherwise any file that has been changed in the mean time will end up
