@@ -1,7 +1,12 @@
 ! $Id$
 !
 !  This module supplies a kinematic velocity field.
+!  Most of the content of this module was moved with revision r12019
+!  by Dhrubaditya Mitra on 5-nov-09 away from nohydro.f90
+!  To inspect the revision history of the file before that time,
+!  check out nohydro.f90 prior to or at revision r12018.
 !
+
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -45,11 +50,10 @@ module Hydro
   logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
   real, dimension(nx) :: ck_r,ck_rsqr
 !
+!  init parameters
+!  (none)
 !
-!init parameters
-!
-!
-!run parameters
+!  run parameters
 !
   character (len=labellen) :: kinematic_flow='none'
   real :: ABC_A=1.0, ABC_B=1.0, ABC_C=1.0
@@ -61,7 +65,6 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   integer :: kinflow_ck_ell=0.
-!DM moved from cdata
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
   character (len=labellen) :: wind_profile='none'
   namelist /hydro_run_pars/ &
@@ -96,7 +99,7 @@ module Hydro
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
 !
-!  6-nov-01/wolf: coded
+!   6-nov-01/wolf: coded
 !
       use Mpicomm, only: lroot
       use SharedVariables
@@ -191,9 +194,10 @@ module Hydro
 !   1-jul-09/axel: added more for kinflow
 !
 !  pencils for kinflow
-! DM
-! The following line can be later removed and the variable kinematic_flow replaced
-! by kinflow.
+!
+!DM: The following line with kinflow can be later removed and the variable
+!DM: kinematic_flow replaced by kinflow.
+!
       kinflow=kinematic_flow
       if (kinflow/='') then
         lpenc_requested(i_uu)=.true.
@@ -541,8 +545,6 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         if (headtt) print*,'Tilgner flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
         fac=ampl_kinflow*sqrt(2.)
         epst=eps_kinflow*t
-kx_uukin=2.*pi
-ky_uukin=2.*pi
         p%uu(:,1)=-fac* sin(ky_uukin*y(m)         )
         p%uu(:,2)=+fac* sin(kx_uukin*(x(l1:l2)+epst))
         p%uu(:,3)=-fac*(cos(kx_uukin*(x(l1:l2)+epst))+cos(ky_uukin*y(m)))
@@ -1052,260 +1054,232 @@ ky_uukin=2.*pi
 !***********************************************************************
     subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !
-!   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)
+!  produces random, isotropic field from energy spectrum following the
+!  KS method (Malik and Vassilicos, 1999.)
 !
-!   more to do; unsatisfactory so far - at least for a steep power-law
-!   energy spectrum
+!  more to do; unsatisfactory so far - at least for a steep power-law
+!  energy spectrum
 !
-!   27-may-05/tony: modified from snod's KS hydro initial
-!   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
+!  27-may-05/tony: modified from snod's KS hydro initial
+!  03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
 !                    KS modes.
 !
-    use Sub, only: cross, dot2
-    use General, only: random_number_wrapper
+      use Sub, only: cross, dot2
+      use General, only: random_number_wrapper
 !
-    integer :: modeN
+      integer :: modeN
 !
-    real, dimension (3) :: k_unit
-    real, dimension (3) :: ee,e1,e2
-!    real, dimension (4) :: r
-    real,dimension (6) :: r
-    real :: initpower,kmin,kmax
-    real, dimension(KS_modes) :: k,dk,energy,ps
-    real :: theta,phi,alpha,beta
-    real :: ex,ey,ez,norm,a
+      real, dimension (3) :: k_unit
+      real, dimension (3) :: ee,e1,e2
+      real,dimension (6) :: r
+      real :: initpower,kmin,kmax
+      real, dimension(KS_modes) :: k,dk,energy,ps
+      real :: theta,phi,alpha,beta
+      real :: ex,ey,ez,norm,a
 !
-    allocate(KS_k(3,KS_modes))
-    allocate(KS_A(3,KS_modes))
-    allocate(KS_B(3,KS_modes))
-    allocate(KS_omega(KS_modes))
+      allocate(KS_k(3,KS_modes))
+      allocate(KS_A(3,KS_modes))
+      allocate(KS_B(3,KS_modes))
+      allocate(KS_omega(KS_modes))
 !
-    kmin=2.*pi      !/(1.0*Lxyz(1))
-!    kmin=kmin*2.*pi
-    kmax=128.*pi    !nx*pi
-    a=(kmax/kmin)**(1./(KS_modes-1.))
+      kmin=2.*pi      !/(1.0*Lxyz(1))
+      kmax=128.*pi    !nx*pi
+      a=(kmax/kmin)**(1./(KS_modes-1.))
 !
+!  loop over all modes
 !
-    do modeN=1,KS_modes
+      do modeN=1,KS_modes
 !
 !  pick wavenumber
 !
-!      k=modeN*kmin
-      k=kmin*(a**(modeN-1.))
-!
-!weezy need to investigate if this is still needed
-!weezy !
-!weezy !  calculate dk
-!weezy !
-!weezy       print *,kmin,kmax,k
-!weezy       dk=1.0*kmin
-!
-!weezy       if (modeN==1)dk=kmin*(a-1.)/2.
-!weezy       if (modeN>1.and.modeN<KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
-!weezy       if (modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
-!
+        k=kmin*(a**(modeN-1.))
 !
 !  pick 4 random angles for each mode
 !
-      call random_number_wrapper(r);
-      theta=pi*(r(1) - 0.)
-      phi=pi*(2*r(2) - 0.)
-      alpha=pi*(2*r(3) - 0.)
-      beta=pi*(2*r(4) - 0.)
-!
-!  random phase?
-!      call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)
+        call random_number_wrapper(r);
+        theta=pi*(r(1) - 0.)
+        phi=pi*(2*r(2) - 0.)
+        alpha=pi*(2*r(3) - 0.)
+        beta=pi*(2*r(4) - 0.)
 !
 !  make a random unit vector by rotating fixed vector to random position
 !  (alternatively make a random transformation matrix for each k)
 !
-      k_unit(1)=sin(theta)*cos(phi)
-      k_unit(2)=sin(theta)*sin(phi)
-      k_unit(3)=cos(theta)
+        k_unit(1)=sin(theta)*cos(phi)
+        k_unit(2)=sin(theta)*sin(phi)
+        k_unit(3)=cos(theta)
 !
-      energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
-                       *exp(-0.5*(k/kmax)**2.)
-!      energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
-!                       *exp(-0.5*(k/kmax)**2.)
+        energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
+          *exp(-0.5*(k/kmax)**2.)
 !
 !  make a vector KS_k of length k from the unit vector for each mode
 !
-      KS_k(:,modeN)=k*k_unit(:)
-!      KS_omega(modeN)=k**(2./3.)
-      KS_omega(:)=sqrt(energy(:)*(k(:)**3.))
+        KS_k(:,modeN)=k*k_unit(:)
+        KS_omega(:)=sqrt(energy(:)*(k(:)**3.))
 !
 !  construct basis for plane having rr normal to it
 !  (bit of code from forcing to construct x', y')
 !
       if ((k_unit(2)==0).and.(k_unit(3)==0)) then
-        ex=0.; ey=1.; ez=0.
-      else
-        ex=1.; ey=0.; ez=0.
-      endif
-      ee = (/ex, ey, ez/)
+          ex=0.; ey=1.; ez=0.
+        else
+          ex=1.; ey=0.; ez=0.
+        endif
+        ee = (/ex, ey, ez/)
 !
-      call cross(k_unit(:),ee,e1)
+        call cross(k_unit(:),ee,e1)
 !  e1: unit vector perp. to KS_k
-      call dot2(e1,norm); e1=e1/sqrt(norm)
-      call cross(k_unit(:),e1,e2)
+        call dot2(e1,norm); e1=e1/sqrt(norm)
+        call cross(k_unit(:),e1,e2)
 !  e2: unit vector perp. to KS_k, e1
-      call dot2(e2,norm); e2=e2/sqrt(norm)
+        call dot2(e2,norm); e2=e2/sqrt(norm)
 !
 !  make two random unit vectors KS_B and KS_A in the constructed plane
 !
-      KS_A(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
-      KS_B(:,modeN) = cos(beta)*e1  + sin(beta)*e2
+        KS_A(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
+        KS_B(:,modeN) = cos(beta)*e1  + sin(beta)*e2
 !
-!  define the power spectrum (ps=sqrt(2.*power_spectrum(k)*delta_k/3.))
+!  make sure dk is set
 !
-!      ps=(k**(initpower/2.))*sqrt(dk*2./3.)
-!  The factor of 2 just after the sqrt may need to be 2./3.
+        call error('random_isotropic_KS_setup', 'Using uninitialized dk')
+        dk=0.                     ! to make compiler happy
 !
-!
-!  With the `weezey' stuff above commented out, dk is currently used, but
-!  never set, so we better abort
-!
-      call error('random_isotropic_KS_setup', 'Using uninitialized dk')
-      dk=0.                     ! to make compiler happy
-!
-      ps=sqrt(2.*energy*dk)   !/3.0)
+        ps=sqrt(2.*energy*dk)   !/3.0)
 !
 !  give KS_A and KS_B length ps
 !
-      KS_A(:,modeN)=ps*KS_A(:,modeN)
-      KS_B(:,modeN)=ps*KS_B(:,modeN)
+        KS_A(:,modeN)=ps*KS_A(:,modeN)
+        KS_B(:,modeN)=ps*KS_B(:,modeN)
 !
-    enddo
+      enddo
 !
 !  form RA = RA x k_unit and RB = RB x k_unit
 !  Note: cannot reuse same vector for input and output
 !
-    do modeN=1,KS_modes
-      call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
-      call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
-    enddo
+      do modeN=1,KS_modes
+        call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
+        call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
+      enddo
 !
-    call keep_compiler_quiet(initpower)
+      call keep_compiler_quiet(initpower)
 !
     endsubroutine random_isotropic_KS_setup
 !***********************************************************************
     subroutine random_isotropic_KS_setup_test
 !
-!   produces random, isotropic field from energy spectrum following the
-!   KS method (Malik and Vassilicos, 1999.)
-!   This test case only uses 3 very specific modes (useful for comparison
-!   with Louise's kinematic dynamo code.
+!  produces random, isotropic field from energy spectrum following the
+!  KS method (Malik and Vassilicos, 1999.)
+!  This test case only uses 3 very specific modes (useful for comparison
+!  with Louise's kinematic dynamo code.
 !
-!   03-feb-06/weezy: modified from random_isotropic_KS_setup
+!  03-feb-06/weezy: modified from random_isotropic_KS_setup
 !
-    use Sub, only: cross
-    use General, only: random_number_wrapper
+      use Sub, only: cross
+      use General, only: random_number_wrapper
 !
-    integer :: modeN
+      integer :: modeN
 !
-    real, dimension (3,KS_modes) :: k_unit
-    real, dimension(KS_modes) :: k,dk,energy,ps
-    real :: initpower,kmin,kmax
+      real, dimension (3,KS_modes) :: k_unit
+      real, dimension(KS_modes) :: k,dk,energy,ps
+      real :: initpower,kmin,kmax
 !
-    allocate(KS_k(3,KS_modes))
-    allocate(KS_A(3,KS_modes))
-    allocate(KS_B(3,KS_modes))
-    allocate(KS_omega(KS_modes))
+      allocate(KS_k(3,KS_modes))
+      allocate(KS_A(3,KS_modes))
+      allocate(KS_B(3,KS_modes))
+      allocate(KS_omega(KS_modes))
 !
-    initpower=-5./3.
-    kmin=10.88279619
-    kmax=23.50952672
-!
-!-----------------------------
-    KS_k(1,1)=2.00*pi
-    KS_k(2,1)=-2.00*pi
-    KS_k(3,1)=2.00*pi
-!
-    KS_k(1,2)=-4.00*pi
-    KS_k(2,2)=0.00*pi
-    KS_k(3,2)=2.00*pi
-!
-    KS_k(1,3)=4.00*pi
-    KS_k(2,3)=2.00*pi
-    KS_k(3,3)=-6.00*pi
+      initpower=-5./3.
+      kmin=10.88279619
+      kmax=23.50952672
 !
 !-----------------------------
-    KS_k(1,1)=+1; KS_k(2,1)=-1; KS_k(3,1)=1
-    KS_k(1,2)=+0; KS_k(2,2)=-2; KS_k(3,2)=1
-    KS_k(1,3)=+0; KS_k(2,3)=-0; KS_k(3,3)=1
+      KS_k(1,1)=2.00*pi
+      KS_k(2,1)=-2.00*pi
+      KS_k(3,1)=2.00*pi
 !
-    k(1)=kmin
-    k(2)=14.04962946
-    k(3)=kmax
+      KS_k(1,2)=-4.00*pi
+      KS_k(2,2)=0.00*pi
+      KS_k(3,2)=2.00*pi
 !
-    do modeN=1,KS_modes
-      k_unit(:,modeN)=KS_k(:,modeN)/k(modeN)
-    enddo
+      KS_k(1,3)=4.00*pi
+      KS_k(2,3)=2.00*pi
+      KS_k(3,3)=-6.00*pi
 !
-    kmax=k(KS_modes)
-    kmin=k(1)
+!-----------------------------
+      KS_k(1,1)=+1; KS_k(2,1)=-1; KS_k(3,1)=1
+      KS_k(1,2)=+0; KS_k(2,2)=-2; KS_k(3,2)=1
+      KS_k(1,3)=+0; KS_k(2,3)=-0; KS_k(3,3)=1
 !
-    do modeN=1,KS_modes
-      if (modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
-      if (modeN>1.and.modeN<KS_modes) &
-                dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
-      if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
-    enddo
+      k(1)=kmin
+      k(2)=14.04962946
+      k(3)=kmax
 !
-    do modeN=1,KS_modes
-       energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
-                         *exp(-0.5*(k(modeN)/kmax)**2)
-    enddo
+      do modeN=1,KS_modes
+        k_unit(:,modeN)=KS_k(:,modeN)/k(modeN)
+      enddo
 !
-    ps=sqrt(2.*energy*dk)
+      kmax=k(KS_modes)
+      kmin=k(1)
 !
-    KS_A(1,1)=1.00/sqrt(2.00)
-    KS_A(2,1)=-1.00/sqrt(2.00)
-    KS_A(3,1)=0.00
+      do modeN=1,KS_modes
+        if (modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
+        if (modeN>1.and.modeN<KS_modes) &
+                  dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
+        if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
+      enddo
 !
-    KS_A(1,2)=1.00/sqrt(3.00)
-    KS_A(2,2)=1.00/sqrt(3.00)
-    KS_A(3,2)=-1.00/sqrt(3.00)
+      do modeN=1,KS_modes
+         energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
+                           *exp(-0.5*(k(modeN)/kmax)**2)
+      enddo
 !
-    KS_A(1,3)=-1.00/2.00
-    KS_A(2,3)=-1.00/2.00
-    KS_A(3,3)=1.00/sqrt(2.00)
+      ps=sqrt(2.*energy*dk)
 !
-    KS_B(1,3)=1.00/sqrt(2.00)
-    KS_B(2,3)=-1.00/sqrt(2.00)
-    KS_B(3,3)=0.00
+      KS_A(1,1)=1.00/sqrt(2.00)
+      KS_A(2,1)=-1.00/sqrt(2.00)
+      KS_A(3,1)=0.00
 !
-    KS_B(1,1)=1.00/sqrt(3.00)
-    KS_B(2,1)=1.00/sqrt(3.00)
-    KS_B(3,1)=-1.00/sqrt(3.00)
+      KS_A(1,2)=1.00/sqrt(3.00)
+      KS_A(2,2)=1.00/sqrt(3.00)
+      KS_A(3,2)=-1.00/sqrt(3.00)
 !
-    KS_B(1,2)=-1.00/2.00
-    KS_B(2,2)=-1.00/2.00
-    KS_B(3,2)=1.00/sqrt(2.00)
+      KS_A(1,3)=-1.00/2.00
+      KS_A(2,3)=-1.00/2.00
+      KS_A(3,3)=1.00/sqrt(2.00)
 !
-    do modeN=1,KS_modes
-       KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
-       KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
-    enddo
+      KS_B(1,3)=1.00/sqrt(2.00)
+      KS_B(2,3)=-1.00/sqrt(2.00)
+      KS_B(3,3)=0.00
 !
-!   form RA = RA x k_unit and RB = RB x k_unit
+      KS_B(1,1)=1.00/sqrt(3.00)
+      KS_B(2,1)=1.00/sqrt(3.00)
+      KS_B(3,1)=-1.00/sqrt(3.00)
 !
+      KS_B(1,2)=-1.00/2.00
+      KS_B(2,2)=-1.00/2.00
+      KS_B(3,2)=1.00/sqrt(2.00)
 !
-     do modeN=1,KS_modes
-       call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
-       call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
-     enddo
+      do modeN=1,KS_modes
+         KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
+         KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
+      enddo
+!
+!  form RA = RA x k_unit and RB = RB x k_unit
+!
+       do modeN=1,KS_modes
+         call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
+         call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
+       enddo
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
-  subroutine periodic_KS_setup(initpower)
+    subroutine periodic_KS_setup(initpower)
 !
-!  ! produces random, isotropic field from energy spectrum following the
-!  ! KS method, however this setup produces periodic velocity field
-!  ! (assuming box at least (-pi,pi))
+!  produces random, isotropic field from energy spectrum following the
+!  KS method, however this setup produces periodic velocity field
+!  (assuming box at least (-pi,pi))
 !
-!  ! jun-2010/abag coded
+!  22-jun-2010/abag coded
 !
     use Cdata, only: pi,Lxyz,nx,ny,nz
     use Sub
@@ -1461,28 +1435,32 @@ ky_uukin=2.*pi
 !
     endsubroutine periodic_KS_setup
 !***********************************************************************
-   subroutine KS_order(ad_, i_N, i_ord, B)
-   implicit none
-   !bubble sort algorithm
-   integer, intent(in) :: i_N, i_ord
-   real, intent(in)  :: ad_(i_N)
-   real, intent(out) :: B(i_N)
-   real :: c=1.
-   integer :: n
-   B = ad_
-   do while(c>0.0)
-      c = -1.
-      do n = 1, i_N-1
-         if (   (i_ord==1 .and. B(n)>B(n+1))  &
-          .or. (i_ord==2 .and. B(n)<B(n+1)) ) then
+    subroutine KS_order(ad_, i_N, i_ord, B)
+!
+!  bubble sort algorithm
+!
+!  22-feb-10/abag: coded
+!
+      implicit none
+      integer, intent(in) :: i_N, i_ord
+      real, intent(in)  :: ad_(i_N)
+      real, intent(out) :: B(i_N)
+      real :: c=1.
+      integer :: n
+      B = ad_
+      do while(c>0.0)
+        c = -1.
+        do n = 1, i_N-1
+          if (   (i_ord==1 .and. B(n)>B(n+1)) &
+            .or. (i_ord==2 .and. B(n)<B(n+1)) ) then
             c        = B(n)
             B(n)   = B(n+1)
             B(n+1) = c
             c = 1.
-         end if
-      end do
-   end do
-   end subroutine KS_order
+          endif
+        enddo
+      enddo
+    end subroutine KS_order
 !***********************************************************************
     subroutine input_persistent_hydro(id,lun,done)
 !
