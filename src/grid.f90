@@ -557,11 +557,11 @@ module Grid
 !
 ! Identify whether you are a processor at the pole or not
 !
-      if(nprocz>0) then
-         if ((coord_system.eq.'spherical').and.(y(m1).eq.xyz0(2)).and.(y(m1).lt.pi/4.)) &
-              lnorth_pole=.true.
-         if ((coord_system.eq.'spherical').and.(y(m2).eq.xyz1(2)).and.(y(m2).gt.3*pi/4.)) &
-              lsouth_pole=.true.
+      if (nprocz>0) then
+        if ((coord_system=='spherical').and. &
+            (y(m1)==xyz0(2)).and.(y(m1)<pi/4.)) lnorth_pole=.true.
+        if ((coord_system=='spherical').and. &
+            (y(m2)==xyz1(2)).and.(y(m2)>3*pi/4.)) lsouth_pole=.true.
       endif
 !
     endsubroutine construct_grid
