@@ -489,8 +489,8 @@ module Mpicomm
             zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
             zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
-        if(lnorth_pole) call isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
-        if(lsouth_pole) call isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
+        if (lnorth_pole) call isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
+        if (lsouth_pole) call isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
       endif
 !
 !  The four corners (in counter-clockwise order).

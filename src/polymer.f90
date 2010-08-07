@@ -389,7 +389,7 @@ module Polymer
           endif
 !
 !  Add synthetic polymer diffusion for numerical stability .
-!            if(eta_poly/=0) df(l1:l2,m,n,ip11:ip23)=&
+!            if (eta_poly/=0) df(l1:l2,m,n,ip11:ip23)=&
 !              df(l1:l2,m,n,ip11:ip23)-eta_poly*p%del2poly
         case('cholesky')
           call fatal_error('pencil_criteria_polymer', &

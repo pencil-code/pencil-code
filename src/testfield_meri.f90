@@ -226,7 +226,7 @@ module Testfield
 ! 
 ! Stop the code if we are not in spherical coordinates
 !
-      if(.not.lspherical_coords) & 
+      if (.not.lspherical_coords) & 
         call stop_it('initialize_testfiled: testfield_meri works only in spherical coordinates') 
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
@@ -735,7 +735,7 @@ module Testfield
         iaztest=iaxtest+2
         uxbtestm(:,:,:,jtest) = 0.
         jxbtestm(:,:,:,jtest)=0.
-        if(.not.lsoca) then
+        if (.not.lsoca) then
 !
            do m=m1,m2
               do n=n1,n2

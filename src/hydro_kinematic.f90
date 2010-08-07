@@ -1336,7 +1336,7 @@ ky_uukin=2.*pi
     print*, 'calculating KS wavenumbers'
     do i=1,10000
      call random_number_wrapper(angle)
-     if((angle(1)-0.0 < epsilon(0.0)) .or. &
+     if ((angle(1)-0.0 < epsilon(0.0)) .or. &
         (angle(2)-0.0 < epsilon(0.0)) .or. &
         (angle(3)-0.0 < epsilon(0.0))) then
         call random_number_wrapper(angle)
@@ -1350,7 +1350,7 @@ ky_uukin=2.*pi
      k_option(1,i)=direction(1)*2.*pi*angle(1)!a possible orientation
      k_option(2,i)=direction(2)*2.*pi*angle(2)   !provided we haven't
      k_option(3,i)=direction(3)*2.*pi*angle(3)  !already got this length
-     if(i==1)then
+     if (i==1)then
        k_option(1,i)=2.*pi
        k_option(2,i)=0.
        k_option(3,i)=0.
@@ -1359,36 +1359,36 @@ ky_uukin=2.*pi
      !find the length of the current k_option vector
      mkunit(i)=sqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 
-     if(i==1.and.mkunit(i).gt.0.)then
+     if (i==1.and.mkunit(i).gt.0.)then
        k(:,num)=k_option(:,i)
        klengths(num)=mkunit(i)
      end if
 
      !now we check that the current length is unique (hasn't come before)
-     if(i>1.and.num<KS_modes)then
+     if (i>1.and.num<KS_modes)then
        do s1=i-1,1,-1
-        if(mkunit(i).gt.0.0.and. &
+        if (mkunit(i).gt.0.0.and. &
            mkunit(i)<=(mkunit(s1)-bubble).or.mkunit(i)>=(mkunit(s1)+bubble))then
            ne=.true.
          else
            ne=.false.
            exit
          end if
-         if(s1==1.and.ne)then !i.e. if length of current k_option is new......
+         if (s1==1.and.ne)then !i.e. if length of current k_option is new......
            num=num+1
            k(:,num)=k_option(:,i) !load current k_option into k that we keep
            klengths(num)=mkunit(i)  ! store the length also
          end if
        end do
       end if
-      if(i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
+      if (i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
     end do
 
     call KS_order(klengths,KS_modes,1,kk) !the 1 means ascending order
 
     do i=1,KS_modes
        do s1=1,KS_modes
-          if(kk(i)==klengths(s1))then
+          if (kk(i)==klengths(s1))then
              orderK(:,i)=k(:,s1)
           end if
        end do
@@ -1401,9 +1401,9 @@ ky_uukin=2.*pi
 
     do i=1,KS_modes
     !now we find delk as defined in Malik & Vassilicos' paper
-       if(i==1) delk(i)=(kk(i+1)-kk(i))/2.0
-       if(i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0
-       if(i.gt.1.and.i.lt.KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
+       if (i==1) delk(i)=(kk(i+1)-kk(i))/2.0
+       if (i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0
+       if (i.gt.1.and.i.lt.KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
     end do
 
     !now find A&B that are perpendicular to each of our N wave-vectors
@@ -1446,8 +1446,8 @@ ky_uukin=2.*pi
 
     do i=1,KS_modes
        arg=energy(i)*(kk(i)**3)            !these are used to define omega - the
-       if(arg.gt.0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
-       if(arg==0.0)omega(i)=0.0
+       if (arg.gt.0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
+       if (arg==0.0)omega(i)=0.0
     end do
 
     do i=1,KS_modes
@@ -1472,7 +1472,7 @@ ky_uukin=2.*pi
    do while(c>0.0)
       c = -1.
       do n = 1, i_N-1
-         if(   (i_ord==1 .and. B(n)>B(n+1))  &
+         if (   (i_ord==1 .and. B(n)>B(n+1))  &
           .or. (i_ord==2 .and. B(n)<B(n+1)) ) then
             c        = B(n)
             B(n)   = B(n+1)
