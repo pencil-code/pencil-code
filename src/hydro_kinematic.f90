@@ -1359,7 +1359,7 @@ ky_uukin=2.*pi
      !find the length of the current k_option vector
      mkunit(i)=sqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
 
-     if (i==1.and.mkunit(i).gt.0.)then
+     if (i==1.and.mkunit(i)>0.)then
        k(:,num)=k_option(:,i)
        klengths(num)=mkunit(i)
      end if
@@ -1367,7 +1367,7 @@ ky_uukin=2.*pi
      !now we check that the current length is unique (hasn't come before)
      if (i>1.and.num<KS_modes)then
        do s1=i-1,1,-1
-        if (mkunit(i).gt.0.0.and. &
+        if (mkunit(i)>0.0.and. &
            mkunit(i)<=(mkunit(s1)-bubble).or.mkunit(i)>=(mkunit(s1)+bubble))then
            ne=.true.
          else
@@ -1381,30 +1381,30 @@ ky_uukin=2.*pi
          end if
        end do
       end if
-      if (i==10000.and.num.lt.KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
+      if (i==10000.and.num<KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
     end do
 
     call KS_order(klengths,KS_modes,1,kk) !the 1 means ascending order
 
     do i=1,KS_modes
-       do s1=1,KS_modes
-          if (kk(i)==klengths(s1))then
-             orderK(:,i)=k(:,s1)
-          end if
-       end do
-    end do
+      do s1=1,KS_modes
+        if (kk(i)==klengths(s1))then
+          orderK(:,i)=k(:,s1)
+        endif
+      enddo
+    enddo
 
     k=orderK
     do i=1,KS_modes
       unit_k(:,i)=k(:,i)/kk(i)
-    end do
+    enddo
 
     do i=1,KS_modes
     !now we find delk as defined in Malik & Vassilicos' paper
        if (i==1) delk(i)=(kk(i+1)-kk(i))/2.0
        if (i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0
-       if (i.gt.1.and.i.lt.KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
-    end do
+       if (i>1.and.i<KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
+    enddo
 
     !now find A&B that are perpendicular to each of our N wave-vectors
     do i=1,KS_modes
@@ -1442,13 +1442,13 @@ ky_uukin=2.*pi
       !we defined earlier, to create the spectrum
       A(:,i)=ampA(i)*A(:,i)
       B(:,i)=ampB(i)*B(:,i)
-    end do
+    enddo
 
     do i=1,KS_modes
-       arg=energy(i)*(kk(i)**3)            !these are used to define omega - the
-       if (arg.gt.0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
-       if (arg==0.0)omega(i)=0.0
-    end do
+      arg=energy(i)*(kk(i)**3)            !these are used to define omega - the
+      if (arg>0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
+      if (arg==0.0)omega(i)=0.0
+    enddo
 
     do i=1,KS_modes
       call cross(A(:,i),unit_k(:,i),KS_A(:,i))
@@ -1458,7 +1458,8 @@ ky_uukin=2.*pi
     KS_k=k
     !tidy up
     deallocate(unit_k,orderk,kk,delk,energy,omega,klengths,ampA,ampB)
-    end subroutine periodic_KS_setup
+!
+    endsubroutine periodic_KS_setup
 !***********************************************************************
    subroutine KS_order(ad_, i_N, i_ord, B)
    implicit none

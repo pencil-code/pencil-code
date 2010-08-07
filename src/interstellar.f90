@@ -1590,7 +1590,7 @@ cool_loop: do i=1,ncool
 !  if using Gressel-hs in initial entropy this must also be specified for stability
       else if (heating_select == 'Gressel-hs') Then
         heat = heat_gressel(n)*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
-        where (lnTT.lt.lnminTT) &
+        where (lnTT<lnminTT) &
           heat = heat + GammaUV**1.5*((exp(lnminTT)-exp(lnTT))/exp(lnminTT))**0.5
       else if (heating_select == 'off') Then
          heat = 0.

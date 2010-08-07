@@ -398,14 +398,14 @@ module Testflow
       idiag_galij=0
     endif
 
-    if ( idiag_aklam/=0 .and. njtestflow.lt.4 ) then
+    if ( idiag_aklam/=0 .and. njtestflow<4 ) then
 
       print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for AKA-Lambda tensor to be calculated'
       idiag_aklam=0
 
     endif
 
-    if ( idiag_nu/=0 .and. ( itestflow=='W11-W22' .and. njtestflow.lt.4 .or. itestflow=='quadratic' .and. njtestflow.lt.6) ) then
+    if ( idiag_nu/=0 .and. ( itestflow=='W11-W22' .and. njtestflow<4 .or. itestflow=='quadratic' .and. njtestflow<6) ) then
 
       print*,'Warning: Number of testflows njtestflow=',njtestflow,' is too small for viscosity tensor to be calculated'
       idiag_nu=0
@@ -719,7 +719,7 @@ module Testflow
 
           uutest=f(l1:l2,m,n,iuxtest:iuztest)		! testflow solution # jtest
           hhtest=f(l1:l2,m,n,ihhtest)
-          !!if ( jtest.eq.1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
+          !!if ( jtest==1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
 !
 !  div u term
 !
@@ -881,7 +881,7 @@ module Testflow
           if ( jtest>0 .or. .not.lprescribed_velocity ) then
 
             call del2v_etc(f,iuxtest,DEL2=del2utest,GRADDIV=graddivutest)
-            if ( .false..and. m.eq.10 .and. n.eq.10 .and.jtest.eq.1) then
+            if ( .false..and. m==10 .and. n==10 .and.jtest==1) then
               print'(14(e12.6,","))', del2utest(:,1)
               print'(14(e12.6,","))',f(l1:l2,m,n,iuxtest)
               print*, '================'
@@ -2168,7 +2168,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           call del_elem( carray, idiag_map(ind), leng )
 !
           idiag_map(ind) = 0
-          if ( ind.lt.nname_old ) &
+          if ( ind<nname_old ) &
             idiag_map(ind+1:nname_old) = idiag_map(ind+1:nname_old)-1
 
         endif
@@ -2317,14 +2317,14 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
       integer :: iname, i, nname_form, indx
 !
-      if ( mat_diag_ind.eq.0 ) then                           ! if complete tensor was not already inquired
+      if ( mat_diag_ind==0) then ! if complete tensor was not already inquired
 !
         do iname=1,nname
         do i=1,2
 !
-          if ( mat_diag_indices(i)/=0 ) then                  ! if any of the elements is inquired
+          if ( mat_diag_indices(i)/=0 ) then ! if any of the elements is inquired
 !
-            mat_diag_ind = -2                                 ! flag the whole tensor to be calculated
+            mat_diag_ind = -2         ! flag the whole tensor to be calculated
             return
 !
           endif
@@ -2351,8 +2351,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           indx = indx+1
 !
         enddo
-
-        if ( mat_diag_ind.lt.nname_old ) &
+!
+        if ( mat_diag_ind<nname_old ) &
           idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+1
 !
         cformat = cform(indx)
@@ -2393,7 +2393,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
         ind = mat_diag_indices(i)
 !
-        if (ind.gt.0) &
+        if (ind>0) &
           mat_diag_indices(i) = idiag_map(ind)
 !
       enddo

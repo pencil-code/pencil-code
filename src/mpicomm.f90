@@ -706,12 +706,12 @@ module Mpicomm
              poleneigh,npole_tag,MPI_COMM_WORLD,isend_rq_npole,mpierr)
         call MPI_WAIT(irecv_rq_npole,irecv_stat_np,mpierr)
         do j=ivar1,ivar2
-          if (bcy1(j).eq.'pp') then
+          if (bcy1(j)=='pp') then
              f(l1:l2,1,n1:n2,j)=npbufyi(:,3,:,j) 
              f(l1:l2,2,n1:n2,j)=npbufyi(:,2,:,j) 
              f(l1:l2,3,n1:n2,j)=npbufyi(:,1,:,j) 
           endif
-          if (bcy1(j).eq.'ap') then 
+          if (bcy1(j)=='ap') then 
              f(l1:l2,1,n1:n2,j)=-npbufyi(:,3,:,j) 
              f(l1:l2,2,n1:n2,j)=-npbufyi(:,2,:,j) 
              f(l1:l2,3,n1:n2,j)=-npbufyi(:,1,:,j)  
@@ -737,9 +737,9 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
+!  The following is not a typo, it must be nprocz although the boundary 
+!  is the pole (i.e., along the y direction). 
 !
-! The following is not a typo, it must be nprocz although the boundary 
-! is the pole (i.e., along the y direction). 
       if (nprocz>1) then
         spbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2) !!(south pole)
         nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
@@ -749,10 +749,10 @@ module Mpicomm
              poleneigh,spole_tag,MPI_COMM_WORLD,isend_rq_spole,mpierr)
         call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
         do j=ivar1,ivar2
-          if (bcy2(j).eq.'pp') & 
-               f(l1:l2,m2+1:my,n1:n2,j)=npbufyi(:,:,:,j) 
-          if (bcy2(j).eq.'ap') & 
-               f(l1:l2,m2+1:my,n1:n2,j)=-npbufyi(:,:,:,j) 
+          if (bcy2(j)=='pp') & 
+              f(l1:l2,m2+1:my,n1:n2,j)=npbufyi(:,:,:,j) 
+          if (bcy2(j)=='ap') & 
+              f(l1:l2,m2+1:my,n1:n2,j)=-npbufyi(:,:,:,j) 
         enddo
         call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
       endif

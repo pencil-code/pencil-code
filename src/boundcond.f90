@@ -353,7 +353,7 @@ module Boundcond
 ! the following condition is used. But this place should be modifyed somehow 
 ! Any ideas?
 !
-            if ((bc12(j) .eq. 'p') .and. lchemistry .and. ldustdensity) bc12(j)=''
+            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
             if (ip_ok) then
@@ -4649,7 +4649,7 @@ module Boundcond
       case ('bot')
         do l=1,mx; do n=1,mz
           value=0.
-          if (f(l,m1,n,j) .lt. 0) value=f(l,m1,n,j)
+          if (f(l,m1,n,j)<0) value=f(l,m1,n,j)
           do i=1,nghost
             f(l,m1-i,n,j)=value
           enddo
@@ -4660,7 +4660,7 @@ module Boundcond
       case ('top')
         do l=1,mx; do n=1,mz
           value=0.
-          if (f(l,m2,n,j) .gt. 0) value=f(l,m2,n,j)
+          if (f(l,m2,n,j) > 0) value=f(l,m2,n,j)
           do i=1,nghost
             f(l,m2+i,n,j)=value
           enddo
