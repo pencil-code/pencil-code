@@ -19,7 +19,7 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, nghost, 3
 ;
-;  calculate mx, my, and mz, based on the input array size
+;  Calculate mx, my, and mz, based on the input array size
 ;
   s=size(f) & d=make_array(size=s)
   mx=s[1] & my=s[2] & mz=s[3]

@@ -30,7 +30,7 @@ function yderzder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   m1=nghost & m2=my-nghost-1
   n1=nghost & n2=mz-nghost-1
 ;
-;  Calculate d2/dydz.
+;  Calculate d2f/dydz.
 ;
   if (s[0] eq 3) then begin
     if ( (m1 ne m2) and (n1 ne n2) ) then begin
