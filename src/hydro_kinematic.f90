@@ -625,7 +625,7 @@ ky_uukin=2.*pi
         p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
         p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
         p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
-        if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2*kz_uukin**2) &
+        if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
           *cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
 !
 !potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz
