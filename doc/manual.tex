@@ -1201,6 +1201,7 @@ to that directory:
 
 
 \subsubsection{Adapting \file{Makefile.src}}
+\index{Makefile}
 
 This step requires some input from you, but you only have to do this once
 for each machine you want to run the code on.
@@ -1442,7 +1443,8 @@ separately for each run in a local directory \file[src/]{src} below the
 individual run directory, like
 e.\,g.~\file[conv-slab/src/]{samples/conv-slab/src}.
 
-It may be a good idea to keep your own runs also under \name{svn}, but
+It may be a good idea to keep your own runs also under \name{svn} or
+\name{cvs} (which is older than but similar to \name{svn}), but
 this would normally be a different repository. On the machine where you
 are running the code, you may want to check them out into a subdirectory
 of \file{pencil-code/}.
@@ -1630,6 +1632,8 @@ executable, \name{MPI} options, or the number of processors) are located in
 \file{getconf.csh}, which is never directly invoked.
 
 \subsubsection{\file{src/ }}
+\index{Makefile}
+
 The \file[src/]{src} directory contains two local files,
 \file[Makefile.local]{src/Makefile.local} and
 \file[cparam.local]{src/cparam.local}, which allow the user to choose
@@ -1995,6 +1999,7 @@ See \cmd{pencil-test --help} for a complete list of options.
 \subsection{Adapting \file{Makefile.src}
   [obsolete; see Sect.~\ref{S-configuration}]}
 \label{adapt-mkfile}
+\index{Makefile}
 
 By default, one \file{Makefile} will only work on a given class of
 computers with identical (or at least similar) compilers.
@@ -5376,6 +5381,7 @@ i   openmpi-doc    - high performance message passing library -- man pages
 
 Install that and keep your configuration (Makefile.src and getconf.csh)
 close to that for `frenesi' or `norlx50'. That should work.
+\index{Makefile}
 
 \subsubsection{Error: Symbol 'mpi_comm_world' at (1) has no IMPLICIT type}
 
@@ -5485,7 +5491,7 @@ subroutine twice with the same \code{f} gives different output \code{df}.
 dependence of \code{df} on the chosen set of pencils. Sometimes these random
 numbers are inconsistent with the physics and cause errors. In that case you
 can set \code{lrandom_f_pencil_check=F} in \code{\&run_pars} in \file{run.in}.
-The initial condition may contain many idealised states (zeros or ones) which
+The initial condition may contain many idealized states (zeros or ones) which
 then do not trigger pencil check errors when \code{lrandom_f_pencil_check=F},
 even if pencils are missing. But it does prevent mathematical inconsistencies.
 
@@ -5912,7 +5918,9 @@ Again, the answer is yes; just go to:
 % ====================================================================== %
 
 \part{Programming the {\sc Pencil Code}}
+\label{ProgrammingStyle}
 \index{Programming style}
+\index{Coding standards}
 \index{Style}
 
 The {\sc Pencil Code} has expanded approximately linearly in the number of
@@ -6056,7 +6064,7 @@ the $\code{gij}$ routine, which calls the \code{der} routine, e.g., like so
       k1=k-1
       do i=1,3
         do j=1,3
-          if (nder == 1) then
+          if (nder==1) then
             call der(f,k1+i,tmp,j)
 \end{verbatim}
 For all further details you just have to follow the trail.
@@ -6101,7 +6109,9 @@ You can of course also repair it!
 \section{Adapting the code}
 
 \subsection{The {\sc Pencil Code} coding standard}
+\index{Programming style}
 \index{Coding standards}
+\index{Style}
 
 As with any code longer than a few lines the appearance and layout
 of the source code is of the utmost importance.  Well laid out
@@ -6116,9 +6126,9 @@ changes of existing code via svn follow the given coding style.
 There are not terribly many rules and using existing code as a template
 is usually the easiest way to proceed.  In short the most important rules are:
 \begin{itemize}
-\item tab characters do not occur anywhere in the code (in fact the use of
-tab character is an extension to the Fortran standard)
-\item code in any delimited block, e.g. if statements, do loops, subroutines
+\item \cmd{tab} characters do not occur anywhere in the code (in fact the use of
+tab character is an extension to the Fortran standard).
+\item Code in any delimited block, e.g. if statements, do loops, subroutines
 etc., is indented be precisely 2 spaces.
 E.g.
 \begin{Verbatim}
@@ -6134,7 +6144,7 @@ E.g.
       call fatal_error('del2fjv','del2fjv not implemented')
   [...]
 \end{Verbatim}
-\item there is always one space separation between 'if' and the criterion
+\item There is always one space separation between 'if' and the criterion
 following in parenthesis:
 \begin{verbatim}
   if (ldensity_nolog) then
@@ -6147,15 +6157,23 @@ This is wrong:
     rho=f(l1:l2,m,n,irho)
   endif
 \end{verbatim}
-\item relational operators are written with symbols (==,/=,$<$,$<$=,$>$,$>$=),
-{\it not} with characters
-(\code{.eq.},\code{.ne.},\code{.lt.},\code{.le.},\code{.gt.},\code{.ge.}).
-\item in general all comments are placed on their own lines with the '!'
+\item
+In general, try to follow common practice used elsewhere in the code.
+For example, in the code fragment above there are no empty spaces within
+the mathematical expressions programmed in the code.
+A unique convention helps in finding certain expressions and patterns
+in the code.
+However, empty spaces are often used after commas and semicolons, for
+examples in name lists.
+\item Relational operators are written with symbols
+($==$, $/=$, $<$, $<=$, $>$, $>=$), {\it not} with characters
+(\code{.eq.}, \code{.ne.}, \code{.lt.}, \code{.le.}, \code{.gt.}, \code{.ge.}).
+\item In general all comments are placed on their own lines with the '!'
 appearing in the first column.
-\item all subroutine/functions begin with a standard comment block describing
+\item All subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
-\item lines longer that 78 characters should be explicitly wrapped using
+\item Lines longer that 78 characters should be explicitly wrapped using
   the \& character, unless there is a block of longer lines that can only
   be read easily when they are not wrapped. Always add one whitespace before
   the \& character.
@@ -7142,6 +7160,9 @@ placed in files with the extension `.in'
 
 \subsection{Fortran Code}
 \label{CodingStandards}
+\index{Programming style}
+\index{Coding standards}
+\index{Style}
 
 The code should remain fully compatible with the Fortran90 standard.
 This ensures that the code will run on all platforms.
@@ -7154,8 +7175,12 @@ some form of capitalization for readability.
 
 In general all Fortran code including keywords, variable names etc. are
 written in lowercase.
+Some of the coding standard has already been discussed in 
+Sect.~\ref{ProgrammingStyle}.
+Here we discuss and amplify some remaining matters.
 
 \subsubsection{Indenting and whitespace}
+
 Whitespace should be removed from the end of lines.
 
 Blank lines are kept to a minimum, and when occurring in subroutines
@@ -7165,9 +7190,12 @@ Tab characters are not used anywhere in the code.  Tab characters are
 not in fact allowed by the Fortran standard and compilers that accept
 them do so as an extension.
 
-All lines are kept to be not more than 78 characters long. Where
-lines are longer they must be explicitly wrapped using the
+All lines are kept to be not more than 80 characters long.
+Where lines are longer they must be explicitly wrapped using the
 Fortran continuation character `\&'.
+Longer lines (up to 132 characters) and additional spaces are allowed
+in cases where the readability of the code is enhanced, e.g.\ when one
+line is followed by a similar one with minor differences in some places.
 
 Code in syntactic blocks such as \code{if}--\code{endif}, \code{do}--\code{enddo},
 \code{subroutine}--\code{endsubroutine} etc. is always indented by precisely two spaces.
@@ -7244,7 +7272,7 @@ is a standard, for example:
 !  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general.
 !
 !  24-nov-02/tony: coded
-!  31-aug-03/axel: normally, diffrho should be given in absolute units
+!   1-aug-03/axel: normally, diffrho should be given in absolute units
 !
 \end{verbatim}
 where dates are written in dd-mmm-yy format as shown and names appearing
@@ -7330,6 +7358,7 @@ Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
                (define-key f90-mode-map [(meta backspace)] 'backward-kill-word)
   )))
 \end{Verbatim}
+
 \subsection{Other best practices}
 When implementing IF or SELECT blocks always write
 code for all cases -- including the default or else case.
@@ -7341,9 +7370,34 @@ code like the {\sc Pencil Code}.
 
 If a case is supposed to do nothing and it may be unclear that the
 coder has recognized this fact then make it explicit by adding the
-default case with a comment like  ! Do Nothing  .
+default case with a comment like\\
+\code{! Do Nothing}.
 The compiler will clean away any such empty blocks.
 
+\subsection{General changes to the code}
+\index{Changes}
+
+It is sometimes necessary to do major changes to the code.
+Since this may affect many people and may even be controversial
+among the developers, such changes are restricted to the time
+of the next Pencil Code User Meeting.
+Such meetings are adversed on \url{http://www.nordita.org/software/pencil-code/}
+under the news section.
+Notes about previous such meetings can be found under
+\url{http://www.nordita.org/software/pencil-code/UserMeetings/}.
+
+Major changes can affect those developers who have not checked in
+their latest changes for some time.
+Before doing such changes it is therefore useful to contact the people
+who have contributed to the latest developments on that module.
+If it is not functional or otherwise in bad shape, it should be
+moved to \file{experimental}, i.e.\ one says
+\cmd{svn mv file.f90 experimental/file.f90}.
+However, any such directory changes constitute a major change in
+itself and should be performed in agreement with those involved in
+the development.
+Otherwise any file that has been changed in the mean time will end up
+being outside revision control, which is to be avoided at all cost.
 
 % ====================================================================== %
 
@@ -8450,7 +8504,7 @@ continue from \file{VAR1} at $128^3$ (on
   \prompt{run_64> } restart-new-dir-VAR ../tmp_64 1
   \end{alltt}
 
-\item Create the new run directory (linking the excutables with -s):
+\item Create the new run directory (linking the executables with -s):
   \begin{alltt}
   \prompt{run_64> } cd ../tmp_64
   \prompt{tmp_64> } pc_newrun -s ../run_128 {\sl or } new run_128
