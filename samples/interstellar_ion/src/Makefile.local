@@ -13,7 +13,7 @@ ENTROPY      =   entropy
 MAGNETIC     = nomagnetic
 RADIATION    = noradiation
 PSCALAR      = nopscalar
-INTERSTELLAR = expertimental/interstellar
+INTERSTELLAR =   interstellar
 EOS          =   eos_ionization
 
 GRAVITY      =   gravity_simple
