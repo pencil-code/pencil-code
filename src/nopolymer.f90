@@ -30,7 +30,7 @@ module Polymer
     subroutine register_polymer()
 !
 !  Initialise variables which should know that we solve for the vector
-!  potential: ipoly, etc; increase nvar accordingly
+!  potential: ipoly, etc; increase nvar accordingly.
 !
 !  14-Aug-08 : Dhruba
 !
@@ -40,7 +40,7 @@ module Polymer
 !***********************************************************************
     subroutine initialize_polymer(f,lstarting)
 !
-!  Perform any post-parameter-read initialization
+!  Perform any post-parameter-read initialization.
 !
 !  14-aug-08/dhruba: initialize polymer field (dummy at present)
 !
@@ -54,7 +54,7 @@ module Polymer
 !***********************************************************************
     subroutine init_poly(f)
 !
-!  Initialise polymer field; called from start.f90
+!  Initialise polymer field.
 !
 !   14-aug-2008/dhruba: coded
 !
