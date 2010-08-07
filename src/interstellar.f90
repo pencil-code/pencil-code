@@ -21,8 +21,8 @@ module Interstellar
 !
   implicit none
 !
-  include '../interstellar.h'
-  include '../record_types.h'
+  include 'interstellar.h'
+  include 'record_types.h'
 !
   type ExplosionSite
     real :: rho, lnrho, yH, lnTT, TT, ss, ee

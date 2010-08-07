@@ -24,8 +24,8 @@ module Hydro
 !
   implicit none
 !
-  include '../record_types.h'
-  include '../hydro.h'
+  include 'record_types.h'
+  include 'hydro.h'
 !
   real, dimension (mz,3) :: uumz=0.
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
