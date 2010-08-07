@@ -29,7 +29,7 @@ module Polymer
   include 'record_types.h'
   include 'polymer.h'
 !
-! start parameters
+!  Start parameters.
 !
   character (len=labellen), dimension(ninit) :: initpoly='nothing'
   real :: ini_radius
@@ -37,7 +37,7 @@ module Polymer
   namelist /polymer_init_pars/ &
      initpoly,ini_radius
 !
-! run parameters
+!  Run parameters.
 !
   logical :: lpolyback=.true.
   logical :: lpolyadvect=.true.
@@ -54,9 +54,9 @@ module Polymer
 !***********************************************************************
     subroutine register_polymer()
 !
-!  Initialise variables
+!  Initialise variables.
 !
-!  14-Aug-08 : Dhruba 
+!  14-Aug-08/Dhruba: coded
 !
       use FArrayManager
 !
@@ -73,7 +73,7 @@ module Polymer
 !***********************************************************************
     subroutine initialize_polymer(f,lstarting)
 !
-!  Perform any post-parameter-read initialization
+!  Perform any post-parameter-read initialization.
 !  At present does nothing. 
 !
 !  14-aug-08/dhruba: initialize polymer field
@@ -93,12 +93,11 @@ module Polymer
 !***********************************************************************
     subroutine init_poly(f)
 !
-!  initialise polymer field; called from start.f90
+!  Initialise polymer field.
 !
 !   14-aug-2008/dhruba: coded
 !
       use Initcond
-      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: rsqr
@@ -118,35 +117,35 @@ module Polymer
             f(:,:,:,ip23) = 0.
           case default
 !
-!  Catch unknown values
+!  Catch unknown values.
 !
             call fatal_error('init_poly', &
                 'init_poly value "' // trim(initpoly(j)) // '" not recognised')
         endselect
 !
-!  End loop over initial conditions
+!  End loop over initial conditions.
 !
       enddo
 !
-!  Interface for user's own initial condition
+!  Interface for user's own initial condition.
 !   Not implemented for polymers yet. 
 !
 !      if (linitial_condition) call initial_condition_pp(f)
 !
-! Also set the f(r_p) depending on the model of the polymer. 
+!  Also set the f(r_p) depending on the model of the polymer. 
 !
       select case (poly_model)
         case ('oldroyd-B')
-           f(:,:,:,ipoly_fr) = 1.
+          f(:,:,:,ipoly_fr) = 1.
         case ('FENE-P')
-           do iz=1,mz; do iy=1,my; do ix=1,mx
-              rsqr = f(ix,iy,iz,ip11)+f(ix,iy,iz,ip22)+&
-                     f(ix,iy,iz,ip33)
-              f(ix,iy,iz,ipoly_fr) = (fenep_L**2-3)/(fenep_L**2-rsqr)
-           enddo; enddo; enddo
+          do iz=1,mz; do iy=1,my; do ix=1,mx
+            rsqr = f(ix,iy,iz,ip11)+f(ix,iy,iz,ip22)+&
+                   f(ix,iy,iz,ip33)
+            f(ix,iy,iz,ipoly_fr) = (fenep_L**2-3)/(fenep_L**2-rsqr)
+          enddo; enddo; enddo
         case default
           call fatal_error('init_poly','no such polymer model')
-       endselect
+      endselect
 !
     endsubroutine init_poly
 !***********************************************************************
@@ -157,11 +156,13 @@ module Polymer
       lpenc_requested(i_poly)=.true.
       lpenc_requested(i_trp)=.true.
       lpenc_requested(i_frC)=.true.
-! Also the pencils for hydro that are required
+!
+!  Also the pencils for hydro that are required.
+!
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_uij)=.true.
 !
-! If we consider backreaction from the polymer to the fluid
+!  If we consider backreaction from the polymer to the fluid.
 !
       if(lpolyback)  then
          lpenc_requested(i_div_frC)=.true.
@@ -169,26 +170,26 @@ module Polymer
          lpenc_requested(i_grad_fr)=.true.
       endif
 !
-! if advection by the velocity is turned on 
+!  If advection by the velocity is turned on.
 !
       if (lpolyadvect)  lpenc_requested(i_u_dot_gradC)=.true.
 !
-! If a diffusive term in the polymer equation is not included: (not default)
+!  If a diffusive term in the polymer equation is not included: (not default)
 !
       if (eta_poly/=0) lpenc_requested(i_del2poly)=.true.
 !
-! Different pencils are chosen depending on different algorithms applied
+!  Different pencils are chosen depending on different algorithms applied.
 !
       select case(poly_algo)
         case('simple')
-           write(*,*) 'no pencils needed now'
+          write(*,*) 'no pencils needed now'
         case('cholesky')
           call inevitably_fatal_error('pencil_criteria_polymer', &
-            'poly_algo: cholesky decomposition is not implemented yet ')
+              'poly_algo: cholesky decomposition is not implemented yet ')
         case('nothing')
           call inevitably_fatal_error('pencil_criteria_polymer', &
-            'poly_algo: please chosse an algorithm to solve the polymer equations. ')
-        endselect
+              'poly_algo: please chosse an algorithm to solve the polymer equations. ')
+      endselect
 !
     endsubroutine pencil_criteria_polymer
 !***********************************************************************
@@ -306,7 +307,7 @@ module Polymer
 !***********************************************************************
     subroutine dpoly_dt(f,df,p)
 !
-!  polymer evolution
+!  Polymer evolution.
 !
 !  18-aug-08/dhruba: coded
 !
@@ -315,7 +316,7 @@ module Polymer
       type (pencil_case) :: p
       real, dimension(nx,3,3) :: uijT,CdotGradu,CdotGraduT
 !
-!  identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dpoly_dt: SOLVE'
       if (headtt) then
@@ -327,16 +328,16 @@ module Polymer
         call identify_bcs('P32',ip32)
       endif
 !
-!  add backreaction due to the polymer to momentum equation
+!  Add backreaction due to the polymer to momentum equation.
 !
       if (lhydro.and.lpolyback) then
         if (tau_poly/=0.0) then
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+& 
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ & 
               mu_poly*tau_poly1*p%div_frC
         endif
       endif
 !
-! If we are advecting the polymer
+!  If we are advecting the polymer.
 ! 
       if (lpolyadvect)  then 
         df(l1:l2,m,n,ip11)= df(l1:l2,m,n,ip11) - p%u_dot_gradC(:,1,1)
@@ -347,13 +348,13 @@ module Polymer
         df(l1:l2,m,n,ip33)= df(l1:l2,m,n,ip33) - p%u_dot_gradC(:,3,3)
       endif
 !
-! CdotGradu and CdotGraduT
+!  CdotGradu and CdotGraduT.
 ! 
       call mult_matrix(p%poly,p%uij,CdotGradu)
       call transpose_mn(p%uij,uijT)
       call mult_matrix(p%poly,uijT,CdotGraduT)
 !
-! Select which algorithm we are using
+!  Select which algorithm we are using.
 !
       select case(poly_algo)
         case('simple')
@@ -385,7 +386,7 @@ module Polymer
 
           endif
 !
-! Add synthetic polymer diffusion for numerical stability 
+!  Add synthetic polymer diffusion for numerical stability .
 !            if(eta_poly/=0) df(l1:l2,m,n,ip11:ip23)=&
 !              df(l1:l2,m,n,ip11:ip23)-eta_poly*p%del2poly
         case('cholesky')
@@ -437,7 +438,7 @@ module Polymer
 !***********************************************************************
     subroutine rprint_polymer(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for polymer
+!  Reads and registers print parameters relevant for polymer.
 !
       use Diagnostics
 !
