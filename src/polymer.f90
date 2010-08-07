@@ -1,4 +1,4 @@
-! $Id: polymer.f90 $
+! $Id$
 !
 !  This modules deals with all aspects of polymers.
 !
@@ -67,7 +67,7 @@ module Polymer
       ipoly_fr=ipoly+6
 !
       if (lroot) call svn_id( &
-           "$Id: polymer.f90  dhruba.mitra $")
+           "$Id$")
 !
     endsubroutine register_polymer
 !***********************************************************************
