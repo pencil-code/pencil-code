@@ -497,7 +497,7 @@ module Sub
 !***********************************************************************
     subroutine transpose_mn(a,b)
 !
-!  Transpose 3x3 pencil array, b=transpose(a), on pencil arrays
+!  Transpose 3x3 pencil array, b=transpose(a), on pencil arrays.
 !
 !   18-aug-10/dhruba: coded 
 !
@@ -508,9 +508,9 @@ module Sub
       integer :: i,j
 !
       do i=1,3
-         do j=1,3
-            b(:,i,j) = a(:,j,i)
-         enddo
+        do j=1,3
+          b(:,i,j) = a(:,j,i)
+        enddo
       enddo
 !
     endsubroutine transpose_mn
@@ -1307,17 +1307,17 @@ module Sub
       integer :: i,j
 !
       do i=1,3
-         bi(:,i)=aijk(:,i,1,1)+aijk(:,i,2,2)+aijk(:,i,3,3)
+        bi(:,i)=aijk(:,i,1,1)+aijk(:,i,2,2)+aijk(:,i,3,3)
       enddo
 !
 !  Adjustments for spherical coordinate system.
 !
       if (lspherical_coords) then
-         call fatal_error('div_mn_2tensor','not impelmented in sph-coordinate')
+        call fatal_error('div_mn_2tensor','not impelmented in sph-coordinate')
       endif
 !
       if (lcylindrical_coords) then
-         call fatal_error('div_mn_2tensor','not impelmented in cyl-coordinate')
+        call fatal_error('div_mn_2tensor','not impelmented in cyl-coordinate')
       endif
 !
     endsubroutine div_mn_2tensor
@@ -2346,27 +2346,27 @@ module Sub
 !  Upwind.
 !
       if (present(upwind)) then
-        call fatal_error('u_dot_grad_mat','unwinding not implemented')
+        call fatal_error('u_dot_grad_mat','upwinding not implemented')
       else
-         do i=1,3
-            do j=1,3
-               call dot_mn(uu,gradM(:,i,j,:),tmp)
-               ugradM(:,i,j)=tmp
-            enddo
-         enddo
+        do i=1,3
+          do j=1,3
+            call dot_mn(uu,gradM(:,i,j,:),tmp)
+            ugradM(:,i,j)=tmp
+          enddo
+        enddo
       endif
 !
 !  Adjustments for spherical coordinate system.
 !  not implemented
 !
       if (lspherical_coords) then
-         call fatal_error('u_dot_grad_mat','not implemented in sph-coordinates')
+        call fatal_error('u_dot_grad_mat','not implemented in sph-coordinates')
       endif
 !
 !  Cylindrical coordinates: not implemented
 !
       if (lcylindrical_coords) then
-         call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
+        call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
       endif
 !
    endsubroutine u_dot_grad_mat
