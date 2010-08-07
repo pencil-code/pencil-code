@@ -1082,7 +1082,7 @@ module Hydro
 !
               xold=xc0(ixy)
               yold=yc0(ixy)
-            end do
+            enddo
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
@@ -1096,8 +1096,8 @@ module Hydro
             call random_number_wrapper(f(l1:l2,m,n1,iuz))
             do n=n1,n2
               f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
-            end do
-          end do
+            enddo
+          enddo
           close(15)
 !
         case ( 'anelastic-nlin')

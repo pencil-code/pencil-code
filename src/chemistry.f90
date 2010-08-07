@@ -4651,7 +4651,7 @@ module Chemistry
       else
         slice=mu1_full(l1:l2,m1:m2,index)
         call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
-      end if
+      endif
 !
     end subroutine get_mu1_slice
 !***********************************************************************

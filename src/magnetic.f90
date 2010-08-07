@@ -2190,25 +2190,25 @@ module Magnetic
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
         etatotal = etatotal + p%etava
-      end if
+      endif
 !
       if (lresi_etaj) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i)
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etaj
         etatotal = etatotal + p%etaj
-      end if
+      endif
 !
       if (lresi_etaj2) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i)
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etaj2
         etatotal = etatotal + p%etaj2
-      end if
+      endif
 !
       if (lresi_etajrho) then
         forall (i = 1:3) fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i)
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etajrho
         etatotal = etatotal + p%etajrho
-      end if
+      endif
 !
       if (lresi_smagorinsky) then
         eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)

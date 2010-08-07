@@ -1566,13 +1566,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (r_point < r_cyl) then
               ba(i,j,:,1:3)=11
               ba(i,j,:,4)=icyl
-            end if
+            endif
             !  Upper ghost points
             r_point=sqrt((((x(i)-x_cyl)**2+(y(my-nghost+j)-y_cyl)**2)))
             if (r_point < r_cyl) then
               ba(i,my-nghost+j,:,1:3)=11
               ba(i,my-nghost+j,:,4)=icyl
-            end if
+            endif
           enddo
         enddo
 !
@@ -1585,13 +1585,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (r_point < r_cyl) then
               ba(i,j,:,1:3)=11
               ba(i,j,:,4)=icyl
-            end if
+            endif
             !  Upper (right) ghost points
             r_point=sqrt((((x(mx-nghost+i)-x_cyl)**2+(y(j)-y_cyl)**2)))
             if (r_point < r_cyl) then
               ba(mx-nghost+i,j,:,1:3)=11
               ba(mx-nghost+i,j,:,4)=icyl
-            end if
+            endif
           enddo
         enddo
 !

@@ -1326,7 +1326,7 @@ module Interstellar
                        tiny(0D0), &
                        tiny(0.D0) &
                      /) / ( m_p_cgs )**2/ unit_Lambda * unit_temperature**beta
-      end if
+      endif
 !
       lamstep = lamk*lamT**beta
 !
@@ -1356,17 +1356,17 @@ module Interstellar
 !
         where (TT < lamT(1)) TT=lamT(1)
         do j=1,9
-           if (TT(n) >= lamT(j) .and. TT(n) <= lamT(j+1)) then
-           fbeta(n)=beta(j)
-           flamk(n)=lamk(j)
-           end if
+          if (TT(n) >= lamT(j) .and. TT(n) <= lamT(j+1)) then
+            fbeta(n)=beta(j)
+            flamk(n)=lamk(j)
+          endif
         where (TT > lamT(10))
-           fbeta=beta(10)
-           flamk=lamk(10)
+          fbeta=beta(10)
+          flamk=lamk(10)
         endwhere
         enddo
-          lambda=real(flamk*TT**fbeta)
-          zheat(n)=lambda(n)*rho(n)
+        lambda=real(flamk*TT**fbeta)
+        zheat(n)=lambda(n)*rho(n)
 !
       enddo
 !
