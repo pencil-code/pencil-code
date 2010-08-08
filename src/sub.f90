@@ -499,7 +499,7 @@ module Sub
 !
 !  Transpose 3x3 pencil array, b=transpose(a), on pencil arrays.
 !
-!   18-aug-10/dhruba: coded 
+!   18-aug-10/dhruba: coded
 !
       real, dimension (nx,3,3) :: a,b
 !
@@ -2318,8 +2318,8 @@ module Sub
 !***********************************************************************
     subroutine u_dot_grad_mat(gradM,uu,ugradM,upwind)
 !
-!  u.grad(M)
-!  where M is a second rank matrix
+!  Computes  u.grad(M)
+!  where M is a second rank matrix.
 !
 !  07-aug-10/dhruba: coded
 !
@@ -2333,7 +2333,7 @@ module Sub
       integer :: i,j
       logical, optional :: upwind
 !
-!  Upwind.
+!  Test if Upwind is used.
 !
       if (present(upwind)) then
         call fatal_error('u_dot_grad_mat','upwinding not implemented')
