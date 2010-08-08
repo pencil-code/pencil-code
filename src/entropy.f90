@@ -240,10 +240,12 @@ module Entropy
           "$Id$")
 !
 !  Get the shared variable lpressuregradient_gas from Hydro module.
+!  Do this only if lhydro=T.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_entropy', &
-          'there was a problem getting lpressuregradient_gas')
+      if (lhydro) then
+        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      endif
 !
     endsubroutine register_entropy
 !***********************************************************************
