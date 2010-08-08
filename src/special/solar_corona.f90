@@ -125,7 +125,7 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-      if (lgranulation.and.ipz.eq.0) then
+      if (lgranulation.and.iproc<=nprocxy+4) then
         call setdrparams()
 !
 ! if irefz is not set choose z=0 or irefz=n1
@@ -144,9 +144,6 @@ module Special
 ! We need at least 4 procs above the ipz=0 for computing
 ! granular velocities in parallel
       if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .true.
-! *** WORK HERE *** Disabled parallel calculation of granulation driver,
-! because it seems to hang for my runs somewhere in diver3 (Bourdin.KIS)
-  lgran_parallel = .false.
 !
       call keep_compiler_quiet(lstarting)
 !
