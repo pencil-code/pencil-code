@@ -2259,14 +2259,12 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
-      logical :: ladd1
+      logical :: ladd1, upwind1
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_vec','variable index is out of bounds')
         return
       endif
-!
-!  Upwind.
 !
       if (present(ladd)) then
         ladd1=ladd
@@ -2274,27 +2272,24 @@ module Sub
         ladd1=.false.
       endif
 !
+!  Test for upwind.
+!
       if (present(upwind)) then
-        do j=1,3
-!
-          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind)
-          if (ladd1) then
-            ugradf(:,j)=ugradf(:,j)+tmp
-          else
-            ugradf(:,j)=tmp
-          endif
-!
-        enddo
+        upwind1=upwind
       else
-        do j=1,3
-          call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp)
-          if (ladd1) then
-            ugradf(:,j)=ugradf(:,j)+tmp
-          else
-            ugradf(:,j)=tmp
-          endif
-        enddo
+        upwind1=.false.
       endif
+!
+      do j=1,3
+!
+        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=upwind1)
+        if (ladd1) then
+          ugradf(:,j)=ugradf(:,j)+tmp
+        else
+          ugradf(:,j)=tmp
+        endif
+!
+      enddo
 !
 !  Adjustments for spherical coordinate system.
 !  The following now works for general u.gradA.
@@ -2316,34 +2311,34 @@ module Sub
 !
     endsubroutine u_dot_grad_vec
 !***********************************************************************
-    subroutine u_dot_grad_mat(gradM,uu,ugradM,upwind)
+    subroutine u_dot_grad_mat(f,k,gradM,uu,ugradM,upwind)
 !
 !  Computes  u.grad(M)
 !  where M is a second rank matrix.
 !
 !  07-aug-10/dhruba: coded
 !
-      intent(in) :: gradM
+      intent(in) :: gradM,f,k
       intent(out) :: ugradM
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
-      real, dimension (nx) :: tmp
-      integer :: i,j
+      integer :: k
       logical, optional :: upwind
+!
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
+        return
+      endif
 !
 !  Test if Upwind is used.
 !
       if (present(upwind)) then
         call fatal_error('u_dot_grad_mat','upwinding not implemented')
       else
-        do i=1,3
-          do j=1,3
-            call dot_mn(uu,gradM(:,i,j,:),tmp)
-            ugradM(:,i,j)=tmp
-          enddo
-        enddo
+        call vec_dot_3tensor(uu,gradM,ugradM,ladd=.false.)
       endif
 !
 !  Spherical and cylindrical coordinates are not
@@ -2356,6 +2351,8 @@ module Sub
       if (lcylindrical_coords) then
         call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
       endif
+!
+      call keep_compiler_quiet(f)
 !
    endsubroutine u_dot_grad_mat
 !***********************************************************************

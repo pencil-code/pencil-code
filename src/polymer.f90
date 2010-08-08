@@ -242,13 +242,9 @@ module Polymer
 ! Cijk
       if (lpencil(i_Cijk)) call gijk_symmetric(f,ipoly,p%Cijk,1)
 ! u_dot_gradC
-      if (lpencil(i_u_dot_gradC)) then
-        if (lspherical_coords.or.lcylindrical_coords.or.lupw_poly) then
-          call
-        else
-          call vect_dot_3tensor(p%uu,p%Cijk,p%u_dot_gradC)
-        endif
-      endif
+      if (lpencil(i_u_dot_gradC)) &
+          call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, &
+          UPWIND=lupw_poly) 
 !
       select case (poly_model)
         case ('oldroyd-B')
@@ -390,7 +386,7 @@ module Polymer
                          tau_poly1*(p%frC(:,1,3))
             df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)- &
                          tau_poly1*(p%frC(:,2,3))
-
+!
           endif
 !
 !  Add synthetic polymer diffusion for numerical stability .
