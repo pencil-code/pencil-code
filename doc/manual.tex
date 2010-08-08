@@ -5845,6 +5845,44 @@ did (minimally) affect the result for r_mn=O(1), while the correct version
 only avoids overflow.
 \end{verbatim}
 
+\subsubsection{Why do we need a \code{/lphysics/} namelist in the first place?}
+
+Wolfgang answered on 29 July 2010: ``\file{cdata.f90} has the explanation''
+\begin{Verbatim}
+  ! Constant 'parameters' cannot occur in namelists, so in order to get the
+  ! now constant module logicals into the lphysics name list...
+  ! We have some proxies that are used to initialise private local variables
+  ! called lhydro etc, in the lphysics namelist!
+\end{Verbatim}
+So the situation is this: we want to write parameters like ldensity to
+param.nml so IDL (and potentially octave, python, etc.) can know whether
+density was on or not. To avoid confusion, we want them to have exactly
+their original names.
+  But we cannot assemble the original ldensity etc. constants in a
+namelist, so we have to define a local ldensity variable. And to provide
+it with the value of the original cdata.ldensity, we need to transfer the
+value via \var{ldensity_var}.
+  That's pretty scary, although it weems to work fine. I can track the
+code back to the big \var{eos_merger} commit, so it may originate from that
+branch.
+  One obvious problem is that you have to add code in a number of places
+(the \cmd{ldensity} $\to$ \var{ldensity_var} assignment and the local
+definition of ldensity) to really get what you need.
+And when adding a new boolean of that sort to \file{cdata.f90},
+you may not even have a clue that you need all the other voodoo.
+
+There may be a cleaner solution involving generated code. Maybe something like
+\begin{Verbatim}
+  logical :: ldensity ! INCLUDE_IN_LPHYSICS
+\end{Verbatim}
+could later generate code (in some param_io_extra.inc file) that looks
+like this:
+\begin{Verbatim}
+  write(unit, *) 'ldensity = ', ldensity
+\end{Verbatim}
+i.e. we can manually write in namelist format.
+But maybe there are even simpler solutions?
+
 \subsubsection{Can I run the code on a Mac?}
 
 \medskip
