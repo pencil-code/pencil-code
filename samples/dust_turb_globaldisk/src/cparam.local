@@ -6,6 +6,6 @@
 !
 !  MGLOBAL CONTRIBUTION 4  
 !  cs2 and glnTT
-integer, parameter :: ncpus=4,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
+integer, parameter :: ncpus=4,nprocx=1,nprocy=2,nprocz=ncpus/(nprocx*nprocy)
 integer, parameter :: nxgrid=64,nygrid=64,nzgrid=16
 integer, parameter :: npar=1000, mpar_loc=500, npar_mig=250

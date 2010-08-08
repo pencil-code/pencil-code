@@ -16,7 +16,6 @@
   wborder_ext= 0.2
   fshift_int = 1
   fshift_ext = -1
-  lbidiagonal_derij=F
   lpencil_check=T
 /
 &eos_run_pars

@@ -12,12 +12,22 @@ Recommended resolution:
     320x320x64 (nu_aniso=eta_aniso=diffrho_aniso=5e-12,5e-12,3e-13)
     if 1 million particles, npar_loc=250000
 Comments:
-    MRI-active globaldisk in cartesian coordinates with dust particles
-    Used in Lyra et al. 2007	
-
+    MRI-active globaldisk in cartesian coordinates with dust particles.
     When using it for production runs, remember to change format "F" to "E" 
     in the stresses. The initial stresses are too near machine precision to 
     figure in the auto-test, hence the "F" format and the absense of the 
-    Maxwell stress brbpm in the print.in of this sample.		 	 
-   	
-	
+    Maxwell stress brbpm in the print.in of this sample.
+References:
+    Lyra, W., Johansen, A., Klahr, H., & Piskunov, N.: 2008, ``Global
+    magnetohydrodynamical models of turbulence in protoplanetary disks I.
+    A cylindrical potential on a Cartesian grid and transport of solids,''
+    Astron. Astrophys. 479, 883-901 (arXiv:0705.4090)
+History:
+    Since revision r8029 of 29-aug-2007, lbidiagonal_derij=T is the
+    default; see the manual on page 127 (formerly page 100), see Fig.20
+    (former Fig.15). In order to maintain agreement with earlier reference data,
+    we used in this sample lbidiagonal_derij=F until 8-aug-10.
+Note:
+    To simplify the input of in this sample, the specification of
+    the input parameters cdt=0.4, cdtv=0.4, dtmin=1e-6 will be dropped
+    in the future. The default is cdtv=0.25, so the result would change.
