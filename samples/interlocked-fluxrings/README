@@ -19,7 +19,7 @@ Comments:
 References:
     Del Sordo, F., Candelaresi, S., & Brandenburg, A.: 2010, ``Magnetic
     field decay of three interlocked flux rings with zero linking number,''
-    Phys. Rev. E  81, 036401 (arXiv:0910.3948
+    Phys. Rev. E  81, 036401 (arXiv:0910.3948)
 History:
     Since revision r8029 of 29-aug-2007, lbidiagonal_derij=T is the
     default; see the manual on page 127 (formerly page 100), see Fig.20
