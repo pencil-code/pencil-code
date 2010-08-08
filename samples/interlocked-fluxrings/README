@@ -7,10 +7,25 @@ Maintainer:
 Added:
     08-May-2002
 Status:
-    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+    succeeds since 24-Sep-2002
 Recommended resolution:
     128x128x128 (nu=eta=1.3e-3)
+    currently: 32x32x32 (with nu=eta=3e-3)
 Comments:
-    Comments can start on this line,
-    and continue later, as long as they are indented.
-
+    This sample presents the decay of a pair of interlocked
+    flux rings.  Since the Pencil Code User Meeting 2010, the
+    initial condition is no longer in magnetic, but is invoked
+    via: INITIAL_CONDITION=initial_condition/fluxrings
+References:
+    Del Sordo, F., Candelaresi, S., & Brandenburg, A.: 2010, ``Magnetic
+    field decay of three interlocked flux rings with zero linking number,''
+    Phys. Rev. E  81, 036401 (arXiv:0910.3948
+History:
+    Since revision r8029 of 29-aug-2007, lbidiagonal_derij=T is the
+    default; see the manual on page 127 (formerly page 100), see Fig.20
+    (former Fig.15). In order to maintain agreement with earlier reference data,
+    we used in this sample lbidiagonal_derij=F until 8-aug-10.
+Note:
+    To simplify the input of in this sample, the specification of
+    the input parameters cdt=0.4, cdtv=0.3, will be dropped in the
+    future. The default is cdtv=0.25, so the result would change.
