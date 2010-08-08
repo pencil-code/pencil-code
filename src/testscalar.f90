@@ -416,14 +416,20 @@ module Testscalar
 !***********************************************************************
     subroutine pencil_criteria_testscalar()
 !
-!   All pencils that the Testscalar module depends on are specified here.
+!  All pencils that the Testscalar module depends on are specified here.
 !
 !  26-jun-05/anders: adapted from magnetic
 !
       use Cdata
 !
+!  Pencils requested for computing the rhs.
+!
       lpenc_requested(i_uu)=.true.
       if (ltestscalar_per_unitvolume) lpenc_requested(i_divu)=.true.
+!
+!  Diagnostics pencils.
+!
+      lpenc_diagnos(i_divu)=.true.
 !
     endsubroutine pencil_criteria_testscalar
 !***********************************************************************
