@@ -9,7 +9,6 @@
   dsnap=50, dvid=0.5
   random_gen='nr_f90'
   lpencil_check=T
-  lbidiagonal_derij=F  !(uses the slightly more accurate formulation for derij)
 /
 &hydro_run_pars
   kinematic_flow='roberts'

@@ -17,6 +17,15 @@ Comments:
 References:
     Brandenburg, A., & Subramanian, K.: 2005, ``Astrophysical magnetic
     fields and nonlinear dynamo theory,'' Phys. Rep. 417, 1-209
+History:
+    Until 8-aug-10, we used to have lbidiagonal_derij=F, which means that
+    the much cheaper bi-diagonal scheme (which is the default since
+    revision r8029 of 29-aug-2007. This is discussed in detail in the
+    manual on page 127 (formerly page 100), see Fig.20 (former Fig.15).
+Notes:
+    To simplify the input of in this sample, the specification of
+    the input parameters cdt=0.4, cdtv=0.4, will be dropped in the
+    future. The default is cdtv=0.25, so the result would change.
 
 Appendix:
 =========
