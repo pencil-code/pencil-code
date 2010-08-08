@@ -1551,8 +1551,6 @@ module Special
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
-      dt_gran = dt_gran / unit_time
-!
       if (lroot) then
         print*,'| solar_corona: settings for granules'
         print*,'-----------------------------------'
@@ -1565,6 +1563,8 @@ module Special
 !
 ! Don't reset if RELOAD is used
       if (.not.lreloading) then
+        dt_gran = dt_gran / unit_time
+!
         if (associated(first)) nullify(first)
         if (associated(current)) nullify(current)
         if (associated(previous)) nullify(previous)
