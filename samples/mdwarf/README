@@ -16,3 +16,12 @@ References:
     Dobler, W., Stix, M., & Brandenburg, A.: 2006, ``Convection
     and magnetic field generation in fully convective spheres,''
     Astrophys. J. 638, 336-347
+History:
+    Since revision r8029 of 29-aug-2007, lbidiagonal_derij=T is the
+    default; see the manual on page 127 (formerly page 100), see Fig.20
+    (former Fig.15). In order to maintain agreement with earlier reference data,
+    we used in this sample lbidiagonal_derij=F until 8-aug-10.
+Notes:
+    To simplify the input of in this sample, the specification of
+    the input parameters cdt=0.4, cdtv=0.3, will be dropped in the
+    future. The default is cdtv=0.25, so the result would change.

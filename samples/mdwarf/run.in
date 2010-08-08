@@ -16,7 +16,6 @@
 !  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
   random_gen='nr_f90'
   lpencil_check=T
-  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
 /
