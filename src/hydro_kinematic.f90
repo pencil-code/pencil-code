@@ -9,7 +9,7 @@
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxiliary variables added by this module
+! variables and auxiliary variables added by this module.
 !
 ! CPARAM logical, parameter :: lhydro = .false.
 ! CPARAM logical, parameter :: lhydro_kinematic = .true.

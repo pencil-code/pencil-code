@@ -572,12 +572,13 @@ module Testscalar
         call dot_mn(uufluct,G0test,ug)
         if (ltestscalar_per_unitvolume) ug=ug+p%divu*C0test
 !
-!  SOCA terms
+!  add SOCA terms
 !
-        if (lsoca_ug) then
-          df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest) &
-            +ug+kappatest*del2ctest
-        else
+        df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest)+ug+kappatest*del2ctest
+!
+!  compute and apply non-soca terms
+!
+        if (.not.lsoca_ug) then
 !
 !  use f-array for uc (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_uc=.false.)
@@ -602,10 +603,9 @@ module Testscalar
             endif
           endif
 !
-!  advance test field equation
+!  add to the right-hand side of the equation
 !
-          df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest) &
-            +ug+kappatest*del2ctest+dugtest
+          df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest)+dugtest
         endif
 !
 !  calculate kappa, begin by calculating uctest (not ugtest!)
@@ -615,7 +615,18 @@ module Testscalar
           do j=1,3
             uctest(:,j)=uufluct(:,j)*cctest
           enddo
+!
+!  under soca, ugtest is not available in the auxiliary array,
+!  so we need to compute it separately for the diagnostics.
+!
+          if (lsoca_ug) then
+            call dot_mn(uufluct,ggtest,ugtest)
+          endif
         endif
+!
+!  flux terms  for diagnostics
+!  (can't they also be inside the if statement?)
+!
         cpq(:,jtest)=cctest
         Fipq(:,:,jtest)=uctest*camp1
         Gipq(:,3,jtest)=ugtest*camp1
