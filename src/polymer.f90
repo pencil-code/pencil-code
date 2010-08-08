@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED poly(3,3); fr; trp; frC(3,3); divC(3)
-! PENCILS PROVIDED grad_fr(3); div_frC(3) 
+! PENCILS PROVIDED grad_fr(3); div_frC(3)
 ! PENCILS PROVIDED Cijk(3,3,3); u_dot_gradC(3,3)
 ! PENCILS PROVIDED del2poly(3,3)
 !
@@ -74,7 +74,7 @@ module Polymer
     subroutine initialize_polymer(f,lstarting)
 !
 !  Perform any post-parameter-read initialization.
-!  At present does nothing. 
+!  At present does nothing.
 !
 !  14-aug-08/dhruba: initialize polymer field
 !
@@ -104,7 +104,7 @@ module Polymer
       integer :: j
 !
       do j=1,ninit
-!        
+!
         select case(initpoly(j))
           case('nothing'); if (lroot .and. j==1) print*,'init_poly: nothing'
           case('zero', '0'); f(:,:,:,ipoly:ipoly+5) = 0.
@@ -128,11 +128,11 @@ module Polymer
       enddo
 !
 !  Interface for user's own initial condition.
-!   Not implemented for polymers yet. 
+!   Not implemented for polymers yet.
 !
 !      if (linitial_condition) call initial_condition_pp(f)
 !
-!  Also set the f(r_p) depending on the model of the polymer. 
+!  Also set the f(r_p) depending on the model of the polymer.
 !
       select case (poly_model)
         case ('oldroyd-B')
@@ -202,7 +202,7 @@ module Polymer
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_u_dot_gradC)) lpencil_in(i_Cijk)=.true. 
+      if (lpencil_in(i_u_dot_gradC)) lpencil_in(i_Cijk)=.true.
       if (lpencil_in(i_div_frC)) then
         lpencil_in(i_divC)=.true.
         lpencil_in(i_grad_fr)=.true.
@@ -242,9 +242,14 @@ module Polymer
 ! Cijk
       if (lpencil(i_Cijk)) call gijk_symmetric(f,ipoly,p%Cijk,1)
 ! u_dot_gradC
-      if (lpencil(i_u_dot_gradC)) & 
-          call u_dot_grad_mat(p%Cijk,p%uu,p%u_dot_gradC, &
-          UPWIND=lupw_poly)
+      if (lpencil(i_u_dot_gradC)) then
+        if (lspherical_coords.or.lcylindrical_coords.or.lupw_poly) then
+          call
+        else
+          call vect_dot_3tensor(p%uu,p%Cijk,p%u_dot_gradC)
+        endif
+      endif
+!
       select case (poly_model)
         case ('oldroyd-B')
           call calc_pencils_oldroyd_b(f,p)
@@ -268,12 +273,12 @@ module Polymer
 ! f(r_p)
       if (lpencil(i_fr)) p%fr(:) = f(l1:l2,m,n,ipoly_fr)
 ! frC
-      if (lpencil(i_frC)) then 
+      if (lpencil(i_frC)) then
         do i=1,3; do j=1,3
           p%frC(:,i,j) = p%fr(:)*p%poly(:,i,j)
         enddo; enddo
       endif
-! div C 
+! div C
       if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
       if (lpencil(i_grad_fr)) call  grad(f,ipoly_fr,p%grad_fr)
@@ -298,7 +303,7 @@ module Polymer
       if (lpencil(i_fr)) p%fr(:) = f(l1:l2,m,n,ipoly_fr)
 ! frC
       if (lpencil(i_frC)) p%frC = p%poly
-! div C 
+! div C
       if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
       if (lpencil(i_grad_fr)) p%grad_fr=0.
@@ -334,14 +339,14 @@ module Polymer
 !
       if (lhydro.and.lpolyback) then
         if (tau_poly/=0.0) then
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ & 
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
               mu_poly*tau_poly1*p%div_frC
         endif
       endif
 !
 !  If we are advecting the polymer.
-! 
-      if (lpolyadvect)  then 
+!
+      if (lpolyadvect)  then
         df(l1:l2,m,n,ip11)= df(l1:l2,m,n,ip11) - p%u_dot_gradC(:,1,1)
         df(l1:l2,m,n,ip12)= df(l1:l2,m,n,ip12) - p%u_dot_gradC(:,1,2)
         df(l1:l2,m,n,ip13)= df(l1:l2,m,n,ip13) - p%u_dot_gradC(:,1,3)
@@ -351,7 +356,7 @@ module Polymer
       endif
 !
 !  CdotGradu and CdotGraduT.
-! 
+!
       call mult_matrix(p%poly,p%uij,CdotGradu)
       call transpose_mn(p%uij,uijT)
       call mult_matrix(p%poly,uijT,CdotGraduT)
@@ -360,17 +365,17 @@ module Polymer
 !
       select case(poly_algo)
         case('simple')
-          df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)+ & 
+          df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)+ &
             CdotGradu(:,1,1)+CdotGraduT(:,1,1)
-          df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)+ & 
+          df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)+ &
             CdotGradu(:,1,2)+CdotGraduT(:,1,2)
-          df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)+ & 
+          df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)+ &
             CdotGradu(:,1,3)+CdotGraduT(:,1,3)
-          df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)+ & 
+          df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)+ &
             CdotGradu(:,2,2)+CdotGraduT(:,2,2)
-          df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)+ & 
+          df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)+ &
             CdotGradu(:,2,3)+CdotGraduT(:,2,3)
-          df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)+ & 
+          df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)+ &
             CdotGradu(:,3,3)+CdotGraduT(:,3,3)
           if (tau_poly/=0.0) then
             df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)- &
