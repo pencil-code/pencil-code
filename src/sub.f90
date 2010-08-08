@@ -1290,21 +1290,18 @@ module Sub
 !
     endsubroutine div_mn
 !***********************************************************************
-    subroutine div_mn_2tensor(aijk,bi,aij)
+    subroutine div_mn_2tensor(aijk,bi)
 !
 !  Calculate divergence from derivative matrix.
 !
-!  18-sep-04/axel: coded
-!  21-feb-07/axel: corrected spherical coordinates
-!  14-mar-07/wlad: added cylindrical coordinates
+!  07-aug-10/dhruba: coded
 !
       real, dimension (nx,3,3,3) :: aijk
-      real, dimension (nx,3,3) :: aij
       real, dimension (nx,3) :: bi
 !
-      intent(in) :: aijk,aij
+      intent(in) :: aijk
       intent(out) :: bi
-      integer :: i,j
+      integer :: i
 !
       do i=1,3
         bi(:,i)=aijk(:,i,1,1)+aijk(:,i,2,2)+aijk(:,i,3,3)
@@ -2319,29 +2316,22 @@ module Sub
 !
     endsubroutine u_dot_grad_vec
 !***********************************************************************
-    subroutine u_dot_grad_mat(f,k,gradM,uu,ugradM,upwind)
+    subroutine u_dot_grad_mat(gradM,uu,ugradM,upwind)
 !
 !  u.grad(M)
 !  where M is a second rank matrix
 !
-!  dhruba: addapted from udotgradA
+!  07-aug-10/dhruba: coded
 !
-      intent(in) :: f,k,gradM
+      intent(in) :: gradM
       intent(out) :: ugradM
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
-      integer :: k
       real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: upwind
-!
-      if (k<1 .or. k>mfarray) then
-        call fatal_error('u_dot_grad_mat','variable index is out of bounds')
-        return
-      endif
 !
 !  Upwind.
 !
@@ -2356,14 +2346,12 @@ module Sub
         enddo
       endif
 !
-!  Adjustments for spherical coordinate system.
-!  not implemented
+!  Spherical and cylindrical coordinates are not
+!  implemented for this subroutine.
 !
       if (lspherical_coords) then
         call fatal_error('u_dot_grad_mat','not implemented in sph-coordinates')
       endif
-!
-!  Cylindrical coordinates: not implemented
 !
       if (lcylindrical_coords) then
         call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')

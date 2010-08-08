@@ -243,7 +243,7 @@ module Polymer
       if (lpencil(i_Cijk)) call gijk_symmetric(f,ipoly,p%Cijk,1)
 ! u_dot_gradC
       if (lpencil(i_u_dot_gradC)) & 
-          call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, &
+          call u_dot_grad_mat(p%Cijk,p%uu,p%u_dot_gradC, &
           UPWIND=lupw_poly)
       select case (poly_model)
         case ('oldroyd-B')
@@ -274,7 +274,7 @@ module Polymer
         enddo; enddo
       endif
 ! div C 
-      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC,p%poly)
+      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
       if (lpencil(i_grad_fr)) call  grad(f,ipoly_fr,p%grad_fr)
       call dot_mn_vm(p%grad_fr,p%poly,grad_fr_dotC)
@@ -299,7 +299,7 @@ module Polymer
 ! frC
       if (lpencil(i_frC)) p%frC = p%poly
 ! div C 
-      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC,p%poly)
+      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
       if (lpencil(i_grad_fr)) p%grad_fr=0.
 ! div_frC
