@@ -39,7 +39,7 @@ module Hydro
   real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0.
   real ::  dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
-  logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
+  logical :: lcalc_uumean=.false.,lupw_uu=.false.
   logical :: lcalc_uumeanxy=.false.
 !
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber?
