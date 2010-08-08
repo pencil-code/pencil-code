@@ -6,7 +6,6 @@
 !  To inspect the revision history of the file before that time,
 !  check out nohydro.f90 prior to or at revision r12018.
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module.
@@ -37,7 +36,8 @@ module Hydro
   real, dimension (mx,my,3) :: uumxy=0.
 !
   real :: u_out_kep=0.0
-  real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0., dtforce=impossible
+  real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0.
+  real ::  dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   logical :: lpressuregradient_gas=.true.,lcalc_uumean=.false.,lupw_uu=.false.
   logical :: lcalc_uumeanxy=.false.
@@ -67,15 +67,16 @@ module Hydro
   integer :: kinflow_ck_ell=0.
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
   character (len=labellen) :: wind_profile='none'
+!
   namelist /hydro_run_pars/ &
-    kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
-    circ_rmax,circ_step_width,circ_amp, &
-    ABC_A,ABC_B,ABC_C, &
-    ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
-    lrandom_location,lwrite_random_location,location_fixed,dtforce,&
-    radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
-    gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell,&
-    eps_kinflow,omega_kinflow,ampl_kinflow
+      kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
+      circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
+      ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
+      lrandom_location,lwrite_random_location,location_fixed,dtforce, &
+      radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
+      gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
+      eps_kinflow,omega_kinflow,ampl_kinflow
+!
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
   integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
@@ -91,7 +92,6 @@ module Hydro
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
 !
-!
   contains
 !***********************************************************************
     subroutine register_hydro()
@@ -102,20 +102,13 @@ module Hydro
 !   6-nov-01/wolf: coded
 !
       use Mpicomm, only: lroot
-      use SharedVariables
 !
       integer :: ierr
 !
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
-           "$Id$")
-!
-!  Share lpressuregradient_gas so Entropy module knows whether to apply
-!  pressure gradient or not.
-!
-      call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_hydro','there was a problem sharing lpressuregradient_gas')
+          "$Id$")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -175,8 +168,7 @@ module Hydro
 !***********************************************************************
     subroutine init_uu(f)
 !
-!  initialise uu and lnrho; called from start.f90
-!  Should be located in the Hydro module, if there was one.
+!  Initialise uu.
 !
 !   7-jun-02/axel: adapted from hydro
 !
@@ -207,7 +199,7 @@ module Hydro
         endif
       endif
 !
-!  disgnostic pencils
+!  Diagnostic pencils.
 !
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
@@ -224,7 +216,6 @@ module Hydro
 !
       logical, dimension (npencils) :: lpencil_in
 !
-!ajwm May be overkill... Perhaps only needed for certain kinflow?
       if (lpencil_in(i_uglnrho)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnrho)=.true.
@@ -274,12 +265,11 @@ module Hydro
       integer :: ell
       real :: Balpha
       real :: theta,theta1
-!      real :: omega0,shear
 !
       intent(in) :: f
       intent(inout) :: p
 !
-!  choose from a list of different flow profiles.
+!  Choose from a list of different flow profiles.
 !  Begin with a constant flow in the x direction.
 !
       if (kinflow=='const-x') then
@@ -290,7 +280,9 @@ module Hydro
           p%uu(:,3)=0.
         endif
         if (lpencil(i_divu)) p%divu=0.
-!  Begin with a constant flow in the (ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z) direction.
+!
+!  Begin with a constant flow in the
+!  (ampl_kinflow_x,ampl_kinflow_y,ampl_kinflow_z) direction.
 !
       elseif (kinflow=='const-xyz') then
         if (lpencil(i_uu)) then
@@ -301,7 +293,7 @@ module Hydro
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
-!  choose from a list of different flow profiles
+!  Choose from a list of different flow profiles.
 !  ABC-flow
 !
       elseif (kinflow=='ABC') then
@@ -803,7 +795,6 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         case ('radial-step')
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
-!          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
           call fatal_error('hydro_kinematic: kinflow= radial_wind-circ', 'no such wind profile. ')
@@ -828,7 +819,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
           p%uu(:,3)=0.
         endif
         p%divu=div_uprof*wind_amp + &
-          div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
+            div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
            (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
@@ -836,11 +827,11 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
-! radial shear + radial wind + circulation
+!  Radial shear + radial wind + circulation.
 !
       elseif (kinflow=='rshear-sat+rwind+circ') then
 !
-! first set wind and cirulation
+!  First set wind and cirulation.
 !
         select case (wind_profile)
         case ('none'); wind_prof=0.;div_uprof=0.
@@ -849,7 +840,6 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         case ('radial-step')
           wind_prof=step(x(l1:l2),wind_rmin,wind_step_width)
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
-!          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
           call fatal_error('hydro_kinematic: kinflow= radial-shear+rwind+rcirc', 'no such wind profile. ')
@@ -864,20 +854,20 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
           div_vel_prof=-der_step(x(l1:l2),circ_rmax,circ_step_width)
 !
           p%uu(:,1)=vel_prof*(r1_mn**2)*(sin1th(m))*(&
-            2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
-            -sin(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 + &
+              2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
+              -sin(theta)*sin(theta-theta1)**2)*&
+              (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 + &
            wind_amp*wind_prof
           p%uu(:,2)=-vel_prof*r1_mn*sin1th(m)*(&
-            cos(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
+              cos(theta)*sin(theta-theta1)**2)*&
+              (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
           p%uu(:,3)=x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
         endif
         p%divu=div_uprof*wind_amp + &
-          div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
+            div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
-           (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
+            (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
         p%der6u(:,1)=wind_amp*der6_uprof
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
@@ -887,13 +877,13 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       elseif (kinflow=='KS') then
         p%uu=0.
         do modeN=1,KS_modes  ! sum over KS_modes modes
-           kdotxwt=KS_k(1,modeN)*x(l1:l2)+(KS_k(2,modeN)*y(m)+KS_k(3,modeN)*z(n))+KS_omega(modeN)*t
-           cos_kdotxwt=cos(kdotxwt) ;  sin_kdotxwt=sin(kdotxwt)
-           if (lpencil(i_uu)) then
-             p%uu(:,1) = p%uu(:,1) + cos_kdotxwt*KS_A(1,modeN) + sin_kdotxwt*KS_B(1,modeN)
-             p%uu(:,2) = p%uu(:,2) + cos_kdotxwt*KS_A(2,modeN) + sin_kdotxwt*KS_B(2,modeN)
-             p%uu(:,3) = p%uu(:,3) + cos_kdotxwt*KS_A(3,modeN) + sin_kdotxwt*KS_B(3,modeN)
-           endif
+          kdotxwt=KS_k(1,modeN)*x(l1:l2)+(KS_k(2,modeN)*y(m)+KS_k(3,modeN)*z(n))+KS_omega(modeN)*t
+          cos_kdotxwt=cos(kdotxwt) ;  sin_kdotxwt=sin(kdotxwt)
+          if (lpencil(i_uu)) then
+            p%uu(:,1) = p%uu(:,1) + cos_kdotxwt*KS_A(1,modeN) + sin_kdotxwt*KS_B(1,modeN)
+            p%uu(:,2) = p%uu(:,2) + cos_kdotxwt*KS_A(2,modeN) + sin_kdotxwt*KS_B(2,modeN)
+            p%uu(:,3) = p%uu(:,3) + cos_kdotxwt*KS_A(3,modeN) + sin_kdotxwt*KS_B(3,modeN)
+          endif
         enddo
         if (lpencil(i_divu))  p%divu = 0.
       else
@@ -930,7 +920,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         if (idiag_ekintot/=0) &
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
       endif
-        if (idiag_divum/=0)  call sum_mn_name(p%divu,idiag_divum)
+      if (idiag_divum/=0)  call sum_mn_name(p%divu,idiag_divum)
 !
       call keep_compiler_quiet(f)
 !
@@ -967,15 +957,13 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !
      if (lkinflow_as_aux) f(l1:l2,m,n,iux:iuz)=p%uu
 !
-!  Calculate maxima and rms values for diagnostic purposes
+!  Calculate maxima and rms values for diagnostic purposes.
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
         if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
-        !if (idiag_orms/=0) call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
-        !if (idiag_omax/=0) call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
 !
-!  kinetic field components at one point (=pt)
+!  Kinetic field components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
@@ -1026,7 +1014,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
    subroutine coriolis_cartesian(df,uu,velind)
 !
-!  coriolis terms for cartesian geometry
+!  Coriolis terms for cartesian geometry.
 !
 !  30-oct-09/MR: outsourced, parameter velind added
 !  checked to be an equivalent change by auot-test conv-slab-noequi, mdwarf
@@ -1043,7 +1031,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine calc_lhydro_pars(f)
 !
-!  dummy routine
+!  Dummy routine.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -1054,11 +1042,11 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !
-!  produces random, isotropic field from energy spectrum following the
+!  Produces random, isotropic field from energy spectrum following the
 !  KS method (Malik and Vassilicos, 1999.)
 !
-!  more to do; unsatisfactory so far - at least for a steep power-law
-!  energy spectrum
+!  More to do; unsatisfactory so far - at least for a steep power-law
+!  energy spectrum.
 !
 !  27-may-05/tony: modified from snod's KS hydro initial
 !  03-feb-06/weezy: Attempted rewrite to guarantee periodicity of
@@ -1071,7 +1059,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !
       real, dimension (3) :: k_unit
       real, dimension (3) :: ee,e1,e2
-      real,dimension (6) :: r
+      real, dimension (6) :: r
       real :: initpower,kmin,kmax
       real, dimension(KS_modes) :: k,dk,energy,ps
       real :: theta,phi,alpha,beta
@@ -1086,15 +1074,15 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       kmax=128.*pi    !nx*pi
       a=(kmax/kmin)**(1./(KS_modes-1.))
 !
-!  loop over all modes
+!  Loop over all modes.
 !
       do modeN=1,KS_modes
 !
-!  pick wavenumber
+!  Pick wavenumber.
 !
         k=kmin*(a**(modeN-1.))
 !
-!  pick 4 random angles for each mode
+!  Pick 4 random angles for each mode.
 !
         call random_number_wrapper(r);
         theta=pi*(r(1) - 0.)
@@ -1102,23 +1090,23 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         alpha=pi*(2*r(3) - 0.)
         beta=pi*(2*r(4) - 0.)
 !
-!  make a random unit vector by rotating fixed vector to random position
-!  (alternatively make a random transformation matrix for each k)
+!  Make a random unit vector by rotating fixed vector to random position
+!  (alternatively make a random transformation matrix for each k).
 !
         k_unit(1)=sin(theta)*cos(phi)
         k_unit(2)=sin(theta)*sin(phi)
         k_unit(3)=cos(theta)
 !
         energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
-          *exp(-0.5*(k/kmax)**2.)
+            *exp(-0.5*(k/kmax)**2.)
 !
-!  make a vector KS_k of length k from the unit vector for each mode
+!  Make a vector KS_k of length k from the unit vector for each mode.
 !
         KS_k(:,modeN)=k*k_unit(:)
         KS_omega(:)=sqrt(energy(:)*(k(:)**3.))
 !
-!  construct basis for plane having rr normal to it
-!  (bit of code from forcing to construct x', y')
+!  Construct basis for plane having rr normal to it
+!  (bit of code from forcing to construct x', y').
 !
       if ((k_unit(2)==0).and.(k_unit(3)==0)) then
           ex=0.; ey=1.; ez=0.
@@ -1134,27 +1122,27 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !  e2: unit vector perp. to KS_k, e1
         call dot2(e2,norm); e2=e2/sqrt(norm)
 !
-!  make two random unit vectors KS_B and KS_A in the constructed plane
+!  Make two random unit vectors KS_B and KS_A in the constructed plane.
 !
         KS_A(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
         KS_B(:,modeN) = cos(beta)*e1  + sin(beta)*e2
 !
-!  make sure dk is set
+!  Make sure dk is set.
 !
         call error('random_isotropic_KS_setup', 'Using uninitialized dk')
         dk=0.                     ! to make compiler happy
 !
         ps=sqrt(2.*energy*dk)   !/3.0)
 !
-!  give KS_A and KS_B length ps
+!  Give KS_A and KS_B length ps.
 !
         KS_A(:,modeN)=ps*KS_A(:,modeN)
         KS_B(:,modeN)=ps*KS_B(:,modeN)
 !
       enddo
 !
-!  form RA = RA x k_unit and RB = RB x k_unit
-!  Note: cannot reuse same vector for input and output
+!  Form RA = RA x k_unit and RB = RB x k_unit.
+!  Note: cannot reuse same vector for input and output.
 !
       do modeN=1,KS_modes
         call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
@@ -1167,7 +1155,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine random_isotropic_KS_setup_test
 !
-!  produces random, isotropic field from energy spectrum following the
+!  Produces random, isotropic field from energy spectrum following the
 !  KS method (Malik and Vassilicos, 1999.)
 !  This test case only uses 3 very specific modes (useful for comparison
 !  with Louise's kinematic dynamo code.
@@ -1192,7 +1180,6 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       kmin=10.88279619
       kmax=23.50952672
 !
-!-----------------------------
       KS_k(1,1)=2.00*pi
       KS_k(2,1)=-2.00*pi
       KS_k(3,1)=2.00*pi
@@ -1205,7 +1192,6 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       KS_k(2,3)=2.00*pi
       KS_k(3,3)=-6.00*pi
 !
-!-----------------------------
       KS_k(1,1)=+1; KS_k(2,1)=-1; KS_k(3,1)=1
       KS_k(1,2)=+0; KS_k(2,2)=-2; KS_k(3,2)=1
       KS_k(1,3)=+0; KS_k(2,3)=-0; KS_k(3,3)=1
@@ -1224,13 +1210,13 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       do modeN=1,KS_modes
         if (modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
         if (modeN>1.and.modeN<KS_modes) &
-                  dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
+            dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
         if (modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
       enddo
 !
       do modeN=1,KS_modes
          energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
-                           *exp(-0.5*(k(modeN)/kmax)**2)
+             *exp(-0.5*(k(modeN)/kmax)**2)
       enddo
 !
       ps=sqrt(2.*energy*dk)
@@ -1260,11 +1246,11 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       KS_B(3,2)=1.00/sqrt(2.00)
 !
       do modeN=1,KS_modes
-         KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
-         KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
+        KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
+        KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
       enddo
 !
-!  form RA = RA x k_unit and RB = RB x k_unit
+!  Form RA = RA x k_unit and RB = RB x k_unit.
 !
        do modeN=1,KS_modes
          call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
@@ -1275,179 +1261,228 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine periodic_KS_setup(initpower)
 !
-!  produces random, isotropic field from energy spectrum following the
+!  Produces random, isotropic field from energy spectrum following the
 !  KS method, however this setup produces periodic velocity field
-!  (assuming box at least (-pi,pi))
+!  (assuming box at least (-pi,pi)).
 !
 !  22-jun-2010/abag coded
 !
-    use Cdata, only: pi,Lxyz,nx,ny,nz
-    use Sub
-    use General
-    implicit none
-    real, intent(IN) :: initpower
-    real,allocatable,dimension(:,:) :: unit_k,k,A,B,orderK
-    real,allocatable,dimension(:) :: kk,delk,energy,omega,klengths
-    real,allocatable,dimension(:) :: ampA(:), ampB(:)
-    real,dimension(3) :: angle,dir_in
-    real :: k_option(3,10000),mkunit(10000)
-    real :: arg, unity
-    real :: bubble, max_box
-    real :: j(3),l(3),newa(3),newa2(3)
-    integer ::i,s1,num,direction(3)
-    logical :: ne
-    !For the calculation of the velocity field we require
-    !KS_k, KS_A/KS_B, KS_omega
-    allocate(KS_k(3,KS_modes), KS_A(3,KS_modes),KS_B(3,KS_modes),KS_omega(KS_modes))
-    !the rest are dummy arrays used to get above
-    allocate(unit_k(3,KS_modes), k(3,KS_modes), A(3,KS_modes), B(3,KS_modes))
-    allocate(orderk(3,KS_modes), kk(KS_modes), delk(KS_modes), energy(KS_modes))
-    allocate(omega(KS_modes), klengths(KS_modes), ampA(KS_modes), ampB(KS_modes))
-    num=1 !dummyvariable
-    bubble=1. !space wavenumbers out
-    max_box=min(nxgrid,nygrid,nzgrid) !needs adapting for 2D runs
-    if (mod(max_box,4.)/=0) print*, 'warning will not be periodic'
-    print*, 'calculating KS wavenumbers'
-    do i=1,10000
-     call random_number_wrapper(angle)
-     if ((angle(1)-0.0 < epsilon(0.0)) .or. &
-        (angle(2)-0.0 < epsilon(0.0)) .or. &
-        (angle(3)-0.0 < epsilon(0.0))) then
+      use Sub
+      use General
+!
+      real, intent(in) :: initpower
+      real, allocatable, dimension(:,:) :: unit_k,k,A,B,orderK
+      real, allocatable, dimension(:) :: kk,delk,energy,omega,klengths
+      real, allocatable, dimension(:) :: ampA(:), ampB(:)
+      real, dimension(3) :: angle,dir_in
+      real :: k_option(3,10000),mkunit(10000)
+      real :: arg, unity
+      real :: bubble, max_box
+      real :: j(3),l(3),newa(3),newa2(3)
+      integer ::i,s1,num,direction(3)
+      logical :: ne
+!
+!  For the calculation of the velocity field we require
+!  KS_k, KS_A/KS_B, KS_omega.
+!
+      allocate(KS_k(3,KS_modes), KS_A(3,KS_modes),KS_B(3,KS_modes),KS_omega(KS_modes))
+!
+!  The rest are dummy arrays used to get above.
+!
+      allocate(unit_k(3,KS_modes), k(3,KS_modes), A(3,KS_modes), B(3,KS_modes))
+      allocate(orderk(3,KS_modes), kk(KS_modes), delk(KS_modes), energy(KS_modes))
+      allocate(omega(KS_modes), klengths(KS_modes), ampA(KS_modes), ampB(KS_modes))
+!
+!  Dummy variable.
+!
+      num=1
+!
+!  Space wavenumbers out.
+!
+      bubble=1.
+!
+!  Needs adaptingf for 2D runs.
+!
+      max_box=min(nxgrid,nygrid,nzgrid)
+!
+      if (mod(max_box,4.)/=0) print*, 'warning will not be periodic'
+!
+      print*, 'calculating KS wavenumbers'
+!
+      do i=1,10000
         call random_number_wrapper(angle)
-     end if
-     !need 4 meshpoints to resolve a wave
-     angle=floor((max_box/4)*angle)
-     call random_number_wrapper(dir_in)
-     direction=nint(dir_in)
-     direction=2*direction -1  !positive or negative directions
-
-     k_option(1,i)=direction(1)*2.*pi*angle(1)!a possible orientation
-     k_option(2,i)=direction(2)*2.*pi*angle(2)   !provided we haven't
-     k_option(3,i)=direction(3)*2.*pi*angle(3)  !already got this length
-     if (i==1)then
-       k_option(1,i)=2.*pi
-       k_option(2,i)=0.
-       k_option(3,i)=0.
-     end if
-
-     !find the length of the current k_option vector
-     mkunit(i)=sqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
-
-     if (i==1.and.mkunit(i)>0.)then
-       k(:,num)=k_option(:,i)
-       klengths(num)=mkunit(i)
-     end if
-
-     !now we check that the current length is unique (hasn't come before)
-     if (i>1.and.num<KS_modes)then
-       do s1=i-1,1,-1
-        if (mkunit(i)>0.0.and. &
-           mkunit(i)<=(mkunit(s1)-bubble).or.mkunit(i)>=(mkunit(s1)+bubble))then
-           ne=.true.
-         else
-           ne=.false.
-           exit
-         end if
-         if (s1==1.and.ne)then !i.e. if length of current k_option is new......
-           num=num+1
-           k(:,num)=k_option(:,i) !load current k_option into k that we keep
-           klengths(num)=mkunit(i)  ! store the length also
-         end if
-       end do
-      end if
-      if (i==10000.and.num<KS_modes)print*,"Haven't got",KS_modes,"modes!!!!"
-    end do
-
-    call KS_order(klengths,KS_modes,1,kk) !the 1 means ascending order
-
-    do i=1,KS_modes
-      do s1=1,KS_modes
-        if (kk(i)==klengths(s1))then
-          orderK(:,i)=k(:,s1)
+        if ((angle(1)-0.0 < epsilon(0.0)) .or. &
+            (angle(2)-0.0 < epsilon(0.0)) .or. &
+            (angle(3)-0.0 < epsilon(0.0))) then
+          call random_number_wrapper(angle)
         endif
+!
+!  Need 4 meshpoints to resolve a wave.
+!
+        angle=floor((max_box/4)*angle)
+        call random_number_wrapper(dir_in)
+        direction=nint(dir_in)
+        direction=2*direction -1  !positive or negative directions
+!
+!  A possible orientation provided we havent's already got this length.
+!
+        k_option(1,i)=direction(1)*2.*pi*angle(1)
+        k_option(2,i)=direction(2)*2.*pi*angle(2)
+        k_option(3,i)=direction(3)*2.*pi*angle(3)
+!
+        if (i==1)then
+          k_option(1,i)=2.*pi
+          k_option(2,i)=0.
+          k_option(3,i)=0.
+        endif
+!
+!  Find the length of the current k_option vector.
+!
+        mkunit(i)=sqrt((k_option(1,i)**2)+(k_option(2,i)**2)+(k_option(3,i)**2))
+!
+        if (i==1.and.mkunit(i)>0.)then
+          k(:,num)=k_option(:,i)
+          klengths(num)=mkunit(i)
+        endif
+!
+!  Now we check that the current length is unique (hasn't come before).
+!
+        if (i>1.and.num<KS_modes)then
+          do s1=i-1,1,-1
+            if (mkunit(i)>0.0.and. &
+                mkunit(i)<=(mkunit(s1)-bubble).or. &
+                mkunit(i)>=(mkunit(s1)+bubble)) then
+              ne=.true.
+            else
+              ne=.false.
+              exit
+            endif
+!
+!  If length of current k_option is new......
+!
+            if (s1==1.and.ne) then
+              num=num+1
+!
+!  Load current k_option into k that we keep.
+!
+              k(:,num)=k_option(:,i)
+!
+!  Store the length also.
+!
+              klengths(num)=mkunit(i)
+            endif
+          enddo
+        endif
+        if (i==10000.and.num<KS_modes) print*,"Haven't got",KS_modes,"modes!!!!"
       enddo
-    enddo
-
-    k=orderK
-    do i=1,KS_modes
-      unit_k(:,i)=k(:,i)/kk(i)
-    enddo
-
-    do i=1,KS_modes
-    !now we find delk as defined in Malik & Vassilicos' paper
-       if (i==1) delk(i)=(kk(i+1)-kk(i))/2.0
-       if (i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0
-       if (i>1.and.i<KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
-    enddo
-
-    !now find A&B that are perpendicular to each of our N wave-vectors
-    do i=1,KS_modes
-    !define "energy" - here we want k^{initpower} in the inertial range
-      energy(i)=1.0+(kk(i))**2
-      energy(i)=(kk(i)**2)*(energy(i)**((initpower-2.)/2.))
-      energy(i)=energy(i)*exp(-0.5*(kk(i)/kk(KS_modes))**2)
-      !set the lengths of A& B as defined in Malik & Vassilicos
-      !ampA(i)=sqrt(2.0*energy(i)*delk(i)/3.0)
-      ampA(i)=sqrt(2.0*energy(i)*delk(i))
-      ampB(i)=ampA(i)
-
-      call random_number(newa)
-      call random_number(newa2)
-      newa=2.0*newa -1.0
-      newa2=2.0*newa2 -1.0
-      j=newa
-      l=newa2
-      j=j/(sqrt(sum(newa**2)))
-      l=l/(sqrt(sum(newa2**2)))
-
-      !Now take the vector product of k with j (->A) and with l (->B)
-      A(1,i)=(j(2)*k(3,i))-(j(3)*k(2,i))
-      A(2,i)=(j(3)*k(1,i))-(j(1)*k(3,i))
-      A(3,i)=(j(1)*k(2,i))-(j(2)*k(1,i))
-      unity=sqrt((A(1,i)**2)+(A(2,i)**2)+(A(3,i)**2))
-      A(:,i)=A(:,i)/unity
-      B(1,i)=(l(2)*k(3,i))-(l(3)*k(2,i))
-      B(2,i)=(l(3)*k(1,i))-(l(1)*k(3,i))
-      B(3,i)=(l(1)*k(2,i))-(l(2)*k(1,i))
-      unity=sqrt((B(1,i)**2)+(B(2,i)**2)+(B(3,i)**2))
-      B(:,i)=B(:,i)/unity
-
-      !Now that we have our unit A's & B's we multiply them by the amplitudes
-      !we defined earlier, to create the spectrum
-      A(:,i)=ampA(i)*A(:,i)
-      B(:,i)=ampB(i)*B(:,i)
-    enddo
-
-    do i=1,KS_modes
-      arg=energy(i)*(kk(i)**3)            !these are used to define omega - the
-      if (arg>0.0)omega(i)=sqrt(arg)    !unsteadiness frequency (co-eff of t)
-      if (arg==0.0)omega(i)=0.0
-    enddo
-
-    do i=1,KS_modes
-      call cross(A(:,i),unit_k(:,i),KS_A(:,i))
-      call cross(B(:,i),unit_k(:,i),KS_B(:,i))
-    enddo
-    KS_omega(:)=omega(:)
-    KS_k=k
-    !tidy up
-    deallocate(unit_k,orderk,kk,delk,energy,omega,klengths,ampA,ampB)
+!
+!  The 1 means ascending order.
+!
+      call KS_order(klengths,KS_modes,1,kk)
+!
+      do i=1,KS_modes
+        do s1=1,KS_modes
+          if (kk(i)==klengths(s1))then
+            orderK(:,i)=k(:,s1)
+          endif
+        enddo
+      enddo
+!
+      k=orderK
+      do i=1,KS_modes
+        unit_k(:,i)=k(:,i)/kk(i)
+      enddo
+!
+      do i=1,KS_modes
+!
+!  Now we find delk as defined in Malik & Vassilicos' paper.
+!
+        if (i==1) delk(i)=(kk(i+1)-kk(i))/2.0
+        if (i==KS_modes) delk(i)=(kk(i)-kk(i-1))/2.0
+        if (i>1.and.i<KS_modes) delk(i)=(kk(i+1)-kk(i-1))/2.0
+      enddo
+!
+!  Now find A&B that are perpendicular to each of our N wave-vectors.
+!
+      do i=1,KS_modes
+!
+!  Define "energy" - here we want k^{initpower} in the inertial range.
+!
+        energy(i)=1.0+(kk(i))**2
+        energy(i)=(kk(i)**2)*(energy(i)**((initpower-2.)/2.))
+        energy(i)=energy(i)*exp(-0.5*(kk(i)/kk(KS_modes))**2)
+!
+!  Set the lengths of A& B as defined in Malik & Vassilicos.
+!
+        ampA(i)=sqrt(2.0*energy(i)*delk(i))
+        ampB(i)=ampA(i)
+!
+        call random_number(newa)
+        call random_number(newa2)
+        newa=2.0*newa -1.0
+        newa2=2.0*newa2 -1.0
+        j=newa
+        l=newa2
+        j=j/(sqrt(sum(newa**2)))
+        l=l/(sqrt(sum(newa2**2)))
+!
+!  Now take the vector product of k with j (->A) and with l (->B).
+!
+        A(1,i)=(j(2)*k(3,i))-(j(3)*k(2,i))
+        A(2,i)=(j(3)*k(1,i))-(j(1)*k(3,i))
+        A(3,i)=(j(1)*k(2,i))-(j(2)*k(1,i))
+        unity=sqrt((A(1,i)**2)+(A(2,i)**2)+(A(3,i)**2))
+        A(:,i)=A(:,i)/unity
+        B(1,i)=(l(2)*k(3,i))-(l(3)*k(2,i))
+        B(2,i)=(l(3)*k(1,i))-(l(1)*k(3,i))
+        B(3,i)=(l(1)*k(2,i))-(l(2)*k(1,i))
+        unity=sqrt((B(1,i)**2)+(B(2,i)**2)+(B(3,i)**2))
+        B(:,i)=B(:,i)/unity
+!
+!  Now that we have our unit A's & B's we multiply them by the amplitudes
+!  we defined earlier, to create the spectrum.
+!
+        A(:,i)=ampA(i)*A(:,i)
+        B(:,i)=ampB(i)*B(:,i)
+      enddo
+!
+      do i=1,KS_modes
+!
+!  These are used to define omega - the unsteadyness frequency (co-eff of t).
+!
+        arg=energy(i)*(kk(i)**3)
+        if (arg>0.0)omega(i)=sqrt(arg)
+        if (arg==0.0)omega(i)=0.0
+      enddo
+!
+      do i=1,KS_modes
+        call cross(A(:,i),unit_k(:,i),KS_A(:,i))
+        call cross(B(:,i),unit_k(:,i),KS_B(:,i))
+      enddo
+!
+      KS_omega(:)=omega(:)
+      KS_k=k
+!
+!  Tidy up.
+!
+      deallocate(unit_k,orderk,kk,delk,energy,omega,klengths,ampA,ampB)
 !
     endsubroutine periodic_KS_setup
 !***********************************************************************
     subroutine KS_order(ad_, i_N, i_ord, B)
 !
-!  bubble sort algorithm
+!  Bubble sort algorithm.
 !
 !  22-feb-10/abag: coded
 !
-      implicit none
       integer, intent(in) :: i_N, i_ord
       real, intent(in)  :: ad_(i_N)
       real, intent(out) :: B(i_N)
       real :: c=1.
       integer :: n
+!
       B = ad_
+!
       do while(c>0.0)
         c = -1.
         do n = 1, i_N-1
@@ -1460,11 +1495,12 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
           endif
         enddo
       enddo
-    end subroutine KS_order
+!
+    endsubroutine KS_order
 !***********************************************************************
     subroutine input_persistent_hydro(id,lun,done)
 !
-!  Read in the stored time of the next random phase calculation
+!  Read in the stored time of the next random phase calculation.
 !
 !  12-apr-08/axel: adapted from input_persistent_forcing
 !
@@ -1487,13 +1523,14 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         read (lun) tsforce
         done=.true.
       endif
+!
       if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
 !
     endsubroutine input_persistent_hydro
 !***********************************************************************
     subroutine output_persistent_hydro(lun)
 !
-!  Writes out the time of the next random phase calculation
+!  Writes out the time of the next random phase calculation.
 !
 !  12-apr-08/axel: adapted from output_persistent_forcing
 !
@@ -1504,7 +1541,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
             print*,'output_persistent_hydro: ',tphase_kinflow
       endif
 !
-!  write details
+!  Write details.
 !
       write (lun) id_record_NOHYDRO_TPHASE
       write (lun) tphase_kinflow
@@ -1562,7 +1599,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for hydro part
+!  Reads and registers print parameters relevant for hydro part.
 !
 !   8-jun-02/axel: adapted from hydro
 !
@@ -1575,8 +1612,8 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
+!  Reset everything in case of reset
+!  (this needs to be consistent with what is defined above!).
 !
       if (lreset) then
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
@@ -1636,7 +1673,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
       enddo
 !
-!  write column where which hydro variable is stored
+!  Write column where which variable is stored.
 !
       if (lwr) then
         write(3,*) 'nname=',nname
@@ -1664,7 +1701,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine calc_mflow
 !
-!  dummy routine
+!  Dummy routine.
 !
 !  19-jul-03/axel: adapted from hydro
 !
@@ -1672,7 +1709,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine remove_mean_momenta(f)
 !
-!  dummy routine
+!  Dummy routine.
 !
 !  32-nov-06/tobi: coded
 !
@@ -1716,6 +1753,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         Zl(l) = jl
         dZldr(l) = ell*jlm1-(ell+1)*jlp1
       enddo
+!
       do m=1,my
         call legendre_pl(LPl,ell,y(m))
         call legendre_pl(LPlm1,ell-1,y(m))
@@ -1727,7 +1765,7 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !***********************************************************************
     subroutine hydro_clean_up
 !
-!  Deallocate the variables allocated in nohydro
+!  Deallocate the variables allocated in nohydro.
 !
 !  8-sep-2009/dhruba: coded
 !
@@ -1736,11 +1774,12 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         deallocate(Zl,dZldr)
         deallocate(Pl,dPldtheta)
       elseif (kinflow=='KS') then
-         deallocate(KS_k)
-         deallocate(KS_A)
-         deallocate(KS_B)
-         deallocate(KS_omega)
-       endif
+        deallocate(KS_k)
+        deallocate(KS_A)
+        deallocate(KS_B)
+        deallocate(KS_omega)
+      endif
+!
       print*, 'Done.'
 !
     endsubroutine hydro_clean_up
@@ -1752,9 +1791,10 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !  16-feb-2010/dhruba: coded
 !
       use General, only: random_number_wrapper
+!
       real, dimension(3) :: fran
 !
-!  generate random numbers
+!  Generate random numbers.
 !
       if (t>tsforce) then
         if (lrandom_location) then
@@ -1764,15 +1804,15 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
           location=location_fixed
         endif
 !
-!  writing down the location
+!  Writing down the location.
 !
         if (lroot .and. lwrite_random_location) then
           open(1,file=trim(datadir)//'/random_location.dat',status='unknown',position='append')
-            write(1,'(4f14.7)') t, location
+          write(1,'(4f14.7)') t, location
           close (1)
         endif
 !
-!  update next tsforce
+!  Update next tsforce.
 !
         tsforce=t+dtforce
         if (ip<=6) print*,'kinematic_random_phase: location=',location
