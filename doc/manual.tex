@@ -5851,7 +5851,7 @@ Wolfgang answered on 29 July 2010: ``\file{cdata.f90} has the explanation''
 \begin{Verbatim}
   ! Constant 'parameters' cannot occur in namelists, so in order to get the
   ! now constant module logicals into the lphysics name list...
-  ! We have some proxies that are used to initialise private local variables
+  ! We have some proxies that are used to initialize private local variables
   ! called lhydro etc, in the lphysics namelist!
 \end{Verbatim}
 So the situation is this: we want to write parameters like ldensity to
@@ -5862,7 +5862,7 @@ their original names.
 namelist, so we have to define a local ldensity variable. And to provide
 it with the value of the original cdata.ldensity, we need to transfer the
 value via \var{ldensity_var}.
-  That's pretty scary, although it weems to work fine. I can track the
+  That's pretty scary, although it seems to work fine. I can track the
 code back to the big \var{eos_merger} commit, so it may originate from that
 branch.
   One obvious problem is that you have to add code in a number of places
