@@ -420,7 +420,7 @@ module Interstellar
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
       if (lroot.and.uniform_zdist_SNI) then
-         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
+        print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
 !
       dv=1.
@@ -434,7 +434,7 @@ module Interstellar
 !  this Lambda as such enters as n^2*Lambda(T) on the rhs of the
 !  energy equation per unit volume
 !
-      unit_Lambda = unit_velocity**2 / unit_density / unit_time
+        unit_Lambda = unit_velocity**2 / unit_density / unit_time
       elseif (unit_system=='SI') then
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -447,8 +447,8 @@ module Interstellar
 ! cooling_select in interstellar_init_pars added
 !
       if (cooling_select == 'RB') then
-         if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-         coolT_cgs = (/ 100.D0, &
+        if (lroot) print*,'initialize_interstellar: default RB cooling fct'
+        coolT_cgs = (/   100.D0, &
                         2000.D0, &
                         8000.D0, &
                         1.0D5, &
@@ -459,7 +459,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolH_cgs = (/ 2.2380D-32, &
+        coolH_cgs = (/ 2.2380D-32, &
                         1.0012D-30, &
                         4.6240D-36, &
                         1.7800D-18, &
@@ -471,7 +471,7 @@ module Interstellar
                         tiny(0.D0), &
                         tiny(0D0) &
                       /) / ( m_p_cgs )**2
-         coolB = (/ 2.0, &
+        coolB = (/ 2.0, &
                     1.5, &
                     2.867, &
                    -0.65, &
@@ -482,7 +482,7 @@ module Interstellar
                     tiny(0.), &
                     tiny(0.), &
                     tiny(0.) /)
-         ncool = 6
+        ncool = 6
 !
 ! 04-jan-10/fred corrected above to original RB parameters
 !           altered coolB(5) and coolT(5,6) in RBr to ensure continuity and
@@ -491,8 +491,8 @@ module Interstellar
 !            + extended range to 1e13 from 1e10 in SSrr to stem spiking
 !
       else if (cooling_select == 'RBr') then
-         if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-         coolT_cgs = (/ 10.D0, &
+        if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
+        coolT_cgs = (/ 10.D0, &
                         300.D0, &
                         2000.D0, &
                         8000.D0, &
@@ -503,7 +503,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolH_cgs = (/ 2.76296D-42, &
+        coolH_cgs = (/ 2.76296D-42, &
                         2.2380D-32, &
                         1.0012D-30, &
                         4.6240D-36, &
@@ -515,7 +515,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0.D0) &
                       /) / ( m_p_cgs )**2
-         coolB = (/ 6.0, &
+        coolB = (/ 6.0, &
                     2.0, &
                     1.5, &
                     2.867, &
@@ -526,12 +526,12 @@ module Interstellar
                     tiny(0.), &
                     tiny(0.), &
                     tiny(0.) /)
-         ncool=6
+        ncool=6
       else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2
 !
 !
-         coolT_cgs = (/ 10.D0, &
+        coolT_cgs = (/ 10.D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
@@ -542,7 +542,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolH_cgs = (/ 3.42D16, &
+        coolH_cgs = (/ 3.42D16, &
                         9.10D18, &
                         1.11D20, &
                         2.00D8, &
@@ -553,7 +553,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolB = (/ 2.12, &
+        coolB = (/ 2.12, &
                     1.0, &
                     0.56, &
                     3.67, &
@@ -564,11 +564,11 @@ module Interstellar
                     tiny(0.), &
                     tiny(0.), &
                     tiny(0.) /)
-         ncool=5
+        ncool=5
       else if (cooling_select == 'SSr') then
 !
-         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs = (/ 10.D0, &
+        if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
+        coolT_cgs = (/ 10.D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
@@ -579,7 +579,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolH_cgs = (/ 3.70D16, &
+        coolH_cgs = (/ 3.70D16, &
                         9.46D18, &
                         1.185D20, &
                         2.00D8, &
@@ -590,7 +590,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolB = (/ 2.12, &
+        coolB = (/ 2.12, &
                     1.0, &
                     0.56, &
                     3.67, &
@@ -601,11 +601,11 @@ module Interstellar
                     tiny(0.) , &
                     tiny(0.), &
                     tiny(0.) /)
-         ncool=5
+        ncool=5
       else if (cooling_select == 'SSrr') then
          ! revised to make continuous
-         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs = (/ 10.D0, &
+        if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
+        coolT_cgs = (/ 10.D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
@@ -616,7 +616,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0d0)/)
-         coolH_cgs = (/ 3.703109927416290D16, &
+        coolH_cgs = (/ 3.703109927416290D16, &
                         9.455658188464892D18, &
                         1.185035244783337D20, &
                         1.9994576479D8, &
@@ -627,7 +627,7 @@ module Interstellar
                         tiny(0D0), &
                         tiny(0D0), &
                         tiny(0D0) /)
-         coolB = (/ 2.12, &
+        coolB = (/ 2.12, &
                     1.0, &
                     0.56, &
                     3.67, &
@@ -638,7 +638,7 @@ module Interstellar
                     tiny(0.), &
                     tiny(0.), &
                     tiny(0.) /)
-         ncool=6
+        ncool=6
       else if (cooling_select == 'SS-Slyz') then
 !
 ! 26-Jan-10/fred
@@ -646,8 +646,8 @@ module Interstellar
 ! combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
 ! as Gressel simulation (2008) constants revised for continuity
 !
-         if (lroot) print*,'initialize_interstellar: SS-Slyz cooling fct'
-         coolT_cgs = (/ 10.D0, &
+        if (lroot) print*,'initialize_interstellar: SS-Slyz cooling fct'
+        coolT_cgs = (/ 10.D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
@@ -658,7 +658,7 @@ module Interstellar
                         3.98D6,  &
                         2.0D7,  &
                         huge(0D0)/)
-         coolH_cgs = (/ 3.420D16, &
+        coolH_cgs = (/ 3.420D16, &
                         8.73275974868D18, &
                         1.0944376395513D20, &
                         1.0178638302185D10, &
@@ -669,7 +669,7 @@ module Interstellar
                         1.48514641828986D22, &
                         8.523033057875D20, &
                         tiny(0D0) /)
-         coolB = (/ 2.12, &
+        coolB = (/ 2.12, &
                     1.0, &
                     0.56, &
                     3.21, &
@@ -680,7 +680,7 @@ module Interstellar
                     0.33, &
                     0.5, &
                     tiny(0.) /)
-         ncool=10
+        ncool=10
       else if (cooling_select == 'SS-Slyzr') then
 !
 ! 26-Jan-10/fred
@@ -690,8 +690,8 @@ module Interstellar
 ! and to match SSrr values at low temp and cut off at 100K
 ! to avoid unresolvable low temperatures
 !
-         if (lroot) print*,'initialize_interstellar: SS-Slyzr cooling fct'
-         coolT_cgs = (/ 0.01D0, &
+        if (lroot) print*,'initialize_interstellar: SS-Slyzr cooling fct'
+        coolT_cgs = (/  0.01D0, &
                         141.D0, &
                         313.D0, &
                         6102.D0, &
@@ -702,7 +702,7 @@ module Interstellar
                         3.98D6,  &
                         1.0D7,  &
                         huge(0D0)/)
-         coolH_cgs = (/ 3.420D16, &
+        coolH_cgs = (/  3.420D16, &
                         8.73275974868D18, &
                         1.0944376395513D20, &
                         1.0178638302185D10, &
@@ -713,7 +713,7 @@ module Interstellar
                         1.48514641828986D22, &
                         8.523033057875D20, &
                         tiny(0D0) /)
-         coolB = (/ 2.12, &
+        coolB = (/2.12, &
                     1.0, &
                     0.56, &
                     3.21, &
@@ -724,23 +724,24 @@ module Interstellar
                     0.33, &
                     0.5, &
                     tiny(0.) /)
-         ncool=10
+        ncool=10
       else if (cooling_select == 'off') then
-         if (lroot) print*,'initialize_interstellar: no cooling applied'
-         coolT_cgs=tiny(0.D0)
-         coolH_cgs=tiny(0.D0)
-         coolB=tiny(0.)
+        if (lroot) print*,'initialize_interstellar: no cooling applied'
+        coolT_cgs=tiny(0.D0)
+        coolH_cgs=tiny(0.D0)
+        coolB=tiny(0.)
       endif
 !
 ! BEGIN TEMPORARY
-        if (any(coolH_cgs(1:ncool+1) == 0) .or. any(coolT_cgs(1:ncool+1) == 0)) then
-          call fatal_error('initialize_interstellar', &
-           'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
-        endif
+      if (any(coolH_cgs(1:ncool+1) == 0) &
+        .or. any(coolT_cgs(1:ncool+1) == 0)) then
+        call fatal_error('initialize_interstellar', &
+        'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
+      endif
 ! END TEMPORARY
       lncoolH(1:ncool+1) = real(log(coolH_cgs(1:ncool+1)) - log(unit_Lambda) &
-                                + log(unit_temperature**coolB(1:ncool+1)) &
-                                + log(coolingfunction_scalefactor))
+                              + log(unit_temperature**coolB(1:ncool+1)) &
+                              + log(coolingfunction_scalefactor))
       lncoolT(1:ncool+1) = real(log(coolT_cgs(1:ncool+1) / unit_temperature))
 !
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
@@ -764,8 +765,8 @@ module Interstellar
         T0UV=T0UV_cgs / unit_temperature
         cUV=cUV_cgs / unit_temperature
                 !GammaUV=GammaUV_cgs !/ (unit_velocity**2 * unit_time)
-        if (GammaUV == impossible) &
-                GammaUV=GammaUV_cgs * real(unit_length/unit_velocity**3)
+        if (GammaUV==impossible) &
+            GammaUV=GammaUV_cgs * real(unit_length/unit_velocity**3)
         if (ampl_SN == impossible) ampl_SN=ampl_SN_cgs / unit_energy
         if (kampl_SN == impossible) kampl_SN=0.0
         if (lroot) print*,'initialize_interstellar: ampl_SN, kampl_SN = '&
@@ -773,7 +774,7 @@ module Interstellar
         if (cloud_tau == impossible) cloud_tau=cloud_tau_cgs / unit_time
         if (mass_SN == impossible) mass_SN=mass_SN_cgs / unit_mass
         if (mass_SN_progenitor == impossible) &
-                mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
+            mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN == impossible) width_SN=width_SN_cgs / unit_length
         if (SNR_damping_time == impossible) SNR_damping_time=SNR_damping_time_cgs / unit_time
         if (SNR_damping_rate == impossible) SNR_damping_rate=SNR_damping_rate_cgs / unit_time
@@ -782,7 +783,7 @@ module Interstellar
       endif
 !
       if (heating_select == 'Gressel-hs') then
-            call gressel_interstellar(f,heat_gressel)
+        call gressel_interstellar(f,heat_gressel)
       endif
 !
 !  Cooling cutoff in shocks
@@ -803,14 +804,14 @@ module Interstellar
       sigma_SN=dxmax*3
       sigma_SN1=1./sigma_SN
 !
-        preSN(:,:)=0
+      preSN(:,:)=0
 !
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
       t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
-          t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+        t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
 !
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -818,12 +819,12 @@ module Interstellar
       endif
 !
       if (lroot.and.lstarting) then
-         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-         write(1,'("#",3A)')  &
+        open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+        write(1,'("#",3A)')  &
           '---it----------t--------itype-iproc----l-----m----n---', &
           '-----x------------y------------z-------', &
           '----rho-----------TT-----------EE---------t_sedov------radius----'
-         close(1)
+        close(1)
       endif
 !
 !  Write unit_Lambda to pc_constants file
@@ -1602,11 +1603,11 @@ cool_loop: do i=1,ncool
 !  Checks for SNe, and implements appropriately:
 !   relevant subroutines in entropy.f90
 !
-    real, dimension(mx,my,mz,mfarray) :: f
-    logical :: l_SNI=.false.   !only allow SNII if no SNI this step
-                               !(may not be worth keeping)
+      real, dimension(mx,my,mz,mfarray) :: f
+      logical :: l_SNI=.false.   !only allow SNII if no SNI this step
+                                 !(may not be worth keeping)
 !
-    intent(inout) :: f
+      intent(inout) :: f
 !
 !  identifier
 !
@@ -1614,13 +1615,13 @@ cool_loop: do i=1,ncool
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
-    if (t < t_settle) return
-    call calc_snr_damping_factor(f)
-    call tidy_SNRs
-    if (lSNI) call check_SNI (f,l_SNI)
-    if (lSNII) call check_SNII(f,l_SNI)
-!    if (lSNII) call check_SNIIb(f,l_SNI)!fred test new scheme
-    call calc_snr_damping_add_heat(f)
+      if (t < t_settle) return
+      call calc_snr_damping_factor(f)
+      call tidy_SNRs
+      if (lSNI) call check_SNI (f,l_SNI)
+      if (lSNII) call check_SNII(f,l_SNI)
+!     if (lSNII) call check_SNIIb(f,l_SNI)!fred test new scheme
+      call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -1628,60 +1629,60 @@ cool_loop: do i=1,ncool
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI
 !
-    real, dimension(mx,my,mz,mfarray) :: f
-    logical :: l_SNI
-    integer :: try_count, iSNR, ierr
+      real, dimension(mx,my,mz,mfarray) :: f
+      logical :: l_SNI
+      integer :: try_count, iSNR, ierr
 !
-    intent(inout) :: f,l_SNI
+      intent(inout) :: f,l_SNI
 !
 !  identifier
 !
-    if (headtt) print*,'check_SNI: ENTER'
+      if (headtt) print*,'check_SNI: ENTER'
 !
-    l_SNI=.false.
-    if (t >= t_next_SNI) then
-      iSNR=get_free_SNR()
-      SNRs(iSNR)%site%TT=1E20
-      SNRs(iSNR)%site%rho=0.
-      SNRs(iSNR)%t=t
-      SNRs(iSNR)%SN_type=1
-      SNRs(iSNR)%radius=width_SN
-      try_count=500
-      do while (try_count>0)
+      l_SNI=.false.
+      if (t >= t_next_SNI) then
+        iSNR=get_free_SNR()
+        SNRs(iSNR)%site%TT=1E20
+        SNRs(iSNR)%site%rho=0.
+        SNRs(iSNR)%t=t
+        SNRs(iSNR)%SN_type=1
+        SNRs(iSNR)%radius=width_SN
+        try_count=500
+        do while (try_count>0)
+          ierr=iEXPLOSION_OK
+          try_count=try_count-1
+!
+          if (uniform_zdist_SNI) then
+            call position_SN_uniformz(f,SNRs(iSNR))
+          else
+            call position_SN_gaussianz(f,h_SNI,SNRs(iSNR))
+          endif
+!
+          if (lforce_locate_SNI.and. &
+            ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+             (SNRs(iSNR)%site%TT > TT_SN_max))) then
+            call find_nearest_SNI(f,SNRs(iSNR))
+          endif
+!
+          if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+              (SNRs(iSNR)%site%TT > TT_SN_max)) then
+            cycle
+          endif
+!
+          call explode_SN(f,SNRs(iSNR),ierr,preSN)
+          if (ierr==iEXPLOSION_OK) then
+            call set_next_SNI
+            l_SNI=.true.
+            exit
+          endif
+        enddo
+!
+        if (try_count==0) then
+          if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
+        endif
+        call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
         ierr=iEXPLOSION_OK
-        try_count=try_count-1
-!
-        if (uniform_zdist_SNI) then
-          call position_SN_uniformz(f,SNRs(iSNR))
-        else
-          call position_SN_gaussianz(f,h_SNI,SNRs(iSNR))
-        endif
-!
-        if (lforce_locate_SNI.and. &
-             ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
-              (SNRs(iSNR)%site%TT > TT_SN_max))) then
-          call find_nearest_SNI(f,SNRs(iSNR))
-        endif
-!
-        if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
-            (SNRs(iSNR)%site%TT > TT_SN_max)) then
-          cycle
-        endif
-!
-        call explode_SN(f,SNRs(iSNR),ierr,preSN)
-        if (ierr==iEXPLOSION_OK) then
-          call set_next_SNI
-          l_SNI=.true.
-          exit
-        endif
-      enddo
-!
-      if (try_count==0) then
-        if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
       endif
-      call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
-      ierr=iEXPLOSION_OK
-    endif
 !
     endsubroutine check_SNI
 !***********************************************************************
@@ -1691,13 +1692,14 @@ cool_loop: do i=1,ncool
 !
       real, dimension(1) :: franSN
 !
-       !  pre-determine time for next SNI
-          if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",&
-                                       t_next_SNI
-          call random_number_wrapper(franSN)
-          t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-          if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = '&
-                                                  ,t_next_SNI
+!  pre-determine time for next SNI
+!
+      if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",&
+        t_next_SNI
+      call random_number_wrapper(franSN)
+      t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
+      if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = '&
+        ,t_next_SNI
     endsubroutine set_next_SNI
 !***********************************************************************
     subroutine set_next_SNII()
@@ -1706,13 +1708,14 @@ cool_loop: do i=1,ncool
 !
       real, dimension(1) :: franSN
 !
-       !  pre-determine time for next SNI
-          if (lroot.and.ip<14) print*,"check_SNII: Old t_next_SNII=",&
-                                       t_next_SNII
-          call random_number_wrapper(franSN)
-          t_next_SNII=t + (1.0 + 0.6*(franSN(1)-0.5)) * t_interval_SNII
-          if (lroot.and.ip<20) print*,'check_SNII: Next SNII at time = '&
-                                                  ,t_next_SNII
+!  pre-determine time for next SNI
+!
+      if (lroot.and.ip<14) print*,"check_SNII: Old t_next_SNII=",&
+        t_next_SNII
+      call random_number_wrapper(franSN)
+      t_next_SNII=t + (1.0 + 0.6*(franSN(1)-0.5)) * t_interval_SNII
+      if (lroot.and.ip<20) print*,'check_SNII: Next SNII at time = '&
+        ,t_next_SNII
     endsubroutine set_next_SNII
 !***********************************************************************
     subroutine check_SNII(f,l_SNI)
@@ -1721,120 +1724,124 @@ cool_loop: do i=1,ncool
 !
 !  03-feb-10/fred: tested and working correctly
 !
-    use General, only: random_number_wrapper
-    use Mpicomm, only: mpireduce_sum, mpibcast_real
-    use EquationOfState, only: eoscalc, ilnrho_ss
+      use General, only: random_number_wrapper
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use EquationOfState, only: eoscalc, ilnrho_ss
 !
-    real, dimension(mx,my,mz,mfarray) :: f
-    real, dimension(nx) :: rho,rho_cloud,lnTT,TT,yH
-    real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
-    real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
-    real, dimension(ncpus) :: cloud_mass_byproc
-    integer :: icpu, m, n, iSNR, ierr
-    logical :: l_SNI
-    real :: dtsn
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: rho,rho_cloud,lnTT,TT,yH
+      real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
+      real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
+      real, dimension(ncpus) :: cloud_mass_byproc
+      integer :: icpu, m, n, iSNR, ierr
+      logical :: l_SNI
+      real :: dtsn
 !
-    intent(in) :: l_SNI
-    intent(inout) :: f
+      intent(in) :: l_SNI
+      intent(inout) :: f
 !
 !  identifier
 !
-    if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
+      if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
 !
-    if (l_SNI) return         ! only do if no SNI this step
+      if (l_SNI) return         ! only do if no SNI this step
 !
-    iSNR=get_free_SNR()
+      iSNR=get_free_SNR()
 !
 !  determine and sum all cells comprising dense cooler clouds
 !  where type 2 SNe are likely
 !
-    if (t >= t_next_SNII) then
-      cloud_mass=0.0
-      do n=n1,n2
-        do m=m1,m2
-          rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-          call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
-                      ,yH=yH,lnTT=lnTT)
-          TT(1:nx)=exp(lnTT(1:nx))
+      if (t >= t_next_SNII) then
+        cloud_mass=0.0
+        do n=n1,n2
+          do m=m1,m2
+            rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
+            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
+                        ,yH=yH,lnTT=lnTT)
+            TT(1:nx)=exp(lnTT(1:nx))
 !            if (ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
 !                               minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
-          rho_cloud(1:nx)=0.
-          where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
-            rho_cloud(1:nx) = rho(1:nx)
+            rho_cloud(1:nx)=0.
+            where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
+              rho_cloud(1:nx) = rho(1:nx)
 !            if (ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
 !                             ,sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
-            cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+              cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+          enddo
         enddo
-      enddo
-      fsum1_tmp=(/ cloud_mass /)
+        fsum1_tmp=(/ cloud_mass /)
 !  
-      call mpireduce_sum(fsum1_tmp,fsum1,1)
-      call mpibcast_real(fsum1,1)
-      cloud_mass_dim=fsum1(1)*dv
-      if (ip<14) &
-      print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
+        call mpireduce_sum(fsum1_tmp,fsum1,1)
+        call mpibcast_real(fsum1,1)
+        cloud_mass_dim=fsum1(1)*dv
+        if (ip<14) &
+        print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !  
-      if (lroot .and. ip < 14) &
-          print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
-              cloud_mass_dim,fsum1(1),dv
+        if (lroot .and. ip < 14) &
+            print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
+            cloud_mass_dim,fsum1(1),dv
 !  
 !    dtsn: elapsed time since last SNII injected
 !    prob of next increases with time
 !    last_SN_t updated afte each SNII
 !    SNI independent distribution
 !  
-      dtsn=t-last_SN_t
-      freq_SNII= &
-        frac_heavy*frac_converted*cloud_mass_dim/&
-                   mass_SN_progenitor/cloud_tau
-      prob_SNII=freq_SNII*dtsn*5.
-      call random_number_wrapper(franSN)
+        dtsn=t-last_SN_t
+        freq_SNII= &
+          frac_heavy*frac_converted*cloud_mass_dim/&
+                     mass_SN_progenitor/cloud_tau
+        prob_SNII=freq_SNII*dtsn*5.
+        call random_number_wrapper(franSN)
 !  
-      if (lroot.and.ip<20) then
-        if (cloud_mass_dim > 0. .and. franSN(1) <= 2.*prob_SNII) then
-          print*,'check_SNII: freq,prob,rnd,dtsn:',&
-                  freq_SNII,prob_SNII,franSN(1),dtsn
-          print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
-                frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+        if (lroot.and.ip<20) then
+          if (cloud_mass_dim > 0. .and. franSN(1) <= 2.*prob_SNII) then
+            print*,'check_SNII: freq,prob,rnd,dtsn:',&
+                    freq_SNII,prob_SNII,franSN(1),dtsn
+            print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
+                  frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+          endif
         endif
-      endif
 !  
-      if (franSN(1) <= prob_SNII) then
-        !  position_SN_bycloudmass needs the cloud_masses for each processor;
-        !   communicate and store them here, to avoid recalculation.
-        cloud_mass_byproc(:)=0.0
-        ! use non-root broadcasts for the communication...
-        do icpu=1,ncpus
-          fmpi1=cloud_mass
-!          if (icpu==iproc+1) then
-          call mpibcast_real(fmpi1,1,icpu-1)
-          cloud_mass_byproc(icpu)=fmpi1(1)
-!          endif
-        enddo
+        if (franSN(1) <= prob_SNII) then
 !  
-        if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
-                                                ,cloud_mass_byproc
-        call position_SN_bycloudmass&
-                        (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
-        if (ierr == iEXPLOSION_TOO_HOT) then
-          call free_SNR(iSNR)
-          ierr=iEXPLOSION_OK
-          return
-        endif
-        SNRs(iSNR)%t=t
-        SNRs(iSNR)%SN_type=2
-        call explode_SN(f,SNRs(iSNR),ierr,preSN)
-        if (ierr==iEXPLOSION_OK) then
-        call set_next_SNII
-          last_SN_t=t
+!  position_SN_bycloudmass needs the cloud_masses for each processor;
+!   communicate and store them here, to avoid recalculation.
+!  
+          cloud_mass_byproc(:)=0.0
+!
+! use non-root broadcasts for the communication...
+!
+          do icpu=1,ncpus
+            fmpi1=cloud_mass
+!           if (icpu==iproc+1) then
+            call mpibcast_real(fmpi1,1,icpu-1)
+            cloud_mass_byproc(icpu)=fmpi1(1)
+!           endif
+          enddo
+!  
+          if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
+                                                  ,cloud_mass_byproc
+          call position_SN_bycloudmass&
+                          (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
+          if (ierr == iEXPLOSION_TOO_HOT) then
+            call free_SNR(iSNR)
+            ierr=iEXPLOSION_OK
+            return
+          endif
+          SNRs(iSNR)%t=t
+          SNRs(iSNR)%SN_type=2
+          call explode_SN(f,SNRs(iSNR),ierr,preSN)
+          if (ierr==iEXPLOSION_OK) then
+            call set_next_SNII
+            last_SN_t=t
 !  
 !   30-dec-09/fred: added ierr and if statement so time of SN can be
 !                   updated if explosion successful else last_SN_t unchanged
 !  
-        endif
+          endif
 !  
+        endif
       endif
-    endif
     call free_SNR(iSNR)
 !  If returned unexploded stops code running out of free slots
 !  
