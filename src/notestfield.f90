@@ -138,7 +138,7 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f,p)
+    subroutine testfield_after_boundary(f,p)
 !
 !  29-jan-06/axel: dummy routine
 !
@@ -150,7 +150,7 @@ module Testfield
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_ltestfield_pars
+    endsubroutine testfield_after_boundary
 !***********************************************************************
     subroutine rescaling_testfield(f)
 !

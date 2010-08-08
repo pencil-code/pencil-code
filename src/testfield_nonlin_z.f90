@@ -337,7 +337,7 @@ module Testfield
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
 !  in the main calculation (lmagnetic=.true.) with phase zero.
 !  Optionally, one can determine the phase in the actual field
-!  and modify the following calculations in calc_ltestfield_pars.
+!  and modify the following calculations in testfield_after_boundary.
 !  They should also be with respect to k*z, not just z.
 !
       c=cz
@@ -1193,7 +1193,7 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f,p)
+    subroutine testfield_after_boundary(f,p)
 !
 !  Calculate <uxb^T> + <u^Txb>, which is needed when lsoca=.false.
 !  Also calculate <jxb^T> + <j^Txb>, which is needed when lsoca_jxb=.false.
@@ -1236,7 +1236,7 @@ module Testfield
 !  Stop if iE0 is too small.
 !
       if (iE0/=5) then
-        call fatal_error('calc_ltestfield_pars','need ntest=5 for u0ref')
+        call fatal_error('testfield_after_boundary','need ntest=5 for u0ref')
       endif
 !
 !  initialize counter for mean fields
@@ -1334,7 +1334,7 @@ module Testfield
               call cross_mn(u0ref,bbtest,uxbtest1)
               call cross_mn(uutest,bbfluct,uxbtest2)
             case default
-              call fatal_error('calc_ltestfield_pars','??itestfield_method')
+              call fatal_error('testfield_after_boundary','??itestfield_method')
             endselect
             uxbtest=uxbtest1+uxbtest2
             jxbtest=jxbtest1+jxbtest2
@@ -1401,7 +1401,7 @@ module Testfield
             bsinphz=fname(idiag_bsinphz)
             phase_testfield=atan2(bsinphz,bcosphz)
           else
-            call fatal_error('calc_ltestfield_pars', &
+            call fatal_error('testfield_after_boundary', &
             'need bcosphz, bsinphz in print.in for lphase_adjust=T')
           endif
         endif
@@ -1418,7 +1418,7 @@ module Testfield
 !
       headtt=headtt_save
 !
-    endsubroutine calc_ltestfield_pars
+    endsubroutine testfield_after_boundary
 !***********************************************************************
     subroutine rescaling_testfield(f)
 !

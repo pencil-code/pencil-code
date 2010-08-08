@@ -696,7 +696,7 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f,p)
+    subroutine testfield_after_boundary(f,p)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -775,7 +775,7 @@ module Testfield
 !
       headtt=headtt_save
 !
-    endsubroutine calc_ltestfield_pars
+    endsubroutine testfield_after_boundary
 !***********************************************************************
     subroutine rescaling_testfield(f)
 !

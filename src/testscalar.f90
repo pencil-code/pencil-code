@@ -106,7 +106,10 @@ module Testscalar
   integer :: idiag_kap13=0      ! DIAG_DOC: $\kappa_{13}$
   integer :: idiag_kap23=0      ! DIAG_DOC: $\kappa_{23}$
   integer :: idiag_kap33=0      ! DIAG_DOC: $\kappa_{33}$
-  integer :: idiag_mkap33=0     ! DIAG_DOC: $\kappa'_{33}$
+  integer :: idiag_mgam33=0     ! DIAG_DOC: $\tilde\gamma_{33}$
+  integer :: idiag_mkap33=0     ! DIAG_DOC: $\tilde\kappa_{33}$
+  integer :: idiag_ngam33=0     ! DIAG_DOC: $\hat\gamma_{33}$
+  integer :: idiag_nkap33=0     ! DIAG_DOC: $\hat\kappa_{33}$
   integer :: idiag_c1rms=0      ! DIAG_DOC: $\left<c_{1}^2\right>^{1/2}$
   integer :: idiag_c2rms=0      ! DIAG_DOC: $\left<c_{2}^2\right>^{1/2}$
   integer :: idiag_c3rms=0      ! DIAG_DOC: $\left<c_{3}^2\right>^{1/2}$
@@ -259,7 +262,7 @@ module Testscalar
       sz=sin(ktestscalar*ztestscalar)
 !
 !  Optionally, one can determine the phase in the actual field
-!  and modify the following calculations in calc_ltestscalar_pars.
+!  and modify the following calculations in testscalar_after_boundary.
 !
 !  debug output
 !
@@ -352,7 +355,7 @@ module Testscalar
         endif
       endif
 !
-!  write testscalar information to a file (for convenient post-processing)
+!  Write testscalar information to a file (for convenient post-processing).
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/testscalar_info.dat',STATUS='unknown')
@@ -499,8 +502,8 @@ module Testscalar
 
       real, dimension (nx) :: cc,cctest,C0test,del2ctest,ug
       real, dimension (nx,3) :: ggtest, G0test=0.,uctest
-      real, dimension (nx) :: ugtest,dugtest,divuc
-      real, dimension (nx,3,njtestscalar) :: Fipq,Gipq
+      real, dimension (nx) :: ugtest,dctest,dugtest
+      real, dimension (nx,3,njtestscalar) :: Fipq,Gipq,Hipq
       real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
       integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
@@ -574,7 +577,7 @@ module Testscalar
 !
 !  add SOCA terms
 !
-        df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest)+ug+kappatest*del2ctest
+        df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest)-ug+kappatest*del2ctest
 !
 !  compute and apply non-soca terms
 !
@@ -605,35 +608,30 @@ module Testscalar
 !
 !  add to the right-hand side of the equation
 !
-          df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest)+dugtest
+          df(l1:l2,m,n,jcctest)=df(l1:l2,m,n,jcctest)-dugtest
         endif
 !
-!  calculate kappa, begin by calculating uctest (not ugtest!)
+!  Calculate gamma and kappa; begin by calculating dctest, uctest, and ugtest.
 !
         if (ldiagnos.or.l1davgfirst) then
           cctest=f(l1:l2,m,n,jcctest)
+          dctest=p%divu*cctest
           do j=1,3
             uctest(:,j)=uufluct(:,j)*cctest
           enddo
+          call dot_mn(uufluct,ggtest,ugtest)
 !
-!  under soca, ugtest is not available in the auxiliary array,
-!  so we need to compute it separately for the diagnostics.
+!  Prepare flux terms for diagnostics.
 !
-          if (lsoca_ug) then
-            call dot_mn(uufluct,ggtest,ugtest)
-          endif
+          cpq(:,jtest)=cctest
+          Fipq(:,:,jtest)=uctest*camp1
+          Gipq(:,3,jtest)=ugtest*camp1
+          Hipq(:,3,jtest)=dctest*camp1
         endif
-!
-!  flux terms  for diagnostics
-!  (can't they also be inside the if statement?)
-!
-        cpq(:,jtest)=cctest
-        Fipq(:,:,jtest)=uctest*camp1
-        Gipq(:,3,jtest)=ugtest*camp1
       enddo
 !
-!  diffusive time step, just take the max of diffus_eta (if existent)
-!  and whatever is calculated here
+!  Evaluate diffusive time step; just take the max of diffus_eta (if existent)
+!  and whatever is calculated here.
 !
       if (lfirst.and.ldt) then
         diffus_eta=max(diffus_eta,kappatest*dxyz_2)
@@ -657,7 +655,7 @@ module Testscalar
         if (idiag_F22z/=0) call xysum_mn_name_z(Fipq(:,2,i2),idiag_F22z)
         if (idiag_F32z/=0) call xysum_mn_name_z(Fipq(:,3,i2),idiag_F32z)
 !
-!  check whether njtestscalar is large enough
+!  Check whether njtestscalar is large enough.
 !
         if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0) then
           if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
@@ -669,32 +667,38 @@ module Testscalar
           if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
         endif
 !
-!  averages of kappa
+!  First consider results from  z-dependent test fields.
 !
-        if (idiag_kap11/=0) call sum_mn_name(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4),idiag_kap11)
-        if (idiag_kap21/=0) call sum_mn_name(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4),idiag_kap21)
-        if (idiag_kap31/=0) call sum_mn_name(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4),idiag_kap31)
-        if (idiag_kap12/=0) call sum_mn_name(+cy(m)*Fipq(:,1,i5)+sy(m)*Fipq(:,1,i6),idiag_kap12)
-        if (idiag_kap22/=0) call sum_mn_name(+cy(m)*Fipq(:,2,i5)+sy(m)*Fipq(:,2,i6),idiag_kap22)
-        if (idiag_kap32/=0) call sum_mn_name(+cy(m)*Fipq(:,3,i5)+sy(m)*Fipq(:,3,i6),idiag_kap32)
-        if (idiag_kap13/=0) call sum_mn_name(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2),idiag_kap13)
-        if (idiag_kap23/=0) call sum_mn_name(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2),idiag_kap23)
-        if (idiag_kap33/=0) call sum_mn_name(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2),idiag_kap33)
-        if (idiag_mkap33/=0) call sum_mn_name(-sz(n)*Gipq(:,3,i1)+cz(n)*Gipq(:,3,i2),idiag_mkap33)
+        if (idiag_kap33/=0) call sum_mn_name (-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33)
+        if (idiag_gam33/=0) call sum_mn_name (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_gam33)
+        if (idiag_mgam33/=0) call sum_mn_name(  +cz(n)*Gipq(:,3,i1)+sz(n)*Gipq(:,3,i2) ,idiag_mgam33)
+        if (idiag_mkap33/=0) call sum_mn_name(-(-sz(n)*Gipq(:,3,i1)+cz(n)*Gipq(:,3,i2))*ktestscalar1,idiag_mkap33)
+        if (idiag_ngam33/=0) call sum_mn_name(  +cz(n)*Hipq(:,3,i1)+sz(n)*Hipq(:,3,i2) ,idiag_ngam33)
+        if (idiag_nkap33/=0) call sum_mn_name(-(-sz(n)*Hipq(:,3,i1)+cz(n)*Hipq(:,3,i2))*ktestscalar1,idiag_nkap33)
 !
-!  pumping effect
+!  Now do remaining kappa terms.
 !
-        if (idiag_gam11/=0) call sum_mn_name(-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4),idiag_gam11)
-        if (idiag_gam21/=0) call sum_mn_name(-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4),idiag_gam21)
-        if (idiag_gam31/=0) call sum_mn_name(-sz(n)*Fipq(:,3,i3)+cz(n)*Fipq(:,3,i4),idiag_gam31)
-        if (idiag_gam12/=0) call sum_mn_name(-sz(n)*Fipq(:,1,i5)+cz(n)*Fipq(:,1,i6),idiag_gam12)
-        if (idiag_gam22/=0) call sum_mn_name(-sz(n)*Fipq(:,2,i5)+cz(n)*Fipq(:,2,i6),idiag_gam22)
-        if (idiag_gam32/=0) call sum_mn_name(-sz(n)*Fipq(:,3,i5)+cz(n)*Fipq(:,3,i6),idiag_gam32)
-        if (idiag_gam13/=0) call sum_mn_name(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2),idiag_gam13)
-        if (idiag_gam23/=0) call sum_mn_name(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2),idiag_gam23)
-        if (idiag_gam33/=0) call sum_mn_name(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2),idiag_gam33)
+        if (idiag_kap11/=0) call sum_mn_name(-(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4)),idiag_kap11)
+        if (idiag_kap21/=0) call sum_mn_name(-(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4)),idiag_kap21)
+        if (idiag_kap31/=0) call sum_mn_name(-(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4)),idiag_kap31)
+        if (idiag_kap12/=0) call sum_mn_name(-(+cy(m)*Fipq(:,1,i5)+sy(m)*Fipq(:,1,i6)),idiag_kap12)
+        if (idiag_kap22/=0) call sum_mn_name(-(+cy(m)*Fipq(:,2,i5)+sy(m)*Fipq(:,2,i6)),idiag_kap22)
+        if (idiag_kap32/=0) call sum_mn_name(-(+cy(m)*Fipq(:,3,i5)+sy(m)*Fipq(:,3,i6)),idiag_kap32)
+        if (idiag_kap13/=0) call sum_mn_name(-(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kap13)
+        if (idiag_kap23/=0) call sum_mn_name(-(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kap23)
 !
-!  values at one point
+!  Finally do remaining gamma terms (pumping effect).
+!
+        if (idiag_gam11/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestscalar1,idiag_gam11)
+        if (idiag_gam21/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestscalar1,idiag_gam21)
+        if (idiag_gam31/=0) call sum_mn_name(-(-sz(n)*Fipq(:,3,i3)+cz(n)*Fipq(:,3,i4))*ktestscalar1,idiag_gam31)
+        if (idiag_gam12/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i5)+cz(n)*Fipq(:,1,i6))*ktestscalar1,idiag_gam12)
+        if (idiag_gam22/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i5)+cz(n)*Fipq(:,2,i6))*ktestscalar1,idiag_gam22)
+        if (idiag_gam32/=0) call sum_mn_name(-(-sz(n)*Fipq(:,3,i5)+cz(n)*Fipq(:,3,i6))*ktestscalar1,idiag_gam32)
+        if (idiag_gam13/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2))*ktestscalar1,idiag_gam13)
+        if (idiag_gam23/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2))*ktestscalar1,idiag_gam23)
+!
+!  Extract values at one point.
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_c1pt/=0) call save_name(cpq(lpoint-nghost,i1),idiag_c1pt)
@@ -705,9 +709,7 @@ module Testscalar
           if (idiag_c6pt/=0) call save_name(cpq(lpoint-nghost,i6),idiag_c6pt)
         endif
 !
-!  rms values of small scales fields cpq in response to the test fields Bpq
-!  Obviously idiag_b0rms and idiag_b12rms cannot both be invoked!
-!  Needs modification!
+!  RMS values of small scales fields cpq in response to the test fields Bpq.
 !
         if (idiag_c1rms/=0) call sum_mn_name(cpq(:,i1)**2,idiag_c1rms,lsqrt=.true.)
         if (idiag_c2rms/=0) call sum_mn_name(cpq(:,i2)**2,idiag_c2rms,lsqrt=.true.)
@@ -756,12 +758,14 @@ module Testscalar
 !
     endsubroutine get_slices_testscalar
 !***********************************************************************
-    subroutine calc_ltestscalar_pars(f)
+    subroutine testscalar_after_boundary(f)
 !
-!  calculate <ug>, which is needed when lsoca_ug=.false.
+!  Calculate either <ug> or, if ltestscalar_per_unitvolume=T, <ug>+<du>,
+!  where g=gradc and d=divu. This is needed when lsoca_ug=F.
 !
 !  26-nov-08/axel: adapted from testfield_z.f90
 !  27-dec-08/axel: also calculate yz-averages
+!   8-aug-10/axel: renamed calc_ltestscalar_pars => testscalar_after_boundary
 !
       use Cdata
       use Sub
@@ -793,10 +797,11 @@ module Testscalar
       fac_yz=1./nyz
       fac_xz=1./nxz
 !
-!  do each of the 2+2 test fields at a time
+!  Do each of the 2+2 test fields at a time,
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
-!  Start with z-dependent mean fields
+!
+!  ** Start with z-dependent mean fields **
 !
       do jtest=jtestz1,jtestz2
         jcctest=icctest+(jtest-1)
@@ -810,8 +815,14 @@ module Testscalar
               call calc_pencils_hydro(f,p)
               call grad(f,jcctest,ggtest)
               call dot_mn(p%uu,ggtest,ugtest)
-              jug=iug+(jtest-1)
-              if (iug/=0) f(l1:l2,m,n,jug)=ugtest
+!
+!  Add divu*c term if ltestscalar_per_unitvolume=T.
+!
+              if (ltestscalar_per_unitvolume) ugtest=ugtest+p%divu*cctest
+!
+!  Put <ug> or <ug-dc> into auxiliary array and compute its average.
+!
+              if (iug/=0) f(l1:l2,m,n,iug+(jtest-1))=ugtest
               ugtestm(n,jtest)=ugtestm(n,jtest)+fac_xy*sum(ugtest)
               headtt=.false.
             enddo
@@ -820,7 +831,7 @@ module Testscalar
         endif
       enddo
 !
-!  Now do x-dependent mean fields
+!  ** Now do x-dependent mean fields **
 !
       if (njtestscalar>=jtestx2) then
         do jtest=jtestx1,jtestx2
@@ -835,8 +846,14 @@ module Testscalar
                 call calc_pencils_hydro(f,p)
                 call grad(f,jcctest,ggtest)
                 call dot_mn(p%uu,ggtest,ugtest)
-                jug=iug+(jtest-1)
-                if (iug/=0) f(l1:l2,m,n,jug)=ugtest
+!
+!  Add divu*c term if ltestscalar_per_unitvolume=T.
+!
+              if (ltestscalar_per_unitvolume) ugtest=ugtest+p%divu*cctest
+!
+!  Put <ug> or <ug-dc> into auxiliary array and compute its average.
+!
+                if (iug/=0) f(l1:l2,m,n,iug+(jtest-1))=ugtest
                 ugtestmx(:,jtest)=ugtestmx(:,jtest)+fac_yz*ugtest
                 headtt=.false.
               enddo
@@ -846,7 +863,7 @@ module Testscalar
         enddo
       endif
 !
-!  Finally do y-dependent mean fields
+!  ** Finally do y-dependent mean fields **
 !
       if (njtestscalar>=jtesty2) then
         do jtest=jtesty1,jtesty2
@@ -861,8 +878,14 @@ module Testscalar
                 call calc_pencils_hydro(f,p)
                 call grad(f,jcctest,ggtest)
                 call dot_mn(p%uu,ggtest,ugtest)
-                jug=iug+(jtest-1)
-                if (iug/=0) f(l1:l2,m,n,jug)=ugtest
+!
+!  Add divu*c term if ltestscalar_per_unitvolume=T.
+!
+              if (ltestscalar_per_unitvolume) ugtest=ugtest+p%divu*cctest
+!
+!  Put <ug> or <ug-dc> into auxiliary array and compute its average.
+!
+                if (iug/=0) f(l1:l2,m,n,iug+(jtest-1))=ugtest
                 ugtestmy(m,jtest)=ugtestmy(m,jtest)+fac_xz*sum(ugtest)
                 headtt=.false.
               enddo
@@ -916,7 +939,7 @@ module Testscalar
 !
       headtt=headtt_save
 !
-    endsubroutine calc_ltestscalar_pars
+    endsubroutine testscalar_after_boundary
 !***********************************************************************
     subroutine rescaling_testscalar(f)
 !
@@ -984,12 +1007,12 @@ module Testscalar
 !  set G0test for each of the 2+2 cases
 !
       select case (jtest)
-      case (1); C0test=+camp*sz(n); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*cz(n)
-      case (2); C0test=-camp*cz(n); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
-      case (3); C0test=+camp*sx(:); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case (4); C0test=-camp*cx(:); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case (5); C0test=+camp*sy(m); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
-      case (6); C0test=-camp*cy(m); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
+      case (1); C0test=+camp*ktestscalar1*sz(n); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*cz(n)
+      case (2); C0test=-camp*ktestscalar1*cz(n); G0test(:,1)=0.; G0test(:,2)=0.; G0test(:,3)=camp*sz(n)
+      case (3); C0test=+camp*ktestscalar1*sx(:); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (4); C0test=-camp*ktestscalar1*cx(:); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
+      case (5); C0test=+camp*ktestscalar1*sy(m); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
+      case (6); C0test=-camp*ktestscalar1*cy(m); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
       case default; C0test(:)=0.; G0test(:,:)=0.
       endselect
 !
@@ -1053,10 +1076,10 @@ module Testscalar
         idiag_F12z=0; idiag_F22z=0; idiag_F32z=0
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
         idiag_kap12=0; idiag_kap22=0; idiag_kap32=0
-        idiag_kap13=0; idiag_kap23=0; idiag_kap33=0; idiag_mkap33=0
+        idiag_kap13=0; idiag_kap23=0; idiag_kap33=0; idiag_mkap33=0; idiag_nkap33=0
         idiag_gam11=0; idiag_gam21=0; idiag_gam31=0
         idiag_gam12=0; idiag_gam22=0; idiag_gam32=0
-        idiag_gam13=0; idiag_gam23=0; idiag_gam33=0
+        idiag_gam13=0; idiag_gam23=0; idiag_gam33=0; idiag_mgam33=0; idiag_ngam33=0
         idiag_c1rms=0; idiag_c2rms=0
         idiag_c1pt=0; idiag_c2pt=0
       endif
@@ -1073,7 +1096,10 @@ module Testscalar
         call parse_name(iname,cname(iname),cform(iname),'kap13',idiag_kap13)
         call parse_name(iname,cname(iname),cform(iname),'kap23',idiag_kap23)
         call parse_name(iname,cname(iname),cform(iname),'kap33',idiag_kap33)
+        call parse_name(iname,cname(iname),cform(iname),'mgam33',idiag_mgam33)
         call parse_name(iname,cname(iname),cform(iname),'mkap33',idiag_mkap33)
+        call parse_name(iname,cname(iname),cform(iname),'ngam33',idiag_ngam33)
+        call parse_name(iname,cname(iname),cform(iname),'nkap33',idiag_nkap33)
         call parse_name(iname,cname(iname),cform(iname),'gam11',idiag_gam11)
         call parse_name(iname,cname(iname),cform(iname),'gam21',idiag_gam21)
         call parse_name(iname,cname(iname),cform(iname),'gam31',idiag_gam31)
@@ -1111,37 +1137,6 @@ module Testscalar
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_kap11=',idiag_kap11
-        write(3,*) 'idiag_kap21=',idiag_kap21
-        write(3,*) 'idiag_kap31=',idiag_kap31
-        write(3,*) 'idiag_kap12=',idiag_kap12
-        write(3,*) 'idiag_kap22=',idiag_kap22
-        write(3,*) 'idiag_kap32=',idiag_kap32
-        write(3,*) 'idiag_kap13=',idiag_kap13
-        write(3,*) 'idiag_kap23=',idiag_kap23
-        write(3,*) 'idiag_kap33=',idiag_kap33
-        write(3,*) 'idiag_mkap33=',idiag_mkap33
-        write(3,*) 'idiag_gam11=',idiag_gam11
-        write(3,*) 'idiag_gam21=',idiag_gam21
-        write(3,*) 'idiag_gam31=',idiag_gam31
-        write(3,*) 'idiag_gam12=',idiag_gam12
-        write(3,*) 'idiag_gam22=',idiag_gam22
-        write(3,*) 'idiag_gam32=',idiag_gam32
-        write(3,*) 'idiag_gam13=',idiag_gam13
-        write(3,*) 'idiag_gam23=',idiag_gam23
-        write(3,*) 'idiag_gam33=',idiag_gam33
-        write(3,*) 'idiag_c1rms=',idiag_c1rms
-        write(3,*) 'idiag_c2rms=',idiag_c2rms
-        write(3,*) 'idiag_c3rms=',idiag_c3rms
-        write(3,*) 'idiag_c4rms=',idiag_c4rms
-        write(3,*) 'idiag_c5rms=',idiag_c5rms
-        write(3,*) 'idiag_c6rms=',idiag_c6rms
-        write(3,*) 'idiag_c1pt=',idiag_c1pt
-        write(3,*) 'idiag_c2pt=',idiag_c2pt
-        write(3,*) 'idiag_c3pt=',idiag_c3pt
-        write(3,*) 'idiag_c4pt=',idiag_c4pt
-        write(3,*) 'idiag_c5pt=',idiag_c5pt
-        write(3,*) 'idiag_c6pt=',idiag_c6pt
         write(3,*) 'idiag_F11z=',idiag_F11z
         write(3,*) 'idiag_F21z=',idiag_F21z
         write(3,*) 'idiag_F31z=',idiag_F31z

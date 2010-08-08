@@ -286,18 +286,19 @@ module Equ
 !
       if (lshock) call calc_shock_profile_simple(f)
 !
-!  Calculate averages, currently only required for certain settings
-!  in hydro of the testfield procedure (only when lsoca=.false.)
+!  Call "after" hooks (for f array precalculation). This may imply
+!  calculating averages (some of which may only be required for certain
+!  settings in hydro of the testfield procedure (only when lsoca=.false.),
+!  for example. The used to be or are still called calc_lhydro_pars etc,
+!  and will soon be renamed to hydro_after_boundary.
 !
       call timing('pde','before calc_lhydro_pars')
-!AB-- if (lhydro.and.ldensity)    call calc_lhydro_pars(f)
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
       if (lentropy)               call calc_lentropy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
-      if (ltestscalar)            call calc_ltestscalar_pars(f)
-      if (ltestfield)             call calc_ltestfield_pars(f,p)
-!AB-- if (ltestflow.and.ldensity) call calc_ldensity_pars(f)
+      if (ltestscalar)            call testscalar_after_boundary(f)
+      if (ltestfield)             call testfield_after_boundary(f,p)
       if (ldensity)               call calc_ldensity_pars(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)

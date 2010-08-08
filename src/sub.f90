@@ -499,7 +499,7 @@ module Sub
 !
 !  Transpose 3x3 pencil array, b=transpose(a), on pencil arrays.
 !
-!   18-aug-10/dhruba: coded
+!   7-aug-10/dhruba: coded
 !
       real, dimension (nx,3,3) :: a,b
 !

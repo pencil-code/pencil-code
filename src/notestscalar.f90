@@ -137,7 +137,7 @@ module Testscalar
 !
     endsubroutine get_slices_testscalar
 !***********************************************************************
-    subroutine calc_ltestscalar_pars(f)
+    subroutine testscalar_after_boundary(f)
 !
 !  Dummy routine
 !
@@ -145,7 +145,7 @@ module Testscalar
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_ltestscalar_pars
+    endsubroutine testscalar_after_boundary
 !***********************************************************************
     subroutine rescaling_testscalar(f)
 !

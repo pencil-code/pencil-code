@@ -8,6 +8,6 @@
   public :: get_slices_testscalar
   public :: init_cctest, dcctest_dt
   public :: pencil_criteria_testscalar, pencil_interdep_testscalar
-  public :: calc_ltestscalar_pars
+  public :: testscalar_after_boundary
   public :: rescaling_testscalar
 

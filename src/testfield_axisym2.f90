@@ -225,7 +225,7 @@ module Testfield
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
 !  in the main calculation (lmagnetic=.true.) with phase zero.
 !  Optionally, one can determine the phase in the actual field
-!  and modify the following calculations in calc_ltestfield_pars.
+!  and modify the following calculations in testfield_after_boundary.
 !  They should also be with respect to k*z, not just z.
 !
       c=cz
@@ -787,7 +787,7 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
-    subroutine calc_ltestfield_pars(f,p)
+    subroutine testfield_after_boundary(f,p)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
 !
@@ -959,7 +959,7 @@ module Testfield
             bsinphz=fname(idiag_bsinphz)
             phase_testfield=atan2(bsinphz,bcosphz)
           else
-            call fatal_error('calc_ltestfield_pars', &
+            call fatal_error('testfield_after_boundary', &
             'need bcosphz, bsinphz in print.in for lphase_adjust=T')
           endif
         endif
@@ -976,7 +976,7 @@ module Testfield
 !
       headtt=headtt_save
 !
-    endsubroutine calc_ltestfield_pars
+    endsubroutine testfield_after_boundary
 !***********************************************************************
     subroutine rescaling_testfield(f)
 !

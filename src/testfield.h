@@ -8,5 +8,5 @@
   public :: get_slices_testfield
   public :: init_aatest, daatest_dt
   public :: pencil_criteria_testfield, pencil_interdep_testfield
-  public :: calc_ltestfield_pars
+  public :: testfield_after_boundary
   public :: rescaling_testfield               
