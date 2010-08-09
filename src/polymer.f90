@@ -46,9 +46,11 @@ module Polymer
   real :: mu_poly=0.,tau_poly=1.,tau_poly1=1.,eta_poly=0.,fenep_L=0.
   character (len=labellen) :: poly_algo='simple',poly_model='oldroyd-B'
 !
-   namelist /magnetic_run_pars/ &
+   namelist /polymer_run_pars/ &
      lpolyback,lpolyadvect,lpoly_diffusion,&
      mu_poly,tau_poly,tau_poly1,eta_poly,fenep_L,lupw_poly,poly_model
+!
+  integer :: idiag_polytrm=0     ! DIAG_DOC: $\left<Tr[C_{ij}]\right>$
 !
   contains
 !***********************************************************************
@@ -394,7 +396,7 @@ module Polymer
 !              df(l1:l2,m,n,ip11:ip23)-eta_poly*p%del2poly
         case('cholesky')
           call fatal_error('pencil_criteria_polymer', &
-              'poly_algo: cholesky decomposition is not implemented yet'
+              'poly_algo: cholesky decomposition is not implemented yet')
         case('nothing')
           call fatal_error('pencil_criteria_polymer', &
               'poly_algo: please chosse an algorithm to solve '// &
@@ -408,11 +410,21 @@ module Polymer
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+      if (present(iostat)) then
+        read(unit,NML=polymer_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=polymer_init_pars,ERR=99)
+      endif
+!
+99    return
+!
     endsubroutine read_polymer_init_pars
 !***********************************************************************
     subroutine write_polymer_init_pars(unit)
 !
       integer, intent(in) :: unit
+!
+      write(unit,NML=polymer_init_pars)
 !
     endsubroutine write_polymer_init_pars
 !***********************************************************************
@@ -421,11 +433,21 @@ module Polymer
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
+      if (present(iostat)) then
+        read(unit,NML=polymer_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=polymer_run_pars,ERR=99)
+      endif
+!
+99    return
+!
     endsubroutine read_polymer_run_pars
 !***********************************************************************
     subroutine write_polymer_run_pars(unit)
 !
      integer, intent(in) :: unit
+!
+      write(unit,NML=polymer_run_pars)
 !
     endsubroutine write_polymer_run_pars
 !***********************************************************************
@@ -444,11 +466,70 @@ module Polymer
 !
 !  Reads and registers print parameters relevant for polymer.
 !
+!   8-aug-10/dhruba: aped from pscalar
+!
       use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
 !
+      integer :: iname, inamez, inamey, inamex
+      logical :: lwr
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  Reset everything in case of reset.
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+         idiag_polytrm=0
+      endif
+!
+!  Check for those quantities that we want to evaluate online.
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'polytrm',idiag_polytrm)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+!      do inamez=1,nnamez
+!        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+!            'lnccmz',idiag_lnccmz)
+!   enddo
+!
+!  Check for those quantities for which we want xz-averages.
+!
+!      do inamey=1,nnamey
+!        call parse_name(inamey,cnamey(inamey),cformy(inamey), &
+!            'lnccmy',idiag_lnccmy)
+!      enddo
+!
+!  Check for those quantities for which we want yz-averages.
+!
+!      do inamex=1,nnamex
+!        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+!            'lnccmx',idiag_lnccmx)
+!      enddo
+!
+!  Write column where which passive scalar variable is stored.
+!
+      if (lwr) then
+        write(3,*) 'ipoly=',ipoly
+        write(3,*) 'ip11=',ip11
+        write(3,*) 'ip12=',ip12
+        write(3,*) 'ip13=',ip13
+        write(3,*) 'ip21=',ip21
+        write(3,*) 'ip22=',ip22
+        write(3,*) 'ip23=',ip23
+        write(3,*) 'ip31=',ip31
+        write(3,*) 'ip32=',ip32
+        write(3,*) 'ip33=',ip33
+        write(3,*) 'ipoly_fr=',ipoly_fr
+     endif
+!
     endsubroutine rprint_polymer
 !***********************************************************************
 endmodule Polymer
+
