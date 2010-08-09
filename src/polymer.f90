@@ -50,7 +50,7 @@ module Polymer
        lpolyback,lpolyadvect,lpoly_diffusion, &
        mu_poly,tau_poly,tau_poly1,eta_poly,fenep_L,lupw_poly,poly_model
 !
-  integer :: idiag_polytrm=0     ! DIAG_DOC: $\left<Tr[C_{ij}]\right>$
+  integer :: idiag_polytrm=0     ! DIAG_DOC: $\left\langle Tr[C_{ij}]\right\rangle$
 !
   contains
 !***********************************************************************
