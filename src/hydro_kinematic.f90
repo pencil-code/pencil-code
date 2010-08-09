@@ -64,8 +64,8 @@ module Hydro
           uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
-  integer :: kinflow_ck_ell=0.
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
+  integer :: kinflow_ck_ell=0.
   character (len=labellen) :: wind_profile='none'
 !
   namelist /hydro_run_pars/ &
@@ -258,13 +258,12 @@ module Hydro
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx
-      real :: fac, fac2, argy, argz
+      real :: fac, fac2, argy, argz, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
-      integer :: modeN
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
-      integer :: ell
       real :: Balpha
       real :: theta,theta1
+      integer :: modeN, ell
 !
       intent(in) :: f
       intent(inout) :: p
@@ -608,23 +607,22 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+sin(ky_uukin*y(m)+esint))
         if (lpencil(i_divu)) p%divu=0.
 !
-!
-!potential flow, u=gradphi, with phi=cosx*cosy*cosz
-!  assume kx_uukin=ky_uukin=kz_uukin
+!  Potential flow, u=gradphi, with phi=coskx*X cosky*Y coskz*Z,
+!  and X=x-ct, Y=y-ct, Z=z-ct.
 !
       elseif (kinflow=='potential') then
         fac=ampl_kinflow
-        if (headtt) print*,'potential; kx_uukin,ampl_kinflow=',ampl_kinflow
-        if (headtt) print*,'potential; kx_uukin=',kx_uukin,ky_uukin,kz_uukin
-        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
-        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+        omt=omega_kinflow*t
+        if (headtt) print*,'potential; ampl_kinflow,omega_kinflow=',ampl_kinflow,omega_kinflow
+        if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
+        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*x(l1:l2)-omt)*cos(ky_uukin*y(m)-omt)*cos(kz_uukin*z(n)-omt)
+        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*x(l1:l2)-omt)*sin(ky_uukin*y(m)-omt)*cos(kz_uukin*z(n)-omt)
+        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2)-omt)*cos(ky_uukin*y(m)-omt)*sin(kz_uukin*z(n)-omt)
         if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
-          *cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          *cos(kx_uukin*x(l1:l2)-omt)*cos(ky_uukin*y(m)-omt)*cos(kz_uukin*z(n)-omt)
 !
-!potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz
-!  assume kx_uukin=ky_uukin=kz_uukin
-!
+!  Potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz;
+!  assume kx_uukin=ky_uukin=kz_uukin.
 !
       elseif (kinflow=='potential_random') then
         fac=ampl_kinflow
