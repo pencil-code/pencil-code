@@ -8,9 +8,9 @@
 !
 !   Description                               | Relevant function call
 !  ------------------------------------------------------------------------
-!   Initial condition registration            | register_special
+!   Initial condition registration            | register_initial_condition
 !     (pre parameter read)                    |
-!   Initial condition initialization          | initialize_special
+!   Initial condition initialization          | initialize_initial_condition
 !     (post parameter read)                   |
 !                                             |
 !   Initial condition for momentum            | initial_condition_uu
