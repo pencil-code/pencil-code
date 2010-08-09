@@ -258,7 +258,7 @@ module Hydro
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx
-      real :: fac, fac2, argy, argz, omt
+      real :: fac, fac2, argy, argz, omt, cxt, cyt, czt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha
@@ -612,12 +612,14 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !
       elseif (kinflow=='potential') then
         fac=ampl_kinflow
-        omt=omega_kinflow*t
+        cxt=omega_kinflow*t/max(kx_uukin,tini)
+        cyt=omega_kinflow*t/max(ky_uukin,tini)
+        czt=omega_kinflow*t/max(kz_uukin,tini)
         if (headtt) print*,'potential; ampl_kinflow,omega_kinflow=',ampl_kinflow,omega_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
-        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*x(l1:l2)-omt)*cos(ky_uukin*y(m)-omt)*cos(kz_uukin*z(n)-omt)
-        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*x(l1:l2)-omt)*sin(ky_uukin*y(m)-omt)*cos(kz_uukin*z(n)-omt)
-        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2)-omt)*cos(ky_uukin*y(m)-omt)*sin(kz_uukin*z(n)-omt)
+        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-cxt))*cos(ky_uukin*(y(m)-cyt))*cos(kz_uukin*(z(n)-czt))
+        p%uu(:,2)=-fac*ky_uukin*cos(kx_uukin*(x(l1:l2)-cxt))*sin(ky_uukin*(y(m)-cyt))*cos(kz_uukin*(z(n)-czt))
+        p%uu(:,3)=-fac*kz_uukin*cos(kx_uukin*(x(l1:l2)-cxt))*cos(ky_uukin*(y(m)-cyt))*sin(kz_uukin*(z(n)-czt))
         if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
           *cos(kx_uukin*x(l1:l2)-omt)*cos(ky_uukin*y(m)-omt)*cos(kz_uukin*z(n)-omt)
 !
