@@ -60,6 +60,7 @@ module Hydro
   real :: wind_amp=0.,wind_rmin=impossible,wind_step_width=0.
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
+  real :: cx_uukin=0., cy_uukin=0., cz_uukin=0.
   real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,&
           uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
@@ -71,7 +72,9 @@ module Hydro
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
-      ampl_kinflow,kx_uukin,ky_uukin,kz_uukin, &
+      ampl_kinflow, & 
+      kx_uukin,ky_uukin,kz_uukin, &
+      cx_uukin,cy_uukin,cz_uukin, &
       lrandom_location,lwrite_random_location,location_fixed,dtforce, &
       radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
@@ -612,9 +615,9 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !
       elseif (kinflow=='potential') then
         fac=ampl_kinflow
-        cxt=omega_kinflow*t/max(kx_uukin,tini)
-        cyt=omega_kinflow*t/max(ky_uukin,tini)
-        czt=omega_kinflow*t/max(kz_uukin,tini)
+        cxt=cx_uukin*t
+        cyt=cy_uukin*t
+        czt=cz_uukin*t
         if (headtt) print*,'potential; ampl_kinflow,omega_kinflow=',ampl_kinflow,omega_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
         p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*(x(l1:l2)-cxt))*cos(ky_uukin*(y(m)-cyt))*cos(kz_uukin*(z(n)-czt))
