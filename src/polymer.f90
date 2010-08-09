@@ -47,8 +47,8 @@ module Polymer
   character (len=labellen) :: poly_algo='simple',poly_model='oldroyd-B'
 !
    namelist /polymer_run_pars/ &
-     lpolyback,lpolyadvect,lpoly_diffusion,&
-     mu_poly,tau_poly,tau_poly1,eta_poly,fenep_L,lupw_poly,poly_model
+       lpolyback,lpolyadvect,lpoly_diffusion, &
+       mu_poly,tau_poly,tau_poly1,eta_poly,fenep_L,lupw_poly,poly_model
 !
   integer :: idiag_polytrm=0     ! DIAG_DOC: $\left<Tr[C_{ij}]\right>$
 !
@@ -238,7 +238,7 @@ module Polymer
         p%poly(:,3,1)=f(l1:l2,m,n,ip31)
         p%poly(:,2,3)=f(l1:l2,m,n,ip23)
         p%poly(:,3,2)=f(l1:l2,m,n,ip32)
-     endif
+      endif
 ! trp
       if (lpencil(i_trp)) call trace_mn(p%poly,p%trp)
 ! Cijk
@@ -308,7 +308,7 @@ module Polymer
 ! div_frC
       if (lpencil(i_div_frC)) p%div_frC=p%divC
 !
-     endsubroutine calc_pencils_oldroyd_b
+    endsubroutine calc_pencils_oldroyd_b
 !***********************************************************************
     subroutine dpoly_dt(f,df,p)
 !
@@ -401,7 +401,7 @@ module Polymer
           call fatal_error('pencil_criteria_polymer', &
               'poly_algo: please chosse an algorithm to solve '// &
               'the polymer equations')
-        endselect
+      endselect
 !
     endsubroutine dpoly_dt
 !***********************************************************************
@@ -445,7 +445,7 @@ module Polymer
 !***********************************************************************
     subroutine write_polymer_run_pars(unit)
 !
-     integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
       write(unit,NML=polymer_run_pars)
 !
@@ -483,7 +483,7 @@ module Polymer
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-         idiag_polytrm=0
+        idiag_polytrm=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -527,9 +527,8 @@ module Polymer
         write(3,*) 'ip32=',ip32
         write(3,*) 'ip33=',ip33
         write(3,*) 'ipoly_fr=',ipoly_fr
-     endif
+      endif
 !
     endsubroutine rprint_polymer
 !***********************************************************************
 endmodule Polymer
-
