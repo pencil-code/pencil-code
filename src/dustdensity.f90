@@ -1185,6 +1185,10 @@ module Dustdensity
           if (lmdvar) then
             df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
                  *(p%ppwater-p%ppsf(:,k))/(Rgas*p%TT*m_w*m_u_cgs)*p%rho
+            do i=1,mx
+              if ((f(i,m,n,imd(k))+df(i,m,n,imd(k))*dt)<1e-25 ) &
+                df(i,m,n,imd(k))=1e-25*dt
+            enddo
           endif
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo

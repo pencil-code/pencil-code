@@ -2294,7 +2294,7 @@ module Chemistry
           df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
               - p%ccondens
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-              + 2.5e10/1.005e7*p%ccondens*p%TT1
+              + 2.5e10/1.005e7*p%ccondens*p%TT1*0.
 
         do i=1,mx
             if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)>=1. ) &
