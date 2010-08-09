@@ -2336,7 +2336,7 @@ module Sub
 !  Test if Upwind is used.
 !
       if (present(upwind)) then
-        call fatal_error('u_dot_grad_mat','upwinding not implemented')
+        if (upwind) call fatal_error('u_dot_grad_mat','upwinding not implemented')
       else
         call vec_dot_3tensor(uu,gradM,ugradM,ladd=.false.)
       endif
