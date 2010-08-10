@@ -738,24 +738,24 @@ module Entropy
       call put_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting chi_t')
-      call put_shared_variable('chi_th',chi_th,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting chi_th')
-      call put_shared_variable('chi_rho',chi_rho,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting chi_rho')
+!      call put_shared_variable('chi_th',chi_th,ierr)
+!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!          'there was a problem when putting chi_th')
+!      call put_shared_variable('chi_rho',chi_rho,ierr)
+!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!          'there was a problem when putting chi_rho')
       call put_shared_variable('lmultilayer',lmultilayer,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lmultilayer')
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lcalc_heatcond_constchi')
-      call put_shared_variable('lheatc_chitherm',lheatc_chitherm,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting lcalc_heatcond_chitherm')
-      call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
-          'there was a problem when putting lcalc_heatcond_sqrtrhochiconst')
+!      call put_shared_variable('lheatc_chitherm',lheatc_chitherm,ierr)
+!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!          'there was a problem when putting lcalc_heatcond_chitherm')
+!      call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst,ierr)
+!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!          'there was a problem when putting lcalc_heatcond_sqrtrhochiconst')
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lviscosity_heat')
