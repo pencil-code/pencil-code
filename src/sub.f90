@@ -509,7 +509,7 @@ module Sub
 !
       do i=1,3
         do j=1,3
-          b(:,i,j) = a(:,j,i)
+          b(:,i,j)=a(:,j,i)
         enddo
       enddo
 !
