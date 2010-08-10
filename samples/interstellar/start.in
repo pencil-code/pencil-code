@@ -5,11 +5,11 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
-  unit_temperature=29.8277784018579
+  unit_temperature=1.e4, , unit_magnetic=3.54491e-7
   xyz0=-0.0625,-0.0625,-0.125
   xyz1=+0.0625,+0.0625,+0.125
   lperi=T,T,F
-  bcz = 's','s','a','a2','sT','s'
+  bcz = 's','s','ouf','a2','sT','s','s','a','a2','a2'
   lwrite_aux=T
 /
 &eos_init_pars
@@ -17,36 +17,25 @@
 /
 &hydro_init_pars
   Omega=25.
+  inituu='nothing'
 /
 &density_init_pars
-  initlnrho='Ferriere'
-  !initlnrho='const_lnrho', lnrho_const=0.
+  initlnrho='Galactic-hs'
 /
 &grav_init_pars
   gravz_profile='Ferriere' 
 /
 &entropy_init_pars
-  !initss='isothermal', T0=4000.
-  initss='Ferriere'
+  initss='Gressel-hs'
+/
+&magnetic_init_pars
+  amplaa=0.01
+  initaa='Ferriere-uniform-By'
 /
 &interstellar_init_pars
-  initinterstellar='single'
-  center_SN_x=0.0
-  center_SN_y=0.0546875
-  center_SN_z=0.0234375
-  width_SN=0.021
-  thermal_profile='gaussian2'
-  frac_eth=1.0
-  frac_ecr=0.0
-  lSN_ecr=F
-  lSN_velocity=F
-  lSN_mass=T
-  mass_SN=0.
-  mass_movement='Galaxycode'
-  SNR_damping=.5
-  cooling_select='SS-Slyz'
-  heating_select='wolfire'
-
+  lSNII=T
+  cooling_select='SS-Slyzr'
+  heating_select='Gressel-hs'
 /
 &shear_init_pars
   qshear=1.0

@@ -5,8 +5,9 @@
 &run_pars
   cvsid='$Id$',
   nt=30, it1=2, isave=50, itorder=3
-  cdt=0.4, cdtv=0.3, dtmin=1e-9
-  dsnap=2., dvid=2.
+  cdt=0.4, cdtv=0.3, dtmin=1e-9, cdts=0.0050
+  cdtv2=0.005, cdtv3=0.005, cdtc=0.005, cdtr=0.005
+  dsnap=2., dvid=2., 
   ip=20
   lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
@@ -16,26 +17,73 @@
 &hydro_run_pars
 /
 &density_run_pars
+  diffrho=0.03
+  diffrho_shock=1.0
+  lmassdiff_fix=T
+  idiff='normal','shock'
   !diffrho=1e-1, idiff='normal'
   lupw_lnrho=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-const'
-  chi=1E-1
+  iheatcond='chi-therm','shock'
+  chi_th=0.03,chi_shock=8.0
   lupw_ss=T
+!  thmin=0.0
+/
+&magnetic_run_pars
+!  llorentzforce=F
+  iresistivity='sqrtrhoeta-const','eta-shock'
+  eta=0.000196,eta_shock=4.0
 /
 &interstellar_run_pars
-  lcooltime_smooth=T
+  width_SN=0.009
+  lSN_scale_rad=T
+  frac_eth=1.0
+  frac_ecr=0.0
+  lSN_ecr=F
+  h_SNI=0.325
+  lSNII=T
+  lSNI=T
+  t_next_SNII=0.0
+  t_next_SNI=0.0
+  SNII_area_rate=25096.363926627693083292
+  SNI_area_rate=4182.728
+  TT_SN_min=0.0
+  TT_SN_max=1.0e2
+  rho_SN_min=0.0175
+  cloud_rho=0.7250
+  cloud_TT=0.80
+  lSN_mass=T
+  energy_width_ratio=1.0
+  velocity_width_ratio=1.250
+  thermal_profile='gaussian'
+  mass_width_ratio=1.0
+  mass_profile='gaussian'
+  mass_movement='off'
+  velocity_profile='gaussian'
+  lSN_velocity=T
+!  ampl_SN=3.182093016 !without kinetic energy
+  ampl_SN=1.591046508 !with 50% kinetic energy
+  kampl_SN=1.591046508 !with 50% kinetic energy
+  mass_SN=6.303127e-8
+!  heatcool_shock_cutoff=0.75 !0.015
+!  heatcool_shock_cutoff_rate=0.125
+  cooling_select='SS-Slyzr'
+  heating_select='Gressel-hs'
+  lcooltime_smooth=F
+!  ladd_massflux=T
+  SNR_damping=0.0 !any non-zero value ldamping=T value not used
+  lcooltime_smooth=F
 /
 &shear_run_pars
 /
 &viscosity_run_pars
-  ivisc='nu-const','nu-shock'
+  ivisc='nu-therm','nu-shock'
   nu=0.02,nu_shock=10.0
 /
 &shock_run_pars
   lshock_first=T
-  lshock_max5=F
+  lshock_max5=T
 /
