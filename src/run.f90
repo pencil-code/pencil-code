@@ -58,7 +58,7 @@ program run
   use Forcing,         only: forcing_clean_up,addforce
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
-  use Interstellar,    only: check_SN
+  use Interstellar,    only: check_SN,addmassflux
   use IO
   use Magnetic,        only: rescaling_magnetic
   use Messages
@@ -538,6 +538,10 @@ program run
 !  Check for SNe, and update f if necessary (see interstellar.f90).
 !
     if (linterstellar) call check_SN(f)
+!
+!  Check if mass flux repalcement required fred test 
+!
+    if (linterstellar) call addmassflux(f)
 !
 !  Check wall clock time, for diagnostics and for user supplied simulation time
 !  limit.
