@@ -15,4 +15,5 @@
   public :: calc_snr_damp_int
   public :: calc_snr_unshock
   public :: input_persistent_interstellar, output_persistent_interstellar
+  public :: addmassflux
 

@@ -211,4 +211,12 @@ module Interstellar
 !
     endsubroutine calc_snr_damp_int
 !***********************************************************************
+    subroutine addmassflux(f)
+!
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine addmassflux
+!***********************************************************************
 endmodule interstellar
