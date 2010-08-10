@@ -22,8 +22,10 @@ module Entropy
   use EquationOfState, only: gamma, gamma_m1, gamma_inv, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
+  use Interstellar
   use Messages
   use Sub, only: keep_compiler_quiet
+  use Viscosity
 !
   implicit none
 !
@@ -1890,12 +1892,14 @@ module Entropy
 !
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
       use Mpicomm, only: mpibcast_real
-      use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: Hmax
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: muhs
-      real :: g_A, g_C, erfB, T_k, erfz
+      real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B ,g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
@@ -1909,7 +1913,6 @@ module Entropy
         g_B = g_B_cgs/unit_length
         if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-        T_k=sqrt(2.0)
 !
 !  Chosen to keep TT as low as possible up to boundary matching rho for hs
 !  equilibrium.
@@ -1921,7 +1924,7 @@ module Entropy
 !
 !  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !  at solar radius.  (for interstellar runs)
-!  Requires GammaUV=0.0147 with 'SS-Slyz' cooling_select
+!  Requires GammaUV=0.0147 with 'SS-Slyz/r' cooling_select
 !  Uses simpler heating function but in principle same method
 !  as O. Gressel 2008 (PhD)
 !
@@ -1931,8 +1934,6 @@ module Entropy
           'hydrostatic thermal equilibrium density and entropy profiles'
       do n=n1,n2
       do m=m1,m2
-        erfB=g_B
-        erfz=sqrt((T_k*z(n))**2+g_B**2)
 !
 !  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
 !                  require initial profile to produce finite Lambda between lamstep(3) and
@@ -1948,6 +1949,8 @@ module Entropy
         call eoscalc(ilnrho_lnTT,log(rho),lnTT,ss=ss)
 !
         f(l1:l2,m,n,iss)=ss
+!
+        if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
       enddo
       enddo
