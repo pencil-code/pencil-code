@@ -22,10 +22,8 @@ module Entropy
   use EquationOfState, only: gamma, gamma_m1, gamma_inv, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
-  use Interstellar
   use Messages
   use Sub, only: keep_compiler_quiet
-  use Viscosity
 !
   implicit none
 !
@@ -1891,6 +1889,7 @@ module Entropy
 !   22-mar-10/fred adapted from galactic-hs,ferriere-hs
 !
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
+      use Interstellar, only: calc_heat_cool_interstellar
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
