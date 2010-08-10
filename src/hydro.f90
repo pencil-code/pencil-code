@@ -168,7 +168,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, eckmann_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
-      lno_meridional_flow,lrotation_xaxis
+      lno_meridional_flow, lrotation_xaxis
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1083,7 +1083,7 @@ module Hydro
 !
               xold=xc0(ixy)
               yold=yc0(ixy)
-            end do
+            enddo
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
@@ -1097,8 +1097,8 @@ module Hydro
             call random_number_wrapper(f(l1:l2,m,n1,iuz))
             do n=n1,n2
               f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
-            end do
-          end do
+            enddo
+          enddo
           close(15)
 !
         case ( 'anelastic-nlin')
@@ -2635,7 +2635,7 @@ module Hydro
         if (lcoriolis_force) then
 !
           if (headtt) &
-            print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+              print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
 !
           c2= 2*Omega*cos(theta*pi/180.)
           s2=-2*Omega*sin(theta*pi/180.)
