@@ -142,6 +142,7 @@ module Hydro
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
+  logical :: lrotation_xaxis=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -167,7 +168,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, eckmann_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
-      lno_meridional_flow
+      lno_meridional_flow,lrotation_xaxis
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1082,7 +1083,7 @@ module Hydro
 !
               xold=xc0(ixy)
               yold=yc0(ixy)
-            enddo
+            end do
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
@@ -1096,8 +1097,8 @@ module Hydro
             call random_number_wrapper(f(l1:l2,m,n1,iuz))
             do n=n1,n2
               f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
-            enddo
-          enddo
+            end do
+          end do
           close(15)
 !
         case ( 'anelastic-nlin')
@@ -1606,6 +1607,8 @@ module Hydro
           call coriolis_spherical(df,p)
         elseif (lprecession) then
           call precession(df,p)
+        elseif (lrotation_xaxis) then
+          call coriolis_cartesian_xaxis(df,p%uu,iux)
         else
           call coriolis_cartesian(df,p%uu,iux)
         endif
@@ -2646,6 +2649,41 @@ module Hydro
       endif
 !
    endsubroutine coriolis_cartesian
+!***********************************************************************
+   subroutine coriolis_cartesian_xaxis(df,uu,velind)
+!
+!  Coriolis force for a box where the rotation axis is in the x-direction
+!  In this case the axis of the box represent to x=r, y=theta and  z=phi,
+!  so that the z-averages in spherical coordinates corresponds to averages
+!  in the phi direction in cartesian coordinates too.
+!
+!  Adapted from coriolis_cartesian.
+!
+!  09-aug-10/GG:
+!
+      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (nx,3),          intent(in)  :: uu
+      integer,                         intent(in)  :: velind
+!
+      real :: c2, s2
+!
+      if (Omega==0.) return
+!
+      if (lcoriolis_force) then
+!
+        if (headtt) &
+          print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+!
+        c2= 2*Omega*cos(theta*pi/180.)
+        s2=-2*Omega*sin(theta*pi/180.)
+!
+        df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )-s2*uu(:,3)
+        df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+c2*uu(:,3)
+        df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)-c2*uu(:,2)+s2*uu(:,1)
+!
+      endif
+!
+   endsubroutine coriolis_cartesian_xaxis
 !***********************************************************************
    subroutine coriolis_spherical(df,p)
 !
