@@ -67,7 +67,7 @@ module Interstellar
 !  04-sep-09/fred: amended xsi_sedov
 !  ref Dyson & Williams Ch7 value for xsi_sedov=(25/3/pi)**(1/5)=1.215440704 for gamma=5/3
 !
-  real :: xsi_sedov=1.215440704! Est'd value for similarity variable at shock 
+  real :: xsi_sedov=1.215440704! Est'd value for similarity variable at shock
 !
 ! 'Current' SN Explosion site parameters
 !
@@ -694,7 +694,7 @@ module Interstellar
 ! 26-Jan-10/fred
 !
 ! combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
-! as Gressel simulation (2008) constants revised for continuity 
+! as Gressel simulation (2008) constants revised for continuity
 ! and to match SSrr values at low temp and cut off at 100K
 ! to avoid unresolvable low temperatures
 !
@@ -1319,13 +1319,13 @@ module Interstellar
         beta = (/ 6.0, &
                    2.0, &
                    1.5, &
-                   2.867, & 
+                   2.867, &
                   -0.65, &
                    0.5, &
                    tiny(0.), &
                    tiny(0.), &
                    tiny(0.), &
-                   tiny(0.) /) 
+                   tiny(0.) /)
         lamT = (/ 10.D0, &
                        300.D0, &
                        2000.D0, &
@@ -1360,7 +1360,7 @@ module Interstellar
         erfB=g_B
         erfz(n)=sqrt(T_k*z(n)**2+g_B**2)
 !
-!  30-mar-10/fred: principle Gamma=Lambda*rho. 
+!  30-mar-10/fred: principle Gamma=Lambda*rho.
 !                  dlnrho/dz=1/RT*gravz
 !                   Set Gamma(z) with GammaUV/Rho0hs z=0
 !                  require initial profile to produce finite Lambda between lamstep(3) and
@@ -1587,7 +1587,7 @@ cool_loop: do i=1,ncool
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
 !
-      real, parameter :: g_B_cgs=6.172e20 
+      real, parameter :: g_B_cgs=6.172e20
 !
 !
       if (heating_select == 'cst') Then
@@ -1791,29 +1791,29 @@ cool_loop: do i=1,ncool
           enddo
         enddo
         fsum1_tmp=(/ cloud_mass /)
-!  
+!
         call mpireduce_sum(fsum1_tmp,fsum1,1)
         call mpibcast_real(fsum1,1)
         cloud_mass_dim=fsum1(1)*dv
         if (ip<14) &
         print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
-!  
+!
         if (lroot .and. ip < 14) &
             print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
             cloud_mass_dim,fsum1(1),dv
-!  
+!
 !    dtsn: elapsed time since last SNII injected
 !    prob of next increases with time
 !    last_SN_t updated afte each SNII
 !    SNI independent distribution
-!  
+!
         dtsn=t-last_SN_t
         freq_SNII= &
           frac_heavy*frac_converted*cloud_mass_dim/&
                      mass_SN_progenitor/cloud_tau
         prob_SNII=freq_SNII*dtsn*5.
         call random_number_wrapper(franSN)
-!  
+!
         if (lroot.and.ip<20) then
           if (cloud_mass_dim > 0. .and. franSN(1) <= 2.*prob_SNII) then
             print*,'check_SNII: freq,prob,rnd,dtsn:',&
@@ -1822,12 +1822,12 @@ cool_loop: do i=1,ncool
                   frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
           endif
         endif
-!  
+!
         if (franSN(1) <= prob_SNII) then
-!  
+!
 !  position_SN_bycloudmass needs the cloud_masses for each processor;
 !   communicate and store them here, to avoid recalculation.
-!  
+!
           cloud_mass_byproc(:)=0.0
 !
 ! use non-root broadcasts for the communication...
@@ -1839,7 +1839,7 @@ cool_loop: do i=1,ncool
             cloud_mass_byproc(icpu)=fmpi1(1)
 !           endif
           enddo
-!  
+!
           if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
                                                   ,cloud_mass_byproc
           call position_SN_bycloudmass&
@@ -1855,17 +1855,17 @@ cool_loop: do i=1,ncool
           if (ierr==iEXPLOSION_OK) then
             call set_next_SNII
             last_SN_t=t
-!  
+!
 !   30-dec-09/fred: added ierr and if statement so time of SN can be
 !                   updated if explosion successful else last_SN_t unchanged
-!  
+!
           endif
-!  
+!
         endif
       endif
     call free_SNR(iSNR)
 !  If returned unexploded stops code running out of free slots
-!  
+!
     endsubroutine check_SNII
 !***********************************************************************
     subroutine check_SNIIb(f,l_SNI) !fred test new SNII scheme
@@ -2451,8 +2451,8 @@ find_SN: do n=n1,n2
       !SNR%site%ss=sum(f(SNR%l:SNR%l+1,SNR%m:SNR%m+1,SNR%n:SNR%n+1,iss))/4.
       SNR%site%lnrho=f(SNR%l,SNR%m,SNR%n,ilnrho)
 !
-!  10-Jun-10/fred: adjust radius according to density of explosion site 
-!                  to concentrate energy in dense locations 
+!  10-Jun-10/fred: adjust radius according to density of explosion site
+!                  to concentrate energy in dense locations
 !
       if (lSN_scale_rad) &
       SNR%radius=width_SN/(exp(SNR%site%lnrho))**0.2
@@ -2528,7 +2528,7 @@ find_SN: do n=n1,n2
       double precision, dimension(nx,3) :: deltauu
       double precision, dimension(2) :: dmpi2, dmpi2_tmp
       real, dimension(1) :: mmpi, mpi_tmp
-      real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rh, site_rho
+      real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu
       real :: maxlnTT, site_mass, maxTT
       real :: radiusA, radiusB
@@ -2683,7 +2683,7 @@ find_SN: do n=n1,n2
           cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(13./4.)/0.2906782474)!&
 !                       *sqrt(1.-0.91*SNR%t_sedov/t_merge)
         elseif (velocity_profile=="r16thgaussian") then
-          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(3.125)/0.301269172512860)!& !25/8 
+          cvelocity_SN=sqrt(kampl_SN/pi/SNR%rhom/width_velocity**(3.125)/0.301269172512860)!& !25/8
 !                       *sqrt(1.-0.91*SNR%t_sedov/t_merge)
         else
           cvelocity_SN=uu_sedov
@@ -2693,7 +2693,7 @@ find_SN: do n=n1,n2
         endif
 !
 !     11-dec-09/fred
-!     If using kinetic energy the thermal energy kampl_SN subtracted from ampl_SN 
+!     If using kinetic energy the thermal energy kampl_SN subtracted from ampl_SN
 !     E_t=E_k= 4*pi*int(0.5*rho*v^2*r^2 dr) where v = cvelocity_SN*velocity_profile
 !     to reasonable approximation rho assumed constant = SNR%rhom
 !     This enables larger width_SN without loss of velocity in snowplough
@@ -3750,7 +3750,7 @@ find_SN: do n=n1,n2
 !  As no inflow boundary condition precludes galactic fountain this adds
 !  the mass flux uniformly throughout the volume to substitute mass
 !  which would otherwise be replaced over time by the fountain
-!              
+!
 !  12-Jul-10/fred: coded
 !
       use Mpicomm, only: mpireduce_sum_double, mpibcast_double, &
@@ -3765,7 +3765,7 @@ find_SN: do n=n1,n2
                                         sum_1tmp, sum_2tmp, sum_3tmp
       integer :: l,m,n
 !
-!  Skip this subroutine if not selected eg before turbulent pressure settles   
+!  Skip this subroutine if not selected eg before turbulent pressure settles
 !
       if (.not. ladd_massflux) return
 !
@@ -3777,7 +3777,7 @@ find_SN: do n=n1,n2
 !  Read in the accumulated boundary flux boldmass
 !
 !
-!  Determine maximum point value of density 
+!  Determine maximum point value of density
 !
       rhomax = maxval(exp(f(:,:,:,ilnrho)))
       sum_tmp=(/ rhomax /)
@@ -3824,7 +3824,7 @@ find_SN: do n=n1,n2
 !
      if (rhoz .ge. rhomax*1e-7) then
 !
-!  For debugging purposes oldmass and new mass can be calculated and the 
+!  For debugging purposes oldmass and new mass can be calculated and the
 !  difference compared to bmass, which should be equal. Commented out for now
 !
 !        oldmass=0.d0
