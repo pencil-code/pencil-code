@@ -12,6 +12,7 @@
 ; Event handling of visualisation window
 pro cslice_event, event
 
+	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, play, scal_b, scal_t
@@ -64,31 +65,37 @@ pro cslice_event, event
 		DRAW_IMAGE_3 = 1
 	end
 	'DRAW_YZ':  begin
-		if (event.press) then begin
-			py = event.x / bin_y
-			pz = event.y / bin_z
+		if (event.press) then button_pressed_yz = 1
+		if (button_pressed_yz) then begin
+			py = event.x / bin_y > 0 < (num_y-1)
+			pz = event.y / bin_z > 0 < (num_z-1)
 			WIDGET_CONTROL, sl_y, SET_VALUE = py
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		endif
+		if (event.release) then button_pressed_yz = 0
 	end
 	'DRAW_XZ':  begin
-		if (event.press) then begin
-			px = event.x / bin_x
-			pz = event.y / bin_z
+		if (event.press) then button_pressed_xz = 1
+		if (button_pressed_xz) then begin
+			px = event.x / bin_x > 0 < (num_x-1)
+			pz = event.y / bin_z > 0 < (num_z-1)
 			WIDGET_CONTROL, sl_x, SET_VALUE = px
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		endif
+		if (event.release) then button_pressed_xz = 0
 	end
 	'DRAW_XY':  begin
-		if (event.press) then begin
-			px = event.x / bin_x
-			py = event.y / bin_y
+		if (event.press) then button_pressed_xy = 1
+		if (button_pressed_xy) then begin
+			px = event.x / bin_x > 0 < (num_x-1)
+			py = event.y / bin_y > 0 < (num_y-1)
 			WIDGET_CONTROL, sl_x, SET_VALUE = px
 			WIDGET_CONTROL, sl_y, SET_VALUE = py
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		endif
+		if (event.release) then button_pressed_xy = 0
 	end
 	'IMG_SCLB': begin
 		WIDGET_CONTROL, scal_b, GET_VALUE = csmin
@@ -253,6 +260,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	!P.MULTI = [0, 1, 1]
 
+	ox = nint (bin_x / 2.0) - 1
+	oy = nint (bin_y / 2.0) - 1
+	oz = nint (bin_z / 2.0) - 1
+
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform(cube[px,*,*]) > csmin) < csmax
 		if (bin_y ne 1 or bin_z ne 1) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
@@ -267,10 +278,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
 		wset, wimg_yz
 		if (show_cross) then begin
-			if (py gt af_y) then for i = (py-af_y)*bin_y, 1, -step do ii[i:i+1, pz*bin_z] = [colorcode, csmin]
-			if (py lt num_y-1-af_y) then for i = (py+af_y)*bin_y, (num_y-1)*bin_y-1, step do ii[i:i+1, pz*bin_z] = [colorcode, csmin]
-			if (pz gt af_z) then for i = (pz-af_z)*bin_z, 1, -step do ii[py*bin_y, i:i+1] = [colorcode, csmin]
-			if (pz lt num_z-1-af_z) then for i = (pz+af_z)*bin_z, (num_z-1)*bin_z-1, step do ii[py*bin_y, i:i+1] = [colorcode, csmin]
+			if (py gt af_y) then for i = (py-af_y)*bin_y, 1, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (py lt num_y-1-af_y) then for i = (py+af_y)*bin_y, (num_y-1)*bin_y-1, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (pz gt af_z) then for i = (pz-af_z)*bin_z, 1, -step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
+			if (pz lt num_z-1-af_z) then for i = (pz+af_z)*bin_z, (num_z-1)*bin_z-1, step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
 		end $
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
@@ -299,10 +310,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
 		wset, wimg_xz
 		if (show_cross) then begin
-			if (px gt af_x) then for i = (px-af_x)*bin_x, 1, -step do ii[i:i+1, pz*bin_z] = [colorcode, csmin]
-			if (px lt num_x-1-af_x) then for i = (px+af_x)*bin_x, (num_x-1)*bin_x-1, step do ii[i:i+1, pz*bin_z] = [colorcode, csmin]
-			if (pz gt af_z) then for i = (pz-af_z)*bin_z, 1, -step do ii[px*bin_x, i:i+1] = [colorcode, csmin]
-			if (pz lt num_z-1-af_z) then for i = (pz+af_z)*bin_z, (num_z-1)*bin_z-1, step do ii[px*bin_x, i:i+1] = [colorcode, csmin]
+			if (px gt af_x) then for i = (px-af_x)*bin_x, 1, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (px lt num_x-1-af_x) then for i = (px+af_x)*bin_x, (num_x-1)*bin_x-1, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (pz gt af_z) then for i = (pz-af_z)*bin_z, 1, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (pz lt num_z-1-af_z) then for i = (pz+af_z)*bin_z, (num_z-1)*bin_z-1, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
 		end $
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
@@ -331,10 +342,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
 		wset, wimg_xy
 		if (show_cross) then begin
-			if (px gt af_x) then for i = (px-af_x)*bin_x, 1, -step do ii[i:i+1, py*bin_y] = [colorcode, csmin]
-			if (px lt num_x-1-af_x) then for i = (px+af_x)*bin_x, (num_x-1)*bin_x-1, step do ii[i:i+1, py*bin_y] = [colorcode, csmin]
-			if (py gt af_y) then for i = (py-af_y)*bin_y, 1, -step do ii[px*bin_x, i:i+1] = [colorcode, csmin]
-			if (py lt num_y-1-af_y) then for i = (py+af_y)*bin_y, (num_y-1)*bin_y-1, step do ii[px*bin_x, i:i+1] = [colorcode, csmin]
+			if (px gt af_x) then for i = (px-af_x)*bin_x, 1, -step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
+			if (px lt num_x-1-af_x) then for i = (px+af_x)*bin_x, (num_x-1)*bin_x-1, step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
+			if (py gt af_y) then for i = (py-af_y)*bin_y, 1, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (py lt num_y-1-af_y) then for i = (py+af_y)*bin_y, (num_y-1)*bin_y-1, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
 		end $
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
@@ -538,6 +549,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, play, scal_b, scal_t
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
@@ -617,6 +629,10 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (num_overs ge 2) then over_active = 1 else over_active = 0
 	if (num_snapshots ge 2) then snap_active = 1 else snap_active = 0
 
+	button_pressed_yz = 0
+	button_pressed_xz = 0
+	button_pressed_xy = 0
+
 	MOTHER	= WIDGET_BASE (title='compare cube-slices')
 	BASE    = WIDGET_BASE (MOTHER, /col)
 	TOP     = WIDGET_BASE (BASE, /row)
@@ -646,13 +662,13 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	play	= WIDGET_BUTTON (bcol, value='PLAY', uvalue='PLAY', xsize=100, sensitive=snap_active)
 	tmp	= WIDGET_BUTTON (bcol, value='QUIT', uvalue='QUIT', xsize=100)
 	drow    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, /button_events)
+	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_yz = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, /button_events)
+	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_xz = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, /button_events)
+	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_xy = !d.window
 	MID     = WIDGET_BASE (BASE, /col)
