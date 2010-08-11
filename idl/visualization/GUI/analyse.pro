@@ -153,6 +153,7 @@ if (not analyse_loaded) then BEGIN
 		tags = tag_names (ts)
 		y_minmax = minmax (ts.dt)
 		if (any (strcmp (tags, 'dtu', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtu])
+		if (any (strcmp (tags, 'dtv', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtv])
 		if (any (strcmp (tags, 'dtnu', /fold_case)))   then y_minmax = minmax ([y_minmax, ts.dtnu])
 		if (any (strcmp (tags, 'dtb', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtb])
 		if (any (strcmp (tags, 'dteta', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dteta])
@@ -163,10 +164,14 @@ if (not analyse_loaded) then BEGIN
 		print, "starting values:"
 		print, "dt    :", ts.dt[0]
 		plot, ts.dt, title = 'dt', yrange=y_minmax, /yl
-		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', yrange=y_minmax, /yl
+		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', yrange=y_minmax, /yl
 		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
 			oplot, ts.t, ts.dtu, linestyle=2, color=11061000
 			print, "dtu   :", ts.dtu[0]
+		end
+		if (any (strcmp (tags, 'dtv', /fold_case))) then begin
+			oplot, ts.t, ts.dtv, linestyle=2, color=128255200
+			print, "dtv   :", ts.dtv[0]
 		end
 		if (any (strcmp (tags, 'dtnu', /fold_case))) then begin
 			oplot, ts.t, ts.dtnu, linestyle=1, color=128000128
