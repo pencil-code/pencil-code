@@ -279,7 +279,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
-			plot, cube[px,*,pz], title = 'horizontal y-cut', xrange=[0,num_y], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[px,*,pz], xrange=[0,num_y], yrange=[cut_min,cut_max], xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
+			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
 	end
 
@@ -309,7 +311,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
-			plot, cube[*,py,pz], title = 'horizontal x-cut', xrange=[0,num_x], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[*,py,pz], xrange=[0,num_x], yrange=[cut_min,cut_max], xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
+			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
 	end
 
@@ -339,7 +343,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
 			wset, wcut_z
-			plot, cube[px,py,*], title = 'vertical z-cut', xrange=[0,num_z], yrange=[cut_min,cut_max], /xstyle, /ystyle
+			plot, cube[px,py,*], xrange=[0,num_z], yrange=[cut_min,cut_max], xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
+			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
 	end
 end
@@ -351,17 +357,33 @@ pro draw_averages, number
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
-	if (n_tags (varsets[number]) eq 1) then begin
+	tags = tag_names (varsets[number])
+
+	if (tags eq ['cube']) then begin
 		window, 2, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 1, 1]
 		vert_prof, varsets[number].cube, coord=coord.z, title = 'horizontal averages'
 	end else begin
 		window, 2, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
-		vert_prof, exp (varsets[number].ln_rho), coord=coord.z, title = 'rho', log=1
-		vert_prof, varsets[number].u_abs, coord=coord.z, title = 'u_abs ['+unit.default_velocity_str+']'
-		vert_prof, varsets[number].Temp, coord=coord.z, title = 'Temp [K]', log=1
-		vert_prof, varsets[number].j, coord=coord.z, title = 'j', log=1
+		max_subplots = 4
+		num_subplots = 0
+		if (any (strcmp (tags, 'ln_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, exp (varsets[number].ln_rho), coord=coord.z, title = 'rho', log=1
+		end
+		if (any (strcmp (tags, 'u_abs', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, varsets[number].u_abs, coord=coord.z, title = 'u_abs ['+unit.default_velocity_str+']'
+		end
+		if (any (strcmp (tags, 'Temp', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, varsets[number].Temp, coord=coord.z, title = 'Temp [K]', log=1
+		end
+		if (any (strcmp (tags, 'j', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, varsets[number].j, coord=coord.z, title = 'j', log=1
+		end
 	end
 end
 
