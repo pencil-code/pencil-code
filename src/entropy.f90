@@ -876,7 +876,7 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          case('Gressel-hs'); call gressel_entropy(f)
+          case('Gressel-hs'); call gressel_entropy(f,df,p,Hmax)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1876,7 +1876,7 @@ module Entropy
 !
     endsubroutine gressel_hs
 !***********************************************************************
-    subroutine gressel_entropy(f)
+    subroutine gressel_entropy(f,df,p)
 !
 !   Density and isothermal entropy profile in hydrostatic equilibrium
 !   with the Ferriere profile set in gravity_simple.f90.
@@ -1895,6 +1895,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+!
       real, dimension (nx) :: Hmax
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: muhs
@@ -1902,6 +1903,8 @@ module Entropy
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
       double precision :: g_B ,g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+!
+      Hmax = 0.0
 !
 !  Set up physical units.
 !
@@ -2461,7 +2464,7 @@ module Entropy
       intent(inout)  :: f,p
       intent(out) :: df
 !
-      Hmax = 0.
+      Hmax = 0.0
 !
 !  Identify module and boundary conditions.
 !
