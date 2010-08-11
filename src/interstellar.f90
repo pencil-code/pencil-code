@@ -3,7 +3,7 @@
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development.
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!***************** AUTOMATIC CPARAM.INC GENERATION ***************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 2
 ! COMMUNICATED AUXILIARIES 1
 !
-!***************************************************************
+!*****************************************************************************
 module Interstellar
 !
   use Cdata
@@ -29,27 +29,27 @@ module Interstellar
   endtype
 !
   type SNRemnant
-    real :: x, y, z, t    ! Time and location
+    real :: x, y, z, t         ! Time and location
     double precision :: EE, MM ! Mass and energy injected
     double precision :: rhom   ! Local mean density at explosion time
-    real :: radius        ! Injection radius
+    real :: radius             ! Injection radius
     real :: t_sedov
     real :: t_damping
     real :: heat_energy
     real :: damping_factor
     real :: energy_loss
-    integer :: l,m,n      ! Grid position
+    integer :: l,m,n           ! Grid position
     integer :: iproc,ipy,ipz
     integer :: SN_type
     integer :: state
     type (ExplosionSite) :: site
   endtype
 !
-! Enumeration of Supernovae types.
+!  Enumeration of Supernovae types.
 !
   integer, parameter :: SNtype_I = 1, SNtype_II = 2
 !
-! Enumeration of Supernovae states.
+!  Enumeration of Supernovae states.
 !
   integer, parameter :: SNstate_invalid   = 0
   integer, parameter :: SNstate_waiting   = 1
@@ -57,7 +57,7 @@ module Interstellar
   integer, parameter :: SNstate_damping   = 3
   integer, parameter :: SNstate_finished  = 4
 !
-! Enumeration of Explosion Errors
+!  Enumeration of Explosion Errors
 !
   integer, parameter :: iEXPLOSION_OK           = 0
   integer, parameter :: iEXPLOSION_TOO_HOT      = 1
@@ -65,11 +65,12 @@ module Interstellar
   integer, parameter :: iEXPLOSION_TOO_UNEVEN   = 3
 !
 !  04-sep-09/fred: amended xsi_sedov
-!  ref Dyson & Williams Ch7 value for xsi_sedov=(25/3/pi)**(1/5)=1.215440704 for gamma=5/3
+!  ref Dyson & Williams Ch7 value = (25/3/pi)**(1/5)=1.215440704 for gamma=5/3
+!  Est'd value for similarity variable at shock
 !
-  real :: xsi_sedov=1.215440704! Est'd value for similarity variable at shock
+  real :: xsi_sedov=1.215440704
 !
-! 'Current' SN Explosion site parameters
+!  'Current' SN Explosion site parameters
 !
   integer, parameter :: mSNR = 20
   integer :: nSNR = 0
@@ -81,23 +82,25 @@ module Interstellar
   integer :: icooling=0
   integer :: icooling2=0
 !
-! Squared distance to the SNe site along the current pencil
+!  Squared distance to the SNe site along the current pencil
+!  Outward normal vector from SNe site along the current pencil
 !
-  double precision, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
-  double precision, dimension(nx,3) :: outward_normal_SN     ! Pencil storing radius to SN
+  double precision, dimension(nx) :: dr2_SN
+  double precision, dimension(nx,3) :: outward_normal_SN
 !
-!  Save space for last SNI time
+!  Allocate time of next SNI/II and intervals until next
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0
   real :: t_interval_SNI=impossible,t_interval_SNII=impossible
 !
-! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
-! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
-!   2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
-!   3d: 4 pi int_0^infty exp(-(r/a)^6) r^2 dr) / a^3 )
-! ( cf. 3.128289613 -- from where ?!? )
-! NB: 1d and 2d results just from numerical integration -- calculate
+!  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
+!  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
+!    2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
+!    3d: 4 pi int_0^infty exp(-(r/a)^6) r^2 dr) / a^3 )
+!  ( cf. 3.128289613 -- from where ?!? )
+!  NB: 1d and 2d results just from numerical integration -- calculate
 !      exact integrals at some point...
+!  3-D  was 3.71213666 but replaced with Maple result....
 !
   double precision, parameter, dimension(3) :: &
              cnorm_gaussian_SN = (/ 0.8862269255, 3.141592654, 5.568327998 /)
@@ -109,7 +112,6 @@ module Interstellar
              cnorm_para_SN = (/  1.33333333,  1.5707963, 1.6755161 /)
   double precision, parameter, dimension(3) :: &
              cnorm_quar_SN = (/  0.,  2.0943951, 0. /)
-!            3-D  was 3.71213666 but replaced with Maple result....
 !
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -121,128 +123,134 @@ module Interstellar
 !
   double precision :: unit_Lambda
 !
-! Remnants of the old Galaxy code formulation
-!  real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8
-!  real, parameter :: TTunits=46.6
+!  Minimum resulting central temperature of a SN explosion.
+!  If this is not reached then consider moving mass to achieve this.
 !
-! Minimum resulting central temperature of a SN explosion.
-! If this is not reached then consider moving mass to achieve this.
+  real, parameter :: TT_SN_min_cgs=1.e6
 !
-  real :: cluster_factor=1.25!fred testing clustering
-  real, parameter :: TT_SN_min_cgs=0!1.e7
-! 22-jan-10/fred with lSN_velocity=T for kinetic energy lower limit no longer required
-! set TT_SN_min=0
+!  22-jan-10/fred:
+!  With lSN_velocity kinetic energy lower limit no longer required for shock
+!  speed. 
+!  10-aug-10/fred:
+!  As per joung et al apj653 2005 min temp 1e6 to avoid excess radiative 
+!  energy losses in early stages.
+!
   real :: uu_sedov_max=0.
   real :: TT_SN_min=impossible
   real :: TT_cutoff_cgs=100.
   real :: TT_cutoff=impossible
 !
-! SNe placement limitations (for code stability)
+!  SNe placement limitations (for code stability)
 !
   double precision, parameter :: rho_SN_min_cgs=1e-28
   real, parameter :: TT_SN_max_cgs=5E8
   real :: rho_SN_min=impossible, TT_SN_max=impossible
 !
-! SNI per (x,y)-area explosion rate
+!  SNI per (x,y)-area explosion rate
 !
   double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
-  real :: SNI_area_rate=impossible,SNII_area_rate=impossible
+  real :: SNI_area_rate=impossible, SNII_area_rate=impossible
 !
-! Some useful constants
+!  Some useful constants
 !
-  double precision, parameter :: kpc_cgs=3.086d+21         ! [cm]
-  real, parameter :: yr_cgs=3.155692E7
-  double precision, parameter :: solar_mass_cgs=1.989e33
+  double precision, parameter :: kpc_cgs=3.086d+21      ! [cm]
+  real, parameter :: yr_cgs=3.155692E7                  ! [s]
+  double precision, parameter :: solar_mass_cgs=1.989e33! [g]
   real :: solar_mass=impossible
 !
-! Scale heights for SNI/II with Gaussian z distributions
+!  Scale heights for SNI/II with Gaussian z distributions
 !
-  real, parameter :: h_SNI_cgs=1.00295e21,h_SNII_cgs=2.7774e20
-  real :: h_SNI=impossible,h_SNII=impossible
+  real, parameter :: h_SNI_cgs=1.00295e21, h_SNII_cgs=2.7774e20
+  real :: h_SNI=impossible, h_SNII=impossible
 !
-! Self regulating SNII explosion coefficients
+!  Self regulating SNII explosion coefficients
 !
-  real, parameter :: cloud_rho_cgs=1.67262158e-24,cloud_TT_cgs=4000.
+  real, parameter :: cloud_rho_cgs=1.67262158e-24, cloud_TT_cgs=4000.
   real, parameter :: cloud_tau_cgs=2.E7 * yr_cgs, minTT_cgs = 0.75e2
   double precision, parameter :: mass_SN_progenitor_cgs=10.*solar_mass_cgs
-  real, parameter :: frac_converted=0.02,frac_heavy=0.10
+  real, parameter :: frac_converted=0.02, frac_heavy=0.10
 !  real, parameter :: tosolarMkpc3=1.483e7
-  real :: cloud_rho=impossible,cloud_TT=impossible
-  real :: cloud_tau=impossible   !was =2e-2
-  real :: mass_SN_progenitor=impossible, lnminTT=impossible
+  real :: cloud_rho=impossible, cloud_TT=impossible
+  real :: cloud_tau=impossible  
+  real :: mass_SN_progenitor=impossible
 !
-! Total SNe energy
+!  Total SNe energy
 !
   double precision, parameter :: ampl_SN_cgs=1D51
   real :: frac_ecr=0.1, frac_eth=0.9
   real :: ampl_SN=impossible, kampl_SN=impossible
 !
-! SNe composition
+!  SNe composition
 !
   logical :: lSN_eth=.true., lSN_ecr=.true.,lSN_mass=.true., lSN_velocity=.false.
 !
-! Total mass added by a SNe
+!  Total mass added by a SNe
 !
   double precision, parameter :: mass_SN_cgs=10.*solar_mass_cgs
   real :: mass_SN=impossible
   real :: velocity_SN=impossible
 !
-! Size of SN insertion site (energy and mass) and shell in mass movement
+!  Size of SN insertion site (energy and mass) and shell in mass movement
 !
   real :: sigma_SN, sigma_SN1
   real, parameter :: width_SN_cgs=3.086E19
-  real :: energy_width_ratio=1. !308533
+  real :: energy_width_ratio=1.
   real :: mass_width_ratio=2.
   real :: velocity_width_ratio=1.
   real :: outer_shell_proportion = 1.2
   real :: inner_shell_proportion = 1.
   real :: width_SN=impossible
 !
-! Parameters for 'averaged'-SN heating
+!  Parameters for 'averaged'-SN heating
 !
   real :: r_SNI_yrkpc2=4.e-6, r_SNII_yrkpc2=3.e-5
   real :: r_SNI=3.e+4, r_SNII=4.e+3
   real :: average_SNI_heating=0., average_SNII_heating=0.
 !
-! Limit placed of minimum density resulting from cavity creation
+!  Limit placed of minimum density resulting from cavity creation
 !
   real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=8.0e3
   real :: rho0ts=impossible, T0hs=impossible
 !
-! Cooling timestep limiter coefficient
-! (This value is overly restrictive. cdt_tauc=0.5 is a better value.)
+!  Cooling timestep limiter coefficient
+!  (This value is overly restrictive. cdt_tauc=0.5 is a better value.)
+!  Actually with full simulation cdt_tauc=0.005 may be appropriate
 !
   real :: cdt_tauc=0.08
 !
-! COMMENT ME
+!  Time of most recent SNII event
 !
   real :: last_SN_t=0.
 !
-! Time to wait before allowing SN to begin firing
+!  Time to wait before allowing SN to begin firing
 !
   real :: t_settle=0.
 !
-! Initial dist'n of explosions
+!  Initial dist'n of explosions
 !
   character (len=labellen), dimension(ninit) :: initinterstellar='nothing'
 !
-! Number of randomly placed SNe to generate to mix the initial medium
+!  Number of randomly placed SNe to generate to mix the initial medium
 !
   integer :: initial_SNI=0
 !
-! Parameters for UV heating of Wolfire et al.
+!  Parameters for UV heating of Wolfire et al.
 !
   real, parameter :: rhoUV_cgs=0.1
   real, parameter :: GammaUV_cgs=0.0147
-  real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
+  real, parameter :: TUV_cgs=7000., T0UV_cgs=12000., cUV_cgs=5.e-4
+  real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
 !
-! 04-jan-10/fred amended cool dim to 8 from 7 to smooth cooling
-!          appended last term to all arrays RBr critical change
+!  04-jan-10/fred:
+!  Amended cool dim from 7 to 11 to accomodate SS-Slyz dimension. 
+!  Appended null last term to all arrays for RB and SS cooling
 !
-  real :: GammaUV=impossible,T0UV=impossible,cUV=impossible
   double precision, dimension(11) :: coolT_cgs, coolH_cgs
   real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
+!
+!  TT & z-dependent uv-heating profile 
+!
   real, dimension(mz) :: heat_gressel
 !
   real :: coolingfunction_scalefactor=1.
@@ -257,19 +265,17 @@ module Interstellar
 !
   real :: cooltime_despike_factor = 2.
 !
-  logical :: lcooltime_despike = .false.  ! Set .true. to smooth the
-!                                          radiative cooling in cooling
-!                                          time space.
-  logical :: lcooltime_smooth = .false.  ! Set .true. to smooth the
-!                                          radiative cooling in cooling
-!                                          time space.
-  logical :: lheatcool_shock_cutoff = .false. !Set .true. to smoothly turn off
-!                                   the heating and cooling where the
-!                                   shock_profile is > heatcool_shock_cutoff
-!                                   and by multiplying the terms by
-!                            0.5*tanh((p%shock-heatcool_shock_cutoff)/heatcool_shock_cutoff_rate)
+!  Set .true. to smooth the radiative cooling in cooling time space.
 !
-! SN, heating, cooling type flags
+  logical :: lcooltime_despike = .false.
+  logical :: lcooltime_smooth = .false.
+!
+!  Set .true. to smoothly turn off the heating and cooling where the
+!  shock_profile is > heatcool_shock_cutoff
+!
+  logical :: lheatcool_shock_cutoff = .false.
+!
+!  SN type flags
 !
   logical :: lSNI=.true., lSNII=.false.
 !
@@ -282,25 +288,32 @@ module Interstellar
   real :: SNR_damping_time = impossible
   real :: SNR_damping_rate = impossible
 !
+!  Cooling & heating flags
+!
   logical :: lsmooth_coolingfunc = .false.
   logical :: laverage_SN_heating = .false.
   logical :: lheating_UV         = .true.
 !
+!  Remnant location flags
+!
   logical :: lforce_locate_SNI=.false.
   logical :: uniform_zdist_SNI = .false.
+!
+!  Adjust SNR%radius inversely with density 
+!
   logical :: lSN_scale_rad=.false.
 !
-! Requested SNe location (used for test SN)
+!  Requested SNe location (used for test SN)
 !
   real :: center_SN_x = impossible
   real :: center_SN_y = impossible
   real :: center_SN_z = impossible
 !
-! Volume element
+!  Volume element
 !
   real :: dv
 !
-! Cooling time diagnostic
+!  Cooling time diagnostic
 !
   integer :: idiag_taucmin=0
   integer :: idiag_Hmax=0
@@ -309,14 +322,13 @@ module Interstellar
   integer :: idiag_rhoLm=0
   integer :: idiag_Gamm=0
 !
-! Heating function, cooling function and mass movement
-! method selection.
+!  Heating function, cooling function and mass movement
+!  method selection.
 !
   character (len=labellen) :: cooling_select  = 'RB'
   character (len=labellen) :: heating_select  = 'wolfire'
   character (len=labellen) :: thermal_profile = 'gaussian3'
   character (len=labellen) :: velocity_profile= 'lineartanh'
-!  character (len=labellen) :: velocity_profile= 'quadratictanh'
   character (len=labellen) :: mass_profile    = 'gaussian3'
   character (len=labellen) :: mass_movement   = 'off'
   character (len=labellen) :: cavity_profile  = 'gaussian3'
@@ -328,50 +340,36 @@ module Interstellar
   double precision :: boldmass
   logical :: ladd_massflux = .false.
 !
-! start parameters
+!  start parameters
 !
   namelist /interstellar_init_pars/ &
-      initinterstellar, initial_SNI, &
-      ampl_SN, kampl_SN, mass_SN, &
-      mass_width_ratio, energy_width_ratio, &
-      lSN_velocity, velocity_SN, velocity_width_ratio, &
-      uniform_zdist_SNI, mass_movement, &
-      width_SN, inner_shell_proportion, outer_shell_proportion, &
-      frac_ecr, frac_eth, lSN_eth, lSN_ecr, lSN_mass, &
-      h_SNI, h_SNII, lSNII, lSNI, lSN_scale_rad, &
-      thermal_profile,velocity_profile, mass_profile, &
-      center_SN_x, center_SN_y, center_SN_z, &
-      t_next_SNI, t_next_SNII, &
-      SNR_damping, uu_sedov_max, rho0ts, T0hs, &
-      cooling_select, heating_select, heating_rate
+      initinterstellar, initial_SNI, h_SNI, h_SNII, lSNII, lSNI, &
+      lSN_scale_rad, ampl_SN, kampl_SN, mass_SN, velocity_SN, width_SN, &
+      mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
+      t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
+      lSN_velocity, lSN_eth, lSN_ecr, lSN_mass, mass_movement, uu_sedov_max, &
+      frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
+      uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
+      SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, T0hs
 !
 ! run parameters
 !
   namelist /interstellar_run_pars/ &
-      ampl_SN, kampl_SN, mass_SN, &
-      mass_width_ratio, energy_width_ratio, &
-      lSN_velocity, velocity_SN, velocity_width_ratio, &
-      uniform_zdist_SNI, mass_movement, &
-      width_SN, inner_shell_proportion, outer_shell_proportion, &
-      frac_ecr, frac_eth, lSN_eth, lSN_ecr, lSN_mass, &
-      h_SNI, h_SNII, &
-      thermal_profile,velocity_profile, mass_profile, &
-      t_next_SNI, t_next_SNII, TT_SN_min, &
-      SNR_damping, uu_sedov_max, &
-      mass_SN_progenitor,cloud_tau, &
-      lSNI, lSNII, lnminTT, &
-      laverage_SN_heating, coolingfunction_scalefactor, &
-      lsmooth_coolingfunc, heatingfunction_scalefactor, &
-      center_SN_x, center_SN_y, center_SN_z, &
-      SNI_area_rate, SNII_area_rate, &
-      rho_SN_min, TT_SN_max, cloud_rho, cloud_TT, &
-      lheating_UV, cdt_tauc,  &
-      cooling_select, heating_select, heating_rate, &
-      t_settle, cluster_factor,  &
-      lforce_locate_SNI, lSN_scale_rad, &
+      ampl_SN, kampl_SN, mass_SN, velocity_SN, t_next_SNI, t_next_SNII, &
+      mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
+      lSN_velocity, lSN_eth, lSN_ecr, lSN_mass, width_SN, lSNI, lSNII, &
+      uniform_zdist_SNI, mass_movement, SNI_area_rate, SNII_area_rate, &
+      inner_shell_proportion, outer_shell_proportion, uu_sedov_max, &
+      frac_ecr, frac_eth, thermal_profile,velocity_profile, mass_profile, &
+      h_SNI, h_SNII, TT_SN_min, SNR_damping, uu_sedov_max, lSN_scale_rad, &
+      mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
+      laverage_SN_heating, coolingfunction_scalefactor,  lforce_locate_SNI,&
+      lsmooth_coolingfunc, heatingfunction_scalefactor, t_settle, &
+      center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
+      lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
-      heatcool_shock_cutoff, heatcool_shock_cutoff_rate, &
-      ladd_massflux
+      heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux
+!
   contains
 !
 !***********************************************************************
@@ -389,7 +387,7 @@ module Interstellar
       if (lroot) call svn_id( &
            "$Id$")
 !
-! Invalidate all SNRs
+!  Invalidate all SNRs
 !
       nSNR=0
       SNRs(:)%state=SNstate_invalid
@@ -421,7 +419,6 @@ module Interstellar
       logical :: lstarting
 !
       real :: mu
-!      real, dimension(nz) :: heat
 !
       f(:,:,:,icooling)=0.0
 !
@@ -448,290 +445,283 @@ module Interstellar
       endif
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
 !
-! Mara: Initialize cooling parameters according to selection
-! Default selection 'RB' Rosen & Bregman (1993)
-! Alternative selection 'SS' Sanchez-Salcedo et al. (2002)
-! Turn off cooling: 'no'
-! cooling_select in interstellar_init_pars added
+!  Mara: Initialize cooling parameters according to selection
+!  Default selection 'RB' Rosen & Bregman (1993)
+!  Alternative selection 'SS' Sanchez-Salcedo et al. (2002)
+!  Turn off cooling: cooling_select='off'
+!  cooling_select in interstellar_init_pars added
 !
       if (cooling_select == 'RB') then
         if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-        coolT_cgs = (/   100.D0, &
-                        2000.D0, &
-                        8000.D0, &
-                        1.0D5, &
-                        4.0D7, &
-                        1.0D9, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
+        coolT_cgs = (/  100.D0,      &
+                        2000.D0,     &
+                        8000.D0,     &
+                        1.0D5,       &
+                        4.0D7,       &
+                        1.0D9,       &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolH_cgs = (/ 2.2380D-32, &
-                        1.0012D-30, &
-                        4.6240D-36, &
-                        1.7800D-18, &
-                        3.2217D-27, &
-                        tiny(0.D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0.D0), &
-                        tiny(0D0) &
-                      /) / ( m_p_cgs )**2
-        coolB = (/ 2.0, &
-                    1.5, &
-                    2.867, &
-                   -0.65, &
-                    0.5, &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.) /)
+        coolH_cgs = (/  2.2380D-32,  &
+                        1.0012D-30,  &
+                        4.6240D-36,  &
+                        1.7800D-18,  &
+                        3.2217D-27,  &
+                        tiny(0.D0),  &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0.D0),  &
+                        tiny(0D0) /) / ( m_p_cgs )**2
+        coolB =     (/  2.0,         &
+                        1.5,         &
+                        2.867,       &
+                       -0.65,        &
+                        0.5,         &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.)  /)
         ncool = 6
 !
-! 04-jan-10/fred corrected above to original RB parameters
-!           altered coolB(5) and coolT(5,6) in RBr to ensure continuity and
-!           more inhibit high temperatures later in diffuse remnant cores
-!           RBr: new lower terms to smoothly force cooling to zero below 300K
-!            + extended range to 1e13 from 1e10 in SSrr to stem spiking
+!  04-jan-10/fred: 
+!  Reset above to original RB parameters. Altered coolB(5) and coolT(5,6) in
+!  RBr to ensure continuity and increase cooling at high temperatures later in
+!  diffuse remnant cores.
+!  RBr: new lower terms for smooth cooling below 300K
+!  and extended range to 1e13 in SSrr to deal with temperature spiking
 !
       else if (cooling_select == 'RBr') then
         if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-        coolT_cgs = (/ 10.D0, &
-                        300.D0, &
-                        2000.D0, &
-                        8000.D0, &
-                        1.D5, &
-                        1.D6, &
-                        1.D9, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
+        coolT_cgs = (/  10.D0,       &
+                        300.D0,      &
+                        2000.D0,     &
+                        8000.D0,     &
+                        1.D5,        &
+                        1.D6,        &
+                        1.D9,        &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolH_cgs = (/ 2.76296D-42, &
-                        2.2380D-32, &
-                        1.0012D-30, &
-                        4.6240D-36, &
-                        1.7800D-18, &
-                        2.240887D-25, &
-                        tiny(0.D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0.D0) &
-                      /) / ( m_p_cgs )**2
-        coolB = (/ 6.0, &
-                    2.0, &
-                    1.5, &
-                    2.867, &
-                   -0.65, &
-                    0.5, &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.) /)
+        coolH_cgs = (/  2.76296D-42, &
+                        2.2380D-32,  &
+                        1.0012D-30,  &
+                        4.6240D-36,  &
+                        1.7800D-18,  &
+                        2.240887D-25,&
+                        tiny(0.D0),  &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0) /) / ( m_p_cgs )**2
+        coolB =     (/  6.0,         &
+                        2.0,         &
+                        1.5,         &
+                        2.867,       &
+                       -0.65,        &
+                        0.5,         &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.)  /)
         ncool=6
       else if (cooling_select == 'SS') then
-         ! These are the SS et al (2002) coefficients multiplied by m_proton**2
 !
+!  These are the SS et al (2002) coefficients multiplied by m_proton**2
 !
-        coolT_cgs = (/ 10.D0, &
-                        141.D0, &
-                        313.D0, &
-                        6102.D0, &
-                        1.0D5, &
-                        1.0D9, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
+        coolT_cgs = (/  10.D0,       &
+                        141.D0,      &
+                        313.D0,      &
+                        6102.D0,     &
+                        1.0D5,       &
+                        1.0D9,       &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolH_cgs = (/ 3.42D16, &
-                        9.10D18, &
-                        1.11D20, &
-                        2.00D8, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
+        coolH_cgs = (/  3.42D16,     &
+                        9.10D18,     &
+                        1.11D20,     &
+                        2.00D8,      &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolB = (/ 2.12, &
-                    1.0, &
-                    0.56, &
-                    3.67, &
-                    -0.65, &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.) /)
+        coolB =     (/  2.12,        &
+                        1.0,         &
+                        0.56,        &
+                        3.67,        &
+                        -0.65,       &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.)  /)
         ncool=5
+!
       else if (cooling_select == 'SSr') then
-!
         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-        coolT_cgs = (/ 10.D0, &
-                        141.D0, &
-                        313.D0, &
-                        6102.D0, &
-                        1.D5, &
-                        1.D9, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
+        coolT_cgs = (/  10.D0,       &
+                        141.D0,      &
+                        313.D0,      &
+                        6102.D0,     &
+                        1.D5,        &
+                        1.D9,        &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolH_cgs = (/ 3.70D16, &
-                        9.46D18, &
-                        1.185D20, &
-                        2.00D8, &
-                        7.96D29, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
+        coolH_cgs = (/  3.70D16,     &
+                        9.46D18,     &
+                        1.185D20,    &
+                        2.00D8,      &    
+                        7.96D29,     &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolB = (/ 2.12, &
-                    1.0, &
-                    0.56, &
-                    3.67, &
-                    -0.65, &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.) , &
-                    tiny(0.), &
-                    tiny(0.) /)
+        coolB =     (/  2.12,        &
+                        1.0,         &
+                        0.56,        &
+                        3.67,        &
+                        -0.65,       &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.),    &
+                        tiny(0.)  /)
         ncool=5
+!
+!  Revised to make continuous
+!
       else if (cooling_select == 'SSrr') then
-         ! revised to make continuous
         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-        coolT_cgs = (/ 10.D0, &
-                        141.D0, &
-                        313.D0, &
-                        6102.D0, &
-                        1.D5, &
-                        4.D7, &
-                        1.D13, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0d0)/)
-        coolH_cgs = (/ 3.703109927416290D16, &
+        coolT_cgs = (/  10.D0,        &
+                        141.D0,       &
+                        313.D0,       &
+                        6102.D0,      &
+                        1.D5,         &
+                        4.D7,         &
+                        1.D13,        &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0d0)  /)
+        coolH_cgs = (/  3.703109927416290D16, &
                         9.455658188464892D18, &
                         1.185035244783337D20, &
-                        1.9994576479D8, &
-                        7.96D29, &
+                        1.9994576479D8,       &
+                        7.96D29,              &
                         1.440602814622207D21, &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0), &
-                        tiny(0D0) /)
-        coolB = (/ 2.12, &
-                    1.0, &
-                    0.56, &
-                    3.67, &
-                    -0.65, &
-                    0.5, &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.), &
-                    tiny(0.) /)
+                        tiny(0D0),            &
+                        tiny(0D0),            &
+                        tiny(0D0),            &
+                        tiny(0D0),            &
+                        tiny(0D0)  /)
+        coolB =     (/  2.12,         &
+                        1.0,          &
+                        0.56,         &
+                        3.67,         &
+                        -0.65,        &
+                        0.5,          &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.)   /)
         ncool=6
+!
+!  26-Jan-10/fred
+!  Combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
+!  as Gressel simulation (2008) with constants revised for continuity
+!
       else if (cooling_select == 'SS-Slyz') then
-!
-! 26-Jan-10/fred
-!
-! combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
-! as Gressel simulation (2008) constants revised for continuity
-!
         if (lroot) print*,'initialize_interstellar: SS-Slyz cooling fct'
-        coolT_cgs = (/ 10.D0, &
-                        141.D0, &
-                        313.D0, &
-                        6102.D0, &
-                        1.D5, &
-                        2.88D5, &
-                        4.73D5, &
-                        2.11D6, &
-                        3.98D6,  &
-                        2.0D7,  &
-                        huge(0D0)/)
-        coolH_cgs = (/ 3.420D16, &
-                        8.73275974868D18, &
-                        1.0944376395513D20, &
-                        1.0178638302185D10, &
-                        1.1420600147164D27, &
-                        2.2079470147055D42, &
-                        3.697214745591D26, &
-                        1.4105221231863D44, &
-                        1.48514641828986D22, &
-                        8.523033057875D20, &
+        coolT_cgs = (/  10.D0,       &
+                        141.D0,      &
+                        313.D0,      &
+                        6102.D0,     &
+                        1.D5,        &
+                        2.88D5,      &
+                        4.73D5,      &
+                        2.11D6,      &
+                        3.98D6,      &
+                        2.0D7,       &
+                        huge(0D0) /)
+        coolH_cgs = (/  3.420D16,             &
+                        8.73275974868D18,     &
+                        1.0944376395513D20,   &
+                        1.0178638302185D10,   &
+                        1.1420600147164D27,   &
+                        2.2079470147055D42,   &
+                        3.697214745591D26,    &
+                        1.4105221231863D44,   &
+                        1.48514641828986D22,  &
+                        8.523033057875D20,    &
                         tiny(0D0) /)
-        coolB = (/ 2.12, &
-                    1.0, &
-                    0.56, &
-                    3.21, &
-                    -0.20, &
-                    -3.0, &
-                    -0.22, &
-                    -3.00, &
-                    0.33, &
-                    0.5, &
-                    tiny(0.) /)
+        coolB =     (/  2.12,        &
+                        1.0,         &
+                        0.56,        &
+                        3.21,        &
+                       -0.20,        &
+                       -3.0,         &
+                       -0.22,        &
+                       -3.00,        &
+                        0.33,        &
+                        0.5,         &
+                        tiny(0.) /)
         ncool=10
+
       else if (cooling_select == 'SS-Slyzr') then
-!
-! 26-Jan-10/fred
-!
-! combines Sanchez-Salcedo (2002) with Slyz et al (2005) above 1e5K
-! as Gressel simulation (2008) constants revised for continuity
-! and to match SSrr values at low temp and cut off at 100K
-! to avoid unresolvable low temperatures
-!
         if (lroot) print*,'initialize_interstellar: SS-Slyzr cooling fct'
-        coolT_cgs = (/  0.01D0, &
-                        141.D0, &
-                        313.D0, &
-                        6102.D0, &
-                        1.D5, &
-                        2.88D5, &
-                        4.73D5, &
-                        2.11D6, &
-                        3.98D6,  &
-                        1.0D7,  &
-                        huge(0D0)/)
-        coolH_cgs = (/  3.420D16, &
-                        8.73275974868D18, &
-                        1.0944376395513D20, &
-                        1.0178638302185D10, &
-                        1.1420600147164D27, &
-                        2.2079470147055D42, &
-                        3.697214745591D26, &
-                        1.4105221231863D44, &
-                        1.48514641828986D22, &
-                        8.523033057875D20, &
+        coolT_cgs = (/  1.D-2,       &
+                        141.D0,      &
+                        313.D0,      &
+                        6102.D0,     &
+                        1.D5,        &
+                        2.88D5,      &
+                        4.73D5,      &
+                        2.11D6,      &
+                        3.98D6,      &
+                        2.0D7,       &
+                        huge(0D0) /)
+        coolH_cgs = (/  3.420D16,             &
+                        8.73275974868D18,     &
+                        1.0944376395513D20,   &
+                        1.0178638302185D10,   &
+                        1.1420600147164D27,   &
+                        2.2079470147055D42,   &
+                        3.697214745591D26,    &
+                        1.4105221231863D44,   &
+                        1.48514641828986D22,  &
+                        8.523033057875D20,    &
                         tiny(0D0) /)
-        coolB = (/2.12, &
-                    1.0, &
-                    0.56, &
-                    3.21, &
-                    -0.20, &
-                    -3.0, &
-                    -0.22, &
-                    -3.00, &
-                    0.33, &
-                    0.5, &
-                    tiny(0.) /)
+        coolB =     (/  2.12,        &
+                        1.0,         &
+                        0.56,        &
+                        3.21,        &
+                       -0.20,        &
+                       -3.0,         &
+                       -0.22,        &
+                       -3.00,        &
+                        0.33,        &
+                        0.5,         &
+                        tiny(0.) /)
         ncool=10
       else if (cooling_select == 'off') then
         if (lroot) print*,'initialize_interstellar: no cooling applied'
@@ -759,33 +749,37 @@ module Interstellar
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         TT_SN_min=TT_SN_min_cgs / unit_temperature
         TT_cutoff=TT_cutoff_cgs / unit_temperature
-        if (lnminTT==impossible) lnminTT=log(minTT_cgs)-log(unit_temperature)
-        if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (SNII_area_rate==impossible) SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
-        if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
+        if (SNI_area_rate==impossible) &
+            SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (SNII_area_rate==impossible) &
+            SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
         h_SNII=h_SNII_cgs / unit_length
         solar_mass=solar_mass_cgs / unit_mass
-        if (lroot) print*,'initialize_interstellar: solar_mass (code) =',solar_mass
-        if (cloud_rho == impossible) cloud_rho=cloud_rho_cgs / unit_density
-        if (cloud_TT == impossible) cloud_TT=cloud_TT_cgs / unit_temperature
+        if (lroot) &
+            print*,'initialize_interstellar: solar_mass (code) =', solar_mass
+        if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
+        if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         T0UV=T0UV_cgs / unit_temperature
         cUV=cUV_cgs * unit_temperature
-                !GammaUV=GammaUV_cgs !/ (unit_velocity**2 * unit_time)
         if (GammaUV==impossible) &
             GammaUV=GammaUV_cgs * real(unit_length/unit_velocity**3)
-        if (ampl_SN == impossible) ampl_SN=ampl_SN_cgs / unit_energy
-        if (kampl_SN == impossible) kampl_SN=0.0
-        if (lroot) print*,'initialize_interstellar: ampl_SN, kampl_SN = '&
-                                                   ,ampl_SN, kampl_SN
-        if (cloud_tau == impossible) cloud_tau=cloud_tau_cgs / unit_time
-        if (mass_SN == impossible) mass_SN=mass_SN_cgs / unit_mass
-        if (mass_SN_progenitor == impossible) &
+        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
+        if (kampl_SN==impossible) kampl_SN=0.0
+        if (lroot) &
+            print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
+            ampl_SN, kampl_SN
+        if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
+        if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
+        if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
-        if (width_SN == impossible) width_SN=width_SN_cgs / unit_length
-        if (SNR_damping_time == impossible) SNR_damping_time=SNR_damping_time_cgs / unit_time
-        if (SNR_damping_rate == impossible) SNR_damping_rate=SNR_damping_rate_cgs / unit_time
+        if (width_SN==impossible) width_SN=width_SN_cgs / unit_length
+        if (SNR_damping_time==impossible) &
+            SNR_damping_time=SNR_damping_time_cgs / unit_time
+        if (SNR_damping_rate==impossible) &
+            SNR_damping_rate=SNR_damping_rate_cgs / unit_time
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -793,8 +787,7 @@ module Interstellar
 !  Inverse volume share of mass lost through the boundary substitute for
 !  galactic fountain given no inflow boundary vertical condition
 !
-      if (ladd_massflux) &
-        addflux_dim1=1./(Lxyz(1)*Lxyz(2)*Lxyz(3))
+      if (ladd_massflux) addflux_dim1=1./(Lxyz(1)*Lxyz(2)*Lxyz(3))
 !
       if (heating_select == 'Gressel-hs') then
         call gressel_interstellar(f,heat_gressel)
@@ -820,12 +813,14 @@ module Interstellar
 !
       preSN(:,:)=0
 !
-      t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNI  = 1./(SNI_area_rate  * Lxyz(1) * Lxyz(2))
       t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
-      average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
-      average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
+      average_SNI_heating = &
+          r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
+      average_SNII_heating= &
+          r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
-        t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+          t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
 !
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -835,10 +830,10 @@ module Interstellar
       if (lroot.and.lstarting) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",4A)')  &
-          '---it----------t--------itype-iproc----l-----m----n---', &
-          '-----x------------y------------z-------', &
-          '----rho-----------TT-----------EE---------t_sedov------radius----', &
-          '--site_mass------maxTT----'
+            '---it----------t--------itype-iproc----l-----m----n---', &
+            '-----x------------y------------z-------', &
+            '----rho-----------TT-----------EE---------t_sedov----', &
+            '--radius------site_mass------maxTT----'
         close(1)
       endif
 !
@@ -852,7 +847,7 @@ module Interstellar
       endif
 !
     endsubroutine initialize_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine input_persistent_interstellar(id,lun,done)
 !
 !  Read in the stored time of the next SNI
@@ -867,7 +862,7 @@ module Interstellar
         read (lun) lSNI, lSNII
         done=.true.
       elseif (id==id_record_ISM_SNRS) then
-        !  Forget any existing SNRs.
+!  Forget any existing SNRs.
         SNRs(:)%state=SNstate_invalid
         read (lun) nSNR
         do i=1,nSNR
@@ -879,10 +874,11 @@ module Interstellar
         read (lun) boldmass
         done=.true.
       endif
-      if (lroot) print*,'input_persistent_interstellar: ', t_next_SNI, t_next_SNII
+      if (lroot) &
+          print*,'input_persistent_interstellar: ', t_next_SNI, t_next_SNII
 !
     endsubroutine input_persistent_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine output_persistent_interstellar(lun)
 !
 !  Writes out the time of the next SNI
@@ -890,7 +886,7 @@ module Interstellar
       integer :: lun, i, iSNR
 !
       if (lroot.and.lSNI.and.lSNII) &
-        print*,'output_persistent_interstellar: ', t_next_SNI, t_next_SNII
+          print*,'output_persistent_interstellar: ', t_next_SNI, t_next_SNII
       write (lun) id_record_T_NEXT_SNI
       write (lun) t_next_SNI, t_next_SNII
       write (lun) id_record_ISM_SN_TOGGLE
@@ -905,12 +901,12 @@ module Interstellar
       enddo
 !
     endsubroutine output_persistent_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine rprint_interstellar(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to interstellar
+!  Reads and registers print parameters relevant to interstellar
 !
-!   1-jun-02/axel: adapted from magnetic fields
+!  01-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
 !
@@ -921,8 +917,8 @@ module Interstellar
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
+!  Reset everything in case of reset
+!  (This needs to be consistent with what is defined above!)
 !
       if (lreset) then
         SNR_damping=0.
@@ -960,7 +956,7 @@ module Interstellar
         call parse_name(iname,cname(iname),cform(iname),'Gamm',idiag_Gamm)
       enddo
 !
-!  write column where which interstellar variable is stored
+!  Write column in which each interstellar variable is stored
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
@@ -968,7 +964,7 @@ module Interstellar
       endif
 !
     endsubroutine rprint_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine get_slices_interstellar(f,slices)
 !
 !  Write slices for animation of Interstellar variables.
@@ -1000,7 +996,7 @@ module Interstellar
       endselect
 !
     endsubroutine get_slices_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1013,14 +1009,14 @@ module Interstellar
 !
 99    return
     endsubroutine read_interstellar_init_pars
-!***********************************************************************
+!*****************************************************************************
     subroutine write_interstellar_init_pars(unit)
       integer, intent(in) :: unit
 !
       write(unit,NML=interstellar_init_pars)
 !
     endsubroutine write_interstellar_init_pars
-!***********************************************************************
+!*****************************************************************************
     subroutine read_interstellar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1033,17 +1029,17 @@ module Interstellar
 !
 99    return
     endsubroutine read_interstellar_run_pars
-!***********************************************************************
+!*****************************************************************************
     subroutine write_interstellar_run_pars(unit)
       integer, intent(in) :: unit
 !
       write(unit,NML=interstellar_run_pars)
 !
     endsubroutine write_interstellar_run_pars
-!!**********************************************************************
+!!****************************************************************************
     subroutine init_interstellar(f)
 !
-!  initialise some explosions etc.
+!  Initialise some explosions etc.
 !  24-nov-2002/tony: coded
 !
       use General, only: chn
@@ -1063,7 +1059,7 @@ module Interstellar
       lnothing=.false.
       call chn(j,iinit_str)
 !
-!  select different initial conditions
+!  Select different initial conditions
 !
       select case (initinterstellar(j))
 !
@@ -1167,7 +1163,7 @@ module Interstellar
       call tidy_SNRs
 !
     endsubroutine init_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine pencil_criteria_interstellar()
 !
 !  All pencils that the Interstellar module depends on are specified here.
@@ -1182,12 +1178,13 @@ module Interstellar
 !
       if (lheatcool_shock_cutoff) lpenc_requested(i_shock)=.true.
 !
-!  diagnostic pencils
+!  Diagnostic pencils
 !
-!AB:  if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
+!  AB:
+!      if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine interstellar_before_boundary(f)
 !
 !  This routine calculates and applies the optically thin cooling function
@@ -1203,18 +1200,18 @@ module Interstellar
       real, dimension (nx) :: heat,cool,lnTT, lnrho
       real, dimension (nx) :: damp_profile
       real :: minqty
-!      real ::  mu
       integer :: i,iSNR
 !
       if (.not.(lcooltime_smooth.or.lcooltime_despike)) return
 !
-!  identifier
+!  Identifier
 !
       if (headtt) print*,'interstellar_before_boundary: ENTER'
 !
-! Precalculate radiative cooling function
+!  Precalculate radiative cooling function
 !
-    do n=n1,n2; do m=m1,m2
+    do n=n1,n2
+    do m=m1,m2
       lnrho = f(l1:l2,m,n,ilnrho)
       call eoscalc(f,nx,lnTT=lnTT)
 !
@@ -1237,10 +1234,9 @@ module Interstellar
           if (SNRs(iSNR)%state==SNstate_damping) then
             call proximity_SN(SNRs(iSNR))
             minqty=0.5*(1.+tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-            damp_profile = damp_profile &
-                * ( (1.-minqty) * 0.5 &
-                    * (1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.)) &
-                    + minqty )
+            damp_profile = damp_profile * ( (1.-minqty) * 0.5 * (1.+ &
+                tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.)) &
+                + minqty )
           endif
         enddo
         if (ltemperature) then
@@ -1251,38 +1247,39 @@ module Interstellar
           f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*damp_profile
         endif
       endif
-    enddo; enddo
+    enddo
+    enddo
 !
 !
     endsubroutine interstellar_before_boundary
-!***********************************************************************
+!*****************************************************************************
     subroutine gressel_interstellar(f,zheat)
 !
-!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
+!  This routine calculates a vertical profile for uv-heating designed to
+!  satisfy an initial condition with heating and cooling balanced for an 
+!  isothermal hydrostatic equilibrium.
+!  The density stratification is derived from the gravity profile of
+!  K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!  Requires: gravz_profile='Ferriere' in gravity_simple.f90
+!            initlnrho='Galactic-hs' in density.f90
+!            initss='Gressel-hs' in entropy.f90
+!            heating_select='Gressel-hs' in interstellar.f90
+!  Using here a similar method to O. Gressel 2008 (PhD)
 !
-!   Density and isothermal entropy profile in hydrostatic equilibrium
-!   with the Ferriere profile set in gravity_simple.f90
-!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
-!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
-!   equilibrium. Constants g_A..D from gravz_profile. In addition equating
-!   the uv-heating with cooling*rho for thermal equilibrium. Use
-!   initss='Gressel-hs' in entropy initpars and heating_select='Gressel-hs' in
-!   interstellar init & runpars
-!
+!  22-mar-10/fred:
+!  adapted from galactic-hs,ferriere-hs
 !
       use Mpicomm, only: mpibcast_real
       use EquationOfState , only: getmu
       use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: rho,TT,lambda,fbeta,flamk, erfz
+      real, dimension(mz) :: zrho
       real, dimension(mz), intent(out) :: zheat
-      real :: muhs
-      real :: g_A, g_C, T_k, erfB
+      real :: muhs, lambda
+      real :: g_A, g_C
       real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      real, dimension(10) :: beta
-      double precision,dimension(10) :: lamk,lamstep,lamT
-      double precision :: g_B, unit_Lambda ,g_D
+      double precision :: g_B, g_D
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
       integer :: j
 !
@@ -1293,106 +1290,34 @@ module Interstellar
           g_C = g_C_cgs/unit_velocity*unit_time
           g_D = g_D_cgs/unit_length
           g_B = g_B_cgs/unit_length
-          unit_Lambda = unit_velocity**2 / unit_density / unit_time
       if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
       if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-          T_k=sqrt(2.)!
 !
-!chosen to keep TT as low as possible up to boundary matching rho for hs equilibrium
+!  T0hs & rho0ts required such that Lambda*rho(z=0) = GammaUV_cgs = 0.0147 at z=0
 !
       else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity','SI unit conversions not inplemented')
+        call fatal_error('gressel_interstellar','SI unit conversions not inplemented')
       endif
 !
-!  uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
-!   at solar radius.  (for interstellar runs)
-!  requires SS-Slyz' cooling_select for similar method
-!  as O. Gressel 2008 (PhD)
-!
-      if (cooling_select == 'SS-Slyz' .or. cooling_select == 'SS-Slyzr') then
-        beta = (/2.12,1.0, 0.56,3.21,-0.2,-3.,-0.22,-3.,.33,.5/)
-        lamk = ((/3.420D16, 8.73275974868D18,1.094d20,10178638302.185D0,&
-                  1.142D27,2.208D42,3.69d26,1.41D44,&
-            1.485d22,8.52d20/)) / unit_Lambda * unit_temperature**beta
-        lamT = ((/10.D0,141.D0,313.D0,6102.D0,1.D5,2.88D5,4.73D5,2.11D6,3.980D6,2.D7/))/unit_temperature
-      else if (cooling_select == 'RBr') then
-        beta = (/ 6.0, &
-                   2.0, &
-                   1.5, &
-                   2.867, &
-                  -0.65, &
-                   0.5, &
-                   tiny(0.), &
-                   tiny(0.), &
-                   tiny(0.), &
-                   tiny(0.) /)
-        lamT = (/ 10.D0, &
-                       300.D0, &
-                       2000.D0, &
-                       8000.D0, &
-                       1.D5, &
-                       1.D6, &
-                       1.D9, &
-                       tiny(0D0), &
-                       tiny(0D0), &
-                       tiny(0D0) /)/unit_temperature
-        lamk = (/ 2.76296D-42, &
-                       2.2380D-32, &
-                       1.0012D-30, &
-                       4.6240D-36, &
-                       1.7800D-18, &
-                       2.240887D-25, &
-                       tiny(0.D0), &
-                       tiny(0D0), &
-                       tiny(0D0), &
-                       tiny(0.D0) &
-                     /) / ( m_p_cgs )**2/ unit_Lambda * unit_temperature**beta
-      endif
-!
-      lamstep = lamk*lamT**beta
+      do j=1,ncool
+        if (coolT_cgs(j)>=T0hs*unit_temperature) then
+          lambda=exp(lncoolH(j))*T0hs**coolB(j)
+          exit
+        endif
+      enddo
 !
       call getmu(f,muhs)
-!
 !
       if (lroot) print*, &
          'Gressel1-interstellar: calculating z-dependent uv-heating function for init hydrostatic & thermal equilibrium'
       do n=1,mz
-        erfB=g_B
-        erfz(n)=sqrt(T_k*z(n)**2+g_B**2)
-!
-!  30-mar-10/fred: principle Gamma=Lambda*rho.
-!                  dlnrho/dz=1/RT*gravz
-!                   Set Gamma(z) with GammaUV/Rho0hs z=0
-!                  require initial profile to produce finite Lambda between lamstep(3) and
-!                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                                                                                                                                 !
-        TT =T0hs!  *exp((T_k*z(n))**2)
-        rho = rho0ts*exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)&
-                         -0.5*g_C*(z(n))**2/g_D))
-!        rho=rho0ts*exp(-0.5/T_k*m_u*muhs/k_B/T0hs*(g_A*exp(g_B**2)*sqrt(pi)&
-!            *(erfunc(erfz(n))-erfunc(erfB)) + g_C/g_D*(exp(-T_k*z(n)**2)-1)))
-!
-!
-!  define initial values for the Lambda(z) array from initial temerature profile
-!
-!
-        where (TT < lamT(1)) TT=lamT(1)
-        do j=1,9
-          if (TT(n) >= lamT(j) .and. TT(n) <= lamT(j+1)) then
-            fbeta(n)=beta(j)
-            flamk(n)=lamk(j)
-          endif
-        where (TT > lamT(10))
-          fbeta=beta(10)
-          flamk=lamk(10)
-        endwhere
-        enddo
-        lambda=real(flamk*TT**fbeta)
-        zheat(n)=lambda(n)*rho(n)
-!
+        zrho=rho0ts*exp(m_u*muhs/k_B/T0hs* &
+            (g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)-0.5*g_C*(z(n))**2/g_D))
+        zheat(n)=lambda*zrho(n)
       enddo
 !
     endsubroutine gressel_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  This routine calculates and applies the optically thin cooling function
@@ -1421,29 +1346,33 @@ module Interstellar
       real, dimension (nx) :: damp_profile
       real :: minqty
       integer :: i, iSNR
-!      real ::  mu
 !
-!  identifier
+!  Identifier
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
+!  
+      if (lcooltime_smooth) then
+        call smooth_kernel(f,icooling,heatcool)
+        call calc_heat(heat,p%lnTT)
+        call calc_cool_func(cool,p%lnTT,p%lnrho)
+      elseif (lcooltime_despike) then
+        call despike(f,icooling,heatcool,cooltime_despike_factor)
+        call calc_heat(heat,p%lnTT)
+        call calc_cool_func(cool,p%lnTT,p%lnrho)
+      else
+        call calc_cool_func(cool,p%lnTT,p%lnrho)
+!  
+!  Possibility of temporal smoothing of cooling function
+!  
+        if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
+        f(l1:l2,m,n,icooling)=cool
+!  
+        call calc_heat(heat,p%lnTT)
+      endif
 !
-    if (lcooltime_smooth) then
-      call smooth_kernel(f,icooling,heatcool)
-      call calc_heat(heat,p%lnTT)
-      call calc_cool_func(cool,p%lnTT,p%lnrho)
-    elseif (lcooltime_despike) then
-      call despike(f,icooling,heatcool,cooltime_despike_factor)
-      call calc_heat(heat,p%lnTT)
-      call calc_cool_func(cool,p%lnTT,p%lnrho)
-    else
-      call calc_cool_func(cool,p%lnTT,p%lnrho)
+!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
+!  so therefore we now need to multiply by TT1.
 !
-!  possibility of temporal smoothing of cooling function
-!
-      if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
-      f(l1:l2,m,n,icooling)=cool
-!
-      call calc_heat(heat,p%lnTT)
       if (ltemperature) then
         heatcool=p%TT1*(heat-cool)*gamma
       elseif (pretend_lnTT) then
@@ -1451,105 +1380,93 @@ module Interstellar
       else
         heatcool=p%TT1*(heat-cool)
       endif
-    endif
 !
-! Prevent unresolved heating/cooling in early SNR core.
+!  Prevent unresolved heating/cooling in early SNR core.
 !
       do i=1,nSNR
         iSNR=SNR_index(i)
         if (SNRs(iSNR)%state==SNstate_damping) then
           call proximity_SN(SNRs(iSNR))
           minqty=0.5*(1.+tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-          damp_profile = ( &
-              (1.-minqty) * 0.5 &
-              * (1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.)) &
-              + minqty)
+          damp_profile = &
+              minqty + (1.-minqty) * 0.5 * &
+              (1.+tanh((sqrt(dr2_SN)-(SNRs(iSNR)%radius*2.))*sigma_SN1-2.))
           heatcool=heatcool*damp_profile
           cool=cool*damp_profile
         endif
       enddo
 !
-! Prevent unresolved heating/cooling in shocks.
+!  Prevent unresolved heating/cooling in shocks.
 !
       if (lheatcool_shock_cutoff) then
-        damp_profile = exp(-(2.0*p%shock * heatcool_shock_cutoff_rate1)**2.0)
-!        damp_profile = 0.5 &
-!            * (1.-tanh((p%shock-heatcool_shock_cutoff) * heatcool_shock_cutoff_rate1))
-!       30-dec-09/fred: changed sign to turn off cool for non-zero p%shock
-!                       other way round cooling in shock and off everywhere else
-!        damp_profile = 0.5 &
-!            * (1.+tanh((p%shock-heatcool_shock_cutoff)*heatcool_shock_cutoff_rate1))
+        damp_profile = 0.5 * (1.-tanh((p%shock-heatcool_shock_cutoff) * &
+            heatcool_shock_cutoff_rate1))
+        where (p%shock<tini) damp_profile = 1.
         cool=cool*damp_profile
         heatcool=heatcool*damp_profile
       endif
 !
-! Save result in diagnostic aux variable
+!  Save result in diagnostic aux variable
 !
-     f(l1:l2,m,n,icooling2)=heatcool
+      f(l1:l2,m,n,icooling2)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
 !
-    if (laverage_SN_heating) then
-      heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
-      heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
-    endif
-!
-!  prepare diagnostic output
-!
-    if (ldiagnos) then
-      if (idiag_Hmax/=0) &
-        call max_mn_name(heat,idiag_Hmax)
-      if (idiag_taucmin/=0) &
-        call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)
-      if (idiag_Lamm/=0) &
-        call sum_mn_name(cool,idiag_Lamm)
-      if (idiag_nrhom/=0) &
-        call sum_mn_name(cool/p%ee,idiag_nrhom)
-!--       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)
-!AB: the factor rho is already included in cool, so cool=rho*Lambda
-      if (idiag_rhoLm/=0) &
-        call sum_mn_name(p%rho*cool,idiag_rhoLm)
-      if (idiag_Gamm/=0) &
-        call sum_mn_name(p%rho*heat,idiag_Gamm)
-    endif
-!
-! Limit timestep by the cooling time (having subtracted any heating)
-!    dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
-!
-    if (lfirst.and.ldt) then
-        !dt1_max=max(dt1_max,(cool-heat)/(p%ee*cdt_tauc))
+      if (laverage_SN_heating) then
+        heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
+        heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
+      endif
+!  
+!    Prepare diagnostic output
+!  
+      if (ldiagnos) then
+        if (idiag_Hmax/=0) &
+          call max_mn_name(heat,idiag_Hmax)
+        if (idiag_taucmin/=0) &
+          call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)
+        if (idiag_Lamm/=0) &
+          call sum_mn_name(cool,idiag_Lamm)
+        if (idiag_nrhom/=0) &
+          call sum_mn_name(cool/p%ee,idiag_nrhom)
+!  --       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)
+!  AB: the factor rho is already included in cool, so cool=rho*Lambda
+        if (idiag_rhoLm/=0) &
+          call sum_mn_name(p%rho*cool,idiag_rhoLm)
+        if (idiag_Gamm/=0) &
+          call sum_mn_name(p%rho*heat,idiag_Gamm)
+      endif
+!  
+!  Limit timestep by the cooling time (having subtracted any heating)
+!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
+!  
+      if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
-        !dt1_max=max(dt1_max,(cool-heat)/(p%ee*cdt_tauc)*max(abs(cool_beta-1.),1.))
-      !where ((heat-cool) > 0.) &
-      !  dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
-!      dt1_max=max(dt1_max,(cool-0.99*heat)/(p%ee*cdt_tauc)*max(abs(cool_beta-1.)**4,1.))
-!print*,'dt1_max(1),p%ee(1)=',dt1_max(1),p%ee(1)
-            !cdt_tauc*(heat)/ee)
+        dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
         Hmax=Hmax+heat
-    endif
+      endif
 !
-!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
-!  so therefore we now need to multiply by TT1.
+!  Apply heating/cooling to temperature/entropy variable
 !
       if (ltemperature) then
-         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+heatcool
-       else
-         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+heatcool
-       endif
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+heatcool
+      else
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+heatcool
+      endif
 !
     endsubroutine calc_heat_cool_interstellar
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_cool_func(cool,lnTT,lnrho)
 !
-!  add T-dept radiative cooling, from Rosen et al., ApJ, 413, 137, 1993 ('RB')
-!  OR
-!  Sanchez-Salcedo et al. ApJ, 577, 768, 2002 ('SS').
-!  cooling is Lambda*rho^2, with (eq 7)
-!     Lambda=coolH(i)*TT*coolB(i),   for coolT(i) <= T < coolT(i+1)
-!  nb: our coefficients coolH(i) differ from those in Rosen et al. by
-!   factor (mu mp)^2, with mu=1.2, since Rosen works in number density, n.
-!   (their cooling = Lambda*n^2,  rho=mu mp n.)
+!  This routine calculates the temperature dependent radiative cooling.
+!  Applies Rosen et al., ApJ, 413, 137, 1993 ('RB') OR
+!  Sanchez-Salcedo et al. ApJ, 577, 768, 2002 ('SS') OR
+!  Slyz et al MNRAS, 356 2005 ('SS-Slyz')
+!
+!  Cooling is Lambda*rho^2, with (eq 7) & Lambda=coolH(i)*TT**coolB(i),
+!  for coolT(i) <= TT < coolT(i+1). Nb: our coefficients coolH(i) differ from
+!  those in Rosen et al. by a factor (mu mp)^2, with mu=1.2, since Rosen works
+!  in number density, n. (their cooling = Lambda*n^2,  rho=mu mp n)
 !  The factor Lambdaunits converts from cgs units to code units.
 !
 !  [Currently, coolT(1) is not modified, but this may be necessary
@@ -1559,66 +1476,50 @@ module Interstellar
       real, dimension (nx), intent(in) :: lnTT, lnrho
       integer :: i
 !
-     cool=0.0
-!    cool_beta=1.0
-cool_loop: do i=1,ncool
-      if (lncoolT(i) >= lncoolT(i+1)) exit cool_loop
-      where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
-        cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
-!        cool_beta=coolB(i)
-      endwhere
-    enddo cool_loop
+      cool=0.0
+      cool_loop: do i=1,ncool
+        if (lncoolT(i) >= lncoolT(i+1)) exit cool_loop
+        where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
+          cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
+        endwhere
+      enddo cool_loop
     endsubroutine calc_cool_func
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_heat(heat,lnTT)
 !
-!  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
+!  This routine adds UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
-!  nb: need rho0 from density_[init/run]_pars, if i want to implement
-!      the the arm/interarm scaling.
+!  Nb: need rho0 from density_[init/run]_pars, to implement the arm/interarm
+!  scaling.
 !
-!  Control with heating_select in interstellar_init_pars
-!   'off' - UV heating of
-!   'cst' - Constant heating with a rate heating_rate[erg/g/s]
-!   'eql' -  Heating balancing the initial cooling function
-!  Default 'off'
-!  Default heating_rate = 0.015
+!  Control with heating_select in interstellar_init_pars/run_pars
+!  Default heating_rate GammaUV = 0.015
 !
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
 !
-      real, parameter :: g_B_cgs=6.172e20
+!  Constant heating with a rate heating_rate[erg/g/s]
 !
-!
-      if (heating_select == 'cst') Then
+      if (heating_select == 'cst') then
          heat = heating_rate_code
-      else if (heating_select == 'wolfire') Then
+      else if (heating_select == 'wolfire') then
         heat(1:nx)=GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
-      else if (heating_select == 'wolfire_min') Then
+      else if (heating_select == 'wolfire_min') then
         heat(1:nx)=GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
         heat = max(heat,heating_rate_code)
-      else if (heating_select == 'eql') Then
-         if (headtt) Then
-           ! heating_rate = cool(1)
-            if (lroot) Then
-               print*,'Heating balancing the initial cooling profile (eql)'
-               print*,'Note: works only for unstratified cases when cool is z-independent!'
-               print*,'      heating_rate is overwritten'
-            endif
-            call fatal_error("interstellar: calc_heat","heating_select=eql is broken")
-         endif
-         heat = heating_rate
 !
-!  if using Gressel-hs in initial entropy this must also be specified for thermal equilibrium
+!  If using Gressel-hs in initial entropy this must also be specified for
+!  thermal equilibrium and applies for vertically stratified density supported
+!  by vertical gravity profile 'Ferriere'.
 !
-      else if (heating_select == 'Gressel-hs') Then
+      else if (heating_select == 'Gressel-hs') then
         heat(1:nx) = heat_gressel(n)*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
-      else if (heating_select == 'off') Then
+      else if (heating_select == 'off') then
         heat = 0.
       endif
 !
     endsubroutine calc_heat
-!***********************************************************************
+!****************************************************************************
     subroutine check_SN(f)
 !
 !  Checks for SNe, and implements appropriately:
@@ -2175,9 +2076,9 @@ cool_loop: do i=1,ncool
       call mpireduce_sum(proc_zrhom,tempi,1)
       call mpibcast_real(tempi,1)
       zrhom=tempi(1)
-      if (SNR%site%rho<=cluster_factor*zrhom) then
-        cycle
-      endif
+!      if (SNR%site%rho<=cluster_factor*zrhom) then
+!        cycle
+!      endif
     enddo
 !
     if (trypsn_count==0) then
@@ -3367,11 +3268,11 @@ find_SN: do n=n1,n2
 !  04-sep-09/fred: amended dr_SN above to avoid div by zero below,
 !                  where unnecassary expense as profile(dr2_SN=0,:)=0
            outward_normal_SN(:,1)=dx_SN/dr_SN
-!           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
+           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
            outward_normal_SN(:,2)=dy_SN/dr_SN
-!           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
+           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
            outward_normal_SN(:,3)=dz_SN/dr_SN
-!           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=0.0
+           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=0.0
          endif
 !
     endsubroutine proximity_SN
