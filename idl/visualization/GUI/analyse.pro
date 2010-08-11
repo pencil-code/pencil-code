@@ -15,14 +15,26 @@
 
 ;;; Settings:
 
-; Quantities to be visualized (calculated in 'precalc_data'):
+; Quantities to be visualized:
 quantities = { temperature:'Temp', currentdensity:'j',            $
                magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
                velocity:'u_abs', velocity_z:'u_z',                $
                logarithmic_density:'ln_rho' }
 
+; Available quantities are:
+; 'Temp', 'rho', 'ln_rho'   ; temperature, density and logarithmic density
+; 'ux', 'uy', 'uz', 'u_abs' ; velocity components and the absolute value
+; 'Ax', 'Ay', 'Az'          ; vector potential components
+; 'Bx', 'By', 'Bz'          ; magnetic field components
+; 'rho_mag'                 ; magnetic energy density
+; 'j'                       ; absolute value of the current density
+; (more quantities can be defined in 'precalc_data', see analyse_companion.pro)
+
 ; Quantities to be overplotted (calculated in 'precalc_data'):
 overplot_quantities = { magnetic_field:'b', velocities:'u' }
+
+; Available quantities for overplotting are:
+; 'b' and 'u'
 
 ; Preferred units for display
 default_length        = 1.e6
@@ -47,8 +59,19 @@ default, analyse_loaded, 0
 
 if (not analyse_loaded) then BEGIN
 
+	if (n_elements (nghost) gt 0) then begin
+		nghost_x = nghost
+		nghost_y = nghost
+		nghost_z = nghost
+	end
 	pc_read_dim, obj=dim, /quiet
-	lmn12 = dim.l1+spread(indgen(dim.nx),[1,2],[dim.ny,dim.nz]) + dim.mx*(dim.m1+spread(indgen(dim.ny),[0,2],[dim.nx,dim.nz])) + dim.mx*dim.my*(dim.n1+spread(indgen(dim.nz),[0,1],[dim.nx,dim.ny]))
+	default, nghost_x, dim.nghostx
+	default, nghost_y, dim.nghosty
+	default, nghost_z, dim.nghostz
+	nx = dim.mx - 2*nghost_x
+	ny = dim.my - 2*nghost_y
+	nz = dim.mz - 2*nghost_z
+	lmn12 = nghost_x+spread(indgen(nx),[1,2],[ny,nz]) + dim.mx*(nghost_y+spread(indgen(ny),[0,2],[nx,nz])) + dim.mx*dim.my*(nghost_z+spread(indgen(nz),[0,1],[nx,ny]))
 
 	pc_units, obj=unit
 
@@ -72,10 +95,17 @@ if (not analyse_loaded) then BEGIN
 		print, "There are ", num_snapshots, " snapshot files available."
 		print, "(This corresponds to ", (round (num_snapshots * gb_per_file * 10) / 10.), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
-			print, "Do you want to read all those files into the cache ?"
-			answer = "-"
-			read, answer, format="(A)", prompt="(y/n) : "
-			if (answer ne "y") then begin
+			repeat begin
+				print, "Which files do you want to load into the cache?"
+				answer = "n"
+				read, answer, format="(A)", prompt="Read (A)ll / (S)elected / (N)o files : "
+			end until (any (strcmp (answer, ['n', 'a', 's'], /fold_case)))
+			if (strcmp (answer, 'n', /fold_case)) then begin
+				stepping = 0
+				skipping = num_snapshots
+				files_total = 0
+			end
+			if (strcmp (answer, 's', /fold_case)) then begin
 				print, "Please enter a stepping for reading files:"
 				print, "(0=do not read any files, 1=each file, 2=every 2nd, ...)"
 				read, stepping, format="(I)", prompt="(0 - number of snapshots) : "

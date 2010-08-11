@@ -74,8 +74,16 @@ pro precalc_data, i, vars
 			; Absolute velocity
 			varsets[i].u_abs = sqrt (dot2 (vars.uu)) * unit.velocity / unit.default_velocity
 		end
+		if (any (strcmp (tags, 'u_x', /fold_case))) then begin
+			; Velocity x-component
+			varsets[i].u_x = vars.uu[*,*,*,0] * unit.velocity / unit.default_velocity
+		end
+		if (any (strcmp (tags, 'u_y', /fold_case))) then begin
+			; Velocity y-component
+			varsets[i].u_y = vars.uu[*,*,*,1] * unit.velocity / unit.default_velocity
+		end
 		if (any (strcmp (tags, 'u_z', /fold_case))) then begin
-			; Vertical velocity component
+			; Velocity z-component
 			varsets[i].u_z = vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
 		end
 	end
@@ -88,10 +96,30 @@ pro precalc_data, i, vars
 		end
 	end
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
+		if (any (strcmp (tags, 'Ax', /fold_case))) then begin
+			; Magnetic vector potential x-component
+			varsets[i].Ax = vars.aa[*,*,*,0]
+		end
+		if (any (strcmp (tags, 'Ay', /fold_case))) then begin
+			; Magnetic vector potential y-component
+			varsets[i].Ay = vars.aa[*,*,*,1]
+		end
+		if (any (strcmp (tags, 'Az', /fold_case))) then begin
+			; Magnetic vector potential z-component
+			varsets[i].Az = vars.aa[*,*,*,2]
+		end
 		; Magnetic field
 		bb = curl (vars.aa) / unit.length
+		if (any (strcmp (tags, 'bx', /fold_case))) then begin
+			; Magnetic field x-component
+			varsets[i].bx = bb[*,*,*,0]
+		end
+		if (any (strcmp (tags, 'by', /fold_case))) then begin
+			; Magnetic field y-component
+			varsets[i].by = bb[*,*,*,1]
+		end
 		if (any (strcmp (tags, 'bz', /fold_case))) then begin
-			; Vertical magnetic field component
+			; Magnetic field z-component
 			varsets[i].bz = bb[*,*,*,2]
 		end
 		if (any (strcmp (tags, 'rho_mag', /fold_case))) then begin
@@ -121,11 +149,13 @@ pro precalc_data, i, vars
 
 	over_tags = tag_names (oversets[i])
 	if (any (strcmp (sources, 'uu', /fold_case))) then begin
+		; Velocity overplot
 		if (any (strcmp (over_tags, 'u', /fold_case))) then begin
 			oversets[i].u = float (vars.uu * unit.velocity / unit.default_velocity)
 		end
 	end
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
+		; Magnetic field overplot
 		if (any (strcmp (over_tags, 'b', /fold_case))) then begin
 			oversets[i].b = float (bb)
 		end
