@@ -4,6 +4,7 @@ initial_condition
 experimental
 inactive
 makefile Makefile
+magnetic
 *.d
 *.inc
 *.il
