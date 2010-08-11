@@ -876,7 +876,7 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          case('Gressel-hs'); call gressel_entropy(f,df,p,Hmax)
+          !case('Gressel-hs'); call gressel_entropy(f,df,p,Hmax)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
