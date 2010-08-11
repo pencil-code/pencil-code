@@ -121,8 +121,8 @@ module EquationOfState
 !  22-jun-06/axel: adapted from initialize_eos
 !   4-aug-09/axel: added possibility of vertical profile function
 !
-      use SharedVariables, only: put_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: put_shared_variable
       use Sub, only: erfunc
 !
       real :: Rgas_unit_sys, cp_reference
@@ -236,8 +236,10 @@ module EquationOfState
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos()
-      use SharedVariables, only: put_shared_variable
+!
       use Mpicomm, only: stop_it
+      use SharedVariables, only: put_shared_variable
+!
       integer :: ierr
 !
 !  Perform any post-parameter-read initialization
@@ -264,7 +266,7 @@ module EquationOfState
         call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
              "there was a problem when sharing lanelastic_lin")
-
+!
         call put_shared_variable('lanelastic_full',lanelastic_full,ierr)
         if (ierr/=0) call stop_it("lanelastic_full: "//&
              "there was a problem when sharing lanelastic_full")
@@ -278,7 +280,7 @@ module EquationOfState
 !
 !   02-apr-06/tony: implemented
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_global
 !
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
@@ -393,7 +395,6 @@ module EquationOfState
           call fatal_error('select_eos_variable', &
               'This thermodynamic variable combination is not implemented')
       endselect
-
 !
     endsubroutine select_eos_variable
 !***********************************************************************
@@ -592,7 +593,6 @@ module EquationOfState
           if (lpencil_in(i_hss)) lpencil_in(i_hlnrho)=.true.
           if (lpencil_in(i_pp)) lpencil_in(i_rho)=.true.
         endif
-
 !
 !  Pencils for thermodynamic quantities for given pp and ss (anelastic case only).
 !
@@ -618,13 +618,12 @@ module EquationOfState
             lpencil_in(i_pp)=.true.
             lpencil_in(i_ss)=.true.
           endif
-          if (lpencil_in(i_rhop)) then 
+          if (lpencil_in(i_rhop)) then
               lpencil_in(i_pp)=.true.
               lpencil_in(i_ss)=.true.
           endif
         endif
 !
-
       case (ipp_cs2)
         if (leos_isentropic) then
            call fatal_error('eos_isentropic', 'isentropic case not yet coded')
@@ -666,7 +665,7 @@ module EquationOfState
 !  FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 !  The code is not wrong however since this is correctly
 !  handled by the eos module.
-
+!
       select case (ieosvars)
 !
 !  Work out thermodynamic quantities for given lnrho or rho and ss.
@@ -947,7 +946,7 @@ module EquationOfState
     endsubroutine getdensity
 !***********************************************************************
   subroutine gettemperature(f,TT_tmp)
-
+!
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
@@ -957,7 +956,7 @@ module EquationOfState
    endsubroutine gettemperature
 !***********************************************************************
  subroutine getpressure(pp_tmp)
-
+!
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
@@ -1139,7 +1138,7 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee, pp, ss
       real, dimension(psize) :: lnrho_
-
+!
       if (psize==nx) then
         lnrho_=f(l1:l2,m,n,ilnrho)
         if (present(ee)) then
@@ -1161,7 +1160,7 @@ module EquationOfState
             f(l1:l2,m,n,iss)=ss
           endif
         endif
-
+!
       elseif (psize==mx) then
         lnrho_=f(:,m,n,ilnrho)
         if (present(ee)) then
@@ -1183,7 +1182,7 @@ module EquationOfState
             f(:,m,n,iss)=ss
           endif
         endif
-
+!
       else
         call not_implemented("eosperturb")
       endif
@@ -1247,7 +1246,7 @@ module EquationOfState
         case default
           call fatal_error('eoscalc_farray','no such pencil size')
         end select
-
+!
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         if (gamma_m1==0.) &
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
@@ -1374,7 +1373,7 @@ module EquationOfState
         ('eoscalc_point','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
-
+!
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
@@ -1382,7 +1381,7 @@ module EquationOfState
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
@@ -1390,7 +1389,7 @@ module EquationOfState
         ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
         pp_=gamma_m1*ee_*exp(lnrho_)
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
@@ -1398,7 +1397,7 @@ module EquationOfState
         ee_=pp_*exp(-lnrho_)/gamma_m1
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
@@ -1406,7 +1405,7 @@ module EquationOfState
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma_m1
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_TT)
         lnrho_=var1
         TT_=var2
@@ -1414,7 +1413,7 @@ module EquationOfState
         ee_=cv*TT_
         pp_=ee_*exp(lnrho_)*gamma_m1
         cs2_=cp*gamma_m1*TT_
-
+!
       case (irho_TT)
         lnrho_=log(var1)
         TT_=var2
@@ -1422,13 +1421,13 @@ module EquationOfState
         ee_=cv*TT_
         pp_=ee_*var1*gamma_m1
         cs2_=cp*gamma_m1*TT_
-
+!
       case (ipp_cs2)
         if (lanelastic_lin) then
           lnrho_=log(var1)
           TT_=exp(lnTT0)
           pp_=exp(lnrho_)*cs20/gamma
-        elseif (lanelastic_full) then  
+        elseif (lanelastic_full) then
           if (leos_isothermal) then
           pp_=var1
           lnrho_=log(pp_*cs20)
@@ -1487,7 +1486,7 @@ module EquationOfState
       if (gamma_m1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
-
+!
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
@@ -1496,7 +1495,7 @@ module EquationOfState
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
         cs2_=gamma*gamma_m1*ee_
         cs2_=cs20*cv1*ee_
-
+!
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
@@ -1504,7 +1503,7 @@ module EquationOfState
         ss_=cv*(lnTT_-lnTT0-gamma_m1*(lnrho_-lnrho0))
         pp_=gamma_m1*ee_*exp(lnrho_)
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
@@ -1512,7 +1511,7 @@ module EquationOfState
         ee_=pp_*exp(-lnrho_)/gamma_m1
         lnTT_=log(cv1*ee_)
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
@@ -1520,7 +1519,7 @@ module EquationOfState
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma_m1
         cs2_=gamma*gamma_m1*ee_
-
+!
       case (ilnrho_TT)
         lnrho_=var1
         TT_=var2
@@ -1528,7 +1527,7 @@ module EquationOfState
         ee_=cv*TT_
         pp_=ee_*exp(lnrho_)*gamma_m1
         cs2_=cp*gamma_m1*TT_
-
+!
       case (irho_TT)
         lnrho_=log(var1)
         TT_=var2
@@ -1700,9 +1699,8 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -1822,10 +1820,8 @@ module EquationOfState
 !
 !   01-dec-2009/piyali+dhruba: coded
 !
-      use Cdata
-!
-      real,intent(in):: init_average_density,average_density
-      real,intent(inout):: average_pressure
+      real, intent(in) :: init_average_density,average_density
+      real, intent(inout) :: average_pressure
 !
       if (leos_isothermal.or.lfirst) then
         average_pressure = average_density*cs20
@@ -1846,9 +1842,8 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -2003,7 +1998,7 @@ module EquationOfState
                   +225*f(:,:,k-7,j) &
                    -72*f(:,:,k-8,j) &
                    +10*f(:,:,k-9,j)
-
+!
       case default
         call fatal_error('bc_ss_flux','invalid argument')
       endselect
@@ -2019,9 +2014,8 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -2135,9 +2129,8 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       logical, pointer :: lmultilayer, lheatc_chiconst
@@ -2270,9 +2263,8 @@ module EquationOfState
 !   04-may-2009/axel: adapted from bc_ss_flux
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
 !
-      use Gravity
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, pointer :: chi_t
 !
@@ -2347,9 +2339,8 @@ module EquationOfState
 !   31-may-2010/pete: adapted from bc_ss_flux_turb
 !   20-jul-2010/pete: expanded to take into account hcond/=0
 !
-      use Gravity
-      use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, pointer :: chi_t,hcondxbot,hcondxtop
 !
@@ -2460,8 +2451,6 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy
@@ -2494,7 +2483,6 @@ module EquationOfState
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
         enddo
-
 !
 !  top boundary
 !
@@ -2525,8 +2513,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2567,7 +2553,7 @@ module EquationOfState
                       - (cp-cv)*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
               enddo
            endif
-
+!
         elseif (lentropy .and. pretend_lnTT) then
            f(l1,:,:,iss) = log(cs2bot/gamma_m1)
            do i=1,nghost; f(l1-i,:,:,iss)=2*f(l1,:,:,iss)-f(l1+i,:,:,iss); enddo
@@ -2608,7 +2594,7 @@ module EquationOfState
           f(l2,:,:,ilnTT) = log(cs2top/gamma_m1)
           do i=1,nghost; f(l2+i,:,:,ilnTT)=2*f(l2,:,:,ilnTT)-f(l2-i,:,:,ilnTT); enddo
         endif
-
+!
       case default
         call fatal_error('bc_ss_temp_x','invalid argument')
       endselect
@@ -2621,8 +2607,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2667,7 +2651,7 @@ module EquationOfState
           f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
                - (cp-cv)*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
         enddo
-
+!
       case default
         call fatal_error('bc_ss_temp_y','invalid argument')
       endselect
@@ -2680,8 +2664,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2772,7 +2754,7 @@ module EquationOfState
             endif
             do i=1,nghost; f(:,:,n2+i,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-i,ilnTT); enddo
         endif
-
+!
       case default
         call fatal_error('bc_ss_temp_z','invalid argument')
       endselect
@@ -2786,7 +2768,7 @@ module EquationOfState
 !  27-sep-2002/axel: coded
 !  19-aug-2005/tobi: distributed across ionization modules
 !
-      use Gravity
+      use Gravity, only: gravz
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2849,7 +2831,7 @@ module EquationOfState
           f(:,:,n2+i,ilnrho)=f(:,:,n2-i,ilnrho)+cp1*f(:,:,n2-i,iss) &
                                                -cp1*f(:,:,n2+i,iss)+2*i*dz*tmp
         enddo
-
+!
       case default
         call fatal_error('bc_lnrho_temp_z','invalid argument')
       endselect
@@ -2965,8 +2947,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
@@ -3020,8 +3000,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Gravity
-!
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
@@ -3055,7 +3033,7 @@ module EquationOfState
           f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
                + (cp-cv)*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
         enddo
-
+!
       case default
         call fatal_error('bc_ss_stemp_x','invalid argument')
       endselect
@@ -3068,8 +3046,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3104,12 +3080,11 @@ module EquationOfState
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
                + (cp-cv)*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
         enddo
-
+!
       case default
         call fatal_error('bc_ss_stemp_y','invalid argument')
       endselect
 !
-
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
     subroutine bc_ss_stemp_z(f,topbot)
@@ -3118,8 +3093,6 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3207,7 +3180,7 @@ module EquationOfState
     case default
       call fatal_error('bc_ss_energy','invalid argument')
     endselect
-
+!
     endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
@@ -3239,9 +3212,9 @@ module EquationOfState
 !
 !  21-aug-2006/wlad: coded
 !
-      use Gravity
+      use Gravity, only: potential
       use Sub, only: div
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       real, dimension (my,mz) :: cs2,gravterm,centterm,uphi
@@ -3254,64 +3227,63 @@ module EquationOfState
 !
       case ('bot')
         do i=1,nghost
-
+!
           cs2 = cs20
           call potential(R=x(l1-i),pot=potm)
           call potential(R=x(l1+i),pot=potp)
-
+!
           gravterm= -(potm-potp)/cs2
-
+!
           step=-2*i*dx
           rad=x(l1-i)
           uphi=f(l1-i,:,:,iuy)
-
+!
           centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,irho)*exp(gravterm + centterm)
           else
             f(l1-i,:,:,ilnrho)=f(l1+i,:,:,ilnrho) + gravterm + centterm
           endif
-
+!
           !print*,'potentials',potm,potp,-(potm-potp)
           !print*,'centrifugal',f(l1-i,mpoint,npoint,iuy)**2 *step/rad
           !stop
-
+!
         enddo
-
 !
 !  Top boundary
 !
       case ('top')
         do i=1,nghost
-
+!
           cs2 = cs20
           call potential(R=x(l2+i),pot=potp)
           call potential(R=x(l2-i),pot=potm)
-
+!
           gravterm= -(potp-potm)/cs2
-
+!
           step=2*i*dx
           rad=x(l2+i)
           uphi=f(l2+i,:,:,iuy)
-
+!
           centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
             f(l2+i,:,:,irho)   = f(l2-i,:,:,irho)*exp(gravterm + centterm)
           else
             f(l2+i,:,:,ilnrho) = f(l2-i,:,:,ilnrho) + gravterm + centterm
           endif
-
+!
           !if (i==nghost) then
           !  print*,'potentials',potp,potm,-potp+potm,-(potp-potm)
           !  print*,'centrifugal',f(l2+i,mpoint,npoint,iuy)**2 *step/rad
           !  stop
           !endif
         enddo
-
+!
       case default
-
+!
       endselect
-
+!
     endsubroutine bc_lnrho_cfb_r_iso
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
@@ -3330,7 +3302,7 @@ module EquationOfState
 !
 !  12-Juil-2006/dintrans: coded
 !
-      use Gravity
+      use Gravity, only: potential, gravz
       use Sub, only: div
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
@@ -3341,7 +3313,7 @@ module EquationOfState
       real :: dlnrhodz, dssdz, cs2_point
       real :: potp,potm
       integer :: i
-
+!
       select case (topbot)
 !
 !  Bottom boundary
@@ -3477,7 +3449,7 @@ module EquationOfState
           do i=1,nghost
             f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
           enddo
-
+!
         else
 !
 !  Isothermal equation of state.
@@ -3505,11 +3477,11 @@ module EquationOfState
               f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) - (potp-potm)/cs2
             endif
           enddo
-
+!
         endif
-
+!
       case default
-
+!
       endselect
 !
     endsubroutine bc_lnrho_hds_z_iso
@@ -3528,10 +3500,10 @@ module EquationOfState
 !
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other
       use Gravity, only: potential
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-
+!
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
       real, dimension (nx,ny) :: tmp_re,tmp_im
       real :: pot
@@ -3557,7 +3529,7 @@ module EquationOfState
 !  Potential field condition at the bottom
 !
       case ('bot')
-
+!
         do i=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -3594,13 +3566,13 @@ module EquationOfState
           else
             f(l1:l2,m1:m2,n1-i,ilnrho) = tmp_re - pot/cs2bot
           endif
-
+!
         enddo
 !
 !  Potential field condition at the top
 !
       case ('top')
-
+!
         do i=1,nghost
 !
 ! Calculate delta_z based on z(), not on dz to improve behavior for
@@ -3637,15 +3609,15 @@ module EquationOfState
           else
             f(l1:l2,m1:m2,n2+i,ilnrho) = tmp_re - pot/cs2top
           endif
-
+!
         enddo
-
+!
       case default
-
+!
         if (lroot) print*,"bc_lnrho_hydrostatic_z_smooth: invalid argument"
-
+!
       endselect
-
+!
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine read_transport_data
@@ -3681,7 +3653,7 @@ module EquationOfState
     endsubroutine read_species
 !***********************************************************************
     subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-
+!
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
