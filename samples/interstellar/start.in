@@ -20,7 +20,7 @@
   inituu='nothing'
 /
 &density_init_pars
-  initlnrho='Galactic-hs'
+  initlnrho='Gressel-hs'
 /
 &grav_init_pars
   gravz_profile='Ferriere' 
