@@ -104,7 +104,7 @@ end else if param.unit_system eq "SI" then begin
                         velocity^2,            $
                         magnetic               $
                       )
-  pc_check_math,location='pc_units - cgs unit calculation'
+  pc_check_math,location='pc_units - SI unit calculation'
   tex=texsyms()
   symbols=create_struct(['temperature',        $
                          'density',            $
