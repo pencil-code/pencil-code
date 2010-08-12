@@ -1312,7 +1312,6 @@ module Interstellar
         rho = rho0ts * &
             exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2) &
             -0.5*g_C*(z(n))**2/g_D))
-!        print*,'rho, z =',rho(1),z(n)
         zrho(n)=rho(1)
 !
         lnrho=log(rho)
@@ -1325,8 +1324,6 @@ module Interstellar
 !
       enddo
       enddo
-!
-      print*,'interstellar gressel_hs: T0hs, zrho=',T0hs, zrho
 !
 !  Share zrho and T0hs for use with entropy ti initialize density and
 !  temperature in gressel_entropy
