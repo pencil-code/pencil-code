@@ -1805,7 +1805,6 @@ module Entropy
 !  
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
       use SharedVariables, only: get_shared_variable
-      use Interstellar, only: gressel_hs
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
