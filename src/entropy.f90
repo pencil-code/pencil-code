@@ -61,8 +61,10 @@ module Entropy
   real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
-  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible, T0hs=impossible
-  real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=8.0e3
+  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible
+  real, target :: T0hs=impossible
+  real, dimension(mx), target :: zrho
+  real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -876,7 +878,10 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          !case('Gressel-hs'); call gressel_entropy(f,df,p,Hmax)
+          case('Gressel-hs')
+            call gressel_entropy(f)
+            call information('init_ss', &
+                'Gressel hydrostatic equilibrium setup done in interstellar')
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1782,177 +1787,56 @@ module Entropy
 !
     endsubroutine ferriere_hs
 !***********************************************************************
-    subroutine gressel_hs(f,rho0hs)
+    subroutine gressel_entropy(f)
 !
-!   Density and isothermal entropy profile in hydrostatic equilibrium
-!   with the Ferriere profile set in gravity_simple.f90
-!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'
-!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
-!   equilibrium. Constants g_A..D from gravz_profile. In addition equating
-!   the cooling function with uv-heating/rho for thermal equilibrium. Use
-!   heating_select='Gressel-hs' in interstellar init & runpars
+!  This routine calculates a vertical profile for density for an appropriate
+!  isothermal entropy designed to balance the vertical 'Ferriere' gravity 
+!  profile used in interstellar. 
+!  T0 and rho0 are chosen to ensure uv-heating approx 0.0147 at z=0.
+!  Initial thermal & hydrostatice equilibrium is achieved by ensuring 
+!  Lambda*rho(z)=Gamma(z) in interstellar.
 !
-!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
+!  Requires gravz_profile='Ferriere' in gravity_simple.f90,
+!  initlnrho='Galactic-hs' in density.f90 and heating_select='Gressel-hs'
+!  in interstellar.f90. Constants g_A..D from gravz_profile. 
 !
-      use EquationOfState , only: eoscalc, ilnrho_lnTT
-      use Mpicomm, only: mpibcast_real
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho,lnrho,ss,heat,TT,lambda,fbeta,flamk,lnTT
-      real :: rho0hs, GammaUV
-      real, parameter :: GammaUV_cgs=0.0147
-      real, dimension(10) :: beta
-      double precision,dimension(10) :: lamk,lamstep,lamT
-      double precision :: g_B, unit_Lambda
-      double precision, parameter :: g_B_cgs=6.172D20
-      integer :: j
-!
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-        g_B = g_B_cgs/unit_length
-        GammaUV = GammaUV_cgs * real(unit_length/unit_velocity**3)
-        unit_Lambda = unit_velocity**2 / unit_density / unit_time
-      else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity', &
-            'SI unit conversions not inplemented')
-      endif
-!
-!  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
-!  at solar radius.  (for interstellar runs)
-!  Requires GammaUV=0.0147 with 'SS-Slyz' cooling_select.
-!  Uses simpler heating function but in principle same method
-!  as O. Gressel 2008 (PhD).
-!
-      beta = (/2.12,1.0, 0.56,3.21,-0.2,-3.,-0.22,-3.,.33,.5/)
-      lamk = ((/3.420D16, 8.73275974868D18,1.094d20,10178638302.185D0,&
-                1.142D27,2.208D42,3.69d26,1.41D44,&
-          1.485d22,8.52d20/)) / unit_Lambda * unit_temperature**beta
-      lamT = ((/10.D0,141.D0,313.D0,6102.D0,1.D5,2.88D5,4.73D5,2.11D6,3.980D6,2.D7/))/unit_temperature
-      lamstep = lamk*lamT**beta
-!
-      if (lroot) print*, &
-         'Gressel-hs: hydrostatic & thermal equilibrium density and entropy profiles'
-      do n=n1,n2
-      do m=m1,m2
-!
-!  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
-!                  require initial profile to produce finite Lambda between lamstep(3) and
-!                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above
-!
-!
-        heat=GammaUV*(exp(-z(n)**2/(1.975*g_B)**2))
-        rho=rho0hs*exp(-abs(z(n))*19.8)
-        lambda=heat/rho
-!
-        lnrho=log(rho)
-        f(l1:l2,m,n,ilnrho)=lnrho
-!
-!  Define initial values for the Lambda array from which an initial temerature
-!  profile is derived.
-!
-        where (lambda < lamstep(1)) lambda=lamstep(1)
-        do j=1,9
-          if (lambda(n) >= lamstep(j) .and. lambda(n) <= lamstep(j+1)) then
-          fbeta(n)=beta(j)
-          flamk(n)=lamk(j)
-          endif
-          where (lambda > lamstep(10))
-            fbeta=beta(10)
-            flamk=lamk(10)
-          endwhere
-        enddo
-          TT=real((lambda/lamk(4))**(1./beta(4)))
-          lnTT=log(TT)
-!
-          call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-!
-          f(l1:l2,m,n,iss)=ss
-!
-      enddo
-      enddo
-!
-      if (lroot) print*, 'Gressel-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
-!
-    endsubroutine gressel_hs
-!***********************************************************************
-    subroutine gressel_entropy(f,df,p)
-!
-!   Density and isothermal entropy profile in hydrostatic equilibrium
-!   with the Ferriere profile set in gravity_simple.f90.
-!   Use gravz_profile='Ferriere'(gravity) and initlnrho='Galactic-hs'.
-!   both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
-!   equilibrium. Constants g_A..D from gravz_profile. In addition equating
-!   the cooling function with uv-heating/rho for thermal equilibrium. Use
-!   heating_select='Gressel-hs' in interstellar init & runpars.
-!
-!   22-mar-10/fred adapted from galactic-hs,ferriere-hs
-!
+!  22-mar-10/fred: coded
+!  12-aug-10/fred: moved to interstellar and added shared variables
+!  
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
-      use Interstellar, only: calc_heat_cool_interstellar
-      use Mpicomm, only: mpibcast_real
+      use SharedVariables, only: get_shared_variable
+      use Interstellar, only: gressel_hs
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx) :: Hmax
-      real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
-      real :: muhs
-      real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B ,g_D
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      real, dimension(nx) :: lnrho,ss,TT,lnTT
+      real, dimension(:), pointer :: zrho
+      real, pointer :: T0hs
+      integer :: ierr
 !
-      Hmax = 0.0
+!  Obtain vertical density profile and isothermal temperature from
+!  interstellar: gressel_hs
 !
-!  Set up physical units.
+      call get_shared_variable('zrho', zrho, ierr)
+      if (ierr/=0) call fatal_error('gressel_entropy', &
+          'there was a problem when getting zrho')
+      call get_shared_variable('T0hs', T0hs, ierr)
+      if (ierr/=0) call fatal_error('gressel_entropy', &
+          'there was a problem when getting T0hs')
 !
-      if (unit_system=='cgs') then
-        g_A = g_A_cgs/unit_velocity*unit_time
-        g_C = g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_cgs/unit_length
-        g_B = g_B_cgs/unit_length
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+!  Allocate density profile to f and derive entropy profile from
+!  temperature and density
 !
-!  Chosen to keep TT as low as possible up to boundary matching rho for hs
-!  equilibrium.
-!
-      else if (unit_system=='SI') then
-        call fatal_error('initialize_gravity', &
-            'SI unit conversions not inplemented')
-      endif
-!
-!  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
-!  at solar radius.  (for interstellar runs)
-!  Requires GammaUV=0.0147 with 'SS-Slyz/r' cooling_select
-!  Uses simpler heating function but in principle same method
-!  as O. Gressel 2008 (PhD)
-!
-      call getmu(f,muhs)
-!
-      if (lroot) print*, 'Gressel-hs: '// &
-          'hydrostatic thermal equilibrium density and entropy profiles'
-      do n=n1,n2
+      do n=1,mz
       do m=m1,m2
-!
-!  22-mar-10/fred: principle Lambda=Gamma/rho. Set Gamma(z) with GammaUV/Rho0hs z=0
-!                  require initial profile to produce finite Lambda between lamstep(3) and
-!                  lamstep(5) for z=|z|max. The disc is stable with rapid diffuse losses above                  !
-        TT =T0hs
-        rho = rho0ts*exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)&
-                         -0.5*g_C*(z(n))**2/g_D))
-!
-        lnrho=log(rho)
+        lnrho=log(zrho(n))
         f(l1:l2,m,n,ilnrho)=lnrho
-        lnTT=log(TT)
 !
-        call eoscalc(ilnrho_lnTT,log(rho),lnTT,ss=ss)
+        lnTT=log(T0hs)
+!
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
 !
         f(l1:l2,m,n,iss)=ss
-!
-        if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
       enddo
       enddo
