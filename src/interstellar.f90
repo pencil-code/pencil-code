@@ -775,7 +775,8 @@ module Interstellar
         if (mass_SN==impossible) mass_SN=mass_SN_cgs / unit_mass
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
-        if (width_SN==impossible) width_SN=width_SN_cgs / unit_length
+        if (width_SN==impossible) width_SN= &
+            max(width_SN_cgs / unit_length,dxmax*2)
         if (SNR_damping_time==impossible) &
             SNR_damping_time=SNR_damping_time_cgs / unit_time
         if (SNR_damping_rate==impossible) &
