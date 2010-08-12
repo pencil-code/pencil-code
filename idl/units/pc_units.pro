@@ -44,7 +44,7 @@ length=param.unit_length*1D0
 temperature=param.unit_temperature*1D0
 density=param.unit_density*1D0
 velocity=param.unit_velocity*1D0
-magnetic=param.magneti*1D0
+magnetic=param.unit_magnetic*1D0
 ;
 if param.unit_system eq "cgs" then begin
 ;
