@@ -91,7 +91,7 @@ module Interstellar
 !  Allocate time of next SNI/II and intervals until next
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0
-  real :: t_interval_SNI=impossible,t_interval_SNII=impossible
+  real :: t_interval_SNI=impossible, t_interval_SNII=impossible
 !
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 !  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
@@ -209,7 +209,7 @@ module Interstellar
 !
 !  Limit placed of minimum density resulting from cavity creation
 !
-  real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=8.0e3
+  real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=2.50e3
   real :: rho0ts=impossible, T0hs=impossible
 !
 !  Cooling timestep limiter coefficient
@@ -251,7 +251,7 @@ module Interstellar
 !
 !  TT & z-dependent uv-heating profile 
 !
-  real, dimension(mz) :: heat_gressel
+  real, dimension(mz) :: heat_gressel, zrho
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
@@ -789,8 +789,9 @@ module Interstellar
 !
       if (ladd_massflux) addflux_dim1=1./(Lxyz(1)*Lxyz(2)*Lxyz(3))
 !
-      if (heating_select == 'Gressel-hs') then
-        call gressel_interstellar(f,heat_gressel)
+      if (heating_select == 'Gressel-hs'.and.lstarting) then
+        call gressel_hs(f,zrho,T0hs)
+        call gressel_interstellar(f,heat_gressel,zrho,T0hs)
       endif
 !
 !  Cooling cutoff in shocks
@@ -1253,7 +1254,93 @@ module Interstellar
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
-    subroutine gressel_interstellar(f,zheat)
+    subroutine gressel_hs(f,zrho,T0hs)
+!
+!  This routine calculates a vertical profile for density for an appropriate
+!  isothermal entropy designed to balance the vertical 'Ferriere' gravity 
+!  profile used in interstellar. 
+!  T0 and rho0 are chosen to ensure uv-heating approx 0.0147 at z=0.
+!  Initial thermal & hydrostatice equilibrium is achieved by ensuring 
+!  Lambda*rho(z)=Gamma(z) in interstellar.
+!
+!  Requires gravz_profile='Ferriere' in gravity_simple.f90,
+!  initlnrho='Galactic-hs' in density.f90 and heating_select='Gressel-hs'
+!  in interstellar.f90. Constants g_A..D from gravz_profile. 
+!
+!  22-mar-10/fred: coded
+!  12-aug-10/fred: updated
+!  
+      use SharedVariables, only: put_shared_variable
+      use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mz), intent(out), target :: zrho
+      real, intent(out), target :: T0hs
+!
+      real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
+      real :: muhs
+      real :: g_A, g_C
+      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      double precision :: g_B ,g_D
+      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      integer :: ierr
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+        g_A = g_A_cgs/unit_velocity*unit_time
+        g_C = g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_cgs/unit_length
+        g_B = g_B_cgs/unit_length
+        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_entopy', &
+            'SI unit conversions not inplemented')
+      endif
+!
+!  Uses gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!  at solar radius.  (for interstellar runs)
+!
+      call getmu(f,muhs)
+!
+      if (lroot) print*, 'Gressel-entropy: '// &
+          'hydrostatic thermal equilibrium density and entropy profiles'
+      do n=1,mz
+      do m=m1,m2
+        TT =T0hs
+        rho = rho0ts * &
+            exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2) &
+            -0.5*g_C*(z(n))**2/g_D))
+!        print*,'rho, z =',rho(1),z(n)
+        zrho(n)=rho(1)
+!
+        lnrho=log(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho
+        lnTT=log(TT)
+!
+        call eoscalc(ilnrho_lnTT,log(rho),lnTT,ss=ss)
+!
+        f(l1:l2,m,n,iss)=ss
+!
+      enddo
+      enddo
+!
+      print*,'interstellar gressel_hs: T0hs, zrho=',T0hs, zrho
+!
+!  Share zrho and T0hs for use with entropy ti initialize density and
+!  temperature in gressel_entropy
+!
+      call put_shared_variable('zrho', zrho, ierr)
+      if (ierr/=0) call fatal_error('gressel_entropy', &
+          'there was a problem when putting zrho')
+      call put_shared_variable('T0hs', T0hs, ierr)
+      if (ierr/=0) call fatal_error('gressel_entropy', &
+          'there was a problem when putting T0hs')
+!
+    endsubroutine gressel_hs
+!*****************************************************************************
+    subroutine gressel_interstellar(f,zheat,zrho,T0hs)
 !
 !  This routine calculates a vertical profile for uv-heating designed to
 !  satisfy an initial condition with heating and cooling balanced for an 
@@ -1261,58 +1348,37 @@ module Interstellar
 !  The density stratification is derived from the gravity profile of
 !  K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !  Requires: gravz_profile='Ferriere' in gravity_simple.f90
-!            initlnrho='Galactic-hs' in density.f90
+!            initlnrho='Gressel-hs' in density.f90
 !            initss='Gressel-hs' in entropy.f90
 !            heating_select='Gressel-hs' in interstellar.f90
 !  Using here a similar method to O. Gressel 2008 (PhD)
 !
 !  22-mar-10/fred:
 !  adapted from galactic-hs,ferriere-hs
+!  12-aug-10/fred:
+!  included zrho & T0hs from gressel_hs
 !
-      use Mpicomm, only: mpibcast_real
       use EquationOfState , only: getmu
-      use Sub, only: erfunc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: zrho
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mz), intent(in) :: zrho
+      real, intent(in) :: T0hs
       real, dimension(mz), intent(out) :: zheat
-      real :: muhs, lambda
-      real :: g_A, g_C
-      real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B, g_D
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+!
+      real :: lambda
       integer :: j
 !
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-          g_A = g_A_cgs/unit_velocity*unit_time
-          g_C = g_C_cgs/unit_velocity*unit_time
-          g_D = g_D_cgs/unit_length
-          g_B = g_B_cgs/unit_length
-      if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-      if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-!
-!  T0hs & rho0ts required such that Lambda*rho(z=0) = GammaUV_cgs = 0.0147 at z=0
-!
-      else if (unit_system=='SI') then
-        call fatal_error('gressel_interstellar','SI unit conversions not inplemented')
-      endif
-!
-      do j=1,ncool
-        if (coolT_cgs(j)>=T0hs*unit_temperature) then
-          lambda=exp(lncoolH(j))*T0hs**coolB(j)
-          exit
-        endif
-      enddo
-!
-      call getmu(f,muhs)
-!
       if (lroot) print*, &
-         'Gressel1-interstellar: calculating z-dependent uv-heating function for init hydrostatic & thermal equilibrium'
+         'Gressel_interstellar: calculating z-dependent uv-heating'// &
+         'function for initial hydrostatic and thermal equilibrium'
+!
       do n=1,mz
-        zrho=rho0ts*exp(m_u*muhs/k_B/T0hs* &
-            (g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2)-0.5*g_C*(z(n))**2/g_D))
+        lam_loop: do j=1,ncool
+          if (coolT_cgs(j)>=T0hs*unit_temperature) then
+            lambda=exp(lncoolH(j-1))*T0hs**coolB(j-1)
+            exit lam_loop
+          endif
+        enddo lam_loop
         zheat(n)=lambda*zrho(n)
       enddo
 !
@@ -1368,17 +1434,17 @@ module Interstellar
         f(l1:l2,m,n,icooling)=cool
 !  
         call calc_heat(heat,p%lnTT)
-      endif
 !
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
 !  so therefore we now need to multiply by TT1.
 !
-      if (ltemperature) then
-        heatcool=p%TT1*(heat-cool)*gamma
-      elseif (pretend_lnTT) then
-        heatcool=p%TT1*(heat-cool)*gamma
-      else
-        heatcool=p%TT1*(heat-cool)
+        if (ltemperature) then
+          heatcool=p%TT1*(heat-cool)*gamma
+        elseif (pretend_lnTT) then
+          heatcool=p%TT1*(heat-cool)*gamma
+        else
+          heatcool=p%TT1*(heat-cool)
+        endif
       endif
 !
 !  Prevent unresolved heating/cooling in early SNR core.
