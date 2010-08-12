@@ -9,6 +9,7 @@ HYDRO     = nohydro
 DENSITY   = nodensity
 ENTROPY   = noentropy
 MAGNETIC  =   magnetic
+MAGNETIC_MEANFIELD  =   magnetic/meanfield
 RADIATION = noradiation
 PSCALAR   = nopscalar
 

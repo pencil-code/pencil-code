@@ -10,13 +10,16 @@
 /
 &magnetic_run_pars
   lmeanfield_theory=T
+  eta=.01, llorentzforce=F
+/
+&magnetic_mf_run_pars
   meanfield_etat=1.
-  eta=.01, alpha_effect=3., alpha_quenching=0., llorentzforce=F
+  alpha_effect=3., alpha_quenching=0.
   lOmega_effect=T
   Omega_profile='(0,cosx*cosz,0)', Omega_ampl=1e3
 /
 &special_run_pars
 !  etat_alpm=1., kf_alpm=5., Rm_alpm=100.
   kf_alpm=5.
-  Omega_profile='(0,cosx*cosz,0)', Omega_ampl=1e0
+  VC_Omega_profile='(0,cosx*cosz,0)', VC_Omega_ampl=1e3
 /
