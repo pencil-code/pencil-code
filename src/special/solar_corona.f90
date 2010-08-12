@@ -112,8 +112,9 @@ module Special
 !***********************************************************************
     subroutine initialize_special(f,lstarting)
 !
-!  called by run.f90 after reading parameter either at the beginning
-!  or if RELOAD is found
+! Called by start.f90 with lstarting=.true. and
+! caled by run.f90 at the beginning and
+! if RELOAD is found, then lreloading=.true.
 !
 !  06-oct-03/tony: coded
 !
@@ -142,7 +143,7 @@ module Special
       call setup_special()
 !
 ! We need at least 4 procs above the ipz=0 for computing
-! granular velocities in parallel
+! granular velocities in parallel.
       if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .true.
 !
       call keep_compiler_quiet(lstarting)
@@ -151,7 +152,8 @@ module Special
 !***********************************************************************
     subroutine init_special(f)
 !
-!  initialise special condition; called from start.f90
+!  Initialise special condition; called from start.f90.
+!
 !  06-oct-2003/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1556,14 +1558,12 @@ module Special
         print*,'-----------------------------------'
         print*,'| radius [Mm]:',granr*unit_length*1e-6
         print*,'| lifetime [min]',life_t*unit_time/60.
-        print*,'| amplitude [km/s]',ampl*unit_velocity*1e-3
         print*,'| update interval [s]',dt_gran*unit_time
         print*,'-----------------------------------'
       endif
 !
 ! Don't reset if RELOAD is used
       if (.not.lreloading) then
-        dt_gran = dt_gran / unit_time
 !
         if (associated(first)) nullify(first)
         if (associated(current)) nullify(current)
@@ -1590,7 +1590,7 @@ module Special
 ! additional parameters are
 !         Bavoid =0.01 : the magn. field strenght in Tesla at which
 !                        no granule is allowed
-!         nvod = 5.    : the strength by which the vorticity is
+!         nvor = 5.    : the strength by which the vorticity is
 !                        enhanced
 !
 !  11-may-10/bing: coded
@@ -1895,6 +1895,10 @@ module Special
 !***********************************************************************
     subroutine resetarr
 !
+! Reset arrays at the beginning of each call to the levels.
+!
+! 12-aug-10/bing: coded
+!
       w(:,:)=0.0
       vx(:,:)=0.0
       vy(:,:)=0.0
@@ -1903,6 +1907,10 @@ module Special
     endsubroutine resetarr
 !***********************************************************************
     subroutine rdpoints(level)
+!
+! Read in points from file if existing.
+!
+! 12-aug-10/bing: coded
 !
       real, dimension(6) :: tmppoint
       integer :: iost,rn,iol
@@ -1942,7 +1950,7 @@ module Special
         call reset
 !
         if (level==nglevel) then
-          write (filename,'("driver/seed.dat")')
+          write (filename,'("driver/seed_",I1.1,".dat")') level
           inquire(file=filename,exist=ex)
           if (ex) then
             open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
@@ -1959,11 +1967,16 @@ module Special
 !***********************************************************************
     subroutine wrpoints(level,issnap)
 !
+! Writes positions and amplitudes of granules to files. Also
+! seed list are stored to be able to reproduce the run.
+!
+! 12-aug-10/bing: coded
+!
       integer :: rn,iol
       integer, optional, intent(in) :: issnap
-      integer,intent(in) :: level
-      real,dimension(6) :: posdata
-      character(len=20) :: filename
+      integer, intent(in) :: level
+      real, dimension(6) :: posdata
+      character(len=22) :: filename
 !
       inquire(IOLENGTH=iol) dy
 !
@@ -1988,25 +2001,27 @@ module Special
 !
       close(10)
 !
-! save seed list if the last level is stored
+! Save seed list for each level. Is needed if levels are spread over 3 procs.
 !
-      if (level.eq.nglevel) then
-        if (present(issnap)) then
-          write (filename,'("driver/seed_",I3.3,".dat")') issnap
-        else
-          write (filename,'("driver/seed.dat")')
-        endif
-!
-        open(10,file=filename,status="replace",access="direct",recl=mseed*iol)
-        write(10,rec=1) points_rstate
-        close(10)
+      if (present(issnap)) then
+        write (filename,'("driver/seed_",I1.1,"_",I3.3,".dat")') level,issnap
+      else
+        write (filename,'("driver/seed_",I1.1,".dat")') level
       endif
+      !
+      open(10,file=filename,status="replace",access="direct",recl=mseed*iol)
+      write(10,rec=1) points_rstate
+      close(10)
 !
       call reset
 !
     endsubroutine wrpoints
 !***********************************************************************
     subroutine addpoint
+!
+! Add a new pointer to the list.
+!
+! 12-aug-10/bing: coded
 !
       type(point), pointer :: newpoint
 !
@@ -2027,6 +2042,10 @@ module Special
     endsubroutine addpoint
 !***********************************************************************
     subroutine rmpoint
+!
+! Remove any pointer from the list.
+!
+! 12-aug-10/bing: coded
 !
       if (associated(current%next)) then
 ! current is NOT the last one
@@ -2058,12 +2077,16 @@ module Special
 !***********************************************************************
     subroutine gtnextpoint
 !
+! 12-aug-10/bing: coded
+!
       previous => current
       current => current%next
 !
     endsubroutine gtnextpoint
 !***********************************************************************
     subroutine reset
+!
+! 12-aug-10/bing: coded
 !
       current => first
       previous => first
@@ -2073,6 +2096,11 @@ module Special
     endsubroutine reset
 !***********************************************************************
     subroutine driveinit
+!
+! If no existing files are found initialize points.
+! The lifetimes are randomly distribute around starting time.
+!
+! 12-aug-10/bing: coded
 !
       use General, only: random_number_wrapper
 !
@@ -2107,8 +2135,10 @@ module Special
 !***********************************************************************
     subroutine helmholtz(frx_r,fry_r)
 !
-! extracts the rotational part of a 2d vector field
-! to increase vorticity of the velocity field
+! Extracts the rotational part of a 2d vector field
+! to increase vorticity of the velocity field.
+!
+! 12-aug-10/bing: coded
 !
       use Fourier, only: fourier_transform_other
 !
@@ -2173,6 +2203,10 @@ module Special
 !***********************************************************************
     subroutine drawupdate
 !
+! Using a point from the list to update the velocity field.
+!
+! 12-aug-10/bing: coded
+!
       real :: xdist,ydist,dist2,dist,wtmp,vv
       integer :: i,ii,j,jj
       real :: dist0,tmp
@@ -2217,6 +2251,10 @@ module Special
     endsubroutine drawupdate
 !***********************************************************************
     subroutine make_newpoint
+!
+! Find the position of a new point.
+!
+! 12-aug-10/bing: coded
 !
       use General, only: random_number_wrapper
 !
@@ -2265,6 +2303,10 @@ module Special
     endsubroutine make_newpoint
 !***********************************************************************
     subroutine updatepoints
+!
+! Update the amplitude/weight of a point.
+!
+! 12-aug-10/bing: coded
 !
       use Sub, only: notanumber
 !
