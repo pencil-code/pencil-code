@@ -694,7 +694,7 @@ module Hydro
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold
-      integer :: j,i,l,ixy
+      integer :: j,i,l,ixy,ix,iy,iz
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -709,6 +709,12 @@ module Hydro
           f(:,:,:,iux:iuz)=0.
         case ('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
         case ('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu)
+        case ('ortho')
+          do ix=l1,l2;do iy=m1,m2;do iz=n1,n2
+            f(ix,iy,iz,iuu)=-2.*ampluu(j)*sin(y(iy))
+            f(ix,iy,iz,iuu+1)=ampluu(j)*sin(x(ix))
+            f(ix,iy,iz,iuu+2)=0.001*ampluu(j)*sin(y(iy))
+          enddo;enddo;enddo
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
