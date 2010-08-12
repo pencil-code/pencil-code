@@ -1286,6 +1286,10 @@ module Interstellar
       double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
       integer :: ierr
 !
+!  Identifier
+!
+      if (lroot.and.headtt.and.ip<14) print*,'gressel_hs: ENTER'
+!
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
@@ -1365,6 +1369,10 @@ module Interstellar
 !
       real :: lambda
       integer :: j
+!
+!  Identifier
+!
+      if (lroot.and.headtt.and.ip<14) print*,'gressel_interstellar: ENTER'
 !
       if (lroot) print*, &
          'Gressel_interstellar: calculating z-dependent uv-heating'// &
@@ -1556,13 +1564,13 @@ module Interstellar
 !  Nb: need rho0 from density_[init/run]_pars, to implement the arm/interarm
 !  scaling.
 !
-!  Control with heating_select in interstellar_init_pars/run_pars
-!  Default heating_rate GammaUV = 0.015
+!  Control with heating_select in interstellar_init_pars/run_pars.
+!  Default heating_rate GammaUV = 0.015.
 !
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
 !
-!  Constant heating with a rate heating_rate[erg/g/s]
+!  Constant heating with a rate heating_rate[erg/g/s].
 !
       if (heating_select == 'cst') then
          heat = heating_rate_code
@@ -1583,37 +1591,38 @@ module Interstellar
       endif
 !
     endsubroutine calc_heat
-!****************************************************************************
+!*****************************************************************************
     subroutine check_SN(f)
 !
 !  Checks for SNe, and implements appropriately:
-!   relevant subroutines in entropy.f90
+!  relevant subroutines in entropy.f90
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      logical :: l_SNI=.false.   !only allow SNII if no SNI this step
-                                 !(may not be worth keeping)
+!
+!  Only allow SNII if no SNI this step (may not be worth keeping).
+!
+      logical :: l_SNI=.false.  
 !
       intent(inout) :: f
 !
-!  identifier
+!  Identifier
 !
       if (headtt) print*,'check_SN: ENTER'
 !
-!  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
+!  Do separately for SNI (simple scheme) and SNII (Boris' scheme).
 !
       if (t < t_settle) return
       call calc_snr_damping_factor(f)
       call tidy_SNRs
-      if (lSNI) call check_SNI (f,l_SNI)
+      if (lSNI)  call check_SNI (f,l_SNI)
       if (lSNII) call check_SNII(f,l_SNI)
-!     if (lSNII) call check_SNIIb(f,l_SNI)!fred test new scheme
       call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
-!***********************************************************************
+!*****************************************************************************
     subroutine check_SNI(f,l_SNI)
 !
-!  If time for next SNI, then implement, and calculate time of subsequent SNI
+!  If time for next SNI, then implement, and calculate time of subsequent SNI.
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: l_SNI
@@ -1621,19 +1630,20 @@ module Interstellar
 !
       intent(inout) :: f,l_SNI
 !
-!  identifier
+!  Identifier
 !
       if (headtt) print*,'check_SNI: ENTER'
 !
       l_SNI=.false.
       if (t >= t_next_SNI) then
         iSNR=get_free_SNR()
-        SNRs(iSNR)%site%TT=1E20
-        SNRs(iSNR)%site%rho=0.
+        SNRs(iSNR)%site%TT=1e20
+        SNRs(iSNR)%site%rho=0.0
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=1
         SNRs(iSNR)%radius=width_SN
         try_count=500
+!
         do while (try_count>0)
           ierr=iEXPLOSION_OK
           try_count=try_count-1
@@ -1664,9 +1674,17 @@ module Interstellar
         enddo
 !
         if (try_count==0) then
-          if (lroot) print*,"check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
+          if (lroot) print*, &
+              "check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
         endif
-        call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
+!
+!  Free up slots in case loop fails repeatedly over many time steps.
+!
+        call free_SNR(iSNR)
+!
+!  Reset ierr or else explode_SN may terminate erroneously on subsequent 
+!  timesteps never to be reset.
+!
         ierr=iEXPLOSION_OK
       endif
 !
@@ -1678,46 +1696,59 @@ module Interstellar
 !
       real, dimension(1) :: franSN
 !
-!  pre-determine time for next SNI
+!  Pre-determine time for next SNI.
 !
-      if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",&
-        t_next_SNI
+      if (lroot.and.ip<14) print*, &
+          "check_SNI: Old t_next_SNI=", t_next_SNI
       call random_number_wrapper(franSN)
+!
+!  Vary the time interval with a uniform random distribution between
+!  0.8 and 1.2 times the average rate required.
+!
       t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-      if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = '&
-        ,t_next_SNI
+      if (lroot.and.ip<20) print*, &
+          'check_SNI: Next SNI at time = ' ,t_next_SNI
+!
     endsubroutine set_next_SNI
-!***********************************************************************
+!*****************************************************************************
     subroutine set_next_SNII()
 !
       use General, only: random_number_wrapper
 !
       real, dimension(1) :: franSN
 !
-!  pre-determine time for next SNI
+!  Pre-determine time for next SNII
+!  Check_SNII has a selfregulating random rate governed by the parameters of 
+!  cloud mass and cloud temperature, but this is very hard to regulate to test
+!  different regimes, so this acts as a contraint on the rate.
 !
-      if (lroot.and.ip<14) print*,"check_SNII: Old t_next_SNII=",&
-        t_next_SNII
+      if (lroot.and.ip<14) print*, &
+          "check_SNII: Old t_next_SNII=", t_next_SNII
       call random_number_wrapper(franSN)
+!
+!  Vary the time interval with a uniform random distribution between
+!  0.7 and 1.3 times the average rate required.
+!
       t_next_SNII=t + (1.0 + 0.6*(franSN(1)-0.5)) * t_interval_SNII
-      if (lroot.and.ip<20) print*,'check_SNII: Next SNII at time = '&
-        ,t_next_SNII
+      if (lroot.and.ip<20) print*, &
+          'check_SNII: Next SNII at time = ' ,t_next_SNII
+!
     endsubroutine set_next_SNII
-!***********************************************************************
+!*****************************************************************************
     subroutine check_SNII(f,l_SNI)
 !
 !  Check for SNII, via self-regulating scheme.
 !
-!  03-feb-10/fred: tested and working correctly
+!  03-feb-10/fred: Tested and working correctly.
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_ss
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho,rho_cloud,lnTT,TT,yH
-      real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
-      real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
+      real, dimension(nx) :: rho, rho_cloud, lnTT, TT, yH
+      real :: cloud_mass, cloud_mass_dim, freq_SNII, prob_SNII
+      real, dimension(1) :: franSN, fsum1, fsum1_tmp, fmpi1
       real, dimension(ncpus) :: cloud_mass_byproc
       integer :: icpu, m, n, iSNR, ierr
       logical :: l_SNI
@@ -1726,179 +1757,126 @@ module Interstellar
       intent(in) :: l_SNI
       intent(inout) :: f
 !
-!  identifier
+!  Identifier
 !
       if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
 !
-      if (l_SNI) return         ! only do if no SNI this step
+      if (l_SNI) return         ! Only do if no SNI this step
 !
       iSNR=get_free_SNR()
 !
-!  determine and sum all cells comprising dense cooler clouds
-!  where type 2 SNe are likely
+!  Determine and sum all cells comprising dense cooler clouds where type II
+!  SNe are prevalent. Only check if t_next_SNII exceeded (see set_next_SNII).
 !
       if (t >= t_next_SNII) then
         cloud_mass=0.0
-        do n=n1,n2
-          do m=m1,m2
-            rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-            call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
-                        ,yH=yH,lnTT=lnTT)
-            TT(1:nx)=exp(lnTT(1:nx))
-!            if (ip<12.and.m==12) print*,'check_SNII:min TT,max rho,n,it,iproc',&
-!                               minval(TT(1:nx)),maxval(rho(1:nx)),n,it,iproc
-            rho_cloud(1:nx)=0.
-            where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
-              rho_cloud(1:nx) = rho(1:nx)
-!            if (ip<12.and.m==12) print*,'check_SNII:sum(rho_cloud,rho),n,it,iproc'&
-!                             ,sum(rho_cloud(1:nx)),sum(rho(1:nx)),n,it,iproc
-              cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
-          enddo
-        enddo
-        fsum1_tmp=(/ cloud_mass /)
 !
+!  Calculate the total mass in locations where the temperature is below
+!  cloud_TT and the density is above cloud_rho, i.e. cold and dense.
+!
+        do n=n1,n2
+        do m=m1,m2
+          rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
+          call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
+              ,yH=yH,lnTT=lnTT)
+          TT(1:nx)=exp(lnTT(1:nx))
+          rho_cloud(1:nx)=0.0
+          where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
+              rho_cloud(1:nx) = rho(1:nx)
+          cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+        enddo
+        enddo
+!
+!  Sum the total over all processors and multiply by dv to find total mass.
+!
+        fsum1_tmp=(/ cloud_mass /)
         call mpireduce_sum(fsum1_tmp,fsum1,1)
         call mpibcast_real(fsum1,1)
         cloud_mass_dim=fsum1(1)*dv
-        if (ip<14) &
-        print*,'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
+!
+        if (ip<14) print*, &
+            'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !
         if (lroot .and. ip < 14) &
             print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
             cloud_mass_dim,fsum1(1),dv
 !
-!    dtsn: elapsed time since last SNII injected
-!    prob of next increases with time
-!    last_SN_t updated afte each SNII
-!    SNI independent distribution
+!  Additional contraint on the interval between SNII events. The total time 
+!  elapsed since last SNII is dtsn. Probability of next event increases with
+!  time and availabilty of cold dense cloud material. Calculate probability.
+!  (SNI distribution is independent of mass distribution.)
+!  This probability is close to 1 for solar neighbourhood rate so this check 
+!  could be discarded, but worth keeping as may be interesting tool.
 !
         dtsn=t-last_SN_t
-        freq_SNII= &
-          frac_heavy*frac_converted*cloud_mass_dim/&
-                     mass_SN_progenitor/cloud_tau
+        freq_SNII=frac_heavy*frac_converted*cloud_mass_dim/ &
+            mass_SN_progenitor/cloud_tau
         prob_SNII=freq_SNII*dtsn*5.
         call random_number_wrapper(franSN)
 !
         if (lroot.and.ip<20) then
-          if (cloud_mass_dim > 0. .and. franSN(1) <= 2.*prob_SNII) then
-            print*,'check_SNII: freq,prob,rnd,dtsn:',&
-                    freq_SNII,prob_SNII,franSN(1),dtsn
-            print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau',&
-                  frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
-          endif
+        if (cloud_mass_dim>0.0.and.franSN(1)<=2.0*prob_SNII) then
+          print*,'check_SNII: freq,prob,rnd,dtsn:', &
+              freq_SNII,prob_SNII,franSN(1),dtsn
+          print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,', &
+              'mass_SN,cloud_tau',&
+              frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
         endif
+        endif
+!
+!  If likelihood of SNII greater than random number locate SNII
 !
         if (franSN(1) <= prob_SNII) then
 !
-!  position_SN_bycloudmass needs the cloud_masses for each processor;
-!   communicate and store them here, to avoid recalculation.
+!  The position_SN_bycloudmass needs the cloud_masses for each processor.
+!  Communicate and store them here, to avoid recalculation.
 !
           cloud_mass_byproc(:)=0.0
 !
-! use non-root broadcasts for the communication...
+!  Use non-root broadcasts for the communication...
 !
           do icpu=1,ncpus
             fmpi1=cloud_mass
-!           if (icpu==iproc+1) then
             call mpibcast_real(fmpi1,1,icpu-1)
             cloud_mass_byproc(icpu)=fmpi1(1)
-!           endif
           enddo
 !
-          if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:'&
-                                                  ,cloud_mass_byproc
+!  Locate the next explosion
+!
+          if (lroot.and.ip<14) print*, &
+              'check_SNII: cloud_mass_byproc:',cloud_mass_byproc
           call position_SN_bycloudmass&
-                          (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
+              (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
+!
+!  If location too hot reset ierr and return to program
+!
           if (ierr == iEXPLOSION_TOO_HOT) then
             call free_SNR(iSNR)
             ierr=iEXPLOSION_OK
             return
           endif
+!
+!  Try to explode SNII and if successful reset time of most recent (last_SN_t)
+!  and next (t_next_SNII) explosion.
+!
           SNRs(iSNR)%t=t
           SNRs(iSNR)%SN_type=2
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
             call set_next_SNII
             last_SN_t=t
-!
-!   30-dec-09/fred: added ierr and if statement so time of SN can be
-!                   updated if explosion successful else last_SN_t unchanged
-!
           endif
 !
         endif
       endif
-    call free_SNR(iSNR)
-!  If returned unexploded stops code running out of free slots
+!
+!  If returned unexploded stop code running out of free slots & reset ierr
+!
+      ierr=iEXPLOSION_OK
+      call free_SNR(iSNR)
 !
     endsubroutine check_SNII
-!***********************************************************************
-    subroutine check_SNIIb(f,l_SNI) !fred test new SNII scheme
-!
-!  If time for next SNI, then implement, and calculate time of subsequent SNI
-!
-    use General, only: random_number_wrapper
-!
-    real, dimension(mx,my,mz,mfarray) :: f
-    logical :: l_SNI
-    integer :: try_count, iSNR, ierr
-    real :: dtsn
-    real, dimension(1) :: franSN
-!
-    intent(inout) :: f,l_SNI
-!
-!  identifier
-!
-    if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
-!
-    if (l_SNI) return         ! only do if no SNI this step
-!
-    dtsn=t-last_SN_t
-    if (dtsn >= t_next_SNII) then
-      iSNR=get_free_SNR()
-      SNRs(iSNR)%site%TT=1E20
-      SNRs(iSNR)%site%rho=0.
-      SNRs(iSNR)%t=t
-      SNRs(iSNR)%SN_type=2
-      SNRs(iSNR)%radius=width_SN
-      try_count=500
-      do while (try_count>0)
-        try_count=try_count-1
-!
-        if (uniform_zdist_SNI) then
-          call position_SN_uniformz(f,SNRs(iSNR))
-        else
-          call position_SN_gaussianz(f,h_SNII,SNRs(iSNR))
-        endif
-!
-        if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
-            (SNRs(iSNR)%site%TT > TT_SN_max)) then
-          cycle
-        endif
-!
-        call explode_SN(f,SNRs(iSNR),ierr)
-        if (ierr==iEXPLOSION_OK) then
-          call random_number_wrapper(franSN)
-          if (lroot) print*,'franSN = ',franSN(1)
-!          t_next_SNII=1./sqrt(2.*pi)*exp(-(0.47729*franSN(1)*&
-!                      6.*SNI_area_rate*Lxyz(1)*Lxyz(2))**2)
-          t_next_SNII=2.*franSN(1)/(SNII_area_rate*Lxyz(1)*Lxyz(2))
-          last_SN_t=t
-          if (lroot.and.ip<14) print*,'t_next_SNII,franSN,last_SN_t =',&
-                                       t_next_SNII,franSN(1),last_SN_t
-          exit
-        endif
-      enddo
-!
-      if (try_count==0) then
-        if (lroot) print*,"check_SNIIb: 500 RETRIES OCCURED - skipping SNI insertion"
-      endif
-      call free_SNR(iSNR) !fred needed to stop running out of slots when loop fails
-      ierr=iEXPLOSION_OK
-    endif
-!
-    endsubroutine check_SNIIb
-!***********************************************************************
+!*****************************************************************************
     subroutine position_SN_testposition(f,SNR)
 !
 !   determine position for next SN (w/ fixed scale-height)
