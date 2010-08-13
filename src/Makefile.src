@@ -652,7 +652,7 @@ endif
 ## Axel on norlx55 (gfortran)
 ##
 #FC=mpif90 #(norlx55*)
-#FFLAGS= -O3 #(norlx55*)
+#FFLAGS= -O3 -fno-second-underscore #(norlx55*)
 #CC=mpicc #(norlx55*)
 #CFLAGS=-O3 #(norlx55*)
 #LD_MPI= #(norlx55*)
