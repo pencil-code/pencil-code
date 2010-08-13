@@ -195,9 +195,9 @@ module Grid
           xprim2= g1der2
 !
           if (lparticles) then
-            g1proc=x00+g1proc-g1lo
             call grid_profile(xi1proc,grid_func(1),g1proc, &
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+            g1proc=x00+g1proc-g1lo
           endif
 !
         case ('duct')
@@ -211,8 +211,8 @@ module Grid
           xprim2=    Lx*(g1der2*a**2)/2
 !
           if (lparticles) then
-            g1proc=x00+Lx*(g1proc-g1lo)/2
             call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
+            g1proc=x00+Lx*(g1proc-g1lo)/2
             g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
             g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
           endif
@@ -248,8 +248,8 @@ module Grid
           if (lparticles) then
              call fatal_error('construct_grid: non-equidistant grid', &
                   'half-duct not implemented for particles.')
-!            g1proc=x00+Lx*(g1proc-g1lo)/2
 !            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
+!            g1proc=x00+Lx*(g1proc-g1lo)/2
 !            g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
 !            g1proc(2*nprocx+1)=g1proc(2*nprocx)+x(l2)-x(l2-1)
           endif
@@ -416,9 +416,9 @@ module Grid
           yprim2= g2der2
 !
           if (lparticles) then
-            g2proc=y00+g2proc-g2lo
             call grid_profile(xi2proc,grid_func(2),g2proc, &
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+            g2proc=y00+g2proc-g2lo
           endif
 !
         case default
@@ -466,8 +466,8 @@ module Grid
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
           if (lparticles) then
-            g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
+            g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
           endif
 !
         case ('step-linear')
@@ -488,9 +488,9 @@ module Grid
           zprim2= g3der2
 !
           if (lparticles) then
-            g3proc=z00+g3proc-g3lo
             call grid_profile(xi3proc,grid_func(2),g3proc, &
               dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
+            g3proc=z00+g3proc-g3lo
           endif
 !
         case default
