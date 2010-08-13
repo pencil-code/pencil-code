@@ -111,7 +111,6 @@ module Magnetic_meanfield
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: put_shared_variable,get_shared_variable
-      use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
