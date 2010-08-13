@@ -1125,7 +1125,8 @@ module Hydro
         case ( 'anelastic-lin')
           print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,ky_uu,kz_uu
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))*sin(kz_uu*z(n))
+!            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))*sin(kz_uu*z(n))
+            f(l1:l2,m,n,iuy)=ampl_uy(j)*exp(-kx_uu*x(l1:l2)**2-kz_uu*z(n)**2)
           enddo; enddo
           call update_ghosts(f)
 ! 2D curl
