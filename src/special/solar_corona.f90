@@ -1,4 +1,4 @@
-! $Id$
+5~<! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,7 +25,7 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
-  real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.5
+  real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
   integer :: irefz=0,nglevel=3
@@ -1842,10 +1842,12 @@ module Special
       call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
+        isnap = nint (t/dsnap)
+        tsnap_uu = (isnap+1) * dsnap
         call rdpoints(level)
         if (.not.associated(current%next)) then
           call driveinit
-          call wrpoints(level,0)
+          call wrpoints(level,isnap)
           call wrpoints(level)
         endif
       else
