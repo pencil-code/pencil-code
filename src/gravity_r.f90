@@ -45,7 +45,7 @@ module Gravity
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
-		       !     1.5 for Keplerian disks, 1.0 for galaxies
+                       !     1.5 for Keplerian disks, 1.0 for galaxies
 !
   character (len=labellen), dimension(ninit) :: ipotential='zero'
 !
@@ -114,10 +114,10 @@ module Gravity
 !
       if (lnumerical_equilibrium) then
 !
-	if (lroot) then
-	  print*,'inititialize_gravity: numerical exact equilibrium - gravity'
-	  print*,'                      will be calculated in density module'
-	endif
+        if (lroot) then
+          print*,'inititialize_gravity: numerical exact equilibrium - gravity'
+          print*,'                      will be calculated in density module'
+        endif
 !
       else
 !
@@ -125,165 +125,165 @@ module Gravity
 !  Ensure the reserved array slots are initialized to zero, so we can add
 !  ninit different gravity fields.
 !
-	if (igg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
-	f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
+        if (igg==0) call farray_register_global('global_gg',iglobal_gg,vector=3)
+        f(l1:l2,m1:m2,n1:n2,iglobal_gg:iglobal_gg+2) = 0.
 !
-	do j=1,1
+        do j=1,1
 !
-	  lpade=.true.
+          lpade=.true.
 !
-	  select case (ipotential(j))
+          select case (ipotential(j))
 !
-	  case ('zero')           ! zero potential
-	    if (lroot) print*, 'initialize_gravity: zero gravity potential'
-	    cpot(:,j) = 0.
+          case ('zero')           ! zero potential
+            if (lroot) print*, 'initialize_gravity: zero gravity potential'
+            cpot(:,j) = 0.
 !
-	  case ('solar')          ! solar case
-	    if (lroot) print*, 'initialize_gravity: solar gravity potential'
-	    cpot(:,j) = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
+          case ('solar')          ! solar case
+            if (lroot) print*, 'initialize_gravity: solar gravity potential'
+            cpot(:,j) = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
 !
-	  case ('M5-dwarf')       ! M5 dwarf
-	    if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
-	    cpot(:,j) = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
+          case ('M5-dwarf')       ! M5 dwarf
+            if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
+            cpot(:,j) = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
 !
-	  case ('M2-sgiant')       ! M super giant
-	    if (lroot) print*, 'M super giant gravity potential'
-	    cpot(:,j) = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
+          case ('M2-sgiant')       ! M super giant
+            if (lroot) print*, 'M super giant gravity potential'
+            cpot(:,j) = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
 !
-	  case ('A7-star')       ! Ap star
-	    if (lroot) print*, 'A star gravity potential'
-	    cpot(:,j) = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
+          case ('A7-star')       ! Ap star
+            if (lroot) print*, 'A star gravity potential'
+            cpot(:,j) = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
 !
-	  case ('A0-star')       ! A0 star
-	    if (lroot) print*, 'A0 star gravity potential'
-	    !cpot(:,j) = (/ 4.7446,  -1.9456,  0.6884,  4.8007, 1.79877 /)
-	    cpot(:,j) = (/ 4.3641,  -1.5612,  0.4841, 4.0678, 1.2548 /)
+          case ('A0-star')       ! A0 star
+            if (lroot) print*, 'A0 star gravity potential'
+            !cpot(:,j) = (/ 4.7446,  -1.9456,  0.6884,  4.8007, 1.79877 /)
+            cpot(:,j) = (/ 4.3641,  -1.5612,  0.4841, 4.0678, 1.2548 /)
 !
-	  case ('simple')         ! simple potential for tests
-	    if (lroot) print*, 'initialize_gravity: very simple gravity potential'
-	    cpot(:,j) =  (/ 1., 0., 0., 1., 0. /)
+          case ('simple')         ! simple potential for tests
+            if (lroot) print*, 'initialize_gravity: very simple gravity potential'
+            cpot(:,j) =  (/ 1., 0., 0., 1., 0. /)
 !
-	  case ('simple-2')       ! another simple potential for tests
-	    if (lroot) print*, 'initialize_gravity: simple gravity potential'
-	    cpot(:,j) =  (/ 1., 1., 0., 1., 1. /)
+          case ('simple-2')       ! another simple potential for tests
+            if (lroot) print*, 'initialize_gravity: simple gravity potential'
+            cpot(:,j) =  (/ 1., 1., 0., 1., 1. /)
 !
-	  case ('smoothed-newton')
-	    if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
-	    lpade=.false.
+          case ('smoothed-newton')
+            if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
+            lpade=.false.
 !
-	  case ('sph-const')
-	    if (lroot) print*,'initialize_gravity: constant g_r in the sphere'
-	    lpade=.false.
+          case ('sph-const')
+            if (lroot) print*,'initialize_gravity: constant g_r in the sphere'
+            lpade=.false.
 !
-	  case ('no-smooth')
-	    if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
-	    lpade=.false.
-	  case ('varying-q')
-	    if (lroot) print*,'initialize_gravity: shear with Omega proto r^-q, q=',qgshear
-	    lpade=.false.
-	  case ('varying-q-smooth')
-	    if (lroot) &
-		 print*,'initialize_gravity: shear with smoothed Omega proto r^-q, q=',qgshear
-	    lpade=.false.
-	  case ('dark-matter-halo')
-	    if (lroot) &
-		 print*,'initialize_gravity: arc-tangent potential generated by a dark matter halo'
-	    lpade=.false.
-	  case ('light-matter')
-	    if (lroot) &
-		 print*,'initialize_gravity: potential generated by an exponential baryonic disk'
-	    lpade=.false.
+          case ('no-smooth')
+            if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
+            lpade=.false.
+          case ('varying-q')
+            if (lroot) print*,'initialize_gravity: shear with Omega proto r^-q, q=',qgshear
+            lpade=.false.
+          case ('varying-q-smooth')
+            if (lroot) &
+                 print*,'initialize_gravity: shear with smoothed Omega proto r^-q, q=',qgshear
+            lpade=.false.
+          case ('dark-matter-halo')
+            if (lroot) &
+                 print*,'initialize_gravity: arc-tangent potential generated by a dark matter halo'
+            lpade=.false.
+          case ('light-matter')
+            if (lroot) &
+                 print*,'initialize_gravity: potential generated by an exponential baryonic disk'
+            lpade=.false.
 !
-	    ! geodynamo
-	  case ('geo-kws-approx')     ! approx. 1/r potential between r=.5 and r=1
-	    if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
-	    cpot(:,j) = (/ 0., 2.2679, 0., 0., 1.1697 /)
-	  case ('geo-benchmark')      ! for geodynamo benchmark runs
-	    if (lroot) print*, 'initialize_gravity: gravity linear in radius'
-	    cpot(:,j) = (/ 0., -.5, 0., 0., 0. /)
-	  case ('geo-kws')
-	    if (lroot) print*, 'initialize_gravity: '//&
-		 'smoothed 1/r potential in spherical shell'
-	    if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small.'//&
-		 'Can be set in grav_r namelists.'
-	    lpade=.false.
-	    ! end geodynamo
+            ! geodynamo
+          case ('geo-kws-approx')     ! approx. 1/r potential between r=.5 and r=1
+            if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
+            cpot(:,j) = (/ 0., 2.2679, 0., 0., 1.1697 /)
+          case ('geo-benchmark')      ! for geodynamo benchmark runs
+            if (lroot) print*, 'initialize_gravity: gravity linear in radius'
+            cpot(:,j) = (/ 0., -.5, 0., 0., 0. /)
+          case ('geo-kws')
+            if (lroot) print*, 'initialize_gravity: '//&
+                 'smoothed 1/r potential in spherical shell'
+            if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small.'//&
+                 'Can be set in grav_r namelists.'
+            lpade=.false.
+            ! end geodynamo
 !
-	  case default
+          case default
 !
 !  Catch unknown values
 !
-	    if (lroot) print*, 'initialize_gravity: '//&
-		 'No such value for ipotential: ', trim(ipotential(j))
-	    call stop_it("")
+            if (lroot) print*, 'initialize_gravity: '//&
+                 'No such value for ipotential: ', trim(ipotential(j))
+            call stop_it("")
 !
-	  endselect
+          endselect
 !
-	  do n=n1,n2
-	    do m=m1,m2
+          do n=n1,n2
+            do m=m1,m2
 !
 !  rr_mn differs depending on the coordinate system
 !
-	      call get_radial_distance(rr_sph,rr_cyl)
+              call get_radial_distance(rr_sph,rr_cyl)
 !
 !  choose between sphere-in-box and cylindrical gravity
 !
-	      if (lcylindrical_gravity) then
-		rr_mn=rr_cyl
-	      else
+              if (lcylindrical_gravity) then
+                rr_mn=rr_cyl
+              else
 ! sphere in a box
-		rr_mn=rr_sph
-	      endif
+                rr_mn=rr_sph
+              endif
 !
-	      if (lpade) then
+              if (lpade) then
 !
-		g_r = - rr_mn * poly( (/ 2*(cpot(1,j)*cpot(4,j)-cpot(2,j)), &
-		     3*(cpot(1,j)*cpot(5,j)-cpot(3,j)), &
-		     4*cpot(1,j)*cpot(3,j), &
-		     cpot(5,j)*cpot(2,j)-cpot(3,j)*cpot(4,j), &
-		     2*cpot(2,j)*cpot(3,j), &
-		     cpot(3,j)**2  /), rr_mn) &
-		     / poly( (/ 1., 0., cpot(4,j), cpot(5,j), &
-		     cpot(3,j) /), rr_mn)**2
-	      else
-		if (ipotential(j) == 'sph-const') then
-		  g_r=-g0
-		elseif (ipotential(j) == 'no-smooth') then
-		  g_r=-g0/rr_mn**2
-		elseif (ipotential(j) == 'varying-q') then
-		  g_r=-g0/rr_mn**(2*qgshear-1)
-		elseif (ipotential(j) == 'varying-q-smooth') then
-		  g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
-		elseif (ipotential(j) == 'dark-matter-halo') then
-		  g_r=-g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
-		elseif (ipotential(j) == 'light-matter') then
-		  !approximation of the bessel functions potential
-		  !of Freeman 1970. Reference: Persic et al 1996
-		  g_r=-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
-		       ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
-		else
+                g_r = - rr_mn * poly( (/ 2*(cpot(1,j)*cpot(4,j)-cpot(2,j)), &
+                     3*(cpot(1,j)*cpot(5,j)-cpot(3,j)), &
+                     4*cpot(1,j)*cpot(3,j), &
+                     cpot(5,j)*cpot(2,j)-cpot(3,j)*cpot(4,j), &
+                     2*cpot(2,j)*cpot(3,j), &
+                     cpot(3,j)**2  /), rr_mn) &
+                     / poly( (/ 1., 0., cpot(4,j), cpot(5,j), &
+                     cpot(3,j) /), rr_mn)**2
+              else
+                if (ipotential(j) == 'sph-const') then
+                  g_r=-g0
+                elseif (ipotential(j) == 'no-smooth') then
+                  g_r=-g0/rr_mn**2
+                elseif (ipotential(j) == 'varying-q') then
+                  g_r=-g0/rr_mn**(2*qgshear-1)
+                elseif (ipotential(j) == 'varying-q-smooth') then
+                  g_r=-g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
+                elseif (ipotential(j) == 'dark-matter-halo') then
+                  g_r=-g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
+                elseif (ipotential(j) == 'light-matter') then
+                  !approximation of the bessel functions potential
+                  !of Freeman 1970. Reference: Persic et al 1996
+                  g_r=-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
+                       ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
+                else
 !
 !  smoothed 1/r potential in a spherical shell
 !  r0_pot is the smoothing radius, and n_pot the smoothing exponent
 !
-		  !g_r=-g0*rr_mn**(n_pot-1) &
-		  !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-		  pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
-			   /(rr_mn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
-		  g_r = pot*(rr_mn**(n_pot-1)/(rr_mn**n_pot+r0_pot**n_pot) &
-			   - r1_pot1*(r1_pot1*rr_mn)**(n_pot1-1) &
-				    /(1 + (r1_pot1*rr_mn)**n_pot1))
-		endif
-	      endif
+                  !g_r=-g0*rr_mn**(n_pot-1) &
+                  !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+                  pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
+                           /(rr_mn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+                  g_r = pot*(rr_mn**(n_pot-1)/(rr_mn**n_pot+r0_pot**n_pot) &
+                           - r1_pot1*(r1_pot1*rr_mn)**(n_pot1-1) &
+                                    /(1 + (r1_pot1*rr_mn)**n_pot1))
+                endif
+              endif
 !
-	      call get_gravity_field(g_r,gg_mn,rr_mn)
-	      f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = &
-		  f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) + gg_mn
+              call get_gravity_field(g_r,gg_mn,rr_mn)
+              f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = &
+                  f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) + gg_mn
 !
-	    enddo
-	  enddo
+            enddo
+          enddo
 !
-	enddo
+        enddo
       endif
 !
 !  Add a simple vertical gravity as well.
@@ -293,21 +293,21 @@ module Gravity
       case ('zero')
 !
       case ('const')
-	if (lroot) print*,'initialize_gravity: constant gravz=', gravz
-	do n=n1,n2; do m=m1,m2
-	  f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)+gravz
-	enddo; enddo
+        if (lroot) print*,'initialize_gravity: constant gravz=', gravz
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)+gravz
+        enddo; enddo
 !
       case ('linear')
-	if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
-	do n=n1,n2; do m=m1,m2
-	  f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)-nu_epicycle**2*z(n)
-	enddo; enddo
+        if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,iglobal_gg+2)=f(l1:l2,m,n,iglobal_gg+2)-nu_epicycle**2*z(n)
+        enddo; enddo
 !
       case default
-	if (lroot) print*, &
-	    'initialize_gravity: unknown gravz_profile ', gravz_profile
-	call fatal_error('initialize_gravity','chosen gravz_profile not valid')
+        if (lroot) print*, &
+            'initialize_gravity: unknown gravz_profile ', gravz_profile
+        call fatal_error('initialize_gravity','chosen gravz_profile not valid')
 !
       endselect
 !
@@ -320,9 +320,9 @@ module Gravity
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-	read(unit,NML=grav_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=grav_init_pars,ERR=99, IOSTAT=iostat)
       else
-	read(unit,NML=grav_init_pars,ERR=99)
+        read(unit,NML=grav_init_pars,ERR=99)
       endif
 !
 99    return
@@ -340,9 +340,9 @@ module Gravity
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-	read(unit,NML=grav_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=grav_run_pars,ERR=99, IOSTAT=iostat)
       else
-	read(unit,NML=grav_run_pars,ERR=99)
+        read(unit,NML=grav_run_pars,ERR=99)
       endif
 !
 99    return
@@ -425,13 +425,13 @@ module Gravity
 ! if statement for testing purposes
 !
       if (lgravity_gas) then
-	df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-	     + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+             + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
 !
       if (lneutralvelocity) then
-	df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) &
-	     + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+        df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) &
+             + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
 !
       call keep_compiler_quiet(f)
@@ -457,45 +457,45 @@ module Gravity
       intent(out) :: pot,pot0
 !
       if (lcylindrical_gravity) &
-	   call stop_it("gravity_r: potential global not implemented "//&
-	   "for cylindrical gravity approximation")
+           call stop_it("gravity_r: potential global not implemented "//&
+           "for cylindrical gravity approximation")
 !
 !  remove this if you are sure rr is already calculated elsewhere
 !
       if     (coord_system=='cartesian') then
-	do n=n1,n2; do m=m1,m2
-	  rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-	enddo; enddo
+        do n=n1,n2; do m=m1,m2
+          rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        enddo; enddo
       elseif (coord_system=='cylindric') then
-	do n=n1,n2; do m=m1,m2
-	  rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+z(n)**2)
-	enddo; enddo
+        do n=n1,n2; do m=m1,m2
+          rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+z(n)**2)
+        enddo; enddo
       elseif (coord_system=='spherical') then
-	do n=n1,n2; do m=m1,m2
-	  rr(l1:l2,m,n)=x(l1:l2)
-	enddo; enddo
+        do n=n1,n2; do m=m1,m2
+          rr(l1:l2,m,n)=x(l1:l2)
+        enddo; enddo
       endif
 !
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
-	select case (ipotential(j))
+        select case (ipotential(j))
 !
-	case ('geo-kws','smoothed-newton')
-	  !pot = pot -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-	  pot = pot - g0*(1. + (r1_pot1*rr)**n_pot1)**(1.0/n_pot1) &
-			/(rr**n_pot + r0_pot**n_pot)**(1.0/n_pot)
-	  if (present(pot0)) pot0=pot0-g0/r0_pot
+        case ('geo-kws','smoothed-newton')
+          !pot = pot -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          pot = pot - g0*(1. + (r1_pot1*rr)**n_pot1)**(1.0/n_pot1) &
+                        /(rr**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
 !
-	case ('no-smooth')
-	  pot = pot -g0/rr
+        case ('no-smooth')
+          pot = pot -g0/rr
 !
-	case default
-	  pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rr) &
-	       / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rr)
-	  if (present(pot0)) pot0 = pot0-cpot(1,j)
+        case default
+          pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rr) &
+               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rr)
+          if (present(pot0)) pot0 = pot0-cpot(1,j)
 !
-	endselect
+        endselect
       enddo
 !
     endsubroutine potential_global
@@ -521,46 +521,46 @@ module Gravity
       intent(out) :: pot,pot0,grav
 !
       if (present(rmn)) then
-	rad = rmn
+        rad = rmn
       else
-	if (present(xmn) .and. present(ymn) .and. present(zmn)) then
+        if (present(xmn) .and. present(ymn) .and. present(zmn)) then
 !
-	  if (.not.lcartesian_coords) &
-	      call stop_it("gravity_r: potential_penc with xmn,ymn,zmn is "//&
-	      "not yet implemented for non-cartesian coordinates. Fix the call "//&
-	      "to use radial distance instead")
+          if (.not.lcartesian_coords) &
+              call stop_it("gravity_r: potential_penc with xmn,ymn,zmn is "//&
+              "not yet implemented for non-cartesian coordinates. Fix the call "//&
+              "to use radial distance instead")
 !
-	  rad = sqrt(xmn**2+ymn**2+zmn**2)
-	else
-	  call stop_it("POTENTIAL_PENC: Need to specify either x,y,z or r.")
-	endif
+          rad = sqrt(xmn**2+ymn**2+zmn**2)
+        else
+          call stop_it("POTENTIAL_PENC: Need to specify either x,y,z or r.")
+        endif
       endif
 !
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
-	select case (ipotential(j))
+        select case (ipotential(j))
 !
-	case ('geo-kws','smoothed-newton')
-	  !pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-	  pot = pot - g0*(1. + (r1_pot1*rmn)**n_pot1)**(1.0/n_pot1) &
-			/(rmn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
-	  if (present(pot0)) pot0=pot0-g0/r0_pot
+        case ('geo-kws','smoothed-newton')
+          !pot=pot-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          pot = pot - g0*(1. + (r1_pot1*rmn)**n_pot1)**(1.0/n_pot1) &
+                        /(rmn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
 !
-	case ('no-smooth')
-	  pot=pot-g0/rmn
+        case ('no-smooth')
+          pot=pot-g0/rmn
 !
-	case default
-	  pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
-	       / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
-	  if (present(pot0)) pot0=pot0-cpot(1,j)
+        case default
+          pot = pot - poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
+               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
+          if (present(pot0)) pot0=pot0-cpot(1,j)
 !
-	endselect
+        endselect
       enddo
 !
       if (present(grav)) then
-	call not_implemented("potential_penc", "optional argument grav")
-	call keep_compiler_quiet(grav)
+        call not_implemented("potential_penc", "optional argument grav")
+        call keep_compiler_quiet(grav)
       endif
 !
     endsubroutine potential_penc
@@ -583,46 +583,46 @@ module Gravity
       intent(out) :: pot,pot0,grav
 !
       if (present(r)) then
-	rad = r
+        rad = r
       else
-	if (present(x) .and. present(y) .and. present(z)) then
+        if (present(x) .and. present(y) .and. present(z)) then
 !
-	  if (.not.lcartesian_coords) &
-	       call stop_it("gravity_r: potential_point with x,y,z is "//&
-	       "not yet implemented for non-cartesiand coordinates. Fix the call "//&
-	       "to  use radial distance instead")
+          if (.not.lcartesian_coords) &
+               call stop_it("gravity_r: potential_point with x,y,z is "//&
+               "not yet implemented for non-cartesiand coordinates. Fix the call "//&
+               "to  use radial distance instead")
 !
-	  rad = sqrt(x**2+y**2+z**2)
-	else
-	  call stop_it("Need to specify either x,y,z or r in potential_point()")
-	endif
+          rad = sqrt(x**2+y**2+z**2)
+        else
+          call stop_it("Need to specify either x,y,z or r in potential_point()")
+        endif
       endif
 !
       pot=0.
       if (present(pot0)) pot0=0.
       do j=1,ninit
-	select case (ipotential(j))
+        select case (ipotential(j))
 !
-	case ('geo-kws','smoothed-newton')
-	  !pot=pot-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-	  pot = pot - g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &
-			/(rad**n_pot + r0_pot**n_pot)**(1.0/n_pot)
-	  if (present(pot0)) pot0=pot0-g0/r0_pot
+        case ('geo-kws','smoothed-newton')
+          !pot=pot-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+          pot = pot - g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &
+                        /(rad**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          if (present(pot0)) pot0=pot0-g0/r0_pot
 !
-	case ('no-smooth')
-	  pot=pot-g0/r
+        case ('no-smooth')
+          pot=pot-g0/r
 !
-	case default
-	  pot = pot- poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
-	       / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
-	  if (present(pot0)) pot0=pot0-cpot(1,j)
+        case default
+          pot = pot- poly((/cpot(1,j), 0., cpot(2,j), cpot(3,j)/), rad) &
+               / poly((/1., 0., cpot(4,j), cpot(5,j), cpot(3,j)/), rad)
+          if (present(pot0)) pot0=pot0-cpot(1,j)
 !
-	endselect
+        endselect
       enddo
 !
       if (present(grav)) then
-	call not_implemented("potential_point", "optional argument grav")
-	call keep_compiler_quiet(grav)
+        call not_implemented("potential_point", "optional argument grav")
+        call keep_compiler_quiet(grav)
       endif
 !
     endsubroutine potential_point
@@ -664,48 +664,48 @@ module Gravity
 !
       call get_radial_distance(rr_sph,rr_cyl)
       if (lcylindrical_gravity) then
-	rr_mn=rr_cyl
+        rr_mn=rr_cyl
       else
-	rr_mn=rr_sph
+        rr_mn=rr_sph
       endif
 !
       g_r=0.
       do j=1,ninit
-	select case (ipotential(j))
-	case ('no-smooth')
-	  g_r=g_r -g0/rr_mn**2
+        select case (ipotential(j))
+        case ('no-smooth')
+          g_r=g_r -g0/rr_mn**2
 !
-	case ('smoothed-newton')
-	  !g_r=g_r -g0*rr_mn**(n_pot-1) &
-	  !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-	  pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
-		   /(rr_mn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
-	  g_r = pot*(rr_mn**(n_pot-1)/(rr_mn**n_pot + r0_pot**n_pot) &
-		   - r1_pot1*(r1_pot1*rr_mn)**(n_pot1-1) &
-			    /(1 + (r1_pot1*rr_mn)**n_pot1))
+        case ('smoothed-newton')
+          !g_r=g_r -g0*rr_mn**(n_pot-1) &
+          !     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+          pot = -g0*(1. + (r1_pot1*rr_mn)**n_pot1)**(1.0/n_pot1) &
+                   /(rr_mn**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          g_r = pot*(rr_mn**(n_pot-1)/(rr_mn**n_pot + r0_pot**n_pot) &
+                   - r1_pot1*(r1_pot1*rr_mn)**(n_pot1-1) &
+                            /(1 + (r1_pot1*rr_mn)**n_pot1))
 !
-	case ('varying-q')
-	  g_r=g_r -g0/rr_mn**(2*qgshear-1)
+        case ('varying-q')
+          g_r=g_r -g0/rr_mn**(2*qgshear-1)
 !
-	case ('varying-q-smooth')
-	  g_r=g_r -g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
+        case ('varying-q-smooth')
+          g_r=g_r -g0*rr_mn/(rr_mn**2+r0_pot**2)**qgshear
 !
-	case ('dark-matter-halo')
-	  g_r=g_r -g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
+        case ('dark-matter-halo')
+          g_r=g_r -g01(j)*(1-rpot(j)/rr_mn*atan2(rr_mn,rpot(j)))/rr_mn
 !
-	case ('light-matter')
-	  g_r=g_r-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
-	       ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
+        case ('light-matter')
+          g_r=g_r-4.134e-4*g01(j)*(.5*rr_mn/rpot(j))**1.22/&
+               ((.5*rr_mn/rpot(j))**2+1.502)**1.43/rr_mn
 !
-	case ('zero')
-	  g_r=g_r
+        case ('zero')
+          g_r=g_r
 !
-	case default
-	  if (lroot) print*, 'acceleration: '//&
-	       'No such value for ipotential: ', trim(ipotential(j))
-	  call stop_it("")
+        case default
+          if (lroot) print*, 'acceleration: '//&
+               'No such value for ipotential: ', trim(ipotential(j))
+          call stop_it("")
 !
-	endselect
+        endselect
       enddo
 !
     endsubroutine acceleration_penc_1D
@@ -729,58 +729,58 @@ module Gravity
       intent(out) :: g_r
 !
       if (present(r)) then
-	rad = r
+        rad = r
       else
-	if (present(x) .and. present(y) .and. present(z)) then
+        if (present(x) .and. present(y) .and. present(z)) then
 !
-	  if (.not.lcartesian_coords) &
-	      call stop_it("gravity_r: acceleration_point with x,y,z is "//&
-	      "not yet implemented for non-cartesiand coordinates. Fix  "//&
-	      "the call to  use radial distance instead")
+          if (.not.lcartesian_coords) &
+              call stop_it("gravity_r: acceleration_point with x,y,z is "//&
+              "not yet implemented for non-cartesiand coordinates. Fix  "//&
+              "the call to  use radial distance instead")
 !
-	  rad = sqrt(x**2+y**2+z**2)
-	else
-	  call stop_it("Need to specify either x,y,z or r in acceleration_point()")
-	endif
+          rad = sqrt(x**2+y**2+z**2)
+        else
+          call stop_it("Need to specify either x,y,z or r in acceleration_point()")
+        endif
       endif
 !
       g_r=0.
       do j=1,ninit
-	select case (ipotential(j))
-	case ('no-smooth')
-	  g_r=g_r -g0/rad**2
+        select case (ipotential(j))
+        case ('no-smooth')
+          g_r=g_r -g0/rad**2
 !
-	case ('smoothed-newton')
-	  !g_r=g_r -g0*rad**(n_pot-1) &
-	  !     *(rad**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-	  pot = -g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &
-		   /(rad**n_pot + r0_pot**n_pot)**(1.0/n_pot)
-	  g_r = pot*(rad**(n_pot-1)/(rad**n_pot + r0_pot**n_pot) &
-		   - r1_pot1*(r1_pot1*rad)**(n_pot1-1) &
-			    /(1 + (r1_pot1*rad)**n_pot1))
+        case ('smoothed-newton')
+          !g_r=g_r -g0*rad**(n_pot-1) &
+          !     *(rad**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+          pot = -g0*(1. + (r1_pot1*rad)**n_pot1)**(1.0/n_pot1) &
+                   /(rad**n_pot + r0_pot**n_pot)**(1.0/n_pot)
+          g_r = pot*(rad**(n_pot-1)/(rad**n_pot + r0_pot**n_pot) &
+                   - r1_pot1*(r1_pot1*rad)**(n_pot1-1) &
+                            /(1 + (r1_pot1*rad)**n_pot1))
 !
-	case ('varying-q')
-	  g_r=g_r -g0/rad**(2*qgshear-1)
+        case ('varying-q')
+          g_r=g_r -g0/rad**(2*qgshear-1)
 !
-	case ('varying-q-smooth')
-	  g_r=g_r -g0*rad/(rad**2+r0_pot**2)**qgshear
+        case ('varying-q-smooth')
+          g_r=g_r -g0*rad/(rad**2+r0_pot**2)**qgshear
 !
-	case ('dark-matter-halo')
-	  g_r=g_r -g01(j)*(1-rpot(j)/rad*atan2(rad,rpot(j)))/rad
+        case ('dark-matter-halo')
+          g_r=g_r -g01(j)*(1-rpot(j)/rad*atan2(rad,rpot(j)))/rad
 !
-	case ('light-matter')
-	  g_r=g_r-4.134e-4*g01(j)*(.5*rad/rpot(j))**1.22/&
-	       ((.5*rad/rpot(j))**2+1.502)**1.43/rad
+        case ('light-matter')
+          g_r=g_r-4.134e-4*g01(j)*(.5*rad/rpot(j))**1.22/&
+               ((.5*rad/rpot(j))**2+1.502)**1.43/rad
 !
-	case ('zero')
-	  g_r=g_r
+        case ('zero')
+          g_r=g_r
 !
-	case default
-	  if (lroot) print*, 'acceleration: '//&
-	       'No such value for ipotential: ', trim(ipotential(j))
-	  call stop_it("")
+        case default
+          if (lroot) print*, 'acceleration: '//&
+               'No such value for ipotential: ', trim(ipotential(j))
+          call stop_it("")
 !
-	endselect
+        endselect
       enddo
 !
     endsubroutine acceleration_point
@@ -795,24 +795,24 @@ module Gravity
       real, dimension(nx,3),intent(out) :: gg_mn
 !
       if (coord_system=='cartesian') then
-	gg_mn(:,1) = x(l1:l2)/rr_mn*gr
-	gg_mn(:,2) = y(  m  )/rr_mn*gr
-	gg_mn(:,3) = z(  n  )/rr_mn*gr
-	if (lcylindrical_gravity) gg_mn(:,3)=0.
+        gg_mn(:,1) = x(l1:l2)/rr_mn*gr
+        gg_mn(:,2) = y(  m  )/rr_mn*gr
+        gg_mn(:,3) = z(  n  )/rr_mn*gr
+        if (lcylindrical_gravity) gg_mn(:,3)=0.
       elseif (coord_system=='cylindric') then
-	gg_mn(:,1) = x(l1:l2)/rr_mn*gr
-	gg_mn(:,2) = 0.
-	gg_mn(:,3) = z(  n  )/rr_mn*gr
-	if (lcylindrical_gravity) gg_mn(:,3)=0.
+        gg_mn(:,1) = x(l1:l2)/rr_mn*gr
+        gg_mn(:,2) = 0.
+        gg_mn(:,3) = z(  n  )/rr_mn*gr
+        if (lcylindrical_gravity) gg_mn(:,3)=0.
       elseif (coord_system=='spherical') then
-	gg_mn(:,2)=0.
-	gg_mn(:,3)=0.
-	if (lcylindrical_gravity) then
-	  gg_mn(:,1) = gr*sin(y(m))
-	  gg_mn(:,3) = gr*cos(y(m))
-	else
-	  gg_mn(:,1) = gr
-	endif
+        gg_mn(:,2)=0.
+        gg_mn(:,3)=0.
+        if (lcylindrical_gravity) then
+          gg_mn(:,1) = gr*sin(y(m))
+          gg_mn(:,3) = gr*cos(y(m))
+        else
+          gg_mn(:,1) = gr
+        endif
       endif
 !
     endsubroutine get_gravity_field
@@ -834,10 +834,10 @@ module Gravity
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-	write(3,*) 'igg=',igg
-	write(3,*) 'igx=',igx
-	write(3,*) 'igy=',igy
-	write(3,*) 'igz=',igz
+        write(3,*) 'igg=',igg
+        write(3,*) 'igx=',igx
+        write(3,*) 'igy=',igy
+        write(3,*) 'igz=',igz
       endif
 !
       call keep_compiler_quiet(lreset)
@@ -862,11 +862,11 @@ module Gravity
       rr_mn=rr_sph
       u_mn=rr_mn/sqrt(2.)/wheat
       if (nzgrid==1) then
-	lumi_mn=luminosity*(1.-exp(-u_mn**2))
-	g_r=-lumi_mn/(2.*pi*rr_mn)*star_cte
+        lumi_mn=luminosity*(1.-exp(-u_mn**2))
+        g_r=-lumi_mn/(2.*pi*rr_mn)*star_cte
       else
-	lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
-	g_r=-lumi_mn/(4.*pi*rr_mn**2)*star_cte
+        lumi_mn=luminosity*(erfunc(u_mn)-2.*u_mn/sqrt(pi)*exp(-u_mn**2))
+        g_r=-lumi_mn/(4.*pi*rr_mn**2)*star_cte
       endif
       call get_gravity_field(g_r, gg_mn, rr_mn)
       f(l1:l2,m,n,iglobal_gg:iglobal_gg+2) = gg_mn
