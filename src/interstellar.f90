@@ -1514,7 +1514,7 @@ module Interstellar
 !  
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
-        dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
+!        dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
         Hmax=Hmax+heat
       endif
 !
