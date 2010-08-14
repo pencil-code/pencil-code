@@ -776,7 +776,7 @@ module Interstellar
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / unit_length,dxmax*2.0)
+            max(width_SN_cgs / unit_length,dxmax*2.0d0)
         if (SNR_damping_time==impossible) &
             SNR_damping_time=SNR_damping_time_cgs / unit_time
         if (SNR_damping_rate==impossible) &
@@ -1275,8 +1275,8 @@ module Interstellar
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mz), intent(out), target :: zrho
-      real, intent(out), target :: T0hs
+      real, dimension(mz), intent(out) :: zrho
+      real, intent(out) :: T0hs
 !
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: muhs
