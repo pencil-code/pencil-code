@@ -260,9 +260,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	!P.MULTI = [0, 1, 1]
 
-	ox = nint (bin_x / 2.0) - 1
-	oy = nint (bin_y / 2.0) - 1
-	oz = nint (bin_z / 2.0) - 1
+	ox = round (bin_x / 2.0) - 1
+	oy = round (bin_y / 2.0) - 1
+	oz = round (bin_z / 2.0) - 1
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform(cube[px,*,*]) > csmin) < csmax
