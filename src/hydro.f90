@@ -1183,6 +1183,9 @@ module Hydro
             endif
           enddo
 !
+        case('Gressel-hs')
+          call information('init_uu', &
+              'Gressel hydrostatic equilibrium setup done in interstellar')
         case default
           !
           !  Catch unknown values
