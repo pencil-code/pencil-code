@@ -460,7 +460,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   weezy & \htmladdnormallink{S. Louise Wilkin}{http://www.mas.ncl.ac.uk/~n9405169/} & University of Newcastle\\
   vpariev & \htmladdnormallink{Vladimir Pariev}{http://www.pas.rochester.edu/~vpariev/} & University of Rochester\\
   torkel & \htmladdnormallink{Ulf Torkelsson}{http://fy.chalmers.se/~torkel/} & Chalmers University\\
-  theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.damtp.cam.ac.uk/user/theine/} & Cambridge University \\
+  theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.damtp.cam.ac.uk/user/theine/} & IAS Princeton \\
   tarek & \htmladdnormallink{Tarek A. Yousef}{http://www.pvv.org/~tarek/} & University of Trondheim\\
   steveb & \htmladdnormallink{Steve Berukoff}{http://www.physics.ucla.edu/~steveb/} & UCLA \\
   snod & \htmladdnormallink{Andrew Snodin}{http://www.ncl.ac.uk/math/postgrad/postgrads.htm} & University of Newcastle\\
@@ -484,7 +484,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   bing & \htmladdnormallink{Sven Bingert}{http://www.mps.mpg.de} & Max Planck Institute for Solar System Research\\
   apichat & \htmladdnormallink{Apichat Neamvonk}{Apichat.Neamvonk@ncl.ac.uk} & University of Newcastle\\
   amjed & \htmladdnormallink{Amjed Mohammed}{http://ehf.uni-oldenburg.de/member.php?nav=staff\&sprache=english\&show=43} & University of Oldenburg\\
-  ajohan & \htmladdnormallink{Anders Johansen}{http://www.strw.leidenuniv.nl/~ajohan} & Leiden Observatory, Leiden University
+  ajohan & \htmladdnormallink{Anders Johansen}{http://pc366.astro.lu.se/anders/index_en.php} & Lund Observatory, Lund University
 \end{tabular}
 
 \vfill
@@ -7253,11 +7253,13 @@ Here we discuss and amplify some remaining matters.
 
 \subsubsection{Indenting and whitespace}
 
+\index{Whitespace}
 Whitespace should be removed from the end of lines.
 
 Blank lines are kept to a minimum, and when occurring in subroutines
 or functions are replaced by a single `!' in the first column.
 
+\index{Tab characters}
 Tab characters are not used anywhere in the code.  Tab characters are
 not in fact allowed by the Fortran standard and compilers that accept
 them do so as an extension.
@@ -7289,6 +7291,7 @@ Alternatively nested loops may be written on a single line, i.e.
 \end{verbatim}
 
 \subsubsection{Comments}
+\index{Comments}
 
 Descriptive comments are written on their own lines unless there is a strong
 reason to do otherwise. Comments are never indented and the `!' should appear
@@ -7390,6 +7393,8 @@ of variables they are as follows:
 \end{itemize}
 
 \subsubsection{Emacs settings}
+\index{Emacs settings}
+
 Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
 \begin{Verbatim}
   ;;; ~/.f90.emacs
@@ -7474,6 +7479,7 @@ being outside revision control, which is to be avoided at all cost.
 % ====================================================================== %
 
 \section{Some specific initial conditions}
+\index{Initial conditions}
 
 \subsection{Random velocity or magnetic fields}
 
@@ -7528,6 +7534,8 @@ Obtained with \code{inituu='Beltrami-z'} or \code{initaa='Beltrami-z'}.
 % ---------------------------------------------------------------------- %
 
 \subsection{Magnetic flux rings: \code{initaa='fluxrings'}}
+\index{Interlocked flux rings}
+\index{Flux rings}
 \label{fluxrings}
 
 This initial condition sets up two interlocked thin magnetic tori
@@ -7646,6 +7654,7 @@ In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose $z_\infty=z_{\rm ref}$.
 
 \subsubsection{Polytropic atmosphere}
+\index{Polytropic atmosphere}
 
 For a polytropic equation of state, $p=K\rho^\Gamma$, where generally
 $\Gamma\neq\gamma$, we can write
@@ -7943,7 +7952,6 @@ very much like the exterior potential field
 ~(\ref{Eq-Apot-x})--(\ref{Eq-Apot-z}), our ghost-zone values do \emph{not}
 represent the exterior field -- they are rather made-up values that allow
 us to implement a local boundary condition at $z=0$.
-
 
 % ---------------------------------------------------------------------- %
 
