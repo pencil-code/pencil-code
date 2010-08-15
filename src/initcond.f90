@@ -4361,41 +4361,49 @@ module Initcond
       real :: ampl,tmp1
       real, dimension(1)::tmp3
       real, dimension(ncpus)::sumtmp,tmp2
-!      double precision :: g_B
-!      double precision, parameter :: g_B_cgs=6.172D20
-!      g_B=g_b_cgs/unit_length
+!
       tmp2(:)=0.0
       sumtmp(:)=0.0
-          tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
-          do icpu=1,ncpus
-          tmp3=tmp1
-          call mpibcast_real(tmp3,1,icpu-1)
-          tmp2(icpu+nprocy)=tmp3(1)
+      tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+!
+!  Calculate the total mass on each processor tmp1 and identify it with the
+!  appropriate processor in the array tmp2
+!
+      do icpu=1,ncpus
+        tmp3=tmp1
+        call mpibcast_real(tmp3,1,icpu-1)
+        tmp2(icpu)=tmp3(1)
+      enddo
+!
+!  If nprocz is 1 then start summing mass below from zero (sumtmp above). 
+!  Otherwise sum the masses on the processors below from which to start
+!  summing the mass on this processor.
+!
+      if (ncpus>nprocy) then
+        do icpu=nprocy+1,ncpus
+          sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu-nprocy)
         enddo
-        if (ncpus>nprocy) then
-          do icpu=nprocy+1,ncpus
-            sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
-          enddo
-        endif
-        if (lroot) print*,'sumtmp =',sumtmp
-        print*,'sumtmp on iproc =',sumtmp(iproc+1)
+      endif
+      if (lroot) print*,'sumtmp =',sumtmp
+      print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'ferriere_uniform_x: set variable to zero; i=',i
+        if (lroot) print*,'ferriere_uniform_x: set B field to zero; i=',i
       else
-        print*,'ferriere_uniform_x: uniform x-field approx propto rho ; i=',i
+        print*,'ferriere_uniform_x: uniform x-field propto rho; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
-        do n=n1,n2; do m=m1,m2
+        do n=n1,n2
+        do m=m1,m2
           f(l1:l2,m,n,i  )=0.0
           f(l1:l2,m,n,i+1)=-ampl*(sumtmp(iproc+1)+&
               sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
-!          f(l1:l2,m,n,i+1)=-ampl*g_B*tanh(z(n)/g_B)
           f(l1:l2,m,n,i+2)=0.0
-        enddo; enddo
+        enddo
+        enddo
       endif
 !
     endsubroutine ferriere_uniform_x
-!***********************************************************************
+!*****************************************************************************
     subroutine ferriere_uniform_y(ampl,f,i)
 !
 !  Uniform B_y field (for vector potential)
@@ -4410,48 +4418,54 @@ module Initcond
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
-      integer :: i,icpu
+      integer :: i ,icpu
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ampl,tmp1
       real, dimension(1)::tmp3
       real, dimension(ncpus)::sumtmp,tmp2
-!      double precision :: g_B
-!      double precision, parameter :: g_B_cgs=6.172D20
-!      g_B=g_b_cgs/unit_length
+!
       tmp2(:)=0.0
       sumtmp(:)=0.0
       tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+!
+!  Calculate the total mass on each processor tmp1 and identify it with the
+!  appropriate processor in the array tmp2
+!
       do icpu=1,ncpus
         tmp3=tmp1
         call mpibcast_real(tmp3,1,icpu-1)
-!--     tmp2(icpu+nprocy)=tmp3(1)
-!AB: the line above is writing out-of-bounds. Please check!
         tmp2(icpu)=tmp3(1)
       enddo
+!
+!  If nprocz is 1 then start summing mass below from zero (sumtmp above). 
+!  Otherwise sum the masses on the processors below from which to start
+!  summing the mass on this processor.
+!
       if (ncpus>nprocy) then
         do icpu=nprocy+1,ncpus
-          sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
+          sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu-nprocy)
         enddo
       endif
       if (lroot) print*,'sumtmp =',sumtmp
-      print*,'sumtmp on iproc =',sumtmp(iproc+1)
+      print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'ferriere_uniform_y: set variable to zero; i=',i
+        if (lroot) print*,'ferriere_uniform_y: set B field to zero; i=',i
       else
-        print*,'ferriere_uniform_y: uniform y-field approx propto rho ; i=',i
+        print*,'ferriere_uniform_y: uniform y-field approx rho; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
-        do n=n1,n2; do m=m1,m2
+        do n=n1,n2
+        do m=m1,m2
           f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+&
               sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
-!          f(l1:l2,m,n,i)=ampl*g_B*tanh(z(n)/g_B)
           f(l1:l2,m,n,i+1)=0.0
           f(l1:l2,m,n,i+2)=0.0
-        enddo; enddo
+        enddo
+        enddo
       endif
 !
     endsubroutine ferriere_uniform_y
-!***********************************************************************
+!*****************************************************************************
 subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
 !
 !  Rigid rotating sphere initial velocity
