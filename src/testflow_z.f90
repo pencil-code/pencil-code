@@ -320,7 +320,7 @@ module Testflow
      ltestflow_forcing = .true.
 !
      if (lkinem_testflow) &
-       lhydro_forcing = .false.			!???
+       lhydro_forcing = .false. ! ???
 
 ! ensure that lprescribed_velocity finds continuous forcing
 
@@ -368,7 +368,7 @@ module Testflow
            cqq(1) = -zrange(1)/(xyz0(3)-zrange(1))      ! coefficients of periodized quadratic function
 
          endif
-         
+!
          if ( zrange(2)>=z(n2) ) then
            zrange(2) = z(n2)+.01
          else
@@ -676,7 +676,7 @@ module Testflow
       ihhtest=iuutest+3
 !
       if (lkinem_testflow) then
-!        
+!
         uufluct = f(l1:l2,m,n,iuxtest:iuztest)           ! ufluct = u0
         call grad(f,ihhtest,ghfluct)                     ! ghfluct = grad(h0)
 !
@@ -717,7 +717,7 @@ module Testflow
 !
         if ( jtest>0 .or. .not.lprescribed_velocity ) then
 
-          uutest=f(l1:l2,m,n,iuxtest:iuztest)		! testflow solution # jtest
+          uutest=f(l1:l2,m,n,iuxtest:iuztest)! testflow solution # jtest
           hhtest=f(l1:l2,m,n,ihhtest)
           !!if ( jtest==1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
 !
@@ -873,7 +873,6 @@ module Testflow
           endif
 
         endif
-!
 !  add linear part of diffusion term nu*(del2u^pq + divu^pq/3)
 !
         if (nutest/=0.) then
@@ -1175,8 +1174,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
                 if ( .not.lburgers_testflow ) &
                   call u_dot_grad(f,ihhtest,ghtest,uutest,hnltest,UPWIND=ltestflow_upw_lnrho)   ! u0.grad(h0)
 
-              endif             
-            
+              endif
+!
             else
 !
               !!call multmv(uijtest,uufluct,unltest)                                        ! (u.grad)(utest)
@@ -1382,7 +1381,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
     real, dimension (2,2) :: aklam
     integer :: i,j,i3,i4,i5,i6,k
 !
-      Fipq=Fipq/(-wamp*valid_zrange*nzgrid)                               ! as at call Fipq, Qipq have inverted sign yet	               	
+      Fipq=Fipq/(-wamp*valid_zrange*nzgrid)                               ! as at call Fipq, Qipq have inverted sign yet               
       Qipq=Qipq/(-wamp*valid_zrange*nzgrid)                               ! factor nzgrid for averaging over z
 !
       !!print*,'z,Fipq=', z(indz), Fipq(1:2,3), Fipq(1:2,4)
@@ -1742,7 +1741,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         U0test(:,3-comp)=0.; U0test(:,3-comp)=0.
         gU0test(:,3-comp)=0.; gU0test(:,3-comp)=0.
 
-        U0test=0.;gU0test=0.	!!!!
+        U0test=0.;gU0test=0.!!!!
 
       case default
         U0test=0.;gU0test=0.

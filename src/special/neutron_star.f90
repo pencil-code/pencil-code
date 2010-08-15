@@ -824,9 +824,9 @@ module Special
 !
 !  FIXME: T_disk_ref is used, but never set
 !
-! 	      df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss) &
-! 	         -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)/ &
-! 		 T_disk_ref(1:nx-ac_dc_size)-1.)
+!       df(l1:l_sz,m,n,iss)=df(l1:l_sz,m,n,iss) &
+!          -1./(5.*dt)*(p%TT(1:nx-ac_dc_size)/ &
+!          T_disk_ref(1:nx-ac_dc_size)-1.)
 !
 !
 !

@@ -107,7 +107,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-	   "$Id$")
+          "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
