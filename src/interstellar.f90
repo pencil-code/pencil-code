@@ -1276,7 +1276,7 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mz), intent(out) :: zrho
-      real, intent(out) :: T0hs
+      real, intent(inout) :: T0hs
 !
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: muhs
