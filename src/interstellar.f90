@@ -1513,9 +1513,11 @@ module Interstellar
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !  
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
+        dt1_max=max(dt1_max,abs(heatcool)/(p%ee*cdt_tauc))
+!        dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
 !        dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
-        Hmax=Hmax+heat
+        where (heatcool>0.0) Hmax=Hmax+heatcool
+!       Hmax=Hmax+heat
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
