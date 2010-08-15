@@ -4399,6 +4399,7 @@ module Initcond
     subroutine ferriere_uniform_y(ampl,f,i)
 !
 !  Uniform B_y field (for vector potential)
+!
 !  22-jan-10/fred
 !
 !  This routine sets up an initial magnetic field y-parallel(azimuthal) with a
@@ -4419,19 +4420,21 @@ module Initcond
 !      g_B=g_b_cgs/unit_length
       tmp2(:)=0.0
       sumtmp(:)=0.0
-          tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
-          do icpu=1,ncpus
-          tmp3=tmp1
-          call mpibcast_real(tmp3,1,icpu-1)
-          tmp2(icpu+nprocy)=tmp3(1)
+      tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+      do icpu=1,ncpus
+        tmp3=tmp1
+        call mpibcast_real(tmp3,1,icpu-1)
+!--     tmp2(icpu+nprocy)=tmp3(1)
+!AB: the line above is writing out-of-bounds. Please check!
+        tmp2(icpu)=tmp3(1)
+      enddo
+      if (ncpus>nprocy) then
+        do icpu=nprocy+1,ncpus
+          sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
         enddo
-        if (ncpus>nprocy) then
-          do icpu=nprocy+1,ncpus
-            sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu)
-          enddo
-        endif
-        if (lroot) print*,'sumtmp =',sumtmp
-        print*,'sumtmp on iproc =',sumtmp(iproc+1)
+      endif
+      if (lroot) print*,'sumtmp =',sumtmp
+      print*,'sumtmp on iproc =',sumtmp(iproc+1)
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'ferriere_uniform_y: set variable to zero; i=',i
