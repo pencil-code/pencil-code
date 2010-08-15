@@ -2478,7 +2478,7 @@ module Entropy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-!      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/ee/cdts)
+!      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/p%ee/cdts)
 !
 !  Calculate entropy related diagnostics.
 !
