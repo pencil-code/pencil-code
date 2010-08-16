@@ -1574,8 +1574,8 @@ module Special
 !
         points_rstate(:)=0.
 !
-        tsnap_uu = t + dsnap
-        isnap = 1
+        isnap = nint (t/dsnap)
+        tsnap_uu = (isnap+1) * dsnap
 !
       endif
 !
@@ -1842,12 +1842,10 @@ module Special
       call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
-        isnap = nint (t/dsnap)
-        tsnap_uu = (isnap+1) * dsnap
         call rdpoints(level)
         if (.not.associated(current%next)) then
           call driveinit
-          call wrpoints(level,isnap)
+          call wrpoints(level,0)
           call wrpoints(level)
         endif
       else
@@ -1887,6 +1885,7 @@ module Special
           isnap  = isnap + 1
         endif
       endif
+!
       if (itsub .eq. 3) &
           lstop = file_exists('STOP')
       if (lstop.or.t>=tmax .or. it.eq.nt.or. &
