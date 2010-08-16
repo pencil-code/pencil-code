@@ -149,15 +149,19 @@ pro precalc_data, i, vars
 
 	over_tags = tag_names (oversets[i])
 	if (any (strcmp (sources, 'uu', /fold_case))) then begin
-		; Velocity overplot
 		if (any (strcmp (over_tags, 'u', /fold_case))) then begin
+			; Velocity overplot
 			oversets[i].u = float (vars.uu * unit.velocity / unit.default_velocity)
 		end
 	end
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
-		; Magnetic field overplot
 		if (any (strcmp (over_tags, 'b', /fold_case))) then begin
+			; Magnetic field overplot
 			oversets[i].b = float (bb)
+		end
+		if (any (strcmp (over_tags, 'a_contour', /fold_case))) then begin
+			; Magnetic field lines overplot
+			oversets[i].a_contour = float (vars.aa)
 		end
 	end
 end

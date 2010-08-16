@@ -67,33 +67,45 @@ pro cslice_event, event
 	'DRAW_YZ':  begin
 		if (event.press) then button_pressed_yz = 1
 		if (button_pressed_yz) then begin
+			last_py = py
+			last_pz = pz
 			py = event.x / bin_y > 0 < (num_y-1)
 			pz = event.y / bin_z > 0 < (num_z-1)
-			WIDGET_CONTROL, sl_y, SET_VALUE = py
-			WIDGET_CONTROL, sl_z, SET_VALUE = pz
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			if ((py ne last_py) or (pz ne last_pz)) then begin
+				WIDGET_CONTROL, sl_y, SET_VALUE = py
+				WIDGET_CONTROL, sl_z, SET_VALUE = pz
+				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			end
 		endif
 		if (event.release) then button_pressed_yz = 0
 	end
 	'DRAW_XZ':  begin
 		if (event.press) then button_pressed_xz = 1
 		if (button_pressed_xz) then begin
+			last_px = px
+			last_pz = pz
 			px = event.x / bin_x > 0 < (num_x-1)
 			pz = event.y / bin_z > 0 < (num_z-1)
-			WIDGET_CONTROL, sl_x, SET_VALUE = px
-			WIDGET_CONTROL, sl_z, SET_VALUE = pz
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			if ((px ne last_px) or (pz ne last_pz)) then begin
+				WIDGET_CONTROL, sl_x, SET_VALUE = px
+				WIDGET_CONTROL, sl_z, SET_VALUE = pz
+				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			end
 		endif
 		if (event.release) then button_pressed_xz = 0
 	end
 	'DRAW_XY':  begin
 		if (event.press) then button_pressed_xy = 1
 		if (button_pressed_xy) then begin
+			last_px = px
+			last_py = py
 			px = event.x / bin_x > 0 < (num_x-1)
 			py = event.y / bin_y > 0 < (num_y-1)
-			WIDGET_CONTROL, sl_x, SET_VALUE = px
-			WIDGET_CONTROL, sl_y, SET_VALUE = py
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			if ((px ne last_px) or (py ne last_py)) then begin
+				WIDGET_CONTROL, sl_x, SET_VALUE = px
+				WIDGET_CONTROL, sl_y, SET_VALUE = py
+				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			end
 		endif
 		if (event.release) then button_pressed_xy = 0
 	end
@@ -250,13 +262,16 @@ end
 pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common overplot_common, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
+	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, play, scal_b, scal_t
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; stepping of crosshairs
 	step = 4
+
+	; number of levels for contour plot
+	default, nlevels, 50
 
 	!P.MULTI = [0, 1, 1]
 
@@ -286,7 +301,11 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
-			velovect, reform (field_y_x[px, *, *]), reform (field_z_x[px, *, *]), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			if (overplot_contour eq 1) then begin
+				contour, reform (field_x_y[px, *, *]), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			end else begin
+				velovect, reform (field_y_x[px, *, *]), reform (field_z_x[px, *, *]), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
@@ -318,7 +337,11 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
-			velovect, reform (field_x_y[*, py, *]), reform (field_z_y[*, py, *]), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			if (overplot_contour eq 1) then begin
+				contour, reform (field_y_x[*, py, *]), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			end else begin
+				velovect, reform (field_x_y[*, py, *]), reform (field_z_y[*, py, *]), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			end
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
@@ -350,7 +373,11 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
-			velovect, reform (field_x_z[*, *, pz]), reform (field_y_z[*, *, pz]), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			if (overplot_contour eq 1) then begin
+				contour, reform (field_z_x[*, *, pz]), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			end else begin
+				velovect, reform (field_x_z[*, *, pz]), reform (field_y_z[*, *, pz]), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
 			wset, wcut_z
@@ -491,7 +518,7 @@ pro prepare_overplot
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common overplot_common, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
+	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, play, scal_b, scal_t
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
@@ -501,6 +528,8 @@ pro prepare_overplot
 	vector_distance = 8
 	; maximum length of vectors
 	vector_length = vector_distance * 0.75
+	; default plot routine: 0=velovect (1=contour)
+	overplot_contour = 0
 
 	if (selected_overplot le 0) then return
 
@@ -514,31 +543,54 @@ pro prepare_overplot
 		stop
 	end
 
-	; setup vector field
-	field_x_y = congrid (reform (field_x[cut]), num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
-	field_x_z = congrid (reform (field_x[cut]), num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
-	field_y_x = congrid (reform (field_y[cut]), num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
-	field_y_z = congrid (reform (field_y[cut]), num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
-	field_z_x = congrid (reform (field_z[cut]), num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
-	field_z_y = congrid (reform (field_z[cut]), num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+	if (strpos (tag, "_velovect") gt 0) then overplot_contour = 0
+	if (strpos (tag, "_contour") gt 0) then overplot_contour = 1
 
-	; setup field indices
-	field_x_indices = (findgen (num_x*bin_x/vector_distance) + 0.5) / (num_x*bin_x/vector_distance)
-	field_y_indices = (findgen (num_y*bin_y/vector_distance) + 0.5) / (num_y*bin_y/vector_distance)
-	field_z_indices = (findgen (num_z*bin_z/vector_distance) + 0.5) / (num_z*bin_z/vector_distance)
+	if (overplot_contour eq 1) then begin
+		; setup contour plot
+		field_x_y = reform (field_x[cut])
+		field_x_z = 0.0
+		field_y_x = reform (field_y[cut])
+		field_y_z = 0.0
+		field_z_x = reform (field_z[cut])
+		field_z_y = 0.0
 
-	; setup vector lengthes for x, y, and z overplots
-	field_x_max = max (field_x[cut])
-	field_y_max = max (field_y[cut])
-	field_z_max = max (field_z[cut])
+		; setup field indices
+		field_x_indices = (findgen (num_x) + 0.25) / num_x
+		field_y_indices = (findgen (num_y) + 0.25) / num_y
+		field_z_indices = (findgen (num_z) + 0.25) / num_z
 
-	; normalize maximum value to 1.0
-;	field_x_y /= field_x_max
-;	field_x_z /= field_x_max
-;	field_y_x /= field_y_max
-;	field_y_z /= field_y_max
-;	field_z_x /= field_z_max
-;	field_z_y /= field_z_max
+		; setup maximum values of x, y, and z overplots
+		field_x_max = max (field_x[cut])
+		field_y_max = max (field_y[cut])
+		field_z_max = max (field_z[cut])
+	end else begin
+		; setup vector field
+		field_x_y = congrid (reform (field_x[cut]), num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+		field_x_z = congrid (reform (field_x[cut]), num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
+		field_y_x = congrid (reform (field_y[cut]), num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
+		field_y_z = congrid (reform (field_y[cut]), num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
+		field_z_x = congrid (reform (field_z[cut]), num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
+		field_z_y = congrid (reform (field_z[cut]), num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+
+		; setup field indices
+		field_x_indices = (findgen (num_x*bin_x/vector_distance) + 0.5) / (num_x*bin_x/vector_distance)
+		field_y_indices = (findgen (num_y*bin_y/vector_distance) + 0.5) / (num_y*bin_y/vector_distance)
+		field_z_indices = (findgen (num_z*bin_z/vector_distance) + 0.5) / (num_z*bin_z/vector_distance)
+
+		; setup vector lengthes for x, y, and z overplots
+		field_x_max = max (field_x[cut])
+		field_y_max = max (field_y[cut])
+		field_z_max = max (field_z[cut])
+
+		; normalize maximum value to 1.0
+;		field_x_y /= field_x_max
+;		field_x_z /= field_x_max
+;		field_y_x /= field_y_max
+;		field_y_z /= field_y_max
+;		field_z_x /= field_z_max
+;		field_z_y /= field_z_max
+	end
 
 	return
 end

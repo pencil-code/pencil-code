@@ -16,12 +16,7 @@
 ;;; Settings:
 
 ; Quantities to be visualized:
-quantities = { temperature:'Temp', currentdensity:'j',            $
-               magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
-               velocity:'u_abs', velocity_z:'u_z',                $
-               logarithmic_density:'ln_rho' }
-
-; Available quantities are:
+; => Available quantities for visualization are:
 ; 'Temp', 'rho', 'ln_rho'   ; temperature, density and logarithmic density
 ; 'ux', 'uy', 'uz', 'u_abs' ; velocity components and the absolute value
 ; 'Ax', 'Ay', 'Az'          ; vector potential components
@@ -29,12 +24,17 @@ quantities = { temperature:'Temp', currentdensity:'j',            $
 ; 'rho_mag'                 ; magnetic energy density
 ; 'j'                       ; absolute value of the current density
 ; (more quantities can be defined in 'precalc_data', see analyse_companion.pro)
+quantities = { temperature:'Temp', currentdensity:'j',            $
+               magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
+               velocity:'u_abs', velocity_z:'u_z',                $
+               logarithmic_density:'ln_rho' }
+
 
 ; Quantities to be overplotted (calculated in 'precalc_data'):
-overplot_quantities = { magnetic_field:'b', velocities:'u' }
+; => Available quantities for overplotting are:
+; 'b', 'a_contour', and 'u'
+overplot_quantities = { magnetic_field:'b', fieldlines:'a_contour', velocities:'u' }
 
-; Available quantities for overplotting are:
-; 'b' and 'u'
 
 ; Preferred units for display
 default_length        = 1.e6
@@ -42,18 +42,16 @@ default_length_str    = 'Mm'
 default_velocity      = 1.e3
 default_velocity_str  = 'km/s'
 
-; initial varfile
+
+; Initial varfile
 default, varfile, 'var.dat'
 
-; default data directory
-default, datadir, './data/'
 
-; stepping for varfiles
-default, stepping, 1
+; Default data directory
+default, datadir, pc_get_datadir()
 
-; skipping of first n varfiles
-default, skipping, 0
 
+;;; MAIN PROGRAM:
 
 default, analyse_loaded, 0
 
@@ -76,8 +74,10 @@ if (not analyse_loaded) then BEGIN
 	pc_units, obj=unit
 
 	file_struct = file_info (datadir+"/proc0/var.dat")
-	subdomains = n_elements (file_search (datadir, "../proc*"))
-	gb_per_file = (file_struct.size * subdomains) / 1024. / 1024. / 1024.
+	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
+	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
+	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
+	gb_per_file = (file_struct.size * subdomains * correction) / 1024. / 1024. / 1024.
 
 	snapshots = file_search (datadir+"/proc0/", "VAR?")
 	add = file_search (datadir+"/proc0/", "VAR??")
@@ -90,57 +90,58 @@ if (not analyse_loaded) then BEGIN
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
 	num_snapshots = n_elements (snapshots)
 	files_total = num_snapshots
+	skipping = 0
+	stepping = 1
 	if (num_snapshots gt 0) then begin
 		print, ""
-		print, "There are ", num_snapshots, " snapshot files available."
-		print, "(This corresponds to ", (round (num_snapshots * gb_per_file * 10) / 10.), " GB.)"
+		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
+		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
+			print, "'"+datadir+"/"+varfile+"' will be read anyways."
+			print, "Do you want to load additional files into the cache?"
 			repeat begin
-				print, "Which files do you want to load into the cache?"
 				answer = "n"
-				read, answer, format="(A)", prompt="Read (A)ll / (S)elected / (N)o files : "
+				read, answer, format="(A)", prompt="Read (A)ll / (S)elected / (N)o additional files: "
 			end until (any (strcmp (answer, ['n', 'a', 's'], /fold_case)))
 			if (strcmp (answer, 'n', /fold_case)) then begin
 				stepping = 0
 				skipping = num_snapshots
 				files_total = 0
 			end
+			print, "Available snapshots: ", snapshots
 			if (strcmp (answer, 's', /fold_case)) then begin
+				if (num_snapshots gt 1) then begin
+					print, "How many files do you want to skip at start?"
+					repeat begin
+						read, skipping, format="(I)", prompt="(0..."+strtrim (num_snapshots-1, 2)+"): "
+					end until ((skipping ge 0) and (skipping le num_snapshots-1))
+				end
 				print, "Please enter a stepping for reading files:"
 				print, "(0=do not read any files, 1=each file, 2=every 2nd, ...)"
-				read, stepping, format="(I)", prompt="(0 - number of snapshots) : "
-				if (stepping le 0) then begin
-					stepping = 0
-					skipping = num_snapshots
-					files_total = 0
-				end else begin
-					print, "How many files do you want to skip at start ?"
-					read, skipping, format="(I)", prompt="(0 - number of snapshots) : "
-					print, "How many files do you want to read in total ?"
-					read, files_total, format="(I)", prompt="(0 - number of remaining files) : "
+				repeat begin
+					read, stepping, format="(I)", prompt="(0..."+strtrim (num_snapshots-skipping, 2)+"): "
+				end until ((stepping ge 0) and (stepping le num_snapshots-skipping))
+				if (num_snapshots-skipping gt 1) then begin
+					print, "How many files do you want to read in total?"
+					repeat begin
+						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (floor ((num_snapshots-skipping)/stepping), 2)+"): "
+					end until ((files_total ge 0) and (files_total le floor ((num_snapshots-skipping)/stepping)))
 				end
 			end
 		end
 	end
 
-	if (skipping lt 0) then skipping = 0
-	if (files_total le 0) then begin
-		files_total = 0
-		stepping = 0
-	end
-	if (stepping lt 0) then stepping = 1
-
 	num_selected = num_snapshots
 	if (skipping ge 1) then num_selected -= skipping
-	if (stepping ge 1) then num_selected = (num_selected - 1) / stepping + 1 else num_snapshots = 0
+	if (stepping ge 1) then num_selected = (num_selected - 1) / stepping + 1 else num_selected = 0
 	if (num_selected lt 0) then num_selected = 0
 	if (files_total gt num_selected) then files_total = num_selected
 	if (files_total lt num_selected) then num_selected = files_total
 	ignore_end = num_snapshots - skipping - (files_total * stepping)
 
 	print, ""
-	print, "Selected snapshots: skipping the first ", skipping, " with stepping=", stepping
-	print, "(This corresponds to ", (num_selected * gb_per_file), " GB = ", num_selected, " files.)"
+	print, "Selected snapshots: skipping the first ", strtrim (skipping, 2), " with stepping=", strtrim (stepping, 2)
+	print, "(This corresponds to ", strtrim (num_selected * gb_per_file, 2), " GB = ", strtrim (num_selected, 2), " files.)"
 	print, ""
 
 
@@ -149,6 +150,13 @@ if (not analyse_loaded) then BEGIN
 	if (n_elements (ts) gt 0) then begin
 		window, 1, xsize=1000, ysize=800, title = 'time series analysis', retain=2
 		!P.MULTI = [0, 2, 2]
+
+		max_subplots = 4
+		num_subplots = 0
+		print, "starting values:"
+		print, "dt    :", ts.dt[0]
+		plot, ts.dt, title = 'dt', /yl
+		num_subplots += 1
 
 		tags = tag_names (ts)
 		y_minmax = minmax (ts.dt)
@@ -161,10 +169,8 @@ if (not analyse_loaded) then BEGIN
 		if (any (strcmp (tags, 'dtchi', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dtchi])
 		if (any (strcmp (tags, 'dtchi2', /fold_case))) then y_minmax = minmax ([y_minmax, ts.dtchi2])
 
-		print, "starting values:"
-		print, "dt    :", ts.dt[0]
-		plot, ts.dt, title = 'dt', yrange=y_minmax, /yl
 		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', yrange=y_minmax, /yl
+		num_subplots += 1
 		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
 			oplot, ts.t, ts.dtu, linestyle=2, color=11061000
 			print, "dtu   :", ts.dtu[0]
@@ -197,8 +203,6 @@ if (not analyse_loaded) then BEGIN
 			oplot, ts.t, ts.dtchi2, linestyle=3, color=41215
 			print, "dtchi2:", ts.dtchi2[0]
 		end
-		max_subplots = 2
-		num_subplots = 0
 		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
