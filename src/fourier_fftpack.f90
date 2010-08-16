@@ -1336,8 +1336,8 @@ module Fourier
           call fatal_error ('vect_pot_extrapol_z_parallel', 'input array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
           call fatal_error ('vect_pot_extrapol_z_parallel', 'output array size mismatch /= nx,ny', lfirst_proc_xy)
-      if ((size (factor, 1) /= pnx) .or. (size (factor, 2) /= pny)) &
-          call fatal_error ('vect_pot_extrapol_z_parallel', 'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
+      if ((size (factor, 1) /= tnx) .or. (size (factor, 2) /= tny)) &
+          call fatal_error ('vect_pot_extrapol_z_parallel', 'factor array size mismatch /= tnx,tny', lfirst_proc_xy)
       if (size (factor, 3) /= onz) &
           call fatal_error ('vect_pot_extrapol_z_parallel', &
                             'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
