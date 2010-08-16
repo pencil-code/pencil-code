@@ -331,6 +331,13 @@ else if (($hn =~ comp*) || ($masterhost =~ andromeda)) then
   source ${HOME}/.cshrc
   set $mpirun=mpirun
 #------------------------------------------------
+else if ($hn =~ norlx5*) then
+  echo "******************************"
+  echo "NORDITA cluster"
+  echo " ******************************"
+  source ${HOME}/.cshrc
+  set $mpirun=${HOME}/Library/bin/mpirun
+#------------------------------------------------
 # For North-West Grid UK
 else if ($hn =~ lv1*) then
   echo "Liverpool Grid - NW-grid"
