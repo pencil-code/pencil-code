@@ -1370,9 +1370,10 @@ module Fourier
       call cffti (nygrid, wsavey)
 !
       if (lforward) then
-        ! forward FFT
 !
-        ! remap the data we need into pencil shape
+        ! Forward FFT.
+!
+        ! Remap the data we need into pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im)
@@ -1382,7 +1383,7 @@ module Fourier
 !
         if (nxgrid>1) then
           do m = 1, pny
-            ! transform x-direction
+            ! Transform x-direction.
             ax = cmplx (p_re(:,m), p_im(:,m))
             call cfftf (nxgrid, ax, wsavex)
             p_re(:,m) = real (ax)
@@ -1395,9 +1396,9 @@ module Fourier
 !
         if (nygrid>1) then
           do l = 1, tny
-            ! transform y-direction
+            ! Transform y-direction.
             ay = cmplx (t_re(:,l), t_im(:,l))
-            ! apply normalization factor to fourier coefficients
+            ! Apply normalization factor to fourier coefficients.
             ay = ay * norm_fact
             call cfftf (nygrid, ay, wsavey)
             t_re(:,l) = real (ay)
@@ -1405,7 +1406,7 @@ module Fourier
           enddo
         endif
 !
-        ! unmap the results back to normal shape
+        ! Unmap the results back to normal shape.
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
         call unmap_from_pencil_xy (p_re, a_re)
@@ -1413,9 +1414,9 @@ module Fourier
 !
       else
 !
-        ! inverse FFT
+        ! Inverse FFT
 !
-        ! remap the data we need into transposed pencil shape
+        ! Remap the data we need into transposed pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
         call transp_pencil_xy (p_re, t_re)
@@ -1423,7 +1424,7 @@ module Fourier
 !
         if (nygrid>1) then
           do l = 1, tny
-            ! transform y-direction back
+            ! Transform y-direction back.
             ay = cmplx (t_re(:,l), t_im(:,l))
             call cfftb (nygrid, ay, wsavey)
             t_re(:,l) = real (ay)
@@ -1436,7 +1437,7 @@ module Fourier
 !
         if (nxgrid>1) then
           do m = 1, pny
-            ! transform x-direction back
+            ! Transform x-direction back.
             ax = cmplx (p_re(:,m), p_im(:,m))
             call cfftb (nxgrid, ax, wsavex)
             p_re(:,m) = real (ax)
@@ -1444,7 +1445,7 @@ module Fourier
           enddo
         endif
 !
-        ! unmap the results back to normal shape
+        ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
 !
@@ -1539,9 +1540,10 @@ module Fourier
       call cffti (nygrid, wsavey)
 !
       if (lforward) then
-        ! forward FFT
 !
-        ! remap the data we need into pencil shape
+        ! Forward FFT.
+!
+        ! Remap the data we need into pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im)
@@ -1552,7 +1554,7 @@ module Fourier
         if (nxgrid>1) then
           do pos_z = 1, inz
             do m = 1, pny
-              ! transform x-direction
+              ! Transform x-direction.
               ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
               call cfftf (nxgrid, ax, wsavex)
               p_re(:,m,pos_z) = real (ax)
@@ -1567,9 +1569,9 @@ module Fourier
         if (nygrid>1) then
           do pos_z = 1, inz
             do l = 1, tny
-              ! transform y-direction
+              ! Transform y-direction.
               ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
-              ! apply normalization factor to fourier coefficients
+              ! Apply normalization factor to fourier coefficients.
               ay = ay * norm_fact
               call cfftf (nygrid, ay, wsavey)
               t_re(:,l,pos_z) = real (ay)
@@ -1578,7 +1580,7 @@ module Fourier
           enddo
         endif
 !
-        ! unmap the results back to normal shape
+        ! Unmap the results back to normal shape.
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
         call unmap_from_pencil_xy (p_re, a_re)
@@ -1586,9 +1588,9 @@ module Fourier
 !
       else
 !
-        ! inverse FFT
+        ! Inverse FFT.
 !
-        ! remap the data we need into transposed pencil shape
+        ! Remap the data we need into transposed pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
         call transp_pencil_xy (p_re, t_re)
@@ -1597,7 +1599,7 @@ module Fourier
         if (nygrid>1) then
           do pos_z = 1, inz
             do l = 1, tny
-              ! transform y-direction back
+              ! Transform y-direction back.
               ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
               call cfftb (nygrid, ay, wsavey)
               t_re(:,l,pos_z) = real (ay)
@@ -1612,7 +1614,7 @@ module Fourier
         if (nxgrid>1) then
           do pos_z = 1, inz
             do m = 1, pny
-              ! transform x-direction back
+              ! Transform x-direction back.
               ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
               call cfftb (nxgrid, ax, wsavex)
               p_re(:,m,pos_z) = real (ax)
@@ -1621,7 +1623,7 @@ module Fourier
           enddo
         endif
 !
-        ! unmap the results back to normal shape
+        ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
 !
@@ -1720,9 +1722,10 @@ module Fourier
       call cffti (nygrid, wsavey)
 !
       if (lforward) then
-        ! forward FFT
 !
-        ! remap the data we need into pencil shape
+        ! Forward FFT.
+!
+        ! Remap the data we need into pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         if (lcompute_im) then
           call remap_to_pencil_xy (a_im, p_im)
@@ -1734,7 +1737,7 @@ module Fourier
           do pos_a = 1, ina
             do pos_z = 1, inz
               do m = 1, pny
-                ! transform x-direction
+                ! Transform x-direction.
                 ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
                 call cfftf (nxgrid, ax, wsavex)
                 p_re(:,m,pos_z,pos_a) = real (ax)
@@ -1751,9 +1754,9 @@ module Fourier
           do pos_a = 1, ina
             do pos_z = 1, inz
               do l = 1, tny
-                ! transform y-direction
+                ! Transform y-direction.
                 ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a)) * norm_fact
-                ! apply normalization factor to fourier coefficients
+                ! Apply normalization factor to fourier coefficients.
                 ay = ay * norm_fact
                 call cfftf (nygrid, ay, wsavey)
                 t_re(:,l,pos_z,pos_a) = real (ay)
@@ -1763,7 +1766,7 @@ module Fourier
           enddo
         endif
 !
-        ! unmap the results back to normal shape
+        ! Unmap the results back to normal shape.
         call transp_pencil_xy (t_re, p_re)
         call transp_pencil_xy (t_im, p_im)
         call unmap_from_pencil_xy (p_re, a_re)
@@ -1771,9 +1774,9 @@ module Fourier
 !
       else
 !
-        ! inverse FFT
+        ! Inverse FFT.
 !
-        ! remap the data we need into transposed pencil shape
+        ! Remap the data we need into transposed pencil shape.
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
         call transp_pencil_xy (p_re, t_re)
@@ -1783,7 +1786,7 @@ module Fourier
           do pos_a = 1, ina
             do pos_z = 1, inz
               do l = 1, tny
-                ! transform y-direction back
+                ! Transform y-direction back.
                 ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
                 call cfftb (nygrid, ay, wsavey)
                 t_re(:,l,pos_z,pos_a) = real (ay)
@@ -1800,7 +1803,7 @@ module Fourier
           do pos_a = 1, ina
             do pos_z = 1, inz
               do m = 1, pny
-                ! transform x-direction back
+                ! Transform x-direction back.
                 ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
                 call cfftb (nxgrid, ax, wsavex)
                 p_re(:,m,pos_z,pos_a) = real (ax)
@@ -1810,7 +1813,7 @@ module Fourier
           enddo
         endif
 !
-        ! unmap the results back to normal shape
+        ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
         if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
 !
