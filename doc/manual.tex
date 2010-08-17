@@ -4106,16 +4106,18 @@ the value of the variable \code{PARTICLES} in \code{Makefile.local} to either
 a few parameters in \code{cparam.local}. Here is a sample of
 \code{cparam.local} for a parallel run with 2,000,000 particles:
 \begin{verbatim}
-integer, parameter :: ncpus=16,nprocy=4,nprocz=ncpus/nprocy,nprocx=1
-integer, parameter :: nxgrid=128,nygrid=256,nzgrid=128
+integer, parameter :: ncpus=16, nprocy=4, nprocz=4, nprocx=1
+integer, parameter :: nxgrid=128, nygrid=256, nzgrid=128
 integer, parameter :: npar=2000000, mpar_loc=400000, npar_mig=1000
+integer, parameter :: npar_species=2
 \end{verbatim}
-The variable \code{npar} is the number of particles in the simulation,
+The paramter \code{npar} is the number of particles in the simulation,
 \code{mpar_loc} is the number of particles that is allowed on each processor
 and \code{npar_mig} is the number of particles that are allowed to migrate from
 one processor to another in any time-step. For a non-parallel run it is enough
-to specify \code{npar}. The two other parameters are explained in the following
-section. The particle input parameters are given in \code{start.in} and
+to specify \code{npar}. The number of particle species is set through
+\code{npar_species} (assumed to be one if not set).
+The particle input parameters are given in \code{start.in} and
 \code{run.in}. Here is a sample of the particle part of \code{start.in} for
 dust particles:
 \begin{verbatim}
@@ -4147,8 +4149,8 @@ The logical \code{ldragforce_gas_par} determines whether the dust particles
 influence the gas with a drag force. \code{cdtp} tells the code how many
 friction times should be resolved in a minimum time-step.
 
-The sample run \file{samples/2d-tests/Kelvin-Helmholtz-disc/} contains the
-latest setup for dust particles.
+The sample run \file{samples/sedimentation/} contains the latest setup for dust
+particles.
 
 \subsubsection{Particles in parallel}
 
