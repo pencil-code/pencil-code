@@ -17,6 +17,12 @@ module Fourier
     module procedure fourier_transform_other_2
   endinterface
 !
+  interface fft_xy_parallel
+    module procedure fft_xy_parallel_2D
+    module procedure fft_xy_parallel_3D
+    module procedure fft_xy_parallel_4D
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
@@ -164,12 +170,12 @@ module Fourier
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
-    subroutine fourier_transform_xy_xy(a_re,a_im,linv)
+    subroutine fourier_transform_xy_xy(a_re,a_im,linv,lneed_im)
 !
 !  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
 !
-      real, dimension(nx,ny) :: a_re,a_im
-      logical, optional :: linv
+      real, dimension(nx,ny), intent(inout) :: a_re,a_im
+      logical, optional, intent(in) :: linv,lneed_im
 !
       call fatal_error('fourier_transform_xy_xy', &
           'this sub is not available in nofourier.f90!')
@@ -177,6 +183,7 @@ module Fourier
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
       call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
 !
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
@@ -196,13 +203,65 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
+    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 2D data in the x- and y-direction.
+!
+      real, dimension (nx,ny), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_xy_parallel_2D', &
+          'this sub is not available in nofourier.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_xy_parallel_2D
+!***********************************************************************
+    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 3D data in the x- and y-direction.
+!
+      real, dimension (:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_xy_parallel_3D', &
+          'this sub is not available in nofourier.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_xy_parallel_3D
+!***********************************************************************
+    subroutine fft_xy_parallel_4D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
+!
+      real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_xy_parallel_4D', &
+          'this sub is not available in nofourier.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_xy_parallel_4D
+!***********************************************************************
     subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
 !  Subroutine to do a z-extrapolation of a vector potential using
 !  'factor' as a multiplication factor to the Fourier coefficients.
 !
-      real, dimension(:,:,:) :: in,factor
-      real, dimension(:,:,:,:) :: out
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in) :: factor
 !
       call fatal_error('vect_pot_extrapol_z_parallel', &
           'this sub is not available in nofourier.f90!')
@@ -218,8 +277,9 @@ module Fourier
 !  Subroutine to do a z-extrapolation of a fields z-component using
 !  'factor' as a multiplication factor to the Fourier coefficients.
 !
-      real, dimension(:,:,:) :: in,factor
-      real, dimension(:,:,:,:) :: out
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in) :: factor
 !
       call fatal_error('field_extrapol_z_parallel', &
           'this sub is not available in nofourier.f90!')

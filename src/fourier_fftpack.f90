@@ -18,6 +18,12 @@ module Fourier
     module procedure fourier_transform_other_2
   endinterface
 !
+  interface fft_xy_parallel
+    module procedure fft_xy_parallel_2D
+    module procedure fft_xy_parallel_3D
+    module procedure fft_xy_parallel_4D
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
@@ -1044,18 +1050,19 @@ module Fourier
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
-    subroutine fourier_transform_xy_xy(a_re,a_im,linv)
+    subroutine fourier_transform_xy_xy(a_re,a_im,linv,lneed_im)
 !
 !  Subroutine to do Fourier transform of a 2-D array under MPI.
 !  nxgrid is restricted to be an integer multiple of nygrid.
 !  The routine overwrites the input data.
+!  You can set lneed_im=false if the imaginary data can be disregarded.
 !
 !   6-oct-2006/tobi: adapted from fourier_transform_other_2
 !
       use Mpicomm, only: transp_xy
 !
-      real, dimension (nx,ny) :: a_re,a_im
-      logical, optional :: linv
+      real, dimension (nx,ny), intent(inout) :: a_re,a_im
+      logical, optional, intent(in) :: linv,lneed_im
 !
       complex, dimension (nx) :: ax
       complex, dimension (nygrid) :: ay
@@ -1063,16 +1070,18 @@ module Fourier
       real, dimension (4*nygrid+15) :: wsavey
       real, dimension (ny) :: deltay_x
       integer :: l,m,ibox
-      logical :: lforward
+      logical :: lforward,lcompute_im
 !
       lforward=.true.
       if (present(linv)) lforward=.not.linv
 !
-      if (nprocx>1) &
-          call fatal_error('fourier_transform_xy_xy','Must have nprocx=1!',lfirst_proc_xy)
+      lcompute_im=.true.
+      if (present(lneed_im)) lcompute_im=lneed_im
 !
-      if (nxgrid/=nygrid) call fatal_error('fourier_transform_xy_xy', &
-          'nxgrid needs to be equal to nygrid.',lfirst_proc_xy)
+      if ((nprocx>1) .or. (mod(nxgrid,nygrid)/=0)) then
+        call fft_xy_parallel(a_re,a_im,linv)
+        return
+      endif
 !
       if (lshear) deltay_x=-deltay*(x(m1+ipy*ny:m2+ipy*ny)-(x0+Lx/2))/Lx
 !
@@ -1083,7 +1092,11 @@ module Fourier
 !  Transform y-direction.
 !
           call transp_xy(a_re)
-          call transp_xy(a_im)
+          if (lcompute_im) then
+            call transp_xy(a_im)
+          else
+            a_im=0.0
+          endif
 !
           call cffti(nygrid,wsavey)
 !
@@ -1151,12 +1164,12 @@ module Fourier
               if (lshear) ay = ay*exp(cmplx(0.,-ky_fft*deltay_x(l)))
               call cfftb(nygrid,ay,wsavey)
               a_re(iy+1:iy+nygrid,l)=real(ay)
-              a_im(iy+1:iy+nygrid,l)=aimag(ay)
+              if (lcompute_im) a_im(iy+1:iy+nygrid,l)=aimag(ay)
             enddo
           enddo
 !
           call transp_xy(a_re)
-          call transp_xy(a_im)
+          if (lcompute_im) call transp_xy(a_im)
 !
         endif
 !
@@ -1290,6 +1303,528 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
+    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 2D data in the x- and y-direction.
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!  You can set lneed_im=false if the imaginary data can be disregarded.
+!  Attention: input data will be overwritten.
+!
+!  17-aug-2010/Bourdin.KIS: adapted from fft_xy_parallel_4D
+!
+      use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
+!
+      real, dimension (nx,ny), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
+      integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
+      real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
+      real, dimension (:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
+      complex, dimension (nxgrid) :: ax
+      complex, dimension (nygrid) :: ay
+      real, dimension (4*nxgrid+15) :: wsavex
+      real, dimension (4*nygrid+15) :: wsavey
+      integer :: l, m, stat
+      logical :: lforward, lcompute_im
+      real, parameter :: norm_fact = 1.0 / (nxgrid*nygrid)
+!
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not.linv
+!
+      lcompute_im = .true.
+      if (present (lneed_im)) lcompute_im = lneed_im
+!
+      if (mod (nxgrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_2D', &
+              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+      if (mod (nygrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_2D', &
+              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+!
+      if (lshear) &
+          call fatal_error ('fft_xy_parallel_2D', &
+              'shearing is not implemented in this routine!', lfirst_proc_xy)
+!
+!  Allocate memory for large arrays.
+!
+      allocate (p_re(pnx,pny), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p_re', .true.)
+      allocate (p_im(pnx,pny), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p_im', .true.)
+      allocate (t_re(tnx,tny), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for t_re', .true.)
+      allocate (t_im(tnx,tny), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for t_im', .true.)
+!
+      call cffti (nxgrid, wsavex)
+      call cffti (nygrid, wsavey)
+!
+      if (lforward) then
+        ! forward FFT
+!
+        ! remap the data we need into pencil shape
+        call remap_to_pencil_xy (a_re, p_re)
+        if (lcompute_im) then
+          call remap_to_pencil_xy (a_im, p_im)
+        else
+          p_im = 0.0
+        endif
+!
+        if (nxgrid>1) then
+          do m = 1, pny
+            ! transform x-direction
+            ax = cmplx (p_re(:,m), p_im(:,m))
+            call cfftf (nxgrid, ax, wsavex)
+            p_re(:,m) = real (ax)
+            p_im(:,m) = aimag (ax)
+          enddo
+        endif
+!
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        if (nygrid>1) then
+          do l = 1, tny
+            ! transform y-direction
+            ay = cmplx (t_re(:,l), t_im(:,l))
+            ! apply normalization factor to fourier coefficients
+            ay = ay * norm_fact
+            call cfftf (nygrid, ay, wsavey)
+            t_re(:,l) = real (ay)
+            t_im(:,l) = aimag (ay)
+          enddo
+        endif
+!
+        ! unmap the results back to normal shape
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+        call unmap_from_pencil_xy (p_re, a_re)
+        call unmap_from_pencil_xy (p_im, a_im)
+!
+      else
+!
+        ! inverse FFT
+!
+        ! remap the data we need into transposed pencil shape
+        call remap_to_pencil_xy (a_re, p_re)
+        call remap_to_pencil_xy (a_im, p_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        if (nygrid>1) then
+          do l = 1, tny
+            ! transform y-direction back
+            ay = cmplx (t_re(:,l), t_im(:,l))
+            call cfftb (nygrid, ay, wsavey)
+            t_re(:,l) = real (ay)
+            t_im(:,l) = aimag (ay)
+          enddo
+        endif
+!
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+!
+        if (nxgrid>1) then
+          do m = 1, pny
+            ! transform x-direction back
+            ax = cmplx (p_re(:,m), p_im(:,m))
+            call cfftb (nxgrid, ax, wsavex)
+            p_re(:,m) = real (ax)
+            if (lcompute_im) p_im(:,m) = aimag (ax)
+          enddo
+        endif
+!
+        ! unmap the results back to normal shape
+        call unmap_from_pencil_xy (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
+!
+      endif
+!
+!  Deallocate large arrays.
+!
+      if (allocated (p_re)) deallocate (p_re)
+      if (allocated (p_im)) deallocate (p_im)
+      if (allocated (t_re)) deallocate (t_re)
+      if (allocated (t_im)) deallocate (t_im)
+!
+    endsubroutine fft_xy_parallel_2D
+!***********************************************************************
+    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 3D data in the x- and y-direction.
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!  You can set lneed_im=false if the imaginary data can be disregarded.
+!  Attention: input data will be overwritten.
+!
+!  17-aug-2010/Bourdin.KIS: adapted from fft_xy_parallel_4D
+!
+      use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
+!
+      real, dimension (:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
+      integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
+      real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
+      real, dimension (:,:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
+      complex, dimension (nxgrid) :: ax
+      complex, dimension (nygrid) :: ay
+      real, dimension (4*nxgrid+15) :: wsavex
+      real, dimension (4*nygrid+15) :: wsavey
+      integer :: inz ! size of the third dimension
+      integer :: l, m, stat, pos_z
+      logical :: lforward, lcompute_im
+      real, parameter :: norm_fact = 1.0 / (nxgrid*nygrid)
+!
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not.linv
+      lcompute_im = .true.
+      if (present (lneed_im)) lcompute_im = lneed_im
+!
+      inz = size (a_re, 3)
+!
+      if (inz /= size (a_im, 3)) &
+          call fatal_error ('fft_xy_parallel_3D', &
+              'third dimension differs for real and imaginary part', lfirst_proc_xy)
+!
+      if ((size (a_re, 1) /= nx) .or. (size (a_re, 2) /= ny)) &
+          call fatal_error ('fft_xy_parallel_3D', &
+              'real array size mismatch /= nx,ny', lfirst_proc_xy)
+      if ((size (a_im, 1) /= nx) .or. (size (a_im, 2) /= ny)) &
+          call fatal_error ('fft_xy_parallel_3D', &
+              'imaginary array size mismatch /= nx,ny', lfirst_proc_xy)
+!
+      if (mod (nxgrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_3D', &
+              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+      if (mod (nygrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_3D', &
+              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+!
+      if (lshear) &
+          call fatal_error ('fft_xy_parallel_3D', &
+              'shearing is not implemented in this routine!', lfirst_proc_xy)
+!
+!  Allocate memory for large arrays.
+!
+      allocate (p_re(pnx,pny,inz), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p_re', .true.)
+      allocate (p_im(pnx,pny,inz), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p_im', .true.)
+      allocate (t_re(tnx,tny,inz), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for t_re', .true.)
+      allocate (t_im(tnx,tny,inz), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for t_im', .true.)
+!
+      call cffti (nxgrid, wsavex)
+      call cffti (nygrid, wsavey)
+!
+      if (lforward) then
+        ! forward FFT
+!
+        ! remap the data we need into pencil shape
+        call remap_to_pencil_xy (a_re, p_re)
+        if (lcompute_im) then
+          call remap_to_pencil_xy (a_im, p_im)
+        else
+          p_im = 0.0
+        endif
+!
+        if (nxgrid>1) then
+          do pos_z = 1, inz
+            do m = 1, pny
+              ! transform x-direction
+              ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
+              call cfftf (nxgrid, ax, wsavex)
+              p_re(:,m,pos_z) = real (ax)
+              p_im(:,m,pos_z) = aimag (ax)
+            enddo
+          enddo
+        endif
+!
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        if (nygrid>1) then
+          do pos_z = 1, inz
+            do l = 1, tny
+              ! transform y-direction
+              ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
+              ! apply normalization factor to fourier coefficients
+              ay = ay * norm_fact
+              call cfftf (nygrid, ay, wsavey)
+              t_re(:,l,pos_z) = real (ay)
+              t_im(:,l,pos_z) = aimag (ay)
+            enddo
+          enddo
+        endif
+!
+        ! unmap the results back to normal shape
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+        call unmap_from_pencil_xy (p_re, a_re)
+        call unmap_from_pencil_xy (p_im, a_im)
+!
+      else
+!
+        ! inverse FFT
+!
+        ! remap the data we need into transposed pencil shape
+        call remap_to_pencil_xy (a_re, p_re)
+        call remap_to_pencil_xy (a_im, p_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        if (nygrid>1) then
+          do pos_z = 1, inz
+            do l = 1, tny
+              ! transform y-direction back
+              ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
+              call cfftb (nygrid, ay, wsavey)
+              t_re(:,l,pos_z) = real (ay)
+              t_im(:,l,pos_z) = aimag (ay)
+            enddo
+          enddo
+        endif
+!
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+!
+        if (nxgrid>1) then
+          do pos_z = 1, inz
+            do m = 1, pny
+              ! transform x-direction back
+              ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
+              call cfftb (nxgrid, ax, wsavex)
+              p_re(:,m,pos_z) = real (ax)
+              if (lcompute_im) p_im(:,m,pos_z) = aimag (ax)
+            enddo
+          enddo
+        endif
+!
+        ! unmap the results back to normal shape
+        call unmap_from_pencil_xy (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
+!
+      endif
+!
+!  Deallocate large arrays.
+!
+      if (allocated (p_re)) deallocate (p_re)
+      if (allocated (p_im)) deallocate (p_im)
+      if (allocated (t_re)) deallocate (t_re)
+      if (allocated (t_im)) deallocate (t_im)
+!
+    endsubroutine fft_xy_parallel_3D
+!***********************************************************************
+    subroutine fft_xy_parallel_4D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!  You can set lneed_im=false if the imaginary data can be disregarded.
+!  Attention: input data will be overwritten.
+!
+!  28-jul-2010/Bourdin.KIS: backport from vect_pot_extrapol_z_parallel
+!
+      use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
+!
+      real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
+      integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
+      real, dimension (:,:,:,:), allocatable :: p_re, p_im ! data in pencil shape
+      real, dimension (:,:,:,:), allocatable :: t_re, t_im ! data in transposed pencil shape
+      complex, dimension (nxgrid) :: ax
+      complex, dimension (nygrid) :: ay
+      real, dimension (4*nxgrid+15) :: wsavex
+      real, dimension (4*nygrid+15) :: wsavey
+      integer :: inz, ina ! size of the third dimension
+      integer :: l, m, stat, pos_z, pos_a
+      logical :: lforward, lcompute_im
+      real, parameter :: norm_fact = 1.0 / (nxgrid*nygrid)
+!
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not.linv
+      lcompute_im = .true.
+      if (present (lneed_im)) lcompute_im = lneed_im
+!
+      inz = size (a_re, 3)
+      ina = size (a_re, 4)
+!
+      if (inz /= size (a_im, 3)) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'third dimension differs for real and imaginary part', lfirst_proc_xy)
+      if (ina /= size (a_im, 4)) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'fourth dimension differs for real and imaginary part', lfirst_proc_xy)
+!
+      if ((size (a_re, 1) /= nx) .or. (size (a_re, 2) /= ny)) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'real array size mismatch /= nx,ny', lfirst_proc_xy)
+      if ((size (a_im, 1) /= nx) .or. (size (a_im, 2) /= ny)) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'imaginary array size mismatch /= nx,ny', lfirst_proc_xy)
+!
+      if (mod (nxgrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+      if (mod (nygrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+!
+      if (lshear) &
+          call fatal_error ('fft_xy_parallel_4D', &
+              'shearing is not implemented in this routine!', lfirst_proc_xy)
+!
+!  Allocate memory for large arrays.
+!
+      allocate (p_re(pnx,pny,inz,ina), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p_re', .true.)
+      allocate (p_im(pnx,pny,inz,ina), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p_im', .true.)
+      allocate (t_re(tnx,tny,inz,ina), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for t_re', .true.)
+      allocate (t_im(tnx,tny,inz,ina), stat=stat)
+      if (stat > 0) &
+          call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for t_im', .true.)
+!
+      call cffti (nxgrid, wsavex)
+      call cffti (nygrid, wsavey)
+!
+      if (lforward) then
+        ! forward FFT
+!
+        ! remap the data we need into pencil shape
+        call remap_to_pencil_xy (a_re, p_re)
+        if (lcompute_im) then
+          call remap_to_pencil_xy (a_im, p_im)
+        else
+          p_im = 0.0
+        endif
+!
+        if (nxgrid>1) then
+          do pos_a = 1, ina
+            do pos_z = 1, inz
+              do m = 1, pny
+                ! transform x-direction
+                ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
+                call cfftf (nxgrid, ax, wsavex)
+                p_re(:,m,pos_z,pos_a) = real (ax)
+                p_im(:,m,pos_z,pos_a) = aimag (ax)
+              enddo
+            enddo
+          enddo
+        endif
+!
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        if (nygrid>1) then
+          do pos_a = 1, ina
+            do pos_z = 1, inz
+              do l = 1, tny
+                ! transform y-direction
+                ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a)) * norm_fact
+                ! apply normalization factor to fourier coefficients
+                ay = ay * norm_fact
+                call cfftf (nygrid, ay, wsavey)
+                t_re(:,l,pos_z,pos_a) = real (ay)
+                t_im(:,l,pos_z,pos_a) = aimag (ay)
+              enddo
+            enddo
+          enddo
+        endif
+!
+        ! unmap the results back to normal shape
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+        call unmap_from_pencil_xy (p_re, a_re)
+        call unmap_from_pencil_xy (p_im, a_im)
+!
+      else
+!
+        ! inverse FFT
+!
+        ! remap the data we need into transposed pencil shape
+        call remap_to_pencil_xy (a_re, p_re)
+        call remap_to_pencil_xy (a_im, p_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        if (nygrid>1) then
+          do pos_a = 1, ina
+            do pos_z = 1, inz
+              do l = 1, tny
+                ! transform y-direction back
+                ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
+                call cfftb (nygrid, ay, wsavey)
+                t_re(:,l,pos_z,pos_a) = real (ay)
+                t_im(:,l,pos_z,pos_a) = aimag (ay)
+              enddo
+            enddo
+          enddo
+        endif
+!
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+!
+        if (nxgrid>1) then
+          do pos_a = 1, ina
+            do pos_z = 1, inz
+              do m = 1, pny
+                ! transform x-direction back
+                ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
+                call cfftb (nxgrid, ax, wsavex)
+                p_re(:,m,pos_z,pos_a) = real (ax)
+                if (lcompute_im) p_im(:,m,pos_z,pos_a) = aimag (ax)
+              enddo
+            enddo
+          enddo
+        endif
+!
+        ! unmap the results back to normal shape
+        call unmap_from_pencil_xy (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
+!
+      endif
+!
+!  Deallocate large arrays.
+!
+      if (allocated (p_re)) deallocate (p_re)
+      if (allocated (p_im)) deallocate (p_im)
+      if (allocated (t_re)) deallocate (t_re)
+      if (allocated (t_im)) deallocate (t_im)
+!
+    endsubroutine fft_xy_parallel_4D
+!***********************************************************************
     subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
 !  Subroutine to do a z-extrapolation of a vector potential using
@@ -1297,7 +1832,7 @@ module Fourier
 !  The normalization needs to be already included in 'factor'.
 !  Backwards and forwards transforms are done efficiently in one go.
 !  For x- and/or y-parallelization the calculation will be done under
-!  MPI in parallel on all processors of the current xy-plane.
+!  MPI in parallel on all processors of the corresponding xy-plane.
 !  nx is restricted to be an integer multiple of nprocy.
 !  ny is restricted to be an integer multiple of nprocx.
 !
@@ -1328,38 +1863,35 @@ module Fourier
       onz = size (out, 3)
       ona = size (out, 4)
 !
-      if (ina /= ona) call fatal_error('vect_pot_extrapol_z_parallel', &
-          'number of components is different for input and ouput arrays', &
-          lfirst_proc_xy)
+      if (ina /= ona) &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'number of components is different for input and ouput arrays', lfirst_proc_xy)
 !
       if ((size (in, 1) /= nx) .or. (size (in, 2) /= ny)) &
           call fatal_error('vect_pot_extrapol_z_parallel', &
-          'input array size mismatch /= nx,ny', lfirst_proc_xy)
+              'input array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
-          call fatal_error('vect_pot_extrapol_z_parallel', &
-          'output array size mismatch /= nx,ny', lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'output array size mismatch /= nx,ny', lfirst_proc_xy)
       if ((size (factor, 1) /= tnx) .or. (size (factor, 2) /= tny)) &
-          call fatal_error('vect_pot_extrapol_z_parallel', &
-          'factor array size mismatch /= tnx,tny', lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'factor array size mismatch /= tnx,tny', lfirst_proc_xy)
       if (size (factor, 3) /= onz) &
-          call fatal_error('vect_pot_extrapol_z_parallel', &
-          'number of ghost cells differs between multiplication factor '// &
-          'and ouput array', lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
       if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error('vect_pot_extrapol_z_parallel', &
-          'nxgrid needs to be an integer multiple of nprocx*nprocy', &
-          lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
       if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error('vect_pot_extrapol_z_parallel', &
-          'nygrid needs to be an integer multiple of nprocx*nprocy', &
-          lfirst_proc_xy)
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-      if (lshear) call fatal_error('vect_pot_extrapol_z_parallel', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
+      if (lshear) &
+          call fatal_error ('vect_pot_extrapol_z_parallel', &
+              'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
-!  Allocate memory for large arrays.
-!
+      ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny,ona), stat=stat)
       if (stat > 0) call fatal_error('vect_pot_extrapol_z_parallel', &
           'Could not allocate memory for p_re', .true.)
@@ -1376,16 +1908,14 @@ module Fourier
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
 !
-!  Collect the data we need.
-!
+      ! Collect the data we need.
       call remap_to_pencil_xy (in, p_re)
       p_im = 0.0
 !
       do pos_a = 1, ona
         do m = 1, pny
 !
-!  Transform x-direction.
-!
+          ! Transform x-direction.
           ax = cmplx (p_re(:,m,pos_a), p_im(:,m,pos_a))
           call cfftf (nxgrid, ax, wsavex)
           p_re(:,m,pos_a) = real (ax)
@@ -1410,15 +1940,13 @@ module Fourier
       do pos_a = 1, ona
         do l = 1, tny
 !
-!  Transform y-direction.
-!
+          ! Transform y-direction.
           ay = cmplx (t_re(:,l,pos_a), t_im(:,l,pos_a))
           call cfftf (nygrid, ay, wsavey)
 !
+          ! Transform y-direction back in each z layer.
           do pos_z = 1, onz
-!
-!  Apply factor to fourier coefficients and transform y-direction back.
-!
+            ! Apply factor to fourier coefficients.
             ay_extra = ay * factor(:,l,pos_z)
             call cfftb (nygrid, ay_extra, wsavey)
             e_re(:,l,pos_z,pos_a) = real (ay_extra)
@@ -1447,9 +1975,7 @@ module Fourier
       do pos_a = 1, ona
         do pos_z = 1, onz
           do m = 1, pny
-!
-!  Transform x-direction back.
-!
+            ! Transform x-direction back in each z layer.
             ax = cmplx (b_re(:,m,pos_z,pos_a), b_im(:,m,pos_z,pos_a))
             call cfftb (nxgrid, ax, wsavex)
             b_re(:,m,pos_z,pos_a) = real (ax)
@@ -1457,13 +1983,8 @@ module Fourier
         enddo
       enddo
 !
-      if (allocated (b_im)) deallocate (b_im)
-!
-!  Distribute the results.
-!
+      ! Distribute the results back in normal shape.
       call unmap_from_pencil_xy (b_re, out)
-!
-!  Deallocate large arrays.
 !
       if (allocated (b_re)) deallocate (b_re)
       if (allocated (b_im)) deallocate (b_im)
@@ -1478,7 +1999,7 @@ module Fourier
 !  'in' and 'factor' are assumed to be already in pencil shape.
 !  Backwards and forwards transforms are done efficiently in one go.
 !  For x- and/or y-parallelization the calculation will be done under
-!  MPI in parallel on all processors of the current xy-plane.
+!  MPI in parallel on all processors of the corresponding xy-plane.
 !  nx is restricted to be an integer multiple of nprocy.
 !  ny is restricted to be an integer multiple of nprocx.
 !
@@ -1497,51 +2018,42 @@ module Fourier
       real, dimension (:,:,:,:), allocatable :: e_re, e_im ! extrapolated data in transposed pencil shape
       real, dimension (:,:,:,:), allocatable :: b_re, b_im ! backtransformed data in pencil shape
       complex, dimension (nxgrid) :: ax
-      complex, dimension (nygrid) :: ay, ay_extra
+      complex, dimension (nygrid) :: ay, ay_extra, ay_extra_x, ay_extra_y
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
-      integer :: onz, ona ! number of ghost cells and components in the output data (usually 3)
-      integer :: l, m, stat, pos_a, pos_z
+      integer :: onz ! number of layers in the output data
+      integer :: l, m, stat, pos_z
 !
       onz = size (out, 3)
-      ona = size (out, 4)
 !
       if ((size (in, 1) /= pnx) .or. (size (in, 2) /= pny)) &
           call fatal_error('field_extrapol_z_parallel', &
-          'input array size mismatch /= pnx,pny', lfirst_proc_xy)
+              'input array size mismatch /= pnx,pny', lfirst_proc_xy)
       if ((size (out, 1) /= nx) .or. (size (out, 2) /= ny)) &
           call fatal_error('field_extrapol_z_parallel', &
-          'output array size mismatch /= nx,ny', lfirst_proc_xy)
-      if (ona /= 3) &
+              'output array size mismatch /= nx,ny', lfirst_proc_xy)
+      if (size (out, 4) /= 2) &
+          call fatal_error ('field_extrapol_z_parallel', &
+             'output array must have two components', lfirst_proc_xy)
+      if ((size (factor, 1) /= tnx) .or. (size (factor, 2) /= tny)) &
           call fatal_error('field_extrapol_z_parallel', &
-          'output array must have three components', lfirst_proc_xy)
-      if ((size (factor, 1) /= pnx) .or. (size (factor, 2) /= pny)) &
-          call fatal_error('field_extrapol_z_parallel', &
-          'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
+              'factor array size mismatch /= pnx,pny', lfirst_proc_xy)
       if (size (factor, 3) /= onz) &
-          call fatal_error('field_extrapol_z_parallel', &
-          'number of ghost cells differs between multiplication factor '// &
-          'and ouput array', lfirst_proc_xy)
-      if (ona < 2) &
-          call fatal_error('field_extrapol_z_parallel', &
-          'output array needs to have at least an x and y component', &
-          lfirst_proc_xy)
+          call fatal_error ('field_extrapol_z_parallel', &
+              'number of ghost cells differs between multiplication factor and ouput array', lfirst_proc_xy)
 !
       if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error('field_extrapol_z_parallel', &
-          'nxgrid needs to be an integer multiple of nprocx*nprocy', &
-          lfirst_proc_xy)
+          call fatal_error ('field_extrapol_z_parallel', &
+              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
       if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error('field_extrapol_z_parallel', &
-          'nygrid needs to be an integer multiple of nprocx*nprocy', &
-          lfirst_proc_xy)
+          call fatal_error ('field_extrapol_z_parallel', &
+              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       if (lshear) &
-          call fatal_error('field_extrapol_z_parallel', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
+          call fatal_error ('field_extrapol_z_parallel', &
+              'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
-!  Allocate memory for large arrays.
-!
+      ! Allocate memory for large arrays.
       allocate (p_re(pnx,pny), stat=stat)
       if (stat > 0) call fatal_error('field_extrapol_z_parallel', &
           'Could not allocate memory for p_re', .true.)
@@ -1558,15 +2070,12 @@ module Fourier
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
 !
-!  Collect the data we need.
-!
+     ! Collect the data we need.
       p_re = in
       p_im = 0.0
 !
       do m = 1, pny
-!
-!  Transform x-direction.
-!
+        ! Transform x-direction.
         ax = cmplx (p_re(:,m), p_im(:,m))
         call cfftf (nxgrid, ax, wsavex)
         p_re(:,m) = real (ax)
@@ -1588,22 +2097,24 @@ module Fourier
           'Could not allocate memory for e_im', .true.)
 !
       do l = 1, tny
-!
-!  Transform y-direction.
-!
+        ! Transform y-direction.
         ay = cmplx (t_re(:,l), t_im(:,l))
         call cfftf (nygrid, ay, wsavey)
 !
-        do pos_a = 1, 2
-          do pos_z = 1, onz
-!
-!  Apply factor to fourier coefficients and transform y-direction back.
-!
-            ay_extra = ay * factor(:,l,pos_z)
-            call cfftb (nygrid, ay_extra, wsavey)
-            e_re(:,l,pos_z,pos_a) = real (ay_extra)
-            e_im(:,l,pos_z,pos_a) = aimag (ay_extra)
-          enddo
+        ! Transform y-direction back in each z layer.
+        do pos_z = 1, onz
+          ! Apply factor to fourier coefficients.
+          ay_extra = ay * factor(:,l,pos_z)
+          ! x-component of A.
+          ay_extra_x = cmplx (-aimag (ay_extra), real (ay_extra)) * ky_fft
+          call cfftb (nygrid, ay_extra_x, wsavey)
+          e_re(:,l,pos_z,1) = real (ay_extra_x)
+          e_im(:,l,pos_z,1) = aimag (ay_extra_x)
+          ! y-component of A.
+          ay_extra_y = cmplx (aimag (ay_extra), -real (ay_extra)) * kx_fft(l+(iproc-ipz*nprocxy)*tny)
+          call cfftb (nygrid, ay_extra_y, wsavey)
+          e_re(:,l,pos_z,2) = real (ay_extra_y)
+          e_im(:,l,pos_z,2) = aimag (ay_extra_y)
         enddo
       enddo
 !
@@ -1624,27 +2135,22 @@ module Fourier
       if (allocated (e_re)) deallocate (e_re)
       if (allocated (e_im)) deallocate (e_im)
 !
-      do pos_a = 1, ona
-        do pos_z = 1, onz
-          do m = 1, pny
-!
-!  Transform x-direction back.
-!
-            ax = cmplx (b_re(:,m,pos_z,pos_a), b_im(:,m,pos_z,pos_a))
-            call cfftb (nxgrid, ax, wsavex)
-            b_re(:,m,pos_z,pos_a) = real (ax)
-          enddo
+      ! Transform x-direction back.
+      do pos_z = 1, onz
+        do m = 1, pny
+          ! x-component of A.
+          ax = cmplx (b_re(:,m,pos_z,1), b_im(:,m,pos_z,1))
+          call cfftb (nxgrid, ax, wsavex)
+          b_re(:,m,pos_z,1) = real (ax)
+          ! y-component of A.
+          ax = cmplx (b_re(:,m,pos_z,2), b_im(:,m,pos_z,2))
+          call cfftb (nxgrid, ax, wsavex)
+          b_re(:,m,pos_z,2) = real (ax)
         enddo
       enddo
 !
-      if (allocated (b_im)) deallocate (b_im)
-!
-!  Distribute the results.
-!
+      ! Distribute the results.
       call unmap_from_pencil_xy (b_re, out)
-      if (ona > 2) out(:,:,:,3:ona) = 0.0
-!
-!  Deallocate large arrays.
 !
       if (allocated (b_re)) deallocate (b_re)
       if (allocated (b_im)) deallocate (b_im)

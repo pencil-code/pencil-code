@@ -19,6 +19,12 @@ module Fourier
     module procedure fourier_transform_other_2
   endinterface
 !
+  interface fft_xy_parallel
+    module procedure fft_xy_parallel_2D
+    module procedure fft_xy_parallel_3D
+    module procedure fft_xy_parallel_4D
+  endinterface
+!
   contains
 !
 !***********************************************************************
@@ -69,7 +75,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
@@ -85,7 +91,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xy
 !***********************************************************************
@@ -101,23 +107,24 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_shear_xy
 !***********************************************************************
-    subroutine fourier_transform_xy_xy(a_re,a_im,linv)
+    subroutine fourier_transform_xy_xy(a_re,a_im,linv,lneed_im)
 !
 !  Subroutine to do Fourier transform in the x- and y-directions
 !
-      real, dimension(nx,ny) :: a_re,a_im
-      logical, optional :: linv
+      real, dimension(nx,ny), intent(inout) :: a_re,a_im
+      logical, optional, intent(in) :: linv,lneed_im
 !
       call fatal_error('fourier_transform_xy_xy', &
           'this sub is not available in fourier_fft.f90!')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
 !
     endsubroutine fourier_transform_xy_xy
 !***********************************************************************
@@ -133,7 +140,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_y_y
 !***********************************************************************
@@ -149,7 +156,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
@@ -165,7 +172,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
@@ -181,7 +188,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_y
 !***********************************************************************
@@ -197,7 +204,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_shear
 !***********************************************************************
@@ -213,7 +220,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -229,7 +236,7 @@ module Fourier
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
-      call keep_compiler_quiet(linv)
+      call keep_compiler_quiet(present(linv))
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
@@ -283,21 +290,73 @@ module Fourier
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(na)
       call keep_compiler_quiet(ifirst_fft)
-      call keep_compiler_quiet(linv)
-      call keep_compiler_quiet(wsavex_temp)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(wsavex_temp))
 !
     endsubroutine fourier_transform_real_1
+!***********************************************************************
+    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 2D data in the x- and y-direction.
+!
+      real, dimension (nx,ny), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_xy_parallel_2D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_xy_parallel_2D
+!***********************************************************************
+    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 3D data in the x- and y-direction.
+!
+      real, dimension (:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_xy_parallel_3D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_xy_parallel_3D
+!***********************************************************************
+    subroutine fft_xy_parallel_4D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
+!
+      real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_xy_parallel_4D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_xy_parallel_4D
 !***********************************************************************
     subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
 !  Subroutine to do a z-extrapolation of a vector potential using
 !  'factor' as a multiplication factor to the Fourier coefficients.
 !
-      real, dimension(:,:,:) :: in_re,factor
-      real, dimension(:,:,:,:) :: out_re
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in) :: factor
 !
       call fatal_error('vect_pot_extrapol_z_parallel', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(in)
       call keep_compiler_quiet(out)
@@ -310,11 +369,12 @@ module Fourier
 !  Subroutine to do a z-extrapolation of a fields z-component using
 !  'factor' as a multiplication factor to the Fourier coefficients.
 !
-      real, dimension(:,:,:) :: in_re,factor
-      real, dimension(:,:,:,:) :: out_re
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in) :: factor
 !
       call fatal_error('field_extrapol_z_parallel', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(in)
       call keep_compiler_quiet(out)
