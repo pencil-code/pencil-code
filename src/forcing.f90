@@ -48,8 +48,9 @@ module Forcing
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
   logical :: lwrite_psi=.false.
-  logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.true.
+  logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lscale_kvector_fac=.false.
+  logical :: lforce_peri=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -105,7 +106,8 @@ module Forcing
        lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
-       lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz
+       lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
+       lforce_peri
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -2009,8 +2011,18 @@ module Forcing
             delta(:,3)=z(n)-location(3)
             do j=1,3
               if (lperi(j)) then
-                where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
-                where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
+                if (lforce_peri) then
+                  if (j==2) then
+                    delta(:,2)=2*atan(tan(.5*(delta(:,2) &
+                        +2.*deltay*atan(1000.*tan(.25* &
+                        (pi+x(l1:l2)-location(1)))))))
+                  else
+                    delta(:,j)=2*atan(tan(.5*delta(:,j)))
+                  endif
+                else
+                  where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
+                  where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
+                endif
               endif
               if (.not.extent(j)) delta(:,j)=0.
             enddo
@@ -2026,6 +2038,13 @@ module Forcing
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian*delta(:,j)
               endif
             enddo
+!
+!  test
+!
+!--         if (icc/=0) f(l1:l2,m,n,icc)=f(l1:l2,m,n,icc)+gaussian
+!
+!  diagnostics
+!
             if (lout) then
               if (idiag_rufm/=0) then
                 rho=exp(f(l1:l2,m,n,ilnrho))

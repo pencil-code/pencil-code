@@ -1,5 +1,8 @@
 ! $Id$
 !
+!  Magnetic flux rings. Constructed from a canonical ring which is the
+!  rotated and translated; see Pencil Code manual, Section C.3.
+!
 !  This module provide a way for users to specify custom initial
 !  conditions.
 !
@@ -203,13 +206,16 @@ module InitialCondition
 !  Initialize the magnetic vector potential.
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
-!  rotated and translated:
+!  rotated and translated (see Pencil Code manual, Section C.3):
+!
 !    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
+!
 !  where AA0(xxx) is the canonical ring and D the rotation matrix
 !  corresponding to a rotation by phi around z, followed by a
 !  rotation by theta around y.
 !  The array was already initialized to zero before calling this
 !  routine.
+!
 !  Optional argument `profile' allows to choose a different profile (see
 !  norm_ring())
 !
