@@ -1329,9 +1329,9 @@ module Fourier
       complex, dimension (nygrid) :: ay
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
-      integer :: l, m, stat
+      real, dimension (tny) :: deltay_x
+      integer :: l, m, stat, x_offset
       logical :: lforward, lcompute_im
-      real, parameter :: norm_fact = 1.0 / (nxgrid*nygrid)
 !
 !
       lforward = .true.
@@ -1349,9 +1349,6 @@ module Fourier
           'nygrid needs to be an integer multiple of nprocx*nprocy', &
           lfirst_proc_xy)
 !
-      if (lshear) call fatal_error('fft_xy_parallel_2D', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
-!
 !  Allocate memory for large arrays.
 !
       allocate (p_re(pnx,pny), stat=stat)
@@ -1366,6 +1363,11 @@ module Fourier
       allocate (t_im(tnx,tny), stat=stat)
       if (stat > 0) call fatal_error('fft_xy_parallel_2D', &
           'Could not allocate memory for t_im', .true.)
+!
+      if (lshear) then
+        x_offset = (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (x(m1+x_offset:m2+x_offset) - (x0+Lx/2))/Lx
+      endif
 !
       call cffti(nxgrid, wsavex)
       call cffti(nygrid, wsavey)
@@ -1404,15 +1406,17 @@ module Fourier
 !  Transform y-direction.
 !
             ay = cmplx (t_re(:,l), t_im(:,l))
-!
-!  Apply normalization factor to fourier coefficients.
-!
-            ay = ay * norm_fact
             call cfftf(nygrid, ay, wsavey)
+            if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
             t_re(:,l) = real (ay)
             t_im(:,l) = aimag (ay)
           enddo
         endif
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        t_re = t_re / (nxgrid*nygrid)
+        t_im = t_im / (nxgrid*nygrid)
 !
 !  Unmap the results back to normal shape.
 !
@@ -1438,6 +1442,7 @@ module Fourier
 !  Transform y-direction back.
 !
             ay = cmplx (t_re(:,l), t_im(:,l))
+            if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
             call cfftb (nygrid, ay, wsavey)
             t_re(:,l) = real (ay)
             t_im(:,l) = aimag (ay)
@@ -1501,13 +1506,14 @@ module Fourier
       complex, dimension (nygrid) :: ay
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
+      real, dimension (tny) :: deltay_x
       integer :: inz ! size of the third dimension
-      integer :: l, m, stat, pos_z
+      integer :: l, m, stat, x_offset, pos_z
       logical :: lforward, lcompute_im
-      real, parameter :: norm_fact = 1.0 / (nxgrid*nygrid)
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
+!
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
@@ -1534,9 +1540,6 @@ module Fourier
           'nygrid needs to be an integer multiple of nprocx*nprocy', &
           lfirst_proc_xy)
 !
-      if (lshear) call fatal_error('fft_xy_parallel_3D', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
-!
 !  Allocate memory for large arrays.
 !
       allocate (p_re(pnx,pny,inz), stat=stat)
@@ -1551,6 +1554,11 @@ module Fourier
       allocate (t_im(tnx,tny,inz), stat=stat)
       if (stat > 0) call fatal_error('fft_xy_parallel_3D', &
           'Could not allocate memory for t_im', .true.)
+!
+      if (lshear) then
+        x_offset = (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (x(m1+x_offset:m2+x_offset) - (x0+Lx/2))/Lx
+      endif
 !
       call cffti(nxgrid, wsavex)
       call cffti(nygrid, wsavey)
@@ -1592,16 +1600,18 @@ module Fourier
 !  Transform y-direction.
 !
               ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
-!
-!  Apply normalization factor to fourier coefficients.
-!
-              ay = ay * norm_fact
               call cfftf(nygrid, ay, wsavey)
+              if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
               t_re(:,l,pos_z) = real (ay)
               t_im(:,l,pos_z) = aimag (ay)
             enddo
           enddo
         endif
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        t_re = t_re / (nxgrid*nygrid)
+        t_im = t_im / (nxgrid*nygrid)
 !
 !  Unmap the results back to normal shape.
 !
@@ -1628,6 +1638,7 @@ module Fourier
 !  Transform y-direction back.
 !
               ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
+              if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
               call cfftb (nygrid, ay, wsavey)
               t_re(:,l,pos_z) = real (ay)
               t_im(:,l,pos_z) = aimag (ay)
@@ -1694,14 +1705,15 @@ module Fourier
       complex, dimension (nygrid) :: ay
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
+      real, dimension (tny) :: deltay_x
       integer :: inz, ina ! size of the third dimension
-      integer :: l, m, stat, pos_z, pos_a
+      integer :: l, m, stat, x_offset, pos_z, pos_a
       logical :: lforward, lcompute_im
-      real, parameter :: norm_fact = 1.0 / (nxgrid*nygrid)
 !
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
+!
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
@@ -1733,9 +1745,6 @@ module Fourier
           'nygrid needs to be an integer multiple of nprocx*nprocy', &
           lfirst_proc_xy)
 !
-      if (lshear) call fatal_error('fft_xy_parallel_4D', &
-          'shearing is not implemented in this routine!', lfirst_proc_xy)
-!
 !  Allocate memory for large arrays.
 !
       allocate (p_re(pnx,pny,inz,ina), stat=stat)
@@ -1750,6 +1759,11 @@ module Fourier
       allocate (t_im(tnx,tny,inz,ina), stat=stat)
       if (stat > 0) call fatal_error('fft_xy_parallel_4D', &
           'Could not allocate memory for t_im', .true.)
+!
+      if (lshear) then
+        x_offset = (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (x(m1+x_offset:m2+x_offset) - (x0+Lx/2))/Lx
+      endif
 !
       call cffti(nxgrid, wsavex)
       call cffti(nygrid, wsavey)
@@ -1793,18 +1807,20 @@ module Fourier
 !
 !  Transform y-direction.
 !
-                ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a)) * norm_fact
-!
-!  Apply normalization factor to fourier coefficients.
-!
-                ay = ay * norm_fact
+                ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
                 call cfftf(nygrid, ay, wsavey)
+                if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
                 t_re(:,l,pos_z,pos_a) = real (ay)
                 t_im(:,l,pos_z,pos_a) = aimag (ay)
               enddo
             enddo
           enddo
         endif
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        t_re = t_re / (nxgrid*nygrid)
+        t_im = t_im / (nxgrid*nygrid)
 !
 !  Unmap the results back to normal shape.
 !
@@ -1832,6 +1848,7 @@ module Fourier
 !  Transform y-direction back.
 !
                 ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
+                if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
                 call cfftb (nygrid, ay, wsavey)
                 t_re(:,l,pos_z,pos_a) = real (ay)
                 t_im(:,l,pos_z,pos_a) = aimag (ay)
