@@ -1365,8 +1365,8 @@ module Fourier
           'Could not allocate memory for t_im', .true.)
 !
       if (lshear) then
-        x_offset = (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (x(m1+x_offset:m2+x_offset) - (x0+Lx/2))/Lx
+        x_offset = l1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       call cffti(nxgrid, wsavex)
@@ -1556,8 +1556,8 @@ module Fourier
           'Could not allocate memory for t_im', .true.)
 !
       if (lshear) then
-        x_offset = (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (x(m1+x_offset:m2+x_offset) - (x0+Lx/2))/Lx
+        x_offset = l1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       call cffti(nxgrid, wsavex)
@@ -1761,8 +1761,8 @@ module Fourier
           'Could not allocate memory for t_im', .true.)
 !
       if (lshear) then
-        x_offset = (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (x(m1+x_offset:m2+x_offset) - (x0+Lx/2))/Lx
+        x_offset = l1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       call cffti(nxgrid, wsavex)
