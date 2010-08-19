@@ -554,6 +554,7 @@ module  power_spectrum
   elseif (sp=='cr') then
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
   elseif (sp=='abr') then
+    a_re=0.
     do m=m1,m2
       do n=n1,n2
         do ivec=1,3
@@ -566,6 +567,7 @@ module  power_spectrum
     enddo
     a_im=0.
   elseif (sp=='aba') then
+    a_re=0.
     do m=m1,m2
       do n=n1,n2
         call grad(f,ispecialvar,gLam)
