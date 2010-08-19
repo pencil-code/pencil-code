@@ -518,7 +518,7 @@ module  power_spectrum
   real, dimension(nzgrid) :: kz
   real, dimension(nx) :: bbi
   real, dimension(nx,3) :: gLam
-  character (len=3) :: sp
+  character (len=2) :: sp
   !
   !  identify version
   !
@@ -553,7 +553,7 @@ module  power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,ilncc)
   elseif (sp=='cr') then
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
-  elseif (sp=='abr') then
+  elseif (sp=='hr') then
     a_re=0.
     do m=m1,m2
       do n=n1,n2
@@ -566,7 +566,7 @@ module  power_spectrum
       enddo
     enddo
     a_im=0.
-  elseif (sp=='aba') then
+  elseif (sp=='ha') then
     a_re=0.
     do m=m1,m2
       do n=n1,n2
