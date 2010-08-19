@@ -56,6 +56,7 @@ module Density
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
   real :: rho_top=1.,rho_bottom=1.
+  real :: rmax_mass_source
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -77,7 +78,7 @@ module Density
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
-  character (len=labellen) :: mass_source_profile='cylindric'
+  character (len=labellen) :: mass_source_profile='nothing'
   character (len=5) :: iinit_str
   character (len=labellen) :: ffree_profile='none'
 !
@@ -96,13 +97,14 @@ module Density
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
       cs2bot, cs2top, &
       lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
-      mass_source_Mdot,  mass_source_sigma, lnrho_int, lnrho_ext, &
+      mass_source_Mdot,  mass_source_sigma, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
       lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons,&
       lffree,ffree_profile,rzero_ffree,wffree
+      
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1315,7 +1317,8 @@ module Density
       if (ldiff_hyper3_mesh) lpenc_requested(i_rho1)=.true.
 !
       if (lmass_source) then
-        if (mass_source_profile=='bump') lpenc_requested(i_r_mn)=.true.
+        if ((mass_source_profile=='bump').or.(mass_source_profile=='sph-step-down')) &
+            lpenc_requested(i_r_mn)=.true.
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
@@ -2129,7 +2132,7 @@ module Density
 !
 !  28-apr-2005/axel: coded
 !
-      use Sub, only: step
+      use Sub, only: step,stepdown
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2141,25 +2144,36 @@ module Density
 !
 !  Choose between different possibilities.
 !
-      if (mass_source_profile=='exponential') then
-        dlnrhodt=mass_source_Mdot
-      elseif (mass_source_profile=='bump') then
-        fnorm=(2.*pi*mass_source_sigma**2)**1.5
-        fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
-        dlnrhodt=mass_source_Mdot*fprofile
-      elseif (mass_source_profile=='cylindric') then
+      select case (mass_source_profile)
+        case ('nothing')
+          call fatal_error('mass_source','mass source with no profile not coded')
+        case ('exponential')
+          dlnrhodt=mass_source_Mdot
+        case('bump')
+          fnorm=(2.*pi*mass_source_sigma**2)**1.5
+          fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
+          dlnrhodt=mass_source_Mdot*fprofile
+        case('cylindric')
 !
 !  Cylindrical profile for inner cylinder.
 !
-        pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
-        fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
+          pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
+          fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
 !
 !  Cylindrical profile for outer cylinder.
 !
-        pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
-        fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
-        dlnrhodt=fint+fext
-      endif
+          pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
+          fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
+          dlnrhodt=fint+fext
+        case ('sph-step-down')
+          dlnrhodt=mass_source_Mdot* &
+              stepdown(r1_mn,rmax_mass_source,wdamp)
+!
+! default to catch unknown values
+!
+        case default
+          call fatal_error('mass_source','no such mass_source_profile')
+        endselect
 !
 !  Add mass source.
 !

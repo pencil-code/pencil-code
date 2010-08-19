@@ -259,7 +259,6 @@ endif
 #   F90FLAGS are only used by $(FC)
 #   F77FLAGS are only used by $(F77)
 # 
-
 ### Begin machine dependent
 
 ## IRIX64:
@@ -876,7 +875,7 @@ endif
 ## ifort
 ##FC = /opt/intel/Compiler/11.1/069/bin/ia32/ifort#(triton)
 ##FFLAGS=-O3 -ftrapuv -WB -check -I /usr/include/mpich2#(triton)
-###FFLAGS=-O3 -I /usr/include/mpich2#(triton)
+##FFLAGS=-O3 -I /usr/include/mpich2#(triton)
 ##FFLAGS_DOUBLE = -r8 #(triton)
 ## gfortran
 #FFLAGS=-O3 -fbounds-check -Wall -Wsurprising -Wunused -I /usr/include/mpich2#(triton)
@@ -1284,7 +1283,7 @@ endif
 ##
 ## Dhruba's new laptop (meera) 
 ##
-#FC=gfortran -L/usr/lib -llibmpi # (meera)
+#FC=/home/dhruba/Library/bin/mpif90 -g # (meera)
 #FFLAGS_DOUBLE = -r8 # (meera)
 #F77=$(FC) #(meera)
 #FFLAGS=-O3 -fno-second-underscore  #(meera)
@@ -1394,7 +1393,7 @@ endif
 #FFLAGS=-O2 -qarch=pwr4 -qtune=pwr4 #(p690*)
 #CFLAGS=-qarch=pwr4 -qtune=pwr4 -DFUNDERSC=0 #(p690*)
 #LD_MPI= #(p690*)
-### -bmaxdata:0x7000000
+## -bmaxdata:0x7000000
 
 
 ### End machine dependent
