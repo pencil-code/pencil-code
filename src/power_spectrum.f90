@@ -509,14 +509,16 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz
+  integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
-  character (len=2) :: sp
+  real, dimension(nx) :: bbi
+  real, dimension(nx,3) :: gLam
+  character (len=3) :: sp
   !
   !  identify version
   !
@@ -551,6 +553,32 @@ module  power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,ilncc)
   elseif (sp=='cr') then
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
+  elseif (sp=='abr') then
+    do m=m1,m2
+      do n=n1,n2
+        do ivec=1,3
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=a_re(:,im,in)+bbi*f(l1:l2,m,n,iaa-1+ivec)
+        enddo
+      enddo
+    enddo
+    a_im=0.
+  elseif (sp=='aba') then
+    do m=m1,m2
+      do n=n1,n2
+        call grad(f,ispecialvar,gLam)
+        do ivec=1,3
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=a_re(:,im,in)+bbi*(f(l1:l2,m,n,iaa-1+ivec)+&
+              gLam(:,ivec))
+        enddo
+      enddo
+    enddo
+    a_im=0.
   endif
   a_im=0.
 !
