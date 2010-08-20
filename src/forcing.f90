@@ -50,7 +50,7 @@ module Forcing
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lscale_kvector_fac=.false.
-  logical :: lforce_peri=.false.
+  logical :: lforce_peri=.false., lforce_cuty=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -107,7 +107,7 @@ module Forcing
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
-       lforce_peri
+       lforce_peri,lforce_cuty
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -1954,6 +1954,13 @@ module Forcing
           location=location_fixed
         endif
 !
+!  It turns out that in the presence of shear, and even for weak shear,
+!  vorticitity is being produced. In order to check whether the shearing
+!  periodic boundaries are to blame, we can cut the y extent of forcing
+!  locations by half.
+!
+        if (lforce_cuty) location(2)=location(2)*.5
+!
 !  reset location(i) to x, y, or z
 !
         if (.not.extent(1)) location(1)=x(1)
@@ -1963,8 +1970,9 @@ module Forcing
 !  write location to file
 !
         if (lroot .and. lwrite_gausspot_to_file) then
-          open(1,file=trim(datadir)//'/gaussian_pot_forcing.dat',status='unknown',position='append')
-            write(1,'(4f14.7)') t, location
+          open(1,file=trim(datadir)//'/gaussian_pot_forcing.dat', &
+              status='unknown',position='append')
+          write(1,'(4f14.7)') t, location
           close (1)
         endif
 !
