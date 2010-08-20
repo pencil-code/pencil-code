@@ -1,0 +1,9 @@
+#!/bin/csh
+#
+#$Id$
+#
+#  Returns a list of recent alive files
+#
+foreach dir (`tail -200 $PENCIL_HOME/.run_directories.log | grep $USER`)
+  ls -lt $dir/data/proc0/alive.info
+end

@@ -1,0 +1,7 @@
+#!/bin/csh
+#
+#$Id$
+#
+#  Returns a sorted list currently (and some recently) running jobs
+#
+pc_recent_alive_files |sort |tail -20
