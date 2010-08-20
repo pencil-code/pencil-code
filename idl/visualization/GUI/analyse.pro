@@ -225,6 +225,7 @@ if (not analyse_loaded) then BEGIN
 	units = { velocity:unit.velocity, temperature:unit.temperature, length:unit.length, density:unit.density, default_length:default_length, default_velocity:default_velocity, default_length_str:default_length_str, default_velocity_str:default_velocity_str }
 	pc_read_grid, obj=grid, /trim, /quiet
 	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
+
 	dummy = dindgen (dim.mx, dim.my, dim.mz)
 	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
 
@@ -253,6 +254,9 @@ if (not analyse_loaded) then BEGIN
 		print, "Could not create overplot dummy!"
 		stop
 	end
+
+	dummy = 0
+	dummy_3D = 0
 
 	prepare_varset, num_selected+1, units, coords, varset, overplot
 
