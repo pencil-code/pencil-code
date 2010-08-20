@@ -35,7 +35,7 @@ else if (($hn =~ a07c01n08*) && ($USER =~ emeric)) then
   set str='s/home\/e\/emeric/misc\/tmp\/volumes\/pdc\/prj.pdc.brandenb.10\/emeric/g'
 else if (($hn =~ a07c01n08*) && ($USER =~ fabiods)) then
   echo "special entry for Fabio"
-  set str='s/home\/f\/fabiods/misc\/tmp\/volumes\/pdc\/prj.pdc.brandenb.10\/fabiods/g'
+  set str='s/home\/f\/fabiods/misc\/pdc\/volumes\/pdc\/prj.pdc.brandenb.10\/fabiods/g'
 else if (($hn =~ a07c01n08*) && ($USER =~ piyali)) then
   echo "special entry for Piyali"
   set str='s/home\/p\/piyali/misc\/tmp\/volumes\/pdc\/prj.pdc.brandenb.11\/piyali/g'
