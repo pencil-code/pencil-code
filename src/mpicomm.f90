@@ -3122,11 +3122,9 @@ module Mpicomm
 !  This routine transposes 2D arrays in x and z only.
 !
 !  19-dec-06/anders: Adapted from transp
-!  18-mar-10/dintrans: adapted for a non-square resolution
 !
-!     integer, parameter :: nxt=nx/nprocz
-      integer, parameter :: nxt=nz
-      real, dimension(nzgrid,nz), intent(in) :: a
+      integer, parameter :: nxt=nx/nprocz
+      real, dimension(nx,nz), intent(in) :: a
       real, dimension(nzgrid,nxt), intent (out) :: b
 !
       real, dimension(nxt,nz) :: send_buf, recv_buf
@@ -3142,7 +3140,7 @@ module Mpicomm
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
 !
-      sendc=nxt*nz; recvc=sendc
+      sendc=nx*nz; recvc=sendc
 !
 !  Send information to different processors (x-z transpose)
 !
