@@ -86,10 +86,11 @@ module InitialCondition
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   logical :: lcorrect_selfgravity=.false.
-  real :: gravitational_const
-
+  real :: gravitational_const,fargo_factor
+!
   namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
-       radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const
+       radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
+       fargo_factor
 !
   contains
 !***********************************************************************
@@ -141,86 +142,86 @@ module InitialCondition
       if (lroot) &
            print*,'centrifugal_balance: initializing velocity field'
 !
-     if ((rsmooth/=0.).or.(r0_pot/=0)) then
-       if (rsmooth/=r0_pot) &
-            call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
-       if (n_pot/=2) &
-            call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
-     endif
+      if ((rsmooth/=0.).or.(r0_pot/=0)) then
+        if (rsmooth/=r0_pot) &
+             call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
+        if (n_pot/=2) &
+             call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
+      endif
 !
-     do m=1,my
-        do n=1,mz
+      do m=1,my
+      do n=1,mz
 !
-          call get_radial_distance(rr_sph,rr_cyl)
+        call get_radial_distance(rr_sph,rr_cyl)
 !
-          if (lgrav) then
+        if (lgrav) then
 !
 ! Gravity of a static central body
 !
-            call acceleration(g_r)
+          call acceleration(g_r)
 !
-            if (any(g_r > 0.)) then
-              do i=1,mx
-                if (g_r(i) > 0) then
-                  if ((i <= nghost).or.(i >= mx-nghost)) then
-                    !ghost zones, just emit a warning
-                    if (ip<=7) then
-                      print*,"centrifugal_balance: gravity at ghost point ",&
-                           x(i),y(m),z(n),"is directed outwards"
-                      call warning("","")
-                    endif
-                    OO(i)=0
-                  else
-                    !physical point. Break!
-                    print*,"centrifugal_balance: gravity at physical point ",&
+          if (any(g_r > 0.)) then
+            do i=1,mx
+              if (g_r(i) > 0) then
+                if ((i <= nghost).or.(i >= mx-nghost)) then
+                  !ghost zones, just emit a warning
+                  if (ip<=7) then
+                    print*,"centrifugal_balance: gravity at ghost point ",&
                          x(i),y(m),z(n),"is directed outwards"
-                    call fatal_error("","")
+                    call warning("","")
                   endif
-                else !g_r ne zero
-                  OO(i)=sqrt(-g_r(i)/rr_cyl(i))
+                  OO(i)=0
+                else
+                  !physical point. Break!
+                  print*,"centrifugal_balance: gravity at physical point ",&
+                       x(i),y(m),z(n),"is directed outwards"
+                  call fatal_error("","")
                 endif
-              enddo
-            else
-              if ( (coord_system=='cylindric')  .or.&
-                   (coord_system=='cartesian')) then
-                OO=sqrt(max(-g_r/rr_cyl,0.))
-              else if (coord_system=='spherical') then
-                OO=sqrt(max(-g_r/rr_sph,0.))
+              else !g_r ne zero
+                OO(i)=sqrt(-g_r(i)/rr_cyl(i))
               endif
+            enddo
+          else
+            if ( (coord_system=='cylindric')  .or.&
+                 (coord_system=='cartesian')) then
+              OO=sqrt(max(-g_r/rr_cyl,0.))
+            else if (coord_system=='spherical') then
+              OO=sqrt(max(-g_r/rr_sph,0.))
             endif
+          endif
 !
-          elseif (lparticles_nbody) then
+        elseif (lparticles_nbody) then
 !
 ! Nbody gravity with a dominating but dynamical central body
 !
-            call power_law(sqrt(g0),rr_sph,qgshear,tmp)
+          call power_law(sqrt(g0),rr_sph,qgshear,tmp)
 !
-            if (lcartesian_coords.or.&
-                 lcylindrical_coords) then
-              OO=tmp
-              if (lcylindrical_gravity) &
-                   OO=tmp*sqrt(rr_sph/rr_cyl)
-            elseif (lspherical_coords) then
-              OO=tmp
-            endif
-!
+          if (lcartesian_coords.or.&
+               lcylindrical_coords) then
+            OO=tmp
+            if (lcylindrical_gravity) &
+                 OO=tmp*sqrt(rr_sph/rr_cyl)
+          elseif (lspherical_coords) then
+            OO=tmp
           endif
 !
-          if (coord_system=='cartesian') then
-            f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
-            f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
-            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
-          elseif (coord_system=='cylindric') then
-            f(:,m,n,iux) = f(:,m,n,iux) + 0.
-            f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
-            f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
-          elseif (coord_system=='spherical') then
-            f(:,m,n,iux) = f(:,m,n,iux) + 0.
-            f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
-            f(:,m,n,iuz) = f(:,m,n,iuz) + OO*rr_sph
-          endif
+        endif
 !
-        enddo
+        if (coord_system=='cartesian') then
+          f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
+          f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
+          f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+        elseif (coord_system=='cylindric') then
+          f(:,m,n,iux) = f(:,m,n,iux) + 0.
+          f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
+          f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+        elseif (coord_system=='spherical') then
+          f(:,m,n,iux) = f(:,m,n,iux) + 0.
+          f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
+          f(:,m,n,iuz) = f(:,m,n,iuz) + OO*rr_sph
+        endif
+!
+      enddo
       enddo
 !
     endsubroutine initial_condition_uu
@@ -255,33 +256,33 @@ module InitialCondition
 !  Set the sound speed
 !
       do m=1,my
-        do n=1,mz
-          lheader=((m==1).and.(n==1).and.lroot)
-          call get_radial_distance(rr_sph,rr_cyl)
-          if (lsphere_in_a_box.or.lspherical_coords) then
-            rr=rr_sph
-          elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
-            rr=rr_cyl
-          else
-            call stop_it("local_isothermal_density: "//&
-                "no valid coordinate system")
-          endif
+      do n=1,mz
+        lheader=((m==1).and.(n==1).and.lroot)
+        call get_radial_distance(rr_sph,rr_cyl)
+        if (lsphere_in_a_box.or.lspherical_coords) then
+          rr=rr_sph
+        elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
+          rr=rr_cyl
+        else
+          call stop_it("local_isothermal_density: "//&
+               "no valid coordinate system")
+        endif
 !
-          call power_law(cs20,rr,ptlaw,cs2,r_ref)
+        call power_law(cs20,rr,ptlaw,cs2,r_ref)
 !
 !  Store cs2 in one of the free slots of the f-array
 !
-          if (llocal_iso) then
-            nullify(iglobal_cs2)
-            call farray_use_global('cs2',iglobal_cs2)
-            ics2=iglobal_cs2
-          elseif (ltemperature) then
-            ics2=ilnTT
-          elseif (lentropy) then
-            ics2=iss
-          endif
-          f(:,m,n,ics2)=cs2
-        enddo
+        if (llocal_iso) then
+          nullify(iglobal_cs2)
+          call farray_use_global('cs2',iglobal_cs2)
+          ics2=iglobal_cs2
+        elseif (ltemperature) then
+          ics2=ilnTT
+        elseif (lentropy) then
+          ics2=iss
+        endif
+        f(:,m,n,ics2)=cs2
+      enddo
       enddo
 !
 !  Stratification is only coded for 3D runs. But as
@@ -300,57 +301,57 @@ module InitialCondition
 !  Pencilize the density allocation.
 !
       do n=1,mz
-        do m=1,my
+      do m=1,my
 !
-          lheader=lroot.and.(m==1).and.(n==1)
+        lheader=lroot.and.(m==1).and.(n==1)
 !
 !  Midplane density
 !
-          call get_radial_distance(rr_sph,rr_cyl)
-          if (lsphere_in_a_box.or.lspherical_coords) then
-            rr=rr_sph
-          elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
-            rr=rr_cyl
-          endif
+        call get_radial_distance(rr_sph,rr_cyl)
+        if (lsphere_in_a_box.or.lspherical_coords) then
+          rr=rr_sph
+        elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
+          rr=rr_cyl
+        endif
 !
-          if (lexponential_smooth) then
-            !radial_percent_smooth = percentage of the grid
-            !that the smoothing is applied
-            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-            lnrhomid=log(rho0) &
-                + plaw*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
-          else
-            lnrhomid=log(rho0)-.5*plaw*log((rr/r_ref)**2+rsmooth**2)
-          endif
+        if (lexponential_smooth) then
+          !radial_percent_smooth = percentage of the grid
+          !that the smoothing is applied
+          rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+          lnrhomid=log(rho0) &
+               + plaw*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
+        else
+          lnrhomid=log(rho0)-.5*plaw*log((rr/r_ref)**2+rsmooth**2)
+        endif
 !
 !  Vertical stratification, if needed
 !
-          if (.not.lcylindrical_gravity.and.lpresent_zed) then
-            if (lheader) &
-                 print*,"Adding vertical stratification with "//&
-                 "scale height h/r=",cs0
+        if (.not.lcylindrical_gravity.and.lpresent_zed) then
+          if (lheader) &
+               print*,"Adding vertical stratification with "//&
+               "scale height h/r=",cs0
 !
 !  Get the sound speed
 !
-            cs2=f(:,m,n,ics2)
+          cs2=f(:,m,n,ics2)
 !
-            if (lspherical_coords.or.lsphere_in_a_box) then
-              ! uphi2/r = -gr + dp/dr
-              if (lgrav) then
-                call acceleration(tmp1)
-              elseif (lparticles_nbody) then
-                !call get_totalmass(g0) 
-                tmp1=-g0/rr_sph**2
-              else
-                print*,"both gravity and particles_nbody are switched off"
-                print*,"there is no gravity to determine the stratification"
-                call stop_it("local_isothermal_density")
-              endif
-!
-              tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)/gamma
-              lat=pi/2-y(m)
-              strat=(tmp2*gamma/cs2) * log(cos(lat))
+          if (lspherical_coords.or.lsphere_in_a_box) then
+            ! uphi2/r = -gr + dp/dr
+            if (lgrav) then
+              call acceleration(tmp1)
+            elseif (lparticles_nbody) then
+              !call get_totalmass(g0) 
+              tmp1=-g0/rr_sph**2
             else
+              print*,"both gravity and particles_nbody are switched off"
+              print*,"there is no gravity to determine the stratification"
+              call stop_it("local_isothermal_density")
+            endif
+!
+            tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)/gamma
+            lat=pi/2-y(m)
+            strat=(tmp2*gamma/cs2) * log(cos(lat))
+          else
 !
 !  The subroutine "potential" yields the whole gradient.
 !  I want the function that partially derived in
@@ -358,28 +359,28 @@ module InitialCondition
 !  The second call takes care of normalizing it
 !  i.e., there should be no correction at midplane
 !
-              if (lgrav) then
-                call potential(POT=tmp1,RMN=rr_sph)
-                call potential(POT=tmp2,RMN=rr_cyl)
-              elseif (lparticles_nbody) then
-                !call get_totalmass(g0)
-                tmp1=-g0/rr_sph 
-                tmp2=-g0/rr_cyl
-              else
-                print*,"both gravity and particles_nbody are switched off"
-                print*,"there is no gravity to determine the stratification"
-                call stop_it("local_isothermal_density")
-              endif
-              strat=-(tmp1-tmp2)/cs2
-              if (lenergy) strat=gamma*strat
+            if (lgrav) then
+              call potential(POT=tmp1,RMN=rr_sph)
+              call potential(POT=tmp2,RMN=rr_cyl)
+            elseif (lparticles_nbody) then
+              !call get_totalmass(g0)
+              tmp1=-g0/rr_sph 
+              tmp2=-g0/rr_cyl
+            else
+              print*,"both gravity and particles_nbody are switched off"
+              print*,"there is no gravity to determine the stratification"
+              call stop_it("local_isothermal_density")
             endif
-!
-          else
-!  No stratification
-            strat=0.
+            strat=-(tmp1-tmp2)/cs2
+            if (lenergy) strat=gamma*strat
           endif
-          f(:,m,n,ilnrho) = lnrhomid+strat
-        enddo
+!
+        else
+!  No stratification
+          strat=0.
+        endif
+        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrhomid + strat
+      enddo
       enddo
 !
 !  Correct the velocities by this pressure gradient
@@ -456,77 +457,77 @@ module InitialCondition
       lenergy=ltemperature.or.lentropy
 !
       do m=m1,m2
-        do n=n1,n2
-          lheader=(lfirstpoint.and.lroot)
+      do n=n1,n2
+        lheader=(lfirstpoint.and.lroot)
 !
 !  Get the density gradient
 !
-          call get_radial_distance(rr_sph,rr_cyl)
-          call grad(f,ilnrho,glnrho)
-          if (lcartesian_coords) then
-            gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
-          else if (lcylindrical_coords) then
-            gslnrho=glnrho(:,1)
-          else if (lspherical_coords) then
-            gslnrho=glnrho(:,1)
-          endif
+        call get_radial_distance(rr_sph,rr_cyl)
+        call grad(f,ilnrho,glnrho)
+        if (lcartesian_coords) then
+          gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
+        else if (lcylindrical_coords) then
+          gslnrho=glnrho(:,1)
+        else if (lspherical_coords) then
+          gslnrho=glnrho(:,1)
+        endif
 !
 !  Get sound speed and calculate the temperature gradient
 !
-          cs2=f(l1:l2,m,n,ics2);rr=rr_cyl
-          if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
-          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+        cs2=f(l1:l2,m,n,ics2);rr=rr_cyl
+        if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
+        gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
 !  Correct for cartesian or spherical
 !
-          corr=(gslnrho+gslnTT)*cs2
-          if (lenergy) corr=corr/gamma
+        corr=(gslnrho+gslnTT)*cs2
+        if (lenergy) corr=corr/gamma
 !
-          if (lcartesian_coords) then
-            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-            tmp2=tmp1 + corr/rr_cyl
-          elseif (lcylindrical_coords) then
-            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-            tmp2=tmp1 + corr/rr_cyl
-          elseif (lspherical_coords) then
-            tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
-            tmp2=tmp1 + corr/rr_sph
-          endif
+        if (lcartesian_coords) then
+          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+          tmp2=tmp1 + corr/rr_cyl
+        elseif (lcylindrical_coords) then
+          tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+          tmp2=tmp1 + corr/rr_cyl
+        elseif (lspherical_coords) then
+          tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
+          tmp2=tmp1 + corr/rr_sph
+        endif
 !
 !  Make sure the correction does not impede centrifugal equilibrium
 !
-          do i=1,nx
-            if (tmp2(i)<0.) then
-              if (rr(i) < r_int) then
-                !it's inside the frozen zone, so
-                !just set tmp2 to zero and emit a warning
-                tmp2(i)=0.
-                if ((ip<=10).and.lheader) &
-                     call warning('correct_density_gradient','Cannot '//&
-                     'have centrifugal equilibrium in the inner '//&
-                     'domain. The pressure gradient is too steep.')
-              else
-                print*,'correct_density_gradient: ',&
-                       'cannot have centrifugal equilibrium in the inner ',&
-                       'domain. The pressure gradient is too steep at ',&
-                       'x,y,z=',x(i+nghost),y(m),z(n)
-                print*,'the angular frequency here is',tmp2(i)
-                call stop_it("")
-              endif
+        do i=1,nx
+          if (tmp2(i)<0.) then
+            if (rr(i) < r_int) then
+              !it's inside the frozen zone, so
+              !just set tmp2 to zero and emit a warning
+              tmp2(i)=0.
+              if ((ip<=10).and.lheader) &
+                   call warning('correct_density_gradient','Cannot '//&
+                   'have centrifugal equilibrium in the inner '//&
+                   'domain. The pressure gradient is too steep.')
+            else
+              print*,'correct_density_gradient: ',&
+                   'cannot have centrifugal equilibrium in the inner ',&
+                   'domain. The pressure gradient is too steep at ',&
+                   'x,y,z=',x(i+nghost),y(m),z(n)
+              print*,'the angular frequency here is',tmp2(i)
+              call stop_it("")
             endif
-          enddo
+          endif
+        enddo
 !
 !  Correct the velocities
 !
-          if (lcartesian_coords) then
-            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-          elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-          elseif (lspherical_coords) then
-            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
-          endif
-        enddo
+        if (lcartesian_coords) then
+          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+        elseif (lcylindrical_coords) then
+          f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+        elseif (lspherical_coords) then
+          f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
+        endif
+      enddo
       enddo
 !
     endsubroutine correct_pressure_gradient
@@ -548,16 +549,16 @@ module InitialCondition
 !
       fac=pi/2
       do m=1,my
-        do n=1,mz
-          call get_radial_distance(rr_sph,rr_cyl)
-          f(1:mx,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
-          if (lexponential_smooth) then
-            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-            arg=(rr_cyl-rshift)/rmid
-            f(1:mx,m,n,ilnrho) = f(1:mx,m,n,ilnrho)*&
-                 .5*(1+atan(arg)/fac)
-          endif
-        enddo
+      do n=1,mz
+        call get_radial_distance(rr_sph,rr_cyl)
+        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrho0 - rr_cyl/r_ref
+        if (lexponential_smooth) then
+          rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+          arg=(rr_cyl-rshift)/rmid
+          f(:,m,n,ilnrho) = f(:,m,n,ilnrho)*&
+               .5*(1+atan(arg)/fac)
+        endif
+      enddo
       enddo
 !
 !  Add self-gravity's contribution to the centrifugal force
@@ -619,65 +620,65 @@ module InitialCondition
 !  update the boundaries for the self-potential
 !
         do n=n1,n2
-          do m=m1,m2
+        do m=m1,m2
 !
-            lheader=(lfirstpoint.and.lroot)
+          lheader=(lfirstpoint.and.lroot)
 !
 !  Get the potential gradient
 !
-            call get_radial_distance(rr_sph,rr_cyl)
-            call grad(f,ipotself,gpotself)
+          call get_radial_distance(rr_sph,rr_cyl)
+          call grad(f,ipotself,gpotself)
 !
 !  correct the angular frequency phidot^2
 !
-            if (lcartesian_coords) then
-              gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-              tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-              tmp2=tmp1+gspotself/rr_cyl
-            elseif (lcylindrical_coords) then
-              gspotself=gpotself(:,1)
-              tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-              tmp2=tmp1+gspotself/rr_cyl
-            elseif (lspherical_coords) then
-              gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
-              tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
-              tmp2=tmp1 + gspotself/(rr_sph*sinth(m)**2)
-            endif
+          if (lcartesian_coords) then
+            gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
+            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+            tmp2=tmp1+gspotself/rr_cyl
+          elseif (lcylindrical_coords) then
+            gspotself=gpotself(:,1)
+            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+            tmp2=tmp1+gspotself/rr_cyl
+          elseif (lspherical_coords) then
+            gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
+            tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
+            tmp2=tmp1 + gspotself/(rr_sph*sinth(m)**2)
+          endif
 !
 !  Catch negative values of phidot^2
 !
-            do i=1,nx
-              if (tmp2(i)<0.) then
-                if (rr_cyl(i) < r_int) then
-                  !it's inside the frozen zone, so
-                  !just set tmp2 to zero and emit a warning
-                  tmp2(i)=0.
-                  if ((ip<=10).and.lheader) &
-                       call warning('correct_for_selfgravity','Cannot '//&
-                       'have centrifugal equilibrium in the inner '//&
-                       'domain. Just warning...')
-                else
-                  print*,'correct_for_selfgravity: ',&
-                       'cannot have centrifugal equilibrium in the inner ',&
-                       'domain. The offending point is ',&
-                       'x,y,z=',x(i+nghost),y(m),z(n)
-                  print*,'the angular frequency here is ',tmp2(i)
-                  call stop_it("")
-                endif
+          do i=1,nx
+            if (tmp2(i)<0.) then
+              if (rr_cyl(i) < r_int) then
+                !it's inside the frozen zone, so
+                !just set tmp2 to zero and emit a warning
+                tmp2(i)=0.
+                if ((ip<=10).and.lheader) &
+                     call warning('correct_for_selfgravity','Cannot '//&
+                     'have centrifugal equilibrium in the inner '//&
+                     'domain. Just warning...')
+              else
+                print*,'correct_for_selfgravity: ',&
+                     'cannot have centrifugal equilibrium in the inner ',&
+                     'domain. The offending point is ',&
+                     'x,y,z=',x(i+nghost),y(m),z(n)
+                print*,'the angular frequency here is ',tmp2(i)
+                call stop_it("")
               endif
-            enddo
+            endif
+          enddo
 !
 !  Correct the velocities
 !
-            if (lcartesian_coords) then
-              f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-              f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-            elseif (lcylindrical_coords) then
-              f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-            elseif (lspherical_coords) then
-              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
-            endif
-          enddo
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+          elseif (lcylindrical_coords) then
+            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+          elseif (lspherical_coords) then
+            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
+          endif
+        enddo
         enddo
       endif ! if (lcorrect_selfgravity)
 !
@@ -761,46 +762,46 @@ module InitialCondition
       if (lenergy) call get_cp1(cp1)
 !
       do m=m1,m2
-        do n=n1,n2
+      do n=n1,n2
 !
 !  Put in the global arrays if they are to be static
 !
-          cs2=f(l1:l2,m,n,ics2)
-          if (llocal_iso) then
+        cs2=f(l1:l2,m,n,ics2)
+        if (llocal_iso) then
 !
-            f(l1:l2,m,n,iglobal_cs2) = cs2
+          f(l1:l2,m,n,iglobal_cs2) = cs2
 !
-            call get_radial_distance(rr_sph,rr_cyl);   rr=rr_cyl
-            if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
+          call get_radial_distance(rr_sph,rr_cyl);   rr=rr_cyl
+          if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
 !
-            gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
-            if (lcartesian_coords) then
-              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
-              f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(m)    /rr_cyl
-              f(l1:l2,m,n,iglobal_glnTT+2)=0.
-            else! (lcylindrical_coords.or.lspherical_coords) then
-              f(l1:l2,m,n,iglobal_glnTT  )=gslnTT
-              f(l1:l2,m,n,iglobal_glnTT+1)=0.
-              f(l1:l2,m,n,iglobal_glnTT+2)=0.
-            endif
-          elseif (ltemperature) then
-!  else do it as temperature ...
-            f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
-          elseif (lentropy) then
-!  ... or entropy
-            lnrho=f(l1:l2,m,n,ilnrho) ! initial condition, always log
-            f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
-          else
-!
-            call fatal_error('set_thermodynamical_quantities', &
-                'No thermodynamical variable. Choose if you want '//&
-                'a local thermodynamical approximation '//&
-                '(switch llocal_iso=T init_pars and entropy=noentropy on '//&
-                'Makefile.local), or if you want to compute the '//&
-                'temperature directly and evolve it in time.')
+          if (lcartesian_coords) then
+            f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
+            f(l1:l2,m,n,iglobal_glnTT+1)=gslnTT*y(m)    /rr_cyl
+            f(l1:l2,m,n,iglobal_glnTT+2)=0.
+          else! (lcylindrical_coords.or.lspherical_coords) then
+            f(l1:l2,m,n,iglobal_glnTT  )=gslnTT
+            f(l1:l2,m,n,iglobal_glnTT+1)=0.
+            f(l1:l2,m,n,iglobal_glnTT+2)=0.
           endif
-        enddo
+        elseif (ltemperature) then
+!  else do it as temperature ...
+          f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
+        elseif (lentropy) then
+!  ... or entropy
+          lnrho=f(l1:l2,m,n,ilnrho) ! initial condition, always log
+          f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+        else
+!
+          call fatal_error('set_thermodynamical_quantities', &
+               'No thermodynamical variable. Choose if you want '//&
+               'a local thermodynamical approximation '//&
+               '(switch llocal_iso=T init_pars and entropy=noentropy on '//&
+               'Makefile.local), or if you want to compute the '//&
+               'temperature directly and evolve it in time.')
+        endif
+      enddo
       enddo
 !
 !  Word of warning...
