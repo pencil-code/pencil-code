@@ -411,21 +411,25 @@ module ImplicitPhysics
 !
 !    where J_x and J_z denote Jacobian matrices df/dT.
 !  08-mar-2010/dintrans: added the case of a non-square domain (ibox-loop)
+!  21-aug-2010/dintrans: simplified version that uses Anders' original
+!    transp_xz and transp_zx subroutines
 !
       use EquationOfState, only: gamma
-      use Mpicomm, only: transp_xz
+      use Mpicomm, only: transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
       implicit none
 !
       integer, parameter :: mzt=nzgrid+2*nghost
       integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
-      integer :: i ,j, ibox, ll1, ll2
+      integer, parameter :: nxt=nx/nprocz
+      integer :: i ,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)  :: source, hcond, dhcond, finter, TT, rho, val
-      real, dimension(mzt,mz) :: hcondt, dhcondt, fintert, TTt, rhot, valt
-      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
+      real, dimension(mx,mz)   :: source, hcond, dhcond, finter, TT, rho
+      real, dimension(mzt,nxt) :: hcondt, dhcondt, fintert, TTt, rhot, valt
+      real, dimension(nx,nz)   :: val
+      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
 !
 !  It is necessary to communicate ghost-zones points between
@@ -487,58 +491,54 @@ module ImplicitPhysics
 !
 ! do the transpositions x <--> z
 !
-      do ibox=1,nxgrid/nzgrid
-        ll1=l1+(ibox-1)*nzgrid
-        ll2=l1+ibox*nzgrid-1
-        call transp_xz(finter(ll1:ll2,n1:n2), fintert(n1t:n2t,n1:n2))
-        call transp_xz(rho(ll1:ll2,n1:n2), rhot(n1t:n2t,n1:n2))
-        call transp_xz(TT(ll1:ll2,n1:n2), TTt(n1t:n2t,n1:n2))
-        call heatcond_TT(TTt, hcondt, dhcondt)
+      call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,:))
+      call transp_xz(rho(l1:l2,n1:n2), rhot(n1t:n2t,:))
+      call transp_xz(TT(l1:l2,n1:n2), TTt(n1t:n2t,:))
+      call heatcond_TT(TTt, hcondt, dhcondt)
 !
-        do i=n1,n2
-          wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
-          az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)            &
-             *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i))      &
-             +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
+      do i=1,nxt
+        wz=dt*cp1*gamma*dz_2/rhot(n1t:n2t,i)
+        az=-wz/4.*(dhcondt(n1t-1:n2t-1,i)            &
+           *(TTt(n1t-1:n2t-1,i)-TTt(n1t:n2t,i))      &
+           +hcondt(n1t-1:n2t-1,i)+hcondt(n1t:n2t,i))
 !
-          bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
-             (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
-             -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
-             +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
+        bz=1.+wz/4.*(dhcondt(n1t:n2t,i)*                 &
+           (2.*TTt(n1t:n2t,i)-TTt(n1t-1:n2t-1,i)         &
+           -TTt(n1t+1:n2t+1,i))+2.*hcondt(n1t:n2t,i)     &
+           +hcondt(n1t+1:n2t+1,i)+hcondt(n1t-1:n2t-1,i))
 !
-          cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
-             *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))      &
-             +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
+        cz=-wz/4.*(dhcondt(n1t+1:n2t+1,i)            &
+           *(TTt(n1t+1:n2t+1,i)-TTt(n1t:n2t,i))      &
+           +hcondt(n1t:n2t,i)+hcondt(n1t+1:n2t+1,i))
 !
-          rhsz=fintert(n1t:n2t,i)
+        rhsz=fintert(n1t:n2t,i)
 !
 ! z boundary conditions
 ! Constant temperature at the top: T^(n+1)-T^n=0
 !
-          bz(nzgrid)=1. ; az(nzgrid)=0.
-          rhsz(nzgrid)=0.
+        bz(nzgrid)=1. ; az(nzgrid)=0.
+        rhsz(nzgrid)=0.
 ! bottom
-          select case (bcz1(ilnTT))
+        select case (bcz1(ilnTT))
 ! Constant temperature at the bottom: T^(n+1)-T^n=0
-            case ('cT')
-              bz(1)=1. ; cz(1)=0.
-              rhsz(1)=0.
+          case ('cT')
+            bz(1)=1. ; cz(1)=0.
+            rhsz(1)=0.
 ! Constant flux at the bottom
-            case ('c3')
-              bz(1)=1. ; cz(1)=-1.
-              rhsz(1)=0.
-            case default 
-               call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
-          endselect
-          call tridag(az, bz, cz, rhsz, workz)
-          valt(n1t:n2t,i)=workz(1:nzgrid)
-        enddo ! i
+          case ('c3')
+            bz(1)=1. ; cz(1)=-1.
+            rhsz(1)=0.
+          case default 
+            call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
+        endselect
+        call tridag(az, bz, cz, rhsz, workz)
+        valt(n1t:n2t,i)=workz(1:nzgrid)
+      enddo ! i
 !
 ! come back on the grid (x,z)
 !
-        call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
-        f(ll1:ll2,4,:,ilnTT)=f(ll1:ll2,4,:,iTTold)+dt*val(ll1:ll2,:)
-      enddo ! ibox
+      call transp_zx(valt(n1t:n2t,:), val)
+      f(l1:l2,4,n1:n2,ilnTT)=f(l1:l2,4,n1:n2,iTTold)+dt*val
 !
 ! update hcond used for the 'c3' condition in boundcond.f90
 !
@@ -761,9 +761,9 @@ module ImplicitPhysics
 !
 ! Do the transpositions x <--> z
 !
-      call transp_xz(finter, fintert)
-      call transp_xz(rho, rhot)
-      call transp_xz(source, sourcet)
+!      call transp_xz(finter, fintert)
+!      call transp_xz(rho, rhot)
+!      call transp_xz(source, sourcet)
 !
 ! Communicate the first and last pencils of size nzgrid
 !
@@ -1119,10 +1119,10 @@ module ImplicitPhysics
         ll1=l1+(ibox-1)*nzgrid
         ll2=l1+ibox*nzgrid-1
 
-        call transp_xz(finter(ll1:ll2,n1:n2), fintert(n1t:n2t,n1:n2))
-        call transp_xz(chi(ll1:ll2,n1:n2), chit(n1t:n2t,n1:n2))
-        call transp_xz(dLnhcond(ll1:ll2,n1:n2), dLnhcondt(n1t:n2t,n1:n2))
-        call transp_xz(TT(ll1:ll2,n1:n2), TTt(n1t:n2t,n1:n2))
+!        call transp_xz(finter(ll1:ll2,n1:n2), fintert(n1t:n2t,n1:n2))
+!        call transp_xz(chi(ll1:ll2,n1:n2), chit(n1t:n2t,n1:n2))
+!        call transp_xz(dLnhcond(ll1:ll2,n1:n2), dLnhcondt(n1t:n2t,n1:n2))
+!        call transp_xz(TT(ll1:ll2,n1:n2), TTt(n1t:n2t,n1:n2))
 !
 ! columns in the z-direction dealt implicitly
 ! be careful! we still play with the l1,l2 and n1,n2 indices but that applies
@@ -1160,7 +1160,7 @@ module ImplicitPhysics
 !
 ! come back on the grid (x,z)
 !
-        call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
+!        call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
         f(ll1:ll2,4,n1:n2,ilnTT)=f(ll1:ll2,4,n1:n2,iTTold)+dt*val(ll1:ll2,n1:n2)
       enddo ! ibox
 !
