@@ -105,7 +105,7 @@ GetOptions(\%opts,
                     --tag-broken=s
                -b   --use-pc_auto-test
                -W=s --auto-test-options=s
-               )) or die "$!\n";
+               )) or die "Aborting.\n";
 die '$Id$ ' . "\n"
             if    ($opts{'v'} || $opts{'version'});
 die usage() if    ($opts{'h'} || $opts{'help'});

@@ -34,7 +34,8 @@ GetOptions(\%opts,
                -n   --dry-run
                     --debug
                -q   --quiet
-               -v   --version ));
+               -v   --version )
+          ) or die "Aborting\n";
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
 if ($debug) {

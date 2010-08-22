@@ -70,7 +70,9 @@ GetOptions(\%opts,
            qw( -h   --help
                -s   --start
                -r   --run
-               -v   --version     ));
+               -v   --version     )
+          ) or die "Aborting.\n";
+
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 if ($opts{'v'} || $opts{'version'}) {
     my $rev = '$Revision: 1.5 $';

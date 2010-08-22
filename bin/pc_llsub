@@ -68,7 +68,8 @@ GetOptions('help'       => \$help,
            'account=s'  => \$account,
            'mail=s'     => \$mail,
            'output'     => \$output,
-           'restart'    => \$restart);
+           'restart'    => \$restart
+          ) or die "Aborting.\n";
 
 die $usage if (@ARGV == 0 or $help);
 

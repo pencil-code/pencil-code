@@ -1,6 +1,6 @@
 #!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 # CVS: $Id$
-# -*-perl-*-
 #
 # Name:   gpgrowth
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
@@ -89,7 +89,8 @@ GetOptions(\%opts,
                -y=s --yrange=s
                -v=s --var=s
                -l   --linear
-             ));
+             )
+          ) or die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 

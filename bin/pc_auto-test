@@ -314,8 +314,8 @@ GetOptions(\%opts,
                     --nodelist=s
                     --no-summary
                     --nolock      --no-lock
-                    --fast
-               )) or $help=1, die "$!\n";
+                    --fast )
+          ) or $help=1, die "Aborting.\n";
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {

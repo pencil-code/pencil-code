@@ -76,7 +76,8 @@ GetOptions(\%opts,
                -1   --one-line
                -M=i --maxtags=i
                -q   --quiet
-               -v   --version ));
+               -v   --version )
+          ) or die "Aborting.\n";
 
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
 if ($debug) {

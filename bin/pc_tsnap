@@ -1,6 +1,6 @@
 #!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 # CVS: $Id$
-# -*-perl-*-
 #
 # Name:   pc_tsnap (used to be called tsnap until 17-may-09)
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -44,7 +44,9 @@ die $usage unless (@ARGV > 0);
 $opts{'help'} = '';
 $opts{'sort'} = '';
 $opts{'double'} = '';
-GetOptions(\%opts, "--help", "--sort", "--double");
+GetOptions(\%opts,
+           "--help", "--sort", "--double"
+          ) or die "Aborting.\n";
 
 if ($opts{'help'}) { die $usage; }
 if ($opts{'sort'}) { @ARGV = sort by_first_num(@ARGV);}
