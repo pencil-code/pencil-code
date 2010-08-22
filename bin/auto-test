@@ -190,6 +190,7 @@ my %tests = (
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
+my $created_datadir = 0;
 my $remove_lock = 0;
 my $failure_message = '';
 my $reference_out = 'reference.out'; # automatically changed to
@@ -327,7 +328,7 @@ my $pencil_home = ($opts{'D'} || $opts{'pencil-home'}     || "$ENV{PENCIL_HOME}"
                                                              || '');
 my $niceval     = ($opts{'N'} || $opts{'nice'}            || 0    );
 my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || 0    );
-my $datadir     = ($opts{'d'} || $opts{'datadir'}         || 0    );
+my $mkdatadir   = ($opts{'d'} || $opts{'datadir'}         || 0    );
 my $short       = ($opts{'s'} || $opts{'short'}           || 0    );
 my $postproc    = ($opts{'p'} || $opts{'postproc'}        || ''   );
 my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
@@ -1089,7 +1090,6 @@ sub test_rundir {
 # and results
     my $dir      = shift;
     my $makeopts = shift;
-    my $created_datadir = 0;
     my $t0 = get_time();
 
     $test_status = 0;           #  so far, everything is OK
@@ -1202,28 +1202,25 @@ sub check_for_datadir {
 # Make sure we have an appropriate data directory
     my $created_datadir = 0;
     if (! -d 'data') {
-        if (!$datadir) {
-            if (-l 'data') {
-                print "        data is file or empty link;\n"
-                    . "        removing and generating data -> $tmpdir\n";
-                system("rm", "data");
-            }
-            else {
-                print "        No data directory; generating data -> $tmpdir\n";
-            }
-            system("mkdir -p $tmpdir; ln -s $tmpdir data");
-            $created_datadir = 1;
-        }
-        else {
+        if ($mkdatadir) {
             if (-l 'data') {
                 print "        data is file or empty link;\n"
                     . "        removing and generating data directory \n";
                 system("rm", "data");
-            }
-            else {
+            } else {
                 print "        No data directory; generating data directory\n";
             }
             system("mkdir -p data");
+        } else {
+            if (-l 'data') {
+                print "        data is file or empty link;\n"
+                    . "        removing and generating data -> $tmpdir\n";
+                system("rm", "data");
+            } else {
+                print "        No data directory; generating data -> $tmpdir\n";
+            }
+            system("mkdir -p $tmpdir; ln -s $tmpdir data");
+            $created_datadir = 1;
         }
     }
     return $created_datadir;
