@@ -1519,6 +1519,12 @@ END {
 
     }
 
+    # Clean up generated directories
+    if ($created_datadir) {
+        system("rm", "data");
+        system("rm", "-r", "$tmpdir");
+    }
+
     # Remove lock file
     if ($remove_lock) {
         unlink $lockfile or warn "Couldn't remove lockfile <$lockfile>\n";
