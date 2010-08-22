@@ -747,7 +747,7 @@ sub test_timelimited_shell_cmd {
     my $maxtime  = shift;
     my $procname = shift;
     my @rest = @_;
-    return test_shell_cmd("reaper -t '$maxtime,$procname' $cmd", @rest);
+    return test_shell_cmd("reaper -t '$maxtime,$procname' '$cmd'", @rest);
 }
 # ---------------------------------------------------------------------- #
 sub test_compile {
