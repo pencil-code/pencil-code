@@ -550,7 +550,8 @@ module  power_spectrum
   elseif (sp=='ss') then
     a_re=f(l1:l2,m1:m2,n1:n2,iss)
   elseif (sp=='cc') then
-    a_re=f(l1:l2,m1:m2,n1:n2,ilncc)
+    if (icc==0) call fatal_error('powerscl','icc=0, which is not allowed')
+    a_re=f(l1:l2,m1:m2,n1:n2,icc)
   elseif (sp=='cr') then
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
   elseif (sp=='hr') then
@@ -618,7 +619,8 @@ module  power_spectrum
   if (iproc==root) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
-    spectrum_sum=.5*spectrum_sum
+!AB: the following line does not make sense for passive scalars
+!-- spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,'(1p,8e10.2)') spectrum_sum
