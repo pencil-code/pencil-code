@@ -29,7 +29,7 @@ module Special
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
   integer :: irefz=0,nglevel=3
-  real :: massflux=0.,u_add,hcond2=0.,hcond3=0.
+  real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
   real, dimension (mz) :: init_lnTT, init_lnrho
@@ -47,7 +47,7 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
-       Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux, &
+       Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
        iheattype,heat_par1,heat_par2,heat_par3,dt_gran
@@ -823,7 +823,8 @@ module Special
       tmp_tau = tdownr* (exp(-allpr*(z(n)*unit_length*1e-6)) )
       newtonr = newtonr * tmp_tau
 !
-      tmp_tau = tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
+!     tmp_tau = tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
+      tmp_tau = tdown * exp(-allp*(lnrho0-lnrho))
       newton  = newton  * tmp_tau
       !
       !  Add newton cooling term to entropy
@@ -893,7 +894,8 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * p%rho1 * p%TT**expo*cubic_step(real(t*unit_time),300.,300.)
+      chi_1 =  Kpara * p%rho1 * p%TT**expo* &
+          cubic_step(real(t*unit_time),init_time,init_time)
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -1074,7 +1076,7 @@ module Special
 !
 !  calculate rhs
 !
-      chix = hcond1*cubic_step(real(t*unit_time),300.,300.)
+      chix = hcond1*cubic_step(real(t*unit_time),init_time,init_time)
 !
       rhs = gamma*chix*tmp
 !
@@ -1182,7 +1184,7 @@ module Special
       rhs = hcond2*(rhs + glnT2*tmp)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*cubic_step(real(t*unit_time),300.,300.)
+          rhs*gamma*cubic_step(real(t*unit_time),init_time,init_time)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -1268,7 +1270,7 @@ module Special
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-      rtv_cool = rtv_cool*cool_RTV *cubic_step(real(t*unit_time),300.,300.)
+      rtv_cool = rtv_cool*cool_RTV *cubic_step(real(t*unit_time),init_time,init_time)
 !     for adjusting by setting cool_RTV in run.in
 !
       rtv_cool=rtv_cool &
@@ -1453,8 +1455,8 @@ module Special
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           !
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-              cubic_step(real(t*unit_time),300.,300.)
+              p%TT1*p%rho1*gamma*p%cp1*heatinput * &
+              cubic_step(real(t*unit_time),init_time,init_time)
 !
         case ('exp')
           ! heat_par_exp(1) should be 530 w/m2 (flux,F)
@@ -1467,7 +1469,7 @@ module Special
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
               p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-              cubic_step(real(t*unit_time),300.,300.)
+              cubic_step(real(t*unit_time),init_time,init_time)
 !
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
@@ -1483,7 +1485,7 @@ module Special
           heatinput=heatinput/unit_density/unit_velocity**3*unit_length
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
               p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-              cubic_step(real(t*unit_time),300.,300.)
+              cubic_step(real(t*unit_time),init_time,init_time)
           !
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
@@ -1603,7 +1605,7 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i,j,ipt,main_proc
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
-      real :: cp1,dA
+      real :: cp1=1.,dA
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
@@ -1631,7 +1633,7 @@ module Special
           elseif (nxgrid==1) then
             dA=dy*unit_length
           endif
-          f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * &
+          f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
               Bz_flux/(Bzflux*dA*unit_magnetic)
         endif
       endif
