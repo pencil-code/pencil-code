@@ -517,7 +517,7 @@ program run
     if (lparticles) call particles_load_balance(f)
 !
 !  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
-!  in the temperature equation (using temperature_idealgas).
+!  in the temperature equation (using the implicit_physics module).
 !
     if (lADI) call calc_heatcond_ADI(f)
     if (ltestperturb) call testperturb_finalize(f)
