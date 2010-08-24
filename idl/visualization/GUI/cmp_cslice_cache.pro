@@ -681,6 +681,10 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (num_overs ge 2) then over_active = 1 else over_active = 0
 	if (num_snapshots ge 2) then snap_active = 1 else snap_active = 0
 
+	if (num_x gt 1) then sl_x_active = 1 else sl_x_active = 0
+	if (num_y gt 1) then sl_y_active = 1 else sl_y_active = 0
+	if (num_z gt 1) then sl_z_active = 1 else sl_z_active = 0
+
 	button_pressed_yz = 0
 	button_pressed_xz = 0
 	button_pressed_xy = 0
@@ -690,11 +694,11 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	TOP     = WIDGET_BASE (BASE, /row)
 	scol    = WIDGET_BASE (top, /col)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=num_x-1, xsize=(num_x>128)+10, /drag)
+	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x>128)+10, /drag, sensitive=sl_x_active)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=num_y-1, xsize=(num_y>128)+10, /drag)
+	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y>128)+10, /drag, sensitive=sl_y_active)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=num_z-1, xsize=(num_z>128)+10, /drag)
+	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z>128)+10, /drag, sensitive=sl_z_active)
 	bcol    = WIDGET_BASE (top, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCL', set_value=abs_scale)
 	b_sub   = CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
