@@ -280,7 +280,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	oz = round (bin_z / 2.0) - 1
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		ii = (reform(cube[px,*,*]) > csmin) < csmax
+		ii = (reform (cube[px,*,*], num_y, num_z) > csmin) < csmax
 		if (bin_y ne 1 or bin_z ne 1) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
 		if (abs_scale) then begin
 			cut_min = csmin
@@ -316,7 +316,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	end
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		ii = (reform (cube[*, py, *]) > csmin) < csmax
+		ii = (reform (cube[*, py, *], num_x, num_z) > csmin) < csmax
 		if (bin_x ne 1 or bin_z ne 1) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
 		if (abs_scale) then begin
 			cut_min = csmin
@@ -352,7 +352,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	end
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		ii = (reform (cube[*, *, pz]) > csmin) < csmax
+		ii = (reform (cube[*, *, pz], num_x, num_y) > csmin) < csmax
 		if (bin_x ne 1 or bin_y ne 1) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
 		if (abs_scale) then begin
 			cut_min = csmin
@@ -606,6 +606,20 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, play, scal_b, scal_t
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
+	; DEFAULT SETTINGS:
+	abs_scale = 1
+	show_cross = 1
+	show_cuts = 1
+	sub_aver = 0
+	selected_cube = 0
+	selected_overplot = 0
+	selected_snapshot = 0
+	af_x = 0
+	af_y = 0
+	af_z = 0
+	min_size = 8
+
+
 	set = set_names
 	if (n_elements (overplots) eq 0) then overplots = {none:'none'} else overplots = create_struct ({none:'none'}, overplots)
 	overplot = overplots
@@ -618,6 +632,10 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	if (n_elements (scaling) eq 0) then scaling = 1
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
+
+	if (num_x*scaling[0] lt min_size) then scaling[0] = min_size / num_x
+	if (num_y*scaling[1] lt min_size) then scaling[1] = min_size / num_y
+	if (num_z*scaling[2] lt min_size) then scaling[2] = min_size / num_z
 
 	bin_x = scaling[0]
 	bin_y = scaling[1]
@@ -635,18 +653,6 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	scal_b = 0
 	scal_t = 0
-
-	; DEFAULT SETTINGS:
-	abs_scale = 1
-	show_cross = 1
-	show_cuts = 1
-	sub_aver = 0
-	selected_cube = 0
-	selected_overplot = 0
-	selected_snapshot = 0
-	af_x = 0
-	af_y = 0
-	af_z = 0
 
 	num_snapshots = n_elements (varfiles)
 	snaps = varfiles[*].title
