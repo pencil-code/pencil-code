@@ -134,9 +134,9 @@ pro precalc_data, i, vars
 	if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
 		; Logarithmic density
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].ln_rho = alog (exp (vars.lnrho) * unit.density)
+			varsets[i].ln_rho = alog10 (exp (vars.lnrho) * unit.density)
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].ln_rho = alog (vars.rho * unit.density)
+			varsets[i].ln_rho = alog10 (vars.rho * unit.density)
 		end
 	end else if (any (strcmp (tags, 'rho', /fold_case))) then begin
 		; Density

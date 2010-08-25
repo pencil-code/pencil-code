@@ -108,7 +108,11 @@ if (not analyse_loaded) then BEGIN
 				skipping = num_snapshots
 				files_total = 0
 			end
-			print, "Available snapshots: ", snapshots
+			show_snapshots = snapshots
+			for i = 0, n_elements (show_snapshots) - 1 do begin
+				show_snapshots[i] = strmid (show_snapshots[i], strpos (show_snapshots[i], "VAR"))
+			end 
+			print, "Available snapshots: ", show_snapshots
 			if (strcmp (answer, 's', /fold_case)) then begin
 				if (num_snapshots gt 1) then begin
 					print, "How many files do you want to skip at start?"

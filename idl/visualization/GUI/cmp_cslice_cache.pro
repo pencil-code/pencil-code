@@ -215,18 +215,15 @@ pro cslice_event, event
 		WIDGET_CONTROL, snap, SENSITIVE = 0
 		WIDGET_CONTROL, play, SENSITIVE = 0
 		WIDGET_CONTROL, aver, SENSITIVE = 0
-		old_show_cuts = show_cuts
-		show_cuts = 0
 		if (num_snapshots gt 1) then begin
 			for i = num_snapshots-1, 1, -1 do begin
 				prepare_set, i
-				prepare_cube, selected_cube
+				prepare_cube, selected_cube, 0
 				draw_images, 1, 1, 1
 			end
 		end
-		show_cuts = old_show_cuts
 		prepare_set, 0
-		prepare_cube, -1
+		prepare_cube, -1, 0
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		if (num_cubes ge 2) then vars_active = 1 else vars_active = 0
 		if (num_overs ge 2) then over_active = 1 else over_active = 0
@@ -279,6 +276,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	oy = round (bin_y / 2.0) - 1
 	oz = round (bin_z / 2.0) - 1
 
+	num_over_x = n_elements (field_x_indices)
+	num_over_y = n_elements (field_y_indices)
+	num_over_z = n_elements (field_z_indices)
+
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[px,*,*], num_y, num_z) > csmin) < csmax
 		if (bin_y ne 1 or bin_z ne 1) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
@@ -302,9 +303,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				contour, reform (field_x_y[px, *, *]), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				contour, reform (field_x_y[px, *, *], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_y_x[px, *, *]), reform (field_z_x[px, *, *]), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				velovect, reform (field_y_x[px, *, *], num_over_y, num_over_z), reform (field_z_x[px, *, *], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
@@ -338,9 +339,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				contour, reform (field_y_x[*, py, *]), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				contour, reform (field_y_x[*, py, *], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_x_y[*, py, *]), reform (field_z_y[*, py, *]), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				velovect, reform (field_x_y[*, py, *], num_over_x, num_over_z), reform (field_z_y[*, py, *], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
@@ -374,9 +375,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				contour, reform (field_z_x[*, *, pz]), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				contour, reform (field_z_x[*, *, pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_x_z[*, *, pz]), reform (field_y_z[*, *, pz]), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				velovect, reform (field_x_z[*, *, pz], num_over_x, num_over_y), reform (field_y_z[*, *, pz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
@@ -444,7 +445,7 @@ end
 
 
 ; Prepares a cube for visualisation
-pro prepare_cube, last_index
+pro prepare_cube, last_index, update_slider
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
@@ -458,6 +459,8 @@ pro prepare_cube, last_index
 	; minimum size of crosshairs
 	af_minimum = 6
 
+	default, update_slider, 1
+
 	; get selected cube from set
 	tag = set.(selected_cube)
 	res = execute ("cube = varsets[selected_snapshot]."+tag+"[cut]")
@@ -469,32 +472,31 @@ pro prepare_cube, last_index
 	; substract horizontal averages
 	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
 
-	; find minimum and maximum values
-	csmin = min (cube)
-	csmax = max (cube)
+	if (update_slider) then begin
+		; find minimum and maximum values
+		csmin = min (cube)
+		csmax = max (cube)
 
-	; get selected cube number
-	i = selected_cube
+		; set default slider positions (min/max)
+		if (pos_b(selected_cube + num_cubes*sub_aver) eq -1) then pos_b(selected_cube + num_cubes*sub_aver) = csmin
+		if (pos_t(selected_cube + num_cubes*sub_aver) eq -1) then pos_t(selected_cube + num_cubes*sub_aver) = csmax
 
-	; set default slider positions (min/max)
-	if (pos_b(i + num_cubes*sub_aver) eq -1) then pos_b(i + num_cubes*sub_aver) = csmin
-	if (pos_t(i + num_cubes*sub_aver) eq -1) then pos_t(i + num_cubes*sub_aver) = csmax
+		if (last_index ge 0) then begin
+			; get slider positions
+			WIDGET_CONTROL, scal_b, GET_VALUE = b
+			pos_b(last_index + num_cubes*sub_aver) = b
+			WIDGET_CONTROL, scal_t, GET_VALUE = t
+			pos_t(last_index + num_cubes*sub_aver) = t
+		end
 
-	if (last_index ge 0) then begin
-		; get slider positions
-		WIDGET_CONTROL, scal_b, GET_VALUE = b
-		pos_b(last_index + num_cubes*sub_aver) = b
-		WIDGET_CONTROL, scal_t, GET_VALUE = t
-		pos_t(last_index + num_cubes*sub_aver) = t
+		; update slider
+		if (scal_b ne 0) then WIDGET_CONTROL, scal_b, SET_VALUE = [ pos_b(selected_cube + num_cubes*sub_aver), csmin, csmax ]
+		if (scal_t ne 0) then WIDGET_CONTROL, scal_t, SET_VALUE = [ pos_t(selected_cube + num_cubes*sub_aver), csmin, csmax ]
+
+		; set min/max from sliders
+		csmin = pos_b(selected_cube + num_cubes*sub_aver)
+		csmax = pos_t(selected_cube + num_cubes*sub_aver)
 	end
-
-	; update slider
-	if (scal_b ne 0) then WIDGET_CONTROL, scal_b, SET_VALUE = [ pos_b(i + num_cubes*sub_aver), csmin, csmax ]
-	if (scal_t ne 0) then WIDGET_CONTROL, scal_t, SET_VALUE = [ pos_t(i + num_cubes*sub_aver), csmin, csmax ]
-
-	; set min/max from sliders
-	csmin = pos_b(i + num_cubes*sub_aver)
-	csmax = pos_t(i + num_cubes*sub_aver)
 
 	; determine dimesions
 	num_x = (size (cube))[1]
@@ -535,13 +537,20 @@ pro prepare_overplot
 
 	; get selected overplot from set
 	tag = overplot.(selected_overplot)
-	res_x = execute ("field_x = reform (oversets[selected_snapshot]."+tag+"[*,*,*,0])")
-	res_y = execute ("field_y = reform (oversets[selected_snapshot]."+tag+"[*,*,*,1])")
-	res_z = execute ("field_z = reform (oversets[selected_snapshot]."+tag+"[*,*,*,2])")
+	res_x = execute ("field_x = oversets[selected_snapshot]."+tag+"[*,*,*,0]")
+	res_y = execute ("field_y = oversets[selected_snapshot]."+tag+"[*,*,*,1]")
+	res_z = execute ("field_z = oversets[selected_snapshot]."+tag+"[*,*,*,2]")
 	if ((not res_x) or (not res_y) or (not res_z)) then begin
 		print, "Could not select overplot dataset!"
 		stop
 	end
+
+	size_field_x = size (field_x)
+	size_field_y = size (field_y)
+	size_field_z = size (field_z)
+	field_x = reform (field_x, size_field_x[1], size_field_x[2], size_field_x[3])
+	field_y = reform (field_y, size_field_y[1], size_field_y[2], size_field_y[3])
+	field_z = reform (field_z, size_field_z[1], size_field_z[2], size_field_z[3])
 
 	if (strpos (tag, "_velovect") gt 0) then overplot_contour = 0
 	if (strpos (tag, "_contour") gt 0) then overplot_contour = 1
@@ -633,14 +642,6 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (n_elements (scaling) eq 0) then scaling = 1
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
 
-	if (num_x*scaling[0] lt min_size) then scaling[0] = min_size / num_x
-	if (num_y*scaling[1] lt min_size) then scaling[1] = min_size / num_y
-	if (num_z*scaling[2] lt min_size) then scaling[2] = min_size / num_z
-
-	bin_x = scaling[0]
-	bin_y = scaling[1]
-	bin_z = scaling[2]
-
 	cut = limits
 
 	wimg_yz = !d.window
@@ -670,6 +671,14 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	prepare_set, 0
 	prepare_cube, -1
 
+
+	if (num_x*scaling[0] lt min_size) then scaling[0] = min_size / num_x
+	if (num_y*scaling[1] lt min_size) then scaling[1] = min_size / num_y
+	if (num_z*scaling[2] lt min_size) then scaling[2] = min_size / num_z
+
+	bin_x = scaling[0]
+	bin_y = scaling[1]
+	bin_z = scaling[2]
 
 	if (n_elements (coords) ge 1) then coord = coords
 	if (n_elements (coord) eq 0) then begin
