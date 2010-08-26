@@ -1790,19 +1790,19 @@ module Entropy
     subroutine gressel_entropy(f)
 !
 !  This routine calculates a vertical profile for density for an appropriate
-!  isothermal entropy designed to balance the vertical 'Ferriere' gravity 
-!  profile used in interstellar. 
+!  isothermal entropy designed to balance the vertical 'Ferriere' gravity
+!  profile used in interstellar.
 !  T0 and rho0 are chosen to ensure uv-heating approx 0.0147 at z=0.
-!  Initial thermal & hydrostatice equilibrium is achieved by ensuring 
+!  Initial thermal & hydrostatice equilibrium is achieved by ensuring
 !  Lambda*rho(z)=Gamma(z) in interstellar.
 !
 !  Requires gravz_profile='Ferriere' in gravity_simple.f90,
 !  initlnrho='Galactic-hs' in density.f90 and heating_select='Gressel-hs'
-!  in interstellar.f90. Constants g_A..D from gravz_profile. 
+!  in interstellar.f90. Constants g_A..D from gravz_profile.
 !
 !  22-mar-10/fred: coded
 !  12-aug-10/fred: moved to interstellar and added shared variables
-!  
+!
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
       use SharedVariables, only: get_shared_variable
 !
@@ -3229,7 +3229,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
       real, dimension (nx) :: bb2,thdiff,b1
-      real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
+      real, dimension (nx) :: tmps,vKpara,vKperp
 !
       integer ::i,j
       type (pencil_case) :: p
@@ -3245,13 +3245,6 @@ module Entropy
       vKpara = Kgpara * exp(p%lnTT)**3.5
       vKperp = Kgperp * b1*exp(2*p%lnrho+0.5*p%lnTT)
 !
-!  Limit perpendicular diffusion.
-!
-      if (maxval(abs(vKpara+vKperp)) > tini) then
-         quenchfactor = vKpara/(vKpara+vKperp)
-         vKperp=vKperp*quenchfactor
-      endif
-!
 !  Calculate gradient of variable diffusion coefficients.
 !
       tmps = 3.5 * vKpara
@@ -3263,10 +3256,9 @@ module Entropy
             tmpv(:,i)=tmpv(:,i) + p%bb(:,j)*p%bij(:,j,i)
          enddo
       enddo
-      call multsv_mn(2*b1*b1,tmpv,tmpv2)
+      call multsv_mn(2*b1,tmpv,tmpv2)
       tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
       call multsv_mn(vKperp,tmpv,gvKperp)
-      gvKperp=gvKperp*spread(quenchfactor,2,3)
 !
 !  Calculate diffusion term.
 !
