@@ -4577,17 +4577,15 @@ $y=x_{\rm e}/(1-2x_{\rm H_2})$.
 \index{Ionization}
 \label{S-ionization}
 
-This part of the code can be invoked by setting
-\code{IONIZATION=ionization} in the \file{Makefile.local} file.
-The equation of state described below works for variable ionization,
-and the entropy offset is different from that used in
-Eq.~(\ref{EOSsimple}), which is now no longer valid.
-As a replacement, one can use \code{IONIZATION=ionization\_fixed},
-where the degree of ionization can be given by hand.
-Here the normalization of the entropy is the same as for
-\code{IONIZATION=ionization}.
-This case is described in more detail below.\footnote{We omit here
-the contribution of H$_2$.}
+This part of the code can be invoked by setting \code{EOS=eos_ionization}
+(or \code{EOS=eos_temperature_ionization}) in the \file{Makefile.local} file.
+The equation of state described below works for variable ionization, and the
+entropy offset is different from that used in Eq.~(\ref{EOSsimple}), which
+is now no longer valid.  As a replacement, one can use
+\code{EOS=eos_fixed_ionization}, where the degree of ionization can be given
+by hand.  Here the normalization of the entropy is the same as for
+\code{EOS=eos_ionization}.  This case is described in more detail
+below.\footnote{We omit here the contribution of H$_2$.}
 
 We treat the gas as being composed of partially ionized hydrogen and neutral
 helium. These are four different particle species, each of which regarded as
