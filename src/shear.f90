@@ -263,15 +263,6 @@ module Shear
         endif
       endif
 !
-!  Testflow stretching term.
-!  Loop through all the duy/dt equations and add -S*ux contribution.
-!
-      if (ltestflow) then
-        do j=iuutest+1,iuutest+ntestflow-1,4
-          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j-1)
-        enddo
-      endif
-!
 !  Meanfield stretching term.
 !  Loop through all the dax/dt equations and add -S*ay contribution.
 !
