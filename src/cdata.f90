@@ -30,9 +30,9 @@ module Cdata
   real, dimension (mz) :: z,dz_1,dz_tilde,zprim,dVol3
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6
   real :: dx,dy,dz,dxmin,dxmax
-  real, dimension (nxgrid) :: kx_fft
-  real, dimension (nygrid) :: ky_fft
-  real, dimension (nzgrid) :: kz_fft
+  real, dimension (nxgrid) :: kx_fft,kx_fft2
+  real, dimension (nygrid) :: ky_fft,ky_fft2
+  real, dimension (nzgrid) :: kz_fft,kz_fft2
   real :: kx_ny,ky_ny,kz_ny
   integer :: dimensionality
 !
@@ -214,7 +214,7 @@ module Cdata
   integer :: ispx=0,ispy=0,ispz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtestpq=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
-  integer :: iuutest=0,iuxtestpq=0,iuztestpq=0,ihhtest=0,ihhtestpq=0
+  integer :: iuutest=0,iuxtestpq=0,iuztestpq=0,ihhtestpq=0
   integer :: ntestscalar=0,ntestfield=0,ntestflow=0
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0

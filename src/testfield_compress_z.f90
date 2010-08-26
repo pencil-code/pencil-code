@@ -53,7 +53,7 @@ module Testfield
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.,ampluutest=0.,amplhhtest=0.
   integer :: iuxtest=0,iuytest=0,iuztest=0,iuxtestpq=0,iuztestpq=0
-  integer :: iu0xtest=0,iu0ztest=0,ihxtest=0
+  integer :: iu0xtest=0,iu0ztest=0,ihxtest=0,ihhtest=0
   integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
 
