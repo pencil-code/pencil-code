@@ -733,8 +733,8 @@ module Special
 !
 !  newton cooling dT/dt = -1/tau * (T-T0)
 !
-      use EquationOfState, only: lnrho0
       use Diagnostics, only: max_mn_name
+      use EquationOfState, only: lnrho0
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -826,7 +826,7 @@ module Special
 !
 !     tmp_tau = tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
       tmp_tau = tdown * exp(-allp*(lnrho0-p%lnrho))
-      newton  = newton  * tmp_tau
+      newton  = newton * tmp_tau
       !
       !  Add newton cooling term to entropy
       !
@@ -836,9 +836,9 @@ module Special
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
           itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(tmp_tau        ,idiag_dtnewt,l_dt=.true.)
+          call max_mn_name(tmp_tau,idiag_dtnewt,l_dt=.true.)
         endif
-        dt1_max=max(dt1_max,tdown*exp(-allp*(z(n)*unit_length*1e-6))/cdts)
+        dt1_max=max(dt1_max,tmp_tau/cdts)
       endif
 !
     endsubroutine calc_heat_cool_newton
