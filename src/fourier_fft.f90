@@ -38,12 +38,12 @@ module Fourier
       real, dimension(nx,ny,nz) :: a_re,a_im
       logical, optional :: linv
 !
+      if (nprocx>1) &
+          call fatal_error ('fourier_transform', 'must have nprocx=1', lroot)
+!
       if (present(linv)) then
-        if (linv) then
-          if (lroot) print*, 'fourier_transform: only implemented for '// &
-              'forwards transform!'
-          call fatal_error('fourier_transform','')
-        endif
+        if (linv) &
+            call fatal_error ('fourier_transform', 'only implemented for forwards transform', lroot)
       endif
 !
       if (lroot .and. ip<10) print*,'transform_i: doing three FFTs'
@@ -71,7 +71,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xz', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xz)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -87,7 +87,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xy', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -103,7 +103,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xy_shear', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -119,7 +119,7 @@ module Fourier
       logical, optional, intent(in) :: linv,lneed_im
 !
       call fatal_error('fourier_transform_xy_xy', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -136,7 +136,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_y_y', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_y)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -152,7 +152,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xy_xy_other', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -168,7 +168,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_x', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_x)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -184,7 +184,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_y', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_y)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -200,7 +200,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_shear', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lroot)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -216,7 +216,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_other_1', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lroot)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -232,7 +232,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_other_2', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lroot)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -251,7 +251,7 @@ module Fourier
       real :: shift_y
 !
       call fatal_error('fourier_shift_yz_y', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_yz)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(shift_y)
@@ -268,7 +268,7 @@ module Fourier
       real, dimension (nx) :: shift_y
 !
       call fatal_error('fourier_shif_y', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_y)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(shift_y)
@@ -285,7 +285,7 @@ module Fourier
       real, dimension(2*na+15),optional :: wsavex_temp
 !
       call fatal_error('fourier_transform_real', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lroot)
 !
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(na)
