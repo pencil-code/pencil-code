@@ -1808,7 +1808,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension(nx) :: lnrho,ss,TT,lnTT
+      real, dimension(nx) :: lnrho,ss,lnTT
       real, dimension(:), pointer :: zrho
       real, pointer :: T0hs
       integer :: ierr
