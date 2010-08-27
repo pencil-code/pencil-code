@@ -1388,6 +1388,8 @@ module Interstellar
         zheat(n)=lambda*zrho(n)
       enddo
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine gressel_interstellar
 !*****************************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
