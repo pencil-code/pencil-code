@@ -106,8 +106,6 @@ module Hydro
 !
       use Mpicomm, only: lroot
 !
-      integer :: ierr
-!
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
