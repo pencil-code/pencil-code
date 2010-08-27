@@ -228,7 +228,6 @@ module Special
       character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
-!
       inquire(IOLENGTH=lend) dummy
 !
       if (.not. lfirst_proc_z .or. (bmdi == 0.0)) then
@@ -368,16 +367,16 @@ module Special
         lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
         lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
 !
-        ! check which stratification file should be used
+! check which stratification file should be used
         if (strati_type=='lnrho_lnTT') then
 !
-          ! read 'stratification.dat'
+! read 'stratification.dat'
           allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
           if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
               'Could not allocate memory for stratification variables')
 !
           if (lroot) then
-            ! file access is only done on the MPI root rank
+! file access is only done on the MPI root rank
             if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
                 .true., 'setup_special: Stratification file not found')
             open (unit,file=stratification_dat)
@@ -446,10 +445,10 @@ module Special
 ! interpolate temperature profile to Pencil grid
             do j = n1-nghost, n2+nghost
               if (z(j) < prof_z(1) ) then
-                call warning("setup_special","extrapolated temperature below bottom of initial profile")
+                call warning("setup_special","extrapolated lnT below bottom of initial profile")
                 lnTT_init_z(j) = prof_lnTT(1)
               elseif (z(j) >= prof_z(prof_nz)) then
-                call warning("setup_special","extrapolated temperature over top of initial profile")
+                call warning("setup_special","extrapolated lnT over top of initial profile")
                 lnTT_init_z(j) = prof_lnTT(prof_nz)
               else
                 do i = 1, prof_nz-1
@@ -498,17 +497,17 @@ module Special
             call mpibcast_real (prof_lnrho,nzgrid)
             call mpibcast_real (prof_z,nzgrid)
 !
-            ! convert from logarithmic SI to Pencil units
+! convert from logarithmic SI to Pencil units
             prof_lnrho = prof_lnrho - alog(real(unit_density))
 !
-            ! convert z coordinates from [Mm] to Pencil units
+! convert z coordinates from [Mm] to Pencil units
             if (unit_system == 'SI') then
               prof_z = prof_z * 1.e6 / unit_length
             elseif (unit_system == 'cgs') then
               prof_z = prof_z * 1.e8 / unit_length
             endif
 !
-            ! interpolate density profile to Pencil grid
+! interpolate density profile to Pencil grid
             do j = n1-nghost, n2+nghost
               if (z(j) < prof_z(1) ) then
                 call warning("setup_special","extrapolated density below bottom of initial profile")
