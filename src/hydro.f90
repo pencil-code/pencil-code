@@ -43,7 +43,7 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
-  real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data 
+  real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data
                                            ! on ghostzones
   real, dimension (mx,my,3) :: uumxy=0.0
   real, dimension (mx,mz,3) :: uumxz=0.0
@@ -478,7 +478,7 @@ module Hydro
 !  Writing files for use with IDL.
 !
       if (lroot) then
-        write(*,*) 'PC:mvar, nvar',mvar,nvar 
+        write(*,*) 'PC:mvar, nvar',mvar,nvar
         if (maux == 0) then
           if (nvar < mvar) write(4,*) ',uu $'
           if (nvar == mvar) write(4,*) ',uu'
@@ -4478,7 +4478,7 @@ module Hydro
 !***********************************************************************
     subroutine meri_circ(f)
 !
-! Meridional circulation as initial condition. 
+! Meridional circulation as initial condition.
 !
 !  26-apr-2010/dhruba: coded.
 !
@@ -4495,7 +4495,7 @@ module Hydro
           f(l1:l2,m,n,iux)=amp_meri_circ*(r1_mn**2)*(sin1th(m))*(&
               2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
               -sin(theta)*sin(theta-theta1)**2)*&
-              (x(l1:l2)-1.)*(x(l1:l2)-rone)**2 
+              (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
           f(l1:l2,m,n,iuy)=-amp_meri_circ*r1_mn*sin1th(m)*(&
               cos(theta)*sin(theta-theta1)**2)*&
               (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
@@ -4519,7 +4519,7 @@ module Hydro
 !
 !  This is a dummy routine.
 !
-!  16-feb-2010/bing:
+!  16-feb-2010/bing: coded
 !
       call fatal_error('kinematic_random_phase', &
           'Use HYDRO=hydro_kinematic in Makefile.local instead')
