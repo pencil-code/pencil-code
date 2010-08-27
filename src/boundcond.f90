@@ -584,7 +584,7 @@ module Boundcond
                 if (j==ilnTT) call bc_ADI_flux_z(f,topbot)
               case ('pfe')
                 ! BCZ_DOC: potential field extrapolation
-                if (j==iaa) call bc_aa_pot_field_extra(f,topbot)
+                if (j==iaa) call bc_aa_pot_field_extrapol(f,topbot)
               case ('pot')
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
@@ -2236,7 +2236,7 @@ module Boundcond
 !
       integer, intent (in) :: j
 !
-      integer :: iref=-1,i
+      integer :: iref=-1,pos
 !
       if (j/=iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
  
@@ -2282,13 +2282,13 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do i=1,nghost
-          f(l1:l2,m1:m2,n1-i,j) = f(l1:l2,m1:m2,n1+i,j) - 2*i*dz*duz_dz
+        do pos=1,nghost
+          f(l1:l2,m1:m2,n1-pos,j) = f(l1:l2,m1:m2,n1+pos,j) - 2*pos*dz*duz_dz
         enddo
 !
       case ('top')               ! top boundary
-        do i=1,nghost
-          f(l1:l2,m1:m2,n2+i,j) = f(l1:l2,m1:m2,n2-i,j) + 2*i*dz*duz_dz
+        do pos=1,nghost
+          f(l1:l2,m1:m2,n2+pos,j) = f(l1:l2,m1:m2,n2-pos,j) + 2*pos*dz*duz_dz
         enddo
 !
       case default
@@ -3665,7 +3665,7 @@ module Boundcond
        real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
        integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
        integer :: tag_tl=345,tag_tr=346,tag_dt=347
-       integer :: lend=0,ierr,i=0,stat,iref,px,py
+       integer :: lend=0,ierr,frame=0,stat,pos,iref,px,py
        real, save :: tl=0.,tr=0.,delta_t=0.
        real  :: zmin
        logical, optional :: quenching
@@ -3722,19 +3722,19 @@ module Boundcond
            open (unit,file=vel_times_dat,form='unformatted',status='unknown',recl=lend,access='direct')
 !
            ierr = 0
-           i=0
+           frame = 0
            do while (ierr == 0)
-             i=i+1
-             read (unit,rec=i,iostat=ierr) tl
-             read (unit,rec=i+1,iostat=ierr) tr
+             frame=frame+1
+             read (unit,rec=frame,iostat=ierr) tl
+             read (unit,rec=frame+1,iostat=ierr) tr
              if (ierr /= 0) then
-               i=1
+               frame=1
                delta_t = t*unit_time                  ! EOF is reached => read again
-               read (unit,rec=i,iostat=ierr) tl
-               read (unit,rec=i+1,iostat=ierr) tr
+               read (unit,rec=frame,iostat=ierr) tl
+               read (unit,rec=frame+1,iostat=ierr) tr
                ierr=-1
              else
-               if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) ierr=-1
+               if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t) ierr=-1
                ! correct time step is reached
              endif
            enddo
@@ -3760,7 +3760,7 @@ module Boundcond
          if (lroot) then
            open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
-           read (unit,rec=2*i-1) tmp
+           read (unit,rec=2*frame-1) tmp
            do px=0, nprocx-1
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
@@ -3771,7 +3771,7 @@ module Boundcond
            enddo
            uxl = tmp(1:nx,1:ny)
 !
-           read (unit,rec=2*i)   tmp
+           read (unit,rec=2*frame) tmp
            do px=0, nprocx-1
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
@@ -3782,7 +3782,7 @@ module Boundcond
            enddo
            uyl = tmp(1:nx,1:ny)
 !
-           read (unit,rec=2*i+1) tmp
+           read (unit,rec=2*frame+1) tmp
            do px=0, nprocx-1
              do py=0, nprocy-1
                if ((px /= 0) .or. (py /= 0)) then
@@ -3793,7 +3793,7 @@ module Boundcond
            enddo
            uxr = tmp(1:nx,1:ny)
 !
-           read (unit,rec=2*i+2) tmp
+           read (unit,rec=2*frame+2) tmp
            uyr = tmp(1:nx,1:ny)
            do px=0, nprocx-1
              do py=0, nprocy-1
@@ -3834,8 +3834,8 @@ module Boundcond
 !
        zmin = minval(abs(z(n1:n2)))
        iref = n1
-       do i=n1,n2
-         if (abs(z(i))==zmin) iref=i; exit
+       do pos=n1,n2
+         if (abs(z(pos))==zmin) iref=pos; exit
        enddo
 !
 !   Calculate B^2 for plasma beta
@@ -3945,136 +3945,171 @@ module Boundcond
 !  Reads in time series of magnetograms
 !
 !  17-feb-10/bing: coded
+!  25-jul-10/Bourdin.KIS: parallelized
 !
-      use Fourier, only : fourier_transform_other
-      use Mpicomm, only : mpibcast_real
+      use Fourier, only : field_extrapol_z_parallel
+      use Mpicomm, only : mpisend_real, mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, save :: tl=0.,tr=0.,delta_t=0.
-      integer :: ierr,lend,i,idx2,idy2,stat
+      real, save :: t_l=0., t_r=0., delta_t=0.
+      integer :: ierr, lend, frame, stat, rec_l, rec_r
+      integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
+      integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
+      integer :: py, partner
+      integer, parameter :: tag_l=208, tag_r=209, tag_dt=210
       logical :: ex
 !
-      real, dimension (:,:), allocatable, save :: Bz0l,Bz0r
-      real, dimension (:,:), allocatable :: Bz0_i,Bz0_r
-      real, dimension (:,:), allocatable :: A_i,A_r
+      real, dimension (:,:), allocatable, save :: Bz0_l, Bz0_r
+      real, dimension (:,:), allocatable :: Bz0 ! current magnetic field z-component
 !
-      real, dimension (:,:), allocatable :: kx,ky,k2
+      real, dimension (:,:,:), allocatable, save :: exp_fact ! exponential factor
+      real, dimension (:,:), allocatable :: k_2 ! wave vector length
+      integer :: kx_start, pos_z
+      real :: delta_z
+      real, parameter :: reduce_factor=0.25, enhance_factor=1.0
 !
       real :: mu0_SI,u_b,time_SI
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
 !
-      ierr = 0
-      stat = 0
-      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=ierr)
-      if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
-      ierr = max(stat,ierr)
-      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
-      allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
-      allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
-      allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
-      allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+      if (mod (nygrid, nprocxy) /= 0) &
+          call fatal_error ('bc_force_aa_time', &
+              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-      if (ierr>0) call fatal_error('bc_force_aa_time', &
-          'Could not allocate memory for all variables, please check')
+      if (mod (nxgrid, nprocxy) /= 0) &
+          call fatal_error ('bc_force_aa_time', &
+              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-      inquire (file=mag_field_dat,exist=ex)
-      if (.not. ex) call stop_it_if_any(.true.,'bc_force_aa_time: File does not exists: '//trim(mag_field_dat))
-      inquire (file=mag_times_dat,exist=ex)
-      if (.not. ex) call stop_it_if_any(.true.,'bc_force_aa_time: File does not exists: '//trim(mag_times_dat))
+      if (lfirst_proc_xy) then
+        inquire (file=mag_field_dat,exist=ex)
+        if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: '//trim(mag_field_dat),.true.)
+        inquire (file=mag_times_dat,exist=ex)
+        if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: '//trim(mag_times_dat),.true.)
+      endif
+!
+      if (.not. allocated(Bz0_l)) then
+        allocate(Bz0_l(bnx,bny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_l',.true.)
+      endif
+      if (.not. allocated(Bz0_r)) then
+        allocate(Bz0_r(bnx,bny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_r',.true.)
+      endif
+!
+      allocate(Bz0(bnx,bny),stat=stat)
+      if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0',.true.)
 !
       time_SI = t*unit_time
 !
-      idx2 = min(2,nxgrid)
-      idy2 = min(2,nygrid)
+      if (t_r+delta_t <= time_SI) then
 !
-      kx =spread(kx_fft,2,nygrid)
-      ky =spread(ky_fft,1,nxgrid)
-      k2 = kx*kx + ky*ky
+        if (lfirst_proc_xy) then
+          ! read and distribute Bz data (in pencil shape)
 !
-      if (tr+delta_t <= time_SI) then
-        !
-        inquire(IOLENGTH=lend) tl
-        open (10,file=mag_times_dat,form='unformatted',status='unknown', &
-            recl=lend,access='direct')
-        !
-        ierr = 0
-        tl = 0.
-        i=0
-        do while (ierr == 0)
-          i=i+1
-          read (10,rec=i,iostat=ierr) tl
-          read (10,rec=i+1,iostat=ierr) tr
-          if (ierr /= 0) then
-            delta_t = time_SI                  ! EOF is reached => read again
-            i=1
-            read (10,rec=i,iostat=ierr) tl
-            read (10,rec=i+1,iostat=ierr) tr
-            ierr=-1
-          else
-            if (tl+delta_t < time_SI .and. tr+delta_t>time_SI ) ierr=-1
-            ! correct time step is reached
-          endif
-        enddo
-        close (10)
+          inquire(IOLENGTH=lend) t_l
+          open (10,file=mag_times_dat,form='unformatted',status='unknown', &
+              recl=lend,access='direct')
 !
-        open (10,file=mag_field_dat,form='unformatted',status='unknown', &
-            recl=lend*nxgrid*nygrid,access='direct')
-        read (10,rec=i) Bz0l
-        read (10,rec=i+1) Bz0r
-        close (10)
+          ierr = 0
+          t_l = 0.
+          frame = 0
+          do while (ierr == 0)
+            frame=frame+1
+            read (10,rec=frame,iostat=ierr) t_l
+            read (10,rec=frame+1,iostat=ierr) t_r
+            if (ierr /= 0) then
+              ! EOF is reached => read again
+              delta_t = time_SI
+              frame=1
+              read (10,rec=frame,iostat=ierr) t_l
+              read (10,rec=frame+1,iostat=ierr) t_r
+              ierr=-1
+            else
+              ! test, if correct time step is reached
+              if (t_l+delta_t < time_SI .and. t_r+delta_t > time_SI) ierr=-1
+            endif
+          enddo
+          close (10)
 !
+          open (10,file=mag_field_dat,form='unformatted',status='unknown', &
+              recl=lend*bnx*bny,access='direct')
+          rec_l = 1 + (frame-1)*nprocxy
+          rec_r = 1 + frame*nprocxy
+          do py=1, nprocxy-1
+            partner = py + ipz*nprocxy
+            ! read Bz data for remote processors
+            read (10,rec=rec_l+py) Bz0_l
+            read (10,rec=rec_r+py) Bz0_r
+            ! send Bz data to remote
+            call mpisend_real (Bz0_l, (/ bnx, bny /), partner, tag_l)
+            call mpisend_real (Bz0_r, (/ bnx, bny /), partner, tag_r)
+            call mpisend_real (t_l, 1, partner, tag_l)
+            call mpisend_real (t_r, 1, partner, tag_r)
+            call mpisend_real (delta_t, 1, partner, tag_dt)
+          enddo
+          ! read local Bz data
+          read (10,rec=rec_l) Bz0_l
+          read (10,rec=rec_r) Bz0_r
+          close (10)
+!
+        else
+!
+          ! wait for Bz data from root processor
+          call mpirecv_real (Bz0_l, (/ bnx, bny /), ipz*nprocxy, tag_l)
+          call mpirecv_real (Bz0_r, (/ bnx, bny /), ipz*nprocxy, tag_r)
+          call mpirecv_real (t_l, 1, ipz*nprocxy, tag_l)
+          call mpirecv_real (t_r, 1, ipz*nprocxy, tag_r)
+          call mpirecv_real (delta_t, 1, ipz*nprocxy, tag_dt)
+!
+        endif
+!
+        ! convert units
         mu0_SI = 4.*pi*1.e-7
         u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
-        Bz0l = Bz0l *  1e-4 / u_b
-        Bz0r = Bz0r *  1e-4 / u_b
+        Bz0_l = Bz0_l *  1e-4 / u_b
+        Bz0_r = Bz0_r *  1e-4 / u_b
 !
       endif
-      !
-      Bz0_r  = (time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l
-      !
-      Bz0_i = 0.
-      !
-      ! Fourier Transform of Bz0:
-      !
-      call fourier_transform_other(Bz0_r,Bz0_i)
-      !
-      ! First the Ax component:
-      where (k2 /= 0 )
-        A_r = -Bz0_i*ky/k2
-        A_i =  Bz0_r*ky/k2
-        !
-      elsewhere
-        A_r = -Bz0_i*ky/ky(1,idy2)
-        A_i =  Bz0_r*ky/ky(1,idy2)
-      endwhere
-      !
-      call fourier_transform_other(A_r,A_i,linv=.true.)
-      f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-      !
-      !  then Ay component:
-      where (k2 /= 0 )
-        A_r =  Bz0_i*kx/k2
-        A_i = -Bz0_r*kx/k2
-      elsewhere
-        A_r =  Bz0_i*kx/kx(idx2,1)
-        A_i = -Bz0_r*kx/kx(idx2,1)
-      endwhere
-      !
-      call fourier_transform_other(A_r,A_i,linv=.true.)
-      f(l1:l2,m1:m2,n1,iay) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-      !
-      if (allocated(Bz0_r)) deallocate(Bz0_r)
-      if (allocated(Bz0_i)) deallocate(Bz0_i)
-      if (allocated(A_r)) deallocate(A_r)
-      if (allocated(A_i)) deallocate(A_i)
-      if (allocated(kx)) deallocate(kx)
-      if (allocated(ky)) deallocate(ky)
-      if (allocated(k2)) deallocate(k2)
+!
+      Bz0  = (time_SI - (t_l+delta_t)) * (Bz0_r - Bz0_l) / (t_r - t_l) + Bz0_l
+!
+!  Fourier Transform of Bz0:
+!
+      if (.not. allocated (exp_fact)) then
+!
+        ! Setup exponential factor for bottom boundary
+        allocate (exp_fact(enx,eny,nghost+1), stat=stat)
+        if (stat > 0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for exp_fact', .true.)
+        allocate (k_2(enx,eny), stat=stat)
+        if (stat > 0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for k_2', .true.)
+!
+        ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
+        kx_start = (ipx+ipy*nprocx)*eny
+        k_2 = spread (ky_fft(1:enx), 2, eny)**2 + spread (kx_fft(kx_start+1:kx_start+eny), 1, enx)**2
+        if (kx_start == 0) k_2(1,1) = 1.0 ! dummy value to avoid division by zero
+        exp_fact = spread (exp (sqrt (k_2)), 3, nghost+1)
+!
+        ! Setup increase of fourrier coefficients for bottom boundary
+        do pos_z = 1, nghost
+          delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
+          ! Enhance (delta_z<0) or reduce (delta_z>0) extrapolation
+          if (delta_z < 0.0) delta_z = delta_z * enhance_factor
+          if (delta_z > 0.0) delta_z = delta_z * reduce_factor
+          ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
+          exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (k_2 * nxgrid*nygrid)
+        enddo
+        exp_fact(:,:,nghost+1) = 1.0 / (k_2 * nxgrid*nygrid)
+        if (kx_start == 0) exp_fact(1,1,:) = 1.0 / (nxgrid*nygrid)
+!
+        if (allocated (k_2)) deallocate (k_2)
+      endif
+!
+      call field_extrapol_z_parallel (Bz0, f(l1:l2,m1:m2,n1-nghost:n1,iax:iay), exp_fact)
+      call communicate_bc_aa_pot (f, 'bot')
+!
+      if (allocated(Bz0)) deallocate(Bz0)
 !
     endsubroutine bc_force_aa_time
 !***********************************************************************
@@ -4745,9 +4780,9 @@ module Boundcond
 !
     endsubroutine bc_frozen_in_bb
 !***********************************************************************
-    subroutine bc_aa_pot_field_extra(f,topbot)
+    subroutine bc_aa_pot_field_extrapol(f,topbot)
 !
-!  Potential field extrapolation in z-direction for three ghost cells
+!  Potential field extrapolation in z-direction for the ghost cells.
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !
@@ -4763,10 +4798,10 @@ module Boundcond
 !
 !
       if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
-          call fatal_error ('bc_aa_pot_field_extra', 'Only implemented for topmost or downmost z-layer.', lfirst_proc_xy)
+          call fatal_error ('bc_aa_pot_field_extrapol', 'Only implemented for topmost or downmost z-layer.', lfirst_proc_xy)
 !
       if (mod (nx, nprocy) /= 0) &
-          call fatal_error ('bc_aa_pot_field_extra', 'nx needs to be an integer multiple of nprocy.', lfirst_proc_xy)
+          call fatal_error ('bc_aa_pot_field_extrapol', 'nx needs to be an integer multiple of nprocy.', lfirst_proc_xy)
 !
 !  Check whether we want to do top or bottom z boundary
 !
@@ -4775,7 +4810,7 @@ module Boundcond
         if (.not. allocated (exp_fact_bot)) then
           ! Setup exponential factor for bottom boundary
           allocate (exp_fact_bot(bnx,bny,nghost), stat=stat)
-          if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact_bot', .true.)
+          if (stat > 0) call fatal_error ('bc_aa_pot_field_extrapol', 'Could not allocate memory for exp_fact_bot', .true.)
           ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
           kx_start = (ipx+ipy*nprocx)*bny
           exp_fact_bot = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
@@ -4792,7 +4827,7 @@ module Boundcond
         if (.not. allocated (exp_fact_top)) then
           ! Setup exponential factor for top boundary
           allocate (exp_fact_top(bnx,bny,nghost), stat=stat)
-          if (stat > 0) call fatal_error ('bc_aa_pot_field_extra', 'Could not allocate memory for exp_fact_top', .true.)
+          if (stat > 0) call fatal_error ('bc_aa_pot_field_extrapol', 'Could not allocate memory for exp_fact_top', .true.)
           ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
           kx_start = (ipx+ipy*nprocx)*bny
           exp_fact_top = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
@@ -4806,14 +4841,14 @@ module Boundcond
         call vect_pot_extrapol_z_parallel &
              (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact_top)
       case default
-        call fatal_error ('bc_aa_pot_field_extra', 'invalid argument', lfirst_proc_xy)
+        call fatal_error ('bc_aa_pot_field_extrapol', 'invalid argument', lfirst_proc_xy)
       endselect
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
       call communicate_bc_aa_pot(f,topbot)
 !
-    endsubroutine bc_aa_pot_field_extra
+    endsubroutine bc_aa_pot_field_extrapol
 !***********************************************************************
     subroutine bc_aa_pot3(f,topbot)
 !
