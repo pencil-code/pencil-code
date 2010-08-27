@@ -28,7 +28,7 @@ module Special
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
-  integer :: irefz=0,nglevel=3
+  integer :: irefz=0,nglevel=3,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
@@ -54,7 +54,8 @@ module Special
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
-       iheattype,heat_par1,heat_par2,heat_par3,dt_gran
+       iheattype,heat_par1,heat_par2,heat_par3,dt_gran, &
+       cool_type
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -1450,12 +1451,13 @@ module Special
       real, dimension (nx) :: lnTT,get_lnQ
       real, dimension (nx) :: slope,ordinate
       real, dimension (nx) :: logT_SI,logQ
-      integer :: i,cool_type=4
+      integer :: i
 !
 !  select type for cooling fxunction
 !  1: 10 points interpolation
 !  2: 37 points interpolation
 !  3: four gaussian fit
+!  4: several fits
 !
       get_lnQ=-1000.
 !
