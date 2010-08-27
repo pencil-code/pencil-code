@@ -615,7 +615,7 @@ module Particles_map
               print*, 'it, itsub, t=', it, itsub, t_sp
               print*, 'ipar, k     =', ipar(k), k
               print*, 'xxp         =', fp(k,ixp:izp)
-              print*, 'vvp         =', fp(k,ivpx:ivpz)
+              if (ivpx/=0) print*, 'vvp         =', fp(k,ivpx:ivpz)
               print*, 'ineargrid   =', ineargrid(k,:)
               print*, 'l1, m1, n1  =', l1, m1, n1
               print*, 'l2, m2, n2  =', l2, m2, n2
