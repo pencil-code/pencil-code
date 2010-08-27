@@ -118,7 +118,7 @@ module Special
     subroutine initialize_special(f,lstarting)
 !
 ! Called by start.f90 with lstarting=.true. and
-! caled by run.f90 at the beginning and
+! caled by run.f90  with lstarting=.false. at the beginning and
 ! if RELOAD is found, then lreloading=.true.
 !
 !  06-oct-03/tony: coded
@@ -143,10 +143,13 @@ module Special
         endif
       endif
 !
-      call setup_magnetic()
-      call setup_vert_profiles(lstarting)
+      if (.not.lreloading) then
+        call setup_magnetic()
+        call setup_vert_profiles()
+      endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
 ! We need at least 4 procs above the ipz=0 for computing
 ! granular velocities in parallel.
@@ -328,7 +331,7 @@ module Special
 !
     endsubroutine setup_magnetic
 !***********************************************************************
-    subroutine setup_vert_profiles(lstarting)
+    subroutine setup_vert_profiles()
 !
 !  Read and set vertical profiles for initial temperature and density.
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
@@ -339,8 +342,6 @@ module Special
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
       use Syscalls, only: file_exists, file_size
-!
-      logical, intent(in) :: lstarting
 !
       real :: dummy,var1,var2
       integer :: lend,ierr
@@ -362,7 +363,7 @@ module Special
 !
       if (.not. (ltemperature .or. lentropy)) return
       if ((strati_type=='nothing') .and. (tdown/=0)) strati_type='lnrho_lnTT'
-      if ((lstarting .and. (linit_lnrho .or. linit_lnTT)) .or. (tdown/=0)) then
+      if ((linit_lnrho .or. linit_lnTT) .or. (tdown/=0)) then
 !
         lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
         lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
@@ -402,14 +403,14 @@ module Special
 !
         elseif (lread_lnrho .or. lread_lnTT) then
 !
-          ! read temperature profile for interpolation
+! read temperature profile for interpolation
           if (lread_lnTT) then
 !
-            ! file access is only done on the MPI root rank
+! file access is only done on the MPI root rank
             if (lroot) then
               if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
                   .true., 'setup_special: file not found: '//trim(lnT_dat))
-              ! find out, how many data points our profile file has
+! find out, how many data points our profile file has
               prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
             endif
             call stop_it_if_any(.false.,'')
@@ -432,17 +433,17 @@ module Special
             call mpibcast_real (prof_lnTT,prof_nz)
             call mpibcast_real (prof_z,prof_nz)
 !
-            ! convert from logarithmic SI to Pencil units
+! convert from logarithmic SI to Pencil units
             prof_lnTT = prof_lnTT - alog(real(unit_temperature))
 !
-            ! convert z coordinates from [Mm] to Pencil units
+! convert z coordinates from [Mm] to Pencil units
             if (unit_system == 'SI') then
               prof_z = prof_z * 1.e6 / unit_length
             elseif (unit_system == 'cgs') then
               prof_z = prof_z * 1.e8 / unit_length
             endif
 !
-            ! interpolate temperature profile to Pencil grid
+! interpolate temperature profile to Pencil grid
             do j = n1-nghost, n2+nghost
               if (z(j) < prof_z(1) ) then
                 call warning("setup_special","extrapolated temperature below bottom of initial profile")
@@ -467,14 +468,14 @@ module Special
 !
           endif
 !
-          ! read density profile for interpolation
+! read density profile for interpolation
           if (lread_lnrho) then
 !
-            ! file access is only done on the MPI root rank
+! file access is only done on the MPI root rank
             if (lroot) then
               if (.not. file_exists (lnrho_dat)) call stop_it_if_any ( &
                   .true., 'setup_special: file not found: '//trim(lnrho_dat))
-              ! find out, how many data points our profile file has
+! find out, how many data points our profile file has
               prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*4 * 2)
             endif
             call stop_it_if_any(.false.,'')
