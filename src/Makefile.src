@@ -128,6 +128,10 @@ include Makefile.local
 # Makefile.local, so we can set REAL_PRECISION=double there.
 #
 include Makefile.inc
+#
+# Can someone explain this?
+#
+MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 # 
 # Compile files with particle programming structure if particles are chosen.
 #
@@ -1654,7 +1658,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
-MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 # 
 #  Generic rules.
 # 
@@ -1686,7 +1689,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND).o $(BORDER_PROFILES).o $(DEBUG).o $(DERIV).o $(FOURIER).o $(GHOSTFOLD).o $(GRID).o $(GSL).o $(INITIAL_CONDITION).o $(IO).o $(MPICOMM_FIX).o $(NSCBC).o $(POWER).o $(SIGNAL_HANDLING).o $(SLICES).o $(SOLID_CELLS).o $(STRUCT_FUNC).o $(SYSCALLS).o $(SYSCALLS)_ansi.o $(TESTPERTURB).o $(TIMEAVG).o $(WENO_TRANSPORT).o cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o $(MAGNETIC).a $(PARTICLES_MAIN).a
+technical=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o $(MAGNETIC).a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
