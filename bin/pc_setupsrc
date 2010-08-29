@@ -61,6 +61,7 @@ link_src_files()
   to_link=
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
               $srcdir/Makefile.src $srcdir/Makefile.depend \
+              $srcdir/Makefile.library $srcdir/Makefile.machine \
               $srcdir/*.h $srcdir/scripts $srcdir/.cvsignore
   do
     if [ -f $file ] || [ -d $file ]; then
