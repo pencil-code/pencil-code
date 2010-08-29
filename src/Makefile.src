@@ -260,41 +260,56 @@ endif
 # Default names of source and object files (unswitchable modules).
 # Please use alphabetical order.
 #
-CPARAM_OBJ=cparam.o
-CPARAM_SRC=cparam.f90
-#
 CDATA_OBJ=cdata.o
 CDATA_SRC=cdata.f90
 #
-SUB_OBJ=sub.o
-SUB_SRC=sub.f90
-#
-GENERAL_OBJ=general.o
-GENERAL_SRC=general.f90
-#
-MESSAGES_OBJ=messages.o
-MESSAGES_SRC=messages.f90
-#
-SHARED_VARIABLES_OBJ=shared_variables.o
-SHARED_VARIABLES_SRC=shared_variables.f90
-#
-FARRAY_OBJ=farray.o
-FARRAY_SRC=farray.f90
-#
-EQU_OBJ=equ.o
-EQU_SRC=equ.f90
+CPARAM_OBJ=cparam.o
+CPARAM_SRC=cparam.f90
 #
 DIAGNOSTICS_OBJ=diagnostics.o
 DIAGNOSTICS_SRC=diagnostics.f90
 #
-PENCIL_CHECK_OBJ=pencil_check.o
-PENCIL_CHECK_SRC=pencil_check.f90
+EQU_OBJ=equ.o
+EQU_SRC=equ.f90
+#
+FARRAY_OBJ=farray.o
+FARRAY_SRC=farray.f90
+#
+FILTER_OBJ=filter.o
+FILTER_SRC=filter.f90
+#
+GENERAL_OBJ=general.o
+GENERAL_SRC=general.f90
 #
 INITCOND_OBJ=initcond.o
 INITCOND_SRC=initcond.f90
 #
+MESSAGES_OBJ=messages.o
+MESSAGES_SRC=messages.f90
+#
 PARTICLES_CDATA_OBJ=particles_cdata.o
 PARTICLES_CDATA_SRC=particles_cdata.f90
+#
+PARAM_IO_OBJ=param_io.o
+PARAM_IO_SRC=param_io.f90
+#
+PENCIL_CHECK_OBJ=pencil_check.o
+PENCIL_CHECK_SRC=pencil_check.f90
+#
+PERSIST_OBJ=persist.o
+PERSIST_SRC=persist.f90
+#
+REGISTER_OBJ=register.o
+REGISTER_SRC=register.f90
+#
+SHARED_VARIABLES_OBJ=shared_variables.o
+SHARED_VARIABLES_SRC=shared_variables.f90
+#
+SNAPSHOT_OBJ=snapshot.o
+SNAPSHOT_SRC=snapshot.f90
+#
+SUB_OBJ=sub.o
+SUB_SRC=sub.f90
 #
 # Default names of source and object files (switchable modules).
 # Please use alphabetical order.
@@ -1678,7 +1693,7 @@ default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
 #  Short hand for modules that must be preprocessed with mkcparam.
 #  Please use alphabetical order.
 #
-preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENTROPY_SRC) $(EOS_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(PARTICLES_SRC) $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_NBODY_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_VISCOSITY_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local grid.f90
+preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENTROPY_SRC) $(EOS_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GRID_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(PARTICLES_SRC) $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_NBODY_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_VISCOSITY_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
 #
 #  Short hand for physics modules used by Register, Param_io, Equ.
 #  Static libraries (.a files) must be placed in the end.
@@ -1689,7 +1704,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) cdata.o cparam.o diagnostics.o farray.o filter.o general.o initcond.o messages.o param_io.o persist.o register.o shared_variables.o snapshot.o sub.o $(MAGNETIC).a $(PARTICLES_MAIN).a
+technical=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(GENERAL_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -1953,11 +1968,6 @@ distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
 	rm -rf special initial_condition Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
-# 
-#  Non-F90 / undetectable dependencies
-#
-fft.o: fft.f Makefile.src
-nodebug.o: nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.
 #
