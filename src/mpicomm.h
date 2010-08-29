@@ -28,7 +28,7 @@
   public :: initiate_shearing, finalize_shearing
 
   public :: transp, transp_xy, transp_xy_other, transp_other
-  public :: transp_xz, transp_zx, transp_mxmz, transp_mzmx
+  public :: transp_xz, transp_zx
 
   public :: communicate_bc_aa_pot, fill_zghostzones_3vec
 

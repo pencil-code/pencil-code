@@ -1055,7 +1055,7 @@ module ImplicitPhysics
 !  parallel version of the ADI_Kprof_mixed subroutine
 !
       use EquationOfState, only: gamma
-      use Mpicomm, only: transp_mxmz, transp_xz, transp_zx
+      use Mpicomm, only: transp_xz, transp_zx
       use Boundcond, only: update_ghosts
 !
       implicit none
