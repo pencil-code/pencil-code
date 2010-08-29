@@ -3122,8 +3122,6 @@ module Mpicomm
 !  This routine transposes 2D arrays in x and z only.
 !
 !  19-dec-06/anders: Adapted from transp
-!  28-aug-10/dintrans: Simplified using the MPI_SENDRECV_REPLACE
-!    subroutine that replaces the former 4 calls MPI_SEND/MPI_RECV
 !
       integer, parameter :: nxt=nx/nprocz
       real, dimension(nx,nz), intent(in) :: a
@@ -3169,20 +3167,20 @@ module Mpicomm
       real, dimension(nzgrid,nxt), intent (in) :: a
       real, dimension(nx,nz), intent(out) :: b
 !
-      real, dimension(nz,nxt) :: send_buf, recv_buf
+      real, dimension(nz,nxt) :: buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc,recvc,px
       integer :: ztag=101,partner
 !
       if (mod(nxgrid,nprocz)/=0) then
-        print*,'transp_xz: nxgrid needs to be an integer multiple of nprocz'
+        print*,'transp_zx: nxgrid needs to be an integer multiple of nprocz'
         call stop_it_if_any(.true.,'Inconsistency: mod(nxgrid,nprocz)/=0')
       endif
 !
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
 !
-      sendc=nz*nxt; recvc=sendc
+      sendc=nz*nxt
 !
 !  Send information to different processors (x-z transpose)
 !
@@ -3190,15 +3188,9 @@ module Mpicomm
       do px=0,nprocz-1
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
-          send_buf=a(px*nz+1:(px+1)*nz,:)
-          if (px<ipz) then      ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
-          elseif (px>ipz) then  ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf,recvc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
-            call MPI_SEND(send_buf,sendc,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
-          endif
-          b(px*nxt+1:(px+1)*nxt,:)=transpose(recv_buf)
+          buf=a(px*nz+1:(px+1)*nz,:)
+          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+          b(px*nxt+1:(px+1)*nxt,:)=transpose(buf)
         endif
       enddo
 !
