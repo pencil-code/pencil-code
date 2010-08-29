@@ -2,11 +2,10 @@
 ##
 ##  $Id: Makefile.src 14894 2010-08-19 17:52:45Z dhruba.mitra $
 ##
-##  Makefile for modular pencil code
+##  Makefile for modular pencil code.
 ##
 #
-#  Dependencies.
-#
+#  Dependencies for library files.
 #
 magnetic.o: magnetic.h $(MAGNETIC_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(BOUNDCOND_OBJ) $(FARRAY_OBJ) $(BORDER_PROFILES_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(FOURIER_OBJ) $(MAGNETIC_MEANFIELD_OBJ)
 #
@@ -29,3 +28,4 @@ particles_main.a: $(PARTICLES_MAIN_OBJ)
 #
 noparticles_main.a: $(PARTICLES_MAIN_OBJ)
 	$(AR) r noparticles_main.a $(PARTICLES_MAIN_OBJ)
+#
