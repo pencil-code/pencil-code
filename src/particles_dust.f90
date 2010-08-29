@@ -874,16 +874,19 @@ k_loop:   do while (.not. (k>npar_loc))
         case ('gaussian-z')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-            call random_number_wrapper(r)
-            call random_number_wrapper(p)
-            if (nprocz==2) then
-              if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-              if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-            else
-              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
-            endif
+            do while (.true.)
+              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              if (nprocz==2) then
+                if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+                if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*  p))
+              else
+                fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              endif
+              if ((fp(k,izp)>=xyz0(3)).and.(fp(k,izp)<=xyz1(3))) exit
+            enddo
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
