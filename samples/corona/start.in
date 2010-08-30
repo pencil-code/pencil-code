@@ -1,5 +1,5 @@
 !                     -*-f90-*-   (for emacs)
-! Initialisation parameters for corona 
+! Initialisation parameters for corona
 !
 &init_pars
   cvsid='$Id$'
@@ -39,4 +39,6 @@
 /
 &magnetic_init_pars
   initaa='magnetogram'
+/
+&special_init_pars
 /
