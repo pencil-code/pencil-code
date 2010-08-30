@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id$',
-  ip=12,
+  ip=14,
   nt=1000, it1=10, itorder=3, ialive=1
   cdt=0.4, 
   cdtv=0.4, 
@@ -12,6 +12,7 @@
   dt=1e-2
 /
 &particles_run_pars
+  lmigration_real_check=F
 /
 &particles_nbody_run_pars
   lfollow_particle=T,T,T,T,T,T,T,T,T
