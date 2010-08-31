@@ -1484,8 +1484,12 @@ END {
 
     # Clean up generated directories
     if ($created_datadir) {
-        system("rm", "data");
-        system("rm", "-r", "$tmpdir");
+        if (-l "data") {
+            system("rm", "data");
+        }
+        if (-d $tmpdir) {
+            system("rm", "-r", "$tmpdir");
+        }
     }
 
     # Remove lock file
