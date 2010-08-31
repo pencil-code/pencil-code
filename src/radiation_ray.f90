@@ -1596,7 +1596,7 @@ module Radiation
         enddo
         enddo
 !
-!  Source function proportional to magnetic energy density
+!  Opacity proportional to magnetic energy density
 !  (used for visualization purposes)
 !  Needs to be done at every time step (not just when lfirst=.true.)
 !

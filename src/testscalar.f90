@@ -258,8 +258,8 @@ module Testscalar
         ktestscalar_effective=ktestscalar
         ztestscalar=z
       endif
-      cz=cos(ktestscalar*ztestscalar)
-      sz=sin(ktestscalar*ztestscalar)
+      cz=cos(ktestscalar_effective*ztestscalar)
+      sz=sin(ktestscalar_effective*ztestscalar)
 !
 !  Optionally, one can determine the phase in the actual field
 !  and modify the following calculations in testscalar_after_boundary.
@@ -676,7 +676,7 @@ module Testscalar
 !  First consider results from  z-dependent test fields.
 !
         if (idiag_kap33/=0) call sum_mn_name (-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33)
-        if (idiag_gam33/=0) call sum_mn_name (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_gam33)
+        if (idiag_gam33/=0) call sum_mn_name (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
         if (idiag_mgam33/=0) call sum_mn_name(  +cz(n)*Gipq(:,3,i1)+sz(n)*Gipq(:,3,i2) ,idiag_mgam33)
         if (idiag_mkap33/=0) call sum_mn_name(-(-sz(n)*Gipq(:,3,i1)+cz(n)*Gipq(:,3,i2))*ktestscalar1,idiag_mkap33)
         if (idiag_ngam33/=0) call sum_mn_name(  +cz(n)*Hipq(:,3,i1)+sz(n)*Hipq(:,3,i2) ,idiag_ngam33)
