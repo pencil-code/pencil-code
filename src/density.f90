@@ -57,6 +57,7 @@ module Density
   real :: rzero_ffree=0.,wffree=0.
   real :: rho_top=1.,rho_bottom=1.
   real :: rmax_mass_source
+  real :: r0_rho=impossible
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -91,7 +92,7 @@ module Density
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
       density_floor, lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
       lnrho_z_shift, powerlr, zoverh, hoverr, lffree, ffree_profile, &
-      rzero_ffree,wffree,rho_top,rho_bottom
+      rzero_ffree,wffree,rho_top,rho_bottom,r0_rho
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -104,7 +105,6 @@ module Density
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons,&
       lffree,ffree_profile,rzero_ffree,wffree
-      
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -489,6 +489,14 @@ module Density
         case ('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
         case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
+        case ('invsqr')
+            do ix=1,mx 
+              if (x(ix).le.r0_rho) then
+                f(ix,:,:,ilnrho)=0
+              else
+                f(ix,:,:,ilnrho)=2*log(r0_rho)-2*log(x(ix))
+              endif
+            enddo
         case ('mode')
           call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j))
