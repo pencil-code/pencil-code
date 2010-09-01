@@ -72,10 +72,9 @@
 !  heatcool_shock_cutoff_rate=0.125
   cooling_select='SS-Slyzr'
   heating_select='Gressel-hs'
-  lcooltime_smooth=F
+  lcooltime_smooth=T
 !  ladd_massflux=T
   SNR_damping=0.0 !any non-zero value ldamping=T value not used
-  lcooltime_smooth=F
 /
 &shear_run_pars
 /
