@@ -86,10 +86,12 @@ module Hydro
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
   logical :: luut_as_aux=.false.,loot_as_aux=.false.
+  logical :: lscale_tobox=.true.
   logical, target :: lpressuregradient_gas=.true.
   logical, target :: lcoriolis_force=.true.
   logical, target :: lcentrifugal_force=.false.
-  logical :: lscale_tobox=.true.
+  logical, pointer :: lffree
+  real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
@@ -502,7 +504,7 @@ module Hydro
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use Initcond
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable,get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
@@ -663,6 +665,25 @@ module Hydro
         call put_shared_variable('w_forc', w_forc, ierr)
         call put_shared_variable('x_forc', x_forc, ierr)
         call put_shared_variable('dx_forc', dx_forc, ierr)
+      endif
+!
+! check if we are solving the force-free equations in parts of domain
+!
+      if (ldensity) then
+        call get_shared_variable('lffree',lffree,ierr)
+        if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+             'failed to get lffree from density')
+        if (lffree) then
+          call get_shared_variable('profx_ffree',profx_ffree,ierr)
+          if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+               'failed to get profx_ffree from density')
+          call get_shared_variable('profy_ffree',profy_ffree,ierr)
+          if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+              'failed to get profy_ffree from density')
+          call get_shared_variable('profz_ffree',profz_ffree,ierr)
+          if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+             'failed to get profz_ffree from density')
+        endif
       endif
 !
       call keep_compiler_quiet(f)
@@ -1470,6 +1491,15 @@ module Hydro
           print *,'calc_pencils_hydro: upwinding advection term'
         endif
         call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+!
+!  If lffree switched is used, we need to turn off the u.gradu term
+!  to ensure momentum conservation.
+!
+        if (lffree) then
+          do j=1,3
+            p%ugu(:,j)=p%ugu(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+          enddo
+        endif
       endif
 ! ugu2
       if (lpencil(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)

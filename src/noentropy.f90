@@ -220,7 +220,9 @@ module Entropy
       intent(inout) :: p
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-! fpres (=pressure gradient force)
+!
+!  fpres (=pressure gradient force)
+!
       if (lpencil(i_fpres)) then
         do j=1,3
           if (llocal_iso) then
@@ -228,11 +230,16 @@ module Entropy
           else
             p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
           endif
+!
 !DM the profz_eos should be changed to profz_free
-          if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
+!AB: should now be removed altogether, I guess.
+!--       if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
+!
+!  multiply previous p%fpres pencil with profiles
+!
           if (ldensity) then
-!            if (lffree) p%fpres(:,j) = p%fpres(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
-            if (lffree) p%fpres(:,j) = p%fpres(:,j)*profz_ffree(n)
+            if (lffree) p%fpres(:,j)=p%fpres(:,j) &
+                *profx_ffree*profy_ffree(m)*profz_ffree(n)
           endif
         enddo
       endif

@@ -413,7 +413,7 @@ module Density
               'you have chosen lffree=T but did not select a profile!')
         endselect
 !
-!  Put the profiles to entropy too.
+!  Put the profiles to entropy and hydro too.
 !
         call put_shared_variable('profx_ffree',profx_ffree,ierr)
         call put_shared_variable('profy_ffree',profy_ffree,ierr)
