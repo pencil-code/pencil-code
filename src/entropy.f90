@@ -2796,7 +2796,6 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
-      real :: thmin
 !
       intent(out) :: df
 !
@@ -2820,8 +2819,7 @@ module Entropy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 !
-      thmin=dxmax*0.5
-      thchi=max(chi_th*(exp(p%lnTT))**0.5,thmin)
+      thchi=chi_th*(exp(p%lnTT))**0.5
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
