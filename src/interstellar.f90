@@ -777,6 +777,8 @@ module Interstellar
             ampl_SN=0.5*ampl_SN
             kampl_SN=ampl_SN
           endif
+        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         endif
         if (lroot) &
             print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
@@ -1285,7 +1287,7 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
-      real, intent(out) :: T0hs
+      real, intent(in) :: T0hs
 !
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: muhs
@@ -1306,8 +1308,6 @@ module Interstellar
         g_C = g_C_cgs/unit_velocity*unit_time
         g_D = g_D_cgs/unit_length
         g_B = g_B_cgs/unit_length
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
       else if (unit_system=='SI') then
         call fatal_error('initialize_entopy', &
             'SI unit conversions not inplemented')
