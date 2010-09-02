@@ -1328,6 +1328,10 @@ module Interstellar
             -0.5*g_C*(z(n))**2/g_D))
         zrho(n)=rho(1)
 !
+!  Maintain minimum uv-heating function at high altitudes through min density.
+!
+        if (rho(1)<1e-7*rho0ts) zrho(n)=1e-7*rho0ts
+!
       enddo
       enddo
 !
@@ -2924,21 +2928,18 @@ module Interstellar
           return
         endif
 !
-!        SNRs(iSNR)%damping_factor = SNR_damping &
-!            * 0.5 * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
-!
         fac=0.
         radius2=SNRs(iSNR)%radius**2
-        do n=n1,n2; do m=m1,m2
+        do n=n1,n2
+        do m=m1,m2
           call proximity_SN(SNRs(iSNR))
           uu = f(l1:l2,m,n,iux:iuz)
           lnrho = f(l1:l2,m,n,ilnrho)
           r_vec=0.
           r_vec(:,1) = x(l1:l2) - SNRs(iSNR)%x
-          r_vec(:,2) = y(m) - SNRs(iSNR)%y
-          r_vec(:,3) = z(n) - SNRs(iSNR)%z
+          r_vec(:,2) = y(m)     - SNRs(iSNR)%y
+          r_vec(:,3) = z(n)     - SNRs(iSNR)%z
           call dot2(r_vec,r2)
-!          r_hat=r_vec/spread(sqrt(r2),2,3)
           call dot(r_vec,uu,uur)
           where (uur > 0.)
             uur=-uur/r2
@@ -2947,17 +2948,17 @@ module Interstellar
             uur=0.
           endwhere
           fac=max(fac,maxval(uur))
-        enddo; enddo
-!        fac=fac*2.
+        enddo
+        enddo
+!
         call mpiallreduce_max(fac,fac2)
 !
-!       print*,"Choose damping factor of:",fac2*2E-4
         SNRs(iSNR)%damping_factor = fac2 * 2E-4 &
             * (1. - tanh((t-SNRs(iSNR)%t_damping)/SNR_damping_rate))
       enddo
 !
     endsubroutine calc_snr_damping_factor
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_snr_unshock(penc)
 !
       real, dimension(mx), intent(inout) :: penc
@@ -2972,13 +2973,11 @@ module Interstellar
       enddo
 !
     endsubroutine calc_snr_unshock
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_snr_damping(p)
 !
       use Sub, only: multsv, multsv_add, dot
 !
-!      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-!      integer, intent(in) :: ivar
       type (pencil_case) :: p
       real, dimension(nx) :: profile
       real, dimension(nx,3) :: tmp, tmp2, gprofile
@@ -2990,13 +2989,10 @@ module Interstellar
         if (lfirst) SNRs(iSNR)%energy_loss=0.
 !
         call proximity_SN(SNRs(iSNR))
-        profile = SNRs(iSNR)%damping_factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
-        gprofile = -SNRs(iSNR)%damping_factor &
-                    * spread( &
-                          (dr2_SN)**2 &
-                          / (SNRs(iSNR)%radius**(2.5)) &
-                          * exp(-(dr2_SN/SNRs(iSNR)%radius**2)) &
-                      ,2,3)
+        profile=SNRs(iSNR)%damping_factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
+        gprofile=-SNRs(iSNR)%damping_factor* &
+            spread(dr2_SN**2/(SNRs(iSNR)%radius**(2.5))* &
+            exp(-(dr2_SN/SNRs(iSNR)%radius**2)),2,3)
         gprofile(:,1)= gprofile(:,1) * x(l1:l2)
         gprofile(:,2)= gprofile(:,2) * y(m)
         gprofile(:,3)= gprofile(:,3) * z(n)
@@ -3007,24 +3003,21 @@ module Interstellar
           call multsv_add(tmp2,p%divu,gprofile,tmp)
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile)
           SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%divu**2)
-!
-!          !tmp=p%graddivu
-!          call multsv(profile*p%rho1,p%graddivu,tmp2)
-!          call multsv_add(tmp2,p%divu,gprofile,tmp)
-!          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile*p%rho1)
-!          SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%rho1*p%divu**2)
-!
           p%fvisc=p%fvisc+tmp
         endif
 !
-!  Have to divide by dxmin**2 to compensate for the * dxmin**2 in
-!  the shock code!
+!  Have to divide by dxmin**2 to compensate for the * dxmin**2 in the shock
+!  code. This was commented out, but needs checking as I do not currently use
+!  damping so have generally left all damping references unchanged except for
+!  format. Fred 
 !
-!      penc=max(penc,SNR_damping*exp(-(dr2_SN_mx/SNRs(iSNR)%radius**2))/dxmin**2)
+!        penc=max(penc,SNR_damping* &
+!            exp(-(dr2_SN_mx/SNRs(iSNR)%radius**2))/dxmin**2)
+!
       enddo
 !
     endsubroutine calc_snr_damping
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_snr_damp_int(int_dt)
 !
       use Sub, only: multsv, multsv_add
@@ -3065,15 +3058,16 @@ module Interstellar
 !
         factor = SNRs(iSNR)%heat_energy &
             / (cnorm_gaussian_SN(dimensionality)*SNRs(iSNR)%radius**dimensionality)
-        do n=n1,n2; do m=m1,m2
+        do n=n1,n2
+        do m=m1,m2
           call proximity_SN(SNRs(iSNR))
           call eoscalc(f,nx,ee=ee_old)
           lnrho=f(l1:l2,m,n,ilnrho)
           rho=exp(lnrho)
           profile = factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
-          call eosperturb(f,nx,ee=real((ee_old*rho+profile) &
-                                                     /exp(lnrho)))
-        enddo; enddo
+          call eosperturb(f,nx,ee=real((ee_old*rho+profile)/exp(lnrho)))
+        enddo
+        enddo
 !
         SNRs(iSNR)%heat_energy=0.
 !
@@ -3083,10 +3077,10 @@ module Interstellar
       enddo
 !
     endsubroutine calc_snr_damping_add_heat
-!***********************************************************************
+!*****************************************************************************
     subroutine get_properties(f,remnant,rhom,ekintot)
 !
-!  Calculate integral of mass cavity profile
+!  Calculate integral of mass cavity profile and total kinetic energy.
 !
 !  22-may-03/tony: coded
 !  10-oct-09/axel: return zero density if the volume is zero
@@ -3102,49 +3096,46 @@ module Interstellar
       integer, dimension(nx) :: mask
       double precision, dimension(3) :: tmp,tmp2
 !
-!  Obtain distance to SN
+!  Obtain distance to SN and sum all points inside 1.5 * SNR radius and
+!  divide by number of points.
 !
-!  Sum all points inside 1.5 * SNR radius and divide by number of points
-!
-      radius2 = (5.0*remnant%radius)**2
+      radius2 = (1.5*remnant%radius)**2
       tmp=0.
       do n=n1,n2
-         do m=m1,m2
-            call proximity_SN(remnant)
-            mask=1
-            rho=exp(f(l1:l2,m,n,ilnrho))
-            call dot2(f(l1:l2,m,n,iuu:iuu+2),u2)
-            tmp(3)=tmp(3)+sum(rho*u2)
-            where (dr2_SN(1:nx) > radius2)
-              rho(1:nx)=0.
-              mask(1:nx)=0
-            endwhere
-            tmp(1)=tmp(1)+sum(rho)
-            tmp(2)=tmp(2)+sum(mask)
-         enddo
+      do m=m1,m2
+        call proximity_SN(remnant)
+        mask=1
+        rho=exp(f(l1:l2,m,n,ilnrho))
+        call dot2(f(l1:l2,m,n,iuu:iuu+2),u2)
+        tmp(3)=tmp(3)+sum(rho*u2)
+        where (dr2_SN(1:nx) > radius2)
+          rho(1:nx)=0.
+          mask(1:nx)=0
+        endwhere
+        tmp(1)=tmp(1)+sum(rho)
+        tmp(2)=tmp(2)+sum(mask)
+      enddo
       enddo
 !
-!  calculate mean density inside the remnant.
-!  Return zero if the volume is zero.
+!  Calculate mean density inside the remnant and return zero if the volume is
+!  zero.
 !
       call mpireduce_sum_double(tmp,tmp2,3)
       call mpibcast_double(tmp2,3)
       ekintot=0.5*tmp2(3)*dv
       if (abs(tmp2(2)) < 1e-30) then
         write(0,*) 'tmp = ', tmp
-!
-       call fatal_error("interstellar.get_properties", &
-           "Dividing by zero?")
+        call fatal_error("interstellar.get_properties","Dividing by zero?")
         rhom=0.
       else
         rhom=tmp2(1)/tmp2(2)
       endif
 !
     endsubroutine get_properties
-!***********************************************************************
+!*****************************************************************************
     subroutine get_lowest_rho(f,SNR,radius,rho_lowest)
 !
-!  Calculate integral of mass cavity profile
+!  Calculate integral of mass cavity profile.
 !
 !  22-may-03/tony: coded
 !
@@ -3158,17 +3149,17 @@ module Interstellar
       double precision :: radius2
       real, dimension(nx) :: rho
 !
-!  Find lowest rho value in the surronding cavity
+!  Find lowest rho value in the surronding cavity.
 !
-      rho_lowest=1E10
+      rho_lowest=1e10
       radius2 = radius**2
       do n=n1,n2
-         do m=m1,m2
-            call proximity_SN(SNR)
-            rho=f(l1:l2,m,n,ilnrho)
-            where (dr2_SN(1:nx) > radius2) rho=1E10
-            rho_lowest=min(rho_lowest,minval(rho(1:nx)))
-         enddo
+      do m=m1,m2
+        call proximity_SN(SNR)
+        rho=f(l1:l2,m,n,ilnrho)
+        where (dr2_SN(1:nx) > radius2) rho=1e10
+        rho_lowest=min(rho_lowest,minval(rho(1:nx)))
+      enddo
       enddo
 !
       tmp=-exp(rho_lowest)
@@ -3176,10 +3167,10 @@ module Interstellar
       call mpibcast_real(rho_lowest,2)
 !
     endsubroutine get_lowest_rho
-!***********************************************************************
+!*****************************************************************************
     subroutine proximity_SN(SNR)
 !
-!  Calculate pencil of distance to SN explosion site
+!  Calculate pencil of distance to SN explosion site.
 !
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
@@ -3192,44 +3183,45 @@ module Interstellar
 !
 !  Obtain distance to SN
 !
-         dx_SN=x(l1:l2)-SNR%x
-         if (lperi(1)) then
-           where (dx_SN > Lx/2.) dx_SN=dx_SN-Lx
-           where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
-         endif
+      dx_SN=x(l1:l2)-SNR%x
+      if (lperi(1)) then
+        where (dx_SN > Lx/2.) dx_SN=dx_SN-Lx
+        where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
+      endif
 !
-         dy_SN=y(m)-SNR%y
-         if (lperi(2)) then
-           if (dy_SN > Ly/2.) dy_SN=dy_SN-Ly
-           if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
-         endif
+      dy_SN=y(m)-SNR%y
+      if (lperi(2)) then
+        if (dy_SN > Ly/2.) dy_SN=dy_SN-Ly
+        if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
+      endif
 !
-         dz_SN=z(n)-SNR%z
-         if (lperi(3)) then
-           if (dz_SN > Lz/2.) dz_SN=dz_SN-Lz
-           if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
-         endif
+      dz_SN=z(n)-SNR%z
+      if (lperi(3)) then
+        if (dz_SN > Lz/2.) dz_SN=dz_SN-Lz
+        if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
+      endif
 !
-         dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
+      dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
 !
-         if (lSN_velocity) then
-           dr_SN=sqrt(dr2_SN)
-           dr_SN=max(dr_SN(1:nx),tiny(0.D0))
-!  04-sep-09/fred: amended dr_SN above to avoid div by zero below,
-!                  where unnecassary expense as profile(dr2_SN=0,:)=0
-           outward_normal_SN(:,1)=dx_SN/dr_SN
-           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
-           outward_normal_SN(:,2)=dy_SN/dr_SN
-           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
-           outward_normal_SN(:,3)=dz_SN/dr_SN
-           where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=0.0
-         endif
+      if (lSN_velocity) then
+        dr_SN=sqrt(dr2_SN)
+        dr_SN=max(dr_SN(1:nx),tiny(0.d0))
+!
+!  Avoid dr_SN = 0 abovee to avoid div by zero below.
+!
+        outward_normal_SN(:,1)=dx_SN/dr_SN
+        where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
+        outward_normal_SN(:,2)=dy_SN/dr_SN
+        where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
+        outward_normal_SN(:,3)=dz_SN/dr_SN
+        where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=0.0
+      endif
 !
     endsubroutine proximity_SN
-!***********************************************************************
+!*****************************************************************************
     subroutine proximity_SN_mx(SNR,dr2_SN_mx)
 !
-!  Calculate pencil of distance to SN explosion site
+!  Calculate pencil of distance to SN explosion site.
 !
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
@@ -3240,33 +3232,33 @@ module Interstellar
       real :: dy_SN
       real :: dz_SN
 !
-!  Obtain distance to SN
+!  Obtain distance to SN.
 !
-         dx_SN=x-SNR%x
-         if (lperi(1)) then
-           where (dx_SN > Lx/2.) dx_SN=dx_SN-Lx
-           where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
-         endif
+      dx_SN=x-SNR%x
+      if (lperi(1)) then
+        where (dx_SN >  Lx/2.) dx_SN=dx_SN-Lx
+        where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
+      endif
 !
-         dy_SN=y(m)-SNR%y
-         if (lperi(2)) then
-           if (dy_SN > Ly/2.) dy_SN=dy_SN-Ly
-           if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
-         endif
+      dy_SN=y(m)-SNR%y
+      if (lperi(2)) then
+        if (dy_SN >  Ly/2.) dy_SN=dy_SN-Ly
+        if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
+      endif
 !
-         dz_SN=z(n)-SNR%z
-         if (lperi(3)) then
-           if (dz_SN > Lz/2.) dz_SN=dz_SN-Lz
-           if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
-         endif
+      dz_SN=z(n)-SNR%z
+      if (lperi(3)) then
+        if (dz_SN >  Lz/2.) dz_SN=dz_SN-Lz
+        if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
+      endif
 !
-         dr2_SN_mx=dx_SN**2 + dy_SN**2 + dz_SN**2
+      dr2_SN_mx=dx_SN**2 + dy_SN**2 + dz_SN**2
 !
     endsubroutine proximity_SN_mx
-!***********************************************************************
+!*****************************************************************************
     subroutine calc_cavity_mass_lnrho(f,SNR,width,depth,mass_removed)
 !
-!  Calculate integral of mass cavity profile
+!  Calculate integral of mass cavity profile.
 !
 !  22-may-03/tony: coded
 !
@@ -3283,38 +3275,35 @@ module Interstellar
 !
 !  Obtain distance to SN
 !
-!
-      !mass_start=0.
-      !mass_end=0.
       mass_removed=0.
       do n=n1,n2
-        do m=m1,m2
-          call proximity_SN(SNR)
+      do m=m1,m2
+        call proximity_SN(SNR)
 !
-          lnrho_old=f(l1:l2,m,n,ilnrho)
-          if (cavity_profile=="gaussian3log") then
-            profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
-            lnrho=lnrho_old - profile_cavity
-            mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
-          elseif (cavity_profile=="gaussian3") then
-            profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
-            lnrho=lnrho_old - profile_cavity
-            mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
-          elseif (cavity_profile=="gaussian2") then
-            profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**2))
-            lnrho=lnrho_old - profile_cavity
-            mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
-          elseif (cavity_profile=="gaussian") then
-            profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)))
-            lnrho=lnrho_old - profile_cavity
-            mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
-          elseif (cavity_profile=="tanh") then
-            profile_cavity=(1.-tanh( (width-sqrt(dr2_SN(1:nx)) ) *sigma_SN1 ))*0.5
-            rho=exp(lnrho_old)*profile_cavity
-            mass_removed=mass_removed+sum(exp(lnrho_old)-rho)
-          endif
+        lnrho_old=f(l1:l2,m,n,ilnrho)
+        if (cavity_profile=="gaussian3log") then
+          profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
+          lnrho=lnrho_old - profile_cavity
+          mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
+        elseif (cavity_profile=="gaussian3") then
+          profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
+          lnrho=lnrho_old - profile_cavity
+          mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
+        elseif (cavity_profile=="gaussian2") then
+          profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**2))
+          lnrho=lnrho_old - profile_cavity
+          mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
+        elseif (cavity_profile=="gaussian") then
+          profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)))
+          lnrho=lnrho_old - profile_cavity
+          mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
+        elseif (cavity_profile=="tanh") then
+          profile_cavity=(1.-tanh( (width-sqrt(dr2_SN(1:nx)) ) *sigma_SN1 ))*0.5
+          rho=exp(lnrho_old)*profile_cavity
+          mass_removed=mass_removed+sum(exp(lnrho_old)-rho)
+        endif
 !
-        enddo
+      enddo
       enddo
       dmpi1_tmp=(/ mass_removed /)
       call mpireduce_sum_double(dmpi1_tmp,dmpi1,1)
@@ -3338,23 +3327,23 @@ module Interstellar
 !
 !      deltarho(1:nx) =  -depth*exp(-(dr2_SN(1:nx)/width**2)**3)
 !
-      c_shell=-depth*cnorm_dim / ( (1. / width_shell_outer**dimensionality) -   &
-                                   (1. / width_shell_inner**dimensionality))
+      c_shell=-depth*cnorm_dim/((1./width_shell_outer**dimensionality)- &
+          (1./width_shell_inner**dimensionality))
 !
-!  add missing mass back into shell
+!  Add missing mass back into shell.
 !
-      profile_shell_outer(1:nx)=                              &
-           exp(-(dr2_SN(1:nx)/width_shell_outer**2)**3)       &
-              /cnorm_dim/width_shell_outer**dimensionality
-      profile_shell_inner(1:nx)=                              &
-           exp(-(dr2_SN(1:nx)/width_shell_inner**2)**3)       &
-              /cnorm_dim/width_shell_inner**dimensionality
-      deltarho(1:nx)= c_shell *      &
-           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx))
+      profile_shell_outer(1:nx)= &
+          exp(-(dr2_SN(1:nx)/width_shell_outer**2)**3)/ &
+          cnorm_dim/width_shell_outer**dimensionality
+      profile_shell_inner(1:nx)= &
+          exp(-(dr2_SN(1:nx)/width_shell_inner**2)**3)/ &
+          cnorm_dim/width_shell_inner**dimensionality
+      deltarho(1:nx)=c_shell* &
+          (profile_shell_outer(1:nx) - profile_shell_inner(1:nx))
       MMtot_SN=MMtot_SN + sum(deltarho(1:nx))
 !
     endsubroutine make_cavity_rho
-!***********************************************************************
+!*****************************************************************************
     subroutine make_cavity_lnrho(lnrho,width,depth,mass_shell, &
                              cnorm_dim,MMtot_SN)
 !
@@ -3362,16 +3351,16 @@ module Interstellar
       double precision, intent(inout) :: MMtot_SN
       real, intent(inout), dimension(nx) :: lnrho
 !
-      double precision, dimension(nx) :: profile_shell_outer,profile_shell_inner, profile_cavity
+      double precision, dimension(nx) :: profile_shell_outer,profile_cavity
+      double precision, dimension(nx) :: profile_shell_inner
       double precision :: width_shell_outer, width_shell_inner, c_shell
       double precision :: mass_before, mass_after
 !
       width_shell_outer=outer_shell_proportion*width
       width_shell_inner=inner_shell_proportion*width
 !
-      c_shell = mass_shell &
-          / (cnorm_dim &
-             * (width_shell_outer**dimensionality - width_shell_inner**dimensionality))
+      c_shell = mass_shell/(cnorm_dim*(width_shell_outer**dimensionality - &
+          width_shell_inner**dimensionality))
 !
       profile_shell_outer(1:nx)=exp(-(dr2_SN(1:nx)/width_shell_outer**2)**3)
       profile_shell_inner(1:nx)=exp(-(dr2_SN(1:nx)/width_shell_inner**2)**3)
@@ -3380,45 +3369,43 @@ module Interstellar
       if (cavity_profile=="gaussian3log") then
         profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
         lnrho = lnrho(1:nx) - profile_cavity
-        lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
-           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
+        lnrho = log(exp(lnrho(1:nx))+c_shell* &
+           (profile_shell_outer(1:nx)-profile_shell_inner(1:nx)))
       elseif (cavity_profile=="gaussian3") then
         profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
-        lnrho = lnrho(1:nx) - profile_cavity
-        lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
-           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
+        lnrho = lnrho(1:nx)-profile_cavity
+        lnrho = log(exp(lnrho(1:nx))+c_shell* &
+           (profile_shell_outer(1:nx)-profile_shell_inner(1:nx)))
       elseif (cavity_profile=="gaussian2") then
         profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**2))
-        lnrho = lnrho(1:nx) - profile_cavity
-        lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
-           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
+        lnrho = lnrho(1:nx)-profile_cavity
+        lnrho = log(exp(lnrho(1:nx))+c_shell* &
+           (profile_shell_outer(1:nx)-profile_shell_inner(1:nx)))
       elseif (cavity_profile=="gaussian") then
         profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)))
-        lnrho = lnrho(1:nx) - profile_cavity
-        lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
-           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
+        lnrho = lnrho(1:nx)-profile_cavity
+        lnrho = log(exp(lnrho(1:nx))+c_shell* &
+           (profile_shell_outer(1:nx)-profile_shell_inner(1:nx)))
       elseif (cavity_profile=="tanh") then
-        profile_cavity=(1.-tanh( (width- sqrt(dr2_SN(1:nx)) )*sigma_SN1 ))*0.5
-        lnrho = log(exp(lnrho(1:nx))*profile_cavity + c_shell *    &
-           (  profile_shell_outer(1:nx) - profile_shell_inner(1:nx)) &
-            + depth*(1.-tanh( (sqrt(dr2_SN(1:nx)) - width )*sigma_SN1 ))*0.5 &
-           )
+        profile_cavity=(1.-tanh((width-sqrt(dr2_SN(1:nx)))*sigma_SN1))*0.5
+        lnrho = log(exp(lnrho(1:nx))*profile_cavity+c_shell* &
+           (profile_shell_outer(1:nx)-profile_shell_inner(1:nx))+ &
+           depth*(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5)
       endif
       mass_after=sum(exp(lnrho(1:nx)))
       MMtot_SN=MMtot_SN + (mass_after-mass_before)
 !
     endsubroutine make_cavity_lnrho
-!***********************************************************************
+!*****************************************************************************
     subroutine injectenergy_SN(deltaEE,width,c_SN,EEtot_SN)
-      !
+!
       double precision, intent(in) :: width,c_SN
       double precision, intent(inout) :: EEtot_SN
       double precision, intent(out), dimension(nx) :: deltaEE
-      !
+!
       double precision, dimension(nx) :: profile_SN
 !
-      ! Whether mass moved or not, inject energy.
-      !
+!  Whether mass is moved or not, inject energy.
 !
       if (thermal_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
@@ -3429,11 +3416,11 @@ module Interstellar
       elseif (thermal_profile=="quadratic") then
         profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0D0)
       elseif (thermal_profile=="quadratictanh") then
-        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0d0) &
-            *0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
+        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0d0)* &
+            0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="quartictanh") then
-        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2)**2,0d0) &
-            *0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
+        profile_SN=max(1d0-(dr2_SN(1:nx)/width**2)**2,0d0)* &
+            0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="tanh") then
         profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
       endif
@@ -3442,17 +3429,16 @@ module Interstellar
       EEtot_SN=EEtot_SN+sum(deltaEE(1:nx))
 !
     endsubroutine injectenergy_SN
-!***********************************************************************
+!*****************************************************************************
     subroutine injectmass_SN(deltarho,width,cmass_SN,MMtot_SN)
-      !
+!
       double precision, intent(in) :: width,cmass_SN
       double precision, intent(inout) :: MMtot_SN
       double precision, intent(out), dimension(nx) :: deltarho
-      !
+!
       double precision, dimension(nx) :: profile_SN
 !
-      ! Inject mass.
-      !
+!  Inject mass.
 !
       if (mass_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
@@ -3463,9 +3449,9 @@ module Interstellar
       elseif (mass_profile=="quadratic") then
         profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0D0)
       elseif (mass_profile=="tanh") then
-      !
-      !  This is normally handled in the mass movement section
-      !
+!
+!  This is normally handled in the mass movement section
+!
         profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
       endif
 !
@@ -3483,17 +3469,19 @@ module Interstellar
 !
       integer :: j
 !
-! Calculate deltauu
+!  Calculate deltauu.
 !
       if (velocity_profile=="quintictanh") then
-        profile_SN=((sqrt(dr2_SN)/width)**5) &
-                   *0.5*(1.-tanh((sqrt(dr2_SN)-(1.1*width))/(0.08*width)))
+        profile_SN=((sqrt(dr2_SN)/width)**5)*0.5* &
+            (1.-tanh((sqrt(dr2_SN)-(1.1*width))/(0.08*width)))
 !
       elseif (velocity_profile=="lineartanh") then
-        profile_SN=max(sqrt(dr2_SN)/width,1.D0)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.))
+        profile_SN=max(sqrt(dr2_SN)/width,1.D0)*0.5* &
+            (1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.))
 !
       elseif (velocity_profile=="quadratictanh") then
-        profile_SN=min((dr2_SN/(width**2)),0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.)))
+        profile_SN=min((dr2_SN/(width**2)),0.5* &
+            (1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.)))
 !
       elseif (velocity_profile=="gaussian") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2))
@@ -3504,36 +3492,25 @@ module Interstellar
       elseif (velocity_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
 !
-      elseif (velocity_profile=="r3gaussian3") then
-        profile_SN=(dr2_SN(1:nx))**1.5*exp(-(dr2_SN(1:nx)/width**2)**3)
-!
-      elseif (velocity_profile=="r6gaussian3") then
-        profile_SN=(dr2_SN(1:nx))**3*exp(-(dr2_SN(1:nx)/width**2)**3)
-!
-      elseif (velocity_profile=="r15gaussian3") then
-        profile_SN=(dr2_SN(1:nx))**0.75*exp(-(dr2_SN(1:nx)/width**2)**3)
-!
       elseif (velocity_profile=="r8thgaussian3") then
         profile_SN=(dr2_SN(1:nx))**0.0625*exp(-(dr2_SN(1:nx)/width**2)**3)
 !
       elseif (velocity_profile=="r8thgaussian") then
         profile_SN=(dr2_SN(1:nx))**0.0625*exp(-(dr2_SN(1:nx)/width**2))
-!     need to eject mass from centre to maintain core temp
+!
       elseif (velocity_profile=="r16thgaussian3") then
         profile_SN=(dr2_SN(1:nx))**0.03125*exp(-(dr2_SN(1:nx)/width**2)**3)
 !
       elseif (velocity_profile=="r16thgaussian") then
         profile_SN=(dr2_SN(1:nx))**0.03125*exp(-(dr2_SN(1:nx)/width**2))
-!     need to eject mass from centre to maintain core temp
 !
       elseif (velocity_profile=="cubictanh") then
-        profile_SN=(sqrt(dr2_SN/width)**3) &
-               * (1.-tanh((sqrt(dr2_SN)-(1.1*width))*sigma_SN1))
+        profile_SN=(sqrt(dr2_SN/width)**3)* &
+            (1.-tanh((sqrt(dr2_SN)-(1.1*width))*sigma_SN1))
 !
       elseif (velocity_profile=="gaussian3der") then
-        profile_SN=(((sqrt(dr2_SN)**5)/width**6*(1./35.)) &
-                  * exp(-(dr2_SN(1:nx)/width**2)**3)) ! &
-                  !* (1.-tanh((sqrt(dr2_SN)-(1.1*width))/sigma_SN))
+        profile_SN=(((sqrt(dr2_SN)**5)/width**6*(1./35.))* &
+            exp(-(dr2_SN(1:nx)/width**2)**3))
 !
       elseif (velocity_profile=="quadratic") then
         profile_SN=dr2_SN(1:nx)/width**2
@@ -3541,17 +3518,20 @@ module Interstellar
       endif
 !
       do j=1,3
-        deltauu(1:nx,j)=cvelocity_SN*profile_SN(1:nx)*outward_normal_SN(1:nx,j) ! spatial mass density
+        deltauu(1:nx,j)=cvelocity_SN*profile_SN(1:nx)* &
+            outward_normal_SN(1:nx,j) ! spatial mass density
       enddo
+!
     endsubroutine injectvelocity_SN
-!***********************************************************************
+!*****************************************************************************
     function get_free_SNR()
 !
       integer :: get_free_SNR
       integer :: i,iSNR
 !
       if (nSNR>=mSNR) then
-        call fatal_error("get_free_SNR","Run out of SNR slots... Increase mSNR.")
+        call fatal_error("get_free_SNR", &
+            "Run out of SNR slots... Increase mSNR.")
       endif
 !
       iSNR=-1
@@ -3573,13 +3553,13 @@ module Interstellar
       get_free_SNR=iSNR
 !
     endfunction get_free_SNR
-!***********************************************************************
+!*****************************************************************************
     subroutine free_SNR(iSNR)
 !
       integer :: i,iSNR
 !
       if (SNRs(iSNR)%state==SNstate_invalid) then
-        if (lroot) print*,"Tried to free and already invalid SNR"
+        if (lroot) print*,"Tried to free an already invalid SNR"
         return
       endif
 !
@@ -3591,7 +3571,7 @@ module Interstellar
       enddo
 !
     endsubroutine free_SNR
-!***********************************************************************
+!*****************************************************************************
     subroutine tidy_SNRs
 !
       integer :: i
@@ -3601,7 +3581,7 @@ module Interstellar
       enddo
 !
     endsubroutine tidy_SNRs
-!***********************************************************************
+!*****************************************************************************
     subroutine addmassflux(f)
 !
 !  This routine calculates the mass flux through the vertical boundary.
@@ -3616,7 +3596,7 @@ module Interstellar
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !
-      real :: rhomax
+      real :: rhomax, prec_factor
       real, dimension(1) :: sum_tmp, rmpi
       double precision :: bflux, bmass, newmass, oldmass, rhoz, rhoz1
       double precision, dimension(1) :: bfmpi, ompi, nmpi, &
@@ -3642,48 +3622,52 @@ module Interstellar
       call mpireduce_max(sum_tmp,rmpi,1)
       call mpibcast_real(rmpi,1)
       rhomax=rmpi(1)
+      prec_factor=1e-9
 !
 !  Calculate mass loss through the vertical boundaries rho*u_z
 !
       bflux=0.d0
       do n=n1,n2
-        if (z(n) .eq. xyz0(3)) then
-          do l=l1,l2;do m=m1,m2
+        if (z(n) == xyz0(3)) then
+          do l=l1,l2
+          do m=m1,m2
             bflux=bflux-exp(dble(f(l,m,n,ilnrho)))*dble(f(l,m,n,iuz))
-          enddo;enddo
+          enddo
+          enddo
         endif
-        if (z(n) .eq. xyz1(3)) then
-          do l=l1,l2;do m=m1,m2
+        if (z(n) == xyz1(3)) then
+          do l=l1,l2
+          do m=m1,m2
             bflux=bflux+exp(dble(f(l,m,n,ilnrho)))*dble(f(l,m,n,iuz))
-          enddo;enddo
+          enddo
+          enddo
         endif
       enddo
       sum_1tmp=(/ bflux /)
 !
-     if (ip<45.and.bflux /=0.0) print*,'addmassflux: bflux on iproc =', &
+      if (ip<45.and.bflux /=0.0) print*,'addmassflux: bflux on iproc =', &
                                                      bflux, iproc
 !
-!  Sum over all processors and communicate total to all
+!  Sum over all processors and communicate total to all.
 !
-     call mpireduce_sum_double(sum_1tmp,bfmpi,1)
-     call mpibcast_double(bfmpi,1)
-     bflux=bfmpi(1)
-     if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
+      call mpireduce_sum_double(sum_1tmp,bfmpi,1)
+      call mpibcast_double(bfmpi,1)
+      bflux=bfmpi(1)
+      if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
 !
 !  Multiply mass flux by area element and timestep to find mass plus any
-!  accumulated boundary mass flux 'boldmass' from previous timesteps
+!  accumulated boundary mass flux 'boldmass' from previous timesteps.
 !
-     bmass=bflux*dt*dx*dy+boldmass
-     if (lroot.and.ip<45) print*,'addmassflux: new bmass, boldmass, timestep =', &
-                                               bmass,     boldmass, dt
+      bmass=bflux*dt*dx*dy+boldmass
+      if (lroot.and.ip<45) print*, &
+          'addmassflux: new bmass, boldmass, timestep =', bmass, boldmass, dt
+      rhoz=bmass*dble(addflux_dim1)
+      rhoz1=1.d0/rhoz
 !
-     rhoz=bmass*dble(addflux_dim1)
-     rhoz1=1.d0/rhoz
+      if (rhoz >= rhomax*prec_factor) then
 !
-     if (rhoz .ge. rhomax*1e-7) then
-!
-!  For debugging purposes oldmass and new mass can be calculated and the
-!  difference compared to bmass, which should be equal. Commented out for now
+!  For debugging purposes oldmass and newmass can be calculated and the
+!  difference compared to bmass, which should be equal. 
 !
 !        oldmass=0.d0
 !        oldmass=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))*dx*dy*dz
@@ -3699,7 +3683,7 @@ module Interstellar
 !        newmass=0.d0
         do n=n1,n2
           f(l1:l2,m1:m2,n,ilnrho)=log(rhoz) + &
-            log(1.d0+rhoz1*exp(dble(f(l1:l2,m1:m2,n,ilnrho))))
+              log(1.d0+rhoz1*exp(dble(f(l1:l2,m1:m2,n,ilnrho))))
         enddo
 !
 !        newmass=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))*dx*dy*dz
@@ -3707,9 +3691,10 @@ module Interstellar
 !        call mpireduce_sum_double(sum_3tmp,nmpi,1)
 !        call mpibcast_double(nmpi,1)
 !        newmass=nmpi(1)
-!        if (lroot.and.ip<45) print*,'addmassflux: newmass, rhoz =',newmass,rhoz
-!        if (lroot.and.ip<45) print*,'addmassflux: added mass vs mass flux='&
-!                                    ,newmass-oldmass,bmass
+!        if (lroot.and.ip<45) print*,'addmassflux: newmass, rhoz =', &
+!            newmass, rhoz
+!        if (lroot.and.ip<45) print*,'addmassflux: added mass vs mass flux=', &
+!            newmass-oldmass, bmass
 !
         boldmass=0.0
       else
@@ -3717,5 +3702,5 @@ module Interstellar
       endif
 !
     endsubroutine addmassflux
-!***********************************************************************
+!*****************************************************************************
  endmodule Interstellar
