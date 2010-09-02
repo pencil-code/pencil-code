@@ -490,13 +490,13 @@ module Density
         case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case ('invsqr')
-            do ix=1,mx 
-              if (x(ix).le.r0_rho) then
-                f(ix,:,:,ilnrho)=0
-              else
-                f(ix,:,:,ilnrho)=2*log(r0_rho)-2*log(x(ix))
-              endif
-            enddo
+          do ix=1,mx 
+            if (x(ix)<=r0_rho) then
+              f(ix,:,:,ilnrho)=0.0
+            else
+              f(ix,:,:,ilnrho)=2*log(r0_rho)-2*log(x(ix))
+            endif
+          enddo
         case ('mode')
           call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j))
