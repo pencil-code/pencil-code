@@ -230,7 +230,7 @@ module Mpicomm
   integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
-  integer :: npole_tag=15,spole_tag=16 
+  integer :: npole_tag=15,spole_tag=16
 !
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
@@ -247,7 +247,7 @@ module Mpicomm
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
-  integer :: isend_rq_spole,isend_rq_npole 
+  integer :: isend_rq_spole,isend_rq_npole
   integer :: irecv_rq_spole,irecv_rq_npole
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
@@ -266,7 +266,7 @@ module Mpicomm
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
-  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, & 
+  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, &
                                           isend_stat_npole,irecv_stat_npole
 !
   contains
@@ -299,7 +299,6 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
-!
 !
 !  Check consistency in processor layout.
 !
@@ -695,8 +694,8 @@ module Mpicomm
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !
-! The following is not a typo, it must be nprocz although the boundary 
-! is the pole (i.e., along the y direction). 
+! The following is not a typo, it must be nprocz although the boundary
+! is the pole (i.e., along the y direction).
       if (nprocz>1) then
         npbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m1:m1i,n1:n2,ivar1:ivar2) !!(north pole)
         nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
@@ -707,14 +706,14 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_npole,irecv_stat_np,mpierr)
         do j=ivar1,ivar2
           if (bcy1(j)=='pp') then
-             f(l1:l2,1,n1:n2,j)=npbufyi(:,3,:,j) 
-             f(l1:l2,2,n1:n2,j)=npbufyi(:,2,:,j) 
-             f(l1:l2,3,n1:n2,j)=npbufyi(:,1,:,j) 
+             f(l1:l2,1,n1:n2,j)=npbufyi(:,3,:,j)
+             f(l1:l2,2,n1:n2,j)=npbufyi(:,2,:,j)
+             f(l1:l2,3,n1:n2,j)=npbufyi(:,1,:,j)
           endif
-          if (bcy1(j)=='ap') then 
-             f(l1:l2,1,n1:n2,j)=-npbufyi(:,3,:,j) 
-             f(l1:l2,2,n1:n2,j)=-npbufyi(:,2,:,j) 
-             f(l1:l2,3,n1:n2,j)=-npbufyi(:,1,:,j)  
+          if (bcy1(j)=='ap') then
+             f(l1:l2,1,n1:n2,j)=-npbufyi(:,3,:,j)
+             f(l1:l2,2,n1:n2,j)=-npbufyi(:,2,:,j)
+             f(l1:l2,3,n1:n2,j)=-npbufyi(:,1,:,j)
           endif
         enddo
         call MPI_WAIT(isend_rq_npole,isend_stat_np,mpierr)
@@ -737,8 +736,8 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  The following is not a typo, it must be nprocz although the boundary 
-!  is the pole (i.e., along the y direction). 
+!  The following is not a typo, it must be nprocz although the boundary
+!  is the pole (i.e., along the y direction).
 !
       if (nprocz>1) then
         spbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2) !!(south pole)
@@ -749,10 +748,10 @@ module Mpicomm
              poleneigh,spole_tag,MPI_COMM_WORLD,isend_rq_spole,mpierr)
         call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
         do j=ivar1,ivar2
-          if (bcy2(j)=='pp') & 
-              f(l1:l2,m2+1:my,n1:n2,j)=npbufyi(:,:,:,j) 
-          if (bcy2(j)=='ap') & 
-              f(l1:l2,m2+1:my,n1:n2,j)=-npbufyi(:,:,:,j) 
+          if (bcy2(j)=='pp') &
+              f(l1:l2,m2+1:my,n1:n2,j)=npbufyi(:,:,:,j)
+          if (bcy2(j)=='ap') &
+              f(l1:l2,m2+1:my,n1:n2,j)=-npbufyi(:,:,:,j)
         enddo
         call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
       endif
@@ -3169,7 +3168,7 @@ module Mpicomm
 !
       real, dimension(nz,nxt) :: buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      integer :: sendc,recvc,px
+      integer :: sendc,px
       integer :: ztag=101,partner
 !
       if (mod(nxgrid,nprocz)/=0) then
@@ -3291,14 +3290,12 @@ module Mpicomm
 !
 !  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of
 !  processors in z-direction.
-
+!
 !  The three components of vec are supposed to be subject to the same
 !  z-boundary condiitons like the variables
 !  ivar, ivar+1, ivar+2
 !
 !   18-oct-2009/MR: Coded
-!
-      use Cdata
 !
       real, dimension(mz,3), intent(inout) :: vec
       integer, intent(in)                  :: ivar
