@@ -577,7 +577,8 @@ module Forcing
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2,coef3
       logical, dimension (3), save :: extent
-      integer, parameter :: mk=3000
+!      integer, parameter :: mk=3000
+      integer, parameter :: mk=6000
       real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
       integer :: ik,j,jf,j2f
