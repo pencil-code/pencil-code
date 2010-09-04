@@ -51,6 +51,7 @@ module Forcing
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lscale_kvector_fac=.false.
   logical :: lforce_peri=.false., lforce_cuty=.false.
+  logical :: lstep_up=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -107,7 +108,7 @@ module Forcing
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
-       lforce_peri,lforce_cuty
+       lforce_peri,lforce_cuty,lstep_up
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -890,7 +891,11 @@ module Forcing
                 else
                   radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
                 endif
-                tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
+                if (lstep_up) then
+                  tmpx = 0.5*(1.+tanh((radius-r_ff)/width_ff))
+                else
+                  tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
+                endif
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*real( &
                   cmplx(coef1(j),coef2(j))*tmpx*fx(l1:l2)*fy(m)*fz(n))
               enddo
