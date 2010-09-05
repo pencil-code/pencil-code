@@ -75,7 +75,7 @@ module Interstellar
 !
 !  'Current' SN Explosion site parameters
 !
-  integer, parameter :: mSNR = 20
+  integer, parameter :: mSNR = 120
   integer :: nSNR = 0
   type (SNRemnant), dimension(mSNR) :: SNRs
   integer, dimension(mSNR) :: SNR_index
@@ -141,7 +141,8 @@ module Interstellar
   real :: uu_sedov_max=0.
   real :: TT_SN_min=impossible
   real :: TT_cutoff_cgs=100.
-  real :: TT_cutoff=impossible
+  real :: TT_cutoff=impossible, TT_cutoff1=impossible
+  logical :: lTT_cutoff=.false.
 !
 !  SNe placement limitations (for code stability)
 !
@@ -353,7 +354,8 @@ module Interstellar
       lSN_velocity, lSN_eth, lSN_ecr, lSN_mass, mass_movement, uu_sedov_max, &
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
-      SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, T0hs
+      SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, &
+      T0hs, TT_SN_max, rho_SN_min
 !
 ! run parameters
 !
@@ -371,7 +373,8 @@ module Interstellar
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
-      heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux
+      heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
+      lTT_cutoff, TT_cutoff 
 !
   contains
 !
@@ -689,10 +692,12 @@ module Interstellar
                         0.5,         &
                         tiny(0.) /)
         ncool=10
-
+!
+!  As above but with higher minimum temperature 90K instead of 10K
+!
       else if (cooling_select == 'SS-Slyzr') then
         if (lroot) print*,'initialize_interstellar: SS-Slyzr cooling fct'
-        coolT_cgs = (/  1.D-2,       &
+        coolT_cgs = (/  90.D0,       &
                         141.D0,      &
                         313.D0,      &
                         6102.D0,     &
@@ -752,6 +757,7 @@ module Interstellar
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         TT_SN_min=TT_SN_min_cgs / unit_temperature
         TT_cutoff=TT_cutoff_cgs / unit_temperature
+        TT_cutoff1=1.0/TT_cutoff
         if (SNI_area_rate==impossible) &
             SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
         if (SNII_area_rate==impossible) &
@@ -777,9 +783,9 @@ module Interstellar
             ampl_SN=0.5*ampl_SN
             kampl_SN=ampl_SN
           endif
+        endif
         if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-        endif
         if (lroot) &
             print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
             ampl_SN, kampl_SN
@@ -803,8 +809,8 @@ module Interstellar
       if (ladd_massflux) addflux_dim1=1./(Lxyz(1)*Lxyz(2)*Lxyz(3))
 !
       if (heating_select == 'Gressel-hs') then
-        call gressel_hs(f,zrho,T0hs)
-        call gressel_interstellar(f,heat_gressel,zrho,T0hs,lstarting)
+        call gressel_hs(f,zrho)
+        call gressel_interstellar(f,heat_gressel,zrho,lstarting)
       endif
 !
 !  Cooling cutoff in shocks
@@ -854,7 +860,8 @@ module Interstellar
 !  Write unit_Lambda to pc_constants file
 !
       if (lroot) then
-        print*,"initialize_interstellar: t_next_SNI=",t_next_SNI
+        print*,"initialize_interstellar: t_next_SNI, t_next_SNII=", &
+            t_next_SNI, t_next_SNII
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,'(a,1pd26.16)') 'unit_Lambda=',unit_Lambda
         close (1)
@@ -1234,12 +1241,17 @@ module Interstellar
 !
       if (nSNR==0) then
 !
+!  05-sep-10/fred 
+!  NB The applied net heating/cooling: (heat-cool)/temp is stored in 
+!  icooling2. The radiative cooling rho*Lambda is stored in icooling.
+!  Both are diagnostic.
+!
         if (ltemperature) then
-          f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*gamma
+          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma
         elseif (pretend_lnTT) then
-          f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*gamma
+          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma
         else
-          f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)
+          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)
         endif
       else
         damp_profile=1.
@@ -1254,11 +1266,11 @@ module Interstellar
           endif
         enddo
         if (ltemperature) then
-          f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
+          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
         elseif (pretend_lnTT) then
-          f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
+          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*gamma*damp_profile
         else
-          f(l1:l2,m,n,icooling)=exp(-lnTT)*(heat-cool)*damp_profile
+          f(l1:l2,m,n,icooling2)=exp(-lnTT)*(heat-cool)*damp_profile
         endif
       endif
     enddo
@@ -1267,7 +1279,7 @@ module Interstellar
 !
     endsubroutine interstellar_before_boundary
 !*****************************************************************************
-    subroutine gressel_hs(f,zrho,T0hs)
+    subroutine gressel_hs(f,zrho)
 !
 !  This routine calculates a vertical profile for density for an appropriate
 !  isothermal entropy designed to balance the vertical 'Ferriere' gravity.
@@ -1287,7 +1299,6 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
-      real, intent(in) :: T0hs
 !
       real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
       real :: muhs
@@ -1347,7 +1358,7 @@ module Interstellar
 !
     endsubroutine gressel_hs
 !*****************************************************************************
-    subroutine gressel_interstellar(f,zheat,zrho,T0hs,lstarting)
+    subroutine gressel_interstellar(f,zheat,zrho,lstarting)
 !
 !  This routine calculates a vertical profile for uv-heating designed to
 !  satisfy an initial condition with heating and cooling balanced for an 
@@ -1367,7 +1378,6 @@ module Interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mz), intent(in) :: zrho
-      real, intent(in) :: T0hs
       real, dimension(mz), intent(out) :: zheat
       logical, intent(in) :: lstarting
 !
@@ -1414,6 +1424,7 @@ module Interstellar
 !  19-nov-02/graeme: adapted from calc_heat_cool
 !  10-aug-03/axel: TT is used as input
 !   3-apr-06/axel: add ltemperature switch
+!  05-sep-10/fred: added TT_cutoff option, comments, revised diagnostics.
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma_inv
@@ -1432,34 +1443,57 @@ module Interstellar
 !  Identifier
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
-!  
+!
+!  05-sep-10/fred
+!  NB redistributing the applied cooling/heating using smooth_kernel or 
+!  despike was found to add to the thermal instability at low temperatures.
+!  Since heatcool is divided by TT for the entropy equation, heatcool is 
+!  shared with neighbours with low temperatures ~0.001 they are rapidly 
+!  amplified producing both superfluids and hyper-heating to crash the code.
+!  I therefore recommend not using them at all.
+!
       if (lcooltime_smooth) then
-        call smooth_kernel(f,icooling,heatcool)
         call calc_heat(heat,p%lnTT)
         call calc_cool_func(cool,p%lnTT,p%lnrho)
+        f(l1:l2,m,n,icooling)=cool
+        call smooth_kernel(f,icooling,cool)
       elseif (lcooltime_despike) then
-        call despike(f,icooling,heatcool,cooltime_despike_factor)
         call calc_heat(heat,p%lnTT)
         call calc_cool_func(cool,p%lnTT,p%lnrho)
+        f(l1:l2,m,n,icooling)=cool
+        call despike(f,icooling,cool,cooltime_despike_factor)
       else
         call calc_cool_func(cool,p%lnTT,p%lnrho)
 !  
 !  Possibility of temporal smoothing of cooling function
 !  
         if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
-        f(l1:l2,m,n,icooling)=cool
 !  
         call calc_heat(heat,p%lnTT)
+      endif
 !
-!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
-!  so therefore we now need to multiply by TT1.
+!  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
+!  we now need to multiply by TT1. At very low temperatures this becomes 
+!  unstable, so limit denominator to TT_cutoff to prevent unresolvable
+!  supercooling or heating spikes. 
+!  This may have been caused by the use of smoothing and despiking discussed
+!  above, however am leaving this switch as an option until a long enough run
+!  has demonstrated whether or not it is required. Fred
 !
-        if (ltemperature) then
-          heatcool=p%TT1*(heat-cool)*gamma
-        elseif (pretend_lnTT) then
-          heatcool=p%TT1*(heat-cool)*gamma
-        else
-          heatcool=p%TT1*(heat-cool)
+      if (ltemperature) then
+        heatcool=p%TT1*(heat-cool)*gamma
+        if (lTT_cutoff) then
+          where (p%TT1>TT_cutoff1) heatcool=TT_cutoff1*(heat-cool)*gamma
+        endif
+      elseif (pretend_lnTT) then
+        heatcool=p%TT1*(heat-cool)*gamma
+        if (lTT_cutoff) then
+          where (p%TT1>TT_cutoff1) heatcool=TT_cutoff1*(heat-cool)*gamma
+        endif
+      else
+        heatcool=p%TT1*(heat-cool)
+        if (lTT_cutoff) then
+          where (p%TT1>TT_cutoff1) heatcool=TT_cutoff1*(heat-cool)
         endif
       endif
 !
@@ -1478,7 +1512,9 @@ module Interstellar
         endif
       enddo
 !
-!  Prevent unresolved heating/cooling in shocks.
+!  Prevent unresolved heating/cooling in shocks. This is recommended as 
+!  early cooling in the shock prematurely inhibits the strength of the
+!  shock wave and also drives down the timestep. Fred 
 !
       if (lheatcool_shock_cutoff) then
         damp_profile = 0.5 * (1.-tanh((p%shock-heatcool_shock_cutoff) * &
@@ -1489,7 +1525,9 @@ module Interstellar
       endif
 !
 !  Save result in diagnostic aux variable
+!  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
+      f(l1:l2,m,n,icooling)=cool
       f(l1:l2,m,n,icooling2)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
@@ -1500,13 +1538,15 @@ module Interstellar
         heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
       endif
 !  
-!    Prepare diagnostic output
+!  Prepare diagnostic output
+!  Since these variables are divided by Temp when applied it is useful to
+!  monitor the actual applied values for diagnostics so TT1 included.
 !  
       if (ldiagnos) then
         if (idiag_Hmax/=0) &
-          call max_mn_name(heat,idiag_Hmax)
+          call max_mn_name(p%TT1*heat,idiag_Hmax)
         if (idiag_taucmin/=0) &
-          call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)
+          call max_mn_name(p%TT1*cool/p%ee,idiag_taucmin,lreciprocal=.true.)
         if (idiag_Lamm/=0) &
           call sum_mn_name(cool,idiag_Lamm)
         if (idiag_nrhom/=0) &
@@ -1514,16 +1554,16 @@ module Interstellar
 !  --       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)
 !  AB: the factor rho is already included in cool, so cool=rho*Lambda
         if (idiag_rhoLm/=0) &
-          call sum_mn_name(p%rho*cool,idiag_rhoLm)
+          call sum_mn_name(p%TT1*cool,idiag_rhoLm)
         if (idiag_Gamm/=0) &
-          call sum_mn_name(p%rho*heat,idiag_Gamm)
+          call sum_mn_name(p%TT1*heat,idiag_Gamm)
       endif
 !  
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !  
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,abs(heatcool)/(p%ee*cdt_tauc))
+        dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
 !        dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
 !        dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
         where (heatcool>0.0) Hmax=Hmax+heatcool
