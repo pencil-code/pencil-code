@@ -1,4 +1,4 @@
-! $Id$
+! mId: entropy.f90 14965 2010-09-01 10:33:23Z fred.gent.ncl $
 !
 !  This module takes care of evolving the entropy.
 !
@@ -880,7 +880,7 @@ module Entropy
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
           case('Gressel-hs')
             call gressel_entropy(f)
-            call information('init_ss', &
+            if (lroot) call information('init_ss', &
                 'Gressel hydrostatic equilibrium setup done in interstellar')
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
@@ -1813,6 +1813,10 @@ module Entropy
       real, pointer :: T0hs
       integer :: ierr
 !
+!  identifier
+!
+      if (headtt) print*,'gressel_entropy: ENTER'
+!
 !  Obtain vertical density profile and isothermal temperature from
 !  interstellar: gressel_hs
 !
@@ -1822,6 +1826,8 @@ module Entropy
       call get_shared_variable('T0hs', T0hs, ierr)
       if (ierr/=0) call fatal_error('gressel_entropy', &
           'there was a problem when getting T0hs')
+      if (lroot) print*, &
+          'gressel_entropy: zrho received from interstellar, T0hs =',T0hs 
 !
 !  Allocate density profile to f and derive entropy profile from
 !  temperature and density
@@ -2819,7 +2825,7 @@ module Entropy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 !
-      thchi=chi_th*(exp(p%lnTT))**0.5
+      thchi=max(chi_th*(exp(p%lnTT))**0.5,dxmax*0.5)
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
