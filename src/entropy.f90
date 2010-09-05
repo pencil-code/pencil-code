@@ -1,4 +1,4 @@
-! mId: entropy.f90 14965 2010-09-01 10:33:23Z fred.gent.ncl $
+! $Id$
 !
 !  This module takes care of evolving the entropy.
 !
