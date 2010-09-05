@@ -40,7 +40,7 @@ module Entropy
   real :: lnTT_left=1.0, lnTT_right=1.0, lnTT_const=0.0, TT_const=1.0
   real :: kx_lnTT=1.0, ky_lnTT=1.0, kz_lnTT=1.0
   real :: Kgperp=0.0, Kgpara=0.0
-  real :: chi=impossible, heat_uniform=0.0, difflnTT_hyper=0.0
+  real :: chi=impossible, heat_uniform=0.0
   real :: zbot=0.0, ztop=0.0
   real :: tau_heat_cor=-1.0, tau_damp_cor=-1.0, zcor=0.0, TT_cor=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
