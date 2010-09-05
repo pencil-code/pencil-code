@@ -30,7 +30,6 @@
   iheatcond='chi-therm','shock'
   chi_th=0.03,chi_shock=8.0
   lupw_ss=T
-!  thmin=0.0
 /
 &magnetic_run_pars
 !  llorentzforce=F
@@ -68,11 +67,11 @@
   ampl_SN=1.591046508 !with 50% kinetic energy
   kampl_SN=1.591046508 !with 50% kinetic energy
   mass_SN=6.303127e-8
-!  heatcool_shock_cutoff=0.75 !0.015
-!  heatcool_shock_cutoff_rate=0.125
-  cooling_select='SS-Slyzr'
+  heatcool_shock_cutoff=0.025
+  heatcool_shock_cutoff_rate=0.0125
+  cooling_select='SS-Slyz'
   heating_select='Gressel-hs'
-  lcooltime_smooth=T
+  lcooltime_smooth=F
 !  ladd_massflux=T
   SNR_damping=0.0 !any non-zero value ldamping=T value not used
 /
