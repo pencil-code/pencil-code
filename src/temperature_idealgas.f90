@@ -37,12 +37,10 @@ module Entropy
   include 'entropy.h'
 !
   real :: radius_lnTT=0.1, ampl_lnTT=0.0, widthlnTT=2*epsi
-  real :: lnTT_left=1.0, lnTT_right=1.0, lnTT_const=0.0, TT_const=1.0
-  real :: kx_lnTT=1.0, ky_lnTT=1.0, kz_lnTT=1.0
+  real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
-  real :: chi=impossible, heat_uniform=0.0
+  real :: chi=impossible
   real :: zbot=0.0, ztop=0.0
-  real :: tau_heat_cor=-1.0, tau_damp_cor=-1.0, zcor=0.0, TT_cor=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
@@ -68,16 +66,16 @@ module Entropy
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_left, lnTT_right, &
-      lnTT_const, TT_const, kx_lnTT, ky_lnTT, kz_lnTT, center1_x, center1_y, &
+      initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, &
+      lnTT_const, TT_const, center1_x, center1_y, &
       center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT, lpressuregradient_gas, ladvection_temperature, heat_uniform,&
-      chi, iheatcond, tau_heat_cor, tau_damp_cor, zcor, TT_cor, &
+      lupw_lnTT, lpressuregradient_gas, ladvection_temperature, &
+      chi, iheatcond, &
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
