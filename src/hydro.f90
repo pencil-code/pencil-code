@@ -1495,10 +1495,12 @@ module Hydro
 !  If lffree switched is used, we need to turn off the u.gradu term
 !  to ensure momentum conservation.
 !
-        if (lffree) then
-          do j=1,3
-            p%ugu(:,j)=p%ugu(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
-          enddo
+        if (ldensity) then
+          if (lffree) then
+            do j=1,3
+              p%ugu(:,j)=p%ugu(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+            enddo
+          endif
         endif
       endif
 ! ugu2
