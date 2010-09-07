@@ -641,6 +641,29 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
+    subroutine read_special_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=special_init_pars,ERR=99)
+      endif
+!
+ 99    return
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=special_init_pars)
+!
+    endsubroutine write_special_init_pars
+!***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
