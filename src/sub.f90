@@ -1911,7 +1911,7 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
-    subroutine gij_etc(f,iref,aa,aij,Bij,del2,graddiv)
+    subroutine gij_etc(f,iref,aa,aij,bij,del2,graddiv)
 !
 !  Calculate B_i,j = eps_ikl A_l,jk and A_l,kk.
 !
