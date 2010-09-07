@@ -728,7 +728,7 @@ module Hydro
           if (lroot) print*,'init_uu: zero velocity'
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
-        case ('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
+        case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
         case ('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu)
         case ('ortho')
           do ix=l1,l2;do iy=m1,m2;do iz=n1,n2
