@@ -306,6 +306,7 @@ module Magnetic
   integer :: idiag_axm=0        ! DIAG_DOC:
   integer :: idiag_aym=0        ! DIAG_DOC:
   integer :: idiag_azm=0        ! DIAG_DOC:
+  integer :: idiag_a2m=0        ! DIAG_DOC:
   integer :: idiag_arms=0       ! DIAG_DOC:
   integer :: idiag_amax=0       ! DIAG_DOC:
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
@@ -999,6 +1000,16 @@ module Magnetic
         call init_aa(f)
       endif
 !
+!  Break if Galilean-invariant advection (fargo) is used without
+!  the advective gauge (only in run-time)
+!
+      if (.not.lstarting) then 
+        if (lfargo_advection.and..not.ladvective_gauge) &
+             call fatal_error('initialize_magnetic',&
+             'For fargo advecction you need the advective gauge. '//&
+             'You may want to switch ladvection_gauge=T in magnetic_run_pars')
+      endif
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_magnetic
@@ -1410,7 +1421,7 @@ module Magnetic
           idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
           idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_aa)=.true.
-      if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
+      if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
           .or. idiag_abmz/=0 .or. idiag_abrms/=0 &
           .or. idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
@@ -1514,108 +1525,138 @@ module Magnetic
         lpencil_in(i_cosjb)=.true.
         lpencil_in(i_jxb)=.true.
       endif
+!
       if (lpencil_in(i_cosjb)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_j2)=.true.
         lpencil_in(i_jb)=.true.
       endif
+!
       if (lpencil_in(i_a2)) lpencil_in(i_aa)=.true.
+!
       if (lpencil_in(i_ab)) then
         lpencil_in(i_aa)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_ua)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_aa)=.true.
       endif
+!
       if (lpencil_in(i_va2)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_rho1)=.true.
       endif
+!
       if (lpencil_in(i_etava)) lpencil_in(i_va2)=.true.
       if (lpencil_in(i_etaj) .or. lpencil_in(i_etaj2) .or. lpencil_in(i_etajrho)) then
         lpencil_in(i_j2)=.true.
         lpencil_in(i_rho1)=.true.
       endif
+!
       if (lpencil_in(i_j2)) lpencil_in(i_jj)=.true.
+!
       if (lpencil_in(i_uxj)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_jj)=.true.
       endif
+!
       if (lpencil_in(i_jb)) then
         lpencil_in(i_bb)=.true.
         lpencil_in(i_jj)=.true.
       endif
+!
       if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
+!
       if (lpencil_in(i_jxbr)) then
         lpencil_in(i_jxb)=.true.
         lpencil_in(i_rho1)=.true.
       endif
+!
       if (lpencil_in(i_jxb)) then
         lpencil_in(i_jj)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_uxb2)) lpencil_in(i_uxb)=.true.
+!
       if (lpencil_in(i_uxb)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_cosub)) then
         lpencil_in(i_ub)=.true.
         lpencil_in(i_u2)=.true.
         lpencil_in(i_b2)=.true.
       endif
+!
       if (lpencil_in(i_ub)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_beta)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_pp)=.true.
       endif
+!
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
+!
       if (lpencil_in(i_bb)) then
         if (.not.lcartesian_coords) lpencil_in(i_aa)=.true.
         lpencil_in(i_aij)=.true.
       endif
+!
       if (lpencil_in(i_djuidjbi)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_bij)=.true.
       endif
+!
       if (lpencil_in(i_jo)) then
         lpencil_in(i_oo)=.true.
         lpencil_in(i_jj)=.true.
       endif
+!
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_jxb)=.true.
       endif
+!
       if (lpencil_in(i_oxu)) then
         lpencil_in(i_oo)=.true.
         lpencil_in(i_uu)=.true.
       endif
+!
       if (lpencil_in(i_oxuxb)) then
         lpencil_in(i_oxu)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_jxbxb)) then
         lpencil_in(i_jxb)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_jxbrxb)) then
         lpencil_in(i_jxbr)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_glnrhoxb)) then
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_bb)=.true.
       endif
+!
       if (lpencil_in(i_oxj)) then
         lpencil_in(i_oo)=.true.
         lpencil_in(i_jj)=.true.
       endif
+!
       if (lpencil_in(i_jij)) lpencil_in(i_bij)=.true.
+
       if (lpencil_in(i_sj)) then
         lpencil_in(i_sij)=.true.
         lpencil_in(i_jij)=.true.
@@ -1767,12 +1808,13 @@ module Magnetic
         call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
       endif
 ! uga
-! DM : this requires later attention
       if (lpencil(i_uga)) then
-        if (.not.lcartesian_coords) then
-          call fatal_error("calc_pencils_magnetic","u_dot_grad A not implemented for non-cartesian coordinates")
-        else
+        if (.not.lfargo_advection) then
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
+        else 
+          ! Fargo (Galilean invariant advection) only works with the 
+          ! advective gauge, but the term will be added in special/fargo.f90
+          p%uga=0.
         endif
       endif
 !
@@ -2765,6 +2807,7 @@ module Magnetic
         if (idiag_axm/=0) call sum_mn_name(p%aa(:,1),idiag_axm)
         if (idiag_aym/=0) call sum_mn_name(p%aa(:,2),idiag_aym)
         if (idiag_azm/=0) call sum_mn_name(p%aa(:,3),idiag_azm)
+        if (idiag_a2m/=0) call sum_mn_name(p%a2,idiag_a2m)
         if (idiag_arms/=0) call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
         if (idiag_amax/=0) call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
 !
@@ -5909,7 +5952,7 @@ module Magnetic
         idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
-        idiag_arms=0; idiag_amax=0; idiag_beta1m=0
+        idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
@@ -6027,6 +6070,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'axm',idiag_axm)
         call parse_name(iname,cname(iname),cform(iname),'aym',idiag_aym)
         call parse_name(iname,cname(iname),cform(iname),'azm',idiag_azm)
+        call parse_name(iname,cname(iname),cform(iname),'a2m',idiag_a2m)
         call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
         call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
