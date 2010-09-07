@@ -53,7 +53,7 @@ module Special
 ! Global arrays
   real, dimension (nx,nz) :: uu_average
 ! "pencils" 
-  real, dimension (nx,3) :: uuadvec_gu
+  real, dimension (nx,3) :: uuadvec_gu,uuadvec_ga
   real, dimension (nx) :: uuadvec_grho,uuadvec_glnrho
   real, dimension (nx) :: uu_residual
   real :: dummy
@@ -63,7 +63,6 @@ module Special
   namelist /special_run_pars/ dummy
 !
   integer :: idiag_nshift=0
-  integer :: idiag_dtuf=0
 !
   contains
 
@@ -116,22 +115,6 @@ module Special
         call stop_it("")
       endif
 !
-!  Not implemented for 3D runs
-!
-      if (nzgrid/=1) then
-        print*,""
-        print*,"You are using nzgrid/=1."
-        print*,"By now the fargo algorithm is only"
-        print*,"implemented for 2D runs. Stop and check"
-        print*,""
-        call stop_it("")
-      endif
-!
-!  Not implemented for the induction equation
-!
-      if (lmagnetic) call stop_it("fargo advection not implemented "//&
-          "for the induction equation")
-!
 !  Not implemented for the energy equation either
 !
       if (lentropy.or.ltemperature) call stop_it("fargo advection not "//&
@@ -154,6 +137,8 @@ module Special
 !
       intent(inout) :: f
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -163,6 +148,7 @@ module Special
 !  18-07-06/tony: coded
 !
       lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_aa)=.true.
 !
 !  For continuity equation
 !
@@ -177,6 +163,10 @@ module Special
 !
       lpenc_requested(i_uij)=.true.
 !
+!  For potential velocity
+!
+      lpenc_requested(i_aij)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
@@ -187,16 +177,16 @@ module Special
       real, dimension(nx,3) :: uu_advec,tmp2
       real, dimension(nx) :: tmp
       type (pencil_case) :: p
-      integer :: j,nn
+      integer :: j,nnghost
 !
-      nn=n-nghost
+      nnghost=n-nghost
 !
 ! Advect by the relative velocity 
 !
 
-      uu_residual=p%uu(:,2)-uu_average(:,nn)
+      uu_residual=p%uu(:,2)-uu_average(:,nnghost)
 !
-! The other velocities are the untouched
+! Advect by the original radial and vertical, but residual azimuthal
 !
       uu_advec(:,1)=p%uu(:,1)
       uu_advec(:,2)=uu_residual
@@ -243,7 +233,19 @@ module Special
       tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
 !
       uuadvec_gu=tmp2
+!
+      do j=1,3
+        call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
+        tmp2(:,j)=tmp
+      enddo
+      tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
+      tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
+!
+      uuadvec_ga=tmp2
+
 !      
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -267,20 +269,20 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df     
       type (pencil_case) :: p
-      integer :: nn
-      real, dimension (nx) :: nshift
+      integer :: nnghost
+      real, dimension (nx) :: nshift,phidot
 !
       intent(in) :: f,p
       intent(inout) :: df
 !
-!  Estimate the shift by nshift=uavg*dt/dy
+!  Estimate the shift by nshift=phidot*dt/dy
 !  This is just an approximation, since uavg
 !  changes from one subtimestep to another, and
 !  the correct cumulative shift is 
 !
 !    nshift=0.
 !    do itsub=1,3
-!       nshift=nshift+uavg*dt_sub/dy
+!       nshift=nshift+phidot*dt_sub/dy
 !    enddo
 !
 !  But it also works fairly well this way, since uavg
@@ -288,8 +290,9 @@ module Special
 !
       if (ldiagnos) then 
         if (idiag_nshift/=0) then
-          nn=n-nghost
-          nshift=uu_average(:,nn)*dt*dy_1(m) 
+          nnghost=n-nghost
+          phidot=uu_average(:,nnghost)*rcyl_mn1
+          nshift=phidot*dt*dy_1(m) 
           call max_mn_name(nshift,idiag_nshift)
         endif
       endif
@@ -359,17 +362,14 @@ endsubroutine read_special_run_pars
 !
       if (lreset) then 
         idiag_nshift=0
-        idiag_dtuf=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
-        call parse_name(iname,cname(iname),cform(iname),'dtuf',idiag_dtuf)
       enddo
 !
       if (lwr) then
         write(3,*) 'i_nshift=',idiag_nshift
-        write(3,*) 'i_nshift=',idiag_dtuf
       endif
 !
     endsubroutine rprint_special
@@ -401,6 +401,8 @@ endsubroutine read_special_run_pars
             uuadvec_glnrho - p%divu
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -412,7 +414,7 @@ endsubroutine read_special_run_pars
 !   others may be calculated directly from the f array
 !
       use Cdata
-      use Sub
+      use Diagnostics
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -431,10 +433,7 @@ endsubroutine read_special_run_pars
                  abs(p%uu(:,3))  *dz_1(  n  )
       endif
 !
-      if (ldiagnos) then 
-        if (idiag_dtuf/=0) &
-            call max_mn_name(advec_uu/cdt,idiag_dtuf,l_dt=.true.)
-      endif
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -454,6 +453,12 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_ga
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine special_calc_magnetic
 !***********************************************************************
     subroutine special_calc_entropy(f,df,p)
@@ -472,6 +477,7 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
@@ -514,7 +520,7 @@ endsubroutine read_special_run_pars
       real, dimension (nx,nz) :: fsum_tmp
       real, dimension (nx) :: uphi
       real :: fac
-      integer :: n,m,nnghost
+      integer :: nnghost
 !
 !  Pre-calculate the average large scale speed of the flow
 !
@@ -523,7 +529,7 @@ endsubroutine read_special_run_pars
 !
       do m=m1,m2
       do n=n1,n2
-        nnghost=n-n1+1
+        nnghost=n-nghost
         uphi=f(l1:l2,m,n,iuy)
         fsum_tmp(:,nnghost)=fsum_tmp(:,nnghost)+fac*uphi
       enddo
@@ -534,7 +540,7 @@ endsubroutine read_special_run_pars
 ! --only relevant for 3D, but is here for generality
 !
       call mpiallreduce_sum(fsum_tmp,uu_average,&
-          (/nx,nz/),LSUMY=.true.)
+          (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -549,35 +555,38 @@ endsubroutine read_special_run_pars
 !  06-jul-06/tony: coded
 !
       use Sub
-      use Fourier, only: fourier_shift_y
+      use Fourier, only: fourier_shift_y,fourier_shift_xy_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,ny,nz) :: tmp
+      real, dimension (nx,ny) :: tmp
       real :: dt_sub
-      real, dimension (nx) :: uua
-
-      integer :: ivar
+      real, dimension (nx) :: phidot
 !
-!  Not yet implemented for nzgrid/=1, so this 
-!  hardcoded uua=uu_average(:,1) will do no harm.
-!  In the (near) future, it has to be generalized so that 
-!  fourier_shift_y accepts (nx,nz) arrays. 
+      integer :: ivar,nnghost
 !
-      uua=uu_average(:,1)
+!  Pencil uses linear velocity. Fargo will shift based on 
+!  angular velocity. Get phidot from uphi. 
 !
-      do ivar=1,mvar
-        tmp=f(l1:l2,m1:m2,n1:n2,ivar)
-        call fourier_shift_y(tmp,uua*dt_sub)
-        f(l1:l2,m1:m2,n1:n2,ivar)=tmp
+      do n=n1,n2
+        nnghost=n-n1+1
+        phidot=uu_average(:,nnghost)*rcyl_mn1
+!
+        do ivar=1,mvar
+!
+          tmp=f(l1:l2,m1:m2,n,ivar)
+          call fourier_shift_xy_y(tmp,phidot*dt_sub)
+          f(l1:l2,m1:m2,n,ivar)=tmp
 !
 !  Also shift df, unless we are at the last subtimestep
 !
-        if (.not.llast) then
-          tmp=df(l1:l2,m1:m2,n1:n2,ivar)
-          call fourier_shift_y(tmp,uua*dt_sub)
-          df(l1:l2,m1:m2,n1:n2,ivar)=tmp
-        endif
+          if (.not.llast) then
+            tmp=df(l1:l2,m1:m2,n,ivar)
+            call fourier_shift_xy_y(tmp,phidot*dt_sub)
+            df(l1:l2,m1:m2,n,ivar)=tmp
+          endif
+        enddo
+!
       enddo
 !
     endsubroutine special_after_timestep
