@@ -2801,7 +2801,7 @@ module Chemistry
         if (found_new_reaction) then
           ChemInpLine=ChemInpLine_add
         else
-          read(file_id,'(80A)',end=1012) ChemInpLine(1:80)
+          read(file_id,'(80A)',end=1012) ChemInpLine
         endif
         found_new_reaction=.false.
 !
@@ -2896,7 +2896,7 @@ module Chemistry
 !
 !  reading of the additional data for (+M) case
 !
-100               read(file_id,'(80A)',end=1012) ChemInpLine_add(1:80)
+100               read(file_id,'(80A)',end=1012) ChemInpLine_add
                   if (ChemInpLine_add(1:1) == ' ') then
 !
 !
@@ -3160,7 +3160,7 @@ module Chemistry
       logical :: found_specie
 !
       if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
-          .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" ))then
+          .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" )) then
         StartSpecie=verify(ChemInpLine(StartInd:StopInd),&
             "1234567890")+StartInd-1
         call find_species_index(ChemInpLine(StartSpecie:StopInd),&
@@ -3171,7 +3171,7 @@ module Chemistry
           print*,'ind_glob,ind_chem=',ind_glob,ind_chem
 !          if (.not. lpencil_check_small) then
 !          if (.not. lpencil_check) then
-            call stop_it("build_stoich_matrix:Did not find specie!")
+            call stop_it("build_stoich_matrix: Did not find species!")
 !          endif
 !          endif
         endif
@@ -4239,7 +4239,7 @@ module Chemistry
 !
       dataloop: do
 !
-        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine(1:80)
+        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
         if (iostat < 0) exit dataloop
         emptyFile=.false.
         StartInd_1=1; StopInd_1=0
