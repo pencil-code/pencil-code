@@ -133,9 +133,9 @@ module Interstellar
 !
 !  22-jan-10/fred:
 !  With lSN_velocity kinetic energy lower limit no longer required for shock
-!  speed. 
+!  speed.
 !  10-aug-10/fred:
-!  As per joung et al apj653 2005 min temp 1e6 to avoid excess radiative 
+!  As per joung et al apj653 2005 min temp 1e6 to avoid excess radiative
 !  energy losses in early stages.
 !
   real :: uu_sedov_max=0.
@@ -175,7 +175,7 @@ module Interstellar
   real, parameter :: frac_converted=0.02, frac_heavy=0.10
 !  real, parameter :: tosolarMkpc3=1.483e7
   real :: cloud_rho=impossible, cloud_TT=impossible
-  real :: cloud_tau=impossible  
+  real :: cloud_tau=impossible
   real :: mass_SN_progenitor=impossible
 !
 !  Total SNe energy
@@ -246,14 +246,14 @@ module Interstellar
   real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
 !
 !  04-jan-10/fred:
-!  Amended cool dim from 7 to 11 to accomodate SS-Slyz dimension. 
+!  Amended cool dim from 7 to 11 to accomodate SS-Slyz dimension.
 !  Appended null last term to all arrays for RB and SS cooling
 !
   double precision, dimension(11) :: coolT_cgs, coolH_cgs
   real, dimension(11) :: coolB, lncoolH, lncoolT
   integer :: ncool
 !
-!  TT & z-dependent uv-heating profile 
+!  TT & z-dependent uv-heating profile
 !
   real, dimension(mz) :: heat_gressel, zrho
 !
@@ -303,7 +303,7 @@ module Interstellar
   logical :: lforce_locate_SNI=.false.
   logical :: uniform_zdist_SNI = .false.
 !
-!  Adjust SNR%radius inversely with density 
+!  Adjust SNR%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
 !
@@ -374,7 +374,7 @@ module Interstellar
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      lTT_cutoff, TT_cutoff 
+      lTT_cutoff, TT_cutoff
 !
   contains
 !
@@ -494,7 +494,7 @@ module Interstellar
                         tiny(0.)  /)
         ncool = 6
 !
-!  04-jan-10/fred: 
+!  04-jan-10/fred:
 !  Reset above to original RB parameters. Altered coolB(5) and coolT(5,6) in
 !  RBr to ensure continuity and increase cooling at high temperatures later in
 !  diffuse remnant cores.
@@ -592,7 +592,7 @@ module Interstellar
         coolH_cgs = (/  3.70D16,     &
                         9.46D18,     &
                         1.185D20,    &
-                        2.00D8,      &    
+                        2.00D8,      &
                         7.96D29,     &
                         tiny(0D0),   &
                         tiny(0D0),   &
@@ -776,10 +776,10 @@ module Interstellar
         if (GammaUV==impossible) &
             GammaUV=GammaUV_cgs * real(unit_length/unit_velocity**3)
         if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
-        if (kampl_SN==impossible) then 
+        if (kampl_SN==impossible) then
           if (.not.lSN_velocity) then
             kampl_SN=0.0
-          else 
+          else
             ampl_SN=0.5*ampl_SN
             kampl_SN=ampl_SN
           endif
@@ -1241,8 +1241,8 @@ module Interstellar
 !
       if (nSNR==0) then
 !
-!  05-sep-10/fred 
-!  NB The applied net heating/cooling: (heat-cool)/temp is stored in 
+!  05-sep-10/fred
+!  NB The applied net heating/cooling: (heat-cool)/temp is stored in
 !  icooling2. The radiative cooling rho*Lambda is stored in icooling.
 !  Both are diagnostic.
 !
@@ -1284,23 +1284,23 @@ module Interstellar
 !  This routine calculates a vertical profile for density for an appropriate
 !  isothermal entropy designed to balance the vertical 'Ferriere' gravity.
 !  T0hs and rho0ts are chosen to ensure uv-heating approx 0.0147 at z=0.
-!  Initial thermal & hydrostatice equilibrium is achieved by ensuring 
+!  Initial thermal & hydrostatice equilibrium is achieved by ensuring
 !  Lambda*rho(z)=Gamma(z).
 !
 !  Requires gravz_profile='Ferriere' in gravity_simple.f90,
 !  init_lnrho & init_ss='Gressel-hs' in density & entropy.f90.
-!  Constants g_A..D from gravz_profile. 
+!  Constants g_A..D from gravz_profile.
 !
 !  22-mar-10/fred: coded
 !  12-aug-10/fred: updated
-!  
+!
       use SharedVariables, only: put_shared_variable
       use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
 !
-      real, dimension(nx) :: rho,lnrho,ss,TT,lnTT
+      real, dimension(nx) :: rho
       real :: muhs
       real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -1361,7 +1361,7 @@ module Interstellar
     subroutine gressel_interstellar(f,zheat,zrho,lstarting)
 !
 !  This routine calculates a vertical profile for uv-heating designed to
-!  satisfy an initial condition with heating and cooling balanced for an 
+!  satisfy an initial condition with heating and cooling balanced for an
 !  isothermal hydrostatic equilibrium.
 !  Requires: gravz_profile='Ferriere' in gravity_simple.f90
 !            initlnrho='Gressel-hs' in density.f90
@@ -1445,10 +1445,10 @@ module Interstellar
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
 !  05-sep-10/fred
-!  NB redistributing the applied cooling/heating using smooth_kernel or 
+!  NB redistributing the applied cooling/heating using smooth_kernel or
 !  despike was found to add to the thermal instability at low temperatures.
-!  Since heatcool is divided by TT for the entropy equation, heatcool is 
-!  shared with neighbours with low temperatures ~0.001 they are rapidly 
+!  Since heatcool is divided by TT for the entropy equation, heatcool is
+!  shared with neighbours with low temperatures ~0.001 they are rapidly
 !  amplified producing both superfluids and hyper-heating to crash the code.
 !  I therefore recommend not using them at all.
 !
@@ -1464,18 +1464,18 @@ module Interstellar
         call despike(f,icooling,cool,cooltime_despike_factor)
       else
         call calc_cool_func(cool,p%lnTT,p%lnrho)
-!  
+!
 !  Possibility of temporal smoothing of cooling function
-!  
+!
         if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
-!  
+!
         call calc_heat(heat,p%lnTT)
       endif
 !
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
-!  we now need to multiply by TT1. At very low temperatures this becomes 
+!  we now need to multiply by TT1. At very low temperatures this becomes
 !  unstable, so limit denominator to TT_cutoff to prevent unresolvable
-!  supercooling or heating spikes. 
+!  supercooling or heating spikes.
 !  This may have been caused by the use of smoothing and despiking discussed
 !  above, however am leaving this switch as an option until a long enough run
 !  has demonstrated whether or not it is required. Fred
@@ -1512,9 +1512,9 @@ module Interstellar
         endif
       enddo
 !
-!  Prevent unresolved heating/cooling in shocks. This is recommended as 
+!  Prevent unresolved heating/cooling in shocks. This is recommended as
 !  early cooling in the shock prematurely inhibits the strength of the
-!  shock wave and also drives down the timestep. Fred 
+!  shock wave and also drives down the timestep. Fred
 !
       if (lheatcool_shock_cutoff) then
         damp_profile = 0.5 * (1.-tanh((p%shock-heatcool_shock_cutoff) * &
@@ -1537,11 +1537,11 @@ module Interstellar
         heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
         heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
       endif
-!  
+!
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
 !  monitor the actual applied values for diagnostics so TT1 included.
-!  
+!
       if (ldiagnos) then
         if (idiag_Hmax/=0) &
           call max_mn_name(p%TT1*heat,idiag_Hmax)
@@ -1558,10 +1558,10 @@ module Interstellar
         if (idiag_Gamm/=0) &
           call sum_mn_name(p%TT1*heat,idiag_Gamm)
       endif
-!  
+!
 !  Limit timestep by the cooling time (having subtracted any heating)
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
-!  
+!
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
 !        dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
@@ -1653,7 +1653,7 @@ module Interstellar
 !
 !  Only allow SNII if no SNI this step (may not be worth keeping).
 !
-      logical :: l_SNI=.false.  
+      logical :: l_SNI=.false.
 !
       intent(inout) :: f
 !
@@ -1733,7 +1733,7 @@ module Interstellar
 !
         call free_SNR(iSNR)
 !
-!  Reset ierr or else explode_SN may terminate erroneously on subsequent 
+!  Reset ierr or else explode_SN may terminate erroneously on subsequent
 !  timesteps never to be reset.
 !
         ierr=iEXPLOSION_OK
@@ -1769,7 +1769,7 @@ module Interstellar
       real, dimension(1) :: franSN
 !
 !  Pre-determine time for next SNII
-!  Check_SNII has a selfregulating random rate governed by the parameters of 
+!  Check_SNII has a selfregulating random rate governed by the parameters of
 !  cloud mass and cloud temperature, but this is very hard to regulate to test
 !  different regimes, so this acts as a contraint on the rate.
 !
@@ -1852,11 +1852,11 @@ module Interstellar
             print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
             cloud_mass_dim,fsum1(1),dv
 !
-!  Additional contraint on the interval between SNII events. The total time 
+!  Additional contraint on the interval between SNII events. The total time
 !  elapsed since last SNII is dtsn. Probability of next event increases with
 !  time and availabilty of cold dense cloud material. Calculate probability.
 !  (SNI distribution is independent of mass distribution.)
-!  This probability is close to 1 for solar neighbourhood rate so this check 
+!  This probability is close to 1 for solar neighbourhood rate so this check
 !  could be discarded, but worth keeping as may be interesting tool.
 !
         dtsn=t-last_SN_t
@@ -2136,10 +2136,10 @@ module Interstellar
         print*,'position_SN_bycloudmass: cum_prob_byproc=',cum_prob_byproc
         print*,'position_SN_bycloudmass: cloud_mass=',cloud_mass
       endif
-!  
+!
 !  Use random number to detemine which processor SN is on.
 !  (Use root processor for rand, to ensure repeatability.)
-!  
+!
       call random_number_wrapper(franSN)
       do icpu=1,ncpus
         if (cum_prob_byproc(icpu-1)<=franSN(1) .and. &
@@ -2151,10 +2151,10 @@ module Interstellar
       if (lroot.and.ip<14) &
             print*, 'position_SN_bycloudmass: franSN(1),SNR%iproc=',&
                                               franSN(1),SNR%iproc
-!  
+!
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
-!  
+!
       call random_number_wrapper(franSN)
       if (iproc==SNR%iproc) then
         cum_mass=0.0
@@ -2176,10 +2176,10 @@ module Interstellar
                 if (ip<14) print*, &
                     'position_SN_bycloudmass: tmpsite,iproc,it =',&
                     tmpsite,iproc,it
-!  
+!
 !  Check that the same site is not being used repeatedly. If used recently
 !  skip and get a new random number next time step.
-!  
+!
                 do ipsn=1,npreSN
                   if (lroot .and. ip<14) &
                   print*,'position_by_cloudmass: preSN,iproc,it =',&
@@ -2204,14 +2204,14 @@ module Interstellar
         enddo
         enddo find_SN
       endif
-!  
+!
       call mpibcast_int(ierr,1,SNR%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
         if (ip<18) print*, &
           'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
         return
       endif
-!  
+!
       call mpibcast_int(tmpsite,4,SNR%iproc)
       SNR%l=tmpsite(1);SNR%m=tmpsite(2)
       SNR%n=tmpsite(3);SNR%iproc=tmpsite(4)
@@ -2248,7 +2248,7 @@ module Interstellar
     integer :: m,n
 !
       if (headtt) print*,'find_nearest_SNI: ENTER'
-!  
+!
       call random_number_wrapper(fran_location)
       if (iproc==SNR%iproc) then
         deltar2=nx**2+ny**2+nx**2
@@ -2257,7 +2257,7 @@ module Interstellar
           rho_test=exp(f(l1:l2,m,n,ilnrho))
           call eoscalc(f,nx,lnTT=lnTT_test)
           TT_test=exp(lnTT_test)
-!  
+!
           do ii=l1,l2
             if ((SNR%site%rho>rho_SN_min).and.(SNR%site%TT < TT_SN_max)) then
               deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
@@ -2270,10 +2270,10 @@ module Interstellar
               endif
             endif
           enddo
-!  
+!
         enddo
         enddo
-!  
+!
         if (nfound==0) then
           new_lmn=(/ nfound, SNR%l, SNR%m, SNR%n /)
         elseif (nfound>1) then
@@ -2284,7 +2284,7 @@ module Interstellar
             rho_test=exp(f(l1:l2,m,n,ilnrho))
             call eoscalc(f,nx,lnTT=lnTT_test)
             TT_test=exp(lnTT_test)
-!  
+!
             do ii=l1,l2
               if ((SNR%site%rho>rho_SN_min).and.(SNR%site%TT<TT_SN_max)) then
                 deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
@@ -2297,15 +2297,15 @@ module Interstellar
                 endif
               endif
             enddo
-!  
+!
           enddo
           enddo search_two
         endif
       endif
-!  
+!
       call mpibcast_int(new_lmn,4,SNR%iproc)
       nfound=new_lmn(1)
-!  
+!
       if (nfound>0) then
         SNR%l=new_lmn(2)
         SNR%m=new_lmn(3)
@@ -2340,16 +2340,16 @@ module Interstellar
       SNR%l=impi4(2)
       SNR%m=impi4(3)
       SNR%n=impi4(4)
-!  
+!
 !  With current SN scheme, we need rho at the SN location.
-!  
+!
       if (iproc==SNR%iproc) then
         SNR%site%lnrho=f(SNR%l,SNR%m,SNR%n,ilnrho)
-!  
+!
 !  10-Jun-10/fred:
 !  Adjust radius according to density of explosion site to concentrate energy
 !  in dense locations.
-!  
+!
         SNR%radius=width_SN
         if (lSN_scale_rad) &
             SNR%radius=(solar_mass/exp(SNR%site%lnrho)*pi_1*60.0)**(1.0/3.0)
@@ -2372,21 +2372,21 @@ module Interstellar
         SNR%y=0.
         SNR%z=0.
       endif
-!  
+!
 !    Broadcast to all processors.
-!  
+!
       fmpi5=(/ SNR%x, SNR%y, SNR%z, SNR%site%lnrho, SNR%site%lnTT, SNR%radius /)
       call mpibcast_real(fmpi5,6,SNR%iproc)
-!  
+!
       SNR%x=fmpi5(1); SNR%y=fmpi5(2); SNR%z=fmpi5(3);
       SNR%site%lnrho=fmpi5(4); SNR%site%lnTT=fmpi5(5); SNR%radius=fmpi5(6)
-!  
+!
       SNR%site%rho=exp(SNR%site%lnrho);
-!  
+!
       call eoscalc(ilnrho_lnTT,SNR%site%lnrho,SNR%site%lnTT, &
           yH=SNR%site%yH,ss=SNR%site%ss,ee=SNR%site%ee)
       SNR%site%TT=exp(SNR%site%lnTT)
-!  
+!
       if (lroot.and.ip<24) print*, &
           'share_SN_parameters: SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,=', &
           SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n
@@ -2717,7 +2717,7 @@ module Interstellar
       do m=m1,m2
         SNR%state=SNstate_waiting
 !
-!  Calculate the distances to the SN origin for all points in the current 
+!  Calculate the distances to the SN origin for all points in the current
 !  pencil and store in the dr2_SN global array.
 !
         call proximity_SN(SNR)
@@ -2823,12 +2823,12 @@ module Interstellar
         lnrho=f(l1:l2,m,n,ilnrho)
         rho_old=exp(lnrho)
         deltarho=0.
-!  
+!
         call eoscalc(f,nx,yH=yH,lnTT=lnTT,ee=ee_old)
         TT=exp(lnTT)
-!  
+!
 !  Apply perturbations.
-!  
+!
         call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%EE)
         if (lmove_mass) then
           if (mass_movement=='rho_cavity') then
@@ -2858,21 +2858,21 @@ module Interstellar
             lnrho=log(rho_old(1:nx)+deltarho(1:nx))
           endif
         endif
-!  
+!
         if (lSN_velocity) then
           uu=f(l1:l2,m,n,iux:iuz)
           call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN)
           f(l1:l2,m,n,iux:iuz)=uu+deltauu
         endif
-!  
+!
         TT=exp(lnTT)
-!  
+!
         if (lcosmicray.and.lSN_ecr) then
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + (deltaEE * frac_ecr)
         endif
-!  
+!
 !  Save changes to f-array.
-!  
+!
         f(l1:l2,m,n,ilnrho)=lnrho
         if (lSN_eth) then
           call eosperturb &
@@ -2882,7 +2882,7 @@ module Interstellar
         lnTT=log(TT)
         if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
         if (iyH/=0) f(l1:l2,m,n,iyH)=yH
-!  
+!
       enddo
       enddo
 !
@@ -3049,7 +3049,7 @@ module Interstellar
 !  Have to divide by dxmin**2 to compensate for the * dxmin**2 in the shock
 !  code. This was commented out, but needs checking as I do not currently use
 !  damping so have generally left all damping references unchanged except for
-!  format. Fred 
+!  format. Fred
 !
 !        penc=max(penc,SNR_damping* &
 !            exp(-(dr2_SN_mx/SNRs(iSNR)%radius**2))/dxmin**2)
@@ -3638,9 +3638,10 @@ module Interstellar
 !
       real :: rhomax, prec_factor
       real, dimension(1) :: sum_tmp, rmpi
-      double precision :: bflux, bmass, newmass, oldmass, rhoz, rhoz1
-      double precision, dimension(1) :: bfmpi, ompi, nmpi, &
-                                        sum_1tmp, sum_2tmp, sum_3tmp
+      double precision :: bflux, bmass, rhoz, rhoz1
+      double precision, dimension(1) :: bfmpi, sum_1tmp
+!      double precision :: newmass, oldmass
+!      double precision, dimension(1) :: ompi, nmpi, sum_2tmp, sum_3tmp
       integer :: l,m,n
 !
 !  Skip this subroutine if not selected eg before turbulent pressure settles
@@ -3707,7 +3708,7 @@ module Interstellar
       if (rhoz >= rhomax*prec_factor) then
 !
 !  For debugging purposes oldmass and newmass can be calculated and the
-!  difference compared to bmass, which should be equal. 
+!  difference compared to bmass, which should be equal.
 !
 !        oldmass=0.d0
 !        oldmass=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))*dx*dy*dz
