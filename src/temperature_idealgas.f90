@@ -122,6 +122,10 @@ module Entropy
   integer :: idiag_ethuymz=0    ! DIAG_DOC:
   integer :: idiag_ethuzmz=0    ! DIAG_DOC:
 !
+  real, dimension(nx,nz) :: pp_xz
+  real, dimension(ny,nz) :: pp_yz
+  real, dimension(nx,ny) :: pp_xy,pp_xy2,pp_xy3,pp_xy4
+!
   contains
 !***********************************************************************
     subroutine register_entropy()
@@ -504,6 +508,8 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
+      if (dvid/=0.0) lpenc_video(i_pp)=.true.
+!
       if (ldt) lpenc_requested(i_cs2)=.true.
 !
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
@@ -723,7 +729,7 @@ module Entropy
       intent(inout) :: f,p
       intent(out) :: df
 !
-! Initialization of thdiff in the declaration the 
+! Initialization of thdiff in the declaration the
 ! variable gets the SAVE attribute,
 ! so in the next call thdiff is not initialized anymore.
 !
@@ -882,6 +888,15 @@ module Entropy
       if (l2davgfirst) then
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+      endif
+!
+      if (lvideo.and.lfirst) then
+        pp_yz(m-m1+1,n-n1+1)=p%pp(ix_loc-l1+1)
+        if (m==iy_loc)  pp_xz(:,n-n1+1)=p%pp
+        if (n==iz_loc)  pp_xy(:,m-m1+1)=p%pp
+        if (n==iz2_loc) pp_xy2(:,m-m1+1)=p%pp
+        if (n==iz3_loc) pp_xy3(:,m-m1+1)=p%pp
+        if (n==iz4_loc) pp_xy4(:,m-m1+1)=p%pp
       endif
 !
     endsubroutine dss_dt
@@ -1495,6 +1510,15 @@ module Entropy
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
           if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
+          slices%ready=.true.
+!  Pressure
+        case ('pp')
+          slices%yz =pp_yz
+          slices%xz =pp_xz
+          slices%xy =pp_xy
+          slices%xy2=pp_xy2
+          if (lwrite_slice_xy3) slices%xy3=pp_xy3
+          if (lwrite_slice_xy4) slices%xy4=pp_xy4
           slices%ready=.true.
 !
       endselect
