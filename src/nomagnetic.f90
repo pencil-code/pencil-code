@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3)
-! PENCILS PROVIDED aa(3) ; diva; del2a(3), aij(3,3)
+! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3)
 !
 !***************************************************************
 module Magnetic
