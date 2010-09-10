@@ -555,11 +555,11 @@ endsubroutine read_special_run_pars
 !  06-jul-06/tony: coded
 !
       use Sub
-      use Fourier, only: fourier_shift_y,fourier_shift_xy_y
+      use Fourier, only: fft_xy_parallel
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,ny) :: tmp
+      real, dimension (nx,ny) :: a_re,a_im
       real :: dt_sub
       real, dimension (nx) :: phidot
 !
@@ -574,16 +574,18 @@ endsubroutine read_special_run_pars
 !
         do ivar=1,mvar
 !
-          tmp=f(l1:l2,m1:m2,n,ivar)
-          call fourier_shift_xy_y(tmp,phidot*dt_sub)
-          f(l1:l2,m1:m2,n,ivar)=tmp
+          a_re=f(l1:l2,m1:m2,n,ivar); a_im=0.
+          call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot*dt_sub)
+          call fft_xy_parallel(a_re,a_im,linv=.true.)          
+          f(l1:l2,m1:m2,n,ivar)=a_re
 !
 !  Also shift df, unless we are at the last subtimestep
 !
           if (.not.llast) then
-            tmp=df(l1:l2,m1:m2,n,ivar)
-            call fourier_shift_xy_y(tmp,phidot*dt_sub)
-            df(l1:l2,m1:m2,n,ivar)=tmp
+            a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
+            call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot*dt_sub)
+            call fft_xy_parallel(a_re,a_im,linv=.true.)
+            df(l1:l2,m1:m2,n,ivar)=a_re
           endif
         enddo
 !
