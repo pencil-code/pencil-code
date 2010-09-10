@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3)
-! PENCILS PROVIDED aa(3) ; diva; del2a(3)
+! PENCILS PROVIDED aa(3) ; diva; del2a(3), aij(3,3)
 !
 !***************************************************************
 module Magnetic
@@ -128,6 +128,7 @@ module Magnetic
       if (lpencil(i_b2)) p%b2=0.0
       if (lpencil(i_jxbr)) p%jxbr=0.0
       if (lpencil(i_bij)) p%bij=0.0
+      if (lpencil(i_aij)) p%aij=0.0
       if (lpencil(i_uxb)) p%uxb=0.0
 !
       call keep_compiler_quiet(f)

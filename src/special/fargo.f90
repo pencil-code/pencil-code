@@ -150,7 +150,7 @@ module Special
 !  18-07-06/tony: coded
 !
       lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_aa)=.true.
+      if (lmagnetic) lpenc_requested(i_aa)=.true.
 !
 !  For continuity equation
 !
@@ -165,9 +165,9 @@ module Special
 !
       lpenc_requested(i_uij)=.true.
 !
-!  For potential velocity
+!  For the induction equation
 !
-      lpenc_requested(i_aij)=.true.
+      if (lmagnetic) lpenc_requested(i_aij)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -236,14 +236,16 @@ module Special
 !
       uuadvec_gu=tmp2
 !
-      do j=1,3
-        call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
-        tmp2(:,j)=tmp
-      enddo
-      tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
-      tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
+      if (lmagnetic) then
+        do j=1,3
+          call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
+          tmp2(:,j)=tmp
+        enddo
+        tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
+        tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
 !
-      uuadvec_ga=tmp2
+        uuadvec_ga=tmp2
+      endif
 
 !      
       call keep_compiler_quiet(f)
