@@ -58,10 +58,11 @@ module Special
   real, dimension (nx) :: uuadvec_grho,uuadvec_glnrho
   real, dimension (nx) :: uu_residual
   real :: dummy
+  logical :: lno_radial_advection=.false.
 !
   namelist /special_init_pars/ dummy
 !   
-  namelist /special_run_pars/ dummy
+  namelist /special_run_pars/ lno_radial_advection
 !
   integer :: idiag_nshift=0
 !
@@ -586,6 +587,14 @@ endsubroutine read_special_run_pars
 !
         enddo
       enddo
+!
+!  Just for test purposes and comparison with the loop advection 
+!  in Stone, J. et al., JCP 250, 509 (2005)
+!
+      if (lno_radial_advection) then 
+        f(:,:,:,iux) = 0.
+        df(:,:,:,iux) = 0.
+      endif
 !
     endsubroutine special_after_timestep
 !********************************************************************
