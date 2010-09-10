@@ -144,3 +144,57 @@ def zder2_6th(f,dz):
     else:
         dfdz = 0.
     return dfdz
+
+def xder6_6th(f,dx):
+    if (f.ndim != 3 and f.ndim != 4):
+        print "%s dimension arrays not handled." % (str(f.ndim))
+        raise ValueError
+
+    fac=1/dx**6
+    d6fdx = N.zeros_like(f)
+    l1 = 3
+    l2 = f.shape[-1] - 3
+    if (l2 > l1):
+        d6fdx[...,l1:l2] = fac*(- 20.0* f[...,l1:l2] 
+                     + 15.0*(f[...,l1+1:l2+1]+f[...,l1-1:l2-1]) 
+                     -  6.0*(f[...,l1+2:l2+2]+f[...,l1-2:l2-2]) 
+                     +      (f[...,l1+3:l2+3]+f[...,l1-3:l2-3]))
+
+    return d6fdx
+
+
+def yder6_6th(f,dy):
+    if (f.ndim != 3 and f.ndim != 4):
+        print "%s dimension arrays not handled." % (str(f.ndim))
+        raise ValueError
+
+    fac=1/dy**6
+    m1 = 3
+    m2 = f.shape[-2] - 3
+    d6fdy = N.zeros_like(f)
+
+    if (m2 > m1):
+        d6fdy[...,m1:m2,:] = fac*(- 20.0* f[...,m1:m2,:] 
+                                 + 15.0*(f[...,m1+1:m2+1,:]+f[...,m1-1:m2-1,:]) 
+                                 -  6.0*(f[...,m1+2:m2+2,:]+f[...,m1-2:m2-2,:]) 
+                                 +      (f[...,m1+3:m2+3,:]+f[...,m1-3:m2-3,:]))
+    
+    return d6fdy
+
+def zder6_6th(f,dz):
+    if (f.ndim != 3 and f.ndim != 4):
+        print "%s dimension arrays not handled." % (str(f.ndim))
+        raise ValueError
+    fac=1/dz**6
+    n1 = 3
+    n2 = f.shape[-3] - 3
+    d6fdy = N.zeros_like(f)
+
+    if (n2 > n1):
+        d6fdy[...,n1:n2,:,:] = fac*(- 20.0* f[...,n1:n2,:,:] 
+                       + 15.0*(f[...,n1+1:n2+1,:,:]+f[...,n1-1:n2-1,:,:]) 
+                       -  6.0*(f[...,n1+2:n2+2,:,:]+f[...,n1-2:n2-2,:,:]) 
+                       +      (f[...,n1+3:n2+3,:,:]+f[...,n1-3:n2-3,:,:]))
+    
+    return d6fdy
+    

@@ -13,3 +13,8 @@ zder = der.zder_6th
 xder2 = der.xder2_6th
 yder2 = der.yder2_6th
 zder2 = der.zder2_6th
+
+xder6 = der.xder6_6th
+yder6 = der.yder6_6th
+zder6 = der.zder6_6th
+

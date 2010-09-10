@@ -80,3 +80,24 @@ def curl2(f,dx,dy,dz):
     
     return curl2
 
+def del2(f,dx,dy,dz):
+    """taken from pencil code's sub.f90 
+    !  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+    !  than del2^3) of a scalar for hyperdiffusion
+    """
+    del2 = xder2(f,dx)
+    del2 = del2 + yder2(f,dy)
+    del2 = del2 + zder2(f,dz)
+
+    return del2
+
+def del6(f,dx,dy,dz):
+    """taken from pencil code's sub.f90 
+    !  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+    !  than del2^3) of a scalar for hyperdiffusion
+    """
+    del6 = xder6(f,dx)
+    del6 = del6 + yder6(f,dy)
+    del6 = del6 + zder6(f,dz)
+
+    return del6
