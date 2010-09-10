@@ -173,6 +173,13 @@ module Chemistry
   integer :: idiag_Y10m=0        ! DIAG_DOC: $\left<Y_10\right>$
   integer :: idiag_Y11m=0        ! DIAG_DOC: $\left<Y_11\right>$
   integer :: idiag_Y12m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y13m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y14m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y15m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y16m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y17m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y18m=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y19m=0        ! DIAG_DOC: $\left<Y_12\right>$
   integer :: idiag_dY1m=0        ! DIAG_DOC: $\left<dY_1\right>$
   integer :: idiag_dY2m=0        ! DIAG_DOC: $\left<dY_2\right>$
   integer :: idiag_dY3m=0        ! DIAG_DOC: $\left<dY_3\right>$
@@ -185,6 +192,13 @@ module Chemistry
   integer :: idiag_dY10m=0        ! DIAG_DOC: $\left<dY_10\right>$
   integer :: idiag_dY11m=0        ! DIAG_DOC: $\left<dY_11\right>$
   integer :: idiag_dY12m=0        ! DIAG_DOC: $\left<dY_12\right>$
+  integer :: idiag_dY13m=0        ! DIAG_DOC: $\left<dY_13\right>$
+  integer :: idiag_dY14m=0        ! DIAG_DOC: $\left<dY_14\right>$
+  integer :: idiag_dY15m=0        ! DIAG_DOC: $\left<dY_15\right>$
+  integer :: idiag_dY16m=0        ! DIAG_DOC: $\left<dY_16\right>$
+  integer :: idiag_dY17m=0        ! DIAG_DOC: $\left<dY_17\right>$
+  integer :: idiag_dY18m=0        ! DIAG_DOC: $\left<dY_18\right>$
+  integer :: idiag_dY19m=0        ! DIAG_DOC: $\left<dY_19\right>$
 !
   integer :: idiag_Y1mz=0        ! DIAG_DOC: $\left<Y_1\right>_{xy}(z)$
   integer :: idiag_Y2mz=0        ! DIAG_DOC: $\left<Y_2\right>_{xy}(z)$
@@ -198,6 +212,13 @@ module Chemistry
   integer :: idiag_Y10mz=0        ! DIAG_DOC: $\left<Y_10\right>_{xy}(z)$
   integer :: idiag_Y11mz=0        ! DIAG_DOC: $\left<Y_11\right>_{xy}(z)$
   integer :: idiag_Y12mz=0        ! DIAG_DOC: $\left<Y_12\right>_{xy}(z)$
+  integer :: idiag_Y13mz=0        ! DIAG_DOC: $\left<Y_13\right>_{xy}(z)$
+  integer :: idiag_Y14mz=0        ! DIAG_DOC: $\left<Y_14\right>_{xy}(z)$
+  integer :: idiag_Y15mz=0        ! DIAG_DOC: $\left<Y_15\right>_{xy}(z)$
+  integer :: idiag_Y16mz=0        ! DIAG_DOC: $\left<Y_16\right>_{xy}(z)$
+  integer :: idiag_Y17mz=0        ! DIAG_DOC: $\left<Y_17\right>_{xy}(z)$
+  integer :: idiag_Y18mz=0        ! DIAG_DOC: $\left<Y_18\right>_{xy}(z)$
+  integer :: idiag_Y19mz=0        ! DIAG_DOC: $\left<Y_19\right>_{xy}(z)$
 !
   integer :: idiag_h1m=0
   integer :: idiag_h2m=0
@@ -211,6 +232,13 @@ module Chemistry
   integer :: idiag_h10m=0
   integer :: idiag_h11m=0
   integer :: idiag_h12m=0
+  integer :: idiag_h13m=0
+  integer :: idiag_h14m=0
+  integer :: idiag_h15m=0
+  integer :: idiag_h16m=0
+  integer :: idiag_h17m=0
+  integer :: idiag_h18m=0
+  integer :: idiag_h19m=0
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
@@ -227,6 +255,13 @@ module Chemistry
   integer :: idiag_cp10m=0
   integer :: idiag_cp11m=0
   integer :: idiag_cp12m=0
+  integer :: idiag_cp13m=0
+  integer :: idiag_cp14m=0
+  integer :: idiag_cp15m=0
+  integer :: idiag_cp16m=0
+  integer :: idiag_cp17m=0
+  integer :: idiag_cp18m=0
+  integer :: idiag_cp19m=0
   integer :: idiag_e_intm=0
 !
   integer :: idiag_lambdam=0
@@ -243,6 +278,13 @@ module Chemistry
   integer :: idiag_diff10m=0
   integer :: idiag_diff11m=0
   integer :: idiag_diff12m=0
+  integer :: idiag_diff13m=0
+  integer :: idiag_diff14m=0
+  integer :: idiag_diff15m=0
+  integer :: idiag_diff16m=0
+  integer :: idiag_diff17m=0
+  integer :: idiag_diff18m=0
+  integer :: idiag_diff19m=0
 !
   contains
 !
@@ -1934,6 +1976,10 @@ module Chemistry
             do n=1,mz
               kreactions_z(n,j)=1./cosh(z(n)/kreactions_profile_width(j))**2
             enddo
+          elseif (kreactions_profile(j)=='gauss') then
+            do n=1,mz
+              kreactions_z(n,j)=exp(-((z(n)/kreactions_profile_width(j))**2))
+            enddo
           elseif (kreactions_profile(j)=='square') then
             do n=1,mz
               if (n < mz/2) then
@@ -2145,7 +2191,8 @@ module Chemistry
 !  indices
 !
       integer :: j,k,i
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
+      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
 !
       intent(in) :: p,f
       intent(inout) :: df
@@ -2387,6 +2434,13 @@ module Chemistry
         if (idiag_Y10m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i10)),idiag_Y10m)
         if (idiag_Y11m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i11)),idiag_Y11m)
         if (idiag_Y12m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i12)),idiag_Y12m)
+        if (idiag_Y13m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i13)),idiag_Y13m)
+        if (idiag_Y14m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i14)),idiag_Y14m)
+        if (idiag_Y15m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i15)),idiag_Y15m)
+        if (idiag_Y16m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i16)),idiag_Y16m)
+        if (idiag_Y17m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i17)),idiag_Y17m)
+        if (idiag_Y18m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i18)),idiag_Y18m)
+        if (idiag_Y19m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i19)),idiag_Y19m)
 !
         if (idiag_cpfull/=0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         if (idiag_cvfull/=0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
@@ -2419,6 +2473,20 @@ module Chemistry
                              idiag_diff11m)
         if (idiag_diff12m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i12),&
                              idiag_diff12m)
+        if (idiag_diff13m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i13),&
+                             idiag_diff13m)
+        if (idiag_diff14m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i14),&
+                             idiag_diff14m)
+        if (idiag_diff15m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i15),&
+                             idiag_diff15m)
+        if (idiag_diff16m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i16),&
+                             idiag_diff16m)
+        if (idiag_diff17m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i17),&
+                             idiag_diff17m)
+        if (idiag_diff18m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i18),&
+                             idiag_diff18m)
+        if (idiag_diff19m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i19),&
+                             idiag_diff19m)
 !
       endif
 !
@@ -2437,6 +2505,13 @@ module Chemistry
         if (idiag_Y10mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i10)),idiag_Y10mz)
         if (idiag_Y11mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i11)),idiag_Y11mz)
         if (idiag_Y12mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i12)),idiag_Y12mz)
+        if (idiag_Y13mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i13)),idiag_Y13mz)
+        if (idiag_Y14mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i14)),idiag_Y14mz)
+        if (idiag_Y15mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i15)),idiag_Y15mz)
+        if (idiag_Y16mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i16)),idiag_Y16mz)
+        if (idiag_Y17mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i17)),idiag_Y17mz)
+        if (idiag_Y18mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i18)),idiag_Y18mz)
+        if (idiag_Y19mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i19)),idiag_Y19mz)
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)
 !
@@ -2510,24 +2585,36 @@ module Chemistry
         idiag_Y1m=0; idiag_Y2m=0; idiag_Y3m=0; idiag_Y4m=0
         idiag_Y5m=0; idiag_Y6m=0; idiag_Y7m=0; idiag_Y8m=0
         idiag_Y9m=0; idiag_Y10m=0; idiag_Y11m=0; idiag_Y12m=0
+        idiag_Y13m=0; idiag_Y14m=0; idiag_Y15m=0; idiag_Y16m=0
+        idiag_Y17m=0; idiag_Y18m=0; idiag_Y19m=0
         idiag_dY1m=0; idiag_dY2m=0; idiag_dY3m=0; idiag_dY4m=0
         idiag_dY5m=0; idiag_dY6m=0; idiag_dY7m=0; idiag_dY8m=0
         idiag_dY9m=0; idiag_dY10m=0; idiag_dY11m=0; idiag_dY12m=0
+        idiag_dY13m=0; idiag_dY14m=0; idiag_dY15m=0; idiag_dY16m=0
+        idiag_dY17m=0; idiag_dY18m=0; idiag_dY19m=0
         idiag_h1m=0; idiag_h2m=0; idiag_h3m=0; idiag_h4m=0;
         idiag_h5m=0; idiag_h6m=0; idiag_h7m=0; idiag_h8m=0;
         idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0;
+        idiag_h13m=0; idiag_h14m=0; idiag_h15m=0; idiag_h16m=0;
+        idiag_h17m=0; idiag_h18m=0; idiag_h19m=0;
         idiag_cp1m=0; idiag_cp2m=0; idiag_cp3m=0; idiag_cp4m=0;
         idiag_cp5m=0; idiag_cp6m=0; idiag_cp7m=0; idiag_cp8m=0;
         idiag_cp9m=0; idiag_cp10m=0; idiag_cp11m=0; idiag_cp12m=0;
+        idiag_cp13m=0; idiag_cp14m=0; idiag_cp15m=0; idiag_cp16m=0;
+        idiag_cp17m=0; idiag_cp18m=0; idiag_cp19m=0;
         idiag_cpfull=0; idiag_cvfull=0
         idiag_e_intm=0
         idiag_Y1mz=0; idiag_Y2mz=0; idiag_Y3mz=0; idiag_Y4mz=0
         idiag_Y5mz=0; idiag_Y6mz=0; idiag_Y7mz=0; idiag_Y8mz=0
         idiag_Y9mz=0; idiag_Y10mz=0; idiag_Y11mz=0; idiag_Y12mz=0
+        idiag_Y13mz=0; idiag_Y14mz=0; idiag_Y15mz=0; idiag_Y16mz=0
+        idiag_Y17mz=0; idiag_Y18mz=0; idiag_Y19mz=0
 !
         idiag_diff1m=0; idiag_diff2m=0; idiag_diff3m=0; idiag_diff4m=0;
         idiag_diff5m=0; idiag_diff6m=0; idiag_diff7m=0; idiag_diff8m=0;
         idiag_diff9m=0; idiag_diff10m=0; idiag_diff11m=0; idiag_diff12m=0;
+        idiag_diff13m=0; idiag_diff14m=0; idiag_diff15m=0; idiag_diff16m=0;
+        idiag_diff17m=0; idiag_diff18m=0; idiag_diff19m=0;
         idiag_lambdam=0; idiag_num=0
 !
       endif
@@ -2549,6 +2636,13 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'Y10m',idiag_Y10m)
         call parse_name(iname,cname(iname),cform(iname),'Y11m',idiag_Y11m)
         call parse_name(iname,cname(iname),cform(iname),'Y12m',idiag_Y12m)
+        call parse_name(iname,cname(iname),cform(iname),'Y13m',idiag_Y13m)
+        call parse_name(iname,cname(iname),cform(iname),'Y14m',idiag_Y14m)
+        call parse_name(iname,cname(iname),cform(iname),'Y15m',idiag_Y15m)
+        call parse_name(iname,cname(iname),cform(iname),'Y16m',idiag_Y16m)
+        call parse_name(iname,cname(iname),cform(iname),'Y17m',idiag_Y17m)
+        call parse_name(iname,cname(iname),cform(iname),'Y18m',idiag_Y18m)
+        call parse_name(iname,cname(iname),cform(iname),'Y19m',idiag_Y19m)
         call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1m)
         call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2m)
         call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3m)
@@ -2561,6 +2655,13 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'dY10m',idiag_dY10m)
         call parse_name(iname,cname(iname),cform(iname),'dY11m',idiag_dY11m)
         call parse_name(iname,cname(iname),cform(iname),'dY12m',idiag_dY12m)
+        call parse_name(iname,cname(iname),cform(iname),'dY13m',idiag_dY13m)
+        call parse_name(iname,cname(iname),cform(iname),'dY14m',idiag_dY14m)
+        call parse_name(iname,cname(iname),cform(iname),'dY15m',idiag_dY15m)
+        call parse_name(iname,cname(iname),cform(iname),'dY16m',idiag_dY16m)
+        call parse_name(iname,cname(iname),cform(iname),'dY17m',idiag_dY17m)
+        call parse_name(iname,cname(iname),cform(iname),'dY18m',idiag_dY18m)
+        call parse_name(iname,cname(iname),cform(iname),'dY19m',idiag_dY19m)
         call parse_name(iname,cname(iname),cform(iname),'h1m',idiag_h1m)
         call parse_name(iname,cname(iname),cform(iname),'h2m',idiag_h2m)
         call parse_name(iname,cname(iname),cform(iname),'h3m',idiag_h3m)
@@ -2573,6 +2674,13 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'h10m',idiag_h10m)
         call parse_name(iname,cname(iname),cform(iname),'h11m',idiag_h11m)
         call parse_name(iname,cname(iname),cform(iname),'h12m',idiag_h12m)
+        call parse_name(iname,cname(iname),cform(iname),'h13m',idiag_h13m)
+        call parse_name(iname,cname(iname),cform(iname),'h14m',idiag_h14m)
+        call parse_name(iname,cname(iname),cform(iname),'h15m',idiag_h15m)
+        call parse_name(iname,cname(iname),cform(iname),'h16m',idiag_h16m)
+        call parse_name(iname,cname(iname),cform(iname),'h17m',idiag_h17m)
+        call parse_name(iname,cname(iname),cform(iname),'h18m',idiag_h18m)
+        call parse_name(iname,cname(iname),cform(iname),'h19m',idiag_h19m)
         call parse_name(iname,cname(iname),cform(iname),'cpfull',idiag_cpfull)
         call parse_name(iname,cname(iname),cform(iname),'cvfull',idiag_cvfull)
         call parse_name(iname,cname(iname),cform(iname),'cp1m',idiag_cp1m)
@@ -2587,6 +2695,13 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'cp10m',idiag_cp10m)
         call parse_name(iname,cname(iname),cform(iname),'cp11m',idiag_cp11m)
         call parse_name(iname,cname(iname),cform(iname),'cp12m',idiag_cp12m)
+        call parse_name(iname,cname(iname),cform(iname),'cp13m',idiag_cp13m)
+        call parse_name(iname,cname(iname),cform(iname),'cp14m',idiag_cp14m)
+        call parse_name(iname,cname(iname),cform(iname),'cp15m',idiag_cp15m)
+        call parse_name(iname,cname(iname),cform(iname),'cp16m',idiag_cp16m)
+        call parse_name(iname,cname(iname),cform(iname),'cp17m',idiag_cp17m)
+        call parse_name(iname,cname(iname),cform(iname),'cp18m',idiag_cp18m)
+        call parse_name(iname,cname(iname),cform(iname),'cp19m',idiag_cp19m)
         call parse_name(iname,cname(iname),cform(iname),'e_intm',idiag_e_intm)
         call parse_name(iname,cname(iname),cform(iname),'lambdam',idiag_lambdam)
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
@@ -2602,6 +2717,13 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'diff10m',idiag_diff10m)
         call parse_name(iname,cname(iname),cform(iname),'diff11m',idiag_diff11m)
         call parse_name(iname,cname(iname),cform(iname),'diff12m',idiag_diff12m)
+        call parse_name(iname,cname(iname),cform(iname),'diff13m',idiag_diff13m)
+        call parse_name(iname,cname(iname),cform(iname),'diff14m',idiag_diff14m)
+        call parse_name(iname,cname(iname),cform(iname),'diff15m',idiag_diff15m)
+        call parse_name(iname,cname(iname),cform(iname),'diff16m',idiag_diff16m)
+        call parse_name(iname,cname(iname),cform(iname),'diff17m',idiag_diff17m)
+        call parse_name(iname,cname(iname),cform(iname),'diff18m',idiag_diff18m)
+        call parse_name(iname,cname(iname),cform(iname),'diff19m',idiag_diff19m)
       enddo
 !
 !  xy-averages
@@ -2619,6 +2741,13 @@ module Chemistry
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y10mz',idiag_Y10mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y11mz',idiag_Y11mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y12mz',idiag_Y12mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y13mz',idiag_Y13mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y14mz',idiag_Y14mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y15mz',idiag_Y15mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y16mz',idiag_Y16mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y17mz',idiag_Y17mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y18mz',idiag_Y18mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y19mz',idiag_Y19mz)
       enddo
 !
 !  Write chemistry index in short notation
@@ -2639,7 +2768,8 @@ module Chemistry
 !  16-may-09/raphael: added more slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9, i10=10
+      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -2767,6 +2897,76 @@ module Chemistry
           slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i12))
           if (lwrite_slice_xy4) &
           slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i12))
+          slices%ready=.true.
+        case ('chemspec13')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i13))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i13))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i13))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i13))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i13))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i13))
+          slices%ready=.true.
+        case ('chemspec14')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i14))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i14))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i14))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i14))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i14))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i14))
+          slices%ready=.true.
+        case ('chemspec15')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i15))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i15))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i15))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i15))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i15))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i15))
+          slices%ready=.true.
+        case ('chemspec16')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i16))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i16))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i16))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i16))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i16))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i16))
+          slices%ready=.true.
+        case ('chemspec17')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i17))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i17))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i17))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i17))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i17))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i17))
+          slices%ready=.true.
+        case ('chemspec18')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i18))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i18))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i18))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i18))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i18))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i18))
+          slices%ready=.true.
+        case ('chemspec19')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ichemspec(i19))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ichemspec(i19))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ichemspec(i19))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ichemspec(i19))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ichemspec(i19))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ichemspec(i19))
           slices%ready=.true.
       endselect
 !
@@ -3568,7 +3768,8 @@ module Chemistry
       real, dimension (nx) :: xdot
       type (pencil_case) :: p
       integer :: k,j
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10,i11=11,i12=12
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
+      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
 !
       p%DYDt_reac=0.
 !
@@ -3660,6 +3861,13 @@ module Chemistry
         if (idiag_dY10m/=0) call sum_mn_name(p%DYDt_reac(:,i10),idiag_dY10m)
         if (idiag_dY11m/=0) call sum_mn_name(p%DYDt_reac(:,i11),idiag_dY11m)
         if (idiag_dY12m/=0) call sum_mn_name(p%DYDt_reac(:,i12),idiag_dY12m)
+        if (idiag_dY13m/=0) call sum_mn_name(p%DYDt_reac(:,i13),idiag_dY13m)
+        if (idiag_dY14m/=0) call sum_mn_name(p%DYDt_reac(:,i14),idiag_dY14m)
+        if (idiag_dY15m/=0) call sum_mn_name(p%DYDt_reac(:,i15),idiag_dY15m)
+        if (idiag_dY16m/=0) call sum_mn_name(p%DYDt_reac(:,i16),idiag_dY16m)
+        if (idiag_dY17m/=0) call sum_mn_name(p%DYDt_reac(:,i17),idiag_dY17m)
+        if (idiag_dY18m/=0) call sum_mn_name(p%DYDt_reac(:,i18),idiag_dY18m)
+        if (idiag_dY19m/=0) call sum_mn_name(p%DYDt_reac(:,i19),idiag_dY19m)
         if (idiag_h1m/=0) call sum_mn_name(p%H0_RT(:,i1)*Rgas*&
             p%TT(:)/species_constants(i1,imass),idiag_h1m)
         if (idiag_h2m/=0) call sum_mn_name(p%H0_RT(:,i2)*Rgas*&
@@ -3684,6 +3892,20 @@ module Chemistry
             p%TT(:)/species_constants(i11,imass),idiag_h11m)
         if (idiag_h12m/=0) call sum_mn_name(p%H0_RT(:,i12)*Rgas*&
             p%TT(:)/species_constants(i12,imass),idiag_h12m)
+        if (idiag_h13m/=0) call sum_mn_name(p%H0_RT(:,i13)*Rgas*&
+            p%TT(:)/species_constants(i13,imass),idiag_h13m)
+        if (idiag_h14m/=0) call sum_mn_name(p%H0_RT(:,i14)*Rgas*&
+            p%TT(:)/species_constants(i14,imass),idiag_h14m)
+        if (idiag_h15m/=0) call sum_mn_name(p%H0_RT(:,i15)*Rgas*&
+            p%TT(:)/species_constants(i15,imass),idiag_h15m)
+        if (idiag_h16m/=0) call sum_mn_name(p%H0_RT(:,i16)*Rgas*&
+            p%TT(:)/species_constants(i16,imass),idiag_h16m)
+        if (idiag_h17m/=0) call sum_mn_name(p%H0_RT(:,i17)*Rgas*&
+            p%TT(:)/species_constants(i17,imass),idiag_h17m)
+        if (idiag_h18m/=0) call sum_mn_name(p%H0_RT(:,i18)*Rgas*&
+            p%TT(:)/species_constants(i18,imass),idiag_h18m)
+        if (idiag_h19m/=0) call sum_mn_name(p%H0_RT(:,i19)*Rgas*&
+            p%TT(:)/species_constants(i19,imass),idiag_h19m)
       endif
 !
     endsubroutine calc_reaction_term

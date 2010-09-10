@@ -79,6 +79,8 @@ class param_file:
         if line=='':
             return('e',None)
         line=line.strip()
+        if line=='':
+            return ('c',None)
         if line[0]=='!':
             desc=line[2]
             if desc=='I':
