@@ -1,0 +1,25 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Runtime parameters for shocktube problem
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2008-11-30 03:16:24 wlyra Exp $'
+  nt=25, it1=5, cdt=0.4, cdtv=0.4, isave=500, itorder=3
+  dsnap=10.0
+  lpencil_check=T
+  ip=16
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+ ladvective_gauge=T
+/
+&viscosity_run_pars
+/
+&special_run_pars
+ lno_radial_advection=T
+/
