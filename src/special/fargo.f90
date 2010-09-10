@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -10,11 +10,12 @@
 ! MAUX CONTRIBUTION 1
 !
 !***************************************************************
-
-!-------------------------------------------------------------------
+!
+!---------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
-! --------------------
+!
+!---------------------------------------------------------------
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
@@ -250,14 +251,14 @@ module Special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
+!  Calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
 !  m,n are global variables looped over in equ.f90
 !
 !  Due to the multi-step Runge Kutta timestepping used one MUST always
 !  add to the present contents of the df array.  NEVER reset it to zero.
 !
-!  several precalculated Pencils of information are passed if for
+!  Several precalculated Pencils of information are passed if for
 !  efficiency.
 !
 !   06-oct-03/tony: coded
@@ -347,7 +348,7 @@ endsubroutine read_special_run_pars
 !
       use Diagnostics
 !
-!  reads and registers print parameters relevant to special
+!  Reads and registers print parameters relevant to special
 !
 !   06-oct-03/tony: coded
 !
@@ -376,7 +377,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the 
 !   mass equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -407,7 +408,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the 
 !   momentum equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -439,7 +440,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the 
 !   induction equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -463,7 +464,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -485,11 +486,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
+!   Possibility of custom boundary condition.
 !
 !   06-oct-03/tony: coded
 !
@@ -562,7 +559,6 @@ endsubroutine read_special_run_pars
       real, dimension (nx,ny) :: a_re,a_im
       real :: dt_sub
       real, dimension (nx) :: phidot
-!
       integer :: ivar,nnghost
 !
 !  Pencil uses linear velocity. Fargo will shift based on 
@@ -587,8 +583,8 @@ endsubroutine read_special_run_pars
             call fft_xy_parallel(a_re,a_im,linv=.true.)
             df(l1:l2,m1:m2,n,ivar)=a_re
           endif
-        enddo
 !
+        enddo
       enddo
 !
     endsubroutine special_after_timestep
