@@ -752,9 +752,9 @@ module Hydro
         case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
         case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
         case ('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
-        case ('trilinear-x'); call trilinear(ampluu(j),f,iux)
-        case ('trilinear-y'); call trilinear(ampluu(j),f,iuy)
-        case ('trilinear-z'); call trilinear(ampluu(j),f,iuz)
+        case ('trilinear-x'); call trilinear(f,iux,ampl_ux(j),ampl_uy(j),ampl_uz(j))
+        case ('trilinear-y'); call trilinear(f,iuy,ampl_ux(j),ampl_uy(j),ampl_uz(j))
+        case ('trilinear-z'); call trilinear(f,iuz,ampl_ux(j),ampl_uy(j),ampl_uz(j))
         case ('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
         case ('tor_pert'); call tor_pert(ampluu(j),f,iux)
         case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,&

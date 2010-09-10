@@ -3441,7 +3441,7 @@ module Initcond
 !
     endsubroutine gaunoise_rprof_scal
 !***********************************************************************
-    subroutine trilinear(ampl,f,ivar)
+    subroutine trilinear(f,ivar,amplx,amply,amplz)
 !
 !  Produce a profile that is linear in any non-periodic direction, but
 !  periodic in periodic ones (for testing purposes).
@@ -3449,7 +3449,7 @@ module Initcond
 !  5-nov-02/wolf: coded
 ! 23-nov-02/axel: included scaling factor ampl, corrected lperi argument
 !
-      real :: ampl
+      real :: amplx,amply,amplz
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar
 !
@@ -3461,28 +3461,28 @@ module Initcond
 !
       do n=n1,n2; do m=m1,m2
         if (lperi(1)) then
-          tmp = sin(2*pi/Lx*(x(l1:l2)-xyz0(1)-0.25*Lxyz(1)))
+          tmp = amplx*sin(2*pi/Lx*(x(l1:l2)-xyz0(1)-0.25*Lxyz(1)))
         else
-          tmp = x(l1:l2)
+          tmp = amplx*x(l1:l2)
         endif
 !
 !  y direction
 !
         if (lperi(2)) then
-          tmp = tmp + 10*sin(2*pi/Ly*(y(m)-xyz0(2)-0.25*Lxyz(2)))
+          tmp = tmp + amply*sin(2*pi/Ly*(y(m)-xyz0(2)-0.25*Lxyz(2)))
         else
-          tmp = tmp + 10*y(m)
+          tmp = tmp + amply*y(m)
         endif
 !
 !  z direction
 !
         if (lperi(3)) then
-          tmp = tmp + 100*sin(2*pi/Lz*(z(n)-xyz0(3)-0.25*Lxyz(3)))
+          tmp = tmp + amplz*sin(2*pi/Lz*(z(n)-xyz0(3)-0.25*Lxyz(3)))
         else
-          tmp = tmp + 100*z(n)
+          tmp = tmp + amplz*z(n)
         endif
 !
-        f(l1:l2,m,n,ivar) = ampl*tmp
+        f(l1:l2,m,n,ivar) = tmp
 !
       enddo; enddo
 !
