@@ -1303,7 +1303,7 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im)
+    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im,shift_y)
 !
 !  Subroutine to do FFT of distributed 2D data in the x- and y-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1315,11 +1315,13 @@ module Fourier
 !  Attention: input data will be overwritten.
 !
 !  17-aug-2010/Bourdin.KIS: adapted from fft_xy_parallel_4D
+!  09-sep-2010/wlad: added possibility of shift
 !
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
+      real, dimension (nx), optional :: shift_y
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1330,12 +1332,17 @@ module Fourier
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
       real, dimension (tny) :: deltay_x
+      real, dimension (tny) :: dshift_y
+!
       integer :: l, m, stat, x_offset
       logical :: lforward, lcompute_im
-!
+      logical :: lshift
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
+!
+      lshift=.false.
+      if (present (shift_y)) lshift=.true.
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
@@ -1364,9 +1371,16 @@ module Fourier
       if (stat > 0) call fatal_error('fft_xy_parallel_2D', &
           'Could not allocate memory for t_im', .true.)
 !
+! WL: Is this correct? x is of dimension mx, not mxgrid
+!
       if (lshear) then
         x_offset = l1 + (ipx+ipy*nprocx)*tny
         deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+      endif
+!
+      if (lshift) then
+        x_offset = 1+ipy*tny
+        dshift_y = shift_y(x_offset:x_offset+tny-1)
       endif
 !
       call cffti(nxgrid, wsavex)
@@ -1408,6 +1422,8 @@ module Fourier
             ay = cmplx (t_re(:,l), t_im(:,l))
             call cfftf(nygrid, ay, wsavey)
             if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+            if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
+!
             t_re(:,l) = real (ay)
             t_im(:,l) = aimag (ay)
           enddo
