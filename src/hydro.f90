@@ -583,14 +583,16 @@ module Hydro
 !
       if (nxgrid*nygrid*nzgrid==1) then
         ladvection_velocity=.false.
-        print*, 'initialize_hydro: 0-D run, turned off advection of velocity'
+        if (lroot) print*, &
+             'initialize_hydro: 0-D run, turned off advection of velocity'
       endif
 !
 !  If fargo is used, advection is taken care of in special/fargo.f90
 !
       if (lfargo_advection) then
         ladvection_velocity=.false.
-        print*,'initialize_hydro: fargo used. turned off advection of velocity'
+        if (lroot) print*, &
+             'initialize_hydro: fargo used. turned off advection of velocity'
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
