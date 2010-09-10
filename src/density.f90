@@ -195,14 +195,16 @@ module Density
 !
       if (nxgrid*nygrid*nzgrid==1) then
         lcontinuity_gas=.false.
-        print*, 'initialize_density: 0-D run, turned off continuity equation'
+        if (lroot) print*, &
+             'initialize_density: 0-D run, turned off continuity equation'
       endif
 !
 !  If fargo is used, continuity is taken care of in special/fargo.f90
 !
       if (lfargo_advection) then
         lcontinuity_gas=.false.
-        print*,'initialize_density: fargo used. turned off continuity equation'
+        if (lroot) print*,& 
+             'initialize_density: fargo used. turned off continuity equation'
       endif
 !
 !  Initialize mass diffusion.
