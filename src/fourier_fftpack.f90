@@ -1372,6 +1372,7 @@ module Fourier
           'Could not allocate memory for t_im', .true.)
 !
 ! WL: Is this correct? x is of dimension mx, not mxgrid
+! Bourdin: It's formally correct, though you are right: x is not accessible, here.
 !
       if (lshear) then
         x_offset = l1 + (ipx+ipy*nprocx)*tny
@@ -1399,7 +1400,7 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid>1) then
+        if (nxgrid > 1) then
           do m = 1, pny
 !
 !  Transform x-direction.
@@ -1411,10 +1412,10 @@ module Fourier
           enddo
         endif
 !
-        call transp_pencil_xy(p_re, t_re)
-        call transp_pencil_xy(p_im, t_im)
+        if (nygrid > 1) then
+          call transp_pencil_xy(p_re, t_re)
+          call transp_pencil_xy(p_im, t_im)
 !
-        if (nygrid>1) then
           do l = 1, tny
 !
 !  Transform y-direction.
@@ -1427,19 +1428,20 @@ module Fourier
             t_re(:,l) = real (ay)
             t_im(:,l) = aimag (ay)
           enddo
+!
+          call transp_pencil_xy(t_re, p_re)
+          call transp_pencil_xy(t_im, p_im)
         endif
-!
-!  Apply normalization factor to fourier coefficients.
-!
-        t_re = t_re / (nxgrid*nygrid)
-        t_im = t_im / (nxgrid*nygrid)
 !
 !  Unmap the results back to normal shape.
 !
-        call transp_pencil_xy(t_re, p_re)
-        call transp_pencil_xy(t_im, p_im)
         call unmap_from_pencil_xy(p_re, a_re)
         call unmap_from_pencil_xy(p_im, a_im)
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        a_re = a_re / (nxgrid*nygrid)
+        a_im = a_im / (nxgrid*nygrid)
 !
       else
 !
@@ -1449,10 +1451,11 @@ module Fourier
 !
         call remap_to_pencil_xy(a_re, p_re)
         call remap_to_pencil_xy(a_im, p_im)
-        call transp_pencil_xy(p_re, t_re)
-        call transp_pencil_xy(p_im, t_im)
 !
-        if (nygrid>1) then
+        if (nygrid > 1) then
+          call transp_pencil_xy(p_re, t_re)
+          call transp_pencil_xy(p_im, t_im)
+!
           do l = 1, tny
 !
 !  Transform y-direction back.
@@ -1463,12 +1466,12 @@ module Fourier
             t_re(:,l) = real (ay)
             t_im(:,l) = aimag (ay)
           enddo
+!
+          call transp_pencil_xy(t_re, p_re)
+          call transp_pencil_xy(t_im, p_im)
         endif
 !
-        call transp_pencil_xy(t_re, p_re)
-        call transp_pencil_xy(t_im, p_im)
-!
-        if (nxgrid>1) then
+        if (nxgrid > 1) then
           do m = 1, pny
 !
 !  Transform x-direction back.
@@ -1592,7 +1595,7 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid>1) then
+        if (nxgrid > 1) then
           do pos_z = 1, inz
             do m = 1, pny
 !
@@ -1606,10 +1609,10 @@ module Fourier
           enddo
         endif
 !
-        call transp_pencil_xy(p_re, t_re)
-        call transp_pencil_xy(p_im, t_im)
+        if (nygrid > 1) then
+          call transp_pencil_xy(p_re, t_re)
+          call transp_pencil_xy(p_im, t_im)
 !
-        if (nygrid>1) then
           do pos_z = 1, inz
             do l = 1, tny
 !
@@ -1622,19 +1625,20 @@ module Fourier
               t_im(:,l,pos_z) = aimag (ay)
             enddo
           enddo
+!
+          call transp_pencil_xy(t_re, p_re)
+          call transp_pencil_xy(t_im, p_im)
         endif
-!
-!  Apply normalization factor to fourier coefficients.
-!
-        t_re = t_re / (nxgrid*nygrid)
-        t_im = t_im / (nxgrid*nygrid)
 !
 !  Unmap the results back to normal shape.
 !
-        call transp_pencil_xy(t_re, p_re)
-        call transp_pencil_xy(t_im, p_im)
         call unmap_from_pencil_xy(p_re, a_re)
         call unmap_from_pencil_xy(p_im, a_im)
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        a_re = a_re / (nxgrid*nygrid)
+        a_im = a_im / (nxgrid*nygrid)
 !
       else
 !
@@ -1644,10 +1648,11 @@ module Fourier
 !
         call remap_to_pencil_xy(a_re, p_re)
         call remap_to_pencil_xy(a_im, p_im)
-        call transp_pencil_xy(p_re, t_re)
-        call transp_pencil_xy(p_im, t_im)
 !
-        if (nygrid>1) then
+        if (nygrid > 1) then
+          call transp_pencil_xy(p_re, t_re)
+          call transp_pencil_xy(p_im, t_im)
+!
           do pos_z = 1, inz
             do l = 1, tny
 !
@@ -1660,12 +1665,12 @@ module Fourier
               t_im(:,l,pos_z) = aimag (ay)
             enddo
           enddo
+!
+          call transp_pencil_xy(t_re, p_re)
+          call transp_pencil_xy(t_im, p_im)
         endif
 !
-        call transp_pencil_xy(t_re, p_re)
-        call transp_pencil_xy(t_im, p_im)
-!
-        if (nxgrid>1) then
+        if (nxgrid > 1) then
           do pos_z = 1, inz
             do m = 1, pny
 !
@@ -1797,7 +1802,7 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid>1) then
+        if (nxgrid > 1) then
           do pos_a = 1, ina
             do pos_z = 1, inz
               do m = 1, pny
@@ -1813,10 +1818,10 @@ module Fourier
           enddo
         endif
 !
-        call transp_pencil_xy(p_re, t_re)
-        call transp_pencil_xy(p_im, t_im)
+        if (nygrid > 1) then
+          call transp_pencil_xy(p_re, t_re)
+          call transp_pencil_xy(p_im, t_im)
 !
-        if (nygrid>1) then
           do pos_a = 1, ina
             do pos_z = 1, inz
               do l = 1, tny
@@ -1831,19 +1836,20 @@ module Fourier
               enddo
             enddo
           enddo
+!
+          call transp_pencil_xy(t_re, p_re)
+          call transp_pencil_xy(t_im, p_im)
         endif
-!
-!  Apply normalization factor to fourier coefficients.
-!
-        t_re = t_re / (nxgrid*nygrid)
-        t_im = t_im / (nxgrid*nygrid)
 !
 !  Unmap the results back to normal shape.
 !
-        call transp_pencil_xy(t_re, p_re)
-        call transp_pencil_xy(t_im, p_im)
         call unmap_from_pencil_xy(p_re, a_re)
         call unmap_from_pencil_xy(p_im, a_im)
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        a_re = a_re / (nxgrid*nygrid)
+        a_im = a_im / (nxgrid*nygrid)
 !
       else
 !
@@ -1853,10 +1859,11 @@ module Fourier
 !
         call remap_to_pencil_xy(a_re, p_re)
         call remap_to_pencil_xy(a_im, p_im)
-        call transp_pencil_xy(p_re, t_re)
-        call transp_pencil_xy(p_im, t_im)
 !
-        if (nygrid>1) then
+        if (nygrid > 1) then
+          call transp_pencil_xy(p_re, t_re)
+          call transp_pencil_xy(p_im, t_im)
+!
           do pos_a = 1, ina
             do pos_z = 1, inz
               do l = 1, tny
@@ -1871,12 +1878,12 @@ module Fourier
               enddo
             enddo
           enddo
+!
+          call transp_pencil_xy(t_re, p_re)
+          call transp_pencil_xy(t_im, p_im)
         endif
 !
-        call transp_pencil_xy(t_re, p_re)
-        call transp_pencil_xy(t_im, p_im)
-!
-        if (nxgrid>1) then
+        if (nxgrid > 1) then
           do pos_a = 1, ina
             do pos_z = 1, inz
               do m = 1, pny
