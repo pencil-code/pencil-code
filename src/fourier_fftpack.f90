@@ -1054,6 +1054,7 @@ module Fourier
 !
 !  Subroutine to do Fourier transform of a 2-D array under MPI.
 !  nxgrid is restricted to be an integer multiple of nygrid.
+!  If it's not, 'fft_xy_parallel' is called, which has fewer restrictions.
 !  The routine overwrites the input data.
 !  You can set lneed_im=false if the imaginary data can be disregarded.
 !
