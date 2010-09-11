@@ -306,6 +306,7 @@ module Interstellar
 !  Adjust SNR%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
+  real :: N_mass=60.0
 !
 !  Requested SNe location (used for test SN)
 !
@@ -355,7 +356,7 @@ module Interstellar
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, &
-      T0hs, TT_SN_max, rho_SN_min
+      T0hs, TT_SN_max, rho_SN_min, N_mass
 !
 ! run parameters
 !
@@ -374,7 +375,7 @@ module Interstellar
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      lTT_cutoff, TT_cutoff
+      lTT_cutoff, TT_cutoff, N_mass
 !
   contains
 !
@@ -2352,7 +2353,7 @@ module Interstellar
 !
         SNR%radius=width_SN
         if (lSN_scale_rad) &
-            SNR%radius=(solar_mass/exp(SNR%site%lnrho)*pi_1*60.0)**(1.0/3.0)
+            SNR%radius=(solar_mass/exp(SNR%site%lnrho)*pi_1*N_mass)**(1.0/3.0)
 !
         m=SNR%m
         n=SNR%n
@@ -2448,7 +2449,7 @@ module Interstellar
 !  Rescale injection radius by mass if required.
 !
       if (lSN_scale_rad) &
-      SNR%radius=(solar_mass/SNR%rhom*pi_1*60.0)**(1.0/3.0)
+      SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
 !
 !  Redistribute energy between thermal and kinetic to avoid over heating in
 !  high density remnants.
