@@ -67,7 +67,7 @@ pro psa, $
   ;; We now unconditionally set bits_per_pixel to 8.
   ;; The /COLOR keyword is still required, because it is handed down to
   ;; DEVICE via _EXTRA
-  device, BITS_PER_PIXEL=8
+  if (running_gdl() eq 0) then device, BITS_PER_PIXEL=8
 
   ; ;; If /COLOR keyword is given, set BITS_PER_PIXEL=8 or we will get
   ; ;; only 64 colours (i.e. light yellow instead of white)

@@ -40,7 +40,8 @@ pro pse, $
 
   if (!d.name eq 'PS') then begin
     ;; Reset PostScript device to default settings before closing
-    device, XOFFSET=1.87, XSIZE=17.15, YOFFSET=12.70, YSIZE=11.99, $
+    if (running_gdl() eq 0) then $
+        device, XOFFSET=1.87, XSIZE=17.15, YOFFSET=12.70, YSIZE=11.99, $
         SCALE_FACTOR=1.
     device, /CLOSE
   endif
@@ -74,7 +75,7 @@ pro pse, $
   ;;;
   ;;; Insert some additional info into the just written (E)PS file:
   ;;;
-  if (modify_ps) then begin
+  if (modify_ps and (running_gdl() eq 0)) then begin
     help, OUTPUT=hist, /RECALL_COMMANDS ; get history list
     ; drop uninteresting first line `Recall buffer length'; reverse to
     ; chronological order

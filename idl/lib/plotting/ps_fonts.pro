@@ -31,14 +31,16 @@ pro ps_fonts
   endif
 
   !P.FONT = 0
-  device, /HELVETICA, ISOLATIN1=1,			font_index=3
-  device, /SCHOOLBOOK, ISOLATIN1=1,			font_index=5
-  device, /TIMES, ISOLATIN1=1,				font_index=6
-  device, /SYMBOL,					font_index=7
-  device, /TIMES, /ITALIC, ISOLATIN1=1,			font_index=8
-  device, /ZAPFCHANCERY, /MEDIUM, /ITALIC,ISOLATIN1=1,	font_index=12
-  device, /SCHOOLBOOK, /ITALIC, ISOLATIN1=1,		font_index=15
-  device, /TIMES, /BOLD, ISOLATIN1=1,			font_index=17
-  device, /TIMES, /BOLD, /ITALIC, ISOLATIN1=1,		font_index=18
+  if (running_gdl() eq 0) then begin
+    device, /HELVETICA, ISOLATIN1=1,			font_index=3
+    device, /SCHOOLBOOK, ISOLATIN1=1,			font_index=5
+    device, /TIMES, ISOLATIN1=1,				font_index=6
+    device, /SYMBOL,					font_index=7
+    device, /TIMES, /ITALIC, ISOLATIN1=1,			font_index=8
+    device, /ZAPFCHANCERY, /MEDIUM, /ITALIC,ISOLATIN1=1,	font_index=12
+    device, /SCHOOLBOOK, /ITALIC, ISOLATIN1=1,		font_index=15
+    device, /TIMES, /BOLD, ISOLATIN1=1,			font_index=17
+    device, /TIMES, /BOLD, /ITALIC, ISOLATIN1=1,		font_index=18
+  endif
 return
 end
