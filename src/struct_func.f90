@@ -36,8 +36,6 @@ module struct_func
       use General
       use Mpicomm
       !
-      implicit none
-      !
       integer, parameter :: qmax=8+1 ! the extrta 1 is for unsigned 3. moment.
       integer, parameter :: imax=lb_nxgrid*2-2
       integer, parameter :: n_pdf=101

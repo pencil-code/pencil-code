@@ -1371,8 +1371,6 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
     use Diagnostics
     use Cdata
 !
-    implicit none
-!
     integer, intent(in) :: indz
 !
     real, dimension (3,0:njtestflow) :: Fipq            ! double index pq in single one (second) subsumed

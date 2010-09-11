@@ -30,8 +30,6 @@ module ImplicitPhysics
       use SharedVariables, only: get_shared_variable
       use MpiComm, only: stop_it
 !
-      implicit none
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:), pointer :: hole_params
       integer :: ierr
@@ -76,8 +74,6 @@ module ImplicitPhysics
 !***********************************************************************
     subroutine heatcond_TT_2d(TT, hcond, dhcond)
 !
-      implicit none
-!
       real, dimension(mx,mz) :: TT, arg, hcond
       real, dimension(mx,mz), optional :: dhcond
 !
@@ -89,8 +85,6 @@ module ImplicitPhysics
     endsubroutine heatcond_TT_2d
 !***********************************************************************
     subroutine heatcond_TT_1d(TT, hcond, dhcond)
-!
-      implicit none
 !
       real, dimension(:)           :: TT, hcond
       real, dimension(:), optional :: dhcond
@@ -104,8 +98,6 @@ module ImplicitPhysics
     endsubroutine heatcond_TT_1d
 !***********************************************************************
     subroutine heatcond_TT_0d(TT, hcond, dhcond)
-!
-      implicit none
 !
       real :: TT, arg, hcond
       real, optional :: dhcond

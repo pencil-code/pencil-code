@@ -343,8 +343,6 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_ADI(f)
 !
-      implicit none
-!
       real, dimension(mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)

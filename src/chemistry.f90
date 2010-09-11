@@ -4774,7 +4774,6 @@ module Chemistry
 !
 !  28-may-09/rplasson: coded
 !
-      implicit none
 !   exchange data
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob

@@ -947,8 +947,6 @@ module Entropy
 !
 !  Dummy subroutine.
 !
-      implicit none
-!
       real, dimension(mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)

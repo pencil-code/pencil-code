@@ -1073,8 +1073,6 @@ module Param_IO
 !
       use Mpicomm, only: parallel_open, parallel_close
 !
-      implicit none
-!
       integer :: unit=1
 !
       call parallel_open(unit,trim(datadir)//'/param.nml')

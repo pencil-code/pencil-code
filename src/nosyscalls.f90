@@ -20,8 +20,6 @@ module Syscalls
 !
       use Cparam, only: ip
 !
-      implicit none
-!
       logical :: file_exists
       character(len=*) :: file
       logical, optional :: delete
@@ -66,8 +64,6 @@ module Syscalls
 !  * -1 if retrieving the file size failed
 !
 !  18-mar-10/Bourdin.KIS: implemented
-!
-      implicit none
 !
       character(len=*) :: file
       integer :: file_size
@@ -121,8 +117,6 @@ module Syscalls
 !
 !  23-mar-10/Bourdin.KIS: implemented
 !
-      implicit none
-!
       character(len=*) :: file
       integer :: count_lines
 !
@@ -149,8 +143,6 @@ module Syscalls
 !
 !   4-aug-10/Bourdin.KIS: coded
 !
-      implicit none
-!
       integer :: get_PID
 !
       get_PID = -1
@@ -169,8 +161,6 @@ module Syscalls
 !  * Empty string, if the variable doesn't exist
 !
 !   4-aug-10/Bourdin.KIS: implemented
-!
-      implicit none
 !
       character(len=*) :: name
       character(len=*) :: value
@@ -193,8 +183,6 @@ module Syscalls
 !   4-aug-10/Bourdin.KIS: coded
 !
       use Cparam, only: fnlen
-!
-      implicit none
 !
       character(len=fnlen) :: get_tmp_prefix
 !

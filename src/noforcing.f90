@@ -119,8 +119,6 @@ module Forcing
 !***********************************************************************
     subroutine forcing_cont(force)
 !
-      implicit none
-!
       real, dimension (nx,3), intent(out) :: force
 !
       call keep_compiler_quiet(force)
