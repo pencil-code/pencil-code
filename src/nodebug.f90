@@ -13,6 +13,8 @@ subroutine output_penciled_vect_c(filename,pencil,ndim,i,iy,iz,t, &
   use Cdata, only: mx,headt,imn
   use Sub, only: keep_compiler_quiet
 !
+  implicit none
+!
   real,dimension(mx,*) :: pencil
   real :: t
   integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen

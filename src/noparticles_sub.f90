@@ -4,4 +4,6 @@
 !
 module Particles_sub
 !
+  implicit none
+!
 endmodule Particles_sub

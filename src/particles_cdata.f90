@@ -6,6 +6,8 @@ module Particles_cdata
 !
   use Cdata
 !
+  implicit none
+!
   public
 !
   real, parameter :: npar_per_cell=npar/(1.*nwgrid)

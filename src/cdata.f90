@@ -11,6 +11,8 @@ module Cdata
 !
   use Cparam
 !
+  implicit none
+!
   public
 !
 !  Tiny and huge numbers.

@@ -11,4 +11,6 @@
 !***************************************************************
 module Particles_map
 !
+  implicit none
+!
 endmodule Particles_map

@@ -1,6 +1,8 @@
 ! $Id$
 
 module Cparam
+!
+  implicit none
 
 !!!  Parameters
 

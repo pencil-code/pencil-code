@@ -16,6 +16,8 @@ module Solid_Cells
   use Cdata
   use Messages
   use Sub, only: keep_compiler_quiet
+!
+  implicit none
 !  
   include 'solid_cells.h'
 !
