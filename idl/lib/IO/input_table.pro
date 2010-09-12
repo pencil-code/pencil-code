@@ -80,7 +80,7 @@ function input_table, filename, $
 
   ;; Determine the number of lines (either with wc or with egrep)
   ;; Favour the new IDL intrinsic if available
-  if (!version.release ge 5.6) then begin
+  if ((!version.release ge 5.6) and (running_gdl() eq 0)) then begin
     N_lines = file_lines(filename) 
   endif else begin
     spawn, 'wc -l ' + filename, ans, /SH
@@ -140,8 +140,8 @@ function input_table, filename, $
             print, '  line = <'+line+'>'
           endif
         endif
-     endif
-     is_comm = (strmid(line,0,clen) eq cchar or strmid(line,0,clen) eq cchar2)
+      endif
+    is_comm = (strmid(line,0,clen) eq cchar or strmid(line,0,clen) eq cchar2)
 
     if (not is_comm) then begin
       ;; If this is first data line, determine number of columns
