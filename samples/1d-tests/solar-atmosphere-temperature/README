@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/solar-atmosphere-temperature
+SVN Id:
+    $Id$
+Maintainer:
+    Tobias Heinemann <Tobias.Heinemann/gmail[dot]com>
+Added:
+    18-Apr-2006
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    128x128x128 (nu=eta=1.3e-3)
+Comments:
+    similar to ${PENCIL_HOME}/samples/1d-tests/solar-atmosphere,
+    but using the ENTROPY=temperature_ionization
