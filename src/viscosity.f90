@@ -761,7 +761,8 @@ module Viscosity
 !  viscous force: nu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)
 !  -- for numerical stability viscous force propto soundspeed in interstellar run
 !
-      muTT=max(nu*sqrt(exp(p%lnTT)),dxmax*0.5)
+      muTT=nu*sqrt(exp(p%lnTT))
+!      muTT=max(nu*sqrt(exp(p%lnTT)),dxmax*0.5)
         if (ldensity) then
           do i=1,3
             p%fvisc(:,i) = p%fvisc(:,i) + 2*muTT*p%sglnrho(:,i)+muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i))
