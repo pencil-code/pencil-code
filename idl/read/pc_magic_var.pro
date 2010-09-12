@@ -46,7 +46,7 @@ end
 ; Utility routine to automatically construct expressions for commonly
 ; requested variable from variables stored in a var file. 
 ;
-; The routine is not really desigend to be called directly
+; The routine is not really designed to be called directly
 ; but rather it is intended as a utility function for other
 ; routines such as pc_read_var.
 ;
@@ -161,6 +161,8 @@ pro pc_magic_var, variables, tags, $
   lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
   lentropy = safe_get_tag(param,'lentropy',default=safe_get_tag(param,'lentropy',default=0)) 
 ;
+  if (param.ldensity_nolog) then density_var='rho' else density_var='lnrho' 
+;
   for iv=0,n_elements(variables)-1 do begin
 ; x Coordinate
     if (variables[iv] eq 'xx') then begin
@@ -234,7 +236,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'flor') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/lnrho,3,3)*cross(jj,bb)'
+        variables[iv]='spread(1/rho,3,3)*cross(jj,bb)'
       endif else begin
         variables[iv]='spread(1/exp(lnrho),3,3)*cross(jj,bb)'
       endelse
@@ -242,7 +244,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'va2') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='total(bb^2,4)/lnrho'
+        variables[iv]='total(bb^2,4)/rho'
       endif else begin
         variables[iv]='total(bb^2,4)/exp(lnrho)'
       endelse
@@ -250,7 +252,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'mpres') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-spread(1/lnrho,3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
+        variables[iv]='-spread(1/rho,3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endif else begin
         variables[iv]='-spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endelse
@@ -258,7 +260,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'mten') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/lnrho,3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+        variables[iv]='spread(1/rho,3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endif else begin
         variables[iv]='spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endelse
@@ -266,7 +268,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'alflim') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='(1+((total(bb^2,4)/(param.mu0*lnrho))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
+        variables[iv]='(1+((total(bb^2,4)/(param.mu0*rho))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
       endif else begin
         variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
       endelse
@@ -315,9 +317,13 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       variables[iv]='gij(uu)'
 ; Gas Density 
-    endif else if (variables[iv] eq 'rho') then begin
+    endif else if ((not(param.ldensity_nolog)) and (variables[iv] eq 'rho')) then begin
       tags[iv]=variables[iv]
       variables[iv]='exp(lnrho)'
+; Logarithmic gas Density 
+    endif else if (param.ldensity_nolog and (variables[iv] eq 'lnrho')) then begin
+      tags[iv]=variables[iv]
+      variables[iv]='alog(rho)'
 ; Velocity advection
     endif else if (variables[iv] eq 'advu') then begin
       tags[iv]=variables[iv]
@@ -337,7 +343,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'advlnrho') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-dot(uu,grad(alog(lnrho)))'
+        variables[iv]='-dot(uu,grad(alog(rho)))'
       endif else begin  
         variables[iv]='-dot(uu,grad(lnrho))'
       endelse
@@ -345,7 +351,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'advrho') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-dot(uu,grad(lnrho))'
+        variables[iv]='-dot(uu,grad(rho))'
       endif else begin  
         variables[iv]='-dot(uu,grad(exp(lnrho)))'
       endelse
@@ -354,7 +360,7 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       if (lshear) then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho)'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(rho)'
         endif else begin
           variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(exp(lnrho))'
         endelse
@@ -366,7 +372,7 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       if (lshear) then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(alog(lnrho))'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(alog(rho))'
         endif else begin
           variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho)'
         endelse
@@ -377,7 +383,7 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'comprho') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-lnrho*divu'
+        variables[iv]='-rho*divu'
       endif else begin  
         variables[iv]='-exp(lnrho)*divu'
       endelse
@@ -393,15 +399,15 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'cs2') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',ss,/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure gradient
     endif else if (variables[iv] eq 'fpres') then begin
       tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(-1/lnrho,3,3)*grad(lnrho)'
+        variables[iv]='spread(-1/rho,3,3)*grad(rho)'
       endif else begin
         variables[iv]='-grad(lnrho)'
       endelse
@@ -409,9 +415,9 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'ee') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',lnTT,/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',ss,/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Temperature
     endif else if (variables[iv] eq 'tt') then begin
@@ -419,7 +425,7 @@ pro pc_magic_var, variables, tags, $
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',ss,/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Logarithm of temperature
     endif else if (variables[iv] eq 'lntt') then begin
@@ -427,7 +433,7 @@ pro pc_magic_var, variables, tags, $
       if (lionization and not lionization_fixed) then begin
         variables[iv]='lnTT'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Entropy ss
     endif else if (variables[iv] eq 'ss') then begin
@@ -435,15 +441,15 @@ pro pc_magic_var, variables, tags, $
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        if (lentropy ne -1) then variables[iv]='pc_eoscalc(lnrho,lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss'
+        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+',lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss'
       endelse
 ; Pressure
     endif else if (variables[iv] eq 'pp') then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',lnTT,/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+',ss,/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Divergence of dust velocity
     endif else if (variables[iv] eq 'divud') then begin
@@ -501,13 +507,13 @@ pro pc_magic_var, variables, tags, $
         variables[iv]='par2.nu*del2(uu)'
       endif else if (par2.ivisc[0] eq 'rho_nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='par2.nu/spread(lnrho,3,3)*(del2(uu)+1/3.*graddiv(uu))'
+          variables[iv]='par2.nu/spread(rho,3,3)*(del2(uu)+1/3.*graddiv(uu))'
         endif else begin
           variables[iv]='par2.nu/spread(exp(lnrho),3,3)*(del2(uu)+1/3.*graddiv(uu))'
         endelse
       endif else if (par2.ivisc[0] eq 'nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(alog(lnrho)),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
+          variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(alog(rho)),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
         endif else  begin
           variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(lnrho),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
         endelse
@@ -515,7 +521,7 @@ pro pc_magic_var, variables, tags, $
         variables[iv]='del6(uu)'
       endif else if (par2.ivisc[0] eq 'hyper3_rho_nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='1/spread(lnrho,3,3)*del6(uu)'
+          variables[iv]='1/spread(rho,3,3)*del6(uu)'
         endif else begin
           variables[iv]='1/spread(exp(lnrho),3,3)*del6(uu)'
         endelse
@@ -539,7 +545,7 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       if (par2.idiff[0] eq 'shock') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='par2.nu_shock*shock*del2(lnrho)'
+          variables[iv]='par2.nu_shock*shock*del2(rho)'
         endif else begin
           variables[iv]='par2.nu_shock*shock*1/exp(lnrho)*del2(exp(lnrho))'
         endelse
