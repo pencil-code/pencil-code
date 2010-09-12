@@ -3501,17 +3501,18 @@ To work with data from \file{var.dat} and similar snapshot files, you can
 e.g. use the following routines:
 \begin{alltt}
   \prompt{GDL> } pc_read_dim, OBJECT=dim
+  \prompt{GDL> } $$PENCIL_HOME/bin/nl2idl -d -m ./data/param.nml> ./param.pro
+  \prompt{GDL> } pc_read_param, OBJECT=par
   \prompt{GDL> } pc_read_grid, OBJECT=grid
   \prompt{GDL> } pc_read_var, OBJECT=var
-  \prompt{GDL> } pc_read_param, OBJECT=par
 \end{alltt}
 Having thus read the data structures, we can have a look at them to see
 what information is available:
 \begin{alltt}
   \prompt{GDL> } help, dim, /STRUCT
+  \prompt{GDL> } help, par, /STRUCT
   \prompt{GDL> } help, grid, /STRUCT
   \prompt{GDL> } help, var, /STRUCT
-  \prompt{GDL> } help, par, /STRUCT
 \end{alltt}
 
 To visualize data, we can e.g. do\footnote{
