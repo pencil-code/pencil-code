@@ -54,8 +54,8 @@ module Special
 ! Global arrays
   real, dimension (nx,nz) :: uu_average
 ! "pencils" 
-  real, dimension (nx,3) :: uuadvec_gu,uuadvec_ga
-  real, dimension (nx) :: uuadvec_grho,uuadvec_glnrho
+  real, dimension (nx,3) :: uuadvec_guu,uuadvec_gaa
+  real, dimension (nx) :: uuadvec_grho,uuadvec_glnrho,uuadvec_gss
   real, dimension (nx) :: uu_residual
   real :: dummy
   logical :: lno_radial_advection=.false.
@@ -119,8 +119,8 @@ module Special
 !
 !  Not implemented for the energy equation either
 !
-      if (lentropy.or.ltemperature) call stop_it("fargo advection not "//&
-          "implemented for the energy equation")
+      if (pretend_lnTT.or.ltemperature) call stop_it("fargo advection not "//&
+          "implemented for the temperature equation")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -150,7 +150,6 @@ module Special
 !  18-07-06/tony: coded
 !
       lpenc_requested(i_uu)=.true.
-      if (lmagnetic) lpenc_requested(i_aa)=.true.
 !
 !  For continuity equation
 !
@@ -167,7 +166,14 @@ module Special
 !
 !  For the induction equation
 !
-      if (lmagnetic) lpenc_requested(i_aij)=.true.
+      if (lmagnetic) then 
+        lpenc_requested(i_aa)=.true.
+        lpenc_requested(i_aij)=.true.
+      endif
+!
+!  For the entropy equation
+!
+      if (lentropy) lpenc_requested(i_gss)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -206,7 +212,7 @@ module Special
 !
 !  Note: It is tempting to use 
 !
-!     call h_dot_grad(uu_advec,p%uij,p%uu,uuadvec_gu)
+!     call h_dot_grad(uu_advec,p%uij,p%uu,uuadvec_guu)
 !
 !  instead of the lines coded below, but the line just above
 !  would introduce the curvature terms with the residual
@@ -215,12 +221,12 @@ module Special
 !  These terms have to be added manually. If one uses
 !  h_dot_grad_vec, then the curvature with residual would
 !  have to be removed manually and then the full speed 
-!  added again (for the r-component of uuadvec_gu), like 
+!  added again (for the r-component of uuadvec_guu), like 
 !  this:
 !
-!   uuadvec_gu(:,1)=uuadvec_gu(:,1)-&
+!   uuadvec_guu(:,1)=uuadvec_guu(:,1)-&
 !      rcyl_mn1*((p%uu(:,2)-uu_advec(:,2))*p%uu(:,2))
-!   uuadvec_gu(:,2)=uuadvec_gu(:,2)+&
+!   uuadvec_guu(:,2)=uuadvec_guu(:,2)+&
 !      rcyl_mn1*((p%uu(:,1)-uu_advec(:,1))*p%uu(:,2))
 !
 !
@@ -234,7 +240,9 @@ module Special
       tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
       tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
 !
-      uuadvec_gu=tmp2
+      uuadvec_guu=tmp2
+!
+!  Advection of the magnetic potential
 !
       if (lmagnetic) then
         do j=1,3
@@ -244,9 +252,13 @@ module Special
         tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
         tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
 !
-        uuadvec_ga=tmp2
+        uuadvec_gaa=tmp2
       endif
-
+!
+!  Advection of entropy
+!
+      if (lentropy) &
+           call h_dot_grad(uu_advec,p%gss,uuadvec_gss)
 !      
       call keep_compiler_quiet(f)
 !
@@ -426,7 +438,7 @@ endsubroutine read_special_run_pars
 !
 !  Modified momentum equation
 !
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_gu
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_guu
 !
 !  The lines below are not symmetric. This is on purpose, to better 
 !  highlight that fargo advects the azimuthal coordinate ONLY!!
@@ -457,10 +469,9 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_ga
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_gaa
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_magnetic
@@ -481,8 +492,9 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-uuadvec_gss
+!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_entropy

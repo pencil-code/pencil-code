@@ -547,6 +547,14 @@ module Entropy
         print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
       endif
 !
+!  Turn off advection of entropy when fargo is used
+!
+      if (lfargo_advection) then
+        ladvection_entropy=.false.
+        if (lroot) print*,& 
+             'initialize_entropy: fargo used, turned off advection of entropy'
+      endif
+!
 !  Possible to calculate pressure gradient directly from the pressure, in which
 !  case we must open an auxiliary slot in f to store the pressure. This method
 !  is not compatible with non-blocking communication of ghost zones, so we turn
@@ -2230,6 +2238,8 @@ module Entropy
 !
       if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gTT)=.true.
       if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
+!
+      if (lfargo_advection) lpenc_requested(i_gss)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
