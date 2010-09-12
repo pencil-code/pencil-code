@@ -128,7 +128,6 @@ module Magnetic
       if (lpencil(i_b2)) p%b2=0.0
       if (lpencil(i_jxbr)) p%jxbr=0.0
       if (lpencil(i_bij)) p%bij=0.0
-      !if (lpencil(i_aij)) p%aij=0.0
       if (lpencil(i_uxb)) p%uxb=0.0
 !
       call keep_compiler_quiet(f)
