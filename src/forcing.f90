@@ -193,6 +193,16 @@ module Forcing
           profz_hel(n)= -1.+2.*step_scalar(z(n),equator-ck_equator_gap,ck_gap_step)
         enddo
 !
+!  step function change in intensity of helicity at zff_hel
+!
+      elseif (iforce_profile=='step_ampl=z') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+                       profz_hel=1.
+        do n=1,mz
+          profz_ampl(n)= step_scalar(z(n),zff_hel,width_ff)
+        enddo
+!
 !  sign change of helicity proportional to cosy
 !
       elseif (iforce_profile=='equator_hel=cosy') then
