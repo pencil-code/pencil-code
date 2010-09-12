@@ -58,7 +58,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
-      endif else if kEyword_set(ee) then begin
+      endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
       endif else if keyword_set(ss) then begin
