@@ -2239,8 +2239,6 @@ module Entropy
       if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gTT)=.true.
       if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
 !
-      if (lfargo_advection) lpenc_requested(i_gss)=.true.
-!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
