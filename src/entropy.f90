@@ -3056,6 +3056,7 @@ module Entropy
 !
       if (headtt) print*, 'calc_heatcond_hyper3: chi_hyper3=', chi_hyper3
 !
+      thdiff=0.
       do j=1,3
         call der6(f,iss,tmp,j,IGNOREDX=.true.)
         thdiff = thdiff + chi_hyper3*pi4_1*tmp*dline_1(:,j)**2
@@ -3066,7 +3067,7 @@ module Entropy
       if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
 !
       if (lfirst.and.ldt) &
-          diffus_chi3=diffus_chi3+diffus_chi3*pi4_1*dxyz_2
+          diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxyz_2
 !
     endsubroutine calc_heatcond_hyper3_polar
 !***********************************************************************
@@ -3684,8 +3685,9 @@ module Entropy
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
 !
-      if (lgravr .and. (luminosity/=0.) .and. (wheat/=0) &
-           .and. (.not.lspherical_coords)) &
+      if (lgravr .and. (.not.lspherical_coords) .and. & 
+           !several possible heating/cooling sources used 
+           (luminosity/=0. .or. cool/=0. .or. cool_int/=0. .or. cool_ext/=0) ) &
            call get_heat_cool_gravr(heat,p)
 !
 !  (also see the comments inside the above subroutine to apply it to
@@ -3874,18 +3876,19 @@ module Entropy
       intent(in) :: p
 !
       if (nzgrid == 1) then
-         prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
+        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)  ! 2-D heating profile
       else
-         prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
+        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
       endif
       heat = luminosity*prof
       if (headt .and. lfirst .and. ip<=9) &
-          call output_pencil(trim(directory)//'/heat.dat',heat,1)
+           call output_pencil(trim(directory)//'/heat.dat',heat,1)
 !
 !  Surface cooling: entropy or temperature
 !  Cooling profile; maximum = 1
 !
 !       prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+!
       if (rcool==0.) rcool=r_ext
       if (lcylindrical_coords) then
         prof = step(p%rcyl_mn,rcool,wcool)
@@ -3899,7 +3902,7 @@ module Entropy
       case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
       case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
-         ! in a more time-step neutral manner
+        ! in a more time-step neutral manner
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
       case ('entropy')        ! cooling to reference entropy (currently =0)
         heat = heat - cool*prof*(p%ss-0.)
@@ -3927,7 +3930,7 @@ module Entropy
 !
       case default
         write(unit=errormsg,fmt=*) &
-            'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+             'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
         call fatal_error('calc_heat_cool',errormsg)
       endselect
 !
