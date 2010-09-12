@@ -1234,7 +1234,7 @@ sub write_timing_summary {
 # ---------------------------------------------------------------------- #
 sub check_for_datadir {
 # Make sure we have an appropriate data directory
-    my $created_datadir = 0;
+    my $created_dir = 0;
     if (! -d 'data') {
         if ($mkdatadir) {
             if (-l 'data') {
@@ -1254,10 +1254,10 @@ sub check_for_datadir {
                 print "        No data directory; generating data -> $tmpdir\n";
             }
             system("mkdir -p $tmpdir; ln -s $tmpdir data");
-            $created_datadir = 1;
+            $created_dir = 1;
         }
     }
-    return $created_datadir;
+    return $created_dir;
 }
 # ---------------------------------------------------------------------- #
 sub time_diff{
