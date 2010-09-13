@@ -1486,7 +1486,7 @@ module Diagnostics
 !   2-oct-05/anders: adapted from xysum_mn_name_z
 !
       real, dimension (nx) :: a
-      integer :: iname,isum
+      integer :: iname
 !
 !  Initialize to zero.
 !
