@@ -131,6 +131,7 @@ module Chemistry
      logical :: latmchem=.false.
      logical :: lcloud=.false.
      integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
+     logical :: lreinit_water=.false.
 !
 !   Diagnostics
 !
@@ -147,7 +148,8 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
-      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2
+      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2, &
+      lreinit_water
 !
 !
 ! run parameters
@@ -1784,6 +1786,25 @@ module Chemistry
 !
     endsubroutine calc_for_chem_mixture
 !***********************************************************************
+    subroutine chemspec_normalization(f)
+!
+!   20-sep-10/Natalia: coded
+!   renormalization of the species
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: sum_Y 
+      integer :: k
+
+      sum_Y=0.
+      do k=1,nchemspec
+        sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+      enddo
+      do k=1,nchemspec
+        f(:,:,:,ichemspec(k))=f(:,:,:,ichemspec(k))/sum_Y
+      enddo
+      
+    endsubroutine chemspec_normalization
+!***********************************************************************
     subroutine astrobiology_data(f)
 !
 !  Proceedure to read in stoichiometric matrices in explicit format for
@@ -2186,7 +2207,7 @@ module Chemistry
       real, dimension (nx) :: ugchemspec, sum_DYDT
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
-      real, dimension (nx) :: RHS_T_full
+      real, dimension (nx) :: RHS_T_full, sum_Y
 !
 !  indices
 !
@@ -2336,13 +2357,25 @@ module Chemistry
 !
       if (lcloud) then
 !
-! commented for the testing. Sould be used later
 !
-          df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
-              - p%ccondens
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-              + 2.5e10/1.005e7*p%ccondens*p%TT1*0.
+        df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
+              + p%ccondens
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
+              - 2.5e6/1.005*p%ccondens*p%TT1
 
+!
+! this is for the debuging perpose: one check that the sum of all mass fractions is 1
+!
+        sum_Y=0.
+        do k=1,nchemspec
+        sum_Y=sum_Y+f(l1:l2,m,n,ichemspec(k))
+        enddo
+        if (maxval(abs(sum_Y(:)-1))>1e-10)  then
+          print*,sum_Y(:)
+            call fatal_error('dchemistry_dt',&
+                  'sum_Y is not unity')
+        endif
+!
         do i=1,mx
             if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)>=1. ) &
               df(i,m,n,ichemspec(index_H2O))=0.
@@ -4444,8 +4477,9 @@ module Chemistry
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: i,j,k=1
+      integer :: i,j,k=1,index_YY
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
+      real :: psat, qvsat
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
 !
@@ -4527,7 +4561,6 @@ module Chemistry
 !
       do j=1,k-1
         f(:,:,:,ichemspec(stor1(j)))=stor2(j)*0.01
-!
       enddo
 !
       sum_Y=0.
@@ -4637,6 +4670,43 @@ module Chemistry
       if (lroot) print*, 'R', k_B_cgs/m_u_cgs
 !
       close(file_id)
+
+!
+!  Testing for the atmospheric case
+!
+       if (lreinit_water) then
+       if ((index_H2O>0) .and. (ldustdensity)) then
+         psat=6.035e12*exp(-5938./TT)
+         qvsat=psat/PP
+         f(:,:,:,ichemspec(index_H2O))=qvsat*0.8
+         index_YY=int(maxval(ichemspec(:)))
+         sum_Y=0.
+         do k=1,nchemspec
+           if (ichemspec(k)/=index_YY) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+         enddo
+           f(:,:,:,index_YY)=1.-sum_Y
+         air_mass=0.
+         do k=1,nchemspec
+           air_mass=air_mass+maxval(f(:,:,:,ichemspec(k))) &
+                   /species_constants(k,imass)
+         enddo
+         air_mass=1./air_mass
+         if (ldensity_nolog) then
+           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+         else
+           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+         endif
+       
+
+         if (lroot) print*, ' Saturation Pressure, Pa   ', psat
+         if (lroot) print*, ' saturated water mass fraction', qvsat
+         if (lroot) print*, 'New Air density, g/cm^3:'
+         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
+         if (lroot) print*, 'New Air mean weight, g/mol', air_mass
+       endif
+       endif
 !
     endsubroutine air_field
 !***********************************************************************

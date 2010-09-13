@@ -118,6 +118,16 @@ module Boundcond
             endif
 !
             do j=ivar1,ivar2
+!
+! Natalia: the next line is for the dustdensity case.
+! If ndustspec is large, it is stupid to set bc for all dust species
+! in start.in. But if one does not set them, they becomes 'p' by default
+! Since this problem is crutial  only for aerosol + chemistry
+! the following condition is used. But this place should be modifyed somehow 
+! Any ideas?
+!
+            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
+!
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ip_ok) then
                 select case (bc12(j))

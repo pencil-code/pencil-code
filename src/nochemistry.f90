@@ -133,6 +133,14 @@ module Chemistry
 !
     endsubroutine rprint_chemistry
 !***********************************************************************
+    subroutine chemspec_normalization(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine chemspec_normalization
+!***********************************************************************
     subroutine get_slices_chemistry(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f

@@ -530,8 +530,43 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       integer :: l_sz
+      real, dimension (mx) :: func_x
+      integer :: j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y,ll1,ll2
+      real :: dt1, lnTT_ref
+      real :: del
+      logical :: lzone_y=.false.
+!
+       dt1=1./(3.*dt)
+       del=0.1
+!
+     
+!
+       sz_r_x=l2-int(del*nxgrid)
+       sz_l_x=int(del*nxgrid)+l1
+!
+       ll1=l1
+       ll2=l2
+     
 
+        do j=1,2
 
+         if (j==1) then
+          ll1=sz_r_x
+          ll2=l2
+          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
+          lnTT_ref=log(285.)
+         elseif (j==2) then
+          ll1=l1+1
+          ll2=sz_l_x
+          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
+          lnTT_ref=log(282.)
+         endif
+!
+          df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+            -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+!
+        enddo
+!
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -578,18 +613,14 @@ module Special
          bc%done=.true.
          case ('aer')
          select case (bc%location)
+           case (iBC_X_TOP)
+             call bc_aerosol_x(f,bc)
+           case (iBC_X_BOT)
+             call bc_aerosol_x(f,bc)
            case (iBC_Y_TOP)
-             call bc_aerosol(f,bc)
+             call bc_aerosol_y(f,bc)
            case (iBC_Y_BOT)
-             call bc_aerosol(f,bc)
-         endselect
-         bc%done=.true.
-         case ('')
-         select case (bc%location)
-           case (iBC_Y_TOP)
-             call bc_aerosol(f,bc)
-           case (iBC_Y_BOT)
-             call bc_aerosol(f,bc)
+             call bc_aerosol_y(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -720,7 +751,7 @@ module Special
       real, dimension (mx,mz) :: u_profile
 !
       do jjj=1,mx
-         u_profile(jjj,:)=cos(PI*x(jjj)/Lxyz(1))
+         u_profile(jjj,:)=cos(Period*PI*x(jjj)/Lxyz(1))
       enddo
 !
       vr=bc%ivar
@@ -742,7 +773,88 @@ module Special
 !
     endsubroutine bc_cos_uy
 !********************************************************************
- subroutine bc_aerosol(f,bc)
+ subroutine bc_aerosol_x(f,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (boundary_condition) :: bc
+      integer :: i,j,vr,k
+      integer :: jjj,kkk
+      real :: value1, value2
+!
+      vr=bc%ivar
+      value1=bc%value1
+      value2=bc%value2
+!
+      if (bc%location==iBC_X_BOT) then
+! bottom boundary
+        if (vr==iuud(1)+3) then 
+          do k=1,ndustspec
+            f(l1,m1:m2,n1:n2,ind(k))=value1  &
+            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-6)**2)
+          enddo
+          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+        endif
+        if (vr==iuud(1)+4) then 
+         f(l1,m1:m2,n1:n2,imd)=value1
+        endif
+
+!      if (vr==iuud(1)+3) then 
+!        f(l1-1,:,:,ind)=0.2*(9*f(l1,:,:,ind)-4*f(l1+2,:,:,ind)  &
+!                       -3*f(l1+3,:,:,ind)+3*f(l1+4,:,:,ind))
+!        f(l1-2,:,:,ind)=0.2*(15*f(l1,:,:,ind)-2*f(l1+1,:,:,ind)  &
+!                       -9*f(l1+2,:,:,ind)-6*f(l1+3,:,:,ind)+ 7*f(l1+4,:,:,ind))
+!        f(l1-3,:,:,ind)=1./35.*(157*f(l1,:,:,ind)-33*f(l1+1,:,:,ind)-108*f(l1+2,:,:,ind)  &
+!                     -68*f(l1+3,:,:,ind)+87*f(l1+4,:,:,ind))
+!      endif
+!      if (vr==iuud(1)+4) then 
+!        f(l1-1,:,:,imd)=0.2*(  9*f(l1,:,:,imd)-4*f(l1+2,:,:,imd)-3*f(l1+3,:,:,imd)  &
+!                       +3*f(l1+4,:,:,imd))
+!        f(l1-2,:,:,imd)=0.2*( 15*f(l1,:,:,imd)-2*f(l1+1,:,:,imd)  &
+!                       -9*f(l1+2,:,:,imd)-6*f(l1+3,:,:,imd)+ 7*f(l1+4,:,:,imd))
+!        f(l1-3,:,:,imd)=1./35.*(157*f(l1,:,:,imd)-33*f(l1+1,:,:,imd)-108*f(l1+2,:,:,imd)  &
+!                     -68*f(l1+3,:,:,imd)+87*f(l1+4,:,:,imd))
+!      endif
+
+      elseif (bc%location==iBC_X_TOP) then
+! top boundary
+        if (vr==iuud(1)+3) then 
+          do k=1,ndustspec
+            f(l2,m1:m2,n1:n2,ind(k))=value2  &
+            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-6)**2)
+          enddo
+          do i=0,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
+        endif
+        if (vr==iuud(1)+4) then 
+         f(l2,m1:m2,n1:n2,imd)=value2
+        endif
+!        if (vr>=iuud(1)+3) then 
+!        f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
+!                       - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))
+!        f(l2+2,:,:,ind)=0.2   *( 15*f(l2,:,:,ind)- 2*f(l2-1,:,:,ind)  &
+!                 -  9*f(l2-2,:,:,ind)- 6*f(l2-3,:,:,ind)+ 7*f(l2-4,:,:,ind))
+!        f(l2+3,:,:,ind)=1./35.*(157*f(l2,:,:,ind)-33*f(l2-1,:,:,ind)  &
+!                       -108*f(l2-2,:,:,ind) -68*f(l2-3,:,:,ind)+87*f(l2-4,:,:,ind))
+!        endif
+!        if (vr==iuud(1)+4) then 
+!        f(l2+1,:,:,imd)=0.2   *(  9*f(l2,:,:,imd)-  4*f(l2-2,:,:,imd) &
+!                       - 3*f(l2-3,:,:,imd)+ 3*f(l2-4,:,:,imd))
+!        f(l2+2,:,:,imd)=0.2   *( 15*f(l2,:,:,imd)- 2*f(l2-1,:,:,imd)  &
+!                 -  9*f(l2-2,:,:,imd)- 6*f(l2-3,:,:,imd)+ 7*f(l2-4,:,:,imd))
+!        f(l2+3,:,:,imd)=1./35.*(157*f(l2,:,:,imd)-33*f(l2-1,:,:,imd)  &
+!                       -108*f(l2-2,:,:,imd) -68*f(l2-3,:,:,imd)+87*f(l2-4,:,:,imd))
+!        endif
+      else
+        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_aerosol_x
+!********************************************************************
+ subroutine bc_aerosol_y(f,bc)
 !
 ! Natalia
 !
@@ -759,32 +871,26 @@ module Special
       value2=bc%value2
 !
       if (bc%location==iBC_Y_BOT) then
-      ! bottom boundary
-!        f(l1:l2,m1,n1:n2,vr) = value1
-!        do i=0,nghost; f(:,m1-i,:,vr)=2*f(:,m1,:,vr)-f(:,m1+i,:,vr); enddo
-
-      if (vr==iuud(1)+3) then 
-        do k=1,ndustspec
-          f(l1:l2,m1,n1:n2,ind(k))=value1  &
-              *exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
-              /(0.1*(dsize_max-dsize_min)))**2)
-        enddo
-        do i=0,nghost; f(:,m1-i,:,ind)=2*f(:,m1,:,ind)-f(:,m1+i,:,ind); enddo
-      endif
-      if (vr==iuud(1)+4) then 
-         f(l1:l2,m1,n1:n2,imd)=value1
-      endif
-
-      elseif (bc%location==iBC_Y_TOP) then
-
-
-      ! top boundary
- !       f(l1:l2,m2,n1:n2,ind) = value2
-
-!print*,f(l2,m2,n1,ind(2))
-!        do i=1,nghost; f(:,m2+i,:,vr)=2*f(:,m2,:,vr)-f(:,m2-i,:,vr); enddo
+! bottom boundary
         if (vr>=iuud(1)+3) then 
-!          do i=0,nghost; f(:,m2+i,:,ind)=2*f(:,m2,:,ind)-f(:,m2-i,:,ind); enddo
+        f(:,m1-1,:,ind)=0.2   *(  9*f(:,m1,:,ind)-  4*f(:,m1+2,:,ind) &
+                       - 3*f(:,m1+3,:,ind)+ 3*f(:,m1+4,:,ind))
+        f(:,m1-2,:,ind)=0.2   *( 15*f(:,m1,:,ind)- 2*f(:,m1+1,:,ind)  &
+                 -  9*f(:,m1+2,:,ind)- 6*f(:,m1+3,:,ind)+ 7*f(:,m1+4,:,ind))
+        f(:,m1-3,:,ind)=1./35.*(157*f(:,m1,:,ind)-33*f(:,m1+1,:,ind)  &
+                       -108*f(:,m1+2,:,ind) -68*f(:,m1+3,:,ind)+87*f(:,m1+4,:,ind))
+        endif
+        if (vr==iuud(1)+4) then 
+        f(:,m1-1,:,imd)=0.2   *(  9*f(:,m1,:,imd)-  4*f(:,m1+2,:,imd) &
+                       - 3*f(:,m1+3,:,imd)+ 3*f(:,m1+4,:,imd))
+        f(:,m1-2,:,imd)=0.2   *( 15*f(:,m1,:,imd)- 2*f(:,m1+1,:,imd)  &
+                 -  9*f(:,m1+2,:,imd)- 6*f(:,m1+3,:,imd)+ 7*f(:,m1+4,:,imd))
+        f(:,m1-3,:,imd)=1./35.*(157*f(:,m1,:,imd)-33*f(:,m1+1,:,imd)  &
+                       -108*f(:,m1+2,:,imd) -68*f(:,m1+3,:,imd)+87*f(:,m1+4,:,imd))      
+        endif
+      elseif (bc%location==iBC_Y_TOP) then
+! top boundary
+        if (vr>=iuud(1)+3) then 
         f(:,m2+1,:,ind)=0.2   *(  9*f(:,m2,:,ind)-  4*f(:,m2-2,:,ind) &
                        - 3*f(:,m2-3,:,ind)+ 3*f(:,m2-4,:,ind))
         f(:,m2+2,:,ind)=0.2   *( 15*f(:,m2,:,ind)- 2*f(:,m2-1,:,ind)  &
@@ -793,7 +899,6 @@ module Special
                        -108*f(:,m2-2,:,ind) -68*f(:,m2-3,:,ind)+87*f(:,m2-4,:,ind))
         endif
         if (vr==iuud(1)+4) then 
-!         do i=0,nghost;  f(:,m2+i,:,imd)=2*f(:,m2,:,imd)-f(:,m2-i,:,imd); enddo
         f(:,m2+1,:,imd)=0.2   *(  9*f(:,m2,:,imd)-  4*f(:,m2-2,:,imd) &
                        - 3*f(:,m2-3,:,imd)+ 3*f(:,m2-4,:,imd))
         f(:,m2+2,:,imd)=0.2   *( 15*f(:,m2,:,imd)- 2*f(:,m2-1,:,imd)  &
@@ -806,7 +911,7 @@ module Special
                         iBC_Y_TOP,")' or `bot(",iBC_Y_BOT,")'"
       endif
 !
-    endsubroutine bc_aerosol
+    endsubroutine bc_aerosol_y
 !********************************************************************
     subroutine special_before_boundary(f)
 !

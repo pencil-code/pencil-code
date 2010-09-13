@@ -873,6 +873,8 @@ module Dustvelocity
         call identify_bcs('udy',iudy(1))
         call identify_bcs('udz',iudz(1))
       endif
+
+      if (.not. lchemistry) then
 !
 !  Loop over dust species.
 !
@@ -1075,6 +1077,7 @@ module Dustvelocity
 !  End loop over dust species
 !
       enddo
+      endif
 !
 !  Calculate diagnostic variables
 !

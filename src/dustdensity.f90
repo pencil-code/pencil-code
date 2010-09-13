@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
-! PENCILS PROVIDED ppsf(ndustspec)
+! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp
 !
 !***************************************************************
 module Dustdensity
@@ -529,9 +529,11 @@ module Dustdensity
         case ('atm_drop_gauss')
           do k=1,ndustspec
             f(:,:,:,ind(k)) = &
-              nd0*exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
-              /(0.1*(dsize_max-dsize_min)))**2)
-            md(k)=0.!4/3.*pi*rhods*dsize(k)**3*(1.-water_ice**3)
+ !             nd0*exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
+ !             /(0.1*(dsize_max-dsize_min)))**2)
+             nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-6)**2)
+            md(k)=0.!rho0*ff(i,0)*dr*4./3.*3.14*rr(i)^3*rhow/mwmol
+             !4/3.*pi*rhods*dsize(k)**3*(1.-water_ice**3)
             mi(k)=0.!4/3.*pi*rhod0*dsize(k)**3*water_ice**3
           enddo
           if (lroot) print*, &
@@ -804,6 +806,8 @@ module Dustdensity
         lpenc_requested(i_ppsf)=.true.
         lpenc_requested(i_md)=.true.
         lpenc_requested(i_mi)=.true.
+        lpenc_requested(i_Ywater)=.true.
+        lpenc_requested(i_pp)=.true.
       endif
 !
       lpenc_diagnos(i_nd)=.true.
@@ -1072,7 +1076,7 @@ module Dustdensity
 ! udrop
         if (lpencil(i_udrop)) then
           p%udrop(:,:,k)=p%uu(:,:)
-          p%udrop(:,3,k)=p%udrop(:,3,k)-1e4*dsize(k)
+          p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2
         endif
 ! udropgnd
         if (lpencil(i_udropgnd)) then
@@ -1095,15 +1099,16 @@ module Dustdensity
 ! ppsat is a  saturation pressure in cgs units
 ! 
         if (lpencil(i_ppsf)) then
-!          p%ppsat=6.035e12*exp(-5938*p%TT1)*10.0
+           p%ppsat=6.035e12*exp(-5938.*p%TT1)
           do k=1, ndustspec
-            if (any(p%ppwater==0.0) .and. (Nion==0.)) zero_ppsf=.true.
-            if (dsize(k)==0.) zero_ppsf=.true.
-            if (.not. zero_ppsf) then
-              p%ppsf(:,k)=p%ppwater(:)*exp(2.*Sigmad/Rgas*p%md(:,k) &
-                      *p%TT1(:)/dsize(k))*(p%ppwater/k_B_cgs*p%TT1)&
-                      /(p%ppwater/k_B_cgs*p%TT1+Nion)
-            endif
+!            if (any(p%ppwater==0.0) .and. (Nion==0.)) zero_ppsf=.true.
+!            if (dsize(k)==0.) zero_ppsf=.true.
+!            if (.not. zero_ppsf) then
+!              p%ppsf(:,k)=p%ppsat*exp(2.*Sigmad/Rgas*p%md(:,k) &
+!                      *p%TT1(:)/dsize(k))!*(p%ppwater/k_B_cgs*p%TT1)&
+!                      /(p%ppwater/k_B_cgs*p%TT1+Nion)
+               p%ppsf(:,k)=6.035e12*exp(-5938.*p%TT1)
+!            endif
           enddo
         endif
 ! ccondens
@@ -1115,6 +1120,7 @@ module Dustdensity
             if (.not.lpencil_check_at_work) then
               write(0,*) 'p%ppsat = ', p%ppsat
               write(0,*) 'p%ppsf = ', p%ppsf
+              write(0,*) 'p%TT = ', minval(p%TT)
             endif
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat or p%ppsf has zero value(s)')
@@ -1122,17 +1128,20 @@ module Dustdensity
             tmp=0.0
             do k=1,ndustspec-1
               tmp=tmp  &
-                +0.5*(p%nd(:,k+1)*dsize(k+1)*(p%ppwater/p%ppsf(:,k+1)-1) &
-                 +p%nd(:,k)*dsize(k)*(p%ppwater/p%ppsf(:,k)-1)) &
+                +0.5*(p%nd(:,k+1)*dsize(k+1)*(p%Ywater-p%ppsf(:,k+1)/p%pp) &
+                 +p%nd(:,k)*dsize(k)*(p%Ywater-p%ppsf(:,k+1)/p%pp(:))) &
                  *(dsize(k+1)-dsize(k))
             enddo
-            p%ccondens(:)=4*pi*rho_w*Aconst*tmp(:)
+            p%ccondens(:)=-12.*pi*Dwater*18.*p%mu1*p%rho/rho_w*tmp(:)*0.
           endif
+!print*,maxval(p%Ywater),maxval(p%ppsf(:,1)/p%pp),maxval(p%TT)
         endif
 ! dndr
         if (lpencil(i_dndr)) then
           call droplet_redistr(f,p,dndr_tmp)
-          p%dndr=4*PI*Aconst*dndr_tmp
+          do k=1,ndustspec
+            p%dndr(:,k)=-3.*Dwater*18.*p%mu1*p%rho/rho_w*dndr_tmp(:,k)*0.
+          enddo
         endif
 !
     endsubroutine calc_pencils_dustdensity
@@ -1212,7 +1221,7 @@ module Dustdensity
 !
         do k=1,ndustspec
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
-                 -p%dndr(:,k)
+                 +p%dndr(:,k)
 !
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
@@ -1861,25 +1870,34 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr, pp_ratio
-      integer :: k
+      real, dimension (nx,ndustspec) :: dndr_dr!, pp_ratio
+      integer :: k, ind_tmp
 !
-      if (any(p%ppsf(:,1)==0.)) then
-        pp_ratio(:,1)=0.
-      else
-        pp_ratio(:,1)=p%ppwater(:)/p%ppsf(:,1)-1
-      endif
+!      if (any(p%ppsf(:,1)==0.)) then
+!        pp_ratio(:,1)=0.
+!      else
+!        pp_ratio(:,1)=p%ppwater(:)/p%ppsf(:,1)-1
+!      endif
       do k=1,ndustspec-1
-      if (any(p%ppsf(:,k+1)==0.)) then
-        pp_ratio(:,k+1)=0.
-      else
-        pp_ratio(:,k+1)=p%ppwater(:)/p%ppsf(:,k+1)-1
-      endif
+!      if (any(p%ppsf(:,k+1)==0.)) then
+!        pp_ratio(:,k+1)=0.
+!      else
+!        pp_ratio(:,k+1)=p%ppwater(:)/p%ppsf(:,k+1)-1
+!      endif
         dndr_dr(:,k)= &
-                (f(l1:l2,m,n,ind(k+1))*pp_ratio(:,k+1)/dsize(k+1) &
-               -f(l1:l2,m,n,ind(k))*pp_ratio(:,k)/dsize(k))    &
+                (f(l1:l2,m,n,ind(k+1))*(p%Ywater(:)-p%ppsf(:,k+1)/p%pp(:))/dsize(k+1) &
+               -f(l1:l2,m,n,ind(k))*(p%Ywater(:)-p%ppsf(:,k+1)/p%pp(:))/dsize(k))    &
                  /(dsize(k+1)-dsize(k))
       enddo
+        ind_tmp=ndustspec-1
+        if (dsize(ndustspec)>0) then
+          dndr_dr(:,ndustspec)= &
+                (f(l1:l2,m,n,ind(ndustspec)) &
+               *(p%Ywater(:)-p%ppsf(:,ndustspec)/p%pp(:))/dsize(ndustspec) &
+               -f(l1:l2,m,n,ind(ind_tmp))  &
+               *(p%Ywater(:)-p%ppsf(:,ind_tmp)/p%pp(:))/dsize(ind_tmp))    &
+                 /(dsize(ndustspec)-dsize(ind_tmp))
+        endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************

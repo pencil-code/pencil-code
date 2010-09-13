@@ -14,6 +14,7 @@
   public :: pencil_interdep_chemistry
 
   public :: calc_for_chem_mixture
+  public :: chemspec_normalization
 !  public :: bc_nscbc_subin_x
 !  public :: bc_nscbc_nref_subout_x
 !  public :: bc_nscbc_nref_subout_y
