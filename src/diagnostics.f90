@@ -1492,14 +1492,12 @@ module Diagnostics
 !
       if (lfirstpoint) fnamex(:,:,iname)=0.0
 !
-      if (lspherical_coords)then
-        do isum=l1,l2
-          fnamex(isum,ipx+1,iname)=fnamex(isum,ipx+1,iname)+x(isum)*x(isum)*sinth(m)*a(isum-nghost)
-        enddo
+!  Use different volume differentials for different coordinate systems.
+!
+      if (lspherical_coords) then
+        fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)**2*sinth(m)*a
       elseif (lcylindrical_coords) then
-        do isum=l1,l2
-          fnamex(isum,ipx+1,iname)=fnamex(isum,ipx+1,iname)+x(isum)*a(isum)
-        enddo
+        fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)*a
       else
         fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+a
       endif
