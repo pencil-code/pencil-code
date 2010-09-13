@@ -22,9 +22,11 @@ module Special
   real :: Kpara=0.,Kperp=0.
   real :: cool_RTV=0.,heatamp=0.
   real :: hyper3_chi=0.
+  real :: tau_inv_newton=0.,exp_newton=0.
 !
   namelist /special_run_pars/ &
-      Kpara,Kperp,cool_RTV,hyper3_chi,heatamp
+      Kpara,Kperp,cool_RTV,hyper3_chi,heatamp,tau_inv_newton, &
+      exp_newton
 !
 ! variables for print.in
 !
@@ -34,19 +36,65 @@ module Special
                               ! DIAG_DOC:   step based on heat conductivity;
                               ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_dtrad=0    ! DIAG_DOC: radiative loss from RTV
+  integer :: idiag_dtnewt=0
 !
 !  variables for video slices:
 !
-  real, target, dimension(nx,ny) :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
-  real, target, dimension(nx,nz) :: spitzer_xz
-  real, target, dimension(ny,nz) :: spitzer_yz
+  real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
+  real, target, dimension (nx,nz) :: spitzer_xz
+  real, target, dimension (ny,nz) :: spitzer_yz
 !
-  real, target, dimension(nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension(nx,nz) :: rtv_xz
-  real, target, dimension(ny,nz) :: rtv_yz
+  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+  real, target, dimension (nx,nz) :: rtv_xz
+  real, target, dimension (ny,nz) :: rtv_yz
+!
+!  miscellaneous variables 
+  real, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
 !
   contains
 !
+!***********************************************************************
+    subroutine register_special()
+!
+!  Set up indices for variables in special modules and write svn id.
+!
+!  10-sep-10/bing: coded
+!
+      if (lroot) call svn_id( &
+           "$Id$")
+!
+    endsubroutine register_special
+!***********************************************************************
+    subroutine initialize_special(f,lstarting)
+!
+!  Called by start.f90 together with lstarting=.true.   and then
+!  called by run.f90   together with lstarting=.false.  after reading
+!  parameters, but before the time loop.
+!
+!  13-sep-10/bing: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      logical, intent(in) :: lstarting
+      real, dimension (mz) :: ztmp
+      character (len=*), parameter :: filename='/strat.dat'
+      integer :: lend,unit=12
+      real :: dummy=1.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
+!
+      inquire(IOLENGTH=lend) dummy
+!
+      if (.not.lstarting.and.tau_inv_newton/=0) then
+        open(unit,file=trim(directory_snap)//filename, &
+            form='unformatted',status='unknown',recl=lend*mz)
+        read(unit) ztmp
+        read(unit) lnrho_init_prof
+        read(unit) lnTT_init_prof
+        close(unit)
+      endif
+!
+    endsubroutine initialize_special
 !***********************************************************************
   subroutine read_special_run_pars(unit,iostat)
 !
@@ -120,6 +168,7 @@ module Special
     if (lreset) then
       idiag_dtchi2=0.
       idiag_dtrad=0.
+      idiag_dtnewt=0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -127,6 +176,7 @@ module Special
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
       call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
+      call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
     enddo
 !
 !  write column where which variable is stored
@@ -134,6 +184,7 @@ module Special
     if (lwr) then
       write(3,*) 'i_dtchi2=',idiag_dtchi2
       write(3,*) 'i_dtrad=',idiag_dtrad
+      write(3,*) 'i_dtnewt=',idiag_dtnewt
     endif
 !
   endsubroutine rprint_special
@@ -195,23 +246,24 @@ module Special
     if (Kpara/=0) call calc_heatcond_spitzer(df,p)
     if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
     if (heatamp/=0) call calc_artif_heating(df,p)
-!
-      if (hyper3_chi/=0) then
-        hc(:) = 0.
-        call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
-        hc = hc + tmp
-        hc = hyper3_chi*hc
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+    if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
+ !
+    if (hyper3_chi/=0) then
+      hc(:) = 0.
+      call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
+      hc = hc + tmp
+      call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
+      hc = hc + tmp
+      call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
+      hc = hc + tmp
+      hc = hyper3_chi*hc
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-            + hyper3_chi
-      endif
+      if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
+          + hyper3_chi
+    endif
 !
   endsubroutine special_calc_entropy
 !***********************************************************************
@@ -321,7 +373,6 @@ module Special
 !
     use EquationOfState, only: gamma
     use Diagnostics,     only: max_mn_name
-    use Sub,             only: cubic_step
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -390,8 +441,6 @@ module Special
 !***********************************************************************
     function get_lnQ(lnTT)
 !
-      use Sub, only: cubic_step
-!
 !  input: lnTT in SI units
 !  output: lnP  [p]= W * m^3
 !
@@ -459,6 +508,46 @@ module Special
       endif
 !
     endsubroutine calc_artif_heating
+!***********************************************************************
+    subroutine calc_heat_cool_newton(df,p)
+!
+!  newton cooling dT/dt = -1/tau * (T-T0)
+!               dlnT/dt = 1/tau *(1-T0/T-1)
+!      where
+!        tau = (rho0/rho)^alpha
+!
+!  13-sep-10/bing: coded
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: lnrho0
+!
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: newton,tau_inv_tmp
+!
+      if (headtt) print*,'special_calc_entropy: newton cooling',tau_inv_newton
+!
+!  Get reference temperature
+      newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
+!
+!  Multiply by density dependend time scale
+      tau_inv_tmp = tau_inv_newton * exp(-exp_newton*(lnrho0-p%lnrho))
+      newton  = newton * tau_inv_tmp
+!
+!  Add newton cooling term to entropy
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+!
+      if (lfirst.and.ldt) then
+        dt1_max=max(dt1_max,tau_inv_tmp/cdts)
+        if (ldiagnos.and.idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt)=ilabel_max_dt          
+          call max_mn_name(tau_inv_tmp,idiag_dtnewt,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heat_cool_newton
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
