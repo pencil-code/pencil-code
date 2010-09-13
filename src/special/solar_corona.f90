@@ -494,8 +494,8 @@ module Special
             endif
             call stop_it_if_any(.false.,'')
 !
-            call mpibcast_real (prof_lnrho,nzgrid)
-            call mpibcast_real (prof_z,nzgrid)
+            call mpibcast_real (prof_lnrho,prof_nz)
+            call mpibcast_real (prof_z,prof_nz)
 !
 ! convert from logarithmic SI to Pencil units
             prof_lnrho = prof_lnrho - alog(real(unit_density))
