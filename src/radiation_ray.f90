@@ -1314,8 +1314,12 @@ module Radiation
 !
           kappa=f(l1:l2,m,n,ikapparho)*p%rho1
           do l=1,nx
-            dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
-                min(1.0,dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2)/cdtrad
+            if (f(l1-1+l,m,n,ikapparho)**2>dxyz_2(l)) then
+              dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
+                  dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
+            else
+              dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
+            endif
           enddo
           dt1_max=max(dt1_max,dt1_rad)
         endif
