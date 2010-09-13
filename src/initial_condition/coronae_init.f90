@@ -356,12 +356,23 @@ contains
 !***********************************************************************
   subroutine write_stratification_dat(f)
 !
-!  Writes the initial temperature stratification into each 
+!  Writes the initial density temperature stratification into each 
 !  proc subfolder.
 !  
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    integer :: unit=12,lend
+    real :: dummy=1.
 !
-!    print*,trim(directory_snap),'________________',iproc,nprocz
+    character (len=*), parameter :: filename='/strat.dat'
+!
+    inquire(IOLENGTH=lend) dummy
+!
+    open(unit,file=trim(directory_snap)//filename, &
+        form='unformatted',status='unknown',recl=lend*mz)
+    write(unit) z
+    write(unit) f(l1,m1,:,ilnrho)
+    write(unit) f(l1,m1,:,ilnTT)
+    close(unit)
 !    
   endsubroutine write_stratification_dat
 !***********************************************************************
