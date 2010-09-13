@@ -18,7 +18,6 @@ module InitialCondition
   include '../initial_condition.h'
 !
   character (len=labellen) :: strati_type='nothing'
-  real, dimension (mz) :: lnTT_init_z, lnrho_init_z
   logical :: linit_lnrho=.false., linit_lnTT=.false.
   real :: rho0=0.
 !
@@ -74,9 +73,6 @@ contains
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-
-    print*,"strati_type",strati_type
-
     if (strati_type=='nothing') then 
       call fatal_error('initial_condition_lnrho','Nothing to do')
     elseif (strati_type=='hydrostatic') then 
@@ -87,12 +83,12 @@ contains
 !
 ! save to file stratification.dat
 !
-    call write_stratification_dat()
+    call write_stratification_dat(f)
 !
   endsubroutine initial_condition_lnrho
 !***********************************************************************
   subroutine setup_vert_profiles(f)
-    !
+!
 !  Read and set vertical profiles for initial temperature and density.
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  Initial density profile is given in ln(rho) [kg/m^3] over z [Mm]
@@ -105,13 +101,12 @@ contains
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: dummy,var1,var2
+      real :: dummy
       integer :: lend,ierr
       integer :: i,j
       integer, parameter :: unit=12,lnrho_tag=368,lnTT_tag=369
 !
-      ! file location settings
-      character (len=*), parameter :: stratification_dat = 'stratification.dat'
+! file location settings
       character (len=*), parameter :: lnrho_dat = 'prof_lnrho.dat'
       character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
@@ -119,189 +114,134 @@ contains
       real, dimension (:), allocatable :: prof_z, prof_lnrho, prof_lnTT
       logical :: lread_lnrho=.false., lread_lnTT=.false.
 !
-      call keep_compiler_quiet(f)
-!
       inquire(IOLENGTH=lend) dummy
 !
-      if (.not. (ltemperature .or. lentropy)) return
-      if ((strati_type=='nothing')) strati_type='lnrho_lnTT'
-      if ((linit_lnrho .or. linit_lnTT)) then
-!
-        lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
-        lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
-!
-! check which stratification file should be used
-        if (strati_type=='lnrho_lnTT') then
-!
-! read 'stratification.dat'
-          allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
-          if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
-              'Could not allocate memory for stratification variables')
-!
-          if (lroot) then
-! file access is only done on the MPI root rank
-            if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
-                .true., 'setup_special: Stratification file not found')
-            open (unit,file=stratification_dat)
-            do i=1,nzgrid
-              read(unit,*,iostat=ierr) dummy,var1,var2
-              if (ierr /= 0) call stop_it_if_any (.true., 'setup_special: '// &
-                  'Error reading stratification file: "'//trim(stratification_dat)//'"')
-              prof_lnrho(i)=var1
-              prof_lnTT(i) =var2
-            enddo
-            close(unit)
-          endif
-          call stop_it_if_any (.false.,'')
-!
-          call mpibcast_real (prof_lnTT,nzgrid)
-          call mpibcast_real (prof_lnrho,nzgrid)
-!
-          do i=1,mx
-            do j=1,my
-              f(i,j,n1:n2,ilnTT) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
-              f(i,j,n1:n2,ilnrho) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
-            enddo
-          enddo
-!
-          if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-          if (allocated (prof_lnrho)) deallocate (prof_lnrho)
-!
-        elseif (lread_lnrho .or. lread_lnTT) then
+      lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
+      lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
 !
 ! read temperature profile for interpolation
-          if (lread_lnTT) then
+      if (lread_lnTT) then
 !
 ! file access is only done on the MPI root rank
-            if (lroot) then
-              if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
-                  .true., 'setup_special: file not found: '//trim(lnT_dat))
+        if (lroot) then
+          if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
+              .true., 'setup_special: file not found: '//trim(lnT_dat))
 ! find out, how many data points our profile file has
-              prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
-            endif
-            call stop_it_if_any(.false.,'')
-            call mpibcast_int (prof_nz,1)
+          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+        endif
+        call stop_it_if_any(.false.,'')
+        call mpibcast_int(prof_nz,1)
 !
-            allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
-            if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
-                'Could not allocate memory for z coordinate or lnTT profile')
+        allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
 !
-            if (lroot) then
-              open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
-              read (unit,iostat=ierr) prof_lnTT
-              read (unit,iostat=ierr) prof_z
-              if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-                  'Error reading stratification file: "'//trim(lnT_dat)//'"')
-              close (unit)
-            endif
-            call stop_it_if_any(.false.,'')
+        if (lroot) then
+          open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          read (unit,iostat=ierr) prof_lnTT
+          read (unit,iostat=ierr) prof_z
+          if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+              'Error reading stratification file: "'//trim(lnT_dat)//'"')
+          close (unit)
+        endif
+        call stop_it_if_any(.false.,'')
 !
-            call mpibcast_real (prof_lnTT,prof_nz)
-            call mpibcast_real (prof_z,prof_nz)
+        call mpibcast_real(prof_lnTT,prof_nz)
+        call mpibcast_real(prof_z,prof_nz)
 !
 ! convert from logarithmic SI to Pencil units
-            prof_lnTT = prof_lnTT - alog(real(unit_temperature))
+        prof_lnTT = prof_lnTT - alog(real(unit_temperature))
 !
 ! convert z coordinates from [Mm] to Pencil units
-            if (unit_system == 'SI') then
-              prof_z = prof_z * 1.e6 / unit_length
-            elseif (unit_system == 'cgs') then
-              prof_z = prof_z * 1.e8 / unit_length
-            endif
+        if (unit_system == 'SI') then
+          prof_z = prof_z * 1.e6 / unit_length
+        elseif (unit_system == 'cgs') then
+          prof_z = prof_z * 1.e8 / unit_length
+        endif
 !
 ! interpolate temperature profile to Pencil grid
-            do j = n1-nghost, n2+nghost
-              if (z(j) < prof_z(1) ) then
-                call warning("setup_special","extrapolated lnT below bottom of initial profile")
-                f(:,:,j,ilnTT) = prof_lnTT(1)
-              elseif (z(j) >= prof_z(prof_nz)) then
-                call warning("setup_special","extrapolated lnT over top of initial profile")
-                f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
-              else
-                do i = 1, prof_nz-1
-                  if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                    ! linear interpolation: y = m*(x-x1) + y1
-                    f(:,:,j,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
-                        (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
-                    exit
-                  endif
-                enddo
+        do j = n1-nghost, n2+nghost
+          if (z(j) < prof_z(1) ) then
+            call warning("setup_special","extrapolated lnT below bottom of initial profile")
+            f(:,:,j,ilnTT) = prof_lnTT(1)
+          elseif (z(j) >= prof_z(prof_nz)) then
+            call warning("setup_special","extrapolated lnT over top of initial profile")
+            f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
+          else
+            do i = 1, prof_nz-1
+              if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
+                ! linear interpolation: y = m*(x-x1) + y1
+                f(:,:,j,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
+                    (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
+                exit
               endif
             enddo
-!
-            if (allocated (prof_z)) deallocate (prof_z)
-            if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-!
           endif
+        enddo
+!
+        if (allocated (prof_z)) deallocate (prof_z)
+        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
+!
+      endif
 !
 ! read density profile for interpolation
-          if (lread_lnrho) then
+      if (lread_lnrho) then
 !
 ! file access is only done on the MPI root rank
-            if (lroot) then
-              if (.not. file_exists (lnrho_dat)) call stop_it_if_any ( &
-                  .true., 'setup_special: file not found: '//trim(lnrho_dat))
+        if (lroot) then
+          if (.not. file_exists (lnrho_dat)) call stop_it_if_any ( &
+              .true., 'setup_special: file not found: '//trim(lnrho_dat))
 ! find out, how many data points our profile file has
-              prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*4 * 2)
-            endif
-            call stop_it_if_any(.false.,'')
-            call mpibcast_int (prof_nz,1)
+          prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*4 * 2)
+        endif
+        call stop_it_if_any(.false.,'')
+        call mpibcast_int (prof_nz,1)
 !
-            allocate (prof_z(prof_nz), prof_lnrho(prof_nz), stat=ierr)
-            if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
-                'Could not allocate memory for z coordinate or lnrho profile')
+        allocate (prof_z(prof_nz), prof_lnrho(prof_nz), stat=ierr)
 !
-            if (lroot) then
-              open (unit,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
-              read (unit,iostat=ierr) prof_lnrho
-              read (unit,iostat=ierr) prof_z
-              if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-                  'Error reading stratification file: "'//trim(lnrho_dat)//'"')
-              close (unit)
-            endif
-            call stop_it_if_any(.false.,'')
+        if (lroot) then
+          open (unit,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          read (unit,iostat=ierr) prof_lnrho
+          read (unit,iostat=ierr) prof_z
+          if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+              'Error reading stratification file: "'//trim(lnrho_dat)//'"')
+          close (unit)
+        endif
+        call stop_it_if_any(.false.,'')
 !
-            call mpibcast_real (prof_lnrho,nzgrid)
-            call mpibcast_real (prof_z,nzgrid)
+        call mpibcast_real (prof_lnrho,prof_nz)
+        call mpibcast_real (prof_z,prof_nz)
 !
 ! convert from logarithmic SI to Pencil units
-            prof_lnrho = prof_lnrho - alog(real(unit_density))
+        prof_lnrho = prof_lnrho - alog(real(unit_density))
 !
 ! convert z coordinates from [Mm] to Pencil units
-            if (unit_system == 'SI') then
-              prof_z = prof_z * 1.e6 / unit_length
-            elseif (unit_system == 'cgs') then
-              prof_z = prof_z * 1.e8 / unit_length
-            endif
+        if (unit_system == 'SI') then
+          prof_z = prof_z * 1.e6 / unit_length
+        elseif (unit_system == 'cgs') then
+          prof_z = prof_z * 1.e8 / unit_length
+        endif
 !
 ! interpolate density profile to Pencil grid
-            do j = n1-nghost, n2+nghost
-              if (z(j) < prof_z(1) ) then
-                call warning("setup_special","extrapolated density below bottom of initial profile")
-                f(:,:,j,ilnrho) = prof_lnrho(1)
-              elseif (z(j) >= prof_z(prof_nz)) then
-                call warning("setup_special","extrapolated density over top of initial profile")
-                f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
-              else
-                do i = 1, prof_nz-1
-                  if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                    ! linear interpolation: y = m*(x-x1) + y1
-                     f(:,:,j,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
-                        (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
-                    exit
-                  endif
-                enddo
+        do j = n1-nghost, n2+nghost
+          if (z(j) < prof_z(1) ) then
+            call warning("setup_special","extrapolated density below bottom of initial profile")
+            f(:,:,j,ilnrho) = prof_lnrho(1)
+          elseif (z(j) >= prof_z(prof_nz)) then
+            call warning("setup_special","extrapolated density over top of initial profile")
+            f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
+          else
+            do i = 1, prof_nz-1
+              if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
+                ! linear interpolation: y = m*(x-x1) + y1
+                f(:,:,j,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
+                    (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
+                exit
               endif
             enddo
-!
-            if (allocated (prof_z)) deallocate (prof_z)
-            if (allocated (prof_lnrho)) deallocate (prof_lnrho)
-!
           endif
+        enddo
 !
-        else
-          call stop_it_if_any(.true.,"setup_special: strati_type='"//trim(strati_type)//"' unknown.")
-        endif
+        if (allocated (prof_z)) deallocate (prof_z)
+        if (allocated (prof_lnrho)) deallocate (prof_lnrho)
 !
       endif
 !
@@ -414,10 +354,15 @@ contains
 !
   endsubroutine hydrostatic
 !***********************************************************************
-  subroutine write_stratification_dat()
+  subroutine write_stratification_dat(f)
 !
-! write to proc-dirs instead of sample-dir !!!
+!  Writes the initial temperature stratification into each 
+!  proc subfolder.
+!  
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
+!    print*,trim(directory_snap),'________________',iproc,nprocz
+!    
   endsubroutine write_stratification_dat
 !***********************************************************************
 !
@@ -428,6 +373,6 @@ contains
 !**  copies dummy routines from noinitial_condition.f90 for any    **
 !**  InitialCondition routines not implemented in this file        **
 !**                                                                **
-    include 'initial_condition_dummies.inc'
+    include '../initial_condition_dummies.inc'
 !********************************************************************
   endmodule InitialCondition
