@@ -437,8 +437,12 @@ module Equ
 !
 !  [AB: Isn't it true that not all 2-D averages use rcyl_mn?
 !  lwrite_phiaverages=T is required, and perhaps only that.]
+!  [BD: add also the z_mn dependency]
 !
-        if (l2davgfirst) lpencil(i_rcyl_mn)=.true.
+        if (l2davgfirst) then
+          lpencil(i_rcyl_mn)=.true.
+          lpencil(i_z_mn)=.true.
+        endif
 !
 !  Calculate grid/geometry related pencils.
 !
