@@ -533,49 +533,54 @@ module Special
       type (pencil_case), intent(in) :: p
       integer :: l_sz
       real, dimension (mx) :: func_x
-      integer :: j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y,ll1,ll2
+      integer :: j,  sz_l_x,sz_r_x,ll1,ll2
       real :: dt1, lnTT_ref
       real :: del
-      logical :: lzone=.false.
+      logical :: lzone=.false., lzone_left, lzone_right
 !
        dt1=1./(3.*dt)
        del=0.1
 !
-     
 !
-       sz_r_x=l2-int(del*nxgrid)
-       sz_l_x=int(del*nxgrid)+l1
+         lzone_left=.false.
+         lzone_right=.false.
+
+         sz_r_x=l1+nxgrid-int(del*nxgrid)
+         sz_l_x=int(del*nxgrid)+l1
 !
-       ll1=l1
-       ll2=l2
-     
+         ll1=l1
+         ll2=l2
 
         do j=1,2
 
          if (j==1) then
-          lzone=.false.
-          ll1=sz_r_x
-          ll2=l2
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
-          if (TT2>0.) then
+           lzone=.false.
+           ll1=sz_r_x
+           ll2=l2
+           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
+           if (TT2>0.) then
             lnTT_ref=log(TT2)
             lzone=.true.
-          endif
+           endif
+           if (lzone .and. lzone_right) then
+             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+               -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+           endif
          elseif (j==2) then
-          lzone=.false.
-          ll1=l1+1
-          ll2=sz_l_x
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
-          if (TT1>0.) then
+           lzone=.false.
+           ll1=l1
+           ll2=sz_l_x
+           if (x(l1)==xyz0(1)) lzone_left=.true.
+           if (TT1>0.) then
             lnTT_ref=log(TT1)
             lzone=.true.
-          endif
+           endif
+           if (lzone .and. lzone_left) then
+             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+               -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+           endif
          endif
 !
-         if (lzone) then
-           df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-             -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
-         endif
 !
         enddo
 !
