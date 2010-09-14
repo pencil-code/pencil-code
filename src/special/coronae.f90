@@ -23,10 +23,11 @@ module Special
   real :: cool_RTV=0.,heatamp=0.
   real :: hyper3_chi=0.
   real :: tau_inv_newton=0.,exp_newton=0.
+  logical :: lgranulation=.false.
 !
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,hyper3_chi,heatamp,tau_inv_newton, &
-      exp_newton
+      exp_newton,lgranulation
 !
 ! variables for print.in
 !
@@ -43,13 +44,36 @@ module Special
   real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
   real, target, dimension (nx,nz) :: spitzer_xz
   real, target, dimension (ny,nz) :: spitzer_yz
-!
   real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
   real, target, dimension (nx,nz) :: rtv_xz
   real, target, dimension (ny,nz) :: rtv_yz
 !
-!  miscellaneous variables 
-  real, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
+!  variables for granulation driver
+  TYPE point
+    real, dimension(2) :: pos
+    real, dimension(4) :: data
+    type(point),pointer :: next
+  end TYPE point
+!
+  Type(point), pointer :: first
+  Type(point), pointer :: previous
+  Type(point), pointer :: current
+  Type(point), pointer, save :: firstlev
+  Type(point), pointer, save :: secondlev
+  Type(point), pointer, save :: thirdlev
+!
+  integer, parameter :: n_gran_level=3
+  integer, save, dimension(n_gran_level) :: xrange_arr, yrange_arr
+  integer, save, dimension(n_gran_level) :: granr_arr
+  real, save, dimension(n_gran_level) :: ampl_arr, lifet_arr
+  real, save :: ig, avoid, dxdy2, thresh, pd
+  integer, save :: pow
+  integer, save, dimension(mseed) :: points_rstate
+  real, dimension(nx,ny) :: Ux,Uy
+  real, dimension(nx,ny) :: vx,vy,w,avoidarr
+!
+!  miscellaneous variables
+  real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
 !
   contains
 !
@@ -81,7 +105,6 @@ module Special
       real :: dummy=1.
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
       inquire(IOLENGTH=lend) dummy
 !
@@ -92,6 +115,10 @@ module Special
         read(unit) lnrho_init_prof
         read(unit) lnTT_init_prof
         close(unit)
+      endif
+!
+      if (.not.lstarting.and.lgranulation) then
+        call setdrparams()
       endif
 !
     endsubroutine initialize_special
@@ -227,6 +254,21 @@ module Special
     call keep_compiler_quiet(f)
 !
   endsubroutine get_slices_special
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Mmodify the f array before the boundaries are communicated.
+!
+!  13-sep-10/bing: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  Compute photospheric granulation.
+      if (lgranulation.and.ipz==0) then
+        if (.not. lpencil_check_at_work) call uudriver(f)
+      endif
+!
+    endsubroutine special_before_boundary
 !***********************************************************************
   subroutine special_calc_entropy(f,df,p)
 !
@@ -542,12 +584,668 @@ module Special
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,tau_inv_tmp/cdts)
         if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt          
+          itype_name(idiag_dtnewt)=ilabel_max_dt
           call max_mn_name(tau_inv_tmp,idiag_dtnewt,l_dt=.true.)
         endif
       endif
 !
     endsubroutine calc_heat_cool_newton
+!***********************************************************************
+    subroutine setdrparams()
+!
+      real, parameter :: ldif=2.0
+      integer :: xrange,yrange
+      real :: granr,life_t,ampl
+!
+! Every granule has 6 values associated with it: data(1-6).
+! These contain:
+!      x-position, y-position,
+!      current amplitude, amplitude at t=t_0,
+!      t_0, and life_time.
+!
+! Gives intergranular area / (granular+intergranular area)
+      ig=0.3
+!
+! Gives exponential power of evolvement. Higher power faster growth/decay.
+      pow=2
+!
+! Fractional difference in granule power
+      pd=0.015
+!
+! Gives average radius of granule + intergranular lane
+! (no smaller than 6 grid points across)
+!     here radius of granules is 0.8 Mm or bigger (3 times dx)
+!
+      if (unit_system.eq.'SI') then
+        granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
+      elseif  (unit_system.eq.'cgs') then
+        granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
+      else
+        call fatal_error("setdrparams","no valid unit system")
+        granr=0.
+      endif
+!
+! Fractional distance, where after emergence, no granule can emerge
+! whithin this radius.(In order to not 'overproduce' granules).
+! This limit is unset when granule reaches t_0.
+      avoid=0.8
+!
+! Lifetime of granule
+      life_t=(60.*5./unit_time)
+!
+      dxdy2=dx**2+dy**2
+!
+! Typical central velocity of granule(1.5e5 cm/s=1.5km/s)
+! Has to be multiplied by the smallest distance, since velocity=ampl/dist
+! should now also be dependant on smallest granluar scale resolvable.
+!
+      if (unit_system.eq.'SI') then
+        ampl=sqrt(dxdy2)/granr*0.28e4/unit_velocity
+      elseif (unit_system.eq.'cgs') then
+        ampl=sqrt(dxdy2)/granr*0.28e6/unit_velocity
+      else
+        call fatal_error("setdrparams","no valid unit system")
+        ampl=0.
+      endif
+!
+! fraction of current amplitude to maximum amplitude to the beginning
+! and when the granule disapears
+      thresh=0.78
+!
+      xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nx/2.0)-1)
+      yrange=min(nint(1.5*granr*(1+ig)/dy),nint(ny/2.0)-1)
+!
+      if (lroot) then
+        print*,'| solar_corona: settings for granules'
+        print*,'-----------------------------------'
+        print*,'| radius [Mm]:',granr*unit_length*1e-6
+        print*,'| lifetime [min]',life_t*unit_time/60.
+        print*,'-----------------------------------'
+      endif
+!
+      granr_arr(1)=granr
+      granr_arr(2)=granr*ldif
+      granr_arr(3)=granr*ldif*ldif
+!
+      ampl_arr(1)=ampl
+      ampl_arr(2)=ampl/ldif
+      ampl_arr(3)=ampl/(ldif*ldif)
+!
+      lifet_arr(1)=life_t
+      lifet_arr(2)=ldif**2*life_t
+      lifet_arr(3)=ldif**4*life_t
+!
+      xrange_arr(1)=xrange
+      xrange_arr(2)=min(nint(ldif*xrange),nint(nx/2.-1.))
+      xrange_arr(3)=min(nint(ldif*ldif*xrange),nint(nx/2.-1.))
+      yrange_arr(1)=yrange
+      yrange_arr(2)=min(nint(ldif*yrange),nint(ny/2-1.))
+      yrange_arr(3)=min(nint(ldif*ldif*yrange),nint(ny/2-1.))
+!
+! Don't reset if RELOAD is used
+      if (.not.lreloading) then
+! Make sure the pointer is defined properly at the first entry
+! at the list for each proc and each level.
+!
+        if (associated(first)) nullify(first)
+        if (associated(current)) nullify(current)
+        if (associated(previous)) nullify(previous)
+        if (associated(firstlev)) nullify(firstlev)
+        if (associated(secondlev)) nullify(secondlev)
+        if (associated(thirdlev)) nullify(thirdlev)
+!
+        allocate(firstlev)
+        if (associated(firstlev%next)) nullify(firstlev%next)
+        allocate(secondlev)
+        if (associated(secondlev%next)) nullify(secondlev%next)
+        allocate(thirdlev)
+        if (associated(thirdlev%next)) nullify(thirdlev%next)
+!
+        points_rstate(:)=iproc*1000.
+!
+       endif
+!
+    endsubroutine setdrparams
+!***********************************************************************
+    subroutine uudriver(f)
+!
+! This routine replaces the external computing of granular velocity
+! pattern initially written by B. Gudiksen (2004)
+!
+! It is invoked by setting lgranulation=T in run.in
+! additional parameters are
+!         Bavoid =0.01 : the magn. field strenght in Tesla at which
+!                        no granule is allowed
+!         nvod = 5.    : the strength by which the vorticity is
+!                        enhanced
+!
+!  13-sep-10/bing: coded
+!
+      use General, only: random_seed_wrapper
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer, dimension(mseed) :: global_rstate
+!
+! Save global random number seed, will be restored after granulation
+! is done
+      call random_seed_wrapper(GET=global_rstate)
+      call random_seed_wrapper(PUT=points_rstate)
+!
+! Compute granular velocities.
+!
+      Ux=0.0
+      Uy=0.0
+!
+      call multi_drive3()
+!
+      call random_seed_wrapper(GET=points_rstate)
+      call random_seed_wrapper(PUT=global_rstate)
+!
+    endsubroutine uudriver
+!***********************************************************************
+    subroutine multi_drive3()
+!
+!  13-sep-10/bing: coded
+!
+      integer :: level
+!
+!  loop over the levels and
+!  set pointer to the start of the first entry of the n-th level list
+!
+      do level=1,n_gran_level
+        if (associated(first)) nullify(first)
+!
+        select case (level)
+        case (1)
+          first => firstlev
+          current => firstlev
+          if (associated(firstlev%next)) then
+            first%next => firstlev%next
+            current%next => firstlev%next
+          endif
+        case (2)
+          first => secondlev
+          current => secondlev
+          if (associated(secondlev%next)) then
+            first%next => secondlev%next
+            current%next => secondlev%next
+          endif
+        case (3)
+          first => thirdlev
+          current => thirdlev
+          if (associated(thirdlev%next)) then
+            first%next => thirdlev%next
+            current%next => thirdlev%next
+          endif
+        end select
+! There is no previous for the first entry
+        nullify(previous)
+!
+! Call driver
+        call drive3(level)
+!
+! Reset and point to the first element which may have changed
+        select case (level)
+        case (1)
+          if (.NOT. associated(firstlev,first)) firstlev => first
+          if (.NOT. associated(firstlev%next,first%next)) &
+              firstlev%next=>first%next
+        case (2)
+          if (.NOT. associated(secondlev,first)) secondlev => first
+          if (.NOT. associated(secondlev%next,first%next)) &
+              secondlev%next=>first%next
+        case (3)
+          if (.NOT. associated(thirdlev,first)) thirdlev => first
+          if (.NOT. associated(thirdlev%next,first%next)) &
+            thirdlev%next=>first%next
+        end select
+!
+      enddo  ! level
+!
+    endsubroutine multi_drive3
+!***********************************************************************
+    subroutine drive3(level)
+!
+      integer, intent(in) :: level
+!
+      call reset_arrays
+!
+      if (.not.associated(current%next)) then
+        call read_points(level)
+        if (.not.associated(current%next)) then
+          if (itsub==1.and.it==1) call drive_init(level)
+          call write_points(level) ! compares to var.dat
+          call write_points(level,0) ! compares to VAR0
+        endif
+      endif
+!
+      Ux = Ux + vx
+      Uy = Uy + vy
+!
+    endsubroutine drive3
+!***********************************************************************
+    subroutine reset_arrays
+!
+      w(:,:)=0.0
+      vx(:,:)=0.0
+      vy(:,:)=0.0
+      avoidarr(:,:)=0.0
+!
+    endsubroutine reset_arrays
+!***********************************************************************
+    subroutine drive_init(level)
+!
+      use General, only: random_number_wrapper
+      use Mpicomm, only: mpisend_real,mpirecv_real, &
+          mpisend_logical,mpirecv_logical
+!
+      integer, intent(in) :: level
+      real :: ampl,xrange,yrange,rand
+      logical :: lwait_for_points,lneed_points,ltmp
+      real, dimension(6) :: tmppoint,tmppoint_recv
+      integer :: send_proc,i,j,ipt
+!
+! Select properties level depending
+!
+      ampl = ampl_arr(level)
+      xrange=xrange_arr(level)
+      yrange=yrange_arr(level)
+!
+! Logicals for the communication of points
+      lwait_for_points=.true.
+      lneed_points=.true.
+!
+! Run until every proc has filled his field
+!
+      do while (lwait_for_points)
+! Check if each proc needs a another point
+        if (lneed_points) then
+!
+          call make_new_point(level)
+!
+! Set randomly some points t0 to the past so they already decay
+!
+          call random_number_wrapper(rand)
+          current%data(3)=t+(rand*2-1)*current%data(4)* &
+              (-alog(thresh*ampl/current%data(2)))**(1./pow)
+          current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
+          call draw_update(level)
+!
+          tmppoint(1) = current%pos(1) + ipx*nx
+          tmppoint(2) = current%pos(2) + ipy*ny
+          tmppoint(3:6) = current%data(:)
+        else
+!
+! No new point create set tmp to zero
+          tmppoint(:)=0.
+        endif
+!
+! Communicate points to all procs.
+!
+        do send_proc=0,nprocxy-1    ! send_proc is the reciever.
+          if (iproc==send_proc) then
+            do i=0,nprocx-1; do j=0,nprocy-1
+              ipt=i+nprocx*j
+              if (ipt/=send_proc) call mpisend_real(tmppoint,6,ipt,ipt+10*send_proc)
+            enddo; enddo
+          else
+            call mpirecv_real(tmppoint_recv,6,send_proc,iproc+10*send_proc)
+!  Check if point received from send_proc is important
+            if (sum(tmppoint_recv)/=0.and.loverlapp(tmppoint)) then
+              call add_point
+              current%pos(1)=tmppoint_recv(1)-ipx*nx
+              current%pos(2)=tmppoint_recv(2)-ipy*ny
+              current%data(:)=tmppoint_recv(3:6)
+              call draw_update(level)
+            endif
+          endif
+        enddo
+!
+! Check if field is full.
+!
+        if (minval(avoidarr).eq.1) then
+          lwait_for_points=.false.
+          lneed_points=.false.
+        else
+          call add_point
+        endif
+!
+! Communicate to wait for others
+! First root collects and then root distributes the result
+         if (iproc==0) then
+           ltmp=.false.
+           do i=0,nprocx-1; do j=0,nprocy-1
+             ipt = i+nprocx*j
+             if (ipt.ne.0) then
+               call mpirecv_logical(ltmp,1,ipt,ipt+222)
+               if (ltmp) lwait_for_points=.true.
+             endif
+           enddo; enddo
+         else
+           call mpisend_logical(lwait_for_points,1,0,iproc+222)
+         endif
+!
+         if (iproc==0) then
+           do i=0,nprocx-1; do j=0,nprocy-1
+             ipt = i+nprocx*j
+             if (ipt.ne.0) then
+               call mpisend_logical(lwait_for_points,1,ipt,ipt+222)
+             endif
+           enddo; enddo
+         else
+           call mpirecv_logical(lwait_for_points,1,0,iproc+222)
+         endif
+      enddo
+!
+! And reset
+!
+      call reset_pointer
+!
+    endsubroutine drive_init
+!***********************************************************************
+    subroutine read_points(level)
+!
+      integer, intent(in) :: level
+      integer :: unit=12,lend,rn,iostat
+      real :: dummy=1.
+      real, dimension(6) :: tmppoint
+      logical :: ex
+!
+      character (len=64) :: filename
+!
+      inquire(IOLENGTH=lend) dummy
+!
+      write (filename,'("/points_",I1.1,".dat")') level
+!
+      inquire(file=trim(directory_snap)//trim(filename),exist=ex)
+!
+      if (ex) then
+        open(unit,file=trim(directory_snap)//trim(filename),access="direct",recl=6*lend)
+!
+        rn=1
+        do
+          read(unit,iostat=iostat,rec=rn) tmppoint
+          if (iostat.eq.0) then
+            current%pos(:) =tmppoint(1:2)
+            current%data(:)=tmppoint(3:6)
+            call add_point
+            call draw_update(level)
+            rn=rn+1
+          else
+            nullify(previous%next)
+            deallocate(current)
+            current => previous
+            exit
+          endif
+        enddo
+        close(unit)
+!
+        if (ip<14) then
+          print*,'Proc',iproc,'read',rn-1
+          print*,'points for the granulation driver in level',level
+        endif
+        call reset_pointer
+!
+        if (level==n_gran_level) then
+          write (filename,'("/seed_",I1.1,".dat")') level
+          inquire(file=trim(directory_snap)//trim(filename),exist=ex)
+          if (ex) then
+            open(unit,file=trim(directory_snap)//trim(filename), &
+                status="unknown",access="direct",recl=mseed*lend)
+            read(unit,rec=1) points_rstate
+            close(unit)
+          else
+            call fatal_error('read_points','cant find seed list for granules')
+          endif
+        endif
+      else
+        print*,'No points lists were found, creating new driver points'
+      endif
+!
+    endsubroutine read_points
+!***********************************************************************
+    subroutine write_points(level,issnap)
+!
+!
+!  14-sep-10/bing: coded
+!
+      integer, intent(in) :: level
+      integer, optional, intent(in) :: issnap
+      integer :: unit=12,lend,rn
+      real :: dummy=1.
+      real, dimension(6) :: tmppoint
+!
+      character (len=64) :: filename
+!
+      inquire(IOLENGTH=lend) dummy
+!
+      if (present(issnap)) then
+        write (filename,'("/points_",I1.1,"_",I3.3,".dat")') level,issnap
+      else
+        write (filename,'("/points_",I1.1,".dat")') level
+      endif
+!
+      open(unit,file=trim(directory_snap)//trim(filename),access="direct",recl=6*lend)
+!
+      rn = 1
+      do
+        tmppoint(1:2)=current%pos
+        tmppoint(3:6)=current%data
+!
+        write(unit,rec=rn) tmppoint
+        if (.not.associated(current%next)) exit
+        call get_next_point
+        rn = rn+1
+      enddo
+!
+      close(unit)
+!
+!
+! Save seed list for each level. Is needed if levels are spread over 3 procs.
+!
+      if (present(issnap)) then
+        write (filename,'("/seed_",I1.1,"_",I3.3,".dat")') level,issnap
+      else
+        write (filename,'("/seed_",I1.1,".dat")') level
+      endif
+      !
+      open(unit,file=trim(directory_snap)//trim(filename),access="direct",recl=mseed*lend)
+      write(unit,rec=1) points_rstate
+      close(unit)
+!
+      call reset_pointer
+!
+    endsubroutine write_points
+!***********************************************************************
+    subroutine make_new_point(level)
+!
+      use General, only: random_number_wrapper
+!
+      integer, intent(in) :: level
+      integer :: kfind,count,ipos,jpos,i,j
+      integer,dimension(nx,ny) :: k
+      real :: rand,ampl,life_t
+!
+      ampl=ampl_arr(level)
+      life_t=lifet_arr(level)
+      k(:,:)=0; ipos=0; jpos=0
+!
+      where (avoidarr.eq.0) k=1
+!
+! Choose and find location of one of them
+!
+      call random_number_wrapper(rand)
+      kfind=int(rand*sum(k))+1
+      count=0
+      do i=1,nx; do j=1,ny
+        if (k(i,j).eq.1) then
+          count=count+1
+          if (count.eq.kfind) then
+            ipos=i
+            jpos=j
+            exit
+          endif
+        endif
+      enddo; enddo
+!
+! Create new data for new point
+!
+      current%pos(1)=ipos
+      current%pos(2)=jpos
+!
+      call random_number_wrapper(rand)
+      current%data(2)=ampl*(1+(2*rand-1)*pd)
+!
+      call random_number_wrapper(rand)
+      current%data(4)=life_t*(1+(2*rand-1)/10.)
+!
+      current%data(3)=t+current%data(4)* &
+          (-alog(thresh*ampl/current%data(2)))**(1./pow)
+!
+      current%data(1)=current%data(2)* &
+          exp(-((t-current%data(3))/current%data(4))**pow)
+!
+    endsubroutine make_new_point
+!***********************************************************************
+    subroutine draw_update(level)
+!
+      integer, intent(in) :: level
+      real :: xdist,ydist,dist2,dist,wtmp,vv
+      integer :: i,ii,j,jj
+      real :: dist0,tmp,ampl,granr
+      integer :: xrange,yrange
+!
+      xrange=xrange_arr(level)
+      yrange=yrange_arr(level)
+      ampl=ampl_arr(level)
+      granr=granr_arr(level)
+!
+! Update weight and velocity for new granule
+!
+       do jj=int(current%pos(2))-yrange,int(current%pos(2))+yrange
+         j = 1+mod(jj-1+ny,ny)
+         if (j>=1.and.j<=ny) then
+         do ii=int(current%pos(1))-xrange,int(current%pos(1))+xrange
+           i = 1+mod(ii-1+nx,nx)
+           if (i>=1.and.i<=nx) then
+!
+           xdist=dx*(ii-current%pos(1))
+           ydist=dy*(jj-current%pos(2))
+           dist2=max(xdist**2+ydist**2,dxdy2)
+           dist=sqrt(dist2)
+!
+           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
+!
+           wtmp=current%data(1)/dist
+!
+           dist0 = 0.53*granr
+           tmp = (dist/dist0)**2
+!
+           vv=exp(1.)*current%data(1)*tmp*exp(-tmp)
+!
+           if (wtmp.gt.w(i,j)*(1-ig)) then
+             if (wtmp.gt.w(i,j)*(1+ig)) then
+               ! granular area
+               vx(i,j)=vv*xdist/dist
+               vy(i,j)=vv*ydist/dist
+               w(i,j) =wtmp
+             else
+               ! intergranular area
+               vx(i,j)=vx(i,j)+vv*xdist/dist
+               vy(i,j)=vy(i,j)+vv*ydist/dist
+               w(i,j) =max(w(i,j),wtmp)
+             end if
+           endif
+           if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
+           endif
+         enddo
+       endif
+       enddo
+!
+    endsubroutine draw_update
+!***********************************************************************
+    function loverlapp(tmppoint)
+!
+      real, dimension(6), intent(in) :: tmppoint
+      logical loverlapp
+!
+      real :: r1,zx,zy,disx,disy
+!
+      loverlapp =.false.
+!
+      r1 = sqrt((nx/2.)**2.+(ny/2.)**2.)
+      zx = nx *(ipx+ 1/2)
+      zy = ny *(ipy+ 1/2)
+!
+      disx = abs(zx-tmppoint(1))
+      disy = abs(zy-tmppoint(2))
+!
+      if (sqrt(disx**2+disy**2)<r1) then
+        loverlapp=.true.
+      endif
+! check for periodic cases in X-direction
+      disx = abs(zx-(tmppoint(1)-nxgrid))
+      if (sqrt(disx**2+disy**2)<r1) then
+        loverlapp=.true.
+      endif
+!
+      disx = abs(zx-(tmppoint(1)+nxgrid))
+      if (sqrt(disx**2+disy**2)<r1) then
+        loverlapp=.true.
+      endif
+! check for periodic cases in Y-direction
+      disx = abs(zx-tmppoint(1))
+      disy = abs(zy-(tmppoint(2)-nygrid))
+      if (sqrt(disx**2+disy**2)<r1) then
+        loverlapp=.true.
+      endif
+!
+      disy = abs(zy-(tmppoint(2)+nygrid))
+      if (sqrt(disx**2+disy**2)<r1) then
+        loverlapp=.true.
+      endif
+!
+    endfunction loverlapp
+!***********************************************************************
+    subroutine add_point
+!
+      type(point), pointer :: newpoint
+!
+      allocate(newpoint)
+!
+! the next after the last is not defined
+      if (associated(newpoint%next)) nullify(newpoint%next)
+!
+! the actual should have the new point as the next in the list
+      current%next => newpoint
+!
+! the current will be the previous
+      previous => current
+!
+! make the new point as the current one
+      current => newpoint
+!
+    endsubroutine add_point
+!***********************************************************************
+    subroutine reset_pointer
+!
+! 14-Sep-10/bing: coded
+!
+      current => first
+      previous => first
+!
+      if (associated(previous)) nullify(previous)
+!
+    endsubroutine reset_pointer
+!***********************************************************************
+    subroutine get_next_point
+!
+! 14-sep-10/bing: coded
+!
+      previous => current
+      current => current%next
+!
+    endsubroutine get_next_point
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
