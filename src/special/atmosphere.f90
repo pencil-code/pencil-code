@@ -67,12 +67,14 @@ module Special
   integer :: ind_water=0!, ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
+  real :: TT2=0., TT1=0.
   
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min 
+      lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
+      TT2,TT1 
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -534,7 +536,7 @@ module Special
       integer :: j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y,ll1,ll2
       real :: dt1, lnTT_ref
       real :: del
-      logical :: lzone_y=.false.
+      logical :: lzone=.false.
 !
        dt1=1./(3.*dt)
        del=0.1
@@ -551,19 +553,29 @@ module Special
         do j=1,2
 
          if (j==1) then
+          lzone=.false.
           ll1=sz_r_x
           ll2=l2
           func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
-          lnTT_ref=log(285.)
+          if (TT2>0.) then
+            lnTT_ref=log(TT2)
+            lzone=.true.
+          endif
          elseif (j==2) then
+          lzone=.false.
           ll1=l1+1
           ll2=sz_l_x
           func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
-          lnTT_ref=log(282.)
+          if (TT1>0.) then
+            lnTT_ref=log(TT1)
+            lzone=.true.
+          endif
          endif
 !
-          df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-            -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+         if (lzone) then
+           df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+             -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+         endif
 !
         enddo
 !
@@ -730,6 +742,7 @@ module Special
       ! top boundary
         f(l2,m1:m2,n1:n2,vr) = value2*u_profile(m1:m2,n1:n2)
         do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
+
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"

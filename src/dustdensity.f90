@@ -69,6 +69,7 @@ module Dustdensity
   logical :: ldiffd_shock=.false.
   logical :: latm_chemistry=.false.
   logical :: lresetuniform_dustdensity=.false.
+  logical :: lnoaerosol=.false.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
@@ -76,7 +77,7 @@ module Dustdensity
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
-      dsize_min, dsize_max, latm_chemistry, spot_number, Nion
+      dsize_min, dsize_max, latm_chemistry, spot_number, Nion, lnoaerosol
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -1132,7 +1133,11 @@ module Dustdensity
                  +p%nd(:,k)*dsize(k)*(p%Ywater-p%ppsf(:,k+1)/p%pp(:))) &
                  *(dsize(k+1)-dsize(k))
             enddo
-            p%ccondens(:)=-12.*pi*Dwater*18.*p%mu1*p%rho/rho_w*tmp(:)*0.
+            if (lnoaerosol) then
+              p%ccondens(:)=0.
+            else
+              p%ccondens(:)=-12.*pi*Dwater*18.*p%mu1*p%rho/rho_w*tmp(:)
+            endif
           endif
 !print*,maxval(p%Ywater),maxval(p%ppsf(:,1)/p%pp),maxval(p%TT)
         endif
@@ -1140,7 +1145,11 @@ module Dustdensity
         if (lpencil(i_dndr)) then
           call droplet_redistr(f,p,dndr_tmp)
           do k=1,ndustspec
-            p%dndr(:,k)=-3.*Dwater*18.*p%mu1*p%rho/rho_w*dndr_tmp(:,k)*0.
+            if (lnoaerosol) then
+              p%dndr(:,k)=0.
+            else
+              p%dndr(:,k)=-3.*Dwater*18.*p%mu1*p%rho/rho_w*dndr_tmp(:,k)
+            endif
           enddo
         endif
 !
