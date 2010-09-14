@@ -2055,8 +2055,8 @@ module Special
           if (iost.eq.0) then
             current%pos(:) =tmppoint(1:2)
             current%data(:)=tmppoint(3:6)
-            call addpoint
             call drawupdate
+            call addpoint
             rn=rn+1
           else
             nullify(previous%next)
