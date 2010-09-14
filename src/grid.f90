@@ -1081,10 +1081,9 @@ module Grid
 !
       if (lpencil(i_evr)) then
         if (lcartesian_coords) then
-          p%evr(:,1) = p%x_mn
-          p%evr(:,2) = p%y_mn
-          p%evr(:,3) = p%z_mn
-          p%evr = p%evr / spread(p%r_mn+tini,2,3)
+          p%evr(:,1) = p%rcyl_mn*p%r_mn1*p%pomx
+          p%evr(:,2) = p%rcyl_mn*p%r_mn1*p%pomy
+          p%evr(:,3) = z(n)*p%r_mn1
         else
           call fatal_error('calc_pencils_grid', &
               'radial unit vector not implemented for '//&
