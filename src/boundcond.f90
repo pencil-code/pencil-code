@@ -285,6 +285,7 @@ module Boundcond
                   bc%ivar=j
                   bc%location=(((k-1)*2)-1)   ! -1/1 for x bot/top
                   bc%value1=fbcx12(j)
+                  bc%value2=fbcx12(j)
                   bc%done=.false.
 !
                   call special_boundconds(f,bc)
