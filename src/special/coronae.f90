@@ -49,6 +49,7 @@ module Special
   real, target, dimension (ny,nz) :: rtv_yz
 !
 !  variables for granulation driver
+!
   TYPE point
     real, dimension(2) :: pos
     real, dimension(4) :: data
@@ -168,6 +169,7 @@ module Special
 !
     if (cool_RTV/=0) then
       lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_rho)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_lnrho)=.true.
     endif
@@ -433,27 +435,27 @@ module Special
 !  lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
 !
     lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
-!
-!  taking ionization of hydrogen into account using Saha-equation
-!
-    dE_kB_T = 1.58e5*exp(-p%lnTT)/unit_temperature
-!
-    ln_n_K = p%lnrho - 1.5*p%lnTT + alog(real(unit_density/unit_temperature**1.5))
-!
-    ln_n_K = ln_n_K + 12.1313 + dE_kB_T
-!
-    where (ln_n_K > 15)
-      lnneni = lnneni - ln_n_K
-    elsewhere (ln_n_K <=15 .and. ln_n_K > -15)
-      lnneni = lnneni + 2.*alog((sqrt(1.0+4.0*exp(ln_n_K))-1.0)/2.0)-2.*ln_n_K
-    endwhere
+! !
+! !  taking ionization of hydrogen into account using Saha-equation
+! !
+!     dE_kB_T = 1.58e5*exp(-p%lnTT)/unit_temperature
+! !
+!     ln_n_K = p%lnrho - 1.5*p%lnTT + alog(real(unit_density/unit_temperature**1.5))
+! !
+!     ln_n_K = ln_n_K + 12.1313 + dE_kB_T
+! !
+!     where (ln_n_K > 15)
+!       lnneni = lnneni - ln_n_K
+!     elsewhere (ln_n_K <=15 .and. ln_n_K > -15)
+!       lnneni = lnneni + 2.*alog((sqrt(1.0+4.0*exp(ln_n_K))-1.0)/2.0)-2.*ln_n_K
+!     endwhere
 !
     lnQ   = get_lnQ(lnTT_SI)
 !
     rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
     rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-    rtv_cool = rtv_cool*cool_RTV
+    rtv_cool = rtv_cool*cool_RTV*(1.-tanh(3e4*(p%rho-1e-4)))/2.
 !
 !     add to temperature equation
 !
@@ -738,6 +740,13 @@ module Special
 !
       call multi_drive3()
 !
+      call enhance_vorticity()
+!      foot point quenching 
+!
+      f(l1:l2,m1:m2,n1,iux) = Ux
+      f(l1:l2,m1:m2,n1,iuy) = Uy
+      f(l1:l2,m1:m2,n1,iuz) = 0.
+!
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
 !
@@ -817,6 +826,24 @@ module Special
           call write_points(level) ! compares to var.dat
           call write_points(level,0) ! compares to VAR0
         endif
+      else
+        !call updatepoints
+        call draw_update(level)
+        do
+          if (associated(current%next)) then
+            call get_next_point
+            call draw_update(level)
+          else
+            exit
+          endif
+        enddo
+        do
+          if (minval(avoidarr).eq.1) exit
+          call add_point
+          call make_new_point(level)
+          call draw_update(level)
+        enddo
+        call reset_pointer
       endif
 !
       Ux = Ux + vx
@@ -968,8 +995,8 @@ module Special
           if (iostat.eq.0) then
             current%pos(:) =tmppoint(1:2)
             current%data(:)=tmppoint(3:6)
-            call add_point
             call draw_update(level)
+            call add_point
             rn=rn+1
           else
             nullify(previous%next)
@@ -983,7 +1010,10 @@ module Special
         if (ip<14) then
           print*,'Proc',iproc,'read',rn-1
           print*,'points for the granulation driver in level',level
+        else
+          print*,'Read driver points',iproc,level
         endif
+!
         call reset_pointer
 !
         if (level==n_gran_level) then
@@ -1039,7 +1069,6 @@ module Special
       enddo
 !
       close(unit)
-!
 !
 ! Save seed list for each level. Is needed if levels are spread over 3 procs.
 !
@@ -1122,45 +1151,45 @@ module Special
 !
 ! Update weight and velocity for new granule
 !
-       do jj=int(current%pos(2))-yrange,int(current%pos(2))+yrange
-         j = 1+mod(jj-1+ny,ny)
-         if (j>=1.and.j<=ny) then
-         do ii=int(current%pos(1))-xrange,int(current%pos(1))+xrange
-           i = 1+mod(ii-1+nx,nx)
-           if (i>=1.and.i<=nx) then
+      do jj=int(current%pos(2))-yrange,int(current%pos(2))+yrange
+        j = 1+mod(jj-1+ny,ny)
+        if (j>=1.and.j<=ny) then
+          do ii=int(current%pos(1))-xrange,int(current%pos(1))+xrange
+            i = 1+mod(ii-1+nx,nx)
+            if (i>=1.and.i<=nx) then
 !
-           xdist=dx*(ii-current%pos(1))
-           ydist=dy*(jj-current%pos(2))
-           dist2=max(xdist**2+ydist**2,dxdy2)
-           dist=sqrt(dist2)
+              xdist=dx*(ii-current%pos(1))
+              ydist=dy*(jj-current%pos(2))
+              dist2=max(xdist**2+ydist**2,dxdy2)
+              dist=sqrt(dist2)
 !
-           if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
+              if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
 !
-           wtmp=current%data(1)/dist
+              wtmp=current%data(1)/dist
 !
-           dist0 = 0.53*granr
-           tmp = (dist/dist0)**2
+              dist0 = 0.53*granr
+              tmp = (dist/dist0)**2
 !
-           vv=exp(1.)*current%data(1)*tmp*exp(-tmp)
+              vv=exp(1.)*current%data(1)*tmp*exp(-tmp)
 !
-           if (wtmp.gt.w(i,j)*(1-ig)) then
-             if (wtmp.gt.w(i,j)*(1+ig)) then
-               ! granular area
-               vx(i,j)=vv*xdist/dist
-               vy(i,j)=vv*ydist/dist
-               w(i,j) =wtmp
-             else
-               ! intergranular area
-               vx(i,j)=vx(i,j)+vv*xdist/dist
-               vy(i,j)=vy(i,j)+vv*ydist/dist
-               w(i,j) =max(w(i,j),wtmp)
-             end if
-           endif
-           if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
-           endif
-         enddo
-       endif
-       enddo
+              if (wtmp.gt.w(i,j)*(1-ig)) then
+                if (wtmp.gt.w(i,j)*(1+ig)) then
+                  ! granular area
+                  vx(i,j)=vv*xdist/dist
+                  vy(i,j)=vv*ydist/dist
+                  w(i,j) =wtmp
+                else
+                  ! intergranular area
+                  vx(i,j)=vx(i,j)+vv*xdist/dist
+                  vy(i,j)=vy(i,j)+vv*ydist/dist
+                  w(i,j) =max(w(i,j),wtmp)
+                end if
+              endif
+              if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
+            endif
+          enddo
+        endif
+      enddo
 !
     endsubroutine draw_update
 !***********************************************************************
@@ -1246,6 +1275,43 @@ module Special
       current => current%next
 !
     endsubroutine get_next_point
+!***********************************************************************
+    subroutine enhance_vorticity()
+!
+      real,dimension(nxgrid,nygrid) :: wscr,wscr2
+      real :: vrms,vtot
+!
+! Putting sum of velocities back into vx,vy
+        vx=Ux
+        vy=Uy
+!
+! Calculating and enhancing rotational part by factor 5
+!        if (lrotin) then
+!          call helmholtz(wscr,wscr2)
+!         !* war vorher 5 ; zum testen auf  50
+!          ! nvor is now keyword !!!
+!          vx=(vx+nvor*wscr )
+!          vy=(vy+nvor*wscr2)
+!        endif
+!
+! Normalize to given total rms-velocity
+        vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
+!
+        if (unit_system.eq.'SI') then
+          vtot=3.*1e3/unit_velocity
+        elseif (unit_system.eq.'cgs') then
+          vtot=3.*1e5/unit_velocity
+        else
+          vtot=0.
+          call fatal_error('solar_corona','define a valid unit system')
+        endif
+!
+! Reinserting rotationally enhanced velocity field
+!
+        Ux=vx*vtot/vrms
+        Uy=vy*vtot/vrms
+!
+    endsubroutine enhance_vorticity
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
