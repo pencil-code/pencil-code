@@ -556,19 +556,18 @@ module Special
 !
          lzone_left=.false.
          lzone_right=.false.
-
-         sz_r_x=l1+nxgrid-int(del*nxgrid)
-         sz_l_x=int(del*nxgrid)+l1
 !
         do j=1,2
          if (ind_H2O>0) lzone=.true.
          if ((j==1) .and. (x(l2)==xyz0(1)+Lxyz(1))) then
+           sz_r_x=l2-int(del*nxgrid)
            ll1=sz_r_x;  ll2=l2
-           lll1=sz_r_x-l1; lll2=nxgrid  
+           lll1=ll1-3; lll2=ll2-3  
            lzone_right=.true.
          elseif ((j==2) .and. ((x(l1)==xyz0(1)))) then
+           sz_l_x=int(del*nxgrid)+l1
            ll1=l1;  ll2=sz_l_x
-           lll1=1;  lll2=int(del*nxgrid)
+           lll1=ll1-3;  lll2=ll2-3
            lzone_left=.true.
          endif
 !
