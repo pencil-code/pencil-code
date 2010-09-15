@@ -970,7 +970,7 @@ module Grid
 !
       if (lpencil_in(i_rcyl_mn1)) lpencil_in(i_rcyl_mn)=.true.
       if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
-      if (lpencil_in(i_evth)) then
+      if (lpencil_in(i_evth).or.lpencil_in(i_evr)) then
          lpencil_in(i_pomx)=.true.
          lpencil_in(i_pomy)=.true.
          lpencil_in(i_rcyl_mn)=.true.
@@ -989,11 +989,10 @@ module Grid
         lpencil_in(i_y_mn)=.true.
       endif
 !
-      if (lpencil_in(i_rr).or.lpencil_in(i_evr)) then
+      if (lpencil_in(i_rr)) then
         lpencil_in(i_x_mn)=.true.
         lpencil_in(i_y_mn)=.true.
         lpencil_in(i_z_mn)=.true.
-        if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
       endif
 !
     endsubroutine pencil_interdep_grid
