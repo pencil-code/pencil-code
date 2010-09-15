@@ -870,12 +870,16 @@ module Diagnostics
             call fatal_error('expand_cname','Too many labels in list')
           endif
           ccname(i+3:nname+2) = ccname(i+1:nname)
-          ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
+!         ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
+          ccname(i) = xlabel
+          ccname(i+1) = ylabel
+          ccname(i+2) = zlabel
           i = i+2
           nname = nname+2
         endif
         i = i+1
       enddo
+      if (lroot) print*, 'ccname final=', ccname
 !
     endsubroutine expand_cname
 !***********************************************************************
