@@ -4475,7 +4475,7 @@ module Chemistry
     subroutine air_field(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y
+      real, dimension (mx,my,mz) :: sum_Y, psat
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -4485,7 +4485,6 @@ module Chemistry
       character (len=1)  :: tmp_string
       integer :: i,j,k=1,index_YY
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
-      real :: psat, qvsat
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
 !
@@ -4682,9 +4681,12 @@ module Chemistry
 !
        if (lreinit_water) then
        if ((index_H2O>0) .and. (ldustdensity)) then
-         psat=6.035e12*exp(-5938./TT)
-         qvsat=psat/PP
-         f(:,:,:,ichemspec(index_H2O))=qvsat! *0.8
+         if (linit_temperature) then
+           psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
+         else
+           psat=6.035e12*exp(-5938./TT)
+         endif
+         f(:,:,:,ichemspec(index_H2O))=psat/PP
          index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
          do k=1,nchemspec
@@ -4706,8 +4708,8 @@ module Chemistry
          endif
        
 
-         if (lroot) print*, ' Saturation Pressure, Pa   ', psat
-         if (lroot) print*, ' saturated water mass fraction', qvsat
+         if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
+         if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
          if (lroot) print*, 'New Air density, g/cm^3:'
          if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
          if (lroot) print*, 'New Air mean weight, g/mol', air_mass
