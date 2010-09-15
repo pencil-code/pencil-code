@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id$',
   nt=30, it1=2, isave=50, itorder=3
-  cdt=0.4, cdtv=0.3, dtmin=1e-9, cdts=0.0050
+  cdt=0.1, cdtv=0.1, dtmin=1e-9, cdts=0.1
   cdtv2=0.005, cdtv3=0.005, cdtc=0.005, cdtr=0.005
   dsnap=2., dvid=2., 
   ip=20
@@ -17,28 +17,28 @@
 &hydro_run_pars
 /
 &density_run_pars
-  diffrho=0.03
-  diffrho_shock=1.0
+  diffrho=0.02
+  diffrho_shock=0.50
   lmassdiff_fix=T
   idiff='normal','shock'
-  !diffrho=1e-1, idiff='normal'
   lupw_lnrho=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
   iheatcond='chi-therm','shock'
-  chi_th=0.03,chi_shock=8.0
+  chi_th=0.02,chi_shock=1.0
   lupw_ss=T
 /
 &magnetic_run_pars
 !  llorentzforce=F
   iresistivity='sqrtrhoeta-const','eta-shock'
-  eta=0.000196,eta_shock=4.0
+  eta=0.000196,eta_shock=1.0
 /
 &interstellar_run_pars
   width_SN=0.009
   lSN_scale_rad=T
+  N_mass=80.0
   frac_eth=1.0
   frac_ecr=0.0
   lSN_ecr=F
@@ -56,18 +56,18 @@
   cloud_TT=0.80
   lSN_mass=T
   energy_width_ratio=1.0
-  velocity_width_ratio=1.250
+  velocity_width_ratio=1.0
   thermal_profile='gaussian'
   mass_width_ratio=1.0
-  mass_profile='gaussian'
+  mass_profile='gaussian3'
   mass_movement='off'
-  velocity_profile='gaussian'
+  velocity_profile='gaussian3'
   lSN_velocity=T
 !  ampl_SN=3.182093016 !without kinetic energy
   ampl_SN=1.591046508 !with 50% kinetic energy
   kampl_SN=1.591046508 !with 50% kinetic energy
   mass_SN=6.303127e-8
-  heatcool_shock_cutoff=0.025
+  heatcool_shock_cutoff=0.0125
   heatcool_shock_cutoff_rate=0.0125
   cooling_select='SS-Slyz'
   heating_select='Gressel-hs'
