@@ -863,6 +863,7 @@ module Register
           if (ierr==0) nnamerz=nnamerz+1
           if (cname_tmp=='uumphi')  iadd=iadd+2
           if (cname_tmp=='bbmphi')  iadd=iadd+2
+          if (cname_tmp=='bbsphmphi')  iadd=iadd+2
           if (cname_tmp=='uxbmphi') iadd=iadd+2
           if (cname_tmp=='jxbmphi') iadd=iadd+2
         enddo
@@ -980,6 +981,7 @@ module Register
 !
         call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
         call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
+        call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi','bpmphi')
         call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
         call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
 !
@@ -991,6 +993,17 @@ module Register
           call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',idiag_zmphi)
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
+!
+!  Output in phiaver.dat the list of fields after the taking into 
+!  account of possible shorthands in phiaver.in
+!
+        if (lroot) then
+          open(11,file=trim(datadir)//'/averages/phiaver.dat',status='unknown')
+          do irz=1,nnamerz
+            write(11,'(A30)') cnamerz(irz)
+          enddo
+          close(11)
+        endif
       endif
 !
     endsubroutine rprint_general

@@ -487,6 +487,9 @@ module Magnetic
   ! For the manual: bbmphi      ! PHIAVG_DOC: shorthand for \var{brmphi},
                                 ! PHIAVG_DOC: \var{bpmphi} and \var{bzmphi}
                                 ! PHIAVG_DOC: together
+  ! For the manual: bbsphmphi   ! PHIAVG_DOC: shorthand for \var{brsphmphi},
+                                ! PHIAVG_DOC: \var{bthmphi} and \var{bpmphi}
+                                ! PHIAVG_DOC: together
   integer :: idiag_b2mphi=0     ! PHIAVG_DOC: $\left<\Bv^2\right>_\varphi$
   integer :: idiag_brsphmphi=0  ! PHIAVG_DOC: $\left<B_r\right>_\varphi$
   integer :: idiag_bthmphi=0    ! PHIAVG_DOC: $\left<B_\vartheta\right>_\varphi$
