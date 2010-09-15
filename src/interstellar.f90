@@ -2446,19 +2446,17 @@ module Interstellar
       call get_properties(f,SNR,rhom,ekintot)
       SNR%rhom=rhom
 !
-!  Rescale injection radius by mass if required.
+!  Rescale injection radius by mass if required. Iterate a few times to
+!  improve match of mass to radius. 
 !
-      if (lSN_scale_rad) &
-      SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
-!
-!  Redistribute energy between thermal and kinetic to avoid over heating in
-!  high density remnants.
-!
-      if (lSN_velocity) then
-        ampl_SN=ampl_SN+kampl_SN*(1-SNR%rhom**0.2)
-        kampl_SN=kampl_SN*SNR%rhom**0.2
+      if (lSN_scale_rad) then
+        do i=1,5       
+          SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
+          call get_properties(f,SNR,rhom,ekintot)
+          SNR%rhom=rhom
+        enddo
+        SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
       endif
-
 !
 !  Calculate effective Sedov evolution time diagnostic and used in damping.
 !
@@ -2713,7 +2711,7 @@ module Interstellar
 !  Validate the explosion.
 !
       site_mass=0.0
-      maxlnTT=0.0
+      maxlnTT=-10.0
       do n=n1,n2
       do m=m1,m2
         SNR%state=SNstate_waiting
@@ -2731,7 +2729,7 @@ module Interstellar
 !
 !  Calculate the ambient mass for the remnant.
 !
-        where (dr2_SN >= SNR%radius**2.0) site_rho = 0.0
+        where (dr2_SN > SNR%radius**2.0) site_rho = 0.0
         site_mass=site_mass+sum(site_rho)
         deltarho=0.
 !
@@ -2774,10 +2772,11 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN >= SNR%radius**2.0) lnTT=0.0
+          where (dr2_SN > SNR%radius**2.0) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
           call mpibcast_real(maxlnTT,1,SNR%iproc)
+          maxTT=exp(maxlnTT)
 !
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
@@ -2910,7 +2909,7 @@ module Interstellar
         print*, 'explode_SN:       x, y, z = ', SNR%x,SNR%y,SNR%z
         print*, 'explode_SN:remnant radius = ', SNR%radius
         print*, 'explode_SN:       rho, TT = ', SNR%site%rho,SNR%site%TT
-        print*, 'explode_SN:    maximum TT = ', exp(maxlnTT)
+        print*, 'explode_SN:    maximum TT = ', maxTT
         print*, 'explode_SN:  Mean density = ', SNR%rhom
         print*, 'explode_SN:  Total energy = ', SNR%EE
         print*, 'explode_SN:    Added mass = ', SNR%MM
@@ -2920,7 +2919,7 @@ module Interstellar
         write(1,'(i10,e13.5,5i6,10e13.5)')  &
             it, t, SNR%SN_type, SNR%iproc, SNR%l, SNR%m, SNR%n, &
             SNR%x, SNR%y, SNR%z, SNR%site%rho, SNR%site%TT, SNR%EE, &
-            SNR%t_sedov, SNR%radius, site_mass, exp(maxlnTT)
+            SNR%t_sedov, SNR%radius, site_mass, maxTT
         close(1)
       endif
 !
