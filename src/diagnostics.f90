@@ -879,7 +879,6 @@ module Diagnostics
         endif
         i = i+1
       enddo
-      if (lroot) print*, 'ccname final=', ccname
 !
     endsubroutine expand_cname
 !***********************************************************************
