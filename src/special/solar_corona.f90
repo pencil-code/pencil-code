@@ -145,7 +145,7 @@ module Special
 !
       if (.not.lreloading) then
         call setup_magnetic()
-        call setup_vert_profiles()
+        call setup_profiles()
       endif
 !
       call keep_compiler_quiet(f)
@@ -228,7 +228,8 @@ module Special
       character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
-      inquire(IOLENGTH=lend) dummy
+!
+      inquire (IOLENGTH=lend) dummy
 !
       if (.not. lfirst_proc_z .or. (bmdi == 0.0)) then
         A_init_x = 0.0
@@ -330,22 +331,21 @@ module Special
 !
     endsubroutine setup_magnetic
 !***********************************************************************
-    subroutine setup_vert_profiles()
+    subroutine setup_profiles()
 !
 !  Read and set vertical profiles for initial temperature and density.
 !  Initial temperature profile is given in ln(T) [K] over z [Mm]
 !  Initial density profile is given in ln(rho) [kg/m^3] over z [Mm]
+!  When using 'prof_ln*.dat' files, z is expected to be in SI units [m].
 !
 !  25-aug-2010/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
-      use Messages, only: warning
-      use Syscalls, only: file_exists, file_size
+      use Mpicomm, only: mpibcast_real, stop_it_if_any
+      use Syscalls, only: file_exists
 !
-      real :: dummy,var1,var2
-      integer :: lend,ierr
-      integer :: i,j
-      integer, parameter :: unit=12,lnrho_tag=368,lnTT_tag=369
+      real :: var0, var1, var2
+      integer :: i, ierr
+      integer, parameter :: unit=12, lnrho_tag=368, lnTT_tag=369
 !
       ! file location settings
       character (len=*), parameter :: stratification_dat = 'stratification.dat'
@@ -355,8 +355,6 @@ module Special
       integer :: prof_nz
       real, dimension (:), allocatable :: prof_z, prof_lnrho, prof_lnTT
       logical :: lread_lnrho=.false., lread_lnTT=.false.
-!
-      inquire(IOLENGTH=lend) dummy
 !
 ! Only read profiles if needed, e.g. Newton cooling (tdown/=0)
 !
@@ -372,17 +370,17 @@ module Special
 !
 ! read 'stratification.dat'
           allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
-          if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
+          if (ierr > 0) call stop_it_if_any (.true.,'setup_profiles: '// &
               'Could not allocate memory for stratification variables')
 !
-          if (lroot) then
 ! file access is only done on the MPI root rank
+          if (lroot) then
             if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
-                .true., 'setup_special: Stratification file not found')
+                .true., 'setup_profiles: Stratification file not found')
             open (unit,file=stratification_dat)
             do i=1,nzgrid
-              read(unit,*,iostat=ierr) dummy,var1,var2
-              if (ierr /= 0) call stop_it_if_any (.true., 'setup_special: '// &
+              read(unit,*,iostat=ierr) var0,var1,var2
+              if (ierr /= 0) call stop_it_if_any (.true., 'setup_profiles: '// &
                   'Error reading stratification file: "'//trim(stratification_dat)//'"')
               prof_lnrho(i)=var1
               prof_lnTT(i) =var2
@@ -397,148 +395,133 @@ module Special
           lnTT_init_z(n1:n2) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
           lnrho_init_z(n1:n2) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
 !
-          if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-          if (allocated (prof_lnrho)) deallocate (prof_lnrho)
-!
         elseif (lread_lnrho .or. lread_lnTT) then
 !
-! read temperature profile for interpolation
           if (lread_lnTT) then
-!
-! file access is only done on the MPI root rank
-            if (lroot) then
-              if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
-                  .true., 'setup_special: file not found: '//trim(lnT_dat))
-! find out, how many data points our profile file has
-              prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
-            endif
-            call stop_it_if_any(.false.,'')
-            call mpibcast_int (prof_nz,1)
-!
-            allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
-            if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
-                'Could not allocate memory for z coordinate or lnTT profile')
-!
-            if (lroot) then
-              open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
-              read (unit,iostat=ierr) prof_lnTT
-              read (unit,iostat=ierr) prof_z
-              if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-                  'Error reading stratification file: "'//trim(lnT_dat)//'"')
-              close (unit)
-            endif
-            call stop_it_if_any(.false.,'')
-!
-            call mpibcast_real (prof_lnTT,prof_nz)
-            call mpibcast_real (prof_z,prof_nz)
-!
-! convert from logarithmic SI to Pencil units
-            prof_lnTT = prof_lnTT - alog(real(unit_temperature))
-!
-! convert z coordinates from [Mm] to Pencil units
-            if (unit_system == 'SI') then
-              prof_z = prof_z * 1.e6 / unit_length
-            elseif (unit_system == 'cgs') then
-              prof_z = prof_z * 1.e8 / unit_length
-            endif
-!
-! interpolate temperature profile to Pencil grid
-            do j = n1-nghost, n2+nghost
-              if (z(j) < prof_z(1) ) then
-                call warning("setup_special","extrapolated lnT below bottom of initial profile")
-                lnTT_init_z(j) = prof_lnTT(1)
-              elseif (z(j) >= prof_z(prof_nz)) then
-                call warning("setup_special","extrapolated lnT over top of initial profile")
-                lnTT_init_z(j) = prof_lnTT(prof_nz)
-              else
-                do i = 1, prof_nz-1
-                  if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                    ! linear interpolation: y = m*(x-x1) + y1
-                    lnTT_init_z(j) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
-                        (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
-                    exit
-                  endif
-                enddo
-              endif
-            enddo
-!
-            if (allocated (prof_z)) deallocate (prof_z)
-            if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-!
+            ! read logarithmic temperature profile
+            call read_profile (lnT_dat, prof_lnTT, prof_z, prof_nz)
+            ! convert from logarithmic SI to Pencil units
+            prof_lnTT = prof_lnTT - alog (real (unit_temperature))
+            ! interpolate logarthmic temperature profile to Pencil grid
+            call interpolate_profile (prof_lnTT, prof_z, prof_nz, lnTT_init_z)
           endif
 !
-! read density profile for interpolation
           if (lread_lnrho) then
-!
-! file access is only done on the MPI root rank
-            if (lroot) then
-              if (.not. file_exists (lnrho_dat)) call stop_it_if_any ( &
-                  .true., 'setup_special: file not found: '//trim(lnrho_dat))
-! find out, how many data points our profile file has
-              prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*4 * 2)
-            endif
-            call stop_it_if_any(.false.,'')
-            call mpibcast_int (prof_nz,1)
-!
-            allocate (prof_z(prof_nz), prof_lnrho(prof_nz), stat=ierr)
-            if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
-                'Could not allocate memory for z coordinate or lnrho profile')
-!
-            if (lroot) then
-              open (unit,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
-              read (unit,iostat=ierr) prof_lnrho
-              read (unit,iostat=ierr) prof_z
-              if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-                  'Error reading stratification file: "'//trim(lnrho_dat)//'"')
-              close (unit)
-            endif
-            call stop_it_if_any(.false.,'')
-!
-            call mpibcast_real (prof_lnrho,prof_nz)
-            call mpibcast_real (prof_z,prof_nz)
-!
-! convert from logarithmic SI to Pencil units
-            prof_lnrho = prof_lnrho - alog(real(unit_density))
-!
-! convert z coordinates from [Mm] to Pencil units
-            if (unit_system == 'SI') then
-              prof_z = prof_z * 1.e6 / unit_length
-            elseif (unit_system == 'cgs') then
-              prof_z = prof_z * 1.e8 / unit_length
-            endif
-!
-! interpolate density profile to Pencil grid
-            do j = n1-nghost, n2+nghost
-              if (z(j) < prof_z(1) ) then
-                call warning("setup_special","extrapolated density below bottom of initial profile")
-                lnrho_init_z(j)= prof_lnrho(1)
-              elseif (z(j) >= prof_z(prof_nz)) then
-                call warning("setup_special","extrapolated density over top of initial profile")
-                lnrho_init_z(j) = prof_lnrho(prof_nz)
-              else
-                do i = 1, prof_nz-1
-                  if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                    ! linear interpolation: y = m*(x-x1) + y1
-                    lnrho_init_z(j) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
-                        (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
-                    exit
-                  endif
-                enddo
-              endif
-            enddo
-!
-            if (allocated (prof_z)) deallocate (prof_z)
-            if (allocated (prof_lnrho)) deallocate (prof_lnrho)
-!
+            ! read logarithmic density profile for interpolation
+            call read_profile (lnrho_dat, prof_lnrho, prof_z, prof_nz)
+            ! convert from logarithmic SI to Pencil units
+            prof_lnrho = prof_lnrho - alog (real (unit_density))
+            ! interpolate logarthmic density profile to Pencil grid
+            call interpolate_profile (prof_lnrho, prof_z, prof_nz, lnrho_init_z)
           endif
 !
         else
-          call stop_it_if_any(.true.,"setup_special: strati_type='"//trim(strati_type)//"' unknown.")
+          call fatal_error ('setup_profiles', "strati_type='"//trim(strati_type)//"' unknown.")
         endif
 !
+        if (allocated (prof_z)) deallocate (prof_z)
+        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
+        if (allocated (prof_lnrho)) deallocate (prof_lnrho)
       endif
 !
-    endsubroutine setup_vert_profiles
+    endsubroutine setup_profiles
+!***********************************************************************
+    subroutine read_profile(filename,data,data_z,n_z)
+!
+!  Read vertical profile data.
+!  Values are expected in SI units.
+!
+!  15-sept-2010/Bourdin.KIS: coded
+!
+      use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
+      use Messages, only: warning
+      use Syscalls, only: file_exists, file_size
+!
+      character (len=*) :: filename
+      real, dimension (:), allocatable :: data, data_z
+      integer :: n_z
+!
+      integer, parameter :: unit=12
+      integer :: lend, ierr
+      real :: dummy
+!
+!
+      inquire (IOLENGTH=lend) dummy
+!
+      ! file access is only done on the MPI root rank
+      if (lroot) then
+        ! determine the number of data points in the profile
+        if (.not. file_exists (filename)) &
+            call stop_it_if_any (.true., "read_profile: can't find "//filename)
+        n_z = (file_size (filename) - 2*2*4) / (lend*4 * 2)
+      endif
+      call stop_it_if_any (.false., '')
+      call mpibcast_int (n_z, 1)
+!
+      ! allocate memory
+      if (allocated (data)) deallocate (data)
+      if (allocated (data_z)) deallocate (data_z)
+      allocate (data(n_z), data_z(n_z), stat=ierr)
+      if (ierr > 0) call stop_it_if_any (.true., 'read_profile: '// &
+          'Could not allocate memory for profile and the z coordinate')
+!
+      if (lroot) then
+        ! read profile
+        open (unit, file=filename, form='unformatted', recl=lend*n_z)
+        read (unit, iostat=ierr) data
+        read (unit, iostat=ierr) data_z
+        if (ierr /= 0) call stop_it_if_any (.true., 'read_profile: '// &
+            'Error reading profile data in "'//trim(filename)//'"')
+        close (unit)
+      endif
+      call stop_it_if_any (.false., '')
+!
+      ! broadcast profile
+      call mpibcast_real (data, n_z)
+      call mpibcast_real (data_z, n_z)
+!
+    endsubroutine read_profile
+!***********************************************************************
+    subroutine interpolate_profile(data,data_z,n_z,profile)
+!
+!  Interpolate profile data to Pencil grid.
+!
+!  15-sept-2010/Bourdin.KIS: coded
+!
+      real, dimension (:) :: data, data_z
+      integer :: n_z
+      real, dimension (mz) :: profile
+!
+      integer :: i, j
+!
+!
+      ! convert z coordinates from SI to Pencil units
+      if (unit_system == 'SI') then
+        data_z = data_z / unit_length
+      elseif (unit_system == 'cgs') then
+        data_z = data_z * 1.e2 / unit_length
+      endif
+!
+      ! linear interpolation of data
+      do j = n1-nghost, n2+nghost
+        if (z(j) < data_z(1) ) then
+          call warning ("interpolate_profile", "used constant value below bottom")
+          profile(j) = data(1)
+        elseif (z(j) >= data_z(n_z)) then
+          call warning ("interpolate_profile", "used constant value over top")
+          profile(j) = data(n_z)
+        else
+          do i = 1, n_z-1
+            if ((z(j) >= data_z(i)) .and. (z(j) < data_z(i+1))) then
+              ! y = m*(x-x1) + y1
+              profile(j) = (data(i+1)-data(i)) / (data_z(i+1)-data_z(i)) * (z(j)-data_z(i)) + data(i)
+              exit
+            endif
+          enddo
+        endif
+      enddo
+!
+    endsubroutine interpolate_profile
 !***********************************************************************
     subroutine pencil_criteria_special()
 !
