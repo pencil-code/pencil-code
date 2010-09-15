@@ -12,6 +12,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED ppsf(ndustspec); pp
+!
 !***************************************************************
 
 !-------------------------------------------------------------------
@@ -68,13 +70,14 @@ module Special
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
   real :: TT2=0., TT1=0.
+  integer :: ind_H2O=0, ind_N2
   
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
-      TT2,TT1 
+      TT2,TT1,ind_H2O, ind_N2
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -391,61 +394,6 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (mx) :: func_x
-      integer :: j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y,ll1,ll2
-      real :: dt1, func_y,lnrho_ref
-      real :: del
-      logical :: lzone_y=.false.
-!
-       dt1=1./dt
-       del=0.1
-!
-      lnrho_ref=-6.907755279
-!
-       sz_r_x=l2-int(del*nxgrid)
-       sz_l_x=int(del*nxgrid)+l1
-       sz_r_y=m2-int(del*nygrid)
-       sz_l_y=int(del*nygrid)+m1
-!
-       ll1=l1
-       ll2=l2
-     
- !      sz_r_x=mx
- !      sz_l_x=1
-
-        do j=1,2
-
-         if (j==1) then
-          ll1=sz_r_x
-          ll2=l2
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
-         elseif (j==2) then
-          ll1=l1+1
-          ll2=sz_l_x
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
-         endif
-!
-!          df(ll1:ll2,m,n,ilnrho)=df(ll1:ll2,m,n,ilnrho)&
-!            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnrho)-lnrho_ref)*dt1
-!
-        enddo
-!
-
-       if ((m<=sz_l_y) .and. (m>=m1)) then
-!        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3
-        lzone_y=.true.
-       elseif ((m>=sz_r_y) .and. (m<=m2)) then
-!        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3
-        lzone_y=.true.
-       endif
-
-       if (lzone_y) then
-      !  df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
-       !    -(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1/8.
-        lzone_y=.false.
-       endif
-!
-! Keep compiler quiet by ensuring every parameter is used
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -524,7 +472,7 @@ module Special
       call keep_compiler_quiet(p)
 
     endsubroutine special_calc_magnetic
-!!***********************************************************************
+!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
       use Cdata
@@ -589,6 +537,59 @@ module Special
       call keep_compiler_quiet(p)
 
     endsubroutine special_calc_entropy
+!***********************************************************************
+   subroutine special_calc_chemistry(f,df,p)
+!
+      use Cdata
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+      integer :: l_sz
+      integer :: j,  sz_l_x,sz_r_x,ll1,ll2,lll1,lll2
+      real :: dt1, lnTT_ref
+      real :: del
+      logical :: lzone=.false., lzone_left, lzone_right
+!
+       dt1=1./(3.*dt)
+       del=0.1
+!
+!
+         lzone_left=.false.
+         lzone_right=.false.
+
+         sz_r_x=l1+nxgrid-int(del*nxgrid)
+         sz_l_x=int(del*nxgrid)+l1
+!
+        do j=1,2
+         if (ind_H2O>0) lzone=.true.
+         if ((j==1) .and. (x(l2)==xyz0(1)+Lxyz(1))) then
+           ll1=sz_r_x;  ll2=l2
+           lll1=sz_r_x-l1; lll2=nxgrid  
+           lzone_right=.true.
+         elseif ((j==2) .and. ((x(l1)==xyz0(1)))) then
+           ll1=l1;  ll2=sz_l_x
+           lll1=1;  lll2=int(del*nxgrid)
+           lzone_left=.true.
+         endif
+!
+         if ((lzone .and. lzone_left) .or. (lzone .and. lzone_right)) then
+           df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
+                df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
+                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
+               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+         endif
+!
+        enddo
+!
+! Keep compiler quiet by ensuring every parameter is used
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+
+    endsubroutine special_calc_chemistry
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

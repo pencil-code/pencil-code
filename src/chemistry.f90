@@ -2200,6 +2200,7 @@ module Chemistry
 !
       use Diagnostics
       use Sub, only: grad,dot_mn
+      use Special, only: special_calc_chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2222,6 +2223,11 @@ module Chemistry
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
+
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_chemistry(f,df,p)
+
 !     !if (headtt) call identify_bcs('ss',iss)
 !
 !  loop over all chemicals
@@ -4678,7 +4684,7 @@ module Chemistry
        if ((index_H2O>0) .and. (ldustdensity)) then
          psat=6.035e12*exp(-5938./TT)
          qvsat=psat/PP
-         f(:,:,:,ichemspec(index_H2O))=qvsat*0.8
+         f(:,:,:,ichemspec(index_H2O))=qvsat! *0.8
          index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
          do k=1,nchemspec

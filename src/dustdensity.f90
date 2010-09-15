@@ -1099,8 +1099,14 @@ module Dustdensity
 !
 ! ppsat is a  saturation pressure in cgs units
 ! 
-        if (lpencil(i_ppsf)) then
+        if (lpencil(i_ppsat)) then
            p%ppsat=6.035e12*exp(-5938.*p%TT1)
+        endif
+!
+! ppsf is a  saturation pressure in cgs units
+! in future ppsat will not be the same as  ppsf
+! 
+        if (lpencil(i_ppsf)) then
           do k=1, ndustspec
 !            if (any(p%ppwater==0.0) .and. (Nion==0.)) zero_ppsf=.true.
 !            if (dsize(k)==0.) zero_ppsf=.true.
@@ -1119,8 +1125,8 @@ module Dustdensity
 !
           if (any(p%ppsat==0.0) .and. any(p%ppsf(:,:)==0.)) then
             if (.not.lpencil_check_at_work) then
-              write(0,*) 'p%ppsat = ', p%ppsat
-              write(0,*) 'p%ppsf = ', p%ppsf
+              write(0,*) 'p%ppsat = ', minval(p%ppsat)
+              write(0,*) 'p%ppsf = ', minval(p%ppsf)
               write(0,*) 'p%TT = ', minval(p%TT)
             endif
             call fatal_error('calc_pencils_dustdensity', &

@@ -24,6 +24,7 @@
   public :: special_calc_pscalar
   public :: special_calc_particles
   public :: special_calc_particles_nbody
+  public :: special_calc_chemistry
 
   public :: special_boundconds
   public :: special_before_boundary

@@ -501,6 +501,29 @@ module Special
 !
     endsubroutine special_calc_particles_nbody
 !***********************************************************************
+    subroutine special_calc_chemistry(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  induction equation.
+!
+!
+!  15-sep-10/natalia: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!!
+!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
+!!
+!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
+!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
+!!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_chemistry
+!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are
