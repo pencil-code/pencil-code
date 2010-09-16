@@ -857,7 +857,7 @@ module Diagnostics
       character (len=*), dimension(:) :: ccname
       character (len=*) :: vlabel,xlabel,ylabel
       character (len=*), optional :: zlabel
-      integer :: nname,nname,i,itot
+      integer :: nname,mname,i,itot
 !
       intent(inout) :: ccname,nname
       intent(in) :: vlabel,xlabel,ylabel,zlabel
