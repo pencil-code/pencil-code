@@ -1333,7 +1333,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## Dhruba on taurus.qmul cluster
 ##
 #FC=mpif90    -L${HOME}/Library/lib #(taurus)
-#FFLAGS= -O3  #(taurus)
+#FFLAGS= -O3 #(taurus)
 #CC=mpicc #(taurus) 
 #CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(taurus)
 ##
