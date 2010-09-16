@@ -750,11 +750,11 @@ module Special
               tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
         endif
 !
-        tmp(:)  = tau_inv
+        tmp(:) = tau_inv
         if (lfirst.and.ldt) then
           if (ldiagnos.and.idiag_dtnewt/=0) then
             itype_name(idiag_dtnewt)=ilabel_max_dt
-            call max_mn_name(tmp        ,idiag_dtnewt,l_dt=.true.)
+            call max_mn_name(tmp/cdts,idiag_dtnewt,l_dt=.true.)
           endif
           dt1_max=max(dt1_max,tmp/cdts)
         endif
@@ -914,6 +914,8 @@ module Special
       if (headtt) print *,'special_calc_entropy: newton cooling',tdown
 !
 !
+      tmp_tau = 0.0
+!
       if ((tdownr /= 0.0) .and. (dt > 0.0)) then
         ! Get reference density
         newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
@@ -931,12 +933,14 @@ module Special
         tmp_tau = tdown/dt * exp (-allp * (lnrho0 - p%lnrho))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
+        ! Adjust tmp_tau for later use in timestep estimation
+        tmp_tau = tmp_tau * dt
       endif
 !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
           itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(tmp_tau,idiag_dtnewt,l_dt=.true.)
+          call max_mn_name(tmp_tau/cdts,idiag_dtnewt,l_dt=.true.)
         endif
         dt1_max=max(dt1_max,tmp_tau/cdts)
       endif
@@ -1389,8 +1393,7 @@ module Special
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
           itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(rtv_cool/cdts &
-              ,idiag_dtnewt,l_dt=.true.)
+          call max_mn_name(rtv_cool/cdts,idiag_dtnewt,l_dt=.true.)
         endif
         dt1_max=max(dt1_max,rtv_cool/cdts)
       endif
