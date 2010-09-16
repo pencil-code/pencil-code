@@ -914,23 +914,26 @@ module Special
 !
       if (headtt) print *,'special_calc_entropy: newton cooling',tdown
 !
-!  Get reference temperature
 !
-      newton  = exp(lnTT_init_z(n)-p%lnTT)-1.
-      newtonr = exp(lnrho_init_z(n)-p%lnrho)-1.
+      if ((tdownr /= 0.0) .and. (dt > 0.0)) then
+        ! Get reference density
+        newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
+! Why the conversion of z to Mm? (Bourdin.KIS)
+        tmp_tau = tdownr * exp (-allpr * (z(n)*unit_length*1e-6))
+!       tmp_tau = tdownr * exp (-allpr * (lnrho0 - p%lnrho))
+        ! Add newton cooling term to entropy
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
+      endif
 !
-      tmp_tau = tdownr* (exp(-allpr*(z(n)*unit_length*1e-6)) )
-      newtonr = newtonr * tmp_tau
+      if ((tdown /= 0.0) .and. (dt > 0.0)) then
+        ! Get reference temperature
+        newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
+!       tmp_tau = tdown * exp (-allp * (z(n)*unit_length*1e-6))
+        tmp_tau = tdown/dt * exp (-allp * (lnrho0 - p%lnrho))
+        ! Add newton cooling term to entropy
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
+      endif
 !
-!     tmp_tau = tdown* (exp(-allp*(z(n)*unit_length*1e-6)) )
-      tmp_tau = tdown * exp(-allp*(lnrho0-p%lnrho))
-      newton  = newton * tmp_tau
-!
-!  Add newton cooling term to entropy
-!
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
-      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr
-      !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
           itype_name(idiag_dtnewt)=ilabel_max_dt
