@@ -117,9 +117,8 @@ module Special
 !***********************************************************************
     subroutine initialize_special(f,lstarting)
 !
-! Called by start.f90 with lstarting=.true. and
-! caled by run.f90  with lstarting=.false. at the beginning and
-! if RELOAD is found, then lreloading=.true.
+! Called by start.f90 with lstarting=.true. or by
+! run.f90 with lstarting=.false. and with lreloading indicating a RELOAD
 !
 !  06-oct-03/tony: coded
 !
@@ -159,7 +158,7 @@ module Special
 !***********************************************************************
     subroutine init_special(f)
 !
-!  Initialise special condition; called from start.f90.
+!  Initialize special condition; called by start.f90.
 !
 !  27-aug-2010/Bourdin.KIS: coded
 !
@@ -173,7 +172,7 @@ module Special
 !
       if (linit_lnTT) then
         if (pretend_lnTT) call stop_it_if_any (.true., &
-            "setup_special: linit_lnTT=T not implemented for pretend_lnTT=T")
+            "init_special: linit_lnTT=T not implemented for pretend_lnTT=T")
         ! set initial temperaure profile values
         do j = n1-nghost, n2+nghost
           if (ltemperature) then
@@ -195,8 +194,8 @@ module Special
         enddo
         ! set lnrho0 to the lower boundary value
         if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-          if (lroot) print *,'setup_special: WARNING: lnrho0 set to ', lnrho0
-          call warning ("setup_special", "overriding lnrho0 setting")
+          if (lroot) print *,'init_special: WARNING: lnrho0 set to ', lnrho0
+          call warning ("init_special", "overriding lnrho0 setting")
         endif
         lnrho0 = lnrho_init_z(n1)
       endif
@@ -261,18 +260,18 @@ module Special
           if (file_exists(mag_field_txt)) then
             open (unit,file=mag_field_txt)
             read (unit,*,iostat=ierr) Bz0_r
-            if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+            if (ierr /= 0) call stop_it_if_any(.true.,'setup_magnetic: '// &
                 'Error reading magnetogram file: "'//trim(mag_field_txt)//'"')
             close (unit)
           elseif (file_exists(mag_field_dat)) then
             open (unit,file=mag_field_dat,form='unformatted',status='unknown', &
                 recl=lend*nxgrid*nygrid,access='direct')
             read (unit,rec=1,iostat=ierr) Bz0_r
-            if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+            if (ierr /= 0) call stop_it_if_any(.true.,'setup_magnetic: '// &
                 'Error reading magnetogram file: "'//trim(mag_field_dat)//'"')
             close (unit)
           else
-            call stop_it_if_any(.true., 'setup_special: No magnetogram file found.')
+            call stop_it_if_any(.true., 'setup_magnetic: No magnetogram file found.')
           endif
 !
           ! Gauss to Tesla and SI to PENCIL units
@@ -434,7 +433,6 @@ module Special
 !  15-sept-2010/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
-      use Messages, only: warning
       use Syscalls, only: file_exists, file_size
 !
       character (len=*) :: filename
@@ -442,18 +440,18 @@ module Special
       integer :: n_z
 !
       integer, parameter :: unit=12
-      integer :: lend, ierr
-      real :: dummy
+      integer :: lend, lend_b8, ierr
 !
 !
-      inquire (IOLENGTH=lend) dummy
+      inquire (IOLENGTH=lend) 1.0
+      inquire (IOLENGTH=lend_b8) 1.0d0
 !
       ! file access is only done on the MPI root rank
       if (lroot) then
         ! determine the number of data points in the profile
         if (.not. file_exists (filename)) &
             call stop_it_if_any (.true., "read_profile: can't find "//filename)
-        n_z = (file_size (filename) - 2*2*4) / (lend*4 * 2)
+        n_z = (file_size (filename) - 2*2*4) / (lend*8/lend_b8 * 2)
       endif
       call stop_it_if_any (.false., '')
       call mpibcast_int (n_z, 1)
@@ -473,6 +471,13 @@ module Special
         if (ierr /= 0) call stop_it_if_any (.true., 'read_profile: '// &
             'Error reading profile data in "'//trim(filename)//'"')
         close (unit)
+!
+        ! convert z coordinates from SI to Pencil units
+        if (unit_system == 'SI') then
+          data_z = data_z / unit_length
+        elseif (unit_system == 'cgs') then
+          data_z = data_z * 1.e2 / unit_length
+        endif
       endif
       call stop_it_if_any (.false., '')
 !
@@ -494,13 +499,6 @@ module Special
 !
       integer :: i, j
 !
-!
-      ! convert z coordinates from SI to Pencil units
-      if (unit_system == 'SI') then
-        data_z = data_z / unit_length
-      elseif (unit_system == 'cgs') then
-        data_z = data_z * 1.e2 / unit_length
-      endif
 !
       ! linear interpolation of data
       do j = n1-nghost, n2+nghost
