@@ -9,7 +9,7 @@
 !  involving mean-field theory, which explains the presence of a number
 !  of non-generic routines
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -20,7 +20,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
 !
   use Cdata
@@ -29,36 +29,36 @@ module Special
   use Sub, only: keep_compiler_quiet
 !
   implicit none
-
+!
   include '../special.h'
-
+!
   character (len=labellen) :: initalpm='zero',VC_Omega_profile='nothing'
-
+!
   ! input parameters
   real :: amplalpm=.1
   real :: kx_alpm=1.,ky_alpm=1.,kz_alpm=1.
   real :: VC_Omega_ampl=.0
-
+!
   namelist /special_init_pars/ &
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
-
+!
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.,deltat_alpm=1.
   logical :: ladvect_alpm=.false.,lupw_alpm=.false.
-
+!
   namelist /special_run_pars/ &
        kf_alpm,ladvect_alpm,alpmdiff, &
        VC_Omega_profile,VC_Omega_ampl,lupw_alpm,deltat_alpm
-
+!
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0, idiag_gatop=0, idiag_gabot=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
-
+!
   logical, pointer :: lmeanfield_theory
   real, pointer :: meanfield_etat,eta
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -67,7 +67,7 @@ module Special
 !
 !  6-jul-02/axel: coded
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde
 !
 !  register ialpm in the f-array and set lalpm=.false.
 !
@@ -114,17 +114,13 @@ module Special
 !
 !   6-jul-2001/axel: coded
 !
-      use Mpicomm
-!     use Density
-      use Sub
-      use Initcond
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       select case (initalpm)
         case ('zero'); f(:,:,:,ialpm)=0.
         case ('constant'); f(:,:,:,ialpm)=amplalpm
-        case default; call stop_it('init_alpm: bad initalpm='//trim(initalpm))
+        case default
+          call fatal_error('init_alpm','bad initalpm='//trim(initalpm))
       endselect
 !
     endsubroutine init_special
@@ -165,7 +161,7 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -219,7 +215,7 @@ module Special
             call fatal_error("dspecial_dt: ", "cannot get shared var eta")
 !
 !  Abbreviations
-!        
+!
       alpm=f(l1:l2,m,n,ialpm)
 !
 !  dynamical quenching equation
@@ -232,12 +228,12 @@ module Special
              -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
-!             if(lupw_alpm) then 
+!             if(lupw_alpm) then
 !               call nou_dot_grad_scl(galpm,p%uu,ugalpm,p%der6u,upwind=lupw_alpm)
 !             else
                 call dot_mn(p%uu,galpm,ugalpm)
 !             endif
-            alpm_divu=alpm*p%divu 
+            alpm_divu=alpm*p%divu
             df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
           endif
           if (alpmdiff/=0) then
@@ -257,7 +253,7 @@ module Special
             df(l1:l2,m,n,ialpm)=0
             alpm=f(l1:l2,m,n,ialpm)
        endif
-     endif    
+     endif
 !
 !  diagnostics
 !
@@ -342,7 +338,7 @@ module Special
 !
 !   6-jul-02/axel: coded
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -420,7 +416,7 @@ module Special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -432,11 +428,11 @@ module Special
       type (pencil_case) :: p
       !
       intent(in) :: f,df,p
-
+!
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
 !!
@@ -450,7 +446,7 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -461,11 +457,11 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
+!
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
@@ -481,7 +477,7 @@ module Special
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -494,11 +490,11 @@ module Special
       type (pencil_case) :: p
       !
       intent(in) :: p
-
+!
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
 !!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
@@ -513,7 +509,7 @@ module Special
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -526,11 +522,11 @@ module Special
       type (pencil_case) :: p
       !
       intent(in) :: p
-
+!
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
-!!  
+!!
 !!
 !!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
 !!
@@ -581,7 +577,7 @@ module Special
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-!   Possibility to modify the f array before the boundaries are 
+!   Possibility to modify the f array before the boundaries are
 !   communicated.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -606,4 +602,3 @@ module Special
     include '../special_dummies.inc'
 !********************************************************************
 endmodule Special
-
