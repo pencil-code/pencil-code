@@ -122,6 +122,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use EquationOfState, only: lnrho0
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
@@ -145,6 +147,13 @@ module Special
       if (.not.lreloading) then
         call setup_magnetic()
         call setup_profiles()
+!
+        ! set lnrho0 to the lower boundary value
+        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
+          if (lroot) print *,'init_special: WARNING: lnrho0 set to ', lnrho0
+          call warning ("init_special", "overriding lnrho0 setting")
+        endif
+        lnrho0 = lnrho_init_z(n1)
       endif
 !
       call keep_compiler_quiet(f)
@@ -192,12 +201,6 @@ module Special
         do j = n1-nghost,n2+nghost
           f(:,:,j,ilnrho) = lnrho_init_z(j)
         enddo
-        ! set lnrho0 to the lower boundary value
-        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-          if (lroot) print *,'init_special: WARNING: lnrho0 set to ', lnrho0
-          call warning ("init_special", "overriding lnrho0 setting")
-        endif
-        lnrho0 = lnrho_init_z(n1)
       endif
 !
     endsubroutine init_special
@@ -930,11 +933,11 @@ module Special
         ! Get reference temperature
         newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
 !       tmp_tau = tdown * exp (-allp * (z(n)*unit_length*1e-6))
-        tmp_tau = tdown/dt * exp (-allp * (lnrho0 - p%lnrho))
+        tmp_tau = tdown*dt * exp (-allp * (lnrho0 - p%lnrho))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
         ! Adjust tmp_tau for later use in timestep estimation
-        tmp_tau = tmp_tau * dt
+        tmp_tau = tmp_tau / dt
       endif
 !
       if (lfirst.and.ldt) then
