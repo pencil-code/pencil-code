@@ -876,8 +876,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-!  Do somehow Newton cooling.
-!
+! Push vector potential back to initial vertical magnetic field values
       if (lfirst_proc_z .and. (bmdi /= 0.0)) then
         f(l1:l2,m1:m2,n1,iax)=f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
             dt*bmdi * A_init_x
