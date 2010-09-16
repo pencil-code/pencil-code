@@ -1090,16 +1090,16 @@ module Grid
         endif
       endif
 !
-!  evth is the latitudinal unit vector
+!  evth is the co-latitudinal unit vector
 !
       if (lpencil(i_evth)) then
         if (lcartesian_coords) then
-          p%evth(:,1) = -z(n)*p%r_mn1*p%pomx
-          p%evth(:,2) = -z(n)*p%r_mn1*p%pomy
-          p%evth(:,3) = p%rcyl_mn*p%r_mn1
+          p%evth(:,1) = z(n)*p%r_mn1*p%pomx
+          p%evth(:,2) = z(n)*p%r_mn1*p%pomy
+          p%evth(:,3) = -p%rcyl_mn*p%r_mn1
         else
           call fatal_error('calc_pencils_grid', &
-              'latitudinal unit vector not implemented for '//&
+              'co-latitudinal unit vector not implemented for '//&
               'non-cartesian coordinates')
         endif
       endif
