@@ -827,7 +827,7 @@ module Special
           call write_points(level,0) ! compares to VAR0
         endif
       else
-        !call updatepoints
+        call update_points(level)
         call draw_update(level)
         do
           if (associated(current%next)) then
@@ -1312,6 +1312,75 @@ module Special
         Uy=vy*vtot/vrms
 !
     endsubroutine enhance_vorticity
+!***********************************************************************
+    subroutine update_points(level)
+!
+! Update the amplitude/weight of a point.
+!
+! 12-aug-10/bing: coded
+!
+      use Sub, only: notanumber
+!
+      integer, intent(in) :: level
+      real :: ampl
+!
+      ampl = ampl_arr(level)
+!
+      do
+        if (notanumber(current%data)) &
+            call fatal_error('update points','NaN found')
+!
+! update amplitude
+        current%data(1)=current%data(2)* &
+            exp(-((t-current%data(3))/current%data(4))**pow)
+!
+! remove point if amplitude is less than threshold
+        if (current%data(1)/ampl.lt.thresh) call remove_point
+!
+! check if last point is reached
+        if (.not. associated(current%next)) exit
+!
+! if not go to next point
+        call get_next_point
+      end do
+!
+      call reset_pointer
+!
+    endsubroutine update_points
+!***********************************************************************
+    subroutine remove_point
+!
+! Remove any pointer from the list.
+!
+! 12-aug-10/bing: coded
+!
+      if (associated(current%next)) then
+! current is NOT the last one
+        if (associated(first,current)) then
+! but current is the first point,
+! check which level it is
+          if (associated(firstlev,first)) firstlev => current%next
+          if (associated(secondlev,first)) secondlev => current%next
+          if (associated(thirdlev,first)) thirdlev => current%next
+          first => current%next
+          deallocate(current)
+          current => first
+          nullify(previous)
+        else
+! we are in between
+          previous%next => current%next
+          deallocate(current)
+          current => previous%next
+        endif
+      else
+! we are at the end
+        deallocate(current)
+        current => previous
+        nullify(previous)
+! BE AWARE THAT PREVIOUS IS NOT POINTING TO THE RIGHT POSITION
+      endif
+!
+    endsubroutine remove_point
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
