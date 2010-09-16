@@ -24,6 +24,7 @@ module Diagnostics
   public :: write_1daverages, write_2daverages
   public :: write_2daverages_prepare, write_zaverages
   public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
+  public :: lname_is_present
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
   public :: integrate_mn
@@ -854,28 +855,32 @@ module Diagnostics
 !   1-apr-04/wolf: coded
 !
       character (len=*), dimension(:) :: ccname
-      integer :: nname
-      character (len=*) :: vlabel,xlabel,ylabel,zlabel
-      integer :: mname
-      integer :: i
+      character (len=*) :: vlabel,xlabel,ylabel
+      character (len=*), optional :: zlabel
+      integer :: nname,nname,i,itot
 !
       intent(inout) :: ccname,nname
       intent(in) :: vlabel,xlabel,ylabel,zlabel
+!
+      if (present(zlabel)) then
+        itot=3
+      else
+        itot=2
+      endif
 !
       mname = size(ccname)
       i = 1
       do while (i <= nname)
         if (ccname(i) == vlabel) then
-          if (nname+2 > mname) then ! sanity check
+          if (nname+itot-1 > mname) then ! sanity check
             call fatal_error('expand_cname','Too many labels in list')
           endif
-          ccname(i+3:nname+2) = ccname(i+1:nname)
-!         ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
+          ccname(i+itot:nname+itot-1) = ccname(i+1:nname)
           ccname(i) = xlabel
           ccname(i+1) = ylabel
-          ccname(i+2) = zlabel
-          i = i+2
-          nname = nname+2
+          if (present(zlabel)) ccname(i+2) = zlabel
+          i = i+itot-1
+          nname = nname+itot-1
         endif
         i = i+1
       enddo
@@ -2076,4 +2081,27 @@ module Diagnostics
 !
    endsubroutine init_xaver
 !*******************************************************************
+   logical function lname_is_present(ccname,vlabel)
+!
+!  Verify if the string vlabel is present or not in the ccname array
+!
+!  16-sep-10/dintrans: coded
+!
+      character (len=*), dimension(:) :: ccname
+      character (len=*) :: vlabel
+      integer :: mname, i
+!
+      intent(inout) :: ccname
+      intent(in) :: vlabel
+!
+      mname = size(ccname)
+      lname_is_present=.false.
+      do i=1, mname
+        if (ccname(i) == vlabel) then
+          lname_is_present=.true.
+        endif
+      enddo
+!
+    endfunction lname_is_present
+!***********************************************************************
 endmodule Diagnostics

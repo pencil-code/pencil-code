@@ -981,7 +981,11 @@ module Register
 !
         call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
         call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
-        call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi','bpmphi')
+        if (lname_is_present(cnamerz,'bpmphi')) then
+          call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi')
+        else
+          call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi','bpmphi')
+        endif
         call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
         call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
 !
