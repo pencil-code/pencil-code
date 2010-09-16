@@ -998,11 +998,11 @@ module Register
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
 !
-!  Output in phiaver.dat the list of fields after the taking into 
+!  Output in phiavg.list the list of fields after the taking into 
 !  account of possible shorthands in phiaver.in
 !
         if (lroot) then
-          open(11,file=trim(datadir)//'/averages/phiaver.dat',status='unknown')
+          open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
           do irz=1,nnamerz
             write(11,'(A30)') cnamerz(irz)
           enddo
