@@ -822,6 +822,8 @@ module Special
     subroutine drive3(level)
 !
       integer, intent(in) :: level
+      logical :: lnew_point
+      real, dimension(6) :: tmppoint
 !
       call reset_arrays
 !
@@ -843,14 +845,21 @@ module Special
             exit
           endif
         enddo
-        do
-          if (minval(avoidarr).eq.1) exit
+! Allow for only one new granule per call
+        lnew_point=.false.
+        if (minval(avoidarr).ne.1) then
           call add_point
           call make_new_point(level)
+          tmppoint(1) = current%pos(1)+ipx*nx
+          tmppoint(2) = current%pos(2)+ipy*ny
+          tmppoint(3:6) = current%data
           call draw_update(level)
-        enddo
+          lnew_point=.true.
+        endif
         call reset_pointer
       endif
+!
+      if (new_points(lnew_point)) call communicate_points(tmppoint,level)
 !
       Ux = Ux + vx
       Uy = Uy + vy
@@ -915,24 +924,7 @@ module Special
 !
 ! Communicate points to all procs.
 !
-        do send_proc=0,nprocxy-1    ! send_proc is the reciever.
-          if (iproc==send_proc) then
-            do i=0,nprocx-1; do j=0,nprocy-1
-              ipt=i+nprocx*j
-              if (ipt/=send_proc) call mpisend_real(tmppoint,6,ipt,ipt+10*send_proc)
-            enddo; enddo
-          else
-            call mpirecv_real(tmppoint_recv,6,send_proc,iproc+10*send_proc)
-!  Check if point received from send_proc is important
-            if (sum(tmppoint_recv)/=0.and.loverlapp(tmppoint)) then
-              call add_point
-              current%pos(1)=tmppoint_recv(1)-ipx*nx
-              current%pos(2)=tmppoint_recv(2)-ipy*ny
-              current%data(:)=tmppoint_recv(3:6)
-              call draw_update(level)
-            endif
-          endif
-        enddo
+        call communicate_points(tmppoint,level)
 !
 ! Check if field is full.
 !
@@ -943,32 +935,11 @@ module Special
           call add_point
         endif
 !
-! Communicate to wait for others
 ! First root collects and then root distributes the result
-         if (iproc==0) then
-           ltmp=.false.
-           do i=0,nprocx-1; do j=0,nprocy-1
-             ipt = i+nprocx*j
-             if (ipt.ne.0) then
-               call mpirecv_logical(ltmp,1,ipt,ipt+222)
-               if (ltmp) lwait_for_points=.true.
-             endif
-           enddo; enddo
-         else
-           call mpisend_logical(lwait_for_points,1,0,iproc+222)
-         endif
 !
-         if (iproc==0) then
-           do i=0,nprocx-1; do j=0,nprocy-1
-             ipt = i+nprocx*j
-             if (ipt.ne.0) then
-               call mpisend_logical(lwait_for_points,1,ipt,ipt+222)
-             endif
-           enddo; enddo
-         else
-           call mpirecv_logical(lwait_for_points,1,0,iproc+222)
-         endif
-      enddo
+        lwait_for_points=new_points(lwait_for_points)         
+!
+       enddo
 !
 ! And reset
 !
@@ -1455,6 +1426,77 @@ module Special
       call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
 !
     endsubroutine helmholtz
+!***********************************************************************
+    subroutine communicate_points(tmppoint,level)
+!
+! Communicate points to all procs.
+!
+      use Mpicomm, only: mpirecv_real, mpisend_real
+!
+      real, dimension(6) :: tmppoint,tmppoint_recv
+      integer, intent(in) :: level
+      integer :: send_proc,ipt,i,j
+!
+      do send_proc=0,nprocxy-1    ! send_proc is the reciever.
+        if (iproc==send_proc) then
+          do i=0,nprocx-1; do j=0,nprocy-1
+            ipt=i+nprocx*j
+            if (ipt/=send_proc) call mpisend_real(tmppoint,6,ipt,ipt+10*send_proc)
+          enddo; enddo
+        else
+          call mpirecv_real(tmppoint_recv,6,send_proc,iproc+10*send_proc)
+!  Check if point received from send_proc is important
+          if (sum(tmppoint_recv)/=0.and.loverlapp(tmppoint)) then
+            call add_point
+            current%pos(1)=tmppoint_recv(1)-ipx*nx
+            current%pos(2)=tmppoint_recv(2)-ipy*ny
+            current%data(:)=tmppoint_recv(3:6)
+            call draw_update(level)
+          endif
+        endif
+      enddo
+!
+    endsubroutine communicate_points
+!***********************************************************************
+    function new_points(lnew_point)
+!
+! Collects and broadcasts the logical in the lower plane of procs
+!
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!
+      logical, intent(in) :: lnew_point
+      logical :: new_points,ltmp
+      integer :: i,j,ipt
+!
+! root collects
+!
+      if (iproc==0) then
+        new_points=lnew_point
+        do i=0,nprocx-1; do j=0,nprocy-1
+          ipt = i+nprocx*j
+          if (ipt.ne.0) then
+            call mpirecv_logical(ltmp,1,ipt,ipt+222)
+            if (ltmp) new_points=.true.
+          endif
+        enddo; enddo
+      else
+        call mpisend_logical(lnew_point,1,0,iproc+222)
+      endif
+!
+!  root sends
+! 
+      if (iproc==0) then
+        do i=0,nprocx-1; do j=0,nprocy-1
+          ipt = i+nprocx*j
+          if (ipt.ne.0) then
+            call mpisend_logical(new_points,1,ipt,ipt+222)
+          endif
+        enddo; enddo
+      else
+        call mpirecv_logical(new_points,1,0,iproc+222)
+      endif
+!
+   endfunction new_points
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
