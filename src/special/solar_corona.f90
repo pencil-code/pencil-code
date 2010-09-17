@@ -24,7 +24,7 @@ module Special
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
+  real :: tdown_const=0.,diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
@@ -50,7 +50,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
+       tdown_const,chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
@@ -122,8 +122,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState, only: lnrho0
-!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
@@ -147,13 +145,6 @@ module Special
       if (.not.lreloading) then
         call setup_magnetic()
         call setup_profiles()
-!
-        ! set lnrho0 to the lower boundary value
-        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-          if (lroot) print *,'init_special: WARNING: lnrho0 set to ', lnrho0
-          call warning ("init_special", "overriding lnrho0 setting")
-        endif
-        lnrho0 = lnrho_init_z(n1)
       endif
 !
       call keep_compiler_quiet(f)
@@ -342,6 +333,7 @@ module Special
 !
 !  25-aug-2010/Bourdin.KIS: coded
 !
+      use EquationOfState, only: lnrho0
       use Mpicomm, only: mpibcast_real, stop_it_if_any
       use Syscalls, only: file_exists
 !
@@ -356,75 +348,82 @@ module Special
 !
       integer :: prof_nz
       real, dimension (:), allocatable :: prof_z, prof_lnrho, prof_lnTT
-      logical :: lread_lnrho=.false., lread_lnTT=.false.
+      logical :: lread_lnrho=.false., lread_lnTT=.false., lnewton_cooling=.false.
 !
-! Only read profiles if needed, e.g. Newton cooling (tdown/=0)
+! Only read profiles if needed, e.g. for Newton cooling
 !
       if (.not. (ltemperature .or. lentropy)) return
-      if ((strati_type=='nothing') .and. (tdown/=0)) strati_type='lnrho_lnTT'
-      if ((linit_lnrho .or. linit_lnTT) .or. (tdown/=0)) then
+      lnewton_cooling = (tdown/=0) .or. (tdownr/=0) .or. (tdown_const/=0)
+      if (.not. (linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
-        lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
-        lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
+      if (strati_type=='nothing') strati_type='lnrho_lnTT'
+      lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
+      lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
 !
 ! check which stratification file should be used
-        if (strati_type=='lnrho_lnTT') then
+      if (strati_type=='lnrho_lnTT') then
 !
 ! read 'stratification.dat'
-          allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
-          if (ierr > 0) call stop_it_if_any (.true.,'setup_profiles: '// &
-              'Could not allocate memory for stratification variables')
+        allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
+        if (ierr > 0) call stop_it_if_any (.true.,'setup_profiles: '// &
+            'Could not allocate memory for stratification variables')
 !
 ! file access is only done on the MPI root rank
-          if (lroot) then
-            if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
-                .true., 'setup_profiles: Stratification file not found')
-            open (unit,file=stratification_dat)
-            do i=1,nzgrid
-              read(unit,*,iostat=ierr) var0,var1,var2
-              if (ierr /= 0) call stop_it_if_any (.true., 'setup_profiles: '// &
-                  'Error reading stratification file: "'//trim(stratification_dat)//'"')
-              prof_lnrho(i)=var1
-              prof_lnTT(i) =var2
-            enddo
-            close(unit)
-          endif
-          call stop_it_if_any (.false.,'')
+        if (lroot) then
+          if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
+              .true., 'setup_profiles: Stratification file not found')
+          open (unit,file=stratification_dat)
+          do i=1,nzgrid
+            read(unit,*,iostat=ierr) var0,var1,var2
+            if (ierr /= 0) call stop_it_if_any (.true., 'setup_profiles: '// &
+                'Error reading stratification file: "'//trim(stratification_dat)//'"')
+            prof_lnrho(i)=var1
+            prof_lnTT(i) =var2
+          enddo
+          close(unit)
+        endif
+        call stop_it_if_any (.false.,'')
 !
-          call mpibcast_real (prof_lnTT,nzgrid)
-          call mpibcast_real (prof_lnrho,nzgrid)
+        call mpibcast_real (prof_lnTT,nzgrid)
+        call mpibcast_real (prof_lnrho,nzgrid)
 !
-          lnTT_init_z(n1:n2) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
-          lnrho_init_z(n1:n2) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
+        lnTT_init_z(n1:n2) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
+        lnrho_init_z(n1:n2) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
 !
-        elseif (lread_lnrho .or. lread_lnTT) then
+      elseif (lread_lnrho .or. lread_lnTT) then
 !
-          if (lread_lnTT) then
-            ! read logarithmic temperature profile
-            call read_profile (lnT_dat, prof_lnTT, prof_z, prof_nz)
-            ! convert from logarithmic SI to Pencil units
-            prof_lnTT = prof_lnTT - alog (real (unit_temperature))
-            ! interpolate logarthmic temperature profile to Pencil grid
-            call interpolate_profile (prof_lnTT, prof_z, prof_nz, lnTT_init_z)
-          endif
-!
-          if (lread_lnrho) then
-            ! read logarithmic density profile for interpolation
-            call read_profile (lnrho_dat, prof_lnrho, prof_z, prof_nz)
-            ! convert from logarithmic SI to Pencil units
-            prof_lnrho = prof_lnrho - alog (real (unit_density))
-            ! interpolate logarthmic density profile to Pencil grid
-            call interpolate_profile (prof_lnrho, prof_z, prof_nz, lnrho_init_z)
-          endif
-!
-        else
-          call fatal_error ('setup_profiles', "strati_type='"//trim(strati_type)//"' unknown.")
+        if (lread_lnTT) then
+          ! read logarithmic temperature profile
+          call read_profile (lnT_dat, prof_lnTT, prof_z, prof_nz)
+          ! convert from logarithmic SI to Pencil units
+          prof_lnTT = prof_lnTT - alog (real (unit_temperature))
+          ! interpolate logarthmic temperature profile to Pencil grid
+          call interpolate_profile (prof_lnTT, prof_z, prof_nz, lnTT_init_z)
         endif
 !
-        if (allocated (prof_z)) deallocate (prof_z)
-        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-        if (allocated (prof_lnrho)) deallocate (prof_lnrho)
+        if (lread_lnrho) then
+          ! read logarithmic density profile for interpolation
+          call read_profile (lnrho_dat, prof_lnrho, prof_z, prof_nz)
+          ! convert from logarithmic SI to Pencil units
+          prof_lnrho = prof_lnrho - alog (real (unit_density))
+          ! interpolate logarthmic density profile to Pencil grid
+          call interpolate_profile (prof_lnrho, prof_z, prof_nz, lnrho_init_z)
+        endif
+!
+      else
+        call fatal_error ('setup_profiles', "strati_type='"//trim(strati_type)//"' unknown.")
       endif
+!
+      ! set lnrho0 to the lower boundary value
+      if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
+        if (lroot) print *,'setup_profiles: WARNING: lnrho0 set to ', lnrho0
+        call warning ("setup_profiles", "overriding lnrho0 setting")
+      endif
+      lnrho0 = lnrho_init_z(n1)
+!
+      if (allocated (prof_z)) deallocate (prof_z)
+      if (allocated (prof_lnTT)) deallocate (prof_lnTT)
+      if (allocated (prof_lnrho)) deallocate (prof_lnrho)
 !
     endsubroutine setup_profiles
 !***********************************************************************
@@ -538,7 +537,7 @@ module Special
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      if (tdown/=0) then
+      if ((tdown/=0.0) .or. (tdownr/=0.0) .or. (tdown_const/=0.0)) then
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
       endif
@@ -859,7 +858,7 @@ module Special
       if (hcond2/=0) call calc_heatcond_glnTT(df,p)
       if (hcond3/=0) call calc_heatcond_glnTT_iso(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
-      if (tdown/=0) call calc_heat_cool_newton(df,p)
+      if (max (tdown, tdownr, tdown_const)/=0.0) call calc_heat_cool_newton(df,p)
       if (K_iso/=0) call calc_heatcond_grad(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
@@ -914,12 +913,14 @@ module Special
 !
       real, dimension (nx) :: newton,newtonr,tmp_tau
 !
-      if (headtt) print *,'special_calc_entropy: newton cooling',tdown
+      if (headtt) print *, 'special_calc_entropy: newton cooling active ', &
+          tdown, tdownr, tdown_const
 !
 !
       tmp_tau = 0.0
 !
-      if ((tdownr /= 0.0) .and. (dt > 0.0)) then
+      ! Timestep dependent correction of density profile
+      if (tdownr /= 0.0) then
         ! Get reference density
         newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
 ! Why the conversion of z to Mm? (Bourdin.KIS)
@@ -929,11 +930,21 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
       endif
 !
-      if ((tdown /= 0.0) .and. (dt > 0.0)) then
+      ! Timestep dependent newton cooling of temperature profile
+      if (tdown /= 0.0) then
         ! Get reference temperature
         newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
 !       tmp_tau = tdown * exp (-allp * (z(n)*unit_length*1e-6))
-        tmp_tau = tdown*dt * exp (-allp * (lnrho0 - p%lnrho))
+        tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
+        ! Add newton cooling term to entropy
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
+      endif
+!
+      ! Timestep independent newton cooling of temperature profile
+      if ((tdown_const /= 0.0) .and. (dt > 0.0)) then
+        ! Get reference temperature
+        newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
+        tmp_tau = tdown_const*dt * exp (-allp * (lnrho0 - p%lnrho))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
         ! Adjust tmp_tau for later use in timestep estimation
