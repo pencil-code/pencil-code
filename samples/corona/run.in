@@ -37,7 +37,7 @@
   Kgpara=4e-10 ! Spitzer heat conduction
   K_iso=1.e-4  ! isotropic heat conduction
                ! prop. to |grad(T)|
-  tdown=0.5e-6 ! Newton cooling strength
+  tdown=2000   ! Newton cooling strength
   allp=1.5     !   and decay 
   cool_rtv=1.  ! Radiative loss
   bmdi = 0.5   ! Refresh magnetogram
