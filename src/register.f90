@@ -862,6 +862,7 @@ module Register
           read(unit,*,iostat=ierr) cname_tmp
           if (ierr==0) nnamerz=nnamerz+1
           if (cname_tmp=='uumphi')  iadd=iadd+2
+          if (cname_tmp=='uusphmphi')  iadd=iadd+2
           if (cname_tmp=='bbmphi')  iadd=iadd+2
           if (cname_tmp=='bbsphmphi')  iadd=iadd+2
           if (cname_tmp=='uxbmphi') iadd=iadd+2
@@ -980,6 +981,11 @@ module Register
 !  Expand some shorthand labels.
 !
         call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
+        if (lname_is_present(cnamerz,'upmphi')) then
+          call expand_cname(cnamerz,nnamerz,'uusphmphi','ursphmphi','uthmphi')
+        else
+          call expand_cname(cnamerz,nnamerz,'uusphmphi','ursphmphi','uthmphi','upmphi')
+        endif
         call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
         if (lname_is_present(cnamerz,'bpmphi')) then
           call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi')
