@@ -73,17 +73,17 @@ contains
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-    if (strati_type=='nothing') then 
-      call fatal_error('initial_condition_lnrho','Nothing to do')
-    elseif (strati_type=='hydrostatic') then 
-      call hydrostatic(f)
-    else 
-      call setup_vert_profiles(f)
-    endif
+      if (strati_type=='nothing') then 
+        call fatal_error('initial_condition_lnrho','Nothing to do')
+      elseif (strati_type=='hydrostatic') then 
+        call hydrostatic(f)
+      else 
+        call setup_vert_profiles(f)
+      endif
 !
 ! save to file stratification.dat
 !
-    call write_stratification_dat(f)
+      call write_stratification_dat(f)
 !
   endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -120,7 +120,7 @@ contains
       lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
 !
 ! read temperature profile for interpolation
-      if (lread_lnTT) then
+      if (lread_lnTT.and.ltemperature.and..not.ltemperature_nolog) then
 !
 ! file access is only done on the MPI root rank
         if (lroot) then
@@ -274,7 +274,8 @@ contains
 !
     inquire(IOLENGTH=lend) lnrho_0
     
-    if (pretend_lnTT.or.lentropy) print*,'hydrostatic: only implemented for ltemperature'
+    if (lentropy.or.ltemperature_nolog) &
+        call fatal_error('hydrostatic','only implemented for ltemperature')
 !
     lnrho_0 = alog(rho0)
 !
@@ -361,22 +362,32 @@ contains
 !  
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     integer :: unit=12,lend
+    real, dimension (mz) :: write_density=0.,write_energy=0.
     real :: dummy=1.
 !
     character (len=*), parameter :: filename='/strat.dat'
 !
     inquire(IOLENGTH=lend) dummy
 !
+    if (ldensity) write_density=f(l1,m1,:,ilnrho)
+    if (lentropy) write_energy=f(l1,m1,:,iss)
+    if (ltemperature) then
+      if (ltemperature_nolog) then
+        write_energy=f(l1,m1,:,iTT)
+      else
+        write_energy=f(l1,m1,:,ilnTT)
+      endif
+    endif
+!
     open(unit,file=trim(directory_snap)//filename, &
         form='unformatted',status='unknown',recl=lend*mz)
     write(unit) z
-    write(unit) f(l1,m1,:,ilnrho)
-    write(unit) f(l1,m1,:,ilnTT)
+    write(unit) write_density
+    write(unit) write_energy
     close(unit)
 !    
   endsubroutine write_stratification_dat
 !***********************************************************************
-!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
