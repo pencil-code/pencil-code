@@ -24,10 +24,11 @@ module Special
   real :: hyper3_chi=0.
   real :: tau_inv_newton=0.,exp_newton=0.
   logical :: lgranulation=.false.
+  real :: increase_vorticity=15.
 !
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,hyper3_chi,heatamp,tau_inv_newton, &
-      exp_newton,lgranulation
+      exp_newton,lgranulation,increase_vorticity
 !
 ! variables for print.in
 !
@@ -119,7 +120,12 @@ module Special
       endif
 !
       if (.not.lstarting.and.lgranulation) then
-        call setdrparams()
+        if (lhydro) then
+          call setdrparams()
+        else
+          call fatal_error &
+              ('initialize_special','granulation only works for lhydro=T')
+        endif
       endif
 !
     endsubroutine initialize_special
@@ -1278,7 +1284,7 @@ module Special
 !***********************************************************************
     subroutine enhance_vorticity()
 !
-      real,dimension(nxgrid,nygrid) :: wscr,wscr2
+      real,dimension(nx,ny) :: wx,wy
       real :: vrms,vtot
 !
 ! Putting sum of velocities back into vx,vy
@@ -1286,13 +1292,13 @@ module Special
         vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-!        if (lrotin) then
-!          call helmholtz(wscr,wscr2)
-!         !* war vorher 5 ; zum testen auf  50
-!          ! nvor is now keyword !!!
-!          vx=(vx+nvor*wscr )
-!          vy=(vy+nvor*wscr2)
-!        endif
+        if (increase_vorticity/=0) then
+          call helmholtz(wx,wy)
+          !* war vorher 5 ; zum testen auf  50
+          ! nvor is now keyword !!!
+          vx=(vx+increase_vorticity*wx )
+          vy=(vy+increase_vorticity*wy)
+        endif
 !
 ! Normalize to given total rms-velocity
         vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
@@ -1317,7 +1323,7 @@ module Special
 !
 ! Update the amplitude/weight of a point.
 !
-! 12-aug-10/bing: coded
+! 16-sep-10/bing: coded
 !
       use Sub, only: notanumber
 !
@@ -1381,6 +1387,74 @@ module Special
       endif
 !
     endsubroutine remove_point
+!***********************************************************************
+    subroutine helmholtz(frx_r,fry_r)
+!
+! Extracts the rotational part of a 2d vector field
+! to increase vorticity of the velocity field.
+!
+! 16-sep-10/bing: coded
+!
+      use Fourier, only: fft_xy_parallel
+!
+      real, dimension(nx,ny) :: kx,ky,k2,filter
+      real, dimension(nx,ny) :: fvx_r,fvy_r,fvx_i,fvy_i
+      real, dimension(nx,ny) :: frx_r,fry_r,frx_i,fry_i
+      real, dimension(nx,ny) :: fdx_r,fdy_r,fdx_i,fdy_i
+      real :: k20
+!
+      fvx_r=vx
+      fvx_i=0.
+      call fft_xy_parallel(fvx_r,fvx_i)
+!
+      fvy_r=vy
+      fvy_i=0.
+      call fft_xy_parallel(fvy_r,fvy_i)
+!
+! Reference frequency is half the Nyquist frequency.
+      k20 = (kx_ny/2.)**2.
+!
+      kx =spread(kx_fft(ipx*nx+1:(ipx+1)*nx),2,ny)
+      ky =spread(ky_fft(ipy*ny+1:(ipy+1)*ny),1,nx)
+!
+      k2 =kx**2 + ky**2 + tini
+!
+      frx_r = +ky*(ky*fvx_r - kx*fvy_r)/k2
+      frx_i = +ky*(ky*fvx_i - kx*fvy_i)/k2
+!
+      fry_r = -kx*(ky*fvx_r - kx*fvy_r)/k2
+      fry_i = -kx*(ky*fvx_i - kx*fvy_i)/k2
+!
+      fdx_r = +kx*(kx*fvx_r + ky*fvy_r)/k2
+      fdx_i = +kx*(kx*fvx_i + ky*fvy_i)/k2
+!
+      fdy_r = +ky*(kx*fvx_r + ky*fvy_r)/k2
+      fdy_i = +ky*(kx*fvx_i + ky*fvy_i)/k2
+!
+! Filter out large wave numbers.
+      filter = exp(-(k2/k20)**2)
+!
+      frx_r = frx_r*filter
+      frx_i = frx_i*filter
+!
+      fry_r = fry_r*filter
+      fry_i = fry_i*filter
+!
+      fdx_r = fdx_r*filter
+      fdx_i = fdx_i*filter
+!
+      fdy_r = fdy_r*filter
+      fdy_i = fdy_i*filter
+!
+      call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
+      vx=fdx_r
+      call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
+      vy=fdy_r
+!
+      call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
+      call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
+!
+    endsubroutine helmholtz
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
