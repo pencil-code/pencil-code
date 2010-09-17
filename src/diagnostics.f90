@@ -719,7 +719,7 @@ module Diagnostics
       use General, only: safe_character_assign,safe_character_append
 !
       integer :: i
-      character (len=4) :: ch
+      character (len=5) :: ch
       character (len=80) :: avgdir,sname,fname
       character (len=1024) :: labels
 !
