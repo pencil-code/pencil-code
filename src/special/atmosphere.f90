@@ -564,14 +564,22 @@ module Special
            ll1=sz_r_x;  ll2=l2
            lll1=ll1-3; lll2=ll2-3  
            lzone_right=.true.
+!              df(ll1:ll2,m,n,iuy)=  &
+ !               df(ll1:ll2,m,n,iuy) &
+ !              +(f(ll1:ll2,m,n,iuy) -0.)*dt1/5.
+
          elseif ((j==2) .and. ((x(l1)==xyz0(1)))) then
            sz_l_x=int(del*nxgrid)+l1
            ll1=l1;  ll2=sz_l_x
            lll1=ll1-3;  lll2=ll2-3
            lzone_left=.true.
+!               df(ll1:ll2,m,n,iuy)=  &
+!                df(ll1:ll2,m,n,iuy) &
+!               +(f(ll1:ll2,m,n,iuy) -0.)*dt1/4.
+
          endif
 !
-         if ((lzone .and. lzone_left) .or. (lzone .and. lzone_right)) then
+         if ((lzone .and. lzone_right)) then
            df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
                 df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
                -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
@@ -581,6 +589,19 @@ module Special
                +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
                -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
          endif
+        if ((lzone .and. lzone_left)) then
+           df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
+                df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
+                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
+               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+         endif
+
+
+
 !
         enddo
 !
