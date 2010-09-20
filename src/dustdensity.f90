@@ -32,6 +32,7 @@ module Dustdensity
   use Cparam
   use Dustvelocity
   use Messages
+  use Special
 !
   implicit none
 !
@@ -82,7 +83,7 @@ module Dustdensity
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
-      diffnd_shock,lresetuniform_dustdensity,nd_reuni
+      diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -100,7 +101,7 @@ module Dustdensity
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager
       use General, only: chn
 !
       integer :: k, ind_tmp, imd_tmp, imi_tmp
@@ -171,7 +172,8 @@ module Dustdensity
 !  parameters.
 !
 !  24-nov-02/tony: coded
-      use FArrayManager, only: farray_register_global
+      use Mpicomm, only: stop_it
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
@@ -188,7 +190,7 @@ module Dustdensity
 !
       if (ldustcondensation) then
       if (.not. lchemistry .and. .not. lpscalar) &
-          call fatal_error('initialize_dustdensity: ' , &
+          call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar')
       endif
 !
@@ -249,7 +251,7 @@ module Dustdensity
         case default
           if (lroot) print*, 'initialize_dustdensity: ', &
               'No such value for idiffd(',i,'): ', trim(idiffd(i))
-          call fatal_error('initialize_dustdensity','No such value for idiffd')
+          call stop_it('initialize_dustdensity')
         endselect
         lnothing=.true.
       enddo
@@ -313,10 +315,13 @@ module Dustdensity
 ! 28-jun-02/axel: added isothermal
 !
       use EquationOfState, only: cs0, cs20, gamma, gamma_m1, beta_glnrho_scaled
+      use Gravity
       use Initcond
+      use IO
+      use Mpicomm
       use Selfgravity, only: rhs_poisson_const
       use InitialCondition, only: initial_condition_nd
-      use Sub, only: notanumber
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -525,9 +530,7 @@ module Dustdensity
         case ('atm_drop_gauss')
           do k=1,ndustspec
             f(:,:,:,ind(k)) = &
- !             nd0*exp(-0.25*((dsize(k)-0.5*(dsize_max+dsize_min)) &
- !             /(0.1*(dsize_max-dsize_min)))**2)
-             nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-6)**2)
+             nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/2e-5)**2)
             md(k)=0.!rho0*ff(i,0)*dr*4./3.*3.14*rr(i)^3*rhow/mwmol
              !4/3.*pi*rhods*dsize(k)**3*(1.-water_ice**3)
             mi(k)=0.!4/3.*pi*rhod0*dsize(k)**3*water_ice**3
@@ -596,6 +599,7 @@ module Dustdensity
 !  18-sep-05/anders: coded
 !
       use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -890,7 +894,7 @@ module Dustdensity
       real, dimension (nx) :: tmp,fcloud_tmp
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp
-!      logical :: zero_ppsf=.false.
+      logical :: zero_ppsf=.false.
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
@@ -1092,14 +1096,14 @@ module Dustdensity
         endif
 !
 ! ppsat is a  saturation pressure in cgs units
-!
+! 
         if (lpencil(i_ppsat)) then
            p%ppsat=6.035e12*exp(-5938.*p%TT1)
         endif
 !
 ! ppsf is a  saturation pressure in cgs units
 ! in future ppsat will not be the same as  ppsf
-!
+! 
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
 !            if (any(p%ppwater==0.0) .and. (Nion==0.)) zero_ppsf=.true.
@@ -1130,13 +1134,13 @@ module Dustdensity
             do k=1,ndustspec-1
               tmp=tmp  &
                 +0.5*(p%nd(:,k+1)*dsize(k+1)*(p%Ywater-p%ppsf(:,k+1)/p%pp) &
-                 +p%nd(:,k)*dsize(k)*(p%Ywater-p%ppsf(:,k+1)/p%pp(:))) &
+                 +p%nd(:,k)*dsize(k)*(p%Ywater-p%ppsf(:,k)/p%pp(:))) &
                  *(dsize(k+1)-dsize(k))
             enddo
             if (lnoaerosol) then
               p%ccondens(:)=0.
             else
-              p%ccondens(:)=-12.*pi*Dwater*18.*p%mu1*p%rho/rho_w*tmp(:)
+              p%ccondens(:)=-12.*pi*Dwater*p%rho*rho_w*tmp(:)
             endif
           endif
 !print*,maxval(p%Ywater),maxval(p%ppsf(:,1)/p%pp),maxval(p%TT)
@@ -1148,7 +1152,7 @@ module Dustdensity
             if (lnoaerosol) then
               p%dndr(:,k)=0.
             else
-              p%dndr(:,k)=-3.*Dwater*18.*p%mu1*p%rho/rho_w*dndr_tmp(:,k)
+              p%dndr(:,k)=-3.*Dwater*p%rho*dndr_tmp(:,k)
             endif
           enddo
         endif
@@ -1163,7 +1167,8 @@ module Dustdensity
 !   7-jun-02/axel: incoporated from subroutine pde
 !
       use Diagnostics
-      use Sub, only: dot_mn, identify_bcs
+      use Mpicomm, only: stop_it
+      use Sub
       use Special, only: special_calc_dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1393,6 +1398,8 @@ module Dustdensity
 !
 !  Redistribute dust number density and dust density in mass bins
 !
+      use Mpicomm, only: stop_it
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
@@ -1459,6 +1466,8 @@ module Dustdensity
 !
 !  Calculate condensation of dust on existing dust surfaces
 !
+      use Mpicomm, only: stop_it
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1466,8 +1475,8 @@ module Dustdensity
       real :: dmdfac
       integer :: k,l
 !
-      if (.not. lmdvar) call fatal_error &
-          ('dust_condensation','Dust condensation only works with lmdvar')
+      if (.not. lmdvar) call stop_it &
+          ('dust_condensation: Dust condensation only works with lmdvar')
 !      if (lchemistry) then
 !        cc_tmp=p%Ywater
 !      else
@@ -1510,8 +1519,9 @@ module Dustdensity
 !
 !  Calculate mass flux of condensing monomers
 !
-      use Diagnostics, only: sum_mn_name, max_mn_name
+      use Diagnostics
       use EquationOfState, only: getmu,eoscalc,ilnrho_ss,getpressure
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: pp_full
@@ -1550,7 +1560,7 @@ module Dustdensity
         endif
 !
       case default
-        call fatal_error('get_mfluxcond','No valid dust chemistry specified.')
+        call stop_it("get_mfluxcond: No valid dust chemistry specified.")
 !
       endselect
 !
@@ -1561,7 +1571,7 @@ module Dustdensity
 !  Calculate kernel of coagulation equation
 !    collision rate = ni*nj*kernel
 !
-      use Sub, only: dot2
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: TT1
@@ -1747,7 +1757,7 @@ module Dustdensity
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Diagnostics, only: parse_name
+      use Diagnostics
       use General, only: chn
 !
       integer :: iname,inamez,inamex,k
@@ -1873,34 +1883,26 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr!, pp_ratio
+      real, dimension (nx,ndustspec) :: dndr_dr
       integer :: k, ind_tmp
 !
-!      if (any(p%ppsf(:,1)==0.)) then
-!        pp_ratio(:,1)=0.
-!      else
-!        pp_ratio(:,1)=p%ppwater(:)/p%ppsf(:,1)-1
-!      endif
-      do k=1,ndustspec-1
-!      if (any(p%ppsf(:,k+1)==0.)) then
-!        pp_ratio(:,k+1)=0.
-!      else
-!        pp_ratio(:,k+1)=p%ppwater(:)/p%ppsf(:,k+1)-1
-!      endif
-        dndr_dr(:,k)= &
-                (f(l1:l2,m,n,ind(k+1))*(p%Ywater(:)-p%ppsf(:,k+1)/p%pp(:))/dsize(k+1) &
-               -f(l1:l2,m,n,ind(k))*(p%Ywater(:)-p%ppsf(:,k+1)/p%pp(:))/dsize(k))    &
-                 /(dsize(k+1)-dsize(k))
+      do k=2,ndustspec-1
+         dndr_dr(:,k)= &
+           ((f(l1:l2,m,n,ind(k+1))-2.*f(l1:l2,m,n,ind(k))  &
+             +f(l1:l2,m,n,ind(k-1)))    &
+                 /(dsize(k+1)-dsize(k-1))/dsize(k) &
+            -f(l1:l2,m,n,ind(k))/dsize(k)**2)  &
+            *(p%Ywater(:)-p%ppsf(:,k)/p%pp(:))
       enddo
         ind_tmp=ndustspec-1
-        if (dsize(ndustspec)>0) then
-          dndr_dr(:,ndustspec)= &
-                (f(l1:l2,m,n,ind(ndustspec)) &
-               *(p%Ywater(:)-p%ppsf(:,ndustspec)/p%pp(:))/dsize(ndustspec) &
-               -f(l1:l2,m,n,ind(ind_tmp))  &
-               *(p%Ywater(:)-p%ppsf(:,ind_tmp)/p%pp(:))/dsize(ind_tmp))    &
-                 /(dsize(ndustspec)-dsize(ind_tmp))
-        endif
+ !       if (dsize(ndustspec)>0) then
+ !         dndr_dr(:,ndustspec)= &
+ !               (f(l1:l2,m,n,ind(ndustspec)) &
+ !             *(p%Ywater(:)-p%ppsf(:,ndustspec)/p%pp(:))/dsize(ndustspec) &
+ !              -f(l1:l2,m,n,ind(ind_tmp))  &
+ !              *(p%Ywater(:)-p%ppsf(:,ind_tmp)/p%pp(:))/dsize(ind_tmp))    &
+ !                /(dsize(ndustspec)-dsize(ind_tmp))
+ !       endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************

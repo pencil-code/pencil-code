@@ -524,8 +524,8 @@ module Special
             lzone=.true.
            endif
            if (lzone .and. lzone_left) then
-             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-               -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+  !           df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+  !             -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
            endif
          endif
 !
@@ -833,7 +833,7 @@ module Special
         if (vr==iuud(1)+3) then 
           do k=1,ndustspec
             f(l1,m1:m2,n1:n2,ind(k))=value1  &
-            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-6)**2)
+            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/2e-5)**2)
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
@@ -860,32 +860,32 @@ module Special
 
       elseif (bc%location==iBC_X_TOP) then
 ! top boundary
-        if (vr==iuud(1)+3) then 
-          do k=1,ndustspec
-            f(l2,m1:m2,n1:n2,ind(k))=value2  &
-            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-6)**2)
-          enddo
-          do i=0,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
-        endif
+!        if (vr==iuud(1)+3) then 
+!          do k=1,ndustspec
+!            f(l2,m1:m2,n1:n2,ind(k))=value2  &
+!            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/2e-5)**2)
+!          enddo
+!          do i=0,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
+!        endif
         if (vr==iuud(1)+4) then 
          f(l2,m1:m2,n1:n2,imd)=value2
         endif
-!        if (vr>=iuud(1)+3) then 
-!        f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
-!                       - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))
-!        f(l2+2,:,:,ind)=0.2   *( 15*f(l2,:,:,ind)- 2*f(l2-1,:,:,ind)  &
-!                 -  9*f(l2-2,:,:,ind)- 6*f(l2-3,:,:,ind)+ 7*f(l2-4,:,:,ind))
-!        f(l2+3,:,:,ind)=1./35.*(157*f(l2,:,:,ind)-33*f(l2-1,:,:,ind)  &
-!                       -108*f(l2-2,:,:,ind) -68*f(l2-3,:,:,ind)+87*f(l2-4,:,:,ind))
-!        endif
-!        if (vr==iuud(1)+4) then 
-!        f(l2+1,:,:,imd)=0.2   *(  9*f(l2,:,:,imd)-  4*f(l2-2,:,:,imd) &
-!                       - 3*f(l2-3,:,:,imd)+ 3*f(l2-4,:,:,imd))
-!        f(l2+2,:,:,imd)=0.2   *( 15*f(l2,:,:,imd)- 2*f(l2-1,:,:,imd)  &
-!                 -  9*f(l2-2,:,:,imd)- 6*f(l2-3,:,:,imd)+ 7*f(l2-4,:,:,imd))
-!        f(l2+3,:,:,imd)=1./35.*(157*f(l2,:,:,imd)-33*f(l2-1,:,:,imd)  &
-!                       -108*f(l2-2,:,:,imd) -68*f(l2-3,:,:,imd)+87*f(l2-4,:,:,imd))
-!        endif
+        if (vr>=iuud(1)+3) then 
+        f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
+                       - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))
+        f(l2+2,:,:,ind)=0.2   *( 15*f(l2,:,:,ind)- 2*f(l2-1,:,:,ind)  &
+                 -  9*f(l2-2,:,:,ind)- 6*f(l2-3,:,:,ind)+ 7*f(l2-4,:,:,ind))
+        f(l2+3,:,:,ind)=1./35.*(157*f(l2,:,:,ind)-33*f(l2-1,:,:,ind)  &
+                       -108*f(l2-2,:,:,ind) -68*f(l2-3,:,:,ind)+87*f(l2-4,:,:,ind))
+        endif
+        if (vr==iuud(1)+4) then 
+        f(l2+1,:,:,imd)=0.2   *(  9*f(l2,:,:,imd)-  4*f(l2-2,:,:,imd) &
+                       - 3*f(l2-3,:,:,imd)+ 3*f(l2-4,:,:,imd))
+        f(l2+2,:,:,imd)=0.2   *( 15*f(l2,:,:,imd)- 2*f(l2-1,:,:,imd)  &
+                 -  9*f(l2-2,:,:,imd)- 6*f(l2-3,:,:,imd)+ 7*f(l2-4,:,:,imd))
+        f(l2+3,:,:,imd)=1./35.*(157*f(l2,:,:,imd)-33*f(l2-1,:,:,imd)  &
+                       -108*f(l2-2,:,:,imd) -68*f(l2-3,:,:,imd)+87*f(l2-4,:,:,imd))
+        endif
       else
         print*, "bc_BL_x: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"

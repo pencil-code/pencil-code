@@ -2367,7 +2367,7 @@ module Chemistry
         df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
               + p%ccondens
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-              - 2.5e6/1.005*p%ccondens*p%TT1
+              - 2.5e6/1005.*p%ccondens*p%TT1
 
 !
 ! this is for the debuging perpose: one check that the sum of all mass fractions is 1
@@ -4686,7 +4686,7 @@ module Chemistry
          else
            psat=6.035e12*exp(-5938./TT)
          endif
-         f(:,:,:,ichemspec(index_H2O))=psat/PP
+         f(:,:,:,ichemspec(index_H2O))=psat/PP!*1.03
          index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
          do k=1,nchemspec
