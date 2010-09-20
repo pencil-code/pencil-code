@@ -24,7 +24,7 @@ module Special
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-  real :: tdown_const=0.,diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
+  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
@@ -50,7 +50,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       tdown_const,chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
+       chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
@@ -353,7 +353,7 @@ module Special
 ! Only read profiles if needed, e.g. for Newton cooling
 !
       if (.not. (ltemperature .or. lentropy)) return
-      lnewton_cooling = (tdown/=0) .or. (tdownr/=0) .or. (tdown_const/=0)
+      lnewton_cooling = (tdown/=0) .or. (tdownr/=0)
       if (.not. (linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
       if (strati_type=='nothing') strati_type='lnrho_lnTT'
@@ -537,7 +537,7 @@ module Special
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      if ((tdown/=0.0) .or. (tdownr/=0.0) .or. (tdown_const/=0.0)) then
+      if ((tdown/=0.0) .or. (tdownr/=0.0)) then
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
       endif
@@ -858,7 +858,7 @@ module Special
       if (hcond2/=0) call calc_heatcond_glnTT(df,p)
       if (hcond3/=0) call calc_heatcond_glnTT_iso(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
-      if (max (tdown, tdownr, tdown_const)/=0.0) call calc_heat_cool_newton(df,p)
+      if (max (tdown, tdownr)/=0.0) call calc_heat_cool_newton(df,p)
       if (K_iso/=0) call calc_heatcond_grad(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
@@ -913,8 +913,8 @@ module Special
 !
       real, dimension (nx) :: newton,newtonr,tmp_tau
 !
-      if (headtt) print *, 'special_calc_entropy: newton cooling active ', &
-          tdown, tdownr, tdown_const
+      if (headtt) &
+          print *, 'special_calc_entropy: newton cooling active', tdown, tdownr
 !
 !
       tmp_tau = 0.0
@@ -938,17 +938,6 @@ module Special
         tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
-      endif
-!
-      ! Timestep independent newton cooling of temperature profile
-      if ((tdown_const /= 0.0) .and. (dt > 0.0)) then
-        ! Get reference temperature
-        newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
-        tmp_tau = tdown_const*dt * exp (-allp * (lnrho0 - p%lnrho))
-        ! Add newton cooling term to entropy
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
-        ! Adjust tmp_tau for later use in timestep estimation
-        tmp_tau = tmp_tau / dt
       endif
 !
       if (lfirst.and.ldt) then
