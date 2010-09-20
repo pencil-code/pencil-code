@@ -346,8 +346,7 @@ module Special
       character (len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
       character (len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
 !
-      integer :: prof_nz
-      real, dimension (:), allocatable :: prof_z, prof_lnrho, prof_lnTT
+      real, dimension (:), allocatable :: prof_lnrho, prof_lnTT
       logical :: lread_lnrho=.false., lread_lnTT=.false., lnewton_cooling=.false.
 !
 ! Only read profiles if needed, e.g. for Newton cooling
@@ -390,25 +389,18 @@ module Special
         lnTT_init_z(n1:n2) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
         lnrho_init_z(n1:n2) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
 !
+        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
+        if (allocated (prof_lnrho)) deallocate (prof_lnrho)
+!
       elseif (lread_lnrho .or. lread_lnTT) then
 !
-        if (lread_lnTT) then
-          ! read logarithmic temperature profile
-          call read_profile (lnT_dat, prof_lnTT, prof_z, prof_nz)
-          ! convert from logarithmic SI to Pencil units
-          prof_lnTT = prof_lnTT - alog (real (unit_temperature))
-          ! interpolate logarthmic temperature profile to Pencil grid
-          call interpolate_profile (prof_lnTT, prof_z, prof_nz, lnTT_init_z)
-        endif
+        ! read logarithmic temperature profile
+        if (lread_lnTT) &
+            call read_profile (lnT_dat, lnTT_init_z, unit_temperature)
 !
-        if (lread_lnrho) then
-          ! read logarithmic density profile for interpolation
-          call read_profile (lnrho_dat, prof_lnrho, prof_z, prof_nz)
-          ! convert from logarithmic SI to Pencil units
-          prof_lnrho = prof_lnrho - alog (real (unit_density))
-          ! interpolate logarthmic density profile to Pencil grid
-          call interpolate_profile (prof_lnrho, prof_z, prof_nz, lnrho_init_z)
-        endif
+        ! read logarithmic density profile for interpolation
+        if (lread_lnrho) &
+            call read_profile (lnrho_dat, lnrho_init_z, unit_density)
 !
       else
         call fatal_error ('setup_profiles', "strati_type='"//trim(strati_type)//"' unknown.")
@@ -421,13 +413,9 @@ module Special
       endif
       lnrho0 = lnrho_init_z(n1)
 !
-      if (allocated (prof_z)) deallocate (prof_z)
-      if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-      if (allocated (prof_lnrho)) deallocate (prof_lnrho)
-!
     endsubroutine setup_profiles
 !***********************************************************************
-    subroutine read_profile(filename,data,data_z,n_z)
+    subroutine read_profile(filename,profile,data_unit)
 !
 !  Read vertical profile data.
 !  Values are expected in SI units.
@@ -437,9 +425,12 @@ module Special
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Syscalls, only: file_exists, file_size
 !
-      character (len=*) :: filename
+      character (len=*), intent (in) :: filename
+      real, dimension (mz), intent (out) :: profile
+      real, intent (in) :: data_unit
+!
       real, dimension (:), allocatable :: data, data_z
-      integer :: n_z
+      integer :: n_data
 !
       integer, parameter :: unit=12
       integer :: lend, lend_b8, ierr
@@ -453,26 +444,27 @@ module Special
         ! determine the number of data points in the profile
         if (.not. file_exists (filename)) &
             call stop_it_if_any (.true., "read_profile: can't find "//filename)
-        n_z = (file_size (filename) - 2*2*4) / (lend*8/lend_b8 * 2)
+        n_data = (file_size (filename) - 2*2*4) / (lend*8/lend_b8 * 2)
       endif
       call stop_it_if_any (.false., '')
-      call mpibcast_int (n_z, 1)
+      call mpibcast_int (n_data, 1)
 !
       ! allocate memory
-      if (allocated (data)) deallocate (data)
-      if (allocated (data_z)) deallocate (data_z)
-      allocate (data(n_z), data_z(n_z), stat=ierr)
+      allocate (data(n_data), data_z(n_data), stat=ierr)
       if (ierr > 0) call stop_it_if_any (.true., 'read_profile: '// &
-          'Could not allocate memory for profile and the z coordinate')
+          'Could not allocate memory for data and its z coordinate')
 !
       if (lroot) then
         ! read profile
-        open (unit, file=filename, form='unformatted', recl=lend*n_z)
+        open (unit, file=filename, form='unformatted', recl=lend*n_data)
         read (unit, iostat=ierr) data
         read (unit, iostat=ierr) data_z
         if (ierr /= 0) call stop_it_if_any (.true., 'read_profile: '// &
             'Error reading profile data in "'//trim(filename)//'"')
         close (unit)
+!
+        ! convert data from logarithmic SI to Pencil units
+        data = data - alog (data_unit)
 !
         ! convert z coordinates from SI to Pencil units
         if (unit_system == 'SI') then
@@ -484,19 +476,25 @@ module Special
       call stop_it_if_any (.false., '')
 !
       ! broadcast profile
-      call mpibcast_real (data, n_z)
-      call mpibcast_real (data_z, n_z)
+      call mpibcast_real (data, n_data)
+      call mpibcast_real (data_z, n_data)
+!
+      ! interpolate logarthmic data to Pencil grid profile
+      call interpolate_profile (data, data_z, n_data, profile)
+!
+      if (allocated (data)) deallocate (data)
+      if (allocated (data_z)) deallocate (data_z)
 !
     endsubroutine read_profile
 !***********************************************************************
-    subroutine interpolate_profile(data,data_z,n_z,profile)
+    subroutine interpolate_profile(data,data_z,n_data,profile)
 !
 !  Interpolate profile data to Pencil grid.
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
       real, dimension (:) :: data, data_z
-      integer :: n_z
+      integer :: n_data
       real, dimension (mz) :: profile
 !
       integer :: i, j
@@ -507,11 +505,11 @@ module Special
         if (z(j) < data_z(1) ) then
           call warning ("interpolate_profile", "used constant value below bottom")
           profile(j) = data(1)
-        elseif (z(j) >= data_z(n_z)) then
+        elseif (z(j) >= data_z(n_data)) then
           call warning ("interpolate_profile", "used constant value over top")
-          profile(j) = data(n_z)
+          profile(j) = data(n_data)
         else
-          do i = 1, n_z-1
+          do i = 1, n_data-1
             if ((z(j) >= data_z(i)) .and. (z(j) < data_z(i+1))) then
               ! y = m*(x-x1) + y1
               profile(j) = (data(i+1)-data(i)) / (data_z(i+1)-data_z(i)) * (z(j)-data_z(i)) + data(i)
