@@ -24,7 +24,8 @@
 ! PENCILS PROVIDED etava, etaj, etaj2, etajrho
 ! PENCILS PROVIDED cosjb,jparallel;jperp
 ! PENCILS PROVIDED cosub
-! PENCILS PROVIDED hyperj(3);hyperj2;hyperjb;coshyperjb
+! PENCILS PROVIDED hjj(3);hj2;hjb;hjxb;coshjb
+! PENCILS PROVIDED hjparallel;hjperp
 !
 !***************************************************************
 module Magnetic
@@ -254,7 +255,7 @@ module Magnetic
   integer :: idiag_jbrms=0      ! DIAG_DOC: $\left<(\jv\cdot\Bv)^2\right>^{1/2}$
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
-  integer :: idiag_hyperjbm=0   ! DIAG_DOC: 
+  integer :: idiag_hjbm=0   ! DIAG_DOC: 
   integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
   integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
@@ -557,11 +558,15 @@ module Magnetic
   integer :: idiag_etajrhomax=0 ! DIAG_DOC: Max of artificial resistivity
                                 ! DIAG_DOC: $\eta\sim J / \rho$
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
-  integer :: idiag_coshyperjbm=0     ! DIAG_DOC: 
+  integer :: idiag_coshjbm=0     ! DIAG_DOC: 
   integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of J parallel to B
   integer :: idiag_jperpm=0     ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of J perpendicular to B
+  integer :: idiag_hjparallelm=0 ! DIAG_DOC: Mean value of the component
+                                ! DIAG_DOC: of $J_{\rm hyper}$ parallel to B
+  integer :: idiag_hjperpm=0     ! DIAG_DOC: Mean value of the component
+                                ! DIAG_DOC: of $J_{\rm hyper}$ perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
   integer :: idiag_Exmxz=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{y}$
   integer :: idiag_Eymxz=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{y}$
@@ -1413,7 +1418,7 @@ module Magnetic
       if (idiag_b2ruzm/=0) &
           lpenc_diagnos(i_rho)=.true.
 !
-      if (idiag_hyperjbm/=0) lpenc_diagnos(i_hyperjb)=.true.
+      if (idiag_hjbm/=0) lpenc_diagnos(i_hjb)=.true.
 !
       if (     idiag_brmphi/=0  .or. idiag_uxbrmphi/=0 .or. idiag_jxbrmphi/=0 &
           .or. idiag_armphi/=0  .or. idiag_brmr/=0     .or. idiag_armr/=0 ) then
@@ -1458,7 +1463,7 @@ module Magnetic
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
           .or. idiag_jbrms/=0 &
          ) lpenc_diagnos(i_jb)=.true.
-      if (idiag_hyperjbm/=0 ) lpenc_diagnos(i_hyperjb)=.true.
+      if (idiag_hjbm/=0 ) lpenc_diagnos(i_hjb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
@@ -1497,14 +1502,15 @@ module Magnetic
       if (idiag_etaj2max/=0) lpenc_diagnos(i_etaj2)=.true.
       if (idiag_etajrhomax/=0) lpenc_diagnos(i_etajrho)=.true.
       if (idiag_cosjbm/=0) lpenc_diagnos(i_cosjb)=.true.
-      if (idiag_coshyperjbm/=0) lpenc_diagnos(i_coshyperjb)=.true.
-      if (idiag_cosubm/=0) then
-        lpenc_diagnos(i_cosub)=.true.
-      endif
+      if (idiag_coshjbm/=0) lpenc_diagnos(i_coshjb)=.true.
+      if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
       if ((idiag_jparallelm/=0).or.(idiag_jperpm/=0)) then
-        lpenc_diagnos(i_cosjb)=.true.
         lpenc_diagnos(i_jparallel)=.true.
         lpenc_diagnos(i_jperp)=.true.
+      endif
+      if ((idiag_hjparallelm/=0).or.(idiag_hjperpm/=0)) then
+        lpenc_diagnos(i_hjparallel)=.true.
+        lpenc_diagnos(i_hjperp)=.true.
       endif
       if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
@@ -1541,9 +1547,18 @@ module Magnetic
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_hjparallel).or.lpencil_in(i_hjperp)) then
+        lpencil_in(i_coshjb)=.true.
+        lpencil_in(i_hjxb)=.true.
+        lpencil_in(i_hj2)=.true.
+        lpencil_in(i_b2)=.true.
+      endif
+!
       if (lpencil_in(i_jparallel).or.lpencil_in(i_jperp)) then
         lpencil_in(i_cosjb)=.true.
         lpencil_in(i_jxb)=.true.
+        lpencil_in(i_j2)=.true.
+        lpencil_in(i_b2)=.true.
       endif
 !
       if (lpencil_in(i_cosjb)) then
@@ -1551,20 +1566,20 @@ module Magnetic
         lpencil_in(i_j2)=.true.
         lpencil_in(i_jb)=.true.
       endif
-      if (lpencil_in(i_coshyperjb)) then
+      if (lpencil_in(i_coshjb)) then
         lpencil_in(i_b2)=.true.
-        lpencil_in(i_hyperj2)=.true.
-        lpencil_in(i_hyperjb)=.true.
+        lpencil_in(i_hj2)=.true.
+        lpencil_in(i_hjb)=.true.
       endif
 !
-      if (lpencil_in(i_hyperjb)) then
+      if (lpencil_in(i_hjb)) then
         lpencil_in(i_bb)=.true.
-        lpencil_in(i_hyperj)=.true.
+        lpencil_in(i_hjj)=.true.
       endif
 !
-      if (lpencil_in(i_hyperj2)) lpencil_in(i_hyperj)=.true.
+      if (lpencil_in(i_hj2)) lpencil_in(i_hjj)=.true.
 !
-      if (lpencil_in(i_hyperj)) lpencil_in(i_del4a)=.true.
+      if (lpencil_in(i_hjj)) lpencil_in(i_del4a)=.true.
 !
       if (lpencil_in(i_a2)) lpencil_in(i_aa)=.true.
 !
@@ -1601,9 +1616,9 @@ module Magnetic
         lpencil_in(i_jj)=.true.
       endif
 !
-      if (lpencil_in(i_hyperjb)) then
+      if (lpencil_in(i_hjb)) then
         lpencil_in(i_bb)=.true.
-        lpencil_in(i_hyperj)=.true.
+        lpencil_in(i_hjj)=.true.
       endif
 !
       if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
@@ -1737,7 +1752,7 @@ module Magnetic
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb
-      real, dimension (nx) :: jcrossb2
+      real, dimension (nx) :: jcrossb2,hjcrossb2
       real :: B2_ext,c,s
       integer :: i,j,ix
 !
@@ -1949,7 +1964,7 @@ module Magnetic
           if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
             p%jperp=0
           else
-            p%jperp=sqrt(jcrossb2(ix))/sqrt(p%b2(ix))
+            p%jperp=sqrt(jcrossb2(ix))/sqrt(p%j2(ix)*p%b2(ix))
           endif
         enddo
       endif
@@ -2011,25 +2026,39 @@ module Magnetic
       if (lpencil(i_glnrhoxb)) call cross_mn(p%glnrho,p%bb,p%glnrhoxb)
 ! del4a
       if (lpencil(i_del4a)) call del4v(f,iaa,p%del4a)
-! hyperj 
-      if (lpencil(i_hyperj)) p%hyperj = p%del4a
-! hyperj2
-      if (lpencil(i_hyperj2)) call dot2_mn(p%hyperj,p%hyperj2)
-! hyperjb
-      if (lpencil(i_hyperjb)) call dot_mn(p%hyperj,p%bbb,p%hyperjb)
-! coshyperjb
-      if (lpencil(i_coshyperjb)) then
+! hjj 
+      if (lpencil(i_hjj)) p%hjj = p%del4a
+! hj2
+      if (lpencil(i_hj2)) call dot2_mn(p%hjj,p%hj2)
+! hjb
+      if (lpencil(i_hjb)) call dot_mn(p%hjj,p%bbb,p%hjb)
+! coshjb
+      if (lpencil(i_coshjb)) then
         do ix=1,nx
-          if ((abs(p%hyperj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
-            p%coshyperjb(ix)=0.
+          if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
+            p%coshjb(ix)=0.
           else
-            p%coshyperjb(ix)=p%hyperjb(ix)/sqrt(p%hyperj2(ix)*p%b2(ix))
+            p%coshjb(ix)=p%hjb(ix)/sqrt(p%hj2(ix)*p%b2(ix))
           endif
         enddo
         if (lpencil_check_at_work) then
 ! map penc0 value back to interval [-1,1]
-          p%coshyperjb = modulo(p%coshyperjb + 1.0, 2.0) - 1
+          p%cosjb = modulo(p%coshjb + 1.0, 2.0) - 1
         endif
+      endif
+! hjcrossb
+      if (lpencil(i_hjxb)) call cross_mn(p%hjj,p%bb,p%hjxb)
+! hjparallel and hjperp
+      if (lpencil(i_hjparallel).or.lpencil(i_hjperp)) then
+        p%hjparallel=sqrt(p%hj2)*p%coshjb
+        call dot2_mn(p%hjxb,hjcrossb2)
+        do ix=1,nx
+          if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
+            p%hjperp=0
+          else
+            p%hjperp=sqrt(hjcrossb2(ix))/sqrt(p%hj2(ix)*p%b2(ix))
+          endif
+        enddo
       endif
 ! del6a
       if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
@@ -2834,7 +2863,7 @@ module Magnetic
 ! <J.B>
 !
         if (idiag_jbm/=0) call sum_mn_name(p%jb,idiag_jbm)
-        if (idiag_hyperjbm/=0) call sum_mn_name(p%hyperjb,idiag_hyperjbm)
+        if (idiag_hjbm/=0) call sum_mn_name(p%hjb,idiag_hjbm)
         if (idiag_j2m/=0) call sum_mn_name(p%j2,idiag_j2m)
         if (idiag_jm2/=0) call max_mn_name(p%j2,idiag_jm2)
         if (idiag_jrms/=0) call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
@@ -2844,6 +2873,10 @@ module Magnetic
         if (idiag_cosjbm/=0) call sum_mn_name(p%cosjb,idiag_cosjbm)
         if (idiag_jparallelm/=0) call sum_mn_name(p%jparallel,idiag_jparallelm)
         if (idiag_jperpm/=0) call sum_mn_name(p%jperp,idiag_jperpm)
+        if (idiag_hjparallelm/=0) & 
+            call sum_mn_name(p%hjparallel,idiag_hjparallelm)
+        if (idiag_hjperpm/=0) & 
+            call sum_mn_name(p%hjperp,idiag_hjperpm)
 !
 !  Resistivity.
 !
@@ -6004,7 +6037,7 @@ module Magnetic
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
-        idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hyperjbm=0
+        idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hjbm=0
         idiag_uam=0; idiag_ubm=0; idiag_dubrms=0; idiag_dobrms=0; idiag_ujm=0
         idiag_uxbxm=0; idiag_uybym=0; idiag_uzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
@@ -6090,7 +6123,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'abumz',idiag_abumz)
         call parse_name(iname,cname(iname),cform(iname),'ajm',idiag_ajm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
-        call parse_name(iname,cname(iname),cform(iname),'hyperjbm',idiag_hyperjbm)
+        call parse_name(iname,cname(iname),cform(iname),'hjbm',idiag_hjbm)
         call parse_name(iname,cname(iname),cform(iname),'jbmn',idiag_jbmn)
         call parse_name(iname,cname(iname),cform(iname),'jbms',idiag_jbms)
         call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
@@ -6233,6 +6266,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
         call parse_name(iname,cname(iname),cform(iname),'jparallelm',idiag_jparallelm)
         call parse_name(iname,cname(iname),cform(iname),'jperpm',idiag_jperpm)
+        call parse_name(iname,cname(iname),cform(iname),'hjparallelm',idiag_hjparallelm)
+        call parse_name(iname,cname(iname),cform(iname),'hjperpm',idiag_hjperpm)
       enddo
 !
 !  Quantities which are averaged over half (north-south) the box.
