@@ -294,6 +294,7 @@ module Magnetic
   integer :: idiag_bymax=0      ! DIAG_DOC: $\max(|B_y|)$
   integer :: idiag_bzmax=0      ! DIAG_DOC: $\max(|B_z|)$
   integer :: idiag_jrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
+  integer :: idiag_hjrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_jmax=0       ! DIAG_DOC: $\max(|\jv|)$
   integer :: idiag_vArms=0      ! DIAG_DOC: $\left<\Bv^2/\varrho\right>^{1/2}$
   integer :: idiag_vAmax=0      ! DIAG_DOC: $\max(\Bv^2/\varrho)^{1/2}$
@@ -1459,6 +1460,7 @@ module Magnetic
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
           idiag_ajm/=0 ) &
           lpenc_diagnos(i_j2)=.true.
+      if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
       if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
           .or. idiag_jbrms/=0 &
@@ -1959,14 +1961,7 @@ module Magnetic
 ! jparallel and jperp
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        call dot2_mn(p%jxb,jcrossb2)
-        do ix=1,nx
-          if ((abs(p%j2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
-            p%jperp=0
-          else
-            p%jperp=sqrt(jcrossb2(ix))/sqrt(p%j2(ix)*p%b2(ix))
-          endif
-        enddo
+        p%jperp=sqrt(p%j2)*sqrt(1-p%cosjb**2)
       endif
 ! jxbr
       if (lpencil(i_jxbr)) then
@@ -2051,14 +2046,7 @@ module Magnetic
 ! hjparallel and hjperp
       if (lpencil(i_hjparallel).or.lpencil(i_hjperp)) then
         p%hjparallel=sqrt(p%hj2)*p%coshjb
-        call dot2_mn(p%hjxb,hjcrossb2)
-        do ix=1,nx
-          if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
-            p%hjperp=0
-          else
-            p%hjperp=sqrt(hjcrossb2(ix))/sqrt(p%hj2(ix)*p%b2(ix))
-          endif
-        enddo
+        p%hjperp=sqrt(p%hj2)*sqrt(1-p%coshjb**2)
       endif
 ! del6a
       if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
@@ -2867,10 +2855,12 @@ module Magnetic
         if (idiag_j2m/=0) call sum_mn_name(p%j2,idiag_j2m)
         if (idiag_jm2/=0) call max_mn_name(p%j2,idiag_jm2)
         if (idiag_jrms/=0) call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
+        if (idiag_hjrms/=0) call sum_mn_name(p%hj2,idiag_hjrms,lsqrt=.true.)
         if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
         if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
         if (idiag_dteta/=0)  call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
         if (idiag_cosjbm/=0) call sum_mn_name(p%cosjb,idiag_cosjbm)
+        if (idiag_coshjbm/=0) call sum_mn_name(p%coshjb,idiag_coshjbm)
         if (idiag_jparallelm/=0) call sum_mn_name(p%jparallel,idiag_jparallelm)
         if (idiag_jperpm/=0) call sum_mn_name(p%jperp,idiag_jperpm)
         if (idiag_hjparallelm/=0) & 
@@ -6097,6 +6087,9 @@ module Magnetic
         idiag_brsphmphi=0; idiag_bthmphi=0; idiag_brmsh=0; idiag_brmsn=0
         idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
+        idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0 
+        idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0 
+        idiag_hjparallelm=0;idiag_hjperpm=0 
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -6161,6 +6154,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bymax',idiag_bymax)
         call parse_name(iname,cname(iname),cform(iname),'bzmax',idiag_bzmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
+        call parse_name(iname,cname(iname),cform(iname),'hjrms',idiag_hjrms)
         call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
         call parse_name(iname,cname(iname),cform(iname),'axm',idiag_axm)
         call parse_name(iname,cname(iname),cform(iname),'aym',idiag_aym)
@@ -6266,6 +6260,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'cosjbm',idiag_cosjbm)
         call parse_name(iname,cname(iname),cform(iname),'jparallelm',idiag_jparallelm)
         call parse_name(iname,cname(iname),cform(iname),'jperpm',idiag_jperpm)
+        call parse_name(iname,cname(iname),cform(iname),'coshjbm',idiag_coshjbm)
         call parse_name(iname,cname(iname),cform(iname),'hjparallelm',idiag_hjparallelm)
         call parse_name(iname,cname(iname),cform(iname),'hjperpm',idiag_hjperpm)
       enddo
