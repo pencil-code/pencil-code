@@ -1556,8 +1556,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## Dhruba's new laptop (meera) 
 ##
-#FC=/home/dhruba/Library/bin/mpif90 -g # (meera)
-#FFLAGS_DOUBLE = -r8 # (meera)
+#FC=/home/dhruba/Library/bin/mpif90  # (meera)
+#FFLAGS_DOUBLE = -O3  # (meera)
 #F77=$(FC) #(meera)
 #FFLAGS=-O3 -fno-second-underscore  #(meera)
 #CC=gcc  #(meera)
