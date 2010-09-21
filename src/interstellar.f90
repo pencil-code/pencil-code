@@ -341,7 +341,7 @@ module Interstellar
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
 !
-  real :: addflux_dim1
+  real :: addflux_dim1, addrate=1.0
   double precision :: boldmass
   logical :: ladd_massflux = .false.
 !
@@ -375,7 +375,7 @@ module Interstellar
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      lTT_cutoff, TT_cutoff, N_mass
+      lTT_cutoff, TT_cutoff, N_mass, addrate
 !
   contains
 !
@@ -386,8 +386,8 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('cooling',icooling,communicated=.true.)
-      call farray_register_auxiliary('cooling2',icooling2)
+      call farray_register_auxiliary('cooling2',icooling2,communicated=.true.)
+      call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
 !
@@ -401,10 +401,10 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',cooling $'
-      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',cooling'
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',cooling2 $'
+      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',cooling2'
       aux_count=aux_count+1
-      if (lroot) write(15,*) 'cooling = fltarr(mx,my,mz)*one'
+      if (lroot) write(15,*) 'cooling2 = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -428,6 +428,7 @@ module Interstellar
       real :: mu
 !
       f(:,:,:,icooling)=0.0
+      f(:,:,:,icooling2)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -1393,7 +1394,7 @@ module Interstellar
          'Gressel_interstellar: calculating z-dependent uv-heating'// &
          'function for initial hydrostatic and thermal equilibrium'
 !
-      do n=1,mz
+      do n=n1,n2
         lam_loop: do j=1,ncool
           if (coolT_cgs(j)>=T0hs*unit_temperature) then
             lambda=exp(lncoolH(j-1))*T0hs**coolB(j-1)
@@ -1522,6 +1523,7 @@ module Interstellar
             heatcool_shock_cutoff_rate1))
         where (p%shock<tini) damp_profile = 1.
         cool=cool*damp_profile
+        heat=heat*damp_profile
         heatcool=heatcool*damp_profile
       endif
 !
@@ -3626,8 +3628,8 @@ module Interstellar
 !
 !  This routine calculates the mass flux through the vertical boundary.
 !  As no inflow boundary condition precludes galactic fountain this adds
-!  the mass flux uniformly throughout the volume to substitute mass
-!  which would otherwise be replaced over time by the fountain
+!  the mass flux proportionately throughout the volume to substitute mass
+!  which would otherwise be replaced over time by the galactic fountain.
 !
 !  12-Jul-10/fred: coded
 !
@@ -3636,12 +3638,11 @@ module Interstellar
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !
-      real :: rhomax, prec_factor
-      real, dimension(1) :: sum_tmp, rmpi
-      double precision :: bflux, bmass, rhoz, rhoz1
-      double precision, dimension(1) :: bfmpi, sum_1tmp
-!      double precision :: newmass, oldmass
-!      double precision, dimension(1) :: ompi, nmpi, sum_2tmp, sum_3tmp
+      real :: prec_factor=2.0e-7
+      double precision, dimension(1) :: sum_tmp, rmpi
+      double precision :: bflux, bmass, add_ratio, rhosum
+      double precision, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
+      double precision :: newmass, oldmass
       integer :: l,m,n
 !
 !  Skip this subroutine if not selected eg before turbulent pressure settles
@@ -3649,21 +3650,14 @@ module Interstellar
       if (.not. ladd_massflux) return
 !
 !  Calculate the total flux through the vertical boundaries to determine
-!  mass loss to the system. If accumulated boundary flux is too small some
-!  added mass can be lost below machine precision, so accumulate 'boldmass'
-!  until large enough to be fully applied.
+!  mass loss to the system. Sum the total mass in the domain.
 !
-!  Read in the accumulated boundary flux boldmass
-!
-!
-!  Determine maximum point value of density
-!
-      rhomax = maxval(exp(f(:,:,:,ilnrho)))
-      sum_tmp=(/ rhomax /)
-      call mpireduce_max(sum_tmp,rmpi,1)
-      call mpibcast_real(rmpi,1)
-      rhomax=rmpi(1)
-      prec_factor=1e-9
+      rhosum = sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
+      sum_tmp=(/ rhosum /)
+      call mpireduce_sum_double(sum_tmp,rmpi,1)
+      call mpibcast_double(rmpi,1)
+      rhosum=rmpi(1)
+      oldmass=rhosum*dv
 !
 !  Calculate mass loss through the vertical boundaries rho*u_z
 !
@@ -3695,51 +3689,49 @@ module Interstellar
       call mpibcast_double(bfmpi,1)
       bflux=bfmpi(1)
       if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
+      if (bflux>0.d0) then
 !
-!  Multiply mass flux by area element and timestep to find mass plus any
-!  accumulated boundary mass flux 'boldmass' from previous timesteps.
+!  Multiply mass flux by area element and timestep to determine lost mass. 
+!  Add unused flux mass from previous timesteps.
 !
-      bmass=bflux*dt*dx*dy+boldmass
-      if (lroot.and.ip<45) print*, &
-          'addmassflux: new bmass, boldmass, timestep =', bmass, boldmass, dt
-      rhoz=bmass*dble(addflux_dim1)
-      rhoz1=1.d0/rhoz
+        bmass=bflux*dt*dx*dy+boldmass
 !
-      if (rhoz >= rhomax*prec_factor) then
+!  Determine multiplier required to restore mass to level before boundary
+!  losses. addrate (default=1.0) can be increased to raise mass levels if 
+!  required.
 !
-!  For debugging purposes oldmass and newmass can be calculated and the
-!  difference compared to bmass, which should be equal.
+        add_ratio=(bmass*addrate+oldmass)/oldmass
+        if (lroot.and.ip<45) print*, &
+            'addmassflux: bmass, add_ratio, timestep =', &
+            bmass, add_ratio, dt
 !
-!        oldmass=0.d0
-!        oldmass=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))*dx*dy*dz
-!        sum_2tmp=(/ oldmass /)
-!        call mpireduce_sum_double(sum_2tmp,ompi,1)
-!        call mpibcast_double(ompi,1)
-!        oldmass=ompi(1)
+!  Add mass proportionally to the existing density throughout the 
+!  volume to replace that lost through boundary. 
+!  add_ratio needs to be large enough for single precision to record small
+!  changes, so accumulate small mass losses in boldmass until large enough.
 !
-!        if (lroot.and.ip<45) print*,'addmassflux: oldmass =',oldmass
+        if (add_ratio>=prec_factor+1.d0) then
+          f(l1:l2,m1:m2,n1:n2,ilnrho)= &
+              dble(f(l1:l2,m1:m2,n1:n2,ilnrho))+log(add_ratio)
 !
-!  Add mass evenly throughout to replace that lost through boundary
+!  For debugging purposes newmass can be calculated and compared to 
+!  bmass+oldmass, which should be equal.
 !
-!        newmass=0.d0
-        do n=n1,n2
-          f(l1:l2,m1:m2,n,ilnrho)=log(rhoz) + &
-              log(1.d0+rhoz1*exp(dble(f(l1:l2,m1:m2,n,ilnrho))))
-        enddo
-!
-!        newmass=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))*dx*dy*dz
-!        sum_3tmp=(/ newmass /)
-!        call mpireduce_sum_double(sum_3tmp,nmpi,1)
-!        call mpibcast_double(nmpi,1)
-!        newmass=nmpi(1)
-!        if (lroot.and.ip<45) print*,'addmassflux: newmass, rhoz =', &
-!            newmass, rhoz
-!        if (lroot.and.ip<45) print*,'addmassflux: added mass vs mass flux=', &
-!            newmass-oldmass, bmass
-!
-        boldmass=0.0
-      else
-        boldmass=bmass
+          rhosum=sum(exp(dble(f(l1:l2,m1:m2,n1:n2,ilnrho))))
+          sum_3tmp=(/ rhosum /)
+          call mpireduce_sum_double(sum_3tmp,nmpi,1)
+          call mpibcast_double(nmpi,1)
+          rhosum=nmpi(1)
+          newmass=nmpi(1)*dv
+          if (lroot.and.ip<45) print*,'addmassflux: oldmass, newmass =', &
+              oldmass, newmass
+          if (lroot.and.ip<70) print*, &
+              'addmassflux: added mass vs mass flux=', &
+              newmass-oldmass, bmass
+          boldmass=0.d0
+        else
+          boldmass=bmass
+        endif
       endif
 !
     endsubroutine addmassflux
