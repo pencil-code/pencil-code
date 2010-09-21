@@ -539,7 +539,7 @@ program run
 !
     if (linterstellar) call check_SN(f)
 !
-!  Check if mass flux repalcement required fred test 
+!  Check if mass flux replacement required fred test 
 !
     if (linterstellar) call addmassflux(f)
 !
