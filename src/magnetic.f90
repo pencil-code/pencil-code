@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED etava, etaj, etaj2, etajrho
 ! PENCILS PROVIDED cosjb,jparallel;jperp
 ! PENCILS PROVIDED cosub
-! PENCILS PROVIDED hjj(3);hj2;hjb;hjxb;coshjb
+! PENCILS PROVIDED hjj(3);hj2;hjb;hjxb(3);coshjb
 ! PENCILS PROVIDED hjparallel;hjperp
 !
 !***************************************************************
