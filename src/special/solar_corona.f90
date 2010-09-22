@@ -34,8 +34,8 @@ module Special
   real, dimension (nx,ny) :: A_init_x, A_init_y
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
-  real :: heat_par1=0.,heat_par2=0.,heat_par3=0.
   real, dimension(2) :: heat_par_exp=(/0.,1./)
+  real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
   character (len=labellen) :: strati_type='nothing'
@@ -54,8 +54,7 @@ module Special
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
-       iheattype,heat_par1,heat_par2,heat_par3,dt_gran, &
-       cool_type
+       iheattype,dt_gran,cool_type
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -99,6 +98,8 @@ module Special
     real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
     real :: Bzflux
     logical :: lgran_parallel=.false.
+!
+    integer, save, dimension(mseed) :: nano_seed
 !
   contains
 !
@@ -145,6 +146,8 @@ module Special
       if (.not.lreloading) then
         call setup_magnetic()
         call setup_profiles()
+!
+        if (.not.lstarting) nano_seed = 0.
       endif
 !
       call keep_compiler_quiet(f)
@@ -1530,78 +1533,194 @@ module Special
 !***********************************************************************
     subroutine calc_artif_heating(df,p)
 !
-!  30-jan-08/bing: coded
+!  Subroutine to calculate intrisic heating.
+!  Activated by setting iheattype = exp, exp2 and/or gauss
+!  Maximum of 3 different possibible heating types
+!  Also set the heating parameters for the chosen heating functions.
+!
+!  22-sept-10/Tijmen: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: cubic_step, notanumber
+      use Diagnostics, only: max_mn_name
+      use General, only: random_number_wrapper,random_seed_wrapper, &
+          normal_deviate
+      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: heatinput
-      real :: z_Mm
+      real, dimension (nx) :: heatinput,heat_flux
+      real, dimension (nx) :: x_Mm,heat_nano,rhs
+      real, dimension (nx) :: heat_event,heat_event1D
+      integer, dimension(mseed) :: global_rstate
+      real :: z_Mm,heat_unit
+      real :: nano_sigma_t,nano_time,nano_start,nano_sigma_z
+      real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
+      real :: nano_amplitude
+      real, dimension(2) :: event_pos
       type (pencil_case) :: p
       integer :: i
 !
+      heat_unit= unit_density*unit_velocity**3/unit_length
+      x_Mm = x(l1:l2)*unit_length*1e-6
+      z_Mm = z(n)*unit_length*1e-6
+!
+      heatinput = 0.
+      heat_flux = 0.
+!
       do i=1,3
+        if (headtt) print*,'iheattype:',iheattype(i)
         select case(iheattype(i))
         case ('nothing')
-          if (headtt) print*,'iheattype:',iheattype(i)
-!
-        case ('sven')
-          ! Volumetric heating rate as it can be found
-          ! in the thesis by bingert.
           !
-          ! Get height in Mm.
-          z_Mm = z(n)*unit_length*1e-6
-          !
-          ! Compute volumetric heating rate in [W/m^3] as
-          ! found in Bingert's thesis.
-          heatinput=heatamp*(1e3*exp(-z_Mm/0.2)+1e-4*exp(-z_Mm/10.))
-          !
-          ! Convert to pencil units.
-          heatinput=heatinput/unit_density/unit_velocity**3*unit_length
-          !
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*p%cp1*heatinput * &
-              cubic_step(real(t*unit_time),init_time,init_time)
-!
         case ('exp')
-          ! heat_par_exp(1) should be 530 w/m2 (flux,F)
+          ! heat_par_exp(1) should be 530 W/m^3 (amplitude)
           ! heat_par_exp(2) should be 0.3 Mm (scale height)
           !
-          if (headtt) print*,'iheattype:',iheattype(i)
-          z_Mm = z(n)*unit_length*1e-6
-          heatinput=heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))
-          ! Convert to pencil units if needed:
-          heatinput=heatinput/unit_density/unit_velocity**3*unit_length
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-              cubic_step(real(t*unit_time),init_time,init_time)
+          heatinput=heatinput + &
+              heat_par_exp(1)*exp(-z_Mm/heat_par_exp(2))/heat_unit
+!
+          heat_flux=heat_flux +  heat_par_exp(1)*heat_par_exp(2)*1e6* &
+              (1.-exp(-lz*unit_length*1e-6/heat_par_exp(2)))
+!
+          if (headtt) print*,'Flux of exp heating: ',heat_flux
+!
+        case ('exp2')
+          ! A second exponential function
+          ! For Sven et al. 2010 set:
+          ! heat_par_exp= (1e3 , 0.2 )
+          ! heat_par_exp2= (1e-4 , 10.)
+          !
+          heatinput=heatinput + &
+              heat_par_exp2(1)*exp(-z_Mm/heat_par_exp2(2))/heat_unit
+!
+          heat_flux=heat_flux + heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
+              (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
+
+          if (headtt) print*,'Flux for exp2 heating: ', &
+              heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
+              (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
 !
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
           ! heat_par_gauss(2) is Width (sigma)
           ! heat_par_gauss(3) is the amplitude (Flux)
           !
-          if (headtt) print*,'iheattype:',iheattype(i)
-          z_Mm = z(n)*unit_length*1e-6
+          heatinput=heatinput + &
+              heat_par_gauss(3)*exp(-((z_Mm-heat_par_gauss(1))**2/ &
+              (2*heat_par_gauss(2)**2)))/heat_unit
+!
+        case ('nanof')
+          ! simulate nanoflare heating =)
+          ! height dependend amplitude und duration
+          ! idea: call random numbers , make condition when to flare, when
+          ! flare get position
+          ! then over time release a flare in shape of gaussian. Also
+          ! distribution is gaussian around a point.
+          ! gaussian distribution is gained via the dierfc function (double
+          ! prec, inverser erf function)
+          ! we draw for new flares as long as nano_time is /= 0. when done we
+          ! reset nano_time to 0. again.
           !
-          heatinput=heat_par_gauss(3)*exp(-((z_Mm-heat_par_gauss(1))**2/ &
-              2*heat_par_gauss(2)**2))
-          ! Convert to pencil units if needed:
-          heatinput=heatinput/unit_density/unit_velocity**3*unit_length
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)+ &
-              p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-              cubic_step(real(t*unit_time),init_time,init_time)
+          ! Later we will implement more options for nanoflaring! =D
           !
+          ! SAVE GLOBAL SEED
+          ! LOAD NANO_SEED
+          call random_seed_wrapper(GET=global_rstate)
+          call random_seed_wrapper(PUT=nano_seed)
+
+          if (nano_start .eq. 0.) then
+            ! If 0 roll to see if a nanoflare occurs
+            call random_number_wrapper(nano_start)
+            !
+            if (nano_start .gt. 0.95 ) then
+              ! 5% chance for a nanoflare to occur, then get the location.
+              call normal_deviate(nano_pos_z)
+              nano_pos_z=nano_pos_z*lz
+              call random_number_wrapper(nano_pos_y)
+              call random_number_wrapper(nano_pos_x)
+              nano_time=60.
+            else
+              ! else no nanoflare, reset nano_start to 0. for the next
+              ! timestep
+              nano_start=0.
+            endif
+          endif
+          !
+          if (nano_start .ne. 0.) then
+            ! if nano_start is not 0. then there is a nanoflare!
+            ! 2nd assumption , nanoflare takes 60 seconds =)
+            nano_flare_energy=10.d17 !joules
+            nano_sigma_z=0.5
+            nano_sigma_t=2.5
+!
+            nano_amplitude=nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
+!
+            heat_nano=nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
+                exp(-((z_Mm-nano_pos_z)**2/ (2*0.5**2)))
+            nano_time=nano_time-dt*unit_time
+!
+            heatinput=heatinput + heat_nano/heat_unit
+!
+            if (nano_time .le. 0.) nano_start=0.
+          end if
+          !
+          !SAVE NANO_SEED
+          !RESTORE GLOBAL SEED
+          call random_seed_wrapper(GET=nano_seed)
+          call random_seed_wrapper(PUT=global_rstate)
+!
+! amp_t = exp(-((t-nano_time)**2/(2.*nano_dur**2)))
+!-> no idea how to properly implement
+! spread = exp(-((z_Mm-nano_pos)**2/(2.*nano_spread**2)))
+!
+! issue! How to put in timelike guassian for a random event starting
+! at a random time?
+!
+        case ('event')
+          ! one small point heating event (gaussian to prevent too strong gradients)
+          ! one point in time, one point in space!
+          if (t*unit_time .gt. 150. .AND. t*unit_time .lt. 1000.) then
+            event_pos(1)=7.5
+            event_pos(2)=15.
+            heat_event=10.*exp(-((250.-t*unit_time))**2/(2*(20.*unit_time)**2))* &
+                exp(-((x_Mm-event_pos(1))**2/ (2*0.2**2))) * &
+                exp(-((z_Mm-event_pos(2))**2/ (2*0.2**2)))
+            heatinput=heatinput + heat_event/heat_unit
+          endif
+!
+        case ('event1D')
+          ! one small point heating event (gaussian to prevent too strong gradients)
+          ! one point in time, one point in space!
+          if (t*unit_time .gt. 300. .AND. t*unit_time .lt. 10000.) then
+            if (t*unit_time .gt. 300. .AND. t*unit_time .lt. 301.) &
+                print*,'EVENTTTT!!!!!'
+            event_pos(1)=10.
+            heat_event1D=10.*exp(-((400.-t))**2/( 2*50.**2))* &
+                exp(-((x_Mm-event_pos(1))**2/ (2*0.2**2)))
+            heatinput=heatinput + heat_event1D/heat_unit
+          endif
+!
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
               'Please provide correct iheattype')
         endselect
       enddo
+      !
+      if (headtt) print*,'Total flux for all types:',heat_flux
 !
-!      if (lfirst.and.ldt) then
-!        dt1_max=max(dt1_max,heatinput/cdts)
-!      endif
+! Add to energy equation
+!
+      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
+          cubic_step(real(t*unit_time),init_time,init_time)
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+!
+      if (lfirst.and.ldt) then
+        if (ldiagnos.and.idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt)=ilabel_max_dt
+          call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
+        endif
+        dt1_max=max(dt1_max,rhs/cdts)
+      endif
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
