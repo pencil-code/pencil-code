@@ -32,7 +32,6 @@ module Dustdensity
   use Cparam
   use Dustvelocity
   use Messages
-  use Special
 !
   implicit none
 !
@@ -101,7 +100,7 @@ module Dustdensity
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde
       use General, only: chn
 !
       integer :: k, ind_tmp, imd_tmp, imi_tmp
@@ -172,8 +171,8 @@ module Dustdensity
 !  parameters.
 !
 !  24-nov-02/tony: coded
-      use Mpicomm, only: stop_it
-      use FArrayManager
+!
+      use FArrayManager, only: farray_register_global
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
@@ -190,7 +189,7 @@ module Dustdensity
 !
       if (ldustcondensation) then
       if (.not. lchemistry .and. .not. lpscalar) &
-          call stop_it('initialize_dustdensity: ' // &
+          call fatal_error('initialize_dustdensity', &
           'Dust growth only works with pscalar')
       endif
 !
@@ -251,7 +250,7 @@ module Dustdensity
         case default
           if (lroot) print*, 'initialize_dustdensity: ', &
               'No such value for idiffd(',i,'): ', trim(idiffd(i))
-          call stop_it('initialize_dustdensity')
+          call fatal_error('initialize_dustdensity','No such value')
         endselect
         lnothing=.true.
       enddo
@@ -314,14 +313,11 @@ module Dustdensity
 !  7-nov-01/wolf: coded
 ! 28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs0, cs20, gamma, gamma_m1, beta_glnrho_scaled
-      use Gravity
-      use Initcond
-      use IO
-      use Mpicomm
-      use Selfgravity, only: rhs_poisson_const
+      use EquationOfState, only: cs0, cs20, gamma, beta_glnrho_scaled
+      use Initcond, only: hat3d, sinwave_phase
       use InitialCondition, only: initial_condition_nd
-      use Sub
+      use Selfgravity, only: rhs_poisson_const
+      use Sub, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -599,7 +595,6 @@ module Dustdensity
 !  18-sep-05/anders: coded
 !
       use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
-      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -894,7 +889,7 @@ module Dustdensity
       real, dimension (nx) :: tmp,fcloud_tmp
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp
-      logical :: zero_ppsf=.false.
+!      logical :: zero_ppsf=.false.
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
@@ -1096,14 +1091,14 @@ module Dustdensity
         endif
 !
 ! ppsat is a  saturation pressure in cgs units
-! 
+!
         if (lpencil(i_ppsat)) then
            p%ppsat=6.035e12*exp(-5938.*p%TT1)
         endif
 !
 ! ppsf is a  saturation pressure in cgs units
 ! in future ppsat will not be the same as  ppsf
-! 
+!
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
 !            if (any(p%ppwater==0.0) .and. (Nion==0.)) zero_ppsf=.true.
@@ -1167,8 +1162,7 @@ module Dustdensity
 !   7-jun-02/axel: incoporated from subroutine pde
 !
       use Diagnostics
-      use Mpicomm, only: stop_it
-      use Sub
+      use Sub, only: identify_bcs, dot_mn
       use Special, only: special_calc_dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1390,7 +1384,6 @@ module Dustdensity
       endif
 !
       if (lspecial) call special_calc_dustdensity(f,df,p)
-
 !
     endsubroutine dndmd_dt
 !***********************************************************************
@@ -1398,7 +1391,6 @@ module Dustdensity
 !
 !  Redistribute dust number density and dust density in mass bins
 !
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ndustspec) :: nd
@@ -1466,8 +1458,6 @@ module Dustdensity
 !
 !  Calculate condensation of dust on existing dust surfaces
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1475,8 +1465,8 @@ module Dustdensity
       real :: dmdfac
       integer :: k,l
 !
-      if (.not. lmdvar) call stop_it &
-          ('dust_condensation: Dust condensation only works with lmdvar')
+      if (.not. lmdvar) call fatal_error &
+          ('dust_condensation','Dust condensation only works with lmdvar')
 !      if (lchemistry) then
 !        cc_tmp=p%Ywater
 !      else
@@ -1519,9 +1509,8 @@ module Dustdensity
 !
 !  Calculate mass flux of condensing monomers
 !
-      use Diagnostics
+      use Diagnostics, only: max_mn_name, sum_mn_name
       use EquationOfState, only: getmu,eoscalc,ilnrho_ss,getpressure
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: pp_full
@@ -1560,7 +1549,7 @@ module Dustdensity
         endif
 !
       case default
-        call stop_it("get_mfluxcond: No valid dust chemistry specified.")
+        call fatal_error('get_mfluxcond','No valid dust chemistry specified.')
 !
       endselect
 !
@@ -1571,7 +1560,7 @@ module Dustdensity
 !  Calculate kernel of coagulation equation
 !    collision rate = ni*nj*kernel
 !
-      use Sub
+      use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: TT1
@@ -1757,7 +1746,7 @@ module Dustdensity
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
       use General, only: chn
 !
       integer :: iname,inamez,inamex,k
