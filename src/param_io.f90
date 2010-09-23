@@ -964,6 +964,7 @@ module Param_IO
       logical :: lhydro           = lhydro_var
       logical :: ldensity         = ldensity_var
       logical :: lentropy         = lentropy_var
+      logical :: ltemperature     = ltemperature_var
       logical :: lshock           = lshock_var
       logical :: lmagnetic        = lmagnetic_var
       logical :: llorenz_gauge    = llorenz_gauge_var
@@ -991,7 +992,7 @@ module Param_IO
           ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, &
           lshock, lradiation_fld, leos_ionization, leos_fixed_ionization, &
           lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
-          lneutralvelocity, lneutraldensity
+          lneutralvelocity, lneutraldensity, ltemperature
 !
 !  Write the param.nml file only from root processor.
 !  However, for pacx-MPI (grid-style computations across different platforms)
@@ -1051,6 +1052,7 @@ module Param_IO
       call keep_compiler_quiet(lhydro)
       call keep_compiler_quiet(ldensity)
       call keep_compiler_quiet(lentropy)
+      call keep_compiler_quiet(ltemperature)
       call keep_compiler_quiet(lmagnetic)
       call keep_compiler_quiet(ltestscalar,ltestfield,ltestflow)
       call keep_compiler_quiet(lpscalar,lradiation,lcosmicray,lcosmicrayflux)

@@ -396,6 +396,7 @@ module Cdata
   logical, parameter :: lhydro_var=lhydro
   logical, parameter :: ldensity_var=ldensity
   logical, parameter :: lentropy_var=lentropy
+  logical, parameter :: ltemperature_var=ltemperature
   logical, parameter :: lshock_var=lshock
   logical, parameter :: lmagnetic_var=lmagnetic
   logical, parameter :: llorenz_gauge_var=llorenz_gauge
