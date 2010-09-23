@@ -1694,6 +1694,174 @@ module EquationOfState
 !
     endsubroutine bc_ss_stemp_z
 !***********************************************************************
+    subroutine bc_ss_a2stemp_x(f,topbot)
+!
+!  boundary condition for entropy: adopt minimum value for entropy in ghost
+!  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
+!  or symmetric temperature to handle shock profiles. 
+!  Effectively caps temperature in ghost zones while otherwise fluctuating
+!  with the outward flow. 
+!
+!  22-sep-2010/fred: adapted from bc_ss_stemp_z
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+!
+      if (ldebug) print*,'bc_ss_a2stemp_x: cs20,cs0=',cs20,cs0
+!
+!  Symmetric temperature/sound speed for entropy.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+        case ('bot')
+          if (cs2bot<=0.) print*, &
+              'bc_ss_a2stemp_x: cannot have cs2bot<=0'
+          do i=1,nghost
+            f(l1-i,:,:,iss) = min( &
+                2*f(l1+1-i,:,:,iss)-f(l1+2-i,:,:,iss)+gamma_m1/gamma* &
+                (2*f(l1+1-i,:,:,ilnrho)-f(l1+2-i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)), &
+                f(l1+i,:,:,iss)+gamma_m1/gamma* &
+                (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)))
+          enddo
+!
+!  top boundary
+!
+        case ('top')
+          if (cs2top<=0.) print*, &
+              'bc_ss_a2stemp_x: cannot have cs2top<=0'
+          do i=1,nghost
+            f(l2+i,:,:,iss) = min( &
+                2*f(l2-1+i,:,:,iss)-f(l2+2-i,:,:,iss)+gamma_m1/gamma* &
+                (2*f(l2-1+i,:,:,ilnrho)-f(l2+2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)), &
+                f(l2+i,:,:,iss)+gamma_m1/gamma* &
+                (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)))
+          enddo
+!
+        case default
+          call fatal_error('bc_ss_a2stemp_x','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_a2stemp_x
+!***********************************************************************
+    subroutine bc_ss_a2stemp_y(f,topbot)
+!
+!  boundary condition for entropy: adopt minimum value for entropy in ghost
+!  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
+!  or symmetric temperature to handle shock profiles. 
+!  Effectively caps temperature in ghost zones while otherwise fluctuating
+!  with the outward flow. 
+!
+!  22-sep-2010/fred: adapted from bc_ss_stemp_y
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+!
+      if (ldebug) print*,'bc_ss_a2stemp_y: cs20,cs0=',cs20,cs0
+!
+!  Symmetric temperature/sound speed for entropy.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+        case ('bot')
+          if (cs2bot<=0.) print*, &
+              'bc_ss_a2stemp_y: cannot have cs2bot<=0'
+          do i=1,nghost
+            f(:,m1-i,:,iss) = min( &
+                2*f(:,m1+1-i,:,iss)-f(:,m1+2-i,:,iss)+gamma_m1/gamma* &
+                (2*f(:,m1+1-i,:,ilnrho)-f(:,m1+2-i,:,ilnrho)-f(:,m1-i,:,ilnrho)), &
+                f(:,m1-i,:,iss)+gamma_m1/gamma* &
+                (f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho)))
+          enddo
+!
+!  top boundary
+!
+        case ('top')
+          if (cs2top<=0.) print*, &
+              'bc_ss_a2stemp_y: cannot have cs2top<=0'
+          do i=1,nghost
+            f(:,m2+i,:,iss) = min( &
+                2*f(:,m2-1+i,:,iss)-f(:,m2-2+i,:,iss)+gamma_m1/gamma* &
+                (2*f(:,m2-1+i,:,ilnrho)-f(:,m2-2+i,:,ilnrho)-f(:,m2+i,:,ilnrho)), &
+                f(:,m2-i,:,iss)+gamma_m1/gamma* &
+                (f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho)))
+          enddo
+!
+        case default
+          call fatal_error('bc_ss_a2stemp_y','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_a2stemp_y
+!***********************************************************************
+    subroutine bc_ss_a2stemp_z(f,topbot)
+!
+!  boundary condition for entropy: adopt minimum value for entropy in ghost
+!  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
+!  or symmetric temperature to handle shock profiles. 
+!  Effectively caps temperature in ghost zones while otherwise fluctuating
+!  with the outward flow. 
+!
+!  22-sep-2010/fred: adapted from bc_ss_stemp_z
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+!
+      if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
+!
+!  Symmetric temperature/sound speed for entropy.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+        case ('bot')
+          if (cs2bot<=0.) print*, &
+              'bc_ss_a2stemp_z: cannot have cs2bot<=0'
+          do i=1,nghost
+            f(:,:,n1-i,iss) = min( &
+                2*f(:,:,n1+1-i,iss)-f(:,:,n1+2-i,iss) + gamma_m1/gamma* &
+                (2*f(:,:,n1+1-i,ilnrho)-f(:,:,n1+2-i,ilnrho)-f(:,:,n1-i,ilnrho)), &
+                f(:,:,n1+i,iss)+gamma_m1/gamma* &
+                (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)))
+          enddo
+!
+!  top boundary
+!
+        case ('top')
+          if (cs2top<=0.) print*, &
+              'bc_ss_a2stemp_z: cannot have cs2top<=0'
+          do i=1,nghost
+            f(:,:,n2+i,iss) = min( &
+                2*f(:,:,n2-1+i,iss)-f(:,:,n2-2+i,iss) + gamma_m1/gamma* &
+                (2*f(:,:,n2-1+i,ilnrho)-f(:,:,n2-2+i,ilnrho)-f(:,:,n2+i,ilnrho)), &
+                f(:,:,n2-i,iss)+gamma_m1/gamma* &
+                (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)))
+          enddo
+        case default
+          call fatal_error('bc_ss_a2stemp_z','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_a2stemp_z
+!***********************************************************************
     subroutine bc_ss_energy(f,topbot)
 !
 !  boundary condition for entropy

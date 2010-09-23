@@ -1776,6 +1776,63 @@ module EquationOfState
 !
     endsubroutine bc_ss_stemp_z
 !***********************************************************************
+    subroutine bc_ss_a2stemp_x(f,topbot)
+! 
+!  boundary condition for entropy: symmetric temperature
+! 
+!   3-aug-2002/wolf: coded
+!  26-aug-2003/tony: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call stop_it("bc_ss_a2stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
+!   
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+! 
+    endsubroutine bc_ss_a2stemp_x
+!***********************************************************************
+    subroutine bc_ss_a2stemp_y(f,topbot)
+!   
+!  boundary condition for entropy: symmetric temperature
+!
+!   3-aug-2002/wolf: coded
+!  26-aug-2003/tony: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call stop_it("bc_ss_a2stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_a2stemp_y
+!***********************************************************************
+    subroutine bc_ss_a2stemp_z(f,topbot)
+!   
+!  boundary condition for entropy: symmetric temperature
+!
+!   3-aug-2002/wolf: coded
+!  26-aug-2003/tony: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call stop_it("bc_ss_a2stemp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_a2stemp_z
+!***********************************************************************
     subroutine bc_ss_energy(f,topbot)
 !
 !  boundary condition for entropy
