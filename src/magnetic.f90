@@ -21,11 +21,11 @@
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12
-! PENCILS PROVIDED etava, etaj, etaj2, etajrho
-! PENCILS PROVIDED cosjb,jparallel;jperp
+! PENCILS PROVIDED etava; etaj; etaj2; etajrho
+! PENCILS PROVIDED cosjb; jparallel; jperp
 ! PENCILS PROVIDED cosub
-! PENCILS PROVIDED hjj(3);hj2;hjb;hjxb(3);coshjb
-! PENCILS PROVIDED hjparallel;hjperp
+! PENCILS PROVIDED hjj(3); hj2; hjb; hjxb(3); coshjb
+! PENCILS PROVIDED hjparallel; hjperp
 !
 !***************************************************************
 module Magnetic
@@ -1754,7 +1754,6 @@ module Magnetic
 !
 !      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb
-      real, dimension (nx) :: jcrossb2,hjcrossb2
       real :: B2_ext,c,s
       integer :: i,j,ix
 !
