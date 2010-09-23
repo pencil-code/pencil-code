@@ -198,6 +198,7 @@ if (cpar gt 0) then begin
   lgravz    = par.lgravz
   lgravr    = par.lgravr
   lentropy  = par.lentropy
+  ltemperature = par.ltemperature
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
   leos_ionization=par.leos_ionization
@@ -236,8 +237,8 @@ if (cpar gt 0) then begin
     dz_tilde = dz_tilde*!values.f_nan
   endelse
   ;
-  if (ldensity) then begin
-    if (not (leos_ionization or leos_temperature_ionization)) then begin
+  if (ldensity and (lentropy or ltemperature)) then begin
+     if (not (leos_ionization or leos_temperature_ionization)) then begin
       cs0=par.cs0 & rho0=par.rho0
       gamma=par.gamma & gamma_m1=gamma-1.
       cs20 = cs0^2 & lnrho0 = alog(rho0)
