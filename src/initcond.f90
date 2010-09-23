@@ -1470,7 +1470,7 @@ module Initcond
 !
 ! complex cube roots of unity
 !
-      omg=complex(-sqrt(2.),sqrt(3.)/2.)
+      omg=cmplx(-sqrt(2.),sqrt(3.)/2.)
       omgsqr=conjg(omg)
 !
 !  possibility of shifting the Beltrami wave by phase ph
