@@ -2,18 +2,22 @@
 ; vdf is the format required by vapor for 3d visualization
 ; last modified 14/07/2010: Guerrero
 
-pro pc2vdf,tinit=tinit,tend=tend,rhof=rhof,sph=sph,variables=variables
+pro pc2vdf,tinit=tinit,tend=tend,rhof=rhof,sph=sph,variables=variables,beq=beq
 
 ; KEYWORD TINIT: INITIAL VARFILE
 ; KEYWORD TEND: FINAL VARFILE
 ; KEYWORD RHOF: COMPUTES DENSITY PERTURBATIONS INSTEAD OF DENSITY 
 ; KEYWORD SPH: READ PC VARFILES IN SPHERICAL COORDS.
+; KEYWORD BEQ: DEFINES A NORMALIZATION VALUE FOR THE MAGNETIC FIELD
+;e.g.:pc2vdf,tinit=2,tend=2,variables=['uu','bb','lnrho'],/rhof,beq=0.26
 
 default, tinit, '0'
 default, tend, '1'
 default,variables,['uu','lnrho']
+default,beq,1.
 
-k = strmatch(variables,'aa')
+
+k = strmatch(variables,'bb')
 mag = where(k EQ 1)
 
 if (mag GE 0) then begin
@@ -45,10 +49,7 @@ cd, readpath
       ;
       OPENR,1, readpath+'data/proc0/'+varfile1, ERROR = err
       close,1
-  
-     print,'Reading:   ',varfile1
-     pc_read_var,variables=['uu'],varfile=varfile1,obj=test,/quiet
-     pc_read_grid,o=g,/trimxyz
+      pc_read_grid,o=g,/trimxyz
 ;
 cd, writepath
 ;	$Id: WriteVDF.pro,v 1.6 2008/09/03 20:51:55 clynejp Exp $
@@ -61,15 +62,9 @@ cd, writepath
 ;	of the same dimension
 ;
 cd, writepath
-nx = (size(test.uu))[1]-6
-ny = (size(test.uu))[2]-6
-nz = (size(test.uu))[3]-6
-l1=3
-m1=3
-n1=3
-l2=l1+nx-1
-m2=m1+ny-1
-n2=n1+nz-1
+nx = (size(g.x))[1]   ;   (size(test.uu))[1]-6
+ny = (size(g.y))[1]   ;   (size(test.uu))[2]-6
+nz = (size(g.z))[1]   ;  (size(test.uu))[3]-6
 
 if (keyword_set(sph)) then dim = [nz,ny,nx] else dim = [nx,ny,nz]
 if (keyword_set(rhof)) then rho_f = fltarr(nx,ny,nz)
@@ -116,14 +111,13 @@ if (keyword_set(sph)) then begin
 ; order for spherical coordinates phi(z),theta(y),r(x) 
    extents = [-180+(180.*g.z[0]/!pi),  -90+(180.*g.y[0]/!pi), g.x[0], $ 
               -180+(180.*g.z[nz-1]/!pi),-90+(180.*g.y[ny-1]/!pi), g.x[nx-1]]
-;   extents = [-180,-60.,0.6,180,60.,1.03]
    print,extents
 ;new variables
    rho_sph = fltarr(nz,ny,nx)
    vr = fltarr(nz,ny,nx)
    vt = fltarr(nz,ny,nx)
    vp = fltarr(nz,ny,nx)
-   print,size(vr)
+   print,'size of v = ', size(vr)
    br = fltarr(nz,ny,nx)
    bt = fltarr(nz,ny,nx)
    bp = fltarr(nz,ny,nx)
@@ -131,7 +125,7 @@ if (keyword_set(sph)) then begin
    last_dim = nx-1
 endif else begin
    extents = [g.x[0], g.y[0], g.z[0], g.x[nx-1], g.y[ny-1], g.z[nz-1]]
-   lastdim = nz-1
+   last_dim = nz-1
 endelse
 ;
 vdf_setextents, mfd, extents
@@ -170,8 +164,10 @@ fac=1
       close,1
   cd, readpath
      print,'Reading:   ',varfile
-     pc_read_var,variables=variables,varfile=varfile,obj=test,/quiet   
-     rho=exp(test.lnrho[l1:l2,m1:m2,n1:n2])
+     pc_read_var,variables=variables,varfile=varfile, $
+       /magic,obj=test,/quiet,/trimall
+   
+     rho=exp(test.lnrho)
 ;
     if (keyword_set(rhof)) then begin
      rhoy = total(rho[*,*,*],2)/ny
@@ -180,16 +176,17 @@ fac=1
      rho = rho_f
     endif
 ;
-    v1 =test.uu[l1:l2,m1:m2,n1:n2,0]
-    v2 =test.uu[l1:l2,m1:m2,n1:n2,1]  
-    v3 =test.uu[l1:l2,m1:m2,n1:n2,2]
-    if (mag GT 0) then begin
-       bb = curl(test.aa)
-       b1 =bb[l1:l2,m1:m2,n1:n2,0]
-       b2 =bb[l1:l2,m1:m2,n1:n2,1]
-       b3 =bb[l1:l2,m1:m2,n1:n2,2]
-       Eb = b1^2 + b2^2 + b2^2 
-    endif
+    ss=[0,ny/2,0]
+    rho = shift(rho,ss)
+    v1 =shift(test.uu[*,*,*,0],ss)
+    v2 =shift(test.uu[*,*,*,1],ss)  
+    v3 =shift(test.uu[*,*,*,2],ss)
+  if (mag GT 0) then begin
+      b1 = shift(test.bb[*,*,*,0],ss)/beq
+      b2 = shift(test.bb[*,*,*,1],ss)/beq
+      b3 = shift(test.bb[*,*,*,2],ss)/beq
+      Eb = alog(b1^2 + b2^2 + b2^2)
+  endif
 ; reordering
     if (keyword_set(sph)) then begin
        for l = 0, nx-1 do begin
@@ -226,10 +223,10 @@ fac=1
             1: tmp_var = vr
             2: tmp_var = vt
             3: tmp_var = vp
-;            4: tmp_var = br
-;            5: tmp_var = bt
-;            6: tmp_var = bp
-;            7: tmp_var = Eb_sph
+            4: tmp_var = br
+            5: tmp_var = bt
+            6: tmp_var = bp
+            7: tmp_var = Eb_sph
          endcase
       endif else begin
          case nvar of
@@ -237,10 +234,10 @@ fac=1
             1: tmp_var = v1
             2: tmp_var = v2
             3: tmp_var = v3
-;            4: tmp_var = b1
-;            5: tmp_var = b2
-;            6: tmp_var = b3
-;            7: tmp_var = Eb
+            4: tmp_var = b1
+            5: tmp_var = b2
+            6: tmp_var = b3
+            7: tmp_var = Eb
          endcase
       endelse
       for z = 0, last_dim do begin
