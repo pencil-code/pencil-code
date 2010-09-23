@@ -188,6 +188,12 @@ module Boundcond
                   ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
+                case ('asT')
+                  ! BCX_DOC: select minimum entropy from symmetric or 
+                  ! BCX_DOC: asymmetric temp relative to boundary value,
+                  ! BCX_DOC: $T_{N-i}=2 T_{N}-T_{N+i}, T_{N-i}=T_{N+i}=$;
+                  ! BCX_DOC: implies $T''(x_N)=T''(x_0)=0, T'(x_0)=0$
+                  if (j==iss) call bc_ss_a2stemp_x(f,topbot)
                 case ('db')
                   ! BCX_DOC:
                   call bc_db_x(f,topbot,j)
@@ -406,6 +412,12 @@ module Boundcond
               case ('sT')
                 ! BCY_DOC: symmetric temp.
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
+              case ('asT')
+                ! BCY_DOC: select minimum entropy from symmetric or 
+                ! BCY_DOC: asymmetric temp relative to boundary value,
+                ! BCY_DOC: $T_{N-i}=2 T_{N}-T_{N+i}, T_{N-i}=T_{N+i}=$;
+                ! BCY_DOC: implies $T''(x_N)=T''(x_0)=0, T'(x_0)=0$
+                if (j==iss) call bc_ss_a2stemp_y(f,topbot)
               case ('f')
                 ! BCY_DOC: freeze value
                 ! tell other modules not to change boundary value
@@ -633,6 +645,12 @@ module Boundcond
                 ! BCZ_DOC: symmetric temp.
                 ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
+              case ('asT')
+                ! BCZ_DOC: select minimum entropy from symmetric or 
+                ! BCZ_DOC: asymmetric temp relative to boundary value,
+                ! BCZ_DOC: $T_{N-i}=2 T_{N}-T_{N+i}, T_{N-i}=T_{N+i}=$;
+                ! BCZ_DOC: implies $T''(x_N)=T''(x_0)=0, T'(x_0)=0$
+                if (j==iss) call bc_ss_a2stemp_z(f,topbot)
               case ('c2')
                 ! BCZ_DOC: complex
                 ! BCZ_DOC:
