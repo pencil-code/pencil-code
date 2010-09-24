@@ -217,9 +217,9 @@ module Interstellar
   real :: rho0ts=impossible, T0hs=impossible
 !
 !  Cooling timestep limiter coefficient
-!  (This value is overly restrictive. cdt_tauc=0.5 is a better value.)
+!  (This value 0.08 is overly restrictive. cdt_tauc=0.5 is a better value.)
 !
-  real :: cdt_tauc=0.08
+  real :: cdt_tauc=0.5
 !
 !  Time of most recent SNII event
 !
@@ -1567,7 +1567,7 @@ module Interstellar
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
         where (heatcool>0.0) Hmax=Hmax+heatcool
-!        dt1_max=max(dt1_max,Hmax/p%ee/cdt_tauc)
+        dt1_max=max(dt1_max,Hmax/p%ee/cdt_tauc)
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
