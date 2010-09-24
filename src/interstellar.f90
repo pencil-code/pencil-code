@@ -218,7 +218,6 @@ module Interstellar
 !
 !  Cooling timestep limiter coefficient
 !  (This value is overly restrictive. cdt_tauc=0.5 is a better value.)
-!  Actually with full simulation cdt_tauc=0.005 may be appropriate
 !
   real :: cdt_tauc=0.08
 !
@@ -342,7 +341,7 @@ module Interstellar
 !  boundary condition used in addmassflux
 !
   real :: addflux_dim1, addrate=1.0
-  double precision :: boldmass
+  double precision :: boldmass=0.d0
   logical :: ladd_massflux = .false.
 !
 !  start parameters
@@ -1563,14 +1562,12 @@ module Interstellar
       endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
-!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
+!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee) 
 !
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
-!        dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
-!        dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
         where (heatcool>0.0) Hmax=Hmax+heatcool
-!       Hmax=Hmax+heat
+!        dt1_max=max(dt1_max,Hmax/p%ee/cdt_tauc)
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
@@ -3638,7 +3635,7 @@ module Interstellar
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !
-      real :: prec_factor=2.0e-7
+      real :: prec_factor=1.0e-6
       double precision, dimension(1) :: sum_tmp, rmpi
       double precision :: bflux, bmass, add_ratio, rhosum
       double precision, dimension(1) :: bfmpi, sum_1tmp, nmpi, sum_3tmp
@@ -3701,6 +3698,7 @@ module Interstellar
 !  required.
 !
         add_ratio=(bmass*addrate+oldmass)/oldmass
+!         
         if (lroot.and.ip<45) print*, &
             'addmassflux: bmass, add_ratio, timestep =', &
             bmass, add_ratio, dt
