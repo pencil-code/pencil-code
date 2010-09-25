@@ -189,10 +189,10 @@ module Boundcond
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
                 case ('asT')
-                  ! BCX_DOC: select minimum entropy from symmetric or 
-                  ! BCX_DOC: asymmetric temp relative to boundary value,
-                  ! BCX_DOC: $T_{N-i}=2 T_{N}-T_{N+i}, T_{N-i}=T_{N+i}=$;
-                  ! BCX_DOC: implies $T''(x_N)=T''(x_0)=0, T'(x_0)=0$
+                  ! BCX_DOC: select entropy for uniform ghost temperature 
+                  ! BCX_DOC: matching fluctuating boundary value,
+                  ! BCX_DOC: $T_{N-i}=T_{N}=$;
+                  ! BCX_DOC: implies $T'(x_N)=T'(x_0)=0$
                   if (j==iss) call bc_ss_a2stemp_x(f,topbot)
                 case ('db')
                   ! BCX_DOC:
@@ -413,10 +413,10 @@ module Boundcond
                 ! BCY_DOC: symmetric temp.
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
               case ('asT')
-                ! BCY_DOC: select minimum entropy from symmetric or 
-                ! BCY_DOC: asymmetric temp relative to boundary value,
-                ! BCY_DOC: $T_{N-i}=2 T_{N}-T_{N+i}, T_{N-i}=T_{N+i}=$;
-                ! BCY_DOC: implies $T''(x_N)=T''(x_0)=0, T'(x_0)=0$
+                ! BCY_DOC: select entropy for uniform ghost temperature 
+                ! BCY_DOC: matching fluctuating boundary value,
+                ! BCY_DOC: $T_{N-i}=T_{N}=$;
+                ! BCY_DOC: implies $T'(x_N)=T'(x_0)=0$
                 if (j==iss) call bc_ss_a2stemp_y(f,topbot)
               case ('f')
                 ! BCY_DOC: freeze value
@@ -646,10 +646,10 @@ module Boundcond
                 ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
               case ('asT')
-                ! BCZ_DOC: select minimum entropy from symmetric or 
-                ! BCZ_DOC: asymmetric temp relative to boundary value,
-                ! BCZ_DOC: $T_{N-i}=2 T_{N}-T_{N+i}, T_{N-i}=T_{N+i}=$;
-                ! BCZ_DOC: implies $T''(x_N)=T''(x_0)=0, T'(x_0)=0$
+                ! BCZ_DOC: select entropy for uniform ghost temperature 
+                ! BCZ_DOC: matching fluctuating boundary value,
+                ! BCZ_DOC: $T_{N-i}=T_{N}=$;
+                ! BCZ_DOC: implies $T'(x_N)=T'(x_0)=0$
                 if (j==iss) call bc_ss_a2stemp_z(f,topbot)
               case ('c2')
                 ! BCZ_DOC: complex

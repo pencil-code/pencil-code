@@ -3135,21 +3135,25 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_a2stemp_x(f,topbot)
 !
-!  boundary condition for entropy: adopt minimum value for entropy in ghost
-!  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
-!  or symmetric temperature to handle shock profiles. 
-!  Effectively caps temperature in ghost zones while otherwise fluctuating
-!  with the outward flow. 
+!  Boundary condition for entropy: adopt boundary value for temperature in
+!  the ghost zone to handle shock profiles in interstellar with steep +ve
+!  1st derivative in cooled remnant shells, followed by steep -ve 1st 
+!  derivative inside remnant. 
+!  s or a2 for temperature both unstable and unphysical as the unshocked 
+!  exterior ISM will be comparatively homogeneous, hence allowing the ghost
+!  zone to fluctuate matching the boundary values is a reasonable approx
+!  of the physical flow, whilst avoiding unphysical spikes to wreck the
+!  calculation. 
 !
-!  22-sep-2010/fred: adapted from bc_ss_stemp_z
+!  25-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if (ldebug) print*,'bc_ss_a2stemp_x: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
 !
-!  Symmetric temperature/sound speed for entropy.
+!  Uniform temperature/sound speed condition for entropy.
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
@@ -3163,11 +3167,8 @@ module EquationOfState
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2bot<=0'
           do i=1,nghost
-            f(l1-i,:,:,iss) = min( &
-                2*f(l1+1-i,:,:,iss)-f(l1+2-i,:,:,iss)+(cp-cv)* &
-                (2*f(l1+1-i,:,:,ilnrho)-f(l1+2-i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)), &
-                f(l1+i,:,:,iss)+(cp-cv)* &
-                (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)))
+            f(l1-i,:,:,iss) = f(l1+1-i,:,:,iss)+(cp-cv)* &
+                (f(l1+1-i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
           enddo
 !
 !  top boundary
@@ -3176,11 +3177,8 @@ module EquationOfState
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_x: cannot have cs2top<=0'
           do i=1,nghost
-            f(l2+i,:,:,iss) = min( &
-                2*f(l2-1+i,:,:,iss)-f(l2+2-i,:,:,iss)+(cp-cv)* &
-                (2*f(l2-1+i,:,:,ilnrho)-f(l2+2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)), &
-                f(l2+i,:,:,iss)+(cp-cv)* &
-                (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)))
+            f(l2+i,:,:,iss) = f(l2-1+i,:,:,iss)+(cp-cv)* &
+                (f(l2-1+i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
           enddo
 !
         case default
@@ -3191,21 +3189,25 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_a2stemp_y(f,topbot)
 !
-!  boundary condition for entropy: adopt minimum value for entropy in ghost
-!  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
-!  or symmetric temperature to handle shock profiles. 
-!  Effectively caps temperature in ghost zones while otherwise fluctuating
-!  with the outward flow. 
+!  Boundary condition for entropy: adopt boundary value for temperature in
+!  the ghost zone to handle shock profiles in interstellar with steep +ve
+!  1st derivative in cooled remnant shells, followed by steep -ve 1st 
+!  derivative inside remnant. 
+!  s or a2 for temperature both unstable and unphysical as the unshocked 
+!  exterior ISM will be comparatively homogeneous, hence allowing the ghost
+!  zone to fluctuate matching the boundary values is a reasonable approx
+!  of the physical flow, whilst avoiding unphysical spikes to wreck the
+!  calculation. 
 !
-!  22-sep-2010/fred: adapted from bc_ss_stemp_y
+!  25-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if (ldebug) print*,'bc_ss_a2stemp_y: cs20,cs0=',cs20,cs0
+      if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
 !
-!  Symmetric temperature/sound speed for entropy.
+!  Uniform temperature/sound speed condition for entropy.
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
@@ -3219,11 +3221,8 @@ module EquationOfState
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2bot<=0'
           do i=1,nghost
-            f(:,m1-i,:,iss) = min( &
-                2*f(:,m1+1-i,:,iss)-f(:,m1+2-i,:,iss)+(cp-cv)* &
-                (2*f(:,m1+1-i,:,ilnrho)-f(:,m1+2-i,:,ilnrho)-f(:,m1-i,:,ilnrho)), &
-                f(:,m1-i,:,iss)+(cp-cv)* &
-                (f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho)))
+            f(:,m1-i,:,iss) = f(:,m1+1-i,:,iss)+(cp-cv)* &
+                (f(:,m1+1-i,:,ilnrho)-f(:,m1-i,:,ilnrho))
           enddo
 !
 !  top boundary
@@ -3232,11 +3231,8 @@ module EquationOfState
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_y: cannot have cs2top<=0'
           do i=1,nghost
-            f(:,m2+i,:,iss) = min( &
-                2*f(:,m2-1+i,:,iss)-f(:,m2-2+i,:,iss)+(cp-cv)* &
-                (2*f(:,m2-1+i,:,ilnrho)-f(:,m2-2+i,:,ilnrho)-f(:,m2+i,:,ilnrho)), &
-                f(:,m2-i,:,iss)+(cp-cv)* &
-                (f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho)))
+            f(:,m2+i,:,iss) = f(:,m2-1+i,:,iss)+(cp-cv)* &
+                (f(:,m2-1+i,:,ilnrho)-f(:,m2+i,:,ilnrho))
           enddo
 !
         case default
@@ -3247,13 +3243,17 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_ss_a2stemp_z(f,topbot)
 !
-!  boundary condition for entropy: adopt minimum value for entropy in ghost
-!  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
-!  or symmetric temperature to handle shock profiles. 
-!  Effectively caps temperature in ghost zones while otherwise fluctuating
-!  with the outward flow. 
+!  Boundary condition for entropy: adopt boundary value for temperature in
+!  the ghost zone to handle shock profiles in interstellar with steep +ve
+!  1st derivative in cooled remnant shells, followed by steep -ve 1st 
+!  derivative inside remnant. 
+!  s or a2 for temperature both unstable and unphysical as the unshocked 
+!  exterior ISM will be comparatively homogeneous, hence allowing the ghost
+!  zone to fluctuate matching the boundary values is a reasonable approx
+!  of the physical flow, whilst avoiding unphysical spikes to wreck the
+!  calculation. 
 !
-!  22-sep-2010/fred: adapted from bc_ss_stemp_z
+!  25-2010/fred: adapted from bc_ss_stemp_z
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3261,7 +3261,7 @@ module EquationOfState
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
 !
-!  Symmetric temperature/sound speed for entropy.
+!  Uniform temperature/sound speed condition for entropy.
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
@@ -3275,11 +3275,8 @@ module EquationOfState
           if (cs2bot<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
-            f(:,:,n1-i,iss) = min( &
-                2*f(:,:,n1+1-i,iss)-f(:,:,n1+2-i,iss) + (cp-cv)* &
-                (2*f(:,:,n1+1-i,ilnrho)-f(:,:,n1+2-i,ilnrho)-f(:,:,n1-i,ilnrho)), &
-                f(:,:,n1+i,iss)+(cp-cv)* &
-                (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)))
+            f(:,:,n1-i,iss) = f(:,:,n1+1-i,iss) + (cp-cv)* &
+                (f(:,:,n1+1-i,ilnrho)-f(:,:,n1-i,ilnrho))
           enddo
 !
 !  top boundary
@@ -3288,11 +3285,8 @@ module EquationOfState
           if (cs2top<=0.) print*, &
               'bc_ss_a2stemp_z: cannot have cs2top<=0'
           do i=1,nghost
-            f(:,:,n2+i,iss) = min( &
-                2*f(:,:,n2-1+i,iss)-f(:,:,n2-2+i,iss) + (cp-cv)* &
-                (2*f(:,:,n2-1+i,ilnrho)-f(:,:,n2-2+i,ilnrho)-f(:,:,n2+i,ilnrho)), &
-                f(:,:,n2-i,iss)+(cp-cv)* &
-                (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)))
+            f(:,:,n2+i,iss) = f(:,:,n2-1+i,iss) + (cp-cv)* &
+                (f(:,:,n2-1+i,ilnrho)-f(:,:,n2+i,ilnrho))
           enddo
         case default
           call fatal_error('bc_ss_a2stemp_z','invalid argument')
