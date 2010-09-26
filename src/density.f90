@@ -61,6 +61,7 @@ module Density
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
+  logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false.,lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
@@ -90,6 +91,7 @@ module Density
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
+      lisothermal_fixed_Hrho, &
       density_floor, lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
       lnrho_z_shift, powerlr, zoverh, hoverr, lffree, ffree_profile, &
       rzero_ffree,wffree,rho_top,rho_bottom,r0_rho
@@ -1984,9 +1986,16 @@ module Density
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
-          tmp=-gamma*pot/cs20
+          if (lisothermal_fixed_Hrho) then
+            tmp=-pot/cs20
+          else
+            tmp=-gamma*pot/cs20
+          endif
           f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + lnrho0 + tmp
           if (lentropy.and..not.pretend_lnTT) then
+!
+!  note: the initial condition is always produced for lnrho
+!
             f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
                 (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
           elseif (lentropy.and.pretend_lnTT) then
