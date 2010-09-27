@@ -1363,7 +1363,7 @@ module Diagnostics
 !
 !  initialize by the volume element (which is different for different m and n)
 !
-      fac=dVol1(l1:l2)*dVol2(m)*dVol3(n)
+      fac=dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
 !
 !  initialize if one is on the first point, or add up otherwise
 !
@@ -1395,7 +1395,7 @@ module Diagnostics
 !
 !  initialize by the volume element (which is different for different m and n)
 !
-      fac=dVol1(l1:l2)*dVol2(m)*dVol3(n)
+      fac=dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
 !
 !  initialize if one is on the first point, or add up otherwise
 !

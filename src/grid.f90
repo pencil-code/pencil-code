@@ -609,9 +609,9 @@ module Grid
           box_volume = box_volume*Lxyz(1)
           dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dVol1=xprim
+          dVol_x=xprim
         else
-          dVol1=1.
+          dVol_x=1.
         endif
 !
 !  y-extent
@@ -620,9 +620,9 @@ module Grid
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *dy
           dvolume_1  = dvolume_1 *dy_1(mpoint)
-          dVol2=yprim
+          dVol_y=yprim
         else
-          dVol2=1.
+          dVol_y=1.
         endif
 !
 !  z-extent
@@ -631,9 +631,9 @@ module Grid
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
-          dVol3=zprim
+          dVol_z=zprim
         else
-          dVol3=1.
+          dVol_z=1.
         endif
 !
 !  Spherical coordinate system
@@ -718,9 +718,9 @@ module Grid
           box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
           dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dVol1=x**2*xprim
+          dVol_x=x**2*xprim
         else
-          dVol1=1./3.*(xyz1(1)**3-xyz0(1)**3)
+          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
         endif
 !
 !  Theta extent (if non-radially symmetric)
@@ -729,12 +729,12 @@ module Grid
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
           dvolume    = dvolume   *x(l1:l2)*dy
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
-          dVol2=sinth*yprim
+          dVol_y=sinth*yprim
         else
           box_volume = box_volume*2.
           dvolume    = dvolume   *x(l1:l2)*2.
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)*.5
-          dVol2=2.
+          dVol_y=2.
         endif
 !
 !  phi extent (if non-axisymmetry)
@@ -743,12 +743,12 @@ module Grid
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*dz
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
-          dVol3=zprim
+          dVol_z=zprim
         else
           box_volume = box_volume*2.*pi
           dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*2.*pi
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)*.5*pi_1
-          dVol3=2.*pi
+          dVol_z=2.*pi
         endif
 !
 !  weighted coordinates for integration purposes
@@ -813,9 +813,9 @@ module Grid
           box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
           dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dVol1=x*xprim
+          dVol_x=x*xprim
         else
-          dVol1=1./2.*(xyz1(1)**2-xyz0(1)**2)
+          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
         endif
 !
 !  theta extent (non-cylindrically symmetric)
@@ -824,12 +824,12 @@ module Grid
           box_volume = box_volume*Lxyz(2)
           dvolume    = dvolume   *rcyl_mn*dy
           dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
-          dVol2=yprim
+          dVol_y=yprim
         else
           box_volume = box_volume*2.*pi
           dvolume    = dvolume   *rcyl_mn*2.*pi
           dvolume_1  = dvolume_1 *rcyl_mn1*.5*pi_1
-          dVol2=2.*pi
+          dVol_y=2.*pi
         endif
 !
 !  z extent (vertically extended)
@@ -838,9 +838,9 @@ module Grid
           box_volume = box_volume*Lxyz(3)
           dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
-          dVol3=zprim
+          dVol_z=zprim
         else
-          dVol3=1.
+          dVol_z=1.
         endif
 !
 !  Trapezoidal rule
@@ -909,18 +909,18 @@ module Grid
 !  and the corresponding step is therefore not called.
 !
       if (.not.lperi(1)) then
-        if (lfirst_proc_x) dVol1(1)=.5*dVol1(1)
-        if (llast_proc_x) dVol1(nx)=.5*dVol1(nx)
+        if (lfirst_proc_x) dVol_x(l1)=.5*dVol_x(l1)
+        if (llast_proc_x) dVol_x(l2)=.5*dVol_x(l2)
       endif
 !
       if (.not.lperi(2)) then
-        if (lfirst_proc_y.and.m==m1) dVol2=.5*dVol2
-        if (llast_proc_y.and.m==m2) dVol2=.5*dVol2
+        if (lfirst_proc_y) dVol_y(m1)=.5*dVol_y(m1)
+        if (llast_proc_y)  dVol_y(m2)=.5*dVol_y(m2)
       endif
 !
       if (.not.lperi(3)) then
-        if (lfirst_proc_z.and.n==n1) dVol3=.5*dVol3
-        if (llast_proc_z.and.n==n2) dVol3=.5*dVol3
+        if (lfirst_proc_z) dVol_z(n1)=.5*dVol_z(n1)
+        if (llast_proc_z)  dVol_z(n2)=.5*dVol_z(n2)
       endif
 !
 !  Print the value for which output is being produced.
