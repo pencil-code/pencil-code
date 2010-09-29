@@ -2026,7 +2026,7 @@ module Magnetic
 ! hj2
       if (lpencil(i_hj2)) call dot2_mn(p%hjj,p%hj2)
 ! hjb
-      if (lpencil(i_hjb)) call dot_mn(p%hjj,p%bbb,p%hjb)
+      if (lpencil(i_hjb)) call dot_mn(p%hjj,p%bb,p%hjb)
 ! coshjb
       if (lpencil(i_coshjb)) then
         do ix=1,nx
@@ -2038,7 +2038,7 @@ module Magnetic
         enddo
         if (lpencil_check_at_work) then
 ! map penc0 value back to interval [-1,1]
-          p%cosjb = modulo(p%coshjb + 1.0, 2.0) - 1
+          p%coshjb = modulo(p%coshjb + 1.0, 2.0) - 1
         endif
       endif
 ! hjcrossb
