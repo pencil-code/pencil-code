@@ -249,8 +249,8 @@ if (noviz eq 0) then begin
   if (arg_present(xtrace) or arg_present(ytrace)) then begin
       dims=size(obj.xp)
       timeiter=dims[2]
-      xtrace=dblarr(npar,timeiter)
-      ytrace=dblarr(npar,timeiter)
+      xtrace=dblarr(npart,timeiter)
+      ytrace=dblarr(npart,timeiter)
       xytrace=1
   endif
   
@@ -259,7 +259,7 @@ if (noviz eq 0) then begin
   ;
   ddt=2e-4
   if (trace) then begin
-      for ipar=0,npar-1 do begin
+      for ipar=0,npart-1 do begin
           if (param.coord_system eq 'cylindric') then begin
               xx0=obj.xp(ipar,*)*cos(obj.yp(ipar,*))
               yy0=obj.xp(ipar,*)*sin(obj.yp(ipar,*))
