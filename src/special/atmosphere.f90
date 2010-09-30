@@ -69,7 +69,7 @@ module Special
   integer :: ind_water=0!, ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
-  real :: TT2=0., TT1=0.
+  real :: TT2=0., TT1=0., dYw=1.
   integer :: ind_H2O=0, ind_N2
   
 ! Keep some over used pencils
@@ -77,11 +77,11 @@ module Special
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
-      TT2,TT1,ind_H2O, ind_N2
+      TT2,TT1,ind_H2O, ind_N2,dYw
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma
+      lbuoyancy_z,lbuoyancy_x, sigma,dYw
 !!
 !! Declare any index variables necessary for main or
 !!
@@ -512,7 +512,7 @@ module Special
            endif
            if (lzone .and. lzone_right) then
              df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-               -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+              -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
            endif
          elseif (j==2) then
            lzone=.false.
@@ -524,8 +524,10 @@ module Special
             lzone=.true.
            endif
            if (lzone .and. lzone_left) then
-  !           df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-  !             -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+             if (dYw==1.) then
+               df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+                 -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+             endif
            endif
          endif
 !
@@ -583,21 +585,34 @@ module Special
            df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
                 df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
                -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
-           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
-                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
-               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+               -p%ppsf(lll2,ind_H2O)/p%pp(lll2))*dt1
+   
+!           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
+!                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
+!               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+!               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
          endif
         if ((lzone .and. lzone_left)) then
+          if (dYw==1) then
            df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
                 df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
                -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
-           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
-                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
-               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2)*dYw)*dt1
+          else
+           df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
+                df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+               -p%ppsf(lll1,ind_H2O)/p%pp(lll1)*dYw)*dt1
+          endif
+!           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
+!                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
+!               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+!               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+
+!                  df(ll1:ll2,m,n,iuy)=  &
+!                df(ll1:ll2,m,n,iuy) &
+!               +(f(ll1:ll2,m,n,iuy) -0.)*dt1/4.
+
          endif
 
 
@@ -833,7 +848,7 @@ module Special
         if (vr==iuud(1)+3) then 
           do k=1,ndustspec
             f(l1,m1:m2,n1:n2,ind(k))=value1  &
-            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/2e-5)**2)
+            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
@@ -867,9 +882,9 @@ module Special
 !          enddo
 !          do i=0,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
 !        endif
-        if (vr==iuud(1)+4) then 
-         f(l2,m1:m2,n1:n2,imd)=value2
-        endif
+!        if (vr==iuud(1)+4) then 
+!         f(l2,m1:m2,n1:n2,imd)=value2
+!        endif
         if (vr>=iuud(1)+3) then 
         f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
                        - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))

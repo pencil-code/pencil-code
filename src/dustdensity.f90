@@ -526,7 +526,7 @@ module Dustdensity
         case ('atm_drop_gauss')
           do k=1,ndustspec
             f(:,:,:,ind(k)) = &
-             nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/2e-5)**2)
+             nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
             md(k)=0.!rho0*ff(i,0)*dr*4./3.*3.14*rr(i)^3*rhow/mwmol
              !4/3.*pi*rhods*dsize(k)**3*(1.-water_ice**3)
             mi(k)=0.!4/3.*pi*rhod0*dsize(k)**3*water_ice**3
@@ -1070,7 +1070,7 @@ module Dustdensity
 ! udrop
         if (lpencil(i_udrop)) then
           p%udrop(:,:,k)=p%uu(:,:)
-          p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2
+          p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2*0.
         endif
 ! udropgnd
         if (lpencil(i_udropgnd)) then
@@ -1842,6 +1842,8 @@ module Dustdensity
 !  26-jul-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9, i10=10
+      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19,i20=20
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -1851,14 +1853,204 @@ module Dustdensity
 !  Dustdensity.
 !
         case ('nd')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(1))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(1))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(1))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(1))
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i1))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i1))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i1))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i1))
           if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(1))
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i1))
           if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(1))
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i1))
+          slices%ready=.true.
+        case ('nd2')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i2))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i2))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i2))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i2))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i2))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i2))
+          slices%ready=.true.
+        case ('nd3')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i3))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i3))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i3))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i3))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i3))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i3))
+          slices%ready=.true.
+        case ('nd4')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i4))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i4))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i4))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i4))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i4))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i4))
+          slices%ready=.true.
+        case ('nd5')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i5))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i5))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i5))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i5))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i5))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i5))
+          slices%ready=.true.
+        case ('nd6')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i6))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i6))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i6))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i6))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i6))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i6))
+          slices%ready=.true.
+        case ('nd7')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i7))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i7))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i7))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i7))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i7))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i7))
+          slices%ready=.true.
+        case ('nd8')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i8))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i8))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i8))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i8))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i8))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i8))
+          slices%ready=.true.
+        case ('nd9')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i9))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i9))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i9))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i9))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i9))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i9))
+          slices%ready=.true.    
+        case ('nd10')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i10))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i10))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i10))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i10))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i10))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i10))
+          slices%ready=.true.
+        case ('nd11')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i11))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i11))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i11))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i11))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i11))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i11))
+          slices%ready=.true.
+        case ('nd12')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i12))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i12))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i12))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i12))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i12))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i12))
+          slices%ready=.true.
+        case ('nd13')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i13))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i13))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i13))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i13))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i13))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i13))
+          slices%ready=.true.
+        case ('nd14')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i14))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i14))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i14))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i14))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i14))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i14))
+          slices%ready=.true.
+        case ('nd15')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i15))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i15))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i15))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i15))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i15))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i15))
+          slices%ready=.true.
+        case ('nd16')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i16))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i16))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i16))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i16))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i16))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i16))
+          slices%ready=.true.
+        case ('nd17')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i17))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i17))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i17))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i17))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i17))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i17))
+          slices%ready=.true.
+        case ('nd18')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i18))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i18))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i18))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i18))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i18))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i18))
+          slices%ready=.true.
+        case ('nd19')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i19))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i19))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i19))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i19))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i19))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i19))
+          slices%ready=.true.
+        case ('nd20')
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i20))
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i20))
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i20))
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i20))
+          if (lwrite_slice_xy3) &
+          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i20))
+          if (lwrite_slice_xy4) &
+          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i20))
           slices%ready=.true.
       endselect
 !
@@ -1874,24 +2066,43 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr
       integer :: k, ind_tmp
+      real :: rr1=0.,rr2=0.,rr3=0.
 !
-      do k=2,ndustspec-1
-         dndr_dr(:,k)= &
-           ((f(l1:l2,m,n,ind(k+1))-2.*f(l1:l2,m,n,ind(k))  &
-             +f(l1:l2,m,n,ind(k-1)))    &
-                 /(dsize(k+1)-dsize(k-1))/dsize(k) &
-            -f(l1:l2,m,n,ind(k))/dsize(k)**2)  &
-            *(p%Ywater(:)-p%ppsf(:,k)/p%pp(:))
-      enddo
-        ind_tmp=ndustspec-1
- !       if (dsize(ndustspec)>0) then
- !         dndr_dr(:,ndustspec)= &
- !               (f(l1:l2,m,n,ind(ndustspec)) &
- !             *(p%Ywater(:)-p%ppsf(:,ndustspec)/p%pp(:))/dsize(ndustspec) &
- !              -f(l1:l2,m,n,ind(ind_tmp))  &
- !              *(p%Ywater(:)-p%ppsf(:,ind_tmp)/p%pp(:))/dsize(ind_tmp))    &
- !                /(dsize(ndustspec)-dsize(ind_tmp))
- !       endif
+
+!df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
+! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
+
+       do k=2,ndustspec-1
+
+         rr1=dsize(k-1)
+         rr2=dsize(k)
+         rr3=dsize(k+1)
+
+         dndr_dr(:,k) = f(l1:l2,m,n,ind(k-1))/rr1*(2*rr2-rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                  +f(l1:l2,m,n,ind(k))/rr2*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr1-rr3)) &
+                   +f(l1:l2,m,n,ind(k+1))/rr3*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
+       enddo
+
+
+        rr1=dsize(1)
+        rr2=dsize(2)
+        rr3=dsize(3)
+        dndr_dr(:,1) = f(l1:l2,m,n,ind(1))/rr1*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
+                     - f(l1:l2,m,n,ind(2))/rr2*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                     + f(l1:l2,m,n,ind(3))/rr3*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
+ 
+         rr1=dsize(ndustspec)
+         rr2=dsize(ndustspec-1)
+         rr3=dsize(ndustspec-2)
+
+        dndr_dr(:,ndustspec)=-f(l1:l2,m,n,ind(ndustspec-2))*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                            +f(l1:l2,m,n,ind(ndustspec)-1)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                            +f(l1:l2,m,n,ind(ndustspec))*(rr1-rr3+rr3-rr2)/((rr1-rr3)*(rr2-rr1))
+
+       do k=1,ndustspec
+        dndr_dr(:,k) = dndr_dr(:,k)*(p%Ywater(:)-p%ppsf(:,k)/p%pp(:))
+       enddo
+
 !
     endsubroutine droplet_redistr
 !***********************************************************************

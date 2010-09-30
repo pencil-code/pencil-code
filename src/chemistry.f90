@@ -132,6 +132,7 @@ module Chemistry
      logical :: lcloud=.false.
      integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
      logical :: lreinit_water=.false.
+     real :: dYw=1., init_water1=0., init_water2=0.
 !
 !   Diagnostics
 !
@@ -149,7 +150,7 @@ module Chemistry
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
       lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2, &
-      lreinit_water
+      lreinit_water,dYw,init_water1, init_water2
 !
 !
 ! run parameters
@@ -4686,7 +4687,23 @@ module Chemistry
          else
            psat=6.035e12*exp(-5938./TT)
          endif
-         f(:,:,:,ichemspec(index_H2O))=psat/PP!*1.03
+         if ((init_water1/=0.) .or. (init_water2/=0.)) then
+           do i=1,mx
+             if (x(i)<=init_x1) then
+               f(i,:,:,ichemspec(index_H2O))=init_water1
+             endif
+             if (x(i)>=init_x2) then
+               f(i,:,:,ichemspec(index_H2O))=init_water2
+             endif
+             if (x(i)>init_x1 .and. x(i)<init_x2) then
+               f(i,:,:,ichemspec(index_H2O))=&
+                 (x(i)-init_x1)/(init_x2-init_x1) &
+                 *(init_water2-init_water1)+init_water1
+             endif
+           enddo
+         else
+           f(:,:,:,ichemspec(index_H2O))=psat/PP*dYw
+         endif
          index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
          do k=1,nchemspec
