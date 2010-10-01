@@ -130,8 +130,8 @@ module Chemistry
      logical :: latmchem=.false.
      logical :: lcloud=.false.
      integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
-     logical :: lreinit_water=.false.
-     real :: dYw=1., init_water1=0., init_water2=0.
+!     logical :: lreinit_water=.false.
+ !    real :: dYw=1., init_water1=0., init_water2=0.
 !
 !   Diagnostics
 !
@@ -148,8 +148,7 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory,&
-      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2, &
-      lreinit_water,dYw,init_water1, init_water2
+      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2
 !
 !
 ! run parameters
