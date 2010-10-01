@@ -2065,7 +2065,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr
-      integer :: k, ind_tmp, i1=1,i2=2,i3=3, ii1, ii2,ii3
+      integer :: k, i1=1,i2=2,i3=3, ii1, ii2,ii3
       real :: rr1=0.,rr2=0.,rr3=0.
 !
 
