@@ -85,7 +85,6 @@ module Chemistry
      character (len=30),allocatable, dimension(:) :: reaction_name
      logical :: lT_tanh=.false.
      logical :: ldamp_zone_for_NSCBC=.false.
-     logical :: linit_velocity=.false.
      logical :: linit_temperature=.false.,linit_density=.false.
 !
 ! 1step_test case
@@ -148,7 +147,7 @@ module Chemistry
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,init_rho,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
-      ldamp_zone_for_NSCBC,linit_velocity, latmchem, lcloud, prerun_directory,&
+      ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory,&
       lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2, &
       lreinit_water,dYw,init_water1, init_water2
 !
@@ -507,6 +506,7 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       use Initcond
+      use InitialCondition, only: initial_condition_chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
@@ -598,7 +598,8 @@ module Chemistry
 !
 !  Interface for user's own initial condition
 !
-!AB:  if (linitial_condition) call initial_condition_chemistry(f)
+      if (linitial_condition) call initial_condition_chemistry(f)
+!
 !
 !   The following lines are kept temporally
 !
@@ -4601,41 +4602,6 @@ module Chemistry
       endif
       endif
 !
-      if (linit_velocity) then
-        if (init_ux /=0.) then
-!        do i=1,mx
-!         f(i,:,:,iux)= &
-!          (x(i)-xyz0(1))/Lxyz(1)*(0.-init_ux)+init_ux
-!        enddo
-         do i=1,my
-           f(:,i,:,iux)=sin(2.*PI*y(i)/Lxyz(2))*init_ux
-         enddo
-!
-        endif
-        if (init_uy /=0.) then
-          do i=1,my
-          if (y(i)>0) then
-            f(:,i,:,iuy)=f(:,i,:,iuy) &
-                        +init_uy*(2.*y(i)/Lxyz(2))**2
-          else
-            f(:,i,:,iuy)=f(:,i,:,iuy) &
-                        -init_uy*(2.*y(i)/Lxyz(2))**2
-          endif
-          enddo
-        endif
-        if (init_uz /=0.) then
-          do i=1,mz
-          if (z(i)>0) then
-            f(:,:,i,iuz)=f(:,:,i,iuz) &
-                        +init_uz*(2.*z(i)/Lxyz(3))**2
-          else
-            f(:,:,i,iuz)=f(:,:,i,iuz) &
-                        -init_uz*(2.*z(i)/Lxyz(3))**2
-          endif
-          enddo
-        endif
-      endif
-!
       if (linit_temperature) then
         do i=1,mx
         if (x(i)<=init_x1) then
@@ -4653,11 +4619,6 @@ module Chemistry
       endif
 !
       if (linit_density) then
-!        do i=1,mx
-!          f(i,:,:,ilnrho)= &
-!          (x(i)-xyz0(1))/Lxyz(1)*(alog(init_rho2)-alog(init_rho)) &
-!          +alog(init_rho)
-!        enddo
         if (ldensity_nolog) then
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
@@ -4665,7 +4626,6 @@ module Chemistry
           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
         endif
-!
       endif
 !
       if (lroot) print*, 'Air temperature, K', TT
@@ -4678,60 +4638,62 @@ module Chemistry
       close(file_id)
 
 !
+! this part will be removed later. Now it is in the aerosol_init.f90
+!
 !  Testing for the atmospheric case
 !
-       if (lreinit_water) then
-       if ((index_H2O>0) .and. (ldustdensity)) then
-         if (linit_temperature) then
-           psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
-         else
-           psat=6.035e12*exp(-5938./TT)
-         endif
-         if ((init_water1/=0.) .or. (init_water2/=0.)) then
-           do i=1,mx
-             if (x(i)<=init_x1) then
-               f(i,:,:,ichemspec(index_H2O))=init_water1
-             endif
-             if (x(i)>=init_x2) then
-               f(i,:,:,ichemspec(index_H2O))=init_water2
-             endif
-             if (x(i)>init_x1 .and. x(i)<init_x2) then
-               f(i,:,:,ichemspec(index_H2O))=&
-                 (x(i)-init_x1)/(init_x2-init_x1) &
-                 *(init_water2-init_water1)+init_water1
-             endif
-           enddo
-         else
-           f(:,:,:,ichemspec(index_H2O))=psat/PP*dYw
-         endif
-         index_YY=int(maxval(ichemspec(:)))
-         sum_Y=0.
-         do k=1,nchemspec
-           if (ichemspec(k)/=index_YY) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-         enddo
-           f(:,:,:,index_YY)=1.-sum_Y
-         air_mass=0.
-         do k=1,nchemspec
-           air_mass=air_mass+maxval(f(:,:,:,ichemspec(k))) &
-                   /species_constants(k,imass)
-         enddo
-         air_mass=1./air_mass
-         if (ldensity_nolog) then
-           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
-         else
-           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
-         endif
+!       if (lreinit_water) then
+!       if ((index_H2O>0) .and. (ldustdensity)) then
+!         if (linit_temperature) then
+!           psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
+!         else
+!           psat=6.035e12*exp(-5938./TT)
+!         endif
+!         if ((init_water1/=0.) .or. (init_water2/=0.)) then
+!           do i=1,mx
+!             if (x(i)<=init_x1) then
+!               f(i,:,:,ichemspec(index_H2O))=init_water1
+!             endif
+!             if (x(i)>=init_x2) then
+!               f(i,:,:,ichemspec(index_H2O))=init_water2
+!             endif
+!             if (x(i)>init_x1 .and. x(i)<init_x2) then
+!               f(i,:,:,ichemspec(index_H2O))=&
+!                 (x(i)-init_x1)/(init_x2-init_x1) &
+!                 *(init_water2-init_water1)+init_water1
+!             endif
+!           enddo
+!         else
+!           f(:,:,:,ichemspec(index_H2O))=psat/PP*dYw
+!         endif
+!         index_YY=int(maxval(ichemspec(:)))
+!         sum_Y=0.
+!         do k=1,nchemspec
+!           if (ichemspec(k)/=index_YY) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+!         enddo
+!           f(:,:,:,index_YY)=1.-sum_Y
+!         air_mass=0.
+!         do k=1,nchemspec
+!           air_mass=air_mass+maxval(f(:,:,:,ichemspec(k))) &
+!                   /species_constants(k,imass)
+!         enddo
+!         air_mass=1./air_mass
+!         if (ldensity_nolog) then
+!           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+!         else
+!           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+!         endif
        
 
-         if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
-         if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
-         if (lroot) print*, 'New Air density, g/cm^3:'
-         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
-         if (lroot) print*, 'New Air mean weight, g/mol', air_mass
-       endif
-       endif
+!         if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
+!         if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
+!         if (lroot) print*, 'New Air density, g/cm^3:'
+!         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
+!         if (lroot) print*, 'New Air mean weight, g/mol', air_mass
+!       endif
+!       endif
 !
     endsubroutine air_field
 !***********************************************************************
