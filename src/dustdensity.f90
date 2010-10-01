@@ -2065,44 +2065,48 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr
-      integer :: k, ind_tmp
+      integer :: k, ind_tmp, i1=1,i2=2,i3=3, ii1, ii2,ii3
       real :: rr1=0.,rr2=0.,rr3=0.
 !
 
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
-
+!
        do k=2,ndustspec-1
-
+!
          rr1=dsize(k-1)
          rr2=dsize(k)
          rr3=dsize(k+1)
-
+!
          dndr_dr(:,k) = f(l1:l2,m,n,ind(k-1))/rr1*(2*rr2-rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                   +f(l1:l2,m,n,ind(k))/rr2*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr1-rr3)) &
                    +f(l1:l2,m,n,ind(k+1))/rr3*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
        enddo
-
-
-        rr1=dsize(1)
-        rr2=dsize(2)
-        rr3=dsize(3)
-        dndr_dr(:,1) = f(l1:l2,m,n,ind(1))/rr1*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
-                     - f(l1:l2,m,n,ind(2))/rr2*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                     + f(l1:l2,m,n,ind(3))/rr3*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
- 
-         rr1=dsize(ndustspec)
-         rr2=dsize(ndustspec-1)
-         rr3=dsize(ndustspec-2)
-
-        dndr_dr(:,ndustspec)=-f(l1:l2,m,n,ind(ndustspec-2))*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                            +f(l1:l2,m,n,ind(ndustspec)-1)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                            +f(l1:l2,m,n,ind(ndustspec))*(rr1-rr3+rr3-rr2)/((rr1-rr3)*(rr2-rr1))
-
+!
+       if (ndustspec>2) then
+!
+        rr1=dsize(i1)
+        rr2=dsize(i2)
+        rr3=dsize(i3)
+        dndr_dr(:,i1) = f(l1:l2,m,n,ind(i1))/rr1*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
+                     - f(l1:l2,m,n,ind(i2))/rr2*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                     + f(l1:l2,m,n,ind(i3))/rr3*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
+!      
+         ii1=ndustspec; ii2=ndustspec-1; ii3=ndustspec-2
+         rr1=dsize(ii1)
+         rr2=dsize(ii2)
+         rr3=dsize(ii3)
+         dndr_dr(:,ndustspec)=-f(l1:l2,m,n,ind(ii3))*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                              +f(l1:l2,m,n,ind(ii2))*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                              +f(l1:l2,m,n,ind(ii1))*(rr1-rr3+rr3-rr2)/((rr1-rr3)*(rr2-rr1))
+        else
+         call fatal_error('droplet_redistr', &
+          'Number of dust species is smaller than 3')
+        endif
+!
        do k=1,ndustspec
         dndr_dr(:,k) = dndr_dr(:,k)*(p%Ywater(:)-p%ppsf(:,k)/p%pp(:))
        enddo
-
 !
     endsubroutine droplet_redistr
 !***********************************************************************
