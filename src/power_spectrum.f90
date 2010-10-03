@@ -330,18 +330,24 @@ module  power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
+!   3-oct-10/axel: added compution of krms (for realisability condition)
+!
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
+  real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi,jji
   real, dimension(nx,3) :: bbEP
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum=0.,spectrum_sum=0.
   real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
+  logical, save :: lwrite_krms=.true.
 !
 !  passive scalar contributions (hardwired for now)
 !
@@ -364,6 +370,8 @@ module  power_spectrum
   !
   !  initialize power spectrum to zero
   !
+  k2m=0.
+  nks=0.
   spectrum=0.
   spectrumhel=0.
   !
@@ -456,14 +464,28 @@ module  power_spectrum
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
-          k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+          k2=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
           if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
             spectrum(k+1)=spectrum(k+1) &
                +b_re(ikx,iky,ikz)**2 &
                +b_im(ikx,iky,ikz)**2
             spectrumhel(k+1)=spectrumhel(k+1) &
                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+            if (lwrite_krms) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
           endif
         enddo
       enddo
@@ -476,6 +498,13 @@ module  power_spectrum
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+  endif
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -497,6 +526,14 @@ module  power_spectrum
     write(1,*) t
     write(1,'(1p,8e10.2)') spectrumhel_sum
     close(1)
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
   endif
   !
   endsubroutine powerhel
