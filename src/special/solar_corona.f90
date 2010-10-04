@@ -410,11 +410,13 @@ module Special
       endif
 !
       ! set lnrho0 to the lower boundary value
-      if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-        if (lroot) print *,'setup_profiles: WARNING: lnrho0 set to ', lnrho0
-        call warning ("setup_profiles", "overriding lnrho0 setting")
+      if (lread_lnrho) then
+        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
+          if (lroot) print *,'setup_profiles: WARNING: lnrho0 set to ', lnrho0, lnrho_init_z(n1)
+          call warning ("setup_profiles", "overriding lnrho0 setting")
+          lnrho0 = lnrho_init_z(n1)
+        endif
       endif
-      lnrho0 = lnrho_init_z(n1)
 !
     endsubroutine setup_profiles
 !***********************************************************************
