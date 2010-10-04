@@ -379,8 +379,8 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
-!**************************************************  
-   subroutine special_calc_dustdensity(f,df,p)
+!***********************************************************************
+    subroutine special_calc_dustdensity(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  continuity equation.
@@ -402,7 +402,7 @@ module Special
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_dustdensity
-!********************************************************************************************
+!***********************************************************************
 
     subroutine special_calc_entropy(f,df,p)
 !
