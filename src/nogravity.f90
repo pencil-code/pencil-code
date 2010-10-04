@@ -342,4 +342,17 @@ module Gravity
 !
     endsubroutine compute_gravity_star
 !***********************************************************************
+    subroutine get_xgravity(xgrav)
+!
+!  Dummy routine for getting the gravity profile into the
+!  intial conditions
+!
+!  04-oct-10/bing: coded
+!
+      real, dimension(nx) :: xgrav
+!
+      call keep_compiler_quiet(xgrav)
+!
+    endsubroutine get_xgravity
+!***********************************************************************
 endmodule Gravity

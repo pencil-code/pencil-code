@@ -918,4 +918,16 @@ module Gravity
 !
     endsubroutine compute_gravity_star
 !***********************************************************************
+    subroutine get_xgravity(xgrav)
+!      
+!  Used from the initial conditions
+!
+!  04-oct-10/bing: coded
+!
+      real, dimension(nx) :: xgrav
+!
+      xgrav = gravx_xpencil(l1:l2)
+!
+    endsubroutine get_xgravity
+!***********************************************************************
 endmodule Gravity
