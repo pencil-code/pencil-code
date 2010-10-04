@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED etava; etaj; etaj2; etajrho
 ! PENCILS PROVIDED cosjb; jparallel; jperp
 ! PENCILS PROVIDED cosub
-! PENCILS PROVIDED hjj(3); hj2; hjb; hjxb(3); coshjb
+! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp
 !
 !***************************************************************
@@ -1552,7 +1552,6 @@ module Magnetic
 !
       if (lpencil_in(i_hjparallel).or.lpencil_in(i_hjperp)) then
         lpencil_in(i_coshjb)=.true.
-        lpencil_in(i_hjxb)=.true.
         lpencil_in(i_hj2)=.true.
         lpencil_in(i_b2)=.true.
       endif
@@ -1961,7 +1960,7 @@ module Magnetic
 ! jparallel and jperp
       if (lpencil(i_jparallel).or.lpencil(i_jperp)) then
         p%jparallel=sqrt(p%j2)*p%cosjb
-        p%jperp=sqrt(p%j2)*sqrt(1-p%cosjb**2)
+        p%jperp=sqrt(p%j2)*sqrt(abs(1-p%cosjb**2))
       endif
 ! jxbr
       if (lpencil(i_jxbr)) then
@@ -2041,12 +2040,10 @@ module Magnetic
           p%coshjb = modulo(p%coshjb + 1.0, 2.0) - 1
         endif
       endif
-! hjcrossb
-      if (lpencil(i_hjxb)) call cross_mn(p%hjj,p%bb,p%hjxb)
 ! hjparallel and hjperp
       if (lpencil(i_hjparallel).or.lpencil(i_hjperp)) then
         p%hjparallel=sqrt(p%hj2)*p%coshjb
-        p%hjperp=sqrt(p%hj2)*sqrt(1-p%coshjb**2)
+        p%hjperp=sqrt(p%hj2)*sqrt(abs(1-p%coshjb**2))
       endif
 ! del6a
       if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
