@@ -3696,7 +3696,7 @@ module Entropy
 !  Spherical gravity in spherical coordinate case:
 !  heat at centre, cool outer layers.
 !
-      if (lgravx.and.luminosity/=0.and.lspherical_coords) &
+      if (lgravx .and. lspherical_coords .and. (luminosity/=0 .or. cool/=0)) &
           call get_heat_cool_gravx_spherical(heat,p)
 !
 !  In Cartesian coordinates, but with the gravity in the
