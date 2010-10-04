@@ -403,7 +403,6 @@ module Special
 !
     endsubroutine special_calc_dustdensity
 !***********************************************************************
-
     subroutine special_calc_entropy(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the

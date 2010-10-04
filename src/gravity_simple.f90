@@ -227,15 +227,20 @@ module Gravity
         !abag added, need to make adaptable to any width/position
         if (lroot) print*,'initialize_gravity: Baker_74=',gravx
         gravx_xpencil =(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
-        gravx*sin(2*(x-pi/2.))
+            gravx*sin(2*(x-pi/2.))
         potx_xpencil=(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
-        gravx*(.5*cos(2*(x-pi/2.))-0.5)
+            gravx*(.5*cos(2*(x-pi/2.))-0.5)
 !
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x
         g0=gravx
+!
+      case ('loop')
+        if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx
+        gravx_xpencil=cos(x)*gravx
+        potx_xpencil =sin(x)*gravx
 !
       case default
         if (lroot) print*, &
