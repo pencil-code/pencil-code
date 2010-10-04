@@ -20,9 +20,10 @@ module InitialCondition
   character (len=labellen) :: strati_type='nothing'
   logical :: linit_lnrho=.false., linit_lnTT=.false.
   real :: rho0=0.
+  character (len=labellen) :: direction='z'
 !
   namelist /initial_condition_pars/ &
-      linit_lnrho,linit_lnTT,strati_type,rho0
+      linit_lnrho,linit_lnTT,strati_type,rho0,direction
 !
 contains
 !***********************************************************************
@@ -73,11 +74,15 @@ contains
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (strati_type=='nothing') then 
+      if (strati_type=='nothing') then
         call fatal_error('initial_condition_lnrho','Nothing to do')
-      elseif (strati_type=='hydrostatic') then 
-        call hydrostatic(f)
-      else 
+      elseif (strati_type=='hydrostatic') then
+        if (direction=='z') then
+          call hydrostatic_z(f)
+        elseif (direction=='x') then
+          call hydrostatic_x(f)
+        endif
+      else
         call setup_vert_profiles(f)
       endif
 !
@@ -158,24 +163,46 @@ contains
         endif
 !
 ! interpolate temperature profile to Pencil grid
-        do j = n1-nghost, n2+nghost
-          if (z(j) < prof_z(1) ) then
-            call warning("setup_special","extrapolated lnT below bottom of initial profile")
-            f(:,:,j,ilnTT) = prof_lnTT(1)
-          elseif (z(j) >= prof_z(prof_nz)) then
-            call warning("setup_special","extrapolated lnT over top of initial profile")
-            f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
-          else
-            do i = 1, prof_nz-1
-              if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                ! linear interpolation: y = m*(x-x1) + y1
-                f(:,:,j,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
-                    (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
-                exit
-              endif
-            enddo
-          endif
-        enddo
+!
+        if (direction=='z') then
+          do j = n1-nghost, n2+nghost
+            if (z(j) < prof_z(1) ) then
+              call warning("setup_special","extrapolated lnT below bottom of initial profile")
+              f(:,:,j,ilnTT) = prof_lnTT(1)
+            elseif (z(j) >= prof_z(prof_nz)) then
+              call warning("setup_special","extrapolated lnT over top of initial profile")
+              f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
+            else
+              do i = 1, prof_nz-1
+                if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  f(:,:,j,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        else if (direction=='x') then
+          do j = l1-nghost, l2+nghost
+            if (x(j) < prof_z(1) ) then
+              call warning("setup_special","extrapolated lnT below bottom of initial profile")
+              f(j,:,:,ilnTT) = prof_lnTT(1)
+            elseif (x(j) >= prof_z(prof_nz)) then
+              call warning("setup_special","extrapolated lnT over top of initial profile")
+              f(j,:,:,ilnTT) = prof_lnTT(prof_nz)
+            else
+              do i = 1, prof_nz-1
+                if ((x(j) >= prof_z(i)) .and. (x(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  f(j,:,:,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (x(j)-prof_z(i)) + prof_lnTT(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        endif
 !
         if (allocated (prof_z)) deallocate (prof_z)
         if (allocated (prof_lnTT)) deallocate (prof_lnTT)
@@ -221,24 +248,45 @@ contains
         endif
 !
 ! interpolate density profile to Pencil grid
-        do j = n1-nghost, n2+nghost
-          if (z(j) < prof_z(1) ) then
-            call warning("setup_special","extrapolated density below bottom of initial profile")
-            f(:,:,j,ilnrho) = prof_lnrho(1)
-          elseif (z(j) >= prof_z(prof_nz)) then
-            call warning("setup_special","extrapolated density over top of initial profile")
-            f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
-          else
-            do i = 1, prof_nz-1
-              if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                ! linear interpolation: y = m*(x-x1) + y1
-                f(:,:,j,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
-                    (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
-                exit
-              endif
-            enddo
-          endif
-        enddo
+        if (direction=='z') then
+          do j = n1-nghost, n2+nghost
+            if (z(j) < prof_z(1) ) then
+              call warning("setup_special","extrapolated density below bottom of initial profile")
+              f(:,:,j,ilnrho) = prof_lnrho(1)
+            elseif (z(j) >= prof_z(prof_nz)) then
+              call warning("setup_special","extrapolated density over top of initial profile")
+              f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
+            else
+              do i = 1, prof_nz-1
+                if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  f(:,:,j,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        elseif (direction=='x') then
+          do j = l1-nghost, l2+nghost
+            if (x(j) < prof_z(1) ) then
+              call warning("setup_special","extrapolated density below bottom of initial profile")
+              f(j,:,:,ilnrho) = prof_lnrho(1)
+            elseif (x(j) >= prof_z(prof_nz)) then
+              call warning("setup_special","extrapolated density over top of initial profile")
+              f(j,:,:,ilnrho) = prof_lnrho(prof_nz)
+            else
+              do i = 1, prof_nz-1
+                if ((x(j) >= prof_z(i)) .and. (x(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  f(j,:,:,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (x(j)-prof_z(i)) + prof_lnrho(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        endif
 !
         if (allocated (prof_z)) deallocate (prof_z)
         if (allocated (prof_lnrho)) deallocate (prof_lnrho)
@@ -247,7 +295,7 @@ contains
 !
     endsubroutine setup_vert_profiles
 !***********************************************************************
-  subroutine hydrostatic(f)
+  subroutine hydrostatic_z(f)
 !
 !  Intialize the density for given temperprofile in vertical
 !  z direction by solving hydrostatic equilibrium.
@@ -273,7 +321,7 @@ contains
     character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
     inquire(IOLENGTH=lend) lnrho_0
-    
+
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
@@ -332,7 +380,7 @@ contains
 !  Set sound speed at the boundaries.
         if (abs(tmp_z-zbot) < dz_step) cs2bot = (gamma-1.)*exp(tmp_lnT)
         if (abs(tmp_z-ztop) < dz_step) cs2top = (gamma-1.)*exp(tmp_lnT)
-!        
+!
         if (abs(tmp_z-z(j)) <= dz_step) then
           f(:,:,j,ilnrho) = tmp_lnrho
           f(:,:,j,ilnTT)  = tmp_lnT
@@ -353,41 +401,178 @@ contains
       enddo
     enddo
 !
-  endsubroutine hydrostatic
+  endsubroutine hydrostatic_z
+!***********************************************************************
+  subroutine hydrostatic_x(f)
+!
+!  Intialize the density for given temperprofile in vertical
+!  z direction by solving hydrostatic equilibrium.
+!  dlnrho = - dlnTT + (cp-cv)/T g dz
+!
+!  The initial densitiy lnrho0 must be given in SI units.
+!  Temperature given as function lnT(z) in SI units
+!  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
+!
+    use EquationOfState, only: gamma,cs2top,cs2bot
+    use Gravity, only: get_xgravity
+    use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
+    use Syscalls, only: file_exists, file_size
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+    real :: xtop,xbot
+    integer :: prof_nx
+    real, dimension(:), allocatable :: prof_lnTT,prof_x
+    real :: tmp_lnrho,tmp_lnT,tmpdT,tmp_x,dx_step,lnrho_0
+    integer :: i,lend,j,ierr,unit=1
+    real, dimension(nx) :: xgrav
+!
+! file location settings
+    character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
+!
+    call get_xgravity(xgrav)
+!
+    inquire(IOLENGTH=lend) lnrho_0
+
+    if (lentropy.or.ltemperature_nolog) &
+        call fatal_error('hydrostatic','only implemented for ltemperature')
+!
+    lnrho_0 = alog(rho0)
+!
+! read temperature profile for interpolation
+!
+! file access is only done on the MPI root rank
+    if (lroot) then
+      if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
+          .true., 'setup_special: file not found: '//trim(lnT_dat))
+! find out, how many data points our profile file has
+      prof_nx = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+    endif
+!
+    call stop_it_if_any(.false.,'')
+    call mpibcast_int (prof_nx,1)
+!
+    allocate (prof_x(prof_nx), prof_lnTT(prof_nx), stat=ierr)
+    if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
+        'Could not allocate memory for x coordinate or lnTT profile')
+!
+    if (lroot) then
+      open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nx)
+      read (unit,iostat=ierr) prof_lnTT
+      read (unit,iostat=ierr) prof_x
+      if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+          'Error reading stratification file: "'//trim(lnT_dat)//'"')
+      close (unit)
+    endif
+    call stop_it_if_any(.false.,'')
+!
+    call mpibcast_real (prof_lnTT,prof_nx)
+    call mpibcast_real (prof_x,prof_nx)
+    !
+    prof_x = prof_x*1.e6/unit_length
+    prof_lnTT = prof_lnTT - alog(real(unit_temperature))
+    !
+    ! get step width
+    ! should be smaler than grid width and
+    ! data width
+    !
+    dx_step = min((prof_x(2)-prof_x(1)),minval(1./dx_1))
+    dx_step = dx_step/10.
+    !
+    do j=l1,l2
+      tmp_lnrho = lnrho_0
+      tmp_lnT = prof_lnTT(1)
+      tmp_x = prof_x(1)
+      !
+      xtop = xyz0(1)+Lxyz(1)
+      xbot = xyz0(1)
+      !
+      do while (tmp_x <= xtop)
+!
+!  Set sound speed at the boundaries.
+        if (abs(tmp_x-xbot) < dx_step) cs2bot = (gamma-1.)*exp(tmp_lnT)
+        if (abs(tmp_x-xtop) < dx_step) cs2top = (gamma-1.)*exp(tmp_lnT)
+!
+        if (abs(tmp_x-x(j)) <= dx_step) then
+          f(j,:,:,ilnrho) = tmp_lnrho
+          f(j,:,:,ilnTT)  = tmp_lnT
+        endif
+!  new x coord
+        tmp_x = tmp_x + dx_step
+!  get T at new x
+        do i=1,prof_nx-1
+          if (tmp_x >= prof_x(i)  .and. tmp_x < prof_x(i+1) ) then
+            tmpdT = (prof_lnTT(i+1)-prof_lnTT(i))/(prof_x(i+1)-prof_x(i)) * (tmp_x-prof_x(i)) + prof_lnTT(i) -tmp_lnT
+            tmp_lnT = tmp_lnT + tmpdT
+          elseif (tmp_x >= prof_x(prof_nx)) then
+            tmpdT = prof_lnTT(prof_nx) - tmp_lnT
+            tmp_lnT = tmp_lnT + tmpdT
+          endif
+        enddo
+        tmp_lnrho = tmp_lnrho - tmpdT + gamma/(gamma-1.)*xgrav(j)*exp(-tmp_lnT) * dx_step
+      enddo
+    enddo
+!
+  endsubroutine hydrostatic_x
 !***********************************************************************
   subroutine write_stratification_dat(f)
 !
-!  Writes the initial density temperature stratification into each 
+!  Writes the initial density temperature stratification into each
 !  proc subfolder.
-!  
+!
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     integer :: unit=12,lend
-    real, dimension (mz) :: write_density=0.,write_energy=0.
+    real, dimension (mx) :: xwrite_density=0.,xwrite_energy=0.
+    real, dimension (mz) :: zwrite_density=0.,zwrite_energy=0.
     real :: dummy=1.
 !
     character (len=*), parameter :: filename='/strat.dat'
 !
     inquire(IOLENGTH=lend) dummy
 !
-    if (ldensity) write_density=f(l1,m1,:,ilnrho)
-    if (lentropy) write_energy=f(l1,m1,:,iss)
-    if (ltemperature) then
-      if (ltemperature_nolog) then
-        write_energy=f(l1,m1,:,iTT)
-      else
-        write_energy=f(l1,m1,:,ilnTT)
+! Z - Direction
+!
+    if (direction=='z') then
+      if (ldensity) zwrite_density=f(l1,m1,:,ilnrho)
+      if (lentropy) zwrite_energy=f(l1,m1,:,iss)
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          zwrite_energy=f(l1,m1,:,iTT)
+        else
+          zwrite_energy=f(l1,m1,:,ilnTT)
+        endif
       endif
+!
+      open(unit,file=trim(directory_snap)//filename, &
+          form='unformatted',status='unknown',recl=lend*mz)
+      write(unit) z
+      write(unit) zwrite_density
+      write(unit) zwrite_energy
+      close(unit)
+!
+! X - Direction
+!
+    elseif (direction=='x') then
+      if (ldensity) xwrite_density=f(:,m1,n1,ilnrho)
+      if (lentropy) xwrite_energy=f(:,m1,n1,iss)
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          xwrite_energy=f(:,m1,n1,iTT)
+        else
+          xwrite_energy=f(:,m1,n1,ilnTT)
+        endif
+      endif
+!
+      open(unit,file=trim(directory_snap)//filename, &
+          form='unformatted',status='unknown',recl=lend*mz)
+      write(unit) x
+      write(unit) xwrite_density
+      write(unit) xwrite_energy
+      close(unit)
     endif
 !
-    open(unit,file=trim(directory_snap)//filename, &
-        form='unformatted',status='unknown',recl=lend*mz)
-    write(unit) z
-    write(unit) write_density
-    write(unit) write_energy
-    close(unit)
-!    
   endsubroutine write_stratification_dat
 !***********************************************************************
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
