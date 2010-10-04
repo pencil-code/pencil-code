@@ -239,8 +239,10 @@ module Gravity
 !
       case ('loop')
         if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx
-        gravx_xpencil=cos(x)*gravx
-        potx_xpencil =sin(x)*gravx
+        gravx_xpencil=cos((x-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
+        gravx_xpencil=gravx * gravx_xpencil
+        potx_xpencil =sin((x-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
+        potx_xpencil =gravx*(xyz0(1)+Lxyz(1))/pi * potx_xpencil
 !
       case default
         if (lroot) print*, &
@@ -534,7 +536,7 @@ module Gravity
                 if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ p%gg(:,2)*&
                                 p%rhop
                 if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*&
-                                 (-p%ss)                                
+                                 (-p%ss)
 !                                p%rhop
         else
           if (lxyzdependence) then
