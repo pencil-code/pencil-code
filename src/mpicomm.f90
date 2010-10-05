@@ -4195,6 +4195,7 @@ module Mpicomm
       integer, parameter :: buf_len=fnlen
       character (len=buf_len) :: filename
       character, dimension(:), allocatable :: buffer
+      character(len=fnlen) :: get_tmp_prefix_
 !
       if (lroot) then
 !
@@ -4248,7 +4249,8 @@ module Mpicomm
         file(pos:pos)='_'
         pos=scan(file, '/')
       enddo
-      write(filename,'(A,A,A,I0)') trim(get_tmp_prefix()), file, '-', iproc
+      get_tmp_prefix_=get_tmp_prefix()
+      write(filename,'(A,A,A,I0)') trim(get_tmp_prefix_), file, '-', iproc
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
