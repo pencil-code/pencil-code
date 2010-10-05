@@ -419,10 +419,9 @@ contains
     use Syscalls, only: file_exists, file_size
 !
     real, dimension (mx,my,mz,mfarray) :: f
-    real :: xtop,xbot
     integer :: prof_nx
     real, dimension(:), allocatable :: prof_lnTT,prof_x
-    real :: tmp_lnrho,tmp_lnT,tmpdT,tmp_x,dx_step,lnrho_0
+    real :: tmp_lnrho,tmp_lnTT,dx_step,lnrho_0,height
     integer :: i,lend,j,ierr,unit=1
     real, dimension(nx) :: xgrav
 !
@@ -468,7 +467,7 @@ contains
     call mpibcast_real (prof_lnTT,prof_nx)
     call mpibcast_real (prof_x,prof_nx)
     !
-    prof_x = prof_x*1.e6/unit_length
+    prof_x = prof_x/unit_length
     prof_lnTT = prof_lnTT - alog(real(unit_temperature))
     !
     ! get step width
@@ -476,40 +475,36 @@ contains
     ! data width
     !
     dx_step = min((prof_x(2)-prof_x(1)),minval(1./dx_1))
-    dx_step = dx_step/10.
+    dx_step = dx_step/100.
     !
-    do j=l1,l2
+    do j=l1,(l1+l2)/2.
       tmp_lnrho = lnrho_0
-      tmp_lnT = prof_lnTT(1)
-      tmp_x = prof_x(1)
-      !
-      xtop = xyz0(1)+Lxyz(1)
-      xbot = xyz0(1)
-      !
-      do while (tmp_x <= xtop)
+      height = Lxyz(1)/pi*sin((x(j)-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
 !
-!  Set sound speed at the boundaries.
-        if (abs(tmp_x-xbot) < dx_step) cs2bot = (gamma-1.)*exp(tmp_lnT)
-        if (abs(tmp_x-xtop) < dx_step) cs2top = (gamma-1.)*exp(tmp_lnT)
+! find the temperature at the girdpoint j
 !
-        if (abs(tmp_x-x(j)) <= dx_step) then
-          f(j,:,:,ilnrho) = tmp_lnrho
-          f(j,:,:,ilnTT)  = tmp_lnT
-        endif
-!  new x coord
-        tmp_x = tmp_x + dx_step
-!  get T at new x
-        do i=1,prof_nx-1
-          if (tmp_x >= prof_x(i)  .and. tmp_x < prof_x(i+1) ) then
-            tmpdT = (prof_lnTT(i+1)-prof_lnTT(i))/(prof_x(i+1)-prof_x(i)) * (tmp_x-prof_x(i)) + prof_lnTT(i) -tmp_lnT
-            tmp_lnT = tmp_lnT + tmpdT
-          elseif (tmp_x >= prof_x(prof_nx)) then
-            tmpdT = prof_lnTT(prof_nx) - tmp_lnT
-            tmp_lnT = tmp_lnT + tmpdT
+      if ( height <= prof_x(1)) then
+        tmp_lnTT = prof_lnTT(1)
+      elseif ( height >= prof_x(prof_nx))  then
+        tmp_lnTT = prof_lnTT(prof_nx)
+      else
+        do i=1,prof_nx
+          if (height >= prof_x(i) .and. height < prof_x(i+1)) then
+            tmp_lnTT =  prof_lnTT(i)+ &
+                (prof_lnTT(i+1)-prof_lnTT(i))/(prof_x(i+1)-prof_x(i))*(height-prof_x(i))
           endif
         enddo
-        tmp_lnrho = tmp_lnrho - tmpdT + gamma/(gamma-1.)*xgrav(j)*exp(-tmp_lnT) * dx_step
-      enddo
+      endif
+      
+      if (j > l1 ) then
+        tmp_lnrho = f(j-1,m1,n1,ilnrho)+ f(j-1,m1,n1,ilnTT)-tmp_lnTT+ &
+            gamma/(gamma-1.)*xgrav(j)*2/(exp(f(j-1,m1,n1,ilnTT))+exp(tmp_lnTT))*(x(j)-x(j-1))
+      endif
+      
+      f(j,:,:,ilnrho) = tmp_lnrho
+      f(j,:,:,ilnTT) = tmp_lnTT
+      f(mx-j+1,:,:,ilnrho) = tmp_lnrho
+      f(mx-j+1,:,:,ilnTT) = tmp_lnTT
     enddo
 !
   endsubroutine hydrostatic_x
@@ -563,7 +558,7 @@ contains
       endif
 !
       open(unit,file=trim(directory_snap)//filename, &
-          form='unformatted',status='unknown',recl=lend*mz)
+          form='unformatted',status='unknown',recl=lend*mx)
       write(unit) x
       write(unit) xwrite_density
       write(unit) xwrite_energy
