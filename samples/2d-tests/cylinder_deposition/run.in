@@ -9,7 +9,7 @@
   cdtv=0.4,
   dtmin=1e-8
   dsnap=0.1
-  dvid=2e-2
+  dvid=2e-3
 /
 &eos_run_pars
 /
@@ -20,7 +20,7 @@
 /
 &viscosity_run_pars
   ivisc='nu-const'
-  nu=8e-3
+  nu=1e-3
 /
 &solid_cells_run_pars
   lclose_interpolation=T
