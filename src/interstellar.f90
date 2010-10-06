@@ -213,7 +213,7 @@ module Interstellar
 !
 !  Limit placed of minimum density resulting from cavity creation
 !
-  real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=2.50e3
+  real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=2.284e3
   real :: rho0ts=impossible, T0hs=impossible
 !
 !  Cooling timestep limiter coefficient
@@ -493,7 +493,7 @@ module Interstellar
                         tiny(0.),    &
                         tiny(0.),    &
                         tiny(0.)  /)
-        ncool = 6
+        ncool = 5
 !
 !  04-jan-10/fred:
 !  Reset above to original RB parameters. Altered coolB(5) and coolT(5,6) in
@@ -505,7 +505,6 @@ module Interstellar
       else if (cooling_select == 'RBr') then
         if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
         coolT_cgs = (/  10.D0,       &
-                        300.D0,      &
                         2000.D0,     &
                         8000.D0,     &
                         1.D5,        &
@@ -514,9 +513,9 @@ module Interstellar
                         tiny(0D0),   &
                         tiny(0D0),   &
                         tiny(0D0),   &
+                        tiny(0D0),   &
                         tiny(0D0) /)
-        coolH_cgs = (/  2.76296D-42, &
-                        2.2380D-32,  &
+        coolH_cgs = (/  2.2380D-32,  &
                         1.0012D-30,  &
                         4.6240D-36,  &
                         1.7800D-18,  &
@@ -525,9 +524,9 @@ module Interstellar
                         tiny(0D0),   &
                         tiny(0D0),   &
                         tiny(0D0),   &
-                        tiny(0D0) /) / ( m_p_cgs )**2
-        coolB =     (/  6.0,         &
-                        2.0,         &
+                        tiny(0D0),   &
+                        tiny(0D0) /) /33.2389 / ( m_p_cgs )**2
+        coolB =     (/  2.0,         &
                         1.5,         &
                         2.867,       &
                        -0.65,        &
@@ -536,8 +535,9 @@ module Interstellar
                         tiny(0.),    &
                         tiny(0.),    &
                         tiny(0.),    &
+                        tiny(0.),    &
                         tiny(0.)  /)
-        ncool=6
+        ncool=5
       else if (cooling_select == 'SS') then
 !
 !  These are the SS et al (2002) coefficients multiplied by m_proton**2
@@ -557,7 +557,7 @@ module Interstellar
                         9.10D18,     &
                         1.11D20,     &
                         2.00D8,      &
-                        tiny(0D0),   &
+                        7.962D29,    &
                         tiny(0D0),   &
                         tiny(0D0),   &
                         tiny(0D0),   &
@@ -585,7 +585,7 @@ module Interstellar
                         6102.D0,     &
                         1.D5,        &
                         1.D9,        &
-                        tiny(0D0),   &
+                        1.D13,       &
                         tiny(0D0),   &
                         tiny(0D0),   &
                         tiny(0D0),   &
@@ -669,28 +669,28 @@ module Interstellar
                         2.11D6,      &
                         3.98D6,      &
                         2.0D7,       &
-                        huge(0D0) /)
-        coolH_cgs = (/  3.420D16,             &
-                        8.73275974868D18,     &
-                        1.0944376395513D20,   &
-                        1.0178638302185D10,   &
-                        1.1420600147164D27,   &
-                        2.2079470147055D42,   &
-                        3.697214745591D26,    &
-                        1.4105221231863D44,   &
-                        1.48514641828986D22,  &
-                        8.523033057875D20,    &
+                        1.0D10      /)
+        coolH_cgs = (/  3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.102120336D10,       &
+                        1.236602671D27,       &
+                        2.390722374D42,       &
+                        4.003272698D26,       &
+                        1.527286104D44,       &
+                        1.608087849D22,       &
+                        9.228575532D20,       &
                         tiny(0D0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
-                        3.21,        &
+                        3.67,        &
                        -0.20,        &
                        -3.0,         &
                        -0.22,        &
                        -3.00,        &
                         0.33,        &
-                        0.5,         &
+                        0.50,        &
                         tiny(0.) /)
         ncool=10
 !
@@ -708,17 +708,17 @@ module Interstellar
                         2.11D6,      &
                         3.98D6,      &
                         2.0D7,       &
-                        huge(0D0) /)
-        coolH_cgs = (/  3.420D16,             &
-                        8.73275974868D18,     &
-                        1.0944376395513D20,   &
-                        1.0178638302185D10,   &
-                        1.1420600147164D27,   &
-                        2.2079470147055D42,   &
-                        3.697214745591D26,    &
-                        1.4105221231863D44,   &
-                        1.48514641828986D22,  &
-                        8.523033057875D20,    &
+                        1.0D10      /)
+        coolH_cgs = (/  3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.102120336D10,       &
+                        1.236602671D27,       &
+                        2.390722374D42,       &
+                        4.003272698D26,       &
+                        1.527286104D44,       &
+                        1.608087849D22,       &
+                        9.228575532D20,       &
                         tiny(0D0) /)
         coolB =     (/  2.12,        &
                         1.0,         &
@@ -740,14 +740,14 @@ module Interstellar
       endif
 !
 ! BEGIN TEMPORARY
-      if (any(coolH_cgs(1:ncool+1) == 0) &
+      if (any(coolH_cgs(1:ncool) == 0) &
         .or. any(coolT_cgs(1:ncool+1) == 0)) then
         call fatal_error('initialize_interstellar', &
         'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
       endif
 ! END TEMPORARY
-      lncoolH(1:ncool+1) = real(log(coolH_cgs(1:ncool+1)) - log(unit_Lambda) &
-                              + log(unit_temperature**coolB(1:ncool+1)) &
+      lncoolH(1:ncool) = real(log(coolH_cgs(1:ncool)) - log(unit_Lambda) &
+                              + log(unit_temperature**coolB(1:ncool)) &
                               + log(coolingfunction_scalefactor))
       lncoolT(1:ncool+1) = real(log(coolT_cgs(1:ncool+1) / unit_temperature))
 !
@@ -1301,7 +1301,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mz), intent(out) :: zrho
 !
-      real, dimension(nx) :: rho
+      real :: logrho
       real :: muhs
       real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
@@ -1330,21 +1330,18 @@ module Interstellar
 !
       call getmu(f,muhs)
 !
-      if (lroot) print*, 'Gressel-entropy: '// &
+      if (lroot) print*, 'Gressel-hs: '// &
           'hydrostatic thermal equilibrium density and entropy profiles'
       do n=1,mz
-      do m=m1,m2
 !
-        rho = rho0ts * &
-            exp(m_u*muhs/k_B/T0hs*(g_A*g_B-g_A*sqrt(g_B**2+(z(n))**2) &
-            -0.5*g_C*(z(n))**2/g_D))
-        zrho(n)=rho(1)
+        logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
+            log(T0hs/(g_A*g_B)* &
+            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D))) 
+        zrho(n)=exp(logrho)
 !
 !  Maintain minimum uv-heating function at high altitudes through min density.
 !
-        if (rho(1)<1e-7*rho0ts) zrho(n)=1e-7*rho0ts
 !
-      enddo
       enddo
 !
 !  Share zrho and T0hs for use with entropy to initialize density and
@@ -1382,7 +1379,11 @@ module Interstellar
       real, dimension(mz), intent(out) :: zheat
       logical, intent(in) :: lstarting
 !
-      real :: lambda
+      real :: g_A, g_C
+      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      double precision :: g_B ,g_D
+      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      real, dimension(mz) :: lambda=0.0, lnTT, TT
       integer :: j
 !
 !  Identifier
@@ -1393,17 +1394,34 @@ module Interstellar
          'Gressel_interstellar: calculating z-dependent uv-heating'// &
          'function for initial hydrostatic and thermal equilibrium'
 !
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+        g_A = g_A_cgs/unit_velocity*unit_time
+        g_C = g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_cgs/unit_length
+        g_B = g_B_cgs/unit_length
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_entopy', &
+            'SI unit conversions not inplemented')
+      endif
+!
+      do n=1,mz
+        TT(n)=T0hs/(g_A*g_B)* &
+            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
+        lnTT(n)=log(TT(n))
+      enddo
+      lam_loop: do j=1,ncool
+        if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
+        where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) 
+          lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
+        endwhere
+      enddo lam_loop
+      zheat=lambda*zrho
       do n=n1,n2
-        lam_loop: do j=1,ncool
-          if (coolT_cgs(j)>=T0hs*unit_temperature) then
-            lambda=exp(lncoolH(j-1))*T0hs**coolB(j-1)
-            exit lam_loop
-          endif
-        enddo lam_loop
-        zheat(n)=lambda*zrho(n)
         if (lstarting) then
-          f(:,:,n,icooling)=lambda*zrho(n)
-          f(:,:,n,icooling2)=zheat(n)-lambda*zrho(n)
+          f(:,:,n,icooling)=zheat(n)
+          f(:,:,n,icooling2)=zheat(n)-lambda(n)*zrho(n)
         endif
       enddo
 !

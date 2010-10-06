@@ -888,8 +888,6 @@ module Entropy
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
           case('Gressel-hs')
             call gressel_entropy(f)
-            if (lroot) call information('init_ss', &
-                'Gressel hydrostatic equilibrium setup done in interstellar')
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1816,14 +1814,30 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension(nx) :: lnrho,ss,lnTT
+      real :: lnrho,ss,lnTT,TT
       real, dimension(:), pointer :: zrho
       real, pointer :: T0hs
+      real :: g_A, g_C
+      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+      double precision :: g_B ,g_D
+      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
       integer :: ierr
 !
 !  identifier
 !
       if (headtt) print*,'gressel_entropy: ENTER'
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+        g_A = g_A_cgs/unit_velocity*unit_time
+        g_C = g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_cgs/unit_length
+        g_B = g_B_cgs/unit_length
+      else if (unit_system=='SI') then
+        call fatal_error('initialize_entopy', &
+            'SI unit conversions not inplemented')
+      endif
 !
 !  Obtain vertical density profile and isothermal temperature from
 !  interstellar: gressel_hs
@@ -1840,18 +1854,18 @@ module Entropy
 !  Allocate density profile to f and derive entropy profile from
 !  temperature and density
 !
-      do n=1,mz
-      do m=m1,m2
+      do n=n1,n2
         lnrho=log(zrho(n))
-        f(l1:l2,m,n,ilnrho)=lnrho
+        f(l1:l2,m1:m2,n,ilnrho)=lnrho
 !
-        lnTT=log(T0hs)
+        TT=T0hs/(g_A*g_B)* &
+            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
+        lnTT=log(TT)
 !
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
 !
-        f(l1:l2,m,n,iss)=ss
+        f(l1:l2,m1:m2,n,iss)=ss
 !
-      enddo
       enddo
 !
     endsubroutine gressel_entropy
