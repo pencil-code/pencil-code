@@ -34,7 +34,7 @@
 /
 &interstellar_init_pars
   lSNII=T
-  cooling_select='SS-Slyz'
+  cooling_select='SSrr'
   heating_select='Gressel-hs'
 /
 &shear_init_pars
