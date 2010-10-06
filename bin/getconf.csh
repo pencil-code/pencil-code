@@ -15,8 +15,9 @@ set debug = 1
 # Just as a keepsake
 set dollar = '$'
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
-if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
-
+if ($?PENCIL_HOME) then
+    setenv PATH ${PATH}:${PENCIL_HOME}/bin
+endif
 # Save working directory for other scripts we call
 setenv PENCIL_WORKDIR `pwd`
 newdir:
@@ -1325,7 +1326,7 @@ else if ($hn =~ node* && $masterhost == 'vsl176') then
 
   source /etc/profile.d/modules.csh
   module add torque maui
-  module add pgi/7.0.7
+  module add pgi/10.6
   module add mvapich2/pgi pgi
   module add ofed/1.3.1/base
 
