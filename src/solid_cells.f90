@@ -22,13 +22,16 @@ module Solid_Cells
   include 'solid_cells.h'
 !
   integer, parameter            :: max_items=10
-  integer                       :: ncylinders,nrectangles,dummy
+  integer                       :: ncylinders,nrectangles,nspheres,dummy
+  integer                       :: nobjects
   integer                       :: nforcepoints=300
-  real, dimension(max_items,5)  :: cylinder
   real, dimension(max_items,7)  :: rectangle
   real, dimension(max_items)    :: cylinder_radius
   real, dimension(max_items)    :: cylinder_temp=703.0
   real, dimension(max_items)    :: cylinder_xpos,cylinder_ypos,cylinder_zpos
+  real, dimension(max_items)    :: sphere_radius
+  real, dimension(max_items)    :: sphere_temp=703.0
+  real, dimension(max_items)    :: sphere_xpos,sphere_ypos,sphere_zpos
   integer, dimension(mx,my,mz,4):: ba,ba_shift
   real :: skin_depth=0, init_uu=0, ampl_noise=0, cylinder_skin=0
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
@@ -40,12 +43,22 @@ module Solid_Cells
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
+
+  type solid_object
+    character(len=10) :: form
+    real :: r,T
+    real, dimension(3) :: x
+  end type solid_object
+
+  type(solid_object), dimension(max_items) :: objects
+
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
        cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
        ampl_noise,interpolation_method, nforcepoints,cylinder_skin,&
-       lclose_interpolation,lclose_linear,limit_close_linear,lnointerception
+       lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
+       nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear,&
@@ -65,38 +78,60 @@ module Solid_Cells
 !
 !  Define the geometry of the solids.
 !  There might be many separate solid objects of different geometries (currently
-!  only cylinders are implemented however).
+!  only cylinders and spheres are implemented however).
 !
 !  19-nov-2008/nils: coded
+!  28-sep-2010/nils: added spheres
 !
-      integer :: icyl
+      integer :: icyl,isph      
 !
 !  Define the geometry of the solid object.
-!  For more complex geometries (i.e. for objects different than cylinders or
-!  rectangles) this shold probably be included as a geometry.local file such that
+!  For more complex geometries (i.e. for objects different than cylinders,
+!  spheres or rectangles) this shold probably be included as a geometry.local 
+!  file such that
 !  one can define complex geometries on a case to case basis.
 !  Alternatively one will here end up with a terribly long series
-!  of case checks.
+!  of case checks. 
+!
+!  Loop over all cylinders
 !
       do icyl=1,ncylinders
         if (cylinder_radius(icyl)>0) then
-          cylinder(icyl,iradius)=cylinder_radius(icyl)
-          cylinder(icyl,ixpos)=cylinder_xpos(icyl)
-          cylinder(icyl,iypos)=cylinder_ypos(icyl)
-          cylinder(icyl,izpos)=cylinder_zpos(icyl)
-          cylinder(icyl,itemp)=cylinder_temp(icyl)
+          objects(icyl)%r    = cylinder_radius(icyl)
+          objects(icyl)%x(1) = cylinder_xpos(icyl)
+          objects(icyl)%x(2) = cylinder_ypos(icyl)
+          objects(icyl)%x(3) = cylinder_zpos(icyl)
+          objects(icyl)%T    = cylinder_temp(icyl)
+          objects(icyl)%form = 'cylinder'
         else
           call fatal_error('initialize_solid_cells',&
                'All cylinders must have non-zero radii!')
         endif
       enddo
 !
+!  Loop over all spheres
+!
+      do isph=1,nspheres
+        if (sphere_radius(isph)>0) then
+          objects(isph+ncylinders)%r   = sphere_radius(isph)
+          objects(isph+ncylinders)%x(1)= sphere_xpos(isph)
+          objects(isph+ncylinders)%x(2)= sphere_ypos(isph)
+          objects(isph+ncylinders)%x(3)= sphere_zpos(isph)
+          objects(isph+ncylinders)%T   = sphere_temp(isph)
+          objects(isph+ncylinders)%form= 'sphere'
+        else
+          call fatal_error('initialize_solid_cells',&
+               'All spheres must have non-zero radii!')
+        endif
+      enddo
+!
+      nobjects=ncylinders+nspheres
       call find_solid_cell_boundaries
       call calculate_shift_matrix
 !
 !
 ! Find nearest grid point of the "forcepoints" on all cylinders
-! (needs also to be called elsewhere if cylinders move)
+! (needs also to be called elsewhere if objects move)
 !
       allocate(fpnearestgrid(ncylinders,nforcepoints,3))
       allocate(c_dragx(ncylinders))
@@ -144,9 +179,9 @@ module Solid_Cells
 !  Loop over all cylinders
 !
           do icyl=1,ncylinders
-            a2 = cylinder(icyl,1)**2
-            xr=x(i)-cylinder(icyl,2)
-            if (cylinder(icyl,3) /= 0) then
+            a2 = objects(icyl)%r**2
+            xr=x(i)-objects(icyl)%x(1)
+            if (objects(icyl)%x(2) /= 0) then
               print*,'When using cylinderstream_x all cylinders must have'
               print*,'zero offset in y-direction!'
               call fatal_error('init_solid_cells:','')
@@ -165,7 +200,7 @@ module Solid_Cells
                   if (ilnTT /= 0) then
                     wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
                     f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
-                         +cylinder(icyl,5)*(1-wall_smoothing_temp)
+                         +objects(icyl)%T*(1-wall_smoothing_temp)
                     f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
                          *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
                   endif
@@ -185,9 +220,9 @@ module Solid_Cells
               enddo
             else
               if (ilnTT /= 0) then
-                f(i,j,k,ilnTT) = cylinder(icyl,5)
+                f(i,j,k,ilnTT) = objects(icyl)%T
                 f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
-                     *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
+                     *f(l2,m2,n2,ilnTT)/objects(icyl)%T
               endif
             endif
           enddo
@@ -203,9 +238,9 @@ module Solid_Cells
         do j=m1,m2
         do k=n1,n2
           do icyl=1,ncylinders
-            a2 = cylinder(icyl,1)**2
-            yr=y(j)-cylinder(icyl,3)
-            if (cylinder(icyl,2) /= 0) then
+            a2 = objects(icyl)%r**2
+            yr=y(j)-objects(icyl)%x(2)
+            if (objects(icyl)%x(1) /= 0) then
               print*,'When using cylinderstream_y all cylinders must have'
               print*,'zero offset in x-direction!'
               call fatal_error('init_solid_cells:','')
@@ -224,7 +259,7 @@ module Solid_Cells
                   if (ilnTT /= 0) then
                     wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
                     f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
-                         +cylinder(icyl,5)*(1-wall_smoothing_temp)
+                         +objects(icyl)%T*(1-wall_smoothing_temp)
                     f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
                          *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
                   endif
@@ -244,9 +279,9 @@ module Solid_Cells
               enddo
             else
               if (ilnTT /= 0) then
-                f(i,j,k,ilnTT) = cylinder(icyl,5)
+                f(i,j,k,ilnTT) = objects(icyl)%T
                 f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
-                     *f(l2,m2,n2,ilnTT)/cylinder(icyl,5)
+                     *f(l2,m2,n2,ilnTT)/objects(icyl)%T
               endif
             endif
           enddo
@@ -273,7 +308,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
   subroutine fp_nearest_grid
 !
 !  Find coordinates for nearest grid point of all the 
-!  "forcepoints" (fp) for each cylinder (assume cylinder with axis
+!  "forcepoints" (fp) for each object (assume object with axis
 !  parallel to the z direction. Assign values to fpnearestgrid.
 !
 !  mar-2009/kragset: coded
@@ -292,14 +327,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     twopi=2.*pi
 !
-!  Loop over all cylinders 
+!  Loop over all objects 
     do icyl=1,ncylinders
-      rcyl = cylinder(icyl,iradius)
-      xcyl = cylinder(icyl,ixpos)
-      ycyl = cylinder(icyl,iypos)
+      rcyl = objects(icyl)%r
+      xcyl = objects(icyl)%x(1)
+      ycyl = objects(icyl)%x(2)
       zcyl = z(n1) !! Needs to be corrected in order to provide variable n in 3D
 !
-!  Loop over all forcepoints on each cylinder, icyl
+!  Loop over all forcepoints on each object, icyl
       do iforcepoint=1,nforcepoints
 !        
 !  Marking whether fp is within this processor's domain or not 
@@ -407,7 +442,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Now, we have the upper and lower (x,y,z)-coordinates: 
 !  ixl, ixu, iyl, iyu, izl, izu,
 !  i.e. the eight corners of the grid cell containing the forcepoint (fp).
-!  Decide which ones are outside the cylinder, and which one of these
+!  Decide which ones are outside the object, and which one of these
 !  is the closest one to fp:
 !
 !  Check if fp is within this processor's local domain
@@ -437,7 +472,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           icoord(7,:) = (/ixu,iyu,izu/)
           icoord(8,:) = (/ixl,iyu,izu/)
           inearest=0
-          do ipoint=1,8 ! Actually, 4 is sufficient in 2D / for cylinder
+          do ipoint=1,8 ! Actually, 4 is sufficient in 2D / for object
 !  Test if we are in a fluid cell, i.e.
 !  that mod(ba(ix,iy,iz,1),10) = 0 
             if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
@@ -470,10 +505,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
   subroutine dsolid_dt(f,df,p)
 !
 !  Find pressure and stress in all the forcepoints (fp) positioned on 
-!  cylinder surface, based on values in nearest grid point.
+!  object surface, based on values in nearest grid point.
 !
 !  mar-2009/kragset: coded
-!  okt-2009/kragset: updated to include multiple cylinders
+!  okt-2009/kragset: updated to include multiple objects
 !
     use viscosity, only: getnu
 !    
@@ -566,11 +601,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !***********************************************************************  
   subroutine dsolid_dt_integrate
 !
-!  Calculate drag- and lift-coefficients for solid cell cylinders
-!  by integrating fluid force on cylinder surface. 
+!  Calculate drag- and lift-coefficients for solid cell objects
+!  by integrating fluid force on object surface. 
 !
 !  mar-2009/kragset: coded
-!  okt-2009/kragset: updated to include multiple cylinders
+!  okt-2009/kragset: updated to include multiple objects
 !
     use mpicomm
     use general
@@ -597,9 +632,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           c_dragx = c_dragx_all * norm
           c_dragy = c_dragy_all * norm
 !          
-!  Write drag coefficients for all cylinders
+!  Write drag coefficients for all objects
 !  (may need to expand solid_cell_drag to more
-!  characters if large number of cylinders)
+!  characters if large number of objects)
 ! 
           open(unit=81,file='data/dragcoeffs.dat',position='APPEND')
           write(solid_cell_drag,84) it-1, t
@@ -694,9 +729,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find x and y values of mirror point
 !
             icyl=ba(i,j,k,4)
-            x_cyl=cylinder(icyl,ixpos)
-            y_cyl=cylinder(icyl,iypos)
-            r_cyl=cylinder(icyl,iradius)
+            x_cyl=objects(icyl)%x(1)
+            y_cyl=objects(icyl)%x(2)
+            r_cyl=objects(icyl)%r
             r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
             r_new=r_cyl+(r_cyl-r_point)
             sin_theta=(y(j)-y_cyl)/r_point
@@ -775,9 +810,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (lclose_linear) then
               if (ba(i,j,k,1)==10) then
                 icyl=ba(i,j,k,4)
-                x_cyl=cylinder(icyl,ixpos)
-                y_cyl=cylinder(icyl,iypos)
-                r_cyl=cylinder(icyl,iradius)
+                x_cyl=objects(icyl)%x(1)
+                y_cyl=objects(icyl)%x(2)
+                r_cyl=objects(icyl)%r
                 r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
                 dr=r_point-r_cyl
                 if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
@@ -863,7 +898,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           +f(lower_i,lower_j,k,ivar)*hx2*hy2 &
           +f(upper_i,lower_j,k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
 !
-!  If the mirror point is very close to the surface of the cylinder 
+!  If the mirror point is very close to the surface of the object 
 !  some special treatment is required.
 !
       if (lclose_interpolation .and. ivar < 4) then
@@ -887,12 +922,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  grid line in the direction away from the solid geometry to set a value
 !  at a grid point which is very close to the solid geometry.
 !  
-!  WARNING: This routine only works for cylinders with an infinitely long
+!  WARNING: This routine only works for objects with an infinitely long
 !  WARNING: central axis in the z-direction!
 !  
 !  The interpolation point, named p, has coordinates [xp,yp].
-!  The point s on the cylinder surface, with coordinates [xs,ys], is 
-!  placed such that the line from s to p is a normal to the cylinder surface.
+!  The point s on the object surface, with coordinates [xs,ys], is 
+!  placed such that the line from s to p is a normal to the object surface.
 !  
 !  If one of the corner points of the grid cell is within a solid geometry
 !  the normal passing through both s and p are continued outward until a
@@ -934,10 +969,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Define some help variables
 !
-        x0=cylinder(icyl,ixpos)
-        y0=cylinder(icyl,iypos)
-        z0=cylinder(icyl,izpos)
-        rs=cylinder(icyl,iradius)
+        x0=objects(icyl)%x(1)
+        y0=objects(icyl)%x(2)
+        z0=objects(icyl)%x(3)
+        rs=objects(icyl)%r
         xp=xxp(1)
         yp=xxp(2)
 !
@@ -969,7 +1004,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         iy1=iy0+1
         iz1=iz0+1
 !
-!  Find distance from corner points to the cylinder center
+!  Find distance from corner points to the object center
 !
         rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
         rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
@@ -997,7 +1032,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           Rsmall=verylarge/2.0
 !
 !  Find the x and y coordinates of p in a coordiante system with origin
-!  in the center of the cylinder
+!  in the center of the object
 !
           yp_cylinder=yp-y0
           xp_cylinder=xp-x0
@@ -1005,8 +1040,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           p_cylinder(2)=yp_cylinder
           rp=sqrt(xp_cylinder**2+yp_cylinder**2)
 !
-!  Determine the point s on the cylinder surface where the normal to the
-!  cylinder surface pass through the point p. 
+!  Determine the point s on the object surface where the normal to the
+!  object surface pass through the point p. 
 !
           xs=rs/rp*xp
           ys=rs/rp*yp
@@ -1016,13 +1051,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           dist=(xp-xs)**2+(yp-ys)**2
 !
 !  Find which grid line is the closest one in the direction
-!  away from the cylinder surface
+!  away from the object surface
 !
 !  Check the distance etc. to all the four (in 2D) possible 
 !  grid lines. Pick the grid line which the normal to the
-!  cylinder surface (which also pass through the point [xp,yp])
+!  object surface (which also pass through the point [xp,yp])
 !  cross first. This grid line should however
-!  be OUTSIDE the point [xp,yp] compared to the cylinder surface.
+!  be OUTSIDE the point [xp,yp] compared to the object surface.
 !
           do counter=1,4
             constdir=constdir_arr(counter)
@@ -1033,25 +1068,25 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  where the normal cross the grid line
 !
             xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))&
-                *(bordervalue(constdir,topbot_tmp)-cylinder(icyl,constdir+1))
+                *(bordervalue(constdir,topbot_tmp)-objects(icyl)%x(constdir))
 !
-!  Find the distance, r, from the center of the cylinder
+!  Find the distance, r, from the center of the object
 !  to the point where the normal cross the grid line
 !
             if (abs(xtemp) > verylarge) then
               r=verylarge*2
             else
               r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)&
-                  -cylinder(icyl,constdir+1))**2)
+                  -objects(icyl)%x(constdir))**2)
             endif
 !
-!  Check if the point xtemp is outside the cylinder,
+!  Check if the point xtemp is outside the object,
 !  outside the point [xp,yp] and that it cross the grid
 !  line within this grid cell
 !
             if ((r > rs) .and. (r > rp) &
-                .and.(xtemp+cylinder(icyl,vardir+1) >= bordervalue(vardir,1))&
-                .and.(xtemp+cylinder(icyl,vardir+1) <= bordervalue(vardir,2)))then
+                .and.(xtemp+objects(icyl)%x(vardir) >= bordervalue(vardir,1))&
+                .and.(xtemp+objects(icyl)%x(vardir) <= bordervalue(vardir,2)))then
               R1=r
             else
               R1=verylarge
@@ -1061,7 +1096,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
             if (R1 < Rsmall) then
               Rsmall=R1                
-              xyint(vardir)=xtemp+cylinder(icyl,vardir+1)
+              xyint(vardir)=xtemp+objects(icyl)%x(vardir)
               xyint(constdir)=bordervalue(constdir,topbot_tmp)
               dirconst=constdir
               dirvar=vardir
@@ -1074,7 +1109,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 rij_max=rij(topbot_tmp,2)
               endif
               inputvalue=bordervalue(constdir,topbot_tmp)&
-                  -cylinder(icyl,constdir+1)
+                  -objects(icyl)%x(constdir)
             endif
           enddo
 !
@@ -1100,8 +1135,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
            endif
 !
 !  Check if the endpoints in the variable direction are
-!  outside the cylinder. If they are not then define the endpoints
-!  as where the grid line cross the cylinder surface.
+!  outside the objects. If they are not then define the endpoints
+!  as where the grid line cross the object surface.
 !  Find the variable value at the endpoints.
 !
            quadratic=.true.
@@ -1115,7 +1150,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
            endif
            call find_point(rij_min,rs,varval,inputvalue,x1,&
                bordervalue(dirvar,1),bordervalue(dirvar,2),&
-               min,f1,cylinder(icyl,dirvar+1))
+               min,f1,objects(icyl)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to 
@@ -1131,7 +1166,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
              endif
              call find_point(rij_min,rs,varval,inputvalue,x1,&
                  bordervalue(dirvar,1),bordervalue(dirvar,2),&
-                 min,f1y,cylinder(icyl,dirvar+1))
+                 min,f1y,objects(icyl)%x(dirvar))
              f1x=f1
            endif
 !
@@ -1145,7 +1180,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
            endif
            call find_point(rij_max,rs,varval,inputvalue,x2,&
                bordervalue(dirvar,1),bordervalue(dirvar,2),&
-               min,f2,cylinder(icyl,dirvar+1))
+               min,f2,objects(icyl)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to 
@@ -1161,12 +1196,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
              endif
              call find_point(rij_max,rs,varval,inputvalue,x2,&
                  bordervalue(dirvar,1),bordervalue(dirvar,2),&
-                 min,f2y,cylinder(icyl,dirvar+1))
+                 min,f2y,objects(icyl)%x(dirvar))
              f2x=f2
            endif
 !
 !  Find the interpolation values between the two endpoints of
-!  the line and the normal from the cylinder.
+!  the line and the normal from the objects.
 !
           rint1=xyint(dirvar)-x1
           rint2=x2-xyint(dirvar)
@@ -1195,7 +1230,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             fint=(rint1*f2+rint2*f1)/(x2-x1)
 !
 !  Find the weigthing factors for the point on the line
-!  and the point on the cylinder surface.
+!  and the point on the object surface.
 !          
             rps=rp-rs
             rintp=Rsmall-rp
@@ -1223,8 +1258,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       in_solid_cell=.false.
 !
       do icyl=1,ncylinders
-        cyl_rad=cylinder(icyl,1)
-        cyl_pos=cylinder(icyl,2:4)
+        cyl_rad=objects(icyl)%r
+        cyl_pos=objects(icyl)%x(1:3)
         distance2=0
 !
 !  Loop only over x and y direction since this is a cylindrical geometry
@@ -1241,7 +1276,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           rad_part=part_rad
         endif
 !
-!  The cylinder_skin is the closest a particle can get to the solid 
+!  The object_skin is the closest a particle can get to the solid 
 !  cell before it is captured (this variable is normally zero).
 !
         if (sqrt(distance2)<cyl_rad+rad_part+cylinder_skin) then
@@ -1345,49 +1380,51 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !                       from the boundary, but the position (ip,jp,kp) is a ghost
 !                       point at the current processor.
 !
-!  The number stored in ba(ip,jp,kp,4) is the number of the cylinder
+!  The number stored in ba(ip,jp,kp,4) is the number of the object
 !
 !  19-nov-2008/nils: coded
 !
-      integer :: i,j,k,icyl,cw
+      integer :: i,j,k,iobj,cw
       real :: x2,y2,xval_p,xval_m,yval_p,yval_m
-      real :: dr,r_point,x_cyl,y_cyl,r_cyl
+      real :: dr,r_point,x_obj,y_obj,z_obj,r_obj
+      character(len=10) :: form
 !
 !  Initialize ba
 !
       ba=0
 !
-!  Loop over all cylinders (this should actually be a loop over all
-!  geometries!)
+!  Loop over all objects 
 !
-      do icyl=1,ncylinders
-        x_cyl=cylinder(icyl,ixpos)
-        y_cyl=cylinder(icyl,iypos)
-        r_cyl=cylinder(icyl,iradius)
+      do iobj=1,nobjects
+        x_obj=objects(iobj)%x(1)
+        y_obj=objects(iobj)%x(2)
+        z_obj=objects(iobj)%x(3)
+        r_obj=objects(iobj)%r
+        form=objects(iobj)%form
 !
 !  First we look in x-direction
 !
         k=l1
         do j=m1,m2
 !
-!  Check if we are inside the cylinder for y(j) (i.e. if x2>0)
+!  Check if we are inside the object for y(j) (i.e. if x2>0)
 !
-          x2=cylinder(icyl,1)**2-(y(j)-cylinder(icyl,3))**2
+          x2=objects(iobj)%r**2-(y(j)-objects(iobj)%x(2))**2
           if (x2>0) then
 !
-!  Find upper and lower x-values for the surface of the cylinder for y(j)
+!  Find upper and lower x-values for the surface of the object for y(j)
 !
-            xval_p=cylinder(icyl,2)+sqrt(x2)
-            xval_m=cylinder(icyl,2)-sqrt(x2)            
+            xval_p=objects(iobj)%x(1)+sqrt(x2)
+            xval_m=objects(iobj)%x(1)-sqrt(x2)            
             do i=l1,l2
               if (x(i)<xval_p .and. x(i)>xval_m) then
                 !
                 if (x(i+1)>xval_p) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,1)=-1
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==1) ba(i,j,:,1)=-1
                   endif
                 endif
@@ -1395,9 +1432,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (x(i+2)>xval_p .and. x(i+1)<xval_p) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,1)=-2
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==1) ba(i,j,:,1)=-2
                   endif
                 endif
@@ -1405,9 +1442,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (x(i+3)>xval_p .and. x(i+2)<xval_p) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,1)=-3
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==1) ba(i,j,:,1)=-3
                   endif
                 endif
@@ -1415,9 +1452,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (x(i-1)<xval_m) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,1)=1
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==-1) ba(i,j,:,1)=1
                   endif
                 endif
@@ -1425,9 +1462,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (x(i-2)<xval_m .and. x(i-1)>xval_m) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,1)=2
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==-1) ba(i,j,:,1)=2
                   endif
                 endif
@@ -1435,16 +1472,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (x(i-3)<xval_m .and. x(i-2)>xval_m) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,1)=3
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==-1) ba(i,j,:,1)=3
                   endif
                 endif
                 !
                 if (ba(i,j,k,1)==0) then
                   ba(i,j,:,1)=9
-                  ba(i,j,:,4)=icyl
+                  ba(i,j,:,4)=iobj
                 endif
                 !
               endif
@@ -1456,23 +1493,23 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
         do i=l1,l2
 !
-!  Check if we are inside the cylinder for x(i) (i.e. if y2>0)
+!  Check if we are inside the object for x(i) (i.e. if y2>0)
 !
-          y2=cylinder(icyl,1)**2-(x(i)-cylinder(icyl,2))**2
+          y2=objects(iobj)%r**2-(x(i)-objects(iobj)%x(1))**2
           if (y2>0) then
 !
-!  Find upper and lower y-values for the surface of the cylinder for x(i)
+!  Find upper and lower y-values for the surface of the object for x(i)
 !
-            yval_p=cylinder(icyl,3)+sqrt(y2)
-            yval_m=cylinder(icyl,3)-sqrt(y2)            
+            yval_p=objects(iobj)%x(2)+sqrt(y2)
+            yval_m=objects(iobj)%x(2)-sqrt(y2)            
             do j=m1,m2
               if (y(j)<yval_p .and. y(j)>yval_m) then
                 if (y(j+1)>yval_p) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,2)=-1
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==2) ba(i,j,:,2)=-1                  
                   endif
                 endif
@@ -1480,9 +1517,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (y(j+2)>yval_p .and. y(j+1)<yval_p) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,2)=-2
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==2) ba(i,j,:,2)=-2                  
                   endif
                 endif
@@ -1490,9 +1527,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (y(j+3)>yval_p .and. y(j+2)<yval_p) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,2)=-3
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==2) ba(i,j,:,2)=-3                  
                   endif
                 endif
@@ -1500,9 +1537,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (y(j-1)<yval_m) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,2)=1
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==-2) ba(i,j,:,2)=1                  
                   endif
                 endif
@@ -1510,9 +1547,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (y(j-2)<yval_m .and. y(j-1)>yval_m) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,2)=2
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==-2) ba(i,j,:,2)=2                  
                   endif
                 endif
@@ -1520,16 +1557,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (y(j-3)<yval_m .and. y(j-2)>yval_m) then
                   if (.not. ba_defined(i,j)) then
                     ba(i,j,:,2)=3
-                    ba(i,j,:,4)=icyl
+                    ba(i,j,:,4)=iobj
                   else
-                    call find_closest_wall(i,j,k,icyl,cw)
+                    call find_closest_wall(i,j,k,iobj,cw)
                     if (cw==-2) ba(i,j,:,2)=3                  
                   endif
                 endif
 !
                 if (ba(i,j,k,2)==0) then
                   ba(i,j,:,2)=9
-                  ba(i,j,:,4)=icyl
+                  ba(i,j,:,4)=iobj
                 endif
               endif
             enddo
@@ -1545,18 +1582,18 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           do i=l1,l2
             do j=m1,m2
-              r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
-              dr=r_point-r_cyl
+              r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
+              dr=r_point-r_obj
               if ((dr >= 0) .and. (dr<limit_close_linear*dxmin)) then
                 ba(i,j,:,1)=10
-                ba(i,j,:,4)=icyl
+                ba(i,j,:,4)=iobj
               endif
             enddo
           enddo
         endif
 !
 !  Fill ba array also for ghost points - need only know whether
-!  we are actually inside cylinder (then ba = 11), not how close we are to 
+!  we are actually inside object (then ba = 11), not how close we are to 
 !  the border.
 !
 !  Lower and upper ghost points in y direction
@@ -1564,16 +1601,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         do j=1,nghost
           do i=1,mx
             !  Lower ghost points
-            r_point=sqrt((((x(i)-x_cyl)**2+(y(j)-y_cyl)**2)))
-            if (r_point < r_cyl) then
+            r_point=sqrt((((x(i)-x_obj)**2+(y(j)-y_obj)**2)))
+            if (r_point < r_obj) then
               ba(i,j,:,1:3)=11
-              ba(i,j,:,4)=icyl
+              ba(i,j,:,4)=iobj
             endif
             !  Upper ghost points
-            r_point=sqrt((((x(i)-x_cyl)**2+(y(my-nghost+j)-y_cyl)**2)))
-            if (r_point < r_cyl) then
+            r_point=sqrt((((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2)))
+            if (r_point < r_obj) then
               ba(i,my-nghost+j,:,1:3)=11
-              ba(i,my-nghost+j,:,4)=icyl
+              ba(i,my-nghost+j,:,4)=iobj
             endif
           enddo
         enddo
@@ -1583,21 +1620,21 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         do j=m1,m2
           do i=1,nghost
             !  Lower (left) ghost points
-            r_point=sqrt((((x(i)-x_cyl)**2+(y(j)-y_cyl)**2)))
-            if (r_point < r_cyl) then
+            r_point=sqrt((((x(i)-x_obj)**2+(y(j)-y_obj)**2)))
+            if (r_point < r_obj) then
               ba(i,j,:,1:3)=11
-              ba(i,j,:,4)=icyl
+              ba(i,j,:,4)=iobj
             endif
             !  Upper (right) ghost points
-            r_point=sqrt((((x(mx-nghost+i)-x_cyl)**2+(y(j)-y_cyl)**2)))
-            if (r_point < r_cyl) then
+            r_point=sqrt((((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2)))
+            if (r_point < r_obj) then
               ba(mx-nghost+i,j,:,1:3)=11
-              ba(mx-nghost+i,j,:,4)=icyl
+              ba(mx-nghost+i,j,:,4)=iobj
             endif
           enddo
         enddo
 !
-! Finalize loop over all cylinders
+! Finalize loop over all objects
 !
       enddo
 !
@@ -1635,19 +1672,19 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !***********************************************************************  
     subroutine find_closest_wall(i,j,k,icyl,cw)
 !
-!  Find the direction of the closest wall for given grid point and cylinder
+!  Find the direction of the closest wall for given grid point and object
 !
 !  28-nov-2008/nils: coded
 !
       integer :: i,j,k,cw,icyl
       real :: xval_p,xval_m,yval_p,yval_m,x2,y2,minval,dist
 !
-      x2=cylinder(icyl,1)**2-(y(j)-cylinder(icyl,3))**2
-      y2=cylinder(icyl,1)**2-(x(i)-cylinder(icyl,2))**2
-      xval_p=cylinder(icyl,2)+sqrt(x2)
-      xval_m=cylinder(icyl,2)-sqrt(x2)            
-      yval_p=cylinder(icyl,3)+sqrt(y2)
-      yval_m=cylinder(icyl,3)-sqrt(y2)            
+      x2=objects(icyl)%r**2-(y(j)-objects(icyl)%x(2))**2
+      y2=objects(icyl)%r**2-(x(i)-objects(icyl)%x(1))**2
+      xval_p=objects(icyl)%x(1)+sqrt(x2)
+      xval_m=objects(icyl)%x(1)-sqrt(x2)            
+      yval_p=objects(icyl)%x(2)+sqrt(y2)
+      yval_m=objects(icyl)%x(2)-sqrt(y2)            
 !
       minval=impossible
       cw=0
