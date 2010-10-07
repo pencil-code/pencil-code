@@ -525,7 +525,7 @@ module Interstellar
                         tiny(0D0),   &
                         tiny(0D0),   &
                         tiny(0D0),   &
-                        tiny(0D0) /) /33.2389 / ( m_p_cgs )**2
+                        tiny(0D0) /)  / ( m_p_cgs )**2
         coolB =     (/  2.0,         &
                         1.5,         &
                         2.867,       &
