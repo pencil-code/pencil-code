@@ -193,9 +193,9 @@ module Solid_Cells
                 if (cyl==0) then
                   wall_smoothing=1-exp(-(rr2-a2)/skin_depth**2)
                   f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*&
-                       2*x(i)*y(j)*a2/rr2**2*wall_smoothing
+                       2*xr*yr*a2/rr2**2*wall_smoothing
                   f(i,j,k,iux) = f(i,j,k,iux)+init_uu*&
-                       (0. - a2/rr2 + 2*y(j)**2*a2/rr2**2)&
+                       (0. - a2/rr2 + 2*yr**2*a2/rr2**2)&
                        *wall_smoothing
                   if (ilnTT /= 0) then
                     wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
@@ -206,15 +206,15 @@ module Solid_Cells
                   endif
                 else
                   shifty=cyl*Lxyz(2)
-                  rr2_low =(x(i)+shiftx)**2+(y(j)+shifty)**2
-                  rr2_high=(x(i)-shiftx)**2+(y(j)-shifty)**2
+                  rr2_low =(xr+shiftx)**2+(yr+shifty)**2
+                  rr2_high=(xr-shiftx)**2+(yr-shifty)**2
                   f(i,j,k,iux) = f(i,j,k,iux)+init_uu*( &
-                       +2*(y(j)-shifty)**2*a2/rr2_high**2-a2/rr2_high&
-                       +2*(y(j)+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
+                       +2*(yr-shifty)**2*a2/rr2_high**2-a2/rr2_high&
+                       +2*(yr+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
                   f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*( &
-                       +2*(x(i)-shiftx)*(y(j)-shifty)&
+                       +2*(xr-shiftx)*(yr-shifty)&
                        *a2/rr2_high**2&
-                       +2*(x(i)+shiftx)*(y(j)+shifty)&
+                       +2*(xr+shiftx)*(yr+shifty)&
                        *a2/rr2_low**2)
                 endif
               enddo
