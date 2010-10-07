@@ -72,6 +72,7 @@ program run
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
   use Snapshot
+  use Solid_Cells,     only: solid_cells_clean_up
   use Sub
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
@@ -433,7 +434,8 @@ program run
         if (lwrite_zaverages)    call zaverages_clean_up()
         if (lwrite_phiaverages)  call phiaverages_clean_up()
         if (lforcing)            call forcing_clean_up()
-        if (.not.lhydro)         call hydro_clean_up()
+        if (lhydro_kinematic)    call hydro_clean_up()
+        if (lsolid_cells)        call solid_cells_clean_up()
         call rprint_list(LRESET=.true.) !(Re-read output list)
         call initialize_modules(f,LSTARTING=.false.)
         if (lparticles) then

@@ -15,6 +15,7 @@ module Solid_Cells
   use Cdata
   use Cparam
   use Sub, only: keep_compiler_quiet
+  use messages, only: warning
 !
   implicit none
 !
@@ -206,5 +207,15 @@ module Solid_Cells
       call keep_compiler_quiet(fluid_point)
 !
     endsubroutine close_interpolation
+!***********************************************************************
+    subroutine solid_cells_clean_up
+!
+!  This is a dummy routine.
+!
+!  7-oct-2010/dhruba: coded
+!
+      call warning('solid_cells_clean_up','dont call in nosolid_cells')
+!
+    endsubroutine solid_cells_clean_up
 !***********************************************************************
 endmodule Solid_Cells

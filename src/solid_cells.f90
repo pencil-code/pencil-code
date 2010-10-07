@@ -1762,4 +1762,18 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************  
+    subroutine solid_cells_clean_up
+!
+!  Deallocate the variables allocated in solid_cells
+!
+!  7-oct-2010/dhruba: aped from hydro_kinematic
+!
+      print*, 'Deallocating some solid_cells variables ...'
+      deallocate(fpnearestgrid)
+      deallocate(c_dragx)
+      deallocate(c_dragy)
+      print*, '..Done.'
+!
+    endsubroutine solid_cells_clean_up
+!***********************************************************************
 endmodule Solid_Cells
