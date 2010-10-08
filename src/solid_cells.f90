@@ -21,8 +21,8 @@ module Solid_Cells
 !  
   include 'solid_cells.h'
 !
-  integer, parameter            :: max_items=10
-  integer                       :: ncylinders,nrectangles,nspheres,dummy
+  integer, parameter            :: max_items=5
+  integer                       :: ncylinders=0,nrectangles,nspheres=0,dummy
   integer                       :: nobjects
   integer                       :: nforcepoints=300
   real, dimension(max_items)    :: cylinder_radius
@@ -122,14 +122,37 @@ module Solid_Cells
                'All spheres must have non-zero radii!')
         endif
       enddo
-!
       nobjects=ncylinders+nspheres
+!
+!  In order to avoid problems with how namelists are written not all
+!  slots of an array which should be stored in the namelist can be zero
+!
+      if (nspheres==0) then
+        sphere_radius(1)=impossible
+        sphere_xpos(1)=impossible
+        sphere_ypos(1)=impossible
+        sphere_zpos(1)=impossible
+        sphere_temp(1)=impossible
+      end if
+      if (ncylinders==0) then
+        cylinder_radius(1)=impossible
+        cylinder_xpos(1)=impossible
+        cylinder_ypos(1)=impossible
+        cylinder_zpos(1)=impossible
+        cylinder_temp(1)=impossible
+      end if
+!
+!  Prepare the solid geometry
+!
       call find_solid_cell_boundaries
       call calculate_shift_matrix
 !
 !
 ! Find nearest grid point of the "forcepoints" on all cylinders
 ! (needs also to be called elsewhere if objects move)
+!
+! NILS: This should be done only if we really have to; i.e. if c_dragx
+! NILS: or c_dragy is set in print.in
 !
       allocate(fpnearestgrid(ncylinders,nforcepoints,3))
       allocate(c_dragx(ncylinders))
@@ -702,12 +725,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k,idir,xind,yind,zind,iobj
       
-      real :: y_cyl, x_cyl, r_cyl, r_new, r_point, sin_theta, cos_theta
+      real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
       real :: xmirror, ymirror, phi, dr
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj
-      logical :: bax, bay
+      logical :: bax, bay, baz
       real :: gpp
       real, dimension(3) :: xxp
+      character(len=10) :: form
 !
 !  Find ghost points based on the mirror interpolation method
 !
@@ -717,30 +741,41 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         do k=n1,n2
           bax=(ba(i,j,k,1) /= 0).and.(ba(i,j,k,1)/=9).and.(ba(i,j,k,1)/=10)
           bay=(ba(i,j,k,2) /= 0).and.(ba(i,j,k,2)/=9).and.(ba(i,j,k,2)/=10)
+          if (form=='sphere') then
+            baz=(ba(i,j,k,3) /= 0).and.(ba(i,j,k,3)/=9).and.(ba(i,j,k,3)/=10)
+          else
+            baz=.false.
+          endif
 !
 !  Check if we are in a point which must be interpolated, i.e. we are inside
 !  a solid geometry AND we are not more than three grid points from the 
 !  closest solid-fluid interface
 !
-          if (bax.or.bay) then
+          if (bax.or.bay.or.baz) then
 !
-!  Find x and y values of mirror point
+!  Find x, y and z values of mirror point
 !
             iobj=ba(i,j,k,4)
-            x_cyl=objects(iobj)%x(1)
-            y_cyl=objects(iobj)%x(2)
-            r_cyl=objects(iobj)%r
-            r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
-            r_new=r_cyl+(r_cyl-r_point)
-            sin_theta=(y(j)-y_cyl)/r_point
-            cos_theta=(x(i)-x_cyl)/r_point
-            xmirror=cos_theta*r_new+x_cyl
-            ymirror=sin_theta*r_new+y_cyl
+            x_obj=objects(iobj)%x(1)
+            y_obj=objects(iobj)%x(2)
+            z_obj=objects(iobj)%x(3)
+            r_obj=objects(iobj)%r
+            form=objects(iobj)%form
+            if (form=='cylinder') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+            elseif (form=='sphere') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+            endif
+            r_new=r_obj+(r_obj-r_point)
+            sin_theta=(y(j)-y_obj)/r_point
+            cos_theta=(x(i)-x_obj)/r_point
+            xmirror=cos_theta*r_new+x_obj
+            ymirror=sin_theta*r_new+y_obj
 !
 !  Check that we are indeed inside the solid geometry
 !
-            if (r_point>r_cyl) then
-              call fatal_error('update_solid_cells:','r_point>r_cyl')
+            if (r_point>r_obj) then
+              call fatal_error('update_solid_cells:','r_point>r_obj')
             endif
 !
 !  Find i and j indeces for points to be used during interpolation 
@@ -808,11 +843,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (lclose_linear) then
               if (ba(i,j,k,1)==10) then
                 iobj=ba(i,j,k,4)
-                x_cyl=objects(iobj)%x(1)
-                y_cyl=objects(iobj)%x(2)
-                r_cyl=objects(iobj)%r
-                r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
-                dr=r_point-r_cyl
+                x_obj=objects(iobj)%x(1)
+                y_obj=objects(iobj)%x(2)
+                r_obj=objects(iobj)%r
+                r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
+                dr=r_point-r_obj
                 if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                   xxp=(/x(i),y(j),z(k)/)
                   call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.)
