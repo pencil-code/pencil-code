@@ -53,17 +53,9 @@ module Special
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
-       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp, &
+       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp &
        iheattype,dt_gran,cool_type
-!!
-!! Declare any index variables necessary for main or
-!!
-!!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!!
-!! other variables (needs to be consistent with reset list below)
-!!
-!!   integer :: i_POSSIBLEDIAGNOSTIC=0
-!!
+!
     integer :: idiag_dtnewt=0
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
@@ -2068,7 +2060,7 @@ module Special
       logical :: lstop=.false.
 !
       call resetarr
-      call fill_B_avoidarr
+      if (B_avoid/=0) call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
         call rdpoints(level)
