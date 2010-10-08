@@ -25,7 +25,6 @@ module Solid_Cells
   integer                       :: ncylinders,nrectangles,nspheres,dummy
   integer                       :: nobjects
   integer                       :: nforcepoints=300
-  real, dimension(max_items,7)  :: rectangle
   real, dimension(max_items)    :: cylinder_radius
   real, dimension(max_items)    :: cylinder_temp=703.0
   real, dimension(max_items)    :: cylinder_xpos,cylinder_ypos,cylinder_zpos
@@ -36,7 +35,6 @@ module Solid_Cells
   real :: skin_depth=0, init_uu=0, ampl_noise=0, cylinder_skin=0
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=labellen) :: interpolation_method='staircase'
-  integer, parameter :: iradius=1, ixpos=2,iypos=3,izpos=4,itemp=5
   logical :: lclose_interpolation=.false., lclose_linear=.false.
   logical :: lnointerception=.false.
   real                          :: rhosum
@@ -702,7 +700,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  19-nov-2008/nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,k,idir,xind,yind,zind,icyl
+      integer :: i,j,k,idir,xind,yind,zind,iobj
       
       real :: y_cyl, x_cyl, r_cyl, r_new, r_point, sin_theta, cos_theta
       real :: xmirror, ymirror, phi, dr
@@ -728,10 +726,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find x and y values of mirror point
 !
-            icyl=ba(i,j,k,4)
-            x_cyl=objects(icyl)%x(1)
-            y_cyl=objects(icyl)%x(2)
-            r_cyl=objects(icyl)%r
+            iobj=ba(i,j,k,4)
+            x_cyl=objects(iobj)%x(1)
+            y_cyl=objects(iobj)%x(2)
+            r_cyl=objects(iobj)%r
             r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
             r_new=r_cyl+(r_cyl-r_point)
             sin_theta=(y(j)-y_cyl)/r_point
@@ -783,23 +781,23 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
             call interpolate_mirror_point(f,phi,iux,k,lower_i,upper_i,lower_j,&
-                upper_j,icyl,xmirror,ymirror)
+                upper_j,iobj,xmirror,ymirror)
             f(i,j,k,iux)=-phi
             call interpolate_mirror_point(f,phi,iuy,k,lower_i,upper_i,lower_j,&
-                upper_j,icyl,xmirror,ymirror)
+                upper_j,iobj,xmirror,ymirror)
             f(i,j,k,iuy)=-phi
             call interpolate_mirror_point(f,phi,iuz,k,lower_i,upper_i,lower_j,&
-                upper_j,icyl,xmirror,ymirror)
+                upper_j,iobj,xmirror,ymirror)
             f(i,j,k,iuz)=-phi
             if (ilnrho>0) then
               call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
-                  lower_j,upper_j,icyl,xmirror,ymirror)
+                  lower_j,upper_j,iobj,xmirror,ymirror)
               f(i,j,k,ilnrho)=phi
             endif
             if (ilnTT>0) then
               call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
-                  lower_j,upper_j,icyl,xmirror,ymirror)
-              f(i,j,k,ilnTT)=2*cylinder_temp(icyl)-phi
+                  lower_j,upper_j,iobj,xmirror,ymirror)
+              f(i,j,k,ilnTT)=2*objects(iobj)%T-phi
             endif
           else
 !
@@ -809,19 +807,19 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
             if (lclose_linear) then
               if (ba(i,j,k,1)==10) then
-                icyl=ba(i,j,k,4)
-                x_cyl=objects(icyl)%x(1)
-                y_cyl=objects(icyl)%x(2)
-                r_cyl=objects(icyl)%r
+                iobj=ba(i,j,k,4)
+                x_cyl=objects(iobj)%x(1)
+                y_cyl=objects(iobj)%x(2)
+                r_cyl=objects(iobj)%r
                 r_point=sqrt(((x(i)-x_cyl)**2+(y(j)-y_cyl)**2))
                 dr=r_point-r_cyl
                 if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                   xxp=(/x(i),y(j),z(k)/)
-                  call close_interpolation(f,i,j,k,icyl,iux,xxp,gpp,.true.)
+                  call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.)
                   f(i,j,k,iux)=gpp
-                  call close_interpolation(f,i,j,k,icyl,iuy,xxp,gpp,.true.)
+                  call close_interpolation(f,i,j,k,iobj,iuy,xxp,gpp,.true.)
                   f(i,j,k,iuy)=gpp
-                  call close_interpolation(f,i,j,k,icyl,iuz,xxp,gpp,.true.)
+                  call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.)
                   f(i,j,k,iuz)=gpp
                 endif
               endif
@@ -859,11 +857,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  probably just have a very minor effect.
 !
               if (xind/=0 .and. yind/=0 .and. zind/=0) then
-                icyl=ba_shift(i,j,k,4)
+                iobj=ba_shift(i,j,k,4)
                 f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
                 if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
                 if (ilnTT>0) f(i,j,k,ilnTT) = &
-                    2*cylinder_temp(icyl)-f(xind,yind,zind,ilnTT)
+                    2*objects(iobj)%T-f(xind,yind,zind,ilnTT)
               endif
             endif
           enddo
@@ -1385,7 +1383,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  19-nov-2008/nils: coded
 !
       integer :: i,j,k,iobj,cw
-      real :: x2,y2,xval_p,xval_m,yval_p,yval_m
+      real :: x2,y2,z2,xval_p,xval_m,yval_p,yval_m
       real :: dr,r_point,x_obj,y_obj,z_obj,r_obj
       character(len=10) :: form
 !
@@ -1404,15 +1402,27 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  First we look in x-direction
 !
-        k=l1
+        do k=n1,n2
         do j=m1,m2
 !
-!  Check if we are inside the object for y(j) (i.e. if x2>0)
+!  Check if we are inside the object for y(j) and z(k) (i.e. if x2>0)
+!  This depens on the form of the solid geometry
 !
-          x2=objects(iobj)%r**2-(y(j)-objects(iobj)%x(2))**2
+          if (form=='cylinder') then
+            x2&
+                =objects(iobj)%r**2&
+                -(y(j)-objects(iobj)%x(2))**2
+          else if (form=='sphere') then
+            x2&
+                =objects(iobj)%r**2&
+                -(y(j)-objects(iobj)%x(2))**2&
+                -(z(k)-objects(iobj)%x(3))**2
+          else
+            call fatal_error('find_solid_cell_boundaries','No such form!')
+          endif
           if (x2>0) then
 !
-!  Find upper and lower x-values for the surface of the object for y(j)
+!  Find upper and lower x-values for the surface of the object for y(j) and z(k)
 !
             xval_p=objects(iobj)%x(1)+sqrt(x2)
             xval_m=objects(iobj)%x(1)-sqrt(x2)            
@@ -1420,82 +1430,96 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (x(i)<xval_p .and. x(i)>xval_m) then
                 !
                 if (x(i+1)>xval_p) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,1)=-1
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=-1
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==1) ba(i,j,:,1)=-1
+                    if (cw==1) ba(i,j,k,1)=-1
                   endif
                 endif
                 !
                 if (x(i+2)>xval_p .and. x(i+1)<xval_p) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,1)=-2
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=-2
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==1) ba(i,j,:,1)=-2
+                    if (cw==1) ba(i,j,k,1)=-2
                   endif
                 endif
                 !
                 if (x(i+3)>xval_p .and. x(i+2)<xval_p) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,1)=-3
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=-3
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==1) ba(i,j,:,1)=-3
+                    if (cw==1) ba(i,j,k,1)=-3
                   endif
                 endif
                 !
                 if (x(i-1)<xval_m) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,1)=1
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=1
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-1) ba(i,j,:,1)=1
+                    if (cw==-1) ba(i,j,k,1)=1
                   endif
                 endif
                 !
                 if (x(i-2)<xval_m .and. x(i-1)>xval_m) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,1)=2
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=2
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-1) ba(i,j,:,1)=2
+                    if (cw==-1) ba(i,j,k,1)=2
                   endif
                 endif
                 !
                 if (x(i-3)<xval_m .and. x(i-2)>xval_m) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,1)=3
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=3
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-1) ba(i,j,:,1)=3
+                    if (cw==-1) ba(i,j,k,1)=3
                   endif
                 endif
                 !
                 if (ba(i,j,k,1)==0) then
-                  ba(i,j,:,1)=9
-                  ba(i,j,:,4)=iobj
+                  ba(i,j,k,1)=9
+                  ba(i,j,k,4)=iobj
                 endif
                 !
               endif
             enddo
           endif
         enddo
+        enddo
 !
 !  Then we look in y-direction
 !
+        do k=n1,n2
         do i=l1,l2
 !
 !  Check if we are inside the object for x(i) (i.e. if y2>0)
+!  This depens on the form of the solid geometry
 !
-          y2=objects(iobj)%r**2-(x(i)-objects(iobj)%x(1))**2
+          if (form=='cylinder') then
+            y2&
+                =objects(iobj)%r**2&
+                -(x(i)-objects(iobj)%x(1))**2
+          else if (form=='sphere') then
+            y2&
+                =objects(iobj)%r**2&
+                -(x(i)-objects(iobj)%x(1))**2&
+                -(z(j)-objects(iobj)%x(3))**2
+          else
+            call fatal_error('find_solid_cell_boundaries','No such form!')
+          endif
           if (y2>0) then
 !
 !  Find upper and lower y-values for the surface of the object for x(i)
@@ -1505,76 +1529,177 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             do j=m1,m2
               if (y(j)<yval_p .and. y(j)>yval_m) then
                 if (y(j+1)>yval_p) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,2)=-1
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,2)=-1
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==2) ba(i,j,:,2)=-1                  
+                    if (cw==2) ba(i,j,k,2)=-1                  
                   endif
                 endif
 !
                 if (y(j+2)>yval_p .and. y(j+1)<yval_p) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,2)=-2
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,2)=-2
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==2) ba(i,j,:,2)=-2                  
+                    if (cw==2) ba(i,j,k,2)=-2                  
                   endif
                 endif
 !
                 if (y(j+3)>yval_p .and. y(j+2)<yval_p) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,2)=-3
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,2)=-3
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==2) ba(i,j,:,2)=-3                  
+                    if (cw==2) ba(i,j,k,2)=-3                  
                   endif
                 endif
 !
                 if (y(j-1)<yval_m) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,2)=1
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,2)=1
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-2) ba(i,j,:,2)=1                  
+                    if (cw==-2) ba(i,j,k,2)=1                  
                   endif
                 endif
 !
                 if (y(j-2)<yval_m .and. y(j-1)>yval_m) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,2)=2
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,2)=2
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-2) ba(i,j,:,2)=2                  
+                    if (cw==-2) ba(i,j,k,2)=2                  
                   endif
                 endif
 !
                 if (y(j-3)<yval_m .and. y(j-2)>yval_m) then
-                  if (.not. ba_defined(i,j)) then
-                    ba(i,j,:,2)=3
-                    ba(i,j,:,4)=iobj
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,2)=3
+                    ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-2) ba(i,j,:,2)=3                  
+                    if (cw==-2) ba(i,j,k,2)=3                  
                   endif
                 endif
 !
                 if (ba(i,j,k,2)==0) then
-                  ba(i,j,:,2)=9
-                  ba(i,j,:,4)=iobj
+                  ba(i,j,k,2)=9
+                  ba(i,j,k,4)=iobj
                 endif
               endif
             enddo
           endif
         enddo
+        enddo
 !
-!  If we interpolate points which are very close to the solid surface
-!  these points has to be "marked" for later use.
+!  If form='sphere' we must also look in the z-direction
+!
+        if (form .ne. 'cylinder') then
+        do i=l1,l2
+        do j=m1,m2
+!
+!  Check if we are inside the object for y(j) and x(i) (i.e. if z2>0)
+!
+          if (form=='cylinder') then
+            call fatal_error('find_solid_cell_boundaries',&
+                'no cylinders when variable z')
+          else if (form=='sphere') then
+            z2&
+                =objects(iobj)%r**2&
+                -(y(j)-objects(iobj)%x(2))**2&
+                -(x(i)-objects(iobj)%x(1))**2
+          else
+            call fatal_error('find_solid_cell_boundaries','No such form!')
+          endif
+          if (z2>0) then
+!
+!  Find upper and lower x-values for the surface of the object for y(j) and z(k)
+!
+            xval_p=objects(iobj)%x(3)+sqrt(z2)
+            xval_m=objects(iobj)%x(3)-sqrt(z2)            
+            do k=n1,n2
+              if (z(k)<xval_p .and. z(k)>xval_m) then
+                !
+                if (z(k+1)>xval_p) then
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=-1
+                    ba(i,j,k,4)=iobj
+                  else
+                    call find_closest_wall(i,j,k,iobj,cw)
+                    if (cw==1) ba(i,j,k,1)=-1
+                  endif
+                endif
+                !
+                if (z(k+2)>xval_p .and. z(k+1)<xval_p) then
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=-2
+                    ba(i,j,k,4)=iobj
+                  else
+                    call find_closest_wall(i,j,k,iobj,cw)
+                    if (cw==1) ba(i,j,k,1)=-2
+                  endif
+                endif
+                !
+                if (z(k+3)>xval_p .and. z(k+2)<xval_p) then
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=-3
+                    ba(i,j,k,4)=iobj
+                  else
+                    call find_closest_wall(i,j,k,iobj,cw)
+                    if (cw==1) ba(i,j,k,1)=-3
+                  endif
+                endif
+                !
+                if (z(k-1)<xval_m) then
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=1
+                    ba(i,j,k,4)=iobj
+                  else
+                    call find_closest_wall(i,j,k,iobj,cw)
+                    if (cw==-1) ba(i,j,k,1)=1
+                  endif
+                endif
+                !
+                if (z(k-2)<xval_m .and. z(k-1)>xval_m) then
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=2
+                    ba(i,j,k,4)=iobj
+                  else
+                    call find_closest_wall(i,j,k,iobj,cw)
+                    if (cw==-1) ba(i,j,k,1)=2
+                  endif
+                endif
+                !
+                if (z(k-3)<xval_m .and. z(k-2)>xval_m) then
+                  if (.not. ba_defined(i,j,k)) then
+                    ba(i,j,k,1)=3
+                    ba(i,j,k,4)=iobj
+                  else
+                    call find_closest_wall(i,j,k,iobj,cw)
+                    if (cw==-1) ba(i,j,k,1)=3
+                  endif
+                endif
+                !
+                if (ba(i,j,k,1)==0) then
+                  ba(i,j,k,1)=9
+                  ba(i,j,k,4)=iobj
+                endif
+                !
+              endif
+            enddo
+          endif
+        enddo
+        enddo
+        endif
+!
+!  If we want to interpolate points which are very close to the solid surface
+!  these points have to be "marked" for later use.
 !
         if (lclose_linear) then
 !
@@ -1582,12 +1707,20 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           do i=l1,l2
             do j=m1,m2
-              r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
-              dr=r_point-r_obj
-              if ((dr >= 0) .and. (dr<limit_close_linear*dxmin)) then
-                ba(i,j,:,1)=10
-                ba(i,j,:,4)=iobj
-              endif
+              do k=n1,n2
+                if (form=='cylinder') then 
+                  r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+                elseif (form=='sphere') then
+                  r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+                else
+                  call fatal_error('find_solid_cell_boundaries','No such form!')
+                endif
+                dr=r_point-r_obj
+                if ((dr >= 0) .and. (dr<limit_close_linear*dxmin)) then
+                  ba(i,j,k,1)=10
+                  ba(i,j,k,4)=iobj
+                endif
+              enddo
             enddo
           enddo
         endif
@@ -1596,42 +1729,102 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  we are actually inside object (then ba = 11), not how close we are to 
 !  the border.
 !
+! Lower and upper ghost points in z direction
+!
+        do i=1,mx
+        do j=1,my
+        do k=1,nghost
+          if (form=='cylinder') then 
+            ba(i,j,k,1:3)=11
+            ba(i,j,k,4)=iobj
+            ba(i,j,mz-nghost+k,1:3)=11
+            ba(i,j,mz-nghost+k,4)=iobj
+          elseif (form=='sphere') then
+            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+            !  Lower (left) ghost points
+            if (r_point < r_obj) then
+              ba(i,j,k,1:3)=11
+              ba(i,j,k,4)=iobj
+            endif
+            !  Upper (right) ghost points
+            if (r_point < r_obj) then
+              ba(i,j,mz-nghost+k,1:3)=11
+              ba(i,j,mz-nghost+k,4)=iobj
+            endif
+          else
+            call fatal_error('find_solid_cell_boundaries','No such form!')
+          endif
+        enddo
+        enddo
+        enddo
+!
 !  Lower and upper ghost points in y direction
 !
         do j=1,nghost
-          do i=1,mx
+        do k=1,mz
+        do i=1,mx
             !  Lower ghost points
-            r_point=sqrt((((x(i)-x_obj)**2+(y(j)-y_obj)**2)))
+            if (form=='cylinder') then 
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+            elseif (form=='sphere') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+            else
+              call fatal_error('find_solid_cell_boundaries','No such form!')
+            endif
             if (r_point < r_obj) then
-              ba(i,j,:,1:3)=11
-              ba(i,j,:,4)=iobj
+              ba(i,j,k,1:3)=11
+              ba(i,j,k,4)=iobj
             endif
             !  Upper ghost points
-            r_point=sqrt((((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2)))
-            if (r_point < r_obj) then
-              ba(i,my-nghost+j,:,1:3)=11
-              ba(i,my-nghost+j,:,4)=iobj
+            if (form=='cylinder') then 
+              r_point=sqrt((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2)
+            elseif (form=='sphere') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(my-nghost+j)-y_obj)**2&
+                  +(z(k)-z_obj)**2)
+            else
+              call fatal_error('find_solid_cell_boundaries','No such form!')
             endif
-          enddo
+            if (r_point < r_obj) then
+              ba(i,my-nghost+j,k,1:3)=11
+              ba(i,my-nghost+j,k,4)=iobj
+            endif
+        enddo
+        enddo
         enddo
 !
 ! Lower and upper ghost points in x direction
 !
-        do j=m1,m2
-          do i=1,nghost
-            !  Lower (left) ghost points
-            r_point=sqrt((((x(i)-x_obj)**2+(y(j)-y_obj)**2)))
-            if (r_point < r_obj) then
-              ba(i,j,:,1:3)=11
-              ba(i,j,:,4)=iobj
-            endif
-            !  Upper (right) ghost points
-            r_point=sqrt((((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2)))
-            if (r_point < r_obj) then
-              ba(mx-nghost+i,j,:,1:3)=11
-              ba(mx-nghost+i,j,:,4)=iobj
-            endif
-          enddo
+        do k=1,mz
+        do j=1,my
+        do i=1,nghost
+          !  Lower (left) ghost points
+          if (form=='cylinder') then 
+            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+          elseif (form=='sphere') then
+            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+          else
+            call fatal_error('find_solid_cell_boundaries','No such form!')
+          endif
+          if (r_point < r_obj) then
+            ba(i,j,k,1:3)=11
+            ba(i,j,k,4)=iobj
+          endif
+          !  Upper (right) ghost points
+          if (form=='cylinder') then 
+            r_point=sqrt((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2)
+          elseif (form=='sphere') then
+            r_point=sqrt((x(mx-nghost+i)-x_obj)**2+(y(j)-y_obj)**2&
+                +(z(k)-z_obj)**2)
+          else
+            call fatal_error('find_solid_cell_boundaries','No such form!')
+          endif
+
+          if (r_point < r_obj) then
+            ba(mx-nghost+i,j,k,1:3)=11
+            ba(mx-nghost+i,j,k,4)=iobj
+          endif
+        enddo
+        enddo
         enddo
 !
 ! Finalize loop over all objects
@@ -1717,7 +1910,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine find_closest_wall
 !***********************************************************************  
-    function ba_defined(i,j)
+    function ba_defined(i,j,k)
 !
 !  28-nov-2008/nils: coded
 !
@@ -1725,11 +1918,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  This is only interesting if interpolation_method=='staircase',
 !  otherwise this function always return .false.
 !
-      integer :: i,j,k
+      integer, intent(in) :: i,j,k
       logical :: lba1=.true.,lba2=.true.
       logical :: ba_defined
-!
-      k=3
 !
       if (interpolation_method=='staircase') then
         if (ba(i,j,k,1)==0 .or. ba(i,j,k,1)==9) then
