@@ -53,7 +53,7 @@ module Special
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
-       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp &
+       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp, &
        iheattype,dt_gran,cool_type
 !
     integer :: idiag_dtnewt=0
@@ -62,6 +62,11 @@ module Special
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+!
+    real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+    real, target, dimension (nx,nz) :: rtv_xz
+    real, target, dimension (ny,nz) :: rtv_yz
+!
 !
     TYPE point
       real, dimension(2) :: pos
@@ -724,8 +729,22 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+      case ('rtv')
+        slices%yz =>rtv_yz
+        slices%xz =>rtv_xz
+        slices%xy =>rtv_xy
+        slices%xy2=>rtv_xy2
+        if (lwrite_slice_xy3) slices%xy3=>rtv_xy3
+        if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
+        slices%ready=.true.
+!
+      endselect
+!
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
 !***********************************************************************
@@ -1379,8 +1398,16 @@ module Special
       rtv_cool=rtv_cool &
           *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
 !
-!     add to temperature equation
+! slices
+      rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
+      if (m==iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
+      if (n==iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
+      if (n==iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
+      if (n==iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
+      if (n==iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
 !
+!     add to temperature equation
+!      
       if (ltemperature) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       else
@@ -2060,7 +2087,7 @@ module Special
       logical :: lstop=.false.
 !
       call resetarr
-      if (B_avoid/=0) call fill_B_avoidarr
+      if (Bavoid/=0) call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
         call rdpoints(level)
