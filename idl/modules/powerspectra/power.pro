@@ -1,7 +1,9 @@
-PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
-          spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
+PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
+          spec1=spec1,spec2=spec2,scal2=scal2,scal3=scal3, $
+          i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
-          compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir
+          compensate1=compensate1,compensate2=compensate2, $
+          compensate3=compensate3,datatopdir=datatopdir
 ;
 ;  $Id$
 ;
@@ -20,11 +22,13 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
 ;
 ;  v1    : First variable to be plotted (Ex: 'u')
 ;  v2    : Second variable to be plotted (Ex: 'b') 
+;  v3    : Third variable to be plotted (Ex: 'cc') 
 ;  all   : Plot all snapshots if /all is set, otherwise only last snapshot
 ;  wait  : Time to wait between each snapshot (if /all is set) 
 ;  k     : Returns the wavenumber vector
 ;  spec1 : Returns all the spectral snapshots of the first variable 
 ;  spec2 : Returns all the spectral snapshots of the second variable 
+;  scal2 : Scaling factor for the second spectrum
 ;  i     : The index of the last time is i-2
 ;  tt    : Returns the times for the different snapshots (vector)
 ;  noplot: Do not plot if set
@@ -45,11 +49,14 @@ default,last,1
 default,w,0.1
 default,tmin,0
 default,tmax,1e34
+default,scal2,1.
+default,scal3,1.
 default,tot,0
 default,lin,0
 default,dir,''
 default,compensate1,0
 default,compensate2,compensate1
+default,compensate3,compensate1
 default,compensate,compensate1
 default,datatopdir,'data'
 ;
@@ -63,11 +70,23 @@ if  keyword_set(wait) then begin
 end
 if  keyword_set(v1) then begin
     file1='power'+v1+'.dat'
+;
+;  second spectrum
+;
     if  keyword_set(v2) then begin
         file2='power'+v2+'.dat'
     end else begin
         file2=''
     end
+;
+;  third spectrum
+;
+    if  keyword_set(v3) then begin
+        file3='power'+v3+'.dat'
+    end else begin
+        file3=''
+    end
+;
 end else begin
     if  keyword_set(v2) then begin
         print,'In order to set v2 you must also set v1!'
@@ -160,6 +179,15 @@ if (file2 ne '') then begin
   spec2=fltarr(imax,i-1)
 endif
 ;
+;  Opening file 3 if it is defined
+;
+if (file3 ne '') then begin
+  close,3
+  spectrum3=fltarr(imax)
+  openr,3,datatopdir+'/'+file3
+  spec3=fltarr(imax,i-1)
+endif
+;
 ;  Plotting the results for last time frame
 ;
 !x.title='!8k!3'
@@ -193,12 +221,25 @@ openr,1, datatopdir+'/'+file1
        	spec1(*,i-1)=spectrum1
        	maxy=max(spectrum1(1:*))
        	miny=min(spectrum1(1:*))
+        ;
+        ;  read second spectrum
+        ;
        	if (file2 ne '') then begin
 	  readf,2,time
 	  readf,2,spectrum2
           spec2(*,i-1)=spectrum2
           if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
           if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
+       	endif
+        ;
+        ;  read third spectrum
+        ;
+       	if (file3 ne '') then begin
+	  readf,3,time
+	  readf,3,spectrum3
+          spec3(*,i-1)=spectrum3
+          if (max(spectrum3(1:*)) gt maxy) then maxy=max(spectrum3(1:*))
+          if (min(spectrum3(1:*)) lt miny) then miny=min(spectrum3(1:*))
        	endif
         ;
         ;  normalize?
@@ -216,22 +257,36 @@ openr,1, datatopdir+'/'+file1
 	      !p.title='t='+str(time)
               if iplot eq 1 then begin
 		plot_oo,k,spectrum1*k^compensate1,back=255,col=0,yr=yrange
+                ;
+                ;  second spectrum
+                ;
          	if (file2 ne '') then begin
                   ;
 		  ; possibility of special settings for helicity plotting
 		  ; of second variable
                   ;
                   if keyword_set(helicity2) then begin
-		    oplot,k,.5*abs(spectrum2)*k^compensate2,col=122
-		    oplot,k,+.5*spectrum2*k^compensate2,col=122,ps=6
-		    oplot,k,-.5*spectrum2*k^compensate2,col=55,ps=6
+		    oplot,k,.5*scal2*abs(spectrum2)*k^compensate2,col=122
+		    oplot,k,+.5*scal2*spectrum2*k^compensate2,col=122,ps=6
+		    oplot,k,-.5*scal2*spectrum2*k^compensate2,col=55,ps=6
                   endif else begin
-		    oplot,k,abs(spectrum2)*k^compensate2,col=122
+		    oplot,k,scal2*abs(spectrum2)*k^compensate2,col=122
                   endelse
 		  if (tot eq 1) then begin
 		    oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
 		  endif
 		endif
+                ;
+                ;  third spectrum
+                ;
+         	if (file3 ne '') then begin
+                  ;
+		  ; possibility of special settings for helicity plotting
+		  ; of second variable
+                  ;
+		  oplot,k,scal3*abs(spectrum3)*k^compensate3,col=55
+		endif
+                ;
 	        if (lin ne 0) then begin
 		  fac=spectrum1(2)/k(2)^(lin)*1.5
 		  oplot,k(2:*),k(2:*)^(lin)*fac,lin=2,col=0
@@ -283,8 +338,3 @@ close,2
 !x.range=''
 !y.range=''
 END
-
-
-
-
-
