@@ -43,6 +43,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
 ;
+default,file3,''
 default,var1,'u'
 default,var2,'b'
 default,last,1
