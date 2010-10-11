@@ -374,7 +374,8 @@ module Interstellar
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      lTT_cutoff, TT_cutoff, N_mass, addrate
+      lTT_cutoff, TT_cutoff, N_mass, addrate, T0hs, rho0ts
+
 !
   contains
 !
@@ -684,7 +685,7 @@ module Interstellar
         coolB =     (/  2.12,        &
                         1.0,         &
                         0.56,        &
-                        3.67,        &
+                        3.21,        &
                        -0.20,        &
                        -3.0,         &
                        -0.22,        &
