@@ -726,8 +726,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer :: i,j,k,idir,xind,yind,zind,iobj
       
       real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
-      real :: xmirror, ymirror, phi, dr
-      integer :: lower_i, upper_i, lower_j, upper_j, ii, jj
+      real :: xmirror, ymirror, zmirror, phi, dr, cos_phi, sin_phi
+      integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
+      integer :: lower_k, upper_k
       logical :: bax, bay, baz
       real :: gpp
       real, dimension(3) :: xxp
@@ -763,22 +764,36 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             form=objects(iobj)%form
             if (form=='cylinder') then
               r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+              r_new=r_obj+(r_obj-r_point)
+              sin_theta=(y(j)-y_obj)/r_point
+              cos_theta=(x(i)-x_obj)/r_point
+              xmirror=cos_theta*r_new+x_obj
+              ymirror=sin_theta*r_new+y_obj 
+              zmirror=0.
             elseif (form=='sphere') then
-              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+              r_new=r_obj+(r_obj-r_point)
+              sin_theta=(y(j)-y_obj)/r_point
+              cos_theta=(x(i)-x_obj)/r_point
+              cos_phi  =(z(k)-z_obj)/r_point
+              sin_phi  =sqrt(1-cos_phi**2)
+              xmirror=sin_phi*cos_theta*r_new+x_obj
+              ymirror=sin_phi*sin_theta*r_new+y_obj            
+              zmirror=cos_phi*r_new+z_obj
             endif
-            r_new=r_obj+(r_obj-r_point)
-            sin_theta=(y(j)-y_obj)/r_point
-            cos_theta=(x(i)-x_obj)/r_point
-            xmirror=cos_theta*r_new+x_obj
-            ymirror=sin_theta*r_new+y_obj
 !
 !  Check that we are indeed inside the solid geometry
 !
             if (r_point>r_obj) then
+              print*,'i,j,k=',i,j,k
+              print*,'x(i),x_obj=',x(i),x_obj
+              print*,'y(j),y_obj=',y(j),y_obj
+              print*,'z(k),z_obj=',z(k),z_obj
+              print*,'r_point,r_new,r_obj=',r_point,r_new,r_obj
               call fatal_error('update_solid_cells:','r_point>r_obj')
             endif
 !
-!  Find i and j indeces for points to be used during interpolation 
+!  Find i, j and k indeces for points to be used during interpolation 
 !
             lower_i=0
             upper_i=0
@@ -800,6 +815,21 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               endif
             enddo
 !
+            if (form=='sphere') then
+              lower_k=0
+              upper_k=0
+              do kk=1,mz
+                if (z(kk)>zmirror) then
+                  lower_k=kk-1
+                  upper_k=kk
+                  exit
+                endif
+              enddo
+            else
+              lower_k=k
+              upper_k=k
+            endif
+!
 !  Issue with domain borders: A mirror point can be outside a
 !  processor's local domain (including ghost points). Some sort
 !  communication has to be implemented!
@@ -810,28 +840,36 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (lower_j == 0 .or. upper_j == 0) then
               call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
             endif            
+            if (form=='sphere') then
+              if (lower_k == 0 .or. upper_k == 0) then
+                call fatal_error('update_solid_cells:','lower_k==0 or upper_k==0')
+              endif
+            endif
 !
 !  First we use interpolations to find the value of the mirror point.
 !  Then we use the interpolated value to find the value of the ghost point
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
-            call interpolate_mirror_point(f,phi,iux,k,lower_i,upper_i,lower_j,&
-                upper_j,iobj,xmirror,ymirror)
+
+! NILSS: Below this point the code has not been updated to work with spheres
+
+            call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
             f(i,j,k,iux)=-phi
-            call interpolate_mirror_point(f,phi,iuy,k,lower_i,upper_i,lower_j,&
-                upper_j,iobj,xmirror,ymirror)
+            call interpolate_mirror_point(f,phi,iuy,lower_i,upper_i,lower_j,&
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
             f(i,j,k,iuy)=-phi
-            call interpolate_mirror_point(f,phi,iuz,k,lower_i,upper_i,lower_j,&
-                upper_j,iobj,xmirror,ymirror)
+            call interpolate_mirror_point(f,phi,iuz,lower_i,upper_i,lower_j,&
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
             f(i,j,k,iuz)=-phi
             if (ilnrho>0) then
-              call interpolate_mirror_point(f,phi,ilnrho,k,lower_i,upper_i,&
-                  lower_j,upper_j,iobj,xmirror,ymirror)
+              call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
+                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
               f(i,j,k,ilnrho)=phi
             endif
             if (ilnTT>0) then
-              call interpolate_mirror_point(f,phi,ilnTT,k,lower_i,upper_i,&
-                  lower_j,upper_j,iobj,xmirror,ymirror)
+              call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
+                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
               f(i,j,k,ilnTT)=2*objects(iobj)%T-phi
             endif
           else
@@ -907,41 +945,61 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine update_solid_cells
 !***********************************************************************  
-    subroutine interpolate_mirror_point(f,phi,ivar,k,lower_i,upper_i,lower_j,upper_j,icyl,xmirror,ymirror)
+    subroutine interpolate_mirror_point(f,phi,ivar,lower_i,upper_i,lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
 !
-!  Interpolate value in a mirror point from the four corner values
+!  Interpolate value in a mirror point from the eight corner values
 !
 !  23-dec-2008/nils: coded
 !  22-apr-2009/nils: added special treatment close to the solid surface
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: icyl
-      integer :: lower_i,upper_i,lower_j,upper_j,k,ivar
-      real :: xmirror,ymirror,phi, hx1, hy1,hy2,hx2
+      integer, intent(in) :: iobj
+      integer, intent(in) :: lower_i,upper_i,lower_j,upper_j,ivar
+      integer, intent(in) :: lower_k,upper_k
+      real,    intent(in) :: xmirror,ymirror,zmirror
+      real,    intent(out):: phi
+!
+      real :: hx1, hy1,hy2,hx2,hz1,hz2
       real, dimension(3) :: xxp
 !
       hx1=xmirror-x(lower_i)
       hx2=x(upper_i)-xmirror
       hy1=ymirror-y(lower_j)
       hy2=y(upper_j)-ymirror
+      hz1=zmirror-z(lower_k)
+      hz2=z(upper_k)-zmirror
 !
-      phi=&
-          (f(lower_i,upper_j,k,ivar)*hx2*hy1 &
-          +f(upper_i,upper_j,k,ivar)*hx1*hy1 &
-          +f(lower_i,lower_j,k,ivar)*hx2*hy2 &
-          +f(upper_i,lower_j,k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
+      if (objects(iobj)%form=='cylinder') then
+        phi=&
+            (f(lower_i,upper_j,lower_k,ivar)*hx2*hy1 &
+            +f(upper_i,upper_j,lower_k,ivar)*hx1*hy1 &
+            +f(lower_i,lower_j,lower_k,ivar)*hx2*hy2 &
+            +f(upper_i,lower_j,lower_k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
+      elseif (objects(iobj)%form=='sphere') then
+        phi=&
+            (f(lower_i,upper_j,lower_k,ivar)*hx2*hy1*hz2 &
+            +f(upper_i,upper_j,lower_k,ivar)*hx1*hy1*hz2 &
+            +f(lower_i,lower_j,lower_k,ivar)*hx2*hy2*hz2 &
+            +f(upper_i,lower_j,lower_k,ivar)*hx1*hy2*hz2 &
+            +f(lower_i,upper_j,upper_k,ivar)*hx2*hy1*hz1 &
+            +f(upper_i,upper_j,upper_k,ivar)*hx1*hy1*hz1 &
+            +f(lower_i,lower_j,upper_k,ivar)*hx2*hy2*hz1 &
+            +f(upper_i,lower_j,upper_k,ivar)*hx1*hy2*hz1 &
+            )/((hx1+hx2)*(hy1+hy2)*(hz1+hz2))
+      endif      
 !
 !  If the mirror point is very close to the surface of the object 
 !  some special treatment is required.
 !
       if (lclose_interpolation .and. ivar < 4) then
-        xxp=(/xmirror,ymirror,0.0/)
-        call close_interpolation(f,lower_i,lower_j,k,icyl,ivar,xxp,phi,.false.)
+        xxp=(/xmirror,ymirror,zmirror/)
+        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
+            phi,.false.)
       endif
 !
     endsubroutine interpolate_mirror_point
 !***********************************************************************  
-    subroutine close_interpolation(f,ix0_,iy0_,iz0_,icyl,ivar1,xxp,gpp,&
+    subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,ivar1,xxp,gpp,&
         fluid_point)
 !
 !  20-mar-2009/nils: coded
@@ -979,8 +1037,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, dimension(3,2) :: borderindex
       integer, dimension(4) :: constdir_arr, vardir_arr, topbot_arr
       real, dimension(2) :: xyint, p_cylinder
-      real :: xtemp,r,xp,yp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
-      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,icyl,counter,topbot
+      real :: xtemp,r,xp,yp,zp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
+      integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,iobj,counter,topbot
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx
       logical, intent(in) :: fluid_point
       real :: fintx, finty,fint_ur,fint_ut,drp,dri,f2x,f2y,f1x,f1y
@@ -1002,12 +1060,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Define some help variables
 !
-        x0=objects(icyl)%x(1)
-        y0=objects(icyl)%x(2)
-        z0=objects(icyl)%x(3)
-        rs=objects(icyl)%r
+        x0=objects(iobj)%x(1)
+        y0=objects(iobj)%x(2)
+        z0=objects(iobj)%x(3)
+        rs=objects(iobj)%r
         xp=xxp(1)
         yp=xxp(2)
+        zp=xxp(3)
 !
 !  Find the corner points of the grid cell we are in
 !
@@ -1027,6 +1086,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           else
             iy0=iy0_
             yp=yp+smallx
+          endif
+          if (zp < z0) then
+            iz0=iz0_-1
+            zp=zp-smallx
+          else
+            iz0=iz0_
+            zp=zp+smallx
           endif
         else
           ix0=ix0_
@@ -1101,7 +1167,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  where the normal cross the grid line
 !
             xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))&
-                *(bordervalue(constdir,topbot_tmp)-objects(icyl)%x(constdir))
+                *(bordervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
 !
 !  Find the distance, r, from the center of the object
 !  to the point where the normal cross the grid line
@@ -1110,7 +1176,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               r=verylarge*2
             else
               r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)&
-                  -objects(icyl)%x(constdir))**2)
+                  -objects(iobj)%x(constdir))**2)
             endif
 !
 !  Check if the point xtemp is outside the object,
@@ -1118,8 +1184,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  line within this grid cell
 !
             if ((r > rs) .and. (r > rp) &
-                .and.(xtemp+objects(icyl)%x(vardir) >= bordervalue(vardir,1))&
-                .and.(xtemp+objects(icyl)%x(vardir) <= bordervalue(vardir,2)))then
+                .and.(xtemp+objects(iobj)%x(vardir) >= bordervalue(vardir,1))&
+                .and.(xtemp+objects(iobj)%x(vardir) <= bordervalue(vardir,2)))then
               R1=r
             else
               R1=verylarge
@@ -1129,7 +1195,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
             if (R1 < Rsmall) then
               Rsmall=R1                
-              xyint(vardir)=xtemp+objects(icyl)%x(vardir)
+              xyint(vardir)=xtemp+objects(iobj)%x(vardir)
               xyint(constdir)=bordervalue(constdir,topbot_tmp)
               dirconst=constdir
               dirvar=vardir
@@ -1142,7 +1208,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 rij_max=rij(topbot_tmp,2)
               endif
               inputvalue=bordervalue(constdir,topbot_tmp)&
-                  -objects(icyl)%x(constdir)
+                  -objects(iobj)%x(constdir)
             endif
           enddo
 !
@@ -1183,7 +1249,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
            endif
            call find_point(rij_min,rs,varval,inputvalue,x1,&
                bordervalue(dirvar,1),bordervalue(dirvar,2),&
-               min,f1,objects(icyl)%x(dirvar))
+               min,f1,objects(iobj)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to 
@@ -1199,7 +1265,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
              endif
              call find_point(rij_min,rs,varval,inputvalue,x1,&
                  bordervalue(dirvar,1),bordervalue(dirvar,2),&
-                 min,f1y,objects(icyl)%x(dirvar))
+                 min,f1y,objects(iobj)%x(dirvar))
              f1x=f1
            endif
 !
@@ -1213,7 +1279,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
            endif
            call find_point(rij_max,rs,varval,inputvalue,x2,&
                bordervalue(dirvar,1),bordervalue(dirvar,2),&
-               min,f2,objects(icyl)%x(dirvar))
+               min,f2,objects(iobj)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to 
@@ -1229,7 +1295,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
              endif
              call find_point(rij_max,rs,varval,inputvalue,x2,&
                  bordervalue(dirvar,1),bordervalue(dirvar,2),&
-                 min,f2y,objects(icyl)%x(dirvar))
+                 min,f2y,objects(iobj)%x(dirvar))
              f2x=f2
            endif
 !
@@ -1286,13 +1352,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       logical :: in_solid_cell
       real, dimension(3) :: cyl_pos, part_pos
       real :: cyl_rad,distance2,part_rad,rad_part
-      integer :: icyl, i
+      integer :: iobj, i
 !
       in_solid_cell=.false.
 !
-      do icyl=1,ncylinders
-        cyl_rad=objects(icyl)%r
-        cyl_pos=objects(icyl)%x(1:3)
+      do iobj=1,ncylinders
+        cyl_rad=objects(iobj)%r
+        cyl_pos=objects(iobj)%x(1:3)
         distance2=0
 !
 !  Loop only over x and y direction since this is a cylindrical geometry
@@ -1418,7 +1484,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  19-nov-2008/nils: coded
 !
       integer :: i,j,k,iobj,cw
-      real :: x2,y2,z2,xval_p,xval_m,yval_p,yval_m
+      real :: x2,y2,z2,xval_p,xval_m,yval_p,yval_m, zval_p,zval_m
       real :: dr,r_point,x_obj,y_obj,z_obj,r_obj
       character(len=10) :: form
 !
@@ -1460,7 +1526,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find upper and lower x-values for the surface of the object for y(j) and z(k)
 !
             xval_p=objects(iobj)%x(1)+sqrt(x2)
-            xval_m=objects(iobj)%x(1)-sqrt(x2)            
+            xval_m=objects(iobj)%x(1)-sqrt(x2)
             do i=l1,l2
               if (x(i)<xval_p .and. x(i)>xval_m) then
                 !
@@ -1551,7 +1617,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             y2&
                 =objects(iobj)%r**2&
                 -(x(i)-objects(iobj)%x(1))**2&
-                -(z(j)-objects(iobj)%x(3))**2
+                -(z(k)-objects(iobj)%x(3))**2
           else
             call fatal_error('find_solid_cell_boundaries','No such form!')
           endif
@@ -1656,12 +1722,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find upper and lower x-values for the surface of the object for y(j) and z(k)
 !
-            xval_p=objects(iobj)%x(3)+sqrt(z2)
-            xval_m=objects(iobj)%x(3)-sqrt(z2)            
+            zval_p=objects(iobj)%x(3)+sqrt(z2)
+            zval_m=objects(iobj)%x(3)-sqrt(z2)            
             do k=n1,n2
-              if (z(k)<xval_p .and. z(k)>xval_m) then
+              if (z(k)<zval_p .and. z(k)>zval_m) then
                 !
-                if (z(k+1)>xval_p) then
+                if (z(k+1)>zval_p) then
                   if (.not. ba_defined(i,j,k)) then
                     ba(i,j,k,1)=-1
                     ba(i,j,k,4)=iobj
@@ -1671,7 +1737,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   endif
                 endif
                 !
-                if (z(k+2)>xval_p .and. z(k+1)<xval_p) then
+                if (z(k+2)>zval_p .and. z(k+1)<zval_p) then
                   if (.not. ba_defined(i,j,k)) then
                     ba(i,j,k,1)=-2
                     ba(i,j,k,4)=iobj
@@ -1681,7 +1747,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   endif
                 endif
                 !
-                if (z(k+3)>xval_p .and. z(k+2)<xval_p) then
+                if (z(k+3)>zval_p .and. z(k+2)<zval_p) then
                   if (.not. ba_defined(i,j,k)) then
                     ba(i,j,k,1)=-3
                     ba(i,j,k,4)=iobj
@@ -1691,7 +1757,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   endif
                 endif
                 !
-                if (z(k-1)<xval_m) then
+                if (z(k-1)<zval_m) then
                   if (.not. ba_defined(i,j,k)) then
                     ba(i,j,k,1)=1
                     ba(i,j,k,4)=iobj
@@ -1701,7 +1767,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   endif
                 endif
                 !
-                if (z(k-2)<xval_m .and. z(k-1)>xval_m) then
+                if (z(k-2)<zval_m .and. z(k-1)>zval_m) then
                   if (.not. ba_defined(i,j,k)) then
                     ba(i,j,k,1)=2
                     ba(i,j,k,4)=iobj
@@ -1711,7 +1777,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   endif
                 endif
                 !
-                if (z(k-3)<xval_m .and. z(k-2)>xval_m) then
+                if (z(k-3)<zval_m .and. z(k-2)>zval_m) then
                   if (.not. ba_defined(i,j,k)) then
                     ba(i,j,k,1)=3
                     ba(i,j,k,4)=iobj
