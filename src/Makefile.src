@@ -1728,15 +1728,15 @@ run.x: run.o
 #
 combine_videofiles.o: cparam.o cdata.o general.o
 combine_videofiles.x: combine_videofiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) combine_videofiles.o cparam.o cdata.o general.o $(LD_MPI) -o combine_videofiles.x
+	$(LD) $(LDFLAGS) combine_videofiles.o cparam.o cdata.o general.o messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o combine_videofiles.x
 # 
 read_videofiles.o: cparam.o cdata.o general.o
 read_videofiles.x: read_videofiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) read_videofiles.o cparam.o cdata.o general.o $(LD_MPI) -o read_videofiles.x
+	$(LD) $(LDFLAGS) read_videofiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_videofiles.x
 # 
 read_vectorfiles.o: cparam.o cdata.o general.o
 read_vectorfiles.x: read_vectorfiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o $(LD_MPI) -o read_vectorfiles.x
+	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_vectorfiles.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
