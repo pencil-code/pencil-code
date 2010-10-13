@@ -46,10 +46,12 @@ module InitialCondition
      integer :: index_H2O=3
      real :: dYw=1., init_water1=0., init_water2=0.
      real :: init_x1=-0.2,init_x2=0.2
+     logical :: lreinit_water=.false.
 
 !
     namelist /initial_condition_pars/ &
-     init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2
+     init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
+     lreinit_water
 !
   contains
 !***********************************************************************
@@ -84,7 +86,6 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i
-      real :: init_uy=5.
 !
         if (init_ux /=0.) then
 !        do i=1,mx
@@ -349,10 +350,7 @@ module InitialCondition
 !
       close(file_id)
 
-!
-!  Testing for the atmospheric case
-!
-!       if (lreinit_water) then
+       if (lreinit_water) then
 !       if ((index_H2O>0) .and. (ldustdensity)) then
 !         if (linit_temperature) then
            psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
@@ -402,6 +400,7 @@ module InitialCondition
          if (lroot) print*, 'New Air density, g/cm^3:'
          if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
          if (lroot) print*, 'New Air mean weight, g/mol', air_mass
+       endif
 !
     endsubroutine air_field_local
 !***********************************************************************

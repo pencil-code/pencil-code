@@ -69,25 +69,21 @@ module Special
   integer :: ind_water=0!, ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
-  real :: TT2=0., TT1=0., dYw=1.
+  real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   integer :: ind_H2O=0, ind_N2
+  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false.
   
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
-      TT2,TT1,ind_H2O, ind_N2,dYw
+      TT2,TT1,ind_H2O, ind_N2,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma,dYw
-!!
-!! Declare any index variables necessary for main or
-!!
-!!   integer :: iSPECIAL_VARIABLE_INDEX=0
 !
-!! other variables (needs to be consistent with reset list below)
 !
   integer :: idiag_dtcrad=0
   integer :: idiag_dtchi=0
@@ -178,7 +174,10 @@ module Special
       !    ind_cloud=k
       !  endif
         if (trim(varname(ichemspec(k)))=='H2O') then
-          ind_water=k
+          ind_H2O=k
+        endif
+        if (trim(varname(ichemspec(k)))=='N2') then
+          ind_N2=k
         endif
 !        
       enddo
@@ -191,7 +190,8 @@ module Special
         endif
 !
    !   print*,'cloud index', ind_cloud
-      print*,'water index', ind_water
+      print*,'water index', ind_H2O
+      print*,'N2 index', ind_N2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -455,24 +455,6 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!
-!   06-oct-03/tony: coded
-!
-      use Cdata
-
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-
-! Keep compiler quiet by ensuring every parameter is used
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-
-    endsubroutine special_calc_magnetic
-!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
       use Cdata
@@ -499,6 +481,7 @@ module Special
          ll1=l1
          ll2=l2
 
+        if (lbuffer_zone_T) then
         do j=1,2
 
          if (j==1) then
@@ -511,8 +494,8 @@ module Special
             lzone=.true.
            endif
            if (lzone .and. lzone_right) then
-             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-              -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+!             df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
+!              -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
            endif
          elseif (j==2) then
            lzone=.false.
@@ -533,6 +516,7 @@ module Special
 !
 !
         enddo
+        endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
@@ -559,6 +543,7 @@ module Special
          lzone_left=.false.
          lzone_right=.false.
 !
+        if (lbuffer_zone_chem) then
         do j=1,2
          if (ind_H2O>0) lzone=.true.
          if ((j==1) .and. (x(l2)==xyz0(1)+Lxyz(1))) then
@@ -582,22 +567,27 @@ module Special
          endif
 !
          if ((lzone .and. lzone_right)) then
-           df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
-                df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -p%ppsf(lll2,ind_H2O)/p%pp(lll2))*dt1
+!           df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
+!                df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+!               -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
+!               -p%ppsf(lll2,ind_H2O)/p%pp(lll2))*dt1
    
 !           df(ll1:ll2,m,n,ichemspec(ind_N2))=  &
 !                df(ll1:ll2,m,n,ichemspec(ind_N2)) &
 !               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
+!            df(ll1:ll2,m,n,iux)=  &
+!                df(ll1:ll2,m,n,iux) &
+!               +(f(ll1:ll2,m,n,iux) -2.)*dt1/4.
          endif
         if ((lzone .and. lzone_left)) then
           if (dYw==1) then
            df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
                 df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
                -(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
-               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2)*dYw)*dt1
+!               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1)*dYw)*dt1
+               -p%ppsf(lll1:lll2,ind_H2O)/pp_init)*dt1
+
           else
            df(ll1:ll2,m,n,ichemspec(ind_H2O))=  &
                 df(ll1:ll2,m,n,ichemspec(ind_H2O)) &
@@ -609,16 +599,12 @@ module Special
 !               +(f(ll1:ll2,m,n,ichemspec(ind_H2O)) &
 !               -p%ppsf(lll1:lll2,ind_H2O)/p%pp(lll1:lll2))*dt1
 
-!                  df(ll1:ll2,m,n,iuy)=  &
-!                df(ll1:ll2,m,n,iuy) &
-!               +(f(ll1:ll2,m,n,iuy) -0.)*dt1/4.
+          
 
          endif
-
-
-
 !
         enddo
+        endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
       call keep_compiler_quiet(df)
@@ -674,6 +660,12 @@ module Special
              call bc_aerosol_y(f,bc)
            case (iBC_Y_BOT)
              call bc_aerosol_y(f,bc)
+         endselect
+         bc%done=.true.
+         case ('sat')
+         select case (bc%location)
+           case (iBC_X_BOT)
+             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -785,7 +777,7 @@ module Special
         do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
 
       else
-        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+        print*, "bc_cos_ux: ", bc%location, " should be `top(", &
                         iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
       endif
 !
@@ -821,7 +813,7 @@ module Special
         f(l1:l2,m2,n1:n2,vr) = value2*u_profile(l1:l2,n1:n2)
         do i=1,nghost; f(:,m2+i,:,vr)=2*f(:,m2,:,vr)-f(:,m2-i,:,vr); enddo
       else
-        print*, "bc_BL_y: ", bc%location, " should be `top(", &
+        print*, "bc_cos_uy: ", bc%location, " should be `top(", &
                         iBC_Y_TOP,")' or `bot(",iBC_Y_BOT,")'"
       endif
 !
@@ -966,6 +958,51 @@ module Special
       endif
 !
     endsubroutine bc_aerosol_y
+!********************************************************************
+subroutine bc_satur_x(f,bc)
+!
+! Natalia
+!
+    use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (boundary_condition) :: bc
+      real, dimension (mx,my,mz) :: sum_Y
+      integer :: i,j,vr,k
+      integer :: jjj,kkk
+      real :: value1, value2, pp_sat
+!
+      vr=bc%ivar
+      value1=bc%value1
+      value2=bc%value2
+!
+      if (bc%location==iBC_X_BOT) then
+! bottom boundary
+        if (vr==ilnTT) then 
+          f(l1,m1:m2,n1:n2,ilnTT)=alog(TT1)
+        endif
+        if (vr==ichemspec(ind_H2O)) then 
+         pp_sat=6.035e12*exp(-5938./TT1)
+         f(l1,m1:m2,n1:n2,ichemspec(ind_H2O))=pp_sat/pp_init
+        endif
+!
+        if (vr==ichemspec(ind_N2)) then 
+          do k=1,nchemspec
+           if (ichemspec(k)/=ind_N2) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+          enddo
+           f(:,:,:,ind_N2)=1.-sum_Y
+        endif
+!
+        do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+      elseif (bc%location==iBC_X_TOP) then
+! top boundary
+
+      else
+        print*, "bc_satur_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_satur_x
 !********************************************************************
     subroutine special_before_boundary(f)
 !

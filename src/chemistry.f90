@@ -4610,9 +4610,11 @@ module Chemistry
           f(i,:,:,ilnTT)=log(init_TT2)
         endif
         if (x(i)>init_x1 .and. x(i)<init_x2) then
-          f(i,:,:,ilnTT)=&
-             log((x(i)-init_x1)/(init_x2-init_x1) &
-             *(init_TT2-init_TT1)+init_TT1)
+          if (init_x1 /= init_x2) then
+            f(i,:,:,ilnTT)=&
+               log((x(i)-init_x1)/(init_x2-init_x1) &
+               *(init_TT2-init_TT1)+init_TT1)
+          endif
         endif
         enddo
       endif
