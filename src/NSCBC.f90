@@ -498,7 +498,8 @@ include 'NSCBC.h'
 !  In addition also speed of sound, gamma and mu1 is found.
 !
       call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t,llinlet)
+          grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t,llinlet,&
+          imin,imax,jmin,jmax)
 !
 !  Define some prefactors to be used later
 !
@@ -1061,8 +1062,9 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_z
 !***********************************************************************
-      subroutine get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
-          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t,llinlet)
+      subroutine get_thermodynamics(mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,nu,&
+          grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t,llinlet,&
+          imin,imax,jmin,jmax)
 !
 !  Find thermodynamical quantities, including density and temperature
 !
@@ -1070,10 +1072,10 @@ include 'NSCBC.h'
 !
         Use Chemistry
         use Viscosity
-        use EquationOfState, only: cs0, cs20
+        use EquationOfState, only: cs0, cs20, eoscalc, irho_TT, gamma
 !
-        integer, intent(in) :: direction, sgn,lll
-        real, dimension(:,:), intent(out)  :: mu1,cs2,cs,gamma, grad_mu1
+        integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax
+        real, dimension(:,:), intent(out)  :: mu1,cs2,cs,gamma_, grad_mu1
         real, dimension(:,:), intent(out)  :: rho0,TT,P0
         real, dimension(:,:,:), intent(inout)  :: grad_rho,grad_T,grad_P
         real, dimension(:,:,:), intent(in) :: fslice
@@ -1081,7 +1083,7 @@ include 'NSCBC.h'
         real, intent(inout) :: T_t
         logical :: llinlet
 !
-        integer :: i
+        integer :: i,ii,jj
 !
 !  Find density
 !
@@ -1107,10 +1109,14 @@ include 'NSCBC.h'
 !  Find mu1, grad_mu1 and gamma
 !
         if (ilnTT>0 .or. iTT>0) then
-          call get_mu1_slice(mu1,grad_mu1,lll,sgn,direction)
-          call get_gamma_slice(gamma,direction,lll)
+          if (leos_chemistry) then
+            call get_mu1_slice(mu1,grad_mu1,lll,sgn,direction)
+            call get_gamma_slice(gamma_,direction,lll)
+          else
+            gamma_=gamma
+          endif
         else
-          gamma=1.
+          gamma_=1.
         endif
 !
 !  Set arrays for the speed of sound and for the speed of sound squared (is it
@@ -1118,8 +1124,18 @@ include 'NSCBC.h'
 !  Set prefactors to be used later.
 !
       if (leos_idealgas) then
-        cs2=cs20
-        cs=cs0
+        if (ilnTT>0 .or. iTT>0) then
+          do ii=1,imax-imin+1
+            do jj=1,jmax-jmin+1
+              call eoscalc(irho_TT,rho0(ii,jj),TT(ii,jj),pp=P0(ii,jj),&
+                  cs2=cs2(ii,jj))
+            enddo
+          enddo
+          cs=sqrt(cs2)
+        else
+          cs2=cs20
+          cs=cs0
+        endif
       elseif (leos_chemistry) then
         call get_cs2_slice(cs2,direction,lll)
         cs=sqrt(cs2)
@@ -1155,8 +1171,7 @@ include 'NSCBC.h'
                 +Rgas*grad_mu1*TT*rho0
             P0=rho0*Rgas*mu1*TT
           else
-            call fatal_error('get_thermodynamics',&
-                'Temperature without chemistry does not yet work with NSCBC!')
+            grad_P(:,:,i)=cs2*(grad_rho(:,:,i)+grad_T(:,:,i)*rho0/TT)
           endif
         else
           grad_P(:,:,i)=grad_rho(:,:,i)*cs2
