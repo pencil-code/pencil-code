@@ -43,7 +43,7 @@ module EquationOfState
 ! integers specifying which independent variables to use in eoscalc
 ! (only relevant in ionization.f90)
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: ilnrho_TT=9, ipp_ss=11,ipp_cs2=12
+  integer, parameter :: ilnrho_TT=9, irho_TT=10, ipp_ss=11,ipp_cs2=12
 
   ! Constants use in calculation of thermodynamic quantities
   real :: lnTTss,lnTTlnrho,lnTT0
