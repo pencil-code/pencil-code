@@ -2204,7 +2204,7 @@ module Density
       if (ldensity_nolog) then
         df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+p%rho*dlnrhodt
       else
-        df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+dlnrhodt
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+dlnrhodt
       endif
 !
 !  Change entropy to keep temperature constant.
