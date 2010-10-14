@@ -1329,9 +1329,6 @@ module Density
       if (ldiff_hyper3_mesh) lpenc_requested(i_rho1)=.true.
 !
       if (lmass_source) then
-         lpenc_requested(i_rhod)=.true.
-         lpenc_requested(i_uud)=.true.
- 
         if ((mass_source_profile=='bump').or.(mass_source_profile=='sph-step-down')) &
             lpenc_requested(i_r_mn)=.true.
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
