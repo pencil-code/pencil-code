@@ -32,7 +32,7 @@ module Solid_Cells
   real, dimension(max_items)    :: sphere_temp=703.0
   real, dimension(max_items)    :: sphere_xpos,sphere_ypos,sphere_zpos
   integer, dimension(mx,my,mz,4):: ba,ba_shift
-  real :: skin_depth=0, init_uu=0, ampl_noise=0, cylinder_skin=0
+  real :: skin_depth=0, init_uu=0, ampl_noise=0, object_skin=0
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=labellen) :: interpolation_method='staircase'
   logical :: lclose_interpolation=.false., lclose_linear=.false.
@@ -54,12 +54,12 @@ module Solid_Cells
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
        cylinder_ypos, cylinder_zpos, initsolid_cells, skin_depth, init_uu, &
-       ampl_noise,interpolation_method, nforcepoints,cylinder_skin,&
+       ampl_noise,interpolation_method, nforcepoints,object_skin,&
        lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
-       nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos
+       nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos,sphere_temp
 !
   namelist /solid_cells_run_pars/  &
-       interpolation_method,cylinder_skin,lclose_interpolation,lclose_linear,&
+       interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
        limit_close_linear,lnointerception
 !
 !  Diagnostic variables (need to be consistent with reset list below).
@@ -1032,13 +1032,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
       integer :: ix1,iy1,iz1,min
       real, dimension(3), intent(in) :: xxp
-      real, dimension(2,2) :: rij
+      real, dimension(2,2,2) :: rij
       real, dimension(3,2) :: bordervalue
       integer, dimension(3,2) :: borderindex
-      integer, dimension(4) :: constdir_arr, vardir_arr, topbot_arr
-      real, dimension(2) :: xyint, p_cylinder
-      real :: xtemp,r,xp,yp,zp,R1,Rsmall,xs,ys,rp,dist,yp_cylinder,xp_cylinder
+      integer, dimension(6) :: constdir_arr, vardir_arr, topbot_arr
+      real, dimension(3) :: xyint, p_object
+      real :: xtemp,r,xp,yp,zp,R1,Rsmall,xs,ys,zs,rp,dist,yp_object,xp_object
+      real :: zp_object
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,iobj,counter,topbot
+      integer :: maxcounter
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx
       logical, intent(in) :: fluid_point
       real :: fintx, finty,fint_ur,fint_ut,drp,dri,f2x,f2y,f1x,f1y
@@ -1105,10 +1107,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find distance from corner points to the object center
 !
-        rij(1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2)
-        rij(1,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2)
-        rij(2,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2)
-        rij(2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2) 
+        rij(1,1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2+(z(iz0)-z0)**2)
+        rij(1,2,1)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2+(z(iz0)-z0)**2)
+        rij(2,1,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2+(z(iz0)-z0)**2)
+        rij(2,2,1)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2+(z(iz0)-z0)**2) 
+        rij(1,1,2)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2+(z(iz1)-z0)**2)
+        rij(1,2,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2+(z(iz1)-z0)**2)
+        rij(2,1,2)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2+(z(iz1)-z0)**2)
+        rij(2,2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2+(z(iz1)-z0)**2) 
 !
 !  Check if we want special treatment
 !
@@ -1118,47 +1124,78 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           bordervalue(1,1)=x(ix0)
           bordervalue(2,1)=y(iy0)
+          bordervalue(3,1)=z(iz0)
           bordervalue(1,2)=x(ix1)
           bordervalue(2,2)=y(iy1)
+          bordervalue(3,2)=z(iz1)
           borderindex(1,1)=ix0
           borderindex(2,1)=iy0
+          borderindex(3,1)=iz0
           borderindex(1,2)=ix1
           borderindex(2,2)=iy1
-          constdir_arr=(/2,2,1,1/)
-          vardir_arr=(/1,1,2,2/)
-          topbot_arr=(/2,1,2,1/)
+          borderindex(3,2)=iz1
+          if (objects(iobj)%form=='cylinder') then
+            constdir_arr=(/2,2,1,1,0,0/)
+            vardir_arr  =(/1,1,2,2,0,0/)
+            topbot_arr  =(/2,1,2,1,0,0/)
+          elseif (objects(iobj)%form=='sphere') then
+            constdir_arr=(/3,3,2,2,1,1/)
+            vardir_arr  =(/1,1,1,1,3,3/)
+            topbot_arr  =(/2,1,2,1,2,1/)
+          endif
           R1=verylarge
           Rsmall=verylarge/2.0
 !
 !  Find the x and y coordinates of p in a coordiante system with origin
 !  in the center of the object
 !
-          yp_cylinder=yp-y0
-          xp_cylinder=xp-x0
-          p_cylinder(1)=xp_cylinder
-          p_cylinder(2)=yp_cylinder
-          rp=sqrt(xp_cylinder**2+yp_cylinder**2)
+          xp_object=xp-x0
+          yp_object=yp-y0
+          zp_object=zp-z0
+          p_object(1)=xp_object
+          p_object(2)=yp_object
+          p_object(3)=zp_object
+          if (objects(iobj)%form=='cylinder') then
+            rp=sqrt(xp_object**2+yp_object**2)
+          elseif (objects(iobj)%form=='sphere') then
+            rp=sqrt(xp_object**2+yp_object**2+zp_object**2)
+          endif
 !
 !  Determine the point s on the object surface where the normal to the
 !  object surface pass through the point p. 
 !
           xs=rs/rp*xp
           ys=rs/rp*yp
+          zs=rs/rp*zp
 !
 !  Find distance from point p to point s
 !
-          dist=(xp-xs)**2+(yp-ys)**2
+          if (objects(iobj)%form=='cylinder') then
+            dist=(xp-xs)**2+(yp-ys)**2
+          elseif (objects(iobj)%form=='sphere') then
+            dist=(xp-xs)**2+(yp-ys)**2+(zp-zs)**2
+          endif
+!
+!  From this on down this subroutine has not been adapted to work
+!  with anything else than cylinders - THIS SHOULD BE FIXED!!!!!!!
+!
+          if (objects(iobj)%form .ne. 'cylinder') then
+            call fatal_error('close_interpolation',&
+                'Close interpolation is not yet adapted to work with anything else than cylinders!')
+          endif
 !
 !  Find which grid line is the closest one in the direction
 !  away from the object surface
 !
-!  Check the distance etc. to all the four (in 2D) possible 
-!  grid lines. Pick the grid line which the normal to the
-!  object surface (which also pass through the point [xp,yp])
-!  cross first. This grid line should however
-!  be OUTSIDE the point [xp,yp] compared to the object surface.
+!  Check the distance to all the six (four in 2D) possible 
+!  surface lines. Pick the surface which the normal to the
+!  object surface (which also pass through the point [xp,yp,zp])
+!  cross first. This crossing point must
+!  be OUTSIDE the point [xp,yp,zp] compared to the object surface.
 !
-          do counter=1,4
+          maxcounter=6
+          if (objects(iobj)%form=='cylinder') maxcounter=4
+          do counter=1,maxcounter
             constdir=constdir_arr(counter)
             vardir=vardir_arr(counter)
             topbot_tmp=topbot_arr(counter)
@@ -1166,7 +1203,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find the position, xtemp, in the variable direction
 !  where the normal cross the grid line
 !
-            xtemp=(p_cylinder(vardir)/(p_cylinder(constdir)+tini))&
+            xtemp=(p_object(vardir)/(p_object(constdir)+tini))&
                 *(bordervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
 !
 !  Find the distance, r, from the center of the object
@@ -1180,7 +1217,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             endif
 !
 !  Check if the point xtemp is outside the object,
-!  outside the point [xp,yp] and that it cross the grid
+!  outside the point [xp,yp,zp] and that it cross the grid
 !  line within this grid cell
 !
             if ((r > rs) .and. (r > rp) &
@@ -1201,11 +1238,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               dirvar=vardir
               topbot=topbot_tmp
               if (constdir == 2) then
-                rij_min=rij(1,topbot_tmp)
-                rij_max=rij(2,topbot_tmp)
+                rij_min=rij(1,topbot_tmp,1)
+                rij_max=rij(2,topbot_tmp,1)
               else
-                rij_min=rij(topbot_tmp,1)
-                rij_max=rij(topbot_tmp,2)
+                rij_min=rij(topbot_tmp,1,1)
+                rij_max=rij(topbot_tmp,2,1)
               endif
               inputvalue=bordervalue(constdir,topbot_tmp)&
                   -objects(iobj)%x(constdir)
@@ -1309,15 +1346,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (ivar1==iux) then
               fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
               finty=(rint1*f2y+rint2*f1y)/(x2-x1)
-              fint_ur    =fintx*xp_cylinder/rs+finty*yp_cylinder/rs
-              fint_ut=finty*xp_cylinder/rs-fintx*yp_cylinder/rs
+              fint_ur    =fintx*xp_object/rs+finty*yp_object/rs
+              fint_ut=finty*xp_object/rs-fintx*yp_object/rs
               drp=rp-rs
               dri=Rsmall-rs
               urp=(drp/dri)**2*fint_ur
               utp=(drp/dri)*fint_ut
-              gpp=urp*xp_cylinder/rs-utp*yp_cylinder/rs
+              gpp=urp*xp_object/rs-utp*yp_object/rs
             elseif (ivar1==iuy) then
-              gpp=urp*yp_cylinder/rs+utp*xp_cylinder/rs
+              gpp=urp*yp_object/rs+utp*xp_object/rs
             else
               call fatal_error('close_interpolation',&
                   'Yor ivar1 is not correct!') 
@@ -1350,21 +1387,23 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  02-dec-2008/nils: coded
 !
       logical :: in_solid_cell
-      real, dimension(3) :: cyl_pos, part_pos
-      real :: cyl_rad,distance2,part_rad,rad_part
-      integer :: iobj, i
+      real, dimension(3) :: obj_pos, part_pos
+      real :: obj_rad,distance2,part_rad,rad_part
+      integer :: iobj, i, ndims
 !
       in_solid_cell=.false.
 !
-      do iobj=1,ncylinders
-        cyl_rad=objects(iobj)%r
-        cyl_pos=objects(iobj)%x(1:3)
+      do iobj=1,nobjects
+        obj_rad=objects(iobj)%r
+        obj_pos=objects(iobj)%x(1:3)
         distance2=0
 !
-!  Loop only over x and y direction since this is a cylindrical geometry
+!  Loop only over the number of dimensions required
 !
-        do i=1,2
-          distance2=distance2+(cyl_pos(i)-part_pos(i))**2
+        ndims=2
+        if (objects(iobj)%form=='sphere') ndims=3
+        do i=1,ndims
+          distance2=distance2+(obj_pos(i)-part_pos(i))**2
         enddo
 !
 !  Check if we want to include interception or not
@@ -1378,7 +1417,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  The object_skin is the closest a particle can get to the solid 
 !  cell before it is captured (this variable is normally zero).
 !
-        if (sqrt(distance2)<cyl_rad+rad_part+cylinder_skin) then
+        if (sqrt(distance2)<obj_rad+rad_part+object_skin) then
           in_solid_cell=.true.
         endif
       enddo
@@ -1964,21 +2003,36 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine calculate_shift_matrix
 !***********************************************************************  
-    subroutine find_closest_wall(i,j,k,icyl,cw)
+    subroutine find_closest_wall(i,j,k,iobj,cw)
 !
 !  Find the direction of the closest wall for given grid point and object
 !
 !  28-nov-2008/nils: coded
 !
-      integer :: i,j,k,cw,icyl
-      real :: xval_p,xval_m,yval_p,yval_m,x2,y2,minval,dist
+      integer :: i,j,k,cw,iobj
+      real :: xval_p,xval_m,yval_p,yval_m,x2,y2,z2,minval,dist
+      real :: zval_p,zval_m
 !
-      x2=objects(icyl)%r**2-(y(j)-objects(icyl)%x(2))**2
-      y2=objects(icyl)%r**2-(x(i)-objects(icyl)%x(1))**2
-      xval_p=objects(icyl)%x(1)+sqrt(x2)
-      xval_m=objects(icyl)%x(1)-sqrt(x2)            
-      yval_p=objects(icyl)%x(2)+sqrt(y2)
-      yval_m=objects(icyl)%x(2)-sqrt(y2)            
+      if (objects(iobj)%form == 'cylinder') then
+        x2=objects(iobj)%r**2-(y(j)-objects(iobj)%x(2))**2
+        y2=objects(iobj)%r**2-(x(i)-objects(iobj)%x(1))**2
+      elseif (objects(iobj)%form == 'sphere') then
+        x2=objects(iobj)%r**2&
+            -(y(j)-objects(iobj)%x(2))**2&
+            -(z(k)-objects(iobj)%x(3))**2
+        y2=objects(iobj)%r**2&
+            -(x(i)-objects(iobj)%x(1))**2&
+            -(z(k)-objects(iobj)%x(3))**2
+        z2=objects(iobj)%r**2&
+            -(x(i)-objects(iobj)%x(1))**2&
+            -(y(j)-objects(iobj)%x(2))**2        
+        zval_p=objects(iobj)%x(3)+sqrt(z2)
+        zval_m=objects(iobj)%x(3)-sqrt(z2)            
+      endif
+      xval_p=objects(iobj)%x(1)+sqrt(x2)
+      xval_m=objects(iobj)%x(1)-sqrt(x2)            
+      yval_p=objects(iobj)%x(2)+sqrt(y2)
+      yval_m=objects(iobj)%x(2)-sqrt(y2)            
 !
       minval=impossible
       cw=0
@@ -1989,22 +2043,36 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         cw=1
       endif
 !
-      dist=yval_p-y(j)
-      if (dist<minval) then
-        minval=dist
-        cw=2
-      endif
-!
       dist=x(i)-xval_m
       if (dist<minval) then
         minval=dist
         cw=-1
       endif
 !
+      dist=yval_p-y(j)
+      if (dist<minval) then
+        minval=dist
+        cw=2
+      endif
+!
       dist=y(j)-yval_m
       if (dist<minval) then
         minval=dist
         cw=-2
+      endif
+!
+      if (objects(iobj)%form == 'sphere') then
+        dist=zval_p-z(k)
+        if (dist<minval) then
+          minval=dist
+          cw=3
+        endif
+!
+        dist=z(k)-zval_m
+        if (dist<minval) then
+          minval=dist
+          cw=-3
+        endif
       endif
 !
       call keep_compiler_quiet(k)
