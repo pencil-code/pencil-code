@@ -1329,6 +1329,9 @@ module Density
       if (ldiff_hyper3_mesh) lpenc_requested(i_rho1)=.true.
 !
       if (lmass_source) then
+         lpenc_requested(i_rhod)=.true.
+         lpenc_requested(i_uud)=.true.
+ 
         if ((mass_source_profile=='bump').or.(mass_source_profile=='sph-step-down')) &
             lpenc_requested(i_r_mn)=.true.
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
@@ -2172,6 +2175,11 @@ module Density
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
           fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
           dlnrhodt=mass_source_Mdot*fprofile
+        case('bump2')
+          fnorm=(2.*pi*mass_source_sigma**2)**1.5
+          fprofile=exp(-.5*(z(n)/mass_source_sigma)**2)/fnorm
+          dlnrhodt=mass_source_Mdot*fprofile
+!          dlnrhodt=mass_source_Mdot*fprofile*exp(-f(l1:l2,m,n,ilnrho))
         case('cylindric')
 !
 !  Cylindrical profile for inner cylinder.
