@@ -122,6 +122,8 @@ module Testscalar
   integer :: idiag_c4pt=0       ! DIAG_DOC: $c^{4}$
   integer :: idiag_c5pt=0       ! DIAG_DOC: $c^{5}$
   integer :: idiag_c6pt=0       ! DIAG_DOC: $c^{6}$
+  integer :: idiag_gam3z=0      ! DIAG_DOC: $\gamma_{3}(z,t)$
+  integer :: idiag_kap33z=0     ! DIAG_DOC: $\kappa_{33}(z,t)$
   integer :: idiag_F11z=0       ! DIAG_DOC: ${\cal F}_1^{1}$
   integer :: idiag_F21z=0       ! DIAG_DOC: ${\cal F}_2^{1}$
   integer :: idiag_F31z=0       ! DIAG_DOC: ${\cal F}_3^{1}$
@@ -660,6 +662,8 @@ module Testscalar
         if (idiag_F12z/=0) call xysum_mn_name_z(Fipq(:,1,i2),idiag_F12z)
         if (idiag_F22z/=0) call xysum_mn_name_z(Fipq(:,2,i2),idiag_F22z)
         if (idiag_F32z/=0) call xysum_mn_name_z(Fipq(:,3,i2),idiag_F32z)
+        if (idiag_gam3z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam3z)
+        if (idiag_kap33z/=0) call xysum_mn_name_z(-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33z)
 !
 !  Check whether njtestscalar is large enough.
 !
@@ -1080,6 +1084,7 @@ module Testscalar
       if (lreset) then
         idiag_F11z=0; idiag_F21z=0; idiag_F31z=0
         idiag_F12z=0; idiag_F22z=0; idiag_F32z=0
+        idiag_gam3z=0; idiag_kap33z=0
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
         idiag_kap12=0; idiag_kap22=0; idiag_kap32=0
         idiag_kap13=0; idiag_kap23=0; idiag_kap33=0; idiag_mkap33=0; idiag_nkap33=0
@@ -1138,6 +1143,8 @@ module Testscalar
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'F12z',idiag_F12z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'F22z',idiag_F22z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'F32z',idiag_F32z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam3z',idiag_gam3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap33z',idiag_kap33z)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
