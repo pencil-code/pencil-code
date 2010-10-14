@@ -91,7 +91,7 @@ module Poisson
 !
       if (lcylindrical_coords) then 
         if (lroot) print*,'You are using cylindrical coordinates. '//&
-             'Use poisson_cyl.f90 instead'
+             'Use poisson_multigrid.f90 instead'
         call fatal_error("inverse_laplacian","")
       endif
 !
