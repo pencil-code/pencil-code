@@ -414,7 +414,12 @@ module Entropy
 !
           case ('const_lnTT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+lnTT_const
 !
-          case ('const_TT'); f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+          case ('const_TT')
+            if (ltemperature_nolog) then
+              f(:,:,:,iTT)=f(:,:,:,iTT)+TT_const
+            else
+              f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
+            endif
 !
           case ('single_polytrope'); call single_polytrope(f)
 !
