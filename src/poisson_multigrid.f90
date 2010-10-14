@@ -23,6 +23,7 @@ module Poisson
   use Cdata
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -578,6 +579,9 @@ module Poisson
 !
       call fatal_error('inverse_laplacian_semispectral', &
           'Cheating! This is not multigrid we are using')
+!
+      call keep_compiler_quiet(phi)
+      call keep_compiler_quiet(h)      
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
