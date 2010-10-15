@@ -235,7 +235,7 @@ module InitialCondition
     subroutine air_field_local(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y, psat
+      real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -382,24 +382,24 @@ module InitialCondition
            f(:,:,:,index_YY)=1.-sum_Y
          air_mass=0.
          do k=1,nchemspec
-           air_mass=air_mass+maxval(f(:,:,:,ichemspec(k))) &
+           air_mass_ar=air_mass_ar+f(:,:,:,ichemspec(k)) &
                    /species_constants(k,imass)
          enddo
-         air_mass=1./air_mass
+         air_mass_ar=1./air_mass_ar
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+            air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
          else
            f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+            air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
          endif
        
 
          if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
          if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
          if (lroot) print*, 'New Air density, g/cm^3:'
-         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
-         if (lroot) print*, 'New Air mean weight, g/mol', air_mass
+         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*maxval(air_mass_ar)/TT
+         if (lroot) print*, 'New Air mean weight, g/mol', maxval(air_mass_ar)
        endif
 !
     endsubroutine air_field_local
