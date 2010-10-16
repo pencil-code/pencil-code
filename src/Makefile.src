@@ -880,6 +880,15 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(nid00*)
 #LD_MPI= #(nid00*)
 ##
+## Axel on Akka
+##
+#FC=mpif90 #(p-bc9901.hpc2n.umu.se)
+#FFLAGS= -O3 -mp -vec_report0 #(p-bc9901.hpc2n.umu.se)
+#CC=mpicc #(p-bc9901.hpc2n.umu.se)
+#CFLAGS=-O3 #(p-bc9901.hpc2n.umu.se)
+#LD_MPI= #(p-bc9901.hpc2n.umu.se)
+#LIBMPISUFFIX=#(p-bc9901.hpc2n.umu.se)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)
