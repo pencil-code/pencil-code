@@ -298,7 +298,31 @@ module Forcing
         profz_ampl=.5*(1.-erfunc(z/width_ff))
         profz_hel=1.
 !
-!  turn off forcing intensity above x=x0
+!  turn off forcing intensity above x=x0, and 
+!  cosy profile of helicity
+!
+      elseif (iforce_profile=='surface_x_cosy') then
+        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
+        profx_hel=1.
+        profy_ampl=1. 
+        do m=1,my
+          profy_hel(m)=cos(y(m))
+        enddo
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off forcing intensity above x=x0, and 
+!  stepy profile of helicity
+!
+      elseif (iforce_profile=='surface_x_stepy') then
+        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
+        profx_hel=1.
+        profy_ampl=1.
+        do m=1,my
+          profy_hel(m)= -1.+2.*step_scalar(y(m),pi/2.,width_ff)
+        enddo
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off forcing intensity and above x=x0
 !
       elseif (iforce_profile=='surface_x') then
         profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
@@ -760,18 +784,20 @@ module Forcing
         fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
+! need to discuss with axel
+!
 !  possibly multiply forcing by sgn(z) and radial profile
 !
-      if (r_ff/=0.) then
-        if (lroot .and. ifirst==1) &
-             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
-        !
-        ! only z-dependent part can be done here; radial stuff needs to go
-        ! into the loop
-        !
-        tmpz = tanh(z/width_ff)
-        fz = fz*tmpz
-      endif
+!      if (r_ff/=0.) then
+!        if (lroot .and. ifirst==1) &
+!             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+!        !
+!        ! only z-dependent part can be done here; radial stuff needs to go
+!        ! into the loop
+!        !
+!        tmpz = tanh(z/width_ff)
+!        fz = fz*tmpz
+!      endif
 !
       if (ip<=5) print*,'forcing_hel: fx=',fx
       if (ip<=5) print*,'forcing_hel: fy=',fy
@@ -907,8 +933,14 @@ module Forcing
                 else
                   tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
                 endif
-                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*real( &
-                  cmplx(coef1(j),coef2(j))*tmpx*fx(l1:l2)*fy(m)*fz(n))
+                forcing_rhs(:,j)=rho1 &
+                  *real(cmplx(coef1(j),profy_hel(m)*coef2(j)) &
+                  *tmpx*fx(l1:l2)*fy(m)*fz(n))
+                  if (lhelical_test) then
+                    f(l1:l2,m,n,jf)=forcing_rhs(:,j)
+                  else
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  endif
               enddo
             enddo
           endif
@@ -2305,18 +2337,20 @@ module Forcing
         fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
+!  need to discuss with axel
+!  
 !  possibly multiply forcing by sgn(z) and radial profile
 !
-      if (r_ff/=0.) then
-        if (lroot .and. ifirst==1) &
-             print*,'forcing_hel_noshear: applying sgn(z)*xi(r) profile'
-        !
-        ! only z-dependent part can be done here; radial stuff needs to go
-        ! into the loop
-        !
-        tmpz = tanh(z/width_ff)
-        fz = fz*tmpz
-      endif
+!      if (r_ff/=0.) then
+!        if (lroot .and. ifirst==1) &
+!             print*,'forcing_hel_noshear: applying sgn(z)*xi(r) profile'
+!        !
+!        ! only z-dependent part can be done here; radial stuff needs to go
+!        ! into the loop
+!        !
+!        tmpz = tanh(z/width_ff)
+!        fz = fz*tmpz
+!      endif
 !
       if (ip<=5) print*,'force_hel_noshear: fx=',fx
       if (ip<=5) print*,'force_hel_noshear: fy=',fy
