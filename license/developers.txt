@@ -40,7 +40,8 @@ Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
 Nishant K. Singh, nishant.cosmo/gmail.com, +91 9916785745
 Andrew Snodin    andrew.snodin/ncl.ac.uk
 Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
-Andreas Svedin, andreas/astro.columbia.edu +1 917 348 1018    +46 73 968 86 56
+Andreas Svedin,  andreas/astro.columbia.edu +1 917 348 1018    +46 73 968 86 56
+Joern Warnecke,  joern/nordita.org,        +46 8 5537 8277,   +46 72 7316111
 Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
 
 Please add further names (in alphabetical order) that have been forgotten so far!
