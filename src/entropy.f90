@@ -3730,7 +3730,8 @@ module Entropy
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) &
-          heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+           !heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+           heat=heat-p%rho*p%cp*gamma_inv/tau_cool
       if (tau_cool2/=0.0) &
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
 !
@@ -4378,13 +4379,13 @@ module Entropy
 !
 !  26-jul-06/tony: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_ss
+      use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       real :: tmpval
-      integer :: l
+      integer :: l,idensity,ieosvars
 !
 !  Loop over slices
 !
@@ -4404,23 +4405,63 @@ module Entropy
 !  Pressure.
 !
         case ('pp')
+          if (ldensity_nolog) then 
+            ieosvars=irho_ss
+            idensity=irho
+          else 
+            ieosvars=ilnrho_ss
+            idensity=ilnrho
+          endif
+!
           do m=m1,m2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),pp=tmpval)
+            call eoscalc(ieosvars,f(ix_loc,m,n,idensity),f(ix_loc,m,n,iss),pp=tmpval)
             slices%yz(m-m1+1,n-n1+1)=tmpval
           enddo; enddo
           do l=l1,l2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),pp=tmpval)
+            call eoscalc(ieosvars,f(l,iy_loc,n,idensity),f(l,iy_loc,n,iss),pp=tmpval)
             slices%xz(l-l1+1,n-n1+1)=tmpval
           enddo; enddo
           do l=l1,l2; do m=m1,m2
-            call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),pp=tmpval)
+            call eoscalc(ieosvars,f(l,m,iz_loc,idensity),f(l,m,iz_loc,iss),pp=tmpval)
             slices%xy(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss),pp=tmpval)
+            call eoscalc(ieosvars,f(l,m,iz2_loc,idensity),f(l,m,iz2_loc,iss),pp=tmpval)
             slices%xy2(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz3_loc,ilnrho),f(l,m,iz3_loc,iss),pp=tmpval)
+            call eoscalc(ieosvars,f(l,m,iz3_loc,idensity),f(l,m,iz3_loc,iss),pp=tmpval)
             slices%xy3(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz4_loc,ilnrho),f(l,m,iz4_loc,iss),pp=tmpval)
+            call eoscalc(ieosvars,f(l,m,iz4_loc,idensity),f(l,m,iz4_loc,iss),pp=tmpval)
             slices%xy4(l-l1+1,m-m1+1)=tmpval
+          enddo; enddo
+          slices%ready=.true.
+!
+! Temperature
+!
+        case ('TT')
+!
+          if (ldensity_nolog) then 
+            ieosvars=irho_ss
+            idensity=irho
+          else 
+            ieosvars=ilnrho_ss
+            idensity=ilnrho
+          endif
+!
+          do m=m1,m2; do n=n1,n2
+            call eoscalc(ieosvars,f(ix_loc,m,n,idensity),f(ix_loc,m,n,iss),lnTT=tmpval)
+            slices%yz(m-m1+1,n-n1+1)=exp(tmpval)
+          enddo; enddo
+          do l=l1,l2; do n=n1,n2
+            call eoscalc(ieosvars,f(l,iy_loc,n,idensity),f(l,iy_loc,n,iss),lnTT=tmpval)
+            slices%xz(l-l1+1,n-n1+1)=exp(tmpval)
+          enddo; enddo
+          do l=l1,l2; do m=m1,m2
+            call eoscalc(ieosvars,f(l,m,iz_loc,idensity),f(l,m,iz_loc,iss),lnTT=tmpval)
+            slices%xy(l-l1+1,m-m1+1)=exp(tmpval)
+            call eoscalc(ieosvars,f(l,m,iz2_loc,idensity),f(l,m,iz2_loc,iss),lnTT=tmpval)
+            slices%xy2(l-l1+1,m-m1+1)=exp(tmpval)
+            call eoscalc(ieosvars,f(l,m,iz3_loc,idensity),f(l,m,iz3_loc,iss),lnTT=tmpval)
+            slices%xy3(l-l1+1,m-m1+1)=exp(tmpval)
+            call eoscalc(ieosvars,f(l,m,iz4_loc,idensity),f(l,m,iz4_loc,iss),lnTT=tmpval)
+            slices%xy4(l-l1+1,m-m1+1)=exp(tmpval)
           enddo; enddo
           slices%ready=.true.
 !

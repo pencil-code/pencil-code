@@ -1374,8 +1374,12 @@ module EquationOfState
 !
       select case (ivars)
 !
-      case (ilnrho_ss)
-        lnrho_=var1
+      case (ilnrho_ss,irho_ss)
+        if (ivars==ilnrho_ss) then
+          lnrho_=var1
+        else 
+          lnrho_=alog(var1)
+        endif
         ss_=var2
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
