@@ -686,14 +686,13 @@ module Particles_main
 !
 !  Curvilinear corrections to acceleration only.
 !  Corrections to velocity were already taken into account
-!  in the dxx_dp of particles_dust.f90
+!  in the dxx_dt of particles_dust.f90
 !
 !  15-sep-07/wlad: coded
 !
       real :: rad,raddot,phidot,thtdot,sintht,costht
       integer :: k
-
-
+!
       do k=1,npar_loc
 !
 !  Correct acceleration.
