@@ -413,7 +413,7 @@ contains
 !  Temperature given as function lnT(z) in SI units
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
-    use EquationOfState, only: gamma,cs2top,cs2bot
+    use EquationOfState, only: gamma,cs2top,cs2bot,get_cp1
     use Gravity, only: get_xgravity
     use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
     use Syscalls, only: file_exists, file_size
@@ -421,13 +421,15 @@ contains
     real, dimension (mx,my,mz,mfarray) :: f
     integer :: prof_nx
     real, dimension(:), allocatable :: prof_lnTT,prof_x
-    real :: tmp_lnrho,tmp_lnTT,dx_step,lnrho_0,height
+    real :: tmp_lnrho,lnrho_0,ztmp,integrand
     integer :: i,lend,j,ierr,unit=1
-    real, dimension(nx) :: xgrav
+    real, dimension(mx) :: xgrav,lnTT_loop
+    real :: cp1=1
 !
 ! file location settings
     character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
+    if (leos) call get_cp1(cp1)
     call get_xgravity(xgrav)
 !
     inquire(IOLENGTH=lend) lnrho_0
@@ -467,44 +469,42 @@ contains
     call mpibcast_real (prof_lnTT,prof_nx)
     call mpibcast_real (prof_x,prof_nx)
     !
-    prof_x = prof_x/unit_length
+    prof_x = prof_x/unit_length*1e6
     prof_lnTT = prof_lnTT - alog(real(unit_temperature))
-    !
-    ! get step width
-    ! should be smaler than grid width and
-    ! data width
-    !
-    dx_step = min((prof_x(2)-prof_x(1)),minval(1./dx_1))
-    dx_step = dx_step/100.
-    !
-    do j=l1,(l1+l2)/2.
-      tmp_lnrho = lnrho_0
-      height = Lxyz(1)/pi*sin((x(j)-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
 !
-! find the temperature at the girdpoint j
+!  project T profile onto the loop
 !
-      if ( height <= prof_x(1)) then
-        tmp_lnTT = prof_lnTT(1)
-      elseif ( height >= prof_x(prof_nx))  then
-        tmp_lnTT = prof_lnTT(prof_nx)
-      else
-        do i=1,prof_nx
-          if (height >= prof_x(i) .and. height < prof_x(i+1)) then
-            tmp_lnTT =  prof_lnTT(i)+ &
-                (prof_lnTT(i+1)-prof_lnTT(i))/(prof_x(i+1)-prof_x(i))*(height-prof_x(i))
-          endif
-        enddo
-      endif
-      
-      if (j > l1 ) then
-        tmp_lnrho = f(j-1,m1,n1,ilnrho)+ f(j-1,m1,n1,ilnTT)-tmp_lnTT+ &
-            gamma/(gamma-1.)*xgrav(j)*2/(exp(f(j-1,m1,n1,ilnTT))+exp(tmp_lnTT))*(x(j)-x(j-1))
-      endif
-      
+    do i=1,mx
+      ztmp = Lxyz(1) / pi *sin( (x(i)-x(l1))/Lxyz(1)*pi )
+!
+      do j=1,prof_nx-1
+        if ( ztmp .lt. prof_x(1) )  then
+          lnTT_loop(i) = prof_lnTT(1)
+        elseif( ztmp .ge. prof_x(j) .and.  ztmp .lt. prof_x(j+1)) then
+          lnTT_loop(i) = lin_inpol(prof_lnTT(j+1),prof_lnTT(j),prof_x(j+1),prof_x(j),ztmp)
+        elseif  ( ztmp .ge. prof_x(prof_nx) )  then
+          lnTT_loop(i) = prof_lnTT(prof_nx)
+        endif
+      enddo
+!
+    enddo
+!
+    tmp_lnrho = lnrho_0
+!
+    f(1,:,:,ilnrho) = tmp_lnrho
+    f(1,:,:,ilnTT) = lnTT_loop(1)
+!
+    do j=2,mx
+!
+      integrand = 0.5*(x(j)-x(j-1))*(xgrav(j)*exp(-lnTT_loop(j)) + &
+          xgrav(j-1)*exp(-lnTT_loop(j-1)) )
+
+      tmp_lnrho = f(j-1,m1,n1,ilnrho)+ lnTT_loop(j-1)-lnTT_loop(j)+ &
+          gamma/(gamma-1.)*cp1*integrand
+!
       f(j,:,:,ilnrho) = tmp_lnrho
-      f(j,:,:,ilnTT) = tmp_lnTT
-      f(mx-j+1,:,:,ilnrho) = tmp_lnrho
-      f(mx-j+1,:,:,ilnTT) = tmp_lnTT
+      f(j,:,:,ilnTT) = lnTT_loop(j)
+!
     enddo
 !
   endsubroutine hydrostatic_x
@@ -566,6 +566,15 @@ contains
     endif
 !
   endsubroutine write_stratification_dat
+!***********************************************************************
+  function lin_inpol(f2,f1,x2,x1,yn)
+
+    real :: f2,f1,x2,x1,yn
+    real :: lin_inpol
+!
+    lin_inpol = (f2-f1)/(x2-x1)*(yn-x1) + f1
+!
+  endfunction lin_inpol
 !***********************************************************************
 !
 !********************************************************************
