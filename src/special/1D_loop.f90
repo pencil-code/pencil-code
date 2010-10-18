@@ -137,6 +137,11 @@ module Special
         lpenc_requested(i_lnrho)=.true.
       endif
 !
+      if (tau_inv_newton/=0) then
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+      endif
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -372,7 +377,7 @@ module Special
       if (headtt) print*,'special_calc_entropy: newton cooling',tau_inv_newton
 !
 !  Get reference temperature
-      newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
+      newton  = exp(lnTT_init_prof(l1:l2)-p%lnTT)-1.
 !
 !  Multiply by density dependend time scale
       tau_inv_tmp = tau_inv_newton * exp(-exp_newton*(lnrho0-p%lnrho))
@@ -433,7 +438,17 @@ module Special
         if (headtt) print*,'iheattype:',iheattype(i)
         select case(iheattype(i))
         case ('nothing')
+        case ('one-sided')
           !
+          heatinput=heatinput + &
+              heat_par_exp(1)*exp(-x(l1:l2)/heat_par_exp(2))/heat_unit
+          heatinput=heatinput + &
+              heat_par_exp2(1)*exp(-x(l1:l2)/heat_par_exp2(2))/heat_unit
+          !
+          heat_flux=heat_flux - heat_par_exp(1)*heat_par_exp(2)*1e6
+!
+          if (headtt) print*,'Flux of exp heating: ',heat_flux(1),' [ W m^(-2)]'
+!
         case ('exp')
           ! heat_par_exp(1) should be 530 W/m^3 (amplitude)
           ! heat_par_exp(2) should be 0.3 Mm (scale height)
@@ -443,7 +458,7 @@ module Special
 !
           heat_flux=heat_flux - heat_par_exp(1)*heat_par_exp(2)*1e6
 !
-          if (headtt) print*,'Flux of exp heating: ',heat_flux(1),' [w m^(-2)]'
+          if (headtt) print*,'Flux of exp heating: ',heat_flux(1),' [ W m^(-2)]'
 !
         case ('exp2')
           ! A second exponential function
