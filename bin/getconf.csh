@@ -331,6 +331,18 @@ else if (($hn =~ comp*) || ($masterhost =~ andromeda)) then
   echo " ******************************"
   source ${HOME}/.cshrc
   set $mpirun=mpirun
+#------------------------------------------
+else if ($hn =~ *.hpc2n.umu.se ) then
+  echo "HPC2N cluster (akka) - Umea"
+  echo "******************************"
+  echo "Always use  multiple of 8 no. of processors .."
+  echo "..for multiprecossor jobs. "
+  echo " ******************************"
+  module load openmpi/1.3/psc
+  setenv PENCIL_HOME $HOME/pfs/pencil-code/
+  alias phome 'cd $PENCIL_HOME; source $PENCIL_HOME/sourceme.csh'
+  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  set $mpirun=mpirun
 #------------------------------------------------
 else if ($hn =~ norlx51) then
   echo "******************************"
