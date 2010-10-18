@@ -39,21 +39,21 @@ module EquationOfState
     module procedure pressure_gradient_farray ! explicit f implicit m,n
     module procedure pressure_gradient_point  ! explicit lnrho, ss
   end interface
-
+!
 ! integers specifying which independent variables to use in eoscalc
 ! (only relevant in ionization.f90)
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
-  integer, parameter :: ilnrho_TT=9, irho_TT=10, ipp_ss=11,ipp_cs2=12
-
-  ! Constants use in calculation of thermodynamic quantities
+  integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
+  integer, parameter :: ipp_cs2=12
+! Constants use in calculation of thermodynamic quantities
   real :: lnTTss,lnTTlnrho,lnTT0
-
-  ! secondary parameters calculated in initialize
+!
+! secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: xHe_term,yH_term,one_yH_term
-
+!
   real :: yH0=.0,xHe=0.1,xH2=0.,kappa_cst=1.
   character (len=labellen) :: opacity_type='ionized_H'
 !
@@ -401,7 +401,7 @@ module EquationOfState
       endif
       if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
-
+!
       if (lpencil_in(i_hlnTT)) then
         lpencil_in(i_hss)=.true.
         if (.not.pretend_lnTT) lpencil_in(i_hlnrho)=.true.
@@ -505,12 +505,12 @@ module EquationOfState
       real :: lnrho
 print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       lnrho = log(EE) - log(1.5*(1.+yH+xHe-xH2)*ss_ion*TT + yH*ee_ion)
-
+!
       rho=exp(max(lnrho,-15.))
     endsubroutine getdensity
 !***********************************************************************
   subroutine gettemperature(f,TT_tmp)
-
+!
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
@@ -520,7 +520,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
    endsubroutine gettemperature
 !***********************************************************************
   subroutine getpressure(pp_tmp)
-
+!
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call keep_compiler_quiet(pp_tmp)
@@ -645,11 +645,11 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
-
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp,ss
-
+!
       call not_implemented("eosperturb")
 !
       call keep_compiler_quiet(f)
@@ -675,20 +675,20 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(psize) :: lnrho_,ss_,lnTT_,TT_,yH_
 !
       select case (psize)
-
+!
       case (nx)
         lnrho_=f(l1:l2,m,n,ilnrho)
         ss_=f(l1:l2,m,n,iss)
-
+!
       case (mx)
         lnrho_=f(:,m,n,ilnrho)
         ss_=f(:,m,n,iss)
-
+!
       case default
         call stop_it("eoscalc: no such pencil size")
-
+!
       end select
-
+!
       lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
       TT_=exp(lnTT_)
       yH_=yH0
@@ -727,7 +727,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_,cs2_
 !
       select case (ivars)
-
+!
       case (ilnrho_ss)
         lnrho_ = var1
         ss_    = var2
@@ -737,7 +737,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
         pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
         cs2_=impossible
-
+!
       case (ilnrho_ee)
         lnrho_ = var1
         ee_    = var2
@@ -747,7 +747,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         rho_   = exp(lnrho_)
         pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
         cs2_=impossible
-
+!
       case (ilnrho_pp)
         lnrho_ = var1
         pp_    = var2
@@ -757,17 +757,17 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
         cs2_=impossible
-
+!
       case (ilnrho_lnTT)
         lnrho_ = var1
         lnTT_  = var2
         ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
         cs2_=impossible
-
+!
       case default
         call stop_it('eoscalc_point: thermodynamic case')
      end select
-
+!
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=yH0
@@ -796,7 +796,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(nx) :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
 !
       select case (ivars)
-
+!
       case (ilnrho_ss)
         lnrho_ = var1
         ss_    = var2
@@ -805,7 +805,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         rho_   = exp(lnrho_)
         ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
         pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
-
+!
       case (ilnrho_ee)
         lnrho_ = var1
         ee_    = var2
@@ -814,7 +814,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         rho_   = exp(lnrho_)
         pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
-
+!
       case (ilnrho_pp)
         lnrho_ = var1
         pp_    = var2
@@ -823,16 +823,16 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
-
+!
       case (ilnrho_lnTT)
         lnrho_ = var1
         lnTT_  = var2
         ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
-
+!
       case default
         call stop_it('eoscalc_pencil: thermodynamic case')
      end select
-
+!
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=yH0
@@ -845,38 +845,38 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     subroutine read_eos_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=eos_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=eos_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_eos_init_pars
 !***********************************************************************
     subroutine write_eos_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=eos_init_pars)
     endsubroutine write_eos_init_pars
 !***********************************************************************
     subroutine read_eos_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=eos_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=eos_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_eos_run_pars
 !***********************************************************************
     subroutine write_eos_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=eos_run_pars)
     endsubroutine write_eos_run_pars
 !***********************************************************************
@@ -969,7 +969,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       enddo
 !
     endsubroutine isothermal_lnrho_ss
-
+!
 !***********************************************************************
      subroutine get_average_pressure(average_density,average_pressure)
 !
@@ -1194,25 +1194,25 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine bc_ss_stemp_z
 !***********************************************************************
     subroutine bc_ss_a2stemp_x(f,topbot)
-! 
+!
 !  boundary condition for entropy: symmetric temperature
-! 
+!
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-! 
+!
       call stop_it("bc_ss_a2stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-! 
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
-!   
+!
     endsubroutine bc_ss_a2stemp_x
 !***********************************************************************
     subroutine bc_ss_a2stemp_y(f,topbot)
-!   
+!
 !  boundary condition for entropy: symmetric temperature
-! 
+!
 !  3-aug-2002/wolf: coded
 !
       character (len=3) :: topbot
@@ -1310,59 +1310,58 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine read_transport_data
-
+!
        real, dimension (mx,my,mz,mfarray) :: f
-
+!
        call keep_compiler_quiet(f)
-
+!
     endsubroutine read_transport_data
 !***********************************************************************
     subroutine write_thermodyn()
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
        call keep_compiler_quiet(f)
-
+!
     endsubroutine write_thermodyn
 !***********************************************************************
     subroutine read_thermodyn(input_file)
-
+!
       character (len=*), intent(in) :: input_file
-
+!
       call keep_compiler_quiet(input_file)
-
+!
     endsubroutine read_thermodyn
 !***********************************************************************
     subroutine read_species(input_file)
-
+!
       character (len=*) :: input_file
-
+!
       call keep_compiler_quiet(input_file)
     endsubroutine read_species
 !***********************************************************************
     subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-
+!
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
       logical, intent(out) :: found_specie
-
+!
          call keep_compiler_quiet(ind_glob)
          call keep_compiler_quiet(ind_chem)
          call keep_compiler_quiet(species_name)
          call keep_compiler_quiet(found_specie)
-
+!
      endsubroutine find_species_index
 !***********************************************************************
      subroutine find_mass(element_name,MolMass)
-
+!
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
 !
        call keep_compiler_quiet(element_name)
        call keep_compiler_quiet(MolMass)
-
+!
      endsubroutine find_mass
 !***********************************************************************
-
 endmodule EquationOfState
