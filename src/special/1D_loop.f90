@@ -16,7 +16,7 @@ module Special
   use Cdata
   use Cparam
   use Messages, only: svn_id, fatal_error
-  use Sub, only: keep_compiler_quiet
+  use Sub, only: keep_compiler_quiet,cubic_step
 !
   implicit none
 !
@@ -224,11 +224,12 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: chi,glnTT2,rhs
 !
-      chi = Kpara * exp(p%lnTT*2.5-p%lnrho)
+      chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
+          cubic_step(t,init_time,init_time)
 !
       call dot2(p%glnTT,glnTT2)
-
-      rhs = Kpara * exp(p%lnTT*3.5)
+!
+      rhs = Kpara * exp(p%lnTT*3.5)*cubic_step(t,init_time,init_time)
       rhs = rhs * (3.5 * glnTT2 + p%del2lnTT)
 !
 !  Add to energy equation.
@@ -294,11 +295,14 @@ module Special
 !
     rtv_cool = rtv_cool*cool_RTV*(1.-tanh(3e4*(p%rho-1e-4)))/2.
 !
+    rtv_cool = rtv_cool * cubic_step(t,init_time,init_time)
+!
 !     add to temperature equation
 !
     if (ltemperature) then
       if (ltemperature_nolog) then
-        call fatal_error('calc_heat_cool_RTV','not implemented for ltemperature_nolog')
+        call fatal_error('calc_heat_cool_RTV', &
+            'not implemented for ltemperature_nolog')
       else
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       endif
@@ -381,6 +385,10 @@ module Special
 !
 !  Multiply by density dependend time scale
       tau_inv_tmp = tau_inv_newton * exp(-exp_newton*(lnrho0-p%lnrho))
+!
+!  Adjust time scale by the initialization time
+      tau_inv_tmp =  tau_inv_tmp * cubic_step(t,init_time,init_time)
+!
       newton  = newton * tau_inv_tmp
 !
 !  Add newton cooling term to entropy
@@ -410,7 +418,6 @@ module Special
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate
-      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput,heat_flux
@@ -586,7 +593,7 @@ module Special
 ! Add to energy equation
 !
       rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-          cubic_step(real(t*unit_time),init_time,init_time)
+          cubic_step(t,init_time,init_time)
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
