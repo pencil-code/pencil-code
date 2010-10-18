@@ -332,7 +332,12 @@ else if (($hn =~ comp*) || ($masterhost =~ andromeda)) then
   source ${HOME}/.cshrc
   set $mpirun=mpirun
 #------------------------------------------------
-else if ($hn =~ norlx5*) then
+else if ($hn =~ norlx51) then
+  echo "******************************"
+  echo "norlx51"
+  echo " ******************************"
+#------------------------------------------------
+else if ($hn =~ norlx55) then
   echo "******************************"
   echo "NORDITA cluster"
   echo " ******************************"
