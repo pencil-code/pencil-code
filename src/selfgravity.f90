@@ -49,6 +49,7 @@ module Selfgravity
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
   integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
+  integer :: idiag_qtoomre=0,idiag_qtoomremin=0
 !
   contains
 !***********************************************************************
@@ -223,6 +224,11 @@ module Selfgravity
         lpenc_diagnos(i_phiy)=.true.
       endif
 !
+      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0) then 
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_cs2)=.true.
+      endif
+!
       if (idiag_potselfmxy/=0) lpenc_diagnos2d(i_potself)=.true.
 !
     endsubroutine pencil_criteria_selfgravity
@@ -394,6 +400,10 @@ module Selfgravity
              call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
+        if (idiag_qtoomre/=0) & 
+             call sum_mn_name(Omega*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomre)
+        if (idiag_qtoomremin/=0) & 
+             call max_mn_name(-Omega*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
       endif
 !
 !  1-D averages.
@@ -517,6 +527,7 @@ module Selfgravity
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
+        idiag_qtoomre=0; idiag_qtoomremin=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -544,6 +555,8 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'grgpm',idiag_grgpm)
         call parse_name(iname,cname(iname),cform(iname),'grgzm',idiag_grgzm)
         call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
+        call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomre)
+        call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomremin)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
