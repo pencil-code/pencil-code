@@ -89,8 +89,13 @@ module Selfgravity
       f(:,:,:,ipotself)=0.0
 !
 !  If gravitational constant was set, re-define rhs_poisson_const.
+!  else define the gravitational constant via rhs_poisson_const
 !
-      if (gravitational_const/=0.0) rhs_poisson_const=4*pi*gravitational_const
+      if (gravitational_const/=0.0) then 
+        rhs_poisson_const=4*pi*gravitational_const
+      else
+        gravitational_const=rhs_poisson_const/(4*pi)
+      endif
 !
       if (.not.lpoisson) then
         if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &
@@ -556,7 +561,7 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'grgzm',idiag_grgzm)
         call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
         call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomre)
-        call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomremin)
+        call parse_name(iname,cname(iname),cform(iname),'qtoomremin',idiag_qtoomremin)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
