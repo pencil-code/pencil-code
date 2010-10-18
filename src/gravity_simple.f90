@@ -924,9 +924,9 @@ module Gravity
 !
 !  04-oct-10/bing: coded
 !
-      real, dimension(nx) :: xgrav
+      real, dimension(mx) :: xgrav
 !
-      xgrav = gravx_xpencil(l1:l2)
+      xgrav = gravx_xpencil
 !
     endsubroutine get_xgravity
 !***********************************************************************
