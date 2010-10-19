@@ -780,7 +780,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               xmirror=sin_phi*cos_theta*r_new+x_obj
               ymirror=sin_phi*sin_theta*r_new+y_obj            
               zmirror=cos_phi*r_new+z_obj
-            endif
+!
+! Check if mirror point is inside domain
+!
+              if (xmirror<xyz0(1) .and. lperi(1)) xmirror=xmirror+Lxyz(1)
+              if (ymirror<xyz0(2) .and. lperi(2)) ymirror=ymirror+Lxyz(2)
+              if (zmirror<xyz0(3) .and. lperi(3)) zmirror=zmirror+Lxyz(3)
+              if (xmirror>xyz1(1) .and. lperi(1)) xmirror=xmirror-Lxyz(1)
+              if (ymirror>xyz1(2) .and. lperi(2)) ymirror=ymirror-Lxyz(2)
+              if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
+             endif
 !
 !  Check that we are indeed inside the solid geometry
 !
