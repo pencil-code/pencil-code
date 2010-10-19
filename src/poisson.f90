@@ -52,6 +52,11 @@ module Poisson
         endif
       endif
 !
+      if (nprocx/=1.and.nzgrid/=1) then
+        if (lroot) print*, 'inverse_laplacian_fft: fourier transforms in x-parallel are still restricted to the 2D case.'
+        call fatal_error('inverse_laplacian_fft','')
+      endif
+!
 !  Limit the wavenumber to the maximum circular region that is always available
 !  in k-space. The radial wavenumber kx changes with time due to shear as
 !
@@ -150,10 +155,14 @@ module Poisson
 !
 !  Forward transform (to k-space).
 !
-      if (lshear) then
-        call fourier_transform_shear(phi,b1)
-      else
-        call fourier_transform(phi,b1)
+      if (nprocx==1) then 
+        if (lshear) then
+          call fourier_transform_shear(phi,b1)
+        else
+          call fourier_transform(phi,b1)
+        endif
+      else 
+        call fft_xy_parallel(phi,b1)
       endif
 !
 !  Solve Poisson equation.
@@ -180,14 +189,14 @@ module Poisson
 !
               if (nzgrid/=1) then ! Order (kz,ky',kx)
                 k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2
+                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx+ipx*nx)**2
               else                ! Order (kx,ky',kz)
-                k2 = (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
                       ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
               endif
 !  The ordering of the array is not important here, because there is no shear!
             else
-              k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+              k2 = kx_fft(ikx+ipx*nx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
             endif
 !
 !  Solution of Poisson equation.
@@ -203,9 +212,9 @@ module Poisson
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
             if (lshear) then
-              k2 = (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
+              k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
             else
-              k2 = kx_fft(ikx)**2+ky_fft(iky+ipy*ny)**2
+              k2 = kx_fft(ikx+ipx*nx)**2+ky_fft(iky+ipy*ny)**2
             endif
 !            
             phi(ikx,iky,ikz) = -.5*phi(ikx,iky,ikz) / sqrt(k2)
@@ -225,10 +234,14 @@ module Poisson
 !
 !  Inverse transform (to real space).
 !
-      if (lshear) then
-        call fourier_transform_shear(phi,b1,linv=.true.)
+      if (nprocx==1) then 
+        if (lshear) then
+          call fourier_transform_shear(phi,b1,linv=.true.)
+        else
+          call fourier_transform(phi,b1,linv=.true.)
+        endif
       else
-        call fourier_transform(phi,b1,linv=.true.)
+        call fft_xy_parallel(phi,b1,linv=.true.)
       endif
 !
     endsubroutine inverse_laplacian_fft
