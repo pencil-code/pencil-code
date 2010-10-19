@@ -659,11 +659,6 @@ module Viscosity
       endif
       if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
           lpenc_diagnos(i_shock)=.true.
-      if (lthermo_ppd) then
-         lpenc_diagnos(i_rho)=.true.
-         lpenc_requested(i_cv1)=.true.
-         lpenc_requested(i_TT1)=.true.
-      endif
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
