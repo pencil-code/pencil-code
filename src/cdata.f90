@@ -27,6 +27,9 @@ module Cdata
 !
 !  Cartesian coordinate system.
 !
+  real, dimension (nxgrid) :: xgrid
+  real, dimension (nygrid) :: ygrid
+  real, dimension (nzgrid) :: zgrid
   real, dimension (mx) :: x,dx_1,dx_tilde,xprim,dVol_x
   real, dimension (my) :: y,dy_1,dy_tilde,yprim,dVol_y
   real, dimension (mz) :: z,dz_1,dz_tilde,zprim,dVol_z
@@ -535,7 +538,6 @@ module Cdata
   logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
   logical :: llocal_iso=.false.
-  logical :: lthermo_ppd=.false.
 !
 !  Allow particles modules to do something special with f; like calculating
 !  the full vorticity field (see equ.f90:pde)

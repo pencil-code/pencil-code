@@ -580,6 +580,10 @@ module Grid
       real :: sinth_min=1e-5,costh_min=1e-5
       integer :: xj,yj,zj,itheta
 !
+! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe 
+! make this z_allprocs obsolete. Can you check if you can use zgrid 
+! instead of z_allprocs? (19-oct-2010)
+!
 !  Set z_allprocs, which contains the z values from all processors
 !  ignore the ghost zones.
 !
@@ -592,6 +596,11 @@ module Grid
         z_allprocs_tmp=z_allprocs
         call mpireduce_sum(z_allprocs_tmp,z_allprocs,(/nz,nprocz/))
       endif
+!
+!  Set the the serial grid arrays, that contain the coordinate values 
+!  from all processors.
+!
+      call construct_serial_arrays()
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !  Introduce new names (spherical_coords), in addition to the old ones.
@@ -1380,5 +1389,106 @@ module Grid
       call fatal_error('find_star','maximum number of iterations exceeded')
 !
     endfunction find_star
+!***********************************************************************
+    subroutine construct_serial_arrays
+!
+!  The arrays xyz are local only, yet sometimes the serial array is 
+!  needed. Construct here the serial arrays out of the local ones, 
+!  but gathering them processor-wise and broadcasting the constructed 
+!  array. This is only done in start time, so legibility (3 near-copies 
+!  of the same code) is preferred over code-reusability (one general 
+!  piece of code called three times). 
+!
+!  19-oct-10/wlad: coded
+!
+      use Mpicomm
+!
+      real, dimension(nx) :: xrecv
+      real, dimension(ny) :: yrecv
+      real, dimension(nz) :: zrecv
+      integer :: jx,jy,jz,iup,ido,iproc_recv
+!
+!  Serial x array
+!
+      if (iproc/=root) then
+!
+!  All processors of the same row (ipx,ipy or ipz) 
+!  send their array values to the root.
+!
+        if (ipy==0.and.ipz==0) call mpisend_real(x(l1:l2),nx,root,111)
+      else
+!
+!  The root processor, in turn, receives the data from the others
+!
+        do jx=0,nprocx-1
+          !avoid send-to-self
+          if (jx/=root) then
+!
+!  Formula of the serial processor number: 
+!  iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+!  Since for the x-row ipy=ipz=0, this reduces 
+!  to iproc_recv=jx.
+!
+            iproc_recv=jx
+            call mpirecv_real(xrecv,nx,iproc_recv,111)
+!
+            ido=jx    *nx + 1 
+            iup=(jx+1)*nx
+            xgrid(ido:iup)=xrecv
+          else
+            !the root just copies its value to the serial array
+            xgrid(1:nx)=x(l1:l2)
+          endif
+        enddo
+      endif
+!
+!  Serial array constructed. Broadcast the result. Repeat the 
+!  procedure for y and z arrays.
+!
+      call mpibcast_real(xgrid,nxgrid)
+!
+!  Serial y-array
+!
+      if (iproc/=root) then
+        if (ipx==0.and.ipz==0) then 
+          call mpisend_real(y(m1:m2),ny,root,222)
+        endif
+      else
+        do jy=0,nprocy-1
+          if (jy/=root) then
+            iproc_recv=nprocx*jy
+            call mpirecv_real(yrecv,ny,iproc_recv,222)
+            ido=jy    *ny + 1
+            iup=(jy+1)*ny
+            ygrid(ido:iup)=yrecv
+          else
+            ygrid(1:ny)=y(m1:m2)
+          endif
+        enddo
+      endif
+      call mpibcast_real(ygrid,nygrid)
+!
+!  Serial z-array
+!
+      if (iproc/=root) then
+        if (ipx==0.and.ipy==0) then 
+          call mpisend_real(z(n1:n2),nz,root,333)
+        endif
+      else
+        do jz=0,nprocz-1
+          if (jz/=root) then
+            iproc_recv=nprocx*nprocy*jz
+            call mpirecv_real(zrecv,nz,iproc_recv,333)
+            ido=jz    *nz + 1
+            iup=(jz+1)*nz
+            zgrid(ido:iup)=zrecv
+          else
+            zgrid(1:nz)=z(n1:n2)
+          endif
+        enddo
+      endif
+      call mpibcast_real(zgrid,nzgrid)
+!
+    endsubroutine construct_serial_arrays
 !***********************************************************************
 endmodule Grid
