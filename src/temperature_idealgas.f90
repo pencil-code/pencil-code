@@ -118,6 +118,7 @@ module Entropy
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
   integer :: idiag_ethmz=0      ! DIAG_DOC:
+  integer :: idiag_ethuxmx=0    ! DIAG_DOC:
   integer :: idiag_ethuxmz=0    ! DIAG_DOC:
   integer :: idiag_ethuymz=0    ! DIAG_DOC:
   integer :: idiag_ethuzmz=0    ! DIAG_DOC:
@@ -629,7 +630,8 @@ module Entropy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee)  =.true.
       endif
-      if (idiag_ethuxmz/=0.or.idiag_ethuymz/=0.or.idiag_ethuzmz/=0) then
+      if (idiag_ethuxmz/=0.or.idiag_ethuymz/=0.or.idiag_ethuzmz/=0.or.&
+          idiag_ethuxmx/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee) =.true.
         lpenc_diagnos(i_uu) =.true.
@@ -880,6 +882,8 @@ module Entropy
         if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
         if (idiag_ppuzmz/=0)  call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
         if (idiag_ethmz/=0)   call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
+        if (idiag_ethuxmx/=0) call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1), &
+            idiag_ethuxmx)
         if (idiag_ethuxmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1), &
             idiag_ethuxmz)
         if (idiag_ethuymz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2), &
@@ -1409,7 +1413,7 @@ module Entropy
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
         idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0; idiag_ppuzmz=0
-        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0
+        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
       endif
@@ -1437,6 +1441,8 @@ module Entropy
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ethuxmx', &
+            idiag_ethuxmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -1500,12 +1506,21 @@ module Entropy
 !  Temperature.
 !
         case ('TT')
-          slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnTT))
-          slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnTT))
-          slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnTT))
-          slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnTT))
-          if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnTT))
-          if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT))
+          if (iTT>0) then 
+            slices%yz =f(ix_loc,m1:m2,n1:n2,iTT)
+            slices%xz =f(l1:l2,iy_loc,n1:n2,iTT)
+            slices%xy =f(l1:l2,m1:m2,iz_loc,iTT)
+            slices%xy2=f(l1:l2,m1:m2,iz2_loc,iTT)
+            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iTT)
+            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iTT)
+          else
+            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnTT))
+            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnTT))
+            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnTT))
+            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnTT))
+            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnTT))
+            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT))
+          endif
           slices%ready=.true.
 !  lnTT
         case ('lnTT')
