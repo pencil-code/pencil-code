@@ -129,7 +129,7 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
-  real :: eckmann_friction=0.0
+  real :: ekman_friction=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1.
   integer :: novec,novecmax=nx*ny*nz/4
@@ -168,7 +168,7 @@ module Hydro
       lforcing_cont_uu, width_ff_uu,x1_ff_uu,x2_ff_uu, &
       luut_as_aux,loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-      velocity_ceiling, eckmann_friction, ampl_Omega, lcoriolis_xdep, &
+      velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis
 !
@@ -1293,7 +1293,7 @@ module Hydro
         endif
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
-      if (ldt.or.(eckmann_friction/=0)) lpenc_requested(i_uu)=.true.
+      if (ldt.or.(ekman_friction/=0)) lpenc_requested(i_uu)=.true.
       if (Omega/=0.0) lpenc_requested(i_uu)=.true.
 !
 !  Damping terms for lcylinder_in_a_box
@@ -1711,8 +1711,8 @@ module Hydro
 !
 !  Ekman Friction, used only in two dimensional runs.
 !
-     if (eckmann_friction/=0) &
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-eckmann_friction*p%uu
+     if (ekman_friction/=0) &
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !

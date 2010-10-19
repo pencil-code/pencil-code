@@ -57,6 +57,8 @@ module Special
   integer :: idiag_Lambzmz=0    ! DIAG_DOC: $\left<\Lam B_z\right>_{xy}$
   integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\Lam\Bv\right>$
   integer :: idiag_apbrms=0     ! DIAG_DOC: $\left<(\Av'\Bv)^2\right>^{1/2}$
+  integer :: idiag_jxarms=0     ! DIAG_DOC: $\left<(\Jv\times\Av)^2\right>^{1/2}$
+  integer :: idiag_divabrms=0   ! DIAG_DOC: $\left<[(\nabla\cdot\Av)\Bv]^2\right>^{1/2}$
 !
   contains
 
@@ -156,6 +158,9 @@ module Special
       lpenc_requested(i_uu)=.true.
       if (idiag_apbrms/=0) lpenc_diagnos(i_ab)=.true.
       if (idiag_gLambm/=0) lpenc_diagnos(i_bb)=.true.
+      if (idiag_jxarms/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_divabrms/=0) lpenc_diagnos(i_bb)=.true.
+      if (idiag_divabrms/=0) lpenc_diagnos(i_diva)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -211,8 +216,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gLam
-      real, dimension (nx) :: Lam,del2Lam,ua,ugLam,gLamb
+      real, dimension (nx,3) :: gLam,jxa,divab
+      real, dimension (nx) :: Lam,del2Lam,ua,ugLam,gLamb,jxa2,divab2
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -260,6 +265,22 @@ module Special
           call dot(gLam,p%bb,gLamb)
           if (idiag_gLambm/=0) call sum_mn_name(gLamb,idiag_gLambm)
           if (idiag_apbrms/=0) call sum_mn_name((p%ab+gLamb)**2,idiag_apbrms,lsqrt=.true.)
+        endif
+!
+!  (JxA)_rms
+!
+        if (idiag_jxarms/=0) then
+          call cross(p%jj,p%aa+gLam,jxa)
+          call dot2(jxa,jxa2)
+          if (idiag_jxarms/=0) call sum_mn_name(jxa2,idiag_jxarms,lsqrt=.true.)
+        endif
+!
+!  [(divA+del2Lam)*B]_rms
+!
+        if (idiag_divabrms/=0) then
+          call multsv(p%diva+del2Lam,p%bb,divab)
+          call dot2(divab,divab2)
+          if (idiag_divabrms/=0) call sum_mn_name(divab2,idiag_divabrms,lsqrt=.true.)
         endif
 !
 !  check for point 1
@@ -355,6 +376,7 @@ module Special
         idiag_Lamm=0; idiag_Lampt=0; idiag_Lamp2=0; idiag_Lamrms=0
         idiag_gLambm=0; idiag_apbrms=0
         idiag_Lambzm=0; idiag_Lambzmz=0
+        idiag_jxarms=0; idiag_divabrms=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -367,6 +389,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'Lamp2',idiag_Lamp2)
         call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
         call parse_name(iname,cname(iname),cform(iname),'apbrms',idiag_apbrms)
+        call parse_name(iname,cname(iname),cform(iname),'jxarms',idiag_jxarms)
+        call parse_name(iname,cname(iname),cform(iname),'divabrms',idiag_divabrms)
       enddo
 !
       do inamez=1,nnamez
