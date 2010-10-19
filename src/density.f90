@@ -58,6 +58,7 @@ module Density
   real :: rho_top=1.,rho_bottom=1.
   real :: rmax_mass_source
   real :: r0_rho=impossible
+  real :: rnoise_int=impossible,rnoise_ext=impossible
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -94,7 +95,7 @@ module Density
       lisothermal_fixed_Hrho, &
       density_floor, lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
       lnrho_z_shift, powerlr, zoverh, hoverr, lffree, ffree_profile, &
-      rzero_ffree,wffree,rho_top,rho_bottom,r0_rho
+      rzero_ffree,wffree,rho_top,rho_bottom,r0_rho,rnoise_int,rnoise_ext
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -584,6 +585,8 @@ module Density
         case ('gaussian-noise')
           If (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
+        case ('gaussian-noise-rprof')
+          call gaunoise_rprof(ampllnrho(j),f,ilnrho,rnoise_int,rnoise_ext)
         case ('gaussian-noise-x')
 !
 !  Noise, but just x-dependent.
