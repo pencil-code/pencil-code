@@ -1372,12 +1372,9 @@ module Fourier
       if (stat > 0) call fatal_error('fft_xy_parallel_2D', &
           'Could not allocate memory for t_im', .true.)
 !
-! WL: Is this correct? x is of dimension mx, not mxgrid
-! Bourdin: It's formally correct, though you are right: x is not accessible, here.
-!
       if (lshear) then
-        x_offset = l1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        x_offset = 1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       if (lshift) then
@@ -1576,8 +1573,8 @@ module Fourier
           'Could not allocate memory for t_im', .true.)
 !
       if (lshear) then
-        x_offset = l1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        x_offset = 1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       call cffti(nxgrid, wsavex)
@@ -1732,7 +1729,6 @@ module Fourier
       integer :: l, m, stat, x_offset, pos_z, pos_a
       logical :: lforward, lcompute_im
 !
-!
       lforward = .true.
       if (present (linv)) lforward = .not.linv
 !
@@ -1783,8 +1779,8 @@ module Fourier
           'Could not allocate memory for t_im', .true.)
 !
       if (lshear) then
-        x_offset = l1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (x(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        x_offset = 1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       call cffti(nxgrid, wsavex)
