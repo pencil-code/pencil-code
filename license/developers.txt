@@ -42,7 +42,7 @@ Andrew Snodin    andrew.snodin/ncl.ac.uk
 Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
 Andreas Svedin,  andreas/astro.columbia.edu +1 917 348 1018    +46 73 968 86 56
 Joern Warnecke,  joern/nordita.org,        +46 8 5537 8277,   +46 72 7316111
-Tijmen van Wettum, vanwettum/mps.mpg.de    +49-5556-979-408,  +49 176 911 232 19, ThePlunder
+Tijmen van Wettum, vanwettum/mps.mpg.de    +49-5556-979-408,  +49 176 911 232 19, TvanWettum
 Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
 
 Please add further names (in alphabetical order) that have been forgotten so far!
