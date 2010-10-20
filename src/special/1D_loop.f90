@@ -24,6 +24,7 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,cool_RTV=0.
   real :: tau_inv_newton=0.,exp_newton=0.
+  real :: width_newton=0.,lnrho_newton=0.
   real :: init_time=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -33,7 +34,8 @@ module Special
 
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,tau_inv_newton,exp_newton,init_time, &
-      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss
+      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
+      width_newton,lnrho_newton
 !
 ! variables for print.in
 !
@@ -41,6 +43,15 @@ module Special
                                   ! DIAG DOC: in special module
   integer :: idiag_dtrad=0        ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtnewt=0
+!
+! variables for video.in
+!
+  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+  real, target, dimension (nx,nz) :: rtv_xz
+  real, target, dimension (ny,nz) :: rtv_yz
+  real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
+  real, target, dimension (nx,nz) :: logQ_xz
+  real, target, dimension (ny,nz) :: logQ_yz
 !
 !  miscellaneous variables
 !
@@ -186,6 +197,43 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of special variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+      case ('rtv')
+        slices%yz =>rtv_yz
+        slices%xz =>rtv_xz
+        slices%xy =>rtv_xy
+        slices%xy2=>rtv_xy2
+        if (lwrite_slice_xy3) slices%xy3=>rtv_xy3
+        if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
+        slices%ready=.true.
+!
+      case ('logQ')
+        slices%yz =>logQ_yz
+        slices%xz =>logQ_xz
+        slices%xy =>logQ_xy
+        slices%xy2=>logQ_xy2
+        if (lwrite_slice_xy3) slices%xy3=>logQ_xy3
+        if (lwrite_slice_xy4) slices%xy4=>logQ_xy4
+        slices%ready=.true.
+!
+      endselect
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine get_slices_special
+!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -317,10 +365,19 @@ module Special
     if (lfirst.and.ldt) then
       dt1_max=max(dt1_max,rtv_cool/cdts)
       if (ldiagnos.and.idiag_dtrad/=0) then
-        itype_name(idiag_dtrad)=ilabel_max_dt
+!        itype_name(idiag_dtrad)=ilabel_max_dt
         call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
       endif
     endif
+!
+! fill video slices
+!
+      logQ_yz(m-m1+1,n-n1+1)=lnQ(ix_loc-l1+1)*0.43429448
+      if (m==iy_loc)  logQ_xz(:,n-n1+1)= lnQ*0.43429448
+      if (n==iz_loc)  logQ_xy(:,m-m1+1)= lnQ*0.43429448
+      if (n==iz2_loc) logQ_xy2(:,m-m1+1)= lnQ*0.43429448
+      if (n==iz3_loc) logQ_xy3(:,m-m1+1)= lnQ*0.43429448
+      if (n==iz4_loc) logQ_xy4(:,m-m1+1)= lnQ*0.43429448
 !
   endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -329,21 +386,35 @@ module Special
 !  input: lnTT in SI units
 !  output: lnP  [p]= W * m^3
 !
-      real, parameter, dimension (37) :: intlnT = (/ &
-          7.74982, 7.9495, 8.18008, 8.39521, 8.71034, 9.24060, 9.67086 &
-          , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
-          , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
-          , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
-          , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
-          ,  15.6576,  69.0776 /)
-      real, parameter, dimension (37) :: intlnQ = (/ &
-          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
-          , -80.5905, -80.0532, -80.0837, -80.2067, -80.1837, -79.9765 &
-          , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
-          , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
-          , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
-          , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
-          , -0.66650 /)
+      ! real, parameter, dimension (37) :: intlnT = (/ &
+      !     7.74982, 7.9495, 8.18008, 8.39521, 8.71034, 9.24060, 9.67086 &
+      !     , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
+      !     , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
+      !     , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
+      !     , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
+      !     ,  15.6576,  69.0776 /)
+      ! real, parameter, dimension (37) :: intlnQ = (/ &
+      !     -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
+      !     , -80.5905, -80.0532, -80.0837, -80.2067, -80.1837, -79.9765 &
+      !     , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
+      !     , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
+      !     , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
+      !     , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
+      !     , -0.66650 /)
+      real, parameter, dimension (36) :: intlnT = (/ &
+          8.98008,      9.09521   ,   9.21034   ,   9.44060,      9.67086  ,    9.90112, &
+      10.1314    ,  10.2465  ,    10.3616   ,   10.5919    ,  10.8221   ,   11.0524, &
+      11.2827  ,    11.5129  ,    11.7432   ,   11.9734  ,    12.2037  ,    12.4340 , &
+      12.6642  ,    12.8945  ,    13.1247   ,   13.3550  ,    13.5853     , 13.8155, &
+      14.0458  ,    14.2760   ,   14.5063  ,    14.6214  ,    14.7365   ,   14.8517, &
+      14.9668   ,   15.1971  ,    15.4273  ,    15.6576  ,    15.8878  ,    16.1181   /)
+      real, parameter, dimension (36) :: intlnQ = (/ &
+     -83.9292 ,    -82.8931 ,    -82.4172  ,   -81.2275   ,  -80.5291 ,    -80.0532, &
+     -80.1837 ,    -80.2067 ,    -80.1837 ,    -79.9765   ,  -79.6694 ,    -79.2857,&
+     -79.0938 ,    -79.1322  ,   -79.4776  ,   -79.4776   ,  -79.3471 ,    -79.2934,&
+     -79.5159 ,    -79.6618  ,   -79.4776  ,   -79.3778  ,   -79.4008 ,    -79.5159,&
+     -79.7462 ,    -80.1990 ,    -80.9052  ,   -81.3196  ,   -81.9874 ,    -82.2023,&
+     -82.5093 ,    -82.5477 ,    -82.4172  ,   -82.2637  ,   -82.1793 ,    -82.2023  /)
 !
       real, dimension (nx) :: lnTT,get_lnQ
       real, dimension (nx) :: slope,ordinate
@@ -351,7 +422,7 @@ module Special
 !
       get_lnQ=-1000.
 !
-      do i=1,36
+      do i=1,35
         where(lnTT .ge. intlnT(i) .and. lnTT .lt. intlnT(i+1))
           slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
           ordinate = intlnQ(i) - slope*intlnT(i)
@@ -385,6 +456,8 @@ module Special
 !
 !  Multiply by density dependend time scale
       tau_inv_tmp = tau_inv_newton * exp(-exp_newton*(lnrho0-p%lnrho))
+!      tau_inv_tmp = tau_inv_newton *&
+!          0.5*(1+tanh(width_newton*(p%lnrho-lnrho_newton)))
 !
 !  Adjust time scale by the initialization time
       tau_inv_tmp =  tau_inv_tmp * cubic_step(t,init_time,init_time)
@@ -398,8 +471,8 @@ module Special
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,tau_inv_tmp/cdts)
         if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(tau_inv_tmp,idiag_dtnewt,l_dt=.true.)
+!          itype_name(idiag_dtnewt)=ilabel_max_dt
+          call max_mn_name(tau_inv_tmp/cdts,idiag_dtnewt,l_dt=.true.)
         endif
       endif
 !
@@ -599,8 +672,8 @@ module Special
 !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
+!!          itype_name(idiag_dtnewt)=ilabel_max_dt
+!          call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
         endif
         dt1_max=max(dt1_max,rhs/cdts)
       endif
