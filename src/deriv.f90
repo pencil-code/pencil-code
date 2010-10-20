@@ -119,7 +119,7 @@ module Deriv
         if (nygrid/=1) then
           fac=(1./60)*dy_1(m)
           df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-               -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
