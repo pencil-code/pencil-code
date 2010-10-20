@@ -1,8 +1,8 @@
 ! $Id$
-
+!
 !  This module takes care of entropy (initial condition
 !  and time advance)
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -39,7 +39,9 @@ module Entropy
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
+  integer, parameter :: nheatc_max=3
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
+  character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
 !
   ! Delete (or use) me asap!
@@ -54,7 +56,8 @@ module Entropy
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
-      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3
+      lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
+      iheatcond
 !
   integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
   integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
@@ -107,13 +110,11 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: ierr
-!
+      integer :: ierr,i
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
 !
       if (ltemperature_nolog) iTT=ilnTT
-!
 !
       if (ltemperature_nolog) then
         call select_eos_variable('TT',iTT)
@@ -155,6 +156,34 @@ module Entropy
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !
       if (ltemperature_nolog) iTT=ilnTT
+!
+      do i=1,nheatc_max
+        select case (iheatcond(i))
+        case ('chi-const')
+          lheatc_chiconst=.true.
+          if (lroot) call information('initialize_entropy', &
+              ' heat conduction: constant chi')
+        case ('chi-hyper3')
+          lheatc_hyper3=.true.
+          if (lroot) call information('initialize_entropy','hyper conductivity')
+        case ('nothing')
+          if (lroot) print*,'heat conduction: nothing'
+        case default
+          if (lroot) then
+            write(unit=errormsg,fmt=*)  &
+                'No such value iheatcond = ', trim(iheatcond(i))
+            call fatal_error('initialize_entropy',errormsg)
+          endif
+        endselect
+      enddo
+!
+      if (lheatc_chiconst .and. chi==0.0) then
+        call warning('initialize_entropy','chi is zero!')
+      endif
+      if (lheatc_hyper3 .and. chi_hyper3==0.0) then
+        call warning('initialize_entropy', &
+            'Conductivity coefficient chi_hyper3 is zero!')
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -344,7 +373,7 @@ module Entropy
     !     lpenc_requested(i_TT1)=.true.
     !     lpenc_requested(i_glnTT)=.true.
     !     lpenc_requested(i_del2lnTT)=.true.
-    !  endif     
+    !  endif
 !
 !  Diagnostics
 !
