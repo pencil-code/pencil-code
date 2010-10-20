@@ -51,13 +51,14 @@ module Density
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
   real :: wdamp=0.0, density_floor=-1.0
-  real :: mass_source_Mdot=0.0, mass_source_sigma=0.0
+  real :: mass_source_Mdot=0.0, mass_source_sigma=0.0, mass_source_offset=0.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
   real :: rho_top=1.,rho_bottom=1.
   real :: rmax_mass_source
   real :: r0_rho=impossible
+  real :: invgrav_ampl = 0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -95,13 +96,13 @@ module Density
       lisothermal_fixed_Hrho, &
       density_floor, lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
       lnrho_z_shift, powerlr, zoverh, hoverr, lffree, ffree_profile, &
-      rzero_ffree,wffree,rho_top,rho_bottom,r0_rho,rnoise_int,rnoise_ext
+      rzero_ffree,wffree,rho_top,rho_bottom,r0_rho,invgrav_ampl,rnoise_int,rnoise_ext
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
       cs2bot, cs2top, &
       lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
-      mass_source_Mdot,  mass_source_sigma, rmax_mass_source, lnrho_int, lnrho_ext, &
+      mass_source_Mdot,  mass_source_sigma, mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
       lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
@@ -500,6 +501,14 @@ module Density
               f(ix,:,:,ilnrho)=0.0
             else
               f(ix,:,:,ilnrho)=2*log(r0_rho)-2*log(x(ix))
+            endif
+          enddo
+        case ('invgravx')
+          do ix=1,mx
+            if (x(ix)<=r0_rho) then
+              f(ix,:,:,ilnrho)=0.0
+            else
+              f(ix,:,:,ilnrho)=lnrho_const+invgrav_ampl/(x(ix))-invgrav_ampl/(r0_rho)
             endif
           enddo
         case ('mode')
@@ -2179,7 +2188,10 @@ module Density
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
           fprofile=exp(-.5*(z(n)/mass_source_sigma)**2)/fnorm
           dlnrhodt=mass_source_Mdot*fprofile
-!          dlnrhodt=mass_source_Mdot*fprofile*exp(-f(l1:l2,m,n,ilnrho))
+        case('bumpx')
+          fnorm=(2.*pi*mass_source_sigma**2)**1.5
+          fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm
+          dlnrhodt=mass_source_Mdot*fprofile
         case('cylindric')
 !
 !  Cylindrical profile for inner cylinder.
