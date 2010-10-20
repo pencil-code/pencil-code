@@ -58,7 +58,13 @@ module Special
   integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\Lam\Bv\right>$
   integer :: idiag_apbrms=0     ! DIAG_DOC: $\left<(\Av'\Bv)^2\right>^{1/2}$
   integer :: idiag_jxarms=0     ! DIAG_DOC: $\left<(\Jv\times\Av)^2\right>^{1/2}$
+  integer :: idiag_jxaprms=0    ! DIAG_DOC: $\left<(\Jv\times\Av')^2\right>^{1/2}$
+  integer :: idiag_jxgLamrms=0  ! DIAG_DOC: $\left<(\Jv\times\nabla\Lambda)^2\right>^{1/2}$
+  integer :: idiag_gLamrms=0    ! DIAG_DOC: $\left<(\nabla\Lambda)^2\right>^{1/2}$
   integer :: idiag_divabrms=0   ! DIAG_DOC: $\left<[(\nabla\cdot\Av)\Bv]^2\right>^{1/2}$
+  integer :: idiag_divapbrms=0  ! DIAG_DOC: $\left<[(\nabla\cdot\Av')\Bv]^2\right>^{1/2}$
+  integer :: idiag_d2Lambrms=0  ! DIAG_DOC: $\left<[(\nabla^2\Lambda)\Bv]^2\right>^{1/2}$
+  integer :: idiag_d2Lamrms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda)^2\right>^{1/2}$
 !
   contains
 
@@ -158,9 +164,11 @@ module Special
       lpenc_requested(i_uu)=.true.
       if (idiag_apbrms/=0) lpenc_diagnos(i_ab)=.true.
       if (idiag_gLambm/=0) lpenc_diagnos(i_bb)=.true.
-      if (idiag_jxarms/=0) lpenc_diagnos(i_jj)=.true.
-      if (idiag_divabrms/=0) lpenc_diagnos(i_bb)=.true.
-      if (idiag_divabrms/=0) lpenc_diagnos(i_diva)=.true.
+      if (idiag_jxarms/=0 .or. idiag_jxaprms/=0 .or. idiag_jxgLamrms/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_divabrms/=0 .or. idiag_divapbrms/=0 .or. idiag_d2Lambrms/=0) then
+        lpenc_diagnos(i_bb)=.true.
+        lpenc_diagnos(i_diva)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -267,20 +275,65 @@ module Special
           if (idiag_apbrms/=0) call sum_mn_name((p%ab+gLamb)**2,idiag_apbrms,lsqrt=.true.)
         endif
 !
-!  (JxA)_rms
+!  (JxA^r)_rms
 !
         if (idiag_jxarms/=0) then
-          call cross(p%jj,p%aa+gLam,jxa)
+          call cross(p%jj,p%aa,jxa)
           call dot2(jxa,jxa2)
           if (idiag_jxarms/=0) call sum_mn_name(jxa2,idiag_jxarms,lsqrt=.true.)
         endif
 !
-!  [(divA+del2Lam)*B]_rms
+!  (JxA^ar)_rms
+!
+        if (idiag_jxarms/=0) then
+          call cross(p%jj,p%aa+gLam,jxa)
+          call dot2(jxa,jxa2)
+          if (idiag_jxaprms/=0) call sum_mn_name(jxa2,idiag_jxaprms,lsqrt=.true.)
+        endif
+!
+!  (JxgLam)_rms
+!
+        if (idiag_jxgLamrms/=0) then
+          call cross(p%jj,gLam,jxa)
+          call dot2(jxa,jxa2)
+          if (idiag_jxgLamrms/=0) call sum_mn_name(jxa2,idiag_jxgLamrms,lsqrt=.true.)
+        endif
+!
+!  (gLam)_rms
+!
+        if (idiag_jxgLamrms/=0) then
+          call dot2(gLam,jxa2)
+          if (idiag_gLamrms/=0) call sum_mn_name(jxa2,idiag_gLamrms,lsqrt=.true.)
+        endif
+!
+!  [(divA^r)*B]_rms
 !
         if (idiag_divabrms/=0) then
-          call multsv(p%diva+del2Lam,p%bb,divab)
+          call multsv(p%diva,p%bb,divab)
           call dot2(divab,divab2)
           if (idiag_divabrms/=0) call sum_mn_name(divab2,idiag_divabrms,lsqrt=.true.)
+        endif
+!
+!  [(divA^ar)*B]_rms
+!
+        if (idiag_divapbrms/=0) then
+          call multsv(p%diva+del2Lam,p%bb,divab)
+          call dot2(divab,divab2)
+          if (idiag_divapbrms/=0) call sum_mn_name(divab2,idiag_divapbrms,lsqrt=.true.)
+        endif
+!
+!  (del2Lambda*B)_rms
+!
+        if (idiag_d2Lambrms/=0) then
+          call multsv(del2Lam,p%bb,divab)
+          call dot2(divab,divab2)
+          if (idiag_d2Lambrms/=0) call sum_mn_name(divab2,idiag_d2Lambrms,lsqrt=.true.)
+        endif
+!
+!  (del2Lambda)_rms
+!
+        if (idiag_d2Lamrms/=0) then
+          if (idiag_d2Lamrms/=0) call sum_mn_name(del2Lam**2,idiag_d2Lamrms,lsqrt=.true.)
         endif
 !
 !  check for point 1
@@ -377,6 +430,9 @@ module Special
         idiag_gLambm=0; idiag_apbrms=0
         idiag_Lambzm=0; idiag_Lambzmz=0
         idiag_jxarms=0; idiag_divabrms=0
+        idiag_jxaprms=0; idiag_divapbrms=0
+        idiag_jxgLamrms=0; idiag_d2Lambrms=0
+        idiag_gLamrms=0; idiag_d2Lamrms=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -390,7 +446,13 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
         call parse_name(iname,cname(iname),cform(iname),'apbrms',idiag_apbrms)
         call parse_name(iname,cname(iname),cform(iname),'jxarms',idiag_jxarms)
+        call parse_name(iname,cname(iname),cform(iname),'jxaprms',idiag_jxaprms)
+        call parse_name(iname,cname(iname),cform(iname),'jxgLamrms',idiag_jxgLamrms)
+        call parse_name(iname,cname(iname),cform(iname),'gLamrms',idiag_gLamrms)
         call parse_name(iname,cname(iname),cform(iname),'divabrms',idiag_divabrms)
+        call parse_name(iname,cname(iname),cform(iname),'divapbrms',idiag_divapbrms)
+        call parse_name(iname,cname(iname),cform(iname),'d2Lambrms',idiag_d2Lambrms)
+        call parse_name(iname,cname(iname),cform(iname),'d2Lamrms',idiag_d2Lamrms)
       enddo
 !
       do inamez=1,nnamez
