@@ -17,13 +17,13 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  character (len=labellen) :: strati_type='nothing'
+  character (len=labellen) :: stratitype='nothing'
   logical :: linit_lnrho=.false., linit_lnTT=.false.
-  real :: rho0=0.
+  real :: rho_init=0.
   character (len=labellen) :: direction='z'
 !
   namelist /initial_condition_pars/ &
-      linit_lnrho,linit_lnTT,strati_type,rho0,direction
+      linit_lnrho,linit_lnTT,stratitype,rho_init,direction
 !
 contains
 !***********************************************************************
@@ -74,9 +74,9 @@ contains
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (strati_type=='nothing') then
+      if (stratitype=='nothing') then
         call warning('initial_condition_lnrho','Nothing to do')
-      elseif (strati_type=='hydrostatic') then
+      elseif (stratitype=='hydrostatic') then
         if (direction=='z') then
           call hydrostatic_z(f)
         elseif (direction=='x') then
@@ -121,8 +121,8 @@ contains
 !
       inquire(IOLENGTH=lend) dummy
 !
-      lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
-      lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
+      lread_lnTT=(stratitype=='prof_lnTT').or.(stratitype=='prof_lnrho_lnTT')
+      lread_lnrho=(stratitype=='prof_lnrho').or.(stratitype=='prof_lnrho_lnTT')
 !
 ! read temperature profile for interpolation
       if (lread_lnTT.and.ltemperature.and..not.ltemperature_nolog) then
@@ -293,7 +293,7 @@ contains
 !  z direction by solving hydrostatic equilibrium.
 !  dlnrho = - dlnTT + (cp-cv)/T g dz
 !
-!  The initial densitiy lnrho0 must be given in SI units.
+!  The initial densitiy lnrho must be given in SI units.
 !  Temperature given as function lnT(z) in SI units
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
@@ -317,7 +317,7 @@ contains
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
-    lnrho_0 = alog(rho0)
+    lnrho_0 = alog(rho_init)
 !
 ! read temperature profile for interpolation
 !
@@ -429,7 +429,7 @@ contains
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
-    lnrho_0 = alog(rho0)
+    lnrho_0 = alog(rho_init)
 !
 ! read temperature profile for interpolation
 !
