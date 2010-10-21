@@ -626,6 +626,22 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
           *cos(kx_uukin*x(l1:l2)-cxt)*cos(ky_uukin*y(m)-cyt)*cos(kz_uukin*z(n)-czt)
 !
+!  2nd Potential flow, u=gradphi, with phi=cos(kx*X+ky*Y+kz*Z),
+!  and X=x-ct, Y=y-ct, Z=z-ct.
+!
+      elseif (kinflow=='potential2') then
+        fac=ampl_kinflow
+        cxt=cx_uukin*t
+        cyt=cy_uukin*t
+        czt=cz_uukin*t
+        if (headtt) print*,'2nd potential; ampl_kinflow,omega_kinflow=',ampl_kinflow,omega_kinflow
+        if (headtt) print*,'2nd potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
+        p%uu(:,1)=-fac*kx_uukin*sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
+        p%uu(:,2)=-fac*ky_uukin*sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
+        p%uu(:,3)=-fac*kz_uukin*sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
+        if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
+          *cos(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
+!
 !  Potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz;
 !  assume kx_uukin=ky_uukin=kz_uukin.
 !
