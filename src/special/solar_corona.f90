@@ -130,7 +130,7 @@ module Special
         call setdrparams()
 !
 ! if irefz is not set choose z=0 or irefz=n1
-        if (irefz .eq. 0)  then
+        if (irefz .eq. 0) then
           zref = minval(abs(z(n1:n2)))
           irefz = n1
           do i=n1,n2
@@ -140,12 +140,10 @@ module Special
         endif
       endif
 !
-      if (.not.lreloading) then
-        call setup_magnetic()
-        call setup_profiles()
+      if (.not.lreloading .and. .not.lstarting) nano_seed = 0.
 !
-        if (.not.lstarting) nano_seed = 0.
-      endif
+      call setup_magnetic()
+      call setup_profiles()
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -221,6 +219,9 @@ module Special
       character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
+!
+      ! don't touch anything during a RELOAD:
+      if (lreloading) return
 !
       inquire (IOLENGTH=lend) dummy
 !
@@ -334,20 +335,9 @@ module Special
 !  25-aug-2010/Bourdin.KIS: coded
 !
       use EquationOfState, only: lnrho0
-      use Mpicomm, only: mpibcast_real, stop_it_if_any
-      use Syscalls, only: file_exists
 !
-      real :: var0, var1, var2
-      integer :: i, ierr
-      integer, parameter :: unit=12, lnrho_tag=368, lnTT_tag=369
 !
-      ! file location settings
-      character (len=*), parameter :: stratification_dat = 'stratification.dat'
-      character (len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
-      character (len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
-!
-      real, dimension (:), allocatable :: prof_lnrho, prof_lnTT
-      logical :: lread_lnrho=.false., lread_lnTT=.false., lnewton_cooling=.false.
+      logical :: lnewton_cooling=.false.
 !
 ! Only read profiles if needed, e.g. for Newton cooling
 !
@@ -355,19 +345,55 @@ module Special
       lnewton_cooling = (tdown/=0) .or. (tdownr/=0)
       if (.not. (linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
+      ! default: read 'stratification.dat' with density and temperature
       if (strati_type=='nothing') strati_type='lnrho_lnTT'
-      lread_lnTT=(strati_type=='prof_lnTT').or.(strati_type=='prof_lnrho_lnTT')
-      lread_lnrho=(strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')
 !
-! check which stratification file should be used
+      ! on RELOAD we don't need to read the profiles again
+      if (.not. lreloading) call read_stratification()
+!
+      ! set lnrho0 to the lower boundary value
+      if ((strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')) then
+        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
+          if (lroot) print *,'setup_profiles: WARNING: lnrho0 set to ', lnrho0, lnrho_init_z(n1)
+          call warning ("setup_profiles", "overriding lnrho0 setting")
+          lnrho0 = lnrho_init_z(n1)
+        endif
+      endif
+!
+    endsubroutine setup_profiles
+!***********************************************************************
+    subroutine read_stratification()
+!
+!  Read stratification file.
+!
+!  21-oct-2010/Bourdin.KIS: coded
+!
+      use Mpicomm, only: mpibcast_real, stop_it_if_any
+      use Syscalls, only: file_exists
+!
+      integer :: i, ierr
+      integer, parameter :: unit=12, lnrho_tag=368, lnTT_tag=369
+      real :: var0, var1, var2
+      real, dimension (:), allocatable :: prof_lnrho, prof_lnTT
+      logical :: lread_prof_lnTT, lread_prof_lnrho
+!
+      ! file location settings
+      character (len=*), parameter :: stratification_dat = 'stratification.dat'
+      character (len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
+      character (len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
+!
+!
+! Check which stratification file should be used:
+!
+      lread_prof_lnTT = (strati_type=='prof_lnTT') .or. (strati_type=='prof_lnrho_lnTT')
+      lread_prof_lnrho = (strati_type=='prof_lnrho') .or. (strati_type=='prof_lnrho_lnTT')
+!
       if (strati_type=='lnrho_lnTT') then
-!
-! read 'stratification.dat'
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
         if (ierr > 0) call stop_it_if_any (.true.,'setup_profiles: '// &
             'Could not allocate memory for stratification variables')
 !
-! file access is only done on the MPI root rank
+        ! read stratification file only on the MPI root rank
         if (lroot) then
           if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
               .true., 'setup_profiles: Stratification file not found')
@@ -392,30 +418,21 @@ module Special
         if (allocated (prof_lnTT)) deallocate (prof_lnTT)
         if (allocated (prof_lnrho)) deallocate (prof_lnrho)
 !
-      elseif (lread_lnrho .or. lread_lnTT) then
+      elseif (lread_prof_lnTT .or. lread_prof_lnrho) then
 !
         ! read logarithmic temperature profile
-        if (lread_lnTT) &
+        if (lread_prof_lnTT) &
             call read_profile (lnT_dat, lnTT_init_z, unit_temperature)
 !
         ! read logarithmic density profile for interpolation
-        if (lread_lnrho) &
+        if (lread_prof_lnrho) &
             call read_profile (lnrho_dat, lnrho_init_z, unit_density)
 !
       else
         call fatal_error ('setup_profiles', "strati_type='"//trim(strati_type)//"' unknown.")
       endif
 !
-      ! set lnrho0 to the lower boundary value
-      if (lread_lnrho) then
-        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-          if (lroot) print *,'setup_profiles: WARNING: lnrho0 set to ', lnrho0, lnrho_init_z(n1)
-          call warning ("setup_profiles", "overriding lnrho0 setting")
-          lnrho0 = lnrho_init_z(n1)
-        endif
-      endif
-!
-    endsubroutine setup_profiles
+    endsubroutine read_stratification
 !***********************************************************************
     subroutine read_profile(filename,profile,data_unit)
 !
