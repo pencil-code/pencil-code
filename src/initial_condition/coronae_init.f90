@@ -75,7 +75,7 @@ contains
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (strati_type=='nothing') then
-        call fatal_error('initial_condition_lnrho','Nothing to do')
+        call warning('initial_condition_lnrho','Nothing to do')
       elseif (strati_type=='hydrostatic') then
         if (direction=='z') then
           call hydrostatic_z(f)
@@ -156,11 +156,7 @@ contains
         prof_lnTT = prof_lnTT - alog(real(unit_temperature))
 !
 ! convert z coordinates from [Mm] to Pencil units
-        if (unit_system == 'SI') then
-          prof_z = prof_z * 1.e6 / unit_length
-        elseif (unit_system == 'cgs') then
-          prof_z = prof_z * 1.e8 / unit_length
-        endif
+        prof_z = prof_z / unit_length
 !
 ! interpolate temperature profile to Pencil grid
 !
@@ -241,11 +237,7 @@ contains
         prof_lnrho = prof_lnrho - alog(real(unit_density))
 !
 ! convert z coordinates from [Mm] to Pencil units
-        if (unit_system == 'SI') then
-          prof_z = prof_z * 1.e6 / unit_length
-        elseif (unit_system == 'cgs') then
-          prof_z = prof_z * 1.e8 / unit_length
-        endif
+        prof_z = prof_z / unit_length
 !
 ! interpolate density profile to Pencil grid
         if (direction=='z') then
