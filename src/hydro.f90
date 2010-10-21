@@ -1299,7 +1299,8 @@ module Hydro
 !  Damping terms for lcylinder_in_a_box
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
-        lpenc_requested(i_r_mn)=.true.
+        if (lOmega_int.or.rdampext/=impossible.or.rdampint/=impossible) &
+            lpenc_requested(i_r_mn)=.true.
         if (lcylinder_in_a_box) lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
