@@ -1171,7 +1171,7 @@ include 'NSCBC.h'
                 +Rgas*grad_mu1*TT*rho0
             P0=rho0*Rgas*mu1*TT
           else
-            grad_P(:,:,i)=cs2*(grad_rho(:,:,i)+grad_T(:,:,i)*rho0/TT)
+            grad_P(:,:,i)=cs2*(grad_rho(:,:,i)+grad_T(:,:,i)*rho0/TT)/gamma_
           endif
         else
           grad_P(:,:,i)=grad_rho(:,:,i)*cs2
