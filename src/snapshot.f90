@@ -169,6 +169,19 @@ module Snapshot
             enddo
             f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
           endif
+!
+!  Read data without testscalar into new run with testscalar.
+!
+        elseif (lread_oldsnap_notestscalar) then
+          print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
+          call input_snap(chsnap,f,msnap-ntestscalar,1)
+          ! shift the rest of the data
+          if (iaztestpq<msnap) then
+            do ivar=iaztestpq+1,msnap
+              f(:,:,:,ivar)=f(:,:,:,ivar-ntestscalar)
+            enddo
+            f(:,:,:,icctest:icctest+ntestscalar-1)=0.
+          endif
         else
           call input_snap(chsnap,f,msnap,1)
         endif

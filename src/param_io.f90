@@ -69,7 +69,8 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
-      lread_oldsnap_notestfield, lread_aux, lwrite_aux, &
+      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
+      lread_aux, lwrite_aux, &
       pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
@@ -98,7 +99,8 @@ module Param_IO
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       ltime_integrals, lnowrite, noghost_for_isave, lwrite_yaverages, &
       lwrite_zaverages, lwrite_phiaverages, test_nonblocking, &
-      lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestfield, &
+      lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
+      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, &
       ybot_slice, ytop_slice, &

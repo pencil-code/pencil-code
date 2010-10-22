@@ -61,7 +61,9 @@ module Entropy
   real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
+  real :: tau_cool_ss=0.0
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible
+  real :: ss_volaverage=0., ss_volaverage_tmp
   real, target :: T0hs=impossible
   real, dimension(mx), target :: zrho
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
@@ -78,9 +80,9 @@ module Entropy
   logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
-  logical :: lcooling_general=.false.
+  logical :: lcooling_general=.false., lcooling_average=.false.
   logical :: lupw_ss=.false.
-  logical :: lcalc_ssmean=.false.
+  logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
@@ -112,6 +114,7 @@ module Entropy
       center1_y, center1_z, center2_x, center2_y, center2_z, T0, ampl_TT, &
       kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
+      tau_cool_ss, &
       TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, &
       rho0ts, T0hs, lconvection_gravx, Fbot
 !
@@ -120,16 +123,19 @@ module Entropy
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      wcool, Fbot, lcooling_general, chi_t, chi_th, chi_rho, chit_prof1, &
+      wcool, Fbot, lcooling_general, lcooling_average, &
+      ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
-      lcalc_ssmean, lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
+      lcalc_ss_volaverage, lcalc_ssmean, &
+      lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
       TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
-      xtop, tau_cool2, tau_diff, lfpres_from_pressure, chit_aniso, &
+      xtop, tau_cool2, tau_cool_ss, &
+      tau_diff, lfpres_from_pressure, chit_aniso, &
       lchit_aniso_simplified, lconvection_gravx
 !
 !  Diagnostic variables (need to be consistent with reset list below).
@@ -2658,7 +2664,7 @@ module Entropy
 !
       intent(inout) :: f
 !
-!  Compute mean field for each component. Include the ghost zones,
+!  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
 !
       if (lcalc_ssmean) then
@@ -2679,6 +2685,13 @@ module Entropy
         gssmz(:,1:2)=0.
         call der_z(ssmz,gssmz(:,3))
         call der2_z(ssmz,del2ssmz)
+      endif
+!
+!  Compute volume average of entropy.
+!
+      if (lcalc_ss_volaverage) then
+        ss_volaverage_tmp=sum(f(l1:l2,m1:m2,n,iss))/nwgrid
+        call mpiallreduce_sum(ss_volaverage_tmp,ss_volaverage)
       endif
 !
     endsubroutine calc_lentropy_pars
@@ -3730,8 +3743,8 @@ module Entropy
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) &
-           !heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
-           heat=heat-p%rho*p%cp*gamma_inv/tau_cool
+          !heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+          heat=heat-p%rho*p%cp*gamma_inv/tau_cool
       if (tau_cool2/=0.0) &
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
 !
@@ -3753,6 +3766,12 @@ module Entropy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%rho1*heat
       if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
+!
+!  Volume heating/cooling term on the mean entropy with respect to ss_const.
+!
+      if (lcalc_ss_volaverage.and.tau_cool_ss/=0.) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ss_volaverage-ss_const)/tau_cool_ss
+      endif
 !
 !  Heating/cooling related diagnostics.
 !
