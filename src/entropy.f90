@@ -3743,8 +3743,7 @@ module Entropy
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) &
-          !heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
-          heat=heat-p%rho*p%cp*gamma_inv/tau_cool
+          heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
       if (tau_cool2/=0.0) &
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
 !
