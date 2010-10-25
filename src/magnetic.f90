@@ -272,12 +272,24 @@ module Magnetic
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
   integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction)
-  integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_0,y_0,z_0,t)$
-  integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_0,y_0,z_0,t)$
-  integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_0,y_0,z_0,t)$
-  integer :: idiag_Expt=0       ! DIAG_DOC: ${\cal E}_x(x_0,y_0,z_0,t)$
-  integer :: idiag_Eypt=0       ! DIAG_DOC: ${\cal E}_y(x_0,y_0,z_0,t)$
-  integer :: idiag_Ezpt=0       ! DIAG_DOC: ${\cal E}_z(x_0,y_0,z_0,t)$
+  integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_1,y_1,z_1,t)$
+  integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_1,y_1,z_1,t)$
+  integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_1,y_1,z_1,t)$
+  integer :: idiag_jxpt=0       ! DIAG_DOC: $J_x(x_1,y_1,z_1,t)$
+  integer :: idiag_jypt=0       ! DIAG_DOC: $J_y(x_1,y_1,z_1,t)$
+  integer :: idiag_jzpt=0       ! DIAG_DOC: $J_z(x_1,y_1,z_1,t)$
+  integer :: idiag_Expt=0       ! DIAG_DOC: ${\cal E}_x(x_1,y_1,z_1,t)$
+  integer :: idiag_Eypt=0       ! DIAG_DOC: ${\cal E}_y(x_1,y_1,z_1,t)$
+  integer :: idiag_Ezpt=0       ! DIAG_DOC: ${\cal E}_z(x_1,y_1,z_1,t)$
+  integer :: idiag_bxp2=0       ! DIAG_DOC: $B_x(x_2,y_2,z_2,t)$
+  integer :: idiag_byp2=0       ! DIAG_DOC: $B_y(x_2,y_2,z_2,t)$
+  integer :: idiag_bzp2=0       ! DIAG_DOC: $B_z(x_2,y_2,z_2,t)$
+  integer :: idiag_jxp2=0       ! DIAG_DOC: $J_x(x_2,y_2,z_2,t)$
+  integer :: idiag_jyp2=0       ! DIAG_DOC: $J_y(x_2,y_2,z_2,t)$
+  integer :: idiag_jzp2=0       ! DIAG_DOC: $J_z(x_2,y_2,z_2,t)$
+  integer :: idiag_Exp2=0       ! DIAG_DOC: ${\cal E}_x(x_2,y_2,z_2,t)$
+  integer :: idiag_Eyp2=0       ! DIAG_DOC: ${\cal E}_y(x_2,y_2,z_2,t)$
+  integer :: idiag_Ezp2=0       ! DIAG_DOC: ${\cal E}_z(x_2,y_2,z_2,t)$
   integer :: idiag_epsM_LES=0   ! DIAG_DOC:
   integer :: idiag_aybym2=0     ! DIAG_DOC:
   integer :: idiag_exaym2=0     ! DIAG_DOC:
@@ -2811,9 +2823,26 @@ module Magnetic
           if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
           if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
           if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
+          if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
+          if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
+          if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
           if (idiag_Expt/=0) call save_name(uxbb(lpoint-nghost,1),idiag_Expt)
           if (idiag_Eypt/=0) call save_name(uxbb(lpoint-nghost,2),idiag_Eypt)
           if (idiag_Ezpt/=0) call save_name(uxbb(lpoint-nghost,3),idiag_Ezpt)
+        endif
+!
+!  Magnetic field components at point 2 (=p2).
+!
+        if (lroot.and.m==mpoint2.and.n==npoint2) then
+          if (idiag_bxp2/=0) call save_name(p%bb(lpoint2-nghost,1),idiag_bxp2)
+          if (idiag_byp2/=0) call save_name(p%bb(lpoint2-nghost,2),idiag_byp2)
+          if (idiag_bzp2/=0) call save_name(p%bb(lpoint2-nghost,3),idiag_bzp2)
+          if (idiag_jxp2/=0) call save_name(p%jj(lpoint2-nghost,1),idiag_jxp2)
+          if (idiag_jyp2/=0) call save_name(p%jj(lpoint2-nghost,2),idiag_jyp2)
+          if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
+          if (idiag_Exp2/=0) call save_name(uxbb(lpoint2-nghost,1),idiag_Exp2)
+          if (idiag_Eyp2/=0) call save_name(uxbb(lpoint2-nghost,2),idiag_Eyp2)
+          if (idiag_Ezp2/=0) call save_name(uxbb(lpoint2-nghost,3),idiag_Ezp2)
         endif
 !
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
@@ -6031,8 +6060,14 @@ module Magnetic
         idiag_uam=0; idiag_ubm=0; idiag_dubrms=0; idiag_dobrms=0; idiag_ujm=0
         idiag_uxbxm=0; idiag_uybym=0; idiag_uzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
-        idiag_epsAD=0; idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_Expt=0
-        idiag_Eypt=0; idiag_Ezpt=0; idiag_aybym2=0; idiag_exaym2=0
+        idiag_epsAD=0
+        idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
+        idiag_jxpt=0; idiag_jypt=0; idiag_jzpt=0
+        idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
+        idiag_bxp2=0; idiag_byp2=0; idiag_bzp2=0
+        idiag_jxp2=0; idiag_jyp2=0; idiag_jzp2=0
+        idiag_Exp2=0; idiag_Eyp2=0; idiag_Ezp2=0
+        idiag_aybym2=0; idiag_exaym2=0
         idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
@@ -6242,9 +6277,21 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
         call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
         call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
+        call parse_name(iname,cname(iname),cform(iname),'jxpt',idiag_jxpt)
+        call parse_name(iname,cname(iname),cform(iname),'jypt',idiag_jypt)
+        call parse_name(iname,cname(iname),cform(iname),'jzpt',idiag_jzpt)
         call parse_name(iname,cname(iname),cform(iname),'Expt',idiag_Expt)
         call parse_name(iname,cname(iname),cform(iname),'Eypt',idiag_Eypt)
         call parse_name(iname,cname(iname),cform(iname),'Ezpt',idiag_Ezpt)
+        call parse_name(iname,cname(iname),cform(iname),'bxp2',idiag_bxp2)
+        call parse_name(iname,cname(iname),cform(iname),'byp2',idiag_byp2)
+        call parse_name(iname,cname(iname),cform(iname),'bzp2',idiag_bzp2)
+        call parse_name(iname,cname(iname),cform(iname),'jxp2',idiag_jxp2)
+        call parse_name(iname,cname(iname),cform(iname),'jyp2',idiag_jyp2)
+        call parse_name(iname,cname(iname),cform(iname),'jzp2',idiag_jzp2)
+        call parse_name(iname,cname(iname),cform(iname),'Exp2',idiag_Exp2)
+        call parse_name(iname,cname(iname),cform(iname),'Eyp2',idiag_Eyp2)
+        call parse_name(iname,cname(iname),cform(iname),'Ezp2',idiag_Ezp2)
         call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)

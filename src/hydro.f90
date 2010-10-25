@@ -182,9 +182,12 @@ module Hydro
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC:
-  integer :: idiag_uxpt=0       ! DIAG_DOC:
-  integer :: idiag_uypt=0       ! DIAG_DOC:
-  integer :: idiag_uzpt=0       ! DIAG_DOC:
+  integer :: idiag_uxpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
+  integer :: idiag_uypt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
+  integer :: idiag_uzpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
+  integer :: idiag_uxp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
+  integer :: idiag_uyp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
+  integer :: idiag_uzp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
@@ -1875,13 +1878,22 @@ module Hydro
         if (idiag_uxuydivum/=0) &
             call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
 !
-!  Kinetic field components at one point (=pt).
+!  Velocity components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
           if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
         endif
+!
+!  Velocity components at point 2 (=p2).
+!
+        if (lroot.and.m==mpoint2.and.n==npoint2) then
+          if (idiag_uxp2/=0) call save_name(p%uu(lpoint2-nghost,1),idiag_uxp2)
+          if (idiag_uyp2/=0) call save_name(p%uu(lpoint2-nghost,2),idiag_uyp2)
+          if (idiag_uzp2/=0) call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
+        endif
+!
         if (idiag_u2mz/=0)  call xysum_mn_name_z(p%u2,idiag_u2mz)
 !
 !  Mean momenta.
@@ -3191,6 +3203,9 @@ module Hydro
         idiag_uxpt=0
         idiag_uypt=0
         idiag_uzpt=0
+        idiag_uxp2=0
+        idiag_uyp2=0
+        idiag_uzp2=0
         idiag_urms=0
         idiag_umax=0
         idiag_uzrms=0
@@ -3497,6 +3512,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxpt',idiag_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',idiag_uypt)
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
+        call parse_name(iname,cname(iname),cform(iname),'uxp2',idiag_uxp2)
+        call parse_name(iname,cname(iname),cform(iname),'uyp2',idiag_uyp2)
+        call parse_name(iname,cname(iname),cform(iname),'uzp2',idiag_uzp2)
         call parse_name(iname,cname(iname),cform(iname),'fintm',idiag_fintm)
         call parse_name(iname,cname(iname),cform(iname),'fextm',idiag_fextm)
         call parse_name(iname,cname(iname),cform(iname),'divuHrms',idiag_divuHrms)
