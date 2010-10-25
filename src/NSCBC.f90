@@ -46,7 +46,7 @@ include 'NSCBC.h'
   real :: transversal_damping=0.2
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
-  logical :: notransveral_terms=.false.
+  logical :: notransveral_terms=.true.
 !
 !  Variables to be used when getting timevarying inlet from file
 !
@@ -636,7 +636,6 @@ include 'NSCBC.h'
       if (.not. ldensity_nolog) then
         dfslice(:,:,ilnrho)=dfslice(:,:,ilnrho)/rho0
       endif
-
 !
 !  Check if we are solving for logT or T
 !
