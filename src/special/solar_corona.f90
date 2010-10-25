@@ -63,9 +63,13 @@ module Special
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
 !
+! video slices
     real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
     real, target, dimension (nx,nz) :: rtv_xz
     real, target, dimension (ny,nz) :: rtv_yz
+    real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
+    real, target, dimension (nx,nz) :: logQ_xz
+    real, target, dimension (ny,nz) :: logQ_yz
 !
 !
     TYPE point
@@ -759,6 +763,15 @@ module Special
         if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
         slices%ready=.true.
 !
+      case ('logQ')
+        slices%yz =>logQ_yz
+        slices%xz =>logQ_xz
+        slices%xy =>logQ_xy
+        slices%xy2=>logQ_xy2
+        if (lwrite_slice_xy3) slices%xy3=>logQ_xy3
+        if (lwrite_slice_xy4) slices%xy4=>logQ_xy4
+        slices%ready=.true.
+!
       endselect
 !
       call keep_compiler_quiet(f)
@@ -1439,6 +1452,13 @@ module Special
         endif
         dt1_max=max(dt1_max,rtv_cool/cdts)
       endif
+!
+      logQ_yz(m-m1+1,n-n1+1)=lnQ(ix_loc-l1+1)*0.43429448
+      if (m==iy_loc)  logQ_xz(:,n-n1+1)= lnQ*0.43429448
+      if (n==iz_loc)  logQ_xy(:,m-m1+1)= lnQ*0.43429448
+      if (n==iz2_loc) logQ_xy2(:,m-m1+1)= lnQ*0.43429448
+      if (n==iz3_loc) logQ_xy3(:,m-m1+1)= lnQ*0.43429448
+      if (n==iz4_loc) logQ_xy4(:,m-m1+1)= lnQ*0.43429448
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -2334,6 +2354,7 @@ module Special
 ! we are at the end
         deallocate(current)
         current => previous
+        nullify(current%next)
         nullify(previous)
 ! BE AWARE THAT PREVIOUS IS NOT NOT ALLOCATED TO THE RIGHT POSITION
       endif
