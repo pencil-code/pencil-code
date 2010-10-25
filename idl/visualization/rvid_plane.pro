@@ -17,7 +17,7 @@
 ;  The /polar option is for sphere/cylinder-in-a-box simulations only.
 ;
 ;  Typical calling sequence:
-;    rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
+;    rvid_plane,'uz',min=-1e-1,max=1e-1,/proc
 ;
 ;  ... and for spherical slices
 ;    rvid_plane,'bb1',min=-.5,max=.5,/sph
@@ -364,15 +364,15 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
 ;  other options
 ;
   if (keyword_set(exponential)) then begin
-    plane2=rebin(exp(plane),zoom*[nx_plane,ny_plane])
+    plane2=rebin(exp(plane),zoom*nx_plane,zoom*ny_plane)
   endif else if (keyword_set(nsmooth)) then begin
-    plane2=rebin(smooth(plane,nsmooth),zoom*[nx_plane,ny_plane])
+    plane2=rebin(smooth(plane,nsmooth),zoom*nx_plane,zoom*ny_plane)
   endif else if (keyword_set(sqroot)) then begin
-    plane2=rebin(sqrt(plane),zoom*[nx_plane,ny_plane])
+    plane2=rebin(sqrt(plane),zoom*nx_plane,zoom*ny_plane)
   endif else if (keyword_set(log)) then begin
-    plane2=rebin(alog10(plane+tini),zoom*[nx_plane,ny_plane])
+     plane2=rebin(alog10(plane+tini),zoom*nx_plane,zoom*ny_plane)
   endif else begin
-    plane2=rebin(plane,zoom*[nx_plane,ny_plane])
+     plane2=rebin(plane,zoom*nx_plane,zoom*ny_plane)
   endelse
 ;
 ;  Do masking, if shell set.
