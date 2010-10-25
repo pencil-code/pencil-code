@@ -570,6 +570,9 @@ module Boundcond
               case ('s0d')
                 ! BCZ_DOC: symmetry, function value such that df/dz=0
                 call bc_symset0der_z(f,topbot,j)
+              case ('0ds')
+                ! BCZ_DOC: symmetry, function value such that df/dz=0
+                call bc_symset0der_z_v2(f,topbot,j)
               case ('a')
                 ! BCZ_DOC: antisymmetry
                 call bc_sym_z(f,-1,topbot,j)
@@ -5737,5 +5740,41 @@ module Boundcond
       endif
 !
     endsubroutine bc_pp_hds_z_iso
+!***********************************************************************
+    subroutine bc_symset0der_z_v2(f,topbot,j)
+!
+!  This routine modified from bc_sym_z, but to a lower order.
+!  Only available for z axis, activate with "0ds"
+!  This is the routine to be used as regularity condition on the axis.
+!
+!  25-Oct-10/axel+koen+tijmen: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j,i1=1,i2=2,i3=3
+!
+      select case (topbot)
+!
+!  bottom (left end of the domain)
+      case ('bot')
+        f(:,:,n1,j)=(+30.*f(:,:,n1+i1,j) &
+            -3.*f(:,:,n1+i2,j) &
+            -2.*f(:,:,n1+i3,j))/25.
+!
+        do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1+i,j); enddo
+!
+!  top (right end of the domain)
+      case ('top')
+        f(:,:,n2,j)=(30.*f(:,:,n2+i1,j) &
+                            -3.*f(:,:,n2+i2,j) &
+                            -2.*f(:,:,n2+i3,j))/25.
+        do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
+!
+      case default
+        print*, "bc_symset0der_z_v2: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_symset0der_z_v2
 !***********************************************************************
 endmodule Boundcond
