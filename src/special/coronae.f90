@@ -791,7 +791,7 @@ module Special
           if (associated(thirdlev%next)) nullify(thirdlev%next)
         endif
 !
-        points_rstate(:)=0.
+        points_rstate(:)=iproc
 !
       endif
 !
@@ -927,7 +927,7 @@ module Special
       if (.not.associated(current%next)) then
         call read_points(level)
         if (.not.associated(current%next)) then
-          call driver_init(level)
+          call driver_fill(level)
           call write_points(level) ! compares to var.dat
           call write_points(level,0) ! compares to VAR0
         endif
@@ -945,17 +945,9 @@ module Special
           endif
         enddo
 !
-! Fill up with new granules:
-        
-!        if (level==1) then
-!          print*,count,' POINTS for LEVEL',level,iproc
-!         if  (minval(avoidarr).ne.1) print*,"need points"
-!        endif
-        call driver_init(level)
-      endif
+        call driver_fill(level)
 !
-
-!      if (new_points(lnew_point)) call communicate_points(tmppoint,level)
+      endif
 !
       Ux = Ux + vx
       Uy = Uy + vy
@@ -980,7 +972,7 @@ module Special
 !
     endsubroutine reset_arrays
 !***********************************************************************
-    subroutine driver_init(level)
+    subroutine driver_fill(level)
 !
       use General, only: random_number_wrapper
 
@@ -988,6 +980,8 @@ module Special
       logical :: lwait_for_points,lneed_points
       real, dimension(6) :: tmppoint
       real :: rand
+!
+      tmppoint=0.
 !
 ! Logicals for the communication of points
       lwait_for_points=.true.
@@ -1006,14 +1000,17 @@ module Special
           call make_new_point(level)
 !
 ! Center times around starting time
-          call random_number_wrapper(rand)
-          current%data(5)=t+(rand*2-1.)*current%data(6)* &
-              (-alog(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
-          !
-          current%data(3)=current%data(4)* &
-              exp(-((t-current%data(5))/current%data(6))**pow)
-!
+          if (it.le.1) then
+            call random_number_wrapper(rand)
+            current%data(5)=t+(rand*2-1.)*current%data(6)* &
+                (-alog(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
+            !
+            current%data(3)=current%data(4)* &
+                exp(-((t-current%data(5))/current%data(6))**pow)
+            !
+          endif
           call draw_update(level)
+
 !
           tmppoint(1) = current%data(1) + ipx*nx
           tmppoint(2) = current%data(2) + ipy*ny
@@ -1047,7 +1044,7 @@ module Special
 !
       call reset_pointer
 !
-    endsubroutine driver_init
+    endsubroutine driver_fill
 !***********************************************************************
     subroutine make_new_point(level)
 !
@@ -1188,6 +1185,10 @@ module Special
       integer, intent(in) :: level
       integer :: send_proc,ipt,i,j
 !
+      intent(in) :: tmppoint
+!
+      tmppoint_recv=0.
+!
       do send_proc=0,nprocxy-1    ! send_proc is the reciever.
         if (iproc==send_proc) then
           do i=0,nprocx-1; do j=0,nprocy-1
@@ -1217,7 +1218,9 @@ module Special
       real :: dist0,tmp,ampl,granr
       integer :: xrange,yrange
       integer :: xpos,ypos
+      logical :: lover_lapp
 !
+      lover_lapp = .false.
       xrange=xrange_arr(level)
       yrange=yrange_arr(level)
       ampl=ampl_arr(level)
@@ -1242,12 +1245,12 @@ module Special
 !
 ! Following line ensures periodicity in Y of the global field.
             j = 1+mod(jj-1+nygrid,nygrid)
-!
             jl = j-ipy*ny
             if (jl>=1.and.jl<=ny) then
 !
-              xdist=dx*(ii-(current%data(1)+nx*ipx))
-              ydist=dy*(jj-(current%data(2)+ny*ipy))
+              lover_lapp = .true.
+              xdist=dx*(ii-current%data(1)-ipx*nx)
+              ydist=dy*(jj-current%data(2)-ipy*ny)
 !
               dist2=max(xdist**2+ydist**2,dxdy2)
               dist=sqrt(dist2)
@@ -1280,6 +1283,8 @@ module Special
           enddo
         endif
       enddo
+!
+      if (.not.lover_lapp) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
@@ -1412,7 +1417,8 @@ module Special
             exp(-((t-current%data(5))/current%data(6))**pow)
 !
 ! remove point if amplitude is less than threshold
-        if (current%data(3)/ampl_arr(level).lt.thresh) call remove_point
+        if (current%data(3)/ampl_arr(level).lt.thresh &
+            .and.t>current%data(5)) call remove_point
 !
 ! check if last point is reached
         if (.not. associated(current%next)) exit
