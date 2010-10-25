@@ -46,7 +46,7 @@ include 'NSCBC.h'
   real :: transversal_damping=0.2
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
-  logical :: notransveral_terms=.true.
+  logical :: notransveral_terms=.false.
 !
 !  Variables to be used when getting timevarying inlet from file
 !
