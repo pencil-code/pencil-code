@@ -894,7 +894,7 @@ module Special
 ! There is no previous for the first entry
         nullify(previous)
 !
-        if (level==3) call drive3(level)
+        call drive3(level)
 !
 ! In case the first point of a level was deleted
 ! adjust levelpointer to first entry
@@ -921,7 +921,6 @@ module Special
     subroutine drive3(level)
 !
       integer, intent(in) :: level
-      integer :: count
 !
       call reset_arrays
       if (Bavoid<huge1) call fill_B_avoidarr(level)
@@ -935,12 +934,10 @@ module Special
         endif
       else
         call update_points(level)
-        count=1
         call draw_update(level)
         do
           if (associated(current%next)) then
             call get_next_point
-            count=count+1
             call draw_update(level)
           else
             exit
@@ -951,6 +948,7 @@ module Special
 !
       endif
 !
+      
       Ux = Ux + vx
       Uy = Uy + vy
 !
@@ -989,7 +987,7 @@ module Special
 !
       tmppoint=0.
 !
-      lwait_for_points = .true.
+      lwait_for_points = new_points()
 !
       do while (lwait_for_points)
         do i=0,nprocxy-1
@@ -1048,13 +1046,7 @@ module Special
 !
 ! start over if one or more has still place to put a granule
 !
-        if (minval(avoidarr).ne.1) then
-          lwait_for_points=.true.
-        else
-          lwait_for_points=.false.
-        endif
-!
-        lwait_for_points=new_points(lwait_for_points)
+        lwait_for_points=new_points()
 !
       enddo
 !
@@ -1153,17 +1145,23 @@ module Special
 !
     endsubroutine get_next_point
 !***********************************************************************
-    function new_points(lnew_point)
+    function new_points()
 !
 ! Collects and broadcasts the logical in the lower plane of procs
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
-      logical, intent(in) :: lnew_point
+      logical :: lnew_point
       logical :: new_points,ltmp
       integer :: i,j,ipt
 !
 ! root collects
+!
+      if (minval(avoidarr).ne.1) then
+        lnew_point=.true.
+      else
+        lnew_point=.false.
+      endif
 !
       if (iproc==0) then
         new_points=lnew_point
@@ -1201,6 +1199,7 @@ module Special
       real :: dist0,tmp,ampl,granr
       integer :: xrange,yrange
       integer :: xpos,ypos
+      logical :: loverlapp
 !
       xrange=xrange_arr(level)
       yrange=yrange_arr(level)
@@ -1212,6 +1211,8 @@ module Special
 ! First get global position
 !
       xpos = int(current%data(1)+ipx*nx)
+!
+      loverlapp = .false.
 !
       do ii=xpos-xrange,xpos+xrange
 !
@@ -1229,6 +1230,7 @@ module Special
             jl = j-ipy*ny
             if (jl>=1.and.jl<=ny) then
 !
+              loverlapp = .true.
               xdist=dx*(ii-current%data(1)-ipx*nx)
               ydist=dy*(jj-current%data(2)-ipy*ny)
 !
@@ -1263,6 +1265,8 @@ module Special
           enddo
         endif
       enddo
+!
+      if (.not.loverlapp.and. it >1) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
@@ -1533,36 +1537,6 @@ module Special
       enddo
 !
     endsubroutine fill_B_avoidarr
-!***********************************************************************
-    function loverlapp(tmppoint,level)
-!
-      real, dimension(6), intent(in) :: tmppoint
-      integer, intent(in) :: level
-      logical loverlapp
-!
-      real :: r1,zx,zy,disx,disy
-!
-      loverlapp =.false.
-!
-      r1 = sqrt((nx/2.)**2.+(ny/2.)**2.)
-      zx = nx *(ipx+ 1/2)
-      zy = ny *(ipy+ 1/2)
-!
-      disx = abs(zx-tmppoint(1))
-      disx = min(disx,abs(zx-tmppoint(1)+nxgrid))
-      disx = min(disx,abs(zx-tmppoint(1)-nxgrid))
-      disx = disx - xrange_arr(level)
-!
-      disy = abs(zy-tmppoint(2))
-      disy = min(disy,abs(zy-tmppoint(2)+nygrid))
-      disy = min(disy,abs(zy-tmppoint(2)-nygrid))
-      disy = disy - yrange_arr(level)
-!
-      if (sqrt(disx**2+disy**2)<r1) then
-        loverlapp=.true.
-      endif
-!
-    endfunction loverlapp
 !***********************************************************************
     subroutine evolve_granules()
 !
