@@ -51,7 +51,6 @@ module Forcing
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lscale_kvector_fac=.false.
   logical :: lforce_peri=.false., lforce_cuty=.false.
-  logical :: lstep_up=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -108,7 +107,7 @@ module Forcing
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
-       lforce_peri,lforce_cuty,lstep_up
+       lforce_peri,lforce_cuty
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -322,15 +321,21 @@ module Forcing
         enddo
         profz_ampl=1.; profz_hel=1.
 !
-!  turn off forcing intensity and above x=x0
+!  turn off forcing intensity above x=x0
 !
       elseif (iforce_profile=='surface_x') then
         profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
         profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
-       
-
+!
+!  turn on forcing intensity above x=x0
+!
+      elseif (iforce_profile=='above_x0') then
+        profx_ampl=.5*(1.+erfunc((x-r_ff)/width_ff))
+        profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.; profz_hel=1.
 !
 !  just a change in intensity in the z direction
 !
@@ -923,19 +928,10 @@ module Forcing
               coef1(2)=cmplx(k*key,sig*kkey)
               coef1(3)=cmplx(k*kez,sig*kkez)
               do m=m1,m2
-                if (lspherical_coords)then
-                  radius = x(l1:l2)
-                else
-                  radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-                endif
-                if (lstep_up) then
-                  tmpx = 0.5*(1.+tanh((radius-r_ff)/width_ff))
-                else
-                  tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
-                endif
                 forcing_rhs(:,j)=rho1 &
+                  *profx_ampl*profy_ampl(m)*profz_ampl(n) &
                   *real(cmplx(coef1(j),profy_hel(m)*coef2(j)) &
-                  *tmpx*fx(l1:l2)*fy(m)*fz(n))
+                  *fx(l1:l2)*fy(m)*fz(n))
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
