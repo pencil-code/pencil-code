@@ -344,7 +344,6 @@ module Special
       endif
 !
       if (luse_ext_vel_field) call read_ext_vel_field()
-
 !
 !  Compute photospheric granulation.
       if (lgranulation.and.ipz==0.and..not. lpencil_check_at_work) then
@@ -684,7 +683,7 @@ module Special
       tau_inv_tmp = tau_inv_newton * cubic_step(p%lnrho,lnrho_newton,width_newton)
 !
       tau_inv_tmp = tau_inv_tmp * cubic_step(t,init_time,init_width)
-
+!
       newton  = newton * tau_inv_tmp
 !
 !  Add newton cooling term to entropy
@@ -790,8 +789,11 @@ module Special
           allocate(thirdlev)
           if (associated(thirdlev%next)) nullify(thirdlev%next)
         endif
+        firstlev%number=0
+        secondlev%number=0
+        thirdlev%number=0
 !
-        points_rstate(:)=iproc
+        points_rstate(:)=0.
 !
       endif
 !
@@ -865,7 +867,7 @@ module Special
 !
       do level=1,n_gran_level
         if (associated(first)) nullify(first)
-
+!
         select case (level)
         case (1)
           first => firstlev
@@ -892,7 +894,7 @@ module Special
 ! There is no previous for the first entry
         nullify(previous)
 !
-        call drive3(level)
+        if (level==3) call drive3(level)
 !
 ! In case the first point of a level was deleted
 ! adjust levelpointer to first entry
@@ -917,7 +919,7 @@ module Special
     endsubroutine multi_drive3
 !***********************************************************************
     subroutine drive3(level)
-
+!
       integer, intent(in) :: level
       integer :: count
 !
@@ -927,7 +929,7 @@ module Special
       if (.not.associated(current%next)) then
         call read_points(level)
         if (.not.associated(current%next)) then
-          call driver_fill(level)
+          call driver_fill(level,init=.true.)
           call write_points(level) ! compares to var.dat
           call write_points(level,0) ! compares to VAR0
         endif
@@ -945,7 +947,7 @@ module Special
           endif
         enddo
 !
-        call driver_fill(level)
+        call driver_fill(level,init=.false.)
 !
       endif
 !
@@ -956,7 +958,7 @@ module Special
 ! field. Needed to be done for each level
 !
       if (luse_ext_vel_field) call evolve_granules()
-
+!
     endsubroutine drive3
 !***********************************************************************
     subroutine reset_arrays
@@ -972,75 +974,89 @@ module Special
 !
     endsubroutine reset_arrays
 !***********************************************************************
-    subroutine driver_fill(level)
+    subroutine driver_fill(level,init)
 !
       use General, only: random_number_wrapper
-
+      use Mpicomm, only: mpirecv_real, mpisend_real
+!
       integer, intent(in) :: level
-      logical :: lwait_for_points,lneed_points
-      real, dimension(6) :: tmppoint
+      logical :: lwait_for_points,init
+      real, dimension(6) :: tmppoint,tmppoint_recv
       real :: rand
+      integer :: i,j
+!
+      intent(in) :: init
 !
       tmppoint=0.
 !
-! Logicals for the communication of points
-      lwait_for_points=.true.
-      if (minval(avoidarr).ne.1) then 
-        lneed_points=.true.
-      else
-        lneed_points=.false.
-      endif
-!
-! Run until every proc has filled his field
+      lwait_for_points = .true.
 !
       do while (lwait_for_points)
+        do i=0,nprocxy-1
+          if (iproc==i) then
 !
-! Check if each proc needs a another point
-        if (lneed_points) then
-          call make_new_point(level)
+! First check if iproc needs a point
 !
-! Center times around starting time
-          if (it.le.1) then
-            call random_number_wrapper(rand)
-            current%data(5)=t+(rand*2-1.)*current%data(6)* &
-                (-alog(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
-            !
-            current%data(3)=current%data(4)* &
-                exp(-((t-current%data(5))/current%data(6))**pow)
-            !
+            if (minval(avoidarr).ne.1) then
+              if (current%number == 0) then
+                current%number=1
+              else
+                call add_point
+              endif
+              call make_new_point(level)
+!
+! When initialize center randomly around t0=0
+              if (init) then
+                call random_number_wrapper(rand)
+                current%data(5)=t+(rand*2-1)*current%data(6)* &
+                    (-alog(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
+!
+                current%data(3)=current%data(4)* &
+                    exp(-((t-current%data(5))/current%data(6))**pow)
+              endif
+!
+              call draw_update(level)
+              tmppoint(1) = current%data(1) + ipx*nx
+              tmppoint(2) = current%data(2) + ipy*ny
+              tmppoint(3:6) = current%data(3:6)
+            else
+! Create dummy result
+              tmppoint(:)=0.
+            endif
+            do j=0,nprocxy-1
+              if (j/=iproc) then
+                call mpisend_real(tmppoint,6,j,j+10*i)
+              endif
+            enddo
+          else
+            call mpirecv_real(tmppoint_recv,6,i,iproc+10*i)
+!  Check if point received from send_proc is filled
+            if (sum(tmppoint_recv)/=0.) then
+              if (current%number == 0) then
+                current%number=1
+              else
+                call add_point
+              endif
+              current%data(1)=tmppoint_recv(1)-ipx*nx
+              current%data(2)=tmppoint_recv(2)-ipy*ny
+              current%data(3:6)=tmppoint_recv(3:6)
+              call draw_update(level)
+            endif
           endif
-          call draw_update(level)
-
 !
-          tmppoint(1) = current%data(1) + ipx*nx
-          tmppoint(2) = current%data(2) + ipy*ny
-          tmppoint(3:6) = current%data(3:6)
+        enddo
+!
+! start over if one or more has still place to put a granule
+!
+        if (minval(avoidarr).ne.1) then
+          lwait_for_points=.true.
         else
-!
-! No new point create set tmp to zero
-          tmppoint(:)=0.
-        endif
-!
-! Communicate points to all procs.
-!
-        call communicate_points(tmppoint,level)
-!
-! Check if field is full.
-!
-        if (minval(avoidarr).eq.1) then
           lwait_for_points=.false.
-          lneed_points=.false.
-        else
-          call add_point
         endif
-!
-! First root collects and then root distributes the result
 !
         lwait_for_points=new_points(lwait_for_points)
 !
-       enddo
-!
-! And reset
+      enddo
 !
       call reset_pointer
 !
@@ -1113,6 +1129,8 @@ module Special
 ! make the new point as the current one
       current => newpoint
 !
+      current%number = previous%number + 1
+!
     endsubroutine add_point
 !***********************************************************************
     subroutine reset_pointer
@@ -1173,42 +1191,7 @@ module Special
         call mpirecv_logical(new_points,1,0,iproc+222)
       endif
 !
-   endfunction new_points
-!***********************************************************************
-    subroutine communicate_points(tmppoint,level)
-!
-! Communicate points to all procs.
-!
-      use Mpicomm, only: mpirecv_real, mpisend_real
-!
-      real, dimension(6) :: tmppoint,tmppoint_recv
-      integer, intent(in) :: level
-      integer :: send_proc,ipt,i,j
-!
-      intent(in) :: tmppoint
-!
-      tmppoint_recv=0.
-!
-      do send_proc=0,nprocxy-1    ! send_proc is the reciever.
-        if (iproc==send_proc) then
-          do i=0,nprocx-1; do j=0,nprocy-1
-            ipt=i+nprocx*j
-            if (ipt/=send_proc) call mpisend_real(tmppoint,6,ipt,ipt+10*send_proc)
-          enddo; enddo
-        else
-          call mpirecv_real(tmppoint_recv,6,send_proc,iproc+10*send_proc)
-!  Check if point received from send_proc is filled
-          if (sum(tmppoint_recv)/=0.) then
-            call add_point
-            current%data(1)=tmppoint_recv(1)-ipx*nx
-            current%data(2)=tmppoint_recv(2)-ipy*ny
-            current%data(3:6)=tmppoint_recv(3:6)
-            call draw_update(level)
-          endif
-        endif
-      enddo
-!
-    endsubroutine communicate_points
+    endfunction new_points
 !***********************************************************************
     subroutine draw_update(level)
 !
@@ -1218,9 +1201,7 @@ module Special
       real :: dist0,tmp,ampl,granr
       integer :: xrange,yrange
       integer :: xpos,ypos
-      logical :: lover_lapp
 !
-      lover_lapp = .false.
       xrange=xrange_arr(level)
       yrange=yrange_arr(level)
       ampl=ampl_arr(level)
@@ -1248,7 +1229,6 @@ module Special
             jl = j-ipy*ny
             if (jl>=1.and.jl<=ny) then
 !
-              lover_lapp = .true.
               xdist=dx*(ii-current%data(1)-ipx*nx)
               ydist=dy*(jj-current%data(2)-ipy*ny)
 !
@@ -1283,8 +1263,6 @@ module Special
           enddo
         endif
       enddo
-!
-      if (.not.lover_lapp) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
@@ -1471,7 +1449,6 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,ny) :: bbx,bby,bbz,fac
       integer :: irefz=n1
-      
 !
 ! compute B = curl(A) for irefz layer
 !
@@ -1575,7 +1552,7 @@ module Special
       disx = min(disx,abs(zx-tmppoint(1)+nxgrid))
       disx = min(disx,abs(zx-tmppoint(1)-nxgrid))
       disx = disx - xrange_arr(level)
-     
+!
       disy = abs(zy-tmppoint(2))
       disy = min(disy,abs(zy-tmppoint(2)+nygrid))
       disy = min(disy,abs(zy-tmppoint(2)-nygrid))
