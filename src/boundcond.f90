@@ -123,7 +123,7 @@ module Boundcond
 ! If ndustspec is large, it is stupid to set bc for all dust species
 ! in start.in. But if one does not set them, they becomes 'p' by default
 ! Since this problem is crutial  only for aerosol + chemistry
-! the following condition is used. But this place should be modifyed somehow 
+! the following condition is used. But this place should be modifyed somehow
 ! Any ideas?
 !
             if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
@@ -189,7 +189,7 @@ module Boundcond
                   ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
                   if (j==iss) call bc_ss_stemp_x(f,topbot)
                 case ('asT')
-                  ! BCX_DOC: select entropy for uniform ghost temperature 
+                  ! BCX_DOC: select entropy for uniform ghost temperature
                   ! BCX_DOC: matching fluctuating boundary value,
                   ! BCX_DOC: $T_{N-i}=T_{N}=$;
                   ! BCX_DOC: implies $T'(x_N)=T'(x_0)=0$
@@ -367,7 +367,7 @@ module Boundcond
 ! If ndustspec is large, it is stupid to set bc for all dust species
 ! in start.in. But if one does not set them, they becomes 'p' by default
 ! Since this problem is crutial  only for aerosol + chemistry
-! the following condition is used. But this place should be modifyed somehow 
+! the following condition is used. But this place should be modifyed somehow
 ! Any ideas?
 !
             if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
@@ -413,7 +413,7 @@ module Boundcond
                 ! BCY_DOC: symmetric temp.
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
               case ('asT')
-                ! BCY_DOC: select entropy for uniform ghost temperature 
+                ! BCY_DOC: select entropy for uniform ghost temperature
                 ! BCY_DOC: matching fluctuating boundary value,
                 ! BCY_DOC: $T_{N-i}=T_{N}=$;
                 ! BCY_DOC: implies $T'(x_N)=T'(x_0)=0$
@@ -611,6 +611,9 @@ module Boundcond
               case ('pfe')
                 ! BCZ_DOC: potential field extrapolation
                 if (j==iaa) call bc_aa_pot_field_extrapol(f,topbot)
+              case ('p1D')
+                ! BCZ_DOC: potential field extrapolation in 1D
+                if (j==iay) call bc_aa_pot_1D(f,topbot)
               case ('pot')
                 ! BCZ_DOC: potential magnetic field
                 if (j==iaa) call bc_aa_pot2(f,topbot)
@@ -649,7 +652,7 @@ module Boundcond
                 ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
               case ('asT')
-                ! BCZ_DOC: select entropy for uniform ghost temperature 
+                ! BCZ_DOC: select entropy for uniform ghost temperature
                 ! BCZ_DOC: matching fluctuating boundary value,
                 ! BCZ_DOC: $T_{N-i}=T_{N}=$;
                 ! BCZ_DOC: implies $T'(x_N)=T'(x_0)=0$
@@ -714,7 +717,7 @@ module Boundcond
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
               case ('div')
                 ! BCZ_DOC: set the divergence of $\uv$ to a given value
-                ! BCZ_DOC: use bc = 'div' for iuz 
+                ! BCZ_DOC: use bc = 'div' for iuz
                 call bc_set_div_z(f,topbot,j,fbcz12(j))
               case ('ovr')
                 ! BCZ_DOC: set boundary value
@@ -868,7 +871,7 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        if (nprocz==1) then 
+        if (nprocz==1) then
            f(:,1:m1-1,n1:nhalf,j) = -f(:,m1:m1i,nhalf+1:n2,j)
            f(:,1:m1-1,nhalf+1:n2,j) = -f(:,m1:m1i,n1:nhalf,j)
         endif
@@ -1913,7 +1916,7 @@ module Boundcond
            lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy) )
             lambda_exp_sinth = lambda_exp*sinth(iy)
             do k=1,nghost
-               if (Omega==0) then 
+               if (Omega==0) then
                  f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))
                else
                  somega=lambda_exp_sinth*omega*(x(l1+k)-x(l1-k))*(x(l1-k)**(1-lambda_exp/nu))
@@ -1941,7 +1944,7 @@ module Boundcond
                 somega=lambda_exp_sinth*omega*(x(l1-k)-x(l1+k))*(x(l1+k)**(1-lambda_exp/nu))
                 f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))&
                                  +somega
-              endif 
+              endif
             enddo
           enddo
         else
@@ -2271,7 +2274,7 @@ module Boundcond
       integer :: iref=-1,pos
 !
       if (j/=iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
- 
+!
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
@@ -2285,7 +2288,7 @@ module Boundcond
 !
       endselect
 !
-! take the x derivative of ux      
+! take the x derivative of ux
       if (nxgrid/=1) then
         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
         duz_dz= fac*(+45.0*(f(l1+1:l2+1,m1:m2,iref,iux)-f(l1-1:l2-1,m1:m2,iref,iux)) &
@@ -2295,7 +2298,7 @@ module Boundcond
         if (ip<=5) print*, 'bc_set_div_z: Degenerate case in x-direction'
       endif
 !
-! take the y derivative of uy and add to dux/dx      
+! take the y derivative of uy and add to dux/dx
       if (nygrid/=1) then
         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
         duz_dz=duz_dz + fac*(+45.0*(f(l1:l2,m1+1:m2+1,iref,iuy)-f(l1:l2,m1-1:m2-1,iref,iuy)) &
@@ -3074,7 +3077,7 @@ module Boundcond
 !
 ! Nyquist-filtering
 !
-      case ('bot')               
+      case ('bot')
 ! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=(1/11.)*&
@@ -3084,7 +3087,7 @@ module Boundcond
         f(:,:,n1-3,j)=(3/11.)*&
              (-27*f(:,:,n1+1,j)-13*f(:,:,n1+2,j)+14*f(:,:,n1+3,j))
 !
-      case ('top')               
+      case ('top')
 ! top boundary
         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=(1/11.)*&
@@ -3158,14 +3161,14 @@ module Boundcond
 !
       select case (topbot)
 !
-      case ('bot')               
+      case ('bot')
 ! bottom boundary
         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n1-1,j)=0.2   *(                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
         f(:,:,n1-2,j)=0.2   *(- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
         f(:,:,n1-3,j)=1./35.*(-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 !
-      case ('top')               
+      case ('top')
 ! top boundary
         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
         f(:,:,n2+1,j)=0.2   *(                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
@@ -4266,7 +4269,7 @@ module Boundcond
     subroutine bc_ss_flux_x(f,topbot)
 !
 !  Constant flux boundary condition for entropy (called when bcx='c1')
-
+!
 !  17-mar-07/dintrans: coded
 !
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
@@ -4288,7 +4291,7 @@ module Boundcond
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for cs2_yz')
 !
-!  Do the 'c1' boundary condition (constant heat flux) for entropy and 
+!  Do the 'c1' boundary condition (constant heat flux) for entropy and
 !  pretend_lnTT. Check whether we want to do top or bottom (this is
 !  processor dependent)
 !
@@ -4304,7 +4307,7 @@ module Boundcond
       case ('bot')
         if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
-!  Deal with the simpler pretend_lnTT=T case first. Now ss is actually 
+!  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FbotKbot/T
 !
         if (pretend_lnTT) then
@@ -4351,7 +4354,7 @@ module Boundcond
 !
         if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
-!  Deal with the simpler pretend_lnTT=T case first. Now ss is actually 
+!  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FtopKtop/T
 !
         if (pretend_lnTT) then
@@ -4692,12 +4695,12 @@ module Boundcond
 !***********************************************************************
     subroutine bc_copy_y_noinflow(f,topbot,j)
 !
-!  Copy value in last grid point to all ghost cells. Set to zero if 
-!  the sign is wrong. This bc is different from outflow (cop). Outflow 
-!  just copies the last point to the ghost cells, thus permitting both 
-!  outflow (uy pointing out of the box) and inflow (uy pointing back to 
-!  the box). 'c+k' is a no-inflow, purely outflow boundary. It sets the 
-!  velocity to zero if that was pointing back to the box. The 'k' means 
+!  Copy value in last grid point to all ghost cells. Set to zero if
+!  the sign is wrong. This bc is different from outflow (cop). Outflow
+!  just copies the last point to the ghost cells, thus permitting both
+!  outflow (uy pointing out of the box) and inflow (uy pointing back to
+!  the box). 'c+k' is a no-inflow, purely outflow boundary. It sets the
+!  velocity to zero if that was pointing back to the box. The 'k' means
 !  "kill". "copy if outflow, kill if inflow".
 !
 !  08-june-2010/wlyra: implemented
@@ -5477,7 +5480,7 @@ module Boundcond
     subroutine bc_wind_z(f,topbot,massflux)
 !
 !  Calculates u_0 so that rho*(u+u_0)=massflux.
-!  Set 'win' for rho and 
+!  Set 'win' for rho and
 !  massflux can be set as fbcz1/2(rho) in run.in.
 !
 !  18-06-2008/bing: coded
@@ -5566,7 +5569,7 @@ module Boundcond
       else
         do i=0,nprocx-1
           do j=0,nprocy-1
-            ipt = i+nprocx*j+ipz*nprocx*nprocy              
+            ipt = i+nprocx*j+ipz*nprocx*nprocy
             if (ipt/=nroot) then
               call mpisend_real(u_add,1,ipt,311+ipt)
             endif
@@ -5747,7 +5750,7 @@ module Boundcond
 !  Only available for z axis, activate with "0ds"
 !  This is the routine to be used as regularity condition on the axis.
 !
-!  25-Oct-10/axel+koen+tijmen: coded
+!  25-Oct-10/tijmen: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5776,5 +5779,76 @@ module Boundcond
       endselect
 !
     endsubroutine bc_symset0der_z_v2
+!***********************************************************************
+    subroutine bc_aa_pot_1D(f,topbot)
+!
+!  Computes a potential field extrapolation for a
+!  1D magnetic field boundary with nprocx >= 1
+!
+!  27-Oct-10/bing: coded
+!
+      use Fourier, only: fourier_transform_other
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+      real, dimension (nxgrid) :: fft_az_r,fft_az_i,A_r,A_i,kx,exp_fact
+      real, dimension (nxgrid) :: iay_global
+      integer :: i,j,ipos,dir
+!
+      kx = abs(kx_fft(ipx*nx+1:ipx*nx+nx))
+!
+      select case (topbot)
+!
+!  bottom (left end of the domain)
+      case ('bot')
+        ipos = n1
+        dir = -1
+!
+!  top (right end of the domain)
+      case ('top')
+        ipos = n2
+        dir = 1
+!
+      case default
+        print*, "bc_aa_pot_1D: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+      if (nygrid>1) call fatal_error('bc_aa_pot_1D','only for nygrid=1')
+!
+      if (iproc==0) then
+        iay_global(1:nx) = f(l1:l2,m1,ipos,iay)
+        do j=1,nprocx-1
+          call mpirecv_real(iay_global(j*nx+1:(j+1)*nx),nx,j,j*100)
+        enddo
+        fft_az_r=iay_global
+        call fourier_transform_other(fft_az_r,fft_az_i)
+      else
+        call mpisend_real(f(l1:l2,m1,ipos,iay),nx,0,iproc*100)
+      endif
+!
+      do i=1,3
+        if (iproc==0) then
+!
+          exp_fact = exp(-kx*(z(ipos+dir*i)-z(ipos)))
+!
+          A_r = exp_fact*fft_az_r
+          A_i = exp_fact*fft_az_i
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+!
+          f(l1:l2,m1,i,iay) = A_r(1:nx)
+          iay_global(1:nx) = f(l1:l2,m1,ipos,iay)
+          do j=1,nprocx-1
+            call mpisend_real(A_r(j*nx+1:(j+1)*nx),nx,j,j*100)
+          enddo
+        else
+          call mpirecv_real(f(iproc*nx+l1:(iproc+1)*nx+nghost,m1,ipos,iay) &
+              ,nx,0,iproc*100)
+        endif
+!
+      enddo
+!
+    endsubroutine bc_aa_pot_1D
 !***********************************************************************
 endmodule Boundcond
