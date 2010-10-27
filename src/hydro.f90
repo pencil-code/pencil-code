@@ -131,7 +131,7 @@ module Hydro
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: ekman_friction=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
-  real :: ampl_fcont_uu=1.
+  real :: ampl_fcont_uu=1., k_diffrot=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -170,7 +170,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
-      lno_meridional_flow, lrotation_xaxis
+      lno_meridional_flow, lrotation_xaxis, k_diffrot
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -4495,10 +4495,23 @@ module Hydro
 !  Radial shear profile
 !
       case ('radial_shear')
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("radial_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+      else
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot &
+             *cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx))
+      endif
+!
+!  Radial shear profile with damping of other mean velocities
+!
+      case ('radial_shear_damp')
       zbot=rdampint
       if (.not.lcalc_uumeanxy) then
         call fatal_error("radial_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
       else
+         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(uumxy(l1:l2,m,1)-0.)
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxy(l1:l2,m,2)-0.)
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
              -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot*tanh((x(l1:l2)-zbot)/wdamp))
       endif
@@ -4510,7 +4523,8 @@ module Hydro
         call fatal_error("latitudinal_shear","you need to set lcalc_uumeanxy=T in hydro_run_pars")
       else
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot*cos(2.*pi*(y(m)-y0)/Ly))
+             -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot &
+             *cos(2.*pi*k_diffrot*(y(m)-y0)/Ly))
       endif
 !
 !  no profile matches
