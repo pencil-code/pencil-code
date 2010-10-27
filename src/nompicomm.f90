@@ -161,6 +161,16 @@ module Mpicomm
     module procedure transp_pencil_xy_4D
   endinterface
 !
+  interface remap_to_pencil_yz
+    module procedure remap_to_pencil_yz_3D
+    module procedure remap_to_pencil_yz_4D
+  endinterface
+!
+  interface unmap_from_pencil_yz
+    module procedure unmap_from_pencil_yz_3D
+    module procedure unmap_from_pencil_yz_4D
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine mpicomm_init()
@@ -1483,6 +1493,62 @@ module Mpicomm
       enddo
 !
     endsubroutine transp_pencil_xy_4D
+!***********************************************************************
+    subroutine remap_to_pencil_yz_3D (in, out)
+!
+!  Remaps data distributed on several processors into z-pencil shape.
+!  This routine remaps 3D arrays in y and z only for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine remap_to_pencil_yz_3D
+!***********************************************************************
+    subroutine remap_to_pencil_yz_4D (in, out)
+!
+!  Remaps data distributed on several processors into z-pencil shape.
+!  This routine remaps 4D arrays in y and z only for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine remap_to_pencil_yz_4D
+!***********************************************************************
+    subroutine unmap_from_pencil_yz_3D (in, out)
+!
+!  Unmaps z-pencil shaped 3D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine unmap_from_pencil_yz_3D
+!***********************************************************************
+    subroutine unmap_from_pencil_yz_4D (in, out)
+!
+!  Unmaps z-pencil shaped 4D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !

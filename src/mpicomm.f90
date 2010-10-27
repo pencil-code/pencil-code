@@ -205,6 +205,16 @@ module Mpicomm
     module procedure transp_pencil_xy_4D
   endinterface
 !
+  interface remap_to_pencil_yz
+    module procedure remap_to_pencil_yz_3D
+    module procedure remap_to_pencil_yz_4D
+  endinterface
+!
+  interface unmap_from_pencil_yz
+    module procedure unmap_from_pencil_yz_3D
+    module procedure unmap_from_pencil_yz_4D
+  endinterface
+!
   include 'mpif.h'
 !
 !  initialize debug parameter for this routine
@@ -4101,6 +4111,290 @@ module Mpicomm
       if (allocated (recv_buf)) deallocate (recv_buf)
 !
     endsubroutine transp_pencil_xy_4D
+!***********************************************************************
+    subroutine remap_to_pencil_yz_3D (in, out)
+!
+!  Remaps data distributed on several processors into z-pencil shape.
+!  This routine remaps 3D arrays in y and z only for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+!
+      integer, parameter :: iny=ny, inz=nz
+      integer, parameter :: ony=ny/nprocz, onz=nzgrid
+      integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
+      integer :: inx, onx ! sizes of in and out arrays
+      integer :: ibox, partner, nboxc, alloc_stat
+      integer, parameter :: ytag=110
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+!
+!
+      if (nprocz == 1) then
+        out = in
+        return
+      endif
+!
+      inx = size (in, 1)
+      onx = size (out, 1)
+      nboxc = onx*bny*bnz
+!
+      if (mod (ny, nprocz) /= 0) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_3D: ny needs to be an integer multiple of nprocz')
+!
+      if ((size (in, 2) /= iny) .or. ((size (in, 3) /= inz))) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_3D: input array size mismatch /= ny,nz')
+      if ((size (out, 2) /= ony) .or. ((size (out, 3) /= onz))) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_3D: output array size mismatch /= ny/nprocz,nzgrid')
+      if (inx /= onx) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_3D: inx/=onx - sizes differ in the x direction')
+!
+      allocate (send_buf(onx,bny,bnz), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_yz_3D: not enough memory for send_buf!')
+      allocate (recv_buf(onx,bny,bnz), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_yz_3D: not enough memory for recv_buf!')
+!
+      do ibox = 0, nprocz-1
+        partner = ibox*nprocxy + ipy*nprocx + ipx
+        if (iproc == partner) then
+          ! data is local
+          out(:,:,bnz*ibox+1:bnz*(ibox+1)) = in(:,bny*ibox+1:bny*(ibox+1),:)
+        else
+          ! communicate with partner
+          send_buf = in(:,bny*ibox+1:bny*(ibox+1),:)
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(:,:,bnz*ibox+1:bnz*(ibox+1)) = recv_buf
+        endif
+      enddo
+!
+      if (allocated (send_buf)) deallocate (send_buf)
+      if (allocated (recv_buf)) deallocate (recv_buf)
+!
+    endsubroutine remap_to_pencil_yz_3D
+!***********************************************************************
+    subroutine remap_to_pencil_yz_4D (in, out)
+!
+!  Remaps data distributed on several processors into z-pencil shape.
+!  This routine remaps 4D arrays in y and z only for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+!
+      integer, parameter :: iny=ny, inz=nz
+      integer, parameter :: ony=ny/nprocz, onz=nzgrid
+      integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
+      integer :: inx, ina, onx, ona ! sizes of in and out arrays
+      integer :: ibox, partner, nboxc, alloc_stat
+      integer, parameter :: ytag=110
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+!
+!
+      if (nprocz == 1) then
+        out = in
+        return
+      endif
+!
+      inx = size (in, 1)
+      ina = size (in, 4)
+      onx = size (out, 1)
+      ona = size (out, 4)
+      nboxc = onx*bny*bnz*ona
+!
+      if (mod (ny, nprocz) /= 0) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: ny needs to be an integer multiple of nprocz')
+!
+      if ((size (in, 2) /= iny) .or. ((size (in, 3) /= inz))) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: input array size mismatch /= ny,nz')
+      if ((size (out, 2) /= ony) .or. ((size (out, 3) /= onz))) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: output array size mismatch /= ny/nprocz,nzgrid')
+      if (inx /= onx) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: inx/=onx - sizes differ in the x direction')
+      if (ina /= ona) &
+          call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: ina/=ona - sizes differ in the 4th dimension')
+!
+      allocate (send_buf(onx,bny,bnz,ona), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: not enough memory for send_buf!')
+      allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'remap_to_pencil_yz_4D: not enough memory for recv_buf!')
+!
+      do ibox = 0, nprocz-1
+        partner = ibox*nprocxy + ipy*nprocx + ipx
+        if (iproc == partner) then
+          ! data is local
+          out(:,:,bnz*ibox+1:bnz*(ibox+1),:) = in(:,bny*ibox+1:bny*(ibox+1),:,:)
+        else
+          ! communicate with partner
+          send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(:,:,bnz*ibox+1:bnz*(ibox+1),:) = recv_buf
+        endif
+      enddo
+!
+      if (allocated (send_buf)) deallocate (send_buf)
+      if (allocated (recv_buf)) deallocate (recv_buf)
+!
+    endsubroutine remap_to_pencil_yz_4D
+!***********************************************************************
+    subroutine unmap_from_pencil_yz_3D (in, out)
+!
+!  Unmaps z-pencil shaped 3D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+!
+      integer, parameter :: iny=ny/nprocz, inz=nzgrid
+      integer, parameter :: ony=ny, onz=nz
+      integer :: inx, onx ! sizes of in and out arrays
+      integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
+      integer :: ibox, partner, nboxc, alloc_stat
+      integer, parameter :: ytag=111
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:), allocatable :: send_buf, recv_buf
+!
+!
+      if (nprocz == 1) then
+        out = in
+        return
+      endif
+!
+      inx = size (in, 1)
+      onx = size (out, 1)
+      nboxc = onx*bny*bnz
+!
+      if (mod (ny, nprocz) /= 0) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_3D: ny needs to be an integer multiple of nprocz')
+!
+      if ((size (in, 2) /= iny) .or. ((size (in, 3) /= inz))) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_3D: input array size mismatch /= ny/nprocz,nygrid')
+      if ((size (out, 2) /= ony) .or. ((size (out, 3) /= onz))) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_3D: output array size mismatch /= ny,nz')
+      if (inx /= onx) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_3D: inx/=onx - sizes differ in the x direction')
+!
+      allocate (send_buf(onx,bny,bnz), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_yz_3D: not enough memory for send_buf!')
+      allocate (recv_buf(onx,bny,bnz), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_yz_3D: not enough memory for recv_buf!')
+!
+      do ibox = 0, nprocz-1
+        partner = ibox*nprocxy + ipy*nprocx + ipx
+        if (iproc == partner) then
+          ! data is local
+          out(:,bny*ibox+1:bny*(ibox+1),:) = in(:,:,bnz*ibox+1:bnz*(ibox+1))
+        else
+          ! communicate with partner
+          send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1))
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(:,bny*ibox+1:bny*(ibox+1),:) = recv_buf
+        endif
+      enddo
+!
+      if (allocated (send_buf)) deallocate (send_buf)
+      if (allocated (recv_buf)) deallocate (recv_buf)
+!
+    endsubroutine unmap_from_pencil_yz_3D
+!***********************************************************************
+    subroutine unmap_from_pencil_yz_4D (in, out)
+!
+!  Unmaps z-pencil shaped 4D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocz>1.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+!
+      integer, parameter :: iny=ny/nprocz, inz=nzgrid
+      integer, parameter :: ony=ny, onz=nz
+      integer :: inx, ina, onx, ona ! sizes of in and out arrays
+      integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
+      integer :: ibox, partner, nboxc, alloc_stat
+      integer, parameter :: ytag=111
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
+!
+!
+      if (nprocz == 1) then
+        out = in
+        return
+      endif
+!
+      inx = size (in, 1)
+      ina = size (in, 4)
+      onx = size (out, 1)
+      ona = size (out, 4)
+      nboxc = onx*bny*bnz*ona
+!
+      if (mod (ny, nprocz) /= 0) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: ny needs to be an integer multiple of nprocz')
+!
+      if ((size (in, 2) /= iny) .or. ((size (in, 3) /= inz))) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: input array size mismatch /= ny/nprocz,nzgrid')
+      if ((size (out, 2) /= ony) .or. ((size (out, 3) /= onz))) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: output array size mismatch /= ny,nz')
+      if (inx /= onx) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: inz/=onz - sizes differ in the x direction')
+      if (ina /= ona) &
+          call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: ina/=ona - sizes differ in the 4th dimension')
+!
+      allocate (send_buf(onx,bny,bnz,ona), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: not enough memory for send_buf!')
+      allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_it_if_any (.true., 'unmap_from_pencil_yz_4D: not enough memory for recv_buf!')
+!
+      do ibox = 0, nprocx-1
+        partner = ibox*nprocxy + ipy*nprocx + ipx
+        if (iproc == partner) then
+          ! data is local
+          out(:,bny*ibox+1:bny*(ibox+1),:,:) = in(:,:,bnz*ibox+1:bnz*(ibox+1),:)
+        else
+          ! communicate with partner
+          send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1),:)
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nboxc, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
+        endif
+      enddo
+!
+      if (allocated (send_buf)) deallocate (send_buf)
+      if (allocated (recv_buf)) deallocate (recv_buf)
+!
+    endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !
