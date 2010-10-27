@@ -5827,7 +5827,7 @@ module Boundcond
         call mpisend_real(f(l1:l2,m1,ipos,iay),nx,0,iproc*100)
       endif
 !
-      do i=1,3
+      do i=1,nghost
         if (iproc==0) then
 !
           exp_fact = exp(-kx*(z(ipos+dir*i)-z(ipos)))
@@ -5837,14 +5837,12 @@ module Boundcond
 !
           call fourier_transform_other(A_r,A_i,linv=.true.)
 !
-          f(l1:l2,m1,i,iay) = A_r(1:nx)
-          iay_global(1:nx) = f(l1:l2,m1,ipos,iay)
+          f(l1:l2,m1,ipos+dir*i,iay) = A_r(1:nx)
           do j=1,nprocx-1
             call mpisend_real(A_r(j*nx+1:(j+1)*nx),nx,j,j*100)
           enddo
         else
-          call mpirecv_real(f(iproc*nx+l1:(iproc+1)*nx+nghost,m1,ipos,iay) &
-              ,nx,0,iproc*100)
+          call mpirecv_real(f(l1:l2,m1,ipos+dir*i,iay),nx,0,iproc*100)
         endif
 !
       enddo
