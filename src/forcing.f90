@@ -606,7 +606,7 @@ module Forcing
       real :: phase,ffnorm,irufm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ff,uf,of,rho
+      real, dimension (nx) :: rho1,ff,uf,of,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: fda,uu,oo,bb,fxb
@@ -3111,10 +3111,10 @@ module Forcing
 !  calculate forcing
 !
       if (lpencil(i_fcont)) then
-
+!
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
         call forcing_cont(p%fcont)
-
+!
       endif
 !
       call keep_compiler_quiet(f)
@@ -3122,21 +3122,21 @@ module Forcing
     endsubroutine calc_pencils_forcing
 !***********************************************************************
     subroutine forcing_cont(force)
-
+!
 ! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
-
+!
       use Sub, only: quintic_step, quintic_der_step
       use Mpicomm, only: stop_it
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
-
+!
       real, dimension (nx,3), intent(out) :: force 
-
+!
       real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu
       real, pointer   :: gravx
       integer         :: ierr
-
+!
         if (iforcing_cont=='ABC') then
           fact=ampl_ff/sqrt(3.)
           fact2=1.-eps_fcont
@@ -3149,18 +3149,18 @@ module Forcing
           force(:,2)=+fact*sinx(l1:l2)*cosy(m)
           force(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt2
         elseif (iforcing_cont=='RobertsFlow_exact') then
-
+!
           kx=k1_ff; ky=k1_ff
           kf=sqrt(kx*kx+ky*ky)
           call getnu(nu)
           fact=ampl_ff*kf*kf*nu
           fact2=ampl_ff*ampl_ff*kx*ky
-
+!
           !!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
           force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
           force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
           force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
-
+!
         elseif (iforcing_cont=='KolmogorovFlow-x') then
           fact=ampl_ff
           force(:,1)=0
@@ -3218,7 +3218,7 @@ module Forcing
         else
           call stop_it("forcing: no continuous iforcing_cont specified")
         endif
-
+!
     endsubroutine forcing_cont
 !***********************************************************************
     subroutine forcing_continuous(df,p)
