@@ -60,6 +60,7 @@ module Particles
   real :: particles_insert_rate
   real :: avg_n_insert, remaining_particles=0.0
   real :: max_particle_insert_time=huge1
+  real :: Deltauy_gas_friction=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iscratch_short_friction=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -122,8 +123,8 @@ module Particles
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback,&
-      rhops
+      lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
+      rhops, Deltauy_gas_friction
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -149,7 +150,7 @@ module Particles
       rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const
+      lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -1983,8 +1984,10 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
           Omega2=2*Omega
           if (.not.lspherical_coords) then
-            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+            dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
+                Omega2*fp(1:npar_loc,ivpy)
+            dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - &
+                Omega2*fp(1:npar_loc,ivpx)
           else
             print*,'dvvp_dt: Coriolis force on the particles is '
             print*,'not yet implemented for spherical coordinates.'
@@ -1992,7 +1995,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
 !
-! Centrifugal force
+!  Add centrifugal force.
 !
         if (lcentrifugal_force_par) then
           if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
@@ -2661,6 +2664,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lfirst.and.ldt) dt1_drag=0.0
         endif
+      endif
+!
+!  Add friction force from gas that moves systematically slower. Can be used
+!  to mimic e.g. a sub-Keplerian gas flow without using the Hydro module.
+!
+      if (Deltauy_gas_friction/=0.0 .and. t>=tstart_dragforce_par) then
+        do k=1,npar_loc
+          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
+          dfp(k,ivpy) = dfp(k,ivpy) - Deltauy_gas_friction*tausp1_par
+        enddo
       endif
 !
 !  Collisional cooling is in a separate subroutine.
