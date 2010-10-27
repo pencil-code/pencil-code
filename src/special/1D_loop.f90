@@ -24,7 +24,8 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,cool_RTV=0.
   real :: tau_inv_newton=0.,exp_newton=0.
-  real :: width_newton=0.,lnrho_newton=0.
+  real :: tanh_newton=0.,cubic_newton=0.
+  real :: width_newton=0.
   real :: init_time=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -35,7 +36,7 @@ module Special
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,tau_inv_newton,exp_newton,init_time, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
-      width_newton,lnrho_newton
+      width_newton,tanh_newton,cubic_newton
 !
 ! variables for print.in
 !
@@ -138,7 +139,6 @@ module Special
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
-        lpenc_requested(i_lnrho)=.true.
       endif
 !
       if (cool_RTV/=0) then
@@ -151,6 +151,12 @@ module Special
       if (tau_inv_newton/=0) then
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
+      endif
+!
+      if (iheattype(1)/='nothing') then
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cp1)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -390,35 +396,20 @@ module Special
 !  input: lnTT in SI units
 !  output: lnP  [p]= W * m^3
 !
-      ! real, parameter, dimension (37) :: intlnT = (/ &
-      !     7.74982, 7.9495, 8.18008, 8.39521, 8.71034, 9.24060, 9.67086 &
-      !     , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
-      !     , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
-      !     , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
-      !     , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
-      !     ,  15.6576,  69.0776 /)
-      ! real, parameter, dimension (37) :: intlnQ = (/ &
-      !     -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
-      !     , -80.5905, -80.0532, -80.0837, -80.2067, -80.1837, -79.9765 &
-      !     , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
-      !     , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
-      !     , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
-      !     , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
-      !     , -0.66650 /)
       real, parameter, dimension (36) :: intlnT = (/ &
-          8.98008,      9.09521   ,   9.21034   ,   9.44060,      9.67086  ,    9.90112, &
-      10.1314    ,  10.2465  ,    10.3616   ,   10.5919    ,  10.8221   ,   11.0524, &
-      11.2827  ,    11.5129  ,    11.7432   ,   11.9734  ,    12.2037  ,    12.4340 , &
-      12.6642  ,    12.8945  ,    13.1247   ,   13.3550  ,    13.5853     , 13.8155, &
-      14.0458  ,    14.2760   ,   14.5063  ,    14.6214  ,    14.7365   ,   14.8517, &
-      14.9668   ,   15.1971  ,    15.4273  ,    15.6576  ,    15.8878  ,    16.1181   /)
+          8.98008,  9.09521, 9.21034, 9.44060,  9.67086, 9.90112, &
+          10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
+          11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340,&
+          12.6642, 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, &
+          14.0458, 14.2760, 14.5063, 14.6214, 14.7365, 14.8517, &
+          14.9668, 15.1971, 15.4273, 15.6576, 15.8878, 16.1181 /)
       real, parameter, dimension (36) :: intlnQ = (/ &
-     -83.9292 ,    -82.8931 ,    -82.4172  ,   -81.2275   ,  -80.5291 ,    -80.0532, &
-     -80.1837 ,    -80.2067 ,    -80.1837 ,    -79.9765   ,  -79.6694 ,    -79.2857,&
-     -79.0938 ,    -79.1322  ,   -79.4776  ,   -79.4776   ,  -79.3471 ,    -79.2934,&
-     -79.5159 ,    -79.6618  ,   -79.4776  ,   -79.3778  ,   -79.4008 ,    -79.5159,&
-     -79.7462 ,    -80.1990 ,    -80.9052  ,   -81.3196  ,   -81.9874 ,    -82.2023,&
-     -82.5093 ,    -82.5477 ,    -82.4172  ,   -82.2637  ,   -82.1793 ,    -82.2023  /)
+          -83.9292, -82.8931, -82.4172, -81.2275, -80.5291, -80.0532, &
+          -80.1837, -80.2067, -80.1837, -79.9765, -79.6694, -79.2857,&
+          -79.0938, -79.1322, -79.4776, -79.4776, -79.3471, -79.2934,&
+          -79.5159, -79.6618, -79.4776, -79.3778, -79.4008, -79.5159,&
+          -79.7462, -80.1990, -80.9052, -81.3196, -81.9874, -82.2023,&
+          -82.5093, -82.5477, -82.4172, -82.2637, -82.1793 , -82.2023 /)
 !
       real, dimension (nx) :: lnTT,get_lnQ
       real, dimension (nx) :: slope,ordinate
@@ -447,6 +438,7 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
+      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -459,9 +451,19 @@ module Special
       newton  = exp(lnTT_init_prof(l1:l2)-p%lnTT)-1.
 !
 !  Multiply by density dependend time scale
-      tau_inv_tmp = tau_inv_newton * exp(-exp_newton*(lnrho0-p%lnrho))
-!      tau_inv_tmp = tau_inv_newton *&
-!          0.5*(1+tanh(width_newton*(p%lnrho-lnrho_newton)))
+      if (exp_newton/=0) then 
+        tau_inv_tmp = tau_inv_newton * &
+            exp(-exp_newton*(lnrho0-p%lnrho))
+!
+      elseif (tanh_newton/=0) then
+        tau_inv_tmp = tau_inv_newton * &
+            0.5*(1+tanh(width_newton*(p%lnrho-tanh_newton)))
+!
+      elseif (cubic_newton/=0) then
+        tau_inv_tmp = tau_inv_newton * &
+            cubic_step(p%lnrho,cubic_newton,width_newton)
+!
+      endif
 !
 !  Adjust time scale by the initialization time
       tau_inv_tmp =  tau_inv_tmp * cubic_step(t,init_time,init_time)
