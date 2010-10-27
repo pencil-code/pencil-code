@@ -5811,6 +5811,8 @@ module Boundcond
 !
       case default
         print*, "bc_aa_pot_1D: ", topbot, " should be 'top' or 'bot'"
+        ipos=1
+        dir=0
 !
       endselect
 !
