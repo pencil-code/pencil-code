@@ -341,7 +341,11 @@ module Special
     rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
     rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-    rtv_cool = rtv_cool*cool_RTV*(1.-tanh(3e4*(p%rho-1e-4)))/2.
+    rtv_cool = rtv_cool*cool_RTV*(1.-tanh(3.*(p%rho/(4.5e-5/unit_density)-1.)))/2.
+!    
+!    rtv_cool=rtv_cool* &
+!        (1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+!
 !
     rtv_cool = rtv_cool * cubic_step(t,init_time,init_time)
 !
@@ -506,6 +510,7 @@ module Special
       integer :: i
 !
       heat_unit= unit_density*unit_velocity**3/unit_length
+
       x_Mm = x(l1:l2)*unit_length*1e-6
 !
 ! The height in [Mm]
