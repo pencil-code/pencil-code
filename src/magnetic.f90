@@ -50,12 +50,12 @@ module Magnetic
   real, target, dimension (nx,nz,3) :: bb_xz, jj_xz
   real, target, dimension (ny,nz,3) :: bb_yz, jj_yz
 !
-  real, target, dimension (nx,ny) :: b2_xy, jb_xy
-  real, target, dimension (nx,ny) :: b2_xy2, jb_xy2
-  real, target, dimension (nx,ny) :: b2_xy3, jb_xy3
-  real, target, dimension (nx,ny) :: b2_xy4, jb_xy4
-  real, target, dimension (ny,nz) :: b2_yz, jb_yz
-  real, target, dimension (nx,nz) :: b2_xz, jb_xz
+  real, target, dimension (nx,ny) :: b2_xy, jb_xy, j2_xy
+  real, target, dimension (nx,ny) :: b2_xy2,jb_xy2,j2_xy2
+  real, target, dimension (nx,ny) :: b2_xy3,jb_xy3,j2_xy3
+  real, target, dimension (nx,ny) :: b2_xy4,jb_xy4,j2_xy4
+  real, target, dimension (ny,nz) :: b2_yz, jb_yz, j2_yz
+  real, target, dimension (nx,nz) :: b2_xz, jb_xz, j2_xz
 !
   real, target, dimension (nx,ny) :: beta_xy
   real, target, dimension (nx,ny) :: beta_xy2
@@ -255,7 +255,7 @@ module Magnetic
   integer :: idiag_jbrms=0      ! DIAG_DOC: $\left<(\jv\cdot\Bv)^2\right>^{1/2}$
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
-  integer :: idiag_hjbm=0   ! DIAG_DOC: 
+  integer :: idiag_hjbm=0   ! DIAG_DOC:
   integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
   integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
@@ -572,7 +572,7 @@ module Magnetic
   integer :: idiag_etajrhomax=0 ! DIAG_DOC: Max of artificial resistivity
                                 ! DIAG_DOC: $\eta\sim J / \rho$
   integer :: idiag_cosjbm=0     ! DIAG_DOC: $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$
-  integer :: idiag_coshjbm=0     ! DIAG_DOC: 
+  integer :: idiag_coshjbm=0     ! DIAG_DOC:
   integer :: idiag_jparallelm=0 ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of J parallel to B
   integer :: idiag_jperpm=0     ! DIAG_DOC: Mean value of the component
@@ -1029,7 +1029,7 @@ module Magnetic
 !  Break if Galilean-invariant advection (fargo) is used without
 !  the advective gauge (only in run-time)
 !
-      if (.not.lstarting) then 
+      if (.not.lstarting) then
         if (lfargo_advection.and..not.ladvective_gauge) &
              call fatal_error('initialize_magnetic',&
              'For fargo advecction you need the advective gauge. '//&
@@ -1307,8 +1307,11 @@ module Magnetic
 !
       if (ladvective_gauge) lpenc_requested(i_uga)=.true.
 !
-      if (dvid/=0.0) lpenc_video(i_b2)=.true.
-      if (dvid/=0.0) lpenc_video(i_jb)=.true.
+      if (dvid/=0.0) then
+        lpenc_video(i_b2)=.true.
+        lpenc_video(i_jb)=.true.
+        lpenc_video(i_j2)=.true.
+      endif
 !
 !  jj pencil always needed when in Weyl gauge
 !
@@ -1880,8 +1883,8 @@ module Magnetic
       if (lpencil(i_uga)) then
         if (.not.lfargo_advection) then
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
-        else 
-          ! Fargo (Galilean invariant advection) only works with the 
+        else
+          ! Fargo (Galilean invariant advection) only works with the
           ! advective gauge, but the term will be added in special/fargo.f90
           p%uga=0.
         endif
@@ -2034,7 +2037,7 @@ module Magnetic
       if (lpencil(i_glnrhoxb)) call cross_mn(p%glnrho,p%bb,p%glnrhoxb)
 ! del4a
       if (lpencil(i_del4a)) call del4v(f,iaa,p%del4a)
-! hjj 
+! hjj
       if (lpencil(i_hjj)) p%hjj = p%del4a
 ! hj2
       if (lpencil(i_hj2)) call dot2_mn(p%hjj,p%hj2)
@@ -2891,9 +2894,9 @@ module Magnetic
         if (idiag_coshjbm/=0) call sum_mn_name(p%coshjb,idiag_coshjbm)
         if (idiag_jparallelm/=0) call sum_mn_name(p%jparallel,idiag_jparallelm)
         if (idiag_jperpm/=0) call sum_mn_name(p%jperp,idiag_jperpm)
-        if (idiag_hjparallelm/=0) & 
+        if (idiag_hjparallelm/=0) &
             call sum_mn_name(p%hjparallel,idiag_hjparallelm)
-        if (idiag_hjperpm/=0) & 
+        if (idiag_hjperpm/=0) &
             call sum_mn_name(p%hjperp,idiag_hjperpm)
 !
 !  Resistivity.
@@ -3330,6 +3333,12 @@ module Magnetic
         if (n==iz2_loc) b2_xy2(:,m-m1+1)=p%b2
         if (n==iz3_loc) b2_xy3(:,m-m1+1)=p%b2
         if (n==iz4_loc) b2_xy4(:,m-m1+1)=p%b2
+        j2_yz(m-m1+1,n-n1+1)=p%j2(ix_loc-l1+1)
+        if (m==iy_loc)  j2_xz(:,n-n1+1)=p%j2
+        if (n==iz_loc)  j2_xy(:,m-m1+1)=p%j2
+        if (n==iz2_loc) j2_xy2(:,m-m1+1)=p%j2
+        if (n==iz3_loc) j2_xy3(:,m-m1+1)=p%j2
+        if (n==iz4_loc) j2_xy4(:,m-m1+1)=p%j2
         jb_yz(m-m1+1,n-n1+1)=p%jb(ix_loc-l1+1)
         if (m==iy_loc)  jb_xz(:,n-n1+1)=p%jb
         if (n==iz_loc)  jb_xy(:,m-m1+1)=p%jb
@@ -4071,7 +4080,18 @@ module Magnetic
           if (lwrite_slice_xy4) slices%xy4=>b2_xy4
           slices%ready=.true.
 !
-!  Current density (derived variable)
+!  Current squared (derived variable)
+!
+        case ('j2')
+          slices%yz =>j2_yz
+          slices%xz =>j2_xz
+          slices%xy =>j2_xy
+          slices%xy2=>j2_xy2
+          if (lwrite_slice_xy3) slices%xy3=>j2_xy3
+          if (lwrite_slice_xy4) slices%xy4=>j2_xy4
+          slices%ready=.true.
+!
+!  Current density times magnetic field (derived variable)
 !
         case ('jb')
           slices%yz =>jb_yz
@@ -5691,7 +5711,7 @@ module Magnetic
 !
           lheader=((m==1).and.(n==1).and.lroot)
 !
-          !this field also has a magnetic pressure gradient          
+          !this field also has a magnetic pressure gradient
           Btheta=const*rr_sph**pblaw/sin(y(m))
 !
           rho1=1./f(:,m,n,ilnrho)
@@ -6122,9 +6142,9 @@ module Magnetic
         idiag_brsphmphi=0; idiag_bthmphi=0; idiag_brmsh=0; idiag_brmsn=0
         idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
-        idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0 
-        idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0 
-        idiag_hjparallelm=0;idiag_hjperpm=0 
+        idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
+        idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
+        idiag_hjparallelm=0;idiag_hjperpm=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
