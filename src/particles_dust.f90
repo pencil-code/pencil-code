@@ -2141,8 +2141,8 @@ k_loop:   do while (.not. (k>npar_loc))
               elseif (lspherical_coords) then
                 vsph=abs(fp(k,ivpx))
               endif
-              dt1_max(ineargrid(k,1))= &
-                  max(dt1_max(ineargrid(k,1)),vsph/rsph/cdtpgrav)
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost),vsph/rsph/cdtpgrav)
             endif
           enddo
 !
@@ -2670,10 +2670,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !  to mimic e.g. a sub-Keplerian gas flow without using the Hydro module.
 !
       if (Deltauy_gas_friction/=0.0 .and. t>=tstart_dragforce_par) then
-        do k=1,npar_loc
-          call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
-          dfp(k,ivpy) = dfp(k,ivpy) - Deltauy_gas_friction*tausp1_par
-        enddo
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
+            dfp(k,ivpy) = dfp(k,ivpy) - Deltauy_gas_friction*tausp1_par
+          enddo
+        endif
       endif
 !
 !  Collisional cooling is in a separate subroutine.
