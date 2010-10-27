@@ -24,6 +24,11 @@ module Fourier
     module procedure fft_xy_parallel_4D
   endinterface
 !
+  interface fft_xyz_parallel
+    module procedure fft_xyz_parallel_3D
+    module procedure fft_xyz_parallel_4D
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
@@ -1725,7 +1730,7 @@ module Fourier
       real, dimension (4*nxgrid+15) :: wsavex
       real, dimension (4*nygrid+15) :: wsavey
       real, dimension (tny) :: deltay_x
-      integer :: inz, ina ! size of the third dimension
+      integer :: inz, ina ! size of the third and fourth dimension
       integer :: l, m, stat, x_offset, pos_z, pos_a
       logical :: lforward, lcompute_im
 !
@@ -1911,6 +1916,266 @@ module Fourier
       if (allocated (t_im)) deallocate (t_im)
 !
     endsubroutine fft_xy_parallel_4D
+!***********************************************************************
+    subroutine fft_xyz_parallel_3D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 3D data in the x-, y- and z-direction.
+!  For the x- and y-direction, the subroutine 'fft_xy_parallel' is used.
+!  For z-parallelization the transform in the z-direction will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  In addition to the restrictions of 'fft_xy_parallel' (see there),
+!  ny is restricted to be an integer multiple of nprocz.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!
+!  27-oct-2010/Bourdin.KIS: adapted from fft_xyz_parallel_4D
+!
+      use Mpicomm, only: remap_to_pencil_yz, unmap_from_pencil_yz
+!
+      real, dimension (:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      integer, parameter :: pny=ny/nprocz, pnz=nzgrid    ! z-pencil shaped data sizes
+      real, dimension (:,:,:), allocatable :: p_re, p_im ! data in pencil shape
+      complex, dimension (nzgrid) :: az
+      real, dimension (4*nzgrid+15) :: wsavez
+      integer :: l, m, stat
+      logical :: lforward, lcompute_im
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not.linv
+!
+      lcompute_im = .true.
+      if (present (lneed_im)) lcompute_im = lneed_im
+!
+      if (size (a_re, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
+          'real array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+      if (size (a_im, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
+          'imaginary array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+!
+      if (mod (nygrid, nprocyz) /= 0) &
+          call fatal_error('fft_xyz_parallel_3D', &
+          'nygrid needs to be an integer multiple of nprocy*nprocz', &
+          lfirst_proc_xyz)
+!
+!  Allocate memory for large arrays.
+!
+      allocate (p_re(nx,pny,pnz), stat=stat)
+      if (stat > 0) call fatal_error('fft_xyz_parallel_3D', &
+          'Could not allocate memory for p_re', .true.)
+      allocate (p_im(nx,pny,pnz), stat=stat)
+      if (stat > 0) call fatal_error('fft_xyz_parallel_3D', &
+          'Could not allocate memory for p_im', .true.)
+!
+      if (lshear) then
+        call fatal_error('fft_xyz_parallel_3D', &
+          'Shearing is not yet implemented.', .true.)
+      endif
+!
+      call cffti(nzgrid, wsavez)
+!
+      if (lforward) then
+!
+!  Forward FFT.
+!
+        call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+!
+!  Remap the data we need into z-pencil shape.
+!
+        call remap_to_pencil_yz(a_re, p_re)
+        call remap_to_pencil_yz(a_im, p_im)
+!
+        do l = 1, nx
+          do m = 1, pny
+!
+!  Transform z-direction.
+!
+            az = cmplx (p_re(l,m,:), p_im(l,m,:))
+            call cfftf(nzgrid, az, wsavez)
+            p_re(l,m,:) = real (az)
+            p_im(l,m,:) = aimag (az)
+          enddo
+        enddo
+!
+!  Unmap the results back to normal shape.
+!
+        call unmap_from_pencil_yz(p_re, a_re)
+        call unmap_from_pencil_yz(p_im, a_im)
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        a_re = a_re / nzgrid
+        a_im = a_im / nzgrid
+!
+      else
+!
+!  Inverse FFT.
+!
+!  Remap the data we need into transposed z-pencil shape.
+!
+        call remap_to_pencil_yz(a_re, p_re)
+        call remap_to_pencil_yz(a_im, p_im)
+!
+        do l = 1, nx
+          do m = 1, pny
+!
+!  Transform z-direction back.
+!
+            az = cmplx (p_re(l,m,:), p_im(l,m,:))
+            call cfftb (nzgrid, az, wsavez)
+            p_re(l,m,:) = real (az)
+            p_im(l,m,:) = aimag (az)
+          enddo
+        enddo
+!
+!  Unmap the results back to normal shape.
+!
+        call unmap_from_pencil_yz(p_re, a_re)
+        call unmap_from_pencil_yz(p_im, a_im)
+!
+        call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+!
+      endif
+!
+!  Deallocate large arrays.
+!
+      if (allocated (p_re)) deallocate (p_re)
+      if (allocated (p_im)) deallocate (p_im)
+!
+    endsubroutine fft_xyz_parallel_3D
+!***********************************************************************
+    subroutine fft_xyz_parallel_4D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
+!  For the x- and y-direction, the subroutine 'fft_xy_parallel' is used.
+!  For z-parallelization the transform in the z-direction will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  In addition to the restrictions of 'fft_xy_parallel' (see there),
+!  ny is restricted to be an integer multiple of nprocz.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!  Attention: input data will be overwritten.
+!
+!  27-oct-2010/Bourdin.KIS: coded
+!
+      use Mpicomm, only: remap_to_pencil_yz, unmap_from_pencil_yz
+!
+      real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      integer, parameter :: pny=ny/nprocz, pnz=nzgrid      ! z-pencil shaped data sizes
+      real, dimension (:,:,:,:), allocatable :: p_re, p_im ! data in pencil shape
+      complex, dimension (nzgrid) :: az
+      real, dimension (4*nzgrid+15) :: wsavez
+      integer :: ina ! size of the fourth dimension
+      integer :: l, m, stat, pos_a
+      logical :: lforward, lcompute_im
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not.linv
+!
+      lcompute_im = .true.
+      if (present (lneed_im)) lcompute_im = lneed_im
+!
+      ina = size (a_re, 4)
+!
+      if (size (a_re, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
+          'real array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+      if (size (a_im, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
+          'imaginary array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+!
+      if (mod (nygrid, nprocyz) /= 0) &
+          call fatal_error('fft_xyz_parallel_3D', &
+          'nygrid needs to be an integer multiple of nprocy*nprocz', &
+          lfirst_proc_xyz)
+!
+!  Allocate memory for large arrays.
+!
+      allocate (p_re(nx,pny,pnz,ina), stat=stat)
+      if (stat > 0) call fatal_error('fft_xyz_parallel_4D', &
+          'Could not allocate memory for p_re', .true.)
+      allocate (p_im(nx,pny,pnz,ina), stat=stat)
+      if (stat > 0) call fatal_error('fft_xyz_parallel_4D', &
+          'Could not allocate memory for p_im', .true.)
+!
+      if (lshear) then
+        call fatal_error('fft_xyz_parallel_4D', &
+          'Shearing is not yet implemented.', .true.)
+      endif
+!
+      call cffti(nzgrid, wsavez)
+!
+      if (lforward) then
+!
+!  Forward FFT.
+!
+        call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+!
+!  Remap the data we need into z-pencil shape.
+!
+        call remap_to_pencil_yz(a_re, p_re)
+        call remap_to_pencil_yz(a_im, p_im)
+!
+        do pos_a = 1, ina
+          do l = 1, nx
+            do m = 1, pny
+!
+!  Transform z-direction.
+!
+              az = cmplx (p_re(l,m,:,pos_a), p_im(l,m,:,pos_a))
+              call cfftf(nzgrid, az, wsavez)
+              p_re(l,m,:,pos_a) = real (az)
+              p_im(l,m,:,pos_a) = aimag (az)
+            enddo
+          enddo
+        enddo
+!
+!  Unmap the results back to normal shape.
+!
+        call unmap_from_pencil_yz(p_re, a_re)
+        call unmap_from_pencil_yz(p_im, a_im)
+!
+!  Apply normalization factor to fourier coefficients.
+!
+        a_re = a_re / nzgrid
+        a_im = a_im / nxgrid
+!
+      else
+!
+!  Inverse FFT.
+!
+!  Remap the data we need into transposed pencil shape.
+!
+        call remap_to_pencil_yz(a_re, p_re)
+        call remap_to_pencil_yz(a_im, p_im)
+!
+        do pos_a = 1, ina
+          do l = 1, nx
+            do m = 1, pny
+!
+!  Transform z-direction back.
+!
+              az = cmplx (p_re(l,m,:,pos_a), p_im(l,m,:,pos_a))
+              call cfftb (nzgrid, az, wsavez)
+              p_re(l,m,:,pos_a) = real (az)
+              p_im(l,m,:,pos_a) = aimag (az)
+            enddo
+          enddo
+        enddo
+!
+!  Unmap the results back to normal shape.
+!
+        call unmap_from_pencil_yz(p_re, a_re)
+        call unmap_from_pencil_yz(p_im, a_im)
+!
+        call fft_xy_parallel (a_re, a_im, .not. lforward, .not. lcompute_im)
+!
+      endif
+!
+!  Deallocate large arrays.
+!
+      if (allocated (p_re)) deallocate (p_re)
+      if (allocated (p_im)) deallocate (p_im)
+!
+    endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
     subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
