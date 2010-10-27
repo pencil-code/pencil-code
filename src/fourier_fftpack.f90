@@ -1948,14 +1948,13 @@ module Fourier
       if (present (lneed_im)) lcompute_im = lneed_im
 !
       if (size (a_re, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
-          'real array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+          'real array size mismatch /= nx,ny,nz', lroot)
       if (size (a_im, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
-          'imaginary array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+          'imaginary array size mismatch /= nx,ny,nz', lroot)
 !
       if (mod (nygrid, nprocyz) /= 0) &
           call fatal_error('fft_xyz_parallel_3D', &
-          'nygrid needs to be an integer multiple of nprocy*nprocz', &
-          lfirst_proc_xyz)
+          'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
 !  Allocate memory for large arrays.
 !
@@ -2077,15 +2076,14 @@ module Fourier
 !
       ina = size (a_re, 4)
 !
-      if (size (a_re, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
-          'real array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
-      if (size (a_im, 3) /= nz) call fatal_error('fft_xyz_parallel_3D', &
-          'imaginary array size mismatch /= nx,ny,nz', lfirst_proc_xyz)
+      if (size (a_re, 3) /= nz) call fatal_error('fft_xyz_parallel_4D', &
+          'real array size mismatch /= nx,ny,nz', lroot)
+      if (size (a_im, 3) /= nz) call fatal_error('fft_xyz_parallel_4D', &
+          'imaginary array size mismatch /= nx,ny,nz', lroot)
 !
       if (mod (nygrid, nprocyz) /= 0) &
-          call fatal_error('fft_xyz_parallel_3D', &
-          'nygrid needs to be an integer multiple of nprocy*nprocz', &
-          lfirst_proc_xyz)
+          call fatal_error('fft_xyz_parallel_4D', &
+          'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
 !  Allocate memory for large arrays.
 !

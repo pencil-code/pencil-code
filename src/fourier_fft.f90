@@ -308,7 +308,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xy_parallel_2D', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -325,7 +325,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xy_parallel_3D', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -342,7 +342,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xy_parallel_4D', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lfirst_proc_xy)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -359,7 +359,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xyz_parallel_3D', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lroot)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -376,7 +376,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xyz_parallel_4D', &
-          'this sub is not available in fourier_fft.f90!')
+          'this sub is not available in fourier_fft.f90!', lroot)
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
