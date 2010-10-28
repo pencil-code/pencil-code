@@ -22,11 +22,12 @@ module Special
 !
   include '../special.h'
 !
-  real :: Kpara=0.,Kperp=0.,cool_RTV=0.
+  real :: Kpara=0.,Kperp=0.,cool_RTV=0.,Kchrom=0.
+  real :: exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.
   real :: tau_inv_newton=0.,exp_newton=0.
   real :: tanh_newton=0.,cubic_newton=0.
-  real :: width_newton=0.
-  real :: init_time=0.
+  real :: width_newton=0.,width_RTV=0.
+  real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -36,7 +37,9 @@ module Special
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,tau_inv_newton,exp_newton,init_time, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
-      width_newton,tanh_newton,cubic_newton
+      width_newton,tanh_newton,cubic_newton,Kchrom, &
+      lnTT0_chrom,width_lnTT_chrom,width_RTV, &
+      exp_RTV,cubic_RTV,tanh_RTV
 !
 ! variables for print.in
 !
@@ -141,6 +144,13 @@ module Special
         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
+      if (Kchrom/=0) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
       if (cool_RTV/=0) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho)=.true.
@@ -258,6 +268,7 @@ module Special
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
+      if (Kchrom/=0) call calc_heatcond_kchrom(df,p)
 !
       call keep_compiler_quiet(f)
 !
@@ -312,7 +323,42 @@ module Special
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-  subroutine calc_heat_cool_RTV(df,p)
+    subroutine calc_heatcond_kchrom(df,p)
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: cubic_step, cubic_der_step, dot2
+!
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+      real, dimension(nx) :: K_chrom,glnTT_2
+      real, dimension(nx) :: gK_chrom,rhs,chix
+!
+      K_chrom=Kchrom * cubic_step(p%lnTT,lnTT0_chrom,width_lnTT_chrom)
+      chix=p%rho1*K_chrom*p%cp1
+!
+      gK_chrom=Kchrom * cubic_der_step(p%lnTT,lnTT0_chrom,width_lnTT_chrom)
+!
+      call dot2(p%glnTT,glnTT_2)
+!
+      rhs = glnTT_2*(gK_chrom+K_chrom) + K_chrom*p%del2lnTT
+!
+      rhs = p%rho1*p%cp1*rhs
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs
+!
+!  Check maximum diffusion from thermal diffusion.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_kchrom
+!***********************************************************************
+    subroutine calc_heat_cool_RTV(df,p)
 !
 !  Computes the radiative loss in the optical thin corona.
 !  Zero order estimation for the electron number densities by
@@ -325,6 +371,7 @@ module Special
 !
     use EquationOfState, only: gamma
     use Diagnostics,     only: max_mn_name
+    use Messages, only: warning
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -347,11 +394,17 @@ module Special
     rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
     rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-    rtv_cool = rtv_cool*cool_RTV*(1.-tanh(3.*(p%rho/(4.5e-5/unit_density)-1.)))/2.
-!    
-!    rtv_cool=rtv_cool* &
-!        (1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+    if (exp_RTV/=0) then
+      call warning('cool_RTV','exp_RTV not yet implemented')
+    elseif (tanh_RTV/=0) then
+      rtv_cool=rtv_cool*cool_RTV* &
+          0.5*(1.-tanh(width_RTV*(p%lnrho-tanh_RTV)))
 !
+    elseif (cubic_RTV/=0) then
+      rtv_cool=rtv_cool*cool_RTV* &
+          (1.-cubic_step(p%lnrho,cubic_RTV,width_RTV))
+!
+    endif
 !
     rtv_cool = rtv_cool * cubic_step(t,init_time,init_time)
 !
@@ -451,7 +504,7 @@ module Special
       newton  = exp(lnTT_init_prof(l1:l2)-p%lnTT)-1.
 !
 !  Multiply by density dependend time scale
-      if (exp_newton/=0) then 
+      if (exp_newton/=0) then
         tau_inv_tmp = tau_inv_newton * &
             exp(-exp_newton*(lnrho0-p%lnrho))
 !
