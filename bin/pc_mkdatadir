@@ -137,6 +137,8 @@ else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ ajohan)) then
   endif
 else if (($hn =~ rio* || $hn =~ pia*) && ($USER =~ wlyra)) then
   set str='s/code/data/g'
+else if ($hn =~ theo*) then 
+  set str='s/afs\/ipp\/home\/[a-z]/ptmp\/mpia/g'  
 else if ($hn =~ genius*) then
   set str='s/u\/ajohan\/BlueGene/ptmp\/ajohan/g'
 else if ($hn =~ *.uppmax.uu.se) then
