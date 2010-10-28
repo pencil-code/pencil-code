@@ -2202,6 +2202,10 @@ module Entropy
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
+!  magnetic chi-quenching
+!
+      if (chiB/=0.0) lpenc_requested(i_b2)=.true.
+!
       lpenc_diagnos2d(i_ss)=.true.
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
