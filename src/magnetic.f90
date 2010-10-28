@@ -111,7 +111,7 @@ module Magnetic
   real :: eta_jump=0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mix_factor=0.
-  integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5
+  integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
@@ -147,7 +147,7 @@ module Magnetic
   logical :: lmeanfield_theory=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false.
-  logical :: lbbt_as_aux=.false., ljjt_as_aux=.false.
+  logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
 !
@@ -159,7 +159,7 @@ module Magnetic
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
-      ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
       lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor
@@ -186,7 +186,7 @@ module Magnetic
   real, dimension(mz,3) :: geta_z
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
-  logical :: lupw_aa=.false.
+  logical :: lupw_aa=.false., ladvective_gauge2=.false.
   logical :: lcalc_aamean=.false.
   logical :: lforcing_cont_aa=.false.
   logical :: lelectron_inertia=.false.
@@ -210,7 +210,7 @@ module Magnetic
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
-      lweyl_gauge, ladvective_gauge, lupw_aa, &
+      lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, &
       eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
       wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
@@ -221,7 +221,8 @@ module Magnetic
       eta_z0, eta_z1,eta_spitzer, &
       borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
-      lbbt_as_aux, ljjt_as_aux, lneutralion_heat, lreset_aa, daareset, &
+      lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
+      lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump,&
       lrun_initaa
@@ -986,6 +987,18 @@ module Magnetic
         endif
       endif
 !
+      if (lua_as_aux) then
+        if (iua==0) then
+          call farray_register_auxiliary('ua',iua,vector=1)
+        endif
+        if (iua/=0.and.lroot) then
+          print*, 'initialize_velocity: iua = ', iua
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'iua=',iua
+          close(3)
+        endif
+      endif
+!
 !  Initialize individual modules.
 !
       call initialize_magnetic_mf (f,lstarting)
@@ -1173,6 +1186,14 @@ module Magnetic
         case ('linear-zx')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=-0.5*amplaa(j)*z(n)**2/Lxyz(3)
+          enddo; enddo
+        case ('Az=x2')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaz)=.25*pi_1*amplaa(j)*(x(l1:l2)/Lxyz(1))**2
+          enddo; enddo
+        case ('Az=x4')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaz)=.25*amplaa(j)*x(l1:l2)**2*(1.-.25*x(l1:l2)**2)
           enddo; enddo
         case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
         case ('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
@@ -1422,6 +1443,10 @@ module Magnetic
           lpenc_requested(i_jxbr)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.0) lpenc_requested(i_va2)=.true.
+!
+!  ua pencil if lua_as_aux
+!
+      if (lua_as_aux) lpenc_diagnos(i_ua)=.true.
 !
 !  diagnostics pencils
 !
@@ -2123,8 +2148,8 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
-      real, dimension (nx,3) :: ujiaj
-      real, dimension (nx) :: exabot,exatop
+      real, dimension (nx,3) :: ujiaj,gua
+      real, dimension (nx) :: exabot,exatop,ua
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi,dub,dob
@@ -2502,6 +2527,20 @@ module Magnetic
               enddo
             enddo
             df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
+!
+!  ladvective_gauge2
+!
+          elseif (ladvective_gauge2) then
+            if (lua_as_aux) then
+              call grad(f,iua,gua)
+              df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres-gua
+!--            call dot(p%uu,p%aa,ua)
+!print*,'UA1=',f(l1:l1+4,m,n,iua)
+!print*,'UA2=',p%ua(1:5)
+!print*,'UA3=',ua(1:5)
+            else
+              call fatal_error('daa_dt','must put lua_as_aux=T')
+            endif
 !
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
@@ -3473,6 +3512,18 @@ module Magnetic
         jjmz(:,1)=-d2aamz(:,1)
         jjmz(:,2)=-d2aamz(:,2)
         jjmz(:,3)=0.
+      endif
+!
+!  put u.a into auxiliarry arry
+!
+      if (lua_as_aux) then
+        do n=1,mz
+          do m=1,my
+            f(:,m,n,iua)=f(:,m,n,iux)*f(:,m,n,iax) &
+                        +f(:,m,n,iuy)*f(:,m,n,iay) &
+                        +f(:,m,n,iuz)*f(:,m,n,iaz)
+          enddo
+        enddo
       endif
 !
     endsubroutine calc_lmagnetic_pars
