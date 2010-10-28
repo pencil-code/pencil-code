@@ -28,6 +28,7 @@ module Special
   real :: tanh_newton=0.,cubic_newton=0.
   real :: width_newton=0.,width_RTV=0.
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
+  real :: hcond3=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -39,7 +40,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
       width_newton,tanh_newton,cubic_newton,Kchrom, &
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
-      exp_RTV,cubic_RTV,tanh_RTV
+      exp_RTV,cubic_RTV,tanh_RTV,hcond3
 !
 ! variables for print.in
 !
@@ -144,13 +145,23 @@ module Special
         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
+      if (hcond3/=0) then
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
+!
       if (Kchrom/=0) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
+!
       if (cool_RTV/=0) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho)=.true.
@@ -264,6 +275,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
+      if (hcond3/=0) call calc_heatcond_glnTT_iso(df,p)
       if (Kpara/=0) call calc_heatcond_spitzer(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
       if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
@@ -327,21 +339,39 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: cubic_step, cubic_der_step, dot2
+      use Sub, only: cubic_step, cubic_der_step, dot2,cross,dot
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: K_chrom,glnTT_2
-      real, dimension(nx) :: gK_chrom,rhs,chix
-!
-      K_chrom=Kchrom * cubic_step(p%lnTT,lnTT0_chrom,width_lnTT_chrom)
-      chix=p%rho1*K_chrom*p%cp1
-!
-      gK_chrom=Kchrom * cubic_der_step(p%lnTT,lnTT0_chrom,width_lnTT_chrom)
+      real, dimension(nx) :: gK_chrom,rhs,chix,tmp
+      real, dimension(nx,3) :: tmpv,tmpv2
+      integer :: i,j
 !
       call dot2(p%glnTT,glnTT_2)
 !
-      rhs = glnTT_2*(gK_chrom+K_chrom) + K_chrom*p%del2lnTT
+      K_chrom=Kchrom*(1.-cubic_step(glnTT_2,lnTT0_chrom,width_lnTT_chrom))
+      chix=p%rho1*K_chrom*p%cp1
+!
+      tmpv(:,1) = p%hlnTT(:,2,3)-p%hlnTT(:,3,2) 
+      tmpv(:,2) = p%hlnTT(:,3,1)-p%hlnTT(:,1,3) 
+      tmpv(:,3) = p%hlnTT(:,1,2)-p%hlnTT(:,2,1) 
+!
+      call cross(tmpv,p%glnTT,tmpv2)
+!
+      tmpv(:,:)=0.
+      do i=1,3
+        do j=1,3
+          tmpv(:,i) = tmpv(:,i) + p%glnTT(:,j)*p%hlnTT(:,i,j)
+        enddo
+        tmpv(:,i)=tmpv(:,i) + tmpv2(:,i)
+      enddo
+!
+      call dot(2*tmpv,p%glnTT,tmp)
+!
+      gK_chrom= - Kchrom*cubic_der_step(glnTT_2,lnTT0_chrom,width_lnTT_chrom)
+!
+      rhs = tmp*gK_chrom + glnTT_2*K_chrom + K_chrom*p%del2lnTT
 !
       rhs = p%rho1*p%cp1*rhs
 !
@@ -739,6 +769,49 @@ module Special
       endif
 !
     endsubroutine calc_artif_heating
+!***********************************************************************
+    subroutine calc_heatcond_glnTT_iso(df,p)
+!
+!  L = Div( Grad(lnT)^2 Grad(T))
+!
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: tmpv
+      real, dimension (nx) :: glnT2,glnT_glnr
+      real, dimension (nx) :: tmp,rhs,chi
+      integer :: i
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+      call dot2(p%glnTT,glnT2)
+      call dot(p%glnTT,p%glnrho,glnT_glnr)
+!
+      do i=1,3
+        tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,1,i) + &
+                    p%glnTT(:,2)*p%hlnTT(:,2,i) + &
+                    p%glnTT(:,3)*p%hlnTT(:,3,i)
+      enddo
+      call dot(p%glnTT,tmpv,tmp)
+!
+      chi = glnT2*hcond3
+!
+      rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond3
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_glnTT_iso
 !***********************************************************************
 !
 !********************************************************************
