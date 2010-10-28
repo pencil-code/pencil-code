@@ -140,6 +140,8 @@ module Special
 !  04-sep-10/bing: coded
 !
       if (Kpara/=0) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -302,12 +304,11 @@ module Special
       real, dimension (nx) :: chi,glnTT2,rhs
 !
       chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
-          cubic_step(t,init_time,init_time)
+          cubic_step(t,init_time,init_time)*p%cp1
 !
       call dot2(p%glnTT,glnTT2)
 !
-      rhs = Kpara * exp(p%lnTT*3.5)*cubic_step(t,init_time,init_time)
-      rhs = rhs * (3.5 * glnTT2 + p%del2lnTT)
+      rhs = gamma * chi * (3.5 * glnTT2 + p%del2lnTT)
 !
 !  Add to energy equation.
       if (ltemperature) then
