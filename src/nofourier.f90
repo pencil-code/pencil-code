@@ -261,12 +261,12 @@ module Fourier
 !***********************************************************************
     subroutine fft_xyz_parallel_3D(a_re,a_im,linv,lneed_im)
 !
-!  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
+!  Subroutine to do FFT of distributed 3D data in the x-, y- and z-direction.
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
 !
-      call fatal_error('fft_xy_parallel_4D', &
+      call fatal_error('fft_xyz_parallel_3D', &
           'this sub is not available in nofourier.f90!')
 !
       call keep_compiler_quiet(a_re)
@@ -278,12 +278,12 @@ module Fourier
 !***********************************************************************
     subroutine fft_xyz_parallel_4D(a_re,a_im,linv,lneed_im)
 !
-!  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
+!  Subroutine to do FFT of distributed 4D data in the x-, y- and z-direction.
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
 !
-      call fatal_error('fft_xy_parallel_4D', &
+      call fatal_error('fft_xyz_parallel_4D', &
           'this sub is not available in nofourier.f90!')
 !
       call keep_compiler_quiet(a_re)
