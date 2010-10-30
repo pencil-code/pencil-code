@@ -237,6 +237,7 @@ module Testfield
       if (lroot) print*,'initialize_testfield: etatest=',etatest
 !
 !  set cosine and sine function for setting test fields and analysis
+!
       j0r= sin(x)/x
       n0r= -cos(x)/x
       dj0dr= cos(x)/x - sin(x)/(x*x)
@@ -632,14 +633,18 @@ module Testfield
         if (idiag_E91xy/=0) call zsum_mn_name_xy(Eipq(:,1,i9),idiag_E91xy)
         if (idiag_E92xy/=0) call zsum_mn_name_xy(Eipq(:,2,i9),idiag_E92xy)
         if (idiag_E93xy/=0) call zsum_mn_name_xy(Eipq(:,3,i9),idiag_E93xy)
-! \tilde{a} (Schrinner et al 2008 ArXiv:astro-ph/0609752
+!
+!  \tilde{a} (Schrinner et al 2007 ArXiv:astro-ph/0609752
+!  http://arxiv.org/abs/astro-ph/0609752
+!  see also notes in tex/notes/testfield/spherical.tex
+!
         temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
         if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
         temp=(dn0dr(l1:l2)*Eipq(:,2,i1)-dj0dr(l1:l2)*Eipq(:,2,i2))/(atilde_denom1(l1:l2))
         if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
         temp=(dn0dr(l1:l2)*Eipq(:,3,i1)-dj0dr(l1:l2)*Eipq(:,3,i2))/(atilde_denom1(l1:l2))
         if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
-! \tilde{b} (Schrinner et al 2008 ArXiv:astro-ph/0609752
+! \tilde{b}
         temp=(n0r(l1:l2)*Eipq(:,1,i1)-j0r(l1:l2)*Eipq(:,1,i2))/(btilde_denom1(l1:l2))
         if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
         temp=(n0r(l1:l2)*Eipq(:,2,i1)-j0r(l1:l2)*Eipq(:,2,i2))/(btilde_denom1(l1:l2))
