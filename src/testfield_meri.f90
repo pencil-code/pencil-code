@@ -1,4 +1,4 @@
-! $Id: testfield_z.f90 13947 2010-05-20 12:29:48Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !***************************************************************
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -188,7 +188,7 @@ module Testfield
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-           "$Id: testfield_z.f90 13947 2010-05-20 12:29:48Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
