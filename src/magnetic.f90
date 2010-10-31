@@ -1760,7 +1760,7 @@ module Magnetic
         lpencil_in(i_jij)=.true.
       endif
       if (lpencil_in(i_ss12)) lpencil_in(i_sij)=.true.
-      if (lpencil_in(i_del2A)) then
+      if (lpencil_in(i_del2a)) then
         if (lspherical_coords) then
 !WL: for the cylindrical case, lpencil_check says these pencils are not needed
           lpencil_in(i_jj)=.true.
@@ -1900,10 +1900,6 @@ module Magnetic
         if (iglobal_ey_ext/=0) p%uxb(:,2)=p%uxb(:,2)+f(l1:l2,m,n,iglobal_ey_ext)
         if (iglobal_ez_ext/=0) p%uxb(:,3)=p%uxb(:,3)+f(l1:l2,m,n,iglobal_ez_ext)
       endif
-! exa
-      if (lpencil(i_exa)) then
-        call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
-      endif
 ! uga
       if (lpencil(i_uga)) then
         if (.not.lfargo_advection) then
@@ -1945,6 +1941,10 @@ module Magnetic
         if (iglobal_jx_ext/=0) p%jj(:,1)=p%jj(:,1)+f(l1:l2,m,n,iglobal_jx_ext)
         if (iglobal_jy_ext/=0) p%jj(:,2)=p%jj(:,2)+f(l1:l2,m,n,iglobal_jy_ext)
         if (iglobal_jz_ext/=0) p%jj(:,3)=p%jj(:,3)+f(l1:l2,m,n,iglobal_jz_ext)
+      endif
+! exa
+      if (lpencil(i_exa)) then
+        call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
       endif
 ! j2
       if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)
