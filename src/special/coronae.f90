@@ -20,13 +20,15 @@ module Special
   implicit none
 !
   real :: Kpara=0.,Kperp=0.
-  real :: cool_RTV=0.
+  real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.
-  real :: tau_inv_newton=0.,exp_newton=0.,lnrho_newton=0.,width_newton=0.
+  real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
+  real :: width_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field
   real :: increase_vorticity=15.,Bavoid=huge1
-  real :: Bz_flux=0.,chi_tensor=0.
-  real :: init_time=0.,init_width=0.
+  real :: Bz_flux=0.
+  real :: init_time=0.,init_width=0.,hcond_grad=0.
+  
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -34,10 +36,12 @@ module Special
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      Kpara,Kperp,cool_RTV,hyper3_chi,tau_inv_newton, &
-      exp_newton,lgranulation,luse_ext_vel_field,increase_vorticity, &
-      Bavoid,Bz_flux,init_time,init_width,lnrho_newton,width_newton, &
-      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,chi_tensor
+      Kpara,Kperp, &
+      cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV, &
+      tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
+      lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
+      Bavoid,Bz_flux,init_time,init_width,width_newton, &
+      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad
 !
 ! variables for print.in
 !
@@ -92,18 +96,18 @@ module Special
   contains
 !
 !***********************************************************************
-    subroutine register_special()
+  subroutine register_special()
 !
 !  Set up indices for variables in special modules and write svn id.
 !
 !  10-sep-10/bing: coded
 !
-      if (lroot) call svn_id( &
-           "$Id$")
+    if (lroot) call svn_id( &
+        "$Id$")
 !
-    endsubroutine register_special
+  endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special(f,lstarting)
+  subroutine initialize_special(f,lstarting)
 !
 !  Called by start.f90 together with lstarting=.true.   and then
 !  called by run.f90   together with lstarting=.false.  after reading
@@ -111,36 +115,36 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical, intent(in) :: lstarting
-      real, dimension (mz) :: ztmp
-      character (len=*), parameter :: filename='/strat.dat'
-      integer :: lend,unit=12
-      real :: dummy=1.
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    logical, intent(in) :: lstarting
+    real, dimension (mz) :: ztmp
+    character (len=*), parameter :: filename='/strat.dat'
+    integer :: lend,unit=12
+    real :: dummy=1.
 !
-      call keep_compiler_quiet(f)
+    call keep_compiler_quiet(f)
 !
-      inquire(IOLENGTH=lend) dummy
+    inquire(IOLENGTH=lend) dummy
 !
-      if (.not.lstarting.and.tau_inv_newton/=0) then
-        open(unit,file=trim(directory_snap)//filename, &
-            form='unformatted',status='unknown',recl=lend*mz)
-        read(unit) ztmp
-        read(unit) lnrho_init_prof
-        read(unit) lnTT_init_prof
-        close(unit)
-      endif
+    if (.not.lstarting.and.tau_inv_newton/=0) then
+      open(unit,file=trim(directory_snap)//filename, &
+          form='unformatted',status='unknown',recl=lend*mz)
+      read(unit) ztmp
+      read(unit) lnrho_init_prof
+      read(unit) lnTT_init_prof
+      close(unit)
+    endif
 !
-      if (.not.lstarting.and.lgranulation.and.ipz==0) then
-        if (lhydro) then
-          call set_driver_params()
-        else
-          call fatal_error &
+    if (.not.lstarting.and.lgranulation.and.ipz==0) then
+      if (lhydro) then
+        call set_driver_params()
+      else
+        call fatal_error &
               ('initialize_special','granulation only works for lhydro=T')
-        endif
       endif
+    endif
 !
-    endsubroutine initialize_special
+  endsubroutine initialize_special
 !***********************************************************************
   subroutine read_special_run_pars(unit,iostat)
 !
@@ -183,6 +187,14 @@ module Special
       lpenc_requested(i_hlnTT)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_glnrho)=.true.
+    endif
+!
+    if (hcond_grad/=0) then
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_hlnTT)=.true.
+      lpenc_requested(i_del2lnTT)=.true.
+      lpenc_requested(i_glnrho)=.true.
+      lpenc_requested(i_cp1)=.true.
     endif
 !
     if (cool_RTV/=0) then
@@ -370,7 +382,7 @@ module Special
     real, dimension (nx) :: hc,tmp
 !
     if (Kpara/=0) call calc_heatcond_spitzer(df,p)
-    if (chi_tensor/=0) call calc_heatcond_tensor(df,p)
+    if (hcond_grad/=0) call calc_heatcond_glnTT_iso(df,p)
     if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
     if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
     if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
@@ -487,9 +499,9 @@ module Special
 !
   endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-  subroutine calc_heatcond_tensor(df,p)
+    subroutine calc_heatcond_glnTT_iso(df,p)
 !
-! L = Div( K rho b*(b*Grad(T))
+!  L = Div( Grad(lnT)^2 Grad(T))
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv,cubic_step
@@ -497,85 +509,38 @@ module Special
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: bunit,hhh,tmpv
-      real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: abs_b,b1
-      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix
-      integer :: i,j,k
+      real, dimension (nx,3) :: tmpv
+      real, dimension (nx) :: glnT2,glnT_glnr
+      real, dimension (nx) :: tmp,rhs,chi
+      integer :: i
 !
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'special/calc_heatcond_chiconst',chi_tensor
-!
-!  Define chi= K_0/rho
-!
-!  calculate unit vector of bb
-!
-      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
-      b1=1./max(tini,abs_b)
-      call multsv(b1,p%bb,bunit)
-!
-!  calculate first H_i
+      call dot2(p%glnTT,glnT2)
+      call dot(p%glnTT,p%glnrho,glnT_glnr)
 !
       do i=1,3
-        hhh(:,i)=0.
-        do j=1,3
-          tmpj(:)=0.
-          do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
-          enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
-        enddo
+        tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,1,i) + &
+                    p%glnTT(:,2)*p%hlnTT(:,2,i) + &
+                    p%glnTT(:,3)*p%hlnTT(:,3,i)
       enddo
-      call multsv(b1,hhh,tmpv)
+      call dot(p%glnTT,tmpv,tmp)
 !
-!  calculate abs(h) for limiting H vector
+      chi = glnT2*hcond_grad
 !
-      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
+      rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
 !
-!  limit the length of H
-!
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv(quenchfactor,tmpv,hhh)
-!
-!  dot H with Grad lnTT
-!
-      call dot(hhh,p%glnTT,tmp)
-!
-!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
-!
-      call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,tmpj)
-      tmp = tmp+tmpj
-!
-!  calculate (Grad lnTT * bunit)^2 needed for lnecr form; also add into tmp
-!
-      call dot(p%glnTT,bunit,tmpi)
-!
-      call dot(p%glnrho,bunit,tmpj)
-      tmp=tmp+(tmpj+tmpi)*tmpi
-!
-!  calculate rhs
-!
-      chix = chi_tensor*cubic_step(real(t*unit_time),init_time,init_time)
-!
-      rhs = gamma*chix*tmp
-!
-      if (.not.(ipz.eq.nprocz-1.and.n.ge.n2-3)) &
-          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
-!
-!      if (itsub .eq. 3 .and. ip .eq. 118) &
-!          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        diffus_chi=diffus_chi+gamma*chi*dxyz_2
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
-  endsubroutine calc_heatcond_tensor
+    endsubroutine calc_heatcond_glnTT_iso
 !***********************************************************************
   subroutine calc_heat_cool_RTV(df,p)
 !
@@ -595,8 +560,6 @@ module Special
     type (pencil_case), intent(in) :: p
 !
     real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
-!    real, dimension (nx) :: ln_n_K
-!    real, dimension (nx) :: dE_kB_T
     real :: unit_lnQ
 !
     unit_lnQ=3*alog(real(unit_velocity))+&
@@ -608,29 +571,25 @@ module Special
 !  lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
 !
     lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
-! !
-! !  taking ionization of hydrogen into account using Saha-equation
-! !
-!     dE_kB_T = 1.58e5*exp(-p%lnTT)/unit_temperature
-! !
-!     ln_n_K = p%lnrho - 1.5*p%lnTT + alog(real(unit_density/unit_temperature**1.5))
-! !
-!     ln_n_K = ln_n_K + 12.1313 + dE_kB_T
-! !
-!     where (ln_n_K > 15)
-!       lnneni = lnneni - ln_n_K
-!     elsewhere (ln_n_K <=15 .and. ln_n_K > -15)
-!       lnneni = lnneni + 2.*alog((sqrt(1.0+4.0*exp(ln_n_K))-1.0)/2.0)-2.*ln_n_K
-!     endwhere
 !
     lnQ   = get_lnQ(lnTT_SI)
 !
     rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
-!
     rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-    rtv_cool = rtv_cool*cool_RTV !*(1.-tanh(3e4*(p%rho-1e-4)))/2.
-    rtv_cool = rtv_cool * cubic_step(t,init_time,init_width)
+    if (exp_RTV/=0) then
+      call warning('cool_RTV','exp_RTV not yet implemented')
+    elseif (tanh_RTV/=0) then
+      rtv_cool=rtv_cool*cool_RTV* &
+          0.5*(1.-tanh(width_RTV*(p%lnrho-tanh_RTV)))
+!
+    elseif (cubic_RTV/=0) then
+      rtv_cool=rtv_cool*cool_RTV* &
+          (1.-cubic_step(p%lnrho,cubic_RTV,width_RTV))
+!
+    endif
+!
+    rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
 !
 !     add to temperature equation
 !
@@ -735,7 +694,7 @@ module Special
         endselect
       enddo
 !
-      heatinput=heatinput*cubic_step(t,init_time,init_width)
+      heatinput=heatinput*cubic_step(real(t),init_time,init_width)
 !
       rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
 !
@@ -770,10 +729,22 @@ module Special
       newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
 !
 !  Multiply by density dependend time scale
-!      tau_inv_tmp = tau_inv_newton * exp(-exp_newton*(lnrho0-p%lnrho))
-      tau_inv_tmp = tau_inv_newton * cubic_step(p%lnrho,lnrho_newton,width_newton)
+      if (exp_newton/=0) then
+        tau_inv_tmp = tau_inv_newton * &
+            exp(-exp_newton*(lnrho0-p%lnrho))
 !
-      tau_inv_tmp = tau_inv_tmp * cubic_step(t,init_time,init_width)
+      elseif (tanh_newton/=0) then
+        tau_inv_tmp = tau_inv_newton * &
+            0.5*(1+tanh(width_newton*(p%lnrho-tanh_newton)))
+!
+      elseif (cubic_newton/=0) then
+        tau_inv_tmp = tau_inv_newton * &
+            cubic_step(p%lnrho,cubic_newton,width_newton)
+!
+      endif
+!
+!  Adjust time scale by the initialization time
+      tau_inv_tmp = tau_inv_tmp * cubic_step(real(t),init_time,init_width)
 !
       newton  = newton * tau_inv_tmp
 !
@@ -941,9 +912,9 @@ module Special
       Ux=0.0
       Uy=0.0
       call multi_drive3()
-!
-      !call enhance_vorticity()
-     ! quenching
+!      
+!      call enhance_vorticity()
+      ! call quenching()
       f(l1:l2,m1:m2,n1,iux) = Ux
       f(l1:l2,m1:m2,n1,iuy) = Uy
 !
@@ -1039,8 +1010,7 @@ module Special
         call driver_fill(level,init=.false.)
 !
       endif
-!
-
+!      
       Ux = Ux + vx
       Uy = Uy + vy
 !
@@ -1589,6 +1559,7 @@ module Special
       endif
 !
       b2 = bbx*bbx + bby*bby + bbz*bbz
+      Bzflux = sum(abs(bbz))
 !
     endsubroutine set_B2
 !***********************************************************************
