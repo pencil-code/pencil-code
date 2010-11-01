@@ -52,7 +52,8 @@ module Special
 !
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0, idiag_gatop=0, idiag_gabot=0
-  integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
+  integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0
+  integer :: idiag_alpmmz=0, idiag_galpmmz3=0
 !
   logical, pointer :: lmeanfield_theory
   real, pointer :: meanfield_etat,eta
@@ -255,7 +256,17 @@ module Special
        endif
      endif
 !
-!  diagnostics
+!  diagnostics for 1-D averages
+!
+      if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        if (idiag_alpmmz/=0) call xysum_mn_name_z(alpm(:),idiag_alpmmz)
+        if (idiag_galpmmz3/=0) then
+          call grad(f,ialpm,galpm)
+          call xysum_mn_name_z(galpm(:,3),idiag_galpmmz3)
+        endif
+      endif
+!
+!  print diagnostics
 !
       if (ldiagnos) then
         if (idiag_alpm_int/=0) call integrate_mn_name(alpm,idiag_alpm_int)
@@ -352,7 +363,8 @@ module Special
 !
       if (lreset) then
         idiag_alpm_int=0; idiag_gatop=0; idiag_gabot=0
-        idiag_alpmm=0; idiag_ammax=0; idiag_amrms=0; idiag_alpmmz=0
+        idiag_alpmm=0; idiag_ammax=0; idiag_amrms=0
+        idiag_alpmmz=0; idiag_galpmmz3=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -369,8 +381,8 @@ module Special
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),&
-            'alpmmz',idiag_alpmmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alpmmz',idiag_alpmmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'galpmmz3',idiag_galpmmz3)
       enddo
 !
 !  write column where which magnetic variable is stored
