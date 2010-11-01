@@ -1987,8 +1987,6 @@ module Magnetic
       endif
 ! jxb
       if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
-! jxbr
-      if (lpencil(i_jxbr)) rho1_jxb=p%rho1
 ! cosjb
       if (lpencil(i_cosjb)) then
         do ix=1,nx
