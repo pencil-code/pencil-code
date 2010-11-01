@@ -10707,11 +10707,22 @@ possible inputs to the file \file{video.in}.
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
   \var{aa}    & magnetic vector potential $\Av$;
-                writes \file[]{a[xyz].\{xz,yz,xy,xy2\}}  \\
+                writes \file[]{aa[xyz].\{xz,yz,xy,xy2\}}  \\
   \var{bb}     & magnetic flux density $\Bv$;
-                writes \file[]{b[xyz].\{xz,yz,xy,xy2\}}  \\
+                writes \file[]{bb[xyz].\{xz,yz,xy,xy2\}}  \\
   \var{b2}    & magnetic energy density $\Bv^2$;
                 writes \file[]{b2.\{xz,yz,xy,xy2\}}  \\
+  \var{jj}    & current density $\jv$;
+                writes \file[]{jj[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{j2}    & current density squared $\jv^2$;
+                writes \file[]{j2.\{xz,yz,xy,xy2\}}  \\
+  \var{jb}    & $\jv\Bv$;
+                writes \file[]{jb.\{xz,yz,xy,xy2\}}  \\
+  \var{beta}   & inverse plasma beta $\Bv^2/(2\mu_0p)$;
+                writes \file[]{beta.\{xz,yz,xy,xy2\}}  \\
+  \var{poynting} & poynting vector  $\eta \jv \times \Bv 
+                     -(\uv\times\Bv)\times\Bv/\mu_0$;
+                writes \file[]{poynting[xyz].\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
