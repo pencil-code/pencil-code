@@ -25,7 +25,7 @@ module Special
   real :: tau_inv_newton=0.,exp_newton=0.,lnrho_newton=0.,width_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field
   real :: increase_vorticity=15.,Bavoid=huge1
-  real :: Bz_flux=0.
+  real :: Bz_flux=0.,chi_tensor=0.
   real :: init_time=0.,init_width=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -37,7 +37,7 @@ module Special
       Kpara,Kperp,cool_RTV,hyper3_chi,tau_inv_newton, &
       exp_newton,lgranulation,luse_ext_vel_field,increase_vorticity, &
       Bavoid,Bz_flux,init_time,init_width,lnrho_newton,width_newton, &
-      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss
+      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,chi_tensor
 !
 ! variables for print.in
 !
@@ -370,6 +370,7 @@ module Special
     real, dimension (nx) :: hc,tmp
 !
     if (Kpara/=0) call calc_heatcond_spitzer(df,p)
+    if (chi_tensor/=0) call calc_heatcond_tensor(df,p)
     if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
     if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
     if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
@@ -485,6 +486,96 @@ module Special
     endif
 !
   endsubroutine calc_heatcond_spitzer
+!***********************************************************************
+  subroutine calc_heatcond_tensor(df,p)
+!
+! L = Div( K rho b*(b*Grad(T))
+!
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: bunit,hhh,tmpv
+      real, dimension (nx) :: hhh2,quenchfactor
+      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix
+      integer :: i,j,k
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+      if (headtt) print*,'special/calc_heatcond_chiconst',chi_tensor
+!
+!  Define chi= K_0/rho
+!
+!  calculate unit vector of bb
+!
+      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
+      b1=1./max(tini,abs_b)
+      call multsv(b1,p%bb,bunit)
+!
+!  calculate first H_i
+!
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv(b1,hhh,tmpv)
+!
+!  calculate abs(h) for limiting H vector
+!
+      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
+!
+!  limit the length of H
+!
+      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      call multsv(quenchfactor,tmpv,hhh)
+!
+!  dot H with Grad lnTT
+!
+      call dot(hhh,p%glnTT,tmp)
+!
+!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
+!
+      call multmv(p%hlnTT,bunit,tmpv)
+      call dot(tmpv,bunit,tmpj)
+      tmp = tmp+tmpj
+!
+!  calculate (Grad lnTT * bunit)^2 needed for lnecr form; also add into tmp
+!
+      call dot(p%glnTT,bunit,tmpi)
+!
+      call dot(p%glnrho,bunit,tmpj)
+      tmp=tmp+(tmpj+tmpi)*tmpi
+!
+!  calculate rhs
+!
+      chix = chi_tensor*cubic_step(real(t*unit_time),init_time,init_time)
+!
+      rhs = gamma*chix*tmp
+!
+      if (.not.(ipz.eq.nprocz-1.and.n.ge.n2-3)) &
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
+!
+!      if (itsub .eq. 3 .and. ip .eq. 118) &
+!          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+  endsubroutine calc_heatcond_tensor
 !***********************************************************************
   subroutine calc_heat_cool_RTV(df,p)
 !
@@ -850,7 +941,8 @@ module Special
       Ux=0.0
       Uy=0.0
       call multi_drive3()
-     ! call enhance_vorticity()
+!
+      !call enhance_vorticity()
      ! quenching
       f(l1:l2,m1:m2,n1,iux) = Ux
       f(l1:l2,m1:m2,n1,iuy) = Uy
@@ -948,7 +1040,7 @@ module Special
 !
       endif
 !
-      
+
       Ux = Ux + vx
       Uy = Uy + vy
 !
