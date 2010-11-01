@@ -1519,7 +1519,6 @@ module Magnetic
           .or. idiag_ubbzm/=0) lpenc_diagnos(i_ub)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
-      if (idiag_vArms/=0 .or. idiag_vAmax/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0) lpenc_diagnos(i_beta)=.true.
       if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
