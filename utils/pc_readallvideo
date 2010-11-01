@@ -5,6 +5,7 @@ cat video.in |  sed -e 's/^bb$/bb1\nbb2\nbb3/' | \
     sed -e 's/^jj$/jj1\njj2\njj3/' | \
     sed -e 's/^Frad$/Frad1\nFrad2\nFrad3/' | \
     sed -e 's/^Jrad$/Jrad1\nJrad2\nJrad3/' | \
+    sed -e 's/^poynting$/poynting1\npoynting2\npoynting3/' | \
     while read variable 
 do
   src/read_videofiles.x << EOF
