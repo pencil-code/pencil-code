@@ -43,12 +43,12 @@ module Magnetic
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb_xy, jj_xy
-  real, target, dimension (nx,ny,3) :: bb_xy2, jj_xy2
-  real, target, dimension (nx,ny,3) :: bb_xy3, jj_xy3
-  real, target, dimension (nx,ny,3) :: bb_xy4, jj_xy4
-  real, target, dimension (nx,nz,3) :: bb_xz, jj_xz
-  real, target, dimension (ny,nz,3) :: bb_yz, jj_yz
+  real, target, dimension (nx,ny,3) :: bb_xy, jj_xy, poynting_xy
+  real, target, dimension (nx,ny,3) :: bb_xy2,jj_xy2,poynting_xy2
+  real, target, dimension (nx,ny,3) :: bb_xy3,jj_xy3,poynting_xy3
+  real, target, dimension (nx,ny,3) :: bb_xy4,jj_xy4,poynting_xy4
+  real, target, dimension (nx,nz,3) :: bb_xz, jj_xz, poynting_xz
+  real, target, dimension (ny,nz,3) :: bb_yz, jj_yz, poynting_yz
 !
   real, target, dimension (nx,ny) :: b2_xy, jb_xy, j2_xy
   real, target, dimension (nx,ny) :: b2_xy2,jb_xy2,j2_xy2
@@ -1332,6 +1332,10 @@ module Magnetic
         lpenc_video(i_b2)=.true.
         lpenc_video(i_jb)=.true.
         lpenc_video(i_j2)=.true.
+        lpenc_video(i_jj)=.true.
+        lpenc_video(i_bb)=.true.
+        lpenc_video(i_uxb)=.true.
+        lpenc_video(i_jxb)=.true.
       endif
 !
 !  jj pencil always needed when in Weyl gauge
@@ -2148,7 +2152,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
-      real, dimension (nx,3) :: ujiaj,gua
+      real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
       real, dimension (nx) :: exabot,exatop,ua
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -3392,6 +3396,18 @@ module Magnetic
         if (n==iz4_loc) beta_xy4(:,m-m1+1)=p%beta
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
+!
+        call cross(p%uxb,p%bb,uxbxb)
+        do j=1,3
+          poynting(:,j) = etatotal * p%jxb(:,j) - mu01 * uxbxb(:,j)
+          poynting_yz(m-m1+1,n-n1+1,j)=poynting(ix_loc-l1+1,j)
+          if (m==iy_loc)  poynting_xz(:,n-n1+1,j)=poynting(:,j)
+          if (n==iz_loc)  poynting_xy(:,m-m1+1,j)=poynting(:,j)
+          if (n==iz2_loc) poynting_xy2(:,m-m1+1,j)=poynting(:,j)
+          if (n==iz3_loc) poynting_xy3(:,m-m1+1,j)=poynting(:,j)
+          if (n==iz4_loc) poynting_xy4(:,m-m1+1,j)=poynting(:,j)
+        enddo
+!
       endif
       call timing('daa_dt','finished',mnloop=.true.)
 !
@@ -4163,6 +4179,22 @@ module Magnetic
           if (lwrite_slice_xy3) slices%xy3=>beta_xy3
           if (lwrite_slice_xy4) slices%xy4=>beta_xy4
           slices%ready=.true.
+!
+! Poynting vector
+!
+        case ('poynting')
+          if (slices%index>=3) then
+            slices%ready=.false.
+          else
+            slices%index=slices%index+1
+            slices%yz =>poynting_yz(:,:,slices%index)
+            slices%xz =>poynting_xz(:,:,slices%index)
+            slices%xy =>poynting_xy(:,:,slices%index)
+            slices%xy2=>poynting_xy2(:,:,slices%index)
+            if (lwrite_slice_xy3) slices%xy3=>poynting_xy3(:,:,slices%index)
+            if (lwrite_slice_xy4) slices%xy4=>poynting_xy4(:,:,slices%index)
+            if (slices%index<=3) slices%ready=.true.
+          endif
 !
       endselect
 !
