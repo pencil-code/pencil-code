@@ -28,7 +28,6 @@ module Special
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.
-  
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -362,6 +361,7 @@ module Special
         if (itsub==1) then
           call granulation_driver(f)
         endif
+!
       endif
 !
     endsubroutine special_before_boundary
@@ -912,8 +912,8 @@ module Special
       Ux=0.0
       Uy=0.0
       call multi_drive3()
-!      
-!      call enhance_vorticity()
+!
+      call enhance_vorticity()
       ! call quenching()
       f(l1:l2,m1:m2,n1,iux) = Ux
       f(l1:l2,m1:m2,n1,iuy) = Uy
@@ -1010,7 +1010,7 @@ module Special
         call driver_fill(level,init=.false.)
 !
       endif
-!      
+!
       Ux = Ux + vx
       Uy = Uy + vy
 !
@@ -1631,6 +1631,96 @@ module Special
       call reset_pointer
 !
     endsubroutine evolve_granules
+!***********************************************************************
+    subroutine enhance_vorticity()
+!
+      real,dimension(nx,ny) :: wx,wy
+      real :: vrms,vtot
+!
+! Putting sum of velocities back into vx,vy
+        vx=Ux
+        vy=Uy
+!
+! Calculating and enhancing rotational part by factor 5
+        if (increase_vorticity/=0) then
+          if (headtt) print*,"Increase vorticity"
+          call helmholtz(wx,wy)
+          vx=(vx+increase_vorticity*wx )
+          vy=(vy+increase_vorticity*wy)
+        endif
+!
+        Ux = vx
+        Uy = vy
+!
+    endsubroutine enhance_vorticity
+!***********************************************************************
+    subroutine helmholtz(frx_r,fry_r)
+!
+! Extracts the rotational part of a 2d vector field
+! to increase vorticity of the velocity field.
+!
+! 16-sep-10/bing: coded
+!
+      use Fourier, only: fft_xy_parallel
+!
+      real, dimension(nx,ny) :: kx,ky,k2,filter
+      real, dimension(nx,ny) :: fvx_r,fvy_r,fvx_i,fvy_i
+      real, dimension(nx,ny) :: frx_r,fry_r,frx_i,fry_i
+      real, dimension(nx,ny) :: fdx_r,fdy_r,fdx_i,fdy_i
+      real :: k20
+!
+      fvx_r=vx
+      fvx_i=0.
+      call fft_xy_parallel(fvx_r,fvx_i)
+!
+      fvy_r=vy
+      fvy_i=0.
+      call fft_xy_parallel(fvy_r,fvy_i)
+!
+! Reference frequency is half the Nyquist frequency.
+      k20 = (kx_ny/2.)**2.
+!
+      kx =spread(kx_fft(ipx*nx+1:(ipx+1)*nx),2,ny)
+      ky =spread(ky_fft(ipy*ny+1:(ipy+1)*ny),1,nx)
+!
+      k2 =kx**2 + ky**2 + tini
+!
+      frx_r = +ky*(ky*fvx_r - kx*fvy_r)/k2
+      frx_i = +ky*(ky*fvx_i - kx*fvy_i)/k2
+!
+      fry_r = -kx*(ky*fvx_r - kx*fvy_r)/k2
+      fry_i = -kx*(ky*fvx_i - kx*fvy_i)/k2
+!
+      fdx_r = +kx*(kx*fvx_r + ky*fvy_r)/k2
+      fdx_i = +kx*(kx*fvx_i + ky*fvy_i)/k2
+!
+      fdy_r = +ky*(kx*fvx_r + ky*fvy_r)/k2
+      fdy_i = +ky*(kx*fvx_i + ky*fvy_i)/k2
+!
+! Filter out large wave numbers.
+      filter = exp(-(k2/k20)**2)
+!
+      frx_r = frx_r*filter
+      frx_i = frx_i*filter
+!
+      fry_r = fry_r*filter
+      fry_i = fry_i*filter
+!
+      fdx_r = fdx_r*filter
+      fdx_i = fdx_i*filter
+!
+      fdy_r = fdy_r*filter
+      fdy_i = fdy_i*filter
+!
+      call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
+      vx=fdx_r
+      call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
+      vy=fdy_r
+!
+      call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
+      call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
+!
+    endsubroutine helmholtz
 !***********************************************************************
     subroutine read_ext_vel_field()
 !
