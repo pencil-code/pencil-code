@@ -859,9 +859,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Then we use the interpolated value to find the value of the ghost point
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
-
-! NILSS: Below this point the code has not been updated to work with spheres
-
             call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
                 upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
             f(i,j,k,iux)=-phi
@@ -884,7 +881,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           else
 !
 !  For fluid points very close to the solid surface the value of the point
-!  is found from interpolation between the value at the closest grid line
+!  is set from interpolation between the value at the closest grid line
 !  and the value at the solid surface.
 !
             if (lclose_linear) then
@@ -1013,41 +1010,59 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  20-mar-2009/nils: coded
 !  
-!  If fluid_point=.true. this routine check if any of the corners in 
-!  the interpolation cell are inside a solid geometry. 
-!  If they are: some special treatment is required.
+!  If fluid_point=.true. this means that we are handling a grid point.
+!  For fluid points very close to the solid surface the value of the point
+!  is found from interpolation between the value at the closest grid line "g"
+!  and the value at the solid surface "s". 
 !  
-!  If fluid_point=.false. the routine use the value at the surface
+!  If fluid_point=.false. we are handling a point which is NOT a grid point,
+!  i.e. the point we are interested in are somewhere between the grid points.
+!  This situation typically appears for mirror points used 
+!  to find the value of the ghost points INSIDE the solid geometry, or when
+!  a particle is very close to the surface.
+!  If fluid_point=.false. the routine check if we any of the neighbouring
+!  grid points, used for interpolation, are inside the solid geometry.
+!  If so the routine use the value at the surface
 !  of the solid geometry together with the interpolated value at the nearest
 !  grid line in the direction away from the solid geometry to set a value
 !  at a grid point which is very close to the solid geometry.
 !  
-!  WARNING: This routine only works for objects with an infinitely long
-!  WARNING: central axis in the z-direction!
+!  The interpolation point is called "p".
+!  Define a straight line "l" which pass through the point "p" and is normal 
+!  to the surface of the object.
+!  The point where "l" cross the surface of the object is called "s"
+!  The point "g" is the point where "l" cross the first grid plane (line in 2D)
+!  outside of "p".
+!  The point "object" is the center point of the solid object.
+!  The variable "bv" give the x,y and z values of the neighbouring grid points
+!  to "p".
 !  
-!  The interpolation point, named p, has coordinates [xp,yp].
-!  The point s on the object surface, with coordinates [xs,ys], is 
-!  placed such that the line from s to p is a normal to the object surface.
 !  
-!  If one of the corner points of the grid cell is within a solid geometry
-!  the normal passing through both s and p are continued outward until a
-!  grid line is reached. If this line has constant, say y, then the variables
-!  constdir and vardir are given the values 2 and 1, respectively.  
+!---------------------------------------------------------------------------
+! Point   Description               Global coord. sys.    Local coord. syst.
+!                                                         (origo in center 
+!                                                         of object)
+!---------------------------------------------------------------------------
+! p       The interpolated point    p_global(3)           p_local(3)
+! s       "l" cross surface         s_global(3)           -
+! g       "l" cross grid plane      g_global(3)           g_local(3)
+! object  Object center             o_global(3)           -
+! bv      Border value              bordervalue(3*2)      -
+!---------------------------------------------------------------------------
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0_,iy0_,iz0_,ivar1
       integer :: ix0,iy0,iz0
       real, intent(inout) :: gpp
-      real :: x0,y0,z0,rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
+      real :: rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
       integer :: ix1,iy1,iz1,min
       real, dimension(3), intent(in) :: xxp
       real, dimension(2,2,2) :: rij
       real, dimension(3,2) :: bordervalue
       integer, dimension(3,2) :: borderindex
       integer, dimension(6) :: constdir_arr, vardir_arr, topbot_arr
-      real, dimension(3) :: xyint, p_object
-      real :: xtemp,r,xp,yp,zp,R1,Rsmall,xs,ys,zs,rp,dist,yp_object,xp_object
-      real :: zp_object
+      real, dimension(3) :: xyint, p_global, p_local, o_global, s_global
+      real :: xtemp,r,R1,Rsmall,xs,ys,zs,rp,dist
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,iobj,counter,topbot
       integer :: maxcounter
       real :: x1,x2,f1,f2,rij_min,rij_max,inputvalue,smallx
@@ -1071,39 +1086,35 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Define some help variables
 !
-        x0=objects(iobj)%x(1)
-        y0=objects(iobj)%x(2)
-        z0=objects(iobj)%x(3)
+        o_global=objects(iobj)%x
         rs=objects(iobj)%r
-        xp=xxp(1)
-        yp=xxp(2)
-        zp=xxp(3)
+        p_global=xxp
 !
 !  Find the corner points of the grid cell we are in
 !
         if (fluid_point) then
           smallx=dx*1e-5
           iz0=iz0_
-          if (xp < x0) then
+          if (p_global(1) < o_global(1)) then
             ix0=ix0_-1
-            xp=xp-smallx
+            p_global(1)=p_global(1)-smallx
           else
             ix0=ix0_
-            xp=xp+smallx
+            p_global(1)=p_global(1)+smallx
           endif
-          if (yp < y0) then
+          if (p_global(2) < o_global(2)) then
             iy0=iy0_-1
-            yp=yp-smallx
+            p_global(2)=p_global(2)-smallx
           else
             iy0=iy0_
-            yp=yp+smallx
+            p_global(2)=p_global(2)+smallx
           endif
-          if (zp < z0) then
+          if (p_global(3) < o_global(3)) then
             iz0=iz0_-1
-            zp=zp-smallx
+            p_global(3)=p_global(3)-smallx
           else
             iz0=iz0_
-            zp=zp+smallx
+            p_global(3)=p_global(3)+smallx
           endif
         else
           ix0=ix0_
@@ -1116,14 +1127,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find distance from corner points to the object center
 !
-        rij(1,1,1)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2+(z(iz0)-z0)**2)
-        rij(1,2,1)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2+(z(iz0)-z0)**2)
-        rij(2,1,1)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2+(z(iz0)-z0)**2)
-        rij(2,2,1)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2+(z(iz0)-z0)**2) 
-        rij(1,1,2)=sqrt((x(ix0)-x0)**2+(y(iy0)-y0)**2+(z(iz1)-z0)**2)
-        rij(1,2,2)=sqrt((x(ix0)-x0)**2+(y(iy1)-y0)**2+(z(iz1)-z0)**2)
-        rij(2,1,2)=sqrt((x(ix1)-x0)**2+(y(iy0)-y0)**2+(z(iz1)-z0)**2)
-        rij(2,2,2)=sqrt((x(ix1)-x0)**2+(y(iy1)-y0)**2+(z(iz1)-z0)**2) 
+        rij(1,1,1)=sqrt((x(ix0)-o_global(1))**2+(y(iy0)-o_global(2))**2&
+            +(z(iz0)-o_global(3))**2)
+        rij(1,2,1)=sqrt((x(ix0)-o_global(1))**2+(y(iy1)-o_global(2))**2&
+            +(z(iz0)-o_global(3))**2)
+        rij(2,1,1)=sqrt((x(ix1)-o_global(1))**2+(y(iy0)-o_global(2))**2&
+            +(z(iz0)-o_global(3))**2)
+        rij(2,2,1)=sqrt((x(ix1)-o_global(1))**2+(y(iy1)-o_global(2))**2&
+            +(z(iz0)-o_global(3))**2) 
+        rij(1,1,2)=sqrt((x(ix0)-o_global(1))**2+(y(iy0)-o_global(2))**2&
+            +(z(iz1)-o_global(3))**2)
+        rij(1,2,2)=sqrt((x(ix0)-o_global(1))**2+(y(iy1)-o_global(2))**2&
+            +(z(iz1)-o_global(3))**2)
+        rij(2,1,2)=sqrt((x(ix1)-o_global(1))**2+(y(iy0)-o_global(2))**2&
+            +(z(iz1)-o_global(3))**2)
+        rij(2,2,2)=sqrt((x(ix1)-o_global(1))**2+(y(iy1)-o_global(2))**2&
+            +(z(iz1)-o_global(3))**2) 
 !
 !  Check if we want special treatment
 !
@@ -1155,52 +1174,29 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           R1=verylarge
           Rsmall=verylarge/2.0
 !
-!  Find the x and y coordinates of p in a coordiante system with origin
+!  Find the x, y and z coordinates of "p" in a coordiante system with origin
 !  in the center of the object
 !
-          xp_object=xp-x0
-          yp_object=yp-y0
-          zp_object=zp-z0
-          p_object(1)=xp_object
-          p_object(2)=yp_object
-          p_object(3)=zp_object
+          p_local=p_global-o_global
           if (objects(iobj)%form=='cylinder') then
-            rp=sqrt(xp_object**2+yp_object**2)
+            rp=sqrt(p_local(1)**2+p_local(2)**2)
           elseif (objects(iobj)%form=='sphere') then
-            rp=sqrt(xp_object**2+yp_object**2+zp_object**2)
+            rp=sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
           endif
 !
 !  Determine the point s on the object surface where the normal to the
 !  object surface pass through the point p. 
 !
-          xs=rs/rp*xp
-          ys=rs/rp*yp
-          zs=rs/rp*zp
-!
-!  Find distance from point p to point s
-!
-          if (objects(iobj)%form=='cylinder') then
-            dist=(xp-xs)**2+(yp-ys)**2
-          elseif (objects(iobj)%form=='sphere') then
-            dist=(xp-xs)**2+(yp-ys)**2+(zp-zs)**2
-          endif
-!
-!  From this on down this subroutine has not been adapted to work
-!  with anything else than cylinders - THIS SHOULD BE FIXED!!!!!!!
-!
-          if (objects(iobj)%form .ne. 'cylinder') then
-            call fatal_error('close_interpolation',&
-                'Close interpolation is not yet adapted to work with anything else than cylinders!')
-          endif
+          s_global=rs/rp*p_global
 !
 !  Find which grid line is the closest one in the direction
 !  away from the object surface
 !
 !  Check the distance to all the six (four in 2D) possible 
-!  surface lines. Pick the surface which the normal to the
-!  object surface (which also pass through the point [xp,yp,zp])
+!  surface planes (lines in 2D). Pick the surface which the normal to the
+!  object surface (which also pass through the point "p")
 !  cross first. This crossing point must
-!  be OUTSIDE the point [xp,yp,zp] compared to the object surface.
+!  be OUTSIDE the point "p" compared to the object surface.
 !
           maxcounter=6
           if (objects(iobj)%form=='cylinder') maxcounter=4
@@ -1212,7 +1208,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find the position, xtemp, in the variable direction
 !  where the normal cross the grid line
 !
-            xtemp=(p_object(vardir)/(p_object(constdir)+tini))&
+            xtemp=(p_local(vardir)/(p_local(constdir)+tini))&
                 *(bordervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
 !
 !  Find the distance, r, from the center of the object
@@ -1226,7 +1222,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             endif
 !
 !  Check if the point xtemp is outside the object,
-!  outside the point [xp,yp,zp] and that it cross the grid
+!  outside the point "p" and that it cross the grid
 !  line within this grid cell
 !
             if ((r > rs) .and. (r > rp) &
@@ -1264,16 +1260,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             print*,'fluid_point=',fluid_point
             print*,'lclose_interpolation=',lclose_interpolation
             print*,'lclose_linear=',lclose_linear
-            print*,'x0,y0,z0=',x0,y0,z0
+            print*,'o_global=',o_global
             print*,'ix0,iy0,iz0=',ix0,iy0,iz0
             print*,'ix1,iy1,iz1=',ix1,iy1,iz1
-            print*,'xp,yp=',xp,yp
+            print*,'p_global=',p_global
             print*,'xtemp=',xtemp
             print*,'r,rs,rp=',r,rs,rp
             print*,'R1,Rsmall=',R1,Rsmall
             print*,'rij,rs=',rij,rs
-            print*,'x(ix0),xp,x(ix1)=',x(ix0),xp,x(ix1)
-            print*,'y(iy0),yp,y(iy1)=',y(iy0),yp,y(iy1)
+            print*,'x(ix0),p_global(1),x(ix1)=',x(ix0),p_global(1),x(ix1)
+            print*,'y(iy0),p_global(2),y(iy1)=',y(iy0),p_global(2),y(iy1)
             print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
              call fatal_error('close_interpolation',&
                 'A valid radius is not found!')            
@@ -1355,15 +1351,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (ivar1==iux) then
               fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
               finty=(rint1*f2y+rint2*f1y)/(x2-x1)
-              fint_ur    =fintx*xp_object/rs+finty*yp_object/rs
-              fint_ut=finty*xp_object/rs-fintx*yp_object/rs
+              fint_ur    =fintx*p_local(1)/rs+finty*p_local(2)/rs
+              fint_ut=finty*p_local(1)/rs-fintx*p_local(2)/rs
               drp=rp-rs
               dri=Rsmall-rs
               urp=(drp/dri)**2*fint_ur
               utp=(drp/dri)*fint_ut
-              gpp=urp*xp_object/rs-utp*yp_object/rs
+              gpp=urp*p_local(1)/rs-utp*p_local(2)/rs
             elseif (ivar1==iuy) then
-              gpp=urp*yp_object/rs+utp*xp_object/rs
+              gpp=urp*p_local(2)/rs+utp*p_local(1)/rs
             else
               call fatal_error('close_interpolation',&
                   'Yor ivar1 is not correct!') 
