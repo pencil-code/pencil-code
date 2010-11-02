@@ -1510,10 +1510,10 @@ module Magnetic
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
       if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
-          .or. idiag_jbrms/=0 .or. idiag_jbmxy/=0 &
+          .or. idiag_jbrms/=0 &
          ) lpenc_diagnos(i_jb)=.true.
       if (idiag_hjbm/=0 ) lpenc_diagnos(i_hjb)=.true.
-      if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
+      if (idiag_jbmphi/=0 .or. idiag_jbmxy/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
       if (idiag_ubm/=0 .or. idiag_ubmz/=0 &
