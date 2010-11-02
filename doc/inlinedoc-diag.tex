@@ -56,6 +56,12 @@
   \var{outm}      & $\left<\omv(t)\cdot\int_0^t\uv(t')
                     dt'\right>$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
+  \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_x(x_2,y_2,z_2,t)$ \\
   \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
   \var{umax}      & $\max(|\uv|)$ \\
   \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
@@ -369,12 +375,24 @@
   \var{fxbxm}     & $\left<f_x B_x\right>$ \\
   \var{epsM}      & $\left<2\eta\mu_0\jv^2\right>$ \\
   \var{epsAD}     & $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction) \\
-  \var{bxpt}      & $B_x(x_0,y_0,z_0,t)$ \\
-  \var{bypt}      & $B_y(x_0,y_0,z_0,t)$ \\
-  \var{bzpt}      & $B_z(x_0,y_0,z_0,t)$ \\
-  \var{Expt}      & ${\cal E}_x(x_0,y_0,z_0,t)$ \\
-  \var{Eypt}      & ${\cal E}_y(x_0,y_0,z_0,t)$ \\
-  \var{Ezpt}      & ${\cal E}_z(x_0,y_0,z_0,t)$ \\
+  \var{bxpt}      & $B_x(x_1,y_1,z_1,t)$ \\
+  \var{bypt}      & $B_y(x_1,y_1,z_1,t)$ \\
+  \var{bzpt}      & $B_z(x_1,y_1,z_1,t)$ \\
+  \var{jxpt}      & $J_x(x_1,y_1,z_1,t)$ \\
+  \var{jypt}      & $J_y(x_1,y_1,z_1,t)$ \\
+  \var{jzpt}      & $J_z(x_1,y_1,z_1,t)$ \\
+  \var{Expt}      & ${\cal E}_x(x_1,y_1,z_1,t)$ \\
+  \var{Eypt}      & ${\cal E}_y(x_1,y_1,z_1,t)$ \\
+  \var{Ezpt}      & ${\cal E}_z(x_1,y_1,z_1,t)$ \\
+  \var{bxp2}      & $B_x(x_2,y_2,z_2,t)$ \\
+  \var{byp2}      & $B_y(x_2,y_2,z_2,t)$ \\
+  \var{bzp2}      & $B_z(x_2,y_2,z_2,t)$ \\
+  \var{jxp2}      & $J_x(x_2,y_2,z_2,t)$ \\
+  \var{jyp2}      & $J_y(x_2,y_2,z_2,t)$ \\
+  \var{jzp2}      & $J_z(x_2,y_2,z_2,t)$ \\
+  \var{Exp2}      & ${\cal E}_x(x_2,y_2,z_2,t)$ \\
+  \var{Eyp2}      & ${\cal E}_y(x_2,y_2,z_2,t)$ \\
+  \var{Ezp2}      & ${\cal E}_z(x_2,y_2,z_2,t)$ \\
   \var{exabot}    & $\int\Ev\times\Av\,dS|_{\rm bot}$ \\
   \var{exatop}    & $\int\Ev\times\Av\,dS|_{\rm top}$ \\
   \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
@@ -1231,6 +1249,8 @@
   \var{c4pt}      & $c^{4}$ \\
   \var{c5pt}      & $c^{5}$ \\
   \var{c6pt}      & $c^{6}$ \\
+  \var{gam3z}     & $\gamma_{3}(z,t)$ \\
+  \var{kap33z}    & $\kappa_{33}(z,t)$ \\
   \var{F11z}      & ${\cal F}_1^{1}$ \\
   \var{F21z}      & ${\cal F}_2^{1}$ \\
   \var{F31z}      & ${\cal F}_3^{1}$ \\
