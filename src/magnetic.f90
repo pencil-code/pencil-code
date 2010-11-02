@@ -1431,7 +1431,7 @@ module Magnetic
 !
 !  Other necessary pencils.
 !
-      if (lentropy .or. ltemperature) lpenc_requested(i_rho1)=.true.
+      if (lentropy .or. ltemperature .or. lhydro) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
 !
