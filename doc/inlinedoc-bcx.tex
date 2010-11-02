@@ -36,6 +36,10 @@
   \var{Fgs}       & Fconv = - chi_t*rho*T*grad(s) \\
   \var{sT}        & symmetric temperature, $T_{N-i}=T_{N+i}$;
                     implies $T'(x_N)=T'''(x_0)=0$ \\
+  \var{asT}       & select entropy for uniform ghost temperature
+                    matching fluctuating boundary value,
+                    $T_{N-i}=T_{N}=$;
+                    implies $T'(x_N)=T'(x_0)=0$ \\
   \var{f}         & ``freeze'' value, i.e. maintain initial \\
   \var{fg}        & ``freeze'' value, i.e. maintain initial \\
   \var{1}         & $f=1$ (for debugging) \\
