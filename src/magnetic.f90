@@ -463,6 +463,7 @@ module Magnetic
   integer :: idiag_bxbymxz=0    ! DIAG_DOC: $\left< B_x B_y \right>_{y}$
   integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right>_{y}$
   integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right>_{y}$
+  integer :: idiag_jbmxy=0      ! DIAG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
@@ -1509,7 +1510,7 @@ module Magnetic
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
       if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
-          .or. idiag_jbrms/=0 &
+          .or. idiag_jbrms/=0 .or. idiag_jbmxy/=0 &
          ) lpenc_diagnos(i_jb)=.true.
       if (idiag_hjbm/=0 ) lpenc_diagnos(i_hjb)=.true.
       if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
@@ -3302,6 +3303,7 @@ module Magnetic
         if (idiag_bx2mxy/=0) call zsum_mn_name_xy(p%bb(:,1)**2,idiag_bx2mxy)
         if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb(:,2)**2,idiag_by2mxy)
         if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb(:,3)**2,idiag_bz2mxy)
+        if (idiag_jbmxy/=0)  call zsum_mn_name_xy(p%jb,idiag_jbmxy)
         if (idiag_bxbymxy/=0) &
             call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,2),idiag_bxbymxy)
         if (idiag_bxbzmxy/=0) &
@@ -6193,7 +6195,7 @@ module Magnetic
         idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0; idiag_bxbymxy=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
-        idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0
+        idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
         idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
         idiag_jxbxbm=0; idiag_gpxbm=0; idiag_uxDxuxbm=0
@@ -6598,6 +6600,7 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbymxy',idiag_bxbymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbzmxy',idiag_bxbzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bybzmxy',idiag_bybzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jbmxy',idiag_jbmxy)
       enddo
 !
 !  Check for those quantities for which we want phi-averages.
