@@ -91,6 +91,7 @@ module Hydro
   logical, target :: lcoriolis_force=.true.
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
+  logical :: lreflecteddy=.false.,louinit=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -115,7 +116,7 @@ module Hydro
       velocity_ceiling, mu_omega, nb_rings, om_rings, gap, lscale_tobox, &
       ampl_Omega,omega_ini, r_cyl,skin_depth, incl_alpha, &
       rot_rr,xsphere,ysphere,zsphere, neddy,amp_meri_circ, &
-      rnoise_int,rnoise_ext
+      rnoise_int,rnoise_ext,lreflecteddy,louinit
 !
 !  Run parameters.
 !
@@ -717,6 +718,7 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (3) :: tmpvec
 !
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
@@ -1132,9 +1134,25 @@ module Hydro
           do m=m1,m2
             call random_number_wrapper(f(l1:l2,m,n1,iuz))
             do n=n1,n2
-              f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
+              if (louinit) then
+                f(l1:l2,m,n,iuz)=100*ampluu(j)*(2*f(l1:l2,m,n1,iuz)-1)
+              else
+                f(l1:l2,m,n,iuz)=0.0d0
+              endif
             enddo
           enddo
+!  Transformation-reflection x -> -x and ux -> -ux
+          if (lreflecteddy) then
+           do iz=1,mz; do iy=1,my;do ix=1, mx/2
+              tmpvec = f(mx-ix+1,iy,iz,iux:iuz) 
+              f(mx-ix+1,iy,iz,iux)= -f(ix,iy,iz,iux)
+              f(ix,iy,iz,iux)=-tmpvec(1) 
+              f(mx-ix+1,iy,iz,iuy)= f(ix,iy,iz,iuy)
+              f(ix,iy,iz,iuy)=tmpvec(2) 
+              f(mx-ix+1,iy,iz,iuz)= f(ix,iy,iz,iuz)
+              f(ix,iy,iz,iuz)=tmpvec(3) 
+            enddo; enddo; enddo
+          endif
           close(15)
 !
         case ( 'anelastic-nlin')

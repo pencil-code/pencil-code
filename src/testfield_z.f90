@@ -328,7 +328,7 @@ module Testfield
 !
       if (ltestfield_newz) then
         ktestfield_effective=ktestfield*(2.*pi/Lz)
-        ztestfield=ktestfield_effective*(z-z0)-pi
+        ztestfield=ktestfield_effective*(z-z0-Lz/2)
       else
         ktestfield_effective=ktestfield
         ztestfield=z*ktestfield_effective
