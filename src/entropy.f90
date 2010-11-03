@@ -557,7 +557,7 @@ module Entropy
 !
       if (lfargo_advection) then
         ladvection_entropy=.false.
-        if (lroot) print*,& 
+        if (lroot) print*,&
              'initialize_entropy: fargo used, turned off advection of entropy'
       endif
 !
@@ -1646,7 +1646,7 @@ module Entropy
 !
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
-      use EquationOfState, only: eoscalc, ilnrho_pp, getmu, eosperturb
+      use EquationOfState, only: eoscalc, ilnrho_pp, eosperturb
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1656,7 +1656,7 @@ module Entropy
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6
       real :: T_c,T_w,T_i,T_h
-      real, dimension(nx) :: rho,pp,lnrho,ss
+      real, dimension(nx) :: rho,pp,lnrho
       real, dimension(1) :: fmpi1
       real :: kpc
       double precision ::  rhoscale
@@ -1715,7 +1715,6 @@ module Entropy
              (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 !
           call eosperturb(f,nx,pp=pp)
-          ss=f(l1:l2,m,n,ilnrho)
 !
           fmpi1=(/ cs2bot /)
           call mpibcast_real(fmpi1,1,0)
@@ -1746,7 +1745,7 @@ module Entropy
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: rho,pp,lnrho,ss
+      real, dimension(nx) :: rho,pp,lnrho
       real, dimension(1) :: fmpi1
       real :: rho0hs,muhs
       real :: g_A, g_C
@@ -1783,7 +1782,7 @@ module Entropy
 !  Isothermal
           pp=rho*gamma_m1/gamma*T0
           call eosperturb(f,nx,pp=pp)
-          ss=f(l1:l2,m,n,ilnrho)
+!
           fmpi1=(/ cs2bot /)
           call mpibcast_real(fmpi1,1,0)
           cs2bot=fmpi1(1)
@@ -1855,7 +1854,7 @@ module Entropy
       if (ierr/=0) call fatal_error('gressel_entropy', &
           'there was a problem when getting T0hs')
       if (lroot) print*, &
-          'gressel_entropy: zrho received from interstellar, T0hs =',T0hs 
+          'gressel_entropy: zrho received from interstellar, T0hs =',T0hs
 !
 !  Allocate density profile to f and derive entropy profile from
 !  temperature and density
@@ -3716,8 +3715,8 @@ module Entropy
 !
 !  Spherical gravity case: heat at centre, cool outer layers.
 !
-      if (lgravr .and. (.not.lspherical_coords) .and. & 
-           !several possible heating/cooling sources used 
+      if (lgravr .and. (.not.lspherical_coords) .and. &
+           !several possible heating/cooling sources used
            (luminosity/=0. .or. cool/=0. .or. cool_int/=0. .or. cool_ext/=0) ) &
            call get_heat_cool_gravr(heat,p)
 !
@@ -4098,14 +4097,13 @@ module Entropy
 !  Assume a linearly increasing reference profile.
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
-!  18-may-10/bing: coded
+!  17-may-10/dhruba: coded
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat
-      real :: zbot,ztop,xi,profile_cor
+      real :: ztop,xi,profile_cor
       intent(in) :: p
 !
-      zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
       if (z(n)>=z_cor) then
         xi=(z(n)-z_cor)/(ztop-z_cor)
@@ -4427,10 +4425,10 @@ module Entropy
 !  Pressure.
 !
         case ('pp')
-          if (ldensity_nolog) then 
+          if (ldensity_nolog) then
             ieosvars=irho_ss
             idensity=irho
-          else 
+          else
             ieosvars=ilnrho_ss
             idensity=ilnrho
           endif
@@ -4459,10 +4457,10 @@ module Entropy
 !
         case ('TT')
 !
-          if (ldensity_nolog) then 
+          if (ldensity_nolog) then
             ieosvars=irho_ss
             idensity=irho
-          else 
+          else
             ieosvars=ilnrho_ss
             idensity=ilnrho
           endif
