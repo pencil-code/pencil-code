@@ -74,7 +74,7 @@ module Special
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.
-  real :: nd0, r0, delta
+  real :: nd0, r0, delta, uy_ref
   
 ! Keep some over used pencils
 !
@@ -82,7 +82,7 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
       TT2,TT1,ind_H2O, ind_N2,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
-      nd0, r0, delta,lbuffer_zone_uy
+      nd0, r0, delta,lbuffer_zone_uy,uy_ref
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
