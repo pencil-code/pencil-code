@@ -434,7 +434,7 @@ module Special
       real    :: del,width
       integer :: l_sz
       integer :: i, j, sz_l_x,sz_r_x,ll1,ll2
-      real    :: dt1, uy_ref
+      real    :: dt1
       logical :: lzone_left, lzone_right
 !
        const_tmp=4./3.*PI*rho_water 
