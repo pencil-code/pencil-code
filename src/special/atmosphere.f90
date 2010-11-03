@@ -64,21 +64,25 @@ module Special
   logical :: lbuoyancy_z=.false.
 
   character (len=labellen) :: initstream='default'
-  real, dimension(ndustspec) :: dsize
+  real, dimension(ndustspec) :: dsize, dds
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_water=0!, ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   integer :: ind_H2O=0, ind_N2
-  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false.
+  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
+
+  real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.
+  real :: nd0, r0, delta
   
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
-      TT2,TT1,ind_H2O, ind_N2,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init
+      TT2,TT1,ind_H2O, ind_N2,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
+      nd0, r0, delta,lbuffer_zone_uy
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -188,6 +192,18 @@ module Special
             dsize(i+1)=dsize_min+i*ddsize
           enddo
         endif
+
+
+        do k=1,ndustspec
+          if ((k>1) .and. (k<ndustspec)) then
+            dds(k)=(dsize(k+1)-dsize(k-1))/2.
+          elseif (k==1) then
+            dds(k)=dsize(k+1)-dsize(k)
+          elseif (k==ndustspec) then
+            dds(k)=dsize(k)-dsize(k-1)
+          endif
+        enddo
+
 !
    !   print*,'cloud index', ind_cloud
       print*,'water index', ind_H2O
@@ -415,9 +431,11 @@ module Special
       real :: rho_water=1., const_tmp=0.
 !
       real, dimension (mx) :: func_x
-      integer :: j,i
-      real :: dt1
-      real :: del,width
+      real    :: del,width
+      integer :: l_sz
+      integer :: i, j, sz_l_x,sz_r_x,ll1,ll2
+      real    :: dt1, uy_ref
+      logical :: lzone_left, lzone_right
 !
        const_tmp=4./3.*PI*rho_water 
       if (lbuoyancy_z) then
@@ -434,19 +452,46 @@ module Special
             )
       endif
 !
-       dt1=1./dt
+!
+       dt1=1./(3.*dt)
        del=0.1
 !
 !
-       width=del*Lxyz(1)
+         lzone_left=.false.
+         lzone_right=.false.
+
+         sz_r_x=l1+nxgrid-int(del*nxgrid)
+         sz_l_x=int(del*nxgrid)+l1
 !
-         do i=1,mx 
-  !       if ((x(i)<xyz0(1)+width) .or. (x(i)>xyz0(1)+Lxyz(1)-width)) then
-         if ((x(i)<xyz0(1)+width)) then
-!           df(i,m,n,iux)=df(i,m,n,iux)-(f(i,m,n,iux)-0.)*dt1/2.
-!           df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-(f(i,m,n,ilnrho)-alog(1e-3))*dt1/8.
+         ll1=l1
+         ll2=l2
+
+        if (lbuffer_zone_uy) then
+        do j=1,2
+
+         if (j==1) then
+           ll1=sz_r_x
+           ll2=l2
+           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
+            uy_ref=0.
+           if (lzone_right) then
+!             df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
+!              -(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
+           endif
+         elseif (j==2) then
+           ll1=l1
+           ll2=sz_l_x
+           if (x(l1)==xyz0(1)) lzone_left=.true.
+            uy_ref=0.
+           if (lzone_left) then
+               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
+                 -(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
+           endif
          endif
-         enddo
+!
+!
+        enddo
+        endif
 !
 !
 !
@@ -562,7 +607,7 @@ module Special
            lzone_left=.true.
 !               df(ll1:ll2,m,n,iuy)=  &
 !                df(ll1:ll2,m,n,iuy) &
-!               +(f(ll1:ll2,m,n,iuy) -0.)*dt1/4.
+!               +(f(ll1:ll2,m,n,iuy) -0.)*dt1
 
          endif
 !
@@ -839,14 +884,25 @@ module Special
 ! bottom boundary
         if (vr==iuud(1)+3) then 
           do k=1,ndustspec
-            f(l1,m1:m2,n1:n2,ind(k))=value1  &
-            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
+            f(l1,m1:m2,n1:n2,ind(k))=nd0  &
+                           *exp(-((dsize(k)-r0)/delta)**2)
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
         if (vr==iuud(1)+4) then 
-         f(l1,m1:m2,n1:n2,imd)=value1
+   !      f(l1,m1:m2,n1:n2,imd)=value1
+          do k=1,ndustspec
+           f(l1,m1:m2,n1:n2,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
+                   *dds(k)/m_w &
+                   *exp(f(l1,m1:m2,n1:n2,ilnrho)) &
+                   *nd0*exp(-((dsize(k)-r0)/delta)**2)
+          enddo
         endif
+!       if (vr==ichemspec(ind_H2O)) then 
+!          psat=6.035e12*exp(-5938./exp(f(l1,m1:m2,n1:n2,ilnTT)))
+!          f(l1,m1:m2,n1:n2,ichemspec(ind_H2O))=psat/PP*dYw
+!          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+!       endif
 
 !      if (vr==iuud(1)+3) then 
 !        f(l1-1,:,:,ind)=0.2*(9*f(l1,:,:,ind)-4*f(l1+2,:,:,ind)  &
@@ -967,10 +1023,10 @@ subroutine bc_satur_x(f,bc)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (boundary_condition) :: bc
-      real, dimension (mx,my,mz) :: sum_Y
+      real, dimension (my,mz) :: sum_Y, pp_sat
       integer :: i,j,vr,k
       integer :: jjj,kkk
-      real :: value1, value2, pp_sat
+      real :: value1, value2
 !
       vr=bc%ivar
       value1=bc%value1
@@ -978,19 +1034,18 @@ subroutine bc_satur_x(f,bc)
 !
       if (bc%location==iBC_X_BOT) then
 ! bottom boundary
+!        
         if (vr==ilnTT) then 
           f(l1,m1:m2,n1:n2,ilnTT)=alog(TT1)
-        endif
-        if (vr==ichemspec(ind_H2O)) then 
-         pp_sat=6.035e12*exp(-5938./TT1)
-         f(l1,m1:m2,n1:n2,ichemspec(ind_H2O))=pp_sat/pp_init
-        endif
-!
-        if (vr==ichemspec(ind_N2)) then 
+        elseif (vr==ichemspec(ind_H2O)) then 
+         pp_sat(:,:)=6.035e12*exp(-5938./TT1)
+ !        f(l1,:,:,ichemspec(ind_H2O))=pp_sat(:,:)/pp_init
+        elseif (vr==ichemspec(ind_N2)) then 
+          sum_Y=0.
           do k=1,nchemspec
-           if (ichemspec(k)/=ind_N2) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+           if (k/=ind_N2) sum_Y=sum_Y+f(l1,:,:,ichemspec(k))
           enddo
-           f(:,:,:,ind_N2)=1.-sum_Y
+           f(l1,:,:,ichemspec(ind_N2))=1.-sum_Y
         endif
 !
         do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo

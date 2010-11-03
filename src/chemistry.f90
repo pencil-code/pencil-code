@@ -11,12 +11,12 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cv; cv1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
+! PENCILS PROVIDED cv; cv1; cp;  glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
 ! PENCILS PROVIDED nu; gradnu(3); rho;
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec), glnpp(3)
+! PENCILS PROVIDED ghhk(3,nchemspec), glnpp(3); cs2
 !
 ! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens; ppwater
 ! PENCILS PROVIDED Ywater
@@ -617,9 +617,9 @@ module Chemistry
 !
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_gYYk)=.true.
-      lpenc_requested(i_ghhk)=.true.
+      if (lreactions) lpenc_requested(i_ghhk)=.true.
 !
-      lpenc_requested(i_DYDt_reac)=.true.
+      if (lreactions) lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
 !
       if (ldiffusion .and. lDiff_simple) then
@@ -629,10 +629,12 @@ module Chemistry
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
          lpenc_requested(i_cv)=.true.
+         lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cv1)=.true.
-         lpenc_requested(i_H0_RT)=.true.
+         if (lreactions) lpenc_requested(i_H0_RT)=.true.
          lpenc_requested(i_nu)=.true.
          lpenc_requested(i_gradnu)=.true.
+         lpenc_requested(i_cs2)=.true.  
 !
          if (lreactions) lpenc_requested(i_hhk_full)=.true.
          if (lThCond_simple) lpenc_requested(i_glncp)=.true.
@@ -750,6 +752,8 @@ module Chemistry
         if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
 !
         if (lpencil(i_cv1)) p%cv1=1./p%cv
+!
+        if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
 !
 !  Viscosity of a mixture
 !
@@ -893,6 +897,10 @@ module Chemistry
        p%lambda=lambda_full(l1:l2,m,n)
        if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
       endif
+      endif
+      
+      if (lpencil(i_cs2)) then
+        p%cs2=p%cp/p%cv*p%mu1*p%TT*Rgas
       endif
 !
       if (lpencil(i_ppwater)) then
@@ -4588,13 +4596,13 @@ module Chemistry
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
         else
-          f(:,:,:,ilnTT)=log(TT)!+f(:,:,:,ilnTT)
+          f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
         endif
         if (ldensity_nolog) then
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3)
         endif
         f(:,:,:,iux)=f(:,:,:,iux)+init_ux
@@ -4604,15 +4612,15 @@ module Chemistry
       if (linit_temperature) then
         do i=1,mx
         if (x(i)<=init_x1) then
-          f(i,:,:,ilnTT)=log(init_TT1)
+          f(i,:,:,ilnTT)=alog(init_TT1)
         endif
         if (x(i)>=init_x2) then
-          f(i,:,:,ilnTT)=log(init_TT2)
+          f(i,:,:,ilnTT)=alog(init_TT2)
         endif
         if (x(i)>init_x1 .and. x(i)<init_x2) then
           if (init_x1 /= init_x2) then
             f(i,:,:,ilnTT)=&
-               log((x(i)-init_x1)/(init_x2-init_x1) &
+               alog((x(i)-init_x1)/(init_x2-init_x1) &
                *(init_TT2-init_TT1)+init_TT1)
           endif
         endif
@@ -4624,7 +4632,7 @@ module Chemistry
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
+          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
         endif
       endif

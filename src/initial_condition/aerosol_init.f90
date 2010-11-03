@@ -45,13 +45,13 @@ module InitialCondition
      integer :: imass=1
      integer :: index_H2O=3
      real :: dYw=1., init_water1=0., init_water2=0.
-     real :: init_x1=-0.2,init_x2=0.2
+     real :: init_x1=0.,init_x2=0.
      logical :: lreinit_water=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water
+     lreinit_water, dYw
 !
   contains
 !***********************************************************************
@@ -101,10 +101,11 @@ module InitialCondition
           do i=1,my
           if (y(i)>0) then
             f(:,i,:,iuy)=f(:,i,:,iuy) &
-                        +init_uy*(2.*y(i)/Lxyz(2))**2
+                        +init_uy!*(2.*y(i)/Lxyz(2))**2
           else
             f(:,i,:,iuy)=f(:,i,:,iuy) &
-                        -init_uy*(2.*y(i)/Lxyz(2))**2
+                        !-init_uy*(2.*y(i)/Lxyz(2))**2
+                        +init_uy
           endif
           enddo
         endif
@@ -236,6 +237,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar
+      real, dimension (mx,my,mz) :: init_water1_,init_water2_
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -249,7 +251,7 @@ module InitialCondition
       integer, dimension(nchemspec) :: stor1
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
-      integer :: iostat
+      integer :: iostat, i1,i2,i3
 !
       air_mass=0.
       StartInd_1=1; StopInd_1 =0
@@ -360,7 +362,7 @@ module InitialCondition
          if ((init_water1/=0.) .or. (init_water2/=0.)) then
            do i=1,mx
              if (x(i)<=init_x1) then
-               f(i,:,:,ichemspec(index_H2O))=init_water1
+                 f(i,:,:,ichemspec(index_H2O))=init_water1
              endif
              if (x(i)>=init_x2) then
                f(i,:,:,ichemspec(index_H2O))=init_water2
@@ -369,6 +371,24 @@ module InitialCondition
                f(i,:,:,ichemspec(index_H2O))=&
                  (x(i)-init_x1)/(init_x2-init_x1) &
                  *(init_water2-init_water1)+init_water1
+             endif
+           enddo
+         elseif ((init_x1/=0.) .or. (init_x2/=0.)) then
+           do i=1,mx
+             if (x(i)<=init_x1) then
+               init_water1_(i,:,:)=psat(i,:,:)/PP
+               f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
+             endif
+             if (x(i)>=init_x2) then
+               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw
+               f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
+             endif
+             if (x(i)>init_x1 .and. x(i)<init_x2) then
+               init_water1_(i,:,:)=psat(i,:,:)/PP
+               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw
+               f(i,:,:,ichemspec(index_H2O))=&
+                 (x(i)-init_x1)/(init_x2-init_x1) &
+                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
              endif
            enddo
          else
@@ -380,21 +400,35 @@ module InitialCondition
            if (ichemspec(k)/=index_YY) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
          enddo
            f(:,:,:,index_YY)=1.-sum_Y
-         air_mass=0.
+           air_mass_ar=0.
          do k=1,nchemspec
-           air_mass_ar=air_mass_ar+f(:,:,:,ichemspec(k)) &
+           air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
                    /species_constants(k,imass)
+!          do i3=1,mz
+!          do i2=1,my
+!          do i1=1,mx
+!           air_mass_ar(i1,i2,i3)=0.
+!           do k=1,nchemspec
+!               air_mass_ar(i1,i2,i3)=air_mass_ar(i1,i2,i3)+f(i1,i2,i3,ichemspec(k)) &
+!                  /species_constants(k,imass)
+!            if (air_mass_ar(i1,i2,i3)<0.)  print*,air_mass_ar(i1,i1,i3), &
+!             k,i1,i2,i3,species_constants(k,imass), f(i1,i2,i3,ichemspec(k)) 
+!           enddo
+!          enddo
+!          enddo
          enddo
          air_mass_ar=1./air_mass_ar
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
          else
-           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+
+!         print*,minval(air_mass_ar)
+
+           f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs) &
+            *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
          endif
        
-
          if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
          if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
          if (lroot) print*, 'New Air density, g/cm^3:'

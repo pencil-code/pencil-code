@@ -163,4 +163,12 @@ module Dustdensity
 !
     endsubroutine get_slices_dustdensity
 !***********************************************************************
+  subroutine dustspec_normalization(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+   endsubroutine dustspec_normalization
+!***********************************************************************
 endmodule Dustdensity

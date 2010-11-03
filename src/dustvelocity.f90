@@ -682,6 +682,7 @@ module Dustvelocity
 !
 !  20-11-04/anders: coded
 !
+      if (.not. lchemistry) then
       lpenc_requested(i_uud)=.true.
       if (ladvection_dust.and..not.ldustvelocity_shorttausd) &
           lpenc_requested(i_udgud)=.true.
@@ -732,6 +733,8 @@ module Dustvelocity
       if (maxval(idiag_odrms)/=0 .or. maxval(idiag_odmax)/=0 .or. &
           maxval(idiag_od2m)/=0) lpenc_diagnos(i_od2)=.true.
       if (maxval(idiag_oudm)/=0) lpenc_diagnos(i_oud)=.true.
+!
+      endif
 !
     endsubroutine pencil_criteria_dustvelocity
 !***********************************************************************

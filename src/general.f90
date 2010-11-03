@@ -23,6 +23,7 @@ module General
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
+  public :: spline_integral
 !
   include 'record_types.h'
 !

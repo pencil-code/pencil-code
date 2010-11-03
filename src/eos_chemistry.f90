@@ -405,11 +405,13 @@ module EquationOfState
 !  it will require any pencils for it's own use.
 !
       lpenc_requested(i_TT)=.true.
-      lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_TT_2)=.true.
-      lpenc_requested(i_TT_3)=.true.
-      lpenc_requested(i_TT_4)=.true.
+      if (.not. ldustdensity) then
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_TT_2)=.true.
+        lpenc_requested(i_TT_3)=.true.
+        lpenc_requested(i_TT_4)=.true.
+      endif
       lpenc_requested(i_del2lnTT)=.true.
 
       if (ltemperature_nolog) then
@@ -442,7 +444,7 @@ module EquationOfState
         if (ltemperature_nolog) then
         ! if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
         else
-         if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
+!         if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
         endif
 !
        if (lpencil_in(i_TT_2))   lpencil_in(i_TT)=.true.

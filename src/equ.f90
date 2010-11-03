@@ -307,7 +307,10 @@ module Equ
 !
 !  Calculate quantities for a chemical mixture
 !
-      if (lchemistry .and. ldustdensity) call chemspec_normalization(f)
+      if (lchemistry .and. ldustdensity) then
+        call chemspec_normalization(f)
+        call dustspec_normalization(f)
+      endif
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
       call timing('pde','after calc_for_chem_mixture')
 !

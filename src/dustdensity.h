@@ -9,3 +9,4 @@
   public :: pencil_criteria_dustdensity, pencil_interdep_dustdensity
 
   public :: redist_mdbins,null_dust_vars
+  public :: dustspec_normalization
