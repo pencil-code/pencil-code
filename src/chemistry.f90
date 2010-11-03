@@ -900,7 +900,10 @@ module Chemistry
       endif
       
       if (lpencil(i_cs2)) then
-        p%cs2=p%cp/p%cv*p%mu1*p%TT*Rgas
+        if (any(p%cv==0.0)) then
+        else 
+          p%cs2=p%cp/p%cv*p%mu1*p%TT*Rgas
+        endif
       endif
 !
       if (lpencil(i_ppwater)) then
