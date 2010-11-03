@@ -1057,6 +1057,7 @@ module Param_IO
       call keep_compiler_quiet(lentropy)
       call keep_compiler_quiet(ltemperature)
       call keep_compiler_quiet(lmagnetic)
+      call keep_compiler_quiet(lforcing)
       call keep_compiler_quiet(ltestscalar,ltestfield,ltestflow)
       call keep_compiler_quiet(lpscalar,lradiation,lcosmicray,lcosmicrayflux)
       call keep_compiler_quiet(linterstellar,lshock)
