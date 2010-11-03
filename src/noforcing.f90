@@ -8,6 +8,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lforcing = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -33,8 +35,6 @@ module Forcing
 !
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
-!
-      lforcing = .false.
 !
 !  identify version number
 !

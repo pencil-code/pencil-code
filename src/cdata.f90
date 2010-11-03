@@ -165,7 +165,7 @@ module Cdata
 !  Module flags.
 !
   logical :: ldensity_nolog=.false., lwrite_stratification=.false.
-  logical :: lmpicomm=.false., lforcing=.false., lforcing_cont=.false.
+  logical :: lmpicomm=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
@@ -403,6 +403,7 @@ module Cdata
   logical, parameter :: ltemperature_var=ltemperature
   logical, parameter :: lshock_var=lshock
   logical, parameter :: lmagnetic_var=lmagnetic
+  logical, parameter :: lforcing_var=lforcing
   logical, parameter :: llorenz_gauge_var=llorenz_gauge
   logical, parameter :: ldustvelocity_var=ldustvelocity
   logical, parameter :: ldustdensity_var=ldustdensity

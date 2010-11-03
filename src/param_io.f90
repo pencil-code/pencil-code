@@ -969,6 +969,7 @@ module Param_IO
       logical :: ltemperature     = ltemperature_var
       logical :: lshock           = lshock_var
       logical :: lmagnetic        = lmagnetic_var
+      logical :: lforcing         = lforcing_var
       logical :: llorenz_gauge    = llorenz_gauge_var
       logical :: ldustvelocity    = ldustvelocity_var
       logical :: ldustdensity     = ldustdensity_var
