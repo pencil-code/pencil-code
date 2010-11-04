@@ -26,7 +26,7 @@ module Special
   real :: width_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field
   real :: increase_vorticity=15.,Bavoid=huge1
-  real :: Bz_flux=0.
+  real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -39,7 +39,7 @@ module Special
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
-      Bavoid,Bz_flux,init_time,init_width,width_newton, &
+      Bavoid,Bz_flux,init_time,init_width,width_newton,quench, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad
 !
 ! variables for print.in
@@ -914,8 +914,9 @@ module Special
       Uy=0.0
       call multi_drive3()
 !
-      call enhance_vorticity()
-      ! call quenching()
+      if (increase_vorticity/=0) call enhance_vorticity()
+      if (quench/=0) call footpoint_quenching(f)
+!
       f(l1:l2,m1:m2,n1,iux) = Ux
       f(l1:l2,m1:m2,n1,iuy) = Uy
 !
@@ -1648,16 +1649,52 @@ module Special
         vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-        if (increase_vorticity/=0) then
-          call helmholtz(wx,wy)
-          vx=(vx+increase_vorticity*wx )
-          vy=(vy+increase_vorticity*wy)
-        endif
+        call helmholtz(wx,wy)
+        vx=(vx+increase_vorticity*wx )
+        vy=(vy+increase_vorticity*wy)
 !
         Ux = vx
         Uy = vy
 !
     endsubroutine enhance_vorticity
+!***********************************************************************
+    subroutine footpoint_quenching(f)
+!
+      use EquationofState, only: gamma_m1,gamma_inv,lnrho0,cs20
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      real, dimension(nx,ny) :: q,pp,beta
+      real :: cp1=1.
+      integer :: i
+!
+! for footpoint quenching compute pressure
+!
+      if (leos) call get_cp1(cp1)
+!
+      if (ltemperature.and..not.ltemperature_nolog) then
+        if (ldensity_nolog) then
+          call fatal_error('solar_corona', &
+              'uudriver only implemented for ltemperature=true')
+        else
+          pp =gamma_m1*gamma_inv/cp1 * &
+              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnrho))
+        endif
+      else
+        pp=gamma_inv*cs20*exp(lnrho0)
+      endif
+!
+      beta =  pp/max(tini,B2)*2.*mu0
+!
+!  quench velocities to one percent of the granule velocities
+      do i=1,ny
+        q(:,i) = cubic_step(alog10(beta(:,i)),0.,1.)*(1.-quench)+quench
+      enddo
+      !
+      Ux = Ux * q
+      Uy = Uy * q
+!
+    endsubroutine footpoint_quenching
 !***********************************************************************
     subroutine helmholtz(frx_r,fry_r)
 !
