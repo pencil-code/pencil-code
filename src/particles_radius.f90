@@ -142,7 +142,7 @@ module Particles_radius
       real :: radius_fraction
       real, dimension (ninit) :: radii_cumulative
 !
-      integer :: i,j,ind,p
+      integer :: i,j,ind,p,ipart
 !
       initial=.false.
       if (present(init)) then
@@ -159,9 +159,11 @@ module Particles_radius
 !
         case ('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
-          call random_number_wrapper(radius_fraction)
-          ind=ceiling(npart_radii*radius_fraction)
-          fp(npar_low:npar_high,iap)=ap0(ind)
+          do ipart=npar_low,npar_high
+            call random_number_wrapper(radius_fraction)
+            ind=ceiling(npart_radii*radius_fraction)
+            fp(ipart,iap)=ap0(ind)
+          enddo
 !
         case ('specify')
           !  user specified particle size distribution
