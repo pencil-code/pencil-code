@@ -227,6 +227,8 @@ module Special
     logical :: lreset,lwr
     logical, optional :: lwrite
 !
+    intent(in) :: lreset, lwrite
+!
     lwr = .false.
     if (present(lwrite)) lwr=lwrite
 !
@@ -266,8 +268,8 @@ module Special
 !
 !  204-sep-10/bing: coded
 !
-    real, dimension (mx,my,mz,mfarray) :: f
-    type (slice_data) :: slices
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    type (slice_data), intent(inout) :: slices
 !
 !  Loop over slices
 !
@@ -416,7 +418,7 @@ module Special
 !  04-sep-10/bing: coded
 !
     use Diagnostics,     only : max_mn_name
-    use EquationOfState, only: gamma, gamma_m1
+    use EquationOfState, only: gamma
     use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -638,8 +640,8 @@ module Special
           , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
           , -0.66650 /)
 !
-      real, dimension (nx) :: lnTT,get_lnQ
-      real, dimension (nx) :: slope,ordinate
+      real, dimension (nx), intent(in) :: lnTT
+      real, dimension (nx) :: slope,ordinate,get_lnQ
       integer :: i
 !
       get_lnQ=-1000.
@@ -660,9 +662,9 @@ module Special
 !
       use EquationOfState, only: gamma
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real, dimension (nx) :: heatinput,rhs
-      type (pencil_case) :: p
+      type (pencil_case), intent(in) :: p
       integer :: i
 !
       heatinput=0.
@@ -894,12 +896,11 @@ module Special
 !
 !  11-may-10/bing: coded
 !
-      use EquationOfState, only: gamma_inv,get_cp1,gamma_m1,lnrho0,cs20
       use General, only: random_seed_wrapper
       use Mpicomm, only: mpisend_real, mpirecv_real
       use Sub, only: cubic_step
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, save, dimension(mseed) :: global_rstate
 !
       call keep_compiler_quiet(f)
@@ -986,6 +987,7 @@ module Special
       integer, intent(in) :: level
 !
       call reset_arrays
+!
       if (Bavoid<huge1) call fill_B_avoidarr(level)
 !
       if (.not.associated(current%next)) then
@@ -1018,6 +1020,8 @@ module Special
 ! field. Needed to be done for each level
 !
       if (luse_ext_vel_field) call evolve_granules()
+!
+      call reset_pointer
 !
     endsubroutine drive3
 !***********************************************************************
@@ -1307,7 +1311,8 @@ module Special
               dist0 = 0.53*granr
               tmp = (dist/dist0)**2
 !
-              vv=exp(1.)*current%data(3)*tmp*exp(-tmp)
+! replaced exp(1.) by 2.72
+              vv=2.72*current%data(3)*tmp*exp(-tmp)
 !
               if (wtmp.gt.w(il,jl)*(1-ig)) then
                 if (wtmp.gt.w(il,jl)*(1+ig)) then
@@ -1328,7 +1333,7 @@ module Special
         endif
       enddo
 !
-      if (.not.loverlapp.and. it >1) call remove_point
+!      if (.not.loverlapp.and. it>1) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
@@ -1462,7 +1467,9 @@ module Special
 !
 ! remove point if amplitude is less than threshold
         if (current%data(3)/ampl_arr(level).lt.thresh &
-            .and.t>current%data(5)) call remove_point
+            .and.t>current%data(5)) then
+          call remove_point
+        endif
 !
 ! check if last point is reached
         if (.not. associated(current%next)) exit
@@ -1634,8 +1641,7 @@ module Special
 !***********************************************************************
     subroutine enhance_vorticity()
 !
-      real,dimension(nx,ny) :: wx,wy
-      real :: vrms,vtot
+      real, dimension(nx,ny) :: wx,wy
 !
 ! Putting sum of velocities back into vx,vy
         vx=Ux
@@ -1643,7 +1649,6 @@ module Special
 !
 ! Calculating and enhancing rotational part by factor 5
         if (increase_vorticity/=0) then
-          if (headtt) print*,"Increase vorticity"
           call helmholtz(wx,wy)
           vx=(vx+increase_vorticity*wx )
           vy=(vy+increase_vorticity*wy)
@@ -1663,9 +1668,10 @@ module Special
 !
       use Fourier, only: fft_xy_parallel
 !
+      real, dimension(nx,ny), intent(out) :: frx_r,fry_r
       real, dimension(nx,ny) :: kx,ky,k2,filter
       real, dimension(nx,ny) :: fvx_r,fvy_r,fvx_i,fvy_i
-      real, dimension(nx,ny) :: frx_r,fry_r,frx_i,fry_i
+      real, dimension(nx,ny) :: frx_i,fry_i
       real, dimension(nx,ny) :: fdx_r,fdy_r,fdx_i,fdy_i
       real :: k20
 !

@@ -172,7 +172,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils) :: lpencil_in
+      logical, dimension(npencils), intent(inout) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -547,7 +547,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition) :: bc
+      type (boundary_condition), intent(in) :: bc
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(bc)
@@ -561,9 +561,9 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dt_
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(dt_)
