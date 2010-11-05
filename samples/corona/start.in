@@ -33,6 +33,10 @@
   gravz_profile='const'
   zref = 0
   gravz=-27.4 ! gravz * unit_velocity^2 / unit_length = 274 m/s^2
+!  gravz_profile = 'solid_sphere'
+!  zref = 0.0            ! photosphereic level
+!  g_ref = -27.4         ! 274 m/s^2
+!  sphere_rad = 69.57    ! 695.7 Mm
 /
 &entropy_init_pars
   initlnTT='nothing'
