@@ -32,7 +32,7 @@
 &grav_init_pars
   gravz_profile='const'
   zref = 0
-  gravz=-27.4 ! gravz * unit_velocity^2 / unit_length = 274 m/s
+  gravz=-27.4 ! gravz * unit_velocity^2 / unit_length = 274 m/s^2
 /
 &entropy_init_pars
   initlnTT='nothing'
