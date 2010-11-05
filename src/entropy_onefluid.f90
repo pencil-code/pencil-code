@@ -44,7 +44,8 @@ module Entropy
   logical :: lheatc_chiconst=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.
-  logical :: lpressuregradient_gas=.true., ladvection_entropy=.true.
+  logical, pointer :: lpressuregradient_gas
+  logical :: ladvection_entropy=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
@@ -55,7 +56,7 @@ module Entropy
 !
   namelist /entropy_run_pars/ &
       hcond0, chi_t, chi_shock, chi, iheatcond, Kbot, lupw_ss,chi_hyper3, &
-      lpressuregradient_gas, beta_glnrho_global, ladvection_entropy
+      beta_glnrho_global, ladvection_entropy
 !
   integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
@@ -73,6 +74,9 @@ module Entropy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
+      use SharedVariables, only: get_shared_variables
+!
+      integer :: ierr
 !
       call farray_register_pde('ss',iss)
 !
@@ -80,6 +84,11 @@ module Entropy
 !
       if (lroot) call svn_id( &
           "$Id$")
+!
+      if (lhydro) then
+        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      endif
 !
     endsubroutine register_entropy
 !***********************************************************************

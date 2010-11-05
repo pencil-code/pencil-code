@@ -46,7 +46,8 @@ module Entropy
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hcond0=impossible, hcond1=1.0, Fbot=impossible
   integer, parameter :: nheatc_max=2
-  logical :: lpressuregradient_gas=.true., ladvection_temperature=.true.
+  logical, pointer :: lpressuregradient_gas
+  logical :: ladvection_temperature=.true.
   logical :: lupw_lnTT=.false., lcalc_heat_cool=.false., lheatc_hyper3=.false.
   logical :: lheatc_Kconst=.false., lheatc_Kprof=.false., lheatc_Karctan=.false.
   logical :: lheatc_tensordiffusion=.false.
@@ -74,7 +75,7 @@ module Entropy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT, lpressuregradient_gas, ladvection_temperature, &
+      lupw_lnTT, ladvection_temperature, &
       chi, iheatcond, &
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
@@ -137,8 +138,16 @@ module Entropy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager, only: farray_register_pde
+      use SharedVariables, only: get_shared_variable
+!
+      integer :: ierr
 !
       call farray_register_pde('lnTT',ilnTT)
+!
+      if (lhydro) then
+        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      endif
 !
 !  Identify version number.
 !
@@ -759,7 +768,7 @@ module Entropy
 !
 !  Add pressure gradient term in momentum equation.
 !
-      if (lhydro.and.lpressuregradient_gas) &
+      if (lpressuregradient_gas) &
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
 !  Advection term and PdV-work.

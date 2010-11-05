@@ -34,7 +34,8 @@ module Entropy
   real :: chi=0.0,heat_uniform=0.0,chi_hyper3=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
-  logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
+  logical, pointer :: lpressuregradient_gas
+  logical :: ladvection_temperature=.true.
   logical :: lviscosity_heat=.false.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
@@ -54,7 +55,7 @@ module Entropy
       kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
+      lupw_lnTT,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond
@@ -76,8 +77,16 @@ module Entropy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
+      use SharedVariables, only: get_shared_variable
+!
+      integer :: ierr
 !
       call farray_register_pde('lnTT',ilnTT)
+!
+      if (lhydro) then
+        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      endif
 !
 !  Identify version number.
 !
@@ -497,7 +506,7 @@ module Entropy
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
 !
-      if (lhydro.and.lpressuregradient_gas) then
+      if (lpressuregradient_gas) then
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%rho1gpp
       endif
 !
