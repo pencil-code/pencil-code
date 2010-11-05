@@ -44,14 +44,15 @@ module InitialCondition
      real :: init_ux=0.,init_uy=0.,init_uz=0.
      integer :: imass=1
      integer :: index_H2O=3
-     real :: dYw=1., init_water1=0., init_water2=0.
+     integer :: index_N2=4
+     real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.
      logical :: lreinit_water=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water, dYw
+     lreinit_water, dYw,dYw1, dYw2
 !
   contains
 !***********************************************************************
@@ -376,16 +377,16 @@ module InitialCondition
          elseif ((init_x1/=0.) .or. (init_x2/=0.)) then
            do i=1,mx
              if (x(i)<=init_x1) then
-               init_water1_(i,:,:)=psat(i,:,:)/PP
+               init_water1_(i,:,:)=psat(i,:,:)/PP*dYw1
                f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
              endif
              if (x(i)>=init_x2) then
-               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw
+               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw2
                f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
              endif
              if (x(i)>init_x1 .and. x(i)<init_x2) then
-               init_water1_(i,:,:)=psat(i,:,:)/PP
-               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw
+               init_water1_(i,:,:)=psat(i,:,:)/PP*dYw1
+               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw2
                f(i,:,:,ichemspec(index_H2O))=&
                  (x(i)-init_x1)/(init_x2-init_x1) &
                  *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
@@ -394,12 +395,12 @@ module InitialCondition
          else
            f(:,:,:,ichemspec(index_H2O))=psat/PP*dYw
          endif
-         index_YY=int(maxval(ichemspec(:)))
+!         index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
          do k=1,nchemspec
-           if (ichemspec(k)/=index_YY) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+           if (ichemspec(k)/=ichemspec(index_N2)) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
          enddo
-           f(:,:,:,index_YY)=1.-sum_Y
+           f(:,:,:,ichemspec(index_N2))=1.-sum_Y
            air_mass_ar=0.
          do k=1,nchemspec
            air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
