@@ -10,7 +10,7 @@ ENTROPY  =   thermal_energy
 MAGNETIC = nomagnetic
 HYDRO    =   hydro
 DENSITY  =   density
-SHOCK    = noshock
+SHOCK    =   shock_highorder
 POWER    = nopower_spectrum
 
 WENO_TRANSPORT = weno_transport
