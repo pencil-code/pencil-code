@@ -42,110 +42,28 @@ module Particles_map
 !  30-dec-04/anders: coded
 !
       use Solid_Cells
-      use Mpicomm, only: stop_it
+      use General
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ivar1, ivar2
+      integer :: ivar1, ivar2, ivar
       real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       integer, dimension (3) :: inear
-      integer :: iblock, ipar
-!
-      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
-      real :: xp0, yp0, zp0
-      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: ivar, i, ix0, iy0, iz0, icyl=1
-      logical :: lfirstcall=.true.
+      integer :: iblock, ipar, ix0, iy0,iz0
+      integer :: icyl=1
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
 !
-!  Determine index value of lowest lying corner point of grid box surrounding
-!  the interpolation point.
-!
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
-      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
-      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
 !
-!  Check if the grid point interval is really correct.
+!  Do the interpolation
 !
-      if ((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1) .or. nxgrid==1) .and. &
-          (y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2) .or. nygrid==1) .and. &
-          (z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3) .or. nzgrid==1)) then
-        ! Everything okay
-      else
-        print*, 'interpolate_linear: Interpolation point does not ' // &
-            'lie within the calculated grid point interval.'
-        print*, 'iproc = ', iproc
-        print*, 'ipar = ', ipar
-        print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
-        print*, 'my, y(1), y(my) = ', my, y(1), y(my)
-        print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
-        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
-        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
-        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
-        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call stop_it('interpolate_linear')
-      endif
-!
-!  Redefine the interpolation point in coordinates relative to lowest corner.
-!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
-!  that the interpolation is bilinear for 2D grids.
-!
-      xp0=0; yp0=0; zp0=0
-      if (nxgrid/=1) xp0=xxp(1)-x(ix0)
-      if (nygrid/=1) yp0=xxp(2)-y(iy0)
-      if (nzgrid/=1) zp0=xxp(3)-z(iz0)
-!
-!  Calculate derived grid spacing parameters needed for interpolation.
-!  For an equidistant grid we only need to do this at the first call.
-!
-      if (lequidist(1)) then
-        if (lfirstcall) dx1=dx_1(ix0) !1/dx
-      else
-        dx1=1/(x(ix0+1)-x(ix0))
-      endif
-!
-      if (lequidist(2)) then
-        if (lfirstcall) dy1=dy_1(iy0)
-      else
-        dy1=1/(y(iy0+1)-y(iy0))
-      endif
-!
-      if (lequidist(3)) then
-        if (lfirstcall) dz1=dz_1(iz0)
-      else
-        dz1=1/(z(iz0+1)-z(iz0))
-      endif
-!
-      if ( (.not. all(lequidist)) .or. lfirstcall) then
-        dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
-        dxdydz1=dx1*dy1*dz1
-      endif
-!
-!  Function values at all corners.
-!
-      g1=f(ix0  ,iy0  ,iz0  ,ivar1:ivar2)
-      g2=f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)
-      g3=f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)
-      g4=f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)
-      g5=f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)
-      g6=f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)
-      g7=f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)
-      g8=f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)
-!
-!  Interpolation formula.
-!
-      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
-          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
-          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
-          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+      call linear_interpolate(f,ivar1,ivar2,xxp,gp,inear,linterp_reality_check)
 !
 !  If we have solid geometry we might want some special treatment very close
 !  to the surface of the solid geometry
 !
-
       if (lsolid_cells) then
         do ivar=ivar1,ivar2
           if (ivar < 4) then
@@ -154,37 +72,6 @@ module Particles_map
           endif
         enddo
       endif
-!
-!  Do a reality check on the interpolation scheme.
-!
-      if (linterp_reality_check) then
-        do i=1,ivar2-ivar1+1
-          if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_linear: interpolated value is LARGER than'
-            print*, 'interpolate_linear: a values at the corner points!'
-            print*, 'interpolate_linear: ipar, xxp=', ipar, xxp
-            print*, 'interpolate_linear: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_linear: g1...g8=', &
-                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, '------------------'
-          endif
-          if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_linear: interpolated value is smaller than'
-            print*, 'interpolate_linear: a values at the corner points!'
-            print*, 'interpolate_linear: xxp=', xxp
-            print*, 'interpolate_linear: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_linear: g1...g8=', &
-                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, '------------------'
-          endif
-        enddo
-      endif
-!
-      if (lfirstcall) lfirstcall=.false.
 !
       call keep_compiler_quiet(iblock)
 !
