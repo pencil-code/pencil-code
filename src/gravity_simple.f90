@@ -53,8 +53,8 @@ module Gravity
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
   real :: xinfty=0.0, yinfty=0.0, zinfty=impossible
-  real :: dgravx=0.0, pot_ratio=1.0
-  real :: z1=0.0, z2=1.0, zref=impossible, qgshear=1.5
+  real :: dgravx=0.0, pot_ratio=1.0, qgshear=1.5
+  real :: z1=0.0, z2=1.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
   real :: r0_pot=0.0
@@ -77,22 +77,21 @@ module Gravity
 !
   namelist /grav_init_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
-      xgrav, ygrav, zgrav, kx_gg, ky_gg, kz_gg, dgravx, pot_ratio, &
-      nux_epicycle, nu_epicycle, z1, z2, zref, lnrho_bot, lnrho_top, ss_bot, &
-      ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, lgravz_gas, &
-      lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, kappa_x1, &
-      lcalc_zinfty, &
-      kappa_x2, kappa_z1, kappa_z2, reduced_top, lboussinesq, n_pot, cs0hs, &
-      H0hs, grav_tilt
+      xgrav, ygrav, zgrav, kx_gg, ky_gg, kz_gg, dgravx, pot_ratio, z1, z2, &
+      nux_epicycle, nu_epicycle, zref, g_ref, sphere_rad, lnrho_bot, lnrho_top, &
+      ss_bot, ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
+      lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
+      lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
+      lboussinesq, n_pot, cs0hs, H0hs, grav_tilt
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
       xgrav, ygrav, zgrav, kx_gg, ky_gg, kz_gg, dgravx, pot_ratio, &
-      nux_epicycle, nu_epicycle, lgravx_gas, lgravx_dust, lgravy_gas, &
-      lgravy_dust, lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, &
-      lcalc_zinfty, &
-      lxyzdependence, kappa_x1, kappa_x2, kappa_z1, kappa_z2, zref, &
-      reduced_top, lboussinesq, n_pot, grav_tilt
+      nux_epicycle, nu_epicycle, zref, g_ref, sphere_rad, &
+      lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
+      lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
+      lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
+      lboussinesq, n_pot, grav_tilt
 !
   integer :: idiag_epot=0
   integer :: idiag_epotmx=0
@@ -329,6 +328,22 @@ module Gravity
         if (lroot) print*,'initialize_gravity: linear z-grav, nu=', nu_epicycle
         gravz_zpencil=-nu_epicycle2*z
         potz_zpencil=0.5*nu_epicycle2*(z**2-zinfty**2)
+!
+      ! solid sphere (homogenous) gravity profile
+      ! 'zref' determines the location of the sphere border relative to the lower box boundary.
+      ! 'g_ref' is the gravity acceleration at zref (implies the mass of the sphere).
+      ! 'sphere_rad' is the radius of the sphere (independant from box coordinates).
+      ! Together, sphere_rad and zref describe, how much of the sphere lies inside the box.
+      case ('solid_sphere')
+        if (lroot) print *, 'initialize_gravity: solid shpere zref=', zref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
+        where (z > zref)
+          gravz_zpencil = g_ref * sphere_rad**2 / (z-zref+sphere_rad)**2
+        else where (z < -zref)
+          gravz_zpencil = -g_ref * sphere_rad**2 / (z-zref+sphere_rad)**2
+        else where
+          gravz_zpencil = g_ref * (z-zref+sphere_rad) / sphere_rad
+        end where
+        potz_zpencil=-gravz_zpencil*(z-zinfty)
 !
       case ('spherical')
         nu_epicycle2=nu_epicycle**2
