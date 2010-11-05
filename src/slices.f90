@@ -240,12 +240,15 @@ module Slices
 !
 !  check whether we want to write a slice on this processor
 !
-      if ( (lwrite_slice_xy .and.index(filename,'xy' )>0) .or. & 
-           (lwrite_slice_xy2.and.index(filename,'xy2')>0) .or. &
-           (lwrite_slice_xy3.and.index(filename,'xy3')>0) .or. &
-           (lwrite_slice_xy4.and.index(filename,'xy4')>0) .or. &
-           (lwrite_slice_xz .and.index(filename,'xz' )>0) .or. &
-           (lwrite_slice_yz .and.index(filename,'yz' )>0) ) then
+      if ( (lwrite_slice_xy .and.index(filename,'xy' )>0 &
+          .and. index(filename,'xy2')==0 &
+          .and. index(filename,'xy3')==0 &
+          .and. index(filename,'xy4')==0 ) .or. &
+          (lwrite_slice_xy2.and.index(filename,'xy2')>0) .or. &
+          (lwrite_slice_xy3.and.index(filename,'xy3')>0) .or. &
+          (lwrite_slice_xy4.and.index(filename,'xy4')>0) .or. &
+          (lwrite_slice_xz .and.index(filename,'xz' )>0) .or. &
+          (lwrite_slice_yz .and.index(filename,'yz' )>0) ) then
         open(1,file=filename,form='unformatted',position='append')
         write(1) a,tslice,pos
         close(1)
@@ -285,22 +288,22 @@ module Slices
         lwrite_slice_yz=.true.
 !
 !  slice positions for spherical coordinates
-!  w is for "wedges" since the outputs are 
-!  the midplane (rphi,theta=y(mpoint)) and four 
+!  w is for "wedges" since the outputs are
+!  the midplane (rphi,theta=y(mpoint)) and four
 !  wedges in rtheta (xy)
 !
       elseif (slice_position=='w') then
         !midplane slices
         !ix_loc=nxgrid/2+nghost
         iy = nygrid/2+nghost
-        !meridional wedges, at 4 different 
+        !meridional wedges, at 4 different
         !equally spaced azimuthal locations
         iz =  0*nzgrid/4+1+nghost
         iz2=  1*nzgrid/4+1+nghost
         iz3=  2*nzgrid/4+1+nghost
         iz4=  3*nzgrid/4+1+nghost
         !yz is not needed
-        lwrite_slice_yz =.false.        
+        lwrite_slice_yz =.false.
 !
 !  Another slice positions for spherical coordinates
 !  s is for "surface" meaning theta-phi sections
@@ -359,7 +362,7 @@ module Slices
       endif
 !
 !  Spherical admits only position 'w'. Break if this is not met.
-!  Also, turn extra r-theta slices to false in case of 
+!  Also, turn extra r-theta slices to false in case of
 !  non-spherical coordinates
 !
       if (coord_system=='spherical') then
@@ -408,6 +411,7 @@ module Slices
         else
           lwrite_slice_xy2=.false.
         endif
+        print*, lwrite_slice_xy2, iz2_loc,iproc,'================================='
       endif
 !
       if (iz3>0) then
@@ -460,7 +464,7 @@ module Slices
         close(1)
       endif
 !
-!  make sure ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc 
+!  make sure ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
 !  are not outside the boundaries
 !
        ix_loc=min( ix_loc,l2) ;  iy_loc=min( iy_loc,m2)
