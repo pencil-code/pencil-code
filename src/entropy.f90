@@ -8,6 +8,7 @@
 !
 ! CPARAM logical, parameter :: lentropy = .true.
 ! CPARAM logical, parameter :: ltemperature = .false.
+! CPARAM logical, parameter :: lthermal_energy = .false.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0

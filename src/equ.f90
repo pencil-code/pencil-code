@@ -262,7 +262,7 @@ module Equ
 !  derived from the basic thermodynamical variables), we need to fill in the
 !  pressure in the f array.
 !
-      if (lentropy) call fill_farray_pressure(f)
+      call fill_farray_pressure(f)
 !
 !  Set inverse timestep to zero before entering loop over m and n.
 !
@@ -356,10 +356,7 @@ module Equ
             diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_lnrho=0.0
             if (leos) advec_cs2=0.0
           endif
-          if (lentropy) then
-            diffus_chi=0.0; diffus_chi3=0.0
-          endif
-          if (ltemperature) then
+          if (lentropy .or. ltemperature .or. lthermal_energy) then
             diffus_chi=0.0; diffus_chi3=0.0
           endif
           if (lmagnetic) then
@@ -658,6 +655,7 @@ module Equ
           if (ldensity) maxdiffus=max(diffus_diffrho,maxdiffus)
           if (lentropy) maxdiffus=max(diffus_chi,maxdiffus)
           if (ltemperature) maxdiffus=max(diffus_chi,maxdiffus)
+          if (lthermal_energy) maxdiffus=max(diffus_chi,maxdiffus)
           if (lmagnetic) maxdiffus=max(diffus_eta,maxdiffus)
           if (ltestfield) maxdiffus=max(diffus_eta,maxdiffus)
           if (ltestscalar) maxdiffus=max(diffus_eta,maxdiffus)
@@ -679,6 +677,7 @@ module Equ
           if (ltestfield) maxdiffus3=max(diffus_eta3,maxdiffus3)
           if (lentropy) maxdiffus3=max(diffus_chi3,maxdiffus3)
           if (ltemperature) maxdiffus3=max(diffus_chi3,maxdiffus3)
+          if (lthermal_energy) maxdiffus3=max(diffus_chi3,maxdiffus3)
           if (ldustvelocity) maxdiffus3=max(diffus_nud3,maxdiffus3)
           if (ldustdensity) maxdiffus3=max(diffus_diffnd3,maxdiffus3)
           if (lpscalar) maxdiffus3=max(diffus_pscalar3,maxdiffus3)

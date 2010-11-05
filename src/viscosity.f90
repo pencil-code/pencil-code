@@ -1301,7 +1301,7 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,p,Hmax)
 !
-!  calculate viscous heating term for right hand side of entropy equation
+!  Calculate viscous heating term for right hand side of entropy equation.
 !
 !  20-nov-02/tony: coded
 !
@@ -1316,20 +1316,22 @@ module Viscosity
 !  the temperature equation. Divide by cv if pretend_lnTT.
 !
       if (lentropy) then
-         if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%visc_heat
-         else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%visc_heat
-         endif
+        if (pretend_lnTT) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%visc_heat
+        else
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%visc_heat
+        endif
       else if (ltemperature) then
         if (ltemperature_nolog) then
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + p%cv1*p%visc_heat
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
         endif
+      else if (lthermal_energy) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + p%visc_heat
       endif
 !
-!  calculate maximum heating (for time step constraint), so it is
+!  Calculate maximum heating (for time step constraint), so it is
 !  only done on the first of the 3 substeps.
 !
       if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat

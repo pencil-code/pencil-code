@@ -44,7 +44,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4, ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
-  integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
+  integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12, irho_eth=13
   integer :: iglobal_cs2, iglobal_glnTT
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
@@ -293,6 +293,7 @@ module EquationOfState
       integer, parameter :: ieosvar_TT    = 2**4
       integer, parameter :: ieosvar_cs2   = 2**5
       integer, parameter :: ieosvar_pp    = 2**6
+      integer, parameter :: ieosvar_eth   = 2**7
 !
       if (ieosvar_count==0) ieosvar_selected=0
 !
@@ -339,6 +340,8 @@ module EquationOfState
         if (findex<0) then
           leos_isobaric=.true.
         endif
+      elseif (variable=='eth') then
+        this_var=ieosvar_eth
       else
         call fatal_error('select_eos_variable','unknown thermodynamic variable')
       endif
@@ -388,6 +391,9 @@ module EquationOfState
         case (ieosvar_pp+ieosvar_cs2)
           if (lroot) print*, 'select_eos_variable: Using pp and cs2'
           ieosvars=ipp_cs2
+        case (ieosvar_rho+ieosvar_eth)
+          if (lroot) print*, 'select_eos_variable: Using rho and eth'
+          ieosvars=irho_eth
         case default
           if (lroot) print*, 'select_eos_variable: '// &
               'Thermodynamic variable combination, ieosvar_selected =', &
@@ -637,6 +643,12 @@ module EquationOfState
           if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
           if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
         endif
+!
+      case (irho_eth)
+        if (lpencil_in(i_cs2)) then
+          lpencil_in(i_rho1)=.true.
+        endif
+!
       case default
         call fatal_error('pencil_interdep_eos','case not implemented yet')
       endselect
@@ -904,6 +916,11 @@ module EquationOfState
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
         if (lpencil(i_del6ss)) call fatal_error('calc_pencils_eos', &
             'del6ss not available for ilnrho_cs2')
+!
+      case (irho_eth)
+        if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*f(l1:l2,m,n,ieth)*p%rho1
+        if (lpencil(i_pp))  p%pp=gamma_m1*f(l1:l2,m,n,ieth)
+!
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect
@@ -955,7 +972,7 @@ module EquationOfState
 !
    endsubroutine gettemperature
 !***********************************************************************
- subroutine getpressure(pp_tmp)
+   subroutine getpressure(pp_tmp)
 !
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
