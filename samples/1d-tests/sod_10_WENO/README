@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/sod_10_WENO
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Anders Johansen <anders@astro.lu.se>
+Added:
+    05-Nov-2010
+Status:
+    Has been working in this form since 05-Nov-2010
+Recommended resolution:
+    400 meshpoints in -3.7 < x < 6.3, with nu_shock=1.0
+Comments:
+    WENO transport solution to shock tube test. WENO needs shock viscosity
+    to dissipate energy, but there are no wiggles in any of the dynamical
+    variables.
