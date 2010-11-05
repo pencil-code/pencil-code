@@ -41,15 +41,14 @@ module Solid_Cells
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
-
+!
   type solid_object
     character(len=10) :: form
     real :: r,T
     real, dimension(3) :: x
   end type solid_object
-
+!
   type(solid_object), dimension(max_items) :: objects
-
 !
   namelist /solid_cells_init_pars/ &
        cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
@@ -728,7 +727,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
       real :: xmirror, ymirror, zmirror, phi, dr, cos_phi, sin_phi
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
-      integer :: lower_k, upper_k
+      integer :: lower_k, upper_k, ndims
       logical :: bax, bay, baz
       real :: gpp
       real, dimension(3) :: xxp
@@ -859,23 +858,30 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Then we use the interpolated value to find the value of the ghost point
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
+            if (objects(iobj)%form=='cylinder') then
+              ndims=2
+            elseif (objects(iobj)%form=='sphere') then
+              ndims=3
+            endif
             call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
             f(i,j,k,iux)=-phi
             call interpolate_mirror_point(f,phi,iuy,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
             f(i,j,k,iuy)=-phi
             call interpolate_mirror_point(f,phi,iuz,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
             f(i,j,k,iuz)=-phi
             if (ilnrho>0) then
               call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
-                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
+                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                  zmirror,ndims)
               f(i,j,k,ilnrho)=phi
             endif
             if (ilnTT>0) then
               call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
-                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
+                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                  zmirror,ndims)
               f(i,j,k,ilnTT)=2*objects(iobj)%T-phi
             endif
           else
@@ -951,54 +957,36 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine update_solid_cells
 !***********************************************************************  
-    subroutine interpolate_mirror_point(f,phi,ivar,lower_i,upper_i,lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror)
+    subroutine interpolate_mirror_point(f,phi,ivar,lower_i,upper_i,lower_j,&
+        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
 !
 !  Interpolate value in a mirror point from the eight corner values
 !
 !  23-dec-2008/nils: coded
 !  22-apr-2009/nils: added special treatment close to the solid surface
 !
+      use General, only: linear_interpolate
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: iobj
+      integer, intent(in) :: iobj,ndims
       integer, intent(in) :: lower_i,upper_i,lower_j,upper_j,ivar
       integer, intent(in) :: lower_k,upper_k
       real,    intent(in) :: xmirror,ymirror,zmirror
       real,    intent(out):: phi
 !
-      real :: hx1, hy1,hy2,hx2,hz1,hz2
       real, dimension(3) :: xxp
+      real, dimension(1) :: gp
+      integer, dimension(3) :: inear
 !
-      hx1=xmirror-x(lower_i)
-      hx2=x(upper_i)-xmirror
-      hy1=ymirror-y(lower_j)
-      hy2=y(upper_j)-ymirror
-      hz1=zmirror-z(lower_k)
-      hz2=z(upper_k)-zmirror
-!
-      if (objects(iobj)%form=='cylinder') then
-        phi=&
-            (f(lower_i,upper_j,lower_k,ivar)*hx2*hy1 &
-            +f(upper_i,upper_j,lower_k,ivar)*hx1*hy1 &
-            +f(lower_i,lower_j,lower_k,ivar)*hx2*hy2 &
-            +f(upper_i,lower_j,lower_k,ivar)*hx1*hy2)/((hx1+hx2)*(hy1+hy2))
-      elseif (objects(iobj)%form=='sphere') then
-        phi=&
-            (f(lower_i,upper_j,lower_k,ivar)*hx2*hy1*hz2 &
-            +f(upper_i,upper_j,lower_k,ivar)*hx1*hy1*hz2 &
-            +f(lower_i,lower_j,lower_k,ivar)*hx2*hy2*hz2 &
-            +f(upper_i,lower_j,lower_k,ivar)*hx1*hy2*hz2 &
-            +f(lower_i,upper_j,upper_k,ivar)*hx2*hy1*hz1 &
-            +f(upper_i,upper_j,upper_k,ivar)*hx1*hy1*hz1 &
-            +f(lower_i,lower_j,upper_k,ivar)*hx2*hy2*hz1 &
-            +f(upper_i,lower_j,upper_k,ivar)*hx1*hy2*hz1 &
-            )/((hx1+hx2)*(hy1+hy2)*(hz1+hz2))
-      endif      
+      xxp=(/xmirror,ymirror,zmirror/)
+      inear=(/lower_i,lower_j,lower_k/)
+      call linear_interpolate(f,ivar,ivar,xxp,gp,inear,.false.)
+      phi=gp(1)
 !
 !  If the mirror point is very close to the surface of the object 
 !  some special treatment is required.
 !
-      if (lclose_interpolation .and. ivar < 4) then
-        xxp=(/xmirror,ymirror,zmirror/)
+      if (lclose_interpolation .and. ivar < 4) then        
         call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
             phi,.false.)
       endif
@@ -1020,7 +1008,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  This situation typically appears for mirror points used 
 !  to find the value of the ghost points INSIDE the solid geometry, or when
 !  a particle is very close to the surface.
-!  If fluid_point=.false. the routine check if we any of the neighbouring
+!  If fluid_point=.false. the routine check if any of the neighbouring
 !  grid points, used for interpolation, are inside the solid geometry.
 !  If so the routine use the value at the surface
 !  of the solid geometry together with the interpolated value at the nearest
@@ -1044,24 +1032,29 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !                                                         of object)
 !---------------------------------------------------------------------------
 ! p       The interpolated point    p_global(3)           p_local(3)
-! s       "l" cross surface         s_global(3)           -
-! g       "l" cross grid plane      g_global(3)           g_local(3)
+! s       "l" cross surface         -                     -
+! g       "l" cross grid plane      g_global(3)           -
 ! object  Object center             o_global(3)           -
 ! bv      Border value              bordervalue(3*2)      -
 !---------------------------------------------------------------------------
+!
+      use General, only: linear_interpolate
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0_,iy0_,iz0_,ivar1
       integer :: ix0,iy0,iz0
       real, intent(inout) :: gpp
-      real :: rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
-      integer :: ix1,iy1,iz1,min
+      real :: rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp,phi
+      real :: r_pg,r_sg,rl,rlmin,xmirror,ymirror,zmirror
+      integer :: ix1,iy1,iz1,min,dir,lower_i,lower_j,lower_k,ndims,ndir
+      integer :: upper_i,upper_j,upper_k,vardir1,vardir2
       real, dimension(3), intent(in) :: xxp
       real, dimension(2,2,2) :: rij
       real, dimension(3,2) :: bordervalue
       integer, dimension(3,2) :: borderindex
       integer, dimension(6) :: constdir_arr, vardir_arr, topbot_arr
-      real, dimension(3) :: xyint, p_global, p_local, o_global, s_global
+      real, dimension(3) :: xyint, p_global, p_local, o_global
+      real, dimension(3) :: ngrids, g_global
       real :: xtemp,r,R1,Rsmall,xs,ys,zs,rp,dist
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,iobj,counter,topbot
       integer :: maxcounter
@@ -1069,8 +1062,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       logical, intent(in) :: fluid_point
       real :: fintx, finty,fint_ur,fint_ut,drp,dri,f2x,f2y,f1x,f1y
       real, save :: urp,utp
-      logical :: quadratic
-
+      logical :: quadratic=.true.
+      real, dimension(1) :: gp
+      integer, dimension(3) :: inear
 !
 !  Check if we really want this special treatment close to the fluid-solid 
 !  interface
@@ -1178,207 +1172,355 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  in the center of the object
 !
           p_local=p_global-o_global
+!
+!  Find the distance from the object center to "p"
+!
           if (objects(iobj)%form=='cylinder') then
             rp=sqrt(p_local(1)**2+p_local(2)**2)
+            p_local(3)=0
           elseif (objects(iobj)%form=='sphere') then
             rp=sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
           endif
 !
-!  Determine the point s on the object surface where the normal to the
-!  object surface pass through the point p. 
+!  Currently there are two implementations for the close surface treatment.
+!  The first one is more general and works both for spheres and cylinders,
+!  but it does not have quadratic interpolation of radial velocities
+!  implemented yet. Furthermore it does not handle particles correctly
+!  for the cases where one of the corner points of "gridplane" is insed
+!  the solid geometry.
 !
-          s_global=rs/rp*p_global
+          if (objects(iobj)%form=='sphere' .or. .not. quadratic) then
+            if (lparticles .and. lclose_interpolation) then
+              print*,'Using close interpolation together with particles '
+              print*,'does not yet work with spherical solid geometries.'
+              print*,'You should either:'
+              print*,' -Turn of lclose_interpolation'
+              print*,' -Use cylinders instead of spheres'
+              print*,' -Implement what is missing in order to solve the problem'
+              call fatal_error('close_interpolation','')
+            endif
 !
 !  Find which grid line is the closest one in the direction
 !  away from the object surface
 !
 !  Check the distance to all the six (four in 2D) possible 
-!  surface planes (lines in 2D). Pick the surface which the normal to the
-!  object surface (which also pass through the point "p")
-!  cross first. This crossing point must
-!  be OUTSIDE the point "p" compared to the object surface.
+!  surface planes (lines in 2D). 
+!  Define a straight line "l" which pass through the point "p" and is normal 
+!  to the surface of the object.
+!  Pick the grid plane, OUTSIDE the point "p", that the line "l" cross first,
+!  call this plane "gridplane". 
 !
-          maxcounter=6
-          if (objects(iobj)%form=='cylinder') maxcounter=4
-          do counter=1,maxcounter
-            constdir=constdir_arr(counter)
-            vardir=vardir_arr(counter)
-            topbot_tmp=topbot_arr(counter)
+            ngrids(1)=nxgrid
+            ngrids(2)=nygrid
+            ngrids(3)=nzgrid
+            ndir=3
+            ndims=0
+            rlmin=verylarge
+            do dir=1,ndir
+! 
+!  Loop through all directions "dir" and find which grid plane, outside of "p",
+!  that is crossed by the line "l" first. Lets call this plane "gridplane". 
+!  If "dir" for the first crossing is 1 then "gridplane" is the 'yz' plane 
+!  and so on.....
+!
+              if (ngrids(dir) .gt. 1) then
+                ndims=ndims+1
+                do topbot_tmp=1,2
+!
+!  Find the variable "rl" such that
+!  rl*p_local(dir)+o_global(dir)=bordervalue(dir)  
+!
+                  rl=(bordervalue(dir,topbot_tmp)-o_global(dir))/p_local(dir)
+!
+!  If "rl" is larger than unity the line "l" cross the grid plane
+!  outside of "p". If in addition "rl" is smaller than the smallest "rl" so
+!  far (rlmin) this state must be stored since it might be the plane
+!  ("gridplane") which we are looking for. In addition we must
+!  find the distance, r, from the center of the object
+!  to the point where the normal cross the grid line.
+!  The point where "l" cross "gridplane" is called "g".
+!
+                  if (rl > 1.0 .and. rl<rlmin) then
+                    constdir=dir
+                    vardir1=mod(constdir+0,3)+1
+                    vardir2=mod(constdir+1,3)+1
+                    rlmin=rl
+                    topbot=topbot_tmp
+                    r=rl*sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
+                    g_global(constdir)=bordervalue(constdir,topbot)
+                    g_global(vardir1)=rl*p_local(vardir1)+o_global(vardir1)
+                    g_global(vardir2)=rl*p_local(vardir2)+o_global(vardir2)
+                  endif
+                enddo
+              endif
+            enddo
+!
+!  The direction of the normal to "gridplane", called "N_grid", is either
+!  in the x, y or z direction since the grid is Cartesian. See table below
+!  for values of constdir, vardir1, and vardir2 for different "N_grid" directions.
+!
+!  N_grid  constdir  vardir1  vardir2 
+!--------------------------------------------------
+!     x        1        2        3    
+!     y        2        3        1
+!     z        3        1        2
+!
+!  Check that we have found a valid distance
+!
+            if (rlmin==verylarge) then
+              print*,'fluid_point=',fluid_point
+              print*,'lclose_interpolation=',lclose_interpolation
+              print*,'lclose_linear=',lclose_linear
+              print*,'o_global=',o_global
+              print*,'ix0,iy0,iz0=',ix0,iy0,iz0
+              print*,'ix1,iy1,iz1=',ix1,iy1,iz1
+              print*,'p_global=',p_global
+              print*,'r,rs,rp=',r,rs,rp
+              print*,'rij,rs=',rij,rs
+              print*,'x(ix0),p_global(1),x(ix1)=',x(ix0),p_global(1),x(ix1)
+              print*,'y(iy0),p_global(2),y(iy1)=',y(iy0),p_global(2),y(iy1)
+              print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
+              call fatal_error('close_interpolation',&
+                  'A valid radius is not found!')            
+            endif
+!
+!  Depending on the value of constdir the indeces of the corner points 
+!  specifying "gridplane" is given by lower_i, upper_i, lower_j ........
+!  The physical position of "g" is stored in xmirror, ymirror and zmirror.
+!
+            if (constdir==1) then
+              lower_i=borderindex(constdir,topbot)
+              upper_i=borderindex(constdir,topbot)
+              lower_j=borderindex(vardir1,1)
+              upper_j=borderindex(vardir1,2)
+              lower_k=borderindex(vardir2,1)
+              upper_k=borderindex(vardir2,2)
+              xmirror=g_global(constdir)
+              ymirror=g_global(vardir1)
+              zmirror=g_global(vardir2)
+            elseif (constdir==2) then
+              lower_j=borderindex(constdir,topbot)
+              upper_j=borderindex(constdir,topbot)
+              lower_k=borderindex(vardir1,1)
+              upper_k=borderindex(vardir1,2)
+              lower_i=borderindex(vardir2,1)
+              upper_i=borderindex(vardir2,2)
+              ymirror=g_global(constdir)
+              xmirror=g_global(vardir2)
+              zmirror=g_global(vardir1)
+            elseif (constdir==3) then
+              lower_k=borderindex(constdir,topbot)
+              upper_k=borderindex(constdir,topbot)
+              lower_i=borderindex(vardir1,1)
+              upper_i=borderindex(vardir1,2)
+              lower_j=borderindex(vardir2,1)
+              upper_j=borderindex(vardir2,2)
+              zmirror=g_global(constdir)
+              xmirror=g_global(vardir1)
+              ymirror=g_global(vardir2)
+            endif
+!
+!  Let "phi" be the physical value of the variable "ivar1" on "gridplane".
+!  The value of "phi" is then found by interpolation between the four corner
+!  points of "gridplane".
+!
+            inear=(/lower_i,lower_j,lower_k/)
+            call linear_interpolate(f,ivar1,ivar1,g_global,gp,inear,.false.)
+            phi=gp(1)
+!
+!  Now we know the value associated with the variable "ivar1" in the point "g".
+!  Furthermore we know the value value associated the "ivar1" in point "s"
+!  on the object surface to be zero for any of the velocities and equal to 
+!  the solid temperature for the temperature.
+!  By interpolation it is now straight forward to find the value also in "p".
+!  First find the distance, "r_pg", from "p" to "g" to be used as weight, 
+!  then normalize by the full distance, "r_sg", between "s" and "g". 
+!
+            r_pg=r-rp
+            r_sg=r-rs
+            gpp=(1-r_pg/r_sg)*phi
+          else
+            maxcounter=6
+            if (objects(iobj)%form=='cylinder') maxcounter=4
+            do counter=1,maxcounter
+              constdir=constdir_arr(counter)
+              vardir=vardir_arr(counter)
+              topbot_tmp=topbot_arr(counter)
 !
 !  Find the position, xtemp, in the variable direction
 !  where the normal cross the grid line
 !
-            xtemp=(p_local(vardir)/(p_local(constdir)+tini))&
-                *(bordervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
+              xtemp=(p_local(vardir)/(p_local(constdir)+tini))&
+                  *(bordervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
 !
 !  Find the distance, r, from the center of the object
 !  to the point where the normal cross the grid line
 !
-            if (abs(xtemp) > verylarge) then
-              r=verylarge*2
-            else
-              r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)&
-                  -objects(iobj)%x(constdir))**2)
-            endif
+              if (abs(xtemp) > verylarge) then
+                r=verylarge*2
+              else
+                r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)&
+                    -objects(iobj)%x(constdir))**2)
+              endif
 !
 !  Check if the point xtemp is outside the object,
 !  outside the point "p" and that it cross the grid
 !  line within this grid cell
 !
-            if ((r > rs) .and. (r > rp) &
-                .and.(xtemp+objects(iobj)%x(vardir) >= bordervalue(vardir,1))&
-                .and.(xtemp+objects(iobj)%x(vardir) <= bordervalue(vardir,2)))then
-              R1=r
-            else
-              R1=verylarge
-            endif
+              if ((r > rs) .and. (r > rp) &
+                  .and.(xtemp+objects(iobj)%x(vardir)>=bordervalue(vardir,1))&
+                  .and.(xtemp+objects(iobj)%x(vardir)<=bordervalue(vardir,2)))then
+                R1=r
+              else
+                R1=verylarge
+              endif
 !
 !  If we have a new all time low (in radius) then go on....
 !
-            if (R1 < Rsmall) then
-              Rsmall=R1                
-              xyint(vardir)=xtemp+objects(iobj)%x(vardir)
-              xyint(constdir)=bordervalue(constdir,topbot_tmp)
-              dirconst=constdir
-              dirvar=vardir
-              topbot=topbot_tmp
-              if (constdir == 2) then
-                rij_min=rij(1,topbot_tmp,1)
-                rij_max=rij(2,topbot_tmp,1)
-              else
-                rij_min=rij(topbot_tmp,1,1)
-                rij_max=rij(topbot_tmp,2,1)
+              if (R1 < Rsmall) then
+                Rsmall=R1                
+                xyint(vardir)=xtemp+objects(iobj)%x(vardir)
+                xyint(constdir)=bordervalue(constdir,topbot_tmp)
+                dirconst=constdir
+                dirvar=vardir
+                topbot=topbot_tmp
+                if (constdir == 2) then
+                  rij_min=rij(1,topbot_tmp,1)
+                  rij_max=rij(2,topbot_tmp,1)
+                else
+                  rij_min=rij(topbot_tmp,1,1)
+                  rij_max=rij(topbot_tmp,2,1)
+                endif
+                inputvalue=bordervalue(constdir,topbot_tmp)&
+                    -objects(iobj)%x(constdir)
               endif
-              inputvalue=bordervalue(constdir,topbot_tmp)&
-                  -objects(iobj)%x(constdir)
-            endif
-          enddo
+            enddo
 !
 !  Check that we have found a valid distance
 !
-          if (Rsmall==verylarge/2.0) then
-            print*,'fluid_point=',fluid_point
-            print*,'lclose_interpolation=',lclose_interpolation
-            print*,'lclose_linear=',lclose_linear
-            print*,'o_global=',o_global
-            print*,'ix0,iy0,iz0=',ix0,iy0,iz0
-            print*,'ix1,iy1,iz1=',ix1,iy1,iz1
-            print*,'p_global=',p_global
-            print*,'xtemp=',xtemp
-            print*,'r,rs,rp=',r,rs,rp
-            print*,'R1,Rsmall=',R1,Rsmall
-            print*,'rij,rs=',rij,rs
-            print*,'x(ix0),p_global(1),x(ix1)=',x(ix0),p_global(1),x(ix1)
-            print*,'y(iy0),p_global(2),y(iy1)=',y(iy0),p_global(2),y(iy1)
-            print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
-             call fatal_error('close_interpolation',&
-                'A valid radius is not found!')            
-           endif
+            if (Rsmall==verylarge/2.0) then
+              print*,'fluid_point=',fluid_point
+              print*,'lclose_interpolation=',lclose_interpolation
+              print*,'lclose_linear=',lclose_linear
+              print*,'o_global=',o_global
+              print*,'ix0,iy0,iz0=',ix0,iy0,iz0
+              print*,'ix1,iy1,iz1=',ix1,iy1,iz1
+              print*,'p_global=',p_global
+              print*,'xtemp=',xtemp
+              print*,'r,rs,rp=',r,rs,rp
+              print*,'R1,Rsmall=',R1,Rsmall
+              print*,'rij,rs=',rij,rs
+              print*,'x(ix0),p_global(1),x(ix1)=',x(ix0),p_global(1),x(ix1)
+              print*,'y(iy0),p_global(2),y(iy1)=',y(iy0),p_global(2),y(iy1)
+              print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
+              call fatal_error('close_interpolation',&
+                  'A valid radius is not found!')            
+            endif
 !
 !  Check if the endpoints in the variable direction are
 !  outside the objects. If they are not then define the endpoints
 !  as where the grid line cross the object surface.
 !  Find the variable value at the endpoints.
 !
-           quadratic=.true.
-           min=1
-           if (dirconst == 2) then
-             varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
-                 iz0,ivar1)
-           else
-             varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
-                 iz0,ivar1)
-           endif
-           call find_point(rij_min,rs,varval,inputvalue,x1,&
-               bordervalue(dirvar,1),bordervalue(dirvar,2),&
-               min,f1,objects(iobj)%x(dirvar))
+            min=1
+            if (dirconst == 2) then
+              varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
+                  iz0,ivar1)
+            else
+              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
+                  iz0,ivar1)
+            endif
+            call find_point(rij_min,rs,varval,inputvalue,x1,&
+                bordervalue(dirvar,1),bordervalue(dirvar,2),&
+                min,f1,objects(iobj)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to 
 ! do interpolations for the radial and theta directions.
 !
-           if (quadratic .and. ivar1==iux) then
-             if (dirconst == 2) then
-               varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
-                   iz0,iuy)
-             else
-               varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
-                   iz0,iuy)
-             endif
-             call find_point(rij_min,rs,varval,inputvalue,x1,&
-                 bordervalue(dirvar,1),bordervalue(dirvar,2),&
-                 min,f1y,objects(iobj)%x(dirvar))
-             f1x=f1
-           endif
+            if (quadratic .and. ivar1==iux) then
+              if (dirconst == 2) then
+                varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
+                    iz0,iuy)
+              else
+                varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
+                    iz0,iuy)
+              endif
+              call find_point(rij_min,rs,varval,inputvalue,x1,&
+                  bordervalue(dirvar,1),bordervalue(dirvar,2),&
+                  min,f1y,objects(iobj)%x(dirvar))
+              f1x=f1
+            endif
 !
-           min=0
-           if (dirconst == 2) then
-             varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
-                 iz0,ivar1)
-           else
-             varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
-                 iz0,ivar1)
-           endif
-           call find_point(rij_max,rs,varval,inputvalue,x2,&
-               bordervalue(dirvar,1),bordervalue(dirvar,2),&
-               min,f2,objects(iobj)%x(dirvar))
+            min=0
+            if (dirconst == 2) then
+              varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
+                  iz0,ivar1)
+            else
+              varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
+                  iz0,ivar1)
+            endif
+            call find_point(rij_max,rs,varval,inputvalue,x2,&
+                bordervalue(dirvar,1),bordervalue(dirvar,2),&
+                min,f2,objects(iobj)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to 
 ! do interpolations for the radial and theta directions.
 !
-           if (quadratic .and. ivar1==iux) then
-             if (dirconst == 2) then
-               varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
-                   iz0,iuy)
-             else
-               varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
-                   iz0,iuy)
-             endif
-             call find_point(rij_max,rs,varval,inputvalue,x2,&
-                 bordervalue(dirvar,1),bordervalue(dirvar,2),&
-                 min,f2y,objects(iobj)%x(dirvar))
-             f2x=f2
-           endif
+            if (quadratic .and. ivar1==iux) then
+              if (dirconst == 2) then
+                varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
+                    iz0,iuy)
+              else
+                varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
+                    iz0,iuy)
+              endif
+              call find_point(rij_max,rs,varval,inputvalue,x2,&
+                  bordervalue(dirvar,1),bordervalue(dirvar,2),&
+                  min,f2y,objects(iobj)%x(dirvar))
+              f2x=f2
+            endif
 !
 !  Find the interpolation values between the two endpoints of
 !  the line and the normal from the objects.
 !
-          rint1=xyint(dirvar)-x1
-          rint2=x2-xyint(dirvar)
+            rint1=xyint(dirvar)-x1
+            rint2=x2-xyint(dirvar)
 !
-          if (quadratic .and. (ivar1 /= iuz)) then
-            if (ivar1==iux) then
-              fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
-              finty=(rint1*f2y+rint2*f1y)/(x2-x1)
-              fint_ur    =fintx*p_local(1)/rs+finty*p_local(2)/rs
-              fint_ut=finty*p_local(1)/rs-fintx*p_local(2)/rs
-              drp=rp-rs
-              dri=Rsmall-rs
-              urp=(drp/dri)**2*fint_ur
-              utp=(drp/dri)*fint_ut
-              gpp=urp*p_local(1)/rs-utp*p_local(2)/rs
-            elseif (ivar1==iuy) then
-              gpp=urp*p_local(2)/rs+utp*p_local(1)/rs
+            if (quadratic .and. (ivar1 /= iuz)) then
+              if (ivar1==iux) then
+                fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
+                finty=(rint1*f2y+rint2*f1y)/(x2-x1)
+                fint_ur    =fintx*p_local(1)/rs+finty*p_local(2)/rs
+                fint_ut=finty*p_local(1)/rs-fintx*p_local(2)/rs
+                drp=rp-rs
+                dri=Rsmall-rs
+                urp=(drp/dri)**2*fint_ur
+                utp=(drp/dri)*fint_ut
+                gpp=urp*p_local(1)/rs-utp*p_local(2)/rs
+              elseif (ivar1==iuy) then
+                gpp=urp*p_local(2)/rs+utp*p_local(1)/rs
+              else
+                call fatal_error('close_interpolation',&
+                    'Yor ivar1 is not correct!') 
+              endif
             else
-              call fatal_error('close_interpolation',&
-                  'Yor ivar1 is not correct!') 
-            endif
-          else
 !
 !  Find the interpolated value on the line
 !
-            fint=(rint1*f2+rint2*f1)/(x2-x1)
+              fint=(rint1*f2+rint2*f1)/(x2-x1)
 !
 !  Find the weigthing factors for the point on the line
 !  and the point on the object surface.
 !          
-            rps=rp-rs
-            rintp=Rsmall-rp
+              rps=rp-rs
+              rintp=Rsmall-rp
 !
 !  Perform the final interpolation
 !
-            gpp=(rps*fint+rintp*0)/(Rsmall-rs)
+              gpp=(rps*fint+rintp*0)/(Rsmall-rs)
+            endif
           endif
         endif
       endif
