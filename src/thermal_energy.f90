@@ -183,6 +183,7 @@ module Entropy
     lpenc_requested(i_eth)=.true.
     lpenc_requested(i_fpres)=.true.
     if (ldt) lpenc_requested(i_cs2)=.true.
+    if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
