@@ -69,6 +69,7 @@ module Hydro
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
   integer :: kinflow_ck_ell=0.
   character (len=labellen) :: wind_profile='none'
+  logical, target :: lpressuregradient_gas=.false.
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -107,11 +108,19 @@ module Hydro
 !   6-nov-01/wolf: coded
 !
       use Mpicomm, only: lroot
+      use SharedVariables, only: put_shared_variable
+!
+      integer :: ierr
 !
 !  Identify version number (generated automatically by SVN).
 !
       if (lroot) call svn_id( &
           "$Id$")
+!
+      call put_shared_variable('lpressuregradient_gas',&
+          lpressuregradient_gas,ierr)
+      if (ierr/=0) call fatal_error('register_hydro',&
+          'there was a problem sharing lpressuregradient_gas')
 !
     endsubroutine register_hydro
 !***********************************************************************

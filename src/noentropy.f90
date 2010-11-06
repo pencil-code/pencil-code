@@ -63,10 +63,8 @@ module Entropy
 !  Get the shared variable lpressuregradient_gas from Hydro module.
 !  Do this only if lhydro=T.
 !
-      if (lhydro) then
-        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
-      endif
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
 !
 !  Identify version number.
 !

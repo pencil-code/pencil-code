@@ -86,10 +86,8 @@ module Entropy
       if (lroot) call svn_id( &
           "$Id$")
 !
-      if (lhydro) then
-        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
-      endif
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
 !
     endsubroutine register_entropy
 !***********************************************************************
