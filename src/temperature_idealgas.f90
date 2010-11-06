@@ -145,10 +145,9 @@ module Entropy
 !
       call farray_register_pde('lnTT',ilnTT)
 !
-      if (lhydro) then
-        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-        if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
-      endif
+!  logical variable lpressuregradient_gas shared with hydro/nohydro
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
 !
 !  Identify version number.
 !
