@@ -17,7 +17,8 @@
 
 ; Quantities to be visualized:
 ; => Available quantities for visualization are:
-; 'Temp', 'rho', 'ln_rho'   ; temperature, density and logarithmic density
+; 'Temp', 'rho'             ; temperature and density
+; 'ln_rho', 'log_rho'       ; logarithmic densities
 ; 'ux', 'uy', 'uz', 'u_abs' ; velocity components and the absolute value
 ; 'Ax', 'Ay', 'Az'          ; vector potential components
 ; 'Bx', 'By', 'Bz'          ; magnetic field components
@@ -27,7 +28,7 @@
 quantities = { temperature:'Temp', currentdensity:'j',            $
                magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
                velocity:'u_abs', velocity_z:'u_z',                $
-               logarithmic_density:'ln_rho' }
+               logarithmic_density:'log_rho' }
 
 
 ; Quantities to be overplotted (calculated in 'precalc_data'):
@@ -88,6 +89,9 @@ if (not analyse_loaded) then BEGIN
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
 	add = file_search (datadir+"/proc0/", "VAR?????")
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
+	for i = 0, n_elements (snapshots) - 1 do begin
+		snapshots[i] = strmid (snapshots[i], strpos (snapshots[i], "VAR"))
+	end 
 	num_snapshots = n_elements (snapshots)
 	files_total = num_snapshots
 	skipping = 0
@@ -108,11 +112,7 @@ if (not analyse_loaded) then BEGIN
 				skipping = num_snapshots
 				files_total = 0
 			end
-			show_snapshots = snapshots
-			for i = 0, n_elements (show_snapshots) - 1 do begin
-				show_snapshots[i] = strmid (show_snapshots[i], strpos (show_snapshots[i], "VAR"))
-			end 
-			print, "Available snapshots: ", show_snapshots
+			print, "Available snapshots: ", snapshots
 			if (strcmp (answer, 's', /fold_case)) then begin
 				if (num_snapshots gt 1) then begin
 					print, "How many files do you want to skip at start?"
@@ -130,6 +130,7 @@ if (not analyse_loaded) then BEGIN
 					repeat begin
 						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (floor ((num_snapshots-skipping)/stepping), 2)+"): "
 					end until ((files_total ge 0) and (files_total le floor ((num_snapshots-skipping)/stepping)))
+					if (files_total eq 0) then files_total = floor ((num_snapshots-skipping)/stepping)
 				end
 			end
 		end
@@ -270,8 +271,8 @@ if (not analyse_loaded) then BEGIN
 	if (num_selected gt 0) then begin
 		for i = 1, num_selected do begin
 			; Precalculate selected timesteps
-			pos = (num_snapshots - ignore_end) - (i - 1) * stepping - 1
-			precalc, i, varfile=strmid (snapshots[pos], strpos (snapshots[pos], "VAR"))
+			pos = skipping + (i-1)*stepping
+			precalc, i, varfile=snapshots[pos]
 		end
 	end
 

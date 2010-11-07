@@ -88,7 +88,7 @@ pro precalc_emissivity
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
 	common settings_common, idx1, idx2, idx3, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_1, af_2, af_3
-	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax
+	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax, dimensionality
 
 	T_0 = parameter[selected_emissivity].T_ex
 	dT = parameter[selected_emissivity].delta_T
@@ -133,7 +133,7 @@ pro plot_emissivity
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
-	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax
+	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax, dimensionality
 
 	wset, wem_x
 	tvscl, (em_x[*,cut_z:*] > emin) < emax, 0, cut_z
@@ -151,7 +151,7 @@ pro emissivity, sets, limits, scaling=scaling
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
-	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax
+	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax, dimensionality
 
 	; Emissivities for different ions (values with only one decimal digit are UNVERIFIED)
 	; Temperatures are logarithmic to the base of 10
