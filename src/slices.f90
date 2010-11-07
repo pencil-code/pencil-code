@@ -272,20 +272,20 @@ module Slices
         lwrite_slice_xy2=llast_proc_z
         lwrite_slice_xy=lfirst_proc_z
         lwrite_slice_xz=lfirst_proc_y
-        lwrite_slice_yz=.true.
+        lwrite_slice_yz=lfirst_proc_x
 !
 !  slice position in middle of the box independ of nprocy,nprocz
 !  second horizontal slice is the upper most layer
 !
       elseif (slice_position=='m') then
-        ix_loc=(l1+l2)/2
+        if (mod(nprocy,2)==0) then; ix_loc=l1; else; ix_loc=(l1+l2)/2; endif
         if (mod(nprocy,2)==0) then; iy_loc=m1; else; iy_loc=(m1+m2)/2; endif
         if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
         iz2_loc=n2
         lwrite_slice_xy2=llast_proc_z
         lwrite_slice_xy=(ipz==nprocz/2)
         lwrite_slice_xz=(ipy==nprocy/2)
-        lwrite_slice_yz=.true.
+        lwrite_slice_yz=(ipx==nprocx/2)
 !
 !  slice positions for spherical coordinates
 !  w is for "wedges" since the outputs are
@@ -293,6 +293,8 @@ module Slices
 !  wedges in rtheta (xy)
 !
       elseif (slice_position=='w') then
+        if (nprocx>1) call warning('setup_slice', &
+            'slice_position=w may be wrong for nrpocx>1')
         !midplane slices
         !ix_loc=nxgrid/2+nghost
         iy = nygrid/2+nghost
@@ -311,6 +313,8 @@ module Slices
 !  The lwrite_slice_xz=.true. is needed for the read_video routine.
 !
       elseif (slice_position=='s') then
+        if (nprocx>1) call warning('setup_slice', &
+            'slice_position=s may be wrong for nrpocx>1')
         iz_loc=n1; iz2_loc=n2
         call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
         lwrite_slice_xy2=(ipz==nprocz/4)
@@ -328,6 +332,8 @@ module Slices
 !  TH: A certain processor layout is implied here
 !
       elseif (slice_position=='e') then
+        if (nprocx>1) call warning('setup_slice', &
+            'slice_position=e may be wrong for nrpocx>1')
         ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
         if (nprocy==1) then; iy_loc=(m1+m2)/2; endif
         if (nprocz==1) then; iz2_loc=(iz+n2)/2; endif
@@ -340,6 +346,8 @@ module Slices
 !  can now be given in terms of z (zbot_slice, ztop_slice).
 !
       elseif (slice_position=='c') then
+        if (nprocx>1) call warning('setup_slice', &
+            'slice_position=c may be wrong for nrpocx>1')
         ix_loc=l1; iy_loc=m1
         call zlocation(zbot_slice,iz_loc,lwrite_slice_xy)
         call zlocation(ztop_slice,iz2_loc,lwrite_slice_xy2)
@@ -353,7 +361,7 @@ module Slices
         lwrite_slice_xy2=lfirst_proc_z
         lwrite_slice_xy=llast_proc_z
         lwrite_slice_xz=llast_proc_y
-        lwrite_slice_yz=.true.
+        lwrite_slice_yz=llast_proc_x
       else
         if (lroot) then
           call fatal_error('setup_slices', &
@@ -439,14 +447,14 @@ module Slices
         close(1)
       endif
 !
-      open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
-      write(1,'(l,i)') lwrite_slice_xy,iz_loc
-      write(1,'(l,i)') lwrite_slice_xy2,iz2_loc
-      write(1,'(l,i)') lwrite_slice_xy3,iz3_loc
-      write(1,'(l,i)') lwrite_slice_xy4,iz4_loc
-      write(1,'(l,i)') lwrite_slice_xz,iy_loc
-      write(1,'(l,i)') lwrite_slice_yz,ix_loc
-      close(1)
+!      open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
+!      write(1,'(l,i)') lwrite_slice_xy,iz_loc
+!      write(1,'(l,i)') lwrite_slice_xy2,iz2_loc
+!      write(1,'(l,i)') lwrite_slice_xy3,iz3_loc
+!      write(1,'(l,i)') lwrite_slice_xy4,iz4_loc
+!      write(1,'(l,i)') lwrite_slice_xz,iy_loc
+!      write(1,'(l,i)') lwrite_slice_yz,ix_loc
+!      close(1)
 !
 !  write the ipz processor numbers for the two slices
 !  The first number (=ipz) is essential, the others just for interest.
