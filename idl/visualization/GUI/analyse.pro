@@ -283,7 +283,7 @@ END
 
 ; scaling factor for visualisation
 default, scaling, fix (256 / max ([dim.nx, dim.ny, dim.nz]))
-if (n_elements (scaling) eq 1) then if (scaling lt 1) then scaling = 1
+if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
 cmp_cslice_cache, quantities, lmn12, scaling=scaling, overplots=overplot_quantities

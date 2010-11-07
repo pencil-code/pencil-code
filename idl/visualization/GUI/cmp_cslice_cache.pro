@@ -729,11 +729,11 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	TOP     = WIDGET_BASE (BASE, /row)
 	scol    = WIDGET_BASE (top, /col)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x>128)+10, /drag, sensitive=sl_x_active)
+	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=sl_x_active)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y>128)+10, /drag, sensitive=sl_y_active)
+	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=sl_y_active)
 	scot    = WIDGET_BASE (scol, /col)
-	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z>128)+10, /drag, sensitive=sl_z_active)
+	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=sl_z_active)
 	bcol    = WIDGET_BASE (top, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCL', set_value=abs_scale)
 	b_sub   = CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
@@ -765,8 +765,8 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	MID     = WIDGET_BASE (BASE, /col)
 	bcot    = WIDGET_BASE (MID, /row)
 
-	scal_b = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='IMG_SCLB', /double, /edit, min=csmin, max=csmax, drag=1, value=csmin, xsize=(2*num_x*bin_x+num_y*bin_y)/2>(500+max([num_x,num_y,num_z]))/2 )
-	scal_t = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='IMG_SCLT', /double, /edit, min=csmin, max=csmax, drag=1, value=csmax, xsize=(2*num_x*bin_x+num_y*bin_y)/2>(500+max([num_x,num_y,num_z]))/2 )
+	scal_b = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='IMG_SCLB', /double, /edit, min=csmin, max=csmax, drag=1, value=csmin, xsize=((2*num_x*bin_x+num_y*bin_y)/2>(500+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2)<500 )
+	scal_t = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='IMG_SCLT', /double, /edit, min=csmin, max=csmax, drag=1, value=csmax, xsize=((2*num_x*bin_x+num_y*bin_y)/2>(500+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2)<500 )
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
