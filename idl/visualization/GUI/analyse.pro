@@ -272,7 +272,7 @@ if (not analyse_loaded) then BEGIN
 		for i = 1, num_selected do begin
 			; Precalculate selected timesteps
 			pos = skipping + (i-1)*stepping
-			precalc, i, varfile=snapshots[pos]
+			precalc, num_selected+1-i, varfile=snapshots[pos]
 		end
 	end
 
