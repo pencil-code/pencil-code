@@ -411,7 +411,6 @@ module Slices
         else
           lwrite_slice_xy2=.false.
         endif
-        print*, lwrite_slice_xy2, iz2_loc,iproc,'================================='
       endif
 !
       if (iz3>0) then
@@ -439,6 +438,15 @@ module Slices
         write(1,'(a)') slice_position
         close(1)
       endif
+!
+      open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
+      write(1,'(l,i)') lwrite_slice_xy,iz_loc
+      write(1,'(l,i)') lwrite_slice_xy2,iz2_loc
+      write(1,'(l,i)') lwrite_slice_xy3,iz3_loc
+      write(1,'(l,i)') lwrite_slice_xy4,iz4_loc
+      write(1,'(l,i)') lwrite_slice_xz,iy_loc
+      write(1,'(l,i)') lwrite_slice_yz,ix_loc
+      close(1)
 !
 !  write the ipz processor numbers for the two slices
 !  The first number (=ipz) is essential, the others just for interest.
@@ -555,5 +563,4 @@ module Slices
 !
     endsubroutine ylocation
 !***********************************************************************
-
 endmodule Slices
