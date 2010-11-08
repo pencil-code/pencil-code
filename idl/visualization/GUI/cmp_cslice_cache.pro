@@ -156,31 +156,8 @@ pro cslice_event, event
 		end
 	end
 	'RESET': begin
-		selected_cube = 0
-		selected_overplot = 0
-		abs_scale = 1
-		sub_aver = 0
-		show_cross = 1
-		px = num_x / 2
-		py = num_y / 2
-		pz = num_z / 2
-		pos_b = replicate (-1.0, num_cubes, 2)
-		pos_t = replicate (-1.0, num_cubes, 2)
-
-		prepare_cube, -1
+		reset_GUI
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
-
-		WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
-		WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
-		WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
-		WIDGET_CONTROL, sl_x, SET_VALUE = px
-		WIDGET_CONTROL, sl_y, SET_VALUE = py
-		WIDGET_CONTROL, sl_z, SET_VALUE = pz
-		WIDGET_CONTROL, scal_b, SET_VALUE = pos_b[selected_cube,sub_aver]
-		WIDGET_CONTROL, scal_t, SET_VALUE = pos_t[selected_cube,sub_aver]
-		WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
-		WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
-		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 	end
 	'LOAD': begin
 		if (file_test (settings_file, /read)) then begin
@@ -254,7 +231,7 @@ pro cslice_event, event
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
-	IF (quit) GE 0 THEN  WIDGET_CONTROL, quit, /DESTROY
+	if (quit ge 0) then  WIDGET_CONTROL, quit, /DESTROY
 
 	return
 end
@@ -299,10 +276,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
 		wset, wimg_yz
 		if (show_cross) then begin
-			if (py gt af_y) then for i = (py-af_y)*bin_y, 1, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (py lt num_y-1-af_y) then for i = (py+af_y)*bin_y, (num_y-1)*bin_y-1, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (pz gt af_z) then for i = (pz-af_z)*bin_z, 1, -step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
-			if (pz lt num_z-1-af_z) then for i = (pz+af_z)*bin_z, (num_z-1)*bin_z-1, step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
+			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
+			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
 		end $
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
@@ -335,10 +312,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
 		wset, wimg_xz
 		if (show_cross) then begin
-			if (px gt af_x) then for i = (px-af_x)*bin_x, 1, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (px lt num_x-1-af_x) then for i = (px+af_x)*bin_x, (num_x-1)*bin_x-1, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (pz gt af_z) then for i = (pz-af_z)*bin_z, 1, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
-			if (pz lt num_z-1-af_z) then for i = (pz+af_z)*bin_z, (num_z-1)*bin_z-1, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
+			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
 		end $
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
@@ -371,10 +348,10 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
 		wset, wimg_xy
 		if (show_cross) then begin
-			if (px gt af_x) then for i = (px-af_x)*bin_x, 1, -step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
-			if (px lt num_x-1-af_x) then for i = (px+af_x)*bin_x, (num_x-1)*bin_x-1, step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
-			if (py gt af_y) then for i = (py-af_y)*bin_y, 1, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
-			if (py lt num_y-1-af_y) then for i = (py+af_y)*bin_y, (num_y-1)*bin_y-1, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
+			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
+			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
 		end $
 		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
 		tvscl, ii
@@ -618,6 +595,41 @@ pro prepare_overplot
 end
 
 
+; Resets everything and redraws the window
+pro reset_GUI
+
+	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax, dimensionality
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, play, scal_b, scal_t
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+
+	selected_cube = 0
+	selected_overplot = 0
+	abs_scale = 1
+	sub_aver = 0
+	show_cross = 1
+	px = num_x / 2
+	py = num_y / 2
+	pz = num_z / 2
+	pos_b = replicate (-1.0, num_cubes, 2)
+	pos_t = replicate (-1.0, num_cubes, 2)
+
+	prepare_cube, -1
+
+	WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
+	WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
+	WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
+	WIDGET_CONTROL, sl_x, SET_VALUE = px
+	WIDGET_CONTROL, sl_y, SET_VALUE = py
+	WIDGET_CONTROL, sl_z, SET_VALUE = pz
+	WIDGET_CONTROL, scal_b, SET_VALUE = pos_b[selected_cube,sub_aver]
+	WIDGET_CONTROL, scal_t, SET_VALUE = pos_t[selected_cube,sub_aver]
+	WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
+	WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
+	WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
+end
+
+
 ; Sophisticated interface with caching of VAR-files
 pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=scaling, overplots=overplots
 
@@ -787,8 +799,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	XMANAGER, "cslice", MOTHER, /no_block
 
-	return
-
+	reset_GUI
 	draw_images, 1, 1, 1
 end
 
