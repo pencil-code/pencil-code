@@ -862,7 +862,7 @@ module General
 !  Solves a tridiagonal system.
 !
 !  01-apr-03/tobi: from Numerical Recipes (p42-43).
-!    
+!
 !  | b1 c1 0  ...            | | u1   |   | r1   |
 !  | a2 b2 c2 ...            | | u2   |   | r2   |
 !  | 0  a3 b3 c3             | | u3   | = | r3   |
@@ -911,7 +911,7 @@ module General
 !
 !  01-apr-03/tobi: from Numerical Recipes (p42-43).
 !  11-apr-03/axel: double precision version.
-!    
+!
 !  | b1 c1 0  ...            | | u1   |   | r1   |
 !  | a2 b2 c2 ...            | | u2   |   | r2   |
 !  | 0  a3 b3 c3             | | u3   | = | r3   |
@@ -1528,7 +1528,7 @@ module General
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: ivar, i, ix0, iy0, iz0, icyl=1
+      integer :: i, ix0, iy0, iz0
       logical :: lfirstcall=.true.,lcheck
 !
       intent(in)  :: f, xxp, ivar1, lcheck
