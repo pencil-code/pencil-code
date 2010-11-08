@@ -1242,7 +1242,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd
-      integer :: k,i, i1,i2,i3
+      integer :: k,i
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -2138,10 +2138,10 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp
-      integer :: k, i1=1,i2=2,i3=3, ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2,pos
-      integer :: i
+      integer :: k, i1=1,i2=2,i3=3, ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
+!      integer :: pos
       real :: rr1=0.,rr2=0.,rr3=0.
-      real :: fac,sgn
+!      real :: sgn
       logical ::  lcalc=.true.
 !
 
@@ -2286,7 +2286,7 @@ module Dustdensity
       use General, only: spline_integral
 
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (ndustspec) :: ff_tmp, ttt,ttt1
+      real, dimension (ndustspec) :: ff_tmp, ttt
       integer :: k,i1,i2,i3
       character (len=20) :: output_file="./data/nd.out"
       character (len=20) :: output_file2="./data/nd2.out"
