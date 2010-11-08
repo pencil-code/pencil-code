@@ -297,6 +297,13 @@ module Forcing
         profz_ampl=.5*(1.-erfunc(z/width_ff))
         profz_hel=1.
 !
+! turn on forcing in the bulk of the convection zone
+     elseif (iforce_profile=='forced_convection') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
+        profz_hel=1.
+!
 !  turn off forcing intensity above x=x0, and 
 !  cosy profile of helicity
 !
@@ -356,6 +363,14 @@ module Forcing
           if (abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
           if (abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
         enddo
+!
+! Galactic helicity profile for helicity
+      elseif (iforce_profile=='gal-wind') then
+         profx_ampl=1.; profx_hel=1.
+         profy_ampl=1.; profy_hel=1.
+         do n=1,mz
+            profz_hel(n)=sin(2.*pi*z(n)/Lz)
+         enddo
 !
 !  corona
 !
