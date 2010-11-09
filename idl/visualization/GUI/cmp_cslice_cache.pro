@@ -547,23 +547,23 @@ pro prepare_overplot
 		stop
 	end
 
-	size_field_x = size (field_x)
-	size_field_y = size (field_y)
-	size_field_z = size (field_z)
-	field_x = reform (field_x, size_field_x[1], size_field_x[2], size_field_x[3])
-	field_y = reform (field_y, size_field_y[1], size_field_y[2], size_field_y[3])
-	field_z = reform (field_z, size_field_z[1], size_field_z[2], size_field_z[3])
+	size_field_x = size (field_x[cut])
+	size_field_y = size (field_y[cut])
+	size_field_z = size (field_z[cut])
+	field_x = reform (field_x[cut], size_field_x[1], size_field_x[2], size_field_x[3])
+	field_y = reform (field_y[cut], size_field_y[1], size_field_y[2], size_field_y[3])
+	field_z = reform (field_z[cut], size_field_z[1], size_field_z[2], size_field_z[3])
 
 	if (strpos (tag, "_velovect") gt 0) then overplot_contour = 0
 	if (strpos (tag, "_contour") gt 0) then overplot_contour = 1
 
 	if (overplot_contour eq 1) then begin
 		; setup contour plot
-		field_x_y = reform (field_x[cut])
+		field_x_y = field_x
 		field_x_z = 0.0
-		field_y_x = reform (field_y[cut])
+		field_y_x = field_y
 		field_y_z = 0.0
-		field_z_x = reform (field_z[cut])
+		field_z_x = field_z
 		field_z_y = 0.0
 
 		; setup field indices
@@ -572,17 +572,17 @@ pro prepare_overplot
 		field_z_indices = (findgen (num_z) + 0.25) / num_z
 
 		; setup maximum values of x, y, and z overplots
-		field_x_max = max (field_x[cut])
-		field_y_max = max (field_y[cut])
-		field_z_max = max (field_z[cut])
+		field_x_max = max (field_x)
+		field_y_max = max (field_y)
+		field_z_max = max (field_z)
 	end else begin
 		; setup vector field
-		field_x_y = congrid (reform (field_x[cut]), num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
-		field_x_z = congrid (reform (field_x[cut]), num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
-		field_y_x = congrid (reform (field_y[cut]), num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
-		field_y_z = congrid (reform (field_y[cut]), num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
-		field_z_x = congrid (reform (field_z[cut]), num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
-		field_z_y = congrid (reform (field_z[cut]), num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+		field_x_y = congrid (field_x, num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+		field_x_z = congrid (field_x, num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
+		field_y_x = congrid (field_y, num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
+		field_y_z = congrid (field_y, num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
+		field_z_x = congrid (field_z, num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
+		field_z_y = congrid (field_z, num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
 
 		; setup field indices
 		field_x_indices = (findgen (num_x*bin_x/vector_distance) + 0.5) / (num_x*bin_x/vector_distance)
@@ -590,9 +590,9 @@ pro prepare_overplot
 		field_z_indices = (findgen (num_z*bin_z/vector_distance) + 0.5) / (num_z*bin_z/vector_distance)
 
 		; setup vector lengthes for x, y, and z overplots
-		field_x_max = max (field_x[cut])
-		field_y_max = max (field_y[cut])
-		field_z_max = max (field_z[cut])
+		field_x_max = max (field_x)
+		field_y_max = max (field_y)
+		field_z_max = max (field_z)
 
 		; normalize maximum value to 1.0
 ;		field_x_y /= field_x_max
