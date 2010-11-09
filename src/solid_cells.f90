@@ -852,13 +852,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             elseif (form=='sphere') then
               r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
               r_new=r_obj+(r_obj-r_point)
-              sin_theta=(y(j)-y_obj)/r_point
-              cos_theta=(x(i)-x_obj)/r_point
-              cos_phi  =(z(k)-z_obj)/r_point
-              sin_phi  =sqrt(1-cos_phi**2)
-              xmirror=sin_phi*cos_theta*r_new+x_obj
-              ymirror=sin_phi*sin_theta*r_new+y_obj            
-              zmirror=cos_phi*r_new+z_obj
+              xmirror=(x(i)-x_obj)*r_new/r_point+x_obj
+              ymirror=(y(j)-y_obj)*r_new/r_point+y_obj
+              zmirror=(z(k)-z_obj)*r_new/r_point+z_obj
 !
 ! Check if mirror point is inside domain
 !
@@ -986,6 +982,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   f(i,j,k,iuy)=gpp
                   call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.)
                   f(i,j,k,iuz)=gpp
+                  if (ilnTT > 0) then
+                    call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,.true.)
+                    f(i,j,k,ilnTT)=gpp
+                  endif
                 endif
               endif
             endif
@@ -1066,7 +1066,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  If the mirror point is very close to the surface of the object 
 !  some special treatment is required.
 !
-      if (lclose_interpolation .and. ivar < 4) then        
+      if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then  
         call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
             phi,.false.)
       endif
@@ -1125,7 +1125,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer :: ix0,iy0,iz0
       real, intent(inout) :: gpp
       real :: rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp,phi
-      real :: r_pg,r_sg,rl,rlmin,xmirror,ymirror,zmirror
+      real :: r_pg,r_sg,rl,rlmin,xmirror,ymirror,zmirror,r_sp,surf_val
       integer :: ix1,iy1,iz1,min,dir,lower_i,lower_j,lower_k,ndims,ndir
       integer :: upper_i,upper_j,upper_k,vardir1,vardir2
       real, dimension(3), intent(in) :: xxp
@@ -1155,7 +1155,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  This subrutine is not working (and should never be used) with other
 !  variables than the velocity.
 !
-        if (ivar1 > iuz) call fatal_error('close_interpolation',&
+        if (ivar1.ne.iux.and.ivar1.ne.iuy.and.ivar1.ne.iuz.and.ivar1.ne.ilnTT) &
+            call fatal_error('close_interpolation',&
             'This subroutine should never be called for anything but velocity!')
 !
 !  Define some help variables
@@ -1408,17 +1409,21 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             call linear_interpolate(f,ivar1,ivar1,g_global,gp,inear,.false.)
             phi=gp(1)
 !
-!  Now we know the value associated with the variable "ivar1" in the point "g".
-!  Furthermore we know the value value associated the "ivar1" in point "s"
+!  Now we know the value associated with the variable "ivar1" in the point "g",
+!  given by "phi".
+!  Furthermore we know the value associated with "ivar1" in point "s"
 !  on the object surface to be zero for any of the velocities and equal to 
-!  the solid temperature for the temperature.
+!  the solid temperature for the temperature. This value is given by "surf_val".
 !  By interpolation it is now straight forward to find the value also in "p".
 !  First find the distance, "r_pg", from "p" to "g" to be used as weight, 
 !  then normalize by the full distance, "r_sg", between "s" and "g". 
 !
             r_pg=r-rp
             r_sg=r-rs
-            gpp=(1-r_pg/r_sg)*phi
+            r_sp=rp-rs
+            surf_val=0
+            if (ivar1==ilnTT) surf_val=objects(iobj)%T
+            gpp=(phi*r_sp+surf_val*r_pg)/r_sg
           else
             maxcounter=6
             if (objects(iobj)%form=='cylinder') maxcounter=4
@@ -1568,7 +1573,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             rint1=xyint(dirvar)-x1
             rint2=x2-xyint(dirvar)
 !
-            if (quadratic .and. (ivar1 /= iuz)) then
+            if (quadratic .and. (ivar1 /= iuz) .and. (ivar1 /= ilnTT)) then
               if (ivar1==iux) then
                 fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
                 finty=(rint1*f2y+rint2*f1y)/(x2-x1)
@@ -1583,7 +1588,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 gpp=urp*p_local(2)/rs+utp*p_local(1)/rs
               else
                 call fatal_error('close_interpolation',&
-                    'Yor ivar1 is not correct!') 
+                    'Your ivar1 is not correct!') 
               endif
             else
 !
@@ -1599,7 +1604,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Perform the final interpolation
 !
-              gpp=(rps*fint+rintp*0)/(Rsmall-rs)
+              surf_val=0
+              if (ivar1==ilnTT) surf_val=objects(iobj)%T
+              gpp=(rps*fint+rintp*surf_val)/(Rsmall-rs)
             endif
           endif
         endif
