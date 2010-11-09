@@ -459,26 +459,26 @@ module Slices
 !  write the ipz processor numbers for the two slices
 !  The first number (=ipz) is essential, the others just for interest.
 !
-      if (lwrite_slice_xy.and.lfirst_proc_y) then
-        open(1,file=trim(directory)//'/zbot_procnum.dat',STATUS='unknown')
-        write(1,'(2i5,e12.4)') ipz,iz_loc,z(iz_loc)
-        close(1)
-      endif
-      if (lwrite_slice_xy2.and.lfirst_proc_y) then
-        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
-        write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
-        close(1)
-      endif
-      if (lwrite_slice_xy3.and.lfirst_proc_y) then
-        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
-        write(1,'(2i5,e12.4)') ipz,iz3_loc,z(iz3_loc)
-        close(1)
-      endif
-      if (lwrite_slice_xy4.and.lfirst_proc_y) then
-        open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
-        write(1,'(2i5,e12.4)') ipz,iz4_loc,z(iz4_loc)
-        close(1)
-      endif
+      ! if (lwrite_slice_xy.and.lfirst_proc_y) then
+      !   open(1,file=trim(directory)//'/zbot_procnum.dat',STATUS='unknown')
+      !   write(1,'(2i5,e12.4)') ipz,iz_loc,z(iz_loc)
+      !   close(1)
+      ! endif
+      ! if (lwrite_slice_xy2.and.lfirst_proc_y) then
+      !   open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+      !   write(1,'(2i5,e12.4)') ipz,iz2_loc,z(iz2_loc)
+      !   close(1)
+      ! endif
+      ! if (lwrite_slice_xy3.and.lfirst_proc_y) then
+      !   open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+      !   write(1,'(2i5,e12.4)') ipz,iz3_loc,z(iz3_loc)
+      !   close(1)
+      ! endif
+      ! if (lwrite_slice_xy4.and.lfirst_proc_y) then
+      !   open(1,file=trim(directory)//'/ztop_procnum.dat',STATUS='unknown')
+      !   write(1,'(2i5,e12.4)') ipz,iz4_loc,z(iz4_loc)
+      !   close(1)
+      ! endif
 !
 !  make sure ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
 !  are not outside the boundaries

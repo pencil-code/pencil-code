@@ -24,18 +24,21 @@
       real, dimension (nx,nz) :: xz_loc
       real, dimension (ny,nz) :: yz_loc
 !
-      integer :: ipx,ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
-      integer :: ipz_mid1,ipz_mid2
+      integer :: ipx,ipy,ipz,iproc,it,nt=999999
+      integer :: ipz_mid1,ipz_mid2,ipz_top,ipz_bottom,ipy_front
+      integer :: ipy1,ipx1,ipz1,ipz2,ipz3,ipz4
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
-      integer :: itdebug=2,nevery=1
-      integer :: isep1=0,isep2=0
+      integer :: itdebug=1,nevery=1
+      integer :: isep1=0,isep2=0,idummy
       logical :: eof=.false.,slice_position_ok=.false.
       logical :: err=.false.,err_timestep=.false.
+      logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
+      logical :: lread_slice_xy4,lread_slice_xz,lread_slice_yz
       real :: t
       real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
       real :: slice_z3pos=0., slice_z4pos=0.
 !
-      character (len=120) :: file='',fullname='',wfile=''
+      character (len=120) :: file='',fullname='',wfile='',directory=''
       character (len=120) :: datadir='data',path='',cfield=''
       character (len=5) :: chproc=''
       character (len=20) :: field='lnrho'
@@ -89,44 +92,80 @@
         write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box, equator (e)? '
         read*,slice_position
       endif
+! !
+! !  interpret slice_position
+! !
+!       if (slice_position=='p') then
+!         ipz_top=nprocz-1
+!         ipz_bottom=0
+!         ipy_front=0
+!       elseif (slice_position=='m') then
+!         ipz_top=nprocz/2
+!         ipz_bottom=nprocz/2
+!         ipy_front=nprocy/2
+!       elseif (slice_position=='e') then
+!         ipz_top=nprocz/4
+!         ipz_bottom=0.
+!         ipy_front=nprocy/2
+!       elseif (slice_position=='c') then
+!         call read_ipz_position(trim(datadir)//'/ztop_procnum.dat',ipz_top)
+!         call read_ipz_position(trim(datadir)//'/zbot_procnum.dat',ipz_bottom)
+!         ipy_front=0
+!       elseif (slice_position=='q') then
+!         ipz_top=0
+!         ipz_bottom=nprocz-1
+!         ipy_front=nprocy-1
+!       elseif (slice_position=='w') then
+!         ipz_bottom = 0*nprocz/4
+!         ipz_top    = 1*nprocz/4
+!         ipz_mid1   = 2*nprocz/4
+!         ipz_mid2   = 3*nprocz/4
+!         print*,'ipz_mid1,ipz_mid2=',ipz_mid1,ipz_mid2
+!         ipy_front=(nygrid/2-1)/ny
+!       elseif (slice_position=='s') then
+!         ipz_bottom = 0*nprocz/4
+!         ipz_top    = 1*nprocz/4
+!         ipy_front  = (nprocy-1)/2
+!       else
+!         print*,'slice_position cannot be interpreted by read_videofiles'
+!       endif
+!       print*,'ipz_top,ipz_bottom,ipy_front=',ipz_top,ipz_bottom,ipy_front
 !
-!  interpret slice_position
+! loop over aller processors to find the positions of the slices.
+! Therefore read all slice_postions.dat
 !
-      if (slice_position=='p') then
-        ipz_top=nprocz-1
-        ipz_bottom=0
-        ipy_front=0
-      elseif (slice_position=='m') then
-        ipz_top=nprocz/2
-        ipz_bottom=nprocz/2
-        ipy_front=nprocy/2
-      elseif (slice_position=='e') then
-        ipz_top=nprocz/4
-        ipz_bottom=0.
-        ipy_front=nprocy/2
-      elseif (slice_position=='c') then
-        call read_ipz_position(trim(datadir)//'/ztop_procnum.dat',ipz_top)
-        call read_ipz_position(trim(datadir)//'/zbot_procnum.dat',ipz_bottom)
-        ipy_front=0
-      elseif (slice_position=='q') then
-        ipz_top=0
-        ipz_bottom=nprocz-1
-        ipy_front=nprocy-1
-      elseif (slice_position=='w') then
-        ipz_bottom = 0*nprocz/4
-        ipz_top    = 1*nprocz/4
-        ipz_mid1   = 2*nprocz/4
-        ipz_mid2   = 3*nprocz/4
-        print*,'ipz_mid1,ipz_mid2=',ipz_mid1,ipz_mid2
-        ipy_front=(nygrid/2-1)/ny
-      elseif (slice_position=='s') then
-        ipz_bottom = 0*nprocz/4
-        ipz_top    = 1*nprocz/4
-        ipy_front  = (nprocy-1)/2
-      else
-        print*,'slice_position cannot be interpreted by read_videofiles'
-      endif
-      print*,'ipz_top,ipz_bottom,ipy_front=',ipz_top,ipz_bottom,ipy_front
+      ipz1=-1; ipz2=-1; ipz3=-1
+      ipz4=-1; ipy1=-1; ipx1=-1
+!
+      do ipx=0,nprocx-1
+        do ipy=0,nprocy-1
+          do ipz=0,nprocz-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'directory_names')
+            call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+! check for existence first 
+            inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
+            if (.not.exists) then
+              print*,'slice_position.dat for iproc=',iproc,'not found!'
+              goto 999
+            endif
+            open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
+            read(1,'(l5,i5)') lread_slice_xy,idummy
+            read(1,'(l5,i5)') lread_slice_xy2,idummy
+            read(1,'(l5,i5)') lread_slice_xy3,idummy
+            read(1,'(l5,i5)') lread_slice_xy4,idummy
+            read(1,'(l5,i5)') lread_slice_xz,idummy
+            read(1,'(l5,i5)') lread_slice_yz,idummy
+            close(1)            
+            if (lread_slice_xy) ipz1=ipz
+            if (lread_slice_xy2) ipz2=ipz
+            if (lread_slice_xy3) ipz3=ipz
+            if (lread_slice_xy4) ipz4=ipz
+            if (lread_slice_xz) ipy1=ipy
+            if (lread_slice_yz) ipx1=ipx
+          enddo
+        enddo
+      enddo
 !
 !  loop through all times
 !  reset error to false at each time step
@@ -140,170 +179,170 @@
 !
       lwrite=(mod(it,nevery)==0)
 !
-!  Top xy2-plane:
-!  need data where ipz=nprocz-1
-!  (or ipz=nprocz/4, in case of slice_position='w')                
+!  Second xy-plane:
 !
-      ipz=ipz_top
-      do ipy=0,nprocy-1
-      do ipx=0,nprocx-1
-        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-        call chn(iproc,chproc,'rvid_box: top xy')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.xy2')
-        call safe_character_assign(fullname,trim(path)//trim(file))
-        if (it<=itdebug) print*,trim(fullname)
-        inquire(FILE=trim(fullname),EXIST=exists)
-        if (.not.exists) then
-          print*,"Slice not found: ", fullname
-          xy2(:,1+ipy*ny:ny+ipy*ny)=0.
-          goto 999
-        endif
-        call read_slice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
-        min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
-        max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
-        if (eof) goto 999
-        xy2(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy2_loc
-      enddo
-      enddo
-      call safe_character_assign(wfile,trim(datadir)//trim(file))
-      err_timestep=err
-      if (.not.err_timestep) then
-        call append_slice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1,lwrite)
-        lwritten_something=.true.
-      else
-        print*,'skip writing because of error; t=',t
-      endif
-!
-!  Bottom xy-plane:
-!  need data where ipz=0
-!
-      ipz=ipz_bottom
-      do ipy=0,nprocy-1
-      do ipx=0,nprocx-1
-        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-        call chn(iproc,chproc,'rvid_box: bottom xy')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
-        call safe_character_assign(fullname,trim(path)//trim(file))
-        if (it<=itdebug) print*,trim(fullname)
-        inquire(FILE=trim(fullname),EXIST=exists)
-        if (.not.exists) then
-          print*,"Slice not found: ", fullname
-          xy(:,1+ipy*ny:ny+ipy*ny)=0.
-          goto 999
-        endif
-        call read_slice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
-        min_xy_loc=min(min_xy_loc,minval(xy_loc))
-        max_xy_loc=max(max_xy_loc,maxval(xy_loc))
-        if (eof) goto 999
-        xy(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy_loc
-      enddo
-      enddo
-      call safe_character_assign(wfile,trim(datadir)//trim(file))
-      err_timestep=err_timestep.or.err
-      if (.not.err_timestep) then
-        call append_slice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2,lwrite)
-        lwritten_something=.true.
-      else
-        print*,'skip writing because of error; t=',t
-      endif
-!
-!  Front xz-plane:
-!  need data where ipy=0
-!
-      ipy=ipy_front
-      do ipz=0,nprocz-1
-      do ipx=0,nprocx-1
-        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-        call chn(iproc,chproc,'rvid_box: front xz')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
-        call safe_character_assign(fullname,trim(path)//trim(file))
-        if (it<=itdebug) print*,trim(fullname)
-        inquire(FILE=trim(fullname),EXIST=exists)
-        if (.not.exists) then
-          print*,"Slice not found: ", fullname
-          xz(:,1+ipz*nz:nz+ipz*nz)=0.
-          goto 999
-        endif
-        call read_slice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
-        min_xz_loc=min(min_xz_loc,minval(xz_loc))
-        max_xz_loc=max(max_xz_loc,maxval(xz_loc))
-        if (eof) goto 999
-        xz(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz)=xz_loc
-      enddo
-      enddo
-      call safe_character_assign(wfile,trim(datadir)//trim(file))
-      err_timestep=err_timestep.or.err
-      if (.not.err_timestep) then
-        call append_slice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3,lwrite)
-        lwritten_something=.true.
-      else
-        print*,'skip writing because of error; t=',t
-      endif
-!
-!  Left side yz-plane:
-!  need data where ipx=0
-!
-      if (slice_position/='w') then 
-      ipx=0
-      do ipz=0,nprocz-1
-      do ipy=0,nprocy-1
-        iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-        call chn(iproc,chproc,'rvid_box: left yz')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
-        call safe_character_assign(fullname,trim(path)//trim(file))
-        if (it<=itdebug) print*,trim(fullname)
-        inquire(FILE=trim(fullname),EXIST=exists)
-        if (.not.exists) then
-          print*,"Slice not found: ", fullname
-          yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=0.
-          goto 999
-        endif
-        call read_slice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
-        min_yz_loc=min(min_yz_loc,minval(yz_loc))
-        max_yz_loc=max(max_yz_loc,maxval(yz_loc))
-        if (eof) goto 999
-        yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=yz_loc
-      enddo
-      enddo
-      call safe_character_assign(wfile,trim(datadir)//trim(file))
-      err_timestep=err_timestep.or.err
-      if (.not.err_timestep) then
-        call append_slice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4,lwrite)
-        lwritten_something=.true.
-      else
-        print*,'skip writing because of error; t=',t
-      endif
-      endif
-!
-!  Mid xy3-plane:
-!  need data where ipz=2*nprocz/4-1
-!
-      if (slice_position=='w') then
-        ipz=ipz_mid1
+      if (ipz2/=-1) then
+        ipz=ipz2
         do ipy=0,nprocy-1
-        do ipx=0,nprocx-1
-          iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-          call chn(iproc,chproc,'rvid_box: mid1 xy')
-          call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-          call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
-          call safe_character_assign(fullname,trim(path)//trim(file))
-          if (it<=itdebug) print*,trim(fullname)
-          inquire(FILE=trim(fullname),EXIST=exists)
-          if (.not.exists) then
-            print*,"Slice not found: ", fullname
-            xy3(:,1+ipy*ny:ny+ipy*ny)=0.
-            goto 999
-          endif
-          call read_slice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
-          min_xy3_loc=min(min_xy3_loc,minval(xy3_loc))
-          max_xy3_loc=max(max_xy3_loc,maxval(xy3_loc))
-          if (eof) goto 999
-          xy3(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy3_loc
+          do ipx=0,nprocx-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'rvid_box: xy2 plane')
+            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(file,'/slice_'//trim(field)//'.xy2')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            if (it<=itdebug) print*,trim(fullname)
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              print*,"Slice not found: ", fullname
+              xy2(:,1+ipy*ny:ny+ipy*ny)=0.
+              goto 999
+            endif
+            call read_slice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
+            min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
+            max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
+            if (eof) goto 999
+            xy2(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy2_loc
+          enddo
         enddo
+        call safe_character_assign(wfile,trim(datadir)//trim(file))
+        err_timestep=err
+        if (.not.err_timestep) then
+          call append_slice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1,lwrite)
+          lwritten_something=.true.
+        else
+          print*,'skip writing because of error; t=',t
+        endif
+      endif
+!
+!  First xy-plane:
+!
+      if (ipz1/=-1) then
+        ipz=ipz1
+        do ipy=0,nprocy-1
+          do ipx=0,nprocx-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'rvid_box: xy-plane')
+            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            if (it<=itdebug) print*,trim(fullname)
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              print*,"Slice not found: ", fullname
+              xy(:,1+ipy*ny:ny+ipy*ny)=0.
+              goto 999
+            endif
+            call read_slice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
+            min_xy_loc=min(min_xy_loc,minval(xy_loc))
+            max_xy_loc=max(max_xy_loc,maxval(xy_loc))
+            if (eof) goto 999
+            xy(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy_loc
+          enddo
+        enddo
+        call safe_character_assign(wfile,trim(datadir)//trim(file))
+        err_timestep=err_timestep.or.err
+        if (.not.err_timestep) then
+          call append_slice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2,lwrite)
+          lwritten_something=.true.
+        else
+          print*,'skip writing because of error; t=',t
+        endif
+      endif
+!
+!  First xz-plane:
+!
+      if (ipy1/=-1) then
+        ipy=ipy1
+        do ipz=0,nprocz-1
+          do ipx=0,nprocx-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'rvid_box: xz-plane')
+            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            if (it<=itdebug) print*,trim(fullname)
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              print*,"Slice not found: ", fullname
+              xz(:,1+ipz*nz:nz+ipz*nz)=0.
+              goto 999
+            endif
+            call read_slice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
+            min_xz_loc=min(min_xz_loc,minval(xz_loc))
+            max_xz_loc=max(max_xz_loc,maxval(xz_loc))
+            if (eof) goto 999
+            xz(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz)=xz_loc
+          enddo
+        enddo
+        call safe_character_assign(wfile,trim(datadir)//trim(file))
+        err_timestep=err_timestep.or.err
+        if (.not.err_timestep) then
+          call append_slice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3,lwrite)
+          lwritten_something=.true.
+        else
+          print*,'skip writing because of error; t=',t
+        endif
+      endif
+!
+!  First yz-plane:
+!
+      if (ipx1/=-1) then 
+        ipx=ipx1
+        do ipz=0,nprocz-1
+          do ipy=0,nprocy-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'rvid_box: yz-plane')
+            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            if (it<=itdebug) print*,trim(fullname)
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              print*,"Slice not found: ", fullname
+              yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=0.
+              goto 999
+            endif
+            call read_slice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
+            min_yz_loc=min(min_yz_loc,minval(yz_loc))
+            max_yz_loc=max(max_yz_loc,maxval(yz_loc))
+            if (eof) goto 999
+            yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=yz_loc
+          enddo
+        enddo
+        call safe_character_assign(wfile,trim(datadir)//trim(file))
+        err_timestep=err_timestep.or.err
+        if (.not.err_timestep) then
+          call append_slice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4,lwrite)
+          lwritten_something=.true.
+        else
+          print*,'skip writing because of error; t=',t
+        endif
+      endif
+!
+!  Third xy-plane:
+!
+      if (ipz3/=-1) then
+        ipz=ipz3
+        do ipy=0,nprocy-1
+          do ipx=0,nprocx-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'rvid_box: xy3-plane')
+            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            if (it<=itdebug) print*,trim(fullname)
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              print*,"Slice not found: ", fullname
+              xy3(:,1+ipy*ny:ny+ipy*ny)=0.
+              goto 999
+            endif
+            call read_slice(trim(fullname),xy3_loc,slice_z3pos,nx,ny,t,it,lun,eof,err)
+            min_xy3_loc=min(min_xy3_loc,minval(xy3_loc))
+            max_xy3_loc=max(max_xy3_loc,maxval(xy3_loc))
+            if (eof) goto 999
+            xy3(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy3_loc
+          enddo
         enddo
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
@@ -313,31 +352,32 @@
         else
           print*,'skip writing because of error; t=',t
         endif
+      endif
 !
-!  Mid xy4-plane:
-!  need data where ipz=3*nprocz/4-1
+!  Fourth xy-plane:
 !
-        ipz=ipz_mid2
+      if (ipz4/=-1) then
+        ipz=ipz4
         do ipy=0,nprocy-1
-        do ipx=0,nprocx-1
-          iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-          call chn(iproc,chproc,'rvid_box: mid2 xy')
-          call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-          call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
-          call safe_character_assign(fullname,trim(path)//trim(file))
-          if (it<=itdebug) print*,trim(fullname)
-          inquire(FILE=trim(fullname),EXIST=exists)
-          if (.not.exists) then
-            print*,"Slice not found: ", fullname
-            xy4(:,1+ipy*ny:ny+ipy*ny)=0.
-            goto 999
-          endif
-          call read_slice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
-          min_xy4_loc=min(min_xy4_loc,minval(xy4_loc))
-          max_xy4_loc=max(max_xy4_loc,maxval(xy4_loc))
-          if (eof) goto 999
-          xy4(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy4_loc
-        enddo
+          do ipx=0,nprocx-1
+            iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            call chn(iproc,chproc,'rvid_box: xy4-plane')
+            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
+            call safe_character_assign(fullname,trim(path)//trim(file))
+            if (it<=itdebug) print*,trim(fullname)
+            inquire(FILE=trim(fullname),EXIST=exists)
+            if (.not.exists) then
+              print*,"Slice not found: ", fullname
+              xy4(:,1+ipy*ny:ny+ipy*ny)=0.
+              goto 999
+            endif
+            call read_slice(trim(fullname),xy4_loc,slice_z4pos,nx,ny,t,it,lun,eof,err)
+            min_xy4_loc=min(min_xy4_loc,minval(xy4_loc))
+            max_xy4_loc=max(max_xy4_loc,maxval(xy4_loc))
+            if (eof) goto 999
+            xy4(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny)=xy4_loc
+          enddo
         enddo
         call safe_character_assign(wfile,trim(datadir)//trim(file))
         err_timestep=err
@@ -392,7 +432,7 @@
           print*,""
       endselect
 !
-      end
+    endprogram rvid_box
 !***********************************************************************
     subroutine read_ipz_position(file,ipz)
 !
