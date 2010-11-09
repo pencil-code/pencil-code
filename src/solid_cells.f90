@@ -23,8 +23,8 @@ module Solid_Cells
 !
   integer, parameter            :: max_items=5
   integer                       :: ncylinders=0,nrectangles,nspheres=0,dummy
-  integer                       :: nobjects
-  integer                       :: nforcepoints=300
+  integer                       :: nobjects, nlong, nlat
+  integer                       :: nforcepoints=200
   real, dimension(max_items)    :: cylinder_radius
   real, dimension(max_items)    :: cylinder_temp=703.0
   real, dimension(max_items)    :: cylinder_xpos,cylinder_ypos,cylinder_zpos
@@ -65,9 +65,10 @@ module Solid_Cells
 !
   integer :: idiag_c_dragx=0       ! DIAG_DOC: 
   integer :: idiag_c_dragy=0       ! DIAG_DOC: 
+  integer :: idiag_c_dragz=0       ! DIAG_DOC: 
 !
   integer, allocatable :: fpnearestgrid(:,:,:)
-  real, allocatable    :: c_dragx(:), c_dragy(:)
+  real, allocatable    :: c_dragx(:), c_dragy(:), c_dragz(:)
 !
   contains
 !***********************************************************************
@@ -79,6 +80,7 @@ module Solid_Cells
 !
 !  19-nov-2008/nils: coded
 !  28-sep-2010/nils: added spheres
+!  nov-2010/kragset: updated allocations related to drag calculations
 !
       integer :: icyl,isph      
 !
@@ -121,7 +123,7 @@ module Solid_Cells
                'All spheres must have non-zero radii!')
         endif
       enddo
-      nobjects=ncylinders+nspheres
+      nobjects=ncylinders+nspheres      
 !
 !  In order to avoid problems with how namelists are written not all
 !  slots of an array which should be stored in the namelist can be zero
@@ -132,6 +134,14 @@ module Solid_Cells
         sphere_ypos(1)=impossible
         sphere_zpos(1)=impossible
         sphere_temp(1)=impossible
+      else
+!
+! Find number of lines of longitude and latitude such that nforcepoints=nlong*(nlat+1)
+! and nlat=nlong/2-1
+!
+        nlong=int(sqrt(2.*nforcepoints))
+        nlat=int(.5*nlong)-1
+        if (nlong*(nlat+1)/=nforcepoints) print*, "Warning: 2*nforcepoints should be square"
       end if
       if (ncylinders==0) then
         cylinder_radius(1)=impossible
@@ -147,18 +157,21 @@ module Solid_Cells
       call calculate_shift_matrix
 !
 !
-! Find nearest grid point of the "forcepoints" on all cylinders
-! (needs also to be called elsewhere if objects move)
+! Find nearest grid point of the "forcepoints" on all cylinders. Arrays
+! are only allocated if c_dragx, c_dragy or c_dragz is set in print.in. 
+! This must be changed if drag force is required for other purposes, 
+! e.g. if solid object is allowed to move.
 !
-! NILS: This should be done only if we really have to; i.e. if c_dragx
-! NILS: or c_dragy is set in print.in
-!
-      allocate(fpnearestgrid(ncylinders,nforcepoints,3))
-      allocate(c_dragx(ncylinders))
-      allocate(c_dragy(ncylinders))
-      call fp_nearest_grid
-      rhosum    = 0.0
-      irhocount = 0
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+          idiag_c_dragz /= 0) then 
+        allocate(c_dragx(nobjects))
+        allocate(c_dragy(nobjects))
+        allocate(c_dragz(nobjects))
+        allocate(fpnearestgrid(nobjects,nforcepoints,3))
+        call fp_nearest_grid
+        rhosum    = 0.0
+        irhocount = 0
+      end if
 !
     endsubroutine initialize_solid_cells
 !***********************************************************************
@@ -332,14 +345,17 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  parallel to the z direction. Assign values to fpnearestgrid.
 !
 !  mar-2009/kragset: coded
+!  nov-2010/kragset: updated to include spheres
 !
 !
-    integer              :: icyl,iforcepoint, ipoint, inearest, icoord(8,3)
-    integer              :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
-    real                 :: rcyl, xcyl, ycyl, zcyl,fpx, fpy, fpz
-    real                 :: dx1, dy1, dz1
-    real                 :: dist_to_fp2(8), dist_to_cent2(8), twopi
-    logical              :: interiorpoint
+    integer           :: iobj,iforcepoint, ipoint, inearest, icoord(8,3)
+    integer           :: ilong,ilat
+    integer           :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
+    real              :: robj, xobj, yobj, zobj,fpx, fpy, fpz
+    real              :: dx1, dy1, dz1, longitude, latitude
+    real              :: dist_to_fp2(8), dist_to_cent2(8), twopi,dlong,dlat
+    logical           :: interiorpoint
+    character(len=10) :: objectform
 !
     dx1=1/dx
     dy1=1/dy
@@ -348,24 +364,49 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     twopi=2.*pi
 !
 !  Loop over all objects 
-    do icyl=1,ncylinders
-      rcyl = objects(icyl)%r
-      xcyl = objects(icyl)%x(1)
-      ycyl = objects(icyl)%x(2)
-      zcyl = z(n1) !! Needs to be corrected in order to provide variable n in 3D
+    do iobj=1,nobjects
+      robj = objects(iobj)%r
+      xobj = objects(iobj)%x(1)
+      yobj = objects(iobj)%x(2)
+      objectform = objects(iobj)%form
+      if (objectform == 'cylinder') then 
+        zobj = z(n1)
+        dlong = twopi/nforcepoints
+      else if (objectform == 'sphere') then
+        zobj  = objects(iobj)%x(3)
+        dlong = twopi/nlong
+        dlat  = pi/(nlat+1)
+      else
+        print*, "Warning: Subroutine fp_nearest_grid not implemented ", &
+            "for this objectform."
+      end if
+
 !
-!  Loop over all forcepoints on each object, icyl
+!  Loop over all forcepoints on each object, iobj
       do iforcepoint=1,nforcepoints
 !        
 !  Marking whether fp is within this processor's domain or not 
         interiorpoint = .true.
 !
 !  Fp coordinates
-!  Shifting the location of the forcpoints in the thetal direction
+!  Shifting the location of the forcpoints in the theta direction
 !  in order to avoid problems with autotesting
-        fpx = xcyl - rcyl * sin(twopi*(iforcepoint-theta_shift)/nforcepoints)
-        fpy = ycyl - rcyl * cos(twopi*(iforcepoint-theta_shift)/nforcepoints)
-        fpz = z(n1)
+        if (objectform == 'cylinder') then
+          longitude = (iforcepoint-theta_shift)*dlong
+          fpx = xobj - robj * sin(longitude)
+          fpy = yobj - robj * cos(longitude)
+          fpz = z(n1)
+        elseif (objectform == 'sphere') then
+!  Note definition of lines of longitude: ilong = [0,..,nlong-1]
+          ilong  = mod(iforcepoint-1,nlong)
+!  Note definition of lines of latitude: ilat  = [0,..,nlat]
+          ilat   = int((iforcepoint-1)/nlong)
+          longitude = (ilong+.5-theta_shift)*dlong
+          latitude  = (ilat+.5)*dlat
+          fpx = xobj - robj*sin(longitude)*sin(latitude)
+          fpy = yobj - robj*cos(longitude)*sin(latitude)
+          fpz = zobj + robj*cos(latitude)
+        end if
 !
 !  Find nearest grid point in x-direction
 !          
@@ -475,14 +516,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           dist_to_fp2(6) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
           dist_to_fp2(7) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
           dist_to_fp2(8) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
-          dist_to_cent2(1) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
-          dist_to_cent2(2) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izl)-zcyl)**2 
-          dist_to_cent2(3) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
-          dist_to_cent2(4) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izl)-zcyl)**2 
-          dist_to_cent2(5) = (x(ixl)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
-          dist_to_cent2(6) = (x(ixu)-xcyl)**2+(y(iyl)-ycyl)**2+(z(izu)-zcyl)**2 
-          dist_to_cent2(7) = (x(ixu)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2 
-          dist_to_cent2(8) = (x(ixl)-xcyl)**2+(y(iyu)-ycyl)**2+(z(izu)-zcyl)**2
           icoord(1,:) = (/ixl,iyl,izl/)
           icoord(2,:) = (/ixu,iyl,izl/)
           icoord(3,:) = (/ixu,iyu,izl/)
@@ -492,7 +525,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           icoord(7,:) = (/ixu,iyu,izu/)
           icoord(8,:) = (/ixl,iyu,izu/)
           inearest=0
-          do ipoint=1,8 ! Actually, 4 is sufficient in 2D / for object
+          do ipoint=1,8 
 !  Test if we are in a fluid cell, i.e.
 !  that mod(ba(ix,iy,iz,1),10) = 0 
             if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
@@ -509,13 +542,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !          
 !  Coordinates of nearest grid point. Zero if outside local domain.
           if (inearest > 0) then
-            fpnearestgrid(icyl,iforcepoint,:) = icoord(inearest,:)
+            fpnearestgrid(iobj,iforcepoint,:) = icoord(inearest,:)
           else
             print*, "WARNING: Could not find fpnearestgrid!"
           endif
 
         else ! fp is outside local domain and fpnearestgrid shouldn't exist
-          fpnearestgrid(icyl,iforcepoint,:) = 0
+          fpnearestgrid(iobj,iforcepoint,:) = 0
         endif
       enddo
     enddo
@@ -529,6 +562,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  mar-2009/kragset: coded
 !  okt-2009/kragset: updated to include multiple objects
+!  nov-2010/kragset: updated to include spheres
 !
     use viscosity, only: getnu
 !    
@@ -538,10 +572,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 
     real    :: fp_pressure
     real    :: fp_stress(3,3)
-    integer :: icyl,ifp,ix0,iy0,iz0, i
-    real    :: nu, twonu
-    real    :: force_x, force_y
-    real    :: twopi, nvec(3)
+    integer :: iobj, ifp, ix0, iy0, iz0, i, ilong, ilat
+    real    :: nu, twonu, longitude, latitude, dlong, dlat, robj
+    real    :: force_x, force_y, force_z
+    real    :: twopi, nvec(3), surfaceelement,surfacecoeff
+    character(len=10) :: objectform
 !
     if (ldiagnos) then
 !      
@@ -550,25 +585,40 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       if (imn == 1) then
         c_dragx=0.
         c_dragy=0.
+        c_dragz=0.
         rhosum=0
         irhocount=0
       endif
 !
-      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0) then 
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 &
+          .or. idiag_c_dragz /= 0) then 
         call getnu(nu)
         twopi=2.*pi
         twonu=2.*nu
 !
-        do icyl=1,ncylinders
+        do iobj=1,nobjects
+          robj = objects(iobj)%r
+          objectform = objects(iobj)%form
+          if (objectform=='cylinder') then
+            dlong = twopi/nforcepoints
+            surfaceelement = dlong
+          else if (objectform=='sphere') then
+            dlong = twopi/nlong
+            dlat  = pi/(nlat+1)
+            surfacecoeff = 2.*dlong*dlat/pi
+          else
+            print*, "Warning: Subroutine dsolid_dt not implemented ", &
+                "for this objectform."
+          end if
           do ifp=1,nforcepoints
-            iy0=fpnearestgrid(icyl,ifp,2)
-!
-            iz0=n !!fpnearestgrid(icyl,ifp,3) doesn't yet provide correct iz0
+            iy0=fpnearestgrid(iobj,ifp,2)
+            iz0=fpnearestgrid(iobj,ifp,3)
+            if (objectform=='cylinder') iz0=n 
 !
 !  Test: Use this pencil for force calculation?
 !
             if (iy0 == m .and. iz0 == n) then
-              ix0=fpnearestgrid(icyl,ifp,1)
+              ix0=fpnearestgrid(iobj,ifp,1)
               ! Test: ix0 in local domain?
               if (ix0 >= l1 .and. ix0 <= l2) then
 !
@@ -578,33 +628,53 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
                 fp_pressure=p%pp(ix0-nghost)
                 fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
-                
-                nvec(1) = -sin(twopi*(ifp-theta_shift)/nforcepoints)
-                nvec(2) = -cos(twopi*(ifp-theta_shift)/nforcepoints)
-                nvec(3) = 0
+!                
+                if (objectform=='cylinder') then
+                  longitude = (ifp-theta_shift)*dlong
+                  nvec(1) = -sin(longitude)
+                  nvec(2) = -cos(longitude)
+                  nvec(3) = 0
+                elseif (objectform == 'sphere') then
+                  ilong  = mod(ifp-1,nlong)
+                  ilat   = int((ifp-1)/nlong)
+                  longitude = (ilong+.5-theta_shift)*dlong
+                  latitude  = (ilat+.5)*dlat
+                  nvec(1) = -sin(longitude)*sin(latitude)
+                  nvec(2) = -cos(longitude)*sin(latitude)
+                  nvec(3) = cos(latitude)
+                  surfaceelement = surfacecoeff*sin(latitude)
+                end if
 !
 !  Force in x direction
 !
-                force_x = -fp_pressure*nvec(1) &
+                force_x = (-fp_pressure*nvec(1) &
                     + fp_stress(1,1)*nvec(1) &
                     + fp_stress(1,2)*nvec(2) & 
-                    + fp_stress(1,3)*nvec(3) 
+                    + fp_stress(1,3)*nvec(3)) * surfaceelement
 !                
 !  Force in y direction
 !
-                force_y = -fp_pressure*nvec(2) &
+                force_y = (-fp_pressure*nvec(2) &
                     + fp_stress(2,1)*nvec(1) &
                     + fp_stress(2,2)*nvec(2) & 
-                    + fp_stress(2,3)*nvec(3)                 
-                c_dragx(icyl) = c_dragx(icyl) + force_x
-                c_dragy(icyl) = c_dragy(icyl) + force_y
+                    + fp_stress(2,3)*nvec(3)) * surfaceelement
+!                
+!  Force in z direction
+!
+                force_z = (-fp_pressure*nvec(3) &
+                    + fp_stress(3,1)*nvec(1) &
+                    + fp_stress(3,2)*nvec(2) & 
+                    + fp_stress(3,3)*nvec(3)) * surfaceelement
+!
+                c_dragx(iobj) = c_dragx(iobj) + force_x
+                c_dragy(iobj) = c_dragy(iobj) + force_y
+                c_dragz(iobj) = c_dragz(iobj) + force_z
               endif
             endif
           enddo
         enddo
 !
-!  Calculate average density of the domain, excluded
-!  solid cell regions:
+!  Calculate average density of the domain, solid cell regions excluded:
 !
         do i=l1,l2
           if (mod(ba(i,m,n,1),10) == 0) then
@@ -626,50 +696,57 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  mar-2009/kragset: coded
 !  okt-2009/kragset: updated to include multiple objects
+!  nov-2010/kragset: updated to include spheres
 !
     use mpicomm
     use general
 
-    real    :: rhosum_all, c_dragx_all(ncylinders), c_dragy_all(ncylinders)
-    integer :: irhocount_all,icyl
+    real    :: rhosum_all, c_dragx_all(nobjects), c_dragy_all(nobjects)
+    real    :: c_dragz_all(nobjects)
+    integer :: irhocount_all,iobj
     real    :: norm, refrho0
     character*50  :: numberstring
     character*500 :: solid_cell_drag
 !    
     if (ldiagnos) then
-      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0) then 
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 &
+          .or. idiag_c_dragz /= 0) then 
 !
-!  Collect and sum rhosum, irhocount, c_dragx and c_dragy
+!  Collect and sum rhosum, irhocount, c_dragx, c_dragz, and c_dragy.
         call mpireduce_sum(rhosum,rhosum_all)
         call mpireduce_sum_int(irhocount,irhocount_all)
-        call mpireduce_sum(c_dragx,c_dragx_all,ncylinders)
-        call mpireduce_sum(c_dragy,c_dragy_all,ncylinders)
+        call mpireduce_sum(c_dragx,c_dragx_all,nobjects)
+        call mpireduce_sum(c_dragy,c_dragy_all,nobjects)
+        call mpireduce_sum(c_dragz,c_dragz_all,nobjects)
 !        
         if (lroot) then          
           refrho0 = rhosum_all / irhocount_all
-          norm = 2. * pi / (nforcepoints*refrho0*init_uu**2)
+!  Normalizing factor. Additional factors was included in subroutine dsolid_dt.
+          norm = 1. / (refrho0*init_uu**2)
 !          
           c_dragx = c_dragx_all * norm
           c_dragy = c_dragy_all * norm
+          c_dragz = c_dragz_all * norm
 !          
 !  Write drag coefficients for all objects
 !  (may need to expand solid_cell_drag to more
-!  characters if large number of objects)
+!  characters if large number of objects).
 ! 
           open(unit=81,file='data/dragcoeffs.dat',position='APPEND')
           write(solid_cell_drag,84) it-1, t
-          do icyl=1,ncylinders
-            write(numberstring,82) c_dragx(icyl), c_dragy(icyl)
+          do iobj=1,nobjects
+            write(numberstring,82) c_dragx(iobj), c_dragy(iobj),c_dragz(iobj)
             call safe_character_append(solid_cell_drag,numberstring)
           enddo
           write(81,*) trim(solid_cell_drag)
           close(81)
 84        format(1I8,1F15.8)
-82        format(2F15.8)
+82        format(3F15.8)
         endif
       endif
       if (idiag_c_dragx /= 0) fname(idiag_c_dragx)=c_dragx(1)
       if (idiag_c_dragy /= 0) fname(idiag_c_dragy)=c_dragy(1)
+      if (idiag_c_dragz /= 0) fname(idiag_c_dragz)=c_dragz(1)
     endif
  !   
   endsubroutine dsolid_dt_integrate
@@ -679,6 +756,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Reads and registers print parameters relevant for solid cells
 !
 !   mar-2009/kragset: coded
+!   nov-2010/kragset: generalized to include drag in z-direction
 !
 !    
     use cdata
@@ -697,6 +775,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     if (lreset) then
       idiag_c_dragx=0 
       idiag_c_dragy=0
+      idiag_c_dragz=0
     endif
 !
 !  check for those quantities that we want to evaluate online
@@ -704,6 +783,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
       call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
+      call parse_name(iname,cname(iname),cform(iname),'c_dragz',idiag_c_dragz)
     enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -2316,6 +2396,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       deallocate(fpnearestgrid)
       deallocate(c_dragx)
       deallocate(c_dragy)
+      deallocate(c_dragz)
       print*, '..Done.'
 !
     endsubroutine solid_cells_clean_up
