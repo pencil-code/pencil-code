@@ -302,7 +302,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = range
 			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = range
 			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = range
-			if ((py le af_y) and (pz le af_z)) then ii[0:1, 0] = range
+			if ((py le af_y) and (py lt num_y-1-af_y) and (pz le af_z) and (pz lt num_z-1-af_z)) then ii[0:1, 0] = range
 		end $
 		else if (abs_scale) then ii[0:1, 0] = range
 		tvscl, ii
@@ -331,7 +331,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, pz*bin_z+oz] = range
 			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[px*bin_x+ox, i:i+1] = range
 			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[px*bin_x+ox, i:i+1] = range
-			if ((px le af_x) and (pz le af_z)) then ii[0:1, 0] = range
+			if ((px le af_x) and (px ge num_x-1-af_x) and (pz le af_z) and (pz ge num_z-1-af_z)) then ii[0:1, 0] = range
 		end $
 		else if (abs_scale) then ii[0:1, 0] = range
 		tvscl, ii
@@ -360,7 +360,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, py*bin_y+oy] = range
 			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[px*bin_x+ox, i:i+1] = range
 			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[px*bin_x+ox, i:i+1] = range
-			if ((px le af_x) and (py le af_y)) then ii[0:1, 0] = range
+			if ((px le af_x) and (px ge num_x-1-af_x) and (py le af_y) and (py ge num_y-1-af_y)) then ii[0:1, 0] = range
 		end $
 		else if (abs_scale) then ii[0:1, 0] = range
 		tvscl, ii
