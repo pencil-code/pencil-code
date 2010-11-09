@@ -9,6 +9,36 @@
 ;;;   Add more comments
 
 
+; Check value range and extend it, if necessary (for sliders or plotting)
+function get_range, data
+
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax, dimensionality
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+
+	if (abs_scale) then begin
+		min = csmin
+		max = csmax
+	end else begin
+		min = min (data)
+		max = max (data)
+	end
+
+	if (min eq max) then begin
+		; extend value range a little, if necessary (must have min < max)
+		; a uniform value should appear as a 50% saturation gray
+		if (min eq 0.0) then begin
+			min = -1d-42
+			max = 1d-42
+		endif else begin
+			min *= 0.99999
+			max *= 1.00001
+		endelse
+	endif
+
+	return, [min, max]
+end
+
+
 ; Event handling of visualisation window
 pro cslice_event, event
 
@@ -264,24 +294,16 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[px,*,*], num_y, num_z) > csmin) < csmax
-		if (bin_y ne 1 or bin_z ne 1) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
-		if (abs_scale) then begin
-			cut_min = csmin
-			cut_max = csmax
-		end else begin
-			cut_min = min (ii)
-			cut_max = max (ii)
-		end
-		colorcode = cut_max
-		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
+		if ((bin_y ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
+		range = get_range (ii)
 		wset, wimg_yz
 		if (show_cross) then begin
-			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
-			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = [colorcode, csmin]
+			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[i:i+1, pz*bin_z+oz] = range
+			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = range
+			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = range
+			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = range
 		end $
-		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
+		else if (abs_scale) then ii[0:1, 0] = range
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
@@ -292,7 +314,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
-			plot, cube[px,*,pz], xrange=[0,num_y], yrange=[cut_min,cut_max], xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			plot, cube[px,*,pz], xrange=[0,num_y], yrange=range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
@@ -300,24 +322,16 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[*, py, *], num_x, num_z) > csmin) < csmax
-		if (bin_x ne 1 or bin_z ne 1) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
-		if (abs_scale) then begin
-			cut_min = csmin
-			cut_max = csmax
-		end else begin
-			cut_min = min (ii)
-			cut_max = max (ii)
-		end
-		colorcode = cut_max
-		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
+		if ((bin_x ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
+		range = get_range (ii)
 		wset, wimg_xz
 		if (show_cross) then begin
-			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, pz*bin_z+oz] = [colorcode, csmin]
-			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
-			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, pz*bin_z+oz] = range
+			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, pz*bin_z+oz] = range
+			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[px*bin_x+ox, i:i+1] = range
+			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[px*bin_x+ox, i:i+1] = range
 		end $
-		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
+		else if (abs_scale) then ii[0:1, 0] = range
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
@@ -328,7 +342,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
-			plot, cube[*,py,pz], xrange=[0,num_x], yrange=[cut_min,cut_max], xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			plot, cube[*,py,pz], xrange=[0,num_x], yrange=range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
@@ -336,24 +350,16 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[*, *, pz], num_x, num_y) > csmin) < csmax
-		if (bin_x ne 1 or bin_y ne 1) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
-		if (abs_scale) then begin
-			cut_min = csmin
-			cut_max = csmax
-		end else begin
-			cut_min = min (ii)
-			cut_max = max (ii)
-		end
-		colorcode = cut_max
-		if (colorcode eq csmin) then colorcode = 2 * (abs (csmax) + 1)
+		if ((bin_x ne 1) or (bin_y ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
+		range = get_range (ii)
 		wset, wimg_xy
 		if (show_cross) then begin
-			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
-			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, py*bin_y+oy] = [colorcode, csmin]
-			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
-			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[px*bin_x+ox, i:i+1] = [colorcode, csmin]
+			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, py*bin_y+oy] = range
+			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, py*bin_y+oy] = range
+			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[px*bin_x+ox, i:i+1] = range
+			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[px*bin_x+ox, i:i+1] = range
 		end $
-		else if (abs_scale) then ii[0:1, 0] = [csmin, csmax]
+		else if (abs_scale) then ii[0:1, 0] = range
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
@@ -364,7 +370,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
 			wset, wcut_z
-			plot, cube[px,py,*], xrange=[0,num_z], yrange=[cut_min,cut_max], xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			plot, cube[px,py,*], xrange=[0,num_z], yrange=range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
@@ -464,10 +470,7 @@ pro prepare_cube, last_index, update_slider
 		; find minimum and maximum values
 		csmin = min (cube)
 		csmax = max (cube)
-
-		; set default slider positions (min/max)
-		if (not finite (pos_b[selected_cube,sub_aver], /NaN)) then pos_b[selected_cube,sub_aver] = csmin
-		if (not finite (pos_t[selected_cube,sub_aver], /NaN)) then pos_t[selected_cube,sub_aver] = csmax
+		range = get_range (cube)
 
 		if (last_index ge 0) then begin
 			; save slider positions of previous cube
@@ -477,13 +480,19 @@ pro prepare_cube, last_index, update_slider
 			pos_t(last_index, sub_aver) = t
 		end
 
-		; update slider
+		; set default slider positions (min/max)
+		if (not finite (pos_b[selected_cube,sub_aver], /NaN)) then pos_b[selected_cube,sub_aver] = csmin
+		if (not finite (pos_t[selected_cube,sub_aver], /NaN)) then pos_t[selected_cube,sub_aver] = csmax
+
+		; adjust slider positions to fit inside value range
 		if (pos_b[selected_cube,sub_aver] lt csmin) then pos_b[selected_cube,sub_aver] = csmin
 		if (pos_t[selected_cube,sub_aver] gt csmax) then pos_t[selected_cube,sub_aver] = csmax
-		if (scal_b ne 0) then WIDGET_CONTROL, scal_b, SET_VALUE = [ pos_b[selected_cube,sub_aver], csmin, csmax ]
-		if (scal_t ne 0) then WIDGET_CONTROL, scal_t, SET_VALUE = [ pos_t[selected_cube,sub_aver], csmin, csmax ]
 
-		; set min/max from sliders
+		; update slider
+		if (scal_b ne 0) then WIDGET_CONTROL, scal_b, SET_VALUE = [ pos_b[selected_cube,sub_aver], range ]
+		if (scal_t ne 0) then WIDGET_CONTROL, scal_t, SET_VALUE = [ pos_t[selected_cube,sub_aver], range ]
+
+		; get desired min/max values from sliders
 		csmin = pos_b[selected_cube,sub_aver]
 		csmax = pos_t[selected_cube,sub_aver]
 	end
