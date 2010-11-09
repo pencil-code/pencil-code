@@ -23,6 +23,7 @@ module Solid_Cells
 !
   integer :: idiag_c_dragx=0       ! DIAG_DOC:
   integer :: idiag_c_dragy=0       ! DIAG_DOC:
+  integer :: idiag_c_dragz=0       ! DIAG_DOC:
 !
   contains
 !***********************************************************************
@@ -162,6 +163,7 @@ module Solid_Cells
       if (lreset) then
         idiag_c_dragx=0
         idiag_c_dragy=0
+        idiag_c_dragz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -169,6 +171,7 @@ module Solid_Cells
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
         call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
+        call parse_name(iname,cname(iname),cform(iname),'c_dragz',idiag_c_dragz)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
