@@ -18,4 +18,8 @@ RADIATION=   radiation_ray
 GRAVITY  = nogravity
 FORCING  = noforcing
 
+FOURIER  =   fourier_fftpack
+POWER    =   power_spectrum
+
 INITIAL_CONDITION = initial_condition/fluxrings
+

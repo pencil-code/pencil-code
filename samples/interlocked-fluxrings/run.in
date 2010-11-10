@@ -5,6 +5,7 @@
 &run_pars
   cvsid='$Id$'
   nt=10, it1=2, cdt=0.9, isave=50, itorder=3
+  dspec=.3,ou_spec=T,ab_spec=T
   tmax=50.
   dsnap=5, dvid=0.6
   ip=14
