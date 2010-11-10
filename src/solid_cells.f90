@@ -59,7 +59,7 @@ module Solid_Cells
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
-       limit_close_linear,lnointerception
+       limit_close_linear,lnointerception,nforcepoints
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -141,7 +141,11 @@ module Solid_Cells
 !
         nlong=int(sqrt(2.*nforcepoints))
         nlat=int(.5*nlong)-1
-        if (nlong*(nlat+1)/=nforcepoints) print*, "Warning: 2*nforcepoints should be square"
+        if (nlong*(nlat+1)/=nforcepoints) then
+          print*, "Warning: 2*nforcepoints should be square"
+          print*,'nforcepoints=',nforcepoints
+          print*,'nlong,nlat=',nlong,nlat
+        endif
       end if
       if (ncylinders==0) then
         cylinder_radius(1)=impossible
@@ -1363,6 +1367,23 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
               call fatal_error('close_interpolation',&
                   'A valid radius is not found!')            
+            endif
+!
+!  Due to roundoff errors the value of g_global might end up outside the
+!  grid cell - in that case put it back in where it belongs
+!
+            if (&
+                (x(ix0)<=g_global(1).and.x(ix0+1)>=g_global(1).or.nxgrid==1).and.&
+                (y(iy0)<=g_global(2).and.y(iy0+1)>=g_global(2).or.nygrid==1).and.&
+                (z(iz0)<=g_global(3).and.z(iz0+1)>=g_global(3).or.nzgrid==1)) then
+              ! Everything okay
+            else
+              if (g_global(1)>x(ix1)) g_global(1)=x(ix1)
+              if (g_global(1)<x(ix0)) g_global(1)=x(ix0)
+              if (g_global(2)>y(iy1)) g_global(2)=y(iy1)
+              if (g_global(2)<y(iy0)) g_global(2)=y(iy0)
+              if (g_global(3)>z(iz1)) g_global(3)=z(iz1)
+              if (g_global(3)<z(iz0)) g_global(3)=z(iz0)
             endif
 !
 !  Depending on the value of constdir the indeces of the corner points 
