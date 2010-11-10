@@ -172,6 +172,13 @@ module Special
 !
       integer :: j
 !
+      if (linit_lnrho) then
+        ! set initial density profile values
+        do j = n1-nghost, n2+nghost
+          f(:,:,j,ilnrho) = lnrho_init_z(j)
+        enddo
+      endif
+!
       if (linit_lnTT) then
         if (pretend_lnTT) call stop_it_if_any (.true., &
             "init_special: linit_lnTT=T not implemented for pretend_lnTT=T")
@@ -187,13 +194,6 @@ module Special
         ! set bottom and top boundary sound speed values
         cs2bot = gamma_m1*exp(lnTT_init_z(n1))
         cs2top = gamma_m1*exp(lnTT_init_z(n2))
-      endif
-!
-      if (linit_lnrho) then
-        ! set initial density profile values
-        do j = n1-nghost,n2+nghost
-          f(:,:,j,ilnrho) = lnrho_init_z(j)
-        enddo
       endif
 !
     endsubroutine init_special
