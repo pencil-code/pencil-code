@@ -1126,7 +1126,8 @@ module Boundcond
           do i=1,nghost
             f(l1-i,:,:,j)=f(l1+i,:,:,j)*(x(l1+i)/x(l1-i))**slope(j)
           enddo
-!         f(l1,:,:,j)=(2.*x(l1+1)*f(l1+1,:,:,j)-.5*x(l1+2)*f(l1+2,:,:,j))/(1.5*x(l1))
+!         f(l1,:,:,j)=(2.*x(l1+1)*f(l1+1,:,:,j)-&
+!          .5*x(l1+2)*f(l1+2,:,:,j))/(1.5*x(l1))
         endif
 !
       case ('top')               ! top boundary
@@ -1139,7 +1140,8 @@ module Boundcond
           do i=1,nghost
             f(l2+i,:,:,j)=f(l2-i,:,:,j)*(x(l2-i)/x(l2+i))**slope(j)
           enddo
-!         f(l2,:,:,j)=(2.*x(l2-1)*f(l2-1,:,:,j)-.5*x(l2-2)*f(l2-2,:,:,j))/(1.5*x(l2))
+!         f(l2,:,:,j)=(2.*x(l2-1)*f(l2-1,:,:,j)-&
+!           .5*x(l2-2)*f(l2-2,:,:,j))/(1.5*x(l2))
         endif
 !
       case default
@@ -1752,7 +1754,7 @@ module Boundcond
 !
       endselect
     else
-      call stop_it('Boundary condition spder is valid only in spherical coordinate system')
+      call stop_it('bc_set_spder_x valid only in spherical coordinate system')
     endif
 !
     endsubroutine bc_set_spder_x
@@ -4211,7 +4213,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_lnTT_flux_z(f,topbot)
 !
-!  Constant flux boundary condition for temperature (called when bcz='c1')
+!  Constant flux boundary condition for temperature
+!  (called when bcz='c1')
 !
 !  12-May-07/dintrans: coded
 !
@@ -4228,7 +4231,7 @@ module Boundcond
 !
       allocate(tmp_xy(mx,my),stat=stat)
       if (stat>0) call fatal_error('bc_lnTT_flux_x', &
-          'Could not allocate memory for tmp_yz')
+          'Could not allocate memory for tmp_xy')
 !
 !  Do the 'c1' boundary condition (constant heat flux) for lnTT or TT (if
 !  ltemperature_nolog=.true.) at the bottom _only_.
