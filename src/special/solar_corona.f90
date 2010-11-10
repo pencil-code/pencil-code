@@ -486,15 +486,11 @@ module Special
             'Error reading profile data in "'//trim(filename)//'"')
         close (unit)
 !
-        ! convert data from logarithmic SI to Pencil units
+        ! convert data from logarithmic SI to logarithmic Pencil units
         data = data - alog (data_unit)
 !
         ! convert z coordinates from SI to Pencil units
-        if (unit_system == 'SI') then
-          data_z = data_z / unit_length
-        elseif (unit_system == 'cgs') then
-          data_z = data_z * 1.e2 / unit_length
-        endif
+        data_z = data_z / unit_length
       endif
       call stop_it_if_any (.false., '')
 !
