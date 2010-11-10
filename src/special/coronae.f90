@@ -120,18 +120,32 @@ module Special
     character (len=*), parameter :: filename='/strat.dat'
     integer :: lend,unit=12
     real :: dummy=1.
+    logical :: exists
 !
     call keep_compiler_quiet(f)
 !
     inquire(IOLENGTH=lend) dummy
 !
     if (.not.lstarting.and.tau_inv_newton/=0) then
-      open(unit,file=trim(directory_snap)//filename, &
-          form='unformatted',status='unknown',recl=lend*mz)
-      read(unit) ztmp
-      read(unit) lnrho_init_prof
-      read(unit) lnTT_init_prof
-      close(unit)
+      
+      inquire(FILE=trim(directory_snap)//filename,EXIST=exists)
+      if (exists) then         
+        open(unit,file=trim(directory_snap)//filename, &
+            form='unformatted',status='unknown',recl=lend*mz)
+        read(unit) ztmp
+        read(unit) lnrho_init_prof
+        read(unit) lnTT_init_prof
+        close(unit)
+      else
+        lnrho_init_prof = f(l1,m1,:,ilnrho)
+        lnTT_init_prof = f(l1,m1,:,ilnTT)
+        open(unit,file=trim(directory_snap)//filename, &
+            form='unformatted',status='unknown',recl=lend*mz)
+        write(unit) z(:)
+        write(unit) lnrho_init_prof
+        write(unit) lnTT_init_prof
+        close(unit)
+      endif
     endif
 !
     if (.not.lstarting.and.lgranulation.and.ipz==0) then
@@ -609,7 +623,7 @@ module Special
       endif
     endif
 !
-    if (lfirst.and.ldt) then
+     if (lfirst.and.ldt) then
       dt1_max=max(dt1_max,rtv_cool/cdts)
       if (ldiagnos.and.idiag_dtrad/=0) then
         itype_name(idiag_dtrad)=ilabel_max_dt
@@ -1660,7 +1674,7 @@ module Special
 !***********************************************************************
     subroutine footpoint_quenching(f)
 !
-      use EquationofState, only: gamma_m1,gamma_inv,lnrho0,cs20
+      use EquationofState, only: gamma_m1,gamma_inv,lnrho0,cs20,get_cp1
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
