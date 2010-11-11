@@ -38,13 +38,13 @@ module Special
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
-  character (len=labellen) :: strati_type='nothing'
+  character (len=labellen) :: prof_type='nothing'
   real, dimension (mz) :: lnTT_init_z, lnrho_init_z
   logical :: linit_lnrho=.false., linit_lnTT=.false.
 !
 ! input parameters
   namelist /special_init_pars/ &
-       linit_lnrho,linit_lnTT,strati_type
+       linit_lnrho,linit_lnTT,prof_type
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -52,7 +52,7 @@ module Special
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
        Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
-       lquench,q0,qw,dq,massflux,luse_ext_vel_field,strati_type, &
+       lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
        iheattype,dt_gran,cool_type
 !
@@ -350,25 +350,33 @@ module Special
       if (.not. (linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
       ! default: read 'stratification.dat' with density and temperature
-      if (strati_type=='nothing') strati_type='lnrho_lnTT'
+      if (prof_type == 'nothing') prof_type = 'lnrho_lnTT'
+!
+      ! check if density profile is read, when needed
+      if ((tdownr /= 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
+        call fatal_error ("setup_profiles", &
+            "a density profile must be read to use density based newton cooling")
+      endif
 !
       ! on RELOAD we don't need to read the profiles again
-      if (.not. lreloading) call read_stratification()
+      if (.not. lreloading) call read_profiles()
 !
-      ! set lnrho0 to the lower boundary value
-      if ((strati_type=='prof_lnrho').or.(strati_type=='prof_lnrho_lnTT')) then
+      ! check if any kind of density profile is in use...
+      if (linit_lnrho .or. (tdownr /= 0.0)) then
+        ! ...and set lnrho0 accordingly to the lower boundary value
         if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-          if (lroot) print *,'setup_profiles: WARNING: lnrho0 set to ', lnrho0, lnrho_init_z(n1)
-          call warning ("setup_profiles", "overriding lnrho0 setting")
+          if (lroot) print *,'setup_profiles: WARNING: ', &
+              'lnrho0 set to ', lnrho_init_z(n1), ' - was before ', lnrho0
+          call warning ("setup_profiles", "overriding manual lnrho0 setting")
         endif
         lnrho0 = lnrho_init_z(n1)
       endif
 !
     endsubroutine setup_profiles
 !***********************************************************************
-    subroutine read_stratification()
+    subroutine read_profiles()
 !
-!  Read stratification file.
+!  Read profiles for temperature and/or density stratification.
 !
 !  21-oct-2010/Bourdin.KIS: coded
 !
@@ -389,10 +397,10 @@ module Special
 !
 ! Check which stratification file should be used:
 !
-      lread_prof_lnTT = (strati_type=='prof_lnTT') .or. (strati_type=='prof_lnrho_lnTT')
-      lread_prof_lnrho = (strati_type=='prof_lnrho') .or. (strati_type=='prof_lnrho_lnTT')
+      lread_prof_lnTT = (prof_type=='prof_lnTT') .or. (prof_type=='prof_lnrho_lnTT')
+      lread_prof_lnrho = (prof_type=='prof_lnrho') .or. (prof_type=='prof_lnrho_lnTT')
 !
-      if (strati_type=='lnrho_lnTT') then
+      if (prof_type=='lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
         if (ierr > 0) call stop_it_if_any (.true.,'setup_profiles: '// &
             'Could not allocate memory for stratification variables')
@@ -403,7 +411,7 @@ module Special
               .true., 'setup_profiles: Stratification file not found')
           open (unit,file=stratification_dat)
           do i=1,nzgrid
-            read(unit,*,iostat=ierr) var0,var1,var2
+            read (unit,*,iostat=ierr) var0,var1,var2
             if (ierr /= 0) call stop_it_if_any (.true., 'setup_profiles: '// &
                 'Error reading stratification file: "'//trim(stratification_dat)//'"')
             prof_lnrho(i)=var1
@@ -433,10 +441,10 @@ module Special
             call read_profile (lnrho_dat, lnrho_init_z, unit_density)
 !
       else
-        call fatal_error ('setup_profiles', "strati_type='"//trim(strati_type)//"' unknown.")
+        call fatal_error ('read_profiles', "prof_type='"//trim(prof_type)//"' unknown.")
       endif
 !
-    endsubroutine read_stratification
+    endsubroutine read_profiles
 !***********************************************************************
     subroutine read_profile(filename,profile,data_unit)
 !
