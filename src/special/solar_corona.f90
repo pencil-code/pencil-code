@@ -440,6 +440,10 @@ module Special
         if (lread_prof_lnrho) &
             call read_profile (lnrho_dat, lnrho_init_z, unit_density)
 !
+      elseif (index (prof_type, 'internal_') == 1) then
+        call warning ('read_profiles', "using internal profile '"//trim(prof_type)//"'.")
+      elseif (index (prof_type, 'initial_') == 1) then
+        call fatal_error ('read_profiles', "prof_type='"//trim(prof_type)//"' is not yet implemented.")
       else
         call fatal_error ('read_profiles', "prof_type='"//trim(prof_type)//"' unknown.")
       endif
