@@ -501,10 +501,11 @@ module  power_spectrum
 !
 !  compute krms only once
 !
-!  if (lwrite_krms) then
+  if (lwrite_krms) then
     call mpireduce_sum(k2m,k2m_sum,nk)
     call mpireduce_sum(nks,nks_sum,nk)
-!  endif
+    if (iproc/=root) lwrite_krms=.false.
+  endif
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
