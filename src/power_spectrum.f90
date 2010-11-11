@@ -7,22 +7,18 @@
 !    5-sep-02/axel: loop first over all points, then distribute to k-shells
 !   23-sep-02/nils: adapted from postproc/src/power_spectrum.f90
 !   14-mar-06/axel: made kx,ky,kz going only in integers. Works only for cubes.
-
+!
 module  power_spectrum
-  !
+!
   use Cdata
-  use General
-  use Fourier
-  use Mpicomm
-  use Messages
-  use Sub
-  !
+  use Messages, only: svn_id, fatal_error
+!
   implicit none
-
+!
   include 'power_spectrum.h'
-  !
+!
   contains
-
+!
 !***********************************************************************
     subroutine power(f,sp)
 !
@@ -30,6 +26,10 @@ module  power_spectrum
 !  specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
+!
+      use Fourier, only: fourier_transform
+      use Mpicomm, only: mpireduce_sum
+      use Sub, only: curli
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
@@ -134,6 +134,10 @@ module  power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
+      use Fourier, only: fourier_transform_xz
+      use Mpicomm, only: mpireduce_sum
+      use Sub, only: curli
+!
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
@@ -231,6 +235,10 @@ module  power_spectrum
 !  specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
+!
+      use Fourier, only: fourier_transform_xy
+      use Mpicomm, only: mpiallreduce_sum
+      use Sub, only: curli
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,ikztot,im,in,ivec
@@ -331,6 +339,10 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
 !   3-oct-10/axel: added compution of krms (for realisability condition)
+!
+    use Fourier, only: fourier_transform
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, cross, grad, curli
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
@@ -546,6 +558,10 @@ module  power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
+    use Fourier, only: fourier_transform
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: curli, grad
+!
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
@@ -672,6 +688,10 @@ module  power_spectrum
 !  Calculate power spectra of the variable specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
+!
+    use Fourier, only: fourier_transform_x
+    use Mpicomm, only: mpireduce_sum, stop_it, transp
+    use Sub, only: curli
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character (len=1) :: sp
@@ -891,10 +911,7 @@ module  power_spectrum
 !
 !    2-dec-03/axel: coded
 !
-  use Cdata
-  use Sub
-  use General
-  use Mpicomm
+      use Sub, only: grad, dot2_mn
 !
   integer :: l,i_pdf
   integer, parameter :: n_pdf=3001
@@ -984,14 +1001,19 @@ endsubroutine pdf
 ! Power spectra in phi direction in spherical coordinates:
 ! I define power_phi of a variable 'u' in the following way:
 ! {\hat u}(r,\theta,k) \equiv FFT (u(r,\theta,k))
-! power_phi(u) \equiv 
-!         \sum_{r,\theta} dr d\theta 
+! power_phi(u) \equiv
+!         \sum_{r,\theta} dr d\theta
 !             {\hat u}(r,\theta,k)*{\hat u}(r,\theta,-k) r^2 sin(\theta)
 ! ---------------------------------------------------------------------
-! As this subroutine is called at the end of a time-step df can be 
-! used for storing temporary data. 
-! The \phi direction is the z direction. 
+! As this subroutine is called at the end of a time-step df can be
+! used for storing temporary data.
+! The \phi direction is the z direction.
 ! ----------------------------------------------------------------------
+!
+      use Sub, only: curli
+      use Mpicomm, only: stop_it, z2x
+      use Fourier, only: fourier_transform_real_1
+!
   integer, parameter :: nk=nz/2
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
@@ -1046,10 +1068,10 @@ endsubroutine pdf
        do m=1,ny
          do j=1,nprocy
            call z2x(a1,l,m,j,aatemp)
-! For multiple processor runs aatemp exists only in the root 
+! For multiple processor runs aatemp exists only in the root
 ! processor. Hence rest of the analysis is done only
 ! in the root processor
-           if (lroot) then 
+           if (lroot) then
 !             write(*,*)l,m,j,'got data shall fft'
              call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
              ifirst_fft = ifirst_fft+1
@@ -1093,14 +1115,19 @@ endsubroutine pdf
 ! Power spectra in phi direction in spherical coordinates:
 ! I define power_phi of a variable 'u' in the following way:
 ! {\hat u}(r,\theta,k) \equiv FFT (u(r,\theta,k))
-! power_phi(u) \equiv 
-!         \sum_{r,\theta} dr d\theta 
+! power_phi(u) \equiv
+!         \sum_{r,\theta} dr d\theta
 !             {\hat u}(r,\theta,k)*{\hat u}(r,\theta,-k) r^2 sin(\theta)
 ! ---------------------------------------------------------------------
-! As this subroutine is called at the end of a time-step df can be 
-! used for storing temporary data. 
-! The \phi direction is the z direction. 
+! As this subroutine is called at the end of a time-step df can be
+! used for storing temporary data.
+! The \phi direction is the z direction.
 ! ----------------------------------------------------------------------
+!
+    use Fourier, only: fourier_transform_real_1
+    use Mpicomm, only: z2x, stop_it
+    use Sub, only: curli
+!
   integer, parameter :: nk=nz/2
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
@@ -1159,17 +1186,17 @@ endsubroutine pdf
      else
         print*,'There are no such sp=',trim(sp)
      endif
-! 
+!
      ifirst_fft=1
      do l=1,nx
        do m=1,ny
          do j=1,nprocy
            call z2x(a1,l,m,j,aatemp)
            call z2x(b1,l,m,j,bbtemp)
-! For multiple processor runs aatemp exists only in the root 
+! For multiple processor runs aatemp exists only in the root
 ! processor. Hence rest of the analysis is done only
 ! in the root processor
-           if (lroot) then 
+           if (lroot) then
 !             write(*,*)l,m,j,'got data shall fft'
              call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
              call fourier_transform_real_1(bbtemp,nzgrid,ifirst_fft,fftpack_temp)
@@ -1231,6 +1258,10 @@ endsubroutine pdf
 !  specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
+!
+      use Sub, only: del2v_etc
+      use Mpicomm, only: mpireduce_sum
+      use Fourier, only: fourier_transform
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,ivec
