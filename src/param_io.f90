@@ -47,6 +47,7 @@ module Param_IO
   use Testscalar
   use Timeavg
   use Viscosity
+  use Power_spectrum
 !
   implicit none
 !
@@ -530,7 +531,8 @@ module Param_IO
 !  31-may-02/wolf: renamed from cread to read_runpars
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!
+!  12-nov-10/MR: added read and write calls for namelist power_spectrum_run_pars
+
       use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
       use Slices, only: setup_slices
@@ -543,7 +545,7 @@ module Param_IO
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0).
 !
-      if (lshear) bcx(:)='she'
+!!!!      if (lshear) bcx(:)='she'
 !
 !  Open namelist file.
 !
@@ -682,6 +684,10 @@ module Param_IO
 !
       call particles_read_runpars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
+      rewind(unit)
+
+      call read_power_spectrum_runpars(unit,IOSTAT=ierr)
+      !if (ierr/=0) call sample_runpars('power_spectrum_run_pars_wrap',ierr)
       rewind(unit)
 !
       call parallel_close(unit)
@@ -858,6 +864,7 @@ module Param_IO
         call write_shock_run_pars(unit)
         call write_solid_cells_run_pars(unit)
         call write_NSCBC_run_pars(unit)
+        call write_power_spectrum_runpars(unit)
         call particles_wparam2(unit)
 !
         if (present(file)) close(unit)

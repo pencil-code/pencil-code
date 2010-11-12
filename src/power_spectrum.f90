@@ -7,6 +7,9 @@
 !    5-sep-02/axel: loop first over all points, then distribute to k-shells
 !   23-sep-02/nils: adapted from postproc/src/power_spectrum.f90
 !   14-mar-06/axel: made kx,ky,kz going only in integers. Works only for cubes.
+!   11-nov-10/MR: intro'd flags for shell integration and z integration,
+!                 for that, namelist run_pars and corresp. read and write subroutines;
+!                 corresp. changes up to now only in power_xy
 !
 module  power_spectrum
 !
@@ -17,8 +20,39 @@ module  power_spectrum
 !
   include 'power_spectrum.h'
 !
+  logical :: lintegrate_shell=.true.,  &
+             lintegrate_z=.true.
+
+  real :: zpos=0.
+
+  namelist /power_spectrum_run_pars/ lintegrate_shell,  &! flag for generation of the shell-integrated spectrum        
+                                     lintegrate_z,      &! flag for integration over z 
+                                     zpos                ! z-position at which spectrum will be calculated,
+                                                         ! only relevant if lintegrate_z=.false.
   contains
 !
+!***********************************************************************
+    subroutine read_power_spectrum_runpars(unit,iostat)
+!
+      integer, intent(in)              :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=power_spectrum_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=power_spectrum_run_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_power_spectrum_runpars
+!***********************************************************************
+    subroutine write_power_spectrum_runpars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=power_spectrum_run_pars)
+!
+    endsubroutine write_power_spectrum_runpars
 !***********************************************************************
     subroutine power(f,sp)
 !
@@ -36,7 +70,7 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -55,7 +89,8 @@ module  power_spectrum
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
-  spectrum=0
+  spectrum=0.
+  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -125,7 +160,7 @@ module  power_spectrum
      close(1)
   endif
   !
-  endsubroutine power
+ endsubroutine power
 !***********************************************************************
     subroutine power_2d(f,sp)
 !
@@ -143,7 +178,7 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -162,14 +197,15 @@ module  power_spectrum
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
-  spectrum=0
+  spectrum=0.
+  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !
   do ivec=1,3
      !
-     if (sp=='u') then
+    if (sp=='u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
      elseif (sp=='b') then
         do n=n1,n2
@@ -189,7 +225,9 @@ module  power_spectrum
 !
 !  Doing the Fourier transform
 !
-     call fourier_transform_xz(a1,b1)
+     print*, 'ivec1=', ivec
+     call fourier_transform_xz(a1,b1)    !!!! MR: causes error - ivec is set back from 1 to 0
+     print*, 'ivec2=', ivec
 !
 !  integration over shells
 !
@@ -200,6 +238,8 @@ module  power_spectrum
            k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
            if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                 +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+!           if (iky==16 .and. ikx==16) &
+!           print*, 'power_2d:', ikx,iky,ikz,k,nk,a1(ikx,iky,ikz),b1(ikx,iky,ikz),spectrum(k+1)
          enddo
        enddo
      enddo
@@ -245,7 +285,9 @@ module  power_spectrum
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
-  real, dimension(nk,nzgrid) :: spectrum=0.,spectrum_sum=0
+  real, allocatable, dimension(:)     :: spectrum1,spectrum1_sum
+  real, allocatable, dimension(:,:)   :: spectrum2,spectrum2_sum
+  real, allocatable, dimension(:,:,:) :: spectrum3,spectrum3_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -256,6 +298,26 @@ module  power_spectrum
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
   !
+  if (lintegrate_shell) then
+    if (lintegrate_z) then
+      allocate( spectrum1(nk), spectrum1_sum(nk) )
+      spectrum1=0.
+      spectrum1_sum=0.
+    else
+      allocate( spectrum2(nk,nzgrid), spectrum2_sum(nk,nzgrid) )
+      spectrum2=0.
+      spectrum2_sum=0.
+    endif
+  else if (lintegrate_z) then
+    allocate( spectrum2(nx,ny), spectrum2_sum(nx,ny) )
+    spectrum2=0.
+    spectrum2_sum=0.
+  else
+    allocate( spectrum3(nx,ny,nzgrid), spectrum3_sum(nx,ny,nzgrid) )
+    spectrum3=0.
+    spectrum3_sum=0.
+  endif
+  ! 
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
@@ -263,8 +325,6 @@ module  power_spectrum
   kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  spectrum=0
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -298,21 +358,45 @@ module  power_spectrum
      if (lroot .AND. ip<10) print*,'fft done; now integrate over circles...'
      do ikz=1,nz
        ikztot=ikz+ipz*nz
-       do iky=1,ny
-         do ikx=1,nx
-           k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-           if (k>=0 .and. k<=(nk-1)) spectrum(k+1,ikztot)=spectrum(k+1,ikztot) &
-                +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+       if (lintegrate_shell) then
+         do iky=1,ny
+           do ikx=1,nx
+             k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
+             if (k>=0 .and. k<=(nk-1)) then
+               if (lintegrate_z) then
+                 spectrum1(k+1)= spectrum1(k+1)+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+               else
+                 spectrum2(k+1,ikztot)= spectrum2(k+1,ikztot) &
+         	                       +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+               endif
+             endif  
+           enddo
          enddo
-       enddo
+       else if (lintegrate_z) then
+         spectrum2(:,:)=spectrum2(:,:)+a1(:,:,ikz)**2+b1(:,:,ikz)**2
+       else
+         spectrum3(:,:,ikztot)=spectrum3(:,:,ikztot)+a1(:,:,ikz)**2+b1(:,:,ikz)**2 
+       endif
      enddo
      !
   enddo !(from loop over ivec)
   !
   !  Summing up the results from the different processors
-  !  The result is available only on root
+  !  The result is available only on root  !!??
   !
-  call mpiallreduce_sum(spectrum,spectrum_sum,(/nk,nzgrid/))
+  if (lintegrate_shell) then
+    if (lintegrate_z) then
+      continue
+      !call mpiallreduce_sum(spectrum1,spectrum1_sum,(/nk/))   ! not yet implemented
+       spectrum1_sum = spectrum1                               !!!! not yet correct
+    else
+      call mpiallreduce_sum(spectrum2,spectrum2_sum,(/nk,nzgrid/))
+    endif
+  else if (lintegrate_z) then
+    call mpiallreduce_sum(spectrum2,spectrum2_sum,(/nx,ny/))
+  else 
+    call mpiallreduce_sum(spectrum3,spectrum3_sum,(/nx,ny,nzgrid/))   !!??
+  endif
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -321,11 +405,32 @@ module  power_spectrum
   if (iproc==root) then
      if (ip<10) print*,'Writing power spectra of variable',sp &
           ,'to ',trim(datadir)//'/power'//trim(sp)//'_xy.dat'
-     spectrum_sum=.5*spectrum_sum
      open(1,file=trim(datadir)//'/power'//trim(sp)//'_xy.dat',position='append')
      write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum
+     if (lintegrate_shell) then
+       if (lintegrate_z) then
+         write(1,'(1p,8e10.2)') .5*spectrum1_sum
+       else
+         write(1,'(1p,8e10.2)') .5*spectrum2_sum
+       endif
+     else if (lintegrate_z) then
+       write(1,'(1p,8e10.2)') .5*spectrum2_sum
+     else
+       write(1,'(1p,8e10.2)') .5*spectrum3_sum
+     endif
      close(1)
+  endif
+  !
+  if (lintegrate_shell) then
+    if (lintegrate_z) then
+      deallocate(spectrum1,spectrum1_sum)
+    else 
+      deallocate(spectrum2,spectrum2_sum)
+    endif
+  else if (lintegrate_z) then
+    deallocate(spectrum2,spectrum2_sum)
+  else 
+    deallocate(spectrum3,spectrum3_sum)
   endif
   !
   endsubroutine power_xy
@@ -353,8 +458,8 @@ module  power_spectrum
   real, dimension(nx,3) :: bbEP
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0.
-  real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -385,7 +490,9 @@ module  power_spectrum
   k2m=0.
   nks=0.
   spectrum=0.
+  spectrum_sum=0.
   spectrumhel=0.
+  spectrumhel_sum=0.
   !
   !  loop over all the components
   !
@@ -566,7 +673,7 @@ module  power_spectrum
   integer :: i,k,ikx,iky,ikz, ivec, im, in
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -590,6 +697,7 @@ module  power_spectrum
   !  initialize power spectrum to zero
   !
   spectrum=0.
+  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  For "kin", calculate spectra of <uk^2> and <ok.uk>
@@ -702,9 +810,9 @@ module  power_spectrum
     integer :: ix,iy,iz,im,in,ikx,iky,ikz
     real, dimension(nx,ny,nz) :: a1,b1,a2
     real, dimension(nx) :: bb
-    real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
-    real, dimension(nk) :: spectrumy=0.,spectrumy_sum=0
-    real, dimension(nk) :: spectrumz=0.,spectrumz_sum=0
+    real, dimension(nk) :: spectrumx,spectrumx_sum
+    real, dimension(nk) :: spectrumy,spectrumy_sum
+    real, dimension(nk) :: spectrumz,spectrumz_sum
     character (len=7) :: str
 !
 !  identify version
@@ -761,12 +869,12 @@ module  power_spectrum
 !
 ! Need to initialize
 !
-    spectrumx=0
-    spectrumx_sum=0
-    spectrumy=0
-    spectrumy_sum=0
-    spectrumz=0
-    spectrumz_sum=0
+    spectrumx=0.
+    spectrumx_sum=0.
+    spectrumy=0.
+    spectrumy_sum=0.
+    spectrumz=0.
+    spectrumz_sum=0.
 !
 !  Do the Fourier transform
 !
@@ -1019,7 +1127,7 @@ endsubroutine pdf
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1
   real, dimension(nx) :: bb
-  real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nzgrid/2) :: spectrum,spectrum_sum
   real, dimension(nzgrid) :: aatemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
   real :: nVol2d,spec_real,spec_imag
@@ -1037,8 +1145,8 @@ endsubroutine pdf
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
   !
-  spectrum=0
-  spectrum_sum=0
+  spectrum=0.
+  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -1133,8 +1241,8 @@ endsubroutine pdf
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bbi
-  real, dimension(nzgrid/2) :: spectrum=0.,spectrum_sum=0
-  real, dimension(nzgrid/2) :: spectrumhel=0.,spectrumhel_sum=0
+  real, dimension(nzgrid/2) :: spectrum,spectrum_sum
+  real, dimension(nzgrid/2) :: spectrumhel,spectrumhel_sum
   real, dimension(nzgrid) :: aatemp,bbtemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
   real :: nVol2d,spec_reala,spec_imaga,spec_realb,spec_imagb
@@ -1152,10 +1260,10 @@ endsubroutine pdf
 !  Ignore *2*pi/Lx factor, because later we want k to be integers
 !
 !
-  spectrum=0
-  spectrum_sum=0
-  spectrumhel=0
-  spectrumhel_sum=0
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -1267,7 +1375,7 @@ endsubroutine pdf
   integer :: i,k,ikx,iky,ikz,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz,3) :: a1,b1
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -1286,7 +1394,8 @@ endsubroutine pdf
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
-  spectrum=0
+  spectrum=0.
+  spectrum_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
