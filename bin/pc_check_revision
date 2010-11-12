@@ -1,0 +1,41 @@
+#!/bin/csh
+
+#  $Id$
+#  12-nov-2010/dintrans: coded
+#  Allow to check old revisions of the code with a given sample
+#  --> useful to find the revision that broke a sample that is not daily
+#  checked in the auto-test list
+#  Results of each successive test are written in:
+#  /tmp/(revision number).out_OK --> the revision is OK
+#  /tmp/(revision number).out_not_OK --> the revision is not OK then exit
+#
+
+set my_sample=2d-tests/A3+chi11+Ra1e5
+
+setenv PENCIL_HOME_CURRENT $PENCIL_HOME
+
+#  specify the range of revisions that will be checked
+foreach i (`seq 15000 25 15300`)
+  echo $i
+  mkdir /tmp/pencil$i
+  setenv PENCIL_HOME /tmp/pencil$i
+  cd $PENCIL_HOME 
+  ln -s $PENCIL_HOME_CURRENT/bin .
+  ln -s $PENCIL_HOME_CURRENT/lib .
+  ln -s $PENCIL_HOME_CURRENT/config .
+  
+  svn co -r$i http://pencil-code.googlecode.com/svn/trunk/src
+  svn co -r$i http://pencil-code.googlecode.com/svn/trunk/samples/$my_sample $my_sample
+  pc_auto-test --fast $my_sample > /tmp/$i.out
+
+  set st=`cat /tmp/$i.out | grep 'not ok' | awk '{print length($0)}'`
+  if ($st > 0) then
+    echo 'Stop at revision number '$i
+    mv /tmp/$i.out /tmp/$i.out_not_OK
+    exit
+  else
+    mv /tmp/$i.out /tmp/$i.out_OK
+    rm -fr $PENCIL_HOME
+  endif
+end
+
