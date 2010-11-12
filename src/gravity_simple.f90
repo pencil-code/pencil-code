@@ -338,7 +338,7 @@ module Gravity
         if (lroot) print *, 'initialize_gravity: solid shpere zref=', zref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
         where (z > zref)
           gravz_zpencil = g_ref * sphere_rad**2 / (z-zref+sphere_rad)**2
-        else where (z < -zref)
+        else where (z < zref-2*sphere_rad)
           gravz_zpencil = -g_ref * sphere_rad**2 / (z-zref+sphere_rad)**2
         else where
           gravz_zpencil = g_ref * (z-zref+sphere_rad) / sphere_rad
