@@ -10,6 +10,25 @@ module power_spectrum
 !
   contains
 !***********************************************************************
+    subroutine read_power_spectrum_runpars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      call keep_compiler_quiet(unit)
+      call keep_compiler_quiet(present(iostat))
+!
+    endsubroutine read_power_spectrum_runpars
+!***********************************************************************
+    subroutine write_power_spectrum_runpars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_power_spectrum_runpars
+
+!***********************************************************************
     subroutine power(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
