@@ -975,8 +975,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 iobj=ba(i,j,k,4)
                 x_obj=objects(iobj)%x(1)
                 y_obj=objects(iobj)%x(2)
+                z_obj=objects(iobj)%x(3)
                 r_obj=objects(iobj)%r
-                r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
+                if (objects(iobj)%form=='cylinder') then
+                  r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
+                elseif (objects(iobj)%form=='sphere') then
+                  r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+                endif
                 dr=r_point-r_obj
                 if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                   xxp=(/x(i),y(j),z(k)/)
