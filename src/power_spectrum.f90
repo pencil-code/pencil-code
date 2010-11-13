@@ -8,10 +8,10 @@
 !   23-sep-02/nils: adapted from postproc/src/power_spectrum.f90
 !   14-mar-06/axel: made kx,ky,kz going only in integers. Works only for cubes.
 !   11-nov-10/MR: intro'd flags for shell integration and z integration,
-!                 for that, namelist run_pars and corresp. read and write subroutines;
-!                 corresp. changes up to now only in power_xy
+!   for that, namelist run_pars and corresp. Read and write subroutines;
+!   corresp. changes up to now only in power_xy.
 !
-module  power_spectrum
+module power_spectrum
 !
   use Cdata
   use Messages, only: svn_id, fatal_error
@@ -20,17 +20,14 @@ module  power_spectrum
 !
   include 'power_spectrum.h'
 !
-  logical :: lintegrate_shell=.true.,  &
-             lintegrate_z=.true.
-
-  real :: zpos=0.
-
-  namelist /power_spectrum_run_pars/ lintegrate_shell,  &! flag for generation of the shell-integrated spectrum        
-                                     lintegrate_z,      &! flag for integration over z 
-                                     zpos                ! z-position at which spectrum will be calculated,
-                                                         ! only relevant if lintegrate_z=.false.
-  contains
+  logical :: lintegrate_shell=.true., lintegrate_z=.true.
 !
+  real :: zpos=0.
+!
+  namelist /power_spectrum_run_pars/ &
+      lintegrate_shell, lintegrate_z, zpos
+!
+  contains
 !***********************************************************************
     subroutine read_power_spectrum_runpars(unit,iostat)
 !
@@ -159,8 +156,8 @@ module  power_spectrum
      write(1,'(1p,8e10.2)') spectrum_sum
      close(1)
   endif
-  !
- endsubroutine power
+!
+    endsubroutine power
 !***********************************************************************
     subroutine power_2d(f,sp)
 !
