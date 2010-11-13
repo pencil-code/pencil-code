@@ -32,6 +32,7 @@ module Param_IO
   use NSCBC
   use Particles_main
   use Poisson
+  use Power_spectrum
   use Pscalar
   use Radiation
   use Selfgravity
@@ -47,7 +48,6 @@ module Param_IO
   use Testscalar
   use Timeavg
   use Viscosity
-  use Power_spectrum
 !
   implicit none
 !
@@ -209,16 +209,15 @@ module Param_IO
 !
       integer :: ierr, unit=1
 !
-!  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
+!  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
       if (lshear) bcx(:)='she'
 !
-!  open namelist file
+!  Open namelist file.
 !
       call parallel_open(unit,'start.in','formatted')
 !
-!  read through all items that *may* be present
-!  in the various modules
+!  Read through all items that *may* be present in the various modules.
 !
       read(unit,NML=init_pars,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('init_pars',ierr)
@@ -360,10 +359,9 @@ module Param_IO
       if (ierr/=0) call sample_startpars('particles_init_pars_wrap',ierr)
       rewind(unit)
 !
-      ! no input parameters for viscosity
       call parallel_close(unit)
 !
-!  Print cvs id from first line.
+!  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
 !
@@ -533,19 +531,15 @@ module Param_IO
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  12-nov-10/MR: added read and write calls for namelist power_spectrum_run_pars
 
-      use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
-      use Slices, only: setup_slices
       use Mpicomm, only: parallel_open, parallel_close
+      use Slices, only: setup_slices
+      use Sub, only: parse_bc
 !
       logical, optional :: print,file
       character (len=*), optional :: annotation
 !
       integer :: ierr, unit=1
-!
-!  Set default to shearing sheet if lshear=.true. (even when Sshear==0).
-!
-!!!!      if (lshear) bcx(:)='she'
 !
 !  Open namelist file.
 !
@@ -692,7 +686,7 @@ module Param_IO
 !
       call parallel_close(unit)
 !
-!  Print cvs id from first line.
+!  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
 !
