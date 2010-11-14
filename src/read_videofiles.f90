@@ -25,7 +25,6 @@
       real, dimension (ny,nz) :: yz_loc
 !
       integer :: ipx,ipy,ipz,iproc,it,nt=999999
-      integer :: ipz_mid1,ipz_mid2,ipz_top,ipz_bottom,ipy_front
       integer :: ipy1,ipx1,ipz1,ipz2,ipz3,ipz4
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
       integer :: itdebug=1,nevery=1
@@ -92,44 +91,6 @@
         write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box, equator (e)? '
         read*,slice_position
       endif
-! !
-! !  interpret slice_position
-! !
-!       if (slice_position=='p') then
-!         ipz_top=nprocz-1
-!         ipz_bottom=0
-!         ipy_front=0
-!       elseif (slice_position=='m') then
-!         ipz_top=nprocz/2
-!         ipz_bottom=nprocz/2
-!         ipy_front=nprocy/2
-!       elseif (slice_position=='e') then
-!         ipz_top=nprocz/4
-!         ipz_bottom=0.
-!         ipy_front=nprocy/2
-!       elseif (slice_position=='c') then
-!         call read_ipz_position(trim(datadir)//'/ztop_procnum.dat',ipz_top)
-!         call read_ipz_position(trim(datadir)//'/zbot_procnum.dat',ipz_bottom)
-!         ipy_front=0
-!       elseif (slice_position=='q') then
-!         ipz_top=0
-!         ipz_bottom=nprocz-1
-!         ipy_front=nprocy-1
-!       elseif (slice_position=='w') then
-!         ipz_bottom = 0*nprocz/4
-!         ipz_top    = 1*nprocz/4
-!         ipz_mid1   = 2*nprocz/4
-!         ipz_mid2   = 3*nprocz/4
-!         print*,'ipz_mid1,ipz_mid2=',ipz_mid1,ipz_mid2
-!         ipy_front=(nygrid/2-1)/ny
-!       elseif (slice_position=='s') then
-!         ipz_bottom = 0*nprocz/4
-!         ipz_top    = 1*nprocz/4
-!         ipy_front  = (nprocy-1)/2
-!       else
-!         print*,'slice_position cannot be interpreted by read_videofiles'
-!       endif
-!       print*,'ipz_top,ipz_bottom,ipy_front=',ipz_top,ipz_bottom,ipy_front
 !
 ! loop over aller processors to find the positions of the slices.
 ! Therefore read all slice_postions.dat
