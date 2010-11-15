@@ -806,11 +806,11 @@ module Forcing
 !  possibly multiply forcing by z-profile
 !  (This stuff is now supposed to be done in initialize; keep for now)
 !
-      if (height_ff/=0.) then
-        if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
-        tmpz=(z/height_ff)**2
-        fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-      endif
+!-    if (height_ff/=0.) then
+!-      if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
+!-      tmpz=(z/height_ff)**2
+!-      fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
+!-    endif
 !
 ! need to discuss with axel
 !
@@ -2350,11 +2350,11 @@ module Forcing
 !
 !  possibly multiply forcing by z-profile
 !
-      if (height_ff/=0.) then
-        if (lroot .and. ifirst==1) print*,'forcing_hel_noshear: include z-profile'
-        tmpz=(z/height_ff)**2
-        fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-      endif
+!-    if (height_ff/=0.) then
+!-      if (lroot .and. ifirst==1) print*,'forcing_hel_noshear: include z-profile'
+!-      tmpz=(z/height_ff)**2
+!-      fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
+!-    endif
 !
 !  need to discuss with axel
 !  
@@ -2458,10 +2458,10 @@ module Forcing
 !  g(z) and g'(z)
 !  use z-profile to cut off
 !
-      if (height_ff/=0.) then
-        tmpz=(z/height_ff)**2
-        gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-      endif
+!-    if (height_ff/=0.) then
+!-      tmpz=(z/height_ff)**2
+!-      gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
+!-    endif
 !
       fac=1./(60.*dz)
       gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
@@ -2537,10 +2537,10 @@ module Forcing
 !  g(z) and g'(z)
 !  use z-profile to cut off
 !
-      if (height_ff/=0.) then
-        tmpz=(z/height_ff)**2
-        gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-      endif
+!-    if (height_ff/=0.) then
+!-      tmpz=(z/height_ff)**2
+!-      gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
+!-    endif
 !
       fac=1./(60.*dz)
       gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
@@ -3013,11 +3013,11 @@ module Forcing
 !
 !  possibly multiply forcing by z-profile
 !
-      if (height_ff/=0.) then
-        if (lroot .and. ifirst==1) print*,'hel_vec: include z-profile'
-        tmpz=(z/height_ff)**2
-        fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-      endif
+!-    if (height_ff/=0.) then
+!-      if (lroot .and. ifirst==1) print*,'hel_vec: include z-profile'
+!-      tmpz=(z/height_ff)**2
+!-      fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
+!-    endif
 !
 !  possibly multiply forcing by sgn(z) and radial profile
 !
