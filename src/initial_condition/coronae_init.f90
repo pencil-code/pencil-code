@@ -18,12 +18,16 @@ module InitialCondition
   include '../initial_condition.h'
 !
   character (len=labellen) :: stratitype='nothing'
-  logical :: linit_lnrho=.false., linit_lnTT=.false.
+  character (len=labellen) :: lnrho_init='nothing'
+  character (len=labellen) :: lnTT_init='nothing'
+  logical :: set_lnTT_first =.true.
   real :: rho_init=0.
+  real :: T0=6000.,T1=1e6,z0_tanh=4e6,width_tanh=1e6
   character (len=labellen) :: direction='z'
 !
   namelist /initial_condition_pars/ &
-      linit_lnrho,linit_lnTT,stratitype,rho_init,direction
+      lnrho_init,lnTT_init,stratitype,rho_init,direction, &
+      set_lnTT_first,T0,T1,z0_tanh,width_tanh
 !
 contains
 !***********************************************************************
@@ -67,28 +71,56 @@ contains
 !***********************************************************************
   subroutine initial_condition_lnrho(f)
 !
-!  Initialize logarithmic density. init_lnrho will take care of
-!  converting it to linear density if you use ldensity_nolog.
+!  Initialize logarithmic density.
 !
 !  04-sep-10/bing: coded
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (stratitype=='nothing') then
-        call warning('initial_condition_lnrho','Nothing to do')
-      elseif (stratitype=='hydrostatic') then
-        if (direction=='z') then
-          call hydrostatic_z(f)
-        elseif (direction=='x') then
-          call hydrostatic_x(f)
-        endif
-      else
-        call setup_vert_profiles(f)
-      endif
+    if (lnrho_init=='hydrostatic'.and.lnTT_init=='hydrostatic') &
+        call fatal_error('initial_condition_lnrho','doesnt work')
+!
+    select case (lnTT_init)
+    case ('nothing')
+      ! do nothing
+    case ('prof_lnTT')
+      call setup_vert_profiles(f)
+    case ('tanh')
+      call setup_tanh(f)
+    case default
+      call fatal_error('initial_condition_lnrho', &
+          'no such value for lnTT_init')
+    endselect
+!
+    select case (lnrho_init)
+    case ('nothing')
+      ! do nothing
+    case ('prof_lnrho')
+      call setup_vert_profiles(f)
+    case ('hydrostatic')
+      call hydrostatic_lnTT(f)
+    case default
+      call fatal_error('initial_condition_lnrho', &
+          'no such value for lnTT_init')
+    endselect
+!
+    ! if (stratitype=='nothing') then
+    !   call warning('initial_condition_lnrho','Nothing to do')
+    ! elseif (stratitype=='hydrostatic') then
+    !   if (direction=='z') then
+    !     call hydrostatic_z(f)
+    !   elseif (direction=='x') then
+    !     call hydrostatic_x(f)
+    !   endif
+    ! else (stratitype=='hydrostatic_lnTT')
+
+    ! else
+    !   call setup_vert_profiles(f)
+    ! endif
 !
 ! save to file stratification.dat
 !
-      call write_stratification_dat(f)
+    call write_stratification_dat(f)
 !
   endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -395,6 +427,65 @@ contains
 !
   endsubroutine hydrostatic_z
 !***********************************************************************
+  subroutine hydrostatic_lnTT(f)
+!
+! Solves the hydrostatic equilibrium using the
+! temperature from the f-array.
+! Integration is done using the trapezoidal rule.
+!
+    use EquationOfState, only: gamma,gamma_m1,get_cp1,lnrho0
+    use Gravity, only: gravz
+    use Mpicomm, only: mpisend_real,mpirecv_real
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+    real :: konst,cp1=1.,lnrho_0,int
+    real, dimension(mz) :: TT,lnTT,lnrho
+    integer :: i,j,k,ipt
+!
+    if (leos) call get_cp1(cp1)
+!
+    konst = gamma*cp1/gamma_m1
+!
+    if (lroot) then
+      lnrho_0=alog(rho_init)
+    else
+      lnrho_0=0.
+    endif
+    f(:,:,n1,ilnrho)= lnrho_0
+!
+    if (ltemperature_nolog) then
+      TT = f(l1,m1,:,iTT)
+      lnTT = alog(f(l1,m1,:,iTT))
+    else
+      TT = exp(f(l1,m1,:,ilnTT))
+      lnTT = f(l1,m1,:,ilnTT)
+    endif
+!
+    do i=n1+1,n2+nghost
+      int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i)+1/TT(i+1)))
+      f(:,:,i,ilnrho)=f(:,:,i-1,ilnrho)-lnTT(i)+ &
+          lnTT(i-1)+konst*int
+    enddo
+!
+    do i=0,nprocz-2
+      ipt = nprocxy*i
+      if (iproc==ipt) then 
+        do j=0,nprocx-1
+          do k=0,nprocy-1
+            ipt=j + nprocx*k+nprocxy*(ipz+1)
+            call mpisend_real(f(l1,m1,n2+1,ilnrho),1,ipt,100*ipz+j*k)
+          enddo
+        enddo
+      endif
+    enddo
+!
+    if (ipz>0) then 
+      call mpirecv_real(lnrho_0,1,nprocxy*(ipz-1),100*(ipz-1)+ipx*ipy)
+      f(:,:,:,ilnrho) =  f(:,:,:,ilnrho)+lnrho_0
+    endif
+!
+  endsubroutine hydrostatic_lnTT
+!***********************************************************************
   subroutine hydrostatic_x(f)
 !
 !  Intialize the density for given temperprofile in vertical
@@ -567,6 +658,27 @@ contains
     lin_inpol = (f2-f1)/(x2-x1)*(yn-x1) + f1
 !
   endfunction lin_inpol
+!***********************************************************************\
+  subroutine setup_tanh(f)
+!    
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, dimension (mz) :: TT,lnTT,z_SI
+    integer :: i,j
+!
+    z_SI = z*unit_length
+!
+    TT = (T1-T0)*(0.5*tanh((z_SI-z0_tanh)/width_tanh)+0.5)+T0
+    TT = TT / unit_temperature
+    
+    lnTT = alog(TT)
+!
+    do i=1,mx
+      do j=1,my
+        f(i,j,:,ilnTT) = lnTT
+      enddo
+    enddo
+!
+  endsubroutine setup_tanh
 !***********************************************************************
 !
 !********************************************************************
