@@ -2028,66 +2028,66 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 !
                 if (z(k+1)>zval_p) then
                   if (.not. ba_defined(i,j,k)) then
-                    ba(i,j,k,1)=-1
+                    ba(i,j,k,3)=-1
                     ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==1) ba(i,j,k,1)=-1
+                    if (cw==1) ba(i,j,k,3)=-1
                   endif
                 endif
                 !
                 if (z(k+2)>zval_p .and. z(k+1)<zval_p) then
                   if (.not. ba_defined(i,j,k)) then
-                    ba(i,j,k,1)=-2
+                    ba(i,j,k,3)=-2
                     ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==1) ba(i,j,k,1)=-2
+                    if (cw==1) ba(i,j,k,3)=-2
                   endif
                 endif
                 !
                 if (z(k+3)>zval_p .and. z(k+2)<zval_p) then
                   if (.not. ba_defined(i,j,k)) then
-                    ba(i,j,k,1)=-3
+                    ba(i,j,k,3)=-3
                     ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==1) ba(i,j,k,1)=-3
+                    if (cw==1) ba(i,j,k,3)=-3
                   endif
                 endif
                 !
                 if (z(k-1)<zval_m) then
                   if (.not. ba_defined(i,j,k)) then
-                    ba(i,j,k,1)=1
+                    ba(i,j,k,3)=1
                     ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-1) ba(i,j,k,1)=1
+                    if (cw==-1) ba(i,j,k,3)=1
                   endif
                 endif
                 !
                 if (z(k-2)<zval_m .and. z(k-1)>zval_m) then
                   if (.not. ba_defined(i,j,k)) then
-                    ba(i,j,k,1)=2
+                    ba(i,j,k,3)=2
                     ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-1) ba(i,j,k,1)=2
+                    if (cw==-1) ba(i,j,k,3)=2
                   endif
                 endif
                 !
                 if (z(k-3)<zval_m .and. z(k-2)>zval_m) then
                   if (.not. ba_defined(i,j,k)) then
-                    ba(i,j,k,1)=3
+                    ba(i,j,k,3)=3
                     ba(i,j,k,4)=iobj
                   else
                     call find_closest_wall(i,j,k,iobj,cw)
-                    if (cw==-1) ba(i,j,k,1)=3
+                    if (cw==-1) ba(i,j,k,3)=3
                   endif
                 endif
                 !
-                if (ba(i,j,k,1)==0) then
-                  ba(i,j,k,1)=9
+                if (ba(i,j,k,3)==0) then
+                  ba(i,j,k,3)=9
                   ba(i,j,k,4)=iobj
                 endif
                 !
@@ -2140,13 +2140,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             ba(i,j,mz-nghost+k,1:3)=11
             ba(i,j,mz-nghost+k,4)=iobj
           elseif (form=='sphere') then
-            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
             !  Lower (left) ghost points
+            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
             if (r_point < r_obj) then
               ba(i,j,k,1:3)=11
               ba(i,j,k,4)=iobj
             endif
             !  Upper (right) ghost points
+            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(mz-nghost+k)-z_obj)**2)
             if (r_point < r_obj) then
               ba(i,j,mz-nghost+k,1:3)=11
               ba(i,j,mz-nghost+k,4)=iobj
