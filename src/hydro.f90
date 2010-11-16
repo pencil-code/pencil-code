@@ -153,6 +153,7 @@ module Hydro
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
+  real :: Shearx=0.
 !
   namelist /hydro_run_pars/ &
       Omega,theta, tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
@@ -171,7 +172,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
-      lno_meridional_flow, lrotation_xaxis, k_diffrot
+      lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -4398,6 +4399,17 @@ module Hydro
       endif
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
         -prof_amp3(n)*cos(2.*pi*((x(l1:l2))-x0)/Lx))
+!
+!  Shear profile linear in x
+!
+      case ('Sx')
+      if (wdamp/=0.) then
+        prof_amp3=ampl1_diffrot*0.5*(1+tanh((z-rdampint)/(wdamp)))
+      else
+        prof_amp3=ampl1_diffrot
+      endif
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+        -Shearx*x(l1:l2))
 !
 !  Solar rotation profile from Dikpati & Charbonneau (1999, ApJ)
 !
