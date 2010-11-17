@@ -145,7 +145,7 @@ module InitialCondition
       if ((rsmooth/=0.).or.(r0_pot/=0)) then
         if (rsmooth/=r0_pot) &
              call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
-        if (n_pot.le.2) &
+        if (n_pot<=2) &
              call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
       endif
 !
