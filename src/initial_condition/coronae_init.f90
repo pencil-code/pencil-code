@@ -87,6 +87,8 @@ contains
       call setup_vert_profiles(f)
     case ('tanh')
       call setup_tanh(f)
+    case ('piecewice_poly')
+      call piecewice_poly(f)
     case default
       call fatal_error('initial_condition_lnrho', &
           'no such value for lnTT_init')
@@ -679,6 +681,88 @@ contains
     enddo
 !
   endsubroutine setup_tanh
+!***********************************************************************
+  subroutine piecewice_poly(f)
+!    
+    use Gravity, only: gravz, z1, z2
+    use EquationOfState, only: cs2top, gamma, gamma_m1, get_cp1
+!
+    real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+    real :: Ttop,T2, T1, T0, beta0, beta1, beta2, cp1=1, temp
+    real :: lnrhotop, lnrho2, lnrho1, lnrho0, ztop
+    real :: lnrhobot,zbot,Tbot
+    real, dimension(4) :: mpoly = (/1.3,1000.,-1.04,500/)
+    real, dimension(3) :: zpoly = (/0.,3.,5./)
+    real, dimension(4) :: beta
+    integer :: i
+!
+    if (leos) call get_cp1(cp1)
+!
+!  Top boundary values.
+!
+      ztop=xyz0(3)+Lxyz(3)
+      zbot=xyz0(3)
+!
+!  Temperature gradients.
+!
+      beta = cp1*gravz/(mpoly+1.)*gamma/gamma_m1
+!
+!
+      T0 = 6000./unit_temperature
+      lnrho0 = alog(3e-4/unit_density)
+!
+      Tbot = T0 - beta(1)*(zpoly(1)-zbot)
+      T1   = T0 + beta(2)*(zpoly(2)-zpoly(1))
+      T2   = T1 + beta(3)*(zpoly(3)-zpoly(2))
+      Ttop = T2 + beta(4)*(ztop-zpoly(3))
+!
+!
+      lnrhobot =  lnrho0+mpoly(1)*log(Tbot/T0)
+      lnrho1   =  lnrho0+mpoly(2)*log(T1/T0)
+      lnrho2   =  lnrho1+mpoly(3)*log(T2/T1)
+      lnrhotop =  lnrho2+mpoly(4)*log(Ttop/T2)
+!
+      if (iproc==0) then
+      print*,'########################################'
+      print*,'Beta',beta
+      print*,"TTbot",Tbot*unit_temperature
+      print*,"TT1",T0*unit_temperature
+      print*,"TT2",T1*unit_temperature
+      print*,"TT3",T2*unit_temperature
+      print*,"TTtop",Ttop*unit_temperature
+      print*,"rhobot",exp(lnrhobot)*unit_density
+      print*,"rho0",exp(lnrho0)*unit_density
+      print*,"rho1",exp(lnrho1)*unit_density
+      print*,"rho2",exp(lnrho2)*unit_density
+      print*,"rhotop",exp(lnrhotop)*unit_density
+      print*,'########################################'
+      endif
+      do  i=n2,n1,-1
+        if (z(i) >= zpoly(3)) then
+          temp = T2 + beta(4)*(z(i)-zpoly(3))
+          f(:,:,i,ilnTT)=log(temp)
+          f(:,:,i,ilnrho)=lnrho2+mpoly(4)*log(temp/T2)
+!
+        elseif (z(i) < zpoly(2) .and. z(i) >=zpoly(3)) then
+          temp = T1 + beta(3)*(z(i)-zpoly(2))
+          f(:,:,i,ilnTT)=log(temp)
+          f(:,:,i,ilnrho)=lnrho1+mpoly(3)*log(temp/T1)
+!
+        elseif (z(i) < zpoly(1) .and. z(i) >=zpoly(2)) then
+          temp = T0 + beta(2)*(z(i)-zpoly(1))
+          f(:,:,i,ilnTT)=log(temp)
+          f(:,:,i,ilnrho)=lnrho0+mpoly(2)*log(temp/T0)
+!
+        elseif (z(i) < zpoly(1)) then
+          temp = Tbot + beta(1)*(z(i)-zbot)
+          f(:,:,i,ilnTT)=log(temp)
+          f(:,:,i,ilnrho)=lnrhobot+mpoly(1)*log(temp/Tbot)
+!
+        endif
+!        
+      enddo
+!    
+  endsubroutine piecewice_poly
 !***********************************************************************
 !
 !********************************************************************
