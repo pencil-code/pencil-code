@@ -5757,23 +5757,24 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,i1=1,i2=2,i3=3
+      integer :: i,j
 !
       select case (topbot)
 !
 !  bottom (left end of the domain)
       case ('bot')
-        f(:,:,n1,j)=(+30.*f(:,:,n1+i1,j) &
-            -3.*f(:,:,n1+i2,j) &
-            -2.*f(:,:,n1+i3,j))/25.
+        f(:,:,n1,j)=(30.*f(:,:,n1+1,j) &
+                     -3.*f(:,:,n1+2,j) &
+                     -2.*f(:,:,n1+3,j))/25.
 !
         do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1+i,j); enddo
 !
 !  top (right end of the domain)
       case ('top')
-        f(:,:,n2,j)=(30.*f(:,:,n2+i1,j) &
-                            -3.*f(:,:,n2+i2,j) &
-                            -2.*f(:,:,n2+i3,j))/25.
+        f(:,:,n2,j)=(30.*f(:,:,n2-1,j) &
+                     -3.*f(:,:,n2-2,j) &
+                     -2.*f(:,:,n2-3,j))/25.
+!
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
 !
       case default
