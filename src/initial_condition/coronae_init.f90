@@ -709,7 +709,7 @@ contains
 !
 !
       T0 = 6000./unit_temperature
-      lnrho0 = alog(3e-4/unit_density)
+      lnrho0 = alog(3e-4/real(unit_density))
 !
       Tbot = T0 - beta(1)*(zpoly(1)-zbot)
       T1   = T0 + beta(2)*(zpoly(2)-zpoly(1))
