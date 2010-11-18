@@ -737,26 +737,27 @@ contains
       print*,"rhotop",exp(lnrhotop)*unit_density
       print*,'########################################'
       endif
-      do  i=n2,n1,-1
-        if (z(i) >= zpoly(3)) then
-          temp = T2 + beta(4)*(z(i)-zpoly(3))
-          f(:,:,i,ilnTT)=log(temp)
-          f(:,:,i,ilnrho)=lnrho2+mpoly(4)*log(temp/T2)
+      do  i=1,mz
 !
-        elseif (z(i) < zpoly(2) .and. z(i) >=zpoly(3)) then
-          temp = T1 + beta(3)*(z(i)-zpoly(2))
-          f(:,:,i,ilnTT)=log(temp)
-          f(:,:,i,ilnrho)=lnrho1+mpoly(3)*log(temp/T1)
+        if (z(i) < zpoly(1)) then
+          Temp = Tbot + beta(1)*(z(i)-zbot)
+          f(:,:,i,ilnTT)=log(Temp)
+          f(:,:,i,ilnrho)=lnrhobot+mpoly(1)*log(Temp/Tbot)
 !
-        elseif (z(i) < zpoly(1) .and. z(i) >=zpoly(2)) then
-          temp = T0 + beta(2)*(z(i)-zpoly(1))
-          f(:,:,i,ilnTT)=log(temp)
-          f(:,:,i,ilnrho)=lnrho0+mpoly(2)*log(temp/T0)
+        elseif (z(i) >=zpoly(1) .and. z(i) < zpoly(2)) then
+          Temp = T0 + beta(2)*(z(i)-zpoly(1))
+          f(:,:,i,ilnTT)=log(Temp)
+          f(:,:,i,ilnrho)=lnrho0+mpoly(2)*log(Temp/T0)
 !
-        elseif (z(i) < zpoly(1)) then
-          temp = Tbot + beta(1)*(z(i)-zbot)
-          f(:,:,i,ilnTT)=log(temp)
-          f(:,:,i,ilnrho)=lnrhobot+mpoly(1)*log(temp/Tbot)
+        elseif (z(i) >= zpoly(2) .and. z(i) <zpoly(3)) then
+          Temp = T1 + beta(3)*(z(i)-zpoly(2))
+          f(:,:,i,ilnTT)=log(Temp)
+          f(:,:,i,ilnrho)=lnrho1+mpoly(3)*log(Temp/T1)
+!
+        elseif (z(i) >= zpoly(3)) then
+          Temp = T2 + beta(4)*(z(i)-zpoly(3))
+          f(:,:,i,ilnTT)=log(Temp)
+          f(:,:,i,ilnrho)=lnrho2+mpoly(4)*log(Temp/T2)
 !
         endif
 !        
