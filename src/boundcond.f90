@@ -62,8 +62,8 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
 !
-!  Boundary conditions in x except for periodic part handled by communication.
-!  boundconds_x() needs to be called before communicating (because we
+!  Boundary conditions in x, except for periodic part handled by communication.
+!  Remark: boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
 !  (yz-'corners').
@@ -318,8 +318,8 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_y(f,ivar1_opt,ivar2_opt)
 !
-!  Boundary conditions in x except for periodic part handled by communication.
-!  boundconds_x() needs to be called before communicating (because we
+!  Boundary conditions in y, except for periodic part handled by communication.
+!  Remark: boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
 !  (yz-'corners').
@@ -502,8 +502,8 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
 !
-!  Boundary conditions in x except for periodic part handled by communication.
-!  boundconds_x() needs to be called before communicating (because we
+!  Boundary conditions in z, except for periodic part handled by communication.
+!  Remark: boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
 !  (yz-'corners').
