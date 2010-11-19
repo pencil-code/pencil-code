@@ -24,10 +24,12 @@ module InitialCondition
   real :: rho_init=0.
   real :: T0=6000.,T1=1e6,z0_tanh=4e6,width_tanh=1e6
   character (len=labellen) :: direction='z'
+  real, dimension(4) :: mpoly = (/1.3,1000.,-1.04,500/)
+  real, dimension(3) :: zpoly = (/0.,3.,5./)
 !
   namelist /initial_condition_pars/ &
       lnrho_init,lnTT_init,stratitype,rho_init,direction, &
-      set_lnTT_first,T0,T1,z0_tanh,width_tanh
+      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly,zpoly
 !
 contains
 !***********************************************************************
@@ -684,15 +686,13 @@ contains
 !***********************************************************************
   subroutine piecewice_poly(f)
 !    
-    use Gravity, only: gravz, z1, z2
-    use EquationOfState, only: cs2top, gamma, gamma_m1, get_cp1
+    use EquationOfState, only: gamma, gamma_m1, get_cp1
+    use Gravity, only: gravz
 !
     real, dimension(mx,my,mz,mfarray), intent(inout) :: f
     real :: Ttop,T2, T1, T0, beta0, beta1, beta2, cp1=1, temp
     real :: lnrhotop, lnrho2, lnrho1, lnrho0, ztop
     real :: lnrhobot,zbot,Tbot
-    real, dimension(4) :: mpoly = (/1.3,1000.,-1.04,500/)
-    real, dimension(3) :: zpoly = (/0.,3.,5./)
     real, dimension(4) :: beta
     integer :: i
 !
