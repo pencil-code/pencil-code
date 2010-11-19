@@ -1549,7 +1549,7 @@ module General
           (z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3) .or. nzgrid==1)) then
         ! Everything okay
       else
-        print*, 'interpolate_linear: Interpolation point does not ' // &
+        print*, 'linear_interpolate: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
@@ -1559,7 +1559,7 @@ module General
         print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
         print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
         print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call fatal_error('interpolate_linear','')
+        call fatal_error('linear_interpolate','')
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
@@ -1620,23 +1620,23 @@ module General
       if (lcheck) then
         do i=1,ivar2-ivar1+1
           if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_linear: interpolated value is LARGER than'
-            print*, 'interpolate_linear: a values at the corner points!'
-            print*, 'interpolate_linear: x0, y0, z0=', &
+            print*, 'linear_interpolate: interpolated value is LARGER than'
+            print*, 'linear_interpolate: a values at the corner points!'
+            print*, 'linear_interpolate: x0, y0, z0=', &
                 x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_linear: g1...g8=', &
+            print*, 'linear_interpolate: i, gp(i)=', i, gp(i)
+            print*, 'linear_interpolate: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
             print*, '------------------'
           endif
           if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_linear: interpolated value is smaller than'
-            print*, 'interpolate_linear: a values at the corner points!'
-            print*, 'interpolate_linear: xxp=', xxp
-            print*, 'interpolate_linear: x0, y0, z0=', &
+            print*, 'linear_interpolate: interpolated value is smaller than'
+            print*, 'linear_interpolate: a values at the corner points!'
+            print*, 'linear_interpolate: xxp=', xxp
+            print*, 'linear_interpolate: x0, y0, z0=', &
                 x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_linear: g1...g8=', &
+            print*, 'linear_interpolate: i, gp(i)=', i, gp(i)
+            print*, 'linear_interpolate: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
             print*, '------------------'
           endif
