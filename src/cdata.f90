@@ -133,6 +133,7 @@ module Cdata
   logical :: lread_oldsnap_notestscalar=.false.
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
+  logical :: lfake_parallel_io=.false.
 !
 !  Units (need to be in double precision).
 !

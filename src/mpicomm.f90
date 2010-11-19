@@ -4470,7 +4470,52 @@ module Mpicomm
 !
     endsubroutine MPI_adi_z
 !***********************************************************************
-    subroutine parallel_open(unit,file,form,recl)
+    subroutine parallel_open(unit,file,form)
+!
+!  Choose between two reading methods. 
+!
+!  19-nov-10/dhruba.mitra: implemented
+!
+      integer :: unit
+      character (len=*) :: file
+      character (len=*), optional :: form
+!
+      if(lfake_parallel_io) then 
+        call fake_parallel_open(unit,file,form)
+      else
+         call true_parallel_open(unit,file,form)
+       endif
+!
+    endsubroutine parallel_open
+!***********************************************************************
+    subroutine fake_parallel_open(unit,file,form)
+!
+!  Read a global file.
+!
+!  18-mar-10/Bourdin.KIS: implemented
+!
+      integer :: unit
+      character (len=*) :: file
+      character (len=*), optional :: form
+!
+      logical :: exists
+!
+!  Test if file exists.
+!
+      inquire(FILE=file,exist=exists)
+      if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
+!
+!  Open file.
+!
+      if (present(form)) then
+        open(unit, FILE=file, FORM=form, STATUS='old')
+      else
+        open(unit, FILE=file, STATUS='old')
+      endif
+!
+    endsubroutine fake_parallel_open
+!***********************************************************************
+    subroutine true_parallel_open(unit,file,form,recl)
 !
 !  Read a global file in parallel.
 !
@@ -4580,9 +4625,38 @@ module Mpicomm
 !  Unit is now reading from RAM and is ready to be used on all ranks in
 !  parallel.
 !
-    endsubroutine parallel_open
+    endsubroutine true_parallel_open
 !***********************************************************************
     subroutine parallel_close(unit)
+!
+!  Close a file unit opened by parallel_open and remove temporary file.
+!
+!  17-mar-10/Bourdin.KIS: implemented
+!
+!
+      integer :: unit
+!
+      if(lfake_parallel_io) then 
+        call fake_parallel_close(unit)
+      else
+         call true_parallel_close(unit)
+       endif
+!
+    endsubroutine parallel_close
+!***********************************************************************
+    subroutine fake_parallel_close(unit)
+!
+!  Close a file unit opened by parallel_open and remove temporary file.
+!
+!  17-mar-10/Bourdin.KIS: implemented
+!
+      integer :: unit
+!
+      close(unit)
+!
+    endsubroutine fake_parallel_close
+!***********************************************************************
+    subroutine true_parallel_close(unit)
 !
 !  Close a file unit opened by parallel_open and remove temporary file.
 !
@@ -4592,7 +4666,7 @@ module Mpicomm
 !
       close(unit,STATUS='delete')
 !
-    endsubroutine parallel_close
+    endsubroutine true_parallel_close
 !***********************************************************************
     function parallel_count_lines(file)
 !
