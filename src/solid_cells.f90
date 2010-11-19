@@ -36,7 +36,7 @@ module Solid_Cells
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=labellen) :: interpolation_method='staircase'
   logical :: lclose_interpolation=.false., lclose_linear=.false.
-  logical :: lnointerception=.false.
+  logical :: lnointerception=.false.,lcheck_ba=.false.
   real                          :: rhosum
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
@@ -59,7 +59,7 @@ module Solid_Cells
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
-       limit_close_linear,lnointerception,nforcepoints
+       limit_close_linear,lnointerception,nforcepoints,lcheck_ba
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -195,7 +195,7 @@ module Solid_Cells
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: a2,rr2, wall_smoothing,rr2_low,rr2_high,shiftx,shifty
       real :: wall_smoothing_temp,xr,yr
-      integer i,j,k,cyl,jj,icyl
+      integer i,j,k,cyl,jj,icyl,isph
 !
       do jj=1,ninit
       select case (initsolid_cells(jj))
@@ -215,7 +215,7 @@ module Solid_Cells
 !
 !  Loop over all cylinders
 !
-          do icyl=1,ncylinders
+          do icyl=1,nobjects
             a2 = objects(icyl)%r**2
             xr=x(i)-objects(icyl)%x(1)
             if (objects(icyl)%x(2) /= 0) then
@@ -852,7 +852,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               cos_theta=(x(i)-x_obj)/r_point
               xmirror=cos_theta*r_new+x_obj
               ymirror=sin_theta*r_new+y_obj 
-              zmirror=0.
+              zmirror=z(k)
             elseif (form=='sphere') then
               r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
               r_new=r_obj+(r_obj-r_point)
@@ -2096,6 +2096,20 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           endif
         enddo
         enddo
+        else
+!
+!  If the object is a cylinder then every point inside the cylinder will
+!  be infinetly far from the surface in the z-direction.
+!
+          do i=l1,l2
+            do j=m1,m2
+              do k=n1,n2
+                if ((ba(i,j,k,1).ne.0) .and. (ba(i,j,k,1).ne.10)) then
+                  ba(i,j,k,3)=9
+                endif
+              enddo
+            enddo
+          enddo
         endif
 !
 !  If we want to interpolate points which are very close to the solid surface
@@ -2134,27 +2148,31 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         do i=1,mx
         do j=1,my
         do k=1,nghost
-          if (form=='cylinder') then 
-            ba(i,j,k,1:3)=11
-            ba(i,j,k,4)=iobj
-            ba(i,j,mz-nghost+k,1:3)=11
-            ba(i,j,mz-nghost+k,4)=iobj
-          elseif (form=='sphere') then
             !  Lower (left) ghost points
-            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+           if (form=='cylinder') then 
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+            elseif (form=='sphere') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+            else
+              call fatal_error('find_solid_cell_boundaries','No such form!')
+            endif
             if (r_point < r_obj) then
               ba(i,j,k,1:3)=11
               ba(i,j,k,4)=iobj
             endif
             !  Upper (right) ghost points
-            r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(mz-nghost+k)-z_obj)**2)
+            if (form=='cylinder') then 
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+            elseif (form=='sphere') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2&
+                  +(z(mz-nghost+k)-z_obj)**2)
+            else
+              call fatal_error('find_solid_cell_boundaries','No such form!')
+            endif
             if (r_point < r_obj) then
               ba(i,j,mz-nghost+k,1:3)=11
               ba(i,j,mz-nghost+k,4)=iobj
             endif
-          else
-            call fatal_error('find_solid_cell_boundaries','No such form!')
-          endif
         enddo
         enddo
         enddo
@@ -2231,6 +2249,54 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 ! Finalize loop over all objects
 !
       enddo
+!
+!  Check that a fluid point is really outside a solid geometry
+!
+      if (lcheck_ba) then
+        do iobj=1,nobjects
+          x_obj=objects(iobj)%x(1)
+          y_obj=objects(iobj)%x(2)
+          z_obj=objects(iobj)%x(3)
+          r_obj=objects(iobj)%r
+          form=objects(iobj)%form
+          do i=1,mx
+            do j=1,my
+              do k=1,mz
+                if (form=='cylinder') then 
+                  r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+                elseif (form=='sphere') then
+                  r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+                else
+                  call fatal_error('find_solid_cell_boundaries','No such form!')
+                endif
+                if (r_point > r_obj) then
+                  if ((ba(i,j,k,1) .ne. 0 ) .and. (ba(i,j,k,1) .ne. 10)) then
+                    print*,'i,j,k=',i,j,k
+                    print*,'ba(i,j,k,1)=',ba(i,j,k,1)
+                    print*,'r_point,r_obj=',r_point,r_obj
+                    print*,'x(i),y(j),z(k)=',x(i),y(j),z(k)
+                    call fatal_error('find_solid_cell_boundaries',&
+                        'Point marked as fluid point but seems not to be...')
+                  endif
+                else
+                  if ((ba(i,j,k,1)==0).or.(ba(i,j,k,1)==10).or.&
+                      (ba(i,j,k,2)==0).or.(ba(i,j,k,2)==10).or.&
+                      (ba(i,j,k,3)==0).or.(ba(i,j,k,3)==10))then
+                    print*,'i,j,k=',i,j,k
+                    print*,'ba(i,j,k,1)=',ba(i,j,k,1)
+                    print*,'ba(i,j,k,2)=',ba(i,j,k,2)
+                    print*,'ba(i,j,k,3)=',ba(i,j,k,3)
+                    print*,'r_point,r_obj=',r_point,r_obj
+                    print*,'x(i),y(j),z(k)=',x(i),y(j),z(k)
+                    call fatal_error('find_solid_cell_boundaries',&
+                        'Point marked as a solid point but seems not to be...')
+                  endif
+                endif
+              enddo
+            enddo
+          enddo
+        enddo
+      endif
 !
     endsubroutine find_solid_cell_boundaries
 !***********************************************************************
