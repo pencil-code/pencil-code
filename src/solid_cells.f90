@@ -72,7 +72,7 @@ module Solid_Cells
 !
   contains
 !***********************************************************************
-    subroutine initialize_solid_cells
+    subroutine initialize_solid_cells(f)
 !
 !  Define the geometry of the solids.
 !  There might be many separate solid objects of different geometries (currently
@@ -82,6 +82,7 @@ module Solid_Cells
 !  28-sep-2010/nils: added spheres
 !  nov-2010/kragset: updated allocations related to drag calculations
 !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: icyl,isph      
 !
 !  Define the geometry of the solid object.
@@ -157,7 +158,7 @@ module Solid_Cells
 !
 !  Prepare the solid geometry
 !
-      call find_solid_cell_boundaries
+      call find_solid_cell_boundaries(f)
       call calculate_shift_matrix
 !
 !
@@ -583,19 +584,19 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     character(len=10) :: objectform
 !
     if (ldiagnos) then
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 &
+          .or. idiag_c_dragz /= 0) then 
 !      
 !  Reset cumulating quantities before calculations in first pencil
 !
-      if (imn == 1) then
-        c_dragx=0.
-        c_dragy=0.
-        c_dragz=0.
-        rhosum=0
-        irhocount=0
-      endif
+        if (imn == 1) then
+          c_dragx=0.
+          c_dragy=0.
+          c_dragz=0.
+          rhosum=0
+          irhocount=0
+        endif
 !
-      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 &
-          .or. idiag_c_dragz /= 0) then 
         call getnu(nu)
         twopi=2.*pi
         twonu=2.*nu
@@ -647,6 +648,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   nvec(2) = -cos(longitude)*sin(latitude)
                   nvec(3) = cos(latitude)
                   surfaceelement = surfacecoeff*sin(latitude)
+                else
+                  call fatal_error('dsolid_dt','No such objectform!')
+                  call keep_compiler_quiet(nvec)
                 end if
 !
 !  Force in x direction
@@ -1754,7 +1758,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 
     endsubroutine write_solid_cells_run_pars
 !***********************************************************************
-    subroutine find_solid_cell_boundaries
+    subroutine find_solid_cell_boundaries(f)
 !
 !  Find the boundaries of the geometries such that we can set the
 !  ghost points inside the solid geometry in order to achieve the
@@ -1782,6 +1786,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  19-nov-2008/nils: coded
 !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i,j,k,iobj,cw
       real :: x2,y2,z2,xval_p,xval_m,yval_p,yval_m, zval_p,zval_m
       real :: dr,r_point,x_obj,y_obj,z_obj,r_obj
@@ -2249,6 +2254,23 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 ! Finalize loop over all objects
 !
       enddo
+!
+!  Set zero value of all variables inside the solid geometry far from 
+!  all interfaces. This is done for more easy interpretation of postprocessing.
+!
+      if (it==1) then 
+        do iobj=1,nobjects
+          do i=1,mx
+          do j=1,my
+          do k=1,mz
+            if (ba(i,j,k,1)==9 .and. ba(i,j,k,2)==9 .and. ba(i,j,k,3)==9) then
+              f(i,j,k,:)=0
+            endif
+          enddo
+          enddo
+          enddo
+        enddo
+      endif
 !
 !  Check that a fluid point is really outside a solid geometry
 !

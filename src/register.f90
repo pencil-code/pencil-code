@@ -392,7 +392,7 @@ module Register
       call initialize_viscosity(lstarting)
       call initialize_special(f,lstarting)
       call initialize_border_profiles()
-      call initialize_solid_cells()
+      call initialize_solid_cells(f)
       call initialize_implicit_physics(f)
 !
     endsubroutine initialize_modules

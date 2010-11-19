@@ -27,9 +27,13 @@ module Solid_Cells
 !
   contains
 !***********************************************************************
-    subroutine initialize_solid_cells
+    subroutine initialize_solid_cells(f)
 !
 !  19-nov-08/nils: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_solid_cells
 !***********************************************************************
