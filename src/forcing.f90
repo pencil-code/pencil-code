@@ -946,7 +946,10 @@ module Forcing
           if (extent(j)) then
             jf=j+ifff-1
             do n=n1,n2
-              sig = relhel*tmpz(n)
+!--           sig = relhel*tmpz(n)
+!AB: removed tmpz factor
+              sig = relhel
+call fatal_error('forcing_hel','radial profile should be quenched')
               coef1(1)=cmplx(k*kex,sig*kkex)
               coef1(2)=cmplx(k*key,sig*kkey)
               coef1(3)=cmplx(k*kez,sig*kkez)
@@ -2400,7 +2403,10 @@ module Forcing
         do j=1,3
           jf=j+ifff-1
           do n=n1,n2
-            sig = relhel*tmpz(n)
+!---        sig = relhel*tmpz(n)
+!AB: removed tmpz factor
+              sig = relhel
+call fatal_error('forcing_hel_noshear','radial profile should be quenched')
             coef(1)=cmplx(k*float(kex),sig*float(kkex))
             coef(2)=cmplx(k*float(key),sig*float(kkey))
             coef(3)=cmplx(k*float(kez),sig*float(kkez))
@@ -3061,7 +3067,10 @@ module Forcing
         do j=1,3
           jf=j+ifff-1
           do n=n1,n2
-            sig = relhel*tmpz(n)
+!--         sig = relhel*tmpz(n)
+!AB: removed tmpz factor
+              sig = relhel
+call fatal_error('hel_vec','radial profile should be quenched')
             coef(1)=cmplx(k*kex,sig*kkex)
             coef(2)=cmplx(k*key,sig*kkey)
             coef(3)=cmplx(k*kez,sig*kkez)
