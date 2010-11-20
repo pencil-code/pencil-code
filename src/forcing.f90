@@ -2464,16 +2464,19 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  g(z) and g'(z)
 !  use z-profile to cut off
 !
-!-    if (height_ff/=0.) then
-!-      tmpz=(z/height_ff)**2
-!-      gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-!-    endif
+      if (height_ff/=0.) then
+        tmpz=(z/height_ff)**2
+        gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
 !
-      fac=1./(60.*dz)
-      gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
-      gg(4:mz-3)=fac*(45.*(gz(5:mz-2)-gz(3:mz-4)) &
-                      -9.*(gz(6:mz-1)-gz(2:mz-5)) &
-                         +(gz(7:mz)  -gz(1:mz-6)))
+        fac=1./(60.*dz)
+        gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
+        gg(4:mz-3)=fac*(45.*(gz(5:mz-2)-gz(3:mz-4)) &
+                        -9.*(gz(6:mz-1)-gz(2:mz-5)) &
+                           +(gz(7:mz)  -gz(1:mz-6)))
+      else
+        gz=0
+        gg=0
+      endif
 !
 !  make sign antisymmetric
 !
@@ -2543,16 +2546,19 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !  g(z) and g'(z)
 !  use z-profile to cut off
 !
-!-    if (height_ff/=0.) then
-!-      tmpz=(z/height_ff)**2
-!-      gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
-!-    endif
+      if (height_ff/=0.) then
+        tmpz=(z/height_ff)**2
+        gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
 !
-      fac=1./(60.*dz)
-      gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
-      gg(4:mz-3)=fac*(45.*(gz(5:mz-2)-gz(3:mz-4)) &
-                      -9.*(gz(6:mz-1)-gz(2:mz-5)) &
-                         +(gz(7:mz)  -gz(1:mz-6)))
+        fac=1./(60.*dz)
+        gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
+        gg(4:mz-3)=fac*(45.*(gz(5:mz-2)-gz(3:mz-4)) &
+                        -9.*(gz(6:mz-1)-gz(2:mz-5)) &
+                           +(gz(7:mz)  -gz(1:mz-6)))
+      else
+        gz=0
+        gg=0
+      endif
 !
 !  make sign antisymmetric
 !
