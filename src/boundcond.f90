@@ -1909,21 +1909,24 @@ module Boundcond
       endif
 !
       select case (topbot)
-! bottom boundary
+!
+! Bottom boundary
+!
       case ('bot')
 !
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
-!           lambda_exp=-(Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
-           lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy) )
-            lambda_exp_sinth = lambda_exp*sinth(iy)
+            lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy))
+            lambda_exp_sinth=lambda_exp*sinth(iy)
             do k=1,nghost
                if (Omega==0) then
-                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))
+                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
+                     **(1-(lambda_exp/nu))
                else
-                 somega=lambda_exp_sinth*omega*(x(l1+k)-x(l1-k))*(x(l1-k)**(1-lambda_exp/nu))
-                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu))&
-                                 +somega
+                 somega=lambda_exp_sinth*Omega*(x(l1+k)-x(l1-k))*(x(l1-k) &
+                     **(1-lambda_exp/nu))
+                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
+                     **(1-(lambda_exp/nu))+somega
                endif
             enddo
           enddo
@@ -1932,20 +1935,23 @@ module Boundcond
             f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1-k)/x(l1+k))
           enddo
         endif
-! top boundary
+!
+! Top boundary
+!
       case ('top')
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
-!            lambda_exp=- (Lambda_V0+Lambda_V1*sinth(iy)*sinth(iy) )
-            lambda_exp=- (Lambda_V0t+Lambda_V1t*sinth(iy)*sinth(iy) )
-            lambda_exp_sinth = lambda_exp*sinth(iy)
+            lambda_exp=-(Lambda_V0t+Lambda_V1t*sinth(iy)*sinth(iy))
+            lambda_exp_sinth=lambda_exp*sinth(iy)
             do k=1,nghost
               if (Omega==0) then
-                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))
+                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
+                    **(1-(lambda_exp/nu)))
               else
-                somega=lambda_exp_sinth*omega*(x(l1-k)-x(l1+k))*(x(l1+k)**(1-lambda_exp/nu))
-                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)))&
-                                 +somega
+                somega=lambda_exp_sinth*Omega*(x(l1-k)-x(l1+k))*(x(l1+k) &
+                    **(1-lambda_exp/nu))
+                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
+                    **(1-(lambda_exp/nu)))+somega
               endif
             enddo
           enddo
