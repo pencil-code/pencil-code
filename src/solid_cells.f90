@@ -2264,7 +2264,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           do j=1,my
           do k=1,mz
             if (ba(i,j,k,1)==9 .and. ba(i,j,k,2)==9 .and. ba(i,j,k,3)==9) then
-              f(i,j,k,:)=0
+              f(i,j,k,iux:iuz)=0
             endif
           enddo
           enddo
