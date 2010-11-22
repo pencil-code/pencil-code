@@ -1558,6 +1558,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 #(Plato)
 ##
 ##
+## joern's laptop
+#FC=mpif90 #(plasmoid)
+#FFLAGS= -O0 #(plasmoid)
+#CFLAGS=-DFUNDERSC=1 #(plasmoid)
+##
+##
 ## norosx52 (Mac Pro, 8 cores)
 ##
 #FC=/opt/ompi/bin/mpif90 #(norosx52)
