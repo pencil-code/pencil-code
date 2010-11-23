@@ -60,6 +60,7 @@ module Hydro
 !
 !  Init parameters.
 !
+  real, dimension (3) :: u0_advec=0.
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: relhel_uu=1.,urandi=0.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
@@ -92,6 +93,7 @@ module Hydro
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
+  logical :: lconst_advection=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -107,7 +109,7 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-      relhel_uu, &
+      relhel_uu, u0_advec, &
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, uy_left, &
       uy_right,uu_const, Omega,  initpower, cutoff, u_out_kep, N_modes_uu, &
@@ -157,6 +159,7 @@ module Hydro
 !
   namelist /hydro_run_pars/ &
       Omega,theta, tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
+      u0_advec, &
       tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
       inituu,ampluu,kz_uu, ampl1_diffrot,ampl2_diffrot,uuprof, &
       xexp_diffrot,kx_diffrot,kz_diffrot, kz_analysis, &
@@ -602,6 +605,13 @@ module Hydro
         ladvection_velocity=.false.
         if (lroot) print*, &
              'initialize_hydro: fargo used. turned off advection of velocity'
+      endif
+!
+!  Turn on constant background advection if instructed.
+!
+      if (any(u0_advec/=0.0)) then
+        lconst_advection=.true.
+        if (lroot) print*, 'initialize_hydro: constant background advection = ', u0_advec
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
@@ -1477,6 +1487,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      real, dimension (nx,3) :: uu
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
 !
@@ -1517,10 +1528,10 @@ module Hydro
       endif
 ! ugu
       if (lpencil(i_ugu)) then
-        if (headtt.and.lupw_uu) then
-          print *,'calc_pencils_hydro: upwinding advection term'
-        endif
-        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
+        uu=p%uu
+        if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
+        call u_dot_grad(f,iuu,p%uij,uu,p%ugu,UPWIND=lupw_uu)
 !
 !  If lffree switched is used, we need to turn off the u.gradu term
 !  to ensure momentum conservation.
@@ -1711,9 +1722,15 @@ module Hydro
                    abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
                    abs(p%uu(:,3))*dz_1(  n  )
         else
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+          if (lconst_advection) then
+             advec_uu=abs(p%uu(:,1)+u0_advec(1))*dx_1(l1:l2)+ &
+                      abs(p%uu(:,2)+u0_advec(2))*dy_1(  m  )+ &
+                      abs(p%uu(:,3)+u0_advec(3))*dz_1(  n  )
+          else
+             advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                      abs(p%uu(:,2))*dy_1(  m  )+ &
+                      abs(p%uu(:,3))*dz_1(  n  )
+          endif
         endif
       endif
 !
