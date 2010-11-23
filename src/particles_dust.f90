@@ -34,6 +34,7 @@ module Particles
   real, target, dimension (npar_species) :: tausp_species=0.0
   real, target, dimension (npar_species) :: tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
+  real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -124,7 +125,7 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
-      rhops, Deltauy_gas_friction
+      rhops, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -591,6 +592,17 @@ module Particles
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
 !
+        case ('constant-1')
+          if (lroot) &
+              print*, 'init_particles: Particle 1 at x,y,z=', xp1, yp1, zp1
+          do k=1,npar_loc
+            if (ipar(k)==1) then
+              fp(k,ixp)=xp1
+              fp(k,iyp)=yp1
+              fp(k,izp)=zp1
+            endif
+          enddo
+!
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -1003,6 +1015,18 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(1:npar_loc,ivpy)=vpy0
             fp(1:npar_loc,ivpz)=vpz0
           endif
+!
+        case ('constant-1')
+          if (lroot) &
+              print*, 'init_particles: Particle 1 velocity vx,vy,vz=', &
+              vpx1, vpy1, vpz1
+          do k=1,npar_loc
+            if (ipar(k)==1) then
+              fp(k,ivpx)=vpx1
+              fp(k,ivpy)=vpy1
+              fp(k,ivpz)=vpz1
+            endif
+          enddo
 !
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
