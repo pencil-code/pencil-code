@@ -1,17 +1,17 @@
 ! $Id: particles_number.f90 14421 2010-07-23 23:55:02Z Bourdin.KIS $
 !
-!  This module takes care of everything related to the mass density
-!  represented by each (super)particle.
+!  This module takes care of everything related to the mass represented by
+!  each (super)particle.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lparticles_mass_density=.false.
+! CPARAM logical, parameter :: lparticles_mass=.false.
 !
 !***************************************************************
-module Particles_mass_density
+module Particles_mass
 !
   use Cdata
   use Messages
@@ -20,19 +20,19 @@ module Particles_mass_density
 !
   implicit none
 !
-  include 'particles_mass_density.h'
+  include 'particles_mass.h'
 !
   contains
 !***********************************************************************
-    subroutine register_particles_mass_density()
+    subroutine register_particles_mass()
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  22-nov-10/anders+michiel: dummy
 !
-    endsubroutine register_particles_mass_density
+    endsubroutine register_particles_mass
 !***********************************************************************
-    subroutine initialize_particles_mass_density(f,lstarting)
+    subroutine initialize_particles_mass(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -45,11 +45,11 @@ module Particles_mass_density
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_particles_mass_density
+    endsubroutine initialize_particles_mass
 !***********************************************************************
-    subroutine init_particles_mass_density(f,fp)
+    subroutine init_particles_mass(f,fp)
 !
-!  Initial particle mass density.
+!  Initial particle mass.
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -59,20 +59,20 @@ module Particles_mass_density
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
 !
-    endsubroutine init_particles_mass_density
+    endsubroutine init_particles_mass
 !***********************************************************************
-    subroutine pencil_criteria_par_mass_density()
+    subroutine pencil_criteria_par_mass()
 !
-!  All pencils that the Particles_mass_density module depends on are specified
+!  All pencils that the Particles_mass module depends on are specified
 !  here.
 !
 !  22-nov-10/anders+michiel: dummy
 !
-    endsubroutine pencil_criteria_par_mass_density
+    endsubroutine pencil_criteria_par_mass
 !***********************************************************************
     subroutine drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of particle mass density.
+!  Evolution of particle mass.
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -112,7 +112,7 @@ module Particles_mass_density
 !
     endsubroutine drhopswarm_dt
 !***********************************************************************
-    subroutine read_particles_dens_init_pars(unit,iostat)
+    subroutine read_particles_mass_init_pars(unit,iostat)
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -122,9 +122,9 @@ module Particles_mass_density
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_dens_init_pars
+    endsubroutine read_particles_mass_init_pars
 !***********************************************************************
-    subroutine write_particles_dens_init_pars(unit)
+    subroutine write_particles_mass_init_pars(unit)
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -132,9 +132,9 @@ module Particles_mass_density
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_dens_init_pars
+    endsubroutine write_particles_mass_init_pars
 !***********************************************************************
-    subroutine read_particles_dens_run_pars(unit,iostat)
+    subroutine read_particles_mass_run_pars(unit,iostat)
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -144,9 +144,9 @@ module Particles_mass_density
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_dens_run_pars
+    endsubroutine read_particles_mass_run_pars
 !***********************************************************************
-    subroutine write_particles_dens_run_pars(unit)
+    subroutine write_particles_mass_run_pars(unit)
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -154,11 +154,11 @@ module Particles_mass_density
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_dens_run_pars
+    endsubroutine write_particles_mass_run_pars
 !***********************************************************************
-    subroutine rprint_particles_mass_density(lreset,lwrite)
+    subroutine rprint_particles_mass(lreset,lwrite)
 !
-!  Read and register print parameters relevant for particle mass density.
+!  Read and register print parameters relevant for particle mass.
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -168,6 +168,6 @@ module Particles_mass_density
       call keep_compiler_quiet(lreset)
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
-    endsubroutine rprint_particles_mass_density
+    endsubroutine rprint_particles_mass
 !***********************************************************************
-endmodule Particles_mass_density
+endmodule Particles_mass

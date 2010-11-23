@@ -1,7 +1,7 @@
 ! $Id: particles_number.f90 14421 2010-07-23 23:55:02Z Bourdin.KIS $
 !
-!  This module takes care of everything related to the mass density
-!  represented by each (super)particle.
+!  This module takes care of everything related to the mass represented by
+!  each (super)particle.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -9,10 +9,10 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 1
-! CPARAM logical, parameter :: lparticles_mass_density=.true.
+! CPARAM logical, parameter :: lparticles_mass=.true.
 !
 !***************************************************************
-module Particles_mass_density
+module Particles_mass
 !
   use Cdata
   use Messages
@@ -22,22 +22,22 @@ module Particles_mass_density
 !
   implicit none
 !
-  include 'particles_mass_density.h'
+  include 'particles_mass.h'
 !
   real :: rhop_swarm0=1.0, rhop_swarm1=1.0
   real :: gravr_swarm0=1.0, gravr_swarm1=1.0
   real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
 !
-  namelist /particles_mass_density_init_pars/ &
+  namelist /particles_mass_init_pars/ &
       initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
 !
-  namelist /particles_mass_density_run_pars/ &
+  namelist /particles_mass_run_pars/ &
       initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
 !
   contains
 !***********************************************************************
-    subroutine register_particles_mass_density()
+    subroutine register_particles_mass()
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -46,7 +46,7 @@ module Particles_mass_density
       if (lroot) call svn_id( &
           "$Id: particles_number.f90 14421 2010-07-23 23:55:02Z Bourdin.KIS $")
 !
-!  Index for particle mass density.
+!  Index for particle mass.
 !
       irhopswarm=npvar+1
 !
@@ -58,12 +58,12 @@ module Particles_mass_density
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_mass_density: npvar > mpvar','')
+        call fatal_error('register_particles_mass: npvar > mpvar','')
       endif
 !
-    endsubroutine register_particles_mass_density
+    endsubroutine register_particles_mass
 !***********************************************************************
-    subroutine initialize_particles_mass_density(f,lstarting)
+    subroutine initialize_particles_mass(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -82,11 +82,11 @@ module Particles_mass_density
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_particles_mass_density
+    endsubroutine initialize_particles_mass
 !***********************************************************************
-    subroutine init_particles_mass_density(f,fp)
+    subroutine init_particles_mass(f,fp)
 !
-!  Initial particle mass density.
+!  Initial particle mass.
 !
 !  22-nov-10/anders+michiel: adapted
 !
@@ -100,19 +100,19 @@ module Particles_mass_density
         select case (initrhopswarm(j))
 !
         case ('nothing')
-          if (lroot.and.j==1) print*, 'init_particles_mass_density: nothing'
+          if (lroot.and.j==1) print*, 'init_particles_mass: nothing'
 !
         case ('constant')
           if (lroot) then
-            print*, 'init_particles_mass_density: constant particle mass density'
-            print*, 'init_particles_mass_density: rhop_swarm0=', rhop_swarm0
+            print*, 'init_particles_mass: constant particle mass density'
+            print*, 'init_particles_mass: rhop_swarm0=', rhop_swarm0
           endif
           fp(1:npar_loc,irhopswarm)=rhop_swarm0
 !
         case ('constant-1')
           if (lroot) then
-            print*, 'init_particles_mass_density: set particle 1 mass density'
-            print*, 'init_particles_mass_density: rhop_swarm1=', rhop_swarm1
+            print*, 'init_particles_mass: set particle 1 mass density'
+            print*, 'init_particles_mass: rhop_swarm1=', rhop_swarm1
           endif
           do k=1,npar_loc
             if (ipar(k)==1) fp(k,irhopswarm)=rhop_swarm1
@@ -120,16 +120,16 @@ module Particles_mass_density
 !
         case ('constant-grav')
           if (lroot) then
-            print*, 'init_particles_mass_density: constant particle gravity'
-            print*, 'init_particles_mass_density: gravr_swarm=', gravr_swarm0
+            print*, 'init_particles_mass: constant particle gravity'
+            print*, 'init_particles_mass: gravr_swarm=', gravr_swarm0
           endif
           fp(1:npar_loc,irhopswarm)=gravr_swarm0/ &
               (rhs_poisson_const/(4*pi)*dx**3)
 !
         case ('constant-grav-1')
           if (lroot) then
-            print*, 'init_particles_mass_density: set particle 1 gravity'
-            print*, 'init_particles_mass_density: gravr_swarm1=', gravr_swarm1
+            print*, 'init_particles_mass: set particle 1 gravity'
+            print*, 'init_particles_mass: gravr_swarm1=', gravr_swarm1
           endif
           print*, gravr_swarm1, rhs_poisson_const, pi, dx
           do k=1,npar_loc
@@ -146,20 +146,20 @@ module Particles_mass_density
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine init_particles_mass_density
+    endsubroutine init_particles_mass
 !***********************************************************************
-    subroutine pencil_criteria_par_mass_density()
+    subroutine pencil_criteria_par_mass()
 !
-!  All pencils that the Particles_mass_density module depends on are specified
+!  All pencils that the Particles_mass module depends on are specified
 !  here.
 !
 !  22-nov-10/anders+michiel: adapted
 !
-    endsubroutine pencil_criteria_par_mass_density
+    endsubroutine pencil_criteria_par_mass
 !***********************************************************************
     subroutine drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of particle mass density.
+!  Evolution of particle mass.
 !
 !  22-nov-10/anders+michiel: adapted
 !
@@ -211,7 +211,7 @@ module Particles_mass_density
 !
     endsubroutine drhopswarm_dt
 !***********************************************************************
-    subroutine read_particles_dens_init_pars(unit,iostat)
+    subroutine read_particles_mass_init_pars(unit,iostat)
 !
 !  22-nov-10/anders+michiel: adapted
 !
@@ -219,26 +219,26 @@ module Particles_mass_density
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_mass_density_init_pars,ERR=99,IOSTAT=iostat)
+        read(unit,NML=particles_mass_init_pars,ERR=99,IOSTAT=iostat)
       else
-        read(unit,NML=particles_mass_density_init_pars,ERR=99)
+        read(unit,NML=particles_mass_init_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_particles_dens_init_pars
+    endsubroutine read_particles_mass_init_pars
 !***********************************************************************
-    subroutine write_particles_dens_init_pars(unit)
+    subroutine write_particles_mass_init_pars(unit)
 !
 !  22-nov-10/anders+michiel: adapted
 !
       integer, intent (in) :: unit
 !
-      write(unit,NML=particles_mass_density_init_pars)
+      write(unit,NML=particles_mass_init_pars)
 !
-    endsubroutine write_particles_dens_init_pars
+    endsubroutine write_particles_mass_init_pars
 !***********************************************************************
-    subroutine read_particles_dens_run_pars(unit,iostat)
+    subroutine read_particles_mass_run_pars(unit,iostat)
 !
 !  22-nov-10/anders+michiel: adapted
 !
@@ -246,28 +246,28 @@ module Particles_mass_density
       integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=particles_mass_density_run_pars,ERR=99,IOSTAT=iostat)
+        read(unit,NML=particles_mass_run_pars,ERR=99,IOSTAT=iostat)
       else
-        read(unit,NML=particles_mass_density_run_pars,ERR=99)
+        read(unit,NML=particles_mass_run_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_particles_dens_run_pars
+    endsubroutine read_particles_mass_run_pars
 !***********************************************************************
-    subroutine write_particles_dens_run_pars(unit)
+    subroutine write_particles_mass_run_pars(unit)
 !
 !  22-nov-10/anders+michiel: adapted
 !
       integer, intent (in) :: unit
 !
-      write(unit,NML=particles_mass_density_run_pars)
+      write(unit,NML=particles_mass_run_pars)
 !
-    endsubroutine write_particles_dens_run_pars
+    endsubroutine write_particles_mass_run_pars
 !***********************************************************************
-    subroutine rprint_particles_mass_density(lreset,lwrite)
+    subroutine rprint_particles_mass(lreset,lwrite)
 !
-!  Read and register print parameters relevant for particle mass density.
+!  Read and register print parameters relevant for particle mass.
 !
 !  22-nov-10/anders+michiel: adapted
 !
@@ -285,6 +285,6 @@ module Particles_mass_density
 !
       call keep_compiler_quiet(lreset)
 !
-    endsubroutine rprint_particles_mass_density
+    endsubroutine rprint_particles_mass
 !***********************************************************************
-endmodule Particles_mass_density
+endmodule Particles_mass

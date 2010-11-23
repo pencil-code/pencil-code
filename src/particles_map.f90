@@ -927,7 +927,7 @@ module Particles_map
                 weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
               elseif (lparticles_number) then
                 weight0=mp_swarm*fp(k,inpswarm)
-              elseif (lparticles_mass_density) then
+              elseif (lparticles_mass) then
                 weight0=fp(k,irhopswarm)
               else
                 weight0=1.0
@@ -982,7 +982,7 @@ module Particles_map
                 weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
               elseif (lparticles_number) then
                 weight0=mp_swarm*fp(k,inpswarm)
-              elseif (lparticles_mass_density) then
+              elseif (lparticles_mass) then
                 weight0=fp(k,irhopswarm)
               else
                 weight0=1.0
@@ -1030,8 +1030,7 @@ module Particles_map
 !  Nearest Grid Point (NGP) method.
 !
         else
-          if (lparticles_radius.or.lparticles_number.or. &
-              lparticles_mass_density) then
+          if (lparticles_radius.or.lparticles_number.or.lparticles_mass) then
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               if (.not.lnbody) then 
@@ -1043,7 +1042,7 @@ module Particles_map
                   weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
                 elseif (lparticles_number) then
                   weight0=mp_swarm*fp(k,inpswarm)
-                elseif (lparticles_mass_density) then
+                elseif (lparticles_mass) then
                   weight0=fp(k,irhopswarm)
                 endif
 !
@@ -1060,7 +1059,7 @@ module Particles_map
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         if (.not.(lparticles_radius.or.lparticles_number.or. &
-                  lparticles_mass_density)) then
+            lparticles_mass)) then
           if (lcartesian_coords) then
             f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)  
           else

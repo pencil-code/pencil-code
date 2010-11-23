@@ -2266,19 +2266,19 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
         endif
         if (idiag_mpvpxm/=0) then
-          if (lparticles_mass_density) then
+          if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx), &
                 idiag_mpvpxm)
           endif
         endif
         if (idiag_mpvpym/=0) then
-          if (lparticles_mass_density) then
+          if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz), &
                 idiag_mpvpym)
           endif
         endif
         if (idiag_mpvpzm/=0) then
-          if (lparticles_mass_density) then
+          if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
                 idiag_mpvpzm)
           endif
