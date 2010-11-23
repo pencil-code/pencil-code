@@ -15,12 +15,12 @@ $host = `hostname`;
 #
 # Go through list of hosts to use proper method.
 #
-if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ ){
+if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
     @jobs = `qstat | grep $ENV{'USER'} `;
-      foreach $job (@jobs) { $job =~ /([0-9]*\.[a-z]*)/; $job=$1; }
+      foreach $job (@jobs) { $job =~ /([0-9]*\.[a-z\-]*)/; $job=$1; }
     }
 
   foreach $job (@jobs){
