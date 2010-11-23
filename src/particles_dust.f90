@@ -159,6 +159,7 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
+  integer :: idiag_mpvpxm=0, idiag_mpvpym=0, idiag_mpvpzm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
@@ -2264,6 +2265,24 @@ k_loop:   do while (.not. (k>npar_loc))
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
           enddo
         endif
+        if (idiag_mpvpxm/=0) then
+          if (lparticles_mass_density) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx), &
+                idiag_mpvpxm)
+          endif
+        endif
+        if (idiag_mpvpym/=0) then
+          if (lparticles_mass_density) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz), &
+                idiag_mpvpym)
+          endif
+        endif
+        if (idiag_mpvpzm/=0) then
+          if (lparticles_mass_density) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
+                idiag_mpvpzm)
+          endif
+        endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
             if (lparticles_number) np_swarm=fp(k,inpswarm)
@@ -3965,6 +3984,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
+        idiag_mpvpxm=0; idiag_mpvpym=0; idiag_mpvpzm=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
         idiag_lpx2m=0; idiag_lpy2m=0; idiag_lpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
@@ -4008,6 +4028,9 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
+        call parse_name(iname,cname(iname),cform(iname),'mpvpxm',idiag_mpvpxm)
+        call parse_name(iname,cname(iname),cform(iname),'mpvpym',idiag_mpvpym)
+        call parse_name(iname,cname(iname),cform(iname),'mpvpzm',idiag_mpvpzm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
         call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
         call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
