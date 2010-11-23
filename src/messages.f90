@@ -58,7 +58,7 @@ module Messages
 ! Also set a flad if fake_parallel_io is requested. 
 !
       inquire(FILE="COLOR", EXIST=ltermcap_color)
-      inquire(FILE="FPIO", EXIST=lfake_parallel_io)
+      inquire(FILE="FAKE_PARALLEL_IO", EXIST=lfake_parallel_io)
 !
     endsubroutine initialize_messages
 !***********************************************************************

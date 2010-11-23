@@ -611,6 +611,36 @@ else if ($hn =~ louhi-login*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if ($hn =~ emil-login2.pdc.kth.se*) then
+  echo "*********************************"
+  echo " PDC machine Lindgren, Stockholm "
+  cd $PBS_O_WORKDIR
+  touch $HOME/.pencil_runs.txt
+  echo "***---------------------------------**" >>$HOME/.pencil_runs.txt
+  echo "starting run" >> $HOME/.pencil_runs.txt
+  echo $PBS_O_WORKDIR >> $HOME/.pencil_runs.txt
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $HOME/.pencil_runs.txt
+  endif
+#  ls
+  echo $SHELL
+  source /mnt/lustre_server/pdc/dmitra/pencil-code/dhruba/cshrc_lindgren
+  set start_x=$PBS_O_WORKDIR/src/start.x
+  set run_x=$PBS_O_WORKDIR/src/run.x
+  echo "*********************************"
+  echo "***---------------------------------**" >>$HOME/.pencil_runs.txt
+  set mpirunops = '-N 1'
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
 else if (($hn =~ n[0-9]*) && ($USER =~ pkapyla || $USER =~ fagent)) then
   echo "Vuori - CSC, Espoo, Finland"
   set mpirunops = ''
