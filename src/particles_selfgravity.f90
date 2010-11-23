@@ -27,6 +27,7 @@ module Particles_selfgravity
 !
   include 'particles_selfgravity.h'
 !
+  real :: cdtpg=0.2
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
   logical :: lselfgravity_nbodyparticles=.false.
@@ -299,7 +300,25 @@ module Particles_selfgravity
               if (lnbody) gpotself=0
             endif
 !
+!  Add gravitational acceleration to particles
+!
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+!
+!  Time-step constraint from particle self-gravity. We require that the
+!  gravitational acceleration must at most move a particle a fraction of
+!  a grid cell in one time-step.
+!
+            if (lfirst.and.ldt) then
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost), &
+                  sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid(k,1)))/cdtpg)
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost), &
+                  sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid(k,2)))/cdtpg)
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost), &
+                  sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
+            endif
 !
           enddo
         endif
