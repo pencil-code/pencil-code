@@ -74,7 +74,17 @@ if (not analyse_loaded) then BEGIN
 
 	pc_units, obj=unit
 
-	file_struct = file_info (datadir+"/proc0/var.dat")
+	procdir = datadir+"/proc0/"
+	file_struct = file_info (procdir+"var.dat")
+	if (file_struct.exists eq 0) then begin
+		procdir = datadir+"/allprocs/"
+		file_struct = file_info (procdir+"var.dat")
+		if (file_struct.exists eq 0) then begin
+			print, "No 'var.dat' file found."
+			stop
+		endif
+	endif
+
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
 	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
 	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
@@ -89,10 +99,15 @@ if (not analyse_loaded) then BEGIN
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
 	add = file_search (datadir+"/proc0/", "VAR?????")
 	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
+	add = file_search (datadir+"/proc0/", "VAR??????")
+	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
+	add = file_search (datadir+"/proc0/", "VAR???????")
+	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
 	for i = 0, n_elements (snapshots) - 1 do begin
 		snapshots[i] = strmid (snapshots[i], strpos (snapshots[i], "VAR"))
 	end 
 	num_snapshots = n_elements (snapshots)
+
 	files_total = num_snapshots
 	skipping = 0
 	stepping = 1
@@ -101,7 +116,7 @@ if (not analyse_loaded) then BEGIN
 		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
 		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
-			print, "'"+datadir+"/"+varfile+"' will be read anyways."
+			print, "'"+procdir+varfile+"' will be read anyways."
 			print, "Do you want to load additional files into the cache?"
 			repeat begin
 				answer = "n"
