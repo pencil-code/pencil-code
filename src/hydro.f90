@@ -1635,6 +1635,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      real, dimension (nx,3) :: uu
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu,odel2um
       real :: kx
       integer :: j
@@ -1713,24 +1714,20 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        if      (lspherical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+        uu=p%uu
+        if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
+        if (lspherical_coords) then
+          advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
+                   abs(uu(:,2))*dy_1(  m  )*r1_mn+ &
+                   abs(uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
         elseif (lcylindrical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+          advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
+                   abs(uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+                   abs(uu(:,3))*dz_1(  n  )
         else
-          if (lconst_advection) then
-             advec_uu=abs(p%uu(:,1)+u0_advec(1))*dx_1(l1:l2)+ &
-                      abs(p%uu(:,2)+u0_advec(2))*dy_1(  m  )+ &
-                      abs(p%uu(:,3)+u0_advec(3))*dz_1(  n  )
-          else
-             advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                      abs(p%uu(:,2))*dy_1(  m  )+ &
-                      abs(p%uu(:,3))*dz_1(  n  )
-          endif
+          advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
+                   abs(uu(:,2))*dy_1(  m  )+ &
+                   abs(uu(:,3))*dz_1(  n  )
         endif
       endif
 !
