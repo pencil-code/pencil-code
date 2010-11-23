@@ -25,13 +25,15 @@ module Particles_mass_density
   include 'particles_mass_density.h'
 !
   real :: rhop_swarm0=1.0, rhop_swarm1=1.0
+  real :: gravr_swarm0=1.0, gravr_swarm1=1.0
+  real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
 !
   namelist /particles_mass_density_init_pars/ &
-      initrhopswarm, rhop_swarm0, rhop_swarm1
+      initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
 !
   namelist /particles_mass_density_run_pars/ &
-      initrhopswarm, rhop_swarm0, rhop_swarm1
+      initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
 !
   contains
 !***********************************************************************
@@ -68,8 +70,14 @@ module Particles_mass_density
 !
 !  22-nov-10/anders+michiel: adapted
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
+!
+      if (lselfgravity) then
+        call get_shared_variable('rhs_poisson_const',rhs_poisson_const)
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -108,6 +116,25 @@ module Particles_mass_density
           endif
           do k=1,npar_loc
             if (ipar(k)==1) fp(k,irhopswarm)=rhop_swarm1
+          enddo
+!
+        case ('constant-grav')
+          if (lroot) then
+            print*, 'init_particles_mass_density: constant particle gravity'
+            print*, 'init_particles_mass_density: gravr_swarm=', gravr_swarm0
+          endif
+          fp(1:npar_loc,irhopswarm)=gravr_swarm0/ &
+              (rhs_poisson_const/(4*pi)*dx**3)
+!
+        case ('constant-grav-1')
+          if (lroot) then
+            print*, 'init_particles_mass_density: set particle 1 gravity'
+            print*, 'init_particles_mass_density: gravr_swarm1=', gravr_swarm1
+          endif
+          print*, gravr_swarm1, rhs_poisson_const, pi, dx
+          do k=1,npar_loc
+            if (ipar(k)==1) &
+                fp(k,irhopswarm)=gravr_swarm1/(rhs_poisson_const/(4*pi)*dx**3)
           enddo
 !
         case ('particles-to-gas-ratio')
