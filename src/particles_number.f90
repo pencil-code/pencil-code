@@ -398,20 +398,20 @@ module Particles_number
       integer :: iname
       logical :: lwr
 !
-!  Write information to index.pro
+!  Write information to index.pro.
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) write(3,*) 'inpswarm=', inpswarm
 !
-!  Reset everything in case of reset
+!  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_nptm=0; idiag_dvp22mwnp=0; idiag_dvp22mwnp2=0
         idiag_dtfragp=0
       endif
 !
-!  Run through all possible names that may be listed in print.in
+!  Run through all possible names that may be listed in print.in.
 !
       if (lroot.and.ip<14) &
           print*, 'rprint_particles_number: run through parse list'
