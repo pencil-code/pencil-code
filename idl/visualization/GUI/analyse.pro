@@ -90,23 +90,20 @@ if (not analyse_loaded) then BEGIN
 	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
 	gb_per_file = (file_struct.size * subdomains * correction) / 1024. / 1024. / 1024.
 
-	snapshots = file_search (datadir+"/proc0/", "VAR?")
-	add = file_search (datadir+"/proc0/", "VAR??")
-	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir+"/proc0/", "VAR???")
-	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir+"/proc0/", "VAR????")
-	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir+"/proc0/", "VAR?????")
-	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir+"/proc0/", "VAR??????")
-	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	add = file_search (datadir+"/proc0/", "VAR???????")
-	if (strlen (add[0]) gt 0) then snapshots = [ snapshots, add ]
-	for i = 0, n_elements (snapshots) - 1 do begin
-		snapshots[i] = strmid (snapshots[i], strpos (snapshots[i], "VAR"))
-	end 
-	num_snapshots = n_elements (snapshots)
+	snapfiles = file_search (procdir, "VAR*")
+	num_snapshots = n_elements (snapfiles)
+	for i = 0, num_snapshots - 1 do begin
+		snapfiles[i] = strmid (snapfiles[i], strpos (snapfiles[i], "VAR"))
+	end
+	snapshots = strarr (1)
+	for i = min (strlen (snapfiles)), max (strlen (snapfiles)) do begin
+		indices = where (strlen (snapfiles) eq i)
+		if (n_elements (indices) eq 1) then if (indices eq -1) then continue
+		sub = snapfiles[indices]
+		reorder = sort (sub)
+		snapshots = [ snapshots, sub[reorder] ]
+	end
+	snapshots = snapshots[1:*]
 
 	files_total = num_snapshots
 	skipping = 0
