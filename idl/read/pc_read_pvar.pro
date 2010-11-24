@@ -100,23 +100,32 @@ INIT_3VECTOR = 'fltarr(npar,3)*one'
 ;
 ;  Go through all possible particle variables
 ;
+default, ixp, 0
 varcontent[ixp].variable = 'Particle position (xx)'
 varcontent[ixp].idlvar   = 'xx'
 varcontent[ixp].idlinit  = INIT_3VECTOR
 varcontent[ixp].skip     = 2
 ;
+default, ivpx, 0
 varcontent[ivpx].variable = 'Particle velocity (vv)'
 varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
 ;
+default, iap, 0
 varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
 varcontent[iap].idlinit  = INIT_SCALAR
 ;
-varcontent[inpswarm].variable = 'Particle internal number (nptilde)'
-varcontent[inpswarm].idlvar   = 'nptilde'
+default, inpswarm, 0
+varcontent[inpswarm].variable = 'Particle internal number (npswarm)'
+varcontent[inpswarm].idlvar   = 'npswarm'
 varcontent[inpswarm].idlinit  = INIT_SCALAR
+;
+default, irhopswarm, 0
+varcontent[irhopswarm].variable = 'Particle mass density (rhopswarm)'
+varcontent[irhopswarm].idlvar   = 'rhopswarm'
+varcontent[irhopswarm].idlinit  = INIT_SCALAR
 ;
 varcontent[0].variable    = 'UNKNOWN'
 varcontent[0].idlvar      = 'UNKNOWN'
