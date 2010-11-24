@@ -682,6 +682,8 @@ module Particles_collisions
 !
 !  Read run parameters from run.in.
 !
+!  28-mar-09/anders: adapted
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -692,11 +694,14 @@ module Particles_collisions
       endif
 !
 99    return
+!
     endsubroutine read_particles_coll_run_pars
 !***********************************************************************
     subroutine write_particles_coll_run_pars(unit)
 !
 !  Write run parameters to param.nml.
+!
+!  28-mar-09/anders: adapted
 !
       integer, intent(in) :: unit
 !
