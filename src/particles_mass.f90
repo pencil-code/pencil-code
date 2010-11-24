@@ -140,6 +140,10 @@ module Particles_mass
         case ('particles-to-gas-ratio')
           fp(1:npar_loc,irhopswarm)=rhop_swarm
 !
+        case default
+          if (lroot) print*, 'init_particles_mass: '// &
+              'No such such value for initrhopswarm: ', trim(initrhopswarm(j))
+          call fatal_error('init_particles_mass','')
         endselect
 !
       enddo
