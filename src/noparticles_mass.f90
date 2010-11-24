@@ -26,16 +26,11 @@ module Particles_mass
 !***********************************************************************
     subroutine register_particles_mass()
 !
-!  Set up indices for access to the fp and dfp arrays.
-!
 !  22-nov-10/anders+michiel: dummy
 !
     endsubroutine register_particles_mass
 !***********************************************************************
     subroutine initialize_particles_mass(f,lstarting)
-!
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -49,8 +44,6 @@ module Particles_mass
 !***********************************************************************
     subroutine init_particles_mass(f,fp)
 !
-!  Initial particle mass.
-!
 !  22-nov-10/anders+michiel: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -63,16 +56,11 @@ module Particles_mass
 !***********************************************************************
     subroutine pencil_criteria_par_mass()
 !
-!  All pencils that the Particles_mass module depends on are specified
-!  here.
-!
 !  22-nov-10/anders+michiel: dummy
 !
     endsubroutine pencil_criteria_par_mass
 !***********************************************************************
     subroutine drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Evolution of particle mass.
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -95,8 +83,6 @@ module Particles_mass
     endsubroutine drhopswarm_dt_pencil
 !***********************************************************************
     subroutine drhopswarm_dt(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of internal particle number.
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -157,8 +143,6 @@ module Particles_mass
     endsubroutine write_particles_mass_run_pars
 !***********************************************************************
     subroutine rprint_particles_mass(lreset,lwrite)
-!
-!  Read and register print parameters relevant for particle mass.
 !
 !  22-nov-10/anders+michiel: dummy
 !
