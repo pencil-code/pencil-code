@@ -1,11 +1,11 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   analyse_companion.pro     ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;   pc_GUI_companion.pro     ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   Framework for precalculation and comparision of output in pencil units.
-;;;   Companion procedures needed by 'analyse.pro'.
+;;;   Companion procedures needed by 'pc_GUI.pro'.
 ;;;
 ;;;  To do:
 ;;;   Add more comments
@@ -276,8 +276,8 @@ end
 
 
 ; Dummy routine
-pro analyse_companion
+pro pc_GUI_companion
 
-	analyse_companion_loaded = 1
+	pc_GUI_companion_loaded = 1
 end
 

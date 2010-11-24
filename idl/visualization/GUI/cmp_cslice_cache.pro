@@ -52,7 +52,7 @@ pro cslice_event, event
 
 	; SETTINGS:
 	; filename for saving the settings
-	settings_file = 'cslice_settings.xdr'
+	settings_file = 'GUI_settings.xdr'
 
 	; time in seconds to wait after showing each frame for 1D, 2D, and 3D movies (0=fastest possible)
 	min_wait_time = [ 0.2, 0.1, 0.05 ]
