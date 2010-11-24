@@ -27,7 +27,7 @@ module Particles_number
   real :: np_swarm0=1.0, rhop_swarm0=1.0, rhopsolid=1.0
   real :: vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
-  logical :: lfragmentation_par=.true.
+  logical :: lfragmentation_par=.false.
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
 !
   integer :: idiag_nptm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
