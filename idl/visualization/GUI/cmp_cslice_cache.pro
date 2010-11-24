@@ -428,25 +428,29 @@ pro draw_averages, number
 		num_subplots = 0
 		if (any (strcmp (tags, 'ln_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, exp (varsets[number].ln_rho[cut]), coord=coord.z, title = 'rho', log=1
+			vert_prof, exp (varsets[number].ln_rho[cut]), coord=coord.z, title = 'density ['+unit.default_density_str+']', log=1
 		end else if (any (strcmp (tags, 'log_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, 10.0^(varsets[number].log_rho[cut]), coord=coord.z, title = 'rho', log=1
+			vert_prof, 10.0^(varsets[number].log_rho[cut]), coord=coord.z, title = 'density ['+unit.default_density_str+']', log=1
 		end else if (any (strcmp (tags, 'rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].rho[cut], coord=coord.z, title = 'rho'
+			vert_prof, varsets[number].rho[cut], coord=coord.z, title = 'density ['+unit.default_density_str+']'
 		end
 		if (any (strcmp (tags, 'u_abs', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].u_abs[cut], coord=coord.z, title = 'u_abs ['+unit.default_velocity_str+']'
+			vert_prof, varsets[number].u_abs[cut], coord=coord.z, title = 'absolute velocity ['+unit.default_velocity_str+']'
+		end
+		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, varsets[number].rho_u_z[cut], coord=coord.z, title = 'vertical impulse density ['+unit.default_density_str+' * '+unit.default_velocity_str+']'
 		end
 		if (any (strcmp (tags, 'Temp', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].Temp[cut], coord=coord.z, title = 'Temp [K]', log=1
+			vert_prof, varsets[number].Temp[cut], coord=coord.z, title = 'temperature [K]', log=1
 		end
 		if (any (strcmp (tags, 'j', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].j[cut], coord=coord.z, title = 'j', log=1
+			vert_prof, varsets[number].j[cut], coord=coord.z, title = 'current density', log=1
 		end
 	end
 end
@@ -706,7 +710,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (n_elements (units) ge 1) then unit = units
 	if (n_elements (unit) eq 0) then begin
 		print, "WARNING: setting units to unity."
-		unit = { velocity:1, temperature:1, length:1, density:1 }
+		unit = { velocity:1, temperature:1, length:1, time:1, density:1 }
 	end
 
 	if (n_elements (scaling) eq 0) then scaling = 1

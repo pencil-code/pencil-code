@@ -134,23 +134,35 @@ pro precalc_data, i, vars
 	if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
 		; Natural logarithmic density
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].ln_rho = alog (exp (vars.lnrho) * unit.density)
+			varsets[i].ln_rho = alog (exp (vars.lnrho) * unit.density / unit.default_density)
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].ln_rho = alog (vars.rho * unit.density)
+			varsets[i].ln_rho = alog (vars.rho * unit.density / unit.default_density)
+		end
+		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
+			; Vertical component of impulse density
+			varsets[i].rho_u_z = exp (varsets[i].ln_rho) * vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
 		end
 	end else if (any (strcmp (tags, 'log_rho', /fold_case))) then begin
 		; Logarithmic density
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].log_rho = alog10 (exp (vars.lnrho) * unit.density)
+			varsets[i].log_rho = alog10 (exp (vars.lnrho) * unit.density / unit.default_density)
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].log_rho = alog10 (vars.rho * unit.density)
+			varsets[i].log_rho = alog10 (vars.rho * unit.density / unit.default_density)
+		end
+		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
+			; Vertical component of impulse density
+			varsets[i].rho_u_z = 10.0^(varsets[i].log_rho) * vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
 		end
 	end else if (any (strcmp (tags, 'rho', /fold_case))) then begin
 		; Density
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].rho = exp (vars.lnrho) * unit.density
+			varsets[i].rho = exp (vars.lnrho) * unit.density / unit.default_density
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].rho = vars.rho * unit.density
+			varsets[i].rho = vars.rho * unit.density / unit.default_density
+		end
+		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
+			; Vertical component of impulse density
+			varsets[i].rho_u_z = varsets[i].rho * vars.uu[*,*,*,2] * unit.velocity / unit.default_velocity
 		end
 	end
 
@@ -169,6 +181,95 @@ pro precalc_data, i, vars
 		if (any (strcmp (over_tags, 'a_contour', /fold_case))) then begin
 			; Magnetic field lines overplot
 			oversets[i].a_contour = float (vars.aa)
+		end
+	end
+end
+
+
+; Show timeseries analysis window
+pro show_timeseries, ts, tags, unit, start_time=start_time
+
+	if (n_elements (ts) gt 0) then begin
+
+		default, start_time, 0
+		add_title = ''
+		if (start_time > 0) then add_title = ' (starting at the frist selected snapshot)'
+
+		window, 1, xsize=1000, ysize=800, title='time series analysis'+add_title, retain=2
+		!P.MULTI = [0, 2, 2]
+
+		max_subplots = 4
+		num_subplots = 0
+		print, "starting values:"
+		print, "dt    :", ts.dt[0]
+		plot, ts.dt, title = 'dt', /yl
+		num_subplots += 1
+
+		tags = tag_names (ts)
+		x_minmax = minmax (ts.t > start_time)
+		y_minmax = minmax (ts.dt)
+		if (any (strcmp (tags, 'dtu', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtu])
+		if (any (strcmp (tags, 'dtv', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtv])
+		if (any (strcmp (tags, 'dtnu', /fold_case)))   then y_minmax = minmax ([y_minmax, ts.dtnu])
+		if (any (strcmp (tags, 'dtb', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtb])
+		if (any (strcmp (tags, 'dteta', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dteta])
+		if (any (strcmp (tags, 'dtc', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtc])
+		if (any (strcmp (tags, 'dtchi', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dtchi])
+		if (any (strcmp (tags, 'dtchi2', /fold_case))) then y_minmax = minmax ([y_minmax, ts.dtchi2])
+
+		ts.t *= unit.time
+		ts.dt *= unit.time
+		x_minmax *= unit.time
+		y_minmax *= unit.time
+
+		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
+		num_subplots += 1
+		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
+			oplot, ts.t, ts.dtu*unit.time, linestyle=2, color=11061000
+			print, "dtu   :", ts.dtu[0]
+		end
+		if (any (strcmp (tags, 'dtv', /fold_case))) then begin
+			oplot, ts.t, ts.dtv*unit.time, linestyle=2, color=128255200
+			print, "dtv   :", ts.dtv[0]
+		end
+		if (any (strcmp (tags, 'dtnu', /fold_case))) then begin
+			oplot, ts.t, ts.dtnu*unit.time, linestyle=1, color=128000128
+			print, "dtnu  :", ts.dtnu[0]
+		end
+		if (any (strcmp (tags, 'dtb', /fold_case))) then begin
+			oplot, ts.t, ts.dtb*unit.time, linestyle=1, color=200
+			print, "dtb   :", ts.dtb[0]
+		end
+		if (any (strcmp (tags, 'dteta', /fold_case))) then begin
+			oplot, ts.t, ts.dteta*unit.time, linestyle=2, color=220200200
+			print, "dteta :", ts.dteta[0]
+		end
+		if (any (strcmp (tags, 'dtc', /fold_case))) then begin
+			oplot, ts.t, ts.dtc*unit.time, linestyle=1, color=61695
+			print, "dtc   :", ts.dtc[0]
+		end
+		if (any (strcmp (tags, 'dtchi', /fold_case))) then begin
+			oplot, ts.t, ts.dtchi*unit.time, linestyle=3, color=115100200
+			print, "dtchi :", ts.dtchi[0]
+		end
+		if (any (strcmp (tags, 'dtchi2', /fold_case))) then begin
+			oplot, ts.t, ts.dtchi2*unit.time, linestyle=3, color=41215
+			print, "dtchi2:", ts.dtchi2[0]
+		end
+		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			Temp_max = ts.TTmax * unit.temperature
+			plot, ts.t, Temp_max, title = 'Temp_max(tt) [K]', xrange=x_minmax, /xs, /yl
+		end
+		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			u_max = ts.umax * unit.velocity / unit.default_velocity
+			plot, ts.t, u_max, title = 'u_max(tt) ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
+		end
+		if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			rho_min = ts.rhomin * unit.density / unit.default_density
+			plot, ts.t, rho_min, title = 'rho_min(tt) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
 		end
 	end
 end

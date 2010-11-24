@@ -11,6 +11,7 @@
 ;;;   Add more comments
 
 @analyse_companion
+resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 
 ;;; Settings:
@@ -24,11 +25,13 @@
 ; 'Bx', 'By', 'Bz'          ; magnetic field components
 ; 'rho_mag'                 ; magnetic energy density
 ; 'j'                       ; absolute value of the current density
+; 'rho_u_z'                 ; vertical component of the impulse density
 ; (more quantities can be defined in 'precalc_data', see analyse_companion.pro)
 quantities = { temperature:'Temp', currentdensity:'j',            $
                magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
                velocity:'u_abs', velocity_z:'u_z',                $
-               logarithmic_density:'log_rho' }
+               logarithmic_density:'log_rho',                     $
+               impulse_density_z:'rho_u_z' }
 
 
 ; Quantities to be overplotted (calculated in 'precalc_data'):
@@ -42,6 +45,8 @@ default_length        = 1.e6
 default_length_str    = 'Mm'
 default_velocity      = 1.e3
 default_velocity_str  = 'km/s'
+default_density       = 1.0
+default_density_str   = 'kg/m^3'
 
 
 ; Initial varfile
@@ -84,6 +89,7 @@ if (not analyse_loaded) then BEGIN
 			stop
 		endif
 	endif
+
 
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
 	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
@@ -162,86 +168,14 @@ if (not analyse_loaded) then BEGIN
 	print, ""
 
 
-	time_series = file_search (datadir, "time_series.dat")
-	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts, /quiet
-	if (n_elements (ts) gt 0) then begin
-		window, 1, xsize=1000, ysize=800, title = 'time series analysis', retain=2
-		!P.MULTI = [0, 2, 2]
-
-		max_subplots = 4
-		num_subplots = 0
-		print, "starting values:"
-		print, "dt    :", ts.dt[0]
-		plot, ts.dt, title = 'dt', /yl
-		num_subplots += 1
-
-		tags = tag_names (ts)
-		y_minmax = minmax (ts.dt)
-		if (any (strcmp (tags, 'dtu', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtu])
-		if (any (strcmp (tags, 'dtv', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtv])
-		if (any (strcmp (tags, 'dtnu', /fold_case)))   then y_minmax = minmax ([y_minmax, ts.dtnu])
-		if (any (strcmp (tags, 'dtb', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtb])
-		if (any (strcmp (tags, 'dteta', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dteta])
-		if (any (strcmp (tags, 'dtc', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtc])
-		if (any (strcmp (tags, 'dtchi', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dtchi])
-		if (any (strcmp (tags, 'dtchi2', /fold_case))) then y_minmax = minmax ([y_minmax, ts.dtchi2])
-
-		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', yrange=y_minmax, /yl
-		num_subplots += 1
-		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
-			oplot, ts.t, ts.dtu, linestyle=2, color=11061000
-			print, "dtu   :", ts.dtu[0]
-		end
-		if (any (strcmp (tags, 'dtv', /fold_case))) then begin
-			oplot, ts.t, ts.dtv, linestyle=2, color=128255200
-			print, "dtv   :", ts.dtv[0]
-		end
-		if (any (strcmp (tags, 'dtnu', /fold_case))) then begin
-			oplot, ts.t, ts.dtnu, linestyle=1, color=128000128
-			print, "dtnu  :", ts.dtnu[0]
-		end
-		if (any (strcmp (tags, 'dtb', /fold_case))) then begin
-			oplot, ts.t, ts.dtb, linestyle=1, color=200
-			print, "dtb   :", ts.dtb[0]
-		end
-		if (any (strcmp (tags, 'dteta', /fold_case))) then begin
-			oplot, ts.t, ts.dteta, linestyle=2, color=220200200
-			print, "dteta :", ts.dteta[0]
-		end
-		if (any (strcmp (tags, 'dtc', /fold_case))) then begin
-			oplot, ts.t, ts.dtc, linestyle=1, color=61695
-			print, "dtc   :", ts.dtc[0]
-		end
-		if (any (strcmp (tags, 'dtchi', /fold_case))) then begin
-			oplot, ts.t, ts.dtchi, linestyle=3, color=115100200
-			print, "dtchi :", ts.dtchi[0]
-		end
-		if (any (strcmp (tags, 'dtchi2', /fold_case))) then begin
-			oplot, ts.t, ts.dtchi2, linestyle=3, color=41215
-			print, "dtchi2:", ts.dtchi2[0]
-		end
-		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			Temp_max = ts.TTmax * unit.temperature
-			plot, ts.t, Temp_max, title = 'Temp_max(tt) [K]', /yl
-		end
-		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			u_max = ts.umax * unit.velocity / default_velocity
-			plot, ts.t, u_max, title = 'u_max(tt) ['+default_velocity_str+']'
-		end
-		if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			rho_min = ts.rhomin * unit.density
-			plot, ts.t, rho_min, title = 'rho_min(tt)', /yl
-		end
-	end
-
-	resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
-
-	units = { velocity:unit.velocity, temperature:unit.temperature, length:unit.length, density:unit.density, default_length:default_length, default_velocity:default_velocity, default_length_str:default_length_str, default_velocity_str:default_velocity_str }
+	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str }
 	pc_read_grid, obj=grid, /trim, /quiet
 	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
+
+	time_series = file_search (datadir, "time_series.dat")
+	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts, /quiet
+	show_timeseries, ts, tags, units
+
 
 	dummy = dindgen (dim.mx, dim.my, dim.mz)
 	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
@@ -281,10 +215,15 @@ if (not analyse_loaded) then BEGIN
 	precalc, 0, varfile=varfile
 
 	if (num_selected gt 0) then begin
-		for i = 1, num_selected do begin
-			; Precalculate selected timesteps
-			pos = skipping + (i-1)*stepping
-			precalc, num_selected+1-i, varfile=snapshots[pos]
+		; Precalculate first selected timestep
+		precalc, num_selected, varfile=snapshots[skipping], vars=vars
+		show_timeseries, ts, tags, units, start_time=vars.t
+		if (num_selected gt 1) then begin
+			for i = 2, num_selected do begin
+				; Precalculate selected timesteps
+				pos = skipping + (i-1)*stepping
+				precalc, num_selected+1-i, varfile=snapshots[pos]
+			end
 		end
 	end
 
