@@ -14,6 +14,7 @@
 module Particles_number
 !
   use Cdata
+  use Cparam
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -23,7 +24,8 @@ module Particles_number
 !
   include 'particles_number.h'
 !
-  real :: np_swarm0, vthresh_coagulation=0.0, deltavp22_floor=0.0
+  real :: np_swarm0=1.0, rhop_swarm0=1.0, rhopsolid=1.0
+  real :: vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.true.
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
@@ -32,8 +34,8 @@ module Particles_number
   integer :: idiag_dtfragp=0
 !
   namelist /particles_number_init_pars/ &
-      initnpswarm, vthresh_coagulation, deltavp22_floor, &
-      lfragmentation_par, tstart_fragmentation_par, cdtpf
+      initnpswarm, np_swarm0, rhop_swarm0, rhopsolid, vthresh_coagulation, &
+      deltavp22_floor, lfragmentation_par, tstart_fragmentation_par, cdtpf
 !
   namelist /particles_number_run_pars/ &
       initnpswarm, vthresh_coagulation, deltavp22_floor, &
@@ -108,18 +110,34 @@ module Particles_number
       integer :: j
 !
       do j=1,ninit
-
+!
         select case (initnpswarm(j))
-
+!
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles_number: nothing'
-
+!
         case ('constant')
           if (lroot) then
             print*, 'init_particles_number: constant internal number'
             print*, 'init_particles_number: np_swarm0=', np_swarm0
           endif
           fp(1:npar_loc,inpswarm)=np_swarm0
+!
+        case ('constant_rhop_swarm')
+          if (lroot) then
+            print*, 'init_particles_number: constant mass density per particle'
+            print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
+          endif
+          fp(1:npar_loc,inpswarm)=rhop_swarm0/ &
+              (four_pi_over_three*rhopsolid*fp(1:npar_loc,iap)**3)
+!
+        case ('constant_rhop')
+          if (lroot) then
+            print*, 'init_particles_number: constant mass density'
+            print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
+          endif
+          fp(1:npar_loc,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
+              (four_pi_over_three*rhopsolid*fp(1:npar_loc,iap)**3)
 !
         endselect
 !
