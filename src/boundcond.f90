@@ -3312,8 +3312,8 @@ module Boundcond
 !
 !  Allocate memory for large array.
 !
-      allocate(fder(mx,my),stat=stat)
-      if (stat>0) call fatal_error('bc_db_z', &
+      allocate(fder(my,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_db_x', &
           'Could not allocate memory for fder')
 !
       select case (topbot)
