@@ -1249,7 +1249,8 @@ module Hydro
           !
           !  Catch unknown values
           !
-          call fatal_error("init_uu","No such value for inituu"//trim(inituu(j)))
+          call fatal_error("init_uu", &
+              "No such value for inituu: "//trim(inituu(j)))
 !
         endselect
 !
