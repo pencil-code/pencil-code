@@ -463,6 +463,13 @@ if ((ilnTT le dim.mvar) or (param.lwrite_aux ne 0)) then begin
   varcontent[ilnTT].idlinitloc = INIT_SCALAR_LOC
 end
 ;
+default, ieth, 0
+varcontent[ieth].variable   = 'Thermal energy'
+varcontent[ieth].idlvar     = 'eth'
+varcontent[ieth].idlinit    = INIT_SCALAR
+varcontent[ieth].idlvarloc  = 'eth_loc'
+varcontent[ieth].idlinitloc = INIT_SCALAR_LOC
+;
 ;  Auxiliary variables (only if they have been saved).
 ;
 if ((param.lwrite_aux ne 0) and (not noaux)) then begin
