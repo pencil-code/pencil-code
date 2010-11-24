@@ -33,7 +33,7 @@ module Particles_radius
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
-  logical :: lsweepup_par=.true., lcondensation_par=.false.
+  logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
@@ -112,7 +112,7 @@ module Particles_radius
 !
 !  Short hand for spherical particle prefactor.
 !
-      four_pi_rhops_over_three=4*pi*rhops/3.0
+      four_pi_rhops_over_three=four_pi_over_three*rhops
 !
 !  Inverse coefficients.
 !
