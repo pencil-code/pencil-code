@@ -272,6 +272,7 @@ module Testfield
       if (.not.lstarting) then
         select case (itestfield)
         case ('j0-P1'); iE0=0
+        case ('SRSRC07'); iE0=0, ltestfield_linear=.true.
         case ('B11-B22'); iE0=0
         case default
           call fatal_error('initialize_testfield','undefined itestfield value')
@@ -541,6 +542,10 @@ module Testfield
         del2Atest=graddiv_atest-jjtest
         select case (itestfield)
           case ('j0-P1'); call set_bbtest_j0_P1(B0test,jtest)
+!
+! Simplest test fields not obeying solenoidal condition from Table~1 of Schrinner et al. (2007)
+!
+          case ('SRSRC07') call set_bbtest_srsrc07(B0test,jtest)
           case ('B=0') !(dont do anything)
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -638,20 +643,24 @@ module Testfield
 !  http://arxiv.org/abs/astro-ph/0609752
 !  see also notes in tex/notes/testfield/spherical.tex
 !
-        temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
-        if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
-        temp=(dn0dr(l1:l2)*Eipq(:,2,i1)-dj0dr(l1:l2)*Eipq(:,2,i2))/(atilde_denom1(l1:l2))
-        if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
-        temp=(dn0dr(l1:l2)*Eipq(:,3,i1)-dj0dr(l1:l2)*Eipq(:,3,i2))/(atilde_denom1(l1:l2))
-        if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
+        if (ltestfield_linear) then
+!       to be filled
+        else
+          temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
+          if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
+          temp=(dn0dr(l1:l2)*Eipq(:,2,i1)-dj0dr(l1:l2)*Eipq(:,2,i2))/(atilde_denom1(l1:l2))
+          if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
+          temp=(dn0dr(l1:l2)*Eipq(:,3,i1)-dj0dr(l1:l2)*Eipq(:,3,i2))/(atilde_denom1(l1:l2))
+          if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
 ! \tilde{b}
-        temp=(n0r(l1:l2)*Eipq(:,1,i1)-j0r(l1:l2)*Eipq(:,1,i2))/(btilde_denom1(l1:l2))
-        if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
-        temp=(n0r(l1:l2)*Eipq(:,2,i1)-j0r(l1:l2)*Eipq(:,2,i2))/(btilde_denom1(l1:l2))
-        if (idiag_b211xy/=0) call zsum_mn_name_xy(temp,idiag_b211xy)
-        temp=(n0r(l1:l2)*Eipq(:,3,i1)-j0r(l1:l2)*Eipq(:,3,i2))/(btilde_denom1(l1:l2))
-        if (idiag_b311xy/=0) call zsum_mn_name_xy(temp,idiag_b311xy)
-     endif
+          temp=(n0r(l1:l2)*Eipq(:,1,i1)-j0r(l1:l2)*Eipq(:,1,i2))/(btilde_denom1(l1:l2))
+          if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
+          temp=(n0r(l1:l2)*Eipq(:,2,i1)-j0r(l1:l2)*Eipq(:,2,i2))/(btilde_denom1(l1:l2))
+          if (idiag_b211xy/=0) call zsum_mn_name_xy(temp,idiag_b211xy)
+          temp=(n0r(l1:l2)*Eipq(:,3,i1)-j0r(l1:l2)*Eipq(:,3,i2))/(btilde_denom1(l1:l2))
+          if (idiag_b311xy/=0) call zsum_mn_name_xy(temp,idiag_b311xy)
+        endif
+      endif
 !
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
@@ -867,6 +876,40 @@ module Testfield
       endselect
 !
     endsubroutine set_bbtest_j0_P1
+!***********************************************************************
+    subroutine set_bbtest_srsrc07(B0test,jtest)
+!
+!  set testfield
+!
+!   25-nov-05/piyali: copied set_bbtest_j0_P1 and modified according
+!                     to Table.~1 of Schrinner et al. (2007)
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: B0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: B0test
+!
+!  set B0test for each of the 9 cases
+!
+      select case (jtest)
+      case (1); B0test(:,1)=bamp; B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*x(l1:l2); B0test(:,2)=0.; B0test(:,3)=0.
+      case (3); B0test(:,1)=bamp*y(m); B0test(:,2)=0.; B0test(:,3)=0.
+!
+      case (4); B0test(:,1)=0.; B0test(:,2)=bamp; B0test(:,3)=0.
+      case (5); B0test(:,1)=0.; B0test(:,2)=bamp*x(l1:l2); B0test(:,3)=0.
+      case (6); B0test(:,1)=0.; B0test(:,2)=bamp*y(m); B0test(:,3)=0.
+!
+      case (7); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp
+      case (8); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*x(l1:l2)
+      case (9); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*y(m)
+      case default; B0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest_srsrc07
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !
