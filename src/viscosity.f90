@@ -105,6 +105,12 @@ module Viscosity
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
+  integer :: idiag_fviscmz=0    ! DIAG_DOC: $\left<2\nu\varrho u_i 
+                                ! DIAG_DOC: \mathcal{S}_{iz} \right>_{xy}$
+                                ! DIAG_DOC: ($z$-component of viscous flux)
+  integer :: idiag_fviscmxy=0   ! DIAG_DOC: $\left<2\nu\varrho u_i 
+                                ! DIAG_DOC: \mathcal{S}_{ix} \right>_{z}$
+                                ! DIAG_DOC: ($x$-xomponent of viscous flux)
 !
   contains
 !***********************************************************************
@@ -493,7 +499,7 @@ module Viscosity
 !
       logical :: lreset
       logical, optional :: lwrite
-      integer :: iname
+      integer :: iname,inamez,ixy
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -506,6 +512,7 @@ module Viscosity
         idiag_epsK_LES=0
         idiag_meshRemax=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
+        idiag_fviscmz=0; idiag_fviscmxy=0 
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -526,6 +533,18 @@ module Viscosity
             'epsK_LES',idiag_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),&
             'meshRemax',idiag_meshRemax)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscmz',idiag_fviscmz)
+      enddo
+!
+!  Check for those quantities for which we want z-averages
+!
+      do ixy=1,nnamexy
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscmxy',idiag_fviscmxy)
       enddo
 !
 !  write column where which viscosity variable is stored
@@ -659,6 +678,14 @@ module Viscosity
       endif
       if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
           lpenc_diagnos(i_shock)=.true.
+      if (idiag_fviscmz/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_sij)=.true.
+      endif
+      if (idiag_fviscmxy/=0) then
+        lpenc_diagnos2d(i_rho)=.true.
+        lpenc_diagnos2d(i_sij)=.true.
+      endif
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -1347,7 +1374,8 @@ module Viscosity
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
 !
-      use Diagnostics, only: sum_mn_name, max_mn_name
+      use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
+          zsum_mn_name_xy
       use Sub, only: cross
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1431,6 +1459,24 @@ module Viscosity
             call sum_mn_name(nuD2uxb(:,3),idiag_nuD2uxbzm)
           endif
         endif
+      endif
+!
+!  1D-averages.
+!
+      if (l1davgfirst) then
+        if (idiag_fviscmz/=0) &
+            call xysum_mn_name_z(2.*p%rho*nu*( &
+                p%uu(:,1)*p%sij(:,1,3)+ &
+                p%uu(:,2)*p%sij(:,2,3)+ &
+                p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
+      endif
+!
+!  2D-averages.
+!
+      if (l2davgfirst) then
+        if (idiag_fviscmxy/=0) call zsum_mn_name_xy(2.*p%rho*nu*( &
+            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
       endif
 !
     endsubroutine calc_viscous_force
