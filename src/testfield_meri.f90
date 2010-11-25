@@ -484,7 +484,7 @@ module Testfield
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.,&
                               temp
       integer :: jtest, j, jaatest, iuxtest, iuytest, iuztest
-      integer :: i1=1, i2=2, i3=3, i4=4,i5=5,i6=6,i7=7,i8,i9=9
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -644,7 +644,65 @@ module Testfield
 !  see also notes in tex/notes/testfield/spherical.tex
 !
         if (ltestfield_linear) then
-!       to be filled
+! Nine a_ij as a function of \tilde{a}_ij and \tilde{b}_ijk
+! using Eq. (16) of Schrinner et al. 2007
+          temp=Eipq(:,1,i1)-Eipq(:,1,i8)+y(m)*Eipq(:,1,i2)
+          if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
+          temp=Eipq(:,1,i2)+Eipq(:,1,i7)-y(m)*Eipq(:,1,i1)
+          if (idiag_a12xy/=0) call zsum_mn_name_xy(temp,idiag_a12xy)
+          temp=Eipq(:,1,i3)
+          if (idiag_a13xy/=0) call zsum_mn_name_xy(temp,idiag_a13xy)
+          temp=Eipq(:,2,i1)-Eipq(:,2,i8)+y(m)*Eipq(:,2,i2)
+          if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
+          temp=Eipq(:,2,i2)+Eipq(:,2,i7)-y(m)*Eipq(:,2,i1)
+          if (idiag_a22xy/=0) call zsum_mn_name_xy(temp,idiag_a22xy)
+          temp=Eipq(:,2,i3)
+          if (idiag_a23xy/=0) call zsum_mn_name_xy(temp,idiag_a23xy)
+          temp=Eipq(:,3,i1)-Eipq(:,3,i8)+y(m)*Eipq(:,3,i2)
+          if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
+          temp=Eipq(:,3,i2)+Eipq(:,3,i7)-y(m)*Eipq(:,3,i1)
+          if (idiag_a32xy/=0) call zsum_mn_name_xy(temp,idiag_a32xy)
+          temp=Eipq(:,3,i3)
+          if (idiag_a33xy/=0) call zsum_mn_name_xy(temp,idiag_a33xy)
+! Eighteen b_ijk = \tilde{b}_ij 
+! using Eq. (16) of Schrinner et al. 2007
+          temp=Eipq(:,1,i4)-x(l1:l2)*Eipq(:,1,i1)
+          if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
+          temp=Eipq(:,1,i5)-x(l1:l2)*Eipq(:,1,i2)
+          if (idiag_b121xy/=0) call zsum_mn_name_xy(temp,idiag_b121xy)
+          temp=Eipq(:,1,i6)-x(l1:l2)*Eipq(:,1,i3)
+          if (idiag_b131xy/=0) call zsum_mn_name_xy(temp,idiag_b131xy)
+          temp=Eipq(:,2,i4)-x(l1:l2)*Eipq(:,2,i1)
+          if (idiag_b211xy/=0) call zsum_mn_name_xy(temp,idiag_b211xy)
+          temp=Eipq(:,2,i5)-x(l1:l2)*Eipq(:,2,i2)
+          if (idiag_b221xy/=0) call zsum_mn_name_xy(temp,idiag_b221xy)
+          temp=Eipq(:,2,i6)-x(l1:l2)*Eipq(:,2,i3)
+          if (idiag_b231xy/=0) call zsum_mn_name_xy(temp,idiag_b231xy)
+          temp=Eipq(:,3,i4)-x(l1:l2)*Eipq(:,3,i1)
+          if (idiag_b311xy/=0) call zsum_mn_name_xy(temp,idiag_b311xy)
+          temp=Eipq(:,3,i5)-x(l1:l2)*Eipq(:,3,i2)
+          if (idiag_b321xy/=0) call zsum_mn_name_xy(temp,idiag_b321xy)
+          temp=Eipq(:,3,i6)-x(l1:l2)*Eipq(:,3,i3)
+          if (idiag_b331xy/=0) call zsum_mn_name_xy(temp,idiag_b331xy)
+!
+          temp=x(l1:l2)*(Eipq(:,1,i7)-y(m)*Eipq(:,1,i1))
+          if (idiag_b112xy/=0) call zsum_mn_name_xy(temp,idiag_b112xy)
+          temp=x(l1:l2)*(Eipq(:,1,i8)-y(m)*Eipq(:,1,i2))
+          if (idiag_b122xy/=0) call zsum_mn_name_xy(temp,idiag_b122xy)
+          temp=x(l1:l2)*(Eipq(:,1,i9)-y(m)*Eipq(:,1,i3))
+          if (idiag_b132xy/=0) call zsum_mn_name_xy(temp,idiag_b132xy)
+          temp=x(l1:l2)*(Eipq(:,2,i7)-y(m)*Eipq(:,2,i1))
+          if (idiag_b212xy/=0) call zsum_mn_name_xy(temp,idiag_b212xy)
+          temp=x(l1:l2)*(Eipq(:,2,i8)-y(m)*Eipq(:,2,i2))
+          if (idiag_b222xy/=0) call zsum_mn_name_xy(temp,idiag_b222xy)
+          temp=x(l1:l2)*(Eipq(:,2,i9)-y(m)*Eipq(:,2,i3))
+          if (idiag_b232xy/=0) call zsum_mn_name_xy(temp,idiag_b232xy)
+          temp=x(l1:l2)*(Eipq(:,3,i7)-y(m)*Eipq(:,3,i1))
+          if (idiag_b312xy/=0) call zsum_mn_name_xy(temp,idiag_b312xy)
+          temp=x(l1:l2)*(Eipq(:,3,i8)-y(m)*Eipq(:,3,i2))
+          if (idiag_b322xy/=0) call zsum_mn_name_xy(temp,idiag_b322xy)
+          temp=x(l1:l2)*(Eipq(:,3,i9)-y(m)*Eipq(:,3,i3))
+          if (idiag_b332xy/=0) call zsum_mn_name_xy(temp,idiag_b332xy)
         else
           temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
           if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
