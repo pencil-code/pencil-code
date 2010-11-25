@@ -28,13 +28,15 @@ module Particles_coagulation
 !
   include 'particles_coagulation.h'
 !
+  real :: kernel_cst
   integer :: ncoll_max_par=-1, npart_max_par=-1
-  logical :: lshear_in_vp=.true.
+  logical :: lshear_in_vp=.true., lconstant_kernel_test=.false.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
   namelist /particles_coag_run_pars/ &
-      lshear_in_vp, ncoll_max_par, npart_max_par
+      lshear_in_vp, ncoll_max_par, npart_max_par, lconstant_kernel_test, &
+      kernel_cst
 !
   contains
 !***********************************************************************
@@ -112,11 +114,10 @@ module Particles_coagulation
           if (k>0) then
             np_point=np_pencil(l-nghost)
             do while (k/=0)
-              j=k
+              j=kshepherd(l-nghost)
               npart_par=0
               ncoll_par=0
               do while (.true.)
-                j=kneighbour(j)
                 if (j==0) then
                   if (npart_max_par/=-1 .and. npart_max_par<np_point) then
                     j=kshepherd(l-nghost)
@@ -150,13 +151,17 @@ module Particles_coagulation
 !  where lambda is the mean free path of a particle relative to a single
 !  superparticle and sigma is the collisional cross section.
 !
-                  if (lparticles_number) then
-                    lambda_mfp=1/(fp(j,inpswarm)*pi*(fp(k,iap)+fp(j,iap))**2)
+                  if (lconstant_kernel_test) then
+                    tau_coll1=kernel_cst*fp(j,inpswarm)
                   else
-                    lambda_mfp=1/(rhop_swarm/(4/3.*pi*fp(j,iap)**3)* &
-                        pi*(fp(k,iap)+fp(j,iap))**2)
+                    if (lparticles_number) then
+                      lambda_mfp=1/(fp(j,inpswarm)*pi*(fp(k,iap)+fp(j,iap))**2)
+                    else
+                      lambda_mfp=1/(rhop_swarm/(4/3.*pi*fp(j,iap)**3)* &
+                          pi*(fp(k,iap)+fp(j,iap))**2)
+                    endif
+                    tau_coll1=deltavjk/lambda_mfp
                   endif
-                  tau_coll1=deltavjk/lambda_mfp
 !
 !  Increase collision rate artificially for fewer collisions.
 !
@@ -193,6 +198,7 @@ module Particles_coagulation
                 npart_par=npart_par+1
                 if (ncoll_max_par/=-1 .and. ncoll_par==ncoll_max_par) exit
                 if (npart_max_par/=-1 .and. npart_par==npart_max_par) exit
+                j=kneighbour(j)
               enddo
               k=kneighbour(k)
 !
