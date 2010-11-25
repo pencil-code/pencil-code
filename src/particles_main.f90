@@ -588,7 +588,8 @@ module Particles_main
 !
 !  Write information about local particle environment to file.
 !
-      if (itsub==1)               call particles_stalker_sub(f,fp,ineargrid)
+      if (itsub==1 .and. (.not.lpencil_check_at_work)) &
+          call particles_stalker_sub(f,fp,ineargrid)
 !
 !  Dynamical equations.
 !
