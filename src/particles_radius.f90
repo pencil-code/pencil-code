@@ -39,14 +39,14 @@ module Particles_radius
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
   namelist /particles_radius_init_pars/ &
-      initap, ap0, rhops, vthresh_sweepup, deltavp12_floor, &
+      initap, ap0, rhopmat, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean
 !
   namelist /particles_radius_run_pars/ &
-      rhops, vthresh_sweepup, deltavp12_floor, &
+      rhopmat, vthresh_sweepup, deltavp12_floor, &
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
@@ -100,7 +100,7 @@ module Particles_radius
           lparticles_number .or. lparticles_spin)) then
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
-        mp_swarm=4/3.0*pi*rhops*ap0(1)**3
+        mp_swarm=4/3.0*pi*rhopmat*ap0(1)**3
         if (lroot) print*, 'initialize_particles_radius: '// &
             'mass per dust grain mp_swarm=', mp_swarm
       endif
@@ -112,7 +112,7 @@ module Particles_radius
 !
 !  Short hand for spherical particle prefactor.
 !
-      four_pi_rhops_over_three=four_pi_over_three*rhops
+      four_pi_rhopmat_over_three=four_pi_over_three*rhopmat
 !
 !  Inverse coefficients.
 !
@@ -306,7 +306,8 @@ module Particles_radius
 !  Allow boulders to sweep up small grains if relative velocity not too high.
             if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
 !  Radius increase due to sweep-up.
-              dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*p%cc(ix)*p%rho(ix)*rhops1
+              dfp(k,iap) = dfp(k,iap) + &
+                  0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
 !
 !  Deplete gas of small grains.
 !
@@ -431,7 +432,8 @@ module Particles_radius
                 dt1_condensation(ix)=max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
-              dapdt=0.25*vth(ix)*rhops1*(rhovap(ix)-rhosat(ix))*alpha_cond_par
+              dapdt=0.25*vth(ix)*rhopmat1* &
+                  (rhovap(ix)-rhosat(ix))*alpha_cond_par
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
 !  the limit of small particles; therefore we need to damp the evaporation to
@@ -451,7 +453,7 @@ module Particles_radius
 !  Vapor monomers are added to the gas or removed from the gas.
 !
             if (lparticles_number) np_swarm=fp(k,inpswarm)
-            drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhops*np_swarm
+            drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
 !
 !  Drive the vapor pressure towards the saturated pressure due to contact
 !  with "ocean" at the box bottom.
@@ -494,7 +496,7 @@ module Particles_radius
 !
           if (lfirst.and.ldt) then
             ap_equi=((p%rhop+(rhovap-rhosat))/ &
-                (4.0/3.0*pi*rhops*np_swarm*p%np))**(1.0/3.0)
+                (4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
             do ix=1,nx
               if (rhocond_tot(ix)>rhosat(ix)) then
                 dt1_condensation(ix) = max(total_surface_area(ix)*vth(ix), &

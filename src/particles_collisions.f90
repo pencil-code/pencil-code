@@ -238,8 +238,8 @@ module Particles_collisions
 !  times.
 !
 !    tau_coll_k = 1/(nj*sigma_jk*dv_jk) = mj/(rhoj*sigma_jk*dv_jk)
-!               = (4/3)*pi*rhops*aj^3/(rhoj*pi*(aj+ak)^2*dv_jk)
-!               = (4/3)*rhops*aj^3/(rhoj*(aj+ak)^2*dv_jk)
+!               = (4/3)*pi*rhopmat*aj^3/(rhoj*pi*(aj+ak)^2*dv_jk)
+!               = (4/3)*rhopmat*aj^3/(rhoj*(aj+ak)^2*dv_jk)
 !               = (4/3)*tau_fric_j*(rhog/rhoj)*(cs/dv_jk)*
 !                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
 !
@@ -468,8 +468,8 @@ module Particles_collisions
 !  times.
 !
 !    tau_coll_k = 1/(nj*sigma_jk*dv_jk) = mj/(rhoj*sigma_jk*dv_jk)
-!               = (4/3)*pi*rhops*aj^3/(rhoj*pi*(aj+ak)^2*dv_jk)
-!               = (4/3)*rhops*aj^3/(rhoj*(aj+ak)^2*dv_jk)
+!               = (4/3)*pi*rhopmat*aj^3/(rhoj*pi*(aj+ak)^2*dv_jk)
+!               = (4/3)*rhopmat*aj^3/(rhoj*(aj+ak)^2*dv_jk)
 !               = (4/3)*tau_fric_j*(rhog/rhoj)*(cs/dv_jk)*
 !                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
 !

@@ -125,7 +125,7 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
-      rhops, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1
+      rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -257,7 +257,7 @@ module Particles
 !
 !  Inverse material density.
 !
-      if (rhops/=0.0) rhops1=1/rhops
+      if (rhopmat/=0.0) rhopmat1=1/rhopmat
 !
 !  Multiple dust species. Friction time is given in the array tausp_species.
 !
@@ -2261,8 +2261,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
             if (lparticles_number) np_swarm=fp(k,inpswarm)
-            call sum_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
+            call sum_par_name((/four_pi_rhopmat_over_three* &
+                fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpvpxm/=0) then
@@ -2287,7 +2287,7 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=1,npar_loc
             if (lparticles_number) np_swarm=fp(k,inpswarm)
             call integrate_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_mpt)
+                (/four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm/),idiag_mpt)
           enddo
         endif
         if (idiag_npargone/=0) then
@@ -2951,7 +2951,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhops)
+          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhopmat)
         else
 !  Check if we are using multiple or single particle species.
           if (npar_species>1) then
@@ -3024,9 +3024,9 @@ k_loop:   do while (.not. (k>npar_loc))
           call fatal_error('get_frictiontime','')
         endif
         if (fp(k,iap)<2.25*mean_free_path_gas) then
-          tausp1_par = 1/(fp(k,iap)*rhops)
+          tausp1_par = 1/(fp(k,iap)*rhopmat)
         else
-          tausp1_par = 1/(fp(k,iap)*rhops)*2.25*mean_free_path_gas/fp(k,iap)
+          tausp1_par = 1/(fp(k,iap)*rhopmat)*2.25*mean_free_path_gas/fp(k,iap)
         endif
 !
       else if (ldraglaw_epstein_transonic) then
@@ -3119,20 +3119,20 @@ k_loop:   do while (.not. (k>npar_loc))
 !  is used, leading to an expression that can be used for arbitrary velocities
 !  as derived by Kwok (1975).
 !
-!     transonic:  Feps=-sqrt(128*pi)/3*a**2*rhog*cs*fd*Delta(u)          (4)
+!     transonic:  Feps=-sqrt(128*pi)/3*a**2*rhog*cs*fd*Delta(u)           (4)
 !
 !  where fd=sqrt(1 + 9*pi/128*m**2)                                       (5)
 !
-!  The force Feps is divided by the mass of the particle mp=4/3*pi*a**3*rhops
+!  The force Feps is divided by the mass of the particle mp=4/3*pi*a**3*rhopmat
 !  to yield the acceleration feps=Feps/mp
 !
-!         feps = -sqrt(8/pi)*rhog*cs*fd*Delta(u)/[a*rhops]                (6)
+!         feps = -sqrt(8/pi)*rhog*cs*fd*Delta(u)/[a*rhopmat]              (6)
 !
 !  Epstein drag ceases to work when the particle diameter becomes comparable
 !  to the mean free path (lambda) of the gas molecules. In this case, the force
 !  is given by Stokes friction in the viscous case (low dust Reynolds number)
 !
-!      Fsto=-6*pi*a*mu_kin*Delta(u)                                    (7)
+!      Fsto=-6*pi*a*mu_kin*Delta(u)                                       (7)
 !
 !  where mu_kin is the kinematic viscosity of the gas
 !
@@ -3168,7 +3168,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  which removes the dependence of (6) on cs. We are left with
 !
-!         feps = -2/pi*sigmag*Omega*fd*Delta(u)/[a*rhops]
+!         feps = -2/pi*sigmag*Omega*fd*Delta(u)/[a*rhopmat]
 !
 !  the constant terms are tausp1. The same follows for Stokes drag
 !
@@ -3238,12 +3238,11 @@ k_loop:   do while (.not. (k>npar_loc))
           lambda=mean_free_path_gas * rho0/p%rho(inx0)
         endif
 !
-!  The Knudsen number is the ratio of the mean free path to the particle radius, 2s
-!  To keep consistency with the formulation evolving for radius, tausp1 is C/(s*rhops)
-!  where C is 2/pi for 2d runs and sqrt(8/pi) for 3D runs (because of the sqrt(2*pi)
-!  factor coming from the substitution Sigma=rho/(sqrt(2*pi)*H). 's' is the particle
-!  radius
-!
+!  The Knudsen number is the ratio of the mean free path to the particle
+!  radius, 2s. To keep consistency with the formulation evolving for radius,
+!  tausp1 is C/(s*rhopmat) where C is 2/pi for 2d runs and sqrt(8/pi) for 3D
+!  runs (because of the sqrt(2*pi) factor coming from the substitution
+!  Sigma=rho/(sqrt(2*pi)*H). 's' is the particle radius
         if (iap/=0) then
           inv_particle_radius=1/fp(k,iap)
         else
@@ -3252,9 +3251,9 @@ k_loop:   do while (.not. (k>npar_loc))
             inv_particle_radius=tmp1
           else
             if (nzgrid==1) then
-              inv_particle_radius=0.5*pi*tmp1     !rhops=1, particle_radius in meters
+              inv_particle_radius=0.5*pi*tmp1     !rhopmat=1, particle_radius in meters
             else
-              inv_particle_radius=sqrt(pi/8)*tmp1 !rhops=1, particle_radius in meters
+              inv_particle_radius=sqrt(pi/8)*tmp1 !rhopmat=1, particle_radius in meters
             endif
           endif
         endif
@@ -3307,9 +3306,11 @@ k_loop:   do while (.not. (k>npar_loc))
       if (iap/=0) then
         if (fp(k,iap)/=0.0) then
           if (nzgrid==1) then
-            tausp1_par=     2*pi_1*OO          *p%rho(inx0)*fac/(fp(k,iap)*rhops)
+            tausp1_par=     2*pi_1*OO* &
+                p%rho(inx0)*fac/(fp(k,iap)*rhopmat)
           else
-            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)*fac/(fp(k,iap)*rhops)
+            tausp1_par=sqrt(8*pi_1*p%cs2(inx0))*p%rho(inx0)* &
+                fac/(fp(k,iap)*rhopmat)
           endif
         endif
       else
@@ -3317,7 +3318,7 @@ k_loop:   do while (.not. (k>npar_loc))
           !bad because it comes at the expense of evil divisions
         if (nzgrid==1) then
           if (luse_tau_ap) then
-            tausp1_par=tmp1*2*pi_1*OO*p%rho(inx0)*fac/(rho0*rhops)
+            tausp1_par=tmp1*2*pi_1*OO*p%rho(inx0)*fac/(rho0*rhopmat)
           else
             tausp1_par=tmp1*OO*p%rho(inx0)*fac/ rho0
           endif
@@ -3834,7 +3835,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Relaxation time:
 !
-      tausp1_par=18.0*cdrag*nu/((rhops/interp_rho(k))*stocunn*dia**2)
+      tausp1_par=18.0*cdrag*nu/((rhopmat/interp_rho(k))*stocunn*dia**2)
 !
     endsubroutine calc_draglaw_steadystate
 !***********************************************************************

@@ -1482,15 +1482,15 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
             if (lparticles_number) np_swarm=fp(k,inpswarm)
-            call sum_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
+            call sum_par_name((/four_pi_rhopmat_over_three* &
+                fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
           enddo
         endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
             if (lparticles_number) np_swarm=fp(k,inpswarm)
             call integrate_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_swarm/),idiag_mpt)
+                (/four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm/),idiag_mpt)
           enddo
         endif
         if (idiag_npargone/=0) then

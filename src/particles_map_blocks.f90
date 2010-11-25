@@ -281,9 +281,10 @@ module Particles_map
 !  Calculate mass density per superparticle.
 !
                   if (lparticles_radius.and.lparticles_number) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inpswarm)
+                    weight0=four_pi_rhopmat_over_three*fp(k,iap)**3* &
+                        fp(k,inpswarm)
                   elseif (lparticles_radius) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
+                    weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
                     weight0=mp_swarm*fp(k,inpswarm)
                   else
@@ -355,9 +356,10 @@ module Particles_map
 !  Calculate mass density per superparticle.
 !
                   if (lparticles_radius.and.lparticles_number) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inpswarm)
+                    weight0=four_pi_rhopmat_over_three*fp(k,iap)**3* &
+                        fp(k,inpswarm)
                   elseif (lparticles_radius) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
+                    weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
                     weight0=mp_swarm*fp(k,inpswarm)
                   else
@@ -431,9 +433,10 @@ module Particles_map
 !  Calculate mass density per superparticle.
 !
                   if (lparticles_radius.and.lparticles_number) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*fp(k,inpswarm)
+                    weight0=four_pi_rhopmat_over_three*fp(k,iap)**3* &
+                        fp(k,inpswarm)
                   elseif (lparticles_radius) then
-                    weight0=four_pi_rhops_over_three*fp(k,iap)**3*np_swarm
+                    weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
                     weight0=mp_swarm*fp(k,inpswarm)
                   else

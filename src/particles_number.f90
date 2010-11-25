@@ -24,7 +24,7 @@ module Particles_number
 !
   include 'particles_number.h'
 !
-  real :: np_swarm0=1.0, rhop_swarm0=1.0, rhopsolid=1.0
+  real :: np_swarm0=1.0, rhop_swarm0=1.0
   real :: vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.false.
@@ -34,7 +34,7 @@ module Particles_number
   integer :: idiag_dtfragp=0
 !
   namelist /particles_number_init_pars/ &
-      initnpswarm, np_swarm0, rhop_swarm0, rhopsolid, vthresh_coagulation, &
+      initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
       deltavp22_floor, lfragmentation_par, tstart_fragmentation_par, cdtpf
 !
   namelist /particles_number_run_pars/ &
@@ -129,7 +129,7 @@ module Particles_number
             print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
           endif
           fp(1:npar_loc,inpswarm)=rhop_swarm0/ &
-              (four_pi_over_three*rhopsolid*fp(1:npar_loc,iap)**3)
+              (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3)
 !
         case ('constant_rhop')
           if (lroot) then
@@ -137,7 +137,7 @@ module Particles_number
             print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
           endif
           fp(1:npar_loc,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
-              (four_pi_over_three*rhopsolid*fp(1:npar_loc,iap)**3)
+              (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3)
 !
         endselect
 !
@@ -246,18 +246,18 @@ module Particles_number
                     dfp(k,inpswarm) = dfp(k,inpswarm) - cdot
                     if (lpscalar_nolog) then
                       df(l,m,n,icc) = df(l,m,n,icc) + &
-                          p%rho1(l-nghost)*4/3.*pi*rhops* &
+                          p%rho1(l-nghost)*4/3.*pi*rhopmat* &
                           (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     else
                       df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                          p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
+                          p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
                           (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     endif
                   endif  ! fragmentation or coagulation
 !  Time-step contribution
 !                  if (lfirst.and.ldt) then
 !                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
-!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops* &
+!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
 !                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
 !                  endif
 !  Need to count collisions for diagnostics.
@@ -279,10 +279,11 @@ module Particles_number
                   dfp(k,inpswarm) = dfp(k,inpswarm) - cdot
                   if (lpscalar_nolog) then
                     df(l,m,n,icc) = df(l,m,n,icc) + &
-                        p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
+                        p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
                   else
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
+                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi* &
+                        rhopmat*fp(k,iap)**3*cdot
                   endif
 !  Need to count collisions for diagnostics.
                   if (ldiagnos) then
@@ -294,7 +295,7 @@ module Particles_number
 !  Time-step contribution
 !                  if (lfirst.and.ldt) then
 !                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
-!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhops*fp(k,iap)**3*cdot
+!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
 !                  endif
                 endif  ! subgrid model
 !
