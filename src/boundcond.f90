@@ -1884,7 +1884,7 @@ module Boundcond
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
       integer :: ierr,k
-      real :: lambda_exp,lambda_exp_sinth,somega
+      real :: lambda_exp,lambda_exp_sinth
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -1923,10 +1923,9 @@ module Boundcond
                  f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
                      **(1-(lambda_exp/nu))
                else
-                 somega=lambda_exp_sinth*Omega*(x(l1+k)-x(l1-k))*(x(l1-k) &
-                     **(1-lambda_exp/nu))
-                 f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
-                     **(1-(lambda_exp/nu))+somega
+                 f(l1-k,iy,:,j)= (f(l1+k,iy,:,j)+Omega*x(l1+k)*sinth(iy)) &
+                      *(x(l1-k)/x(l1+k))**(1-(lambda_exp/nu)) &
+                      -Omega*x(l1-k)*sinth(iy)
                endif
             enddo
           enddo
@@ -1948,10 +1947,9 @@ module Boundcond
                 f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
                     **(1-(lambda_exp/nu)))
               else
-                somega=lambda_exp_sinth*Omega*(x(l1-k)-x(l1+k))*(x(l1+k) &
-                    **(1-lambda_exp/nu))
-                f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
-                    **(1-(lambda_exp/nu)))+somega
+                f(l2+k,iy,:,j)= (f(l2-k,iy,:,j)+Omega*x(l2-k)*sinth(iy)) &
+                     *(x(l2+k)/x(l2-k))**(1-(lambda_exp/nu)) &
+                     -Omega*x(l2+k)*sinth(iy)
               endif
             enddo
           enddo
