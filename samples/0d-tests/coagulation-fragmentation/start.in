@@ -21,7 +21,7 @@
   initxxp='nothing', eps_dtog=1.0
 /
 &particles_radius_init_pars
-  initap='constant', ap0=1.0, rhops=1.0
+  initap='constant', ap0=1.0, rhopmat=1.0
   deltavp12_floor=0.01
 /
 &particles_number_init_pars
