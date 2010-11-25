@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Module containing global parameters (constants)
+!  Module containing global parameters (constants).
 !
 module Cparam
 !
