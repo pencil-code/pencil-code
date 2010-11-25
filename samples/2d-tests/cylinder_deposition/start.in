@@ -62,7 +62,7 @@
   initap='constant'
   ap0=190e-6
   lsweepup_par=F
-  rhops=1e3
+  rhopmat=1e3
 /
 &particles_stalker_init_pars
   dstalk=5e-4
