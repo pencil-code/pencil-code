@@ -56,7 +56,7 @@
   lparticlemesh_tsc=T
   tausp_species=0.01,0.1,0.3,1.
   lmigration_real_check=T
-  rhops=1.
+  rhopmat=1.
 /
 &particles_selfgrav_init_pars
   lselfgravity_particles=F !for start time
