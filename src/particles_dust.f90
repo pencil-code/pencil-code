@@ -1872,9 +1872,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
 !
-!  Calculate particle pencils.
-!
-!  16-feb-06/anders: dummy
+!  Calculate Particles pencils.
+!  Most basic pencils should come first, as others may depend on them.
+
+!  16-feb-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
