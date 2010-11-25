@@ -21,7 +21,9 @@
 /
 &particles_radius_run_pars
   cdtps=0.2
+  lsweepup_par=T
 /
 &particles_number_run_pars
   cdtpf=0.2
+  lfragmentation_par=T
 /
