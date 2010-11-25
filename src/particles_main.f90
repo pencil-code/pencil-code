@@ -9,6 +9,7 @@ module Particles_main
   use Particles
   use Particles_cdata
   use Particles_collisions
+  use Particles_coagulation
   use Particles_map
   use Particles_mass
   use Particles_mpicomm
@@ -58,15 +59,16 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles           (lreset,LWRITE=lroot)
-      call rprint_particles_radius    (lreset,LWRITE=lroot)
-      call rprint_particles_spin      (lreset,LWRITE=lroot)
-      call rprint_particles_number    (lreset,LWRITE=lroot)
-      call rprint_particles_mass      (lreset,LWRITE=lroot)
-      call rprint_particles_selfgrav  (lreset,LWRITE=lroot)
-      call rprint_particles_nbody     (lreset,LWRITE=lroot)
-      call rprint_particles_viscosity (lreset,LWRITE=lroot)
-      call rprint_particles_collisions(lreset,LWRITE=lroot)
+      call rprint_particles            (lreset,LWRITE=lroot)
+      call rprint_particles_radius     (lreset,LWRITE=lroot)
+      call rprint_particles_spin       (lreset,LWRITE=lroot)
+      call rprint_particles_number     (lreset,LWRITE=lroot)
+      call rprint_particles_mass       (lreset,LWRITE=lroot)
+      call rprint_particles_selfgrav   (lreset,LWRITE=lroot)
+      call rprint_particles_nbody      (lreset,LWRITE=lroot)
+      call rprint_particles_viscosity  (lreset,LWRITE=lroot)
+      call rprint_particles_coagulation(lreset,LWRITE=lroot)
+      call rprint_particles_collisions (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -145,17 +147,18 @@ module Particles_main
 !
 !  Initialize individual modules.
 !
-      call initialize_particles_mpicomm   (f,lstarting)
-      call initialize_particles           (f,lstarting)
-      call initialize_particles_radius    (f,lstarting)
-      call initialize_particles_spin      (f,lstarting)
-      call initialize_particles_number    (f,lstarting)
-      call initialize_particles_mass      (f,lstarting)
-      call initialize_particles_selfgrav  (f,lstarting)
-      call initialize_particles_nbody     (f,lstarting)
-      call initialize_particles_viscosity (f,lstarting)
-      call initialize_particles_collisions(f,lstarting)
-      call initialize_particles_stalker   (f,lstarting)
+      call initialize_particles_mpicomm    (f,lstarting)
+      call initialize_particles            (f,lstarting)
+      call initialize_particles_radius     (f,lstarting)
+      call initialize_particles_spin       (f,lstarting)
+      call initialize_particles_number     (f,lstarting)
+      call initialize_particles_mass       (f,lstarting)
+      call initialize_particles_selfgrav   (f,lstarting)
+      call initialize_particles_nbody      (f,lstarting)
+      call initialize_particles_viscosity  (f,lstarting)
+      call initialize_particles_coagulation(f,lstarting)
+      call initialize_particles_collisions (f,lstarting)
+      call initialize_particles_stalker    (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -365,16 +368,29 @@ module Particles_main
 !
 !  13-nov-09/anders: coded
 !
-      if (lparticles_collisions .and. itsub==3) then
+      if ((lparticles_collisions.or.lparticles_coagulation).and.itsub==3) then
+!
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
+!
         if (lparticles_blocks) then
           call sort_particles_iblock(fp,ineargrid,ipar)
-          call particles_collisions_blocks(fp,ineargrid)
+          if (lparticles_collisions) then
+            call particles_collisions_blocks(fp,ineargrid)
+          endif
+          if (lparticles_coagulation) then
+            call particles_coagulation_blocks(fp,ineargrid)
+          endif
         else
           call sort_particles_imn(fp,ineargrid,ipar)
-          call particles_collisions_pencils(fp,ineargrid)
+          if (lparticles_collisions) then
+            call particles_collisions_pencils(fp,ineargrid)
+          endif
+          if (lparticles_coagulation) then
+            call particles_coagulation_pencils(fp,ineargrid)
+          endif
         endif
+!
       endif
 !
     endsubroutine particles_discrete_collisions
@@ -747,7 +763,7 @@ module Particles_main
         call read_particles_rad_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_startpars('particles_rad_init_pars',iostat); return
+            call samplepar_startpars('particles_radius_init_pars',iostat); return
           endif
         endif
       endif
@@ -915,7 +931,7 @@ module Particles_main
         call read_particles_rad_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_runpars('particles_rad_run_pars',iostat); return
+            call samplepar_runpars('particles_radius_run_pars',iostat); return
           endif
         endif
       endif
@@ -933,7 +949,7 @@ module Particles_main
         call read_particles_num_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_runpars('particles_num_run_pars',iostat); return
+            call samplepar_runpars('particles_number_run_pars',iostat); return
           endif
         endif
       endif
@@ -970,6 +986,15 @@ module Particles_main
         if (present(iostat)) then
           if (iostat/=0) then
             call samplepar_runpars('particles_visc_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
+      if (lparticles_coagulation) then
+        call read_particles_coag_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_coag_run_pars',iostat); return
           endif
         endif
       endif
@@ -1012,6 +1037,7 @@ module Particles_main
         if (lparticles_selfgravity) print*,'&particles_selfgrav_run_pars/'
         if (lparticles_nbody)       print*,'&particles_nbody_run_pars   /'
         if (lparticles_viscosity)   print*,'&particles_visc_run_pars    /'
+        if (lparticles_coagulation) print*,'&particles_coag_run_pars    /'
         if (lparticles_collisions)  print*,'&particles_coll_run_pars    /'
         if (lparticles_stalker)     print*,'&particles_stalker_run_pars /'
         print*,'------END sample particle namelist -------'
@@ -1039,6 +1065,7 @@ module Particles_main
       if (lparticles_selfgravity) call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_run_pars(unit)
       if (lparticles_viscosity)   call write_particles_visc_run_pars(unit)
+      if (lparticles_coagulation) call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)  call write_particles_coll_run_pars(unit)
       if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
