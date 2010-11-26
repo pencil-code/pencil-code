@@ -23,11 +23,12 @@ module Special
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
-  real :: width_newton=0.
+  real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.
+  real :: dampuu=0.,wdampuu,pdampuu
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -36,10 +37,10 @@ module Special
 !
   namelist /special_run_pars/ &
       Kpara,Kperp, &
-      cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV, &
+      cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
-      Bavoid,Bz_flux,init_time,init_width,width_newton,quench, &
+      Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad
 !
 ! variables for print.in
@@ -127,9 +128,9 @@ module Special
     inquire(IOLENGTH=lend) dummy
 !
     if (.not.lstarting.and.tau_inv_newton/=0) then
-      
+
       inquire(FILE=trim(directory_snap)//filename,EXIST=exists)
-      if (exists) then         
+      if (exists) then
         open(unit,file=trim(directory_snap)//filename, &
             form='unformatted',status='unknown',recl=lend*mz)
         read(unit) ztmp
@@ -381,6 +382,22 @@ module Special
       endif
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+      use Sub, only: cubic_step
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+! sponge layer
+      if (ipz .eq. nprocz-1) then
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) &
+            - cubic_step(1.*n,pdampuu,wdampuu)*dampuu*f(l1:l2,m,n,iuz)
+      endif
+!
+    endsubroutine special_calc_hydro
 !***********************************************************************
   subroutine special_calc_entropy(f,df,p)
 !
@@ -757,6 +774,9 @@ module Special
         tau_inv_tmp = tau_inv_newton * &
             cubic_step(p%lnrho,cubic_newton,width_newton)
 !
+      elseif (gauss_newton/=0) then
+        tau_inv_tmp = tau_inv_newton * &
+            exp(-(z(n)-gauss_newton)**2/width_newton)
       endif
 !
 !  Adjust time scale by the initialization time
