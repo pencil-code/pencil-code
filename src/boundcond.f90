@@ -5775,9 +5775,9 @@ module Boundcond
 !
 !  top (right end of the domain)
       case ('top')
-        f(:,:,n2,j)=(18.*f(:,:,n2-1,j) &
+        f(:,:,n2,j)=(+18.*f(:,:,n2-1,j) &
                      -9.*f(:,:,n2-2,j) &
-                     2.*f(:,:,n2-3,j))/11.
+                     +2.*f(:,:,n2-3,j))/11.
 !
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
 !
