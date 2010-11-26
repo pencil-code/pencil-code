@@ -60,6 +60,7 @@ module Testfield
 !  real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
 !  real :: delta_testfield_next=0., delta_testfield_time=0.
   integer, parameter :: mtestfield=3*njtest
+  integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
@@ -279,7 +280,7 @@ module Testfield
       if (.not.lstarting) then
         select case (itestfield)
         case ('j0-P1'); iE0=0
-        case ('SRSRC07'); iE0=0, ltestfield_linear=.true.
+        case ('SRSRC07'); iE0=0
         case ('B11-B22'); iE0=0
         case default
           call fatal_error('initialize_testfield','undefined itestfield value')
@@ -491,7 +492,6 @@ module Testfield
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.,&
                               temp
       integer :: jtest, j, jaatest, iuxtest, iuytest, iuztest
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -556,7 +556,7 @@ module Testfield
 ! Simplest test fields not obeying solenoidal condition from 
 ! Table 1 of Schrinner et al. (2007)
 !
-          case ('SRSRC07') call set_bbtest_srsrc07(B0test,jtest)
+          case ('SRSRC07'); call set_bbtest_srsrc07(B0test,jtest)
           case ('B=0'); B0test=0.
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -659,10 +659,9 @@ module Testfield
 !
         call invert_testfield_eqn
 !
-! Now calculate the (a,b) from tilde (a,b)
+! Now calculate the (a,b) from tilde (a,b) 
 !
         call get_ab_from_tildeab
-!          temp=Eipq(:,1,i2)+Eipq(:,1,i7)-y(m)*Eipq(:,1,i1)
       endif
 !
 !  write B-slices for output in wvid in run.f90
@@ -689,8 +688,8 @@ module Testfield
 ! 
       select case (itestfield)
       case ('j0-P1'); call invert_bbtest_j0_P1
-      case ('SRSRC07') call invert_bbtest_srsrc07
-      case ('B=0'); call invert_bbtest_zero
+      case ('SRSRC07'); call invert_bbtest_srsrc07
+      case ('B=0'); call fatal_error('invert_testfield_eqn','cannot invert for zero testfield')
       case default
         call fatal_error('invert_testfield_eqn','undefined itestfield value')
       endselect
@@ -703,6 +702,7 @@ module Testfield
 ! 
 !  dhruba+piyali: 
 ! 
+      use Cdata
       integer :: ivec
 !
       do ivec=1,3
@@ -713,22 +713,25 @@ module Testfield
 ! For the testfield (0,0,1)
         atilde(:,ivec,3) = Eipq(:,ivec,i3)
 ! For the testfield (r,0,0)
-        btilde(:,ivec,1,1) = Eipq(:,ivec,i4) - x(l1:l2)*atilde(:,ivec,1)
+        do ix=1,nx
+          btilde(ix,ivec,1,1) = Eipq(ix,ivec,i4) - x(ix+3)*atilde(ix,ivec,1)
 ! For the testfield (0,r,0)
-        btilde(:,ivec,2,1) = Eipq(:,ivec,i5) - x(l1:l2)*atilde(:,ivec,2)
+          btilde(ix,ivec,2,1) = Eipq(ix,ivec,i5) - x(ix+3)*atilde(ix,ivec,2)
 ! For the testfield (0,0,r)
-        btilde(:,ivec,3,1) = Eipq(:,ivec,i6) - x(l1:l2)*atilde(:,ivec,3)
+          btilde(ix,ivec,3,1) = Eipq(ix,ivec,i6) - x(ix+3)*atilde(ix,ivec,3)
 ! For the testfield (theta,0,0)
-        btilde(:,ivec,1,2) = x(l1:l2)*(Eipq(:,ivec,i7) - y(m)*atilde(:,ivec,1))
+          btilde(ix,ivec,1,2) = x(ix+3)*(Eipq(ix,ivec,i7) - y(m)*atilde(ix,ivec,1))
 ! For the testfield (0,theta,0)
-        btilde(:,ivec,2,2) = x(l1:l2)*(Eipq(:,ivec,i8) - y(m)*atilde(:,ivec,2))
+          btilde(ix,ivec,2,2) = x(ix+3)*(Eipq(ix,ivec,i8) - y(m)*atilde(ix,ivec,2))
 ! For the testfield (0,0,theta)
-        btilde(:,ivec,3,2) = x(l1:l2)*(Eipq(:,ivec,i9) - y(m)*atilde(:,ivec,3))
+          btilde(ix,ivec,3,2) = x(ix+3)*(Eipq(ix,ivec,i9) - y(m)*atilde(ix,ivec,3))
+        enddo
       enddo
 !
     endsubroutine invert_bbtest_srsrc07
 !***********************************************************************
     subroutine invert_bbtest_j0_P1
+      use Cdata
 ! 
 ! Inversion for the testfield for spherical bessel and legendre.
 ! 
@@ -756,6 +759,7 @@ module Testfield
     endsubroutine invert_bbtest_j0_P1
 !***********************************************************************
     subroutine get_ab_from_tildeab
+      use Cdata
 ! 
 ! Get the a and b (alpha and beta in our notation) from the tilde (a,b)
 ! Eq. (16) page 6, Schrinner 2007 (Arxiv version)
@@ -763,8 +767,10 @@ module Testfield
 !  dhruba+piyali: 
 !
 !
-      alpha(:,:,1) = atilde(:,:,1) - btilde(:,:,2,2)/x(l1:l2)
-      alpha(:,:,2) = atilde(:,:,2) - btilde(:,:,1,2)/x(l1:l2)
+      do ix=1, nx 
+        alpha(ix,:,1) = atilde(ix,:,1) - btilde(ix,:,2,2)/x(ix+3)
+        alpha(ix,:,2) = atilde(ix,:,2) - btilde(ix,:,1,2)/x(ix+3)
+      enddo
       alpha(:,:,3) = atilde(:,:,3) 
       beta = btilde
 
@@ -812,6 +818,7 @@ module Testfield
 !
       use Cdata
       use Sub
+      use Hydro, only: uumxy,lcalc_uumeanxy
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
