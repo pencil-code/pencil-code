@@ -82,6 +82,9 @@ contains
     if (lnrho_init=='hydrostatic'.and.lnTT_init=='hydrostatic') &
         call fatal_error('initial_condition_lnrho','doesnt work')
 !
+    if (stratitype=='hydrostatic'.and.direction=='x') &
+        call hydrostatic_x(f)
+!
     select case (lnTT_init)
     case ('nothing')
       ! do nothing
@@ -108,8 +111,8 @@ contains
           'no such value for lnTT_init')
     endselect
 !
-    ! if (stratitype=='nothing') then
-    !   call warning('initial_condition_lnrho','Nothing to do')
+!    if (stratitype=='nothing') then
+      !   call warning('initial_condition_lnrho','Nothing to do')
     ! elseif (stratitype=='hydrostatic') then
     !   if (direction=='z') then
     !     call hydrostatic_z(f)
