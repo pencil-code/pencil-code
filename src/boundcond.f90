@@ -5768,7 +5768,7 @@ module Boundcond
 !  bottom (left end of the domain)
       case ('bot')
         f(:,:,n1,j)=(-18.*f(:,:,n1+1,j) &
-                     9.*f(:,:,n1+2,j) &
+                     +9.*f(:,:,n1+2,j) &
                      -2.*f(:,:,n1+3,j))/11.
 !
         do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1+i,j); enddo
