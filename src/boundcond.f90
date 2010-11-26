@@ -5757,7 +5757,7 @@ module Boundcond
 !  Only available for z axis, activate with "0ds"
 !  This is the routine to be used as regularity condition on the axis.
 !
-!  25-Oct-10/tijmen: coded
+!  25-Oct-10/tijmen & bing: coded
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5767,17 +5767,17 @@ module Boundcond
 !
 !  bottom (left end of the domain)
       case ('bot')
-        f(:,:,n1,j)=(30.*f(:,:,n1+1,j) &
-                     -3.*f(:,:,n1+2,j) &
-                     -2.*f(:,:,n1+3,j))/25.
+        f(:,:,n1,j)=(-18.*f(:,:,n1+1,j) &
+                     9.*f(:,:,n1+2,j) &
+                     -2.*f(:,:,n1+3,j))/11.
 !
         do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1+i,j); enddo
 !
 !  top (right end of the domain)
       case ('top')
-        f(:,:,n2,j)=(30.*f(:,:,n2-1,j) &
-                     -3.*f(:,:,n2-2,j) &
-                     -2.*f(:,:,n2-3,j))/25.
+        f(:,:,n2,j)=(18.*f(:,:,n2-1,j) &
+                     -9.*f(:,:,n2-2,j) &
+                     2.*f(:,:,n2-3,j))/11.
 !
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
 !
