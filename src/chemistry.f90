@@ -908,7 +908,7 @@ module Chemistry
 !
       if (lpencil(i_ppwater)) then
         if (index_H2O>0) then
-         p%ppwater=p%rho*Rgas*p%TT*f(l1:l2,m,n,ichemspec(index_H2O))
+         p%ppwater=p%rho*Rgas*p%TT*p%mu1*f(l1:l2,m,n,ichemspec(index_H2O))
         endif
       endif
       if (lpencil(i_Ywater)) then
@@ -1593,7 +1593,7 @@ module Chemistry
                     T_up=1e10
                   endif
 !
-                  if (lcloud) T_low=0.
+                  if (lcloud) T_low=20.
                   where (T_loc >=T_low .and. T_loc <= T_mid)
                    cp_R_spec=species_constants(k,iaa2(ii1)) &
                           +species_constants(k,iaa2(ii2))*T_loc &

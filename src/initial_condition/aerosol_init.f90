@@ -47,12 +47,13 @@ module InitialCondition
      integer :: index_N2=4
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.
+     real :: X_wind=impossible
      logical :: lreinit_water=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water, dYw,dYw1, dYw2
+     lreinit_water, dYw,dYw1, dYw2, X_wind
 !
   contains
 !***********************************************************************
@@ -86,7 +87,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer :: i
+      integer :: i,j
 !
         if (init_ux /=0.) then
 !        do i=1,mx
@@ -98,17 +99,17 @@ module InitialCondition
          enddo
 !
         endif
-        if (init_uy /=0.) then
-          do i=1,my
-          if (y(i)>0) then
-            f(:,i,:,iuy)=f(:,i,:,iuy) &
-                        +init_uy!*(2.*y(i)/Lxyz(2))**2
-          else
-            f(:,i,:,iuy)=f(:,i,:,iuy) &
-                        !-init_uy*(2.*y(i)/Lxyz(2))**2
-                        +init_uy
-          endif
+        if ((init_uy /=0.) .and. (X_wind /= impossible)) then
+          do j=1,mx
+            if (x(j)>X_wind) then
+              f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
+            else
+              f(j,:,:,iuy)=f(j,:,:,iuy)
+            endif
           enddo
+        endif
+        if ((init_uy /=0.) .and. (X_wind == impossible)) then
+          f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
         endif
         if (init_uz /=0.) then
           do i=1,mz

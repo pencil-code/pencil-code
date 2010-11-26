@@ -405,9 +405,9 @@ module EquationOfState
 !  it will require any pencils for it's own use.
 !
       lpenc_requested(i_TT)=.true.
+      lpenc_requested(i_TT1)=.true.
       if (.not. ldustdensity) then
         lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_TT_2)=.true.
         lpenc_requested(i_TT_3)=.true.
         lpenc_requested(i_TT_4)=.true.

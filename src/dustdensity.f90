@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
-! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp
+! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp: mu1
 !
 !***************************************************************
 module Dustdensity
@@ -356,6 +356,8 @@ module Dustdensity
       !real :: water_ice=1.
       integer :: j,k,l
       logical :: lnothing
+      character (len=20) :: output_file="./data/nd.out"
+      integer :: file_id=123
 !
 !  Different initializations of nd.
 !
@@ -556,14 +558,26 @@ module Dustdensity
         case ('atm_drop_gauss')
           do k=1,ndustspec
             f(:,:,:,ind(k)) = init_distr(k)
+          enddo
             if (lmdvar) then
+            do k=1,ndustspec
               f(:,:,:,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
-                    *init_distr(k)*dds(k)/m_w*exp(f(:,:,:,ilnrho)) 
+                   *init_distr(k)*dds(k)/m_w*exp(f(:,:,:,ilnrho)) 
+            enddo
+              if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
+                open(file_id,file=output_file)
+                write(file_id,'(7E14.4)') t
+                do k=1,ndustspec
+                  if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+                  write(file_id,'(7e14.4)') dsize(k),  &
+                        f(l1,m1,n1,ind(k)), f(l1,m1,n1,imd(k))
+                enddo
+                close(file_id)
+              endif
             endif
             if (lmice) then
-              f(:,:,:,imi(k))=0.
+              f(:,:,:,imi)=0.
             endif
-          enddo
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
         case default
@@ -1172,7 +1186,7 @@ module Dustdensity
               if (p%md(i,k)+cion(i,k)<1e-30) then
                 p%ppsf(i,k)=0.
               else
-                p%ppsf(i,k)=p%ppsat(i)*p%md(i,k)/(p%md(i,k)+cion(i,k))
+                p%ppsf(i,k)=p%ppsat(i)!*p%md(i,k)/(p%md(i,k)+cion(i,k))
               endif
             enddo
          enddo
@@ -1242,7 +1256,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd
-      integer :: k,i
+      integer :: k,i, i1,i2,i3
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -1271,15 +1285,17 @@ module Dustdensity
       elseif (latm_chemistry) then
         do k=1,ndustspec
           if (lmdvar) then
-            df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
-                *(p%ppwater-p%ppsf(:,k))/(Rgas*p%TT*m_w)*p%rho
+              df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
+                *(p%ppwater-p%ppsf(:,k))/(Rgas*p%TT*m_w*p%mu1)*p%rho
+
             do i=1,mx
               if ((f(i,m,n,imd(k))+df(i,m,n,imd(k))*dt)<1e-25 ) &
                   df(i,m,n,imd(k))=1e-25*dt
             enddo
-          endif
+            endif
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo
+!print*,maxval(df(l1,m1,n1,imd(:)))
       endif
 !
 !  Calculate kernel of coagulation equation
@@ -1299,17 +1315,13 @@ module Dustdensity
       if (latm_chemistry) then
 !
         do k=1,ndustspec
-         
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
                  +p%dndr(:,k)
-!
           do i=1,mx
             if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
               df(i,m,n,ind(k))=1e-25*dt
           enddo
         enddo
-!print*,maxval(p%dndr(:,:))
-
       endif
 !
 !  Loop over dust layers
@@ -2313,14 +2325,6 @@ module Dustdensity
 !
       if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
       if ((abs(t-dt*10)<1e-10)) then
-        open(file_id,file=output_file)
-            write(file_id,'(7E12.4)') t
-          do k=1,ndustspec
-!            write(file_id,'(7E12.4)') dsize(k), f(l1,m1,n1,ind(k))
-             write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))
-   
-          enddo
-        close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
         print*,ttt(ndustspec) 
       endif
@@ -2328,7 +2332,8 @@ module Dustdensity
         open(file_id,file=output_file2)
             write(file_id,'(7E12.4)') t
           do k=1,ndustspec
-            write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+            write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k)), f(l1,m1,n1,imd(k))
           enddo
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
