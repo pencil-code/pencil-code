@@ -147,18 +147,18 @@ module Particles_main
 !
 !  Initialize individual modules.
 !
-      call initialize_particles_mpicomm    (f,lstarting)
-      call initialize_particles            (f,lstarting)
-      call initialize_particles_radius     (f,lstarting)
-      call initialize_particles_spin       (f,lstarting)
-      call initialize_particles_number     (f,lstarting)
-      call initialize_particles_mass       (f,lstarting)
-      call initialize_particles_selfgrav   (f,lstarting)
-      call initialize_particles_nbody      (f,lstarting)
-      call initialize_particles_viscosity  (f,lstarting)
-      call initialize_particles_coagulation(f,lstarting)
-      call initialize_particles_collisions (f,lstarting)
-      call initialize_particles_stalker    (f,lstarting)
+      call initialize_particles_mpicomm   (f,lstarting)
+      call initialize_particles           (f,lstarting)
+      call initialize_particles_radius    (f,lstarting)
+      call initialize_particles_spin      (f,lstarting)
+      call initialize_particles_number    (f,lstarting)
+      call initialize_particles_mass      (f,lstarting)
+      call initialize_particles_selfgrav  (f,lstarting)
+      call initialize_particles_nbody     (f,lstarting)
+      call initialize_particles_viscosity (f,lstarting)
+      call initialize_particles_coag      (f,lstarting)
+      call initialize_particles_collisions(f,lstarting)
+      call initialize_particles_stalker   (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &

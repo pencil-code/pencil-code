@@ -25,7 +25,7 @@ module Particles_coagulation
 !
   contains
 !***********************************************************************
-    subroutine initialize_particles_coagulation(f,lstarting)
+    subroutine initialize_particles_coag(f,lstarting)
 !
 !  24-nov-10/anders: coded
 !
@@ -35,7 +35,7 @@ module Particles_coagulation
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_particles_coagulation
+    endsubroutine initialize_particles_coag
 !***********************************************************************
     subroutine particles_coagulation_pencils(fp,ineargrid)
 !
