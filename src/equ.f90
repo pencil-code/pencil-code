@@ -293,6 +293,8 @@ module Equ
 !  and will soon be renamed to hydro_after_boundary.
 !
       call timing('pde','before calc_lhydro_pars')
+!DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
+! hydro_after_boundary etc. 
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
       if (lentropy)               call calc_lentropy_pars(f)

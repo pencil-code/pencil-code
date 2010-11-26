@@ -26,6 +26,12 @@ module Testfield
   real, target, dimension (nx,nz,3) :: bb11_xz
   real, target, dimension (ny,nz,3) :: bb11_yz
 !
+! Define the EMF and the Test fields here
+!
+  real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
+  real, dimension (nx,3,3) :: atilde,alpha
+  real, dimension (nx,3,3,2) :: btilde,beta
+!
 !  spherical bessel and legendre function for setting test fields and analysis
 !
   real, dimension(mx) :: j0r,n0r,dj0dr,dn0dr,atilde_denom1,btilde_denom1
@@ -81,8 +87,9 @@ module Testfield
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest,tau_aatest
-
+!
 ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_E11xy=0      ! DIAG_DOC: $E_{11xy}$
   integer :: idiag_E12xy=0      ! DIAG_DOC: $E_{12xy}$
   integer :: idiag_E13xy=0      ! DIAG_DOC: $E_{13xy}$
@@ -477,7 +484,7 @@ module Testfield
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
+!      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddiv_atest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
@@ -540,13 +547,17 @@ module Testfield
 ! del2A
 !
         del2Atest=graddiv_atest-jjtest
+!
+! Select which testfield to use.
+!
         select case (itestfield)
           case ('j0-P1'); call set_bbtest_j0_P1(B0test,jtest)
 !
-! Simplest test fields not obeying solenoidal condition from Table~1 of Schrinner et al. (2007)
+! Simplest test fields not obeying solenoidal condition from 
+! Table 1 of Schrinner et al. (2007)
 !
           case ('SRSRC07') call set_bbtest_srsrc07(B0test,jtest)
-          case ('B=0') !(dont do anything)
+          case ('B=0'); B0test=0.
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
@@ -602,6 +613,7 @@ module Testfield
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
 !
+!DM check if the following is correct in spherical coordinates
       if (lfirst.and.ldt) then
         diffus_eta=max(diffus_eta,etatest*dxyz_2)
       endif
@@ -621,8 +633,8 @@ module Testfield
         if (idiag_E32xy/=0) call zsum_mn_name_xy(Eipq(:,2,i3),idiag_E32xy)
         if (idiag_E33xy/=0) call zsum_mn_name_xy(Eipq(:,3,i3),idiag_E33xy)
         if (idiag_E41xy/=0) call zsum_mn_name_xy(Eipq(:,1,i4),idiag_E41xy)
-        if (idiag_E42xy/=0) call zsum_mn_name_xy(Eipq(:,2,i5),idiag_E42xy)
-        if (idiag_E43xy/=0) call zsum_mn_name_xy(Eipq(:,3,i6),idiag_E43xy)
+        if (idiag_E42xy/=0) call zsum_mn_name_xy(Eipq(:,2,i4),idiag_E42xy)
+        if (idiag_E43xy/=0) call zsum_mn_name_xy(Eipq(:,3,i4),idiag_E43xy)
         if (idiag_E51xy/=0) call zsum_mn_name_xy(Eipq(:,1,i5),idiag_E51xy)
         if (idiag_E52xy/=0) call zsum_mn_name_xy(Eipq(:,2,i5),idiag_E52xy)
         if (idiag_E53xy/=0) call zsum_mn_name_xy(Eipq(:,3,i5),idiag_E53xy)
@@ -639,85 +651,18 @@ module Testfield
         if (idiag_E92xy/=0) call zsum_mn_name_xy(Eipq(:,2,i9),idiag_E92xy)
         if (idiag_E93xy/=0) call zsum_mn_name_xy(Eipq(:,3,i9),idiag_E93xy)
 !
-!  \tilde{a} (Schrinner et al 2007 ArXiv:astro-ph/0609752
+! Invert the testfield equations here to get the transport coeffecients,
+! in terms of the testfields and the calculated EMF. 
+! ( \tilde{a} (Schrinner et al 2007 ArXiv:astro-ph/0609752
 !  http://arxiv.org/abs/astro-ph/0609752
-!  see also notes in tex/notes/testfield/spherical.tex
+!  see also notes in tex/notes/testfield/spherical.tex )
 !
-        if (ltestfield_linear) then
-! Nine a_ij as a function of \tilde{a}_ij and \tilde{b}_ijk
-! using Eq. (16) of Schrinner et al. 2007
-          temp=Eipq(:,1,i1)-Eipq(:,1,i8)+y(m)*Eipq(:,1,i2)
-          if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
-          temp=Eipq(:,1,i2)+Eipq(:,1,i7)-y(m)*Eipq(:,1,i1)
-          if (idiag_a12xy/=0) call zsum_mn_name_xy(temp,idiag_a12xy)
-          temp=Eipq(:,1,i3)
-          if (idiag_a13xy/=0) call zsum_mn_name_xy(temp,idiag_a13xy)
-          temp=Eipq(:,2,i1)-Eipq(:,2,i8)+y(m)*Eipq(:,2,i2)
-          if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
-          temp=Eipq(:,2,i2)+Eipq(:,2,i7)-y(m)*Eipq(:,2,i1)
-          if (idiag_a22xy/=0) call zsum_mn_name_xy(temp,idiag_a22xy)
-          temp=Eipq(:,2,i3)
-          if (idiag_a23xy/=0) call zsum_mn_name_xy(temp,idiag_a23xy)
-          temp=Eipq(:,3,i1)-Eipq(:,3,i8)+y(m)*Eipq(:,3,i2)
-          if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
-          temp=Eipq(:,3,i2)+Eipq(:,3,i7)-y(m)*Eipq(:,3,i1)
-          if (idiag_a32xy/=0) call zsum_mn_name_xy(temp,idiag_a32xy)
-          temp=Eipq(:,3,i3)
-          if (idiag_a33xy/=0) call zsum_mn_name_xy(temp,idiag_a33xy)
-! Eighteen b_ijk = \tilde{b}_ij 
-! using Eq. (16) of Schrinner et al. 2007
-          temp=Eipq(:,1,i4)-x(l1:l2)*Eipq(:,1,i1)
-          if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
-          temp=Eipq(:,1,i5)-x(l1:l2)*Eipq(:,1,i2)
-          if (idiag_b121xy/=0) call zsum_mn_name_xy(temp,idiag_b121xy)
-          temp=Eipq(:,1,i6)-x(l1:l2)*Eipq(:,1,i3)
-          if (idiag_b131xy/=0) call zsum_mn_name_xy(temp,idiag_b131xy)
-          temp=Eipq(:,2,i4)-x(l1:l2)*Eipq(:,2,i1)
-          if (idiag_b211xy/=0) call zsum_mn_name_xy(temp,idiag_b211xy)
-          temp=Eipq(:,2,i5)-x(l1:l2)*Eipq(:,2,i2)
-          if (idiag_b221xy/=0) call zsum_mn_name_xy(temp,idiag_b221xy)
-          temp=Eipq(:,2,i6)-x(l1:l2)*Eipq(:,2,i3)
-          if (idiag_b231xy/=0) call zsum_mn_name_xy(temp,idiag_b231xy)
-          temp=Eipq(:,3,i4)-x(l1:l2)*Eipq(:,3,i1)
-          if (idiag_b311xy/=0) call zsum_mn_name_xy(temp,idiag_b311xy)
-          temp=Eipq(:,3,i5)-x(l1:l2)*Eipq(:,3,i2)
-          if (idiag_b321xy/=0) call zsum_mn_name_xy(temp,idiag_b321xy)
-          temp=Eipq(:,3,i6)-x(l1:l2)*Eipq(:,3,i3)
-          if (idiag_b331xy/=0) call zsum_mn_name_xy(temp,idiag_b331xy)
+        call invert_testfield_eqn
 !
-          temp=x(l1:l2)*(Eipq(:,1,i7)-y(m)*Eipq(:,1,i1))
-          if (idiag_b112xy/=0) call zsum_mn_name_xy(temp,idiag_b112xy)
-          temp=x(l1:l2)*(Eipq(:,1,i8)-y(m)*Eipq(:,1,i2))
-          if (idiag_b122xy/=0) call zsum_mn_name_xy(temp,idiag_b122xy)
-          temp=x(l1:l2)*(Eipq(:,1,i9)-y(m)*Eipq(:,1,i3))
-          if (idiag_b132xy/=0) call zsum_mn_name_xy(temp,idiag_b132xy)
-          temp=x(l1:l2)*(Eipq(:,2,i7)-y(m)*Eipq(:,2,i1))
-          if (idiag_b212xy/=0) call zsum_mn_name_xy(temp,idiag_b212xy)
-          temp=x(l1:l2)*(Eipq(:,2,i8)-y(m)*Eipq(:,2,i2))
-          if (idiag_b222xy/=0) call zsum_mn_name_xy(temp,idiag_b222xy)
-          temp=x(l1:l2)*(Eipq(:,2,i9)-y(m)*Eipq(:,2,i3))
-          if (idiag_b232xy/=0) call zsum_mn_name_xy(temp,idiag_b232xy)
-          temp=x(l1:l2)*(Eipq(:,3,i7)-y(m)*Eipq(:,3,i1))
-          if (idiag_b312xy/=0) call zsum_mn_name_xy(temp,idiag_b312xy)
-          temp=x(l1:l2)*(Eipq(:,3,i8)-y(m)*Eipq(:,3,i2))
-          if (idiag_b322xy/=0) call zsum_mn_name_xy(temp,idiag_b322xy)
-          temp=x(l1:l2)*(Eipq(:,3,i9)-y(m)*Eipq(:,3,i3))
-          if (idiag_b332xy/=0) call zsum_mn_name_xy(temp,idiag_b332xy)
-        else
-          temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
-          if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
-          temp=(dn0dr(l1:l2)*Eipq(:,2,i1)-dj0dr(l1:l2)*Eipq(:,2,i2))/(atilde_denom1(l1:l2))
-          if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
-          temp=(dn0dr(l1:l2)*Eipq(:,3,i1)-dj0dr(l1:l2)*Eipq(:,3,i2))/(atilde_denom1(l1:l2))
-          if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
-! \tilde{b}
-          temp=(n0r(l1:l2)*Eipq(:,1,i1)-j0r(l1:l2)*Eipq(:,1,i2))/(btilde_denom1(l1:l2))
-          if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
-          temp=(n0r(l1:l2)*Eipq(:,2,i1)-j0r(l1:l2)*Eipq(:,2,i2))/(btilde_denom1(l1:l2))
-          if (idiag_b211xy/=0) call zsum_mn_name_xy(temp,idiag_b211xy)
-          temp=(n0r(l1:l2)*Eipq(:,3,i1)-j0r(l1:l2)*Eipq(:,3,i2))/(btilde_denom1(l1:l2))
-          if (idiag_b311xy/=0) call zsum_mn_name_xy(temp,idiag_b311xy)
-        endif
+! Now calculate the (a,b) from tilde (a,b)
+!
+        call get_ab_from_tildeab
+!          temp=Eipq(:,1,i2)+Eipq(:,1,i7)-y(m)*Eipq(:,1,i1)
       endif
 !
 !  write B-slices for output in wvid in run.f90
@@ -733,6 +678,97 @@ module Testfield
       endif
 !
     endsubroutine daatest_dt
+!***********************************************************************
+    subroutine invert_testfield_eqn
+! 
+! Invert the testfield equations to get the 'tilde'-(a,b) in terms of
+! EMF and testfields. For different choice of testfield different 
+! subroutines are called. 
+! 
+!  dhruba+piyali: 
+! 
+      select case (itestfield)
+      case ('j0-P1'); call invert_bbtest_j0_P1
+      case ('SRSRC07') call invert_bbtest_srsrc07
+      case ('B=0'); call invert_bbtest_zero
+      case default
+        call fatal_error('invert_testfield_eqn','undefined itestfield value')
+      endselect
+!
+    endsubroutine invert_testfield_eqn
+!***********************************************************************
+    subroutine invert_bbtest_srsrc07
+! 
+! Inversion for the testfield in Schrinner '07 paper.
+! 
+!  dhruba+piyali: 
+! 
+      integer :: ivec
+!
+      do ivec=1,3
+! For the testfield (1,0,0)
+        atilde(:,ivec,1) = Eipq(:,ivec,i1)
+! For the testfield (0,1,0)
+        atilde(:,ivec,2) = Eipq(:,ivec,i2)
+! For the testfield (0,0,1)
+        atilde(:,ivec,3) = Eipq(:,ivec,i3)
+! For the testfield (r,0,0)
+        btilde(:,ivec,1,1) = Eipq(:,ivec,i4) - x(l1:l2)*atilde(:,ivec,1)
+! For the testfield (0,r,0)
+        btilde(:,ivec,2,1) = Eipq(:,ivec,i5) - x(l1:l2)*atilde(:,ivec,2)
+! For the testfield (0,0,r)
+        btilde(:,ivec,3,1) = Eipq(:,ivec,i6) - x(l1:l2)*atilde(:,ivec,3)
+! For the testfield (theta,0,0)
+        btilde(:,ivec,1,2) = x(l1:l2)*(Eipq(:,ivec,i7) - y(m)*atilde(:,ivec,1))
+! For the testfield (0,theta,0)
+        btilde(:,ivec,2,2) = x(l1:l2)*(Eipq(:,ivec,i8) - y(m)*atilde(:,ivec,2))
+! For the testfield (0,0,theta)
+        btilde(:,ivec,3,2) = x(l1:l2)*(Eipq(:,ivec,i9) - y(m)*atilde(:,ivec,3))
+      enddo
+!
+    endsubroutine invert_bbtest_srsrc07
+!***********************************************************************
+    subroutine invert_bbtest_j0_P1
+! 
+! Inversion for the testfield for spherical bessel and legendre.
+! 
+!  dhruba+piyali: 
+! 
+      integer :: ivec
+!
+      call fatal_error('invert_bbtest_j0_P1','not coded yet')
+! get inspiration from below
+!          temp=(dn0dr(l1:l2)*Eipq(:,1,i1)-dj0dr(l1:l2)*Eipq(:,1,i2))/(atilde_denom1(l1:l2))
+!          if (idiag_a11xy/=0) call zsum_mn_name_xy(temp,idiag_a11xy)
+!          temp=(dn0dr(l1:l2)*Eipq(:,2,i1)-dj0dr(l1:l2)*Eipq(:,2,i2))/(atilde_denom1(l1:l2))
+!          if (idiag_a21xy/=0) call zsum_mn_name_xy(temp,idiag_a21xy)
+!          temp=(dn0dr(l1:l2)*Eipq(:,3,i1)-dj0dr(l1:l2)*Eipq(:,3,i2))/(atilde_denom1(l1:l2))
+!          if (idiag_a31xy/=0) call zsum_mn_name_xy(temp,idiag_a31xy)
+! \tilde{b}
+!          temp=(n0r(l1:l2)*Eipq(:,1,i1)-j0r(l1:l2)*Eipq(:,1,i2))/(btilde_denom1(l1:l2))
+!          if (idiag_b111xy/=0) call zsum_mn_name_xy(temp,idiag_b111xy)
+!          temp=(n0r(l1:l2)*Eipq(:,2,i1)-j0r(l1:l2)*Eipq(:,2,i2))/(btilde_denom1(l1:l2))
+!          if (idiag_b211xy/=0) call zsum_mn_name_xy(temp,idiag_b211xy)
+!          temp=(n0r(l1:l2)*Eipq(:,3,i1)-j0r(l1:l2)*Eipq(:,3,i2))/(btilde_denom1(l1:l2))
+!          if (idiag_b311xy/=0) call zsum_mn_name_xy(temp,idiag_b311xy)
+!        endif
+!
+    endsubroutine invert_bbtest_j0_P1
+!***********************************************************************
+    subroutine get_ab_from_tildeab
+! 
+! Get the a and b (alpha and beta in our notation) from the tilde (a,b)
+! Eq. (16) page 6, Schrinner 2007 (Arxiv version)
+! 
+!  dhruba+piyali: 
+!
+!
+      alpha(:,:,1) = atilde(:,:,1) - btilde(:,:,2,2)/x(l1:l2)
+      alpha(:,:,2) = atilde(:,:,2) - btilde(:,:,1,2)/x(l1:l2)
+      alpha(:,:,3) = atilde(:,:,3) 
+      beta = btilde
+
+    endsubroutine get_ab_from_tildeab
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
 ! 
@@ -784,7 +820,7 @@ module Testfield
       real, dimension (mx,my,3) :: uxbtestm_temp,jxbtestm_temp
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
-      real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest,uu
+      real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest,uu,uufluct
       real, dimension (nx,3) :: del2Atest2,graddiv_atest
       integer :: jtest,j,juxb,jjxb
       logical :: headtt_save
@@ -814,8 +850,19 @@ module Testfield
                  aatest=f(l1:l2,m,n,iaxtest:iaztest)
                  call gij(f,iaxtest,aijtest,1)
                  call curl_mn(aijtest,bbtest,aatest)
+!DM I think we should subtract the mean flow from uu here. Axel, could you
+! confirm ?
+!                 uu=f(l1:l2,m,n,iux:iuz)
+! 
                  uu=f(l1:l2,m,n,iux:iuz)
-                 call cross_mn(uu,bbtest,uxbtest)
+                 if (lcalc_uumeanxy) then
+                   do j=1,3
+                     uufluct(:,j)=uu(:,j)-uumxy(l1:l2,m,j)
+                   enddo
+                 else
+                   uufluct=uu
+                 endif
+                 call cross_mn(uufluct,bbtest,uxbtest)
                  juxb=iuxb+3*(jtest-1)
                  if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
                  do j=1,3
