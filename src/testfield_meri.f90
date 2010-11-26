@@ -859,6 +859,8 @@ module Testfield
                  call curl_mn(aijtest,bbtest,aatest)
 !DM I think we should subtract the mean flow from uu here. Axel, could you
 ! confirm ?
+!PC: Actually shouldn't matter since \bar{uBar X b} is zero anyway.
+!
 !                 uu=f(l1:l2,m,n,iux:iuz)
 ! 
                  uu=f(l1:l2,m,n,iux:iuz)
