@@ -24,12 +24,12 @@ module InitialCondition
   real :: rho_init=0.
   real :: T0=6000.,T1=1e6,z0_tanh=4e6,width_tanh=1e6
   character (len=labellen) :: direction='z'
-  real, dimension(4) :: mpoly = (/1.3,1000.,-1.04,500/)
+  real, dimension(4) :: mpoly_special = (/1.3,1000.,-1.04,500/)
   real, dimension(3) :: zpoly = (/0.,3.,5./)
 !
   namelist /initial_condition_pars/ &
       lnrho_init,lnTT_init,stratitype,rho_init,direction, &
-      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly,zpoly
+      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly
 !
 contains
 !***********************************************************************
@@ -157,8 +157,8 @@ contains
 !
       inquire(IOLENGTH=lend) dummy
 !
-      lread_lnTT=(stratitype=='prof_lnTT').or.(stratitype=='prof_lnrho_lnTT')
-      lread_lnrho=(stratitype=='prof_lnrho').or.(stratitype=='prof_lnrho_lnTT')
+      lread_lnTT=(lnTT_init=='prof_lnTT')
+      lread_lnrho=(lnrho_init=='prof_lnrho')
 !
 ! read temperature profile for interpolation
       if (lread_lnTT.and.ltemperature.and..not.ltemperature_nolog) then
@@ -705,7 +705,7 @@ contains
 !
 !  Temperature gradients.
 !
-      beta = cp1*gravz/(mpoly+1.)*gamma/gamma_m1
+      beta = cp1*gravz/(mpoly_special+1.)*gamma/gamma_m1
 !
 !
       T0 = 6000./unit_temperature
@@ -717,10 +717,10 @@ contains
       Ttop = T2 + beta(4)*(ztop-zpoly(3))
 !
 !
-      lnrhobot =  lnrho0+mpoly(1)*log(Tbot/T0)
-      lnrho1   =  lnrho0+mpoly(2)*log(T1/T0)
-      lnrho2   =  lnrho1+mpoly(3)*log(T2/T1)
-      lnrhotop =  lnrho2+mpoly(4)*log(Ttop/T2)
+      lnrhobot =  lnrho0+mpoly_special(1)*log(Tbot/T0)
+      lnrho1   =  lnrho0+mpoly_special(2)*log(T1/T0)
+      lnrho2   =  lnrho1+mpoly_special(3)*log(T2/T1)
+      lnrhotop =  lnrho2+mpoly_special(4)*log(Ttop/T2)
 !
       if (iproc==0) then
       print*,'########################################'
@@ -742,22 +742,22 @@ contains
         if (z(i) < zpoly(1)) then
           Temp = Tbot + beta(1)*(z(i)-zbot)
           f(:,:,i,ilnTT)=log(Temp)
-          f(:,:,i,ilnrho)=lnrhobot+mpoly(1)*log(Temp/Tbot)
+          f(:,:,i,ilnrho)=lnrhobot+mpoly_special(1)*log(Temp/Tbot)
 !
         elseif (z(i) >=zpoly(1) .and. z(i) < zpoly(2)) then
           Temp = T0 + beta(2)*(z(i)-zpoly(1))
           f(:,:,i,ilnTT)=log(Temp)
-          f(:,:,i,ilnrho)=lnrho0+mpoly(2)*log(Temp/T0)
+          f(:,:,i,ilnrho)=lnrho0+mpoly_special(2)*log(Temp/T0)
 !
         elseif (z(i) >= zpoly(2) .and. z(i) <zpoly(3)) then
           Temp = T1 + beta(3)*(z(i)-zpoly(2))
           f(:,:,i,ilnTT)=log(Temp)
-          f(:,:,i,ilnrho)=lnrho1+mpoly(3)*log(Temp/T1)
+          f(:,:,i,ilnrho)=lnrho1+mpoly_special(3)*log(Temp/T1)
 !
         elseif (z(i) >= zpoly(3)) then
           Temp = T2 + beta(4)*(z(i)-zpoly(3))
           f(:,:,i,ilnTT)=log(Temp)
-          f(:,:,i,ilnrho)=lnrho2+mpoly(4)*log(Temp/T2)
+          f(:,:,i,ilnrho)=lnrho2+mpoly_special(4)*log(Temp/T2)
 !
         endif
 !        
