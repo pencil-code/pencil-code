@@ -852,52 +852,55 @@ module Testfield
         jxbtestm(:,:,:,jtest)=0.
         if (.not.lsoca) then
 !
-           do m=m1,m2
-              do n=n1,n2
-                 aatest=f(l1:l2,m,n,iaxtest:iaztest)
-                 call gij(f,iaxtest,aijtest,1)
-                 call curl_mn(aijtest,bbtest,aatest)
-!DM I think we should subtract the mean flow from uu here. Axel, could you
-! confirm ?
-!PC: Actually shouldn't matter since \bar{uBar X b} is zero anyway.
+          do m=m1,m2
+            do n=n1,n2
+              aatest=f(l1:l2,m,n,iaxtest:iaztest)
+              call gij(f,iaxtest,aijtest,1)
+              call curl_mn(aijtest,bbtest,aatest)
+!
+!  Subtract the mean flow from uu.
+!  This does not matter for the calculation of <Ubar x b>, which
+!  is zero, but for Ubar x b, if it is saved in the f array.
 !
 !                 uu=f(l1:l2,m,n,iux:iuz)
 ! 
-                 uu=f(l1:l2,m,n,iux:iuz)
-                 if (lcalc_uumeanxy) then
-                   do j=1,3
-                     uufluct(:,j)=uu(:,j)-uumxy(l1:l2,m,j)
-                   enddo
-                 else
-                   uufluct=uu
-                 endif
-                 call cross_mn(uufluct,bbtest,uxbtest)
-                 juxb=iuxb+3*(jtest-1)
-                 if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
-                 do j=1,3
-                    uxbtestm_temp(l1:l2,m,j)=uxbtestm_temp(l1:l2,m,j)+fac*uxbtest(:,jtest)
-                 enddo
-                 if (.not.lsoca_jxb) then
-                    call gij_etc(f,iaxtest,aatest,aijtest,bijtest,GRADDIV=graddiv_atest)
-                    call curl_mn(bijtest,jjtest,bbtest)
-                    call cross_mn(jjtest,bbtest,jxbtest)
-                    jjxb=ijxb+3*(jtest-1)
-                    if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-                    do j=1,3
-                       jxbtestm_temp(l1:l2,m,j)=jxbtestm_temp(l1:l2,m,j)+fac*jxbtest(:,jtest)
-                    enddo
-                 endif
+              uu=f(l1:l2,m,n,iux:iuz)
+              if (lcalc_uumeanxy) then
+                do j=1,3
+                  uufluct(:,j)=uu(:,j)-uumxy(l1:l2,m,j)
+                enddo
+              else
+                uufluct=uu
+              endif
+              call cross_mn(uufluct,bbtest,uxbtest)
+              juxb=iuxb+3*(jtest-1)
+              if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+              do j=1,3
+                uxbtestm_temp(l1:l2,m,j)=uxbtestm_temp(l1:l2,m,j)+fac*uxbtest(:,jtest)
               enddo
-           enddo
+              if (.not.lsoca_jxb) then
+                call gij_etc(f,iaxtest,aatest,aijtest,bijtest,GRADDIV=graddiv_atest)
+                call curl_mn(bijtest,jjtest,bbtest)
+                call cross_mn(jjtest,bbtest,jxbtest)
+                jjxb=ijxb+3*(jtest-1)
+                if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+                do j=1,3
+                  jxbtestm_temp(l1:l2,m,j)=jxbtestm_temp(l1:l2,m,j)+fac*jxbtest(:,jtest)
+                enddo
+              endif
+            enddo
+          enddo
 !
-           if (nprocz>1) then
-              call mpiallreduce_sum(uxbtestm_temp,uxbtestm(:,:,:,jtest),(/mx,my,3/),idir=3)
-              if (.not.lsoca_jxb) &
-                   call mpiallreduce_sum(jxbtestm_temp,jxbtestm(:,:,:,jtest),(/mx,my,3/),idir=3)
-           endif
+!  do communication in the z (or phi) direction
+!
+          if (nprocz>1) then
+            call mpiallreduce_sum(uxbtestm_temp,uxbtestm(:,:,:,jtest),(/mx,my,3/),idir=3)
+            if (.not.lsoca_jxb) &
+                call mpiallreduce_sum(jxbtestm_temp,jxbtestm(:,:,:,jtest),(/mx,my,3/),idir=3)
+          endif
 !
         endif
-     enddo
+      enddo
 !
 !  reset headtt
 !
