@@ -14,6 +14,7 @@
 %%   testfield_x.f90
 %%   testflow_z.f90
 %%   viscosity.f90
+%%   thermal_energy.f90
 %%   shear.f90
 %%   testfield_axisym.f90
 %%   polymer.f90
@@ -545,6 +546,7 @@
   \var{bxbymxz}   & $\left< B_x B_y \right>_{y}$ \\
   \var{bxbzmxz}   & $\left< B_x B_z \right>_{y}$ \\
   \var{bybzmxz}   & $\left< B_y B_z \right>_{y}$ \\
+  \var{jbmxy}     & $\left< \Jv\cdot\Bv \right>_{z}$ \\
   \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
@@ -847,6 +849,37 @@
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to
                     viscous time step;
+                    see \S~\ref{time-step}) \\
+  \var{fviscmz}   & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{iz} \right>_{xy}$
+                    ($z$-component of viscous flux) \\
+  \var{fviscmxy}  & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{ix} \right>_{z}$
+                    ($x$-xomponent of viscous flux) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
+\midrule
+  \var{TTmax}     & $\max (T)$ \\
+  \var{gTmax}     & $\max (|\nabla T|)$ \\
+  \var{TTmin}     & $\min (T)$ \\
+  \var{TTm}       & $\left< T \right>$ \\
+  \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
+                    \quad(radiative flux at the top) \\
+  \var{ethm}      & $\left< e_{\text{th}}\right> =
+                    \left< c_v \rho T \right> $
+                    \quad(mean thermal energy) \\
+  \var{eem}       & $\left< e \right> =
+                    \left< c_v T \right>$
+                    \quad(mean internal energy) \\
+  \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
+                    /\max c_{\rm s}]$
+                    \quad(time step relative to
+                    acoustic time step;
+                    see \S~\ref{time-step}) \\
+  \var{dtchi}     & $\delta t / [c_{\delta t,{\rm v}}\,
+                    \delta x^2/\chi_{\rm max}]$
+                    \quad(time step relative to time
+                    step based on heat conductivity;
                     see \S~\ref{time-step}) \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\

@@ -1263,7 +1263,6 @@ that in such cases symbolic links are again made in the run directory
 to the various locations, then the \file{datadir.in} need
 contain only a short relative path.
 
-
 \subsubsection{Running the code}
 
 You are now ready to start the code:
@@ -4112,7 +4111,7 @@ integer, parameter :: nxgrid=128, nygrid=256, nzgrid=128
 integer, parameter :: npar=2000000, mpar_loc=400000, npar_mig=1000
 integer, parameter :: npar_species=2
 \end{verbatim}
-The paramter \code{npar} is the number of particles in the simulation,
+The parameter \code{npar} is the number of particles in the simulation,
 \code{mpar_loc} is the number of particles that is allowed on each processor
 and \code{npar_mig} is the number of particles that are allowed to migrate from
 one processor to another in any time-step. For a non-parallel run it is enough
@@ -6400,6 +6399,8 @@ This way such a change does not affect the memory usage for other
 applications where this addition to \file{cparam.local} is not made.
 In order to output this part of the f-array, one must write
 \code{lwrite_aux=T} in the \code{init_pars} of \file{start.in}.
+(Technically, \code{lwrite_aux=T} can also be invoked in \code{run_pars}
+of \file{run.in}, but this does not work at the moment.)
 
 \subsection{The df-array}
 \label{df-array}
@@ -8505,6 +8506,50 @@ mesh-independent way.
 A hyper-mesh Reynolds number of 30 corresponds to a coefficient
 \cmd{diffrho_hyper3_mesh=2} if \var{maxadvec} is about 1, but in
 practice we need a bit more (5 is currently the default).
+
+\subsubsection{Turbulence with hyperviscosity}
+\index{Hyperviscosity}
+
+When comparing hyperviscous simulations with non-hyperviscous ones,
+it turns out that the Reynolds number at half the Nyquist frequency
+is usually in the range 5--7, i.e.\
+\begin{equation}
+\mbox{Re}_{\rm half-grid}=
+u_{\rm rms}\left/\left[\nu_n \left(k_{\rm Ny}/2\right)^{2n-1}\right]\right.
+\approx\mbox{5--7}
+\end{equation}
+The following table gives some typical values used in simulations with
+forcing wavenumber $k_{\rm f}=1.5$ and a forcing amplitude of $f_0=0.02$.
+If hyperdiffusion $D_3$ is used in the continuity equation, the
+corresponding values are about 30 times smaller than those of $\nu_3$;
+see Table~\ref{ThyperSummary}.
+
+\begin{table}[htb]\caption{
+Empirical values of viscosity and hyperviscosity, as well as hyperdiffusion
+for density, at different numerical resolution, for simulations with
+forcing wavenumber $k_{\rm f}=1.5$ and a forcing amplitude of $f_0=0.02$
+in a $2\pi$ periodic domain.
+In all cases the half-mesh Reynolds number is about 5--7.
+For comparison, estimates of the numerical 4th order hyperdiffusion
+resulting from a third order time step are give for two values of the
+CFL parameter.
+}\vspace{12pt}\centerline{\begin{tabular}{cccccccc}
+$N$ & $\nu_1$ & $\nu_2$ & $\nu_3$ & $D_3$ & $\kappa_2^{\rm CFL=0.4}$  & $\kappa_2^{\rm CFL=0.9}$ \\
+\hline
+ 64&$2\times10^{-3}$&$5\times10^{-6}$&$2\times10^{-8}$ &$6\times10^{-10}$&$2\times10^{-7}$&$3\times10^{-6}$\\
+128&$1\times10^{-3}$&$6\times10^{-7}$&$6\times10^{-10}$&$2\times10^{-11}$&$3\times10^{-8}$&$4\times10^{-7}$\\
+256&$5\times10^{-4}$&$8\times10^{-8}$&$2\times10^{-11}$&$6\times10^{-13}$&$4\times10^{-9}$&$5\times10^{-8}$\\
+512&$2\times10^{-4}$&$1\times10^{-8}$&$6\times10^{-13}$&$2\times10^{-14}$&$5\times10^{-10}$&$6\times10^{-9}$\\
+\label{ThyperSummary}\end{tabular}}\end{table}
+
+For comparison, we give in Table~\ref{ThyperSummary}
+estimates of the numerical 4th order hyperdiffusion
+resulting from a third order time step, for which we have
+\begin{equation}
+\kappa_2^{\rm CFL}={1\over24}u_{\rm rms}\left(C_{\rm CFL}\delta x\right)^3
+\end{equation}
+where $C_{\rm CFL}$ is the CFL parameter which is either 0.4
+in the conservative case or 0.9 in the more progressive case.
 
 \subsection{Anisotropic hyperdissipation}
 
@@ -10720,9 +10765,9 @@ possible inputs to the file \file{video.in}.
                 writes \file[]{jb.\{xz,yz,xy,xy2\}}  \\
   \var{beta}   & inverse plasma beta $\Bv^2/(2\mu_0p)$;
                 writes \file[]{beta.\{xz,yz,xy,xy2\}}  \\
-  \var{poynting} & poynting vector  $\eta \jv \times \Bv 
+  \var{Poynting} & Poynting vector  $\eta \jv \times \Bv 
                      -(\uv\times\Bv)\times\Bv/\mu_0$;
-                writes \file[]{poynting[xyz].\{xz,yz,xy,xy2\}}  \\
+                writes \file[]{Poynting[xyz].\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
