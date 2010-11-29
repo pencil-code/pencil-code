@@ -310,15 +310,6 @@ module Magnetic_meanfield
 !
       intent(inout) :: f,p
 !
-! exa
-!
-      if (lpencil(i_exa)) then
-        if (lmeanfield_theory) then
-          call cross_mn(-p%mf_EMF,p%aa,exa_meanfield)
-          p%exa=p%exa+exa_meanfield
-        endif
-      endif
-!
 !  mean-field Lorentz force
 !
       if (lpencil(i_jxbr_mf)) then
@@ -514,6 +505,16 @@ module Magnetic_meanfield
             p%mf_EMF(:,1)=p%mf_EMF(:,1)*EMF_prof(:)
             p%mf_EMF(:,2)=p%mf_EMF(:,2)*EMF_prof(:)
             p%mf_EMF(:,3)=p%mf_EMF(:,3)*EMF_prof(:)
+        endif
+      endif
+!
+!  Evaluate exa, but do this at the end after mf_EMF has been
+!  fully assembled.
+!
+      if (lpencil(i_exa)) then
+        if (lmeanfield_theory) then
+          call cross_mn(-p%mf_EMF,p%aa,exa_meanfield)
+          p%exa=p%exa+exa_meanfield
         endif
       endif
 !
