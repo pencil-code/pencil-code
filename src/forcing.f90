@@ -30,7 +30,8 @@ module Forcing
   include 'forcing.h'
 !
   real :: force=0.,force2=0.
-  real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5,nexp_ff=1.
+  real :: relhel=1.,height_ff=0.,r_ff=0.,rcyc_ff=0.
+  real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
   real :: dforce=0.,radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: omega_ff=1.
@@ -92,7 +93,7 @@ module Forcing
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,crosshel,height_ff,r_ff,width_ff,nexp_ff, &
+       iforce,force,relhel,crosshel,height_ff,r_ff,rcyc_ff,width_ff,nexp_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
@@ -200,7 +201,7 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
                        profz_hel=1.
         do n=1,mz
-          profz_ampl(n)= step_scalar(z(n),zff_hel,width_ff)
+          profz_ampl(n)=step_scalar(z(n),zff_hel,width_ff)
         enddo
 !
 !  sign change of helicity proportional to cosy
@@ -816,16 +817,16 @@ module Forcing
 !
 !  possibly multiply forcing by sgn(z) and radial profile
 !
-!      if (r_ff/=0.) then
-!        if (lroot .and. ifirst==1) &
-!             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
-!        !
-!        ! only z-dependent part can be done here; radial stuff needs to go
+       if (rcyl_ff/=0.) then
+         if (lroot .and. ifirst==1) &
+              print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+         !
+         ! only z-dependent part can be done here; radial stuff needs to go
 !        ! into the loop
-!        !
-!        tmpz = tanh(z/width_ff)
-!        fz = fz*tmpz
-!      endif
+         !
+         tmpz = tanh(z/width_ff)
+         fz = fz*tmpz
+       endif
 !
       if (ip<=5) print*,'forcing_hel: fx=',fx
       if (ip<=5) print*,'forcing_hel: fy=',fy
@@ -886,7 +887,7 @@ module Forcing
 !
       force_ampl=1.0
       irufm=0
-      if (r_ff == 0) then       ! no radial profile
+      if (rcyl_ff == 0) then       ! no radial profile
         do n=n1,n2
           do m=m1,m2
             if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
@@ -941,15 +942,16 @@ module Forcing
             enddo
           enddo
         enddo
-      else                      ! with radial profile
+      else
+!
+!  Radial profile, but this is old fashioned and probably no longer used.
+!
         do j=1,3
           if (extent(j)) then
             jf=j+ifff-1
             do n=n1,n2
-!--           sig = relhel*tmpz(n)
-!AB: removed tmpz factor
-              sig = relhel
-call fatal_error('forcing_hel','radial profile should be quenched')
+              sig = relhel*tmpz(n)
+call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok')
               coef1(1)=cmplx(k*kex,sig*kkex)
               coef1(2)=cmplx(k*key,sig*kkey)
               coef1(3)=cmplx(k*kez,sig*kkez)
@@ -969,7 +971,7 @@ call fatal_error('forcing_hel','radial profile should be quenched')
         enddo
       endif
 !
-! For printouts
+!  For printouts:
 !
       if (lout) then
         if (idiag_rufm/=0) then
