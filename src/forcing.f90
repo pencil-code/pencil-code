@@ -30,7 +30,7 @@ module Forcing
   include 'forcing.h'
 !
   real :: force=0.,force2=0.
-  real :: relhel=1.,height_ff=0.,r_ff=0.,rcyc_ff=0.
+  real :: relhel=1.,height_ff=0.,r_ff=0.,rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
   real :: dforce=0.,radius_ff=0.,k1_ff=1.,slope_ff=0.,work_ff=0.
@@ -93,7 +93,7 @@ module Forcing
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,crosshel,height_ff,r_ff,rcyc_ff,width_ff,nexp_ff, &
+       iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
