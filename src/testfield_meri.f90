@@ -56,7 +56,10 @@ module Testfield
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='jzero-pzero'
-!  real :: ktestfield=1., ktestfield1=1.
+  real :: krtf=1.,krtf1=1.
+  real :: khtf=1.,khtf1=1.
+  real, dimension(nx) :: xtf
+  real, dimension(ny) :: ytf,csec
 !  real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
 !  real :: delta_testfield_next=0., delta_testfield_time=0.
   integer, parameter :: mtestfield=3*njtest
@@ -281,7 +284,12 @@ module Testfield
         select case (itestfield)
         case ('j0-P1'); iE0=0
         case ('SRSRC07'); iE0=0
-        case ('B11-B22'); iE0=0
+        case('harmonic') 
+          xtf=krtf*(x(l1:l2)-x(l1))/Lx
+          if (krtf /= 0.) krtf1=Lx/krtf
+          ytf=khtf*y(m1:m2);
+          csec=1./sin(ytf)
+          if (khtf /= 0.) khtf1=1./khtf
         case default
           call fatal_error('initialize_testfield','undefined itestfield value')
         endselect
@@ -557,6 +565,7 @@ module Testfield
 ! Table 1 of Schrinner et al. (2007)
 !
           case ('SRSRC07'); call set_bbtest_srsrc07(B0test,jtest)
+          case ('harmonic'); call set_bbtest_harmonic(B0test,jtest)
           case ('B=0'); B0test=0.
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -689,6 +698,7 @@ module Testfield
       select case (itestfield)
       case ('j0-P1'); call invert_bbtest_j0_P1
       case ('SRSRC07'); call invert_bbtest_srsrc07
+      case ('harmonic'); call invert_bbtest_harmonic
       case ('B=0'); call fatal_error('invert_testfield_eqn','cannot invert for zero testfield')
       case default
         call fatal_error('invert_testfield_eqn','undefined itestfield value')
@@ -729,6 +739,40 @@ module Testfield
       enddo
 !
     endsubroutine invert_bbtest_srsrc07
+!***********************************************************************
+    subroutine invert_bbtest_harmonic
+! 
+! Inversion for the harmonic testfield in r and \theta.
+! 
+!  dhruba+piyali: 
+! 
+      use Cdata
+      integer :: ivec
+!
+      do ivec=1,3
+        atilde(:,ivec,1) = Eipq(:,ivec,i1)*cos(xtf)+&
+                           Eipq(:,ivec,i2)*sin(xtf)
+        atilde(:,ivec,2) = Eipq(:,ivec,i3)*cos(xtf)+&
+                           Eipq(:,ivec,i4)*sin(xtf)
+        atilde(:,ivec,3) = Eipq(:,ivec,i5)*cos(xtf)+&
+                           Eipq(:,ivec,i6)*sin(xtf)
+        do ix=1,nx
+          btilde(ix,ivec,1,1) =krtf1*(-Eipq(ix,ivec,i1)*sin(xtf(ix))+&
+                                       Eipq(ix,ivec,i2)*cos(xtf(ix)))
+          btilde(ix,ivec,2,1) =krtf1*(-Eipq(ix,ivec,i3)*sin(xtf(ix))+&
+                                       Eipq(ix,ivec,i4)*cos(xtf(ix)))
+          btilde(ix,ivec,3,1) =krtf1*(-Eipq(ix,ivec,i5)*sin(xtf(ix))+&
+                                       Eipq(ix,ivec,i6)*cos(xtf(ix)))
+          btilde(ix,ivec,1,2) = khtf1*x(ix)*csec(m)*(atilde(ix,ivec,1)*&
+                                cos(ytf(m))-Eipq(ix,ivec,i7))
+          btilde(ix,ivec,2,2) = khtf1*x(ix)*csec(m)*(atilde(ix,ivec,2)*&
+                                cos(ytf(m))-Eipq(ix,ivec,i8))
+          btilde(ix,ivec,3,2) = khtf1*x(ix)*csec(m)*(atilde(ix,ivec,3)*&
+                                cos(ytf(m))-Eipq(ix,ivec,i9))
+        enddo
+      enddo
+!
+    endsubroutine invert_bbtest_harmonic
 !***********************************************************************
     subroutine invert_bbtest_j0_P1
       use Cdata
@@ -998,7 +1042,7 @@ module Testfield
 !
 !  set testfield
 !
-!   25-nov-05/piyali: copied set_bbtest_j0_P1 and modified according
+!   25-nov-10/piyali: copied set_bbtest_j0_P1 and modified according
 !                     to Table.~1 of Schrinner et al. (2007)
 !
       use Cdata
@@ -1013,20 +1057,52 @@ module Testfield
 !
       select case (jtest)
       case (1); B0test(:,1)=bamp; B0test(:,2)=0.; B0test(:,3)=0.
-      case (2); B0test(:,1)=bamp*x(l1:l2); B0test(:,2)=0.; B0test(:,3)=0.
-      case (3); B0test(:,1)=bamp*y(m); B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=0.; B0test(:,2)=bamp; B0test(:,3)=0.
+      case (3); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp
 !
-      case (4); B0test(:,1)=0.; B0test(:,2)=bamp; B0test(:,3)=0.
+      case (4); B0test(:,1)=bamp*x(l1:l2); B0test(:,2)=0.; B0test(:,3)=0.
       case (5); B0test(:,1)=0.; B0test(:,2)=bamp*x(l1:l2); B0test(:,3)=0.
-      case (6); B0test(:,1)=0.; B0test(:,2)=bamp*y(m); B0test(:,3)=0.
+      case (6); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*x(l1:l2)
 !
-      case (7); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp
-      case (8); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*x(l1:l2)
+      case (7); B0test(:,1)=bamp*y(m); B0test(:,2)=0.; B0test(:,3)=0.
+      case (8); B0test(:,1)=0.; B0test(:,2)=bamp*y(m); B0test(:,3)=0.
       case (9); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*y(m)
       case default; B0test(:,:)=0.
       endselect
 !
     endsubroutine set_bbtest_srsrc07
+!***********************************************************************
+    subroutine set_bbtest_harmonic(B0test,jtest)
+!
+!  set testfield
+!
+!   25-nov-05/piyali: copied set_bbtest_j0_P1 and modified according
+!                     to Table.~1 of Schrinner et al. (2007)
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: B0test
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: B0test
+!
+!  set B0test for each of the 9 cases
+!
+      select case (jtest)
+      case (1); B0test(:,1)=bamp*cos(xtf); B0test(:,2)=0.; B0test(:,3)=0.
+      case (2); B0test(:,1)=bamp*sin(xtf); B0test(:,2)=0.; B0test(:,3)=0.
+      case (3); B0test(:,1)=0.; B0test(:,2)=bamp*cos(xtf); B0test(:,3)=0.
+      case (4); B0test(:,1)=0.; B0test(:,2)=bamp*sin(xtf); B0test(:,3)=0.
+      case (5); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*cos(xtf)
+      case (6); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*sin(xtf)
+      case (7); B0test(:,1)=bamp*cos(ytf(m)); B0test(:,2)=0.; B0test(:,3)=0.
+      case (8); B0test(:,1)=0.; B0test(:,2)=bamp*cos(ytf(m)); B0test(:,3)=0.
+      case (9); B0test(:,1)=0.; B0test(:,2)=0.; B0test(:,3)=bamp*cos(ytf(m))
+      case default; B0test(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest_harmonic
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !
