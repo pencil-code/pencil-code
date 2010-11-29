@@ -139,16 +139,20 @@ if (not pc_GUI_loaded) then BEGIN
 					end until ((skipping ge 0) and (skipping le num_snapshots-1))
 				end
 				print, "Please enter a stepping for reading files:"
-				print, "(0=do not read any files, 1=each file, 2=every 2nd, ...)"
+				print, "(0=do not read any more files, 1=each file, 2=every 2nd, ...)"
 				repeat begin
 					read, stepping, format="(I)", prompt="(0..."+strtrim (num_snapshots-skipping, 2)+"): "
 				end until ((stepping ge 0) and (stepping le num_snapshots-skipping))
-				if (num_snapshots-skipping gt 1) then begin
+				if ((num_snapshots-skipping gt 1) and (stepping ge 1)) then begin
 					print, "How many files do you want to read in total?"
 					repeat begin
 						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (floor ((num_snapshots-skipping)/stepping), 2)+"): "
 					end until ((files_total ge 0) and (files_total le floor ((num_snapshots-skipping)/stepping)))
 					if (files_total eq 0) then files_total = floor ((num_snapshots-skipping)/stepping)
+				end
+				if (stepping eq 0) then begin
+					files_total = 1
+					stepping = 1
 				end
 			end
 		end
@@ -233,7 +237,7 @@ if (not pc_GUI_loaded) then BEGIN
 END
 
 ; scaling factor for visualisation
-default, scaling, fix (256 / max ([dim.nx, dim.ny, dim.nz]))
+default, scaling, fix (256.0 / max ([dim.nx, dim.ny, dim.nz]))
 if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
