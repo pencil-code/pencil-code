@@ -37,6 +37,18 @@ module Particles_coagulation
 !
     endsubroutine initialize_particles_coag
 !***********************************************************************
+    subroutine particles_coagulation_timestep(fp,ineargrid)
+!
+!  30-nov-10/anders: dummy
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine particles_coagulation_timestep
+!***********************************************************************
     subroutine particles_coagulation_pencils(fp,ineargrid)
 !
 !  24-nov-10/anders: coded

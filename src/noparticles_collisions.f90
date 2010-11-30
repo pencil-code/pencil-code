@@ -39,6 +39,18 @@ module Particles_collisions
 !
     endsubroutine initialize_particles_collisions
 !***********************************************************************
+    subroutine particles_collisions_timestep(fp,ineargrid)
+!
+!  30-nov-10/anders: dummy
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine particles_collisions_timestep
+!***********************************************************************
     subroutine particles_collisions_pencils(fp,ineargrid)
 !
 !  23-mar-09/anders: dummy

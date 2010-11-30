@@ -144,14 +144,6 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine particles_discrete_collisions()
-!
-!  Discrete particle collisions.
-!
-!  13-nov-09/anders: dummy
-!
-    endsubroutine particles_discrete_collisions
-!***********************************************************************
     subroutine particles_load_balance(f)
 !
 !  Redistribute particles among the processors for better load balancing.
@@ -406,11 +398,12 @@ module Particles_main
 !
     endsubroutine write_dim_particles
 !***********************************************************************
-    subroutine write_snapshot_particles(snap_directory,f,enum)
+    subroutine write_snapshot_particles(snap_directory,f,enum,snapnum)
 
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
       character (len=*) :: snap_directory
+      integer, optional :: snapnum
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(snap_directory)

@@ -120,11 +120,6 @@ module Timestep
 !
         if (lparticles) call particles_timestep_second()
 !
-!  Discrete particle collisions. Must be done in the end of the time-step so
-!  that dt is known.
-!
-        if (lparticles .and. itsub==3) call particles_discrete_collisions()
-!
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
 !

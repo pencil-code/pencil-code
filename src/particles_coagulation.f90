@@ -28,7 +28,7 @@ module Particles_coagulation
 !
   include 'particles_coagulation.h'
 !
-  real :: kernel_cst
+  real :: kernel_cst=1.0, cdtpcoag=0.2, cdtpcoag1=5.0
   integer :: ncoll_max_par=-1, npart_max_par=-1
   logical :: lshear_in_vp=.true., lconstant_kernel_test=.false.
 !
@@ -42,17 +42,53 @@ module Particles_coagulation
 !***********************************************************************
     subroutine initialize_particles_coag(f,lstarting)
 !
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
 !  24-nov-10/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
+!  Allocate neighbour array necessary for identifying collisions.
+!
       if (.not.allocated(kneighbour)) allocate(kneighbour(mpar_loc))
+!
+!  Precalculate inverse of coagulation time-step parameter.
+!
+      cdtpcoag1=1/cdtpcoag
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_coag
+!***********************************************************************
+    subroutine particles_coagulation_timestep(fp,ineargrid)
+!
+!  Time-step contribution from particle coagulation.
+!
+!  30-nov-10/anders: coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (nx) :: dt1_coag
+      integer :: k
+!
+!  Special time-step for constant kernel test.
+!
+      if (lconstant_kernel_test) then
+        if (npar_imn(imn)/=0) then
+          dt1_coag=0.0
+          do k=k1_imn(imn),k2_imn(imn)
+            dt1_coag(ineargrid(k,1)-nghost)=dt1_coag(ineargrid(k,1)-nghost)+ &
+                kernel_cst*fp(k,inpswarm)
+          enddo
+          dt1_max=max(dt1_max,dt1_coag*cdtpcoag1)
+        endif
+      endif
+!
+    endsubroutine particles_coagulation_timestep
 !***********************************************************************
     subroutine particles_coagulation_pencils(fp,ineargrid)
 !

@@ -47,6 +47,9 @@ module Particles_collisions
 !***********************************************************************
     subroutine initialize_particles_collisions(f,lstarting)
 !
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
 !  07-oct-08/anders: coded
 !
       use SharedVariables, only: get_shared_variable
@@ -62,7 +65,9 @@ module Particles_collisions
         call fatal_error('initialize_particles_collisions','')
       endselect
 !
-      allocate(kneighbour(mpar_loc))
+!  Allocate neighbour array necessary for identifying collisions.
+!
+      if (.not.allocated(kneighbour)) allocate(kneighbour(mpar_loc))
 !
       if (lparticles_blocks) then
         if (npart_max_par/=-1 .and. (.not.lrandom_particle_blocks)) then
@@ -101,6 +106,20 @@ module Particles_collisions
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_particles_collisions
+!***********************************************************************
+    subroutine particles_collisions_timestep(fp,ineargrid)
+!
+!  Time-step contribution from particle collisions.
+!
+!  30-nov-10/anders: dummy
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine particles_collisions_timestep
 !***********************************************************************
     subroutine particles_collisions_pencils(fp,ineargrid)
 !

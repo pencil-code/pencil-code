@@ -245,27 +245,38 @@ module Particles_main
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
-    subroutine write_snapshot_particles(snap_directory,f,enum)
+    subroutine write_snapshot_particles(snap_directory,f,enum,snapnum)
+!
+      use General, only: chn
 !
       character (len=*) :: snap_directory
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
+      integer, optional :: snapnum
 !
-      if (enum.eqv..true.) then 
+      character (len=5) :: ch
+!
+      if (present(snapnum)) then 
+        call chn(snapnum,ch)
+        call particles_write_snapshot(trim(snap_directory)//'/PVAR'//ch,f, &
+            enum=.false.)
+!
+        if (lparticles_nbody) call particles_nbody_write_snapshot(&
+            trim(snap_directory)//'/SPVAR'//ch,enum=.false.)
+!
+      elseif (enum) then 
         call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
             ENUM=.true.,FLIST='pvarN.list')
 !
-        if (lparticles_nbody) &
-            call particles_nbody_write_snapshot(&
-            trim(snap_directory)//'/SPVAR',&
-            ENUM=.true.,FLIST='spvarN.list')
+        if (lparticles_nbody) call particles_nbody_write_snapshot(&
+            trim(snap_directory)//'/SPVAR',enum=.true.,flist='spvarN.list')
       else
         call particles_write_snapshot( &
-            trim(snap_directory)//'/pvar.dat',f,ENUM=.false.)
-        
+            trim(snap_directory)//'/pvar.dat',f,enum=.false.)
+!        
         if (lparticles_nbody.and.lroot) then
           call particles_nbody_write_snapshot( & 
-              trim(snap_directory)//'/spvar.dat',ENUM=.false.)  
+              trim(snap_directory)//'/spvar.dat',enum=.false.)  
         endif
       endif
 !      
@@ -345,7 +356,7 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       if (itsub==1) then
-        dfp(1:npar_loc,:)=0.
+        dfp(1:npar_loc,:)=0.0
       else
         dfp(1:npar_loc,:)=alpha_ts(itsub)*dfp(1:npar_loc,:)
       endif
@@ -359,6 +370,10 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
+!
+!  Discrete particle collisions. Must be done at the end of the time-step.
+!
+      call particles_discrete_collisions()
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
@@ -533,13 +548,13 @@ module Particles_main
 !
 !  20-apr-06/anders: coded
 !
-      if (lparticles)              call pencil_criteria_particles()
-      if (lparticles_radius)       call pencil_criteria_par_radius()
-      if (lparticles_spin)         call pencil_criteria_par_spin()
-      if (lparticles_number)       call pencil_criteria_par_number()
-      if (lparticles_mass)         call pencil_criteria_par_mass()
-      if (lparticles_selfgravity)  call pencil_criteria_par_selfgrav()
-      if (lparticles_nbody)        call pencil_criteria_par_nbody()
+      if (lparticles)             call pencil_criteria_particles()
+      if (lparticles_radius)      call pencil_criteria_par_radius()
+      if (lparticles_spin)        call pencil_criteria_par_spin()
+      if (lparticles_number)      call pencil_criteria_par_number()
+      if (lparticles_mass)        call pencil_criteria_par_mass()
+      if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
+      if (lparticles_nbody)       call pencil_criteria_par_nbody()
 !
     endsubroutine particles_pencil_criteria
 !***********************************************************************
@@ -648,6 +663,13 @@ module Particles_main
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_viscosity) &
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
+!
+!  Time-step contribution from discrete particle collisions.
+!
+      if (lparticles_collisions) &
+          call particles_collisions_timestep(fp,ineargrid)
+      if (lparticles_coagulation) &
+          call particles_coagulation_timestep(fp,ineargrid)
 !
       call cleanup_interpolated_quantities()
       call timing('particles_pde_pencil','finished',mnloop=.true.)
