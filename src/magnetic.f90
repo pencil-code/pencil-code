@@ -282,6 +282,9 @@ module Magnetic
   integer :: idiag_Expt=0       ! DIAG_DOC: ${\cal E}_x(x_1,y_1,z_1,t)$
   integer :: idiag_Eypt=0       ! DIAG_DOC: ${\cal E}_y(x_1,y_1,z_1,t)$
   integer :: idiag_Ezpt=0       ! DIAG_DOC: ${\cal E}_z(x_1,y_1,z_1,t)$
+  integer :: idiag_axpt=0       ! DIAG_DOC: $A_x(x_1,y_1,z_1,t)$
+  integer :: idiag_aypt=0       ! DIAG_DOC: $A_y(x_1,y_1,z_1,t)$
+  integer :: idiag_azpt=0       ! DIAG_DOC: $A_z(x_1,y_1,z_1,t)$
   integer :: idiag_bxp2=0       ! DIAG_DOC: $B_x(x_2,y_2,z_2,t)$
   integer :: idiag_byp2=0       ! DIAG_DOC: $B_y(x_2,y_2,z_2,t)$
   integer :: idiag_bzp2=0       ! DIAG_DOC: $B_z(x_2,y_2,z_2,t)$
@@ -291,6 +294,9 @@ module Magnetic
   integer :: idiag_Exp2=0       ! DIAG_DOC: ${\cal E}_x(x_2,y_2,z_2,t)$
   integer :: idiag_Eyp2=0       ! DIAG_DOC: ${\cal E}_y(x_2,y_2,z_2,t)$
   integer :: idiag_Ezp2=0       ! DIAG_DOC: ${\cal E}_z(x_2,y_2,z_2,t)$
+  integer :: idiag_axp2=0       ! DIAG_DOC: $A_x(x_2,y_2,z_2,t)$
+  integer :: idiag_ayp2=0       ! DIAG_DOC: $A_y(x_2,y_2,z_2,t)$
+  integer :: idiag_azp2=0       ! DIAG_DOC: $A_z(x_2,y_2,z_2,t)$
   integer :: idiag_epsM_LES=0   ! DIAG_DOC:
   integer :: idiag_aybym2=0     ! DIAG_DOC:
   integer :: idiag_exaym2=0     ! DIAG_DOC:
@@ -2873,6 +2879,9 @@ module Magnetic
           if (idiag_Expt/=0) call save_name(uxbb(lpoint-nghost,1),idiag_Expt)
           if (idiag_Eypt/=0) call save_name(uxbb(lpoint-nghost,2),idiag_Eypt)
           if (idiag_Ezpt/=0) call save_name(uxbb(lpoint-nghost,3),idiag_Ezpt)
+          if (idiag_axpt/=0) call save_name(p%aa(lpoint-nghost,1),idiag_axpt)
+          if (idiag_aypt/=0) call save_name(p%aa(lpoint-nghost,2),idiag_aypt)
+          if (idiag_azpt/=0) call save_name(p%aa(lpoint-nghost,3),idiag_azpt)
         endif
 !
 !  Magnetic field components at point 2 (=p2).
@@ -2887,6 +2896,9 @@ module Magnetic
           if (idiag_Exp2/=0) call save_name(uxbb(lpoint2-nghost,1),idiag_Exp2)
           if (idiag_Eyp2/=0) call save_name(uxbb(lpoint2-nghost,2),idiag_Eyp2)
           if (idiag_Ezp2/=0) call save_name(uxbb(lpoint2-nghost,3),idiag_Ezp2)
+          if (idiag_axp2/=0) call save_name(p%aa(lpoint-nghost,1),idiag_axp2)
+          if (idiag_ayp2/=0) call save_name(p%aa(lpoint-nghost,2),idiag_ayp2)
+          if (idiag_azp2/=0) call save_name(p%aa(lpoint-nghost,3),idiag_azp2)
         endif
 !
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
@@ -6166,9 +6178,11 @@ module Magnetic
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
         idiag_jxpt=0; idiag_jypt=0; idiag_jzpt=0
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
+        idiag_axpt=0; idiag_aypt=0; idiag_azpt=0
         idiag_bxp2=0; idiag_byp2=0; idiag_bzp2=0
         idiag_jxp2=0; idiag_jyp2=0; idiag_jzp2=0
         idiag_Exp2=0; idiag_Eyp2=0; idiag_Ezp2=0
+        idiag_axp2=0; idiag_ayp2=0; idiag_azp2=0
         idiag_aybym2=0; idiag_exaym2=0
         idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
@@ -6385,6 +6399,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'Expt',idiag_Expt)
         call parse_name(iname,cname(iname),cform(iname),'Eypt',idiag_Eypt)
         call parse_name(iname,cname(iname),cform(iname),'Ezpt',idiag_Ezpt)
+        call parse_name(iname,cname(iname),cform(iname),'axpt',idiag_axpt)
+        call parse_name(iname,cname(iname),cform(iname),'aypt',idiag_aypt)
+        call parse_name(iname,cname(iname),cform(iname),'azpt',idiag_azpt)
         call parse_name(iname,cname(iname),cform(iname),'bxp2',idiag_bxp2)
         call parse_name(iname,cname(iname),cform(iname),'byp2',idiag_byp2)
         call parse_name(iname,cname(iname),cform(iname),'bzp2',idiag_bzp2)
@@ -6394,6 +6411,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'Exp2',idiag_Exp2)
         call parse_name(iname,cname(iname),cform(iname),'Eyp2',idiag_Eyp2)
         call parse_name(iname,cname(iname),cform(iname),'Ezp2',idiag_Ezp2)
+        call parse_name(iname,cname(iname),cform(iname),'axp2',idiag_axp2)
+        call parse_name(iname,cname(iname),cform(iname),'ayp2',idiag_ayp2)
+        call parse_name(iname,cname(iname),cform(iname),'azp2',idiag_azp2)
         call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
