@@ -570,6 +570,9 @@ module EquationOfState
           lpencil_in(i_hlnTT)=.true.
           lpencil_in(i_hlnrho)=.true.
         endif
+        if (lpencil_in(i_gTT)) then
+          lpencil_in(i_glnTT)=.true.
+        endif
 !
 !  Pencils for thermodynamic quantities for given lnrho or rho and TT.
 !
@@ -756,6 +759,9 @@ module EquationOfState
         if (lpencil(i_gss)) p%gss=cv*(p%glnTT-gamma_m1*p%glnrho)
         if (lpencil(i_del2ss)) p%del2ss=cv*(p%del2lnTT-gamma_m1*p%del2lnrho)
         if (lpencil(i_hss)) p%hss=cv*(p%hlnTT-gamma_m1*p%hlnrho)
+        if (lpencil(i_gTT)) then
+          do i=1,3; p%gTT(:,i)=p%TT*p%glnTT(:,i); enddo
+        endif
         if (lpencil(i_del6ss)) call fatal_error('calc_pencils_eos', &
             'del6ss not available for ilnrho_lnTT')
 !

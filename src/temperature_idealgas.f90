@@ -22,7 +22,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond;
 !
 !***************************************************************
 module Entropy
@@ -552,6 +552,7 @@ module Entropy
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_cp1)=.true.
       endif
 !
       if (lheatc_Kconst) then
@@ -713,6 +714,17 @@ module Entropy
           p%fpres(:,j)=-gamma_inv*p%cs2* &
               (p%glnrho(:,j)+p%glnTT(:,j)-p%glnmumol(:,j))
         enddo
+      endif
+! cond
+      if (lpencil(i_tcond)) then
+        if (lheatc_chiconst) then
+          p%tcond=chi*p%rho/p%cp1
+        elseif (lheatc_Kconst) then
+          p%tcond=hcond0
+        else
+          call fatal_error('calc_pencils_entropy',  &
+              'This heatcond is not implemented to work with lpencil(i_cond)!')
+        endif
       endif
 !
     endsubroutine calc_pencils_entropy

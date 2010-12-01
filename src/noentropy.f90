@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cs2; pp; TT1; Ma2; fpres(3); cv1
+! PENCILS PROVIDED cs2; pp; TT1; Ma2; fpres(3); cv1; tcond;
 !
 !***************************************************************
 module Entropy
