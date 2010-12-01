@@ -30,7 +30,7 @@ module Particles_number
   logical :: lfragmentation_par=.false.
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
 !
-  integer :: idiag_nptm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
+  integer :: idiag_npswarmm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
   integer :: idiag_dtfragp=0
 !
   namelist /particles_number_init_pars/ &
@@ -348,7 +348,8 @@ module Particles_number
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_nptm/=0) call sum_par_name(fp(1:npar_loc,inpswarm),idiag_nptm)
+        if (idiag_npswarmm/=0) &
+            call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -426,7 +427,7 @@ module Particles_number
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_nptm=0; idiag_dvp22mwnp=0; idiag_dvp22mwnp2=0
+        idiag_npswarmm=0; idiag_dvp22mwnp=0; idiag_dvp22mwnp2=0
         idiag_dtfragp=0
       endif
 !
@@ -435,7 +436,8 @@ module Particles_number
       if (lroot.and.ip<14) &
           print*, 'rprint_particles_number: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'npswarmm',idiag_npswarmm)
         call parse_name(iname,cname(iname),cform(iname), &
             'dvp22mwnp',idiag_dvp22mwnp)
         call parse_name(iname,cname(iname),cform(iname), &
