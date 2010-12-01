@@ -488,7 +488,7 @@ module Grid
           zprim2= g3der2
 !
           if (lparticles) then
-            call grid_profile(xi3proc,grid_func(2),g3proc, &
+            call grid_profile(xi3proc,grid_func(3),g3proc, &
               dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
             g3proc=z00+g3proc-g3lo
           endif
