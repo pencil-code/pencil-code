@@ -33,6 +33,7 @@ module Particles_radius
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
+  real :: aplow=1.0, aphigh=2.0
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -43,7 +44,8 @@ module Particles_radius
       lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean
+      lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
+      aplow, aphigh
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -142,7 +144,7 @@ module Particles_radius
       real :: radius_fraction
       real, dimension (ninit) :: radii_cumulative
 !
-      integer :: i,j,ind,p,ipart
+      integer :: i,j,ind,p,k
 !
       initial=.false.
       if (present(init)) then
@@ -159,15 +161,23 @@ module Particles_radius
 !
         case ('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
-          do ipart=npar_low,npar_high
+          do k=npar_low,npar_high
             call random_number_wrapper(radius_fraction)
             ind=ceiling(npart_radii*radius_fraction)
-            fp(ipart,iap)=ap0(ind)
+            fp(k,iap)=ap0(ind)
+          enddo
+!
+        case ('random')
+          if (initial.and.lroot) print*, 'set_particles_radius: random radius'
+          do k=npar_low,npar_high
+            call random_number_wrapper(fp(k,iap))
+            fp(k,iap)=fp(k,iap)*(aphigh-aplow)+aplow
           enddo
 !
         case ('specify')
-          !  user specified particle size distribution
-          ! (with constant radii)
+!
+!  User specified particle size distribution with constant radii.
+!
           if (initial.and.lroot) &
               print*, 'set_particles_radius: constant radius, user specified distribution'
           radii_cumulative=0.0
@@ -176,7 +186,9 @@ module Particles_radius
             radii_cumulative(i) = radii_cumulative(i-1) + radii_distribution(i)
           enddo
           if (radii_cumulative(npart_radii) /= 1.0) then
-          !  renormalize
+!
+!  Renormalize.
+!
             do i=1,npart_radii
               radii_cumulative(i)=radii_cumulative(i)/radii_cumulative(npart_radii)
             enddo
