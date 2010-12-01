@@ -29,14 +29,12 @@ module Particles_coagulation
   include 'particles_coagulation.h'
 !
   real :: kernel_cst=1.0, cdtpcoag=0.2, cdtpcoag1=5.0
-  integer :: ncoll_max_par=-1, npart_max_par=-1
   logical :: lshear_in_vp=.true., lconstant_kernel_test=.false.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
   namelist /particles_coag_run_pars/ &
-      lshear_in_vp, ncoll_max_par, npart_max_par, lconstant_kernel_test, &
-      kernel_cst
+      lshear_in_vp, lconstant_kernel_test, kernel_cst
 !
   contains
 !***********************************************************************
@@ -72,21 +70,58 @@ module Particles_coagulation
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: dt1_coag
-      integer :: k
+      real, dimension (3) :: xpj, xpk, vpj, vpk
+      real :: deltavjk, dt1_coag_par
+      integer :: j, k, l
 !
-!  Special time-step for constant kernel test.
+!  Create list of shepherd and neighbour particles for each grid cell in the
+!  current pencil.
 !
-      if (lconstant_kernel_test) then
-        if (npar_imn(imn)/=0) then
-          dt1_coag=0.0
-          do k=k1_imn(imn),k2_imn(imn)
-            dt1_coag(ineargrid(k,1)-nghost)=dt1_coag(ineargrid(k,1)-nghost)+ &
-                kernel_cst*fp(k,inpswarm)
+      call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
+!
+      do l=l1,l2
+        k=kshepherd(l-nghost)
+        if (k>0) then
+          do while (k/=0)
+            dt1_coag_par=0.0
+            j=kshepherd(l-nghost)
+            do while (.true.)
+!
+!  Calculate the relative speed of particles j and k.
+!
+              xpk=fp(k,ixp:izp)
+              vpk=fp(k,ivpx:ivpz)
+              if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
+              xpj=fp(j,ixp:izp)
+              vpj=fp(j,ivpx:ivpz)
+              if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
+!
+              if (lconstant_kernel_test) then
+                dt1_coag_par=dt1_coag_par+kernel_cst* &
+                    min(fp(j,inpswarm),fp(k,inpswarm))
+              else
+!
+!  Only consider collisions between particles approaching each other.
+!
+                deltavjk=sqrt(sum((vpk-vpj)**2))
+                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+                  dt1_coag_par=dt1_coag_par+ &
+                      pi*(fp(k,iap)+fp(k,iap))**2*deltavjk* &
+                      min(fp(j,inpswarm),fp(k,inpswarm))
+                endif
+!
+              endif
+              j=kneighbour(j)
+              if (j==0) exit
+            enddo
+!
+            dt1_max(l-nghost)=max(dt1_max(l-nghost),dt1_coag_par*cdtpcoag1)
+!
+            k=kneighbour(k)
+!
           enddo
-          dt1_max=max(dt1_max,dt1_coag*cdtpcoag1)
         endif
-      endif
+      enddo
 !
     endsubroutine particles_coagulation_timestep
 !***********************************************************************
@@ -106,9 +141,8 @@ module Particles_coagulation
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: np_pencil
       real, dimension (3) :: xpj, xpk, vpj, vpk
-      real :: np_point, lambda_mfp, deltavjk, tau_coll1, prob, r, apnew
+      real :: lambda_mfp1, deltavjk, tau_coll1, prob, r
       integer :: l, j, k, ncoll, ncoll_par, npart_par
 !
       intent (in) :: ineargrid
@@ -125,42 +159,16 @@ module Particles_coagulation
 !  Create list of shepherd and neighbour particles for each grid cell in the
 !  current pencil.
 !
-!  Note: with npart_max_par>0, it is safest to also set
-!  lrandom_particle_pencils=T. Otherwise there is a risk that a particle
-!  always interacts with the same subset of other particles.
-!
         call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
-!
-!  Calculate number of particles per grid point. This is only needed in order
-!  to limit the number of collision partners. Note that f(:,:,:,inp) is not
-!  up-to-date at this time.
-!
-        if (npart_max_par/=-1) then
-          np_pencil=0
-          if (npar_imn(imn)/=0) then
-            do k=k1_imn(imn),k2_imn(imn)
-              np_pencil(ineargrid(k,1)-nghost)= &
-                  np_pencil(ineargrid(k,1)-nghost)+1
-            enddo
-          endif
-        endif
 !
         do l=l1,l2
           k=kshepherd(l-nghost)
           if (k>0) then
-            np_point=np_pencil(l-nghost)
             do while (k/=0)
               j=kshepherd(l-nghost)
               npart_par=0
               ncoll_par=0
               do while (.true.)
-                if (j==0) then
-                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                    j=kshepherd(l-nghost)
-                  else
-                    exit
-                  endif
-                endif
 !
 !  Calculate the relative speed of particles j and k.
 !
@@ -173,7 +181,8 @@ module Particles_coagulation
 !
 !  Only consider collisions between particles approaching each other.
 !
-                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+                if ((sum((vpk-vpj)*(xpk-xpj))<0.0).or. &
+                     lconstant_kernel_test) then
 !
 !  Relative particle speed.
 !
@@ -188,21 +197,12 @@ module Particles_coagulation
 !  superparticle and sigma is the collisional cross section.
 !
                   if (lconstant_kernel_test) then
-                    tau_coll1=kernel_cst*fp(j,inpswarm)
+                    tau_coll1=kernel_cst*min(fp(j,inpswarm),fp(k,inpswarm))
                   else
                     if (lparticles_number) then
-                      lambda_mfp=1/(fp(j,inpswarm)*pi*(fp(k,iap)+fp(j,iap))**2)
-                    else
-                      lambda_mfp=1/(rhop_swarm/(4/3.*pi*fp(j,iap)**3)* &
-                          pi*(fp(k,iap)+fp(j,iap))**2)
+                      tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
+                          min(fp(j,inpswarm),fp(k,inpswarm))
                     endif
-                    tau_coll1=deltavjk/lambda_mfp
-                  endif
-!
-!  Increase collision rate artificially for fewer collisions.
-!
-                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                    tau_coll1=tau_coll1*np_point/npart_max_par
                   endif
 !
                   if (tau_coll1/=0.0) then
@@ -213,28 +213,24 @@ module Particles_coagulation
                     call random_number_wrapper(r)
                     if (r<=prob) then
 !
-!  Outcome of collision in separate subroutine.
-!
-                      call particle_coagulation(fp(k,iap),fp(j,iap), &
-                          deltavjk,apnew)
-!
 !  Change the particle size to the new size, but keep the total mass in the
 !  particle swarm the same.
 !
                       if (lparticles_number) then
-                        fp(k,inpswarm)=fp(k,inpswarm)*fp(k,iap)**3/apnew**3
+                        fp(j,iap)=2**(1.0/3.0)*max(fp(k,iap),fp(k,iap))
+                        fp(k,iap)=fp(j,iap)
+                        fp(j,inpswarm)=0.5*min(fp(k,inpswarm),fp(k,inpswarm))
+                        fp(k,inpswarm)=fp(j,inpswarm)
                       endif
-                      fp(k,iap)=apnew
 !
                       ncoll=ncoll+1
                       ncoll_par=ncoll_par+1
+!
                     endif
                   endif
                 endif
-                npart_par=npart_par+1
-                if (ncoll_max_par/=-1 .and. ncoll_par==ncoll_max_par) exit
-                if (npart_max_par/=-1 .and. npart_par==npart_max_par) exit
                 j=kneighbour(j)
+                if (j==0) exit
               enddo
               k=kneighbour(k)
 !
@@ -292,26 +288,6 @@ module Particles_coagulation
 !
     endsubroutine particles_coagulation_blocks
 !***********************************************************************
-    subroutine particle_coagulation(ap1,ap2,deltavjk,apnew)
-!
-!  Calculate outcome of a collision between two superparticles.
-!
-!  13-nov-09/anders: coded
-!
-      use General
-      use Sub
-!
-      real :: ap1, ap2, deltavjk, apnew
-!      
-      intent (in) :: ap1, ap2, deltavjk
-      intent (out) :: apnew
-!
-!  Coagulation.
-!
-      apnew=(ap1**3+ap2**3)**(1.0/3.0)
-!
-    endsubroutine particle_coagulation
-!***********************************************************************
     subroutine read_particles_coag_run_pars(unit,iostat)
 !
 !  Read run parameters from run.in.
@@ -326,6 +302,7 @@ module Particles_coagulation
       endif
 !
 99    return
+!
     endsubroutine read_particles_coag_run_pars
 !***********************************************************************
     subroutine write_particles_coag_run_pars(unit)
