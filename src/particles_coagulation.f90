@@ -34,7 +34,7 @@ module Particles_coagulation
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
   namelist /particles_coag_run_pars/ &
-      lshear_in_vp, lconstant_kernel_test, kernel_cst
+      cdtpcoag, lshear_in_vp, lconstant_kernel_test, kernel_cst
 !
   contains
 !***********************************************************************
@@ -74,54 +74,57 @@ module Particles_coagulation
       real :: deltavjk, dt1_coag_par
       integer :: j, k, l
 !
+      if (lfirst.and.ldt) then
+!
 !  Create list of shepherd and neighbour particles for each grid cell in the
 !  current pencil.
 !
-      call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
+        call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
-      do l=l1,l2
-        k=kshepherd(l-nghost)
-        if (k>0) then
-          do while (k/=0)
-            dt1_coag_par=0.0
-            j=kshepherd(l-nghost)
-            do while (.true.)
+        do l=l1,l2
+          k=kshepherd(l-nghost)
+          if (k>0) then
+            do while (k/=0)
+              dt1_coag_par=0.0
+              j=kshepherd(l-nghost)
+              do while (.true.)
 !
 !  Calculate the relative speed of particles j and k.
 !
-              xpk=fp(k,ixp:izp)
-              vpk=fp(k,ivpx:ivpz)
-              if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
-              xpj=fp(j,ixp:izp)
-              vpj=fp(j,ivpx:ivpz)
-              if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
+                xpk=fp(k,ixp:izp)
+                vpk=fp(k,ivpx:ivpz)
+                if (lshear .and. lshear_in_vp) vpk(2)=vpk(2)-qshear*Omega*xpk(1)
+                xpj=fp(j,ixp:izp)
+                vpj=fp(j,ivpx:ivpz)
+                if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
-              if (lconstant_kernel_test) then
-                dt1_coag_par=dt1_coag_par+kernel_cst* &
-                    min(fp(j,inpswarm),fp(k,inpswarm))
-              else
+                if (lconstant_kernel_test) then
+                  dt1_coag_par=dt1_coag_par+kernel_cst* &
+                      min(fp(j,inpswarm),fp(k,inpswarm))
+                else
 !
 !  Only consider collisions between particles approaching each other.
 !
-                deltavjk=sqrt(sum((vpk-vpj)**2))
-                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
-                  dt1_coag_par=dt1_coag_par+ &
-                      pi*(fp(k,iap)+fp(k,iap))**2*deltavjk* &
-                      min(fp(j,inpswarm),fp(k,inpswarm))
+                  deltavjk=sqrt(sum((vpk-vpj)**2))
+                  if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+                    dt1_coag_par=dt1_coag_par+ &
+                        pi*(fp(k,iap)+fp(k,iap))**2*deltavjk* &
+                        min(fp(j,inpswarm),fp(k,inpswarm))
+                  endif
+!
                 endif
+                j=kneighbour(j)
+                if (j==0) exit
+              enddo
 !
-              endif
-              j=kneighbour(j)
-              if (j==0) exit
+              dt1_max(l-nghost)=max(dt1_max(l-nghost),dt1_coag_par*cdtpcoag1)
+!
+              k=kneighbour(k)
+!
             enddo
-!
-            dt1_max(l-nghost)=max(dt1_max(l-nghost),dt1_coag_par*cdtpcoag1)
-!
-            k=kneighbour(k)
-!
-          enddo
-        endif
-      enddo
+          endif
+        enddo
+      endif
 !
     endsubroutine particles_coagulation_timestep
 !***********************************************************************
@@ -165,10 +168,12 @@ module Particles_coagulation
           k=kshepherd(l-nghost)
           if (k>0) then
             do while (k/=0)
-              j=kshepherd(l-nghost)
+              j=k
               npart_par=0
               ncoll_par=0
               do while (.true.)
+                j=kneighbour(j)
+                if (j==0) exit
 !
 !  Calculate the relative speed of particles j and k.
 !
@@ -229,8 +234,6 @@ module Particles_coagulation
                     endif
                   endif
                 endif
-                j=kneighbour(j)
-                if (j==0) exit
               enddo
               k=kneighbour(k)
 !
