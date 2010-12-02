@@ -383,7 +383,8 @@ module Particles_main
 !
 !  13-nov-09/anders: coded
 !
-      if ((lparticles_collisions.or.lparticles_coagulation).and.itsub==3) then
+      if ( (lparticles_collisions.or.lparticles_coagulation) .and. &
+          (itsub==itorder) ) then
 !
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
