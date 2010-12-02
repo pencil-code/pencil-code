@@ -175,9 +175,12 @@ module Solid_Cells
         rhosum    = 0.0
         irhocount = 0
       endif
-      if (idiag_c_dragx /= 0) allocate(c_dragx(nobjects))
-      if (idiag_c_dragy /= 0) allocate(c_dragy(nobjects))
-      if (idiag_c_dragz /= 0) allocate(c_dragz(nobjects))
+      if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+          idiag_c_dragz /= 0) then
+        allocate(c_dragx(nobjects))
+        allocate(c_dragy(nobjects))
+        allocate(c_dragz(nobjects))
+      endif
       if (idiag_Nusselt /= 0) allocate(Nusselt(nobjects))        
 !
 ! Try to find flow direction
@@ -210,13 +213,15 @@ module Solid_Cells
 !
 ! Find inlet temperature
 !
-      if (flow_dir== 1) T0=fbcx1(ilnTT)
-      if (flow_dir==-1) T0=fbcx2(ilnTT)
-      if (flow_dir== 2) T0=fbcy1(ilnTT)
-      if (flow_dir==-2) T0=fbcy2(ilnTT)
-      if (flow_dir== 3) T0=fbcz1(ilnTT)
-      if (flow_dir==-3) T0=fbcz2(ilnTT)
-      if (.not. ltemperature_nolog) T0=exp(T0)
+      if (ilnTT /= 0) then
+        if (flow_dir== 1) T0=fbcx1(ilnTT)
+        if (flow_dir==-1) T0=fbcx2(ilnTT)
+        if (flow_dir== 2) T0=fbcy1(ilnTT)
+        if (flow_dir==-2) T0=fbcy2(ilnTT)
+        if (flow_dir== 3) T0=fbcz1(ilnTT)
+        if (flow_dir==-3) T0=fbcz2(ilnTT)
+        if (.not. ltemperature_nolog) T0=exp(T0)
+      endif
 !
     endsubroutine initialize_solid_cells
 !***********************************************************************
@@ -632,9 +637,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Reset cumulating quantities before calculations in first pencil
 !
         if (imn == 1) then
-          if (idiag_c_dragx /= 0) c_dragx=0.
-          if (idiag_c_dragy /= 0) c_dragy=0.
-          if (idiag_c_dragz /= 0) c_dragz=0.
+          if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+              idiag_c_dragz /= 0) then
+            c_dragx=0.
+            c_dragy=0.
+            c_dragz=0.
+          endif
           if (idiag_Nusselt /= 0) Nusselt=0.
           rhosum=0
           irhocount=0
@@ -697,26 +705,32 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   call keep_compiler_quiet(nvec)
                 end if
 !
+! Find force in x,y and z direction
+!
+                if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+                    idiag_c_dragz /= 0) then
+!
 !  Force in x direction
 !
-                if (idiag_c_dragx /= 0) force_x = (-fp_pressure*nvec(1) &
-                    + fp_stress(1,1)*nvec(1) &
-                    + fp_stress(1,2)*nvec(2) & 
-                    + fp_stress(1,3)*nvec(3)) * surfaceelement
+                  force_x = (-fp_pressure*nvec(1) &
+                      + fp_stress(1,1)*nvec(1) &
+                      + fp_stress(1,2)*nvec(2) & 
+                      + fp_stress(1,3)*nvec(3)) * surfaceelement
 !                
 !  Force in y direction
 !
-                if (idiag_c_dragy /= 0) force_y = (-fp_pressure*nvec(2) &
-                    + fp_stress(2,1)*nvec(1) &
-                    + fp_stress(2,2)*nvec(2) & 
-                    + fp_stress(2,3)*nvec(3)) * surfaceelement
+                  force_y = (-fp_pressure*nvec(2) &
+                      + fp_stress(2,1)*nvec(1) &
+                      + fp_stress(2,2)*nvec(2) & 
+                      + fp_stress(2,3)*nvec(3)) * surfaceelement
 !                
 !  Force in z direction
 !
-                if (idiag_c_dragz /= 0) force_z = (-fp_pressure*nvec(3) &
-                    + fp_stress(3,1)*nvec(1) &
-                    + fp_stress(3,2)*nvec(2) & 
-                    + fp_stress(3,3)*nvec(3)) * surfaceelement
+                  force_z = (-fp_pressure*nvec(3) &
+                      + fp_stress(3,1)*nvec(1) &
+                      + fp_stress(3,2)*nvec(2) & 
+                      + fp_stress(3,3)*nvec(3)) * surfaceelement
+                endif
 !                
 !  Local heat flux
 !
@@ -731,9 +745,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   loc_Nus=heat_flux*robj*2./deltaT
                 endif
 !
-                if (idiag_c_dragx /= 0) c_dragx(iobj) = c_dragx(iobj) + force_x
-                if (idiag_c_dragy /= 0) c_dragy(iobj) = c_dragy(iobj) + force_y
-                if (idiag_c_dragz /= 0) c_dragz(iobj) = c_dragz(iobj) + force_z
+                if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+                    idiag_c_dragz /= 0) then
+                  c_dragx(iobj) = c_dragx(iobj) + force_x
+                  c_dragy(iobj) = c_dragy(iobj) + force_y
+                  c_dragz(iobj) = c_dragz(iobj) + force_z
+                endif
                 if (idiag_Nusselt /= 0) Nusselt(iobj) = Nusselt(iobj) + loc_Nus
               endif
             endif
@@ -782,38 +799,52 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Collect and sum rhosum, irhocount, c_dragx, c_dragz, and c_dragy.
         call mpireduce_sum(rhosum,rhosum_all)
         call mpireduce_sum_int(irhocount,irhocount_all)
-        if (idiag_c_dragx /= 0) call mpireduce_sum(c_dragx,c_dragx_all,nobjects)
-        if (idiag_c_dragy /= 0) call mpireduce_sum(c_dragy,c_dragy_all,nobjects)
-        if (idiag_c_dragz /= 0) call mpireduce_sum(c_dragz,c_dragz_all,nobjects)
+        if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+            idiag_c_dragz /= 0) then
+          call mpireduce_sum(c_dragx,c_dragx_all,nobjects)
+          call mpireduce_sum(c_dragy,c_dragy_all,nobjects)
+          call mpireduce_sum(c_dragz,c_dragz_all,nobjects)
+        endif
         if (idiag_Nusselt /= 0) call mpireduce_sum(Nusselt,Nusselt_all,nobjects)
         if (idiag_Nusselt /= 0) call mpireduce_sum(ksum,ksum_all)
 !        
         if (lroot) then          
           refrho0 = rhosum_all / irhocount_all
-          if (idiag_Nusselt /= 0) refk0   = ksum_all / irhocount_all
+!
+!  Find drag and lift
+!
+          if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
+              idiag_c_dragz /= 0) then
 !  Normalizing factor. Additional factors was included in subroutine dsolid_dt.
-          norm = 1. / (refrho0*init_uu**2)
-          if (idiag_Nusselt /= 0) norm_nus=1. / refk0
-!          
-          if (idiag_c_dragx /= 0) c_dragx = c_dragx_all * norm
-          if (idiag_c_dragy /= 0) c_dragy = c_dragy_all * norm
-          if (idiag_c_dragz /= 0) c_dragz = c_dragz_all * norm
-          if (idiag_Nusselt /= 0) Nusselt = Nusselt_all * norm_nus
+            norm = 1. / (refrho0*init_uu**2)
+            c_dragx = c_dragx_all * norm
+            c_dragy = c_dragy_all * norm
+            c_dragz = c_dragz_all * norm
 !          
 !  Write drag coefficients for all objects
 !  (may need to expand solid_cell_drag to more
 !  characters if large number of objects).
 ! 
-          open(unit=81,file='data/dragcoeffs.dat',position='APPEND')
-          write(solid_cell_drag,84) it-1, t
-          do iobj=1,nobjects
-            write(numberstring,82) c_dragx(iobj), c_dragy(iobj),c_dragz(iobj)
-            call safe_character_append(solid_cell_drag,numberstring)
-          enddo
-          write(81,*) trim(solid_cell_drag)
-          close(81)
-84        format(1I8,1F15.8)
-82        format(3F15.8)
+            open(unit=81,file='data/dragcoeffs.dat',position='APPEND')
+            write(solid_cell_drag,84) it-1, t
+            do iobj=1,nobjects
+              write(numberstring,82) c_dragx(iobj), c_dragy(iobj),c_dragz(iobj)
+              call safe_character_append(solid_cell_drag,numberstring)
+            enddo
+            write(81,*) trim(solid_cell_drag)
+            close(81)
+84          format(1I8,1F15.8)
+82          format(3F15.8)
+          endif
+!
+!  Find Nusselt number
+!
+          if (idiag_Nusselt /= 0) then
+            refk0   = ksum_all / irhocount_all
+!  Normalizing factor. Additional factors was included in subroutine dsolid_dt.
+            norm_nus=1. / refk0
+            Nusselt = Nusselt_all * norm_nus
+          endif
         endif
       endif
       if (idiag_c_dragx /= 0) fname(idiag_c_dragx)=c_dragx(1)
