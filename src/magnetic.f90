@@ -470,6 +470,9 @@ module Magnetic
   integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right>_{y}$
   integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right>_{y}$
   integer :: idiag_jbmxy=0      ! DIAG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
+  integer :: idiag_examxy1=0   ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
+  integer :: idiag_examxy2=0   ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
+  integer :: idiag_examxy3=0   ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
@@ -1498,32 +1501,41 @@ module Magnetic
           idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
           idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_aa)=.true.
+!
+      if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
+         ) lpenc_diagnos2d(i_aa)=.true.
+!
       if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
           .or. idiag_abmz/=0 .or. idiag_abrms/=0 &
           .or. idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
           .or. idiag_abuxmz/=0 .or. idiag_abuymz/=0 .or. idiag_abuzmz/=0 &
          ) lpenc_diagnos(i_ab)=.true.
+!
       if (idiag_uam/=0 .or. idiag_uamz/=0) lpenc_diagnos(i_ua)=.true.
       if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 &
           .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
           .or. idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
           lpenc_diagnos(i_bij)=.true.
+!
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
           idiag_ajm/=0 ) &
           lpenc_diagnos(i_j2)=.true.
+!
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
       if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
           .or. idiag_jbrms/=0 &
          ) lpenc_diagnos(i_jb)=.true.
+!
       if (idiag_hjbm/=0 ) lpenc_diagnos(i_hjb)=.true.
       if (idiag_jbmphi/=0 .or. idiag_jbmxy/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
       if (idiag_cosubm/=0) lpenc_diagnos(i_cosub)=.true.
       if (idiag_ubm/=0 .or. idiag_ubmz/=0 &
           .or. idiag_ubbzm/=0) lpenc_diagnos(i_ub)=.true.
+!
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
@@ -1542,8 +1554,16 @@ module Magnetic
           .or. idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
           .or. idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0 &
          ) lpenc_diagnos(i_jj)=.true.
+!
+       if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
+         ) lpenc_diagnos2d(i_jj)=.true.   
+!
       if (idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_exa)=.true.
+!
+      if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
+         ) lpenc_diagnos2d(i_exa)=.true.
+!
       if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0 &
          ) lpenc_diagnos(i_diva)=.true.
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
@@ -3316,6 +3336,9 @@ module Magnetic
         if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb(:,2)**2,idiag_by2mxy)
         if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb(:,3)**2,idiag_bz2mxy)
         if (idiag_jbmxy/=0)  call zsum_mn_name_xy(p%jb,idiag_jbmxy)
+        if (idiag_examxy1/=0)  call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
+        if (idiag_examxy2/=0)  call zsum_mn_name_xy(p%exa(:,2),idiag_examxy2)
+        if (idiag_examxy3/=0)  call zsum_mn_name_xy(p%exa(:,3),idiag_examxy3)
         if (idiag_bxbymxy/=0) &
             call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,2),idiag_bxbymxy)
         if (idiag_bxbzmxy/=0) &
@@ -6208,6 +6231,7 @@ module Magnetic
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0; idiag_bxbymxy=0
+        idiag_examxy1=0; idiag_examxy3=0; idiag_examxy2=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
         idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
@@ -6621,6 +6645,9 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbzmxy',idiag_bxbzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bybzmxy',idiag_bybzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jbmxy',idiag_jbmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy1',idiag_examxy1)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy2',idiag_examxy2)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy3',idiag_examxy3)
       enddo
 !
 !  Check for those quantities for which we want phi-averages.
