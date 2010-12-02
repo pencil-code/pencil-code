@@ -261,9 +261,9 @@ module Particles_coagulation
 !
                       if (lparticles_number) then
                         if (lcoag_simultaneous) then
-                          fp(j,iap)=2**(1.0/3.0)*max(fp(k,iap),fp(k,iap))
+                          fp(j,iap)=2**(1.0/3.0)*max(fp(j,iap),fp(k,iap))
                           fp(k,iap)=fp(j,iap)
-                          fp(j,inpswarm)=0.5*min(fp(k,inpswarm),fp(k,inpswarm))
+                          fp(j,inpswarm)=0.5*min(fp(j,inpswarm),fp(k,inpswarm))
                           fp(k,inpswarm)=fp(j,inpswarm)
                         else
                           if (fp(k,iap)<fp(j,iap)) then
