@@ -29,12 +29,14 @@ module Particles_coagulation
   include 'particles_coagulation.h'
 !
   real :: kernel_cst=1.0, cdtpcoag=0.2, cdtpcoag1=5.0
+  logical :: lcoag_simultaneous=.false.
   logical :: lshear_in_vp=.true., lconstant_kernel_test=.false.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
   namelist /particles_coag_run_pars/ &
-      cdtpcoag, lshear_in_vp, lconstant_kernel_test, kernel_cst
+      cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
+      kernel_cst
 !
   contains
 !***********************************************************************
@@ -168,12 +170,18 @@ module Particles_coagulation
           k=kshepherd(l-nghost)
           if (k>0) then
             do while (k/=0)
-              j=k
+              if (lcoag_simultaneous) then
+                j=k
+              else
+                j=kshepherd(l-nghost)
+              endif
               npart_par=0
               ncoll_par=0
               do while (.true.)
-                j=kneighbour(j)
-                if (j==0) exit
+                if (lcoag_simultaneous) then
+                  j=kneighbour(j)
+                  if (j==0) exit
+                endif
 !
 !  Calculate the relative speed of particles j and k.
 !
@@ -196,13 +204,37 @@ module Particles_coagulation
 !  The time-scale for collisions between a representative particle from
 !  superparticle k and the particle swarm in superparticle j is
 !
-!    tau_coll = 1/(n*sigma*dv) = lambda/dv
+!    tau_coll = 1/(n_j*sigma_jk*deltav_jk)
 !
-!  where lambda is the mean free path of a particle relative to a single
-!  superparticle and sigma is the collisional cross section.
+!  where n_j is the number density of swarm j and sigma_jk is the collisional
+!  cross section [=pi*(a_j+a_k)^2].
+!
+!  The collision time-scale above is actually the *mass collision time-scale*,
+!  i.e. the time for a particle to collide with its own mass. Since super-
+!  particles always represent the same mass, that means that
+!
+!    - The interaction time-scale for a particle k to collide with a swarm
+!      of larger particles j is simply the collision time-scale (when one
+!      small particle has collid with a large, then they all have collided).
+!
+!    - The interaction time-scale for a particle k to collide with a swarm
+!      of smaller particles is the collision time-scale times the mass ratio
+!      m_k/m_j, so that tau_coll = 1/(n_k*sigma_jk*deltav_jk).
+!
+!  We use lcoag_simultaneous to specify that two colliding superparticles
+!  change internal properties at the same time. The default is that the
+!  swarms evolve separately.
 !
                   if (lconstant_kernel_test) then
-                    tau_coll1=kernel_cst*min(fp(j,inpswarm),fp(k,inpswarm))
+                    if (lcoag_simultaneous) then
+                      tau_coll1=kernel_cst*min(fp(j,inpswarm),fp(k,inpswarm))
+                    else
+                      if (fp(k,iap)<fp(j,iap)) then
+                        tau_coll1=kernel_cst*fp(j,inpswarm)
+                      else
+                        tau_coll1=kernel_cst*fp(k,inpswarm)
+                      endif
+                    endif
                   else
                     if (lparticles_number) then
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
@@ -221,11 +253,28 @@ module Particles_coagulation
 !  Change the particle size to the new size, but keep the total mass in the
 !  particle swarm the same.
 !
+!  A representative particle k colliding with a swarm of larger particles j
+!  simply obtains the new mass m_k -> m_k + m_j.
+!
+!  A representative particle k colliding with a swarm of smaller particles j
+!  obtains the new mass m_k -> 2*m_k.
+!
                       if (lparticles_number) then
-                        fp(j,iap)=2**(1.0/3.0)*max(fp(k,iap),fp(k,iap))
-                        fp(k,iap)=fp(j,iap)
-                        fp(j,inpswarm)=0.5*min(fp(k,inpswarm),fp(k,inpswarm))
-                        fp(k,inpswarm)=fp(j,inpswarm)
+                        if (lcoag_simultaneous) then
+                          fp(j,iap)=2**(1.0/3.0)*max(fp(k,iap),fp(k,iap))
+                          fp(k,iap)=fp(j,iap)
+                          fp(j,inpswarm)=0.5*min(fp(k,inpswarm),fp(k,inpswarm))
+                          fp(k,inpswarm)=fp(j,inpswarm)
+                        else
+                          if (fp(k,iap)<fp(j,iap)) then
+                            fp(k,inpswarm)=fp(k,inpswarm)* &
+                                fp(k,iap)**3/(fp(k,iap)**3+fp(j,iap)**3)
+                            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+                          else
+                            fp(k,inpswarm)=0.5*fp(k,inpswarm)
+                            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+                          endif
+                        endif
                       endif
 !
                       ncoll=ncoll+1
@@ -234,6 +283,12 @@ module Particles_coagulation
                     endif
                   endif
                 endif
+!
+                if (.not.lcoag_simultaneous) then
+                  j=kneighbour(j)
+                  if (j==0) exit
+                endif
+!
               enddo
               k=kneighbour(k)
 !
