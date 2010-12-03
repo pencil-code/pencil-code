@@ -698,6 +698,7 @@ module Register
       use Mpicomm
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamer
+      integer :: iname_sound
       integer :: inamexy,inamexz,inamerz
       integer :: iname_tmp,ierr,iadd
       integer :: unit=1
@@ -706,6 +707,7 @@ module Register
       character (LEN=30) :: cname_tmp
       character (LEN=30) :: print_in_file
       character (LEN=*), parameter :: video_in_file    = 'video.in'
+      character (LEN=*), parameter :: sound_in_file    = 'sound.in'
       character (LEN=*), parameter :: xyaver_in_file   = 'xyaver.in'
       character (LEN=*), parameter :: xzaver_in_file   = 'xzaver.in'
       character (LEN=*), parameter :: yzaver_in_file   = 'yzaver.in'
@@ -756,6 +758,21 @@ module Register
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
+!
+!  Read in the list of variables for "sound".
+!
+      nname_sound = parallel_count_lines(sound_in_file)
+      if ((dsound/=0.0) .and. (nname_sound>0)) then
+        ! Allocate the relevant arrays and read into these arrays
+        call allocate_sound()
+        lwrite_sound=.true.
+        call parallel_open(unit,file=sound_in_file)
+        do iname_sound=1, nname_sound
+          read(unit,*,iostat=ierr) cname_sound(iname_sound)
+        enddo
+        call parallel_close(unit)
+      endif
+      if (lroot .and. (ip<14)) print*, 'sound_print_list: nname_sound=', nname_sound
 !
 !  Read in the list of variables for xy-averages.
 !

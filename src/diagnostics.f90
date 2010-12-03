@@ -22,6 +22,7 @@ module Diagnostics
   public :: phizaverages_r, yaverages_xz, zaverages_xy
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
+  public :: write_sound
   public :: write_2daverages_prepare, write_zaverages
   public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
   public :: lname_is_present
@@ -34,11 +35,11 @@ module Diagnostics
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
-  public :: allocate_vnames
+  public :: allocate_vnames,allocate_sound
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
   public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages
-  public :: vnames_clean_up
+  public :: vnames_clean_up,sound_clean_up
   public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
   public :: phizaverages_clean_up
   public :: yaverages_clean_up, zaverages_clean_up, phiaverages_clean_up
@@ -190,6 +191,95 @@ module Diagnostics
       fname(1:nname)=0.0
 !
     endsubroutine prints
+!***********************************************************************
+    subroutine write_sound
+!
+!  Reads and registers "sound" parameters gathered from the different
+!  modules and marked in `sound.in'.
+!
+!   3-may-02/axel: coded
+!
+      use General, only: safe_character_append
+      use Sub, only: noform
+!
+      logical,save :: first=.true.
+      character (len=640) :: fform,legend,line
+      character (len=1), parameter :: comma=','
+      integer :: iname,index_d,index_a
+!
+!  Add general (not module-specific) quantities for diagnostic output. If the
+!  timestep (=dt) is to be written, it is known only after rk_2n, so the best
+!  place to enter it into the save list is here. Use 1.0*(it-1) to have floating
+!  point or double precision.
+!
+      if (lroot) then
+        if (idiag_t/=0)   call save_name_sound(tdiagnos,idiag_t)
+      endif
+!
+      if (lroot) then
+!
+!  Produce the format.
+!  Must set cform(1) explicitly, and then do iname>=2 in loop.
+!
+        fform = '(' // cform(1)
+        legend=noform(cname(1))
+        do iname=2,nname
+          call safe_character_append(fform,  comma // cform(iname))
+          call safe_character_append(legend, noform(cname(iname)))
+        enddo
+        call safe_character_append(fform, ')')
+!
+        if (ldebug) then
+          write(0,*) 'PRINTS.prints: format = ', trim(fform)
+          write(0,*) 'PRINTS.prints: args   = ', fname(1:nname)
+        endif
+!
+!  This treats all numbers as floating point numbers.  Only those numbers are
+!  given (and computed) that are also listed in print.in.
+!
+        if (first) write(*,*)
+        if (first) write(*,'(" ",A)') trim(legend)
+!
+!  Write legend to extra file (might want to do only once after each lreset)
+!
+        if (first) then
+          open(1,file=trim(datadir)//'/legend.dat')
+          write(1,'(" ",A)') trim(legend)
+          close(1)
+        endif
+!
+!  Put output line into a string and remove spurious dots.
+!
+        if (ldebug) write(*,*) 'bef. writing prints'
+        write(line,trim(fform)) fname(1:nname)
+        index_d=index(line,'. ')
+        if (index_d >= 1) then
+          line(index_d:index_d)=' '
+        endif
+!
+!  If the line contains unreadable characters, then comment out line.
+!
+        index_a=(index(line,'***') +  index(line,'???'))
+        if (index_a > 0) then
+          line(1:1)=comment_char
+        endif
+!
+!  Append to diagnostics file.
+!
+        open(1,file=trim(datadir)//'/time_series.dat',position='append')
+        if (first) write(1,"('"//comment_char//"',a)") trim(legend)
+        write(1,'(a)') trim(line)
+        write(6,'(a)') trim(line)
+        close(1)
+!
+      endif                     ! (lroot)
+!
+      if (ldebug) write(*,*) 'exit prints'
+      first = .false.
+!
+      fname(1:nname)=0.0
+!
+    endsubroutine write_sound
 !***********************************************************************
     subroutine get_average_density(mass_per_proc,average_density)
 !
@@ -903,6 +993,23 @@ module Diagnostics
       itype_name(iname)=ilabel_save
 !
    endsubroutine save_name
+!***********************************************************************
+    subroutine save_name_sound(a,iname)
+!
+!  Lists the value of a (must be treated as real) in fname array
+!
+!  3-Dec-10 dhruba+joern: adapted from max_mn_name
+!
+      real :: a
+      integer :: iname
+!
+!  Set corresponding entry in itype_name
+!  This routine is to be called only once per step
+!
+      fname_sound(iname)=a
+      itype_name(iname)=ilabel_save
+!
+   endsubroutine save_name_sound
 !***********************************************************************
     subroutine save_name_halfz(a,iname)
 !
@@ -1787,6 +1894,32 @@ module Diagnostics
 !
     endfunction get_from_fname
 !***********************************************************************
+    subroutine allocate_sound
+!
+!  Allocate the variables needed for "sound" 
+!
+!   3-Dec-10 dhruba+joern
+!
+      integer :: stat
+!
+!  Allocate and initialize to zero. Setting it to zero is only
+!  necessary because of the pencil test, which doesn't compute these
+!  averages, and only evaluates its output for special purposes
+!  such as computing mean field energies in calc_bmz, for example,
+!
+      allocate(fname_sound(nname_sound),stat=stat)
+      fname_sound=0.
+!
+      if (stat>0) then
+        call fatal_error('allocate_sound', &
+            'Could not allocate memory for sound variables', .true.)
+      else
+        if (lroot) print*, 'allocate_sound: allocated memory for '// &
+            'fname_sound  with nname_sound  =', nname_sound
+      endif
+!
+    endsubroutine allocate_sound
+!***********************************************************************
     subroutine allocate_vnames
 !
 !  Allocate space needed for reading the video.in file.
@@ -1978,6 +2111,17 @@ module Diagnostics
       if (allocated(cnamev)) deallocate(cnamev)
 !
     endsubroutine vnames_clean_up
+!***********************************************************************
+    subroutine sound_clean_up
+!
+!  Deallocate space needed for reading the video.in file.
+!
+!   
+!
+      if (allocated(cname_sound)) deallocate(cname_sound)
+      if (allocated(fname_sound)) deallocate(fname_sound)
+!
+    endsubroutine sound_clean_up
 !***********************************************************************
     subroutine xyaverages_clean_up
 !

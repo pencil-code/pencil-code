@@ -123,7 +123,7 @@ module Cdata
 !
   character (len=120) :: datadir='data'
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
-  real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible
+  real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0.
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
@@ -169,6 +169,7 @@ module Cdata
   logical :: lmpicomm=.false., lforcing_cont=.false.
   logical :: lpostproc=.false.
   logical :: lwrite_slices=.false., lwrite_2daverages=.false.
+  logical :: lwrite_sound=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
   logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
@@ -292,11 +293,13 @@ module Cdata
   integer :: it1=10,it1d=impossible_int
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
+  integer :: nname_sound=0
   integer :: nr_directions=1
   real :: tdiagnos,t1ddiagnos,t2davgfirst
   integer, parameter :: mname=100,mnamev=100
   integer, dimension (mname) :: itype_name=0
   real, dimension (mname) :: fname=0.0, fweight=0.0
+  real, dimension (:), allocatable :: fname_sound
   real, dimension (nz,nprocz) :: z_allprocs=0.0
   real, dimension (:,:,:), allocatable :: fnamex, fnamey, fnamez
   real, dimension (:,:), allocatable :: fnamer
@@ -304,7 +307,7 @@ module Cdata
   real, dimension(:,:,:,:), allocatable :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30) :: cname(mname),cform(mname)
-  character (len=30), allocatable :: cnamev(:)
+  character (len=30), allocatable, dimension(:) :: cnamev,cname_sound
   character (len=30), allocatable :: cnamexy(:),cformxy(:)
   character (len=30), allocatable :: cnamexz(:),cformxz(:)
   character (len=30), allocatable :: cnamerz(:),cformrz(:)

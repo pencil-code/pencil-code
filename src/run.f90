@@ -511,6 +511,7 @@ program run
      endif
     if (l1davg) call write_1daverages()
     if (l2davg) call write_2daverages()
+    if (lwrite_sound) call write_sound()
 !
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
@@ -738,5 +739,6 @@ program run
   if (lwrite_yaverages)    call yaverages_clean_up()
   if (lwrite_zaverages)    call zaverages_clean_up()
   if (lwrite_phiaverages)  call phiaverages_clean_up()
+  if (lwrite_sound)        call sound_clean_up()
 !
 endprogram run
