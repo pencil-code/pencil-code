@@ -7,7 +7,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 0
 !
 !***************************************************************
 !
@@ -53,6 +53,7 @@ module Special
   include '../special.h'
 ! Global arrays
   real, dimension (nx,nz) :: uu_average
+  real, dimension (nx,nz) :: phidot_average
 ! "pencils" 
   real, dimension (nx,3) :: uuadvec_guu,uuadvec_gaa
   real, dimension (nx) :: uuadvec_grho,uuadvec_glnrho,uuadvec_gss
@@ -191,7 +192,6 @@ module Special
 !
 ! Advect by the relative velocity 
 !
-
       uu_residual=p%uu(:,2)-uu_average(:,nnghost)
 !
 ! Advect by the original radial and vertical, but residual azimuthal
@@ -411,10 +411,10 @@ endsubroutine read_special_run_pars
 !
       if (ldensity_nolog) then
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-            uuadvec_grho   - p%rho*p%divu
+             uuadvec_grho   - p%rho*p%divu
       else
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-            uuadvec_glnrho - p%divu
+             uuadvec_glnrho - p%divu
       endif
 !
       call keep_compiler_quiet(f)
@@ -558,6 +558,16 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_sub)
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real :: dt_sub
+!
+      call fourier_shift_fargo(f,df,dt_sub)
+!
+    endsubroutine special_after_timestep
+!***********************************************************************
+    subroutine fourier_shift_fargo(f,df,dt_sub)
+!
 !  Possibility to modify the f array after the evolution equations 
 !  are solved.
 !
@@ -567,39 +577,86 @@ endsubroutine read_special_run_pars
 !  06-jul-06/tony: coded
 !
       use Sub
-      use Fourier, only: fft_xy_parallel
+      use Fourier, only: fft_xy_parallel,fourier_shift_y
+      use Cdata
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ny) :: a_re,a_im
       real :: dt_sub
-      real, dimension (nx) :: phidot
+      !real, dimension (nx) :: phidot
+      real, dimension (nxgrid) :: phidot_serial
       integer :: ivar,nnghost
+!
+      integer :: ixdo,ixup,izdo,izup,iproc_recv,jx,jz,iz_serial
+      real, dimension (nx,nz) :: uu_average_recv
+      real, dimension (nxgrid,nzgrid) :: uu_average_allprocs
+!
+      uu_average_recv=1.
+      if (iproc/=root) then
+        if (ipy==0) call mpisend_real(uu_average,(/nx,nz/),root,222)
+      else
+        do jx=0,nprocx-1 
+          do jz=0,nprocz-1
+            !iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+            iproc_recv=jx+nprocx*nprocy*jz
+            if (iproc_recv/=root) then
+              call mpirecv_real(uu_average_recv,(/nx,nz/),iproc_recv,222)
+            else
+              uu_average_recv=uu_average
+            endif
+            ixdo= jx   *nx + 1 ; izdo= jz   *nz + 1 
+            ixup=(jx+1)*nx     ; izup=(jz+1)*nz
+            uu_average_allprocs(ixdo:ixup,izdo:izup)=uu_average_recv
+          enddo
+        enddo
+      endif
+      call mpibcast_real(uu_average_allprocs,(/nxgrid,nzgrid/))
 !
 !  Pencil uses linear velocity. Fargo will shift based on 
 !  angular velocity. Get phidot from uphi. 
 !
       do n=n1,n2
         nnghost=n-n1+1
-        phidot=uu_average(:,nnghost)*rcyl_mn1
+        !phidot=uu_average(:,nnghost)*rcyl_mn1
+        iz_serial=ipz*nz + nnghost
+        phidot_serial=uu_average_allprocs(:,iz_serial)/xgrid
 !
         do ivar=1,mvar
 !
           a_re=f(l1:l2,m1:m2,n,ivar); a_im=0.
-          call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot*dt_sub)
-          call fft_xy_parallel(a_re,a_im,linv=.true.)          
+!
+!  Forward transform. No need for computing the imaginary part. 
+!  The transform is just a shift in y, so no need to compute 
+!  the x-transform either. 
+!
+          !call fourier_shift_y(a_re,phidot*dt_sub)
+          call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt_sub,&
+               lneed_transform_x=.false.,lneed_im=.false.)
+!
+!  Inverse transform of the shifted array back into real space. 
+!  No need again for either imaginary part of x-transform. 
+!
+          call fft_xy_parallel(a_re,a_im,linv=.true.,&
+               lneed_transform_x=.false.,lneed_im=.false.)          
           f(l1:l2,m1:m2,n,ivar)=a_re
 !
 !  Also shift df, unless we are at the last subtimestep
 !
           if (.not.llast) then
             a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
-            call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot*dt_sub)
-            call fft_xy_parallel(a_re,a_im,linv=.true.)
+            !call fourier_shift_y(a_re,phidot*dt_sub)
+            call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt_sub,&
+                 lneed_transform_x=.false.,lneed_im=.false.)
+!
+            call fft_xy_parallel(a_re,a_im,linv=.true.,&
+                 lneed_transform_x=.false.,lneed_im=.false.)
             df(l1:l2,m1:m2,n,ivar)=a_re
           endif
 !
         enddo
+!
       enddo
 !
 !  Just for test purposes and comparison with the loop advection 
@@ -610,7 +667,7 @@ endsubroutine read_special_run_pars
         df(:,:,:,iux) = 0.
       endif
 !
-    endsubroutine special_after_timestep
+    endsubroutine fourier_shift_fargo
 !********************************************************************
 !
 !********************************************************************
