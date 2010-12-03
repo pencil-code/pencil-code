@@ -1256,7 +1256,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd
-      integer :: k,i, i1,i2,i3
+      integer :: k,i
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -2300,7 +2300,6 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (ndustspec) :: ff_tmp, ttt
       integer :: k,i1,i2,i3
-      character (len=20) :: output_file="./data/nd.out"
       character (len=20) :: output_file2="./data/nd2.out"
       integer :: file_id=123
 
