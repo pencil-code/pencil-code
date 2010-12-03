@@ -2177,7 +2177,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
-      real, dimension (nx) :: exabot,exatop,ua
+      real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi,dub,dob
@@ -2562,10 +2562,6 @@ module Magnetic
             if (lua_as_aux) then
               call grad(f,iua,gua)
               df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres-gua
-!--            call dot(p%uu,p%aa,ua)
-!print*,'UA1=',f(l1:l1+4,m,n,iua)
-!print*,'UA2=',p%ua(1:5)
-!print*,'UA3=',ua(1:5)
             else
               call fatal_error('daa_dt','must put lua_as_aux=T')
             endif
