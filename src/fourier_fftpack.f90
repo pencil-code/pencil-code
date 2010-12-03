@@ -1309,7 +1309,8 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
-    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im,shift_y,&
+         lneed_transform_x,lneed_transform_y)
 !
 !  Subroutine to do FFT of distributed 2D data in the x- and y-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1326,8 +1327,8 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
-      real, dimension (nx), optional :: shift_y
+      logical, optional, intent(in) :: linv, lneed_im, lneed_transform_x, lneed_transform_y
+      real, dimension (nxgrid), optional :: shift_y
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1340,10 +1341,10 @@ module Fourier
       real, dimension (tny) :: deltay_x
       real, dimension (tny) :: dshift_y
 !
-      integer :: l, m, stat, x_offset
-      logical :: lforward, lcompute_im
+      integer :: l, m, stat, x_offset, ngrid
+      logical :: lforward, lcompute_im, lcompute_transform_x, lcompute_transform_y
       logical :: lshift
-!
+!     
       lforward = .true.
       if (present (linv)) lforward = .not.linv
 !
@@ -1352,6 +1353,25 @@ module Fourier
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lcompute_transform_x = .true.
+      if (present (lneed_transform_x)) lcompute_transform_x = lneed_transform_x
+!
+      lcompute_transform_y = .true.
+      if (present (lneed_transform_y)) lcompute_transform_y = lneed_transform_y
+!
+!  Break if both transform_x and transform_y are false
+!
+      if (.not.(lcompute_transform_x.or.lcompute_transform_y)) then
+        call fatal_error('fft_xy_parallel_2D','Both x and y transforms are false '// &
+             'so this routine should not have been called')
+      endif
+!
+!  Normalizing factor is different if x-transform is needed or not
+!
+      ngrid=1.
+      if (lcompute_transform_x) ngrid=ngrid*nxgrid
+      if (lcompute_transform_y) ngrid=ngrid*nygrid
 !
       if (mod (nxgrid, nprocxy) /= 0) &
           call fatal_error('fft_xy_parallel_2D', &
@@ -1383,12 +1403,12 @@ module Fourier
       endif
 !
       if (lshift) then
-        x_offset = 1+ipy*tny
+        x_offset = 1 + (ipx+ipy*nprocx)*tny
         dshift_y = shift_y(x_offset:x_offset+tny-1)
       endif
 !
-      call cffti(nxgrid, wsavex)
-      call cffti(nygrid, wsavey)
+      if (lcompute_transform_x) call cffti(nxgrid, wsavex)
+      if (lcompute_transform_y) call cffti(nygrid, wsavey)
 !
       if (lforward) then
 !
@@ -1403,7 +1423,7 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid > 1) then
+        if (nxgrid > 1.and.lcompute_transform_x) then
           do m = 1, pny
 !
 !  Transform x-direction.
@@ -1415,7 +1435,7 @@ module Fourier
           enddo
         endif
 !
-        if (nygrid > 1) then
+        if (nygrid > 1.and.lcompute_transform_y) then
           call transp_pencil_xy(p_re, t_re)
           call transp_pencil_xy(p_im, t_im)
 !
@@ -1425,6 +1445,7 @@ module Fourier
 !
             ay = cmplx (t_re(:,l), t_im(:,l))
             call cfftf(nygrid, ay, wsavey)
+!
             if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
             if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
 !
@@ -1443,8 +1464,8 @@ module Fourier
 !
 !  Apply normalization factor to fourier coefficients.
 !
-        a_re = a_re / (nxgrid*nygrid)
-        a_im = a_im / (nxgrid*nygrid)
+        a_re = a_re / ngrid
+        a_im = a_im / ngrid
 !
       else
 !
@@ -1455,7 +1476,7 @@ module Fourier
         call remap_to_pencil_xy(a_re, p_re)
         call remap_to_pencil_xy(a_im, p_im)
 !
-        if (nygrid > 1) then
+        if (nygrid > 1.and.lcompute_transform_y) then
           call transp_pencil_xy(p_re, t_re)
           call transp_pencil_xy(p_im, t_im)
 !
@@ -1465,6 +1486,7 @@ module Fourier
 !
             ay = cmplx (t_re(:,l), t_im(:,l))
             if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+!
             call cfftb (nygrid, ay, wsavey)
             t_re(:,l) = real (ay)
             t_im(:,l) = aimag (ay)
@@ -1474,7 +1496,7 @@ module Fourier
           call transp_pencil_xy(t_im, p_im)
         endif
 !
-        if (nxgrid > 1) then
+        if (nxgrid > 1.and.lcompute_transform_x) then
           do m = 1, pny
 !
 !  Transform x-direction back.
@@ -1502,7 +1524,8 @@ module Fourier
 !
     endsubroutine fft_xy_parallel_2D
 !***********************************************************************
-    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im)
+    subroutine fft_xy_parallel_3D(a_re,a_im,linv,lneed_im,&
+         lneed_transform_x,lneed_transform_y)
 !
 !  Subroutine to do FFT of distributed 3D data in the x- and y-direction.
 !  For x- and/or y-parallelization the calculation will be done under
@@ -1518,7 +1541,7 @@ module Fourier
       use Mpicomm, only: remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
-      logical, optional, intent(in) :: linv, lneed_im
+      logical, optional, intent(in) :: linv, lneed_im, lneed_transform_x,lneed_transform_y
 !
       integer, parameter :: pnx=nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
       integer, parameter :: tnx=nygrid, tny=nxgrid/nprocxy ! pencil shaped transposed data sizes
@@ -1530,14 +1553,33 @@ module Fourier
       real, dimension (4*nygrid+15) :: wsavey
       real, dimension (tny) :: deltay_x
       integer :: inz ! size of the third dimension
-      integer :: l, m, stat, x_offset, pos_z
-      logical :: lforward, lcompute_im
+      integer :: l, m, stat, x_offset, pos_z, ngrid
+      logical :: lforward, lcompute_im, lcompute_transform_x,lcompute_transform_y
 !
       lforward = .true.
       if (present (linv)) lforward = .not.linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lcompute_transform_x = .true.
+      if (present (lneed_transform_x)) lcompute_transform_x = lneed_transform_x
+!
+      lcompute_transform_y = .true.
+      if (present (lneed_transform_y)) lcompute_transform_y = lneed_transform_y
+!
+!  Break if both transform_x and transform_y are false
+!
+      if (.not.(lcompute_transform_x.or.lcompute_transform_y)) then
+        call fatal_error('fft_xy_parallel_3D','Both x and y transforms are false '// & 
+        'so this routine should not have been called')
+      endif
+!
+!  Normalizing factor is different is x-transform is needed or not
+!
+      ngrid=1.
+      if (lcompute_transform_x) ngrid=ngrid*nxgrid
+      if (lcompute_transform_y) ngrid=ngrid*nygrid
 !
       inz = size (a_re, 3)
 !
@@ -1582,8 +1624,8 @@ module Fourier
         deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
-      call cffti(nxgrid, wsavex)
-      call cffti(nygrid, wsavey)
+      if (lcompute_transform_x) call cffti(nxgrid, wsavex)
+      if (lcompute_transform_y) call cffti(nygrid, wsavey)
 !
       if (lforward) then
 !
@@ -1598,7 +1640,7 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid > 1) then
+        if (nxgrid > 1.and.lcompute_transform_x) then
           do pos_z = 1, inz
             do m = 1, pny
 !
@@ -1612,7 +1654,7 @@ module Fourier
           enddo
         endif
 !
-        if (nygrid > 1) then
+        if (nygrid > 1.and.lcompute_transform_y) then
           call transp_pencil_xy(p_re, t_re)
           call transp_pencil_xy(p_im, t_im)
 !
@@ -1640,8 +1682,8 @@ module Fourier
 !
 !  Apply normalization factor to fourier coefficients.
 !
-        a_re = a_re / (nxgrid*nygrid)
-        a_im = a_im / (nxgrid*nygrid)
+        a_re = a_re / ngrid
+        a_im = a_im / ngrid
 !
       else
 !
@@ -1652,7 +1694,7 @@ module Fourier
         call remap_to_pencil_xy(a_re, p_re)
         call remap_to_pencil_xy(a_im, p_im)
 !
-        if (nygrid > 1) then
+        if (nygrid > 1.and.lcompute_transform_y) then
           call transp_pencil_xy(p_re, t_re)
           call transp_pencil_xy(p_im, t_im)
 !
@@ -1673,7 +1715,7 @@ module Fourier
           call transp_pencil_xy(t_im, p_im)
         endif
 !
-        if (nxgrid > 1) then
+        if (nxgrid > 1.and.lcompute_transform_x) then
           do pos_z = 1, inz
             do m = 1, pny
 !
