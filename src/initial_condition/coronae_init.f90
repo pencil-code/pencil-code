@@ -446,7 +446,7 @@ contains
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real :: konst,cp1=1.,lnrho_0,int
-    real, dimension(mz) :: TT,lnTT,lnrho
+    real, dimension(mz) :: TT,lnTT
     integer :: i,j,k,ipt
 !
     if (leos) call get_cp1(cp1)
@@ -693,7 +693,7 @@ contains
     use Gravity, only: gravz
 !
     real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-    real :: Ttop,T2, T1, T0, beta0, beta1, beta2, cp1=1, temp
+    real :: Ttop,T2, T1, T0, cp1=1, temp
     real :: lnrhotop, lnrho2, lnrho1, lnrho0, ztop
     real :: lnrhobot,zbot,Tbot
     real, dimension(4) :: beta
