@@ -25,6 +25,7 @@ module Diagnostics
   public :: write_sound
   public :: write_2daverages_prepare, write_zaverages
   public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
+  public :: save_name_sound
   public :: lname_is_present
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
@@ -197,20 +198,15 @@ module Diagnostics
 !  Reads and registers "sound" parameters gathered from the different
 !  modules and marked in `sound.in'.
 !
-!   3-may-02/axel: coded
+!   3-dec-10/dhruba+joern: coded
 !
       use General, only: safe_character_append
       use Sub, only: noform
 !
       logical,save :: first=.true.
-      character (len=640) :: fform,legend,line
+      character (len=640) :: fform,line
       character (len=1), parameter :: comma=','
       integer :: iname,index_d,index_a
-!
-!  Add general (not module-specific) quantities for diagnostic output. If the
-!  timestep (=dt) is to be written, it is known only after rk_2n, so the best
-!  place to enter it into the save list is here. Use 1.0*(it-1) to have floating
-!  point or double precision.
 !
       if (lroot) then
         if (idiag_t/=0)   call save_name_sound(tdiagnos,idiag_t)
@@ -221,37 +217,17 @@ module Diagnostics
 !  Produce the format.
 !  Must set cform(1) explicitly, and then do iname>=2 in loop.
 !
-        fform = '(' // cform(1)
-        legend=noform(cname(1))
-        do iname=2,nname
-          call safe_character_append(fform,  comma // cform(iname))
-          call safe_character_append(legend, noform(cname(iname)))
+        fform = '(' // cform_sound(1)
+        do iname=2,nname_sound
+          call safe_character_append(fform,  comma // cform_sound(iname))
         enddo
         call safe_character_append(fform, ')')
-!
-        if (ldebug) then
-          write(0,*) 'PRINTS.prints: format = ', trim(fform)
-          write(0,*) 'PRINTS.prints: args   = ', fname(1:nname)
-        endif
-!
-!  This treats all numbers as floating point numbers.  Only those numbers are
-!  given (and computed) that are also listed in print.in.
-!
-        if (first) write(*,*)
-        if (first) write(*,'(" ",A)') trim(legend)
-!
-!  Write legend to extra file (might want to do only once after each lreset)
-!
-        if (first) then
-          open(1,file=trim(datadir)//'/legend.dat')
-          write(1,'(" ",A)') trim(legend)
-          close(1)
-        endif
+
 !
 !  Put output line into a string and remove spurious dots.
 !
         if (ldebug) write(*,*) 'bef. writing prints'
-        write(line,trim(fform)) fname(1:nname)
+        write(line,trim(fform)) fname_sound(1:nname_sound)
         index_d=index(line,'. ')
         if (index_d >= 1) then
           line(index_d:index_d)=' '
@@ -266,10 +242,9 @@ module Diagnostics
 !
 !  Append to diagnostics file.
 !
-        open(1,file=trim(datadir)//'/time_series.dat',position='append')
-        if (first) write(1,"('"//comment_char//"',a)") trim(legend)
+        open(1,file=trim(datadir)//'/sound.dat',position='append')
         write(1,'(a)') trim(line)
-        write(6,'(a)') trim(line)
+!        write(6,'(a)') trim(line)
         close(1)
 !
       endif                     ! (lroot)
@@ -277,7 +252,7 @@ module Diagnostics
       if (ldebug) write(*,*) 'exit prints'
       first = .false.
 !
-      fname(1:nname)=0.0
+      fname_sound(1:nname_sound)=0.0
 !
     endsubroutine write_sound
 !***********************************************************************
@@ -1917,6 +1892,8 @@ module Diagnostics
         if (lroot) print*, 'allocate_sound: allocated memory for '// &
             'fname_sound  with nname_sound  =', nname_sound
       endif
+
+     allocate(cname_sound(nname_sound),cform_sound(nname_sound))
 !
     endsubroutine allocate_sound
 !***********************************************************************

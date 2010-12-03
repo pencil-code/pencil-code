@@ -85,7 +85,7 @@ module Param_IO
 !
   namelist /run_pars/ &
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
-      cdtc, isave, itorder, dsnap, d2davg, dvid, dtmin, dspec, tmax, iwig, &
+      cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, &
       uxj_spec, vec_spec, ou_spec, ab_spec, ub_spec, vel_phispec, mag_phispec, &

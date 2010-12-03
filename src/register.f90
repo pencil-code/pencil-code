@@ -768,7 +768,7 @@ module Register
         lwrite_sound=.true.
         call parallel_open(unit,file=sound_in_file)
         do iname_sound=1, nname_sound
-          read(unit,*,iostat=ierr) cname_sound(iname_sound)
+          read(unit,*,iostat=ierr) fname_sound(iname_sound)
         enddo
         call parallel_close(unit)
       endif

@@ -2916,6 +2916,24 @@ module Magnetic
           if (idiag_ayp2/=0) call save_name(p%aa(lpoint-nghost,2),idiag_ayp2)
           if (idiag_azp2/=0) call save_name(p%aa(lpoint-nghost,3),idiag_azp2)
         endif
+
+!
+! Magnetic field components at one point (=pt) written out in sound.dat
+!
+ if (lroot.and.m==mpoint.and.n==npoint) then
+          if (idiag_bxpt/=0) call save_name_sound(p%bb(lpoint-nghost,1),idiag_bxpt)
+          if (idiag_bypt/=0) call save_name_sound(p%bb(lpoint-nghost,2),idiag_bypt)
+          if (idiag_bzpt/=0) call save_name_sound(p%bb(lpoint-nghost,3),idiag_bzpt)
+          if (idiag_jxpt/=0) call save_name_sound(p%jj(lpoint-nghost,1),idiag_jxpt)
+          if (idiag_jypt/=0) call save_name_sound(p%jj(lpoint-nghost,2),idiag_jypt)
+          if (idiag_jzpt/=0) call save_name_sound(p%jj(lpoint-nghost,3),idiag_jzpt)
+          if (idiag_Expt/=0) call save_name_sound(uxbb(lpoint-nghost,1),idiag_Expt)
+          if (idiag_Eypt/=0) call save_name_sound(uxbb(lpoint-nghost,2),idiag_Eypt)
+          if (idiag_Ezpt/=0) call save_name_sound(uxbb(lpoint-nghost,3),idiag_Ezpt)
+          if (idiag_axpt/=0) call save_name_sound(float(lpoint),idiag_axpt) !test
+          if (idiag_aypt/=0) call save_name_sound(float(m),idiag_aypt) !test
+          if (idiag_azpt/=0) call save_name_sound(float(n),idiag_azpt) !test
+        endif
 !
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
@@ -6172,7 +6190,7 @@ module Magnetic
 !
       use Diagnostics
 !
-      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half
+      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half,iname_sound
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -6679,6 +6697,17 @@ module Magnetic
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'azmr',  idiag_azmr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'b2mr',  idiag_b2mr)
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'brbpmr',idiag_brbpmr)
+      enddo
+!
+!  Check for those quantities for which we want to have in the sound.dat file.
+!
+      do iname_sound=1,nname_sound
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bxpt',idiag_bxpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bypt',idiag_bypt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'bzpt',idiag_bzpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'axpt',idiag_axpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'aypt',idiag_aypt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'azpt',idiag_azpt)
       enddo
 !
 !  Write column, idiag_XYZ, where our variable XYZ is stored.

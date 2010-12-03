@@ -307,7 +307,7 @@ module Cdata
   real, dimension(:,:,:,:), allocatable :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30) :: cname(mname),cform(mname)
-  character (len=30), allocatable, dimension(:) :: cnamev,cname_sound
+  character (len=30), allocatable, dimension(:) :: cnamev,cname_sound,cform_sound
   character (len=30), allocatable :: cnamexy(:),cformxy(:)
   character (len=30), allocatable :: cnamexz(:),cformxz(:)
   character (len=30), allocatable :: cnamerz(:),cformrz(:)
