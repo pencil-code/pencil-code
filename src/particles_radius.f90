@@ -33,7 +33,7 @@ module Particles_radius
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
-  real :: aplow=1.0, aphigh=2.0
+  real :: aplow=1.0, aphigh=2.0, mbar=1.0
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -45,7 +45,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh
+      aplow, aphigh, mbar
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -140,11 +140,11 @@ module Particles_radius
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: npar_low,npar_high
       logical, optional :: init
-      logical :: initial
-      real :: radius_fraction
-      real, dimension (ninit) :: radii_cumulative
 !
-      integer :: i,j,ind,p,k
+      real, dimension (ninit) :: radii_cumulative
+      real :: radius_fraction, mcen, mmin, mmax, fcen, p
+      integer :: i, j, k, ind
+      logical :: initial
 !
       initial=.false.
       if (present(init)) then
@@ -194,16 +194,65 @@ module Particles_radius
             enddo
           endif
 !
-          do p=npar_low,npar_high
+          do k=npar_low,npar_high
             call random_number_wrapper(radius_fraction)
             do i=1,npart_radii
               if (radius_fraction <= radii_cumulative(i)) then
-                fp(p,iap)=ap0(i)
+                fp(k,iap)=ap0(i)
                 exit
-                endif
-              enddo
+              endif
+            enddo
+          enddo
+!
+!  Coagulation test with linear kernel. We initially put particles according
+!  to the distribution function
+!
+!    fk = dn/dm = n_0/mbar_0*exp(-m/mbar_0)
+!        => rhok = m_k*n_0/mbar_0*exp(-m/mbar_0)
+!
+!  Integrating rhok over all mass and normalising by n_0*mbar_0 gives
+!
+!    I = int_0^m[rhok]/int_0^oo[rhok] = 1 - exp(-x) - x*exp(-x)
+!
+!  where x=mk/mbar_0. We place particles equidistantly along the integral
+!  to obtain the right distribution function.
+!
+        case ('kernel-lin')
+          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+              'initial condition for linear kernel test'
+          do k=npar_low,npar_high
+            p=(ipar(k)-0.5)/float(npar)
+            mmin=0.0
+            mmax=1.0
+            do while (.true.)
+              if ((1.0-exp(-mmax)*(1+mmax))<p) then 
+                mmax=mmax+1.0
+              else
+                exit
+              endif
             enddo
 !
+            mcen=0.5*(mmin+mmax)
+            fcen=1.0-exp(-mcen)*(1+mcen)
+!
+            do while (abs(p-fcen)>1.0e-6)
+              if (fcen<p) then
+                mmin=mcen
+              else
+                mmax=mcen
+              endif
+              mcen=0.5*(mmin+mmax)
+              fcen=1.0-exp(-mcen)*(1+mcen)
+            enddo
+!
+            fp(k,iap)=(mcen*mbar/four_pi_rhopmat_over_three)**(1.0/3.0)
+!
+          enddo
+!
+        case default
+          if (lroot) print*, 'init_particles_radius: '// &
+              'No such such value for initap: ', trim(initap(j))
+          call fatal_error('init_particles_radius','')
         endselect
       enddo
 !
