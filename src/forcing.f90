@@ -2232,7 +2232,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       real, save :: kav
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx
-      real, dimension (mz) :: tmpz
+!      real, dimension (mz) :: tmpz
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
