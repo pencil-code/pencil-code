@@ -4395,6 +4395,7 @@ module Hydro
         -prof_amp3(n)*sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot)
 !
 !  modified diffrot profile from Brandenburg & Sandin (2004, A&A)
+!
       case ('BS04m')
       if (wdamp/=0.) then
         prof_amp1=ampl1_diffrot*(1.-step(x(l1:l2),rdampint,wdamp))
@@ -4404,7 +4405,8 @@ module Hydro
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
         -prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))*cos((pi/(2.*y(m2)))*y(m)))
 !
-!  Shear profile from Hughes & Proctor (2009, PRL)
+!  Shear profile from Hughes & Proctor (2009, PRL). Force either the
+!  full velocity field or only the y-average.
 !
       case ('HP09')
       if (wdamp/=0.) then
@@ -4412,8 +4414,13 @@ module Hydro
       else
         prof_amp3=ampl1_diffrot
       endif
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -prof_amp3(n)*cos(2.*pi*((x(l1:l2))-x0)/Lx))
+      if (.not.lcalc_uumeanxz) then
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+        -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+      else
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2) &
+        -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+      endif
 !
 !  Shear profile linear in x
 !
@@ -4444,8 +4451,13 @@ module Hydro
 !
       case ('vertical_shear')
       zbot=xyz0(3)
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-        -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+      if (.not.lcalc_uumean) then
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+            -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+      else
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+            -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+      endif
 !
 !  vertical shear profile
 !
