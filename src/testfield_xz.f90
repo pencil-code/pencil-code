@@ -137,6 +137,9 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
+       real, dimension (nx)        :: c2x, cx1
+       real, dimension (nz)        :: c2z, cz1
+!
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
 !
@@ -147,18 +150,24 @@ module Testfield
 !  xx and zz for calculating diffusive part of emf
 !
       cx=cos(ktestfield_x*(x(l1:l2)+x0))
-      sx=sin(ktestfield_x*(x(l1:l2)+x0))
+      sx=sin(ktestfield_x*(x(l1:l2)+x0))      
 
-      cz=cos(ktestfield_z*(z(n)+z0))
-      sz=sin(ktestfield_z*(z(n)+z0))
+      cz=cos(ktestfield_z*(z(n1:n2)+z0))
+      sz=sin(ktestfield_z*(z(n1:n2)+z0))
 
-      do i=1,mx
-      do j=1,mz
+      c2x=cos(2*ktestfield_x*(x(l1:l2)+x0))
+      c2z=cos(2*ktestfield_z*(z(n1:n2)+z0))
+
+      cx1=1/cx
+      cz1=1/cz
+
+      do i=l1,l2
+      do j=n2,n2
         Minv(i,j,:,:) = (/  &
-        	          (/ , , /), &
-        	          (/ , , /), &
-        	          (/ , , /) &
-                         /)
+        	          (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx*cz1, sz*cx1 /), &
+        	          (/                           -sx*cz1, cx*cz1,      0 /), &
+        	          (/                           -sz*cx1,      0, cz*cx1 /) &
+                        /)
       enddo
       enddo
 !
