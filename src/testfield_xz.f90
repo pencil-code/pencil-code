@@ -15,7 +15,7 @@
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
 !
-! MVAR CONTRIBUTION 36
+! MVAR CONTRIBUTION 27
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
