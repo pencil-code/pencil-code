@@ -1457,7 +1457,7 @@ module Initcond
 !
 !  Beltrami field (as initial condition)
 !
-!  23-sep-10/dhruba: aped from beltrami 
+!  23-sep-10/dhruba: aped from beltrami
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1489,7 +1489,7 @@ module Initcond
       if (present(kx)) then
         k=abs(kx)
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncx=sign(sqrt(abs(ampl/k)),kx)*& 
+        cfuncx=sign(sqrt(abs(ampl/k)),kx)*&
             real(cos(k*x+ph)+omgsqr*cos(omg*k*x+ph)+omg*cos(omgsqr*k*x+ph))
         sfuncx=sign(sqrt(abs(ampl/k)),kx)*&
             real(sin(k*x+ph)+omgsqr*sin(omg*k*x+ph)+omg*sin(omgsqr*k*x+ph))
@@ -3487,8 +3487,8 @@ module Initcond
       intent(in)  :: ampl,i1,i2
       intent(out) :: f
 !
-!  The default is noise in the range r_int < r < r_ext, but the user 
-!  is allowed to use a different range by initializing the variables 
+!  The default is noise in the range r_int < r < r_ext, but the user
+!  is allowed to use a different range by initializing the variables
 !  rnoise_int and rnoise_ext
 !
       if (rnoise_int == impossible) rnoise_int=r_int
@@ -4240,8 +4240,11 @@ module Initcond
 !
 !  Allocate memory for arrays.
 !
+      if (.not.lequidist(1).or..not.lequidist(2)) &
+          call fatal_error('mag_init','not yet implemented for non-equidistant grids')
+!
       iostat = 0
-      if (periodic) then 
+      if (periodic) then
         nxinit=nxgrid
         nyinit=nygrid
       else
@@ -4263,18 +4266,27 @@ module Initcond
 !  Auxiliary quantities:
 !
 !  idx2 and idy2 are essentially =2, but this makes compilers
-!  complain if nygrid=1 (in which case this is highly unlikely to be
+!  complain if nyinit=1 (in which case this is highly unlikely to be
 !  correct anyway), so we try to do this better:
-      idx2 = min(2,nxgrid)
-      idy2 = min(2,nygrid)
+      idx2 = min(2,nxinit)
+      idy2 = min(2,nyinit)
 !
 !  Magnetic field strength unit [B] = u_b
 !
       mu0_SI = 4.*pi*1.e-7
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
-      kx = spread(kx_fft,2,nygrid)
-      ky = spread(ky_fft,1,nxgrid)
+      if (periodic) then
+        kx = spread(kx_fft,2,nyinit)
+        ky = spread(ky_fft,1,nxinit)
+      else
+        kx=spread( &
+            cshift((/(i-(nxinit+1)/2,i=0,nxinit-1)/),+(nxinit+1)/2)*pi/Lx &
+            ,2,nyinit)
+        ky=spread( &
+            cshift((/(i-(nyinit+1)/2,i=0,nyinit-1)/),+(nyinit+1)/2)*pi/Ly &
+            ,1,nxinit)
+      endif
 !
       k2 = kx*kx + ky*ky
 !
@@ -4287,7 +4299,7 @@ module Initcond
         read (11,rec=1) Bz0_r(1:nxgrid,1:nygrid)
         close (11)
         if (.not.periodic) then
-          do i=1,nxgrid 
+          do i=1,nxgrid
             do j=1,nygrid
               Bz0_r(nxgrid+i,j)=Bz0_r(nxgrid+1-i,j)
               Bz0_r(i,nygrid+j)=Bz0_r(i,nygrid+1-j)
@@ -4385,7 +4397,7 @@ module Initcond
       ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
       if (pretend_lnTT) print*,'temp_hydrostatic: not implemented for pretend_lnTT=T'
 !
-      if (lnrho0 > 0.99*alog(impossible)) then 
+      if (lnrho0 > 0.99*alog(impossible)) then
         call warning("lnrho0 from eos module not useful","use rho_const from density instead")
         lnrho_0 = alog(rho0)
       else
@@ -4497,7 +4509,7 @@ module Initcond
         tmp2(icpu)=tmp3(1)
       enddo
 !
-!  If nprocz is 1 then start summing mass below from zero (sumtmp above). 
+!  If nprocz is 1 then start summing mass below from zero (sumtmp above).
 !  Otherwise sum the masses on the processors below from which to start
 !  summing the mass on this processor.
 !
@@ -4559,7 +4571,7 @@ module Initcond
         tmp2(icpu)=tmp3(1)
       enddo
 !
-!  If nprocz is 1 then start summing mass below from zero (sumtmp above). 
+!  If nprocz is 1 then start summing mass below from zero (sumtmp above).
 !  Otherwise sum the masses on the processors below from which to start
 !  summing the mass on this processor.
 !
@@ -4628,12 +4640,12 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
                 f(l,m,n,j) = -vel_phi*cos(phi)*cos(incl_alpha)
                 j = i+2
                 f(l,m,n,j) = vel_phi*cos(phi)*sin(incl_alpha)
-                if (x_real < 0.0) then 
-                   j = i              
-                   f(l,m,n,j) = -f(l,m,n,j)       
-                   j = i+1          
+                if (x_real < 0.0) then
+                   j = i
                    f(l,m,n,j) = -f(l,m,n,j)
-                endif           
+                   j = i+1
+                   f(l,m,n,j) = -f(l,m,n,j)
+                endif
               endif
             enddo
           enddo
