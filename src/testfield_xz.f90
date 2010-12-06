@@ -1,5 +1,5 @@
 ! $Id: testfield.f90 14785 2010-08-08 21:32:38Z AxelBrandenburg $
-
+!
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -27,7 +27,7 @@ module Testfield
   use Sub, only: keep_compiler_quiet
   implicit none
 
-  include '../testfield.h'
+  include 'testfield.h'
 
   character (len=labellen) :: initaatest='zero'
 
@@ -73,8 +73,11 @@ module Testfield
   integer :: idiag_alp12xz=0,idiag_alp22xz=0,idiag_alp32xz=0
   integer :: idiag_alp13xz=0,idiag_alp23xz=0,idiag_alp33xz=0
   integer :: idiag_eta111xz=0,idiag_eta211xz=0,idiag_eta311xz=0
+  integer :: idiag_eta112xz=0,idiag_eta212xz=0,idiag_eta312xz=0
   integer :: idiag_eta121xz=0,idiag_eta221xz=0,idiag_eta321xz=0
+  integer :: idiag_eta122xz=0,idiag_eta222xz=0,idiag_eta322xz=0
   integer :: idiag_eta131xz=0,idiag_eta231xz=0,idiag_eta331xz=0
+  integer :: idiag_eta132xz=0,idiag_eta232xz=0,idiag_eta332xz=0
   integer :: idiag_eta113xz=0,idiag_eta213xz=0,idiag_eta313xz=0
   integer :: idiag_eta123xz=0,idiag_eta223xz=0,idiag_eta323xz=0
   integer :: idiag_eta133xz=0,idiag_eta233xz=0,idiag_eta333xz=0
@@ -82,7 +85,7 @@ module Testfield
   integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
   integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
 
-  real, dimension (mx,mz,3,njtest) :: uxbtestm
+  real, dimension (nx,nz,3,njtest) :: uxbtestm
   real, dimension (nx)        :: cx,sx
   real, dimension (nz)        :: cz,sz
   real, dimension (nx,nz,3,3) :: Minv
@@ -139,6 +142,7 @@ module Testfield
 !
        real, dimension (nx)        :: c2x, cx1
        real, dimension (nz)        :: c2z, cz1
+       integer :: i,j
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -161,13 +165,13 @@ module Testfield
       cx1=1/cx
       cz1=1/cz
 
-      do i=l1,l2
-      do j=n2,n2
-        Minv(i,j,:,:) = (/  &
-        	          (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx*cz1, sz*cx1 /), &
-        	          (/                           -sx*cz1, cx*cz1,      0 /), &
-        	          (/                           -sz*cx1,      0, cz*cx1 /) &
-                        /)
+      do i=1,nx
+      do j=1,nz
+        Minv(i,j,:,:) = RESHAPE (  (/  &
+        	                     (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx(i)*cz1(j), sz(j)*cx1(i) /), &
+        	                     (/                     -sx(i)*cz1(j), cx(i)*cz1(j),            0 /), &
+        	                     (/                     -sz(i)*cx1(j),            0, cz(j)*cx1(i) /) &
+                                   /), (/3,3/))
       enddo
       enddo
 !
@@ -389,28 +393,28 @@ module Testfield
     	 if (idiag_alp11xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3),idiag_alp11xz)
 
-    	 if (idiag_alp21xz/=0) 
+    	 if (idiag_alp21xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3),idiag_alp21xz)
 
-    	 if (idiag_alp31xz/=0) 
+    	 if (idiag_alp31xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3),idiag_alp31xz)
 
     	 if (idiag_alp12xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6),idiag_alp12xz)
 
-    	 if (idiag_alp22xz/=0) 
+    	 if (idiag_alp22xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6),idiag_alp22xz)
 
-    	 if (idiag_alp32xz/=0) 
+    	 if (idiag_alp32xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6),idiag_alp32xz)
 
     	 if (idiag_alp13xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9),idiag_alp13xz)
 
-    	 if (idiag_alp23xz/=0) 
+    	 if (idiag_alp23xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9),idiag_alp23xz)
 
-    	 if (idiag_alp33xz/=0) 
+    	 if (idiag_alp33xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9),idiag_alp33xz)
 
             !call xyysum_mn_name_xz_z(uxbtest(:,2),idiag_eta213z)
@@ -472,14 +476,14 @@ module Testfield
          if (idiag_eta332xz/=0) &
     	   call ysum_mn_name_xz( Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9),idiag_eta332xz)
 
-       case (default)
+       case default
 
        end select
      endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !
-     if (.false.)		 !l1davgfirst) then
+     if (.false.) then		 !l1davgfirst) then
        select case (jtest)
        case (1)
      	 if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
@@ -549,7 +553,7 @@ module Testfield
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: btest,uxbtest
-      integer :: jtest,j,nxy=nxgrid*nygrid, nn
+      integer :: jtest,j,nxy=nxgrid*nygrid, nscan
       logical :: headtt_save
       real :: fac
       real, dimension (nx,nz,3) :: uxbtestm1
@@ -577,9 +581,9 @@ module Testfield
 
             do n=n1,n2
               
-              nn=n-n1+1
+              nscan=n-n1+1
 
-              uxbtestm(:,nn,:,jtest)=0.
+              uxbtestm(:,nscan,:,jtest)=0.
 
               do m=m1,m2
 
@@ -588,7 +592,7 @@ module Testfield
                 call cross_mn(p%uu,btest,uxbtest)
 
                 do j=1,3
-                  uxbtestm(:,nn,j,jtest)=uxbtestm(:,nn,j,jtest)+fac*uxbtest(:,j)
+                  uxbtestm(:,nscan,j,jtest)=uxbtestm(:,nscan,j,jtest)+fac*uxbtest(:,j)
                 enddo
                 headtt=.false.
               enddo
@@ -600,7 +604,6 @@ module Testfield
             uxbtestm(:,:,:,jtest)=uxbtestm1
 !
           endif
-        endif
       enddo
 !
 !  reset headtt
@@ -678,17 +681,17 @@ module Testfield
 !
       select case (jtest)
 
-      case (1); bbtest(:,1)=cx*cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (2); bbtest(:,1)=sx*cz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case (3); bbtest(:,1)=cx*sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (1); bbtest(:,1)=cx*cz(n-n1+1); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (2); bbtest(:,1)=sx*cz(n-n1+1); bbtest(:,2)=0.; bbtest(:,3)=0.
+      case (3); bbtest(:,1)=cx*sz(n-n1+1); bbtest(:,2)=0.; bbtest(:,3)=0.
 
-      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cz; bbtest(:,3)=0.
-      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz; bbtest(:,3)=0.
-      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz; bbtest(:,3)=0.
+      case (4); bbtest(:,1)=0.; bbtest(:,2)=cx*cz(n-n1+1); bbtest(:,3)=0.
+      case (5); bbtest(:,1)=0.; bbtest(:,2)=sx*cz(n-n1+1); bbtest(:,3)=0.
+      case (6); bbtest(:,1)=0.; bbtest(:,2)=cx*sz(n-n1+1); bbtest(:,3)=0.
 
-      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cz
-      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz
-      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz
+      case (7); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*cz(n-n1+1)
+      case (8); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx*cz(n-n1+1)
+      case (9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx*sz(n-n1+1)
 
       case default; bbtest(:,:)=0.
 
@@ -851,8 +854,11 @@ module Testfield
         idiag_alp12xz=0; idiag_alp22xz=0; idiag_alp32xz=0
         idiag_alp13xz=0; idiag_alp23xz=0; idiag_alp33xz=0
         idiag_eta111xz=0; idiag_eta211xz=0; idiag_eta311xz=0
+        idiag_eta112xz=0; idiag_eta212xz=0; idiag_eta312xz=0
         idiag_eta121xz=0; idiag_eta221xz=0; idiag_eta321xz=0
+        idiag_eta122xz=0; idiag_eta222xz=0; idiag_eta322xz=0
         idiag_eta131xz=0; idiag_eta231xz=0; idiag_eta331xz=0
+        idiag_eta132xz=0; idiag_eta232xz=0; idiag_eta332xz=0
         idiag_eta113xz=0; idiag_eta213xz=0; idiag_eta313xz=0
         idiag_eta123xz=0; idiag_eta223xz=0; idiag_eta323xz=0
         idiag_eta133xz=0; idiag_eta233xz=0; idiag_eta333xz=0
@@ -920,14 +926,23 @@ module Testfield
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23xz',idiag_alp23xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33xz',idiag_alp33xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta111xz',idiag_eta111xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta112xz',idiag_eta112xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta211xz',idiag_eta211xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta212xz',idiag_eta212xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta311xz',idiag_eta311xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta312xz',idiag_eta312xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta121xz',idiag_eta121xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta122xz',idiag_eta122xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta221xz',idiag_eta221xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta222xz',idiag_eta222xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta321xz',idiag_eta321xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta322xz',idiag_eta322xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta131xz',idiag_eta131xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta132xz',idiag_eta132xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta231xz',idiag_eta231xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta232xz',idiag_eta232xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta331xz',idiag_eta331xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta332xz',idiag_eta332xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta113xz',idiag_eta113xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta213xz',idiag_eta213xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta313xz',idiag_eta313xz)
@@ -999,12 +1014,21 @@ module Testfield
         write(3,*) 'idiag_eta111xz=',idiag_eta111xz
         write(3,*) 'idiag_eta211xz=',idiag_eta211xz
         write(3,*) 'idiag_eta311xz=',idiag_eta311xz
+        write(3,*) 'idiag_eta112xz=',idiag_eta112xz
+        write(3,*) 'idiag_eta212xz=',idiag_eta212xz
+        write(3,*) 'idiag_eta312xz=',idiag_eta312xz
         write(3,*) 'idiag_eta121xz=',idiag_eta121xz
         write(3,*) 'idiag_eta221xz=',idiag_eta221xz
         write(3,*) 'idiag_eta321xz=',idiag_eta321xz
+        write(3,*) 'idiag_eta122xz=',idiag_eta122xz
+        write(3,*) 'idiag_eta222xz=',idiag_eta222xz
+        write(3,*) 'idiag_eta322xz=',idiag_eta322xz
         write(3,*) 'idiag_eta131xz=',idiag_eta131xz
         write(3,*) 'idiag_eta231xz=',idiag_eta231xz
         write(3,*) 'idiag_eta331xz=',idiag_eta331xz
+        write(3,*) 'idiag_eta132xz=',idiag_eta132xz
+        write(3,*) 'idiag_eta232xz=',idiag_eta232xz
+        write(3,*) 'idiag_eta332xz=',idiag_eta332xz
         write(3,*) 'idiag_eta113xz=',idiag_eta113xz
         write(3,*) 'idiag_eta213xz=',idiag_eta213xz
         write(3,*) 'idiag_eta313xz=',idiag_eta313xz
