@@ -4215,7 +4215,7 @@ module Initcond
 !
     endsubroutine corona_init
 !***********************************************************************
-    subroutine mdi_init(f)
+    subroutine mdi_init(f,periodic)
 !
 !  Intialize the vector potential
 !  by potential field extrapolation
@@ -4226,12 +4226,14 @@ module Initcond
       use Fourier, only: fourier_transform_other
       use Mpicomm, only: mpibcast_real,stop_it_if_any
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
+      logical, intent (in) :: periodic
       real :: mu0_SI,u_b,zref
       logical :: exists
-      integer :: i,idx2,idy2,stat,iostat,lend
+      integer :: i,j,idx2,idy2,stat,iostat,lend
+      integer :: nxinit,nyinit
 !
       ! file location settings
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
@@ -4239,13 +4241,21 @@ module Initcond
 !  Allocate memory for arrays.
 !
       iostat = 0
-      allocate(kx(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
-      allocate(ky(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
-      allocate(k2(nxgrid,nygrid),stat=stat);     iostat=max(stat,iostat)
-      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
-      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  iostat=max(stat,iostat)
-      allocate(A_r(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
-      allocate(A_i(nxgrid,nygrid),stat=stat);    iostat=max(stat,iostat)
+      if (periodic) then 
+        nxinit=nxgrid
+        nyinit=nygrid
+      else
+        nxinit=2*nxgrid
+        nyinit=2*nygrid
+      endif
+!
+      allocate(kx(nxinit,nyinit),stat=stat);     iostat=max(stat,iostat)
+      allocate(ky(nxinit,nyinit),stat=stat);     iostat=max(stat,iostat)
+      allocate(k2(nxinit,nyinit),stat=stat);     iostat=max(stat,iostat)
+      allocate(Bz0_i(nxinit,nyinit),stat=stat);  iostat=max(stat,iostat)
+      allocate(Bz0_r(nxinit,nyinit),stat=stat);  iostat=max(stat,iostat)
+      allocate(A_r(nxinit,nyinit),stat=stat);    iostat=max(stat,iostat)
+      allocate(A_i(nxinit,nyinit),stat=stat);    iostat=max(stat,iostat)
 !
       call stop_it_if_any((iostat>0),'mdi_init: '// &
           'Could not allocate memory for variables, please check')
@@ -4274,12 +4284,21 @@ module Initcond
         inquire(IOLENGTH=lend) u_b
         open (11,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
-        read (11,rec=1) Bz0_r
+        read (11,rec=1) Bz0_r(1:nxgrid,1:nygrid)
         close (11)
+        if (.not.periodic) then
+          do i=1,nxgrid 
+            do j=1,nygrid
+              Bz0_r(nxgrid+i,j)=Bz0_r(nxgrid+1-i,j)
+              Bz0_r(i,nygrid+j)=Bz0_r(i,nygrid+1-j)
+              Bz0_r(nxgrid+i,nygrid+j)=Bz0_r(nxgrid+1-i,nygrid+1-j)
+            enddo
+          enddo
+        endif
       else
         call stop_it_if_any(.false.,'')
       endif
-      call mpibcast_real(Bz0_r,(/nxgrid,nygrid/))
+      call mpibcast_real(Bz0_r,(/nxinit,nyinit/))
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla and SI to PENCIL units
