@@ -399,7 +399,7 @@ module Particles_main
     endsubroutine write_dim_particles
 !***********************************************************************
     subroutine write_snapshot_particles(snap_directory,f,enum,snapnum)
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
       character (len=*) :: snap_directory
@@ -408,6 +408,7 @@ module Particles_main
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(snap_directory)
       call keep_compiler_quiet(enum)
+      call keep_compiler_quiet(present(snapnum))
 !
     endsubroutine write_snapshot_particles
 !***********************************************************************
