@@ -557,11 +557,11 @@ module Testfield
     select case (itestfield)
     case (1)
     
-!    if (ipy==0) then
-!      ymult=1.
-!    else
-!      ymult=0.
-!    endif
+    if (ipy==0) then
+      ymult=1.
+    else
+      ymult=0.
+    endif
     do j=1,nz
     
       if (idiag_alp11xz/=0) &
