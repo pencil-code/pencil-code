@@ -545,151 +545,203 @@ module Testfield
 !
       headtt=headtt_save
 !
-      if (l2davgfirst) call calc_coefficients                
+      if ((ldiagnos .and. twod_needed) .or. l2davgfirst) call calc_coefficients                
 
     endsubroutine testfield_after_boundary
 !***********************************************************************
     subroutine calc_coefficients
 
     integer :: j
-    logical :: ltype_set=.false.
-    real :: ymult=1.
-
+    real, dimension (nx,nz,27) :: temp
+    logical, dimension(27) :: need_temp
+!
+    if (l2davgfirst) need_temp=twod_need
+    if (ldiagnos .and. twod_needed) need_temp=need_temp .or. twod_need_for_0d
+!
     select case (itestfield)
     case (1)
     
-    if (ipy==0) then
-      ymult=1.
-    else
-      ymult=0.
-    endif
-    do j=1,nz
+      do j=1,nz
     
-      if (idiag_alp11xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)),idiag_alp11xz)
+      if (need_temp(1)) & !(idiag_alp11xz/=0) &
+     	temp(:,j,1)=Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)),idiag_alp11xz)
 
-      if (idiag_alp21xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)),idiag_alp21xz)
+      if (need_temp(2)) & !(idiag_alp21xz/=0) &
+     	temp(:,j,2)=Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)),idiag_alp21xz)
 
-      if (idiag_alp31xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3)),idiag_alp31xz)
+      if (need_temp(3)) & !(idiag_alp31xz/=0) &
+     	temp(:,j,3)=Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3)),idiag_alp31xz)
 
-      if (idiag_alp12xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6)),idiag_alp12xz)
+      if (need_temp(4)) & !(idiag_alp12xz/=0) &
+     	temp(:,j,4)=Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6)),idiag_alp12xz)
 
-      if (idiag_alp22xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6)),idiag_alp22xz)
+      if (need_temp(5)) & !(idiag_alp22xz/=0) &
+     	temp(:,j,5)=Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6)),idiag_alp22xz)
 
-      if (idiag_alp32xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6)),idiag_alp32xz)
+      if (need_temp(6)) & !(idiag_alp32xz/=0) &
+     	temp(:,j,6)=Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6)),idiag_alp32xz)
 
-      if (idiag_alp13xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9)),idiag_alp13xz)
+      if (need_temp(7)) & !(idiag_alp13xz/=0) &
+     	temp(:,j,7)=Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9)),idiag_alp13xz)
 
-      if (idiag_alp23xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9)),idiag_alp23xz)
+      if (need_temp(8)) & !(idiag_alp23xz/=0) &
+     	temp(:,j,8)=Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9)),idiag_alp23xz)
 
-      if (idiag_alp33xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)),idiag_alp33xz)
+      if (need_temp(9)) & !(idiag_alp33xz/=0) &
+     	temp(:,j,9)=Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)),idiag_alp33xz)
 
     	 !call xyysum_mn_name_xz_z(uxbtest(:,2),idiag_eta213z)
 
-      if (idiag_eta111xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,1,1)+Minv(:,n,2,2)*uxbtestm(:,n,1,2)+Minv(:,n,2,3)*uxbtestm(:,n,1,3)),idiag_eta111xz)
+      if (need_temp(10)) & !(idiag_eta111xz/=0) &
+     	temp(:,j,10)=Minv(:,n,2,1)*uxbtestm(:,n,1,1)+Minv(:,n,2,2)*uxbtestm(:,n,1,2)+Minv(:,n,2,3)*uxbtestm(:,n,1,3)),idiag_eta111xz)
 
-      if (idiag_eta112xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,1,1)+Minv(:,n,3,2)*uxbtestm(:,n,1,2)+Minv(:,n,3,3)*uxbtestm(:,n,1,3)),idiag_eta112xz)
+      if (need_temp(11)) & !(idiag_eta112xz/=0) &
+     	temp(:,j,11)=Minv(:,n,3,1)*uxbtestm(:,n,1,1)+Minv(:,n,3,2)*uxbtestm(:,n,1,2)+Minv(:,n,3,3)*uxbtestm(:,n,1,3)),idiag_eta112xz)
  
-      if (idiag_eta211xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,2,1)+Minv(:,n,2,2)*uxbtestm(:,n,2,2)+Minv(:,n,2,3)*uxbtestm(:,n,2,3)),idiag_eta211xz)
+      if (need_temp(12)) & !(idiag_eta211xz/=0) &
+     	temp(:,j,12)=Minv(:,n,2,1)*uxbtestm(:,n,2,1)+Minv(:,n,2,2)*uxbtestm(:,n,2,2)+Minv(:,n,2,3)*uxbtestm(:,n,2,3)),idiag_eta211xz)
  
-      if (idiag_eta212xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,2,1)+Minv(:,n,3,2)*uxbtestm(:,n,2,2)+Minv(:,n,3,3)*uxbtestm(:,n,2,3)),idiag_eta212xz)
+      if (need_temp(13)) & !(idiag_eta212xz/=0) &
+     	temp(:,j,13)=Minv(:,n,3,1)*uxbtestm(:,n,2,1)+Minv(:,n,3,2)*uxbtestm(:,n,2,2)+Minv(:,n,3,3)*uxbtestm(:,n,2,3)),idiag_eta212xz)
 
-      if (idiag_eta311xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,3,1)+Minv(:,n,2,2)*uxbtestm(:,n,3,2)+Minv(:,n,2,3)*uxbtestm(:,n,3,3)),idiag_eta311xz)
+      if (need_temp(14)) & !(idiag_eta311xz/=0) &
+     	temp(:,j,14)=Minv(:,n,2,1)*uxbtestm(:,n,3,1)+Minv(:,n,2,2)*uxbtestm(:,n,3,2)+Minv(:,n,2,3)*uxbtestm(:,n,3,3)),idiag_eta311xz)
 
-      if (idiag_eta312xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,3,1)+Minv(:,n,3,2)*uxbtestm(:,n,3,2)+Minv(:,n,3,3)*uxbtestm(:,n,3,3)),idiag_eta312xz)
+      if (need_temp(15)) & !(idiag_eta312xz/=0) &
+     	temp(:,j,15)=Minv(:,n,3,1)*uxbtestm(:,n,3,1)+Minv(:,n,3,2)*uxbtestm(:,n,3,2)+Minv(:,n,3,3)*uxbtestm(:,n,3,3)),idiag_eta312xz)
 
 
 
-      if (idiag_eta121xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,1,4)+Minv(:,n,2,2)*uxbtestm(:,n,1,5)+Minv(:,n,2,3)*uxbtestm(:,n,1,6)),idiag_eta121xz)
+      if (need_temp(16)) & !(idiag_eta121xz/=0) &
+     	temp(:,j,16)=Minv(:,n,2,1)*uxbtestm(:,n,1,4)+Minv(:,n,2,2)*uxbtestm(:,n,1,5)+Minv(:,n,2,3)*uxbtestm(:,n,1,6)),idiag_eta121xz)
 
-      if (idiag_eta122xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,1,4)+Minv(:,n,3,2)*uxbtestm(:,n,1,5)+Minv(:,n,3,3)*uxbtestm(:,n,1,6)),idiag_eta122xz)
+      if (need_temp(17)) & !(idiag_eta122xz/=0) &
+     	temp(:,j,17)=Minv(:,n,3,1)*uxbtestm(:,n,1,4)+Minv(:,n,3,2)*uxbtestm(:,n,1,5)+Minv(:,n,3,3)*uxbtestm(:,n,1,6)),idiag_eta122xz)
  
-      if (idiag_eta221xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,2,4)+Minv(:,n,2,2)*uxbtestm(:,n,2,5)+Minv(:,n,2,3)*uxbtestm(:,n,2,6)),idiag_eta221xz)
+      if (need_temp(18)) & !(idiag_eta221xz/=0) &
+     	temp(:,j,18)=Minv(:,n,2,1)*uxbtestm(:,n,2,4)+Minv(:,n,2,2)*uxbtestm(:,n,2,5)+Minv(:,n,2,3)*uxbtestm(:,n,2,6)),idiag_eta221xz)
  
-      if (idiag_eta222xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,2,4)+Minv(:,n,3,2)*uxbtestm(:,n,2,5)+Minv(:,n,3,3)*uxbtestm(:,n,2,6)),idiag_eta222xz)
+      if (need_temp(19)) & !(idiag_eta222xz/=0) &
+     	temp(:,j,19)=Minv(:,n,3,1)*uxbtestm(:,n,2,4)+Minv(:,n,3,2)*uxbtestm(:,n,2,5)+Minv(:,n,3,3)*uxbtestm(:,n,2,6)),idiag_eta222xz)
 
-      if (idiag_eta321xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,3,4)+Minv(:,n,2,2)*uxbtestm(:,n,3,5)+Minv(:,n,2,3)*uxbtestm(:,n,3,6)),idiag_eta321xz)
+      if (need_temp(20)) & !(idiag_eta321xz/=0) &
+     	temp(:,j,20)=Minv(:,n,2,1)*uxbtestm(:,n,3,4)+Minv(:,n,2,2)*uxbtestm(:,n,3,5)+Minv(:,n,2,3)*uxbtestm(:,n,3,6)),idiag_eta321xz)
 
-      if (idiag_eta322xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,3,4)+Minv(:,n,3,2)*uxbtestm(:,n,3,5)+Minv(:,n,3,3)*uxbtestm(:,n,3,6)),idiag_eta322xz)
+      if (need_temp(21)) & !(idiag_eta322xz/=0) &
+     	temp(:,j,21)=Minv(:,n,3,1)*uxbtestm(:,n,3,4)+Minv(:,n,3,2)*uxbtestm(:,n,3,5)+Minv(:,n,3,3)*uxbtestm(:,n,3,6)),idiag_eta322xz)
 
 
-      if (idiag_eta131xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,1,7)+Minv(:,n,2,2)*uxbtestm(:,n,1,8)+Minv(:,n,2,3)*uxbtestm(:,n,1,9)),idiag_eta131xz)
+      if (need_temp(22)) & !(idiag_eta131xz/=0) &
+     	temp(:,j,22)=Minv(:,n,2,1)*uxbtestm(:,n,1,7)+Minv(:,n,2,2)*uxbtestm(:,n,1,8)+Minv(:,n,2,3)*uxbtestm(:,n,1,9)),idiag_eta131xz)
 
-      if (idiag_eta132xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,1,7)+Minv(:,n,3,2)*uxbtestm(:,n,1,8)+Minv(:,n,3,3)*uxbtestm(:,n,1,9)),idiag_eta132xz)
+      if (need_temp(23)) & !(idiag_eta132xz/=0) &
+     	temp(:,j,23)=Minv(:,n,3,1)*uxbtestm(:,n,1,7)+Minv(:,n,3,2)*uxbtestm(:,n,1,8)+Minv(:,n,3,3)*uxbtestm(:,n,1,9)),idiag_eta132xz)
  
-      if (idiag_eta231xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,2,7)+Minv(:,n,2,2)*uxbtestm(:,n,2,8)+Minv(:,n,2,3)*uxbtestm(:,n,2,9)),idiag_eta231xz)
+      if (need_temp(24)) & !(idiag_eta231xz/=0) &
+     	temp(:,j,24)=Minv(:,n,2,1)*uxbtestm(:,n,2,7)+Minv(:,n,2,2)*uxbtestm(:,n,2,8)+Minv(:,n,2,3)*uxbtestm(:,n,2,9)),idiag_eta231xz)
  
-      if (idiag_eta232xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,2,7)+Minv(:,n,3,2)*uxbtestm(:,n,2,8)+Minv(:,n,3,3)*uxbtestm(:,n,2,9)),idiag_eta232xz)
+      if (need_temp(25)) & !(idiag_eta232xz/=0) &
+     	temp(:,j,25)=Minv(:,n,3,1)*uxbtestm(:,n,2,7)+Minv(:,n,3,2)*uxbtestm(:,n,2,8)+Minv(:,n,3,3)*uxbtestm(:,n,2,9)),idiag_eta232xz)
 
-      if (idiag_eta331xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,3,7)+Minv(:,n,2,2)*uxbtestm(:,n,3,8)+Minv(:,n,2,3)*uxbtestm(:,n,3,9)),idiag_eta331xz)
+      if (need_temp(26)) & !(idiag_eta331xz/=0) &
+     	temp(:,j,26)=Minv(:,n,2,1)*uxbtestm(:,n,3,7)+Minv(:,n,2,2)*uxbtestm(:,n,3,8)+Minv(:,n,2,3)*uxbtestm(:,n,3,9)),idiag_eta331xz)
 
-      if (idiag_eta332xz/=0) &
-     	call sum_name(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9)),idiag_eta332xz)
+      if (need_temp(27)) & !(idiag_eta332xz/=0) &
+     	temp(:,j,27)=Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9)),idiag_eta332xz)
 
     enddo
     case default
 
     end select
 
-    if (.not. ltype_set) then
 
-      if (idiag_alp11xz/=0) itypename(idiag_alp11xz)=ilabel_integrate
-      if (idiag_alp12xz/=0) itypename(idiag_alp12xz)=ilabel_integrate
-      if (idiag_alp13xz/=0) itypename(idiag_alp13xz)=ilabel_integrate
-      if (idiag_alp21xz/=0) itypename(idiag_alp21xz)=ilabel_integrate
-      if (idiag_alp22xz/=0) itypename(idiag_alp22xz)=ilabel_integrate
-      if (idiag_alp23xz/=0) itypename(idiag_alp23xz)=ilabel_integrate
-      if (idiag_alp31xz/=0) itypename(idiag_alp31xz)=ilabel_integrate
-      if (idiag_alp32xz/=0) itypename(idiag_alp32xz)=ilabel_integrate
-      if (idiag_alp33xz/=0) itypename(idiag_alp33xz)=ilabel_integrate
+    if (l2davgfirst)
 
-      if (idiag_eta111xz/=0) itypename(idiag_eta111xz)=ilabel_integrate
-      if (idiag_eta112xz/=0) itypename(idiag_eta112xz)=ilabel_integrate
-      if (idiag_eta121xz/=0) itypename(idiag_eta121xz)=ilabel_integrate
-      if (idiag_eta122xz/=0) itypename(idiag_eta122xz)=ilabel_integrate
-      if (idiag_eta131xz/=0) itypename(idiag_eta131xz)=ilabel_integrate
-      if (idiag_eta132xz/=0) itypename(idiag_eta132xz)=ilabel_integrate
+      if (idiag_alp11xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)),idiag_alp11xz)
 
-      if (idiag_eta211xz/=0) itypename(idiag_eta211xz)=ilabel_integrate
-      if (idiag_eta212xz/=0) itypename(idiag_eta212xz)=ilabel_integrate
-      if (idiag_eta221xz/=0) itypename(idiag_eta221xz)=ilabel_integrate
-      if (idiag_eta222xz/=0) itypename(idiag_eta222xz)=ilabel_integrate
-      if (idiag_eta231xz/=0) itypename(idiag_eta231xz)=ilabel_integrate
-      if (idiag_eta232xz/=0) itypename(idiag_eta232xz)=ilabel_integrate
+      if (idiag_alp21xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)),idiag_alp21xz)
 
-      if (idiag_eta311xz/=0) itypename(idiag_eta311xz)=ilabel_integrate
-      if (idiag_eta312xz/=0) itypename(idiag_eta312xz)=ilabel_integrate
-      if (idiag_eta321xz/=0) itypename(idiag_eta321xz)=ilabel_integrate
-      if (idiag_eta322xz/=0) itypename(idiag_eta322xz)=ilabel_integrate
-      if (idiag_eta331xz/=0) itypename(idiag_eta331xz)=ilabel_integrate
-      if (idiag_eta332xz/=0) itypename(idiag_eta332xz)=ilabel_integrate
+      if (idiag_alp31xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3)),idiag_alp31xz)
 
-      ltype_set=.true.
+      if (idiag_alp12xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6)),idiag_alp12xz)
+
+      if (idiag_alp22xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6)),idiag_alp22xz)
+
+      if (idiag_alp32xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6)),idiag_alp32xz)
+
+      if (idiag_alp13xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9)),idiag_alp13xz)
+
+      if (idiag_alp23xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9)),idiag_alp23xz)
+
+      if (idiag_alp33xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)),idiag_alp33xz)
+
+         !call xyysum_mn_name_xz_z(uxbtest(:,2),idiag_eta213z)
+
+      if (idiag_eta111xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,1,1)+Minv(:,n,2,2)*uxbtestm(:,n,1,2)+Minv(:,n,2,3)*uxbtestm(:,n,1,3)),idiag_eta111xz)
+
+      if (idiag_eta112xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,1,1)+Minv(:,n,3,2)*uxbtestm(:,n,1,2)+Minv(:,n,3,3)*uxbtestm(:,n,1,3)),idiag_eta112xz)
+
+      if (idiag_eta211xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,2,1)+Minv(:,n,2,2)*uxbtestm(:,n,2,2)+Minv(:,n,2,3)*uxbtestm(:,n,2,3)),idiag_eta211xz)
+
+      if (idiag_eta212xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,2,1)+Minv(:,n,3,2)*uxbtestm(:,n,2,2)+Minv(:,n,3,3)*uxbtestm(:,n,2,3)),idiag_eta212xz)
+
+      if (idiag_eta311xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,3,1)+Minv(:,n,2,2)*uxbtestm(:,n,3,2)+Minv(:,n,2,3)*uxbtestm(:,n,3,3)),idiag_eta311xz)
+
+      if (idiag_eta312xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,3,1)+Minv(:,n,3,2)*uxbtestm(:,n,3,2)+Minv(:,n,3,3)*uxbtestm(:,n,3,3)),idiag_eta312xz)
+
+
+
+      if (idiag_eta121xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,1,4)+Minv(:,n,2,2)*uxbtestm(:,n,1,5)+Minv(:,n,2,3)*uxbtestm(:,n,1,6)),idiag_eta121xz)
+
+      if (idiag_eta122xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,1,4)+Minv(:,n,3,2)*uxbtestm(:,n,1,5)+Minv(:,n,3,3)*uxbtestm(:,n,1,6)),idiag_eta122xz)
+
+      if (idiag_eta221xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,2,4)+Minv(:,n,2,2)*uxbtestm(:,n,2,5)+Minv(:,n,2,3)*uxbtestm(:,n,2,6)),idiag_eta221xz)
+
+      if (idiag_eta222xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,2,4)+Minv(:,n,3,2)*uxbtestm(:,n,2,5)+Minv(:,n,3,3)*uxbtestm(:,n,2,6)),idiag_eta222xz)
+
+      if (idiag_eta321xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,3,4)+Minv(:,n,2,2)*uxbtestm(:,n,3,5)+Minv(:,n,2,3)*uxbtestm(:,n,3,6)),idiag_eta321xz)
+
+      if (idiag_eta322xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,3,4)+Minv(:,n,3,2)*uxbtestm(:,n,3,5)+Minv(:,n,3,3)*uxbtestm(:,n,3,6)),idiag_eta322xz)
+
+
+      if (idiag_eta131xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,1,7)+Minv(:,n,2,2)*uxbtestm(:,n,1,8)+Minv(:,n,2,3)*uxbtestm(:,n,1,9)),idiag_eta131xz)
+
+      if (idiag_eta132xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,1,7)+Minv(:,n,3,2)*uxbtestm(:,n,1,8)+Minv(:,n,3,3)*uxbtestm(:,n,1,9)),idiag_eta132xz)
+
+      if (idiag_eta231xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,2,7)+Minv(:,n,2,2)*uxbtestm(:,n,2,8)+Minv(:,n,2,3)*uxbtestm(:,n,2,9)),idiag_eta231xz)
+
+      if (idiag_eta232xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,2,7)+Minv(:,n,3,2)*uxbtestm(:,n,2,8)+Minv(:,n,3,3)*uxbtestm(:,n,2,9)),idiag_eta232xz)
+
+      if (idiag_eta331xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,2,1)*uxbtestm(:,n,3,7)+Minv(:,n,2,2)*uxbtestm(:,n,3,8)+Minv(:,n,2,3)*uxbtestm(:,n,3,9)),idiag_eta331xz)
+
+      if (idiag_eta332xz/=0) &
+        call ysum_mn_name_xz(ymult*( Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9)),idiag_eta332xz)
 
     endif
 
