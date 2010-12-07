@@ -1610,7 +1610,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
                 nr_hat    =(/cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)/)
                 nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
-                ntheta_hat=(/-sin(theta),cos(theta),0/)
+                ntheta_hat=(/-sin(theta),cos(theta),0./)
 !
 !  Having found the unit vectors in all three directions we can now
 !  find the velocities in the same three directions at point "g".
