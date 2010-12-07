@@ -465,8 +465,6 @@ contains
 !  don't handle writing the grid, but that does not seem to be used
 !  anyway.
 !
-      use Mpicomm, only: stop_it
-!
       integer :: nv,reclen
       integer(kind=MPI_OFFSET_KIND) :: fpos
       character (len=*) :: file
@@ -763,6 +761,8 @@ contains
 !  Write t to file
 !  21-sep-02/wolf: coded
 !
+      use Mpicomm, only: stop_it
+!
       double precision :: tau
       character (len=*) :: file
 !
@@ -785,6 +785,8 @@ contains
 !
 !  Read t from file
 !  21-sep-02/wolf: coded
+!
+      use Mpicomm, only: stop_it
 !
       double precision :: tau
       character (len=*) :: file
