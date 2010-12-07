@@ -155,6 +155,7 @@ program run
 !
   if (nxgrid/=1) then
     kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+    kx_fft2=kx_fft**2
     kx_ny =nxgrid/2 * 2*pi/Lx
   else
     kx_fft=0.0
@@ -163,6 +164,7 @@ program run
 !
   if (nygrid/=1) then
     ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+    ky_fft2=ky_fft**2
     ky_ny =nygrid/2 * 2*pi/Ly
   else
     ky_fft=0.0
@@ -171,6 +173,7 @@ program run
 !
   if (nzgrid/=1) then
     kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+    kz_fft2=kz_fft**2
     kz_ny =nzgrid/2 * 2*pi/Lz
   else
     kz_fft=0.0
@@ -342,6 +345,10 @@ program run
 !  Save spectrum snapshot.
 !
   if (dspec/=impossible) call powersnap(f)
+!
+!  Save soundfile
+!
+!  lout_sound = (t-tsnap) >= dsound
 !
 !  Initialize pencils in the pencil_case.
 !
