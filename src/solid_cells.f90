@@ -914,9 +914,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: xmirror, ymirror, zmirror, phi, dr, cos_phi, sin_phi
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
       integer :: lower_k, upper_k, ndims
-      logical :: bax, bay, baz
-      real :: gpp
-      real, dimension(3) :: xxp
+      logical :: bax, bay, baz, lnew_interpolation_method 
+      logical :: quadratic=.true.
+      real, dimension(3) :: xxp,gpp
       character(len=10) :: form
 !
 !  Find ghost points based on the mirror interpolation method
@@ -970,6 +970,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (xmirror>xyz1(1) .and. lperi(1)) xmirror=xmirror-Lxyz(1)
               if (ymirror>xyz1(2) .and. lperi(2)) ymirror=ymirror-Lxyz(2)
               if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
+             endif
+!
+!  Check if we will use the old or the new interpolation method
+!
+             if (objects(iobj)%form=='sphere' .or. .not. quadratic) then
+               lnew_interpolation_method=.true.
+             else
+               lnew_interpolation_method=.false.
              endif
 !
 !  Check that we are indeed inside the solid geometry
@@ -1046,24 +1054,27 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               ndims=3
             endif
             call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                quadratic,lnew_interpolation_method)
             f(i,j,k,iux)=-phi
             call interpolate_mirror_point(f,phi,iuy,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                quadratic,lnew_interpolation_method)
             f(i,j,k,iuy)=-phi
             call interpolate_mirror_point(f,phi,iuz,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                quadratic,lnew_interpolation_method)
             f(i,j,k,iuz)=-phi
             if (ilnrho>0) then
               call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
                   lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                  zmirror,ndims)
+                  zmirror,ndims,quadratic,lnew_interpolation_method)
               f(i,j,k,ilnrho)=phi
             endif
             if (ilnTT>0) then
               call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
                   lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                  zmirror,ndims)
+                  zmirror,ndims,quadratic,lnew_interpolation_method)
               f(i,j,k,ilnTT)=2*objects(iobj)%T-phi
             endif
           else
@@ -1075,6 +1086,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             if (lclose_linear) then
               if (ba(i,j,k,1)==10) then
                 iobj=ba(i,j,k,4)
+!
+!  Check if we will use the old or the new interpolation method
+!
+                if (objects(iobj)%form=='sphere' .or. .not. quadratic) then
+                  lnew_interpolation_method=.true.
+                else
+                  lnew_interpolation_method=.false.
+                endif
+!
                 x_obj=objects(iobj)%x(1)
                 y_obj=objects(iobj)%x(2)
                 z_obj=objects(iobj)%x(3)
@@ -1087,15 +1107,30 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 dr=r_point-r_obj
                 if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                   xxp=(/x(i),y(j),z(k)/)
-                  call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.)
-                  f(i,j,k,iux)=gpp
-                  call close_interpolation(f,i,j,k,iobj,iuy,xxp,gpp,.true.)
-                  f(i,j,k,iuy)=gpp
-                  call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.)
-                  f(i,j,k,iuz)=gpp
-                  if (ilnTT > 0) then
-                    call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,.true.)
-                    f(i,j,k,ilnTT)=gpp
+                  if (lnew_interpolation_method) then
+                    call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
+                        quadratic,lnew_interpolation_method)
+                    f(i,j,k,iux:iuz)=gpp
+                    if (ilnTT > 0) then
+                      call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
+                          .true.,quadratic,lnew_interpolation_method)
+                      f(i,j,k,ilnTT)=gpp(1)
+                    endif
+                  else
+                    call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
+                        quadratic,lnew_interpolation_method)
+                    f(i,j,k,iux)=gpp(1)
+                    call close_interpolation(f,i,j,k,iobj,iuy,xxp,gpp,.true.,&
+                        quadratic,lnew_interpolation_method)
+                    f(i,j,k,iuy)=gpp(1)
+                    call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.,&
+                        quadratic,lnew_interpolation_method)
+                    f(i,j,k,iuz)=gpp(1)
+                    if (ilnTT > 0) then
+                      call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
+                          .true.,quadratic,lnew_interpolation_method)
+                      f(i,j,k,ilnTT)=gpp(1)
+                    endif
                   endif
                 endif
               endif
@@ -1148,8 +1183,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine update_solid_cells
 !***********************************************************************  
-    subroutine interpolate_mirror_point(f,phi,ivar,lower_i,upper_i,lower_j,&
-        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
+    subroutine interpolate_mirror_point(f,phi_,ivar,lower_i,upper_i,lower_j,&
+        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,quadratic,&
+        lnew_interpolation_method)
 !
 !  Interpolate value in a mirror point from the eight corner values
 !
@@ -1163,29 +1199,32 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, intent(in) :: lower_i,upper_i,lower_j,upper_j,ivar
       integer, intent(in) :: lower_k,upper_k
       real,    intent(in) :: xmirror,ymirror,zmirror
-      real,    intent(out):: phi
+      real,    intent(out):: phi_
+      logical, intent(in) :: quadratic, lnew_interpolation_method
 !
-      real, dimension(3) :: xxp
+      real, dimension(3) :: xxp, phi
       real, dimension(1) :: gp
       integer, dimension(3) :: inear
 !
       xxp=(/xmirror,ymirror,zmirror/)
       inear=(/lower_i,lower_j,lower_k/)
       call linear_interpolate(f,ivar,ivar,xxp,gp,inear,.false.)
-      phi=gp(1)
+      phi_=gp(1)
 !
 !  If the mirror point is very close to the surface of the object 
 !  some special treatment is required.
 !
-      if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then  
+      if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then 
+        phi(1)=phi_
         call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
-            phi,.false.)
+            phi,.false.,quadratic,lnew_interpolation_method)
+        phi_=phi(1)
       endif
 !
     endsubroutine interpolate_mirror_point
 !***********************************************************************  
     subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,ivar1,xxp,gpp,&
-        fluid_point)
+        fluid_point,quadratic,lnew_interpolation_method)
 !
 !  20-mar-2009/nils: coded
 !  
@@ -1230,12 +1269,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !---------------------------------------------------------------------------
 !
       use General, only: linear_interpolate
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      logical, intent(in) :: quadratic,lnew_interpolation_method
       integer, intent(in) :: ix0_,iy0_,iz0_,ivar1
       integer :: ix0,iy0,iz0
-      real, intent(inout) :: gpp
-      real :: rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp,phi
+      real, dimension(3), intent(inout) :: gpp
+      real :: rs,verylarge=1e9,varval,rint1,rint2,fint,rps,rintp
       real :: r_pg,r_sg,rl,rlmin,xmirror,ymirror,zmirror,r_sp,surf_val
       integer :: ix1,iy1,iz1,min,dir,lower_i,lower_j,lower_k,ndims,ndir
       integer :: upper_i,upper_j,upper_k,vardir1,vardir2
@@ -1245,7 +1286,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, dimension(3,2) :: borderindex
       integer, dimension(6) :: constdir_arr, vardir_arr, topbot_arr
       real, dimension(3) :: xyint, p_global, p_local, o_global
-      real, dimension(3) :: ngrids, g_global
+      real, dimension(3) :: ngrids, g_global,fvar, nr_hat,nphi_hat,ntheta_hat
       real :: xtemp,r,R1,Rsmall,xs,ys,zs,rp,dist
       integer :: constdir,vardir,topbot_tmp,dirconst,dirvar,iobj,counter,topbot
       integer :: maxcounter
@@ -1253,9 +1294,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       logical, intent(in) :: fluid_point
       real :: fintx, finty,fint_ur,fint_ut,drp,dri,f2x,f2y,f1x,f1y
       real, save :: urp,utp
-      logical :: quadratic=.true.
       real, dimension(1) :: gp
       integer, dimension(3) :: inear
+      real :: phi,theta,vg_phi,vg_theta,vg_r,vp_phi,vp_theta,vp_r
 !
 !  Check if we really want this special treatment close to the fluid-solid 
 !  interface
@@ -1264,7 +1305,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           .or. ( fluid_point .and. lclose_linear)) then
 !
 !  This subrutine is not working (and should never be used) with other
-!  variables than the velocity.
+!  variables than the velocity or the temperature.
 !
         if (ivar1.ne.iux.and.ivar1.ne.iuy.and.ivar1.ne.iuz.and.ivar1.ne.ilnTT) &
             call fatal_error('close_interpolation',&
@@ -1375,22 +1416,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           endif
 !
 !  Currently there are two implementations for the close surface treatment.
-!  The first one is more general and works both for spheres and cylinders,
-!  but it does not have quadratic interpolation of radial velocities
-!  implemented yet. Furthermore it does not handle particles correctly
-!  for the cases where one of the corner points of "gridplane" is insed
+!  The new one is more general and works both for spheres and cylinders,
+!  but it does not handle particles correctly
+!  for the cases where one of the corner points of "gridplane" is inside
 !  the solid geometry.
 !
-          if (objects(iobj)%form=='sphere' .or. .not. quadratic) then
-            if (lparticles .and. lclose_interpolation) then
-              print*,'Using close interpolation together with particles '
-              print*,'does not yet work with spherical solid geometries.'
-              print*,'You should either:'
-              print*,' -Turn of lclose_interpolation'
-              print*,' -Use cylinders instead of spheres'
-              print*,' -Implement what is missing in order to solve the problem'
-              call fatal_error('close_interpolation','')
-            endif
+          if (lnew_interpolation_method) then
 !
 !  Find which grid line is the closest one in the direction
 !  away from the object surface
@@ -1529,16 +1560,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               ymirror=g_global(vardir2)
             endif
 !
-!  Let "phi" be the physical value of the variable "ivar1" on "gridplane".
-!  The value of "phi" is then found by interpolation between the four corner
+!  Let "fvar" be the physical value of the variable "ivar1" on "gridplane".
+!  The value of "fvar" is then found by interpolation between the four corner
 !  points of "gridplane".
 !
             inear=(/lower_i,lower_j,lower_k/)
-            call linear_interpolate(f,ivar1,ivar1,g_global,gp,inear,.false.)
-            phi=gp(1)
+            if (ivar1==iux) then
+              call linear_interpolate(f,iux,iuz,g_global,gpp,inear,.false.)
+              fvar=gpp
+            else
+              call linear_interpolate(f,ivar1,ivar1,g_global,gpp(1),inear,&
+                  .false.)
+              fvar(1)=gpp(1)
+            endif
 !
 !  Now we know the value associated with the variable "ivar1" in the point "g",
-!  given by "phi".
+!  given by "fvar".
 !  Furthermore we know the value associated with "ivar1" in point "s"
 !  on the object surface to be zero for any of the velocities and equal to 
 !  the solid temperature for the temperature. This value is given by "surf_val".
@@ -1549,9 +1586,56 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             r_pg=r-rp
             r_sg=r-rs
             r_sp=rp-rs
-            surf_val=0
-            if (ivar1==ilnTT) surf_val=objects(iobj)%T
-            gpp=(phi*r_sp+surf_val*r_pg)/r_sg
+!
+!  If quadratic = true we must find the velocities in the r, theta and phi
+!  directions at the point "g". This will then be used to set up a 
+!  linear interpolation for v_theta and v_phi and a quadratic interpolation 
+!  for v_r.
+!           
+            if (ivar1==ilnTT) then
+              surf_val=objects(iobj)%T
+              gpp(1)=(fvar(1)*r_sp+surf_val*r_pg)/r_sg
+            else
+              surf_val=0
+              if (quadratic) then
+!
+!  The unity vector "nr_hat" is normal to the solid surface, while 
+!  "nphi_hat" and "ntheta_hat" are the unit vectors in the two angular 
+!  directions. The angle "theta" is zero in the positive x-direction, 
+!  while "phi" is zero in the positive z-direction.
+!
+                phi=acos(p_local(3)/rp)
+                theta=acos(p_local(1)/(rp*sin(phi)))
+                if (p_local(2) < 0) theta=-theta
+!
+                nr_hat    =(/cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)/)
+                nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
+                ntheta_hat=(/-sin(theta),cos(theta),0/)
+!
+!  Having found the unit vectors in all three directions we can now
+!  find the velocities in the same three directions at point "g".
+!
+                call dot(nr_hat    ,fvar,vg_r)
+                call dot(nphi_hat  ,fvar,vg_phi)
+                call dot(ntheta_hat,fvar,vg_theta)
+!
+!  Now it is time to use linear and quadratic interpolation to find the
+!  velocities in point "p".
+!
+                vp_phi  =(vg_phi  *r_sp+surf_val*r_pg)/r_sg
+                vp_theta=(vg_theta*r_sp+surf_val*r_pg)/r_sg
+                vp_r    =(vg_r    *(r_sp/r_sg)**2)
+!
+!  Finally the velocities found in the spherical coordinate system can
+!  now be transfered back to the cartesian coordinate system.
+!
+                gpp=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+              else
+                gpp(1:3)=(fvar(1:3)*r_sp+surf_val*r_pg)/r_sg
+              endif
+            endif
+
+
           else
             maxcounter=6
             if (objects(iobj)%form=='cylinder') maxcounter=4
@@ -1711,9 +1795,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 dri=Rsmall-rs
                 urp=(drp/dri)**2*fint_ur
                 utp=(drp/dri)*fint_ut
-                gpp=urp*p_local(1)/rs-utp*p_local(2)/rs
+                gpp(1)=urp*p_local(1)/rs-utp*p_local(2)/rs
               elseif (ivar1==iuy) then
-                gpp=urp*p_local(2)/rs+utp*p_local(1)/rs
+                gpp(1)=urp*p_local(2)/rs+utp*p_local(1)/rs
               else
                 call fatal_error('close_interpolation',&
                     'Your ivar1 is not correct!') 
@@ -1734,7 +1818,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
               surf_val=0
               if (ivar1==ilnTT) surf_val=objects(iobj)%T
-              gpp=(rps*fint+rintp*surf_val)/(Rsmall-rs)
+              gpp(1)=(rps*fint+rintp*surf_val)/(Rsmall-rs)
             endif
           endif
         endif
