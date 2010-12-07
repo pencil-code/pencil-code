@@ -552,6 +552,7 @@ module Testfield
     subroutine calc_coefficients
 
     integer :: j
+    logical :: ltype_set=.false.
     real :: ymult=1.
 
     select case (itestfield)
@@ -566,7 +567,6 @@ module Testfield
     
       if (idiag_alp11xz/=0) &
      	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)),idiag_alp11xz)
-        ! summation here is not really necessary as all quantities depend only on x and z
 
       if (idiag_alp21xz/=0) &
      	call sum_name(ymult*( Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)),idiag_alp21xz)
@@ -655,6 +655,43 @@ module Testfield
     case default
 
     end select
+
+    if (.not. ltype_set) then
+
+      if (idiag_alp11xz/=0) itypename(idiag_alp11xz)=ilabel_integrate
+      if (idiag_alp12xz/=0) itypename(idiag_alp12xz)=ilabel_integrate
+      if (idiag_alp13xz/=0) itypename(idiag_alp13xz)=ilabel_integrate
+      if (idiag_alp21xz/=0) itypename(idiag_alp21xz)=ilabel_integrate
+      if (idiag_alp22xz/=0) itypename(idiag_alp22xz)=ilabel_integrate
+      if (idiag_alp23xz/=0) itypename(idiag_alp23xz)=ilabel_integrate
+      if (idiag_alp31xz/=0) itypename(idiag_alp31xz)=ilabel_integrate
+      if (idiag_alp32xz/=0) itypename(idiag_alp32xz)=ilabel_integrate
+      if (idiag_alp33xz/=0) itypename(idiag_alp33xz)=ilabel_integrate
+
+      if (idiag_eta111xz/=0) itypename(idiag_eta111xz)=ilabel_integrate
+      if (idiag_eta112xz/=0) itypename(idiag_eta112xz)=ilabel_integrate
+      if (idiag_eta121xz/=0) itypename(idiag_eta121xz)=ilabel_integrate
+      if (idiag_eta122xz/=0) itypename(idiag_eta122xz)=ilabel_integrate
+      if (idiag_eta131xz/=0) itypename(idiag_eta131xz)=ilabel_integrate
+      if (idiag_eta132xz/=0) itypename(idiag_eta132xz)=ilabel_integrate
+
+      if (idiag_eta211xz/=0) itypename(idiag_eta211xz)=ilabel_integrate
+      if (idiag_eta212xz/=0) itypename(idiag_eta212xz)=ilabel_integrate
+      if (idiag_eta221xz/=0) itypename(idiag_eta221xz)=ilabel_integrate
+      if (idiag_eta222xz/=0) itypename(idiag_eta222xz)=ilabel_integrate
+      if (idiag_eta231xz/=0) itypename(idiag_eta231xz)=ilabel_integrate
+      if (idiag_eta232xz/=0) itypename(idiag_eta232xz)=ilabel_integrate
+
+      if (idiag_eta311xz/=0) itypename(idiag_eta311xz)=ilabel_integrate
+      if (idiag_eta312xz/=0) itypename(idiag_eta312xz)=ilabel_integrate
+      if (idiag_eta321xz/=0) itypename(idiag_eta321xz)=ilabel_integrate
+      if (idiag_eta322xz/=0) itypename(idiag_eta322xz)=ilabel_integrate
+      if (idiag_eta331xz/=0) itypename(idiag_eta331xz)=ilabel_integrate
+      if (idiag_eta332xz/=0) itypename(idiag_eta332xz)=ilabel_integrate
+
+      ltype_set=.true.
+
+    endif
 
     endsubroutine calc_coefficients
 !***********************************************************************
