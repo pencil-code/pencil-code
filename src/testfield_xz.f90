@@ -14,6 +14,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM integer, parameter :: njtest=9
 !
 ! MVAR CONTRIBUTION 27
 ! MAUX CONTRIBUTION 0
@@ -41,7 +42,8 @@ module Testfield
   logical :: linit_aatest=.false.
   integer :: itestfield=1
   real :: ktestfield_x=1.,  ktestfield_z=1., x0=0., z0=0.
-  integer, parameter :: njtest=9, mtestfield=3*njtest
+!  integer, parameter :: njtest=9, mtestfield=3*njtest
+  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
 
   namelist /testfield_init_pars/ &
@@ -101,30 +103,55 @@ module Testfield
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
-      use FArrayManager
       use Mpicomm
       use Sub
 !
+      integer :: j
 !
-!  Register test field.
+!  Set first and last index of text field
+!  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
+!  These values are used in this form in start, but later overwritten.
 !
-      call farray_register_pde('aatest',iaatest,vector=mtestfield)
+      iaatest=nvar+1
+      iaxtest=iaatest
+      iaytest=iaatest+1
+      iaztest=iaatest+2
+      iaxtestpq=iaatest+3*(njtest-1)
+      iaztestpq=iaxtestpq+2
+      ntestfield=mtestfield
+      nvar=nvar+ntestfield
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'register_testfield: nvar = ', nvar
+        print*, 'register_testfield: iaatest = ', iaatest
+      endif
+!
+!  Put variable names in array
+!
+      do j=iaatest,iaztestpq
+        varname(j) = 'aatest'
+      enddo
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-           "$Id: testfield.f90 14785 2010-08-08 21:32:38Z AxelBrandenburg $")
+           "$Id: testfield_z.f90 14785 2010-08-08 21:32:38Z AxelBrandenburg $")
 !
-!  Writing files for use with IDL.
+      if (nvar > mvar) then
+        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
+        call stop_it('register_testfield: nvar > mvar')
+      endif
+!
+!  Writing files for use with IDL
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aa $'
-          if (nvar == mvar) write(4,*) ',aa'
+          if (nvar < mvar) write(4,*) ',aatest $'
+          if (nvar == mvar) write(4,*) ',aatest'
         else
-          write(4,*) ',aa $'
+          write(4,*) ',aatest $'
         endif
-        write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
+        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
       endif
 !
     endsubroutine register_testfield
@@ -547,7 +574,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: stop_it,mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -600,7 +627,7 @@ module Testfield
 !
 !  do communication along y
 !
-            call mpiallreduce_sum(uxbtestm(1,1,1,jtest),uxbtestm1,nx*nz*3,idir=2)
+            call mpiallreduce_sum(uxbtestm(:,:,:,jtest),uxbtestm1,(/nx,nz,3/),idir=2)
             uxbtestm(:,:,:,jtest)=uxbtestm1
 !
           endif
