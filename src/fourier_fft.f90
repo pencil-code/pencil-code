@@ -436,9 +436,12 @@ module Fourier
   real :: fac
 
   select case (idir)
+!AB: but xgrid etc is defined as 1-D array in cdata.f90
     case (1); n=nxgrid; allocate(grid(n)); grid=xgrid(nghost+1,nghost+n); fac=dx
     case (2); n=nygrid; allocate(grid(n)); grid=ygrid(nghost+1,nghost+n); fac=dy
-    case (3); n=nzgrid; allocate(grid(n)); grid=xgrid(nghost+1,nghost+n); fac=dz
+!-- case (3); n=nzgrid; allocate(grid(n)); grid=xgrid(nghost+1,nghost+n); fac=dz
+!AB: should be zgrid right?
+    case (3); n=nzgrid; allocate(grid(n)); grid=zgrid(nghost+1,nghost+n); fac=dz
     case default; n=nxgrid; allocate(grid(n)); grid=xgrid(nghost+1,nghost+n); fac=dx
   end select
 
