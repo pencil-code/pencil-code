@@ -208,26 +208,25 @@ module Diagnostics
       character (len=1), parameter :: comma=','
       integer :: iname,index_d,index_a
 !
-      if (lroot) then
-        if (idiag_t/=0)   call save_name_sound(tdiagnos,idiag_t)
-      endif
+!      if (lroot) then
+!        if (idiag_t/=0)   call save_name_sound(tdiagnos,idiag_t)
+!      endif
 !
       if (lroot) then
 !
 !  Produce the format.
 !  Must set cform(1) explicitly, and then do iname>=2 in loop.
 !
-        fform = '(' // cform_sound(1)
-        do iname=2,nname_sound
+        fform = '(f10.3' 
+        do iname=1,nname_sound
           call safe_character_append(fform,  comma // cform_sound(iname))
         enddo
         call safe_character_append(fform, ')')
-
 !
 !  Put output line into a string and remove spurious dots.
 !
         if (ldebug) write(*,*) 'bef. writing prints'
-        write(line,trim(fform)) fname_sound(1:nname_sound)
+        write(line,trim(fform)) tdiagnos, fname_sound(1:nname_sound)
         index_d=index(line,'. ')
         if (index_d >= 1) then
           line(index_d:index_d)=' '
@@ -244,7 +243,6 @@ module Diagnostics
 !
         open(1,file=trim(datadir)//'/sound.dat',position='append')
         write(1,'(a)') trim(line)
-!        write(6,'(a)') trim(line)
         close(1)
 !
       endif                     ! (lroot)
@@ -277,14 +275,17 @@ module Diagnostics
 !
     endsubroutine get_average_density
 !**********************************************************************
-    subroutine diagnostic
+    subroutine diagnostic(vname,nlname)
 !
 !  Finalize calculation of diagnostic quantities (0-D).
 !
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
 !
-      real, dimension (nname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
+      real, dimension(nlname), intent(inout) :: vname
+      integer,                 intent(in)    :: nlname
+
+      real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
       integer :: iname,imax_count,isum_count,nmax_count,nsum_count
       logical :: lweight_comm
@@ -331,13 +332,13 @@ module Diagnostics
       imax_count=0
       isum_count=0
       lweight_comm=.false.
-      do iname=1,nname
+      do iname=1,nlname
         if (itype_name(iname)<0) then
           imax_count=imax_count+1
-          fmax_tmp(imax_count)=fname(iname)
+          fmax_tmp(imax_count)=vname(iname)
         elseif (itype_name(iname)>0) then
           isum_count=isum_count+1
-          fsum_tmp(isum_count)=fname(iname)
+          fsum_tmp(isum_count)=vname(iname)
           if (itype_name(iname)==ilabel_sum_weighted .or. &
               itype_name(iname)==ilabel_sum_weighted_sqrt .or. &
               itype_name(iname)==ilabel_sum_par) then
@@ -363,64 +364,64 @@ module Diagnostics
 !
         imax_count=0
         isum_count=0
-        do iname=1,nname
+        do iname=1,nlname
           if (itype_name(iname)<0) then ! max
             imax_count=imax_count+1
 !
             if (itype_name(iname)==ilabel_max)            &
-                fname(iname)=fmax(imax_count)
+                vname(iname)=fmax(imax_count)
 !
             if (itype_name(iname)==ilabel_max_sqrt)       &
-                fname(iname)=sqrt(fmax(imax_count))
+                vname(iname)=sqrt(fmax(imax_count))
 !
             if (itype_name(iname)==ilabel_max_dt)         &
-                fname(iname)=fmax(imax_count)
+                vname(iname)=fmax(imax_count)
 !
             if (itype_name(iname)==ilabel_max_neg)        &
-                fname(iname)=-fmax(imax_count)
+                vname(iname)=-fmax(imax_count)
 !
             if (itype_name(iname)==ilabel_max_reciprocal) &
-                fname(iname)=1./fmax(imax_count)
+                vname(iname)=1./fmax(imax_count)
 !
           elseif (itype_name(iname)>0) then
             isum_count=isum_count+1
 !
             if (itype_name(iname)==ilabel_sum)            &
-                fname(iname)=fsum(isum_count)*dVol_rel1
+                vname(iname)=fsum(isum_count)*dVol_rel1
 !
             if (itype_name(iname)==ilabel_sum_sqrt)       &
-                fname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
+                vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 !
             if (itype_name(iname)==ilabel_sum_par)        &
-                fname(iname)=fsum(isum_count)/fweight(isum_count)
+                vname(iname)=fsum(isum_count)/fweight(isum_count)
 !
             if (itype_name(iname)==ilabel_integrate)            &
-                fname(iname)=fsum(isum_count)
+                vname(iname)=fsum(isum_count)
 !
              if (itype_name(iname)==ilabel_surf)          &
-                 fname(iname)=fsum(isum_count)
+                 vname(iname)=fsum(isum_count)
 !
              if (itype_name(iname)==ilabel_sum_lim) then
                 vol=1.
                 if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
                 if (nzgrid/=1)           vol=vol*Lz
                 if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
-                fname(iname)=fsum(isum_count)/vol
+                vname(iname)=fsum(isum_count)/vol
              endif
 !
             if (itype_name(iname)==ilabel_sum_weighted) then
               if (fweight(isum_count)/=0.0) then
-                fname(iname)=fsum(isum_count)/fweight(isum_count)
+                vname(iname)=fsum(isum_count)/fweight(isum_count)
               else
-                fname(iname)=0.0
+                vname(iname)=0.0
               endif
             endif
 !
             if (itype_name(iname)==ilabel_sum_weighted_sqrt) then
               if (fweight(isum_count)/=0.0) then
-                fname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
+                vname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
               else
-                fname(iname)=0.0
+                vname(iname)=0.0
               endif
             endif
 !
