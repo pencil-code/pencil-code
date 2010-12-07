@@ -4014,8 +4014,8 @@ module Boundcond
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
 !
-     if (.not.lequidist(1).or..not.lequidist(2)) &
-          call fatal_error('bc_force_aa_time','not yet implemented for non-equidistant grids')
+     if (.not. lequidist(1) .or. .not. lequidist(2)) &
+          call fatal_error('bc_force_aa_time','not yet implemented for non-equidistant grids', lfirst_proc_xy)
 !
       if (mod (nygrid, nprocxy) /= 0) &
           call fatal_error ('bc_force_aa_time', &
