@@ -2989,29 +2989,4 @@ module Fourier
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
-  function fourier_single_mode(vec,kanalyze,idir)
-
-  implicit none
-
-  real, dimension(2) :: fourier_single_mode
-
-  integer           , intent(in) :: idir
-  real, dimension(*), intent(in) :: vec
-  real              , intent(in) :: kanalyze
-
-  integer :: n
-  real, dimension(:), allocatable :: grid
-  real :: fac
-
-  select case (idir)
-!   case (1); n=nxgrid; allocate(grid(n)); grid=xgrid(nghost+1,nghost+n); fac=dx
-!   case (2); n=nygrid; allocate(grid(n)); grid=ygrid(nghost+1,nghost+n); fac=dy
-!   case (3); n=nzgrid; allocate(grid(n)); grid=zgrid(nghost+1,nghost+n); fac=dz
-!   case default; n=nxgrid; allocate(grid(n)); grid=xgrid(nghost+1,nghost+n); fac=dx
-  end select
-
-  !fourier_single_mode = fac*(/ sum(vec(1:n)*cos(kanalyze*grid(1:n))), sum(vec(1:n)*sin(kanalyze*grid(1:n))) /)
-
-  endfunction fourier_single_mode
-!***********************************************************************
 endmodule Fourier

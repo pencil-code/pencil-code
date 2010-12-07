@@ -81,6 +81,8 @@ module Sub
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
   public :: zlocation
+
+  public :: fourier_single_mode
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -5414,5 +5416,40 @@ nameloop: do
 900   continue
 !
     endsubroutine zlocation
+!***********************************************************************
+  function fourier_single_mode(vec,k,idir)
+
+  implicit none
+
+  real, dimension(2) :: fourier_single_mode
+
+  integer           , intent(in) :: idir
+  real, dimension(*), intent(in) :: vec
+  real              , intent(in) :: k
+
+  integer :: n
+  real, dimension(:), allocatable :: grid
+  real :: fac
+
+  select case (idir)
+    case (1)    ; n=nxgrid
+    case (2)    ; n=nygrid
+    case (3)    ; n=nzgrid
+    case default; n=nxgrid
+  end select
+
+  allocate(grid(n))
+
+  select case (idir)
+    case (1)    ; grid=xgrid; fac=dx
+    case (2)    ; grid=ygrid; fac=dy
+    case (3)    ; grid=zgrid; fac=dz
+    case default; grid=xgrid; fac=dx
+  end select
+
+  fourier_single_mode = fac*(/ sum(vec(1:n)*cos(k*grid(1:n))), sum(vec(1:n)*sin(k*grid(1:n))) /)
+
+  deallocate(grid)
+  endfunction fourier_single_mode
 !***********************************************************************
 endmodule Sub
