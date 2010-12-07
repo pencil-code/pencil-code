@@ -937,7 +937,9 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, save, dimension(mseed) :: global_rstate
 !
-      call keep_compiler_quiet(f)
+      if (.not.lequidist(1).or..not.lequidist(2)) &
+          call fatal_error('read_ext_vel_field', &
+          'not yet implemented for non-equidistant grids')
 !
 ! Save global random number seed, will be restored after granulation
 ! is done
@@ -1814,6 +1816,10 @@ module Special
       character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
       character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
       integer :: unit=1
+!
+      if (.not.lequidist(1).or..not.lequidist(2)) &
+          call fatal_error('read_ext_vel_field', &
+          'not yet implemented for non-equidistant grids')
 !
       ierr = 0
       stat = 0

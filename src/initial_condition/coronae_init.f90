@@ -20,6 +20,7 @@ module InitialCondition
   character (len=labellen) :: stratitype='nothing'
   character (len=labellen) :: lnrho_init='nothing'
   character (len=labellen) :: lnTT_init='nothing'
+  character (len=labellen) :: aa_init='nothing'
   logical :: set_lnTT_first =.true.
   real :: rho_init=0.
   real :: T0=6000.,T1=1e6,z0_tanh=4e6,width_tanh=1e6
@@ -131,6 +132,16 @@ contains
 !
   endsubroutine initial_condition_lnrho
 !***********************************************************************
+    subroutine initial_condition_aa(f)
+!
+!  Initialize the magnetic vector potential.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (aa_init.eq.'magnetogramm_nonequi') call mag_init(f,.false.)
+!
+    endsubroutine initial_condition_aa
+!***********************************************************************
   subroutine setup_vert_profiles(f)
 !
 !  Read and set vertical profiles for initial temperature and density.
@@ -202,10 +213,10 @@ contains
         if (direction=='z') then
           do j = n1-nghost, n2+nghost
             if (z(j) < prof_z(1) ) then
-              call warning("setup_special","extrapolated lnT below bottom of initial profile")
+              !call warning("setup_special","extrapolated lnT below bottom of initial profile")
               f(:,:,j,ilnTT) = prof_lnTT(1)
             elseif (z(j) >= prof_z(prof_nz)) then
-              call warning("setup_special","extrapolated lnT over top of initial profile")
+              !call warning("setup_special","extrapolated lnT over top of initial profile")
               f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -221,10 +232,10 @@ contains
         else if (direction=='x') then
           do j = l1-nghost, l2+nghost
             if (x(j) < prof_z(1) ) then
-              call warning("setup_special","extrapolated lnT below bottom of initial profile")
+              !call warning("setup_special","extrapolated lnT below bottom of initial profile")
               f(j,:,:,ilnTT) = prof_lnTT(1)
             elseif (x(j) >= prof_z(prof_nz)) then
-              call warning("setup_special","extrapolated lnT over top of initial profile")
+              !call warning("setup_special","extrapolated lnT over top of initial profile")
               f(j,:,:,ilnTT) = prof_lnTT(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -282,10 +293,10 @@ contains
         if (direction=='z') then
           do j = n1-nghost, n2+nghost
             if (z(j) < prof_z(1) ) then
-              call warning("setup_special","extrapolated density below bottom of initial profile")
+              !call warning("setup_special","extrapolated density below bottom of initial profile")
               f(:,:,j,ilnrho) = prof_lnrho(1)
             elseif (z(j) >= prof_z(prof_nz)) then
-              call warning("setup_special","extrapolated density over top of initial profile")
+              !call warning("setup_special","extrapolated density over top of initial profile")
               f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -301,10 +312,10 @@ contains
         elseif (direction=='x') then
           do j = l1-nghost, l2+nghost
             if (x(j) < prof_z(1) ) then
-              call warning("setup_special","extrapolated density below bottom of initial profile")
+              !call warning("setup_special","extrapolated density below bottom of initial profile")
               f(j,:,:,ilnrho) = prof_lnrho(1)
             elseif (x(j) >= prof_z(prof_nz)) then
-              call warning("setup_special","extrapolated density over top of initial profile")
+              !call warning("setup_special","extrapolated density over top of initial profile")
               f(j,:,:,ilnrho) = prof_lnrho(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -767,6 +778,150 @@ contains
       enddo
 !    
   endsubroutine piecewice_poly
+!***********************************************************************
+  subroutine mag_init(f,lequi)
+!
+!
+!  Intialize the vector potential
+!  by potential field extrapolation
+!  of a mdi magnetogram
+!
+!  13-dec-05/bing : coded.
+!
+      use Fourier, only: fourier_transform_other
+      use Mpicomm, only: mpibcast_real,stop_it_if_any
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+!
+      real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
+      logical, intent(in) :: lequi
+    
+      real :: mu0_SI,u_b,zref
+      logical :: exists
+      integer :: i,j,idx2,idy2,stat,iostat,lend
+      integer :: nxinit,nyinit
+      real :: nx_mag,ny_mag,lx_mag,ly_mag
+!
+! file location settings
+      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+      character (len=*), parameter :: mag_grid_dat = 'driver/mag_grid.dat'
+!
+!  Allocate memory for arrays.
+!
+      if (.not.lequidist(1).or..not.lequidist(2)) &
+          call fatal_error('mag_init','not yet implemented for non-equidistant grids')
+!
+      iostat = 0
+      nxinit=nxgrid
+      nyinit=nygrid
+!
+      allocate(kx(nxinit,nyinit),stat=stat);     iostat=max(stat,iostat)
+      allocate(ky(nxinit,nyinit),stat=stat);     iostat=max(stat,iostat)
+      allocate(k2(nxinit,nyinit),stat=stat);     iostat=max(stat,iostat)
+      allocate(Bz0_i(nxinit,nyinit),stat=stat);  iostat=max(stat,iostat)
+      allocate(Bz0_r(nxinit,nyinit),stat=stat);  iostat=max(stat,iostat)
+      allocate(A_r(nxinit,nyinit),stat=stat);    iostat=max(stat,iostat)
+      allocate(A_i(nxinit,nyinit),stat=stat);    iostat=max(stat,iostat)
+!
+      call stop_it_if_any((iostat>0),'mdi_init: '// &
+          'Could not allocate memory for variables, please check')
+!
+!  Auxiliary quantities:
+!
+!  idx2 and idy2 are essentially =2, but this makes compilers
+!  complain if nyinit=1 (in which case this is highly unlikely to be
+!  correct anyway), so we try to do this better:
+      idx2 = min(2,nxinit)
+      idy2 = min(2,nyinit)
+!
+!  Magnetic field strength unit [B] = u_b
+!
+      mu0_SI = 4.*pi*1.e-7
+      u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+!
+        kx = spread(kx_fft,2,nyinit)
+        ky = spread(ky_fft,1,nxinit)
+        ! kx=spread( &
+        !     cshift((/(i-(nxinit+1)/2,i=0,nxinit-1)/),+(nxinit+1)/2)*pi/Lx &
+        !     ,2,nyinit)
+        ! ky=spread( &
+        !     cshift((/(i-(nyinit+1)/2,i=0,nyinit-1)/),+(nyinit+1)/2)*pi/Ly &
+        !     ,1,nxinit)
+!
+      k2 = kx*kx + ky*ky
+!
+      if (lroot) then
+        inquire(file=mag_field_dat,exist=exists)
+        call stop_it_if_any(.not.exists, 'mdi_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
+        inquire(IOLENGTH=lend) u_b
+        open (11,file=mag_field_dat,form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read (11,rec=1) Bz0_r(1:nxgrid,1:nygrid)
+        close (11)
+      else
+        call stop_it_if_any(.false.,'')
+      endif
+      call mpibcast_real(Bz0_r,(/nxinit,nyinit/))
+!
+      Bz0_i = 0.
+      Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla and SI to PENCIL units
+!
+!  Fourier Transform of Bz0:
+!
+      call fourier_transform_other(Bz0_r,Bz0_i)
+!
+      do i=n1,n2
+!
+!  Calculate transformed vector potential for every z layer
+!
+        zref = z(i) - xyz0(3)
+!
+        if (nygrid > 1) then
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*zref )
+            A_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*zref )
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*zref )
+            A_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*zref )
+          endwhere
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+!
+          f(l1:l2,m1:m2,i,iax)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        else
+          f(l1:l2,m1:m2,i,iax)=0.
+        endif
+!
+        if (nxgrid > 1) then
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*zref )
+            A_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*zref )
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*zref )
+            A_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*zref )
+          endwhere
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+!
+          f(l1:l2,m1:m2,i,iay)=A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        else
+          f(l1:l2,m1:m2,i,iay)=0.
+        endif
+!
+        f(l1:l2,m1:m2,i,iaz)=0.
+      enddo
+!
+!  Deallocate arrays.
+!
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(k2)) deallocate(k2)
+      if (allocated(Bz0_i)) deallocate(Bz0_i)
+      if (allocated(Bz0_r)) deallocate(Bz0_r)
+      if (allocated(A_r)) deallocate(A_r)
+      if (allocated(A_i)) deallocate(A_i)
+  
+  endsubroutine mag_init
 !***********************************************************************
 !
 !********************************************************************
