@@ -315,9 +315,9 @@ module Cdata
   character (len=30), allocatable :: cnamey(:),cformy(:)
   character (len=30), allocatable :: cnamex(:),cformx(:)
   character (len=30), allocatable :: cnamer(:),cformr(:)
-  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lout_sound=.false.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
-  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.
+  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,ldiagnos_sound=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
   logical :: lwrite_phizaverages=.true.
