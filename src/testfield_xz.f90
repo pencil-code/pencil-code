@@ -23,6 +23,7 @@
 
 module Testfield
 
+  use Cdata
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
@@ -41,7 +42,7 @@ module Testfield
   logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
   logical :: linit_aatest=.false.
   integer :: itestfield=1
-  real :: ktestfield_x=1.,  ktestfield_z=1., x0=0., z0=0., kanalyze_x=-1.,kanalyze_z=-1.
+  real :: ktestfield_x=1.,  ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.,kanalyze_z=-1.
 !  integer, parameter :: njtest=9, mtestfield=3*njtest
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
@@ -54,7 +55,7 @@ module Testfield
   real, dimension(njtest) :: rescale_aatest=0.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,xextent,zextent,lsoca, &
-       lset_bbtest2,etatest,itestfield,ktestfield_x, ktestfield_z,x0,z0,kanalyze_x,kanalyze_z,daainit, &
+       lset_bbtest2,etatest,itestfield,ktestfield_x, ktestfield_z,xx0,zz0,kanalyze_x,kanalyze_z,daainit, &
        linit_aatest, &
        rescale_aatest
 
@@ -62,6 +63,12 @@ module Testfield
   integer :: idiag_alp11=0,idiag_alp21=0,idiag_alp31=0
   integer :: idiag_alp12=0,idiag_alp22=0,idiag_alp32=0
   integer :: idiag_alp13=0,idiag_alp23=0,idiag_alp33=0
+  integer :: idiag_eta111=0,idiag_eta211=0,idiag_eta311=0
+  integer :: idiag_eta112=0,idiag_eta212=0,idiag_eta312=0
+  integer :: idiag_eta121=0,idiag_eta221=0,idiag_eta321=0
+  integer :: idiag_eta122=0,idiag_eta222=0,idiag_eta322=0
+  integer :: idiag_eta131=0,idiag_eta231=0,idiag_eta331=0
+  integer :: idiag_eta132=0,idiag_eta232=0,idiag_eta332=0
   integer :: idiag_alp11z=0,idiag_alp21z=0,idiag_alp31z=0
   integer :: idiag_alp12z=0,idiag_alp22z=0,idiag_alp32z=0
   integer :: idiag_alp13z=0,idiag_alp23z=0,idiag_alp33z=0
@@ -86,6 +93,7 @@ module Testfield
   integer :: idiag_alp11exz=0,idiag_alp21exz=0,idiag_alp31exz=0
   integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
   integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
+
 
   real, dimension (nx,nz,3,njtest) :: uxbtestm
   real, dimension (nx)        :: cx,sx
@@ -182,14 +190,14 @@ module Testfield
 !
 !  xx and zz for calculating diffusive part of emf
 !
-      cx=cos(ktestfield_x*(x(l1:l2)+x0))
-      sx=sin(ktestfield_x*(x(l1:l2)+x0))      
+      cx=cos(ktestfield_x*(x(l1:l2)+xx0))
+      sx=sin(ktestfield_x*(x(l1:l2)+xx0))      
 
-      cz=cos(ktestfield_z*(z(n1:n2)+z0))
-      sz=sin(ktestfield_z*(z(n1:n2)+z0))
+      cz=cos(ktestfield_z*(z(n1:n2)+zz0))
+      sz=sin(ktestfield_z*(z(n1:n2)+zz0))
 
-      c2x=cos(2*ktestfield_x*(x(l1:l2)+x0))
-      c2z=cos(2*ktestfield_z*(z(n1:n2)+z0))
+      c2x=cos(2*ktestfield_x*(x(l1:l2)+xx0))
+      c2z=cos(2*ktestfield_z*(z(n1:n2)+zz0))
 
       cx1=1/cx
       cz1=1/cz
@@ -547,12 +555,14 @@ module Testfield
 !
       headtt=headtt_save
 !
-      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d) call calc_coefficients                
+      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d)) call calc_coefficients                
 
     endsubroutine testfield_after_boundary
 !***********************************************************************
     subroutine calc_coefficients
-
+!
+    Use Diagnostics
+!
     integer :: j, count
     real, dimension (:,:,:), allocatable :: temp
     logical, dimension(27) :: need_temp
@@ -696,7 +706,7 @@ module Testfield
     end select
 
 
-    if (l2davgfirst)
+    if (l2davgfirst .and. needed2d_2d) then
 !
     do n=n1,n2 ! ny multiplied in because we are not in the mn loop
 !
@@ -788,7 +798,7 @@ module Testfield
     enddo
     endif
 !
-    if (ldiagnos .and. twod_needed) then
+    if (ldiagnos .and. needed2d_1d) then
 
       do n=n1,n2
 
@@ -1033,6 +1043,12 @@ module Testfield
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
         idiag_alp13=0; idiag_alp23=0; idiag_alp33=0
+        idiag_eta111=0; idiag_eta211=0; idiag_eta311=0
+        idiag_eta112=0; idiag_eta212=0; idiag_eta312=0
+        idiag_eta121=0; idiag_eta221=0; idiag_eta321=0
+        idiag_eta122=0; idiag_eta222=0; idiag_eta322=0
+        idiag_eta131=0; idiag_eta231=0; idiag_eta331=0
+        idiag_eta132=0; idiag_eta232=0; idiag_eta332=0
         idiag_alp11z=0; idiag_alp21z=0; idiag_alp31z=0
         idiag_alp12z=0; idiag_alp22z=0; idiag_alp32z=0
         idiag_alp13z=0; idiag_alp23z=0; idiag_alp33z=0
@@ -1071,6 +1087,24 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'alp13',idiag_alp13)
         call parse_name(iname,cname(iname),cform(iname),'alp23',idiag_alp23)
         call parse_name(iname,cname(iname),cform(iname),'alp33',idiag_alp33)
+        call parse_name(iname,cname(iname),cform(iname),'eta111',idiag_eta111)
+        call parse_name(iname,cname(iname),cform(iname),'eta112',idiag_eta112)
+        call parse_name(iname,cname(iname),cform(iname),'eta211',idiag_eta211)
+        call parse_name(iname,cname(iname),cform(iname),'eta212',idiag_eta212)
+        call parse_name(iname,cname(iname),cform(iname),'eta311',idiag_eta311)
+        call parse_name(iname,cname(iname),cform(iname),'eta312',idiag_eta312)
+        call parse_name(iname,cname(iname),cform(iname),'eta121',idiag_eta121)
+        call parse_name(iname,cname(iname),cform(iname),'eta122',idiag_eta122)
+        call parse_name(iname,cname(iname),cform(iname),'eta221',idiag_eta221)
+        call parse_name(iname,cname(iname),cform(iname),'eta222',idiag_eta222)
+        call parse_name(iname,cname(iname),cform(iname),'eta321',idiag_eta321)
+        call parse_name(iname,cname(iname),cform(iname),'eta322',idiag_eta322)
+        call parse_name(iname,cname(iname),cform(iname),'eta131',idiag_eta131)
+        call parse_name(iname,cname(iname),cform(iname),'eta132',idiag_eta132)
+        call parse_name(iname,cname(iname),cform(iname),'eta231',idiag_eta231)
+        call parse_name(iname,cname(iname),cform(iname),'eta232',idiag_eta232)
+        call parse_name(iname,cname(iname),cform(iname),'eta331',idiag_eta331)
+        call parse_name(iname,cname(iname),cform(iname),'eta332',idiag_eta332)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1167,6 +1201,24 @@ module Testfield
         write(3,*) 'idiag_alp13=',idiag_alp13
         write(3,*) 'idiag_alp23=',idiag_alp23
         write(3,*) 'idiag_alp33=',idiag_alp33
+        write(3,*) 'idiag_eta111=',idiag_eta111
+        write(3,*) 'idiag_eta112=',idiag_eta112
+        write(3,*) 'idiag_eta211=',idiag_eta211
+        write(3,*) 'idiag_eta212=',idiag_eta212
+        write(3,*) 'idiag_eta311=',idiag_eta311
+        write(3,*) 'idiag_eta312=',idiag_eta312
+        write(3,*) 'idiag_eta121=',idiag_eta121
+        write(3,*) 'idiag_eta122=',idiag_eta122
+        write(3,*) 'idiag_eta221=',idiag_eta221
+        write(3,*) 'idiag_eta222=',idiag_eta222
+        write(3,*) 'idiag_eta321=',idiag_eta321
+        write(3,*) 'idiag_eta322=',idiag_eta322
+        write(3,*) 'idiag_eta131=',idiag_eta131
+        write(3,*) 'idiag_eta132=',idiag_eta132
+        write(3,*) 'idiag_eta231=',idiag_eta231
+        write(3,*) 'idiag_eta232=',idiag_eta232
+        write(3,*) 'idiag_eta331=',idiag_eta331
+        write(3,*) 'idiag_eta332=',idiag_eta332
         write(3,*) 'idiag_alp11z=',idiag_alp11z
         write(3,*) 'idiag_alp21z=',idiag_alp21z
         write(3,*) 'idiag_alp31z=',idiag_alp31z
@@ -1249,7 +1301,7 @@ module Testfield
 !
     endsubroutine rprint_testfield
 !***********************************************************************
-    subrouting diagnos_interdep
+    subroutine diagnos_interdep
 !
 ! 2d-dependences
 !
