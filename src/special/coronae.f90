@@ -214,6 +214,16 @@ module Special
       lpenc_requested(i_cp1)=.true.
     endif
 !
+    if (hcond_grad/=0) then
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_bij)=.true.
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_hlnTT)=.true.
+      lpenc_requested(i_del2lnTT)=.true.
+      lpenc_requested(i_glnrho)=.true.
+      lpenc_requested(i_cp1)=.true.
+    endif
+!
     if (cool_RTV/=0) then
       lpenc_requested(i_cp1)=.true.
       lpenc_requested(i_lnTT)=.true.
@@ -386,22 +396,6 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-      use Sub, only: cubic_step
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-! sponge layer
-      if (ipz .eq. nprocz-1) then
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) &
-            - cubic_step(1.*n,pdampuu,wdampuu)*dampuu*f(l1:l2,m,n,iuz)
-      endif
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
   subroutine special_calc_entropy(f,df,p)
 !
 ! Additional terms to the right hand side of the
@@ -419,6 +413,7 @@ module Special
 !
     if (Kpara/=0) call calc_heatcond_spitzer(df,p)
     if (hcond_grad/=0) call calc_heatcond_glnTT(df,p)
+    if (hcond_grad_iso/=0) call calc_heatcond_glnTT(df,p)
     if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
     if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
     if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
@@ -1865,7 +1860,7 @@ module Special
 !
 ! 16-sep-10/bing: coded
 !
-      use Fourier, only: fft_xy_parallel
+      use Fourier, only: fft_xy_parallel, fft_x_parallel
 !
       real, dimension(nx,ny), intent(out) :: frx_r,fry_r
       real, dimension(nx,ny) :: kx,ky,k2,filter
@@ -1876,11 +1871,17 @@ module Special
 !
       fvx_r=vx
       fvx_i=0.
-      call fft_xy_parallel(fvx_r,fvx_i)
 !
       fvy_r=vy
       fvy_i=0.
-      call fft_xy_parallel(fvy_r,fvy_i)
+!
+      if (nygrid==1) then
+        call fft_x_parallel(fvx_r,fvx_i)
+        call fft_x_parallel(fvy_r,fvy_i)
+      else
+        call fft_xy_parallel(fvx_r,fvx_i)
+        call fft_xy_parallel(fvy_r,fvy_i)
+      endif
 !
 ! Reference frequency is half the Nyquist frequency.
       k20 = (kx_ny/2.)**2.
@@ -1917,13 +1918,20 @@ module Special
       fdy_r = fdy_r*filter
       fdy_i = fdy_i*filter
 !
-      call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
-      vx=fdx_r
-      call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
-      vy=fdy_r
+      if (nygrid==1) then
+        call fft_x_parallel(fdx_r,fdx_i,.true.)
+        call fft_x_parallel(fdy_r,fdy_i,.true.)
+        call fft_x_parallel(frx_r,frx_i,.true.)
+        call fft_x_parallel(fry_r,fry_i,.true.)
+      else        
+        call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
+        call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
+        call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
+        call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
+      endif
 !
-      call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
-      call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
+      vx=fdx_r
+      vy=fdy_r
 !
     endsubroutine helmholtz
 !***********************************************************************
