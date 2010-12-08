@@ -5417,39 +5417,69 @@ nameloop: do
 !
     endsubroutine zlocation
 !***********************************************************************
-  function fourier_single_mode(vec,k,idir)
+  function fourier_single_mode(arr,idims,k,idir)
+
+! no parallelization in x allowed here
+
+  use mpicomm, only: mpireduce_sum
 
   implicit none
 
-  real, dimension(2) :: fourier_single_mode
+  integer, dimension(2)             , intent(in) :: idims
+  real   , dimension(2,idims(2))                 :: fourier_single_mode
 
-  integer           , intent(in) :: idir
-  real, dimension(*), intent(in) :: vec
-  real              , intent(in) :: k
+  integer                           , intent(in) :: idir
+  real, dimension(idims(1),idims(2)), intent(in) :: arr
+  real                              , intent(in) :: k
 
-  integer :: n
-  real, dimension(:), allocatable :: grid
+  integer :: n,i
+  real, dimension(:), allocatable :: cg,sg
+  real, dimension(2,idims(2)) :: buffer
   real :: fac
 
   select case (idir)
     case (1)    ; n=nxgrid
-    case (2)    ; n=nygrid
-    case (3)    ; n=nzgrid
+    case (2)    ; n=ny
+    case (3)    ; n=nz
     case default; n=nxgrid
   end select
 
-  allocate(grid(n))
+  if (idims(1)/=n) then
+    fourier_single_mode=0
+    return
+  endif
+
+  allocate(cg(n),sg(n))
 
   select case (idir)
-    case (1)    ; grid=xgrid; fac=dx
-    case (2)    ; grid=ygrid; fac=dy
-    case (3)    ; grid=zgrid; fac=dz
-    case default; grid=xgrid; fac=dx
+    case (1)    ; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
+    case (2)    ; cg=cos(k*y(m1:m2));sg=sin(k*y(m1:m2)); fac=dy
+    case (3)    ; cg=cos(k*z(n1:n2));sg=sin(k*z(n1:n2)); fac=dz
+    case default; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
   end select
 
-  fourier_single_mode = fac*(/ sum(vec(1:n)*cos(k*grid(1:n))), sum(vec(1:n)*sin(k*grid(1:n))) /)
+  
+  do i=1,idims(2)
+    fourier_single_mode(:,i) = fac*(/ sum(arr(:,i)*cg), sum(arr(:,i)*sg) /)
+  enddo
 
-  deallocate(grid)
+  if (ncpus>1) then
+    select case (idir)
+      case (2)
+        if (nprocy>1) then
+          call mpireduce_sum(fourier_single_mode,buffer,(/2,idims(2)/),idir=2)
+          if (ipy==0) fourier_single_mode=buffer                               !result is in root of y-beams
+        endif
+      case (3)
+        if (nprocz>1) then
+          call mpireduce_sum(fourier_single_mode,buffer,(/2,idims(2)/),idir=3)
+          if (ipz==0) fourier_single_mode=buffer                               !result is in root of z-beams
+        endif
+    end select
+  endif
+
+  deallocate(cg,sg)
+
   endfunction fourier_single_mode
 !***********************************************************************
 endmodule Sub
