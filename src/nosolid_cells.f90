@@ -195,13 +195,13 @@ module Solid_Cells
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************
     subroutine close_interpolation(f,ix0,iy0,iz0,icyl,ivar1,xxp,gpp,&
-        fluid_point)
+        fluid_point,quadratic,lnew_interpolation_method)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: ix0,iy0,iz0,icyl,ivar1
-      real, intent(inout) :: gpp
+      real, dimension(3), intent(inout) :: gpp
       real, dimension(3), intent(in) :: xxp
-      logical, intent(in) :: fluid_point
+      logical, intent(in) :: fluid_point,quadratic,lnew_interpolation_method
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ix0)
@@ -212,6 +212,8 @@ module Solid_Cells
       call keep_compiler_quiet(xxp)
       call keep_compiler_quiet(gpp)
       call keep_compiler_quiet(fluid_point)
+      call keep_compiler_quiet(quadratic)
+      call keep_compiler_quiet(lnew_interpolation_method)
 !
     endsubroutine close_interpolation
 !***********************************************************************
