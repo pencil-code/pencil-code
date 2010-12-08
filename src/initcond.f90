@@ -4375,8 +4375,8 @@ module Initcond
     subroutine temp_hydrostatic(f,rho0)
 !
 ! 07-dec-05/bing : coded.
-!      intialize the density for given temperprofile in vertical
-!      z direction by solving hydrostatic equilibrium.
+!      intialize the density for a given temperature profile in vertical
+!      z direction by solving the hydrostatic equilibrium:
 !      dlnrho = - dlnTT + (cp-cv)/T g dz
 !
       use EquationOfState, only: lnrho0,gamma,cs2top,cs2bot
