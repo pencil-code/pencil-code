@@ -237,7 +237,7 @@ module Boundcond
                 case ('e2')
                   ! BCX_DOC: extrapolation [describe]
                   call bcx_extrap_2_2(f,topbot,j)
-               case ('e3')
+                case ('e3')
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
                 case ('hat')
@@ -447,7 +447,7 @@ module Boundcond
                 ! BCY_DOC: extrapolation
                 call bcy_extrap_2_2(f,topbot,j)
               case ('e3')
-                ! BCX_DOC: extrapolation in log [maintain a power law]
+                ! BCY_DOC: extrapolation in log [maintain a power law]
                 call bcy_extrap_2_3(f,topbot,j)
               case ('der')
                 ! BCY_DOC: set derivative on the boundary
@@ -461,17 +461,17 @@ module Boundcond
                 ! BCY_DOC: to all ghost cells, but suppressing any inflow
                 call bc_copy_y_noinflow(f,topbot,j)
               case ('sfr')
-                  ! BCY_DOC: stress-free boundary condition for spherical coordinate system.
+                ! BCY_DOC: stress-free boundary condition for spherical coordinate system.
                 call bc_set_sfree_y(f,topbot,j)
               case ('nfr')
-                  ! BCY_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
+                ! BCY_DOC: Normal-field bc for spherical coordinate system.
+                ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
                 call bc_set_nfr_y(f,topbot,j)
               case ('pfc')
-                  !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
+                !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
                 call bc_set_pfc_y(f,topbot,j)
               case ('')
-               ! do nothing; assume that everything is set
+                ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
@@ -624,17 +624,14 @@ module Boundcond
                 ! BCZ_DOC:
                 call bc_del2zero(f,topbot,j)
               case ('hds')
-                ! BCZ_DOC: hydrostatic equilibrium with
-                !          a high-frequency filter
+                ! BCZ_DOC: hydrostatic equilibrium with a high-frequency filter
                 call bc_lnrho_hdss_z_iso(f,topbot)
               case ('cT')
                 ! BCZ_DOC: constant temp.
-                ! BCZ_DOC:
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 call bc_ss_temp_z(f,topbot)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                ! BCZ_DOC:
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
@@ -643,6 +640,19 @@ module Boundcond
                 if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
                 if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
                 if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
+              case ('hse')
+                ! BCZ_DOC: hydrostatic extrapolation
+                ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
+                ! BCZ_DOC: temperature is calculated in hydrostatic equilibrium.
+                if (.not. lgrav) &
+                    call fatal_error ('boundconds_z', "'hse' requires gravity")
+                if (.not. leos) &
+                    call fatal_error ('boundconds_z', "'hse' requires an eos module")
+                if ((ilnrho == 0) .or. (ilnTT == 0)) &
+                    call fatal_error ('boundconds_z', "'hse' requires lnrho and lnTT")
+                if (j /= ilnTT) &
+                    call fatal_error ('boundconds_z', "'hse' works only in lnTT")
+                call bcz_hydrostatic_temp(f,topbot)
               case ('cp')
                 ! BCZ_DOC: constant pressure
                 ! BCZ_DOC:
@@ -675,6 +685,17 @@ module Boundcond
               case ('e2')
                 ! BCZ_DOC: extrapolation
                 call bc_extrap_2_2(f,topbot,j)
+              case ('ex')
+                ! BCZ_DOC: simple linear extrapolation in first order
+                call bcz_extrapol(f,topbot,j)
+              case ('exf')
+                ! BCZ_DOC: simple linear extrapolation in first order
+                !  with a fixed value in the first ghost cell
+                call bcz_extrapol_fixed(f,topbot,j)
+              case ('exd')
+                ! BCZ_DOC: simple linear extrapolation in first order
+                !  with an included damping to zero (useful for velocities)
+                call bcz_extrapol_damped(f,topbot,j)
               case ('b1')
                 ! BCZ_DOC: extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_0(f,topbot,j)
@@ -3238,6 +3259,148 @@ module Boundcond
 !
     endsubroutine bcx_extrap_2_3
 !***********************************************************************
+    subroutine bcz_extrapol(f,topbot,j)
+!
+!  Simple linear extrapolation in first order.
+!  The last two grid points are used to determine the slope.
+!
+!  23-nov-10/Bourdin.KIS: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i, j
+!
+      real, dimension (mx,my) :: df
+!
+!
+      select case (topbot)
+      case ('bot')
+        ! bottom (left end of the domain)
+        df = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        do i = 1, nghost
+          f(:,:,n1-i,j) = f(:,:,n1,j) + df * (z(n1-i) - z(n1))
+        enddo
+      case ('top')
+        ! top (right end of the domain)
+        df = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        do i = 1, nghost
+          f(:,:,n2+i,j) = f(:,:,n2,j) + df * (z(n2+i) - z(n2))
+        enddo
+      case default
+        call fatal_error ('bcz_extrapol', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+    endsubroutine bcz_extrapol
+!***********************************************************************
+    subroutine bcz_extrapol_fixed(f,topbot,j)
+!
+!  Simple linear extrapolation in first order
+!  with a fixed value in the first ghost cell.
+!  The last two grid points are used to determine the slope.
+!
+!  23-nov-10/Bourdin.KIS: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i, j
+!
+      real, dimension (mx,my) :: df
+!
+!
+      select case (topbot)
+      case ('bot')
+        ! bottom (left end of the domain)
+        df = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        do i = 2, nghost
+          f(:,:,n1-i,j) = f(:,:,n1-1,j) + df * (z(n1-i) - z(n1-1))
+        enddo
+      case ('top')
+        ! top (right end of the domain)
+        df = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        do i = 2, nghost
+          f(:,:,n2+i,j) = f(:,:,n2+1,j) + df * (z(n2+i) - z(n2+1))
+        enddo
+      case default
+        call fatal_error ('bcz_extrapol_fixed', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+    endsubroutine bcz_extrapol_fixed
+!***********************************************************************
+    subroutine bcz_extrapol_damped(f,topbot,j)
+!
+!  Simple linear extrapolation in first order
+!  with an included damping to zero (useful for velocities).
+!  The last two grid points are used to determine the slope.
+!  The parameters 'fbcz_bot' and 'fbcz_top' are used as damping factors,
+!  which should have values between 0.0 (no damping) and 1.0 (full damping).
+!  A typical value of 0.001 corresponds to a half-value time of ~1000 timesteps.
+!  Negative values let the damping be persistent, even if 'lfade_damp' is true.
+!
+!  23-nov-10/Bourdin.KIS: coded
+!
+      use SharedVariables, only: get_shared_variable
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i, j
+!
+      real, dimension (mx,my) :: df
+      real :: gamma_bot, gamma_top, tau, fade_fact
+      real, pointer :: tdamp, tfade_start
+      logical, pointer :: ldamp_fade
+!
+!
+      ! bottom and top damping factors:
+      gamma_bot = 1.0 - abs (fbcz_bot(j))
+      gamma_top = 1.0 - abs (fbcz_top(j))
+!
+      call get_shared_variable ('ldamp_fade', ldamp_fade)
+      if (ldamp_fade) then
+        ! fading of damping is active
+        call get_shared_variable ('tdamp', tdamp)
+        call get_shared_variable ('tfade_start', tfade_start)
+        if (t > tfade_start) then
+          if (t < tdamp) then
+            ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
+            tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
+            fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
+            ! apply damping with fading:
+            gamma_bot = 1.0 - abs (fbcz_bot(j)) * fade_fact
+            gamma_top = 1.0 - abs (fbcz_top(j)) * fade_fact
+          else
+            ! damping has already ended (t >= tdamp)
+            gamma_bot = 1.0
+            gamma_top = 1.0
+          endif
+          ! apply fading-persistent damping:
+          if (fbcz_bot(j) < 0.0) gamma_bot = 1.0 - abs (fbcz_bot(j))
+          if (fbcz_top(j) < 0.0) gamma_top = 1.0 - abs (fbcz_top(j))
+        endif
+      endif
+!
+      select case (topbot)
+      case ('bot')
+        ! bottom (left end of the domain)
+        df = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        do i = 1, nghost
+          f(:,:,n1-i,j) = (f(:,:,n1,j) + df * (z(n1-i) - z(n1))) * gamma_bot**i
+        enddo
+        df = (f(:,:,n1+1,j) - f(:,:,n1-1,j)) / (z(n1+1) - z(n1-1))
+        f(:,:,n1,j) = f(:,:,n1+1,j) + df * (z(n1) - z(n1+1))
+      case ('top')
+        ! top (right end of the domain)
+        df = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        do i = 1, nghost
+          f(:,:,n2+i,j) = (f(:,:,n2,j) + df * (z(n2+i) - z(n2))) * gamma_top**i
+        enddo
+        df = (f(:,:,n2+1,j) - f(:,:,n2-1,j)) / (z(n2+1) - z(n2-1))
+        f(:,:,n2,j) = f(:,:,n2-1,j) + df * (z(n2) - z(n2-1))
+      case default
+        call fatal_error ('bcz_extrapol_damped', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+    endsubroutine bcz_extrapol_damped
+!***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
 !  "One-sided" boundary condition for density.
@@ -4848,7 +5011,7 @@ module Boundcond
 !  z boundary. The implementation occurs in daa_dt where magnetic
 !  diffusion is switched off in that layer.
 !
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
 !
       character (len=3) :: topbot
       integer :: j
@@ -4878,6 +5041,52 @@ module Boundcond
       lfirstcall=.false.
 !
     endsubroutine bc_frozen_in_bb
+!***********************************************************************
+    subroutine bcz_hydrostatic_temp(f,topbot)
+!
+!  The logarithmic density in the ghost cells is used to calculate the
+!  logarithmic tempterature under the asumption of a hydrostatic equilibrium.
+!
+!  19-nov-2010/Bourdin.KIS: coded
+!
+      use EquationOfState, only: gamma, gamma_m1, get_cp1
+      use SharedVariables, only: get_shared_variable
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+!
+      integer :: i
+      real, dimension (mx,my) :: T_inv
+      real :: g_ref, delta_z, inv_cp_cv, cp_inv
+      real, dimension (:), pointer :: gravz_zpencil
+!
+!
+      call get_shared_variable ('gravz_zpencil', gravz_zpencil)
+      call get_cp1 (cp_inv)
+      inv_cp_cv = gamma / gamma_m1 * cp_inv
+!
+      select case (topbot)
+      case ('bot')
+        ! bottom (left end of the domain)
+        do i = 1, nghost
+          delta_z = z(n1-i) - z(n1-i+1)
+          g_ref = gravz_zpencil(n1-i+1)
+          T_inv = exp (-f(:,:,n1-i+1,ilnTT))
+          f(:,:,n1-i,ilnTT) = f(:,:,n1-i+1,ilnTT) + f(:,:,n1-i+1,ilnrho) - f(:,:,n1-i,ilnrho) + g_ref*delta_z*inv_cp_cv*T_inv
+        enddo
+      case ('top')
+        ! top (right end of the domain)
+        do i = 1, nghost
+          delta_z = z(n2+i) - z(n2+i-1)
+          g_ref = gravz_zpencil(n2+i-1)
+          T_inv = exp (-f(:,:,n2+i-1,ilnTT))
+          f(:,:,n2+i,ilnTT) = f(:,:,n2+i-1,ilnTT) + f(:,:,n2+i-1,ilnrho) - f(:,:,n2+i,ilnrho) + g_ref*delta_z*inv_cp_cv*T_inv
+        enddo
+      case default
+        call fatal_error ('bcz_hydrostatic_temp', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+    endsubroutine bcz_hydrostatic_temp
 !***********************************************************************
     subroutine bc_aa_pot_field_extrapol(f,topbot)
 !

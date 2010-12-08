@@ -445,11 +445,15 @@ module Cdata
   logical :: lsfflux=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
 !
-!  Boundary conditions.
+  ! Auxiliary parameters for boundary conditions:
+  real, dimension(mcom) :: fbcx1=0., fbcy1=0., fbcz1=0., fbcz1_1=0., fbcz1_2=0.
+  real, dimension(mcom) :: fbcx2=0., fbcy2=0., fbcz2=0., fbcz2_1=0., fbcz2_2=0.
+  real, dimension(mcom) :: fbcx1_2=0., fbcx2_2=0.
+  ! Auxiliary parameters for distinct use only with bottom or top boundary:
+  real, dimension(mcom) :: fbcx_bot=0., fbcx_top=0.
+  real, dimension(mcom) :: fbcy_bot=0., fbcy_top=0.
+  real, dimension(mcom) :: fbcz_bot=0., fbcz_top=0.
 !
-  real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0., fbcz1_1=0., fbcz1_2=0.
-  real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
-  real, dimension(mcom) :: fbcx1_2=0.,fbcx2_2=0.
   real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom) :: bcx1='',bcx2='', &
@@ -457,7 +461,6 @@ module Cdata
                                             bcz1='',bcz2=''
   character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
-
 !
 !  Parameters for freezing boundary zones.
 !

@@ -435,6 +435,7 @@ module Gravity
       endif
 !
       call put_shared_variable('nu_epicycle',nu_epicycle)
+      call put_shared_variable('gravz_zpencil',gravz_zpencil)
 !
       call keep_compiler_quiet(f)
 !
