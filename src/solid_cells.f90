@@ -1265,7 +1265,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 ! s       "l" cross surface         -                     -
 ! g       "l" cross grid plane      g_global(3)           -
 ! object  Object center             o_global(3)           -
-! bv      Border value              bordervalue(3*2)      -
+! bv      Border value              cornervalue(3*2)      -
 !---------------------------------------------------------------------------
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -1275,12 +1275,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real, dimension(3), intent(in) :: xxp
       logical, intent(in) :: fluid_point
 !
-      integer :: ix0,iy0,iz0,ix1,iy1,iz1
       real, dimension(3) :: p_local,p_global,o_global
       real :: rs, rp, smallx
       real, dimension(2,2,2) :: rij
-      real, dimension(3,2) :: bordervalue
-      integer, dimension(3,2) :: borderindex
+      real, dimension(3,2) :: cornervalue
+      integer, dimension(3,2) :: cornerindex
+      integer :: itop_bot,jtop_bot,ktop_bot
 !
 !  Check if we really want special treatment close to the fluid-solid 
 !  interface
@@ -1301,78 +1301,29 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         rs=objects(iobj)%r
         p_global=xxp
 !
-!  Find the corner points of the grid cell we are in
+!  Find the corner points of the grid cell we are in based on one of the 
+!  corner points (given by ix0_,iy0_,iz0_)
 !
-        if (fluid_point) then
-          smallx=dx*1e-5
-          iz0=iz0_
-          if (p_global(1) < o_global(1)) then
-            ix0=ix0_-1
-            p_global(1)=p_global(1)-smallx
-          else
-            ix0=ix0_
-            p_global(1)=p_global(1)+smallx
-          endif
-          if (p_global(2) < o_global(2)) then
-            iy0=iy0_-1
-            p_global(2)=p_global(2)-smallx
-          else
-            iy0=iy0_
-            p_global(2)=p_global(2)+smallx
-          endif
-          if (p_global(3) < o_global(3)) then
-            iz0=iz0_-1
-            p_global(3)=p_global(3)-smallx
-          else
-            iz0=iz0_
-            p_global(3)=p_global(3)+smallx
-          endif
-        else
-          ix0=ix0_
-          iy0=iy0_
-          iz0=iz0_
-        endif
-        ix1=ix0+1
-        iy1=iy0+1
-        iz1=iz0+1
+        call find_corner_points(fluid_point,cornervalue,cornerindex,&
+            ix0_,iy0_,iz0_,p_global,o_global)
 !
-!  Find distance from corner points to the object center
+!  Find the distance rij from all eight corner points to the object center
 !
-        rij(1,1,1)=sqrt((x(ix0)-o_global(1))**2+(y(iy0)-o_global(2))**2&
-            +(z(iz0)-o_global(3))**2)
-        rij(1,2,1)=sqrt((x(ix0)-o_global(1))**2+(y(iy1)-o_global(2))**2&
-            +(z(iz0)-o_global(3))**2)
-        rij(2,1,1)=sqrt((x(ix1)-o_global(1))**2+(y(iy0)-o_global(2))**2&
-            +(z(iz0)-o_global(3))**2)
-        rij(2,2,1)=sqrt((x(ix1)-o_global(1))**2+(y(iy1)-o_global(2))**2&
-            +(z(iz0)-o_global(3))**2) 
-        rij(1,1,2)=sqrt((x(ix0)-o_global(1))**2+(y(iy0)-o_global(2))**2&
-            +(z(iz1)-o_global(3))**2)
-        rij(1,2,2)=sqrt((x(ix0)-o_global(1))**2+(y(iy1)-o_global(2))**2&
-            +(z(iz1)-o_global(3))**2)
-        rij(2,1,2)=sqrt((x(ix1)-o_global(1))**2+(y(iy0)-o_global(2))**2&
-            +(z(iz1)-o_global(3))**2)
-        rij(2,2,2)=sqrt((x(ix1)-o_global(1))**2+(y(iy1)-o_global(2))**2&
-            +(z(iz1)-o_global(3))**2) 
+          do itop_bot=1,2
+          do jtop_bot=1,2
+          do ktop_bot=1,2
+            rij(itop_bot,jtop_bot,ktop_bot)=sqrt(&
+                (cornervalue(1,itop_bot)-o_global(1))**2+&
+                (cornervalue(2,jtop_bot)-o_global(2))**2+&
+                (cornervalue(3,ktop_bot)-o_global(3))**2)
+          enddo
+          enddo
+          enddo
 !
-!  Check if we want special treatment
+!  We want special treatment if at least one of the corner points are 
+!  inside the solid geometry, of if this is a fluid point.
 !
         if ((minval(rij) < rs) .or. fluid_point) then
-!
-!  Put help variables into arrays
-!
-          bordervalue(1,1)=x(ix0)
-          bordervalue(2,1)=y(iy0)
-          bordervalue(3,1)=z(iz0)
-          bordervalue(1,2)=x(ix1)
-          bordervalue(2,2)=y(iy1)
-          bordervalue(3,2)=z(iz1)
-          borderindex(1,1)=ix0
-          borderindex(2,1)=iy0
-          borderindex(3,1)=iz0
-          borderindex(1,2)=ix1
-          borderindex(2,2)=iy1
-          borderindex(3,2)=iz1
 !
 !  Find the x, y and z coordinates of "p" in a coordiante system with origin
 !  in the center of the object
@@ -1396,12 +1347,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           if (lnew_interpolation_method) then
             call close_inter_new(f,gpp,p_local,p_global,o_global,rs,rp,&
-                bordervalue,borderindex, fluid_point,ix0,iy0,iz0,ix1,iy1,&
-                iz1, ivar1,iobj, quadratic)
+                cornervalue,cornerindex, fluid_point,ivar1,iobj, quadratic)
           else
             call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
-                ix0,iy0,iz0,ix1,iy1,iz1,iobj, quadratic, bordervalue, &
-                borderindex,p_local, ivar1, rs, rp)
+                iobj, quadratic, cornervalue, &
+                cornerindex,p_local, ivar1, rs, rp)
           endif
         endif
       endif
@@ -1409,7 +1359,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     endsubroutine close_interpolation
 !***********************************************************************  
     subroutine close_inter_new(f,gpp,p_local,p_global,o_global,rs,rp,&
-        bordervalue,borderindex, fluid_point,ix0,iy0,iz0,ix1,iy1,iz1, ivar1,&
+        cornervalue,cornerindex, fluid_point,ivar1,&
         iobj, quadratic)
 !
       use General, only: linear_interpolate
@@ -1421,18 +1371,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: rp,rs, verylarge=1e9, rlmin, rl, r, r_pg, r_sg, r_sp, surf_val
       integer :: ndir, ndims, dir, vardir1,vardir2, constdir, topbot_tmp
       integer :: topbot, ivar1, iobj
-      real, dimension(3,2) :: bordervalue
-      integer, dimension(3,2) :: borderindex
+      real, dimension(3,2) :: cornervalue
+      integer, dimension(3,2) :: cornerindex
       logical :: fluid_point, quadratic
-      integer :: ix0,iy0,iz0,ix1,iy1,iz1
       integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
       real :: xmirror, ymirror, zmirror, phi, theta
       real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat
       real :: vg_r, vg_phi, vg_theta
       real :: vp_r, vp_phi, vp_theta
-
-!
-
 !
       intent(out) :: gpp
       intent(in) :: ivar1, iobj, quadratic
@@ -1465,9 +1411,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           do topbot_tmp=1,2
 !
 !  Find the variable "rl" such that
-!  rl*p_local(dir)+o_global(dir)=bordervalue(dir)  
+!  rl*p_local(dir)+o_global(dir)=cornervalue(dir)  
 !
-            rl=(bordervalue(dir,topbot_tmp)-o_global(dir))/p_local(dir)
+            rl=(cornervalue(dir,topbot_tmp)-o_global(dir))/p_local(dir)
 !
 !  If "rl" is larger than unity the line "l" cross the grid plane
 !  outside of "p". If in addition "rl" is smaller than the smallest "rl" so
@@ -1484,7 +1430,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               rlmin=rl
               topbot=topbot_tmp
               r=rl*sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
-              g_global(constdir)=bordervalue(constdir,topbot)
+              g_global(constdir)=cornervalue(constdir,topbot)
               g_global(vardir1)=rl*p_local(vardir1)+o_global(vardir1)
               g_global(vardir2)=rl*p_local(vardir2)+o_global(vardir2)
             endif
@@ -1509,13 +1455,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         print*,'lclose_interpolation=',lclose_interpolation
         print*,'lclose_linear=',lclose_linear
         print*,'o_global=',o_global
-        print*,'ix0,iy0,iz0=',ix0,iy0,iz0
-        print*,'ix1,iy1,iz1=',ix1,iy1,iz1
+        print*,'cornerindex=',cornerindex
+        print*,'cornervalue=',cornervalue
         print*,'p_global=',p_global
         print*,'r,rs,rp=',r,rs,rp
         print*,'rs=',rs
-        print*,'x(ix0),p_global(1),x(ix1)=',x(ix0),p_global(1),x(ix1)
-        print*,'y(iy0),p_global(2),y(iy1)=',y(iy0),p_global(2),y(iy1)
         call fatal_error('close_interpolation',&
             'A valid radius is not found!')            
       endif
@@ -1524,17 +1468,20 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  grid cell - in that case put it back in where it belongs
 !
       if (&
-          (x(ix0)<=g_global(1).and.x(ix0+1)>=g_global(1).or.nxgrid==1).and.&
-          (y(iy0)<=g_global(2).and.y(iy0+1)>=g_global(2).or.nygrid==1).and.&
-          (z(iz0)<=g_global(3).and.z(iz0+1)>=g_global(3).or.nzgrid==1)) then
+          (cornervalue(1,1)<=g_global(1).and.&
+          cornervalue(1,2)>=g_global(1).or.nxgrid==1).and.&
+          (cornervalue(2,1)<=g_global(2).and.&
+          cornervalue(2,2)>=g_global(2).or.nygrid==1).and.&
+          (cornervalue(3,1)<=g_global(3).and.&
+          cornervalue(3,2)>=g_global(3).or.nzgrid==1)) then
         ! Everything okay
       else
-        if (g_global(1)>x(ix1)) g_global(1)=x(ix1)
-        if (g_global(1)<x(ix0)) g_global(1)=x(ix0)
-        if (g_global(2)>y(iy1)) g_global(2)=y(iy1)
-        if (g_global(2)<y(iy0)) g_global(2)=y(iy0)
-        if (g_global(3)>z(iz1)) g_global(3)=z(iz1)
-        if (g_global(3)<z(iz0)) g_global(3)=z(iz0)
+        if (g_global(1)>cornervalue(1,2)) g_global(1)=cornervalue(1,2)
+        if (g_global(1)<cornervalue(1,1)) g_global(1)=cornervalue(1,1)
+        if (g_global(2)>cornervalue(2,2)) g_global(2)=cornervalue(2,2)
+        if (g_global(2)<cornervalue(2,1)) g_global(2)=cornervalue(2,1)
+        if (g_global(3)>cornervalue(3,2)) g_global(3)=cornervalue(3,2)
+        if (g_global(3)<cornervalue(3,1)) g_global(3)=cornervalue(3,1)
       endif
 !
 !  Depending on the value of constdir the indeces of the corner points 
@@ -1542,32 +1489,32 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  The physical position of "g" is stored in xmirror, ymirror and zmirror.
 !
       if (constdir==1) then
-        lower_i=borderindex(constdir,topbot)
-        upper_i=borderindex(constdir,topbot)
-        lower_j=borderindex(vardir1,1)
-        upper_j=borderindex(vardir1,2)
-        lower_k=borderindex(vardir2,1)
-        upper_k=borderindex(vardir2,2)
+        lower_i=cornerindex(constdir,topbot)
+        upper_i=cornerindex(constdir,topbot)
+        lower_j=cornerindex(vardir1,1)
+        upper_j=cornerindex(vardir1,2)
+        lower_k=cornerindex(vardir2,1)
+        upper_k=cornerindex(vardir2,2)
         xmirror=g_global(constdir)
         ymirror=g_global(vardir1)
         zmirror=g_global(vardir2)
       elseif (constdir==2) then
-        lower_j=borderindex(constdir,topbot)
-        upper_j=borderindex(constdir,topbot)
-        lower_k=borderindex(vardir1,1)
-        upper_k=borderindex(vardir1,2)
-        lower_i=borderindex(vardir2,1)
-        upper_i=borderindex(vardir2,2)
+        lower_j=cornerindex(constdir,topbot)
+        upper_j=cornerindex(constdir,topbot)
+        lower_k=cornerindex(vardir1,1)
+        upper_k=cornerindex(vardir1,2)
+        lower_i=cornerindex(vardir2,1)
+        upper_i=cornerindex(vardir2,2)
         ymirror=g_global(constdir)
         xmirror=g_global(vardir2)
         zmirror=g_global(vardir1)
       elseif (constdir==3) then
-        lower_k=borderindex(constdir,topbot)
-        upper_k=borderindex(constdir,topbot)
-        lower_i=borderindex(vardir1,1)
-        upper_i=borderindex(vardir1,2)
-        lower_j=borderindex(vardir2,1)
-        upper_j=borderindex(vardir2,2)
+        lower_k=cornerindex(constdir,topbot)
+        upper_k=cornerindex(constdir,topbot)
+        lower_i=cornerindex(vardir1,1)
+        upper_i=cornerindex(vardir1,2)
+        lower_j=cornerindex(vardir2,1)
+        upper_j=cornerindex(vardir2,2)
         zmirror=g_global(constdir)
         xmirror=g_global(vardir1)
         ymirror=g_global(vardir2)
@@ -1650,8 +1597,77 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     end subroutine close_inter_new
 !***********************************************************************  
+    subroutine find_corner_points(fluid_point,cornervalue,cornerindex,&
+        ix0_,iy0_,iz0_,p_global,o_global)
+!
+!  8-dec-10: coded (nils)
+!
+!  Based on one of the corner points this routine find all corner points
+!  of the fluid cell inwhich we are.
+!  Furthermore; if we are at a fluid point p_global is shifted slightly 
+!  inside the domain.
+!
+      logical, intent(in) :: fluid_point
+      integer, intent(in) :: ix0_,iy0_,iz0_            
+      real, dimension(3), intent(inout) :: p_global
+      real, dimension(3), intent(in) :: o_global
+      real, dimension(3,2), intent(out) :: cornervalue
+      integer, dimension(3,2), intent(out) :: cornerindex
+      real :: smallx
+      integer :: ix0,iy0,iz0,ix1,iy1,iz1
+!
+        if (fluid_point) then
+          smallx=dx*1e-5
+          iz0=iz0_
+          if (p_global(1) < o_global(1)) then
+            ix0=ix0_-1
+            p_global(1)=p_global(1)-smallx
+          else
+            ix0=ix0_
+            p_global(1)=p_global(1)+smallx
+          endif
+          if (p_global(2) < o_global(2)) then
+            iy0=iy0_-1
+            p_global(2)=p_global(2)-smallx
+          else
+            iy0=iy0_
+            p_global(2)=p_global(2)+smallx
+          endif
+          if (p_global(3) < o_global(3)) then
+            iz0=iz0_-1
+            p_global(3)=p_global(3)-smallx
+          else
+            iz0=iz0_
+            p_global(3)=p_global(3)+smallx
+          endif
+        else
+          ix0=ix0_
+          iy0=iy0_
+          iz0=iz0_
+        endif
+        ix1=ix0+1
+        iy1=iy0+1
+        iz1=iz0+1
+!
+!  Put help variables into arrays
+!
+          cornervalue(1,1)=x(ix0)
+          cornervalue(2,1)=y(iy0)
+          cornervalue(3,1)=z(iz0)
+          cornervalue(1,2)=x(ix1)
+          cornervalue(2,2)=y(iy1)
+          cornervalue(3,2)=z(iz1)
+          cornerindex(1,1)=ix0
+          cornerindex(2,1)=iy0
+          cornerindex(3,1)=iz0
+          cornerindex(1,2)=ix1
+          cornerindex(2,2)=iy1
+          cornerindex(3,2)=iz1
+!
+      end subroutine find_corner_points
+!***********************************************************************  
     subroutine close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
-        ix0,iy0,iz0,ix1,iy1,iz1,iobj, quadratic, bordervalue, borderindex,&
+        iobj, quadratic, cornervalue, cornerindex,&
         p_local, ivar1, rs, rp)
 !
 !  7-dec-2010/nils: moved from close_interpolation
@@ -1665,14 +1681,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer :: vardir, constdir
       real, dimension(3) :: xyint, gpp, o_global, p_global, p_local
       logical :: fluid_point, quadratic
-      integer :: ix0,iy0,iz0,ix1,iy1,iz1,iobj, maxcounter, counter, topbot_tmp
+      integer :: iobj, maxcounter, counter, topbot_tmp
       real :: R1, verylarge, Rsmall, xtemp, r, rp, rs, rij_min
       real :: rij_max, inputvalue, varval, x1, f1, f1y, f1x, x2, f2, f2y, f2x
       real :: rint1, rint2, fintx, fint, finty, rps, fint_ur, rintp
       real, save :: urp, utp
       real :: surf_val, fint_ut, drp, dri
-      real, dimension(3,2) :: bordervalue
-      integer, dimension(3,2) :: borderindex
+      real, dimension(3,2) :: cornervalue
+      integer, dimension(3,2) :: cornerindex
       integer :: dirconst, dirvar, topbot, min, ivar1
 
       if (objects(iobj)%form=='cylinder') then
@@ -1701,7 +1717,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  where the normal cross the grid line
 !
         xtemp=(p_local(vardir)/(p_local(constdir)+tini))&
-            *(bordervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
+            *(cornervalue(constdir,topbot_tmp)-objects(iobj)%x(constdir))
 !
 !  Find the distance, r, from the center of the object
 !  to the point where the normal cross the grid line
@@ -1709,7 +1725,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         if (abs(xtemp) > verylarge) then
           r=verylarge*2
         else
-          r=sqrt(xtemp**2+(bordervalue(constdir,topbot_tmp)&
+          r=sqrt(xtemp**2+(cornervalue(constdir,topbot_tmp)&
               -objects(iobj)%x(constdir))**2)
         endif
 !
@@ -1718,8 +1734,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  line within this grid cell
 !
         if ((r > rs) .and. (r > rp) &
-            .and.(xtemp+objects(iobj)%x(vardir)>=bordervalue(vardir,1))&
-            .and.(xtemp+objects(iobj)%x(vardir)<=bordervalue(vardir,2)))then
+            .and.(xtemp+objects(iobj)%x(vardir)>=cornervalue(vardir,1))&
+            .and.(xtemp+objects(iobj)%x(vardir)<=cornervalue(vardir,2)))then
           R1=r
         else
           R1=verylarge
@@ -1730,7 +1746,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         if (R1 < Rsmall) then
           Rsmall=R1                
           xyint(vardir)=xtemp+objects(iobj)%x(vardir)
-          xyint(constdir)=bordervalue(constdir,topbot_tmp)
+          xyint(constdir)=cornervalue(constdir,topbot_tmp)
           dirconst=constdir
           dirvar=vardir
           topbot=topbot_tmp
@@ -1741,7 +1757,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             rij_min=rij(topbot_tmp,1,1)
             rij_max=rij(topbot_tmp,2,1)
           endif
-          inputvalue=bordervalue(constdir,topbot_tmp)&
+          inputvalue=cornervalue(constdir,topbot_tmp)&
               -objects(iobj)%x(constdir)
         endif
       enddo
@@ -1753,16 +1769,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         print*,'lclose_interpolation=',lclose_interpolation
         print*,'lclose_linear=',lclose_linear
         print*,'o_global=',o_global
-        print*,'ix0,iy0,iz0=',ix0,iy0,iz0
-        print*,'ix1,iy1,iz1=',ix1,iy1,iz1
+        print*,'cornerindex=',cornerindex
+        print*,'cornervalue=',cornervalue
         print*,'p_global=',p_global
         print*,'xtemp=',xtemp
         print*,'r,rs,rp=',r,rs,rp
         print*,'R1,Rsmall=',R1,Rsmall
         print*,'rij,rs=',rij,rs
-        print*,'x(ix0),p_global(1),x(ix1)=',x(ix0),p_global(1),x(ix1)
-        print*,'y(iy0),p_global(2),y(iy1)=',y(iy0),p_global(2),y(iy1)
-        print*,'dirvar,dirconst,topbot,iz0=',dirvar,dirconst,topbot,iz0
+        print*,'dirvar,dirconst,topbot=',dirvar,dirconst,topbot
         call fatal_error('close_interpolation',&
             'A valid radius is not found!')            
       endif
@@ -1774,14 +1788,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       min=1
       if (dirconst == 2) then
-        varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
-            iz0,ivar1)
+        varval=f(cornerindex(dirvar,1),cornerindex(dirconst,topbot),&
+            cornerindex(3,1),ivar1)
       else
-        varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
-            iz0,ivar1)
+        varval=f(cornerindex(dirconst,topbot),cornerindex(dirvar,1),&
+            cornerindex(3,1),ivar1)
       endif
       call find_point(rij_min,rs,varval,inputvalue,x1,&
-          bordervalue(dirvar,1),bordervalue(dirvar,2),&
+          cornervalue(dirvar,1),cornervalue(dirvar,2),&
           min,f1,objects(iobj)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
@@ -1790,28 +1804,28 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       if (quadratic .and. ivar1==iux) then
         if (dirconst == 2) then
-          varval=f(borderindex(dirvar,1),borderindex(dirconst,topbot),&
-              iz0,iuy)
+          varval=f(cornerindex(dirvar,1),cornerindex(dirconst,topbot),&
+              cornerindex(3,1),iuy)
         else
-          varval=f(borderindex(dirconst,topbot),borderindex(dirvar,1),&
-              iz0,iuy)
+          varval=f(cornerindex(dirconst,topbot),cornerindex(dirvar,1),&
+              cornerindex(3,1),iuy)
         endif
         call find_point(rij_min,rs,varval,inputvalue,x1,&
-            bordervalue(dirvar,1),bordervalue(dirvar,2),&
+            cornervalue(dirvar,1),cornervalue(dirvar,2),&
             min,f1y,objects(iobj)%x(dirvar))
         f1x=f1
       endif
 !
       min=0
       if (dirconst == 2) then
-        varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
-            iz0,ivar1)
+        varval=f(cornerindex(dirvar,2),cornerindex(dirconst,topbot),&
+            cornerindex(3,1),ivar1)
       else
-        varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
-            iz0,ivar1)
+        varval=f(cornerindex(dirconst,topbot),cornerindex(dirvar,2),&
+            cornerindex(3,1),ivar1)
       endif
       call find_point(rij_max,rs,varval,inputvalue,x2,&
-          bordervalue(dirvar,1),bordervalue(dirvar,2),&
+          cornervalue(dirvar,1),cornervalue(dirvar,2),&
           min,f2,objects(iobj)%x(dirvar))
 !
 ! If we want quadratic interpolation of the radial velocity we
@@ -1820,14 +1834,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       if (quadratic .and. ivar1==iux) then
         if (dirconst == 2) then
-          varval=f(borderindex(dirvar,2),borderindex(dirconst,topbot),&
-              iz0,iuy)
+          varval=f(cornerindex(dirvar,2),cornerindex(dirconst,topbot),&
+              cornerindex(3,1),iuy)
         else
-          varval=f(borderindex(dirconst,topbot),borderindex(dirvar,2),&
-              iz0,iuy)
+          varval=f(cornerindex(dirconst,topbot),cornerindex(dirvar,2),&
+              cornerindex(3,1),iuy)
         endif
         call find_point(rij_max,rs,varval,inputvalue,x2,&
-            bordervalue(dirvar,1),bordervalue(dirvar,2),&
+            cornervalue(dirvar,1),cornervalue(dirvar,2),&
             min,f2y,objects(iobj)%x(dirvar))
         f2x=f2
       else
