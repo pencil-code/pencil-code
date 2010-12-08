@@ -725,6 +725,10 @@ module Boundcond
               case ('ouf')
                 ! BCZ_DOC: allow outflow, but no inflow (experimental)
                 call bc_outflow_z(f,topbot,j)
+              case ('ubs')
+                ! BCZ_DOC: symmetric outflow, 
+                ! but match boundary inflow (experimental)
+                call bc_steady_z(f,topbot,j)
               case ('win')
                 ! BCZ_DOC: forces massflux given as
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
@@ -4636,6 +4640,56 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_z
+!***********************************************************************
+    subroutine bc_steady_z(f,topbot,j)
+!
+!  Steady in/outflow boundary conditions.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to boundary value.
+!
+!  06-nov-2010/fred: implemented
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, ix, iy
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do iy=1,my; do ix=1,mx
+          if (f(ix,iy,n1,j)<0.0) then  ! 's'
+            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
+          else                         ! 'u(n1)'
+            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1,j); enddo
+            f(ix,iy,n1,j)=0.0
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do iy=1,my; do ix=1,mx
+          if (f(ix,iy,n2,j)>0.0) then  ! 's'
+            do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
+          else                         ! 'u(n2)'
+            do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2,j); enddo
+            f(ix,iy,n2,j)=0.0
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_steady_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_steady_z
 !***********************************************************************
     subroutine bc_copy_x(f,topbot,j)
 !
