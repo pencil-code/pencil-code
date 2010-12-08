@@ -71,14 +71,14 @@ module Param_IO
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
-      lread_aux, lwrite_aux, &
-      pretend_lnTT, lprocz_slowest, &
+      lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
-      tstart, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, fbcz1_1, fbcz1_2, &
-      fbcz2_1, fbcz2_2, fbcx1_2, fbcx2_2, xyz_step, xi_step_frac, &
-      xi_step_width, niter_poisson, lcylinder_in_a_box, &
-      lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
+      tstart, fbcx1, fbcx2, fbcx1_2, fbcx2_2, fbcy1, fbcy2, &
+      fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
+      fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
+      xyz_step, xi_step_frac, xi_step_width, niter_poisson, &
+      lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, border_frac_x, border_frac_y, border_frac_z, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max
@@ -92,33 +92,29 @@ module Param_IO
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, isaveglobal, lr_spec, r2u_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
-!DM moved the three to hydro_kinematic
-!      eps_kinflow, omega_kinflow, ampl_kinflow, lkinflow_as_aux, &
-      lkinflow_as_aux, &
-      ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, kx_kinflow, ky_kinflow, &
-      kz_kinflow, dtphase_kinflow, &
+      lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
+      kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       ltime_integrals, lnowrite, noghost_for_isave, lwrite_yaverages, &
       lwrite_zaverages, lwrite_phiaverages, test_nonblocking, &
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
-      xbot_slice, xtop_slice, &
-      ybot_slice, ytop_slice, &
-      zbot_slice, ztop_slice, &
+      xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
       fshift_int, fshift_ext, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, &
-      fbcx1_2, fbcx2_2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, Udrift_bc, &
-      ttransient, tavg, idx_tavg, lserial_io, nr_directions, lsfu, lsfb, &
-      lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, lwrite_aux, &
+      fbcx1_2, fbcx2_2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
+      fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
+      Udrift_bc, ttransient, tavg, idx_tavg, lserial_io, nr_directions, &
+      lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, &
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
-      lwrite_dvar, force_lower_bound, force_upper_bound, border_frac_x, &
-      oned, twod, &
-      border_frac_y, border_frac_z, lpoint, mpoint, npoint, lpoint2, mpoint2, &
-      npoint2, lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
+      lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
+      oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
+      border_frac_x, border_frac_y, border_frac_z, &
+      lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lrandom_f_pencil_check, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
@@ -1166,8 +1162,8 @@ module Param_IO
       integer :: unit=1
 !
       if (lroot) then
-        open(1,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
-        write(1,NML=run_pars)
+        open(unit,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
+        write(unit,NML=run_pars)
         call write_eos_run_pars(unit)
         call write_hydro_run_pars(unit)
         call write_density_run_pars(unit)
