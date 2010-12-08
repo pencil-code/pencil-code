@@ -300,6 +300,22 @@ module Fourier
 !
     endsubroutine fourier_transform_real_1
 !***********************************************************************
+    subroutine fft_x_parallel(a_re,a_im,linv)
+!
+!  Dummy routine.
+!
+      real, dimension (nx), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv
+!
+      call fatal_error('fft_x_parallel', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+!
+    endsubroutine fft_x_parallel
+!***********************************************************************
     subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im)
 !
 !  Subroutine to do FFT of distributed 2D data in the x- and y-direction.

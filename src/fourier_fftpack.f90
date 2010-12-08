@@ -1309,6 +1309,39 @@ module Fourier
 !
     endsubroutine fourier_transform_xy_xy_other
 !***********************************************************************
+    subroutine fft_x_parallel(a_re,a_im,linv)
+!
+!  Subroutine to do FFT of 1D data parallized in x direction.
+!
+      use Mpicomm, only: mpirecv_real, mpisend_real
+!
+      real, dimension (nx), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv
+!
+      real, dimension (nxgrid) :: a_re_grid, a_im_grid
+      logical :: l_inv=.false.
+      integer :: j
+!
+      if (nygrid>1) call fatal_error('bc_aa_pot_1D','only for nygrid=1')
+!
+      if (present(linv)) l_inv=linv
+! collect the data
+!
+      if (iproc==0) then
+        a_re_grid(1:nx) = a_re
+        a_im_grid(1:nx) = a_im
+        do j=1,nprocx-1
+          call mpirecv_real(a_re(j*nx+1:(j+1)*nx),nx,j,j*10+1)
+          call mpirecv_real(a_im(j*nx+1:(j+1)*nx),nx,j,j*10)
+        enddo
+        call fourier_transform_other(a_re_grid,a_im_grid,linv=l_inv)
+      else
+        call mpisend_real(a_re,nx,0,iproc*10+1)
+        call mpisend_real(a_im,nx,0,iproc*10)
+      endif
+
+    endsubroutine fft_x_parallel
+!***********************************************************************
     subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im,shift_y,&
          lneed_transform_x,lneed_transform_y)
 !
@@ -1344,7 +1377,7 @@ module Fourier
       integer :: l, m, stat, x_offset, ngrid
       logical :: lforward, lcompute_im, lcompute_transform_x, lcompute_transform_y
       logical :: lshift
-!     
+!
       lforward = .true.
       if (present (linv)) lforward = .not.linv
 !
@@ -1571,7 +1604,7 @@ module Fourier
 !  Break if both transform_x and transform_y are false
 !
       if (.not.(lcompute_transform_x.or.lcompute_transform_y)) then
-        call fatal_error('fft_xy_parallel_3D','Both x and y transforms are false '// & 
+        call fatal_error('fft_xy_parallel_3D','Both x and y transforms are false '// &
         'so this routine should not have been called')
       endif
 !
