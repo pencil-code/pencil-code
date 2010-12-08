@@ -27,7 +27,7 @@ module Special
   logical :: lgranulation=.false.,luse_ext_vel_field
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.,quench=0.
-  real :: init_time=0.,init_width=0.,hcond_grad=0.
+  real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: dampuu=0.,wdampuu,pdampuu
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -41,7 +41,8 @@ module Special
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
-      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad
+      iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
+      hcond_grad_iso
 !
 ! variables for print.in
 !
@@ -88,6 +89,8 @@ module Special
   real, dimension(nx,ny) :: Ux,Uy,b2
   real, dimension(nx,ny) :: Ux_ext,Uy_ext
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
+  real, save :: tsnap_uu=0.
+  integer, save :: isnap
 !
 !  miscellaneous variables
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
@@ -415,7 +418,7 @@ module Special
     real, dimension (nx) :: hc,tmp
 !
     if (Kpara/=0) call calc_heatcond_spitzer(df,p)
-    if (hcond_grad/=0) call calc_heatcond_glnTT_iso(df,p)
+    if (hcond_grad/=0) call calc_heatcond_glnTT(df,p)
     if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
     if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
     if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
@@ -532,6 +535,105 @@ module Special
 !
   endsubroutine calc_heatcond_spitzer
 !***********************************************************************
+    subroutine calc_heatcond_glnTT(df,p)
+!
+!  L = Div( Grad(lnT)^2  rho b*(b*Grad(T)))
+!  => flux = T  Grad(lnT)^2  rho
+!    gflux = flux * (glnT + glnrho +Grad( Grad(lnT)^2))
+!  => chi =  Grad(lnT)^2
+!
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot2,dot,multsv,multmv,cubic_step
+      use EquationOfState, only: gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: glnT2
+      real, dimension (nx) :: tmp,rhs,chi
+      real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
+      real, dimension (nx) :: hhh2,quenchfactor
+      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: tmpj
+      integer :: i,j,k
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+!  calculate unit vector of bb
+!
+      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
+      b1=1./max(tini,abs_b)
+      call multsv(b1,p%bb,bunit)
+!
+!  calculate first H_i
+!
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv(b1,hhh,tmpv)
+!
+!  calculate abs(h) for limiting H vector
+!
+      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
+!
+!  limit the length of H
+!
+      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      call multsv(quenchfactor,tmpv,hhh)
+!
+!  dot H with Grad lnTT
+!
+      call dot(hhh,p%glnTT,tmp)
+!
+!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
+!
+      call multmv(p%hlnTT,bunit,tmpv)
+      call dot(tmpv,bunit,tmpj)
+      tmp = tmp+tmpj
+!
+      call dot2(p%glnTT,glnT2)
+!
+      tmpv = p%glnTT+p%glnrho
+!
+      call multsv(glnT2,tmpv,gflux)
+!
+      do i=1,3
+        tmpv(:,i) = 2.*(&
+            p%glnTT(:,1)*p%hlnTT(:,i,1) + &
+            p%glnTT(:,2)*p%hlnTT(:,i,2) + &
+            p%glnTT(:,3)*p%hlnTT(:,i,3) )
+      enddo
+!
+      gflux  = gflux +tmpv
+!
+      call dot(gflux,bunit,rhs)
+      call dot(p%glnTT,bunit,tmpj)
+      rhs = rhs*tmpj
+!
+      chi = glnT2*hcond_grad
+!
+      rhs = hcond_grad*(rhs + glnT2*tmp)
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
+          rhs*gamma*cubic_step(real(t*unit_time),init_time,init_time)
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_glnTT
+!***********************************************************************
     subroutine calc_heatcond_glnTT_iso(df,p)
 !
 !  L = Div( Grad(lnT)^2 Grad(T))
@@ -560,11 +662,11 @@ module Special
       enddo
       call dot(p%glnTT,tmpv,tmp)
 !
-      chi = glnT2*hcond_grad
+      chi = glnT2*hcond_grad_iso
 !
       rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad_iso
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -893,6 +995,9 @@ module Special
 !
         points_rstate(:)=0.
 !
+        isnap = nint (t/dsnap)+1
+        tsnap_uu = isnap * dsnap
+!
       endif
 !
       granr_arr(1)=granr
@@ -1021,7 +1126,10 @@ module Special
 !***********************************************************************
     subroutine drive3(level)
 !
+      use Syscalls, only: file_exists
+!
       integer, intent(in) :: level
+      logical :: lstop=.false.
 !
       call reset_arrays
 !
@@ -1058,7 +1166,23 @@ module Special
 !
       if (luse_ext_vel_field) call evolve_granules()
 !
+!
+! Save granules to file.
+!
       call reset_pointer
+!
+      if (t >= tsnap_uu) then
+        call write_points(level,isnap)
+        if (level.eq.n_gran_level) then
+          tsnap_uu = tsnap_uu + dsnap
+          isnap  = isnap + 1
+        endif
+      endif
+!
+      if (itsub .eq. 3) lstop = file_exists('STOP')
+      if (lstop.or.t>=tmax .or. it.ge.nt.or. &
+          mod(it,isave).eq.0.or.dt<dtmin) &
+          call write_points(level)
 !
     endsubroutine drive3
 !***********************************************************************
@@ -1309,7 +1433,7 @@ module Special
       ampl=ampl_arr(level)
       granr=granr_arr(level)
 !
-! Update weight and velocity for new granule
+! Update weight and velocity for a granule
 !
 ! First get global position
 !
@@ -1321,7 +1445,9 @@ module Special
 !
 ! Following line ensures periodicity in X of the global field.
         i = 1+mod(ii-1+nxgrid,nxgrid)
+! Shift to iproc positions
         il = i-ipx*nx
+! Check if there is an overlapp
         if (il>=1.and.il<=nx) then
 !
           ypos = int(current%data(2)+ipy*ny)
@@ -1333,7 +1459,6 @@ module Special
             jl = j-ipy*ny
             if (jl>=1.and.jl<=ny) then
 !
-              loverlapp = .true.
               xdist=dx*(ii-current%data(1)-ipx*nx)
               ydist=dy*(jj-current%data(2)-ipy*ny)
 !
@@ -1357,6 +1482,7 @@ module Special
                   vx(il,jl)=vv*xdist/dist
                   vy(il,jl)=vv*ydist/dist
                   w(il,jl) =wtmp
+                  loverlapp = .true.                  
                 else
                   ! intergranular area
                   vx(il,jl)=vx(il,jl)+vv*xdist/dist
@@ -1370,7 +1496,7 @@ module Special
         endif
       enddo
 !
-!      if (.not.loverlapp.and. it>1) call remove_point
+!      if (.not.loverlapp.and. t*unit_time>300) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
