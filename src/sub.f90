@@ -5417,7 +5417,7 @@ nameloop: do
 !
     endsubroutine zlocation
 !***********************************************************************
-  function fourier_single_mode(arr,idims,k,idir)
+  subroutine fourier_single_mode(arr,idims,k,idir,amps,l2nd)
 
 ! no parallelization in x allowed here
 
@@ -5425,17 +5425,30 @@ nameloop: do
 
   implicit none
 
-  integer, dimension(2)             , intent(in) :: idims
-  real   , dimension(2,idims(2))                 :: fourier_single_mode
+  integer, dimension(2)             , intent(in)  :: idims
+  real, dimension(idims(1),idims(2)), intent(in)  :: arr
+  real                              , intent(in)  :: k
+  integer                           , intent(in)  :: idir
+  real   , dimension(2,*)           , intent(out) :: amps
+  logical                , optional , intent(in)  :: l2nd
 
-  integer                           , intent(in) :: idir
-  real, dimension(idims(1),idims(2)), intent(in) :: arr
-  real                              , intent(in) :: k
-
-  integer :: n,i
-  real, dimension(:), allocatable :: cg,sg
-  real, dimension(2,idims(2)) :: buffer
+  integer :: n,i,idim
+  real, dimension(:)  , allocatable :: cg,sg
+  real, dimension(:,:), allocatable :: buffer
   real :: fac
+  logical :: l2ndl
+  
+  if (present(l2nd)) then
+    l2ndl=l2nd
+  else
+    l2ndl=.false.
+  endif
+
+  if (l2ndl) then
+    idim=idims(1) 
+  else
+    idim=idims(2)
+  endif
 
   select case (idir)
     case (1)    ; n=nxgrid
@@ -5444,8 +5457,8 @@ nameloop: do
     case default; n=nxgrid
   end select
 
-  if (idims(1)/=n) then
-    fourier_single_mode=0
+  if (idims(1)+idims(2)-idim/=n) then
+    amps(:,1:idim)=0.
     return
   endif
 
@@ -5459,27 +5472,33 @@ nameloop: do
   end select
 
   
-  do i=1,idims(2)
-    fourier_single_mode(:,i) = fac*(/ sum(arr(:,i)*cg), sum(arr(:,i)*sg) /)
+  do i=1,idim
+    if (l2ndl) then
+      amps(:,i) = fac*(/ sum(arr(i,:)*cg), sum(arr(i,:)*sg) /)
+    else
+      amps(:,i) = fac*(/ sum(arr(:,i)*cg), sum(arr(:,i)*sg) /)
+    endif
   enddo
 
   if (ncpus>1) then
+    allocate(buffer(2,idim))
     select case (idir)
       case (2)
         if (nprocy>1) then
-          call mpireduce_sum(fourier_single_mode,buffer,(/2,idims(2)/),idir=2)
-          if (ipy==0) fourier_single_mode=buffer                               !result is in root of y-beams
+          call mpireduce_sum(amps,buffer,(/2,idim/),idir=2)
+          if (ipy==0) amps(:,1:idim)=buffer                               !result is in root of y-beams
         endif
       case (3)
         if (nprocz>1) then
-          call mpireduce_sum(fourier_single_mode,buffer,(/2,idims(2)/),idir=3)
-          if (ipz==0) fourier_single_mode=buffer                               !result is in root of z-beams
+          call mpireduce_sum(amps,buffer,(/2,idim/),idir=3)
+          if (ipz==0) amps(:,1:idim)=buffer                               !result is in root of z-beams
         endif
     end select
+    deallocate(buffer)
   endif
 
   deallocate(cg,sg)
 
-  endfunction fourier_single_mode
+  endsubroutine fourier_single_mode
 !***********************************************************************
 endmodule Sub
