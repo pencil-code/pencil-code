@@ -109,20 +109,20 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-      relhel_uu, u0_advec, &
-      uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
-      kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, uy_left, &
-      uy_right,uu_const, Omega,  initpower, cutoff, u_out_kep, N_modes_uu, &
-      lcoriolis_force, lcentrifugal_force, ladvection_velocity, lprecession, &
-      omega_precession, alpha_precession, luut_as_aux,loot_as_aux, &
-      velocity_ceiling, mu_omega, nb_rings, om_rings, gap, lscale_tobox, &
-      ampl_Omega,omega_ini, r_cyl,skin_depth, incl_alpha, &
-      rot_rr,xsphere,ysphere,zsphere, neddy,amp_meri_circ, &
-      rnoise_int,rnoise_ext,lreflecteddy,louinit
+      relhel_uu, u0_advec, coefuu, &
+      uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, &
+      kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
+      uy_left, uy_right, uu_const, Omega, initpower, cutoff, u_out_kep, &
+      N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
+      lprecession, omega_precession, alpha_precession, velocity_ceiling, &
+      luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
+      lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
+      rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
+      rnoise_int, rnoise_ext, lreflecteddy, louinit
 !
 !  Run parameters.
 !
-  real :: tdamp=0.,dampu=0.,wdamp=0.
+  real :: tdamp=0.,tfade_start=-1.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
   real :: ruxm=0.,ruym=0.,ruzm=0.
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
@@ -158,20 +158,19 @@ module Hydro
   real :: Shearx=0.
 !
   namelist /hydro_run_pars/ &
-      Omega,theta, tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-      u0_advec, &
-      tau_damp_ruxm,tau_damp_ruym,tau_damp_ruzm,tau_diffrot1, &
-      inituu,ampluu,kz_uu, ampl1_diffrot,ampl2_diffrot,uuprof, &
-      xexp_diffrot,kx_diffrot,kz_diffrot, kz_analysis, &
-      lreinitialize_uu,lremove_mean_momenta,lremove_mean_flow, &
-      lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-      borderuu, lfreeze_uint, lpressuregradient_gas, &
-      lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-      utop,ubot,omega_out,omega_in, lprecession, omega_precession, &
+      Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
+      wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
+      u0_advec, inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
+      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, &
+      lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
+      ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
+      othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
+      lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
+      utop, ubot, omega_out, omega_in, lprecession, omega_precession, &
       alpha_precession, lshear_rateofstrain, &
-      lalways_use_gij_etc,lcalc_uumean,lcalc_uumeanxy,lcalc_uumeanxz, &
-      lforcing_cont_uu, width_ff_uu,x1_ff_uu,x2_ff_uu, &
-      luut_as_aux,loot_as_aux, loutest, ldiffrot_test, &
+      lalways_use_gij_etc, lcalc_uumean, lcalc_uumeanxy, lcalc_uumeanxz, &
+      lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
+      luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
@@ -547,6 +546,15 @@ module Hydro
           endselect
         enddo
       endif
+!
+      ! Default value of 'tfade_start' is tdamp/2 for faded damping
+      if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
+      if (ldamp_fade .and. (tfade_start >= tdamp)) &
+          call fatal_error ('register_hydro', 'Please set tfade_start < tdamp')
+      call put_shared_variable ('dampu', dampu)
+      call put_shared_variable ('tdamp', tdamp)
+      call put_shared_variable ('ldamp_fade', ldamp_fade)
+      call put_shared_variable ('tfade_start', tfade_start)
 !
 !  r_int and r_ext override rdampint and rdampext if both are set
 !
@@ -2997,16 +3005,17 @@ module Hydro
 !
       real, dimension (nx) :: pdamp,fint_work,fext_work
       real, dimension (nx,3) :: fint,fext
-      real :: t_infl,t_span,tau,pfade
+      real :: tau, fade_fact
       integer :: i,j
 !
 !  warn about the damping term
 !
         if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
           if (ldamp_fade) then
-            print*, 'udamping: Damping velocities constantly until time ', tdamp
+            print*, 'udamping: Damping velocities until time ', tdamp
+            print*, 'udamping: with a smooth fade starting at ', tfade_start
           else
-            print*, 'udamping: Damping velocities smoothly until time ', tdamp
+            print*, 'udamping: Damping velocities constantly until time ', tdamp
           endif
         endif
 !
@@ -3016,7 +3025,15 @@ module Hydro
 !
 !
         if ((dampu /= 0.) .and. (t < tdamp)) then
-          if (ldamp_fade) then  ! smoothly fade
+!
+          if (.not. ldamp_fade) then
+            ! no fading => full damping:
+            fade_fact = 1.
+          elseif (t <= tfade_start) then
+            ! before transition => full damping:
+            fade_fact = 1.
+          else
+            ! inside transition => smooth fading:
 !
 !  smoothly fade out damping according to the following
 !  function of time:
@@ -3031,38 +3048,34 @@ module Hydro
 !    |                       ****
 !  0 +-------------+-------------**********---> t
 !    |             |             |
-!    0          Tdamp/2        Tdamp
+!    0            Tfade_start   Tdamp
 !
-!  i.e. for 0<t<Tdamp/2, full damping is applied, while for
-!  Tdamp/2<t<Tdamp, damping goes smoothly (with continuous
-!  derivatives) to zero.
+!  For 0 < t < Tfade_start, full damping is applied.
+!  In the interval Tfade_start < t < Tdamp, damping goes smoothly to zero
+!  with continuous derivatives. (The default value for Tfade_start is Tdamp/2.)
 !
-            t_infl = 0.75*tdamp ! position of inflection point
-            t_span = 0.5*tdamp   ! width of transition (1->0) region
-            tau = (t-t_infl)/t_span ! normalized t, tr. region is [-0.5,0.5]
+            ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
+            tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
             if (tau <= -0.5) then
-              pfade = 1.
+              fade_fact = 1.
             elseif (tau <= 0.5) then
-              pfade = 0.5*(1-tau*(3-4*tau**2))
+              fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
             else
               call fatal_error("UDAMPING","Never got here.")
             endif
-          else                ! don't fade, switch
-            pfade = 1.
           endif
 !
-! damp absolutely or relative to time step
-!
-          if (dampu > 0) then   ! absolutely
+          if (dampu > 0) then
+            ! absolute damping
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                    - pfade*dampu*f(l1:l2,m,n,iux:iuz)
-          else                  ! relative to dt
-            if (dt > 0) then    ! dt known and good
-              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                      + pfade*dampu/dt*f(l1:l2,m,n,iux:iuz)
-            else
-              call fatal_error("UDAMPING","dt <=0 -- what does this mean?")
-            endif
+                                    - fade_fact*dampu*f(l1:l2,m,n,iux:iuz)
+          else
+            ! damping relative to time step (dampu < 0)
+            if (dt <= 0) &
+                call fatal_error("UDAMPING","dt <= 0 -- timestep is invalid")
+            ! dt known and good
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                    + fade_fact*dampu/dt*f(l1:l2,m,n,iux:iuz)
           endif
         endif
 !
