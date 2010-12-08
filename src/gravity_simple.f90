@@ -434,7 +434,7 @@ module Gravity
         call fatal_error('initialize_gravity','found NaN or +/-Inf in gravz_zpencil')
       endif
 !
-      call put_shared_variable('nu_epicycle',nu_epicycle,ierr)
+      call put_shared_variable('nu_epicycle',nu_epicycle)
 !
       call keep_compiler_quiet(f)
 !
