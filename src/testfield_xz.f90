@@ -69,6 +69,8 @@ module Testfield
   integer :: idiag_eta122=0,idiag_eta222=0,idiag_eta322=0
   integer :: idiag_eta131=0,idiag_eta231=0,idiag_eta331=0
   integer :: idiag_eta132=0,idiag_eta232=0,idiag_eta332=0
+  integer :: idiag_alp11cc=0,idiag_alp11cs=0,idiag_alp11sc=0,idiag_alp11ss=0
+  integer :: idiag_eta122cc=0,idiag_eta122cs=0,idiag_eta122sc=0,idiag_eta122ss=0
   integer :: idiag_alp11z=0,idiag_alp21z=0,idiag_alp31z=0
   integer :: idiag_alp12z=0,idiag_alp22z=0,idiag_alp32z=0
   integer :: idiag_alp13z=0,idiag_alp23z=0,idiag_alp33z=0
@@ -562,8 +564,11 @@ module Testfield
     subroutine calc_coefficients
 !
     Use Diagnostics
+    Use Sub, only: fourier_single_mode
 !
     integer :: j, count
+    real, dimension(2,nx) :: temp_fft_z
+    real, dimension(2,2) :: temp_fft
     real, dimension (:,:,:), allocatable :: temp
     logical, dimension(27) :: need_temp
     integer, dimension (27) :: twod_address
@@ -808,6 +813,33 @@ module Testfield
 
       enddo
 
+      if (idiag_alp11cc .or. idiag_alp11cs .or. idiag_alp11sc .or. idiag_alp11ss) then
+        call fourier_single_mode(temp(:,:,twod_address(1)), (/nx,nz/), 1., 3, temp_fft_z)
+        if (ipz==0) then !result of fft only known on root of z-beam
+          call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
+          if (lroot) then
+            if (idiag_alp11cc) call save_name(temp_fft(1,1), idiag_alp11cc)
+            if (idiag_alp11cs) call save_name(temp_fft(1,2), idiag_alp11cs)
+            if (idiag_alp11sc) call save_name(temp_fft(2,1), idiag_alp11sc)
+            if (idiag_alp11ss) call save_name(temp_fft(2,2), idiag_alp11ss)
+          endif
+        endif
+      endif
+
+      if (idiag_eta122cc .or. idiag_eta122cs .or. idiag_eta122sc .or. idiag_eta122ss) then
+        call fourier_single_mode(temp(:,:,twod_address(17)), (/nx,nz/), 1., 3, temp_fft_z)
+        if (ipz==0) then !result of fft only known on root of z-beam
+          call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
+          if (lroot) then
+            if (idiag_eta122cc) call save_name(temp_fft(1,1), idiag_eta122cc)
+            if (idiag_eta122cs) call save_name(temp_fft(1,2), idiag_eta122cs)
+            if (idiag_eta122sc) call save_name(temp_fft(2,1), idiag_eta122sc)
+            if (idiag_eta122ss) call save_name(temp_fft(2,2), idiag_eta122ss)
+          endif
+        endif
+      endif
+         
+
     endif
 !
     deallocate(temp)
@@ -1049,6 +1081,8 @@ module Testfield
         idiag_eta122=0; idiag_eta222=0; idiag_eta322=0
         idiag_eta131=0; idiag_eta231=0; idiag_eta331=0
         idiag_eta132=0; idiag_eta232=0; idiag_eta332=0
+        idiag_alp11cc=0;idiag_alp11cs=0;idiag_alp11sc=0;idiag_alp11ss=0
+        idiag_eta122cc=0;idiag_eta122cs=0;idiag_eta122sc=0;idiag_eta122ss=0
         idiag_alp11z=0; idiag_alp21z=0; idiag_alp31z=0
         idiag_alp12z=0; idiag_alp22z=0; idiag_alp32z=0
         idiag_alp13z=0; idiag_alp23z=0; idiag_alp33z=0
@@ -1105,6 +1139,14 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta232',idiag_eta232)
         call parse_name(iname,cname(iname),cform(iname),'eta331',idiag_eta331)
         call parse_name(iname,cname(iname),cform(iname),'eta332',idiag_eta332)
+        call parse_name(iname,cname(iname),cform(iname),'alp11cc',idiag_alp11cc)
+        call parse_name(iname,cname(iname),cform(iname),'alp11cs',idiag_alp11cs)
+        call parse_name(iname,cname(iname),cform(iname),'alp11sc',idiag_alp11sc)
+        call parse_name(iname,cname(iname),cform(iname),'alp11ss',idiag_alp11ss)
+        call parse_name(iname,cname(iname),cform(iname),'eta122cc',idiag_eta122cc)
+        call parse_name(iname,cname(iname),cform(iname),'eta122cs',idiag_eta122cs)
+        call parse_name(iname,cname(iname),cform(iname),'eta122sc',idiag_eta122sc)
+        call parse_name(iname,cname(iname),cform(iname),'eta122ss',idiag_eta122ss)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1219,6 +1261,14 @@ module Testfield
         write(3,*) 'idiag_eta232=',idiag_eta232
         write(3,*) 'idiag_eta331=',idiag_eta331
         write(3,*) 'idiag_eta332=',idiag_eta332
+        write(3,*) 'idiag_alp11cc=',idiag_alp11cc
+        write(3,*) 'idiag_alp11cs=',idiag_alp11cs
+        write(3,*) 'idiag_alp11sc=',idiag_alp11sc
+        write(3,*) 'idiag_alp11ss=',idiag_alp11ss
+        write(3,*) 'idiag_eta122cc=',idiag_eta122cc
+        write(3,*) 'idiag_eta122cs=',idiag_eta122cs
+        write(3,*) 'idiag_eta122sc=',idiag_eta122sc
+        write(3,*) 'idiag_eta122ss=',idiag_eta122ss
         write(3,*) 'idiag_alp11z=',idiag_alp11z
         write(3,*) 'idiag_alp21z=',idiag_alp21z
         write(3,*) 'idiag_alp31z=',idiag_alp31z
