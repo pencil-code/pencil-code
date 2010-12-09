@@ -1876,8 +1876,8 @@ module Special
       fvy_i=0.
 !
       if (nygrid==1) then
-        call fft_x_parallel(fvx_r,fvx_i)
-        call fft_x_parallel(fvy_r,fvy_i)
+        call fft_x_parallel(fvx_r(:,m1),fvx_i(:,m1))
+        call fft_x_parallel(fvy_r(:,m1),fvy_i(:,m1))
       else
         call fft_xy_parallel(fvx_r,fvx_i)
         call fft_xy_parallel(fvy_r,fvy_i)
@@ -1919,10 +1919,10 @@ module Special
       fdy_i = fdy_i*filter
 !
       if (nygrid==1) then
-        call fft_x_parallel(fdx_r,fdx_i,.true.)
-        call fft_x_parallel(fdy_r,fdy_i,.true.)
-        call fft_x_parallel(frx_r,frx_i,.true.)
-        call fft_x_parallel(fry_r,fry_i,.true.)
+        call fft_x_parallel(fdx_r(:,m1),fdx_i(:,m1),.true.)
+        call fft_x_parallel(fdy_r(:,m1),fdy_i(:,m1),.true.)
+        call fft_x_parallel(frx_r(:,m1),frx_i(:,m1),.true.)
+        call fft_x_parallel(fry_r(:,m1),fry_i(:,m1),.true.)
       else        
         call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
         call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
