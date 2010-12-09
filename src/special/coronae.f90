@@ -206,7 +206,7 @@ module Special
       lpenc_requested(i_glnrho)=.true.
     endif
 !
-    if (hcond_grad/=0) then
+    if (hcond_grad_iso/=0) then
       lpenc_requested(i_glnTT)=.true.
       lpenc_requested(i_hlnTT)=.true.
       lpenc_requested(i_del2lnTT)=.true.
@@ -413,7 +413,7 @@ module Special
 !
     if (Kpara/=0) call calc_heatcond_spitzer(df,p)
     if (hcond_grad/=0) call calc_heatcond_glnTT(df,p)
-    if (hcond_grad_iso/=0) call calc_heatcond_glnTT(df,p)
+    if (hcond_grad_iso/=0) call calc_heatcond_glnTT_iso(df,p)
     if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
     if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
     if (tau_inv_newton/=0) call calc_heat_cool_newton(df,p)
@@ -1477,7 +1477,7 @@ module Special
                   vx(il,jl)=vv*xdist/dist
                   vy(il,jl)=vv*ydist/dist
                   w(il,jl) =wtmp
-                  loverlapp = .true.                  
+                  loverlapp = .true.
                 else
                   ! intergranular area
                   vx(il,jl)=vx(il,jl)+vv*xdist/dist
@@ -1923,7 +1923,7 @@ module Special
         call fft_x_parallel(fdy_r(:,m1),fdy_i(:,m1),.true.)
         call fft_x_parallel(frx_r(:,m1),frx_i(:,m1),.true.)
         call fft_x_parallel(fry_r(:,m1),fry_i(:,m1),.true.)
-      else        
+      else
         call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
         call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
         call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
