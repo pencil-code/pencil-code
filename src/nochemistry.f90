@@ -24,6 +24,7 @@ module Chemistry
 !
   real :: Rgas
   logical :: lchemistry_diag=.false.
+  logical :: lreactions=.false.
 !
   include 'chemistry.h'
 !
@@ -260,5 +261,14 @@ module Chemistry
 !***********************************************************************
     subroutine  write_net_reaction
     endsubroutine  write_net_reaction
+!***********************************************************************
+    subroutine get_reac_rate(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine get_reac_rate
 !***********************************************************************
 endmodule Chemistry

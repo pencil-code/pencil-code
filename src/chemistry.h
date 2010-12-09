@@ -27,6 +27,7 @@
   public :: get_cs2_full
   public :: get_gamma_full
   public :: get_RHS_Y_full
+  public :: get_reac_rate
  
 
   public :: Rgas
@@ -47,3 +48,4 @@
 ! public :: chemistry_before_boundary
   public :: write_net_reaction
   public :: lchemistry_diag
+  public :: lreactions

@@ -20,6 +20,7 @@ module NSCBC
   use Cparam
   use Messages
   use Mpicomm
+  use EquationOfState
 !
   implicit none
 !
@@ -68,6 +69,7 @@ include 'NSCBC.h'
   real :: Lx_in
   real :: Ly_in
   real :: Lz_in
+  real :: inlet_zz1, inlet_zz2
   real :: smooth_time=0.
 !
 !  Variables for inlet profiles
@@ -77,19 +79,20 @@ include 'NSCBC.h'
   real, dimension(2) :: jet_center=(/0.,0./)
   real :: velocity_ratio=3.3, sigma=1.
   character (len=labellen), dimension(ninit) :: velocity_profile='nothing'
+  character (len=labellen), dimension(ninit) :: zz_profile='nothing'
   logical :: lfinal_velocity_profile=.false.
 !
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir, jet_inlet,radius_profile,momentum_thickness,jet_center,&
-      velocity_ratio,turb_inlet_file
+      velocity_ratio,turb_inlet_file,inlet_zz1,inlet_zz2,zz_profile
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
       notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
       jet_center,velocity_ratio,turb_inlet_file,sigma,lfinal_velocity_profile,&
-      velocity_profile
+      velocity_profile,inlet_zz1,inlet_zz2,zz_profile
 !
   contains
 !***********************************************************************
@@ -296,13 +299,12 @@ include 'NSCBC.h'
 !
 ! Set the values of species
 !
-
-        if (nchemspec>1) then
+       if (ichemspec(1)>0) then
          YYk=0.
          do i=1,nchemspec
            YYk(i)=valx(ichemspec(i))
          enddo
-        endif
+       endif
 !
 !  Do the NSCBC boundary
 !
@@ -312,10 +314,10 @@ include 'NSCBC.h'
             call bc_nscbc_prf(f,df,j,topbot,.false.)
 !
           case ('part_ref_inlet')
-            call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,u_t=u_t,T_t=T_t)
+            call bc_nscbc_prf(f,df,j,topbot,.true.,linlet=.true.,u_t=u_t,T_t=T_t,YYk=YYk)
 !
           case ('ref_inlet')
-            call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,u_t=u_t,T_t=T_t)
+            call bc_nscbc_prf(f,df,j,topbot,.false.,linlet=.true.,u_t=u_t,T_t=T_t,YYk=YYk)
 !
           case ('subsonic_inflow')
             if (j==1) then
@@ -358,7 +360,7 @@ include 'NSCBC.h'
 !
     endsubroutine nscbc_boundtreat_xyz
 !***********************************************************************
-    subroutine bc_nscbc_prf(f,df,dir,topbot,non_reflecting_inlet,linlet,u_t,T_t)
+    subroutine bc_nscbc_prf(f,df,dir,topbot,non_reflecting_inlet,linlet,u_t,T_t,YYk)
 !
 !   Calculate du and dlnrho at a partially reflecting outlet/inlet normal to
 !   x-direction acc. to LODI relations. Uses a one-sided finite diff. stencil.
@@ -369,6 +371,9 @@ include 'NSCBC.h'
 !  22-jan-10/nils: made general with respect to direction such that we do not
 !                  need three different routines for the three different
 !                  directions.
+!  26-jui-10/julien: added the full composition array as an optional argument to
+!                    enable a relaxation of the species mass fractions at the inlet
+!                    in the case of a multi-species flow
 !
       use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
       use Chemistry
@@ -380,9 +385,10 @@ include 'NSCBC.h'
       logical, optional :: linlet
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t, T_t
+      real, optional, dimension(nchemspec) :: YYk
       real :: Mach,KK,nu, cs0_average
-      integer, dimension(30) :: stat
-      integer lll,k,ngridpoints,imin,imax,jmin,jmax
+      integer, dimension(32) :: stat
+      integer lll,k,ngridpoints,imin,imax,jmin,jmax,i
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:,:) :: dui_dxj
@@ -391,7 +397,9 @@ include 'NSCBC.h'
       real, allocatable, dimension(:,:) :: &
           TT,mu1,grad_mu1,rho0,P0,L_1,L_2,L_3,L_4,L_5,&
           prefac1,prefac2,T_1,T_2,T_3,T_4,T_5,cs,&
-          cs2,gamma,dYk_dx
+          cs2,gamma,dY_dx
+      real, allocatable, dimension(:,:,:) :: L_k, dYk_dx
+      real, allocatable, dimension(:,:,:) :: YYk_full
 !
       intent(inout) :: f
       intent(inout) :: df
@@ -417,7 +425,7 @@ include 'NSCBC.h'
         sgn = -1
       case default
         print*, "bc_nscbc_prf: ", topbot, " should be `top' or `bot'"
-      endselect
+      end select
 !
 !  Set some auxillary variables
 !
@@ -465,12 +473,16 @@ include 'NSCBC.h'
       allocate(      cs(igrid,jgrid),        STAT=stat(20))
       allocate(     cs2(igrid,jgrid),        STAT=stat(21))
       allocate(   gamma(igrid,jgrid),        STAT=stat(22))
-      allocate(  dYk_dx(igrid,jgrid),        STAT=stat(23))
+      allocate(dYk_dx(igrid,jgrid,nchemspec),  STAT=stat(23))
       allocate(grad_rho(igrid,jgrid,3),      STAT=stat(24))
       allocate(    u_in(igrid,jgrid,3),      STAT=stat(25))
       allocate(  grad_T(igrid,jgrid,3),      STAT=stat(26))
       allocate(  grad_P(igrid,jgrid,3),      STAT=stat(27))
       allocate( dui_dxj(igrid,jgrid,3,3),    STAT=stat(28))
+      allocate(L_k(igrid,jgrid,nchemspec),   STAT=stat(29))      
+      allocate(YYk_full(igrid,jgrid,nchemspec), STAT=stat(30))
+      allocate(dY_dx(igrid,jgrid),           STAT=stat(31))
+!
       if (maxval(stat) > 0) &
           call stop_it("Couldn't allocate memory for all vars in bc_nscbc_prf")
 !
@@ -488,6 +500,13 @@ include 'NSCBC.h'
       else
         call fatal_error('bc_nscbc_prf','No such dir!')
       endif
+!
+      i = 1
+      do k=ichemspec(1), ichemspec(nchemspec)
+        call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
+	dYk_dx(:,:,i) = dY_dx(:,:)
+	i=i+1
+      enddo
 !
 !  Find derivatives at boundary
 !
@@ -524,7 +543,7 @@ include 'NSCBC.h'
 !
       if (llinlet) then
 !
-!  Find the velocity to be used at the inlet.
+!  Find the velocity and composition to be used at the inlet.
 !
         if (dir==1) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
@@ -539,8 +558,12 @@ include 'NSCBC.h'
               Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax,&
               igrid,jgrid)
         endif
+!
+        call find_composition_at_inlet(nchemspec,YYk,YYk_full,&
+             dir,imin,imax,jmin,jmax,igrid,jgrid)        
+!
         if (lroot .and. ip<5) then
-          print*,'bc_nscbc_prf: Finalized reading velocity profiles at the inlet.'
+          print*,'bc_nscbc_prf: Finalized reading velocity and composition profiles at the inlet.'
         endif
 
 !
@@ -553,6 +576,12 @@ include 'NSCBC.h'
           if (ilnTT>0) then
             L_2=nscbc_sigma_in*(TT-T_t)&
               *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
+!  Julien: The above formula seems erroneous which could explain the following
+!          remark from Nils. The following correction is proposed but needs
+!          some tests (that's why it's still commented)
+!  Corrected according to Yoo et al. (Combustion Theory and Modelling, 2005)            
+!	    L_2 = nscbc_sigma_in*(TT-T_t)&
+!                *rho0*Rgas/(cs*Lxyz(dir1))-(cs2*T_1-T_5)
 !
 !  NILS: There seems to be something wrong with the calculation of L_2, as the
 !  NILS: coded crashes with the version above. For now L_2 is therefore
@@ -575,11 +604,20 @@ include 'NSCBC.h'
           L_5 = nscbc_sigma_in*cs2*rho0&
               *sgn*(fslice(:,:,dir1)-u_in(:,:,dir1))*(1-Mach**2)/Lxyz(dir1)&
               -(T_5+sgn*rho0*cs*T_2)
+	  if (ichemspec(1)>0) then
+	    do k = 1, nchemspec
+	      L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))-YYk_full(:,:,k))&
+                  *cs/Lxyz(dir1)
+	    enddo
+	  else
+	    L_k=0.
+	  endif        
         else
           L_3=0
           L_4=0
           L_5 = L_1
           L_2=0.5*(gamma-1)*(L_5+L_1)
+          L_k=0.
         endif
       else
 !
@@ -598,7 +636,15 @@ include 'NSCBC.h'
         L_5 = (fslice(:,:,dir1) - sgn*cs)*&
              (grad_P(:,:,dir1)&
              - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
+        if (ichemspec(1)>0) then
+	  do k = 1, nchemspec
+	    L_k(:,:,k)=fslice(:,:,dir1)*dYk_dx(:,:,k)
+	  enddo
+	else
+	  L_k=0.
+	endif
       endif
+!
       if (lroot .and. ip<5) then
         print*,'bc_nscbc_prf: Finalized setting up the Ls.'
       endif
@@ -630,6 +676,11 @@ include 'NSCBC.h'
       endif
       dfslice(:,:,dir2) = -L_3-T_3
       dfslice(:,:,dir3) = -L_4-T_4
+      if (ichemspec(1)>0) then
+        do k = 1, nchemspec
+          dfslice(:,:,ichemspec(k)) = -L_k(:,:,k)
+        enddo
+      endif
 !
 !  Check if we are solving for logrho or rho
 !
@@ -642,6 +693,7 @@ include 'NSCBC.h'
       if (.not. ltemperature_nolog .and. ilnTT>0) then
         dfslice(:,:,ilnTT)=dfslice(:,:,ilnTT)/TT
       endif
+!
       if (lroot .and. ip<5) then
         print*,'bc_nscbc_prf: Finalized setting up the dfslice array.'
       endif
@@ -671,6 +723,12 @@ include 'NSCBC.h'
           dfslice(:,:,dir2)=0
           dfslice(:,:,dir3)=0
           if (ilnTT>0) dfslice(:,:,ilnTT)=0
+	  if (ichemspec(1)>0) then
+	    do k = 1, nchemspec
+	      fslice(:,:,ichemspec(k)) = YYk_full(:,:,k)
+	      dfslice(:,:,ichemspec(k)) = 0
+	    enddo
+	  endif
         endif
       endif
 !
@@ -678,9 +736,9 @@ include 'NSCBC.h'
 !
       iused=max(ilnTT,ilnrho)
       if (mvar>iused) then
-        do k=iused+1,mvar
-          call der_onesided_4_slice(f,sgn,k,dYk_dx,lll,dir1)
-          dfslice(:,:,k)=-fslice(:,:,dir1)*dYk_dx
+        do k=iused+nchemspec+1,mvar
+          call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
+          dfslice(:,:,k)=-fslice(:,:,dir1)*dY_dx
         enddo
       endif
 !
@@ -736,6 +794,7 @@ include 'NSCBC.h'
 ! Define default for the inlet_profile for backward compatibility
 !
       inlet_profile(1)='uniform'
+      zz_profile(1)='uniform'
 !
       if (present(iostat)) then
         read(unit,NML=NSCBC_run_pars,ERR=99, IOSTAT=iostat)
@@ -1012,6 +1071,92 @@ include 'NSCBC.h'
         deallocate(u_turb)
 !
       end subroutine find_velocity_at_inlet
+!***********************************************************************
+    subroutine find_composition_at_inlet(nchemspec,YYi,YYi_full,dir,imin,imax,jmin,jmax,igrid,jgrid)
+!
+!  Find composition at inlet.
+!
+!  2010.07.26/Julien Savre: coded
+!
+  use  EquationOfState     
+!  
+      real, dimension(:,:,:), intent(inout) :: YYi_full
+      real, dimension(:), intent(in) :: YYi
+      real, dimension(igrid,jgrid) :: zz
+      real :: zz1, zz2, init_y1, init_y2
+      real :: beta
+      integer, intent(in) :: imin,imax,jmin,jmax,igrid,jgrid,nchemspec,dir
+!
+      real, dimension(igrid) :: dim
+      integer :: i_CH4=0, i_O2=0, i_N2=0
+      integer :: ichem_CH4=0, ichem_O2=0, ichem_N2=0
+      integer :: i,j,kkk,jj,k
+      logical :: lO2, lN2, lCH4
+!
+! Define composition profile at inlet
+!
+        do jj=1,ninit
+          select case (zz_profile(jj))
+!
+          case ('nothing')
+            if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+                print*,'inlet_YY_profile: nothing'
+!	    
+          case ('uniform')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'inlet_YY_profile: uniform,'
+            do k = 1, nchemspec
+	      YYi_full(:,:,k)=YYi(k)
+	    enddo  
+!
+          case ('triple_flame')
+            if (lroot .and. it==1 .and. lfirst) &
+                print*,'inlet_YY_profile: triple flame, constant gradient'
+            zz1=inlet_zz1
+	    zz2=inlet_zz2
+!	    
+	    if (dir == 1) then
+	      dim(1:igrid) = y(imin:imax)
+	      init_y1 = xyz0(2) + Lxyz(2)/3.
+              init_y2 = xyz0(2) + 2.*Lxyz(2)/3
+	    else if (dir == 2) then
+	      dim(1:igrid) = x(imin:imax)
+	      init_y1 = xyz0(1) + Lxyz(1)/3.
+              init_y2 = xyz0(1) + 2.*Lxyz(1)/3	      
+	    else if (dir == 3) then
+	      dim(1:igrid) = x(imin:imax)
+	      init_y1 = xyz0(1) + Lxyz(1)/3.
+              init_y2 = xyz0(1) + 2.*Lxyz(1)/3	      
+	    endif
+	    do i = 1, igrid
+	      if (dim(i) >= init_y1 .and. dim(i) <= init_y2) then
+	        zz(i,:) = zz2 - (zz2-zz1) * (init_y2 - dim(i)) / &
+		                          (init_y2 - init_y1)
+              else if (dim(i) <= init_y1) then
+	        zz(i,:) = zz1
+	      else if (dim(i) >= init_y2) then
+	        zz(i,:) = zz2
+	      endif
+	    enddo
+!
+            call find_species_index('O2' ,ichem_O2,i_O2 ,lO2)
+            call find_species_index('N2' ,ichem_N2,i_N2,lN2)
+            call find_species_index('CH4',ichem_CH4,i_CH4,lCH4)
+            do k = 1, nchemspec
+	      YYi_full(:,:,k)=YYi(k)	      
+	    enddo
+	    beta = YYi(i_N2)/YYi(i_O2)
+	    do i = 1, igrid
+	      YYi_full(i,:,i_CH4)=zz(i,:)
+	      YYi_full(i,:,i_O2)=(1.-YYi_full(i,:,i_CH4)) / (1.+beta)
+	      YYi_full(i,:,i_N2)=1.-YYi_full(i,:,i_O2)-YYi_full(i,:,i_CH4)
+	    enddo	    
+!
+          end select
+!
+        enddo
+!
+      end subroutine find_composition_at_inlet
 !***********************************************************************
       subroutine turbulent_vel_x(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
 !

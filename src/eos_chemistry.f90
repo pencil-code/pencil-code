@@ -83,6 +83,7 @@ module EquationOfState
 !
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data
+ real, dimension(nchemspec) :: Lewis_coef
 
 
 !NILS: Why do we spend a lot of memory allocating these variables here????
@@ -1711,5 +1712,52 @@ module EquationOfState
       close(file_id)
 !
     endsubroutine read_transport_data
+!***********************************************************************
+   subroutine read_Lewis
+!
+!  Reading of the species Lewis numbers in an input file
+!
+!  21-jun-10/julien: coded
+!
+     use Mpicomm, only: stop_it
+
+      logical :: emptyfile
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      real    :: lewisk
+      character (len=10) :: specie_string
+!
+      emptyFile=.true.
+!
+      open(file_id,file="lewis.dat")
+!
+      if (lroot) print*, 'the following species are found '//&
+          'in lewis.dat: beginning of the list:'
+!
+      dataloop: do
+        read(file_id,*,end=1000) specie_string, lewisk
+        emptyFile=.false.
+!
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+!
+        if (found_specie) then
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
+          Lewis_coef(ind_chem) = lewisk
+	endif 
+      enddo dataloop
+!
+! Stop if lewis.dat is empty
+!
+
+1000  if (emptyFile)  call stop_it('The input file lewis.dat was empty!')
+!
+      if (lroot) then
+        print*, 'the following species are found in lewis.dat: end of the list:'
+	print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
+      endif
+!
+      close(file_id)
+!
+    endsubroutine read_Lewis
 !***********************************************************************
 endmodule EquationOfState

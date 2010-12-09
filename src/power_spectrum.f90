@@ -635,13 +635,25 @@ module power_spectrum
     !
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') spectrum_sum
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
     close(1)
     !
     open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
-    write(1,*) t
-    write(1,'(1p,8e10.2)') spectrumhel_sum
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else    
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
     close(1)
     !
     if (lwrite_krms) then

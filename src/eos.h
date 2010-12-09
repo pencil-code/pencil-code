@@ -17,6 +17,7 @@
   public :: rprint_eos, get_slices_eos
   public :: read_eos_init_pars, write_eos_init_pars
   public :: read_eos_run_pars,  write_eos_run_pars
+  public :: read_Lewis
 
   public :: select_eos_variable
                                                                                                        

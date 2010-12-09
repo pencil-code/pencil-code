@@ -1653,4 +1653,12 @@ module EquationOfState
 
      endsubroutine find_mass
 !***********************************************************************
+    subroutine read_Lewis
+
+       real, dimension (mx,my,mz,mfarray) :: f
+
+       call keep_compiler_quiet(f)
+
+    endsubroutine read_Lewis
+!***********************************************************************
 endmodule EquationOfState

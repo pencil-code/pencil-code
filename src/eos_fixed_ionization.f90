@@ -1364,4 +1364,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
      endsubroutine find_mass
 !***********************************************************************
+    subroutine read_Lewis
+
+       real, dimension (mx,my,mz,mfarray) :: f
+
+       call keep_compiler_quiet(f)
+
+    endsubroutine read_Lewis
+!***********************************************************************
 endmodule EquationOfState

@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec), glnpp(3); cs2
+! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec), glnpp(3); cs2
 !
 ! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens; ppwater
 ! PENCILS PROVIDED Ywater
@@ -52,7 +52,9 @@ module Chemistry
      real :: init_x1=-0.2,init_x2=0.2
      real :: init_y1=-0.2,init_y2=0.2
      real :: init_z1=-0.2,init_z2=0.2
-     real :: init_TT1=400., init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+     real :: init_TT1=298., init_TT2=2400., init_ux=0., init_uy=0., init_uz=0.
+     real :: init_zz1=0.01, init_zz2=0.2 
+     real :: flame_pos=0.    
      real :: init_rho2=1.
      real :: init_rho=1.
      real :: str_thick=0.02
@@ -71,6 +73,10 @@ module Chemistry
      logical :: lDiff_simple=.false.
      logical :: lThCond_simple=.false.
      logical :: lT_const=.false.
+     logical :: ldiff_fick=.false.   
+     logical :: ldiff_corr=.false. 
+     logical, save :: tran_exist=.false.
+     logical, save :: lew_exist=.false.
 !
      logical :: lfilter=.false.
      logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
@@ -86,11 +92,14 @@ module Chemistry
      logical :: lT_tanh=.false.
      logical :: ldamp_zone_for_NSCBC=.false.
      logical :: linit_temperature=.false.,linit_density=.false.
+     logical :: lreac_as_aux=.false.
 !
 ! 1step_test case
 ! possible, will be removed later
 !
-     logical :: l1step_test=.false., lflame_front=.false.
+     logical :: l1step_test=.false.
+     logical :: lflame_front=.false., ltriple_flame=.false.
+     logical :: lFlameMaster=.false.
      integer :: ipr=2
      real :: Tc=440., Tinf=2000., beta=1.09
 !
@@ -103,6 +112,7 @@ module Chemistry
      character (len=labellen), dimension (ninit) :: initchem='nothing'
      character (len=labellen), allocatable, dimension (:) :: kreactions_profile
      character (len=60) :: prerun_directory='nothing'
+     character (len=60) :: file_name='nothing'
 !
      real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
      real, allocatable, dimension(:,:,:,:) :: Diff_full, Diff_full_add
@@ -124,6 +134,7 @@ module Chemistry
      logical, allocatable, dimension(:) :: photochem_case
      real :: lamb_low,lamb_up
 !  real, dimension(nchemspec,7)     :: tran_data
+     real, dimension(nchemspec) :: Lewis_coef
 !
 !   Atmospheric physics
 !
@@ -148,7 +159,8 @@ module Chemistry
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory,&
-      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2
+      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2,&
+      file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos
 !
 !
 ! run parameters
@@ -158,7 +170,8 @@ module Chemistry
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
       visc_const,cp_const,reinitialize_chemistry,lfilter_strict, &
-      init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density
+      init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
+      ldiff_corr, ldiff_fick, lreac_as_aux
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -346,13 +359,19 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !  19-feb-08/axel: reads in chemistry.dat file
+!  21-nov-10/julien: added the reaction rates as optional auxiliary variables 
+!                    in the f array for output.
+!
+      use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: data_file_exit=.false.
       logical :: exist,exist1,exist2
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
       integer :: ind_glob,ind_chem, stat
+      integer :: i
       logical :: found_specie=.false.
+      character(len=2) :: car2
 !
 !  initialize chemistry
 !
@@ -490,6 +509,27 @@ module Chemistry
           net_react_m=0.
       endif
 !
+!  Define the chemical reaction rates as auxilliary variables for output
+!
+      if (lreac_as_aux) then
+        if (ireac==0) then
+          call farray_register_auxiliary('reac',ireac,vector=nchemspec)
+          do i = 0, nchemspec-1
+	    ireaci(i+1)=ireac+i
+	  enddo
+         endif
+        if (ireac/=0.and.lroot) then
+          print*, 'initialize_reaction_rates: ireac = ', ireac
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'ireac=',ireac
+	  do i = 1, nchemspec
+	    write(car2,'(i2)') i
+	    write(3,*) 'ireac'//trim(adjustl(car2))//'=', ireaci(i)
+	  enddo
+          close(3)
+        endif
+      endif      
+!
 !  write array dimension to chemistry diagnostics file
 !
       open(1,file=trim(datadir)//'/net_reactions.dat',position='append')
@@ -503,6 +543,7 @@ module Chemistry
 !  initialise chemistry initial condition; called from start.f90
 !
 !  13-aug-07/steveb: coded
+!     jul-10/julien: Added some new initial cases
 !
       use Initcond
       use InitialCondition, only: initial_condition_chemistry
@@ -577,6 +618,8 @@ module Chemistry
            endif
         case ('flame_front')
           call flame_front(f)
+        case ('triple_flame')
+          call triple_flame(f)
         case ('flame')
           if (lroot) print*, 'initchem: flame '
           call flame(f)
@@ -584,6 +627,10 @@ module Chemistry
           call flame_blob(f)
         case ('prerun_1D')          
           call prerun_1D(f,prerun_directory)
+        case ('prerun_1D_opp')          
+          call prerun_1D_opp(f,prerun_directory)	
+	case ('FlameMaster')
+	  call FlameMaster_ini(f,file_name)  
         case default
 !
 !  Catch unknown values
@@ -632,6 +679,7 @@ module Chemistry
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cv1)=.true.
          if (lreactions) lpenc_requested(i_H0_RT)=.true.
+         if (lreactions) lpenc_requested(i_S0_R)=.true.
          lpenc_requested(i_nu)=.true.
          lpenc_requested(i_gradnu)=.true.
          lpenc_requested(i_cs2)=.true.  
@@ -663,12 +711,15 @@ module Chemistry
         if (lpencil_in(i_cv1))    lpencil_in(i_cv)=.true.
         if (lpencil_in(i_glambda))  lpencil_in(i_lambda)=.true.
 !
-         if (lpencil_in(i_H0_RT))  then
+         if (lpencil_in(i_H0_RT).or.lpencil_in(i_S0_R))  then
             lpencil_in(i_TT)=.true.
             lpencil_in(i_TT_2)=.true.
             lpencil_in(i_TT_3)=.true.
             lpencil_in(i_TT_4)=.true.
             lpencil_in(i_TT1)=.true.
+         endif
+         if (lpencil_in(i_S0_R)) then
+           lpencil_in(i_lnTT)=.true.
          endif
          if (lpencil_in(i_DYDt_reac))  then
             lpencil_in(i_TT)=.true.
@@ -714,7 +765,7 @@ module Chemistry
       intent(in) :: f
       intent(inout) :: p
       integer :: k,i
-      integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6
+      integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6,ii7=7
       real :: T_low,T_up, T_mid
       real, dimension(nx) :: T_loc
 !
@@ -816,7 +867,7 @@ module Chemistry
           if (lpencil(i_hhk_full) .and.lreactions) then
             do k=1,nchemspec
               if (species_constants(k,imass)>0.)  then
-                p%hhk_full(:,k)=p%H0_RT(:,k)*Rgas*p%TT&
+                p%hhk_full(:,k)=p%H0_RT(:,k)*Rgas*T_loc&
                     /species_constants(k,imass)
               endif
             enddo
@@ -828,12 +879,51 @@ module Chemistry
                 !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
                 do i=1,3
                   p%ghhk(:,i,k)=(cv_R_spec_full(l1:l2,m,n,k)+1) &
-                      /species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT(:)
+                      /species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
                 enddo
               endif
             enddo
           endif
         endif
+!
+!  Find the entropy by using fifth order temperature fitting function
+!
+      if (lpencil(i_S0_R)) then
+        if (.not. lT_const) then
+!AB: Natalia, maybe we should ask earlier for lentropy?
+          if ((.not. lT_const).and.(ilnTT/=0)) then
+            do k=1,nchemspec
+              T_low=species_constants(k,iTemp1)
+              T_mid=species_constants(k,iTemp2)
+              T_up= species_constants(k,iTemp3)
+!
+! Natalia:pencil_check
+! if lpencil_check and full compiler settings then
+! the problem appears for T_loc= p%TT
+! Does anybody know why it is so?
+! While this problem is not resolved 
+! I use T_loc= exp(f(l1:l2,m,n,ilnTT))
+! 
+              T_loc= exp(f(l1:l2,m,n,ilnTT))
+              where(T_loc <= T_mid .and. T_low <= T_loc)
+                p%S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
+                  +species_constants(k,iaa2(ii2))*T_loc &
+                  +species_constants(k,iaa2(ii3))*p%TT_2/2 &
+                  +species_constants(k,iaa2(ii4))*p%TT_3/3 &
+                  +species_constants(k,iaa2(ii5))*p%TT_4/4 &
+                  +species_constants(k,iaa2(ii7))
+              elsewhere (T_mid <= p%TT .and. p%TT <= T_up)
+                p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
+                  +species_constants(k,iaa1(ii2))*T_loc &
+                  +species_constants(k,iaa1(ii3))*p%TT_2/2 &
+                  +species_constants(k,iaa1(ii4))*p%TT_3/3 &
+                  +species_constants(k,iaa1(ii5))*p%TT_4/4 &
+                  +species_constants(k,iaa1(ii7))
+               endwhere
+             enddo
+           endif
+         endif
+       endif
 !
 ! Calculate the reaction term and the corresponding pencil
 !
@@ -855,8 +945,8 @@ module Chemistry
            if (Diff_coef_const>impossible*0.99)  Diff_coef_const=10.
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=Diff_coef_const &
-               *(p%TT(:)/p%TT(1)*p%rho(1)/p%rho(:))**0.7  &
-               *species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
+                *exp(0.7*(log(p%TT(:)/p%TT(1))+log(p%rho(1)/p%rho(:))))  &
+                *species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
            enddo
          elseif ((.not. lDiff_simple) .and. (Diff_coef_const<impossible)) then
            p%Diff_penc_add(:,:)=Diff_coef_const
@@ -883,7 +973,7 @@ module Chemistry
         if (lThCond_simple) then
           if (lambda_const>impossible*0.99) lambda_const=1e4
           p%lambda=lambda_const &
-             *(p%TT(:)/p%TT(1))**0.7*cp_full(l1:l2,m,n)/cp_full(l1,m,n)
+              *exp(0.7*log(p%TT(:)/p%TT(1)))*cp_full(l1:l2,m,n)/cp_full(l1,m,n)
           if (lpencil(i_glambda))  then
            do i=1,3
             p%glambda(:,i)=p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
@@ -923,6 +1013,7 @@ module Chemistry
 !
 ! 06.05.2009/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
+! 06.24.2010/Julien Savre: Modifications for lean methane/air combustion
 ! This routine set up the initial profiles used in 1D flame speed measurments
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -930,11 +1021,14 @@ module Chemistry
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
       real :: log_inlet_density, del
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      integer :: i_CH4, i_CO2, ichem_CH4, ichem_CO2
-      real :: initial_mu1, final_massfrac_O2
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
+      real :: initial_mu1, final_massfrac_O2,final_massfrac_CH4, &
+              final_massfrac_H2O,final_massfrac_CO2
       real :: init_H2,init_O2,init_N2,init_H2O,init_CO2,init_CH4
-      logical :: lH2,lO2,lN2,lH2O,lCH4,lCO2
+      logical :: lH2=.false.,lO2=.false.,lN2=.false.,lH2O=.false.
+      logical :: lCH4=.false.,lCO2=.false.
 !
       lflame_front=.true.
 !
@@ -976,16 +1070,36 @@ module Chemistry
       endif
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
+! Warning: These formula are only correct for lean fuel/air mixtures. They
+!          must be modified under rich conditions to account for the excess
+!          of fuel.
 !
-     final_massfrac_O2=0.
-
-     if (mO2>0) final_massfrac_O2 = init_O2
-     if (mH2>0) final_massfrac_O2 = &
-                final_massfrac_O2 - init_H2/(2.*mH2)*mO2
-     if (mCH4>0) final_massfrac_O2 = &
-                 final_massfrac_O2 - init_CH4*2/(mCH4)*mO2
+      final_massfrac_O2=0.
+      if (lH2.and..not.lCH4) then  
+      final_massfrac_H2O = &
+                mH2O/mH2 * init_H2       
+      final_massfrac_O2 = &
+                1. - final_massfrac_H2O	- init_N2	    
+     else if (lCH4) then
+      final_massfrac_CH4=0.
+      final_massfrac_H2O = &
+                2.*mH2O/mCH4 * init_CH4       
+      final_massfrac_CO2 = &
+                mCO2/mCH4 * init_CH4      
+      final_massfrac_O2 = &
+              1. - final_massfrac_CO2 - final_massfrac_H2O  &
+	      - init_N2
+     endif
 !
      if (final_massfrac_O2<0.) final_massfrac_O2=0.
+     if (lroot) then
+                print*, '          init                      final'
+       if (lH2.and..not.lCH4) print*, 'H2 :', init_H2, 0. 
+       if (lCH4) print*, 'CH4 :', init_CH4, 0.
+       if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
+       if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
+       if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
+     endif
 !
 !  Initialize temperature and species
 !
@@ -1012,17 +1126,263 @@ module Chemistry
           endif
         endif
 !
-!  Initialize steam and hydrogen
+!  Initialize fuel
 !
         if (lT_tanh) then
-          del=(init_x2-init_x1)
+          if (lH2.and..not.lCH4) then          
+	    del=(init_x2-init_x1)
+            f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
+                 +(0.-f(l1,:,:,i_H2))*0.5  &
+                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+	  endif
+          if (lCH4) then
+	    if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+	  endif 
+!
+        else
+          if (x(k)>init_x1) then
+            if (lH2.and..not.lCH4) then
+              f(k,:,:,i_H2)=init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                  /(init_TT1-init_TT2)
+            endif
+            if (lCH4) then
+              f(k,:,:,i_CH4)=init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                  /(init_TT1-init_TT2)
+            endif
+          endif
+        endif
+!
+!  Initialize oxygen
+!
+         if (lT_tanh) then
+           del=(init_x2-init_x1)
+           f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
+                +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
+                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+         else
+           if (x(k)>init_x2) f(k,:,:,i_O2)=final_massfrac_O2
+           if (x(k)>init_x1 .and. x(k)<=init_x2) &
+              f(k,:,:,i_O2)=(x(k)-init_x1)/(init_x2-init_x1) &
+              *(final_massfrac_O2-init_O2)+init_O2
+         endif
+       enddo
+!
+! Initialize products
+!
+        if (lT_tanh) then
+	  do k=1,mx
+            if (lH2.and..not.lCH4) then 	  
+	      del=(init_x2-init_x1)          
+	      f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
+                  +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
+                  *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+            endif
+            if (lCH4) then
+	      if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+	    endif
+	  enddo
+!
+	else
+	  do k=1,mx
+            if (x(k)>=init_x1.and.x(k)<init_x2) then
+              f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
+                  *final_massfrac_H2O
+              if (lCO2) f(k,:,:,i_CO2)=(x(k)-init_x1)/(init_x2-init_x1) &
+                  *final_massfrac_CO2
+            else if (x(k)>=init_x2) then
+              if (lCO2) f(k,:,:,i_CO2)=final_massfrac_CO2
+              if (lH2O) f(k,:,:,i_H2O)=final_massfrac_H2O
+            endif
+          enddo
+        endif
+!
+         if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+         endif
+!
+!  Find logaritm of density at inlet
+!
+         initial_mu1&
+             =initial_massfractions(ichem_O2)/(mO2)&
+             +initial_massfractions(ichem_H2O)/(mH2O)&
+             +initial_massfractions(ichem_N2)/(mN2)
+	 if (lH2.and..not.lCH4) initial_mu1=initial_mu1+ &
+	     initial_massfractions(ichem_H2)/(mH2)
+         if (lCO2) initial_mu1=initial_mu1+init_CO2/(mCO2)
+         if (lCH4) initial_mu1=initial_mu1+init_CH4/(mCH4)
+         log_inlet_density= &
+             log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+!  Initialize density
+!
+      call getmu_array(f,mu1_full)     
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
+          * (f(l1:l2,m1:m2,n1:n2,iux)+init_ux)
+!      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!
+!  Check if we want nolog of density or nolog of temperature
+!
+      if (ldensity_nolog) &
+          f(l1:l2,m1:m2,n1:n2,irho)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) &
+          f(l1:l2,m1:m2,n1:n2,iTT)=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+!
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            f(i,j,k,ichemspec)=f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+          enddo
+        enddo      
+      enddo
+!
+    endsubroutine flame_front
+!***********************************************************************
+      subroutine triple_flame(f)
+!
+! 26.07.2010/Julien Savre: Copy from the flame_front case
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i,j,k
+!
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: log_inlet_density, del
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
+      real :: initial_mu1, final_massfrac_O2,final_massfrac_CH4, &
+              final_massfrac_H2O,final_massfrac_CO2
+      real :: init_H2,init_O2,init_N2,init_H2O,init_CO2,init_CH4
+      real :: beta
+      real :: init_y1, init_y2
+      real :: init_rho, init_m1
+      real, dimension (ny) :: dim
+      logical :: lH2=.false.,lO2=.false.,lN2=.false.,lH2O=.false.
+      logical :: lCH4=.false.,lCO2=.false.
+!
+      ltriple_flame=.true.
+!
+      call air_field(f)
+!
+      init_y1 = xyz0(2) + Lxyz(2)/3.
+      init_y2 = xyz0(2) + 2.*Lxyz(2)/3.
+!
+      if (ltemperature_nolog) f(:,:,:,ilnTT)=log(f(:,:,:,ilnTT))
+      if (lroot) print*, 'init_chem: triple_flame '
+!
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,lH2)
+      if (lH2) then
+        mH2 =species_constants(ichem_H2 ,imass)
+        init_H2=initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,lO2)
+      if (lO2) then
+        mO2 =species_constants(ichem_O2 ,imass)
+        init_O2=initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,lN2)
+      if (lN2) then
+        mN2 =species_constants(ichem_N2 ,imass)
+        init_N2=initial_massfractions(ichem_N2)
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O =species_constants(ichem_H2O ,imass)
+        init_H2O=initial_massfractions(ichem_H2O)
+      endif
+      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
+      if (lCH4) then
+        mCH4 =species_constants(ichem_CH4 ,imass)
+        init_CH4=initial_massfractions(ichem_CH4)
+      endif
+      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
+      if (lCO2) then
+        mCO2 =species_constants(ichem_CO2 ,imass)
+        init_CO2=initial_massfractions(ichem_CO2)
+      endif
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+     final_massfrac_O2=0.
+      if (lH2) then  
+      final_massfrac_H2O = &
+                mH2O/(2.*mH2) * init_H2       
+      final_massfrac_O2 = &
+                1. - final_massfrac_H2O	- init_N2	    
+     else if (lCH4) then
+      final_massfrac_CH4=0.
+      final_massfrac_H2O = &
+                2.*mH2O/mCH4 * init_CH4       
+      final_massfrac_CO2 = &
+                mCO2/mCH4 * init_CH4      
+      final_massfrac_O2 = &
+              1. - final_massfrac_CO2 - final_massfrac_H2O  &
+	      - init_N2
+     endif
+!
+     if (final_massfrac_O2<0.) final_massfrac_O2=0.
+     if (lroot) then
+                print*, '          init                      final'
+       if (lH2) print*, 'H2 :', init_H2, 0. 
+       if (lCH4) print*, 'CH4 :', init_CH4, 0.
+       if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
+       if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
+       if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
+     endif
+!
+!  Initialize temperature and species
+!
+      if (lT_tanh) then
+       if (lroot) print*, 'Temperature initialization: tanh function.'
+      else
+       if (lroot) print*, 'Temperature initialization: linear.'
+      endif
+!      
+      do k=1,mx
+!
+!  Initialize temperature
+!
+        if (lT_tanh) then
+          del=init_x2-init_x1
+          f(k,:,:,ilnTT)=f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
+              +((init_TT2-init_TT1)*0.5)  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
+        else
+          if (x(k)<=init_x1) then
+	    f(k,:,:,ilnTT)=log(init_TT1)
+          endif
+          if (x(k)>=init_x2) then
+            f(k,:,:,ilnTT)=log(init_TT2)
+          endif
+          if (x(k)>init_x1 .and. x(k)<init_x2) then
+	    f(k,:,:,ilnTT)=&
+                log((x(k)-init_x1)/(init_x2-init_x1) &
+                *(init_TT2-init_TT1)+init_TT1)
+          endif
+        endif
+!
+!  Initialize fuel
+!
+        if (lT_tanh) then
+          if (lH2) then          
+	  del=(init_x2-init_x1)
           f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
               +(0.-f(l1,:,:,i_H2))*0.5  &
               *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-!
-          f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
-              +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+	  endif
+          if (lCH4) then
+	  if (lroot) print*, 'No tanh initial function available for CH4 combustion.'	  
+	  endif	  
 !
         else
           if (x(k)>init_x1) then
@@ -1046,40 +1406,37 @@ module Chemistry
               *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
          else
 !
-          if (x(k)>init_x2) then
-            f(k,:,:,i_O2)=final_massfrac_O2
-          endif
-          if (x(k)>init_x1 .and. x(k)<init_x2) then
-            f(k,:,:,i_O2)=(x(k)-init_x2)/(init_x1-init_x2) &
-                *(init_O2-final_massfrac_O2)&
-                +final_massfrac_O2
-          endif
+          if (x(k)>init_x2) f(k,:,:,i_O2)=final_massfrac_O2
+          if (x(k)>init_x1 .and. x(k)<=init_x2) &
+            f(k,:,:,i_O2)=(x(k)-init_x1)/(init_x2-init_x1) &
+                *(final_massfrac_O2-init_O2)+init_O2
          endif
         enddo
 !
-! Initialize steam and CO2
+! Initialize products
 !
-        if (.not. lT_tanh) then
-          do k=1,mx
-            if (x(k)>=init_x1) then
-              if (final_massfrac_O2>0.) then
-                f(k,:,:,i_H2O)=initial_massfractions(ichem_H2)/mH2*mH2O &
-                    *(exp(f(k,:,:,ilnTT))-init_TT1) &
-                    /(init_TT2-init_TT1)+init_H2O
-              else
-                if (x(k)>=init_x2) then
-                  if (lCO2) f(k,:,:,i_CO2)=init_CO2+(init_CH4-f(k,:,:,i_CH4))
-                  f(k,:,:,i_H2O)=1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)-f(k,:,:,i_O2)
-                  if (lCH4) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CH4)
-                  if (lCO2) f(k,:,:,i_H2O)=f(k,:,:,i_H2O)-f(k,:,:,i_CO2)
-                else
-                  f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
-                      *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2)) &
-                       -initial_massfractions(ichem_H2O)) &
-                       +initial_massfractions(ichem_H2O)
-                endif
-!
-              endif
+        if (lT_tanh) then
+	  do k=1,mx
+           if (lH2) then 	  
+	    del=(init_x2-init_x1)          
+	    f(k,:,:,i_H2O)=(f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
+              +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
+              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+           endif
+           if (lCH4) then 	  
+	    if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
+           endif	   
+	  enddo
+	else
+	  do k=1,mx
+            if (x(k)>=init_x1.and.x(k)<init_x2) then
+              f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
+                *final_massfrac_H2O
+              if (lCO2) f(k,:,:,i_CO2)=(x(k)-init_x1)/(init_x2-init_x1) &
+                *final_massfrac_CO2
+            else if (x(k)>=init_x2) then
+               if (lCO2) f(k,:,:,i_CO2)=final_massfrac_CO2
+               if (lH2O) f(k,:,:,i_H2O)=final_massfrac_H2O
             endif
           enddo
         endif
@@ -1089,29 +1446,78 @@ module Chemistry
           Rgas=Rgas_unit_sys/unit_energy
          endif
 !
-!  Find logaritm of density at inlet
+!  Set the initial equivalence ratio gradient in the fresh gases
+!     
+      dim(1:ny) = y(m1:m2)           
+      beta = init_N2/init_O2
+      do i = 1, mx
+        if (x(i) <= init_x1) then	
+	do j = 1, ny      
+	  if (dim(j) >= init_y1 .and. dim(j) <= init_y2) then
+	    if (lH2) then
+	      f(i,m1+j-1,:,i_H2) = init_zz2 - (init_zz2-init_zz1) * (init_y2 - dim(j)) / &
+		                          (init_y2 - init_y1) 
+	    else if (lCH4) then
+	      f(i,m1+j-1,:,i_CH4) = init_zz2 - (init_zz2-init_zz1) * (init_y2 - dim(j)) / &
+		                          (init_y2 - init_y1)
+	    endif
+          else if (dim(j) <= init_y1) then
+	    if (lH2) then
+	      f(i,m1+j-1,:,i_H2) = init_zz1
+	    else if (lCH4) then
+	      f(i,m1+j-1,:,i_CH4) = init_zz1
+	    endif
+          else if (dim(j) >= init_y2) then
+	    if (lH2) then
+	      f(i,m1+j-1,:,i_H2) = init_zz2
+	    else if (lCH4) then
+	      f(i,m1+j-1,:,i_CH4) = init_zz2
+	    endif	    	    	    
+	  endif
+	enddo
 !
-         initial_mu1&
-             =initial_massfractions(ichem_H2)/(mH2)&
-             +initial_massfractions(ichem_O2)/(mO2)&
-             +initial_massfractions(ichem_H2O)/(mH2O)&
-             +initial_massfractions(ichem_N2)/(mN2)
-         if (lCO2) initial_mu1=initial_mu1+init_CO2/(mCO2)
-         if (lCH4) initial_mu1=initial_mu1+init_CH4/(mCH4)
-         log_inlet_density=&
-             log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+	  if (lH2) then
+	    f(i,ny:my,:,i_H2) = init_zz2
+	    if (lO2) f(i,:,:,i_O2) = (1.-f(i,:,:,i_H2)) / (1.+beta)		  
+	    if (lN2) f(i,:,:,i_N2) = 1.-f(i,:,:,i_O2)-f(i,:,:,i_H2) 
+	  else if (lCH4) then
+	    f(i,ny:my,:,i_CH4) = init_zz2	    
+	    if (lO2) f(i,:,:,i_O2) = (1.-f(i,:,:,i_CH4)) / (1.+beta)
+	    if (lN2) f(i,:,:,i_N2) = 1.-f(i,:,:,i_O2)-f(i,:,:,i_CH4)
+            if (lCO2) f(i,:,:,i_CO2)=0.
+            if (lH2O) f(i,:,:,i_H2O)=0.
+	  endif
+	endif	  
+      enddo
 !
-       call getmu_array(f,mu1_full)
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i=1,mx
+       do j=1,my
+        do k=1,mz
+         f(i,j,k,ichemspec)=f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+        enddo
+       enddo      
+      enddo         
 !
 !  Initialize density
 !
+      call getmu_array(f,mu1_full)     
       f(l1:l2,m1:m2,n1:n2,ilnrho)=log(init_pressure)-log(Rgas)  &
           -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
 !
 !  Initialize velocity
 !
-      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
-!
+!      
+      if (lCH4) then
+        init_m1 = init_CH4/mCH4 + init_O2/mO2 + init_N2/mN2
+	init_rho = init_pressure/(init_TT1 * init_m1 * Rgas)
+        f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux) +   &
+                 init_ux * init_rho / exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      else
+	f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+      endif      
 !
 !  Check if we want nolog of density or nolog of temperature
 !
@@ -1120,18 +1526,7 @@ module Chemistry
       if (ltemperature_nolog) &
           f(l1:l2,m1:m2,n1:n2,iTT)=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
 !
-! Renormalize all species too be sure that the sum of all mass fractions
-! are unity
-!
-      do i=1,mx
-      do j=1,my
-      do k=1,mz
-        f(i,j,k,ichemspec)=f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
-      enddo
-      enddo      
-      enddo
-!
-    endsubroutine flame_front
+    endsubroutine triple_flame
 !***********************************************************************
       subroutine flame(f)
 !
@@ -1416,16 +1811,16 @@ module Chemistry
 !
         Rad=0.
        if (nxgrid >1) then
-        Rad=x(j1)**2
+        Rad=x(j1)*x(j1)
        endif
        if (nygrid>1) then
-        Rad=Rad+y(j2)**2
+        Rad=Rad+y(j2)*y(j2)
        endif
        if (nzgrid>1) then
-        Rad=Rad+z(j3)**2
+        Rad=Rad+z(j3)*z(j3)
        endif
 !
-       Rad=(Rad)**0.5
+       Rad=sqrt(Rad)
 !
        !  if (Rad<0.2) then
 !          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.06-Rad)/0.06)**2)
@@ -1497,6 +1892,9 @@ module Chemistry
 !
 !  Calculate quantities for a mixture
 !
+!  06/22/2010:julien: Added evaluation of diffusion coefficients using constant
+!                     Lewis numers Di = lambda/(rho*Cp*Lei)
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) ::  tmp_sum,tmp_sum2, nu_dyn,nuk_nuj,Phi
       real, dimension (mx) :: cp_R_spec,T_loc,T_loc_2,T_loc_3,T_loc_4
@@ -1507,7 +1905,6 @@ module Chemistry
       real :: mk_mj
       real :: EE=0.,TT=0.,yH=1.
 !
-      logical :: tran_exist=.false.
       logical,save :: lwrite=.true.
 !
       character (len=20) :: output_file="./data/mix_quant.out"
@@ -1539,14 +1936,14 @@ module Chemistry
 !  Mole fraction XX
 !
           do k=1,nchemspec
-          if (species_constants(k,imass)>0.) then
-          do j2=mm1,mm2
-          do j3=nn1,nn2
-             XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
-                /(species_constants(k,imass)*mu1_full(:,j2,j3))
-          enddo
-          enddo
-          endif
+            if (species_constants(k,imass)>0.) then
+              do j2=mm1,mm2
+                do j3=nn1,nn2
+                  XX_full(:,j2,j3,k)=f(:,j2,j3,ichemspec(k))*unit_mass &
+                      /(species_constants(k,imass)*mu1_full(:,j2,j3))
+                enddo
+              enddo
+            endif
           enddo
 !
           call  getpressure(pp_full)
@@ -1606,8 +2003,8 @@ module Chemistry
                           +species_constants(k,iaa1(ii3))*T_loc_2 &
                           +species_constants(k,iaa1(ii4))*T_loc_3 &
                           +species_constants(k,iaa1(ii5))*T_loc_4
-                 endwhere
-                 cv_R_spec_full(:,j2,j3,k)=cp_R_spec-1.
+                  endwhere
+                  cv_R_spec_full(:,j2,j3,k)=cp_R_spec-1.
 !
 ! Check if the temperature are within bounds
 !
@@ -1631,18 +2028,13 @@ module Chemistry
            enddo
          endif
 !
-!  Binary diffusion coefficients
-!
-          inquire(file='tran.dat',exist=tran_exist)
-!
-          if (tran_exist) then
-            call calc_diff_visc_coef(f)
-          endif
-!
 !  Viscosity of a mixture
 !
-       if (visc_const>impossible*0.99) then
+        if (tran_exist) then
+          call calc_diff_visc_coef(f)
+        endif
 !
+        if (visc_const>impossible*0.99) then
         do j3=nn1,nn2
         do j2=mm1,mm2
 !
@@ -1651,32 +2043,27 @@ module Chemistry
           else
             nu_dyn=0.
             do k=1,nchemspec
-             if (species_constants(k,imass)>0.) then
-              tmp_sum2=0.
-              do j=1,k
-                mk_mj=species_constants(k,imass) &
-                    /species_constants(j,imass)
-                nuk_nuj=species_viscosity(:,j2,j3,k) &
-                    /species_viscosity(:,j2,j3,j)
-                Phi=1./sqrt(8.)*1./sqrt(1.+mk_mj) &
-                    *(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-                tmp_sum2=tmp_sum2 &
-                                  +XX_full(:,j2,j3,j)*Phi
-              enddo
-              nu_dyn=nu_dyn+XX_full(:,j2,j3,k)*&
-                  species_viscosity(:,j2,j3,k)/tmp_sum2
-             endif
+              if (species_constants(k,imass)>0.) then
+                tmp_sum2=0.
+                do j=1,nchemspec
+                  mk_mj=species_constants(k,imass)/species_constants(j,imass)
+                  nuk_nuj=species_viscosity(:,j2,j3,k)/species_viscosity(:,j2,j3,j)
+                  Phi=1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
+                  tmp_sum2=tmp_sum2 + XX_full(:,j2,j3,j)*Phi
+                enddo
+                nu_dyn=nu_dyn + XX_full(:,j2,j3,k)*species_viscosity(:,j2,j3,k)/tmp_sum2
+              endif
             enddo
-              nu_full(:,j2,j3)=nu_dyn/rho_full(:,j2,j3)
+            nu_full(:,j2,j3)=nu_dyn/rho_full(:,j2,j3)
           endif
 !
         enddo
         enddo
        endif
 !
-!  Diffusion coeffisient of a mixture
+!  Diffusion coefficient of a mixture from tran.dat file
 !
-       if (.not. lDiff_simple) then
+       if ((.not. lDiff_simple).and.(.not. lew_exist)) then
 !
          do j3=nn1,nn2
          do j2=mm1,mm2
@@ -1687,8 +2074,8 @@ module Chemistry
              if (lfix_Sc) then
               do k=1,nchemspec
                if (species_constants(k,imass)>0.) then
-               Diff_full(:,j2,j3,k)=species_viscosity(:,j2,j3,k) &
-                   /rho_full(:,j2,j3)/Sc_number
+                 Diff_full(:,j2,j3,k)=species_viscosity(:,j2,j3,k) &
+                     /rho_full(:,j2,j3)/Sc_number
                endif
               enddo
              elseif (ldiffusion) then
@@ -1711,31 +2098,49 @@ module Chemistry
                  endif
                  endif
                 enddo
-                 Diff_full(:,j2,j3,k)=mu1_full(:,j2,j3)*tmp_sum2&
-                     /tmp_sum
+                Diff_full(:,j2,j3,k)=mu1_full(:,j2,j3)*tmp_sum2&
+                    /tmp_sum
               enddo
              endif
             endif
-             do k=1,nchemspec
+            do k=1,nchemspec
               if (species_constants(k,imass)>0.) then
-              Diff_full_add(:,j2,j3,k)=Diff_full(:,j2,j3,k)*&
-                  species_constants(k,imass)/unit_mass &
-                  *mu1_full(:,j2,j3)
+                Diff_full_add(:,j2,j3,k)=Diff_full(:,j2,j3,k)*&
+                    species_constants(k,imass)/unit_mass &
+                    *mu1_full(:,j2,j3)
               endif
-             enddo
+            enddo
          enddo
          enddo
+!
+!  Diffusion coefficient of a mixture with constant Lewis numbers
+!
+       else if ((.not. lDiff_simple).and.lew_exist) then 
+ 	 do j3=nn1,nn2
+           do j2=mm1,mm2
+             Diff_full(:,j2,j3,:)=0.
+             if (.not.lone_spec) then	   
+	       do k=1,nchemspec 
+	         Diff_full_add(:,j2,j3,k)=lambda_full(:,j2,j3)/&
+	             (rho_full(:,j2,j3)*cp_full(:,j2,j3)*Lewis_coef(k))
+	       
+	       enddo
+	     endif	    
+           enddo
+	 enddo
        endif
 !
 !  Thermal diffusivity
 !
-        if (lheatc_chemistry .and. (.not. lThCond_simple)) then
+        if (lheatc_chemistry .and. (.not.lThCond_simple)) then
           call calc_therm_diffus_coef(f)
         endif
         else
           call stop_it('This case works only for cgs units system!')
         endif
       endif
+!
+!  Write block
 !
       if (lwrite) then
         open(file_id,file=output_file)
@@ -2057,15 +2462,19 @@ module Chemistry
 !  if the file with chemkin data exists
 !  reading the Chemkin data
 !
+!  06/21/2010:julien: Reading lewis.dat file to collect constant Lewis numbers 
+!                     for each species
+!
       character (len=20) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: stat,k,i
-      logical :: tran_exist
       character (len=20) :: input_file2="./data/stoich.out"
       integer :: file_id=123
 !
 !
       inquire(file='tran.dat',exist=tran_exist)
+      inquire(file='lewis.dat',exist=lew_exist)
+      if (lew_exist) ldiff_fick=.true.
 !
 !  Allocate binary diffusion coefficient array
 !
@@ -2082,7 +2491,6 @@ module Chemistry
           if (stat>0) call stop_it("Couldn't allocate memory "//&
               "for binary diffusion coefficients")
 !
-!
         endif
       endif
 !
@@ -2091,14 +2499,20 @@ module Chemistry
           print*,'tran.dat file with transport data is found.'
         endif
         call read_transport_data
-        !call calc_diff_visc_coef(f)
+      else if (lew_exist) then
+        if (lroot) then
+          print*,'lewis.dat file with transport data is found.'
+	  print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
+        endif
+        call read_Lewis
       else
         if (lroot) then
           print*,'tran.dat file with transport data is not found.'
+	  print*,'lewis.dat file with Lewis numbers is not found.'
           print*,'Now diffusion coefficients is ',chem_diff
           print*,'Now species viscosity is ',nu_spec
         endif
-        Bin_Diff_coef=chem_diff/(unit_length**2/unit_time)
+        Bin_Diff_coef=chem_diff/(unit_length*unit_length/unit_time)
         do k=1,nchemspec
           species_viscosity(:,:,:,k)=nu_spec(k)/&
               (unit_mass/unit_length/unit_time)
@@ -2209,6 +2623,7 @@ module Chemistry
 !   13-aug-07/steveb: coded
 !    8-jan-08/natalia: included advection/diffusion
 !   20-feb-08/axel: included reactions
+!   22-jun-10/julien: modified evaluation of enthalpy fluxes with constant Lewis numbers
 !
       use Diagnostics
       use Sub, only: grad,dot_mn
@@ -2216,8 +2631,8 @@ module Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gchemspec, dk_D
-      real, dimension (nx) :: ugchemspec, sum_DYDT
+      real, dimension (nx,3) :: gchemspec, dk_D, sum_diff=0.
+      real, dimension (nx) :: ugchemspec, sum_DYDT, sum_dhhk=0.
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
       real, dimension (nx) :: RHS_T_full, sum_Y
@@ -2276,7 +2691,7 @@ module Chemistry
               p%DYDt_reac(:,k)
         endif 
 !
-!  Add filter for negative consentrations
+!  Add filter for negative concentrations
 !
         if (lfilter .and. .not. lfilter_strict) then
           do i=1,mx
@@ -2285,7 +2700,7 @@ module Chemistry
           enddo
         endif
 !
-!  Add strict filter for negative consentrations
+!  Add strict filter for negative concentrations
 !
         if (lfilter_strict) then
           do i=1,mx
@@ -2300,14 +2715,16 @@ module Chemistry
 !
     enddo
 !
+    if (lreactions .and. ireac /= 0) call get_reac_rate(f,p)
+!
       if (ldensity .and. lcheminp) then
 !
        if (l1step_test) then
         sum_DYDt=0.
         do i=1,nx
 !
-        sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
-           *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)**2
+          sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
+             *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
 !
       !   if (p%TT(i)>Tc) then
       !     if (x(i)>0.) then
@@ -2317,6 +2734,7 @@ module Chemistry
     !        (1.-f(l1-1+i,m,n,ichemspec(ipr)))
       !   endif
         enddo
+!
        else
         sum_DYDt=0.
         sum_hhk_DYDt_reac=0.
@@ -2327,7 +2745,7 @@ module Chemistry
           sum_DYDt=sum_DYDt+Rgas/species_constants(k,imass)&
               *(p%DYDt_reac(:,k)+p%DYDt_diff(:,k))
           if (lreactions) then
-           sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
+            sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
           endif
 !
          if (ldiffusion) then
@@ -2337,6 +2755,11 @@ module Chemistry
              +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
              *p%Diff_penc_add(:,k)
            enddo
+          else if (ldiff_fick) then
+            call grad(f,ichemspec(k),gchemspec)           
+ 	    do i=1,3
+              dk_D(:,i)=gchemspec(:,i)*Diff_full_add(l1:l2,m,n,k)
+            enddo
           else
            do i=1,3
             dk_D(:,i)=(p%gXXk(:,i,k) &
@@ -2346,10 +2769,21 @@ module Chemistry
           endif
            call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
            sum_dk_ghk=sum_dk_ghk+dk_dhhk
+           if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
          endif
 !
         endif
         enddo
+
+!
+! If the correction velocity is added
+!
+        if (ldiff_corr.and.ldiffusion) then
+         do k=1,nchemspec
+	  call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
+	  sum_dk_ghk(:)=sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
+         enddo
+	endif       
        endif
 !
         if (l1step_test) then
@@ -2382,7 +2816,7 @@ module Chemistry
               - 2.5e6/1005.*p%ccondens*p%TT1
 
 !
-! this is for the debuging perpose: one check that the sum of all mass fractions is 1
+! this is for debuging purposes: one check that the sum of all mass fractions is 1
 !
         sum_Y=0.
         do k=1,nchemspec
@@ -3528,19 +3962,20 @@ module Chemistry
 !  NILS: so one should maybe put some effort into optimizing it more.
 !
 !  17-mar-08/natalia: coded
+!  11-nov-10/julien: optimized, reaction rates are calculated under a logarithmic form
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
       real, dimension (nx):: mix_conc
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc,prod1,prod2
+      real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc
+      real, dimension (nx) :: prod1,prod2
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
-      real, dimension (nx,nchemspec) :: S0_R
       real :: Rcal
       integer :: k , reac, i
-      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd
+      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd, Rcal1
       logical,save :: lwrite=.true., lwrite_first=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
@@ -3550,7 +3985,6 @@ module Chemistry
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
       real, dimension (nx) :: TT1_loc
 !
-!
 ! Natalia:pencil_check
 ! the same problem as in calculation of p%H0_RT:
 ! if lpencil_check and full compiler settings then
@@ -3559,63 +3993,18 @@ module Chemistry
 ! While this problem is not resolved 
 ! I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
 ! 
-      TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
+      TT1_loc=exp(-p%lnTT)
 !
       if (lwrite_first)  open(file_id,file=input_file)
 !
 !  p is in atm units; atm/bar=1./10.13
 !
       Rcal=Rgas_unit_sys/4.14*1e-7
+      Rcal1=1./Rcal
       rho_cgs=p%rho*unit_mass/unit_length**3
       p_atm=1e6*unit_length**3/unit_energy
       if (lwrite)  write(file_id,*)'T= ',   p%TT
       if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
-!
-   !   if (lpencil(i_S0_R)) then
-!
-!  Dimensionless Standard-state molar entropy  S0/R
-!
-      if (lwrite)  write(file_id,*)'**************************'
-      if (lwrite) write(file_id,*)'S0_R'
-      if (lwrite)  write(file_id,*)'**************************'
-!
-!
-      do k=1,nchemspec
-        if (species_constants(k,imass)>0.) then
-          T_low=species_constants(k,iTemp1)
-          T_mid=species_constants(k,iTemp2)
-          T_up= species_constants(k,iTemp3)
-!
-!  Check that we are not outside the temperture range
-!
-            if ((maxval(exp(f(l1:l2,m,n,ilnTT))) > T_up)  &
-                .or. (minval(exp(f(l1:l2,m,n,ilnTT))) < T_low-10.)) then
-              print*,'m,n=',m,n
-              print*,'p%TT=',p%TT
-              call fatal_error('get_reaction_rate',&
-                  'p%TT(i) is outside range')
-            endif
-!
-!  Find the entropy by using fifth order temperature fitting function
-!
-          where(p%TT <= T_mid .and. T_low <= p%TT)
-            S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
-                  +species_constants(k,iaa2(ii2))*p%TT &
-                  +species_constants(k,iaa2(ii3))*p%TT_2/2 &
-                  +species_constants(k,iaa2(ii4))*p%TT_3/3 &
-                  +species_constants(k,iaa2(ii5))*p%TT_4/4 &
-                  +species_constants(k,iaa2(ii7))
-          elsewhere (T_mid <= p%TT .and. p%TT <= T_up)
-            S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
-                  +species_constants(k,iaa1(ii2))*p%TT &
-                  +species_constants(k,iaa1(ii3))*p%TT_2/2 &
-                  +species_constants(k,iaa1(ii4))*p%TT_3/3 &
-                  +species_constants(k,iaa1(ii5))*p%TT_4/4 &
-                  +species_constants(k,iaa1(ii7))
-          endwhere
-        endif
-      enddo
-!    endif
 !
 !  calculation of the reaction rate
 !
@@ -3631,50 +4020,70 @@ module Chemistry
         prod1=1.
         prod2=1.
         do k=1,nchemspec
-          if ((abs(Sijp(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
-            prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-                /species_constants(k,imass))**Sijp(k,reac)
+          if((abs(Sijp(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
+            if(abs(Sijp(k,reac))==1) then
+              prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                  /species_constants(k,imass))
+            else if(abs(Sijp(k,reac))==2) then
+              prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
+                  *rho_cgs(:)/species_constants(k,imass))           
+            else
+              prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                  /species_constants(k,imass))**Sijp(k,reac) 
+            endif         
           endif
         enddo
         do k=1,nchemspec
           if ((abs(Sijm(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
-            prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-                /species_constants(k,imass))**Sijm(k,reac)
+            if(abs(Sijm(k,reac))==1) then
+              prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                 /species_constants(k,imass))
+            else if(abs(Sijm(k,reac))==2) then
+              prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                 /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
+                 *rho_cgs(:)/species_constants(k,imass))         
+            else
+              prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
+                 /species_constants(k,imass))**Sijm(k,reac)
+            endif
           endif
         enddo
 !
 !  Find forward rate constant for reaction 'reac'
 !
-        if (latmchem) then
-          do i=1,nx
-            if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
-                .and. (E_an(reac)==0.)) then
-              call calc_extra_react(f,reac,kf(i),i,m,n,p)
-            else
-              kf(i)=B_n(reac)*p%TT(i)**alpha_n(reac)*exp(-E_an(reac)*p%TT1(i))
-            endif
-          enddo
-        else
-          kf=B_n(reac)*p%TT**alpha_n(reac)*exp(-E_an(reac)/Rcal*TT1_loc)
-        endif
+	  if(latmchem) then	    
+	    if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
+                 .and. (E_an(reac)==0.)) then          
+	      do i=1,nx	                
+		call calc_extra_react(f,reac,kf(i),i,m,n,p)
+	      enddo
+	      kf=log(kf)
+            else 
+	      do i=1,nx	 
+                kf(i)=log(B_n(reac))+alpha_n(reac)*p%lnTT(i)-E_an(reac)*TT1_loc(i)
+	      enddo 
+	    endif
+	  else
+            kf=log(B_n(reac))+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
 !
 !  Find backward rate constant for reaction 'reac'
 !
-        dSR=0.
-        dHRT=0.
-        sum_tmp=0.
-        do k=1,nchemspec
-          dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*S0_R(:,k)
-          dHRT=dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
-          sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
-        enddo
-        Kp=exp(dSR-dHRT)
-        if (sum_tmp==0.) then
-          Kc=Kp
-        else
-          Kc=Kp*(p_atm*p%TT1/Rgas)**sum_tmp
-        endif
-        kr=kf/Kc
+            dSR=0.
+            dHRT=0.
+            sum_tmp=0.
+            do k=1,nchemspec
+              dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(:,k)
+              dHRT=dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
+              sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+            enddo
+            Kp=dSR-dHRT
+            if (sum_tmp==0.) then
+              Kc=Kp
+            else
+              Kc=Kp+sum_tmp*log(p_atm*p%TT1/Rgas)
+            endif
+          endif
 !
 !  Multiply by third body reaction term
 !
@@ -3692,30 +4101,29 @@ module Chemistry
           mix_conc=rho_cgs(:)*p%mu1(:)/unit_mass
         endif
 !
-!  The Lindstrom approach to the fall of reactions
+!  The Lindeman approach to the fall of reactions
 !
-     !   Kc_0=Kc
         if (maxval(abs(low_coeff(:,reac))) > 0.) then
           B_n_0=low_coeff(1,reac)
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)
-          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*TT1_loc(:))
-          Pr=kf_0/kf*mix_conc
-          kf=kf*(Pr/(1.+Pr))
+          kf_0(:)=log(B_n_0)+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+          Pr=mix_conc*exp(kf_0-kf)
+          kf=kf+log(Pr/(1.+Pr))
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
           E_an_0=high_coeff(3,reac)
-          kf_0(:)=B_n_0*p%TT(:)**alpha_n_0*exp(-E_an_0/Rcal*TT1_loc(:))
-          Pr=kf_0/kf*mix_conc
-          kf=kf*(1./(1.+Pr))
+          kf_0(:)=log(B_n_0)+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+          Pr=exp(kf_0-kf)*mix_conc
+          kf=kf+log(1./(1.+Pr))
         endif
 !
 ! The Troe approach
 !
         if (maxval(abs(troe_coeff(:,reac))) > 0.) then
          Fcent=(1.-troe_coeff(1,reac))*exp(-p%TT(:)/troe_coeff(2,reac)) &
-         +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
+             +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
          ccc=-0.4-0.67*log10(Fcent)
          nnn=0.75-1.27*log10(Fcent)
          ddd=0.14
@@ -3723,42 +4131,40 @@ module Chemistry
          tmpF=((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
          tmpF=1./(1.+tmpF)
          FF=tmpF*log10(Fcent)
-         FF=10**(FF)
-         kf=kf*FF
+         FF=FF*log(10.)
+         kf=kf+FF
         endif
 !
 !  Find forward (vreact_p) and backward (vreact_m) rate of
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-        if (Mplus_case (reac)) then
-          where (prod1 > 0)
-            vreact_p(:,reac)=prod1*kf
-          elsewhere
-            vreact_p(:,reac)=0.
-          endwhere
+        if (latmchem) then
+          kr=kf
         else
-          where (prod1 > 0)
-            vreact_p(:,reac)=prod1*kf*sum_sp
-          elsewhere
-            vreact_p(:,reac)=0.
-          endwhere
+          kr=kf-Kc
         endif
 !
-        if (latmchem) then
-          kr=kf!/Kc(i)
-        else
-          kr=kf/Kc
-        endif
         if (Mplus_case (reac)) then
-          where (prod2 > 0)
-            vreact_m(:,reac)=prod2*kr
+          where (prod1 > 0.)
+            vreact_p(:,reac)=prod1*exp(kf)
+          elsewhere
+            vreact_p(:,reac)=0.
+          endwhere
+          where (prod2 > 0.)
+            vreact_m(:,reac)=prod2*exp(kr)
           elsewhere
             vreact_m(:,reac)=0.
           endwhere
+!
         else
-          where (prod2 > 0)
-            vreact_m(:,reac)=prod2*kr*sum_sp
+          where (prod1 > 0.)
+            vreact_p(:,reac)=prod1*exp(kf)*sum_sp
+          elsewhere
+            vreact_p(:,reac)=0.
+          endwhere
+          where (prod2 > 0.)
+            vreact_m(:,reac)=prod2*exp(kr)*sum_sp
           elsewhere
             vreact_m(:,reac)=0.
           endwhere
@@ -3771,9 +4177,8 @@ module Chemistry
         if (l1step_test) then
           do i=1,nx
             if (p%TT(i) > Tc) then
-              vreact_p(i,reac)=f(l1,m,n,iux)**2*p%rho(1)*Cp_const &
-                  /lambda_const*beta*(beta-1.) &
-                  *(1.-f(l1-1+i,m,n,ichemspec(ipr)))
+              vreact_p(i,reac)=f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
+                  /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
             else
               vreact_p(i,reac)=0.
             endif
@@ -3837,23 +4242,25 @@ module Chemistry
           else
             alpha=1.
           endif
-          vreactions_p(:,j)=alpha*kreactions_p(j)*kreactions_z(n,j)
-          vreactions_m(:,j)=alpha*kreactions_m(j)*kreactions_z(n,j)
+          vreactions_p(:,j)=log(alpha*kreactions_p(j)*kreactions_z(n,j))
+          vreactions_m(:,j)=log(alpha*kreactions_m(j)*kreactions_z(n,j))
           do k=1,nchemspec
-            vreactions_p(:,j)=vreactions_p(:,j)*&
-                f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
-            vreactions_m(:,j)=vreactions_m(:,j)*&
-                f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
+            vreactions_p(:,j)=vreactions_p(:,j)+&
+                Sijm(k,j)*log(f(l1:l2,m,n,ichemspec(k)))
+            vreactions_m(:,j)=vreactions_m(:,j)+&
+                Sijp(k,j)*log(f(l1:l2,m,n,ichemspec(k)))
           enddo
+	  vreactions_p(:,j)=exp(vreactions_p(:,j))
+	  vreactions_m(:,j)=exp(vreactions_m(:,j))
         enddo
       else
 !
 !  Chemkin data case
 !
-         call get_reaction_rate(f,vreactions_p,vreactions_m,p)
+        call get_reaction_rate(f,vreactions_p,vreactions_m,p)
       endif
 !
-!  Calculate rate of progress variable (labeled q in the chemkin manual)
+!  Calculate rate of reactions (labeled q in the chemkin manual)
 !
       vreactions=vreactions_p-vreactions_m
 !
@@ -3874,7 +4281,7 @@ module Chemistry
         endif
         p%DYDt_reac(:,k)=xdot*unit_time
       enddo
-
+!
       if (lchemistry_diag) then
         do k=1,nchemspec
         do j=1,nreactions
@@ -3975,7 +4382,7 @@ module Chemistry
     subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
 !
 !  Get coefficients for calculating of the collision integral
-!  This routind is called from calc_diff_visc_coeff, which again is called from
+!  This routine is called from calc_diff_visc_coeff, which again is called from
 !  calc_for_chem_mixture, which is why we work on full chunks of arrays here.
 !
 !  03-apr-08/natalia: coded
@@ -4034,10 +4441,10 @@ module Chemistry
 !
 !  Find binary diffusion coefficients
 !
-      tmp_local=3./16.*(2.*k_B_cgs**3/pi)**0.5
+      tmp_local=3./16.*sqrt(2.*k_B_cgs**3/pi)
       do j3=nn1,nn2
       do j2=mm1,mm2
-        prefactor(ll1:ll2,j2,j3)=tmp_local*(TT_full(ll1:ll2,j2,j3))**0.5&
+        prefactor(ll1:ll2,j2,j3)=tmp_local*sqrt(TT_full(ll1:ll2,j2,j3))&
             *unit_length**3/(Rgas_unit_sys*rho_full(ll1:ll2,j2,j3))
       enddo
       enddo
@@ -4060,7 +4467,7 @@ module Chemistry
 !  manual
 !
             if (j/=k) then
-                eps_jk=(tran_data(j,2)*tran_data(k,2))**0.5
+                eps_jk=sqrt(tran_data(j,2)*tran_data(k,2))
                 sigma_jk=0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
                 m_jk=(species_constants(j,imass)*species_constants(k,imass)) &
                     /(species_constants(j,imass)+species_constants(k,imass))/Na
@@ -4069,7 +4476,7 @@ module Chemistry
                 eps_jk=tran_data(j,2)
                 sigma_jk=tran_data(j,3)*1e-8
                 m_jk=species_constants(j,imass)/(2*Na)
-                delta_jk=0.5*(tran_data(j,4)*1e-18)**2
+                delta_jk=0.5*(tran_data(j,4)*1e-18)*(tran_data(j,4)*1e-18)
               endif
 !
 ! Loop over all grid points
@@ -4096,10 +4503,10 @@ module Chemistry
                     +0.19*delta_jk_star*delta_jk_star/(TT_full(ll1:ll2,j2,j3)/eps_jk)
                if (j/=k) then
                 Bin_Diff_coef(ll1:ll2,j2,j3,k,j)=prefactor(ll1:ll2,j2,j3)/mu1_full(ll1:ll2,j2,j3)&
-                    /(sqrt(m_jk)*sigma_jk**2*Omega_kl(ll1:ll2,j2,j3))
+                    /(sqrt(m_jk)*sigma_jk*sigma_jk*2*Omega_kl(ll1:ll2,j2,j3))
                else
                 Bin_Diff_coef(ll1:ll2,j2,j3,k,j)=prefactor(ll1:ll2,j2,j3)&
-                    /(sqrt(m_jk)*sigma_jk**2*Omega_kl(ll1:ll2,j2,j3))*species_constants(k,imass)
+                    /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))*species_constants(k,imass)
 !
                endif
               enddo
@@ -4128,15 +4535,15 @@ module Chemistry
 !
      if (visc_const>impossible*0.99) then
       omega='Omega22'
-      tmp_local=5./16.*(k_B_cgs/(Na*pi))**0.5
+      tmp_local=5./16.*sqrt(k_B_cgs/(Na*pi))
 !
       do k=1,nchemspec
-        tmp_local2=(species_constants(k,imass))**0.5/  &
-             (tran_data(k,3)*1e-8)**2*tmp_local
+        tmp_local2=sqrt(species_constants(k,imass))/  &
+             ((tran_data(k,3)*1e-8)*(tran_data(k,3)*1e-8))*tmp_local
 !
 ! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
 !
-          delta_st=(1e-18*tran_data(k,4))**2/2./ &
+          delta_st=(1e-18*tran_data(k,4))*(1e-18*tran_data(k,4))/2./ &
              (tran_data(k,2)*k_B_cgs*(tran_data(k,3)*1e-8)**3)
 !
           if (ltemperature_nolog) then
@@ -4148,7 +4555,7 @@ module Chemistry
 !
           do j3=nn1,nn2
           do j2=mm1,mm2
-           species_viscosity(ll1:ll2,j2,j3,k)=TT_full(ll1:ll2,j2,j3)**0.5&
+           species_viscosity(ll1:ll2,j2,j3,k)=sqrt(TT_full(ll1:ll2,j2,j3))&
                /(Omega_kl(ll1:ll2,j2,j3) &
                +0.2*delta_st*delta_st/(TT_full(ll1:ll2,j2,j3)  &
                /tran_data(k,2)))*tmp_local2 &
@@ -4176,8 +4583,8 @@ module Chemistry
 !
 !        call timing('calc_therm_diffus_coef','just entered')
 !
-        pi_1_5=pi**1.5
-        pi_2=pi**2.
+         pi_2=pi*pi      
+         pi_1_5=pi*sqrt(pi)
 !
         do j3=nn1,nn2
         do j2=mm1,mm2
@@ -4209,11 +4616,11 @@ module Chemistry
                   /species_viscosity(:,j2,j3,k)
               AA=2.5-tmp_val
               T_st=tran_data(k,2)/298.
-              FF=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
+              FF=1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
                   *(T_st)+pi_1_5*(T_st)**1.5
               ZZ=tran_data(k,6)*FF
               T_st=tran_data(k,2)/TT_full(:,j2,j3)
-              FF=1.+pi_1_5/2.*(T_st)**0.5+(pi_2/4.+2.) &
+              FF=1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
                   *(T_st)+pi_1_5*(T_st)**1.5
               ZZ=ZZ/FF
               BB=ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
@@ -4260,6 +4667,9 @@ module Chemistry
 !
 !  Calculate diffusion term, p%DYDt_diff
 !
+!  06/22/2010:julien: Evaluation of mass diffusion fluxes using Fick's law for simplified
+!                     diffusion using constant Lewis numbers
+!
       use Sub, only: del2,grad,dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4269,6 +4679,8 @@ module Chemistry
       real, dimension (nx) :: del2chemspec
       real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX,  del2lnpp!del2pp,
       real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
+      real, dimension (nx) :: sum_gdiff=0.,diff_op3
+      real, dimension (nx,3)  :: sum_diff=0., dk_D      
       real :: diff_k
       integer :: k,i
 !
@@ -4300,7 +4712,9 @@ module Chemistry
           endif
         else
 !
-          if (ldiffusion) then
+!  Detailed chemistry and transport using CHEMKIN formalism.
+!
+          if (ldiffusion.and.(.not.ldiff_fick)) then
             call del2(XX_full(:,:,:,k),del2XX)
             call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
 !
@@ -4329,21 +4743,55 @@ module Chemistry
              call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
              call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
            endif
-          endif
+          else if (ldiffusion.and.ldiff_fick) then
+            call del2(f,ichemspec(k),del2chemspec)            
+	    call grad(f,ichemspec(k),gchemspec)
+            call grad(Diff_full_add(:,:,:,k),gDiff_full_add)	    
+            call dot_mn(p%glnrho,gchemspec,diff_op1)
+            call dot_mn(gDiff_full_add,gchemspec,diff_op2)	 	   
+	  endif
 !
           if (lDiff_simple) then
 ! Have removed all terms including pressure gradients as these are supposed
 ! to be small and not required for such as crude approxiamtion as the simplified
 ! diffustion method.
+!
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2
-          else
+	   do i=1,3
+	    dk_D(:,i)=p%Diff_penc_add(:,k)*p%gXXk(:,i,k)
+	   enddo
+          else if ((.not.lDiff_simple).and.(.not.ldiff_fick)) then
            p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
            +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*del2lnpp &
            +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*glnrho_glnpp &
-           +Xk_Yk(:)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
+           +Xk_Yk(:)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk          
+	   do i=1,3
+	    dk_D(:,i)=Diff_full_add(l1:l2,m,n,k)*(p%gXXk(:,i,k)+Xk_Yk(:)*p%glnpp(:,i))
+	   enddo		   
+          else if (ldiff_fick) then
+           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2chemspec+diff_op1)+diff_op2
+	   do i=1,3
+	    dk_D(:,i)=Diff_full_add(l1:l2,m,n,k)*gchemspec(:,i)
+	   enddo    	   
           endif
+!
+         if (ldiff_corr) then	
+	   sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
+	   sum_gdiff(:) = sum_gdiff(:)+ p%DYDt_diff(:,k)
+	 endif
         endif
       enddo
+!
+!  Adding correction diffusion velocity to ensure mass balance
+!      
+      if (ldiffusion.and.ldiff_corr) then
+        do k=1,nchemspec
+         call grad(f,ichemspec(k),gchemspec)	
+	 call dot_mn(gchemspec(:,:),sum_diff,diff_op3)
+	 p%DYDt_diff(:,k)=p%DYDt_diff(:,k)-   &
+	    (diff_op3+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
+        enddo
+      endif
 !
     endsubroutine calc_diffusion_term
 !***********************************************************************
@@ -4595,7 +5043,7 @@ module Chemistry
       endif
 !
       if (.not. reinitialize_chemistry) then
-      if (.not. lflame_front)  then
+      if (.not.lflame_front .and. .not.ltriple_flame .and. .not.lFlameMaster)  then
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
         else
@@ -4696,9 +5144,8 @@ module Chemistry
 !         else
 !           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
 !            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
-!         endif
-       
-
+!         endif   
+!    
 !         if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
 !         if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
 !         if (lroot) print*, 'New Air density, g/cm^3:'
@@ -5005,38 +5452,379 @@ module Chemistry
       character (len=100) :: file
       character (len=10) :: processor
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,7,7,mfarray) :: a
-      integer :: j,k
+      real, dimension (:,:,:,:), allocatable :: a
+      real, dimension (:,:,:), allocatable :: grid
+      real, dimension (:), allocatable :: cc
+      real :: t, sum
+      integer :: j,k,i,ii, imid, ipos
+      integer :: mx2, my2, mz2, mv2
+      integer :: l22, m22
 !
 ! NILS: For the time beeing the prerun simulation can not have been run in parallell
 ! NILS: Should fix this soon.
 !
-      processor='proc0'
+! Read dimension of the array stored during the 1D prerun
+!
+      processor='proc0'     
+      file=trim(prerun_dir)//'/data/'//trim(processor)//'/dim.dat'
+      print*,'Reading prerun dim from ',file     
+      open(1,FILE=file)
+      read(1,*) mx2, my2, mz2, mv2
+      close(1)     
+      l22 = mx2-l1+1
+      m22 = mx2-2*(l1-1)      
+      allocate(a(mx2,my2,mz2,mv2), grid(m22,my2-6,mz2-6), cc(m22))
+!
+! Read the grid used during the prerun
+!
+      file=trim(prerun_dir)//'/data/'//trim(processor)//'/grid.dat'
+      print*,'Reading prerun grid from ',file     
+      open(1,FILE=file,FORM='unformatted')
+      read(1) t,grid(:,1,1),grid(1,:,1),grid(1,1,:)
+      close(1)     
+!
+! Read the data stored during the prerun
+!       
       file=trim(prerun_dir)//'/data/'//trim(processor)//'/var.dat'
       print*,'Reading inlet data from ',file
-!
-!  Open and read data from file
-!
       open(1,FILE=file,FORM='unformatted')
       read(1) a
       close(1)
 !
+! Definition of a progress variable
+!       
+      cc(1) = 0.
+      ipos=0; imid=0      
+      do ii = 2, m22-1
+        cc(ii) = (exp(a(ii,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))/ &
+	         (exp(a(m22-1,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))
+        if (cc(ii) > 0.7 .AND. cc(ii-1) <= 0.7) imid = ii
+	if (grid(ii,1,1) > flame_pos .AND. grid(ii-1,1,1) <= flame_pos) ipos = ii
+	if (ipos>0 .and. imid>0) exit		         
+      enddo
+!
+!  The center of the flame, arbitrarily identified by cc=0.7, is
+!  located at the position flame_pos (chemistry_init_pars)
+!  The flame is thus moved in its domain 
+!
 !  Spread the data on the f-array
 !
       do j=1,my
-        do k=1,mz
-          f(:,j,k,iux)=f(:,j,k,iux)+a(:,m1,n1,iux)
-          f(:,j,k,iuz+1:mvar)=a(:,m1,n1,iuz+1:mvar)
+        do k=1,mz	  
+          do i =1,mx
+!
+	    do ii = 2, m22-1
+	    if (x(i) > grid(ii,1,1)-(grid(imid,1,1)-grid(ipos,1,1)) .and. x(i) &
+	          <= grid(ii+1,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then	    
+	      f(i,j,k,iux)=f(i,j,k,iux)+a(ii,m1,n1,iux)+(x(i)-grid(ii,1,1)&
+	          +(grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iux)-a(ii,m1,n1,iux))&
+		  /(grid(ii+1,1,1)-grid(ii,1,1))
+	      f(i,j,k,iuz+1:mvar)=a(ii,m1,n1,iuz+1:mvar)+(x(i)-grid(ii,1,1)+ &
+	          (grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iuz+1:mvar) &
+		  -a(ii,m1,n1,iuz+1:mvar))/(grid(ii+1,1,1)-grid(ii,1,1))
+	    else if (x(i) <= grid(2,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
+	      f(i,j,k,iux)=f(i,j,k,iux)+a(l1,m1,n1,iux)
+              f(i,j,k,iuz+1:mvar)=a(l1,m1,n1,iuz+1:mvar)
+              exit
+	    else if (x(i) >= grid(m22-1,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then	   
+	      f(i,j,k,iux)=f(i,j,k,iux)+a(l22,m1,n1,iux)
+	      f(i,j,k,iuz+1:mvar)=a(l22,m1,n1,iuz+1:mvar)
+	      exit
+	    endif
+	    enddo
+!
+!  Renormalize the species mass fractions
+!
+            sum = 0.
+	    do ii = 1, nchemspec
+	      sum = sum + f(i,j,k,ichemspec(ii))
+	    enddo
+	    f(i,j,k,ichemspec(1):ichemspec(nchemspec)) = &
+	        f(i,j,k,ichemspec(1):ichemspec(nchemspec))/sum
+!
+	  enddo
         enddo
       enddo
 !
 !  Set the y and z velocities to zero in order to avoid random noise
 !
-      if (.not. reinitialize_chemistry) then
-        f(:,:,:,iuy:iuz)=0
-      endif
+!      if (.not. reinitialize_chemistry) then
+!        f(:,:,:,iuy:iuz)=0
+!      endif
+!      
+      deallocate(a,grid)     
 !
     endsubroutine prerun_1D
+!***********************************************************************
+    subroutine prerun_1D_opp(f,prerun_dir)
+!
+!  read snapshot file, possibly with mesh and time (if mode=1)
+!  04-aug-10/julien: coded
+!
+      character (len=*) :: prerun_dir
+      character (len=100) :: file
+      character (len=10) :: processor
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:), allocatable :: a
+      real, dimension (:,:,:), allocatable :: grid
+      real :: t
+      real :: x1, x2, xm, xfl
+      integer :: j,k,i,ii,ifl
+      integer :: mx2, my2, mz2, mv2
+      integer :: l22, m22
+!
+      x1 = xyz0(1)+Lxyz(1) / 4.
+      x2 = x1+Lxyz(1) / 2.
+      xm = xyz0(1)+Lxyz(1) / 2.
+!
+! Read dimension of the array stored during the 1D prerun
+!
+      processor='proc0'     
+      file=trim(prerun_dir)//'/data/'//trim(processor)//'/dim.dat'
+      print*,'Reading prerun dim from ',file     
+      open(1,FILE=file)
+      read(1,*) mx2, my2, mz2, mv2
+      close(1)     
+      l22 = mx2-l1+1
+      m22 = mx2-2*(l1-1)      
+      allocate(a(mx2,my2,mz2,mv2), grid(m22,my2-6,mz2-6))
+!
+! Read the grid used during the prerun
+!
+      file=trim(prerun_dir)//'/data/'//trim(processor)//'/grid.dat'
+      print*,'Reading prerun grid from ',file     
+      open(1,FILE=file,FORM='unformatted')
+      read(1) t,grid(:,1,1),grid(1,:,1),grid(1,1,:)
+      close(1)     
+!
+! Read the data stored during the prerun
+!       
+      file=trim(prerun_dir)//'/data/'//trim(processor)//'/var.dat'
+      print*,'Reading inlet data from ',file
+      open(1,FILE=file,FORM='unformatted')
+      read(1) a
+      close(1)
+!
+      do ii = 1, m22-1
+        if (exp(a(ii,m1,n1,iuz+2)) < 1200. .and. exp(a(ii+1,m1,n1,iuz+2)) >= 1200.) then
+	  xfl = grid(ii,1,1)
+	  ifl = ii
+          exit
+	endif
+      enddo      
+!
+!  Spread the data on the f-array : interpolations
+!
+      do j=1,my
+        do k=1,mz	  
+          do i=1,mx
+!
+	    if (x(i) < xm) then 
+	    do ii = 2, m22-1
+	      if (x(i)-x1 > grid(ii,1,1)-xfl .and. x(i)-x1 <= grid(ii+1,1,1)-xfl) then
+	        f(i,j,k,iuz+1:mvar)=a(ii,m1,n1,iuz+1:mvar)+((x(i)-x1)-(grid(ii,1,1)-xfl))* &
+		             (a(ii+1,m1,n1,iuz+1:mvar)-a(ii,m1,n1,iuz+1:mvar))/            &
+			     (grid(ii+1,1,1)-grid(ii,1,1))	      
+	        exit
+	      else if (x(i)-x1 <= grid(l1,1,1)-xfl) then
+		f(i,j,k,iuz+1:mvar)=a(l1,m1,n1,iuz+1:mvar)
+		exit
+	      else if (x(i)-x1 >= grid(m22,1,1)-xfl) then	   
+		f(i,j,k,iuz+1:mvar)=a(l22,m1,n1,iuz+1:mvar)
+		exit
+	      endif
+	    enddo
+!
+	    else if (x(i) >= xm) then
+	    do ii = 2, m22-1
+	      if (x(i)-x2 > grid(ii,1,1)-xfl .and. x(i)-x2 <= grid(ii+1,1,1)-xfl &
+	          .and. 2*ifl > ii+1) then
+	        f(i,j,k,iuz+1:mvar)=a(2*ifl-ii,m1,n1,iuz+1:mvar)+((x(i)-x2)-(grid(ii,1,1)-xfl))&
+		*(a(2*ifl-ii-1,m1,n1,iuz+1:mvar)-a(2*ifl-ii,m1,n1,iuz+1:mvar))/(grid(ii+1,1,1)-grid(ii,1,1))	      
+	        exit
+	      else if (x(i)-x2 <= grid(l1,1,1)-xfl) then
+		f(i,j,k,iuz+1:mvar)=a(l22,m1,n1,iuz+1:mvar)
+		exit
+	      else if (x(i)-x2 >= grid(m22-1,1,1)-xfl .or. 2*ifl <= ii+1) then	   
+		f(i,j,k,iuz+1:mvar)=a(l1,m1,n1,iuz+1:mvar)
+		exit
+	      endif
+	    enddo	      
+	    endif
+	  enddo
+        enddo
+      enddo
+!
+!  Set the y and z velocities to zero in order to avoid random noise
+!
+!      if (.not. reinitialize_chemistry) then
+!        f(:,:,:,iuy:iuz)=0
+!      endif
+!      
+      deallocate(a,grid)     
+!
+    endsubroutine prerun_1D_opp
+!***********************************************************************
+    subroutine FlameMaster_ini(f,file_name)
+!
+!  read FlameMaster file for flame initialization
+!  11-nov-10/julien: coded
+!
+      character (len=*) :: file_name
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:), allocatable :: a
+      real, dimension (:), allocatable :: grid
+      real, dimension (:), allocatable :: cc
+      real  :: sum
+      integer :: j,k,i,ii, imid, ipos
+      integer :: is, js
+      integer :: nsp, npts
+      character(len=8), dimension (:), allocatable  :: name_sp
+      character(len=10)  :: car10='nothing'
+      character(len=12)  :: car12
+      character(len=20)  :: car20='nothing'
+      character(len=1)  :: car1
+!
+      lFlameMaster=.true.
+!
+! NILS: For the time beeing the prerun simulation can not have been run in parallell
+! NILS: Should fix this soon.
+!
+! Read dimension of the array stored in the FlameMaster initial file
+!
+      open(1,FILE=trim(file_name))
+      print*, 'Reading initial conditions in file ', trim(file_name)
+      do while (car10 /= 'FlameThick')
+        read(1,*) car10
+      enddo
+      read(1,*) car12, car1, nsp
+      read(1,*) car12, car1, npts    
+      allocate(a(npts,nsp+3), grid(npts), cc(npts))
+      allocate(name_sp(nsp))
+!
+! Read the data stored during the prerun
+!       
+      do while (car10 /= 'body')
+        read(1,*) car10
+      enddo
+      read(1,*)
+      read(1,*) grid
+      grid = grid*100.
+!      
+      i = 0
+      do while (trim(car20) /= 'trailer')
+        read(1,*) car20
+        select case (car20(1:12))
+          case('massflowrate')
+	    read(1,*) a(:,1)
+	  case('temperature')
+	    read(1,*) a(:,3)
+	  case('massfraction')
+	    i = i+1	  
+	    read(1,*) a(:,3+i)	    
+	    name_sp(i) = car20(14:20)
+	  case('density')
+	    read(1,*) a(:,2)	    
+        end select
+      enddo
+      close(1)
+      a(:,1) = a(:,1) / a(:,2)
+      a(:,1) = a(:,1)*100.
+      a(:,2) = a(:,2)/1000.
+!
+! Definition of a progress variable
+!       
+      cc(1) = 0.
+      ipos=0; imid=0
+      do ii = 2, npts
+        cc(ii) = (a(ii,3) - a(1,3)) / (a(npts,3) - a(1,3))
+        if (cc(ii) > 0.7 .AND. cc(ii-1) <= 0.7) imid = ii
+	if (grid(ii) > flame_pos .AND. grid(ii-1) <= flame_pos) ipos = ii
+	if (ipos>0 .and. imid>0) exit
+      enddo
+!
+!  The center of the flame, arbitrarily identified by cc=0.7, is
+!  located at the position flame_pos (chemistry_init_pars)
+!  The flame is thus moved in its domain
+!
+!  Spread the data on the f-array : interpolations
+!
+      do j=1,my
+        do k=1,mz	  
+          do i =1,mx
+!
+	    do ii = 2, npts-1
+	      if (x(i) > grid(ii)-(grid(imid)-grid(ipos)) .and. x(i) &
+	          <= grid(ii+1)-(grid(imid)-grid(ipos))) then
+	        f(i,j,k,iux)=f(i,j,k,iux)+a(ii,1)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+		             (a(ii+1,1)-a(ii,1)) / (grid(ii+1)-grid(ii))			     
+		f(i,j,k,iuz+2)=a(ii,3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+		             (a(ii+1,3)-a(ii,3)) / (grid(ii+1)-grid(ii))
+		f(i,j,k,iuz+1)=a(ii,2)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+		              (a(ii+1,2)-a(ii,2)) / (grid(ii+1)-grid(ii))
+	        do is = 1, nsp
+		  do js = 1, nchemspec
+		    if (trim(name_sp(is)) == trim(varname(ichemspec(js)))) then
+		      f(i,j,k,iuz+2+js)=a(ii,is+3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))*   &
+		              (a(ii+1,is+3)-a(ii,is+3)) / (grid(ii+1)-grid(ii))
+		      exit
+		    endif 
+		  enddo
+		enddo
+!
+	      else if (x(i) <= grid(2)-(grid(imid)-grid(ipos))) then	   
+	        f(i,j,k,iux)=f(i,j,k,iux)+a(1,1)
+		f(i,j,k,iuz+2)=a(1,3)
+		f(i,j,k,iuz+1)=a(1,2)
+	        do is = 1, nsp
+		  do js = 1, nchemspec
+		    if (trim(name_sp(is)) == trim(varname(ichemspec(js)))) then
+		      f(i,j,k,iuz+2+js)=a(1,is+3)
+		      exit
+		    endif 
+		  enddo
+		enddo		
+		exit	          
+!
+	      else if (x(i) >= grid(npts)-(grid(imid)-grid(ipos))) then	   
+	        f(i,j,k,iux)=f(i,j,k,iux)+a(npts,1)
+		f(i,j,k,iuz+2)=a(npts,3)
+		f(i,j,k,iuz+1)=a(npts,2)
+	        do is = 1, nsp
+		  do js = 1, nchemspec
+		    if (trim(name_sp(is)) == trim(varname(ichemspec(js)))) then
+		      f(i,j,k,iuz+2+js)=a(npts,is+3)
+		      exit
+		    endif 
+		  enddo
+		enddo		
+		exit
+	      endif
+	    enddo
+!
+!  Renormalize the species mass fractions
+!
+            sum = 0.
+	    do ii = 1, nchemspec
+	      sum = sum + f(i,j,k,iuz+2+ii)
+	    enddo
+	    f(i,j,k,iuz+2:iuz+2+nchemspec) = f(i,j,k,iuz+2:iuz+2+nchemspec)/sum
+!
+	  enddo
+        enddo
+      enddo
+      if(.not. ldensity_nolog) f(:,:,:,iuz+1) = log(f(:,:,:,iuz+1))
+      if(.not. ltemperature_nolog) f(:,:,:,iuz+2) = log(f(:,:,:,iuz+2))
+!
+!  Set the y and z velocities to zero in order to avoid random noise
+!
+!      if (.not. reinitialize_chemistry) then
+!        f(:,:,:,iuy:iuz)=0
+!      endif
+!      
+      deallocate(a,grid)     
+!
+    endsubroutine FlameMaster_ini
 !***********************************************************************
   subroutine chemistry_clean_up()
 !
@@ -5062,4 +5850,15 @@ module Chemistry
 !
   endsubroutine chemistry_clean_up
 !***********************************************************************
+   subroutine get_reac_rate(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))=   &
+	  f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+p%DYDt_reac
+!
+    endsubroutine get_reac_rate
+!***********************************************************************
 endmodule Chemistry
+
