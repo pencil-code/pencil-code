@@ -35,11 +35,12 @@ module Shock
 !
   integer :: ishock_max=1
   logical :: lgaussian_smooth=.false.
+  logical :: lconserve=.true.
   logical :: lforce_periodic_shockviscosity=.false.
   real    :: div_threshold=0.
 !
   namelist /shock_run_pars/ &
-      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity, div_threshold
+      ishock_max,lgaussian_smooth,lconserve,lforce_periodic_shockviscosity, div_threshold
 ! 
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
@@ -88,7 +89,7 @@ module Shock
 !
       f(:,:,:,ishock)=0.0
 !
-!  Calculate factors for polynomial smoothing
+!  Calculate the smoothing factors
 !
       smooth_factor = 1.
 !
@@ -125,7 +126,11 @@ module Shock
         smooth_factor(:,:,+1:+3) = 0.
       endif
 !
-      smooth_factor = smooth_factor/sum(smooth_factor)
+      if (lconserve) then
+        smooth_factor = smooth_factor / sum(smooth_factor)
+      else
+        smooth_factor = smooth_factor / smooth_factor(0,0,0)
+      endif
 !
 !  Check that smooth order is within bounds
 !
