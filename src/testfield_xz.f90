@@ -193,7 +193,7 @@ module Testfield
 !  xx and zz for calculating diffusive part of emf
 !
       cx=cos(ktestfield_x*(x(l1:l2)+xx0))
-      sx=sin(ktestfield_x*(x(l1:l2)+xx0))      
+      sx=sin(ktestfield_x*(x(l1:l2)+xx0))
 
       cz=cos(ktestfield_z*(z(n1:n2)+zz0))
       sz=sin(ktestfield_z*(z(n1:n2)+zz0))
@@ -207,9 +207,9 @@ module Testfield
       do i=1,nx
       do j=1,nz
         Minv(i,j,:,:) = RESHAPE (  (/  &
-        	                     (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx(i)*cz1(j), sz(j)*cx1(i) /), &
-        	                     (/                     -sx(i)*cz1(j), cx(i)*cz1(j),            0 /), &
-        	                     (/                     -sz(i)*cx1(j),            0, cz(j)*cx1(i) /) &
+                                     (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx(i)*cz1(j), sz(j)*cx1(i) /), &
+                                     (/                     -sx(i)*cz1(j), cx(i)*cz1(j),            0 /), &
+                                     (/                     -sz(i)*cx1(j),            0, cz(j)*cx1(i) /) &
                                    /), (/3,3/))
       enddo
       enddo
@@ -366,7 +366,7 @@ module Testfield
 !  Note: the same block of lines occurs again further down in the file.
 !
       do jtest=1,njtest
- 
+
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
 
@@ -410,7 +410,7 @@ module Testfield
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
-! 
+!
           if (lfirst.and.ldt) then
             diffus_eta=max(diffus_eta,etatest*dxyz_2)
           endif
@@ -428,51 +428,51 @@ module Testfield
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
 !
-     if (.false.) then		 !l1davgfirst) then
+     if (.false.) then           !l1davgfirst) then
        select case (jtest)
        case (1)
-     	 if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
-     	 if (idiag_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp21z)
-     	 if (idiag_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp31z)
+         if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
+         if (idiag_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp21z)
+         if (idiag_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp31z)
        case (2)
-     	 if (idiag_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp12z)
-     	 if (idiag_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp22z)
-     	 if (idiag_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp32z)
+         if (idiag_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp12z)
+         if (idiag_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp22z)
+         if (idiag_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp32z)
        case (3)
-     	 if (idiag_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp13z)
-     	 if (idiag_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp23z)
-     	 if (idiag_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp33z)
+         if (idiag_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp13z)
+         if (idiag_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp23z)
+         if (idiag_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp33z)
        case (4)
-     	 if (idiag_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta113z)
-     	 if (idiag_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta213z)
-     	 if (idiag_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta313z)
+         if (idiag_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta113z)
+         if (idiag_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta213z)
+         if (idiag_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta313z)
        case (5)
-     	 if (idiag_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta123z)
-     	 if (idiag_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta223z)
-     	 if (idiag_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta323z)
+         if (idiag_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta123z)
+         if (idiag_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta223z)
+         if (idiag_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta323z)
        case (6)
-     	 if (idiag_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta133z)
-     	 if (idiag_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta233z)
-     	 if (idiag_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta333z)
+         if (idiag_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta133z)
+         if (idiag_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta233z)
+         if (idiag_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta333z)
        case (7)
-     	 if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
-     	 if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
-     	 if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
+         if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
+         if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
+         if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
        case (8)
-     	 if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
-     	 if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
-     	 if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
+         if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
+         if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
+         if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
        case (9)
-     	 if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
-     	 if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
-     	 if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
+         if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
+         if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
+         if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
        end select
      endif
  !
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
-! 
+!
 !  Dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -525,7 +525,7 @@ module Testfield
         else
 
           do n=n1,n2
-            
+
             nscan=n-n1+1
 
             uxbtestm(:,nscan,:,jtest)=0.
@@ -537,7 +537,7 @@ module Testfield
               call cross_mn(p%uu,btest,uxbtest)
 
               do j=1,3
-        	uxbtestm(:,nscan,j,jtest)=uxbtestm(:,nscan,j,jtest)+fac*uxbtest(:,j)
+                uxbtestm(:,nscan,j,jtest)=uxbtestm(:,nscan,j,jtest)+fac*uxbtest(:,j)
               enddo
               headtt=.false.
             enddo
@@ -547,7 +547,7 @@ module Testfield
 !
           call mpiallreduce_sum(uxbtestm(:,:,:,jtest),uxbtestm1,(/nx,nz,3/),idir=2)
 !         or
-!         call mpiallreduce_sum_arr(uxbtestm(1,1,1,jtest),uxbtestm1,nx*nz*3,idir=2)	  !avoids copy
+!         call mpiallreduce_sum_arr(uxbtestm(1,1,1,jtest),uxbtestm1,nx*nz*3,idir=2)       !avoids copy
           uxbtestm(:,:,:,jtest)=uxbtestm1
 !
         endif
@@ -557,7 +557,7 @@ module Testfield
 !
       headtt=headtt_save
 !
-      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d)) call calc_coefficients                
+      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d)) call calc_coefficients
 
     endsubroutine testfield_after_boundary
 !***********************************************************************
@@ -589,120 +589,120 @@ module Testfield
 !
     select case (itestfield)
     case (1)
-    
+
       do n=1,nz
-    
+
       if (need_temp(1)) & !(idiag_alp11xz/=0) &
-     	temp(:,n,twod_address(1))= &
+        temp(:,n,twod_address(1))= &
             Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)
 
       if (need_temp(2)) & !(idiag_alp21xz/=0) &
-     	temp(:,j,twod_address(2))= &
+        temp(:,j,twod_address(2))= &
             Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)
 
       if (need_temp(3)) & !(idiag_alp31xz/=0) &
-     	temp(:,j,twod_address(3))= &
+        temp(:,j,twod_address(3))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3)
 
       if (need_temp(4)) & !(idiag_alp12xz/=0) &
-     	temp(:,j,twod_address(4))= &
+        temp(:,j,twod_address(4))= &
             Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6)
 
       if (need_temp(5)) & !(idiag_alp22xz/=0) &
-     	temp(:,j,twod_address(5))= &
+        temp(:,j,twod_address(5))= &
             Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6)
 
       if (need_temp(6)) & !(idiag_alp32xz/=0) &
-     	temp(:,j,twod_address(6))= &
+        temp(:,j,twod_address(6))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6)
 
       if (need_temp(7)) & !(idiag_alp13xz/=0) &
-     	temp(:,j,twod_address(7))= &
+        temp(:,j,twod_address(7))= &
             Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9)
 
       if (need_temp(8)) & !(idiag_alp23xz/=0) &
-     	temp(:,j,twod_address(8))= &
+        temp(:,j,twod_address(8))= &
             Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9)
 
       if (need_temp(9)) & !(idiag_alp33xz/=0) &
-     	temp(:,j,twod_address(9))= &
+        temp(:,j,twod_address(9))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)
 
 !
 
       if (need_temp(10)) & !(idiag_eta111xz/=0) &
-     	temp(:,j,twod_address(10))= &
+        temp(:,j,twod_address(10))= &
             Minv(:,n,2,1)*uxbtestm(:,n,1,1)+Minv(:,n,2,2)*uxbtestm(:,n,1,2)+Minv(:,n,2,3)*uxbtestm(:,n,1,3)
 
       if (need_temp(11)) & !(idiag_eta112xz/=0) &
-     	temp(:,j,twod_address(11))= &
+        temp(:,j,twod_address(11))= &
             Minv(:,n,3,1)*uxbtestm(:,n,1,1)+Minv(:,n,3,2)*uxbtestm(:,n,1,2)+Minv(:,n,3,3)*uxbtestm(:,n,1,3)
- 
+
       if (need_temp(12)) & !(idiag_eta211xz/=0) &
-     	temp(:,j,twod_address(12))= &
+        temp(:,j,twod_address(12))= &
             Minv(:,n,2,1)*uxbtestm(:,n,2,1)+Minv(:,n,2,2)*uxbtestm(:,n,2,2)+Minv(:,n,2,3)*uxbtestm(:,n,2,3)
- 
+
       if (need_temp(13)) & !(idiag_eta212xz/=0) &
-     	temp(:,j,twod_address(13))= &
+        temp(:,j,twod_address(13))= &
             Minv(:,n,3,1)*uxbtestm(:,n,2,1)+Minv(:,n,3,2)*uxbtestm(:,n,2,2)+Minv(:,n,3,3)*uxbtestm(:,n,2,3)
 
       if (need_temp(14)) & !(idiag_eta311xz/=0) &
-     	temp(:,j,twod_address(14))= &
+        temp(:,j,twod_address(14))= &
             Minv(:,n,2,1)*uxbtestm(:,n,3,1)+Minv(:,n,2,2)*uxbtestm(:,n,3,2)+Minv(:,n,2,3)*uxbtestm(:,n,3,3)
 
       if (need_temp(15)) & !(idiag_eta312xz/=0) &
-     	temp(:,j,twod_address(15))= &
+        temp(:,j,twod_address(15))= &
             Minv(:,n,3,1)*uxbtestm(:,n,3,1)+Minv(:,n,3,2)*uxbtestm(:,n,3,2)+Minv(:,n,3,3)*uxbtestm(:,n,3,3)
 
 !
 
       if (need_temp(16)) & !(idiag_eta121xz/=0) &
-     	temp(:,j,twod_address(16))= &
+        temp(:,j,twod_address(16))= &
             Minv(:,n,2,1)*uxbtestm(:,n,1,4)+Minv(:,n,2,2)*uxbtestm(:,n,1,5)+Minv(:,n,2,3)*uxbtestm(:,n,1,6)
 
       if (need_temp(17)) & !(idiag_eta122xz/=0) &
-     	temp(:,j,twod_address(17))= &
+        temp(:,j,twod_address(17))= &
             Minv(:,n,3,1)*uxbtestm(:,n,1,4)+Minv(:,n,3,2)*uxbtestm(:,n,1,5)+Minv(:,n,3,3)*uxbtestm(:,n,1,6)
- 
+
       if (need_temp(18)) & !(idiag_eta221xz/=0) &
-     	temp(:,j,twod_address(18))= &
+        temp(:,j,twod_address(18))= &
             Minv(:,n,2,1)*uxbtestm(:,n,2,4)+Minv(:,n,2,2)*uxbtestm(:,n,2,5)+Minv(:,n,2,3)*uxbtestm(:,n,2,6)
- 
+
       if (need_temp(19)) & !(idiag_eta222xz/=0) &
-     	temp(:,j,twod_address(19))= &
+        temp(:,j,twod_address(19))= &
             Minv(:,n,3,1)*uxbtestm(:,n,2,4)+Minv(:,n,3,2)*uxbtestm(:,n,2,5)+Minv(:,n,3,3)*uxbtestm(:,n,2,6)
 
       if (need_temp(20)) & !(idiag_eta321xz/=0) &
-     	temp(:,j,twod_address(20))= &
+        temp(:,j,twod_address(20))= &
             Minv(:,n,2,1)*uxbtestm(:,n,3,4)+Minv(:,n,2,2)*uxbtestm(:,n,3,5)+Minv(:,n,2,3)*uxbtestm(:,n,3,6)
 
       if (need_temp(21)) & !(idiag_eta322xz/=0) &
-     	temp(:,j,twod_address(21))= &
+        temp(:,j,twod_address(21))= &
             Minv(:,n,3,1)*uxbtestm(:,n,3,4)+Minv(:,n,3,2)*uxbtestm(:,n,3,5)+Minv(:,n,3,3)*uxbtestm(:,n,3,6)
 
 
       if (need_temp(22)) & !(idiag_eta131xz/=0) &
-     	temp(:,j,twod_address(22))= &
+        temp(:,j,twod_address(22))= &
             Minv(:,n,2,1)*uxbtestm(:,n,1,7)+Minv(:,n,2,2)*uxbtestm(:,n,1,8)+Minv(:,n,2,3)*uxbtestm(:,n,1,9)
 
       if (need_temp(23)) & !(idiag_eta132xz/=0) &
-     	temp(:,j,twod_address(23))= &
+        temp(:,j,twod_address(23))= &
             Minv(:,n,3,1)*uxbtestm(:,n,1,7)+Minv(:,n,3,2)*uxbtestm(:,n,1,8)+Minv(:,n,3,3)*uxbtestm(:,n,1,9)
- 
+
       if (need_temp(24)) & !(idiag_eta231xz/=0) &
-     	temp(:,j,twod_address(24))= &
+        temp(:,j,twod_address(24))= &
             Minv(:,n,2,1)*uxbtestm(:,n,2,7)+Minv(:,n,2,2)*uxbtestm(:,n,2,8)+Minv(:,n,2,3)*uxbtestm(:,n,2,9)
- 
+
       if (need_temp(25)) & !(idiag_eta232xz/=0) &
-     	temp(:,j,twod_address(25))= &
+        temp(:,j,twod_address(25))= &
             Minv(:,n,3,1)*uxbtestm(:,n,2,7)+Minv(:,n,3,2)*uxbtestm(:,n,2,8)+Minv(:,n,3,3)*uxbtestm(:,n,2,9)
 
       if (need_temp(26)) & !(idiag_eta331xz/=0) &
-     	temp(:,j,twod_address(26))= &
+        temp(:,j,twod_address(26))= &
             Minv(:,n,2,1)*uxbtestm(:,n,3,7)+Minv(:,n,2,2)*uxbtestm(:,n,3,8)+Minv(:,n,2,3)*uxbtestm(:,n,3,9)
 
       if (need_temp(27)) & !(idiag_eta332xz/=0) &
-     	temp(:,j,twod_address(27))= &
+        temp(:,j,twod_address(27))= &
             Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9)
 
     enddo
@@ -838,7 +838,7 @@ module Testfield
           endif
         endif
       endif
-         
+
 
     endif
 !
@@ -1481,7 +1481,7 @@ module Testfield
     if (idiag_eta332) &
         twod_need_1d(27)=.true.
 !
-    if (any(twod_need_1d)) needed2d_1d=.true.    
+    if (any(twod_need_1d)) needed2d_1d=.true.
 !
   endsubroutine diagnos_interdep
 !***********************************************************************

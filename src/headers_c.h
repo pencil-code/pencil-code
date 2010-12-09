@@ -11,7 +11,7 @@
 /* Choose single or double precision here (typically done from the Makefile) */
 #ifdef DOUBLE_PRECISION
 #  define REAL double
-#  define FINT int		/* should this be long int? */
+#  define FINT int        /* should this be long int? */
 #  define NBYTES 8
 #  define GSL_PREC GSL_PREC_DOUBLE
 #else

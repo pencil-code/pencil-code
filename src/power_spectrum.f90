@@ -314,7 +314,7 @@ module power_spectrum
     spectrum3=0.
     spectrum3_sum=0.
   endif
-  ! 
+  !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
@@ -364,15 +364,15 @@ module power_spectrum
                  spectrum1(k+1)= spectrum1(k+1)+a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
                else
                  spectrum2(k+1,ikztot)= spectrum2(k+1,ikztot) &
-         	                       +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+                                       +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
                endif
-             endif  
+             endif
            enddo
          enddo
        else if (lintegrate_z) then
          spectrum2(:,:)=spectrum2(:,:)+a1(:,:,ikz)**2+b1(:,:,ikz)**2
        else
-         spectrum3(:,:,ikztot)=spectrum3(:,:,ikztot)+a1(:,:,ikz)**2+b1(:,:,ikz)**2 
+         spectrum3(:,:,ikztot)=spectrum3(:,:,ikztot)+a1(:,:,ikz)**2+b1(:,:,ikz)**2
        endif
      enddo
      !
@@ -391,7 +391,7 @@ module power_spectrum
     endif
   else if (lintegrate_z) then
     call mpiallreduce_sum(spectrum2,spectrum2_sum,(/nx,ny/))
-  else 
+  else
     call mpiallreduce_sum(spectrum3,spectrum3_sum,(/nx,ny,nzgrid/))   !!??
   endif
   !
@@ -421,12 +421,12 @@ module power_spectrum
   if (lintegrate_shell) then
     if (lintegrate_z) then
       deallocate(spectrum1,spectrum1_sum)
-    else 
+    else
       deallocate(spectrum2,spectrum2_sum)
     endif
   else if (lintegrate_z) then
     deallocate(spectrum2,spectrum2_sum)
-  else 
+  else
     deallocate(spectrum3,spectrum3_sum)
   endif
   !
@@ -650,7 +650,7 @@ module power_spectrum
       do k = 1, nk
         write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
       enddo
-    else    
+    else
       write(1,*) t
       write(1,'(1p,8e10.2)') spectrumhel_sum
     endif

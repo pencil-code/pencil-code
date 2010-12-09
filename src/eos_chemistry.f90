@@ -1203,22 +1203,22 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
-! 
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_a2stemp_x
 !***********************************************************************
-   subroutine bc_ss_a2stemp_y(f,topbot) 
-!   
+   subroutine bc_ss_a2stemp_y(f,topbot)
+!
 !  boundary condition for entropy: symmetric temperature
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
-!   
+!
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
 !
@@ -1743,7 +1743,7 @@ module EquationOfState
         if (found_specie) then
           if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
           Lewis_coef(ind_chem) = lewisk
-	endif 
+        endif
       enddo dataloop
 !
 ! Stop if lewis.dat is empty
@@ -1753,7 +1753,7 @@ module EquationOfState
 !
       if (lroot) then
         print*, 'the following species are found in lewis.dat: end of the list:'
-	print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
+        print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
       endif
 !
       close(file_id)

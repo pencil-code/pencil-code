@@ -479,7 +479,7 @@ include 'NSCBC.h'
       allocate(  grad_T(igrid,jgrid,3),      STAT=stat(26))
       allocate(  grad_P(igrid,jgrid,3),      STAT=stat(27))
       allocate( dui_dxj(igrid,jgrid,3,3),    STAT=stat(28))
-      allocate(L_k(igrid,jgrid,nchemspec),   STAT=stat(29))      
+      allocate(L_k(igrid,jgrid,nchemspec),   STAT=stat(29))
       allocate(YYk_full(igrid,jgrid,nchemspec), STAT=stat(30))
       allocate(dY_dx(igrid,jgrid),           STAT=stat(31))
 !
@@ -504,8 +504,8 @@ include 'NSCBC.h'
       i = 1
       do k=ichemspec(1), ichemspec(nchemspec)
         call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
-	dYk_dx(:,:,i) = dY_dx(:,:)
-	i=i+1
+        dYk_dx(:,:,i) = dY_dx(:,:)
+        i=i+1
       enddo
 !
 !  Find derivatives at boundary
@@ -560,7 +560,7 @@ include 'NSCBC.h'
         endif
 !
         call find_composition_at_inlet(nchemspec,YYk,YYk_full,&
-             dir,imin,imax,jmin,jmax,igrid,jgrid)        
+             dir,imin,imax,jmin,jmax,igrid,jgrid)
 !
         if (lroot .and. ip<5) then
           print*,'bc_nscbc_prf: Finalized reading velocity and composition profiles at the inlet.'
@@ -579,8 +579,8 @@ include 'NSCBC.h'
 !  Julien: The above formula seems erroneous which could explain the following
 !          remark from Nils. The following correction is proposed but needs
 !          some tests (that's why it's still commented)
-!  Corrected according to Yoo et al. (Combustion Theory and Modelling, 2005)            
-!	    L_2 = nscbc_sigma_in*(TT-T_t)&
+!  Corrected according to Yoo et al. (Combustion Theory and Modelling, 2005)
+!           L_2 = nscbc_sigma_in*(TT-T_t)&
 !                *rho0*Rgas/(cs*Lxyz(dir1))-(cs2*T_1-T_5)
 !
 !  NILS: There seems to be something wrong with the calculation of L_2, as the
@@ -604,14 +604,14 @@ include 'NSCBC.h'
           L_5 = nscbc_sigma_in*cs2*rho0&
               *sgn*(fslice(:,:,dir1)-u_in(:,:,dir1))*(1-Mach**2)/Lxyz(dir1)&
               -(T_5+sgn*rho0*cs*T_2)
-	  if (ichemspec(1)>0) then
-	    do k = 1, nchemspec
-	      L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))-YYk_full(:,:,k))&
+          if (ichemspec(1)>0) then
+            do k = 1, nchemspec
+              L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))-YYk_full(:,:,k))&
                   *cs/Lxyz(dir1)
-	    enddo
-	  else
-	    L_k=0.
-	  endif        
+            enddo
+          else
+            L_k=0.
+          endif
         else
           L_3=0
           L_4=0
@@ -637,12 +637,12 @@ include 'NSCBC.h'
              (grad_P(:,:,dir1)&
              - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (ichemspec(1)>0) then
-	  do k = 1, nchemspec
-	    L_k(:,:,k)=fslice(:,:,dir1)*dYk_dx(:,:,k)
-	  enddo
-	else
-	  L_k=0.
-	endif
+          do k = 1, nchemspec
+            L_k(:,:,k)=fslice(:,:,dir1)*dYk_dx(:,:,k)
+          enddo
+        else
+          L_k=0.
+        endif
       endif
 !
       if (lroot .and. ip<5) then
@@ -723,12 +723,12 @@ include 'NSCBC.h'
           dfslice(:,:,dir2)=0
           dfslice(:,:,dir3)=0
           if (ilnTT>0) dfslice(:,:,ilnTT)=0
-	  if (ichemspec(1)>0) then
-	    do k = 1, nchemspec
-	      fslice(:,:,ichemspec(k)) = YYk_full(:,:,k)
-	      dfslice(:,:,ichemspec(k)) = 0
-	    enddo
-	  endif
+          if (ichemspec(1)>0) then
+            do k = 1, nchemspec
+              fslice(:,:,ichemspec(k)) = YYk_full(:,:,k)
+              dfslice(:,:,ichemspec(k)) = 0
+            enddo
+          endif
         endif
       endif
 !
@@ -1078,8 +1078,8 @@ include 'NSCBC.h'
 !
 !  2010.07.26/Julien Savre: coded
 !
-  use  EquationOfState     
-!  
+  use  EquationOfState
+!
       real, dimension(:,:,:), intent(inout) :: YYi_full
       real, dimension(:), intent(in) :: YYi
       real, dimension(igrid,jgrid) :: zz
@@ -1101,56 +1101,56 @@ include 'NSCBC.h'
           case ('nothing')
             if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
                 print*,'inlet_YY_profile: nothing'
-!	    
+!
           case ('uniform')
             if (lroot .and. it==1 .and. lfirst) &
                 print*,'inlet_YY_profile: uniform,'
             do k = 1, nchemspec
-	      YYi_full(:,:,k)=YYi(k)
-	    enddo  
+              YYi_full(:,:,k)=YYi(k)
+            enddo
 !
           case ('triple_flame')
             if (lroot .and. it==1 .and. lfirst) &
                 print*,'inlet_YY_profile: triple flame, constant gradient'
             zz1=inlet_zz1
-	    zz2=inlet_zz2
-!	    
-	    if (dir == 1) then
-	      dim(1:igrid) = y(imin:imax)
-	      init_y1 = xyz0(2) + Lxyz(2)/3.
+            zz2=inlet_zz2
+!
+            if (dir == 1) then
+              dim(1:igrid) = y(imin:imax)
+              init_y1 = xyz0(2) + Lxyz(2)/3.
               init_y2 = xyz0(2) + 2.*Lxyz(2)/3
-	    else if (dir == 2) then
-	      dim(1:igrid) = x(imin:imax)
-	      init_y1 = xyz0(1) + Lxyz(1)/3.
-              init_y2 = xyz0(1) + 2.*Lxyz(1)/3	      
-	    else if (dir == 3) then
-	      dim(1:igrid) = x(imin:imax)
-	      init_y1 = xyz0(1) + Lxyz(1)/3.
-              init_y2 = xyz0(1) + 2.*Lxyz(1)/3	      
-	    endif
-	    do i = 1, igrid
-	      if (dim(i) >= init_y1 .and. dim(i) <= init_y2) then
-	        zz(i,:) = zz2 - (zz2-zz1) * (init_y2 - dim(i)) / &
-		                          (init_y2 - init_y1)
+            else if (dir == 2) then
+              dim(1:igrid) = x(imin:imax)
+              init_y1 = xyz0(1) + Lxyz(1)/3.
+              init_y2 = xyz0(1) + 2.*Lxyz(1)/3
+            else if (dir == 3) then
+              dim(1:igrid) = x(imin:imax)
+              init_y1 = xyz0(1) + Lxyz(1)/3.
+              init_y2 = xyz0(1) + 2.*Lxyz(1)/3
+            endif
+            do i = 1, igrid
+              if (dim(i) >= init_y1 .and. dim(i) <= init_y2) then
+                zz(i,:) = zz2 - (zz2-zz1) * (init_y2 - dim(i)) / &
+                                          (init_y2 - init_y1)
               else if (dim(i) <= init_y1) then
-	        zz(i,:) = zz1
-	      else if (dim(i) >= init_y2) then
-	        zz(i,:) = zz2
-	      endif
-	    enddo
+                zz(i,:) = zz1
+              else if (dim(i) >= init_y2) then
+                zz(i,:) = zz2
+              endif
+            enddo
 !
             call find_species_index('O2' ,ichem_O2,i_O2 ,lO2)
             call find_species_index('N2' ,ichem_N2,i_N2,lN2)
             call find_species_index('CH4',ichem_CH4,i_CH4,lCH4)
             do k = 1, nchemspec
-	      YYi_full(:,:,k)=YYi(k)	      
-	    enddo
-	    beta = YYi(i_N2)/YYi(i_O2)
-	    do i = 1, igrid
-	      YYi_full(i,:,i_CH4)=zz(i,:)
-	      YYi_full(i,:,i_O2)=(1.-YYi_full(i,:,i_CH4)) / (1.+beta)
-	      YYi_full(i,:,i_N2)=1.-YYi_full(i,:,i_O2)-YYi_full(i,:,i_CH4)
-	    enddo	    
+              YYi_full(:,:,k)=YYi(k)
+            enddo
+            beta = YYi(i_N2)/YYi(i_O2)
+            do i = 1, igrid
+              YYi_full(i,:,i_CH4)=zz(i,:)
+              YYi_full(i,:,i_O2)=(1.-YYi_full(i,:,i_CH4)) / (1.+beta)
+              YYi_full(i,:,i_N2)=1.-YYi_full(i,:,i_O2)-YYi_full(i,:,i_CH4)
+            enddo
 !
           end select
 !
