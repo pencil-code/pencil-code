@@ -577,7 +577,7 @@ endsubroutine read_special_run_pars
 !  06-jul-06/tony: coded
 !
       use Sub
-      use Fourier, only: fft_xy_parallel,fourier_shift_y
+      use Fourier, only: fft_y_parallel
       use Cdata
       use Mpicomm
 !
@@ -632,14 +632,13 @@ endsubroutine read_special_run_pars
 !  the x-transform either. 
 !
           !call fourier_shift_y(a_re,phidot*dt_sub)
-          call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt_sub,&
-               lneed_transform_x=.false.,lneed_im=.false.)
+          call fft_y_parallel(a_re,a_im,lneed_im=.false., &
+              SHIFT_Y=phidot_serial*dt_sub)
 !
 !  Inverse transform of the shifted array back into real space. 
 !  No need again for either imaginary part of x-transform. 
 !
-          call fft_xy_parallel(a_re,a_im,linv=.true.,&
-               lneed_transform_x=.false.,lneed_im=.false.)          
+          call fft_y_parallel(a_re,a_im,lneed_im=.false.,linv=.true.)
           f(l1:l2,m1:m2,n,ivar)=a_re
 !
 !  Also shift df, unless we are at the last subtimestep
@@ -647,11 +646,10 @@ endsubroutine read_special_run_pars
           if (.not.llast) then
             a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
             !call fourier_shift_y(a_re,phidot*dt_sub)
-            call fft_xy_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt_sub,&
-                 lneed_transform_x=.false.,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,lneed_im=.false., &
+                SHIFT_Y=phidot_serial*dt_sub)
 !
-            call fft_xy_parallel(a_re,a_im,linv=.true.,&
-                 lneed_transform_x=.false.,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,lneed_im=.false.,linv=.true.)
             df(l1:l2,m1:m2,n,ivar)=a_re
           endif
 !
