@@ -134,6 +134,10 @@ module Cdata
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
   logical :: lfake_parallel_io=.false.
+  logical :: ltec=.false.
+  logical :: lformat=.false.
+  logical :: lread_less=.false.
+  real :: vel_corr=0.
 !
 !  Units (need to be in double precision).
 !
@@ -487,6 +491,8 @@ module Cdata
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1
   integer :: mvar_io=0
+  integer :: ireac=0
+  integer, dimension(nchemspec) :: ireaci=0
 !
 !  Number of iterations for multigrid solver.
 !
