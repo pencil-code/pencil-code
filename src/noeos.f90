@@ -58,7 +58,8 @@ module EquationOfState
   logical :: lcalc_cp=.false.
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
+  real, dimension(nchemspec,7)  :: tran_data
+  real, dimension(nchemspec)    :: Lewis_coef
 !
   contains
 !***********************************************************************
