@@ -84,6 +84,7 @@ module Magnetic
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: eta_aniso_hyper3
+  real, dimension(3) :: u0_advec=0.
   real, dimension(nx,3) :: uxbb
   real, target :: zmode=1.0 !(temporary)
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
@@ -150,12 +151,13 @@ module Magnetic
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
+  logical :: lconst_advection=.false.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, &
-      widthaa, by_left, by_right, bz_left, bz_right, &
-      relhel_aa, initaa, amplaa, kx_aa, &
-      ky_aa, kz_aa, coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
+      B_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
+      by_left, by_right, bz_left, bz_right, &
+      relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
+      coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
@@ -201,7 +203,8 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 !
   namelist /magnetic_run_pars/ &
-      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, omega_Bz_ext, nu_ni, &
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
+      B_ext, omega_Bz_ext, u0_advec, nu_ni, &
       hall_term, lmeanfield_theory, &
       z_surface, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
@@ -1009,6 +1012,14 @@ module Magnetic
         endif
       endif
 !
+!  Check if constant background advection needs to be turned on.
+!
+      if (any(u0_advec /= 0.)) then
+        lconst_advection=.true.
+        if (lroot) print*, 'initialize_magnetic: constant background advection = ', u0_advec
+        if (lupw_aa) call fatal_error('initialize_magnetic', 'upwind version of constant background advection is not implemented')
+      endif
+!
 !  Initialize individual modules.
 !
       call initialize_magnetic_mf (f,lstarting)
@@ -1339,6 +1350,8 @@ module Magnetic
 !  need uga always for advective gauge.
 !
       if (ladvective_gauge) lpenc_requested(i_uga)=.true.
+!
+      if (lconst_advection) lpenc_requested(i_aij)=.true.
 !
       if (dvid/=0.0) then
         lpenc_video(i_b2)=.true.
@@ -2179,6 +2192,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
+      real, dimension (nx,3) :: u0ga
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -2539,6 +2553,14 @@ module Magnetic
 !
       if (.not.lupw_aa) then
         if (linduction) then
+!
+!  Constant background advection
+!
+          if (lconst_advection) then
+            call u_dot_grad(f,iaa,p%aij,spread(u0_advec,1,nx),u0ga)
+            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-u0ga
+          endif
+!
           if (ladvective_gauge) then
 !
 !  Take care of possibility of imposed field.
