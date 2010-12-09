@@ -174,7 +174,7 @@ module Special
 !
       if (linit_lnrho) then
         ! set initial density profile values
-        do j = n1-nghost, n2+nghost
+        do j = 1, mz
           f(:,:,j,ilnrho) = lnrho_init_z(j)
         enddo
       endif
@@ -183,7 +183,7 @@ module Special
         if (pretend_lnTT) call stop_it_if_any (.true., &
             "init_special: linit_lnTT=T not implemented for pretend_lnTT=T")
         ! set initial temperaure profile values
-        do j = n1-nghost, n2+nghost
+        do j = 1, mz
           if (ltemperature) then
             f(:,:,j,ilnTT) = lnTT_init_z(j)
           elseif (lentropy) then
@@ -338,7 +338,7 @@ module Special
 !
 !  25-aug-2010/Bourdin.KIS: coded
 !
-      use EquationOfState, only: lnrho0
+      use EquationOfState, only: lnrho0, rho0
 !
 !
       logical :: lnewton_cooling=.false.
@@ -370,6 +370,12 @@ module Special
           call warning ("setup_profiles", "overriding manual lnrho0 setting")
         endif
         lnrho0 = lnrho_init_z(n1)
+        if ((rho0 /= 0.0) .and. (rho0 /= exp (lnrho0))) then
+          if (lroot) print *,'setup_profiles: WARNING: ', &
+              'rho0 set to ', exp (lnrho0), ' - was before ', rho0
+          call warning ("setup_profiles", "overriding manual rho0 setting")
+        endif
+        rho0 = exp (lnrho0)
       endif
 !
     endsubroutine setup_profiles
@@ -532,7 +538,7 @@ module Special
 !
 !
       ! linear interpolation of data
-      do j = n1-nghost, n2+nghost
+      do j = 1, mz
         if (z(j) < data_z(1) ) then
           call warning ("interpolate_profile", "used constant value below bottom")
           profile(j) = data(1)
@@ -959,11 +965,14 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
+      use Sub, only: sine_step
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: newton,newtonr,tmp_tau
+      real, save :: lnrho_ref = -1.0
+      integer :: pos, ref_pos
 !
       if (headtt) &
           print *, 'special_calc_entropy: newton cooling active', tdown, tdownr
@@ -971,23 +980,31 @@ module Special
 !
       tmp_tau = 0.0
 !
-      ! Timestep dependent correction of density profile
+      ! Correction of density profile
       if (tdownr /= 0.0) then
         ! Get reference density
         newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
-! Why the conversion of z to Mm? (Bourdin.KIS)
-        tmp_tau = tdownr * exp (-allpr * (z(n)*unit_length*1e-6))
-!       tmp_tau = tdownr * exp (-allpr * (lnrho0 - p%lnrho))
-        ! Add newton cooling term to entropy
+        ! allpr is given in [Mm]
+        tmp_tau = tdownr * exp (-allpr*unit_length*1e-6 * z(n))
+        ! Add correction term to density
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
       endif
 !
-      ! Timestep dependent newton cooling of temperature profile
+      ! Newton cooling of temperature profile
       if (tdown /= 0.0) then
+        if (lnrho_ref == -1.0) then
+          ! Get reference density
+          ref_pos = 1
+          do pos = 1, mz
+            if (z(pos) <= 0.0) ref_pos = pos
+          enddo
+          lnrho_ref = lnrho_init_z(ref_pos)
+          print *, 'calc_heat_cool_newton: reference density ', lnrho_ref
+        endif
         ! Get reference temperature
         newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
-!       tmp_tau = tdown * exp (-allp * (z(n)*unit_length*1e-6))
-        tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
+!       tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
+        tmp_tau = tdown * sine_step (p%lnrho, lnrho_ref-allp, allp/2.0)
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
       endif
