@@ -268,6 +268,7 @@ module Chemistry
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine get_reac_rate
 !***********************************************************************

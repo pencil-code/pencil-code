@@ -252,8 +252,8 @@ module Snapshot
         if (r3u_spec) call power(f,'r3u')
         if (mag_spec) call power(f,'b')
         if (vec_spec) call power(f,'a')
-        if (j_spec)   call power_vec(f,'j')            
-!         if (jb_spec)   call powerhel(f,'jb')            
+        if (j_spec)   call power_vec(f,'j')
+!         if (jb_spec)   call powerhel(f,'jb')
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
         if (ab_spec)  call powerhel(f,'mag')
@@ -546,7 +546,7 @@ module Snapshot
 !***********************************************************************
     subroutine output_snap_form(file,a,nv)
 !
-!  Write FORMATED snapshot file 
+!  Write FORMATED snapshot file
 !
 !  28-june-10/julien: coded (copy from output_snap)
 !
@@ -561,37 +561,37 @@ module Snapshot
 !
       if (lwrite_2d) then
         if (nx==1) then
-	  do i = m1, m2
-	    do j = n1, n2
-	      write(lun_output+1,'(22(f12.5))') t_sp,x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
-	    enddo
-	  enddo
+          do i = m1, m2
+            do j = n1, n2
+              write(lun_output+1,'(22(f12.5))') t_sp,x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
+            enddo
+          enddo
         elseif (ny==1) then
           do i = l1, l2
-	    do j = n1, n2          
-	      write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
-	    enddo
-	  enddo
+            do j = n1, n2
+              write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
+            enddo
+          enddo
         elseif (nz==1) then
           do i = l1, l2
-	    do j = m1, m2  	
+            do j = m1, m2
               write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
-	    enddo
-	  enddo
+            enddo
+          enddo
         else
           call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
         endif
       else
         do i = l1, l2
-	  do j = m1, m2   
-	    do k = n1, n2       
-	      write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
-	    enddo
-	  enddo
-	enddo
+          do j = m1, m2
+            do k = n1, n2
+              write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
+            enddo
+          enddo
+        enddo
       endif
 !
-      close(lun_output+1)     
+      close(lun_output+1)
 !
     endsubroutine output_snap_form
 !***********************************************************************
@@ -603,7 +603,6 @@ module Snapshot
 !
       integer :: nv, nd
       integer :: i, j, k, kk
-      integer :: nnx, nny, nnz
       real, dimension (mx,my,mz,nv) :: a
       real, dimension (nx*ny*nz) :: xx, yy, zz
       character (len=*) :: file
@@ -618,8 +617,8 @@ module Snapshot
         do j = 1, ny
           do i = 1, nx
             xx(kk+i) = x(i)
-	    yy(kk+i) = y(j)
-	    zz(kk+i) = z(k)	    
+            yy(kk+i) = y(j)
+            zz(kk+i) = z(k)
           enddo
           kk = kk + nx
         enddo
@@ -629,26 +628,26 @@ module Snapshot
 !
       write(lun_output+2,*) 'TITLE     = "output"'
       if (lwrite_2d) then
-      nd = 2             
-      if (nx==1) then      
+      nd = 2
+      if (nx==1) then
       write(lun_output+2,*) 'VARIABLES = "y"'
       write(lun_output+2,*) '"z"'
-      elseif (ny==1) then 
+      elseif (ny==1) then
       write(lun_output+2,*) 'VARIABLES = "x"'
-      write(lun_output+2,*) '"z"'           
+      write(lun_output+2,*) '"z"'
       elseif (nz==1) then
       write(lun_output+2,*) 'VARIABLES = "x"'
       write(lun_output+2,*) '"y"'
-      endif      
+      endif
       else
       if (ny==1.and.nz==1) then
-      write(lun_output+2,*) 'VARIABLES = "x"' 
-      nd = 1     
-      else 
       write(lun_output+2,*) 'VARIABLES = "x"'
-      write(lun_output+2,*) '"y"'  
-      write(lun_output+2,*) '"z"' 
-      nd = 3         
+      nd = 1
+      else
+      write(lun_output+2,*) 'VARIABLES = "x"'
+      write(lun_output+2,*) '"y"'
+      write(lun_output+2,*) '"z"'
+      nd = 3
       endif
       endif
       do i = 1, nv
@@ -657,16 +656,16 @@ module Snapshot
         write(lun_output+2,*) '"'//trim(name(i))//'"'
       enddo
 !
-      write(lun_output+2,*) 'ZONE T="Zone"'    
-      if (lwrite_2d) then     
+      write(lun_output+2,*) 'ZONE T="Zone"'
+      if (lwrite_2d) then
       if (nx==1) write(lun_output+2,*) ' I=1, J=',ny, ', K=',nz
-      if (ny==1) write(lun_output+2,*) ' I=',nx, ', J=1, K=',nz   
-      if (nz==1) write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=1'  
+      if (ny==1) write(lun_output+2,*) ' I=',nx, ', J=1, K=',nz
+      if (nz==1) write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=1'
       else
       if (ny==1.and.nz==1) then
-      write(lun_output+2,*) ' I=',nx, ', J=1, K='    
+      write(lun_output+2,*) ' I=',nx, ', J=1, K='
       else
-      write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=',nz     
+      write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=',nz
       endif
       endif
       write(lun_output+2,*) ' DATAPACKING=BLOCK'
@@ -680,43 +679,43 @@ module Snapshot
 !
       if (lwrite_2d) then
         if (nx==1) then
-	  write(lun_output+2,*) yy
-	  write(lun_output+2,*) zz
-	  do j = 1, nv
-	    write(lun_output+2,*) a(l1,m1:m2,n1:n2,j)
-          enddo
-	elseif (ny==1) then
-	  write(lun_output+2,*) xx
-	  write(lun_output+2,*) zz	  
-	  do j = 1, nv
-	    write(lun_output+2,*) a(l1:l2,m1,n1:n2,j)
-          enddo
-	elseif (nz==1) then
-	  write(lun_output+2,*) xx
-	  write(lun_output+2,*) yy	  
+          write(lun_output+2,*) yy
+          write(lun_output+2,*) zz
           do j = 1, nv
-	    write(lun_output+2,*) a(l1:l2,m1:m2,n1,j)
+            write(lun_output+2,*) a(l1,m1:m2,n1:n2,j)
           enddo
-	else
+        elseif (ny==1) then
+          write(lun_output+2,*) xx
+          write(lun_output+2,*) zz
+          do j = 1, nv
+            write(lun_output+2,*) a(l1:l2,m1,n1:n2,j)
+          enddo
+        elseif (nz==1) then
+          write(lun_output+2,*) xx
+          write(lun_output+2,*) yy
+          do j = 1, nv
+            write(lun_output+2,*) a(l1:l2,m1:m2,n1,j)
+          enddo
+        else
           call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
         endif
       else
-	if (ny==1.and.nz==1) then
-	write(lun_output+2,*) xx	
-	do j = 1, nv
+        if (ny==1.and.nz==1) then
+        write(lun_output+2,*) xx
+        do j = 1, nv
           write(lun_output+2,*) a(l1:l2,m1,n1,j)
-	enddo	
-	else
-	write(lun_output+2,*) xx
-	write(lun_output+2,*) yy
-	write(lun_output+2,*) zz
-	do j = 1, nv
+        enddo
+        else
+        write(lun_output+2,*) xx
+        write(lun_output+2,*) yy
+        write(lun_output+2,*) zz
+        do j = 1, nv
           write(lun_output+2,*) a(l1:l2,m1:m2,n1:n2,j)
-	enddo
-	endif
+        enddo
+        endif
       endif
 !
-      close(lun_output+2)     
+      close(lun_output+2)
 !
     endsubroutine output_snap_tec
 !
