@@ -28,16 +28,20 @@ module Particles_coagulation
 !
   include 'particles_coagulation.h'
 !
-  real :: kernel_cst=1.0, kernel_lin=1.0, cdtpcoag=0.2, cdtpcoag1=5.0
+  real :: cdtpcoag=0.2, cdtpcoag1=5.0
+  real :: kernel_cst=1.0, kernel_lin=1.0, kernel_pro=1.0
+  real :: four_pi_rhopmat_over_three2=0.0
   logical :: lcoag_simultaneous=.false.
   logical :: lshear_in_vp=.true.
-  logical :: lconstant_kernel_test=.false., llinear_kernel_test=.false.
+  logical :: lkernel_test=.false., lconstant_kernel_test=.false.
+  logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
-      kernel_cst, llinear_kernel_test, kernel_lin
+      kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
+      kernel_pro
 !
   contains
 !***********************************************************************
@@ -58,6 +62,15 @@ module Particles_coagulation
 !  Precalculate inverse of coagulation time-step parameter.
 !
       cdtpcoag1=1/cdtpcoag
+!
+!  Short hand for any kernel test.
+!
+      lkernel_test=lconstant_kernel_test.or.llinear_kernel_test.or. &
+          lproduct_kernel_test
+!
+!  Squared volume factor needed for product kernel test.
+!
+      four_pi_rhopmat_over_three2=four_pi_rhopmat_over_three**2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -101,12 +114,15 @@ module Particles_coagulation
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
-                if (lconstant_kernel_test.or.llinear_kernel_test) then
+                if (lkernel_test) then
                   if (lconstant_kernel_test) then
                     kernel=kernel_cst
                   elseif (llinear_kernel_test) then
                     kernel=kernel_lin* &
                        four_pi_rhopmat_over_three*(fp(j,iap)**3+fp(k,iap)**3)
+                  elseif (lproduct_kernel_test) then
+                    kernel=kernel_pro* &
+                       four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                   endif
                   dt1_coag_par=dt1_coag_par+kernel* &
                       min(fp(j,inpswarm),fp(k,inpswarm))
@@ -201,8 +217,7 @@ module Particles_coagulation
 !
 !  Only consider collisions between particles approaching each other.
 !
-                if ((sum((vpk-vpj)*(xpk-xpj))<0.0) .or. &
-                     lconstant_kernel_test .or. llinear_kernel_test) then
+                if ((sum((vpk-vpj)*(xpk-xpj))<0.0).or.lkernel_test) then
 !
 !  Relative particle speed.
 !
@@ -232,12 +247,15 @@ module Particles_coagulation
 !  change internal properties at the same time. The default is that the
 !  swarms evolve separately.
 !
-                  if (lconstant_kernel_test.or.llinear_kernel_test) then
+                  if (lkernel_test) then
                     if (lconstant_kernel_test) then
                       kernel=kernel_cst
                     elseif (llinear_kernel_test) then
                       kernel=kernel_lin* &
                         four_pi_rhopmat_over_three*(fp(j,iap)**3+fp(k,iap)**3)
+                    elseif (lproduct_kernel_test) then
+                      kernel=kernel_pro* &
+                        four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                     endif
                     if (lcoag_simultaneous) then
                       tau_coll1=kernel*min(fp(j,inpswarm),fp(k,inpswarm))
@@ -281,7 +299,7 @@ module Particles_coagulation
                         else
                           if (fp(k,iap)<fp(j,iap)) then
                             fp(k,inpswarm)=fp(k,inpswarm)* &
-                                fp(k,iap)**3/(fp(k,iap)**3+fp(j,iap)**3)
+                                 (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
                             fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
                           else
                             fp(k,inpswarm)=0.5*fp(k,inpswarm)
