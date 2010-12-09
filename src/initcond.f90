@@ -36,7 +36,7 @@ module Initcond
   public :: planet, planet_hc
   public :: random_isotropic_KS
   public :: htube, htube2, htube_x, hat, hat3d
-  public :: htube_erf
+  public :: htube_erf, xpoint
   public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
@@ -656,6 +656,25 @@ module Initcond
       endif
 !
     endsubroutine cos2x_cos2y_cos2z
+!***********************************************************************
+    subroutine xpoint(ampl,f,i,x0,y0)
+!
+! Creates a magnetic X point for a 2D run.
+! The vector potential is given by A_z = ampl*(x-x0)*(y -y0)
+!
+!   9-dec-10/bing: coded
+!
+      integer, intent(in) :: i
+      real, dimension (mx,my,mz,mfarray) ,intent(inout) :: f
+      real, intent(in) :: ampl,x0,y0
+!
+      if (ampl==0) then
+        if (lroot) print*,'xpoint: ampl=0'
+      else
+        f(:,:,n1,i)=ampl*spread(x-x0,2,my)*spread(y-y0,1,mx)
+      endif
+!
+    endsubroutine xpoint
 !***********************************************************************
     subroutine innerbox(ampl,ampl2,f,i,width)
 !
