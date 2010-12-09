@@ -33,6 +33,8 @@
   public :: communicate_bc_aa_pot, fill_zghostzones_3vec
 
   public :: distribute_to_pencil_xy, collect_from_pencil_xy
+  public :: remap_to_pencil_x, unmap_from_pencil_x
+  public :: remap_to_pencil_y, unmap_from_pencil_y
   public :: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
   public :: remap_to_pencil_yz, unmap_from_pencil_yz
 

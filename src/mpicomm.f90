@@ -3481,12 +3481,114 @@ module Mpicomm
 !
     endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
+    subroutine remap_to_pencil_x (in, out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 1D arrays in x only for nprocx>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(nx), intent(in) :: in
+      real, dimension(nxgrid), intent(out) :: out
+!
+      integer :: ibox, partner
+      integer, parameter :: ytag=105
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      real, dimension(nx) :: recv_buf
+!
+!
+      do ibox = 0, nprocx-1
+        partner = ipz*nprocxy + ipy*nprocx + ibox
+        if (iproc == partner) then
+          ! data is local
+          out(nx*ibox+1:nx*(ibox+1)) = in
+        else
+          ! communicate with partner
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (in, nx, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(nx*ibox+1:nx*(ibox+1)) = recv_buf
+        endif
+      enddo
+!
+    endsubroutine remap_to_pencil_x
+!***********************************************************************
+    subroutine unmap_from_pencil_x (in, out)
+!
+!  Unmaps pencil shaped 1D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocx>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(nxgrid), intent(in) :: in
+      real, dimension(nx), intent(out) :: out
+!
+!
+      out = in(nx*ipx+1:nx*(ipx+1))
+!
+    endsubroutine unmap_from_pencil_x
+!***********************************************************************
+    subroutine remap_to_pencil_y (in, out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 1D arrays in y only for nprocy>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(ny), intent(in) :: in
+      real, dimension(nygrid), intent(out) :: out
+!
+      integer :: ibox, partner
+      integer, parameter :: ytag=105
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      real, dimension(ny) :: recv_buf
+!
+!
+      do ibox = 0, nprocy-1
+        partner = ipz*nprocxy + ibox*nprocx + ipx
+        if (iproc == partner) then
+          ! data is local
+          out(ny*ibox+1:ny*(ibox+1)) = in
+        else
+          ! communicate with partner
+          if (iproc > partner) then ! above diagonal: send first, receive then
+            call MPI_SEND (in, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+          else                      ! below diagonal: receive first, send then
+            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+          out(ny*ibox+1:ny*(ibox+1)) = recv_buf
+        endif
+      enddo
+!
+    endsubroutine remap_to_pencil_y
+!***********************************************************************
+    subroutine unmap_from_pencil_y (in, out)
+!
+!  Unmaps pencil shaped 1D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocy>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(nygrid), intent(in) :: in
+      real, dimension(ny), intent(out) :: out
+!
+!
+      out = in(ny*ipy+1:ny*(ipy+1))
+!
+    endsubroutine unmap_from_pencil_y
+!***********************************************************************
     subroutine remap_to_pencil_xy_2D (in, out)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
 !
-!   4-jul-2010/Bourdin.KIS: coded
+!   04-jul-2010/Bourdin.KIS: coded
 !
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out

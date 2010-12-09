@@ -1355,6 +1355,62 @@ module Mpicomm
 !
     endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
+    subroutine remap_to_pencil_x (in, out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 1D arrays in x only for nprocx>1.
+!
+!   08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(:), intent(in) :: in
+      real, dimension(:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine remap_to_pencil_x
+!***********************************************************************
+    subroutine unmap_from_pencil_x (in, out)
+!
+!  Unmaps pencil shaped 1D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocx>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(:), intent(in) :: in
+      real, dimension(:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine unmap_from_pencil_x
+!***********************************************************************
+    subroutine remap_to_pencil_y (in, out)
+!
+!  Remaps data distributed on several processors into pencil shape.
+!  This routine remaps 1D arrays in y only for nprocy>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(:), intent(in) :: in
+      real, dimension(:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine remap_to_pencil_y
+!***********************************************************************
+    subroutine unmap_from_pencil_y (in, out)
+!
+!  Unmaps pencil shaped 1D data distributed on several processors back to normal shape.
+!  This routine is the inverse of the remap function for nprocy>1.
+!
+!  08-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension(:), intent(in) :: in
+      real, dimension(:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine unmap_from_pencil_y
+!***********************************************************************
     subroutine remap_to_pencil_xy_2D (in, out)
 !
 !  Remaps data distributed on several processors into pencil shape.
