@@ -133,8 +133,6 @@ module Chemistry
      logical, allocatable, dimension(:) :: Mplus_case
      logical, allocatable, dimension(:) :: photochem_case
      real :: lamb_low,lamb_up
-!  real, dimension(nchemspec,7)     :: tran_data
-     real, dimension(nchemspec) :: Lewis_coef
 !
 !   Atmospheric physics
 !

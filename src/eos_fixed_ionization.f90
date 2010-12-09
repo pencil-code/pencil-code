@@ -81,6 +81,7 @@ module EquationOfState
 !
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data
+  real, dimension(nchemspec)  :: Lewis_coef
 !
   contains
 !***********************************************************************
