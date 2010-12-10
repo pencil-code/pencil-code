@@ -43,7 +43,7 @@ module Entropy
   real :: chi=impossible
   real :: zbot=0.0, ztop=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
-  real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hcond0=impossible, hcond1=1.0, Fbot=impossible
   integer, parameter :: nheatc_max=2
@@ -51,7 +51,7 @@ module Entropy
   logical :: ladvection_temperature=.true.
   logical :: lupw_lnTT=.false., lcalc_heat_cool=.false., lheatc_hyper3=.false.
   logical :: lheatc_Kconst=.false., lheatc_Kprof=.false., lheatc_Karctan=.false.
-  logical :: lheatc_tensordiffusion=.false.
+  logical :: lheatc_tensordiffusion=.false., lheatc_hyper3_mesh=.false.
   logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false., lfreeze_lnTText=.false.
   logical :: lhcond_global=.false.
@@ -77,7 +77,7 @@ module Entropy
 !
   namelist /entropy_run_pars/ &
       lupw_lnTT, ladvection_temperature, &
-      chi, iheatcond, &
+      chi, iheatcond, chi_hyper3_mesh, &
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
@@ -222,6 +222,7 @@ module Entropy
 !
       lheatc_shock=.false.
       lheatc_hyper3=.false.
+      lheatc_hyper3_mesh=.false.
       lheatc_hyper3_polar=.false.
 !
 !  initialize lnothing. It is needed to prevent multiple output.
@@ -262,6 +263,9 @@ module Entropy
         case ('chi-hyper3')
           lheatc_hyper3=.true.
           if (lroot) call information('initialize_entropy','hyper conductivity')
+        case ('hyper3_mesh','hyper3-mesh')
+          lheatc_hyper3_mesh=.true.
+          if (lroot) call information('initialize_entropy','hyper mesh conductivity')
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           lheatc_hyper3_polar=.true.
           if (lroot) call information('initialize_entropy', &
@@ -612,6 +616,8 @@ module Entropy
         endif
       endif
 !
+      if (lheatc_hyper3_mesh) lpenc_requested(i_TT1)=.true.
+!
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           lpenc_requested(i_ugTT)=.true.
@@ -830,6 +836,17 @@ module Entropy
         endif
         if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
         if (headtt) print*,'dss_dt: chi_hyper3=', chi_hyper3
+      endif
+!
+      if (lheatc_hyper3_mesh) then
+        do j=1,3
+          call der6(f,ilnTT,tmp,j,IGNOREDX=.true.)
+          if (.not.ltemperature_nolog) tmp=tmp*p%TT1
+          thdiff = thdiff + chi_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
+        enddo
+        if (lfirst.and.ldt) &
+            diffus_chi3=chi_hyper3_mesh*pi5_1*dx_1(l1:l2)
+        if (headtt) print*,'dss_dt: chi_hyper3_mesh=', chi_hyper3_mesh
       endif
 !
       if (lheatc_hyper3_polar) then
@@ -1527,7 +1544,7 @@ module Entropy
 !  Temperature.
 !
         case ('TT')
-          if (iTT>0) then 
+          if (iTT>0) then
             slices%yz =f(ix_loc,m1:m2,n1:n2,iTT)
             slices%xz =f(l1:l2,iy_loc,n1:n2,iTT)
             slices%xy =f(l1:l2,m1:m2,iz_loc,iTT)
