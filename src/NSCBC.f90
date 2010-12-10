@@ -1187,6 +1187,10 @@ include 'NSCBC.h'
               dim(1:igrid) = x(imin:imax)
               init_y1 = xyz0(1) + Lxyz(1)/3.
               init_y2 = xyz0(1) + 2.*Lxyz(1)/3
+            else
+              call fatal_error('find_composition_at_inlet','No such dir!')
+              init_y1 = 0.
+              init_y2 = 0.
             endif
             do i = 1, igrid
               if (dim(i) >= init_y1 .and. dim(i) <= init_y2) then
