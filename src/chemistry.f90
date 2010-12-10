@@ -1050,6 +1050,8 @@ module Chemistry
       if (lN2) then
         mN2 =species_constants(ichem_N2 ,imass)
         init_N2=initial_massfractions(ichem_N2)
+      else
+        init_N2=0
       endif
       call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
       if (lH2O) then
@@ -1065,6 +1067,10 @@ module Chemistry
       if (lCO2) then
         mCO2 =species_constants(ichem_CO2 ,imass)
         init_CO2=initial_massfractions(ichem_CO2)
+        final_massfrac_CO2=init_CO2
+      else
+        init_CO2=0
+        final_massfrac_CO2=init_CO2      
       endif
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
@@ -4613,6 +4619,11 @@ module Chemistry
               Cv_tran_R=1.5
               Cv_rot_R=1.5
               Cv_vib_R=cv_R_spec_full(:,j2,j3,k)-3.
+            else
+              Cv_tran_R=0
+              Cv_rot_R=0
+              Cv_vib_R=0
+              call fatal_error('calc_therm_diffus_coef','No such tran_data!')
             endif
 !
 ! The rotational and vibrational contributions are zero for the single
