@@ -151,7 +151,7 @@ module Particles_map
           if (ivar < 4) then
             gpp(1)=gp(ivar-ivar1+1)
             call close_interpolation(f,ix0,iy0,iz0,icyl,ivar,xxp,&
-                gpp,.false.,.true.,.false.)
+                gpp,.false.,.false.)
             gp(ivar-ivar1+1)=gpp(1)
           endif
         enddo
