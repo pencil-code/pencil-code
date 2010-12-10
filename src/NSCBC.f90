@@ -501,12 +501,14 @@ include 'NSCBC.h'
         call fatal_error('bc_nscbc_prf','No such dir!')
       endif
 !
-      i = 1
-      do k=ichemspec(1), ichemspec(nchemspec)
-        call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
-        dYk_dx(:,:,i) = dY_dx(:,:)
-        i=i+1
-      enddo
+      if (ichemspec(1)>0) then
+        i = 1
+        do k=ichemspec(1), ichemspec(nchemspec)
+          call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
+          dYk_dx(:,:,i) = dY_dx(:,:)
+          i=i+1
+        enddo
+      endif
 !
 !  Find derivatives at boundary
 !
@@ -1090,7 +1092,7 @@ include 'NSCBC.h'
       real, dimension(igrid) :: dim
       integer :: i_CH4=0, i_O2=0, i_N2=0
       integer :: ichem_CH4=0, ichem_O2=0, ichem_N2=0
-      integer :: i,j,kkk,jj,k
+      integer :: i,kkk,jj,k
       logical :: lO2, lN2, lCH4
 !
 ! Define composition profile at inlet
@@ -1099,7 +1101,7 @@ include 'NSCBC.h'
           select case (zz_profile(jj))
 !
           case ('nothing')
-            if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+            if (lroot .and. it==1 .and. jj == 1 .and. lfirst) &
                 print*,'inlet_YY_profile: nothing'
 !
           case ('uniform')
