@@ -940,7 +940,7 @@ module Chemistry
        if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
        if  ((Diff_coef_const<impossible) .or. (lDiff_simple) ) then
          if (lDiff_simple) then
-           if (Diff_coef_const>impossible*0.99)  Diff_coef_const=10.
+           if (Diff_coef_const==impossible)  Diff_coef_const=10.
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=Diff_coef_const &
                 *exp(0.7*(log(p%TT(:)/p%TT(1))+log(p%rho(1)/p%rho(:))))  &
@@ -969,7 +969,7 @@ module Chemistry
       if (lpencil(i_lambda) .and. lheatc_chemistry) then
       if ((lThCond_simple) .or. (lambda_const<impossible))then
         if (lThCond_simple) then
-          if (lambda_const>impossible*0.99) lambda_const=1e4
+          if (lambda_const==impossible) lambda_const=1e4
           p%lambda=lambda_const &
               *exp(0.7*log(p%TT(:)/p%TT(1)))*cp_full(l1:l2,m,n)/cp_full(l1,m,n)
           if (lpencil(i_glambda))  then
@@ -2028,11 +2028,11 @@ module Chemistry
 !
 !  Viscosity of a mixture
 !
-        if (tran_exist) then
-          call calc_diff_visc_coef(f)
-        endif
+         if (tran_exist) then
+           call calc_diff_visc_coef(f)
+         endif
 !
-        if (visc_const>impossible*0.99) then
+        if (visc_const>impossible) then
         do j3=nn1,nn2
         do j2=mm1,mm2
 !
@@ -3733,7 +3733,7 @@ module Chemistry
                         !    ind_glob,ind_chem,found_specie)
                         !if (found_specie) a_k4(ind_chem,k)=1.
                         do ind_chem=1,nchemspec
-                          if (a_k4(ind_chem,k)>impossible*0.99) a_k4(ind_chem,k)=1
+                          if (a_k4(ind_chem,k)==impossible) a_k4(ind_chem,k)=1
                         enddo
 !
                       endif
@@ -4533,7 +4533,7 @@ module Chemistry
 !
 !  Calculate viscosity
 !
-     if (visc_const>impossible*0.99) then
+     if (visc_const==impossible) then
       omega='Omega22'
       tmp_local=5./16.*sqrt(k_B_cgs/(Na*pi))
 !
