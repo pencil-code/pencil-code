@@ -37,7 +37,7 @@ module Solid_Cells
   character (len=labellen) :: interpolation_method='staircase'
   logical :: lclose_interpolation=.false., lclose_linear=.false.
   logical :: lnointerception=.false.,lcheck_ba=.false.
-  logical :: lclose_quadratic_radial_interpolation=.true.
+  logical :: lclose_quad_rad_inter=.true.
   real                          :: rhosum,ksum,flow_dir,T0
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
@@ -57,12 +57,12 @@ module Solid_Cells
        ampl_noise,interpolation_method, nforcepoints,object_skin,&
        lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
        nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos,sphere_temp,&
-       lclose_quadratic_radial_interpolation
+       lclose_quad_rad_inter
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
        limit_close_linear,lnointerception,nforcepoints,lcheck_ba,&
-       lclose_quadratic_radial_interpolation
+       lclose_quad_rad_inter
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -977,7 +977,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Check if we will use the old or the new interpolation method
 !
              if (objects(iobj)%form=='sphere' .or. &
-                 .not. lclose_quadratic_radial_interpolation) then
+                 .not. lclose_quad_rad_inter) then
                lnew_interpolation_method=.true.
              else
                lnew_interpolation_method=.false.
@@ -1093,7 +1093,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Check if we will use the old or the new interpolation method
 !
                 if (objects(iobj)%form=='sphere' .or. &
-                    .not. lclose_quadratic_radial_interpolation) then
+                    .not. lclose_quad_rad_inter) then
                   lnew_interpolation_method=.true.
                 else
                   lnew_interpolation_method=.false.
@@ -1551,7 +1551,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       r_sg=r-rs
       r_sp=rp-rs
 !
-!  If lclose_quadratic_radial_interpolation = true we must find the 
+!  If lclose_quad_rad_inter = true we must find the 
 !  velocities in the r, theta and phi
 !  directions at the point "g". This will then be used to set up a 
 !  linear interpolation for v_theta and v_phi and a quadratic interpolation 
@@ -1562,7 +1562,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         gpp(1)=(fvar(1)*r_sp+surf_val*r_pg)/r_sg
       else
         surf_val=0
-        if (lclose_quadratic_radial_interpolation) then
+        if (lclose_quad_rad_inter) then
 !
 !  The unity vector "nr_hat" is normal to the solid surface, while 
 !  "nphi_hat" and "ntheta_hat" are the unit vectors in the two angular 
@@ -1817,7 +1817,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 ! must find both the interploated x and y velocity in order to 
 ! do interpolations for the radial and theta directions.
 !
-      if (lclose_quadratic_radial_interpolation .and. ivar1==iux) then
+      if (lclose_quad_rad_inter .and. ivar1==iux) then
         if (dirconst == 2) then
           varval=f(cornerindex(dirvar,1),cornerindex(dirconst,topbot),&
               cornerindex(3,1),iuy)
@@ -1847,7 +1847,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 ! must find both the interploated x and y velocity in order to 
 ! do interpolations for the radial and theta directions.
 !
-      if (lclose_quadratic_radial_interpolation .and. ivar1==iux) then
+      if (lclose_quad_rad_inter .and. ivar1==iux) then
         if (dirconst == 2) then
           varval=f(cornerindex(dirvar,2),cornerindex(dirconst,topbot),&
               cornerindex(3,1),iuy)
@@ -1871,7 +1871,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       rint1=xyint(dirvar)-x1
       rint2=x2-xyint(dirvar)
 !
-      if (lclose_quadratic_radial_interpolation .and. (ivar1 /= iuz) &
+      if (lclose_quad_rad_inter .and. (ivar1 /= iuz) &
           .and. (ivar1 /= ilnTT)) then
         if (ivar1==iux) then
           fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
