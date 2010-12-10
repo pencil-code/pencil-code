@@ -209,8 +209,8 @@ module Testfield
         Minv(i,j,:,:) = RESHAPE (  (/  &
                                      (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx(i)*cz1(j), sz(j)*cx1(i) /), &
                                      (/                     -sx(i)*cz1(j), cx(i)*cz1(j),            0 /), &
-                                     (/                     -sz(i)*cx1(j),            0, cz(j)*cx1(i) /) &
-                                   /), (/3,3/))
+                                     (/                     -sz(j)*cx1(i),            0, cz(j)*cx1(i) /) &
+                                   /), (/3,3/), ORDER=(/ 2, 1 /))
       enddo
       enddo
 !
@@ -399,7 +399,7 @@ module Testfield
 !  subtract average emf
 !
             do j=1,3
-              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(:,n,j,jtest)
+              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(:,n-n1+1,j,jtest)
             enddo
 !
 !  advance test field equation
@@ -569,7 +569,7 @@ module Testfield
     integer :: j, count
     real, dimension(2,nx) :: temp_fft_z
     real, dimension(2,2) :: temp_fft
-    real, dimension (:,:,:), allocatable :: temp
+    real, dimension (:,:,:), allocatable :: temp_array
     logical, dimension(27) :: need_temp
     integer, dimension (27) :: twod_address
 !
@@ -585,124 +585,125 @@ module Testfield
       endif
     enddo
 !
-    allocate(temp(nx,nz,count))
+    allocate(temp_array(nx,nz,count))
 !
+
     select case (itestfield)
     case (1)
 
       do n=1,nz
 
       if (need_temp(1)) & !(idiag_alp11xz/=0) &
-        temp(:,n,twod_address(1))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)
+        temp_array(:,n,twod_address(1))= &
+            Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)!+Minv(:,n,1,3)*uxbtestm(:,n,1,3)
 
       if (need_temp(2)) & !(idiag_alp21xz/=0) &
-        temp(:,j,twod_address(2))= &
+        temp_array(:,j,twod_address(2))= &
             Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)
 
       if (need_temp(3)) & !(idiag_alp31xz/=0) &
-        temp(:,j,twod_address(3))= &
+        temp_array(:,j,twod_address(3))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3)
 
       if (need_temp(4)) & !(idiag_alp12xz/=0) &
-        temp(:,j,twod_address(4))= &
+        temp_array(:,j,twod_address(4))= &
             Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6)
 
       if (need_temp(5)) & !(idiag_alp22xz/=0) &
-        temp(:,j,twod_address(5))= &
+        temp_array(:,j,twod_address(5))= &
             Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6)
 
       if (need_temp(6)) & !(idiag_alp32xz/=0) &
-        temp(:,j,twod_address(6))= &
+        temp_array(:,j,twod_address(6))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6)
 
       if (need_temp(7)) & !(idiag_alp13xz/=0) &
-        temp(:,j,twod_address(7))= &
+        temp_array(:,j,twod_address(7))= &
             Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9)
 
       if (need_temp(8)) & !(idiag_alp23xz/=0) &
-        temp(:,j,twod_address(8))= &
+        temp_array(:,j,twod_address(8))= &
             Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9)
 
       if (need_temp(9)) & !(idiag_alp33xz/=0) &
-        temp(:,j,twod_address(9))= &
+        temp_array(:,j,twod_address(9))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)
 
 !
 
       if (need_temp(10)) & !(idiag_eta111xz/=0) &
-        temp(:,j,twod_address(10))= &
+        temp_array(:,j,twod_address(10))= &
             Minv(:,n,2,1)*uxbtestm(:,n,1,1)+Minv(:,n,2,2)*uxbtestm(:,n,1,2)+Minv(:,n,2,3)*uxbtestm(:,n,1,3)
 
       if (need_temp(11)) & !(idiag_eta112xz/=0) &
-        temp(:,j,twod_address(11))= &
+        temp_array(:,j,twod_address(11))= &
             Minv(:,n,3,1)*uxbtestm(:,n,1,1)+Minv(:,n,3,2)*uxbtestm(:,n,1,2)+Minv(:,n,3,3)*uxbtestm(:,n,1,3)
 
       if (need_temp(12)) & !(idiag_eta211xz/=0) &
-        temp(:,j,twod_address(12))= &
+        temp_array(:,j,twod_address(12))= &
             Minv(:,n,2,1)*uxbtestm(:,n,2,1)+Minv(:,n,2,2)*uxbtestm(:,n,2,2)+Minv(:,n,2,3)*uxbtestm(:,n,2,3)
 
       if (need_temp(13)) & !(idiag_eta212xz/=0) &
-        temp(:,j,twod_address(13))= &
+        temp_array(:,j,twod_address(13))= &
             Minv(:,n,3,1)*uxbtestm(:,n,2,1)+Minv(:,n,3,2)*uxbtestm(:,n,2,2)+Minv(:,n,3,3)*uxbtestm(:,n,2,3)
 
       if (need_temp(14)) & !(idiag_eta311xz/=0) &
-        temp(:,j,twod_address(14))= &
+        temp_array(:,j,twod_address(14))= &
             Minv(:,n,2,1)*uxbtestm(:,n,3,1)+Minv(:,n,2,2)*uxbtestm(:,n,3,2)+Minv(:,n,2,3)*uxbtestm(:,n,3,3)
 
       if (need_temp(15)) & !(idiag_eta312xz/=0) &
-        temp(:,j,twod_address(15))= &
+        temp_array(:,j,twod_address(15))= &
             Minv(:,n,3,1)*uxbtestm(:,n,3,1)+Minv(:,n,3,2)*uxbtestm(:,n,3,2)+Minv(:,n,3,3)*uxbtestm(:,n,3,3)
 
 !
 
       if (need_temp(16)) & !(idiag_eta121xz/=0) &
-        temp(:,j,twod_address(16))= &
+        temp_array(:,j,twod_address(16))= &
             Minv(:,n,2,1)*uxbtestm(:,n,1,4)+Minv(:,n,2,2)*uxbtestm(:,n,1,5)+Minv(:,n,2,3)*uxbtestm(:,n,1,6)
 
       if (need_temp(17)) & !(idiag_eta122xz/=0) &
-        temp(:,j,twod_address(17))= &
+        temp_array(:,j,twod_address(17))= &
             Minv(:,n,3,1)*uxbtestm(:,n,1,4)+Minv(:,n,3,2)*uxbtestm(:,n,1,5)+Minv(:,n,3,3)*uxbtestm(:,n,1,6)
 
       if (need_temp(18)) & !(idiag_eta221xz/=0) &
-        temp(:,j,twod_address(18))= &
+        temp_array(:,j,twod_address(18))= &
             Minv(:,n,2,1)*uxbtestm(:,n,2,4)+Minv(:,n,2,2)*uxbtestm(:,n,2,5)+Minv(:,n,2,3)*uxbtestm(:,n,2,6)
 
       if (need_temp(19)) & !(idiag_eta222xz/=0) &
-        temp(:,j,twod_address(19))= &
+        temp_array(:,j,twod_address(19))= &
             Minv(:,n,3,1)*uxbtestm(:,n,2,4)+Minv(:,n,3,2)*uxbtestm(:,n,2,5)+Minv(:,n,3,3)*uxbtestm(:,n,2,6)
 
       if (need_temp(20)) & !(idiag_eta321xz/=0) &
-        temp(:,j,twod_address(20))= &
+        temp_array(:,j,twod_address(20))= &
             Minv(:,n,2,1)*uxbtestm(:,n,3,4)+Minv(:,n,2,2)*uxbtestm(:,n,3,5)+Minv(:,n,2,3)*uxbtestm(:,n,3,6)
 
       if (need_temp(21)) & !(idiag_eta322xz/=0) &
-        temp(:,j,twod_address(21))= &
+        temp_array(:,j,twod_address(21))= &
             Minv(:,n,3,1)*uxbtestm(:,n,3,4)+Minv(:,n,3,2)*uxbtestm(:,n,3,5)+Minv(:,n,3,3)*uxbtestm(:,n,3,6)
 
 
       if (need_temp(22)) & !(idiag_eta131xz/=0) &
-        temp(:,j,twod_address(22))= &
+        temp_array(:,j,twod_address(22))= &
             Minv(:,n,2,1)*uxbtestm(:,n,1,7)+Minv(:,n,2,2)*uxbtestm(:,n,1,8)+Minv(:,n,2,3)*uxbtestm(:,n,1,9)
 
       if (need_temp(23)) & !(idiag_eta132xz/=0) &
-        temp(:,j,twod_address(23))= &
+        temp_array(:,j,twod_address(23))= &
             Minv(:,n,3,1)*uxbtestm(:,n,1,7)+Minv(:,n,3,2)*uxbtestm(:,n,1,8)+Minv(:,n,3,3)*uxbtestm(:,n,1,9)
 
       if (need_temp(24)) & !(idiag_eta231xz/=0) &
-        temp(:,j,twod_address(24))= &
+        temp_array(:,j,twod_address(24))= &
             Minv(:,n,2,1)*uxbtestm(:,n,2,7)+Minv(:,n,2,2)*uxbtestm(:,n,2,8)+Minv(:,n,2,3)*uxbtestm(:,n,2,9)
 
       if (need_temp(25)) & !(idiag_eta232xz/=0) &
-        temp(:,j,twod_address(25))= &
+        temp_array(:,j,twod_address(25))= &
             Minv(:,n,3,1)*uxbtestm(:,n,2,7)+Minv(:,n,3,2)*uxbtestm(:,n,2,8)+Minv(:,n,3,3)*uxbtestm(:,n,2,9)
 
       if (need_temp(26)) & !(idiag_eta331xz/=0) &
-        temp(:,j,twod_address(26))= &
+        temp_array(:,j,twod_address(26))= &
             Minv(:,n,2,1)*uxbtestm(:,n,3,7)+Minv(:,n,2,2)*uxbtestm(:,n,3,8)+Minv(:,n,2,3)*uxbtestm(:,n,3,9)
 
       if (need_temp(27)) & !(idiag_eta332xz/=0) &
-        temp(:,j,twod_address(27))= &
+        temp_array(:,j,twod_address(27))= &
             Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9)
 
     enddo
@@ -716,90 +717,90 @@ module Testfield
     do n=n1,n2 ! ny multiplied in because we are not in the mn loop
 !
       if (idiag_alp11xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(1)),idiag_alp11xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(1)),idiag_alp11xz)
 
       if (idiag_alp21xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(2)),idiag_alp21xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(2)),idiag_alp21xz)
 
       if (idiag_alp31xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(3)),idiag_alp31xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(3)),idiag_alp31xz)
 
       if (idiag_alp12xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(4)),idiag_alp12xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(4)),idiag_alp12xz)
 
       if (idiag_alp22xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(5)),idiag_alp22xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(5)),idiag_alp22xz)
 
       if (idiag_alp32xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(6)),idiag_alp32xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(6)),idiag_alp32xz)
 
       if (idiag_alp13xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(7)),idiag_alp13xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(7)),idiag_alp13xz)
 
       if (idiag_alp23xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(8)),idiag_alp23xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(8)),idiag_alp23xz)
 
       if (idiag_alp33xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(9)),idiag_alp33xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(9)),idiag_alp33xz)
 
 !
 
       if (idiag_eta111xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(10)),idiag_eta111xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(10)),idiag_eta111xz)
 
       if (idiag_eta112xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(11)),idiag_eta112xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(11)),idiag_eta112xz)
 
       if (idiag_eta211xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(12)),idiag_eta211xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(12)),idiag_eta211xz)
 
       if (idiag_eta212xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(13)),idiag_eta212xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(13)),idiag_eta212xz)
 
       if (idiag_eta311xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(14)),idiag_eta311xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(14)),idiag_eta311xz)
 
       if (idiag_eta312xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(15)),idiag_eta312xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(15)),idiag_eta312xz)
 
 
 
       if (idiag_eta121xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(16)),idiag_eta121xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(16)),idiag_eta121xz)
 
       if (idiag_eta122xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(17)),idiag_eta122xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(17)),idiag_eta122xz)
 
       if (idiag_eta221xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(18)),idiag_eta221xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(18)),idiag_eta221xz)
 
       if (idiag_eta222xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(19)),idiag_eta222xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(19)),idiag_eta222xz)
 
       if (idiag_eta321xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(20)),idiag_eta321xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(20)),idiag_eta321xz)
 
       if (idiag_eta322xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(21)),idiag_eta322xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(21)),idiag_eta322xz)
 
 
       if (idiag_eta131xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(22)),idiag_eta131xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(22)),idiag_eta131xz)
 
       if (idiag_eta132xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(23)),idiag_eta132xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(23)),idiag_eta132xz)
 
       if (idiag_eta231xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(24)),idiag_eta231xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(24)),idiag_eta231xz)
 
       if (idiag_eta232xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(25)),idiag_eta232xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(25)),idiag_eta232xz)
 
       if (idiag_eta331xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(26)),idiag_eta331xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(26)),idiag_eta331xz)
 
       if (idiag_eta332xz/=0) &
-        call ysum_mn_name_xz(ny*temp(:,n-n1+1,twod_address(27)),idiag_eta332xz)
+        call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(27)),idiag_eta332xz)
     enddo
     endif
 !
@@ -807,14 +808,14 @@ module Testfield
 
       do n=n1,n2
 
-        if (idiag_alp11/=0) call sum_mn_name(ny*temp(:,n-n1+1,twod_address(1)), idiag_alp11)
+        if (idiag_alp11/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(1)), idiag_alp11)
 
-        if (idiag_eta122/=0) call sum_mn_name(ny*temp(:,n-n1+1, twod_address(17)), idiag_eta122)
+        if (idiag_eta122/=0) call sum_mn_name(ny*temp_array(:,n-n1+1, twod_address(17)), idiag_eta122)
 
       enddo
 
       if (idiag_alp11cc .or. idiag_alp11cs .or. idiag_alp11sc .or. idiag_alp11ss) then
-        call fourier_single_mode(temp(:,:,twod_address(1)), (/nx,nz/), 1., 3, temp_fft_z)
+        call fourier_single_mode(temp_array(:,:,twod_address(1)), (/nx,nz/), 1., 3, temp_fft_z)
         if (ipz==0) then !result of fft only known on root of z-beam
           call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
           if (lroot) then
@@ -827,7 +828,7 @@ module Testfield
       endif
 
       if (idiag_eta122cc .or. idiag_eta122cs .or. idiag_eta122sc .or. idiag_eta122ss) then
-        call fourier_single_mode(temp(:,:,twod_address(17)), (/nx,nz/), 1., 3, temp_fft_z)
+        call fourier_single_mode(temp_array(:,:,twod_address(17)), (/nx,nz/), 1., 3, temp_fft_z)
         if (ipz==0) then !result of fft only known on root of z-beam
           call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
           if (lroot) then
@@ -842,7 +843,7 @@ module Testfield
 
     endif
 !
-    deallocate(temp)
+    deallocate(temp_array)
 !
     endsubroutine calc_coefficients
 !***********************************************************************
