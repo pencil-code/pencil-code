@@ -15,8 +15,10 @@ module Fourier
 !
   complex, dimension (nxgrid) :: ax
   complex, dimension (nygrid) :: ay
+  complex, dimension (nzgrid) :: az
   real, dimension (4*nxgrid+15) :: wsavex
   real, dimension (4*nygrid+15) :: wsavey
+  real, dimension (4*nzgrid+15) :: wsavez
 !
   interface fourier_transform_other
     module procedure fourier_transform_other_1
@@ -2337,12 +2339,26 @@ module Fourier
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
-      lshift = .false.
-      if (present (shift_y)) lshift = .true.
-!
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+      lshift = .false.
+      if (present (shift_y)) lshift = .true.
+!
+!
+      ! Check for degenerate cases.
+      if (nxgrid == 1) then
+        if (lshift) then
+          call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+        else
+          call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        endif
+        return
+      endif
+      if (nygrid == 1) then
+        call fft_x_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
 !
       if (mod (nxgrid, nprocxy) /= 0) &
           call fatal_error ('fft_xy_parallel_2D', 'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
@@ -2384,33 +2400,29 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid > 1) then
-          ! Transform x-direction.
-          do m = 1, pny
-            ax = cmplx (p_re(:,m), p_im(:,m))
-            call cfftf (nxgrid, ax, wsavex)
-            p_re(:,m) = real (ax)
-            p_im(:,m) = aimag (ax)
-          enddo
-        endif
+        ! Transform x-direction.
+        do m = 1, pny
+          ax = cmplx (p_re(:,m), p_im(:,m))
+          call cfftf (nxgrid, ax, wsavex)
+          p_re(:,m) = real (ax)
+          p_im(:,m) = aimag (ax)
+        enddo
 !
-        if (nygrid > 1) then
-          call transp_pencil_xy (p_re, t_re)
-          call transp_pencil_xy (p_im, t_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
 !
-          ! Transform y-direction.
-          do l = 1, tny
-            ay = cmplx (t_re(:,l), t_im(:,l))
-            call cfftf(nygrid, ay, wsavey)
-            if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
-            if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
-            t_re(:,l) = real (ay)
-            t_im(:,l) = aimag (ay)
-          enddo
+        ! Transform y-direction.
+        do l = 1, tny
+          ay = cmplx (t_re(:,l), t_im(:,l))
+          call cfftf(nygrid, ay, wsavey)
+          if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+          if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
+          t_re(:,l) = real (ay)
+          t_im(:,l) = aimag (ay)
+        enddo
 !
-          call transp_pencil_xy (t_re, p_re)
-          call transp_pencil_xy (t_im, p_im)
-        endif
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2428,32 +2440,28 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
 !
-        if (nygrid > 1) then
-          call transp_pencil_xy (p_re, t_re)
-          call transp_pencil_xy (p_im, t_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
 !
-          do l = 1, tny
-            ! Transform y-direction back.
-            ay = cmplx (t_re(:,l), t_im(:,l))
-            if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
-            call cfftb (nygrid, ay, wsavey)
-            t_re(:,l) = real (ay)
-            t_im(:,l) = aimag (ay)
-          enddo
+        do l = 1, tny
+          ! Transform y-direction back.
+          ay = cmplx (t_re(:,l), t_im(:,l))
+          if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+          call cfftb (nygrid, ay, wsavey)
+          t_re(:,l) = real (ay)
+          t_im(:,l) = aimag (ay)
+        enddo
 !
-          call transp_pencil_xy (t_re, p_re)
-          call transp_pencil_xy (t_im, p_im)
-        endif
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
 !
-        if (nxgrid > 1) then
-          do m = 1, pny
-            ! Transform x-direction back.
-            ax = cmplx (p_re(:,m), p_im(:,m))
-            call cfftb (nxgrid, ax, wsavex)
-            p_re(:,m) = real (ax)
-            if (lcompute_im) p_im(:,m) = aimag (ax)
-          enddo
-        endif
+        do m = 1, pny
+          ! Transform x-direction back.
+          ax = cmplx (p_re(:,m), p_im(:,m))
+          call cfftb (nxgrid, ax, wsavex)
+          p_re(:,m) = real (ax)
+          if (lcompute_im) p_im(:,m) = aimag (ax)
+        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2503,6 +2511,16 @@ module Fourier
       if (present (lneed_im)) lcompute_im = lneed_im
 !
 !
+      ! Check for degenerate cases.
+      if (nxgrid == 1) then
+        call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
+      if (nygrid == 1) then
+        call fft_x_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
+!
       inz = size (a_re, 3)
 !
       if (inz /= size (a_im, 3)) &
@@ -2548,36 +2566,32 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid > 1) then
-          do pos_z = 1, inz
-            do m = 1, pny
-              ! Transform x-direction.
-              ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
-              call cfftf (nxgrid, ax, wsavex)
-              p_re(:,m,pos_z) = real (ax)
-              p_im(:,m,pos_z) = aimag (ax)
-            enddo
+        do pos_z = 1, inz
+          do m = 1, pny
+            ! Transform x-direction.
+            ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
+            call cfftf (nxgrid, ax, wsavex)
+            p_re(:,m,pos_z) = real (ax)
+            p_im(:,m,pos_z) = aimag (ax)
           enddo
-        endif
+        enddo
 !
-        if (nygrid > 1) then
-          call transp_pencil_xy (p_re, t_re)
-          call transp_pencil_xy (p_im, t_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
 !
-          do pos_z = 1, inz
-            do l = 1, tny
-              ! Transform y-direction.
-              ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
-              call cfftf (nygrid, ay, wsavey)
-              if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
-              t_re(:,l,pos_z) = real (ay)
-              t_im(:,l,pos_z) = aimag (ay)
-            enddo
+        do pos_z = 1, inz
+          do l = 1, tny
+            ! Transform y-direction.
+            ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
+            call cfftf (nygrid, ay, wsavey)
+            if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+            t_re(:,l,pos_z) = real (ay)
+            t_im(:,l,pos_z) = aimag (ay)
           enddo
+        enddo
 !
-          call transp_pencil_xy (t_re, p_re)
-          call transp_pencil_xy (t_im, p_im)
-        endif
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2595,36 +2609,32 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
 !
-        if (nygrid > 1) then
-          call transp_pencil_xy (p_re, t_re)
-          call transp_pencil_xy (p_im, t_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
 !
-          do pos_z = 1, inz
-            do l = 1, tny
-              ! Transform y-direction back.
-              ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
-              if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
-              call cfftb (nygrid, ay, wsavey)
-              t_re(:,l,pos_z) = real (ay)
-              t_im(:,l,pos_z) = aimag (ay)
-            enddo
+        do pos_z = 1, inz
+          do l = 1, tny
+            ! Transform y-direction back.
+            ay = cmplx (t_re(:,l,pos_z), t_im(:,l,pos_z))
+            if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+            call cfftb (nygrid, ay, wsavey)
+            t_re(:,l,pos_z) = real (ay)
+            t_im(:,l,pos_z) = aimag (ay)
           enddo
+        enddo
 !
-          call transp_pencil_xy (t_re, p_re)
-          call transp_pencil_xy (t_im, p_im)
-        endif
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
 !
-        if (nxgrid > 1) then
-          do pos_z = 1, inz
-            do m = 1, pny
-              ! Transform x-direction back.
-              ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
-              call cfftb (nxgrid, ax, wsavex)
-              p_re(:,m,pos_z) = real (ax)
-              if (lcompute_im) p_im(:,m,pos_z) = aimag (ax)
-            enddo
+        do pos_z = 1, inz
+          do m = 1, pny
+            ! Transform x-direction back.
+            ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
+            call cfftb (nxgrid, ax, wsavex)
+            p_re(:,m,pos_z) = real (ax)
+            if (lcompute_im) p_im(:,m,pos_z) = aimag (ax)
           enddo
-        endif
+        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2668,11 +2678,21 @@ module Fourier
       logical :: lforward, lcompute_im
 !
       lforward = .true.
-      if (present (linv)) lforward = .not.linv
+      if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+!
+      ! Check for degenerate cases.
+      if (nxgrid == 1) then
+        call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
+      if (nygrid == 1) then
+        call fft_x_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
 !
       inz = size (a_re, 3)
       ina = size (a_re, 4)
@@ -2722,40 +2742,36 @@ module Fourier
           p_im = 0.0
         endif
 !
-        if (nxgrid > 1) then
-          do pos_a = 1, ina
-            do pos_z = 1, inz
-              do m = 1, pny
-                ! Transform x-direction.
-                ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
-                call cfftf (nxgrid, ax, wsavex)
-                p_re(:,m,pos_z,pos_a) = real (ax)
-                p_im(:,m,pos_z,pos_a) = aimag (ax)
-              enddo
+        do pos_a = 1, ina
+          do pos_z = 1, inz
+            do m = 1, pny
+              ! Transform x-direction.
+              ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
+              call cfftf (nxgrid, ax, wsavex)
+              p_re(:,m,pos_z,pos_a) = real (ax)
+              p_im(:,m,pos_z,pos_a) = aimag (ax)
             enddo
           enddo
-        endif
+        enddo
 !
-        if (nygrid > 1) then
-          call transp_pencil_xy (p_re, t_re)
-          call transp_pencil_xy (p_im, t_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
 !
-          do pos_a = 1, ina
-            do pos_z = 1, inz
-              do l = 1, tny
-                ! Transform y-direction.
-                ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
-                call cfftf (nygrid, ay, wsavey)
-                if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
-                t_re(:,l,pos_z,pos_a) = real (ay)
-                t_im(:,l,pos_z,pos_a) = aimag (ay)
-              enddo
+        do pos_a = 1, ina
+          do pos_z = 1, inz
+            do l = 1, tny
+              ! Transform y-direction.
+              ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
+              call cfftf (nygrid, ay, wsavey)
+              if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+              t_re(:,l,pos_z,pos_a) = real (ay)
+              t_im(:,l,pos_z,pos_a) = aimag (ay)
             enddo
           enddo
+        enddo
 !
-          call transp_pencil_xy (t_re, p_re)
-          call transp_pencil_xy (t_im, p_im)
-        endif
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2773,40 +2789,36 @@ module Fourier
         call remap_to_pencil_xy (a_re, p_re)
         call remap_to_pencil_xy (a_im, p_im)
 !
-        if (nygrid > 1) then
-          call transp_pencil_xy (p_re, t_re)
-          call transp_pencil_xy (p_im, t_im)
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
 !
-          do pos_a = 1, ina
-            do pos_z = 1, inz
-              do l = 1, tny
-                ! Transform y-direction back.
-                ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
-                if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
-                call cfftb (nygrid, ay, wsavey)
-                t_re(:,l,pos_z,pos_a) = real (ay)
-                t_im(:,l,pos_z,pos_a) = aimag (ay)
-              enddo
+        do pos_a = 1, ina
+          do pos_z = 1, inz
+            do l = 1, tny
+              ! Transform y-direction back.
+              ay = cmplx (t_re(:,l,pos_z,pos_a), t_im(:,l,pos_z,pos_a))
+              if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+              call cfftb (nygrid, ay, wsavey)
+              t_re(:,l,pos_z,pos_a) = real (ay)
+              t_im(:,l,pos_z,pos_a) = aimag (ay)
             enddo
           enddo
+        enddo
 !
-          call transp_pencil_xy (t_re, p_re)
-          call transp_pencil_xy (t_im, p_im)
-        endif
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
 !
-        if (nxgrid > 1) then
-          do pos_a = 1, ina
-            do pos_z = 1, inz
-              do m = 1, pny
-                ! Transform x-direction back.
-                ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
-                call cfftb (nxgrid, ax, wsavex)
-                p_re(:,m,pos_z,pos_a) = real (ax)
-                if (lcompute_im) p_im(:,m,pos_z,pos_a) = aimag (ax)
-              enddo
+        do pos_a = 1, ina
+          do pos_z = 1, inz
+            do m = 1, pny
+              ! Transform x-direction back.
+              ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
+              call cfftb (nxgrid, ax, wsavex)
+              p_re(:,m,pos_z,pos_a) = real (ax)
+              if (lcompute_im) p_im(:,m,pos_z,pos_a) = aimag (ax)
             enddo
           enddo
-        endif
+        enddo
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -2841,8 +2853,6 @@ module Fourier
 !
       integer, parameter :: pny=ny/nprocz, pnz=nzgrid    ! z-pencil shaped data sizes
       real, dimension (:,:,:), allocatable :: p_re, p_im ! data in pencil shape
-      complex, dimension (nzgrid) :: az
-      real, dimension (4*nzgrid+15) :: wsavez
       integer :: l, m, stat
       logical :: lforward, lcompute_im
 !
@@ -2852,6 +2862,12 @@ module Fourier
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+!
+      ! Check for degenerate cases.
+      if (nzgrid == 1) then
+        call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
 !
       if (size (a_re, 3) /= nz) &
           call fatal_error ('fft_xyz_parallel_3D', 'real array size mismatch /= nx,ny,nz', lroot)
@@ -2951,8 +2967,6 @@ module Fourier
 !
       integer, parameter :: pny=ny/nprocz, pnz=nzgrid      ! z-pencil shaped data sizes
       real, dimension (:,:,:,:), allocatable :: p_re, p_im ! data in pencil shape
-      complex, dimension (nzgrid) :: az
-      real, dimension (4*nzgrid+15) :: wsavez
       integer :: ina ! size of the fourth dimension
       integer :: l, m, stat, pos_a
       logical :: lforward, lcompute_im
@@ -2963,6 +2977,12 @@ module Fourier
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+!
+      ! Check for degenerate cases.
+      if (nzgrid == 1) then
+        call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        return
+      endif
 !
       ina = size (a_re, 4)
 !
