@@ -44,7 +44,7 @@ include 'NSCBC.h'
   character(len=40) :: turb_inlet_dir=''
   character(len=40) :: turb_inlet_file='var.dat'
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
-  real :: transversal_damping=0.2
+  real :: transversal_damping=0.2, turb_profile_mag=1.0
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
   logical :: notransveral_terms=.true.
@@ -85,14 +85,15 @@ include 'NSCBC.h'
   namelist /NSCBC_init_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir, jet_inlet,radius_profile,momentum_thickness,jet_center,&
-      velocity_ratio,turb_inlet_file,inlet_zz1,inlet_zz2,zz_profile
+      velocity_ratio,turb_inlet_file,turb_profile_mag,inlet_zz1,inlet_zz2,&
+          zz_profile
 !
   namelist /NSCBC_run_pars/  &
       nscbc_bc, nscbc_sigma_in, nscbc_sigma_out, p_infty, inlet_from_file,&
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
       notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
       jet_center,velocity_ratio,turb_inlet_file,sigma,lfinal_velocity_profile,&
-      velocity_profile,inlet_zz1,inlet_zz2,zz_profile
+      velocity_profile,turb_profile_mag,inlet_zz1,inlet_zz2,zz_profile
 !
   contains
 !***********************************************************************
@@ -397,7 +398,7 @@ include 'NSCBC.h'
       real, allocatable, dimension(:,:) :: &
           TT,mu1,grad_mu1,rho0,P0,L_1,L_2,L_3,L_4,L_5,&
           prefac1,prefac2,T_1,T_2,T_3,T_4,T_5,cs,&
-          cs2,gamma,dY_dx
+          cs2,gamma,dY_dx,scalar_profile
       real, allocatable, dimension(:,:,:) :: L_k, dYk_dx
       real, allocatable, dimension(:,:,:) :: YYk_full
 !
@@ -479,6 +480,7 @@ include 'NSCBC.h'
       allocate(  grad_T(igrid,jgrid,3),      STAT=stat(26))
       allocate(  grad_P(igrid,jgrid,3),      STAT=stat(27))
       allocate( dui_dxj(igrid,jgrid,3,3),    STAT=stat(28))
+      if (lpscalar_nolog) allocate(scalar_profile(igrid,jgrid),STAT=stat(29))
       allocate(L_k(igrid,jgrid,nchemspec),   STAT=stat(29))
       allocate(YYk_full(igrid,jgrid,nchemspec), STAT=stat(30))
       allocate(dY_dx(igrid,jgrid),           STAT=stat(31))
@@ -550,15 +552,15 @@ include 'NSCBC.h'
         if (dir==1) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
-              igrid,jgrid)
+              igrid,jgrid,scalar_profile)
         elseif (dir==2) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Ly_in,ny_in,u_t,dir,l1_in,l2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
-              igrid,jgrid)
+              igrid,jgrid,scalar_profile)
         elseif (dir==3) then
           call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lz_in,nz_in,u_t,dir,l1_in,l2_in,m1_in,m2_in,imin,imax,jmin,jmax,&
-              igrid,jgrid)
+              igrid,jgrid,scalar_profile)
         endif
 !
         call find_composition_at_inlet(nchemspec,YYk,YYk_full,&
@@ -739,8 +741,18 @@ include 'NSCBC.h'
       iused=max(ilnTT,ilnrho)
       if (mvar>iused) then
         do k=iused+nchemspec+1,mvar
-          call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
-          dfslice(:,:,k)=-fslice(:,:,dir1)*dY_dx
+          if (llinlet) then
+            if (k == icc) then
+              fslice(:,:,icc)=scalar_profile
+              dfslice(:,:,icc)=0
+            else
+              call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
+              dfslice(:,:,k)=-fslice(:,:,dir1)*dY_dx
+            endif
+          else
+            call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
+            dfslice(:,:,k)=-fslice(:,:,dir1)*dY_dx
+          endif
         enddo
       endif
 !
@@ -912,7 +924,7 @@ include 'NSCBC.h'
 !***********************************************************************
     subroutine find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
         domain_length,grid_points,u_t,dir,imin_turb,imax_turb,&
-        jmin_turb,jmax_turb,imin,imax,jmin,jmax,igrid,jgrid)
+        jmin_turb,jmax_turb,imin,imax,jmin,jmax,igrid,jgrid,scalar_profile)
 !
 !  Find velocity at inlet.
 !
@@ -920,6 +932,7 @@ include 'NSCBC.h'
 !
       logical, intent(out) :: non_zero_transveral_velo
       real, dimension(:,:,:), intent(out) :: u_in
+      real, dimension(:,:), intent(out) :: scalar_profile
       real, intent(in) :: domain_length,u_t
       integer, intent(in) :: grid_points,dir,imin,imax,jmin,jmax,igrid,jgrid
       integer, intent(in) :: imin_turb,imax_turb,jmin_turb,jmax_turb
@@ -991,9 +1004,45 @@ include 'NSCBC.h'
                       +(velo(3)-velo(2))/2*tanh((rad-radius_profile(2))/&
                       (2*momentum_thickness(2)))
                 endif
+                ! Define profile for turbulence on inlet
+                u_profile(jjj-imin+1,kkk-jmin+1)&
+                    =0.5-0.5*&
+                    tanh((rad-radius_profile(2)*1.2)/(0.5*momentum_thickness(1)))
+                if (rad < 1.2*radius_profile(2)) then 
+                  u_profile(jjj-imin+1,kkk-jmin+1)&
+                      =u_profile(jjj-imin+1,kkk-jmin+1)&
+                      -0.5+0.5*&
+                      tanh((rad-radius_profile(2))/(0.5*momentum_thickness(1)))
+                endif
+                if (rad < 1.2*radius_profile(1)) then
+                  u_profile(jjj-imin+1,kkk-jmin+1)&
+                      =u_profile(jjj-imin+1,kkk-jmin+1)&
+                      +0.5-0.5*&
+                      tanh((rad-radius_profile(1))/(0.5*momentum_thickness(1)))
+                endif
+                if (rad < 0.8*radius_profile(1)) then
+                  u_profile(jjj-imin+1,kkk-jmin+1)&
+                      =u_profile(jjj-imin+1,kkk-jmin+1)&
+                      -0.5+0.5*&
+                      tanh((rad-radius_profile(1)*0.6)/(&
+                      0.5*momentum_thickness(1)))  
+                endif
+                ! Define profile for passive scalar
+                if (lpscalar_nolog) then
+                  scalar_profile(jjj-imin+1,kkk-jmin+1)&
+                      =0.5-0.5&
+                      *tanh((rad-radius_profile(2)*1.2)/(&
+                      0.5*momentum_thickness(2)))
+                  if (rad < radius_mean) then
+                    scalar_profile(jjj-imin+1,kkk-jmin+1)&
+                        =scalar_profile(jjj-imin+1,kkk-jmin+1)&
+                        -0.5+0.5*&
+                        tanh((rad-radius_profile(1)*0.9)/(&
+                        0.5*momentum_thickness(2)))
+                  endif
+                endif
               enddo
             enddo
-            u_profile=u_in(:,:,dir)
 !
           case ('single_jet')
             if (lroot .and. it==1 .and. lfirst) &
@@ -1015,9 +1064,18 @@ include 'NSCBC.h'
                     =u_in(jjj-imin+1,kkk-jmin+1,dir)&
                     +velo(1)*(1-tanh((rad-radius_profile(1))/&
                     momentum_thickness(1)))*0.5+velo(2)
+                ! Define profile for turbulence on inlet
+                u_profile(jjj-imin+1,kkk-jmin+1)&
+                    =0.2*((velo(1))/2-(velo(1))/2&
+                    *tanh((rad-radius_profile(1)*1.3)/(2*momentum_thickness(1))))
+                ! Define profile for passive scalar
+                if (lpscalar_nolog) then
+                  scalar_profile(jjj-imin+1,kkk-jmin+1)&
+                      =0.5-0.5&
+                      *tanh((rad-radius_profile(1)*1.2)/(momentum_thickness(1)))
+                endif
               enddo
             enddo
-            u_profile=u_in(:,:,dir)
 !
           end select
 !
@@ -1062,7 +1120,7 @@ include 'NSCBC.h'
 !  Add the mean inlet velocity to the turbulent one
 !
           do i=1,3
-            u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile
+            u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile*turb_profile_mag
           enddo
 
         endif
@@ -1698,6 +1756,7 @@ include 'NSCBC.h'
       logical :: non_zero_transveral_velo
       integer :: dir, dir2, dir3, igrid, jgrid, imin, imax, jmin, jmax
       real, allocatable, dimension(:,:,:) :: u_in
+      real, allocatable, dimension(:,:) :: scalar_profile
 !
 ! reading data from file
 !
@@ -1713,7 +1772,7 @@ include 'NSCBC.h'
 !
         call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
-              igrid,jgrid)
+              igrid,jgrid,scalar_profile)
       endif
 !
 !    if (.not.present(val)) call stop_it(&
@@ -3215,6 +3274,7 @@ include 'NSCBC.h'
       logical :: non_zero_transveral_velo
       integer :: dir, dir2, dir3, igrid, jgrid, imin, imax, jmin, jmax
       real, allocatable, dimension(:,:,:) :: u_in
+      real, allocatable, dimension(:,:) :: scalar_profile
 !
 ! reading data from file
 !
@@ -3230,7 +3290,7 @@ include 'NSCBC.h'
 !
         call find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
               Lx_in,nx_in,u_t,dir,m1_in,m2_in,n1_in,n2_in,imin,imax,jmin,jmax,&
-              igrid,jgrid)
+              igrid,jgrid,scalar_profile)
       endif
 !
 !    if (.not.present(val)) call stop_it(&
