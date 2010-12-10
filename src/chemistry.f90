@@ -3610,6 +3610,7 @@ module Chemistry
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') low_coeff(1,k)
+                              if (low_coeff(1,k)/=0.) low_coeff(1,k)=log(low_coeff(1,k))
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') low_coeff(2,k)
@@ -3678,6 +3679,7 @@ module Chemistry
                             if (VarNumber_add==1) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') high_coeff(1,k)
+                              if (high_coeff(1,k)/=0.) high_coeff(1,k)=log(high_coeff(1,k))
                             elseif (VarNumber_add==2) then
                               read (unit=ChemInpLine_add(StartInd_add:&
                                   StopInd_add),fmt='(E15.8)') high_coeff(2,k)
@@ -3803,6 +3805,7 @@ module Chemistry
                     if (VarNumber==1) then
                       read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
                           B_n(k)
+                      if (B_n(k)/=0.) B_n(k)=log(B_n(k))
                     elseif (VarNumber==2) then
                       read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
                           alpha_n(k)
@@ -3972,10 +3975,11 @@ module Chemistry
       real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc
       real, dimension (nx) :: prod1,prod2
       real, dimension (nx) :: kf=0., kr=0.
-      real, dimension (nx) :: rho_cgs,p_atm
+      real, dimension (nx) :: rho_cgs
       real :: Rcal
       integer :: k , reac, i
-      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd, Rcal1
+      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd 
+      real  :: Rcal1, lnRgas, l10, lnp_atm
       logical,save :: lwrite=.true., lwrite_first=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
@@ -4001,10 +4005,13 @@ module Chemistry
 !
       Rcal=Rgas_unit_sys/4.14*1e-7
       Rcal1=1./Rcal
+      lnRgas=log(Rgas)
+      l10=log(10.)
+!
       rho_cgs=p%rho*unit_mass/unit_length**3
-      p_atm=1e6*unit_length**3/unit_energy
+      lnp_atm=log(1e6*unit_length**3/unit_energy)
       if (lwrite)  write(file_id,*)'T= ',   p%TT
-      if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
+      if (lwrite)  write(file_id,*)'lnp_atm= ',   lnp_atm
 !
 !  calculation of the reaction rate
 !
@@ -4020,7 +4027,6 @@ module Chemistry
         prod1=1.
         prod2=1.
         do k=1,nchemspec
-          if((abs(Sijp(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
             if(abs(Sijp(k,reac))==1) then
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))
@@ -4028,14 +4034,12 @@ module Chemistry
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
                   *rho_cgs(:)/species_constants(k,imass))
-            else
+            else if(abs(Sijp(k,reac))>0) then
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))**Sijp(k,reac)
             endif
-          endif
         enddo
         do k=1,nchemspec
-          if ((abs(Sijm(k,reac))>0) .and. (species_constants(k,imass)>0.)) then
             if(abs(Sijm(k,reac))==1) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                  /species_constants(k,imass))
@@ -4043,11 +4047,10 @@ module Chemistry
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
                  *rho_cgs(:)/species_constants(k,imass))
-            else
+            else if (abs(Sijm(k,reac))>0) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                  /species_constants(k,imass))**Sijm(k,reac)
             endif
-          endif
         enddo
 !
 !  Find forward rate constant for reaction 'reac'
@@ -4060,12 +4063,10 @@ module Chemistry
               enddo
               kf=log(kf)
             else
-              do i=1,nx
-                kf(i)=log(B_n(reac))+alpha_n(reac)*p%lnTT(i)-E_an(reac)*TT1_loc(i)
-              enddo
+              kf=B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*TT1_loc
             endif
           else
-            kf=log(B_n(reac))+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
+            kf=B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
 !
 !  Find backward rate constant for reaction 'reac'
 !
@@ -4078,10 +4079,11 @@ module Chemistry
               sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
             enddo
             Kp=dSR-dHRT
+!
             if (sum_tmp==0.) then
               Kc=Kp
             else
-              Kc=Kp+sum_tmp*log(p_atm*p%TT1/Rgas)
+              Kc=Kp+sum_tmp*(lnp_atm-p%lnTT-lnRgas)
             endif
           endif
 !
@@ -4090,10 +4092,10 @@ module Chemistry
         if (minval(a_k4(:,reac))<impossible) then
           sum_sp=0.
           do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
+!            if (species_constants(k,imass)>0.) then
               sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                   *rho_cgs(:)/species_constants(k,imass)
-            endif
+!            endif
           enddo
           mix_conc=sum_sp
         else
@@ -4107,16 +4109,16 @@ module Chemistry
           B_n_0=low_coeff(1,reac)
           alpha_n_0=low_coeff(2,reac)
           E_an_0=low_coeff(3,reac)
-          kf_0(:)=log(B_n_0)+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
-          Pr=mix_conc*exp(kf_0-kf)
+          kf_0(:)=B_n_0+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+          Pr=exp(kf_0-kf)*mix_conc
           kf=kf+log(Pr/(1.+Pr))
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           B_n_0=high_coeff(1,reac)
           alpha_n_0=high_coeff(2,reac)
           E_an_0=high_coeff(3,reac)
-          kf_0(:)=log(B_n_0)+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+          kf_0(:)=B_n_0+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
           Pr=exp(kf_0-kf)*mix_conc
-          kf=kf+log(1./(1.+Pr))
+          kf=kf-log(1.+Pr)
         endif
 !
 ! The Troe approach
@@ -4131,7 +4133,7 @@ module Chemistry
          tmpF=((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
          tmpF=1./(1.+tmpF)
          FF=tmpF*log10(Fcent)
-         FF=FF*log(10.)
+         FF=FF*l10
          kf=kf+FF
         endif
 !
@@ -4221,13 +4223,23 @@ module Chemistry
       real :: alpha
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-      real, dimension (nx) :: xdot
+      real, dimension (nx,nchemspec) :: xdot
+      real, dimension (nx) :: rho1
+      real, dimension (nx,nchemspec)  :: molm
       type (pencil_case) :: p
       integer :: k,j
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
       integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
 !
       p%DYDt_reac=0.
+      rho1=1./p%rho
+      if (lcheminp .and. (.not.l1step_test)) then
+        do k=1,nchemspec
+          molm(:,k)=rho1*species_constants(k,imass)
+        enddo
+      else
+        molm=1.
+      endif
 !
 !  if we do reactions, we must calculate the reaction speed vector
 !  outside the loop where we multiply it by the stoichiometric matrix
@@ -4242,17 +4254,17 @@ module Chemistry
           else
             alpha=1.
           endif
-          vreactions_p(:,j)=log(alpha*kreactions_p(j)*kreactions_z(n,j))
-          vreactions_m(:,j)=log(alpha*kreactions_m(j)*kreactions_z(n,j))
+          vreactions_p(:,j)=alpha*kreactions_p(j)*kreactions_z(n,j)
+          vreactions_m(:,j)=alpha*kreactions_m(j)*kreactions_z(n,j)
           do k=1,nchemspec
-            vreactions_p(:,j)=vreactions_p(:,j)+&
-                Sijm(k,j)*log(f(l1:l2,m,n,ichemspec(k)))
-            vreactions_m(:,j)=vreactions_m(:,j)+&
-                Sijp(k,j)*log(f(l1:l2,m,n,ichemspec(k)))
+            vreactions_p(:,j)=vreactions_p(:,j)*&
+                f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
+            vreactions_m(:,j)=vreactions_m(:,j)*&
+                f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
           enddo
-          vreactions_p(:,j)=exp(vreactions_p(:,j))
-          vreactions_m(:,j)=exp(vreactions_m(:,j))
         enddo
+        vreactions_m=-vreactions_m
+        vreactions_p=-vreactions_p
       else
 !
 !  Chemkin data case
@@ -4266,21 +4278,16 @@ module Chemistry
 !
 !  Calculate production rate for all species k (called \dot(\omega)_k
 !  in the chemkin manual)
-!
+! 
+      xdot=0. 
       do k=1,nchemspec
-        xdot=0.
         do j=1,nreactions
-          xdot=xdot+stoichio(k,j)*vreactions(:,j)
+          xdot(:,k)=xdot(:,k)-stoichio(k,j)*vreactions(:,j)*molm(:,k)
         enddo
-        if (lcheminp) then
-         if (l1step_test) then
-          xdot=-xdot!/p%rho
-         else
-          xdot=-xdot*species_constants(k,imass)/p%rho
-         endif
-        endif
-        p%DYDt_reac(:,k)=xdot*unit_time
       enddo
+      p%DYDt_reac=xdot*unit_time
+!
+!  For diagnostics
 !
       if (lchemistry_diag) then
         do k=1,nchemspec
