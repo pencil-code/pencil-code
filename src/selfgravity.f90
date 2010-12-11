@@ -292,15 +292,16 @@ module Selfgravity
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
+      rhs_poisson = 0.
       if (t>=tstart_selfgrav) then 
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
         if (lhydro.and.ldensity.and.lselfgravity_gas) then
           if (ldensity_nolog) then
-            rhs_poisson=rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irho)
+            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irho)
           else
-            rhs_poisson=rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
           endif
         endif
 !
@@ -308,44 +309,24 @@ module Selfgravity
 !
         if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
-            if (lselfgravity_gas) then  ! No need to zero rhs.
-              rhs_poisson = rhs_poisson + &
-                  rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
-            else                        ! Must zero rhs.
-              rhs_poisson = rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
-            endif
+            rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
           else
-            if (lselfgravity_gas) then  ! No need to zero rhs.
-              rhs_poisson = rhs_poisson + &
-                  rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ind(1))
-            else                        ! Must zero rhs.
-              rhs_poisson = rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ind(1))
-            endif
+            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ind(1))
           endif
         endif
 !  Neutrals.
         if (lneutraldensity.and.lneutralvelocity.and.lselfgravity_neutrals) then
           if (lneutraldensity_nolog) then
-            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
-              rhs_poisson = rhs_poisson + &
-                  rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhon)
-            else                        ! Must zero rhs.
-              rhs_poisson = rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
-            endif
+            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhon)
           else
-            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
-              rhs_poisson = rhs_poisson + &
-                  rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
-            else                        ! Must zero rhs.
-              rhs_poisson = rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrhon)
-            endif
+            rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
           endif
         endif
 !
 !  Contribution from particles is taken care of by the particle modules.
 !
         if (lparticles) &
-            call particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const, &
+            call particles_calc_selfpotential(f,rhs_poisson,1., &
             lselfgravity_gas.or.lselfgravity_dust)
 !
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
@@ -355,7 +336,7 @@ module Selfgravity
 !
 !  Put potential into f array.
 !
-        f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson
+        f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const * rhs_poisson
 !
       endif ! if (t>=tstart_selfgrav) then
 !
