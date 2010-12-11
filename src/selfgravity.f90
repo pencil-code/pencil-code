@@ -292,16 +292,15 @@ module Selfgravity
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
-      rhs_poisson = 0.
       if (t>=tstart_selfgrav) then 
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
         if (lhydro.and.ldensity.and.lselfgravity_gas) then
           if (ldensity_nolog) then
-            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irho)
+            rhs_poisson=f(l1:l2,m1:m2,n1:n2,irho)
           else
-            rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            rhs_poisson=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
           endif
         endif
 !
@@ -309,17 +308,33 @@ module Selfgravity
 !
         if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
-            rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+            if (lselfgravity_gas) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+            else                        ! Must zero rhs.
+              rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+            endif
           else
-            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ind(1))
+            if (lselfgravity_gas) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ind(1))
+            else                        ! Must zero rhs.
+              rhs_poisson = f(l1:l2,m1:m2,n1:n2,ind(1))
+            endif
           endif
         endif
 !  Neutrals.
         if (lneutraldensity.and.lneutralvelocity.and.lselfgravity_neutrals) then
           if (lneutraldensity_nolog) then
-            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhon)
+            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhon)
+            else                        ! Must zero rhs.
+              rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+            endif
           else
-            rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+            else                        ! Must zero rhs.
+              rhs_poisson = f(l1:l2,m1:m2,n1:n2,ilnrhon)
+            endif
           endif
         endif
 !
