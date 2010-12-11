@@ -298,9 +298,9 @@ module Selfgravity
 !
         if (lhydro.and.ldensity.and.lselfgravity_gas) then
           if (ldensity_nolog) then
-            rhs_poisson=f(l1:l2,m1:m2,n1:n2,irho)
+            rhs_poisson = f(l1:l2,m1:m2,n1:n2,irho)
           else
-            rhs_poisson=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
           endif
         endif
 !
@@ -308,31 +308,33 @@ module Selfgravity
 !
         if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
-            if (lselfgravity_gas) then  ! No need to zero rhs.
+            if (lselfgravity_gas) then  ! No need to zero rhs
               rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
-            else                        ! Must zero rhs.
+            else                        ! Must zero rhs
               rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
             endif
           else
-            if (lselfgravity_gas) then  ! No need to zero rhs.
+            if (lselfgravity_gas) then  ! No need to zero rhs
               rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ind(1))
-            else                        ! Must zero rhs.
+            else                        ! Must zero rhs
               rhs_poisson = f(l1:l2,m1:m2,n1:n2,ind(1))
             endif
           endif
         endif
-!  Neutrals.
+!
+!  Contribution from neutrals.
+!
         if (lneutraldensity.and.lneutralvelocity.and.lselfgravity_neutrals) then
           if (lneutraldensity_nolog) then
-            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
+            if (lselfgravity_gas.or.lselfgravity_dust) then! No need to zero rhs
               rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhon)
-            else                        ! Must zero rhs.
+            else                        ! Must zero rhs
               rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
             endif
           else
-            if (lselfgravity_gas.or.lselfgravity_dust) then  ! No need to zero rhs.
+            if (lselfgravity_gas.or.lselfgravity_dust) then! No need to zero rhs
               rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
-            else                        ! Must zero rhs.
+            else                        ! Must zero rhs
               rhs_poisson = f(l1:l2,m1:m2,n1:n2,ilnrhon)
             endif
           endif
@@ -340,8 +342,7 @@ module Selfgravity
 !
 !  Contribution from particles is taken care of by the particle modules.
 !
-        if (lparticles) &
-            call particles_calc_selfpotential(f,rhs_poisson,1., &
+        if (lparticles) call particles_calc_selfpotential(f,rhs_poisson,1.0, &
             lselfgravity_gas.or.lselfgravity_dust)
 !
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
