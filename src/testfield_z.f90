@@ -1325,7 +1325,7 @@ module Testfield
 !
 !  calculate uxb, and put it into f-array
 !  If ltestfield_taver is turned on, the time evolution becomes unstable,
-!  so that does not currently work.
+!  so that does not currently work. It was introduced in revision 10236.
 !
           do n=n1,n2
             uxbtestm(n,:,jtest)=0.

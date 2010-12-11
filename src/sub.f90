@@ -3200,13 +3200,17 @@ module Sub
 !
 !  Smooth unit step function centred at x0; implemented as tanh profile.
 !
-!  05 sept 2008/dhruba : copied from step
+!   5-sep-08/dhruba: copied from step
+!   9-nov-10/axel: no need to have the tini here
 !
       real :: x
       real :: step_scalar
       real :: x0,width
 !
-      step_scalar = 0.5*(1+tanh((x-x0)/(width+tini)))
+!  check wheather width is finite.
+!
+      if (width==0) call fatal_error('step_scalar','width must not be zero')
+      step_scalar = 0.5*(1+tanh((x-x0)/width))
 !
     endfunction step_scalar
 !***********************************************************************
