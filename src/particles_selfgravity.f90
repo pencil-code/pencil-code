@@ -142,11 +142,9 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           if (lcontinued) then  ! Potential has already been zeroed by the gas.
-            rhs_poisson=rhs_poisson+ &
-                rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhop)
+            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhop)
           else                  ! Must zero potential from last time-step.
-            rhs_poisson= &
-                rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhop)
+            rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)
           endif
         endif
 !
