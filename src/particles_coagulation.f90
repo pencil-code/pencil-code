@@ -31,7 +31,7 @@ module Particles_coagulation
   real :: cdtpcoag=0.2, cdtpcoag1=5.0
   real :: kernel_cst=1.0, kernel_lin=1.0, kernel_pro=1.0
   real :: four_pi_rhopmat_over_three2=0.0
-  logical :: lcoag_simultaneous=.false.
+  logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
@@ -41,7 +41,7 @@ module Particles_coagulation
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
-      kernel_pro
+      kernel_pro, lnoselfcollision
 !
   contains
 !***********************************************************************
@@ -124,6 +124,7 @@ module Particles_coagulation
                     kernel=kernel_pro* &
                        four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                   endif
+                  if (j==k .and. lnoselfcollision) kernel=0.0
                   dt1_coag_par=dt1_coag_par+kernel* &
                       min(fp(j,inpswarm),fp(k,inpswarm))
                 else
@@ -257,6 +258,7 @@ module Particles_coagulation
                       kernel=kernel_pro* &
                         four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                     endif
+                    if (j==k .and. lnoselfcollision) kernel=0.0
                     if (lcoag_simultaneous) then
                       tau_coll1=kernel*min(fp(j,inpswarm),fp(k,inpswarm))
                     else
