@@ -33,6 +33,13 @@ module Fourier
     module procedure fft_y_parallel_4D
   endinterface
 !
+  interface fft_z_parallel
+    module procedure fft_z_parallel_1D
+    module procedure fft_z_parallel_2D
+    module procedure fft_z_parallel_3D
+    module procedure fft_z_parallel_4D
+  endinterface
+!
   interface fft_xy_parallel
     module procedure fft_xy_parallel_2D
     module procedure fft_xy_parallel_3D
@@ -449,6 +456,74 @@ module Fourier
       call keep_compiler_quiet(present(lneed_im))
 !
     endsubroutine fft_y_parallel_4D
+!***********************************************************************
+    subroutine fft_z_parallel_1D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 1D data in the z-direction.
+!
+      real, dimension (nz), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_z_parallel_1D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_z_parallel_1D
+!***********************************************************************
+    subroutine fft_z_parallel_2D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 2D data in the z-direction.
+!
+      real, dimension (:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_z_parallel_2D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_z_parallel_2D
+!***********************************************************************
+    subroutine fft_z_parallel_3D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 3D data in the z-direction.
+!
+      real, dimension (:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_z_parallel_3D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_z_parallel_3D
+!***********************************************************************
+    subroutine fft_z_parallel_4D(a_re,a_im,linv,lneed_im)
+!
+!  Subroutine to do FFT of distributed 4D data in the z-direction.
+!
+      real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+!
+      call fatal_error('fft_z_parallel_4D', &
+          'this sub is not available in fourier_fft.f90!')
+!
+      call keep_compiler_quiet(a_re)
+      call keep_compiler_quiet(a_im)
+      call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
+!
+    endsubroutine fft_z_parallel_4D
 !***********************************************************************
     subroutine fft_xy_parallel_2D(a_re,a_im,linv,lneed_im)
 !
