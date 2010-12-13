@@ -4794,7 +4794,9 @@ module Chemistry
           endif
 !
          if (ldiff_corr) then
-           sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
+           do i=1,3
+             sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
+           enddo
            sum_gdiff(:) = sum_gdiff(:)+ p%DYDt_diff(:,k)
          endif
         endif
