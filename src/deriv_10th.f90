@@ -8,13 +8,14 @@
 !
 !***************************************************************
 module Deriv
-
-  use Messages
-
+!
+  use Messages, only: fatal_error, warning
+  use Cdata
+!
   implicit none
-
+!
   private
-
+!
   public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
@@ -96,6 +97,7 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  25-aug-09/axel: adapted from deriv
+!  12-dec-10/axel: adapted also y and z derivatives
 !
       use Cdata
 !
@@ -123,11 +125,12 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./840.)*dy_1(m)
-          df=fac*(+672.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  -168.*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  + 32.*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)) &
-                  -  3.*(f(l1:l2,m+4,n,k)-f(l1:l2,m-4,n,k)))
+          fac=(1./2520.)*dy_1(m)
+          df=fac*(+2100.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  - 600.*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  + 150.*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)) &
+                  -  25.*(f(l1:l2,m+4,n,k)-f(l1:l2,m-4,n,k)) &
+                  +   2.*(f(l1:l2,m+5,n,k)-f(l1:l2,m-5,n,k)))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
         else
@@ -136,11 +139,12 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./840.)*dz_1(n)
-          df=fac*(+672.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -168.*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  + 32.*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)) &
-                  -  3.*(f(l1:l2,m,n+4,k)-f(l1:l2,m,n-4,k)))
+          fac=(1./2520.)*dz_1(n)
+          df=fac*(+2100.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  - 600.*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  + 150.*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)) &
+                  -  25.*(f(l1:l2,m,n+4,k)-f(l1:l2,m,n-4,k)) &
+                  +   2.*(f(l1:l2,m,n+5,k)-f(l1:l2,m,n-5,k)))
           if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
@@ -160,6 +164,7 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  25-aug-09/axel: adapted from deriv
+!  12-dec-10/axel: adapted also y and z derivatives
 
       use Cdata
 !
@@ -175,22 +180,24 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./840.)*dx_1(l1:l2)
-          df=fac*(+672.*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
-                  -168.*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
-                  + 32.*(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)) &
-                  -  3.*(f(l1+4:l2+4,m,n)-f(l1-4:l2-4,m,n)))
+          fac=(1./2520.)*dx_1(l1:l2)
+          df=fac*(+2100.*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
+                  - 600.*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
+                  + 150.*(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)) &
+                  -  25.*(f(l1+4:l2+4,m,n)-f(l1-4:l2-4,m,n)) &
+                  +   2.*(f(l1+5:l2+5,m,n)-f(l1-5:l2-5,m,n)))
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./840.)*dy_1(m)
-          df=fac*(+672.*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
-                  -168.*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
-                  + 32.*(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)) &
-                  -  3.*(f(l1:l2,m+4,n)-f(l1:l2,m-4,n)))
+          fac=(1./2520.)*dy_1(m)
+          df=fac*(+2100.*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
+                  - 600.*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
+                  + 150.*(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)) &
+                  -  25.*(f(l1:l2,m+4,n)-f(l1:l2,m-4,n)) &
+                  +   2.*(f(l1:l2,m+5,n)-f(l1:l2,m-5,n)))
           if (lspherical_coords)     df=df*r1_mn
           if (lcylindrical_coords)   df=df*rcyl_mn1
         else
@@ -199,11 +206,12 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./840.)*dz_1(n)
-          df=fac*(+672.*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
-                  -168.*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
-                  + 32.*(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)) &
-                  -  3.*(f(l1:l2,m,n+4)-f(l1:l2,m,n-4)))
+          fac=(1./2520.)*dz_1(n)
+          df=fac*(+2100.*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
+                  - 600.*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
+                  + 150.*(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)) &
+                  -  25.*(f(l1:l2,m,n+4)-f(l1:l2,m,n-4)) &
+                  +   2.*(f(l1:l2,m,n+5)-f(l1:l2,m,n-5)))
           if (lspherical_coords) df=df*r1_mn*sin1th(m)
         else
           df=0.
@@ -235,8 +243,8 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size mx for x derivative'
           call fatal_error('der_pencil','')
         endif
-        df(l1:l2)=(1./840)*dx_1(l1:l2)*( &
-            + 672.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
+        df(l1:l2)=(1./2520)*dx_1(l1:l2)*( &
+            + 2100.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
             - 168.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
             +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
       else if (j==2) then
@@ -247,8 +255,8 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
           call fatal_error('der_pencil','')
         endif
-        df(m1:m2)=(1./840)*dy_1(m1:m2)*( &
-            + 672.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
+        df(m1:m2)=(1./2520)*dy_1(m1:m2)*( &
+            + 2100.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
             - 168.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
             +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
       else if (j==3) then
@@ -259,8 +267,8 @@ module Deriv
           if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
           call fatal_error('der_pencil','')
         endif
-        df(n1:n2)=(1./840)*dz_1(n1:n2)*( &
-            + 672.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
+        df(n1:n2)=(1./2520)*dz_1(n1:n2)*( &
+            + 2100.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
             - 168.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
             +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
       else
@@ -282,6 +290,7 @@ module Deriv
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: adapted from deriv
+!  12-dec-10/axel: adapted also y and z derivatives
 !
       use Cdata
 !
@@ -319,7 +328,8 @@ module Deriv
                   +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
-                  +der2_coef4*(f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)))
+                  +der2_coef4*(f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)) &
+                  +der2_coef5*(f(l1:l2,m+5,n,k)+f(l1:l2,m-5,n,k)))
           if (lspherical_coords)     df2=df2*r2_mn
           if (lcylindrical_coords)   df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
@@ -336,7 +346,8 @@ module Deriv
                    +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                    +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                    +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
-                   +der2_coef4*(f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)))
+                   +der2_coef4*(f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)) &
+                   +der2_coef5*(f(l1:l2,m,n+5,k)+f(l1:l2,m,n-5,k)))
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
@@ -346,7 +357,6 @@ module Deriv
           df2=0.
         endif
       endif
-
 !
     endsubroutine der2_main
 !***********************************************************************
@@ -959,16 +969,18 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./20160.)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./100800.)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-                       8064.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
-                              +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
-                      -1008.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
-                              +f(l1-2:l2-2,m-2,n,k)-f(l1+2:l2+2,m-2,n,k)) &
-                      + 128.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
-                              +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
-                      -   9.*( f(l1+4:l2+4,m+4,n,k)-f(l1-4:l2-4,m+4,n,k)  &
-                              +f(l1-4:l2-4,m-4,n,k)-f(l1+4:l2+4,m-4,n,k)) &
+                       42000.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
+                               +f(l1-1:l2-1,m-1,n,k)-f(l1+1:l2+1,m-1,n,k)) &
+                      - 6000.*( f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k)  &
+                               +f(l1-2:l2-2,m-2,n,k)-f(l1+2:l2+2,m-2,n,k)) &
+                      + 1000.*( f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k)  &
+                               +f(l1-3:l2-3,m-3,n,k)-f(l1+3:l2+3,m-3,n,k)) &
+                      -  125.*( f(l1+4:l2+4,m+4,n,k)-f(l1-4:l2-4,m+4,n,k)  &
+                               +f(l1-4:l2-4,m-4,n,k)-f(l1+4:l2+4,m-4,n,k)) &
+                      +    8.*( f(l1+5:l2+5,m+5,n,k)-f(l1-5:l2-5,m+5,n,k)  &
+                               +f(l1-5:l2-5,m-5,n,k)-f(l1+5:l2+5,m-5,n,k)) &
                    )
           else
             df=0.
@@ -976,16 +988,18 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./20160.)*dy_1(m)*dz_1(n)
+            fac=(1./100800.)*dy_1(m)*dz_1(n)
             df=fac*( &
-                        8064.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
-                              +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
-                       -1008.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
-                              +f(l1:l2,m-2,n-2,k)-f(l1:l2,m-2,n+2,k)) &
-                       + 128.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
-                              +f(l1:l2,m-3,n-3,k)-f(l1:l2,m-3,n+3,k)) &
-                       -   9.*( f(l1:l2,m+4,n+4,k)-f(l1:l2,m+4,n-4,k)  &
-                              +f(l1:l2,m-4,n-4,k)-f(l1:l2,m-4,n+4,k)) &
+                       42000.*( f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k)  &
+                               +f(l1:l2,m-1,n-1,k)-f(l1:l2,m-1,n+1,k)) &
+                      - 6000.*( f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k)  &
+                               +f(l1:l2,m-2,n-2,k)-f(l1:l2,m-2,n+2,k)) &
+                      + 1000.*( f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k)  &
+                               +f(l1:l2,m-3,n-3,k)-f(l1:l2,m-3,n+3,k)) &
+                      -  125.*( f(l1:l2,m+4,n+4,k)-f(l1:l2,m+4,n-4,k)  &
+                               +f(l1:l2,m-4,n-4,k)-f(l1:l2,m-4,n+4,k)) &
+                      +    8.*( f(l1:l2,m+5,n+5,k)-f(l1:l2,m+5,n-5,k)  &
+                               +f(l1:l2,m-5,n-5,k)-f(l1:l2,m-5,n+5,k)) &
                    )
           else
             df=0.
@@ -993,16 +1007,18 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./20160.)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./100800.)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-                        8064.*( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
-                              +f(l1-1:l2-1,m,n-1,k)-f(l1+1:l2+1,m,n-1,k)) &
-                       -1008.*( f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k)  &
-                              +f(l1-2:l2-2,m,n-2,k)-f(l1+2:l2+2,m,n-2,k)) &
-                       + 128.*( f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k)  &
-                              +f(l1-3:l2-3,m,n-3,k)-f(l1+3:l2+3,m,n-3,k)) &
-                       -   9.*( f(l1+4:l2+4,m,n+4,k)-f(l1-4:l2-4,m,n+4,k)  &
-                              +f(l1-4:l2-4,m,n-4,k)-f(l1+4:l2+4,m,n-4,k)) &
+                       42000.*( f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k)  &
+                               +f(l1-1:l2-1,m,n-1,k)-f(l1+1:l2+1,m,n-1,k)) &
+                      - 6000.*( f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k)  &
+                               +f(l1-2:l2-2,m,n-2,k)-f(l1+2:l2+2,m,n-2,k)) &
+                      + 1000.*( f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k)  &
+                               +f(l1-3:l2-3,m,n-3,k)-f(l1+3:l2+3,m,n-3,k)) &
+                      -  125.*( f(l1+4:l2+4,m,n+4,k)-f(l1-4:l2-4,m,n+4,k)  &
+                               +f(l1-4:l2-4,m,n-4,k)-f(l1+4:l2+4,m,n-4,k)) &
+                      +    8.*( f(l1+5:l2+5,m,n+5,k)-f(l1-5:l2-5,m,n+5,k)  &
+                               +f(l1-5:l2-5,m,n-5,k)-f(l1+5:l2+5,m,n-5,k)) &
                    )
           else
             df=0.
@@ -1016,24 +1032,24 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./840.**2)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./2520.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-              672.*((672.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+              2100.*((2100.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
                     -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
                        +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
-                  -(672.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                  -(2100.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
                     -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
                        +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
-              -9.*((672.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+              -9.*((2100.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
                     -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
                        +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
-                  -(672.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                  -(2100.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
                     -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
                        +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
-                 +((672.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+                 +((2100.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
                     -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
                        +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
-                  -(672.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                  -(2100.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
                     -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
                        +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                    )
@@ -1043,24 +1059,24 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./840.**2)*dy_1(m)*dz_1(n)
+            fac=(1./2520.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
-              672.*((672.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+              2100.*((2100.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
                     -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
                        +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                  -(672.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
+                  -(2100.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
                     -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
                        +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-              -9.*((672.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+              -9.*((2100.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
                     -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
                        +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                  -(672.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
+                  -(2100.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
                     -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
                        +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-                 +((672.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+                 +((2100.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
                     -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
                        +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                  -(672.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
+                  -(2100.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
                     -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                        +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
                    )
@@ -1070,24 +1086,24 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./840.**2)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./2520.**2)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-              672.*((672.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+              2100.*((2100.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
                     -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
                        +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                  -(672.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                  -(2100.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
                     -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
                        +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-              -9.*((672.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+              -9.*((2100.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
                     -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
                        +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                  -(672.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                  -(2100.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
                     -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
                        +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-                 +((672.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+                 +((2100.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
                     -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
                        +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                  -(672.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                  -(2100.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
                     -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
                        +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                    )
@@ -1202,24 +1218,24 @@ module Deriv
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid/=1.and.nygrid/=1) then
-            fac=(1./840.**2)*dx_1(l1:l2)*dy_1(m)
+            fac=(1./2520.**2)*dx_1(l1:l2)*dy_1(m)
             df=fac*( &
-              672.*((672.*(f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n))  &
+              2100.*((2100.*(f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n))  &
                     -9.*(f(l1+2:l2+2,m+1,n)-f(l1-2:l2-2,m+1,n))  &
                        +(f(l1+3:l2+3,m+1,n)-f(l1-3:l2-3,m+1,n))) &
-                  -(672.*(f(l1+1:l2+1,m-1,n)-f(l1-1:l2-1,m-1,n))  &
+                  -(2100.*(f(l1+1:l2+1,m-1,n)-f(l1-1:l2-1,m-1,n))  &
                     -9.*(f(l1+2:l2+2,m-1,n)-f(l1-2:l2-2,m-1,n))  &
                        +(f(l1+3:l2+3,m-1,n)-f(l1-3:l2-3,m-1,n))))&
-              -9.*((672.*(f(l1+1:l2+1,m+2,n)-f(l1-1:l2-1,m+2,n))  &
+              -9.*((2100.*(f(l1+1:l2+1,m+2,n)-f(l1-1:l2-1,m+2,n))  &
                     -9.*(f(l1+2:l2+2,m+2,n)-f(l1-2:l2-2,m+2,n))  &
                        +(f(l1+3:l2+3,m+2,n)-f(l1-3:l2-3,m+2,n))) &
-                  -(672.*(f(l1+1:l2+1,m-2,n)-f(l1-1:l2-1,m-2,n))  &
+                  -(2100.*(f(l1+1:l2+1,m-2,n)-f(l1-1:l2-1,m-2,n))  &
                     -9.*(f(l1+2:l2+2,m-2,n)-f(l1-2:l2-2,m-2,n))  &
                        +(f(l1+3:l2+3,m-2,n)-f(l1-3:l2-3,m-2,n))))&
-                 +((672.*(f(l1+1:l2+1,m+3,n)-f(l1-1:l2-1,m+3,n))  &
+                 +((2100.*(f(l1+1:l2+1,m+3,n)-f(l1-1:l2-1,m+3,n))  &
                     -9.*(f(l1+2:l2+2,m+3,n)-f(l1-2:l2-2,m+3,n))  &
                        +(f(l1+3:l2+3,m+3,n)-f(l1-3:l2-3,m+3,n))) &
-                  -(672.*(f(l1+1:l2+1,m-3,n)-f(l1-1:l2-1,m-3,n))  &
+                  -(2100.*(f(l1+1:l2+1,m-3,n)-f(l1-1:l2-1,m-3,n))  &
                     -9.*(f(l1+2:l2+2,m-3,n)-f(l1-2:l2-2,m-3,n))  &
                        +(f(l1+3:l2+3,m-3,n)-f(l1-3:l2-3,m-3,n))))&
                    )
@@ -1229,24 +1245,24 @@ module Deriv
           endif
         elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
           if (nygrid/=1.and.nzgrid/=1) then
-            fac=(1./840.**2)*dy_1(m)*dz_1(n)
+            fac=(1./2520.**2)*dy_1(m)*dz_1(n)
             df=fac*( &
-              672.*((672.*(f(l1:l2,m+1,n+1)-f(l1:l2,m-1,n+1))  &
+              2100.*((2100.*(f(l1:l2,m+1,n+1)-f(l1:l2,m-1,n+1))  &
                     -9.*(f(l1:l2,m+2,n+1)-f(l1:l2,m-2,n+1))  &
                        +(f(l1:l2,m+3,n+1)-f(l1:l2,m-3,n+1))) &
-                  -(672.*(f(l1:l2,m+1,n-1)-f(l1:l2,m-1,n-1))  &
+                  -(2100.*(f(l1:l2,m+1,n-1)-f(l1:l2,m-1,n-1))  &
                     -9.*(f(l1:l2,m+2,n-1)-f(l1:l2,m-2,n-1))  &
                        +(f(l1:l2,m+3,n-1)-f(l1:l2,m-3,n-1))))&
-              -9.*((672.*(f(l1:l2,m+1,n+2)-f(l1:l2,m-1,n+2))  &
+              -9.*((2100.*(f(l1:l2,m+1,n+2)-f(l1:l2,m-1,n+2))  &
                     -9.*(f(l1:l2,m+2,n+2)-f(l1:l2,m-2,n+2))  &
                        +(f(l1:l2,m+3,n+2)-f(l1:l2,m-3,n+2))) &
-                  -(672.*(f(l1:l2,m+1,n-2)-f(l1:l2,m-1,n-2))  &
+                  -(2100.*(f(l1:l2,m+1,n-2)-f(l1:l2,m-1,n-2))  &
                     -9.*(f(l1:l2,m+2,n-2)-f(l1:l2,m-2,n-2))  &
                        +(f(l1:l2,m+3,n-2)-f(l1:l2,m-3,n-2))))&
-                 +((672.*(f(l1:l2,m+1,n+3)-f(l1:l2,m-1,n+3))  &
+                 +((2100.*(f(l1:l2,m+1,n+3)-f(l1:l2,m-1,n+3))  &
                     -9.*(f(l1:l2,m+2,n+3)-f(l1:l2,m-2,n+3))  &
                        +(f(l1:l2,m+3,n+3)-f(l1:l2,m-3,n+3))) &
-                  -(672.*(f(l1:l2,m+1,n-3)-f(l1:l2,m-1,n-3))  &
+                  -(2100.*(f(l1:l2,m+1,n-3)-f(l1:l2,m-1,n-3))  &
                     -9.*(f(l1:l2,m+2,n-3)-f(l1:l2,m-2,n-3))  &
                        +(f(l1:l2,m+3,n-3)-f(l1:l2,m-3,n-3))))&
                    )
@@ -1256,24 +1272,24 @@ module Deriv
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid/=1.and.nxgrid/=1) then
-            fac=(1./840.**2)*dz_1(n)*dx_1(l1:l2)
+            fac=(1./2520.**2)*dz_1(n)*dx_1(l1:l2)
             df=fac*( &
-              672.*((672.*(f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1))  &
+              2100.*((2100.*(f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1))  &
                     -9.*(f(l1+2:l2+2,m,n+1)-f(l1-2:l2-2,m,n+1))  &
                        +(f(l1+3:l2+3,m,n+1)-f(l1-3:l2-3,m,n+1))) &
-                  -(672.*(f(l1+1:l2+1,m,n-1)-f(l1-1:l2-1,m,n-1))  &
+                  -(2100.*(f(l1+1:l2+1,m,n-1)-f(l1-1:l2-1,m,n-1))  &
                     -9.*(f(l1+2:l2+2,m,n-1)-f(l1-2:l2-2,m,n-1))  &
                        +(f(l1+3:l2+3,m,n-1)-f(l1-3:l2-3,m,n-1))))&
-              -9.*((672.*(f(l1+1:l2+1,m,n+2)-f(l1-1:l2-1,m,n+2))  &
+              -9.*((2100.*(f(l1+1:l2+1,m,n+2)-f(l1-1:l2-1,m,n+2))  &
                     -9.*(f(l1+2:l2+2,m,n+2)-f(l1-2:l2-2,m,n+2))  &
                        +(f(l1+3:l2+3,m,n+2)-f(l1-3:l2-3,m,n+2))) &
-                  -(672.*(f(l1+1:l2+1,m,n-2)-f(l1-1:l2-1,m,n-2))  &
+                  -(2100.*(f(l1+1:l2+1,m,n-2)-f(l1-1:l2-1,m,n-2))  &
                     -9.*(f(l1+2:l2+2,m,n-2)-f(l1-2:l2-2,m,n-2))  &
                        +(f(l1+3:l2+3,m,n-2)-f(l1-3:l2-3,m,n-2))))&
-                 +((672.*(f(l1+1:l2+1,m,n+3)-f(l1-1:l2-1,m,n+3))  &
+                 +((2100.*(f(l1+1:l2+1,m,n+3)-f(l1-1:l2-1,m,n+3))  &
                     -9.*(f(l1+2:l2+2,m,n+3)-f(l1-2:l2-2,m,n+3))  &
                        +(f(l1+3:l2+3,m,n+3)-f(l1-3:l2-3,m,n+3))) &
-                  -(672.*(f(l1+1:l2+1,m,n-3)-f(l1-1:l2-1,m,n-3))  &
+                  -(2100.*(f(l1+1:l2+1,m,n-3)-f(l1-1:l2-1,m,n-3))  &
                     -9.*(f(l1+2:l2+2,m,n-3)-f(l1-2:l2-2,m,n-3))  &
                        +(f(l1+3:l2+3,m,n-3)-f(l1-3:l2-3,m,n-3))))&
                    )
@@ -1348,24 +1364,24 @@ module Deriv
         endif
       elseif ((i==1.and.j==2)) then
         if (nxgrid/=1.and.nygrid/=1) then
-          fac=dx_1(l1:l2)**5*1/840.0*dy_1(m)
+          fac=dx_1(l1:l2)**5*1/2520.0*dy_1(m)
           df=fac*( &
-            2.5*((672.*(f(l1+1:l2+1,m+1,n,k)-f(l1+1:l2+1,m-1,n,k))  &
+            2.5*((2100.*(f(l1+1:l2+1,m+1,n,k)-f(l1+1:l2+1,m-1,n,k))  &
                   -9.*(f(l1+1:l2+1,m+2,n,k)-f(l1+1:l2+1,m-2,n,k))  &
                      +(f(l1+1:l2+1,m+3,n,k)-f(l1+1:l2+1,m-3,n,k))) &
-                -(672.*(f(l1-1:l2-1,m+1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                -(2100.*(f(l1-1:l2-1,m+1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
                   -9.*(f(l1-1:l2-1,m+2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
                      +(f(l1-1:l2-1,m+3,n,k)-f(l1-1:l2-1,m-3,n,k))))&
-           -2.0*((672.*(f(l1+2:l2+2,m+1,n,k)-f(l1+2:l2+2,m-1,n,k))  &
+           -2.0*((2100.*(f(l1+2:l2+2,m+1,n,k)-f(l1+2:l2+2,m-1,n,k))  &
                   -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1+2:l2+2,m-2,n,k))  &
                      +(f(l1+2:l2+2,m+3,n,k)-f(l1+2:l2+2,m-3,n,k))) &
-                -(672.*(f(l1-2:l2-2,m+1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
+                -(2100.*(f(l1-2:l2-2,m+1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
                   -9.*(f(l1-2:l2-2,m+2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
                      +(f(l1-2:l2-2,m+3,n,k)-f(l1-2:l2-2,m-3,n,k))))&
-           +0.5*((672.*(f(l1+3:l2+3,m+1,n,k)-f(l1+3:l2+3,m-1,n,k))  &
+           +0.5*((2100.*(f(l1+3:l2+3,m+1,n,k)-f(l1+3:l2+3,m-1,n,k))  &
                   -9.*(f(l1+3:l2+3,m+2,n,k)-f(l1+3:l2+3,m-2,n,k))  &
                      +(f(l1+3:l2+3,m+3,n,k)-f(l1+3:l2+3,m-3,n,k))) &
-                -(672.*(f(l1-3:l2-3,m+1,n,k)-f(l1-3:l2-3,m-1,n,k))  &
+                -(2100.*(f(l1-3:l2-3,m+1,n,k)-f(l1-3:l2-3,m-1,n,k))  &
                   -9.*(f(l1-3:l2-3,m+2,n,k)-f(l1-3:l2-3,m-2,n,k))  &
                      +(f(l1-3:l2-3,m+3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                  )
@@ -1375,24 +1391,24 @@ module Deriv
         endif
       elseif ((i==2.and.j==1)) then
         if (nygrid/=1.and.nxgrid/=1) then
-          fac=dy_1(m)**5*1/840.0*dx_1(l1:l2)
+          fac=dy_1(m)**5*1/2520.0*dx_1(l1:l2)
           df=fac*( &
-            2.5*((672.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+            2.5*((2100.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
                   -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
                      +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
-                -(672.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                -(2100.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
                   -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
                      +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
-           -2.0*((672.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+           -2.0*((2100.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
                   -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
                      +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
-                -(672.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                -(2100.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
                   -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
                      +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
-           +0.5*((672.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+           +0.5*((2100.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
                   -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
                      +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
-                -(672.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                -(2100.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
                   -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
                      +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                  )
@@ -1402,24 +1418,24 @@ module Deriv
         endif
       elseif ((i==1.and.j==3)) then
         if (nxgrid/=1.and.nzgrid/=1) then
-          fac=dx_1(l1:l2)**5*1/840.0*dz_1(n)
+          fac=dx_1(l1:l2)**5*1/2520.0*dz_1(n)
           df=fac*( &
-            2.5*((672.*(f(l1+1:l2+1,m,n+1,k)-f(l1+1:l2+1,m,n-1,k))  &
+            2.5*((2100.*(f(l1+1:l2+1,m,n+1,k)-f(l1+1:l2+1,m,n-1,k))  &
                   -9.*(f(l1+1:l2+1,m,n+2,k)-f(l1+1:l2+1,m,n-2,k))  &
                      +(f(l1+1:l2+1,m,n+3,k)-f(l1+1:l2+1,m,n-3,k))) &
-                -(672.*(f(l1-1:l2-1,m,n+1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                -(2100.*(f(l1-1:l2-1,m,n+1,k)-f(l1-1:l2-1,m,n-1,k))  &
                   -9.*(f(l1-1:l2-1,m,n+2,k)-f(l1-1:l2-1,m,n-2,k))  &
                      +(f(l1-1:l2-1,m,n+3,k)-f(l1-1:l2-1,m,n-3,k))))&
-           -2.0*((672.*(f(l1+2:l2+2,m,n+1,k)-f(l1+2:l2+2,m,n-1,k))  &
+           -2.0*((2100.*(f(l1+2:l2+2,m,n+1,k)-f(l1+2:l2+2,m,n-1,k))  &
                   -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1+2:l2+2,m,n-2,k))  &
                      +(f(l1+2:l2+2,m,n+3,k)-f(l1+2:l2+2,m,n-3,k))) &
-                -(672.*(f(l1-2:l2-2,m,n+1,k)-f(l1-2:l2-2,m,n-1,k))  &
+                -(2100.*(f(l1-2:l2-2,m,n+1,k)-f(l1-2:l2-2,m,n-1,k))  &
                   -9.*(f(l1-2:l2-2,m,n+2,k)-f(l1-2:l2-2,m,n-2,k))  &
                      +(f(l1-2:l2-2,m,n+3,k)-f(l1-2:l2-2,m,n-3,k))))&
-           +0.5*((672.*(f(l1+3:l2+3,m,n+1,k)-f(l1+3:l2+3,m,n-1,k))  &
+           +0.5*((2100.*(f(l1+3:l2+3,m,n+1,k)-f(l1+3:l2+3,m,n-1,k))  &
                   -9.*(f(l1+3:l2+3,m,n+2,k)-f(l1+3:l2+3,m,n-2,k))  &
                      +(f(l1+3:l2+3,m,n+3,k)-f(l1+3:l2+3,m,n-3,k))) &
-                -(672.*(f(l1-3:l2-3,m,n+1,k)-f(l1-3:l2-3,m,n-1,k))  &
+                -(2100.*(f(l1-3:l2-3,m,n+1,k)-f(l1-3:l2-3,m,n-1,k))  &
                   -9.*(f(l1-3:l2-3,m,n+2,k)-f(l1-3:l2-3,m,n-2,k))  &
                      +(f(l1-3:l2-3,m,n+3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
@@ -1429,24 +1445,24 @@ module Deriv
         endif
       elseif ((i==3.and.j==1)) then
         if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/840.0*dy_1(m)
+          fac=dz_1(n)**5*1/2520.0*dy_1(m)
           df=fac*( &
-            2.5*((672.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+            2.5*((2100.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
                   -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
                      +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
-                -(672.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                -(2100.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
                   -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
                      +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
-           -2.0*((672.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+           -2.0*((2100.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
                   -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
                      +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
-                -(672.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                -(2100.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
                   -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
                      +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
-           +0.5*((672.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+           +0.5*((2100.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
                   -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
                      +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
-                -(672.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                -(2100.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
                   -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
                      +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
@@ -1456,24 +1472,24 @@ module Deriv
         endif
       elseif ((i==2.and.j==3)) then
         if (nygrid/=1.and.nzgrid/=1) then
-          fac=dy_1(m)**5*1/840.0*dz_1(n)
+          fac=dy_1(m)**5*1/2520.0*dz_1(n)
           df=fac*( &
-            2.5*((672.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k))  &
+            2.5*((2100.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m+1,n-1,k))  &
                   -9.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m+1,n-2,k))  &
                      +(f(l1:l2,m+1,n+3,k)-f(l1:l2,m+1,n-3,k))) &
-                -(672.*(f(l1:l2,m-1,n+1,k)-f(l1:l2,m-1,n-1,k))  &
+                -(2100.*(f(l1:l2,m-1,n+1,k)-f(l1:l2,m-1,n-1,k))  &
                   -9.*(f(l1:l2,m-1,n+2,k)-f(l1:l2,m-1,n-2,k))  &
                      +(f(l1:l2,m-1,n+3,k)-f(l1:l2,m-1,n-3,k))))&
-           -2.0*((672.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n-1,k))  &
+           -2.0*((2100.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m+2,n-1,k))  &
                   -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m+2,n-2,k))  &
                      +(f(l1:l2,m+2,n+3,k)-f(l1:l2,m+2,n-3,k))) &
-                -(672.*(f(l1:l2,m-2,n+1,k)-f(l1:l2,m-2,n-1,k))  &
+                -(2100.*(f(l1:l2,m-2,n+1,k)-f(l1:l2,m-2,n-1,k))  &
                   -9.*(f(l1:l2,m-2,n+2,k)-f(l1:l2,m-2,n-2,k))  &
                      +(f(l1:l2,m-2,n+3,k)-f(l1:l2,m-2,n-3,k))))&
-           +0.5*((672.*(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n-1,k))  &
+           +0.5*((2100.*(f(l1:l2,m+3,n+1,k)-f(l1:l2,m+3,n-1,k))  &
                   -9.*(f(l1:l2,m+3,n+2,k)-f(l1:l2,m+3,n-2,k))  &
                      +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m+3,n-3,k))) &
-                -(672.*(f(l1:l2,m-3,n+1,k)-f(l1:l2,m-3,n-1,k))  &
+                -(2100.*(f(l1:l2,m-3,n+1,k)-f(l1:l2,m-3,n-1,k))  &
                   -9.*(f(l1:l2,m-3,n+2,k)-f(l1:l2,m-3,n-2,k))  &
                      +(f(l1:l2,m-3,n+3,k)-f(l1:l2,m-3,n-3,k))))&
                  )
@@ -1483,24 +1499,24 @@ module Deriv
         endif
       elseif ((i==3.and.j==2)) then
         if (nzgrid/=1.and.nygrid/=1) then
-          fac=dz_1(n)**5*1/840.0*dy_1(m)
+          fac=dz_1(n)**5*1/2520.0*dy_1(m)
           df=fac*( &
-            2.5*((672.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
+            2.5*((2100.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
                   -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
                      +(f(l1:l2,m+3,n+1,k)-f(l1:l2,m-3,n+1,k))) &
-                -(672.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
+                -(2100.*(f(l1:l2,m+1,n-1,k)-f(l1:l2,m-1,n-1,k))  &
                   -9.*(f(l1:l2,m+2,n-1,k)-f(l1:l2,m-2,n-1,k))  &
                      +(f(l1:l2,m+3,n-1,k)-f(l1:l2,m-3,n-1,k))))&
-           -2.0*((672.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
+           -2.0*((2100.*(f(l1:l2,m+1,n+2,k)-f(l1:l2,m-1,n+2,k))  &
                   -9.*(f(l1:l2,m+2,n+2,k)-f(l1:l2,m-2,n+2,k))  &
                      +(f(l1:l2,m+3,n+2,k)-f(l1:l2,m-3,n+2,k))) &
-                -(672.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
+                -(2100.*(f(l1:l2,m+1,n-2,k)-f(l1:l2,m-1,n-2,k))  &
                   -9.*(f(l1:l2,m+2,n-2,k)-f(l1:l2,m-2,n-2,k))  &
                      +(f(l1:l2,m+3,n-2,k)-f(l1:l2,m-3,n-2,k))))&
-           +0.5*((672.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
+           +0.5*((2100.*(f(l1:l2,m+1,n+3,k)-f(l1:l2,m-1,n+3,k))  &
                   -9.*(f(l1:l2,m+2,n+3,k)-f(l1:l2,m-2,n+3,k))  &
                      +(f(l1:l2,m+3,n+3,k)-f(l1:l2,m-3,n+3,k))) &
-                -(672.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
+                -(2100.*(f(l1:l2,m+1,n-3,k)-f(l1:l2,m-1,n-3,k))  &
                   -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                      +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
                  )
