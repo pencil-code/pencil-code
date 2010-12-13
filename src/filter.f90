@@ -1,23 +1,21 @@
 ! $Id$
-
 !
 !  Filters for smoothing, removing trends (like spurious build-up of
 !  horizontal momentum) and similar.
 !
-
 module Filter
-
+!
+  use Cdata
   use Mpicomm
   use Sub
-
+!
   implicit none
-
+!
   private
-
+!
   public :: rmwig, rmwig_xyaverage
-
+!
   contains
-
 !***********************************************************************
     subroutine rmwig(f,df,ivar1,ivar2,awigg,explog)
 !
@@ -39,9 +37,6 @@ module Filter
 !  30-Aug-02/wolf: coded
 !  28-jul-03/axel: moved to own module, allowed range ivar1-ivar2
 !
-      use Cdata
-      use Mpicomm
-      use Sub
       use Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -149,7 +144,7 @@ module Filter
 !
     endsubroutine rmwig_1d
 !***********************************************************************
-      subroutine rmwig_old(f,df,ivar,explog)
+    subroutine rmwig_old(f,df,ivar,explog)
 !
 !  Remove small scale oscillations (`wiggles') from a component of f,
 !  normally from lnrho. Sometimes necessary since Nyquist oscillations in
@@ -169,9 +164,6 @@ module Filter
 !
 !  8-Jul-02/wolf: coded
 !
-      use Cdata
-      use Mpicomm
-      use Sub
       use Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -261,8 +253,8 @@ module Filter
         xyaver(n)=sum(exp(f(l1:l2,m1:m2,n,ivar)))/(nx*ny)
       enddo
       call smooth_4th(xyaver,xyaver_smooth,.true.)
-rhom1=sum(xyaver(n1:n2))/nz
-rhom2=sum(xyaver_smooth(n1:n2))/nz
+      rhom1=sum(xyaver(n1:n2))/nz
+      rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
       do n=1,mz
         del_average=xyaver(n)-xyaver_smooth(n)
@@ -290,10 +282,6 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !  This routine operates only on the log of rho, so its not mass conserving
 !
 !  28-Sep-02/axel: coded
-!
-      use Cdata
-      use Mpicomm
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
@@ -325,11 +313,9 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
     endsubroutine rmwig_lnxyaverage
 !***********************************************************************
-      subroutine smooth_4th(a,b,lbdry)
+    subroutine smooth_4th(a,b,lbdry)
 !
 !  28-Sep-02/axel: adapted from f77 version
-!
-      use Cdata
 !
       real, dimension (mz) :: a(mz),b(mz)
       real :: am1,a0,a1,a2,a3,a4
@@ -373,6 +359,4 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
     endsubroutine smooth_4th
 !***********************************************************************
-
-
 endmodule Filter
