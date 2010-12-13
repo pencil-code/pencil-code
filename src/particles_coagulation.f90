@@ -172,7 +172,10 @@ module Particles_coagulation
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: lambda_mfp1, deltavjk, tau_coll1, prob, r, kernel
-      integer :: l, j, k, ncoll, ncoll_par, npart_par
+      real :: npswarmj, npswarmk
+      real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
+      real :: rhopsma, rhopbig
+      integer :: l, j, k, ncoll, ncoll_par, npart_par, k2
 !
       intent (in) :: ineargrid
       intent (inout) :: fp
@@ -201,10 +204,23 @@ module Particles_coagulation
               endif
               npart_par=0
               ncoll_par=0
+!
+              if (lparticles_number) then
+                npswarmk=fp(k,inpswarm)
+              else
+                npswarmk=rhop_swarm/(four_pi_rhopmat_over_three*fp(k,iap)**3)
+              endif
+!
               do while (.true.)
                 if (lcoag_simultaneous) then
                   j=kneighbour(j)
                   if (j==0) exit
+                endif
+!
+                if (lparticles_number) then
+                  npswarmj=fp(j,inpswarm)
+                else
+                  npswarmj=rhop_swarm/(four_pi_rhopmat_over_three*fp(j,iap)**3)
                 endif
 !
 !  Calculate the relative speed of particles j and k.
@@ -259,20 +275,14 @@ module Particles_coagulation
                         four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                     endif
                     if (j==k .and. lnoselfcollision) kernel=0.0
-                    if (lcoag_simultaneous) then
-                      tau_coll1=kernel*min(fp(j,inpswarm),fp(k,inpswarm))
+                    if (fp(k,iap)<fp(j,iap)) then
+                      tau_coll1=kernel*npswarmj
                     else
-                      if (fp(k,iap)<fp(j,iap)) then
-                        tau_coll1=kernel*fp(j,inpswarm)
-                      else
-                        tau_coll1=kernel*fp(k,inpswarm)
-                      endif
+                      tau_coll1=kernel*npswarmk
                     endif
                   else
-                    if (lparticles_number) then
-                      tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
-                          min(fp(j,inpswarm),fp(k,inpswarm))
-                    endif
+                    tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
+                        min(npswarmj,npswarmk)
                   endif
 !
                   if (tau_coll1/=0.0) then
@@ -294,10 +304,38 @@ module Particles_coagulation
 !
                       if (lparticles_number) then
                         if (lcoag_simultaneous) then
-                          fp(j,iap)=2**(1.0/3.0)*max(fp(j,iap),fp(k,iap))
-                          fp(k,iap)=fp(j,iap)
-                          fp(j,inpswarm)=0.5*min(fp(j,inpswarm),fp(k,inpswarm))
-                          fp(k,inpswarm)=fp(j,inpswarm)
+                          if (fp(j,iap) < fp(k,iap)) then
+                            mpsma = four_pi_rhopmat_over_three*fp(j,iap)**3
+                            npsma = fp(j,inpswarm)
+                            mpbig = four_pi_rhopmat_over_three*fp(k,iap)**3
+                            npbig = fp(k,inpswarm)
+                          else
+                            mpsma = four_pi_rhopmat_over_three*fp(k,iap)**3
+                            npsma = fp(k,inpswarm)
+                            mpbig = four_pi_rhopmat_over_three*fp(j,iap)**3
+                            npbig = fp(j,inpswarm)
+                          endif
+                          rhopsma=mpsma*npsma
+                          rhopbig=mpbig*npbig
+                          mpnew=mpbig+rhopsma/npbig
+                          apnew=(mpnew/four_pi_rhopmat_over_three)**(1.0/3.0)
+                          npnew=0.5*(rhopsma+rhopbig)/mpnew
+                          if (npnew*dx*dy*dz<1.0) then
+                            call remove_particle(fp,ipar,j)
+                            k2=k
+                            do while (kneighbour(k2)/=j)
+                              k2=kneighbour(k2)
+                            enddo
+                            kneighbour(k2)=kneighbour(kneighbour(k2))
+                            fp(k,iap)=((rhopsma+rhopbig)/1.0/ &
+                                four_pi_rhopmat_over_three)**(1.0/3.0)
+                            fp(k,inpswarm)=1.0
+                          else
+                            fp(j,iap)=apnew
+                            fp(k,iap)=apnew
+                            fp(j,inpswarm)=npnew
+                            fp(k,inpswarm)=npnew
+                          endif
                         else
                           if (fp(k,iap)<fp(j,iap)) then
                             fp(k,inpswarm)=fp(k,inpswarm)* &
@@ -305,6 +343,17 @@ module Particles_coagulation
                             fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
                           else
                             fp(k,inpswarm)=0.5*fp(k,inpswarm)
+                            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+                          endif
+                        endif
+                      else
+                        if (lcoag_simultaneous) then
+                          fp(j,iap)=2**(1.0/3.0)*max(fp(j,iap),fp(k,iap))
+                          fp(k,iap)=fp(j,iap)
+                        else
+                          if (fp(k,iap)<fp(j,iap)) then
+                            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+                          else
                             fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
                           endif
                         endif
