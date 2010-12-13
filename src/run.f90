@@ -207,19 +207,16 @@ program run
     mvar_io=mvar
   endif
 !
-! Shall we read also auxiliary variables?
+! Shall we read also auxiliary variables or fewer variables (ex: turbulence
+! field with 0 species as an input file for a chemistry problem)?
 !
   if (lread_aux) then
     mvar_in=mvar+maux
+  else if (lread_less) then
+    mvar_in=4
   else
     mvar_in=mvar
   endif
-!
-! Shall we read an input file with fewer variables (ex: turbulence field
-! with 0 species as an input file for a chemistry problem)?
-!
-  if (lread_less) mvar_in=4
-  allocate(f_in(mx,my,mz,mvar_in))
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -260,10 +257,7 @@ program run
 !  This directory must exist, but may be linked to another disk.
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
-!  Modified 08-06-2010/Julien: Read an input file with less variables (4)
-  call rsnap(trim(directory_snap)//'/var.dat',f_in,mvar_in)
-  f(:,:,:,1:mvar_in) = f_in
-  deallocate(f_in)
+  call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
 !
   if (lparticles) call read_snapshot_particles(directory_snap)
 !
