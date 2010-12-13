@@ -39,7 +39,7 @@ module Testfield
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
-  logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
+  logical :: xextent=.true.,zextent=.true.,lsoca=.false.,lset_bbtest2=.false.
   logical :: linit_aatest=.false.
   integer :: itestfield=1
   real :: ktestfield_x=1.,  ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.,kanalyze_z=-1.
@@ -509,11 +509,15 @@ module Testfield
 !
       intent(in) :: f
 !
+      logical :: need_output
+!
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
 !
       headtt_save=headtt
       fac=1./ny
+      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d)) then
+        need_output=.true. ; else ; need_output=.false. ; endif
 !
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
@@ -523,8 +527,7 @@ module Testfield
 
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
-
-        if (lsoca .and. .not.l2davgfirst) then
+        if (lsoca .and.(.not. need_output)) then
           uxbtestm(:,:,:,jtest)=0.
         else
 
@@ -561,7 +564,7 @@ module Testfield
 !
       headtt=headtt_save
 !
-      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d)) call calc_coefficients
+      if (need_output) call calc_coefficients
 
     endsubroutine testfield_after_boundary
 !***********************************************************************
@@ -812,33 +815,36 @@ module Testfield
       do n=n1,n2
 
         if (idiag_alp11/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(1)), idiag_alp11)
+        if (idiag_alp22/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(5)), idiag_alp22)
+        if (idiag_alp33/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(9)), idiag_alp33)
+
 
         if (idiag_eta122/=0) call sum_mn_name(ny*temp_array(:,n-n1+1, twod_address(17)), idiag_eta122)
 
       enddo
 
-      if (idiag_alp11cc .or. idiag_alp11cs .or. idiag_alp11sc .or. idiag_alp11ss) then
+      if (idiag_alp11cc/=0 .or. idiag_alp11cs/=0 .or. idiag_alp11sc/=0 .or. idiag_alp11ss/=0) then
         call fourier_single_mode(temp_array(:,:,twod_address(1)), (/nx,nz/), 1., 3, temp_fft_z)
         if (ipz==0) then !result of fft only known on root of z-beam
           call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
           if (lroot) then
-            if (idiag_alp11cc) call save_name(temp_fft(1,1), idiag_alp11cc)
-            if (idiag_alp11cs) call save_name(temp_fft(1,2), idiag_alp11cs)
-            if (idiag_alp11sc) call save_name(temp_fft(2,1), idiag_alp11sc)
-            if (idiag_alp11ss) call save_name(temp_fft(2,2), idiag_alp11ss)
+            if (idiag_alp11cc/=0) call save_name(temp_fft(1,1), idiag_alp11cc)
+            if (idiag_alp11cs/=0) call save_name(temp_fft(1,2), idiag_alp11cs)
+            if (idiag_alp11sc/=0) call save_name(temp_fft(2,1), idiag_alp11sc)
+            if (idiag_alp11ss/=0) call save_name(temp_fft(2,2), idiag_alp11ss)
           endif
         endif
       endif
 
-      if (idiag_eta122cc .or. idiag_eta122cs .or. idiag_eta122sc .or. idiag_eta122ss) then
+      if (idiag_eta122cc/=0 .or. idiag_eta122cs/=0 .or. idiag_eta122sc/=0 .or. idiag_eta122ss/=0) then
         call fourier_single_mode(temp_array(:,:,twod_address(17)), (/nx,nz/), 1., 3, temp_fft_z)
         if (ipz==0) then !result of fft only known on root of z-beam
           call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
           if (lroot) then
-            if (idiag_eta122cc) call save_name(temp_fft(1,1), idiag_eta122cc)
-            if (idiag_eta122cs) call save_name(temp_fft(1,2), idiag_eta122cs)
-            if (idiag_eta122sc) call save_name(temp_fft(2,1), idiag_eta122sc)
-            if (idiag_eta122ss) call save_name(temp_fft(2,2), idiag_eta122ss)
+            if (idiag_eta122cc/=0) call save_name(temp_fft(1,1), idiag_eta122cc)
+            if (idiag_eta122cs/=0) call save_name(temp_fft(1,2), idiag_eta122cs)
+            if (idiag_eta122sc/=0) call save_name(temp_fft(2,1), idiag_eta122sc)
+            if (idiag_eta122ss/=0) call save_name(temp_fft(2,2), idiag_eta122ss)
           endif
         endif
       endif
