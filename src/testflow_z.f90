@@ -1181,6 +1181,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
               !!call multmv(uijtest,uufluct,unltest)                                        ! (u.grad)(utest)
               call u_dot_grad(f,iuxtest,uijtest, uufluct,unltest,UPWIND=ltestflow_upw_uu)
 !
+!  initialize unltest and hnltest (unless lburgers_testflow)
+!
               !!call multmv(uij0,uutest,unltest,.true.)                                     ! (utest.grad)(u0)
               call u_dot_grad(f,iuutest,uij0,uutest,unltest,ltestflow_upw_uu,.true.)
 !
@@ -1212,10 +1214,14 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
               endif
 !
+!  part of dissipative term
+!
               if ( .not.lburgers_testflow .and. (jtest>0 .or. .not.lprescribed_velocity) ) &
                 unltest = unltest - (2.*nutest*cs2test1)*sghtest
 !
             endif
+!
+!  unless SOCA or other things, incrementing df with unltest
 !
             if ( jtest==0.and..not.lprescribed_velocity .or. jtest>0.and..not.lsoca_testflow ) then        
  
@@ -1225,14 +1231,18 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
                 df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-hnltest
 
             endif
-
+!
+!  Means of nonlinear terms always needed for 0th testflow (if not prescribed),
+!  if not SOCA for all testflows, except from that if the
+!  the turbulence coefficients have to be calculated.
+!
             if ( (jtest==0.and..not.lprescribed_velocity) .or. &
-                 (jtest>0 .and.(.not.lsoca_testflow .or. ldiagnos) ) ) then                  ! means of nonlinear terms always needed for 0th testflow (if not prescribed), 
-            !!if ( jtest==0 .or. .not.lsoca_testflow.or.ldiagnos ) then
-                                                                           ! if not SOCA for all testflows, except from that if the
-                                                                           ! the turbulence coefficients have to be calculated
+                 (jtest>0 .and.(.not.lsoca_testflow .or. ldiagnos) ) ) then
+!
+!  sums of nonlinear parts (here sum sums over x extent only)
+!
               do j=1,3
-                unltestm(j,jtest)=unltestm(j,jtest)+sum(unltest(:,j))      ! sums of nonlinear parts (here sum sums over x extent only)
+                unltestm(j,jtest)=unltestm(j,jtest)+sum(unltest(:,j))
               enddo
 
               hnltestm(jtest)=hnltestm(jtest)+sum(hnltest)
@@ -1294,6 +1304,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           do j=1,3
 !
             ju = iuxtest+j-1
+!
+!  subtract unltestm (mean flow)
 !
             df(l1:l2,m1:m2,n,ju)=df(l1:l2,m1:m2,n,ju)+unltestm(j,jtest)
 !

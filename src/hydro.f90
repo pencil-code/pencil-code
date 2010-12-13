@@ -45,6 +45,7 @@ module Hydro
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
   real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data
                                            ! on ghostzones
+  real, dimension (mx,3) :: uumx=0.0
   real, dimension (mx,my,3) :: uumxy=0.0
   real, dimension (mx,mz,3) :: uumxz=0.0
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
@@ -143,7 +144,7 @@ module Hydro
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumean=.false.,lcalc_uumeanxy=.false.
-  logical :: lcalc_uumeanxz=.false.
+  logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
   logical :: lforcing_cont_uu=.false.
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
@@ -168,7 +169,8 @@ module Hydro
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       utop, ubot, omega_out, omega_in, lprecession, omega_precession, &
       alpha_precession, lshear_rateofstrain, &
-      lalways_use_gij_etc, lcalc_uumean, lcalc_uumeanxy, lcalc_uumeanxz, &
+      lalways_use_gij_etc, &
+      lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
@@ -2357,7 +2359,7 @@ module Hydro
       integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
-      integer :: nxy=nxgrid*nygrid
+      integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid
 !     real, dimension (nz,nprocz,3) :: uumz1
 !     real, dimension (nz*nprocz*3) :: uumz2,uumz3
       real, dimension (3) :: OO, dOO
@@ -2365,6 +2367,7 @@ module Hydro
       integer :: l,m,i,j
       real :: fact
       real, dimension (mz,3) :: temp
+      real, dimension (mx,3) :: tempx
       real, dimension (mx,my,3) :: tempxy
       real, dimension (mx,mz,3) :: tempxz
 !
@@ -2407,7 +2410,7 @@ module Hydro
         ruzm=fsum(3)
       endif
 !
-!  do mean field for each component
+!  do xy-averaged mean field for each component
 !
       if (lcalc_uumean) then
         fact=1./nxy
@@ -2426,10 +2429,30 @@ module Hydro
         endif
 !
 !AB: it would be better to define guumz without ghost zones
+!AB: this is still not done, right?
 !
         do j=1,3
           call der_z(uumz(:,j),guumz(n1:n2,j))       ! ghost zones in guumz are not filled!
         enddo
+!
+      endif
+!
+!  do yz-averaged mean field for each component
+!
+      if (lcalc_uumeanx) then
+        fact=1./nyz
+        do l=1,mx
+          do j=1,3
+            uumx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iux+j-1))
+          enddo
+        enddo
+!
+!  communicate over y and z directions
+!
+        if (nprocy>1.or.nprocz>1) then
+          call mpiallreduce_sum(uumx,tempx,(/mx,3/),idir=23)
+          uumx=tempx
+        endif
 !
       endif
 !
@@ -4443,8 +4466,13 @@ module Hydro
       else
         prof_amp3=ampl1_diffrot
       endif
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -Shearx*x(l1:l2))
+      if (lcalc_uumeanx) then
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumx(l1:l2,iuy) &
+          -Shearx*x(l1:l2))
+      else
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
+          -Shearx*x(l1:l2))
+      endif
 !
 !  Solar rotation profile from Dikpati & Charbonneau (1999, ApJ)
 !
