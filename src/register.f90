@@ -776,43 +776,49 @@ module Register
 !
 !  Read in the list of variables for xy-averages.
 !
-      nnamez = parallel_count_lines(xyaver_in_file)
-      if (nnamez>0) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_xyaverages()
-        call parallel_open(unit,file=xyaver_in_file)
-        do inamez=1,nnamez
-          read(unit,*,iostat=ierr) cnamez(inamez)
-        enddo
+      if (parallel_file_exists(xyaver_in_file)) then
+        nnamez = parallel_count_lines(xyaver_in_file)
+        if (nnamez>0) then
+          ! Allocate the relevant arrays and read into these arrays
+          call allocate_xyaverages()
+          call parallel_open(unit,file=xyaver_in_file)
+          do inamez=1,nnamez
+            read(unit,*,iostat=ierr) cnamez(inamez)
+          enddo
+        endif
+        call parallel_close(unit)
       endif
-      call parallel_close(unit)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
 !  Read in the list of variables for xz-averages.
 !
-      nnamey = parallel_count_lines(xzaver_in_file)
-      if (nnamey>0) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_xzaverages()
-        call parallel_open(unit, xzaver_in_file)
-        do inamey=1,nnamey
-          read(unit,*,iostat=ierr) cnamey(inamey)
-        enddo
-        call parallel_close(unit)
+      if (parallel_file_exists(xzaver_in_file)) then
+        nnamey = parallel_count_lines(xzaver_in_file)
+        if (nnamey>0) then
+          ! Allocate the relevant arrays and read into these arrays
+          call allocate_xzaverages()
+          call parallel_open(unit, xzaver_in_file)
+          do inamey=1,nnamey
+            read(unit,*,iostat=ierr) cnamey(inamey)
+          enddo
+          call parallel_close(unit)
+        endif
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
-      nnamex = parallel_count_lines(yzaver_in_file)
-      if (nnamex>0) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_yzaverages()
-        call parallel_open(unit,file=yzaver_in_file)
-        do inamex=1,nnamex
-          read(unit,*,iostat=ierr) cnamex(inamex)
-        enddo
-        call parallel_close(unit)
+      if (parallel_file_exists(yzaver_in_file)) then
+        nnamex = parallel_count_lines(yzaver_in_file)
+        if (nnamex>0) then
+          ! Allocate the relevant arrays and read into these arrays
+          call allocate_yzaverages()
+          call parallel_open(unit,file=yzaver_in_file)
+          do inamex=1,nnamex
+            read(unit,*,iostat=ierr) cnamex(inamex)
+          enddo
+          call parallel_close(unit)
+        endif
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
