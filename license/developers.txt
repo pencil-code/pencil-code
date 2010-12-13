@@ -18,6 +18,7 @@ Philippe Bourdin, bourdin/mps.mpg.de,      +49-5556-979-408,  +49-5551-5895372, 
 Axel Brandenburg, brandenb/nordita.org,    +46 8 5537 8707,   +46 70 574 0650, brandenb, axelbrandenburg
 Simon Candelaresi, iomsn1/gmail.com        +46 8 5537 8277,   +46 737204349, iomsn, iomsn1
 Piyali Chatterjee, mppiyali/gmail.com,     +46-8-5537-8375,   +46 738794457
+Chao-Chin Yang,   ccyang/ucolick.org,
 Fabio Del Sordo,  fabio/nordita.org        +46 8 5537 8277    +46 700629700, fadiesis, fabiodelsordo
 Boris Dintrans,   dintrans/ast.obs-mip.fr  +33 5 6133 2811    +33 6 61 24 79 83, boris.dintrans, bdintrans
 Wolfgang Dobler,  wdobler/gmail.com,       +49 33201 43791,   +49 1520 4056 762, +49 305331 12083 (office), wdobler, mob (new): +49 1 51 281 23 472
@@ -39,6 +40,7 @@ Jeffrey S. Oishi joishi/amnh.org           +1 212 313 7439
 Raphael Plasson, +46 7 3575 8374,  
 Matthias Rheinhardt, mreinhardt/aip.de,    +468 5537 8708   , +49 49 3044 19348, rei,
 Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
+Julien Savre,    juliensavre/gmail.com
 Nishant K. Singh, nishant.cosmo/gmail.com, +91 9916785745
 Andrew Snodin    andrew.snodin/ncl.ac.uk
 Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
