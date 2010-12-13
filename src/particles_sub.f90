@@ -667,16 +667,17 @@ module Particles_sub
     subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
 !
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc) :: ipar
+      integer :: k
+      real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc,3), optional :: ineargrid
       integer, optional :: ks
-      integer :: k
+!
       logical :: lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
 !   
-      intent (inout) :: fp, dfp,ineargrid
-      intent (in)    :: k
+      intent (inout) :: fp, dfp, ineargrid
+      intent (in)    :: k, ks
 !
       t_sp = t
 !
