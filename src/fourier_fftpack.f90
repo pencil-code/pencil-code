@@ -1348,7 +1348,7 @@ module Fourier
 !
       use Mpicomm, only: remap_to_pencil_x, unmap_from_pencil_x
 !
-      real, dimension (nx), intent(inout) :: a_re, a_im
+      real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
 !
       real, dimension (:), allocatable :: p_re, p_im   ! data in pencil shape
@@ -1361,6 +1361,11 @@ module Fourier
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+!
+      if (size (a_re, 1) /= nx) &
+          call fatal_error ('fft_x_parallel_1D', 'size of input must be nx!', lfirst_proc_x)
+      if (size (a_re, 1) /= size (a_im, 1)) &
+          call fatal_error ('fft_x_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nxgrid), stat=stat)
@@ -1789,7 +1794,7 @@ module Fourier
 !
     endsubroutine fft_x_parallel_4D
 !***********************************************************************
-    subroutine fft_y_parallel_1D(a_re,a_im,linv,lneed_im)
+    subroutine fft_y_parallel_1D(a_re,a_im,linv,lneed_im,shift_y)
 !
 !  Subroutine to do FFT of distributed 1D data in the y-direction.
 !  For y-parallelization the calculation will be done under
@@ -1802,12 +1807,13 @@ module Fourier
 !
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
 !
-      real, dimension (ny), intent(inout) :: a_re, a_im
+      real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
+      real, dimension (nxgrid), optional :: shift_y
 !
       real, dimension (:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: stat
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshift
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
@@ -1815,14 +1821,23 @@ module Fourier
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+      lshift = .false.
+      if (present (shift_y)) lshift = .true.
+!
+!
+      if (size (a_re, 1) /= ny) &
+          call fatal_error ('fft_y_parallel_1D', 'size of input must be ny!', lfirst_proc_y)
+      if (size (a_re, 1) /= size (a_im, 1)) &
+          call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
+!
+      if (lshear) call fatal_error ('fft_y_parallel_1D', 'Shearing is not possible for 1D data!', lfirst_proc_y)
+      if (lshift) call fatal_error ('fft_y_parallel_1D', 'Shifting is not possible for 1D data!', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p_re', .true.)
       allocate (p_im(nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p_im', .true.)
-!
-      if (lshear) call fatal_error ('fft_y_parallel_1D', 'Shearing is not implemented!', lfirst_proc_y)
 !
       call cffti (nygrid, wsavey)
 !
@@ -2261,7 +2276,7 @@ module Fourier
 !
       use Mpicomm, only: remap_to_pencil_z, unmap_from_pencil_z
 !
-      real, dimension (nz), intent(inout) :: a_re, a_im
+      real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
 !
       real, dimension (:), allocatable :: p_re, p_im ! data in pencil shape
@@ -2274,6 +2289,11 @@ module Fourier
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
 !
+!
+      if (size (a_re, 1) /= ny) &
+          call fatal_error ('fft_z_parallel_1D', 'size of input must be nz!', lfirst_proc_z)
+      if (size (a_re, 1) /= size (a_im, 1)) &
+          call fatal_error ('fft_z_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
       allocate (p_re(nzgrid), stat=stat)
@@ -2708,14 +2728,14 @@ module Fourier
       ! Check for degenerate cases.
       if (nxgrid == 1) then
         if (lshift) then
-          call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y)
         else
-          call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im)
         endif
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_x_parallel (a_re(:,1), a_im(:,1), .not. lforward, lcompute_im)
         return
       endif
 !
@@ -2878,11 +2898,11 @@ module Fourier
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
-        call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_y_parallel (a_re(1,:,:), a_im(1,:,:), .not. lforward, lcompute_im)
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_x_parallel (a_re(:,1,:), a_im(:,1,:), .not. lforward, lcompute_im)
         return
       endif
 !
@@ -3063,11 +3083,11 @@ module Fourier
 !
       ! Check for degenerate cases.
       if (nxgrid == 1) then
-        call fft_y_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_y_parallel (a_re(1,:,:,:), a_im(1,:,:,:), .not. lforward, lcompute_im)
         return
       endif
       if (nygrid == 1) then
-        call fft_x_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_x_parallel (a_re(:,1,:,:), a_im(:,1,:,:), .not. lforward, lcompute_im)
         return
       endif
 !
@@ -3254,14 +3274,14 @@ module Fourier
       ! Check for degenerate cases.
       if (nzgrid == 1) then
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re(:,:,1), a_im(:,:,1), .not. lforward, lcompute_im, shift_y)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re(:,:,1), a_im(:,:,1), .not. lforward, lcompute_im)
         endif
         return
       endif
       if ((nxgrid == 1) .and. (nygrid == 1)) then
-        call fft_z_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_z_parallel (a_re(1,1,:), a_im(1,1,:), .not. lforward, lcompute_im)
         return
       endif
 !
@@ -3388,14 +3408,14 @@ module Fourier
       ! Check for degenerate cases.
       if (nzgrid == 1) then
         if (lshift) then
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im, shift_y)
+          call fft_xy_parallel (a_re(:,:,1,:), a_im(:,:,1,:), .not. lforward, lcompute_im, shift_y)
         else
-          call fft_xy_parallel (a_re, a_im, .not. lforward, lcompute_im)
+          call fft_xy_parallel (a_re(:,:,1,:), a_im(:,:,1,:), .not. lforward, lcompute_im)
         endif
         return
       endif
       if ((nxgrid == 1) .and. (nygrid == 1)) then
-        call fft_z_parallel (a_re, a_im, .not. lforward, lcompute_im)
+        call fft_z_parallel (a_re(1,1,:,:), a_im(1,1,:,:), .not. lforward, lcompute_im)
         return
       endif
 !
