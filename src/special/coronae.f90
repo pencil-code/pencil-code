@@ -521,6 +521,17 @@ module Special
       endif
     endif
 !
+    if (lvideo) then
+!
+! slices
+      spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
+      if (m==iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
+      if (n==iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
+      if (n==iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
+      if (n==iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
+      if (n==iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
+    endif
+!
     if (lfirst.and.ldt) then
       diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
       if (ldiagnos.and.idiag_dtchi2/=0) then
@@ -618,7 +629,7 @@ module Special
       rhs = hcond_grad*(rhs + glnT2*tmp)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*cubic_step(real(t*unit_time),init_time,init_time)
+          rhs*gamma !*cubic_step(real(t*unit_time),init_time,init_time)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -717,6 +728,8 @@ module Special
       rtv_cool=rtv_cool*cool_RTV* &
           (1.-cubic_step(p%lnrho,cubic_RTV,width_RTV))
 !
+    else
+      if (headtt) call warning("calc_heat_cool_RTV","cool acts everywhere")
     endif
 !
     rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
@@ -725,7 +738,8 @@ module Special
 !
     if (ltemperature) then
       if (ltemperature_nolog) then
-        call fatal_error('calc_heat_cool_RTV','not implemented for ltemperature_nolog')
+        call fatal_error('calc_heat_cool_RTV', &
+            'not implemented for ltemperature_nolog')
       else
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       endif
@@ -735,6 +749,17 @@ module Special
       else
         call fatal_error('calc_heat_cool_RTV','not implemented for lentropy')
       endif
+    endif
+!
+    if (lvideo) then
+!
+! slices
+      rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
+      if (m==iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
+      if (n==iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
+      if (n==iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
+      if (n==iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
+      if (n==iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
     endif
 !
      if (lfirst.and.ldt) then
