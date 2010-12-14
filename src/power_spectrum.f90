@@ -1109,7 +1109,7 @@ module power_spectrum
    write(1,11) pdf_yy
    close(1)
 !
-10 format(1p,e11.5,0p,i6,1p,4e12.4)
+10 format(1p,e12.5,0p,i6,1p,4e12.4)
 11 format(8i10)
 endsubroutine pdf
 !***********************************************************************
