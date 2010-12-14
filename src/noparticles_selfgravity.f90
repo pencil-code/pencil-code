@@ -58,7 +58,6 @@ module Particles_selfgravity
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(rhs_poisson)
-      call keep_compiler_quiet(rhs_poisson_const)
       call keep_compiler_quiet(lcontinued)
 !
     endsubroutine calc_selfpotential_particles
