@@ -205,7 +205,7 @@ module Particles_coagulation
       real :: npswarmj, npswarmk
       real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
       real :: rhopsma, rhopbig
-      integer :: l, j, k, ncoll, ncoll_par, npart_par, k2
+      integer :: l, j, k, ncoll, ncoll_par, npart_par
 !
       intent (in) :: ineargrid
       intent (inout) :: fp
@@ -244,12 +244,23 @@ module Particles_coagulation
                 npswarmk=rhop_swarm/(four_pi_rhopmat_over_three*fp(k,iap)**3)
               endif
 !
-!  Move through neighbours.
+!  Move through neighbours, excluding particles tagged with negative radius
+!  (they have coagulated with a sink particle and will be removed later).
 !
-              do while (.true.)
+              do while (fp(k,iap)>=0.0)
                 if (lcoag_simultaneous) then
                   j=kneighbour(j)
                   if (j==0) exit
+!
+!  Do not attempt to collide with particles tagged for removal.
+!
+                  if (lparticles_number) then
+                    do while (fp(j,iap)<0.0)
+                      j=kneighbour(j)
+                      if (j==0) exit
+                    enddo
+                    if (j==0) exit
+                  endif
                 endif
 !
 !  Particle number density either from f array or from rhop_swarm.
@@ -329,7 +340,6 @@ module Particles_coagulation
                     prob=dt*tau_coll1
                     call random_number_wrapper(r)
                     if (r<=prob) then
-!                    print*, j, k, prob, npswarmj, npswarmk, fp(j,iap), fp(k,iap)
 !
 !  Change the particle size to the new size, but keep the total mass in the
 !  particle swarm the same.
@@ -359,12 +369,10 @@ module Particles_coagulation
                           apnew=(mpnew/four_pi_rhopmat_over_three)**(1.0/3.0)
                           npnew=0.5*(rhopsma+rhopbig)/mpnew
                           if (npnew*dx*dy*dz<1.0) then
-                            call remove_particle(fp,ipar,j)
-                            k2=k
-                            do while (kneighbour(k2)/=j)
-                              k2=kneighbour(k2)
-                            enddo
-                            kneighbour(k2)=kneighbour(kneighbour(k2))
+!
+!  Tag particle for removal by making the radius negative.
+!
+                            fp(j,iap)=-fp(j,iap)
                             fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
                                 four_pi_rhopmat_over_three)**(1.0/3.0)
                             fp(k,inpswarm)=1/(dx*dy*dz)
@@ -410,13 +418,14 @@ module Particles_coagulation
                   endif
                 endif
 !
+!  Move to next particle neighbour.
+!
                 if (.not.lcoag_simultaneous) then
                   j=kneighbour(j)
                   if (j==0) exit
                 endif
 !
               enddo
-              k=kneighbour(k)
 !
 !  Collision diagnostics. Since this subroutine is called in the last sub-
 !  time-step, we can not use ldiagnos. Therefore we calculate collision
@@ -429,6 +438,10 @@ module Particles_coagulation
                 if (idiag_ncoagpartpm/=0) &
                     call sum_par_name((/float(npart_par)/),idiag_ncoagpartpm)
               endif
+!
+!  Move to next particle in the grid cell.
+!
+              k=kneighbour(k)
 !
             enddo
           endif
@@ -449,6 +462,21 @@ module Particles_coagulation
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncoagpartpm)
         endif
       endif
+!
+!  Remove the particles that have been tagged for removal. We have to remove
+!  them after the coagulation step, as we will otherwise confuse the
+!  shepherd-neighbour algorithm.
+!
+      k=1
+      do while (.true.)
+        if (fp(k,iap)<0.0) then
+          fp(k,iap)=-fp(k,iap)
+          call remove_particle(fp,ipar,k)
+        else
+          k=k+1
+          if (k>npar_loc) exit
+        endif
+      enddo
 !
     endsubroutine particles_coagulation_pencils
 !***********************************************************************
