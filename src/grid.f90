@@ -196,7 +196,7 @@ module Grid
 !
           if (lparticles) then
             call grid_profile(xi1proc,grid_func(1),g1proc, &
-              dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+              dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
             g1proc=x00+g1proc-g1lo
           endif
 !
