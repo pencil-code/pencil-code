@@ -101,7 +101,8 @@ module Viscosity
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   viscous time step;
                                 ! DIAG_DOC:  see \S~\ref{time-step})
-  integer :: idiag_meshRemax=0  ! DIAG_DOC:
+  integer :: idiag_meshRemax=0    ! DIAG_DOC: Mesh Reynolds number
+  integer :: idiag_Reshock=0  ! DIAG_DOC: Mesh Reynolds number at shock
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
@@ -511,6 +512,7 @@ module Viscosity
         idiag_epsK2=0
         idiag_epsK_LES=0
         idiag_meshRemax=0
+        idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_fviscmz=0; idiag_fviscmxy=0 
       endif
@@ -529,10 +531,9 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'epsK_LES',idiag_epsK_LES)
-        call parse_name(iname,cname(iname),cform(iname),&
-            'meshRemax',idiag_meshRemax)
+        call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
+        call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
+        call parse_name(iname,cname(iname),cform(iname),'Reshock',idiag_Reshock)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
@@ -654,7 +655,7 @@ module Viscosity
             lpenc_requested(i_sij2)=.true.
       endif
 !
-      if (idiag_meshRemax/=0) lpenc_diagnos(i_u2)=.true.
+      if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
@@ -676,8 +677,8 @@ module Viscosity
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
-      if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
-          lpenc_diagnos(i_shock)=.true.
+      if ((idiag_meshRemax/=0.or.idiag_dtnu/=0).and.lvisc_nu_shock) lpenc_diagnos(i_shock)=.true.
+      if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
       if (idiag_fviscmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij)=.true.
@@ -1375,13 +1376,14 @@ module Viscosity
 !   9-jul-04/nils: added Smagorinsky viscosity
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
-          zsum_mn_name_xy
+          zsum_mn_name_xy, max_name
       use Sub, only: cross
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: nu_smag
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
+      integer, dimension(1) :: max_loc
 !
       intent (in) :: p
       intent (inout) :: df
@@ -1417,8 +1419,13 @@ module Viscosity
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
         if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
-        if (idiag_meshRemax/=0) &
-           call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
+        if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
+        if (idiag_Reshock/=0) then
+          if (any(p%shock>0.)) then
+            max_loc = maxloc(p%shock)
+            call max_name(dxmax*sqrt(p%u2(max_loc(1)))/(nu_shock*maxval(p%shock)),idiag_Reshock)
+          endif
+        endif
 !  Viscous heating as explicit analytical term.
         if (idiag_epsK/=0) then
           if (lvisc_nu_const)     call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)

@@ -47,6 +47,11 @@ module Diagnostics
   public :: get_from_fname
   public :: init_xaver
 !
+  interface max_name
+    module procedure max_name_int
+    module procedure max_name_real
+  endinterface max_name
+!
   integer :: mnamer
   character (len=5) :: ch2davg
 !
@@ -1004,7 +1009,7 @@ module Diagnostics
 !
    endsubroutine save_name_halfz
 !***********************************************************************
-    subroutine max_name(a,iname,lneg)
+    subroutine max_name_int(a,iname,lneg)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !
@@ -1031,7 +1036,37 @@ module Diagnostics
         itype_name(iname)=ilabel_max
       endif
 !
-    endsubroutine max_name
+    endsubroutine max_name_int
+!***********************************************************************
+    subroutine max_name_real(a,iname,lneg)
+!
+!  Successively calculate maximum of a, which is supplied at each call.
+!
+!  13-dec-10/ccyang: adapted from max_name
+!
+      real, intent(in) :: a
+      integer, intent(in) :: iname
+      logical, intent(in), optional :: lneg
+!
+      if (present(lneg)) then
+        if (lneg) then
+          if (a<fname(iname)) fname(iname)=a
+        else
+          if (a>fname(iname)) fname(iname)=a
+        endif
+      else
+        if (a>fname(iname)) fname(iname)=a
+      endif
+!
+!  Set corresponding entry in itype_name.
+!
+      if (present(lneg)) then
+        itype_name(iname)=ilabel_max_neg
+      else
+        itype_name(iname)=ilabel_max
+      endif
+!
+    endsubroutine max_name_real
 !***********************************************************************
     subroutine sum_name(a,iname)
 !
