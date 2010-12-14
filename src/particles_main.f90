@@ -107,25 +107,22 @@ module Particles_main
 !  density and mass density per grid cell (np_const or rhop_const).
 !
       if (rhop_const/=0.0) then
-        if (lparticles_radius.or.lparticles_number) then
-          if (lroot) print*, 'particles_initialize_modules: '// &
-              'can not use rhop_const together with Particles_radius or '// &
-              'Particles_number modules'
-          call fatal_error('particles_initialize_modules','')
-        endif
-        if (mp_swarm==0.0 .and. np_swarm==0.0) then
-          if (lroot) print*, 'particles_initialize_modules: '// &
-              'must set either mp_swarm or np_swarm when using rhop_const'
-          call fatal_error('particles_initialize_modules','')
-        endif
-        if (mp_swarm/=0.0 .and. np_swarm/=0.0) then
-          if (lroot) print*, 'particles_initialize_modules: '// &
-              'may not set both mp_swarm and np_swarm when using rhop_const'
-          call fatal_error('particles_initialize_modules','')
-        endif
         rhop_swarm=rhop_const/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (mp_swarm==0.0) mp_swarm=rhop_swarm/np_swarm
-        if (np_swarm==0.0) np_swarm=rhop_swarm/mp_swarm
+        if (lparticles_radius) then
+          if (mp_swarm/=0.0 .or. np_swarm/=0.0) then
+            if (lroot) print*, 'particles_initialize_modules: '// &
+                'may not set mp_swarm or np_swarm when setting rhop_const'
+            call fatal_error('particles_initialize_modules','')
+          endif
+        else
+          if (mp_swarm/=0.0 .and. np_swarm/=0.0) then
+            if (lroot) print*, 'particles_initialize_modules: '// &
+                'must set only mp_swarm or np_swarm when using rhop_const'
+            call fatal_error('particles_initialize_modules','')
+          endif
+          if (mp_swarm==0.0) mp_swarm=rhop_swarm/np_swarm
+          if (np_swarm==0.0) np_swarm=rhop_swarm/mp_swarm
+        endif
       elseif (np_const/=0.0) then
         if (lparticles_number) then
           if (lroot) print*, 'particles_initialize_modules: '// &
