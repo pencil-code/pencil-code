@@ -88,7 +88,6 @@ program run
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
   real :: wall_clock_time=0.0, time_per_step=0.0
-  real, allocatable, dimension(:,:,:,:) :: f_in
   integer :: icount, i, mvar_in
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., timeover=.false., resubmit=.false.
@@ -554,7 +553,7 @@ program run
 !
     if (linterstellar) call check_SN(f)
 !
-!  Check if mass flux replacement required fred test 
+!  Check if mass flux replacement required fred test
 !
     if (linterstellar) call addmassflux(f)
 !
@@ -716,7 +715,7 @@ program run
   if (lroot) then
     wall_clock_time=time2-time1
     print*
-    write(*,'(A,1pG10.3,A,1pG8.2,A)') &
+    write(*,'(A,1pG10.3,A,1pG9.2,A)') &
         ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
         ' (+/- ', real(mpiwtick())/3600.0, ')'
     if (it>1) then
