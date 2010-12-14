@@ -55,6 +55,12 @@ module Particles_coagulation
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
 !
+!  Fatal error if Particle_radius module not used.
+!
+      if (.not.lparticles_radius) &
+          call fatal_error('initialize_particles_coag', &
+          'must use Particles_radius module for coagulation')
+!
 !  Allocate neighbour array necessary for identifying collisions.
 !
       if (.not.allocated(kneighbour)) allocate(kneighbour(mpar_loc))
@@ -88,6 +94,7 @@ module Particles_coagulation
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: deltavjk, dt1_coag_par, kernel
+      real :: npswarmj, npswarmk
       integer :: j, k, l
 !
       if (lfirst.and.ldt) then
@@ -97,13 +104,31 @@ module Particles_coagulation
 !
         call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
+!  Calculate coagulation time-step.
+!
         do l=l1,l2
+!
+!  Start with shepherd particle.
+!
           k=kshepherd(l-nghost)
           if (k>0) then
             do while (k/=0)
+              if (lparticles_number) then
+                npswarmk=fp(k,inpswarm)
+              else
+                npswarmk=rhop_swarm/(four_pi_rhopmat_over_three*fp(k,iap)**3)
+              endif
               dt1_coag_par=0.0
               j=kshepherd(l-nghost)
+!
+!  Move through neighbours.
+!
               do while (.true.)
+                if (lparticles_number) then
+                  npswarmj=fp(j,inpswarm)
+                else
+                  npswarmj=rhop_swarm/(four_pi_rhopmat_over_three*fp(j,iap)**3)
+                endif
 !
 !  Calculate the relative speed of particles j and k.
 !
@@ -113,6 +138,8 @@ module Particles_coagulation
                 xpj=fp(j,ixp:izp)
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
+!
+!  Special treatment for kernel tets.
 !
                 if (lkernel_test) then
                   if (lconstant_kernel_test) then
@@ -125,17 +152,16 @@ module Particles_coagulation
                        four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                   endif
                   if (j==k .and. lnoselfcollision) kernel=0.0
-                  dt1_coag_par=dt1_coag_par+kernel* &
-                      min(fp(j,inpswarm),fp(k,inpswarm))
+                  dt1_coag_par=dt1_coag_par+kernel*min(npswarmj,npswarmk)
                 else
 !
-!  Only consider collisions between particles approaching each other.
+!  Time-step for physical kernel.
 !
                   deltavjk=sqrt(sum((vpk-vpj)**2))
                   if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
                     dt1_coag_par=dt1_coag_par+ &
                         pi*(fp(k,iap)+fp(k,iap))**2*deltavjk* &
-                        min(fp(j,inpswarm),fp(k,inpswarm))
+                        min(npswarmj,npswarmk)
                   endif
 !
                 endif
@@ -143,7 +169,11 @@ module Particles_coagulation
                 if (j==0) exit
               enddo
 !
+!  Put particle's time-step into inverse time-step array.
+!
               dt1_max(l-nghost)=max(dt1_max(l-nghost),dt1_coag_par*cdtpcoag1)
+!
+!  Move to next particle in the grid cell.
 !
               k=kneighbour(k)
 !
@@ -194,6 +224,9 @@ module Particles_coagulation
         call shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
 !
         do l=l1,l2
+!
+!  Start with shepherd particle.
+!
           k=kshepherd(l-nghost)
           if (k>0) then
             do while (k/=0)
@@ -211,11 +244,15 @@ module Particles_coagulation
                 npswarmk=rhop_swarm/(four_pi_rhopmat_over_three*fp(k,iap)**3)
               endif
 !
+!  Move through neighbours.
+!
               do while (.true.)
                 if (lcoag_simultaneous) then
                   j=kneighbour(j)
                   if (j==0) exit
                 endif
+!
+!  Particle number density either from f array or from rhop_swarm.
 !
                 if (lparticles_number) then
                   npswarmj=fp(j,inpswarm)
@@ -292,6 +329,7 @@ module Particles_coagulation
                     prob=dt*tau_coll1
                     call random_number_wrapper(r)
                     if (r<=prob) then
+!                    print*, j, k, prob, npswarmj, npswarmk, fp(j,iap), fp(k,iap)
 !
 !  Change the particle size to the new size, but keep the total mass in the
 !  particle swarm the same.
@@ -327,9 +365,9 @@ module Particles_coagulation
                               k2=kneighbour(k2)
                             enddo
                             kneighbour(k2)=kneighbour(kneighbour(k2))
-                            fp(k,iap)=((rhopsma+rhopbig)/1.0/ &
+                            fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
                                 four_pi_rhopmat_over_three)**(1.0/3.0)
-                            fp(k,inpswarm)=1.0
+                            fp(k,inpswarm)=1/(dx*dy*dz)
                           else
                             fp(j,iap)=apnew
                             fp(k,iap)=apnew
@@ -357,6 +395,12 @@ module Particles_coagulation
                             fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
                           endif
                         endif
+                      endif
+!
+                      if (lparticles_number) then
+                        npswarmk=fp(k,inpswarm)
+                      else
+                        npswarmk=rhop_swarm/(four_pi_rhopmat_over_three*fp(k,iap)**3)
                       endif
 !
                       ncoll=ncoll+1
