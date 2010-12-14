@@ -314,12 +314,13 @@ module Fourier
 !
     endsubroutine fft_y_parallel_1D
 !***********************************************************************
-    subroutine fft_y_parallel_2D(a_re,a_im,linv,lneed_im)
+    subroutine fft_y_parallel_2D(a_re,a_im,linv,lneed_im,shift_y)
 !
 !  Subroutine to do FFT of distributed 2D data in the y-direction.
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
+      real, dimension(nxgrid), optional :: shift_y
 !
       call fatal_error('fft_y_parallel_2D', &
           'this sub is not available in nofourier.f90!')
@@ -328,6 +329,7 @@ module Fourier
       call keep_compiler_quiet(a_im)
       call keep_compiler_quiet(present(linv))
       call keep_compiler_quiet(present(lneed_im))
+      call keep_compiler_quiet(present(shift_y))
 !
     endsubroutine fft_y_parallel_2D
 !***********************************************************************
