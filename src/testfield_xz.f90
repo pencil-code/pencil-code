@@ -190,6 +190,10 @@ module Testfield
         f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
       endif
 !
+      if (linit_aatest) then
+        lrescaling_testfield=.true.
+      endif
+!
 !  xx and zz for calculating diffusive part of emf
 !
       cx=cos(ktestfield_x*(x(l1:l2)+xx0))
@@ -824,31 +828,28 @@ module Testfield
       enddo
 
       if (idiag_alp11cc/=0 .or. idiag_alp11cs/=0 .or. idiag_alp11sc/=0 .or. idiag_alp11ss/=0) then
-        call fourier_single_mode(temp_array(:,:,twod_address(1)), (/nx,nz/), 1., 3, temp_fft_z)
-        if (ipz==0) then !result of fft only known on root of z-beam
+        call fourier_single_mode(temp_array(:,:,twod_address(1)), &
+            (/nx,nz/), 1., 3, temp_fft_z, l2nd=.true.)
+        if (lroot) then
           call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
-          if (lroot) then
-            if (idiag_alp11cc/=0) call save_name(temp_fft(1,1), idiag_alp11cc)
-            if (idiag_alp11cs/=0) call save_name(temp_fft(1,2), idiag_alp11cs)
-            if (idiag_alp11sc/=0) call save_name(temp_fft(2,1), idiag_alp11sc)
-            if (idiag_alp11ss/=0) call save_name(temp_fft(2,2), idiag_alp11ss)
-          endif
+          if (idiag_alp11cc/=0) call save_name(temp_fft(1,1), idiag_alp11cc)
+          if (idiag_alp11cs/=0) call save_name(temp_fft(1,2), idiag_alp11cs)
+          if (idiag_alp11sc/=0) call save_name(temp_fft(2,1), idiag_alp11sc)
+          if (idiag_alp11ss/=0) call save_name(temp_fft(2,2), idiag_alp11ss)
         endif
       endif
 
       if (idiag_eta122cc/=0 .or. idiag_eta122cs/=0 .or. idiag_eta122sc/=0 .or. idiag_eta122ss/=0) then
-        call fourier_single_mode(temp_array(:,:,twod_address(17)), (/nx,nz/), 1., 3, temp_fft_z)
-        if (ipz==0) then !result of fft only known on root of z-beam
+        call fourier_single_mode(temp_array(:,:,twod_address(17)), &
+            (/nx,nz/), 1., 3, temp_fft_z, l2nd=.true.)
+        if (lroot) then
           call fourier_single_mode(temp_fft_z, (/2,nx/), 1., 1, temp_fft, l2nd=.true.)
-          if (lroot) then
-            if (idiag_eta122cc/=0) call save_name(temp_fft(1,1), idiag_eta122cc)
-            if (idiag_eta122cs/=0) call save_name(temp_fft(1,2), idiag_eta122cs)
-            if (idiag_eta122sc/=0) call save_name(temp_fft(2,1), idiag_eta122sc)
-            if (idiag_eta122ss/=0) call save_name(temp_fft(2,2), idiag_eta122ss)
-          endif
+          if (idiag_eta122cc/=0) call save_name(temp_fft(1,1), idiag_eta122cc)
+          if (idiag_eta122cs/=0) call save_name(temp_fft(1,2), idiag_eta122cs)
+          if (idiag_eta122sc/=0) call save_name(temp_fft(2,1), idiag_eta122sc)
+          if (idiag_eta122ss/=0) call save_name(temp_fft(2,2), idiag_eta122ss)
         endif
       endif
-
 
     endif
 !
