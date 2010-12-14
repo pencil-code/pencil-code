@@ -22,4 +22,5 @@
 /
 &special_run_pars
  lno_radial_advection=T
+ lfargoadvection_as_shift=T
 /
