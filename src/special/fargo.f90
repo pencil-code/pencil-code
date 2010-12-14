@@ -60,10 +60,12 @@ module Special
   real, dimension (nx) :: uu_residual
   real :: dummy
   logical :: lno_radial_advection=.false.
+  logical :: lfargoadvection_as_shift=.false.
+  real :: nu_hyper3=1e-8
 !
   namelist /special_init_pars/ dummy
 !   
-  namelist /special_run_pars/ lno_radial_advection
+  namelist /special_run_pars/ lno_radial_advection, lfargoadvection_as_shift, nu_hyper3
 !
   integer :: idiag_nshift=0
 !
@@ -562,8 +564,12 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_sub
 !
-      call fourier_shift_fargo(f,df,dt_sub)
-!
+      if (lfargoadvection_as_shift) then
+        call fourier_shift_fargo(f,df,dt_sub)
+      else
+        call advect_fargo(f,df,dt_sub)
+      endif
+
     endsubroutine special_after_timestep
 !***********************************************************************
     subroutine fourier_shift_fargo(f,df,dt_sub)
@@ -585,7 +591,6 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ny) :: a_re,a_im
       real :: dt_sub
-      !real, dimension (nx) :: phidot
       real, dimension (nxgrid) :: phidot_serial
       integer :: ivar,nnghost
 !
@@ -619,7 +624,6 @@ endsubroutine read_special_run_pars
 !
       do n=n1,n2
         nnghost=n-n1+1
-        !phidot=uu_average(:,nnghost)*rcyl_mn1
         iz_serial=ipz*nz + nnghost
         phidot_serial=uu_average_allprocs(:,iz_serial)/xgrid
 !
@@ -631,30 +635,24 @@ endsubroutine read_special_run_pars
 !  The transform is just a shift in y, so no need to compute 
 !  the x-transform either. 
 !
-          !call fourier_shift_y(a_re,phidot*dt_sub)
-          call fft_y_parallel(a_re,a_im,lneed_im=.false., &
-              SHIFT_Y=phidot_serial*dt_sub)
+          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt_sub,lneed_im=.false.)
 !
 !  Inverse transform of the shifted array back into real space. 
 !  No need again for either imaginary part of x-transform. 
 !
-          call fft_y_parallel(a_re,a_im,lneed_im=.false.,linv=.true.)
+          call fft_y_parallel(a_re,a_im,linv=.true.)
           f(l1:l2,m1:m2,n,ivar)=a_re
 !
 !  Also shift df, unless we are at the last subtimestep
 !
-          if (.not.llast) then
+          if (lwrite_dvar.or..not.llast) then
             a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
-            !call fourier_shift_y(a_re,phidot*dt_sub)
-            call fft_y_parallel(a_re,a_im,lneed_im=.false., &
-                SHIFT_Y=phidot_serial*dt_sub)
-!
-            call fft_y_parallel(a_re,a_im,lneed_im=.false.,linv=.true.)
+            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt_sub,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,linv=.true.)
             df(l1:l2,m1:m2,n,ivar)=a_re
           endif
 !
         enddo
-!
       enddo
 !
 !  Just for test purposes and comparison with the loop advection 
@@ -666,6 +664,266 @@ endsubroutine read_special_run_pars
       endif
 !
     endsubroutine fourier_shift_fargo
+!********************************************************************
+    subroutine advect_fargo(f,df,dt_sub)
+!
+!  Possibility to modify the f array after the evolution equations 
+!  are solved.
+!
+!  In this case, do the fargo shift to the f and df-array, in 
+!  real space. 
+!
+!  06-jul-06/tony: coded
+!
+      use Sub
+      use Cdata
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      real, dimension (ny,mvar) :: faux
+      real, dimension (ny,mvar) :: dfaux
+!
+      real, dimension (ny,mvar) :: a_re,da_re
+      integer :: ivar,ng,mg,ig,mshift,cellshift,i
+      real :: dt_sub
+!
+      integer, dimension (nx,nz) :: shift_intg
+      real, dimension (nx,nz) :: shift_total,shift_frac
+!
+! For shift in real space, the shift is done in integer number of 
+! cells in the azimuthal direction, so, take only the integer part 
+! of the velocity for fargo advection. 
+!
+      do n=1,nz
+        phidot_average(:,n) = uu_average(:,n)*rcyl_mn1
+      enddo
+!
+! Define the integer circular shift
+!
+      shift_total = phidot_average*dt_sub*dy_1(mpoint)
+      shift_intg  = nint(shift_total)
+      shift_frac  = shift_total-shift_intg
+!
+      do m=1,10
+        f(l1:l2,m,n1:n2,iuz)=shift_total
+      enddo
+      do m=11,20
+        f(l1:l2,m,n1:n2,iuz)=shift_intg
+      enddo
+      do m=21,30
+        f(l1:l2,m,n1:n2,iuz)=shift_frac
+      enddo
+!
+! Do circular shift of cells
+!
+      do n=n1,n2
+        ng=n-n1+1
+!
+        do i=l1,l2
+          ig=i-l1+1
+          cellshift=shift_intg(ig,ng)
+!
+           faux =f(i,m1:m2,n,1:mvar)
+          dfaux=df(i,m1:m2,n,1:mvar)
+!
+          do m=1,ny
+            mshift=m-cellshift
+            if (mshift .lt. 1 ) mshift = mshift + ny
+            if (mshift .gt. ny) mshift = mshift - ny
+!          
+            do ivar=1,mvar
+               a_re(m,ivar) = faux(mshift,ivar)
+              !if (lwrite_dvar.or..not.llast) &
+              da_re(m,ivar) = dfaux(mshift,ivar)
+            enddo
+          enddo
+!         
+          do ivar=1,mvar
+            if (ivar.ne.iuz) then
+              if (.not.((i.eq.l1).or.(i.eq.l2))) then
+                f(i,m1:m2,n,ivar)=a_re(:,ivar)
+                !if (lwrite_dvar.or..not.llast) &
+                df(i,m1:m2,n,ivar)=da_re(:,ivar)
+              endif
+            endif
+          enddo
+        enddo
+      enddo
+!
+! Fractional step
+!
+      !call fractional_step(f,df,shift_frac)
+      call fractional_step_highorder(f,df,shift_frac,dt_sub)
+!
+    endsubroutine advect_fargo
+!********************************************************************
+    subroutine fractional_step_highorder(f,df,shift_frac,dt_full_step)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df      
+      real, dimension (mx,my,mz,mvar) :: df_frac,d2f_frac      
+      real, dimension (nx,nz) :: shift_frac,phidot_frac,uu_frac
+      real :: dt_full_step,shift_cell,ushift
+      real, dimension(3) :: dt_substep
+      integer :: ivar,i,itsubstep
+      real, dimension (ny) :: gradf,graddf
+!
+      dt_substep=dt_full_step*beta_ts
+!
+      !shift_total = phidot_average*dt_sub*dy_1(mpoint)
+      !shift_intg  = nint(shift_total)
+      !shift_frac  = shift_total-shift_intg
+!
+      !phidot_frac = shift_frac/(dt_full_step*dy_1(mpoint))
+      !do n=1,nz
+      !  uu_frac(:,n) = phidot_frac(:,n)*rcyl_mn
+      !enddo
+      uu_frac=shift_frac/dt_full_step
+
+!
+      do itsubstep=1,itorder
+        if (itsubstep==1) then
+          df_frac=0.
+          d2f_frac=0.
+        else
+          df_frac=alpha_ts(itsubstep)*df_frac
+          d2f_frac=alpha_ts(itsubstep)*d2f_frac          
+        endif
+!
+        do n=n1,n2;do i=l1,l2
+          !shift_cell=shift_frac(i-l1+1,n-n1+1)
+          !shift_cell=uu_frac(i-l1+1,n-n1+1)
+          ushift=uu_frac(i-l1+1,n-n1+1)
+!
+          do ivar=1,mvar
+!
+            call linterp( f(i,:,n,ivar),1.,gradf)
+            call linterp(df(i,:,n,ivar),1.,graddf)
+!
+            df_frac(i,m1:m2,n,ivar) =  df_frac(i,m1:m2,n,ivar)  - ushift*gradf  
+            d2f_frac(i,m1:m2,n,ivar) = d2f_frac(i,m1:m2,n,ivar) - ushift*graddf
+!          
+            if ((i.eq.l1).or.(i.eq.l2)) then
+              df_frac(i,m1:m2,n,ivar)=0.
+              df_frac(i,m1:m2,n,ivar)=0.
+            endif
+
+            f(i,m1:m2,n,ivar) = &
+                 f(i,m1:m2,n,ivar)+ dt_substep(itsubstep)*df_frac(i,m1:m2,n,ivar)
+!
+            df(i,m1:m2,n,ivar) =&
+                 df(i,m1:m2,n,ivar)+dt_substep(itsubstep)*d2f_frac(i,m1:m2,n,ivar)
+!
+          enddo
+!
+        enddo;enddo
+!
+      enddo
+!
+    endsubroutine fractional_step_highorder
+!********************************************************************
+    subroutine fractional_step(f,df,shift_frac)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      real, dimension (nx,nz) :: shift_frac
+      real :: shift_cell
+      real, dimension (ny) :: g,dg
+      integer :: i,ivar
+!
+! Calculate fractional shift in cells and interpolate using van leer
+!
+      do n=n1,n2;do i=l1,l2
+        shift_cell=shift_frac(i-l1+1,n-n1+1)
+!
+        do ivar=1,mvar
+
+          !call vanleer( f(i,:,n,ivar),-shift,g)
+          !call vanleer(df(i,:,n,ivar),-shift,dg)
+
+          call linterp( f(i,:,n,ivar),-shift_cell,g)
+          call linterp(df(i,:,n,ivar),-shift_cell,dg)
+!
+          if (ivar .ne. iuz) then
+!
+          f(i,m1:m2,n,ivar)  =  f(i,m1:m2,n,ivar) + g
+          df(i,m1:m2,n,ivar) = df(i,m1:m2,n,ivar) + dg
+!          
+          endif
+        enddo
+      enddo;enddo
+!
+    endsubroutine fractional_step
+!********************************************************************
+    subroutine linterp(f,shift_cell,g)
+!
+      real, dimension (my) :: f
+      real, dimension (ny) :: g,der1f,der6f
+      real :: shift_cell,fac
+!
+!      do m=m1,m2
+!        g(m-m1+1) = f(m) + (f(m+1)-f(m))*shift
+!      enddo
+!
+! Set boundaries      
+!
+      f(1:m1-1) = f(m2i:m2)
+      f(m2+1:my) = f(m1:m1i)
+!
+      do m=m1,m2
+        der1f(m-m1+1) = 1.0/60*       &
+             (+ 45.0*(f(m+1)-f(m-1))  &
+              -  9.0*(f(m+2)-f(m-2))  &
+              +      (f(m+3)-f(m-3)))
+!
+        fac=dy_1(m)**6
+        der6f(m-m1+1)=fac*(- 20.0* f(m) &
+             + 15.0*(f(m+1)+f(m-1))     &
+             -  6.0*(f(m+2)+f(m-2))     &
+             +      (f(m+3)+f(m-3)))
+      enddo
+!
+!      nu_hyper3=1e-10
+      !shiftf = shift_cell*der1f + nu_hyper3*der6f
+!      
+      g = der1f !+ nu_hyper3*der6f
+!
+    endsubroutine linterp
+!********************************************************************
+    subroutine vanleer(f,shift_cell,g)
+!
+      real, dimension (my) :: f
+      real, dimension (ny) :: g
+      real :: shift_cell,gl,gm,gr,limiter,tmp,hh
+!
+! Set boundaries      
+!
+      f(1:m1-1) = f(m2i:m2)
+      f(m2+1:my) = f(m1:m1i)
+!
+      do m=m1,m2
+        gl=f(m-1); gm=f(m); gr=f(m+1)
+!
+        hh=gr-gl
+!
+        if (hh == 0) then 
+          g(m-m1+1)=gm
+        else
+          tmp = (gm-gl)*(gr-gm)
+          if (tmp > 0.) then 
+            limiter=tmp
+          else
+            limiter=0.
+          endif
+          g(m-m1+1) = gm + 2*shift_cell/(gr-gl)*limiter
+        endif
+!
+      enddo
+!
+    endsubroutine vanleer
 !********************************************************************
 !
 !********************************************************************
