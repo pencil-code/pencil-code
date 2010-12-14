@@ -86,11 +86,19 @@ module InitialCondition
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   logical :: lcorrect_selfgravity=.false.
-  real :: gravitational_const,fargo_factor
+  real :: gravitational_const
+!
+! For the noise
+! 
+  real :: rho_rms=0.05
+  integer :: xmodes=10,ymodes=10,zmodes=0
+  logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
+  real :: xmid=1.5
 !
   namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
-       fargo_factor
+       xmodes,ymodes,zmodes,rho_rms,llowk_noise,xmid,&
+       lgaussian_distributed_noise
 !
   contains
 !***********************************************************************
@@ -248,10 +256,19 @@ module InitialCondition
       logical                :: lheader,lenergy,lpresent_zed
 !
       if (lroot) print*,&
-           'local isothermal_density: locally isothermal approximation'
+           'initial_condition_lnrho: locally isothermal approximation'
       if (lroot) print*,'Radial stratification with power law=',plaw
 !
       lenergy=ltemperature.or.lentropy
+!
+      if (lenergy.and.llocal_iso) then
+        if (lroot) then
+          print*,'You switched on entropy or temperature evolution,'
+          print*,'but you are still using llocal_iso in start.in.'
+          print*,'Use one or the other instead.'
+        endif
+        call stop_it("")
+      endif
 !
 !  Set the sound speed
 !
@@ -264,7 +281,7 @@ module InitialCondition
         elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
           rr=rr_cyl
         else
-          call stop_it("local_isothermal_density: "//&
+          call stop_it("initial_condition_lnrho: "//&
                "no valid coordinate system")
         endif
 !
@@ -392,6 +409,8 @@ module InitialCondition
       call correct_for_selfgravity(f)
 !
 !  Set the thermodynamical variable
+!
+      if (llowk_noise) call lowk_noise_gaussian_rprof(f)
 !
       if (llocal_iso) then
         call set_thermodynamical_quantities&
@@ -829,33 +848,133 @@ module InitialCondition
 !
     endsubroutine set_thermodynamical_quantities
 !***********************************************************************
-    subroutine initial_condition_xxp(f,fp)
+    subroutine lowk_noise_gaussian_rprof(f)
 !
-!  Initialize particles' positions.
 !
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine initial_condition_xxp
-!***********************************************************************
-    subroutine initial_condition_vvp(f,fp)
-!
-!  Initialize particles' velocities.
+!  Initialize logarithmic density. init_lnrho will take care of
+!  converting it to linear density if you use ldensity_nolog.
 !
 !  07-may-09/wlad: coded
 !
+      use General, only: random_number_wrapper
+      use Mpicomm
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (:,:), intent(inout) :: fp
+      real, dimension (nx,ny,nz) :: lump_of_sines
+      real :: Lx,Ly,Lz,d0,phase,xi,yi,zi,nw1
+      real :: fmeantmp_rho2,fmeantmp_rho
+      real :: fmean_rho2,fmean_rho
+      real :: unnormalized_rho_rms
+      real :: normalization_factor
+      integer :: i,mm,nn,ll,mm1,ll1,nn1,itmp,irho
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
+      Lx=Lxyz(1) ; Ly=Lxyz(2) ; Lz=Lxyz(3)
 !
-    endsubroutine initial_condition_vvp
+      d0=0.2*Lx
+!
+      if (lroot) print*,'domain size=',Lx,Ly,Lz
+!
+!  save the original linear density 
+!  on the free spot of shock, which isn't set yet
+!
+      if (lshock) then
+        itmp=ishock
+        f(l1:l2,m1:m2,n1:n2,itmp)=f(l1:l2,m1:m2,n1:n2,ilnrho)
+      else 
+        if (lroot) then
+          print*,'This is a baroclinic run. You expect '
+          print*,'many vortices to form in this run, do you not?'
+          print*,'These beasts usually get supersonic, which is '
+          print*,'actually what prevents them from growing too much,'
+          print*,'as then they shock and dissipate. Yet, you are'
+          print*,'NOT using shock viscosity. I recommend you to stop'
+          print*,'and switch SHOCK=shock_highorder in src/Makefile.local'
+        endif
+        call fatal_error("","")     
+      endif
+!
+!  Work with LINEAR density. As this is start time, there is no confusion
+!  linear-log. All initial conditions are to be coded in log. We will 
+!  construct the density here as linear, then pass to log
+!
+      irho=ilnrho
+!
+!  Have to set it to something first, otherwise the sines 
+!  can lead to negative densities. The density is saved in the 
+!  slot reserved to shock. 
+!
+      f(l1:l2,m1:m2,n1:n2,irho)=1.
+      lump_of_sines=0.
+!      
+      do ll=-xmodes,xmodes ; do mm=0,ymodes ; do nn=-zmodes,zmodes
+!
+        if (lroot) call random_number_wrapper(phase)
+        call mpibcast_real(phase,1)
+!
+        do i=1,nx ; do m=1,ny ; do n=1,nz
+          ll1=i+l1-1 ; xi=x(ll1)
+          mm1=m+m1-1 ; yi=y(mm1)
+          nn1=n+n1-1 ; zi=z(nn1)
+!
+          lump_of_sines(i,m,n)=lump_of_sines(i,m,n) + &
+             sin(2*pi*(ll*xi/Lx + mm*yi/Ly + nn*zi/Lz+ phase))
+!
+        enddo;enddo;enddo !end grid loop
+      enddo;enddo;enddo !end modes loop
+!
+!  Now construct the density and fill in the normalization 
+!  constants needed to get a rms equal to the input rho_rms.
+!
+      fmeantmp_rho2=0.
+      fmeantmp_rho=0.
+      nw1=1./(nxgrid*nygrid*nzgrid*1.0)
+!      
+      do n=1,nz
+        nn1=n+n1-1
+        do m=1,ny
+          mm1=m+m1-1
+          do i=1,nx
+            ll1=i+l1-1 ; xi=x(ll1)
+            f(ll1,mm1,nn1,irho)=f(ll1,mm1,nn1,irho) + &
+                lump_of_sines(i,m,n)*exp(-(.5*(xi-xmid)/d0)**2)
+          enddo
+          fmeantmp_rho2=fmeantmp_rho2+nw1*sum(f(l1:l2,mm1,nn1,irho)**2)
+          fmeantmp_rho =fmeantmp_rho +nw1*sum(f(l1:l2,mm1,nn1,irho))
+        enddo
+      enddo !end grid loop
+!
+!  Sum the normalization constants over processors, and perform
+!  the normalization.
+!
+      call mpireduce_sum(fmeantmp_rho2,fmean_rho2)
+      call mpireduce_sum(fmeantmp_rho,fmean_rho)
+      call mpibcast_real(fmean_rho2,1)
+      call mpibcast_real(fmean_rho,1)
+!
+      unnormalized_rho_rms=sqrt(fmean_rho2-fmean_rho**2)
+      normalization_factor=rho_rms/unnormalized_rho_rms
+!
+!  Assumes rho0=1.
+!
+      f(l1:l2,m1:m2,n1:n2,irho)=1.+&
+          normalization_factor*(f(l1:l2,m1:m2,n1:n2,irho)-1.)
+!
+      if (lroot) then 
+        print*,'max density (linear): ',maxval(f(l1:l2,m1:m2,n1:n2,irho))
+        print*,'min density (linear): ',minval(f(l1:l2,m1:m2,n1:n2,irho))
+        print*,'rms density (linear): ',&
+            unnormalized_rho_rms*normalization_factor
+      endif
+!
+!  convert to log before finishing. 
+!
+      f(l1:l2,m1:m2,n1:n2,ilnrho)=&
+          f(l1:l2,m1:m2,n1:n2,itmp)+log(f(l1:l2,m1:m2,n1:n2,irho))
+!
+!  keep the original stratification in the ishock slot since it 
+!  will be needed when setting the entropy
+!
+    endsubroutine lowk_noise_gaussian_rprof
 !***********************************************************************
     subroutine read_initial_condition_pars(unit,iostat)
 !
