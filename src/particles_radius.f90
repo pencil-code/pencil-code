@@ -55,7 +55,7 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, TTocean
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
-  integer :: idiag_dvp12m=0, idiag_dtsweepp=0
+  integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
 !
   contains
 !***********************************************************************
@@ -609,6 +609,9 @@ module Particles_radius
             call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
         if (idiag_apmax/=0) &
             call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
+        if (idiag_npswarmm/=0) &
+            call sum_par_name(rhop_swarm/ &
+            (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -698,7 +701,7 @@ module Particles_radius
 !
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
-        idiag_dvp12m=0; idiag_dtsweepp=0
+        idiag_dvp12m=0; idiag_dtsweepp=0; idiag_npswarmm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -711,7 +714,10 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
-        call parse_name(iname,cname(iname),cform(iname),'dtsweepp',idiag_dtsweepp)
+        call parse_name(iname,cname(iname),cform(iname),'dtsweepp', &
+            idiag_dtsweepp)
+        if (.not.lparticles_number) call parse_name(iname,cname(iname), &
+            cform(iname),'npswarmm',idiag_npswarmm)
       enddo
 !
     endsubroutine rprint_particles_radius
