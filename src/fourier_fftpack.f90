@@ -2359,7 +2359,8 @@ module Fourier
 !***********************************************************************
     subroutine fft_z_parallel_2D(a_re,a_im,linv,lneed_im)
 !
-!  Subroutine to do FFT of distributed 1D data in the z-direction.
+!  Subroutine to do FFT of distributed 2D data in the z-direction.
+!  The z-component is expected to be in the first dimension.
 !  For z-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the corresponding z-coordinate.
 !  linv indicates forward (=false, default) or backward (=true) transform.
@@ -2464,7 +2465,8 @@ module Fourier
 !***********************************************************************
     subroutine fft_z_parallel_3D(a_re,a_im,linv,lneed_im)
 !
-!  Subroutine to do FFT of distributed 1D data in the z-direction.
+!  Subroutine to do FFT of distributed 3D data in the z-direction.
+!  The z-component is expected to be in the third dimension.
 !  For z-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the corresponding z-coordinate.
 !  linv indicates forward (=false, default) or backward (=true) transform.
@@ -2572,7 +2574,8 @@ module Fourier
 !***********************************************************************
     subroutine fft_z_parallel_4D(a_re,a_im,linv,lneed_im)
 !
-!  Subroutine to do FFT of distributed 1D data in the z-direction.
+!  Subroutine to do FFT of distributed 4D data in the z-direction.
+!  The z-component is expected to be in the third dimension.
 !  For z-parallelization the calculation will be done under
 !  MPI in parallel on all processors of the corresponding z-coordinate.
 !  linv indicates forward (=false, default) or backward (=true) transform.
