@@ -491,8 +491,7 @@ module Particles_main
 !
     endsubroutine particles_doprepencil_calc
 !***********************************************************************
-    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const, &
-        lcontinued)
+    subroutine particles_calc_selfpotential(f,rhs_poisson,lcontinued)
 !
 !  Calculate the potential of the dust particles (wrapper).
 !
