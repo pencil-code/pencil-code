@@ -706,9 +706,9 @@ Lyra, W., Johansen, A., Zsom, A., Klahr, H., \& Piskunov, N.
 % -- spherical coordinate --
 Mitra, D., Tavakol, R., Brandenburg, A., \& Moss, D.
 \yapj{2009}{697}{923}{933}
-{Turbulent dynamos in spherical shell segments of varying geometrical 
-extent.}
-(arXiv:0812.3106). 
+{Turbulent dynamos in spherical shell segments of varying geometrical
+ extent.}
+(arXiv:0812.3106).
 \end{list}
 
 \clearpage
@@ -2436,13 +2436,16 @@ slices to \file{data/}
 Once all global slices have been assembled you may want to remove the
 local slices \file[]{data/proc*/slice*}.
 
+To read all sub-slices demanded in \file{video.in} at once use
+\file{src/read_all_videofiles.x}. This program doesn't expect any
+user input and can thus be submitted in computing queues.
+
 For visualization of slices, you can use the \name{IDL} routine
 \file{rvid_box}, which allows the flag \option{/png} for writing
 \name{PNG} images that can then be combined into an \name{MPEG} movie
 using \name{mpeg_encode}.
 Based on \file{rvid_box}, you can write your own video routines in
 \name{IDL}.
-
 
 \paragraph{An example}
 Suppose you have set up a run using \name{entropy.f90} and
