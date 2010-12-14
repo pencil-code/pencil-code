@@ -342,7 +342,7 @@ module Selfgravity
 !
 !  Contribution from particles is taken care of by the particle modules.
 !
-        if (lparticles) call particles_calc_selfpotential(f,rhs_poisson,1.0, &
+        if (lparticles) call particles_calc_selfpotential(f,rhs_poisson, &
             lselfgravity_gas.or.lselfgravity_dust)
 !
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and

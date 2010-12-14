@@ -503,8 +503,7 @@ module Particles_main
       real :: rhs_poisson_const
       logical :: lcontinued
 !
-      call calc_selfpotential_particles(f,rhs_poisson,rhs_poisson_const, &
-          lcontinued)
+      call calc_selfpotential_particles(f,rhs_poisson,lcontinued)
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************

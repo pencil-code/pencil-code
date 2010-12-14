@@ -46,7 +46,7 @@ module Particles_selfgravity
 !
     endsubroutine initialize_particles_selfgrav
 !***********************************************************************
-    subroutine calc_selfpotential_particles(f,rhs_poisson,rhs_poisson_const,    lcontinued)
+    subroutine calc_selfpotential_particles(f,rhs_poisson,lcontinued)
 !
 !  Calculate the potential of the dust particles.
 !
@@ -54,7 +54,6 @@ module Particles_selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real :: rhs_poisson_const
       logical :: lcontinued
 !
       call keep_compiler_quiet(f)
