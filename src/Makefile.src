@@ -1766,12 +1766,16 @@ combine_videofiles.x: combine_videofiles.o cparam.o cdata.o general.o
 read_videofiles.o: cparam.o cdata.o general.o
 read_videofiles.x: read_videofiles.o cparam.o cdata.o general.o
 	$(LD) $(LDFLAGS) read_videofiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_videofiles.x
+#
+read_all_videofiles.o: cparam.o cdata.o general.o
+read_all_videofiles.x: read_all_videofiles.o cparam.o cdata.o general.o
+	$(LD) $(LDFLAGS) read_all_videofiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_all_videofiles.x
 # 
 read_vectorfiles.o: cparam.o cdata.o general.o
 read_vectorfiles.x: read_vectorfiles.o cparam.o cdata.o general.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_vectorfiles.x
 #
-TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # 
 #  Symbolic targets
@@ -1795,7 +1799,7 @@ depend dep:
 	    '  rm src/Makefile.depend; pc_setupsrc' \
 	    '*********************************************'
 	rm -f Makefile.depend
-	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
+	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 # 
 #  Help us finding out what compiler, MPI library, etc we have and give
 #  recommendations
@@ -1881,7 +1885,7 @@ nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 # 
 EXECUTABLES=start.x run.x \
-	combine_videofiles.x read_videofiles.x read_vectorfiles.x
+	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 # 
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
@@ -1898,7 +1902,7 @@ code: Makefile.inc cparam.inc
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 # 
-FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_vectorfiles.x
+FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
