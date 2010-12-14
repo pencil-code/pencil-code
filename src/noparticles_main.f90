@@ -202,7 +202,7 @@ module Particles_main
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
-    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
+    subroutine particles_calc_selfpotential(f,rhs_poisson,lcontinued)
 !
 !  Calculate the potential of the dust particles.
 !
@@ -210,12 +210,10 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real :: rhs_poisson_const
       logical :: lcontinued
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(rhs_poisson)
-      call keep_compiler_quiet(rhs_poisson_const)
       call keep_compiler_quiet(lcontinued)
 !
     endsubroutine particles_calc_selfpotential
