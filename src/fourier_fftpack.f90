@@ -2290,7 +2290,7 @@ module Fourier
       if (present (lneed_im)) lcompute_im = lneed_im
 !
 !
-      if (size (a_re, 1) /= ny) &
+      if (size (a_re, 1) /= nz) &
           call fatal_error ('fft_z_parallel_1D', 'size of input must be nz!', lfirst_proc_z)
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_z_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_z)
