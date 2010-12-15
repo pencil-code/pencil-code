@@ -45,6 +45,29 @@ contains
 !
   endsubroutine register_initial_condition
 !***********************************************************************
+  subroutine initialize_initial_condition(f)
+!
+!  Initialize any module variables which are parameter dependent.
+!
+!  07-may-09/wlad: coded
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+!
+    if (iproc==0) then
+      write(*,*) "------------------------------------------------------------------"
+      write(*,*) "Parameters to be set in run.in:"
+      write(*,*)
+      write(*,*) "Kpara=",2e-11 /unit_density/unit_velocity**3./ &
+          unit_length*unit_temperature**3.5
+      write(*,*) "Kperp=",3.47e12 / ((unit_velocity**3*unit_magnetic**2*unit_length)/ &
+          (unit_density * sqrt(unit_temperature) ))
+      write(*,*) "------------------------------------------------------------------"
+    endif
+!
+    call keep_compiler_quiet(f)
+!
+    endsubroutine initialize_initial_condition
+!***********************************************************************
   subroutine read_initial_condition_pars(unit,iostat)
 !
 !  04-sep-10/bing: coded
