@@ -171,7 +171,7 @@ module Grid
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
 !
-        case ('cos','arsinh')
+        case ('cos','arsinh','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=coeff_grid(1,1)
           xi1star=xi1lo+(xyz_star(1)-x00)/Lx*(xi1up-xi1lo)
@@ -371,7 +371,7 @@ module Grid
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
 !
-        case ('cos','arsinh')
+        case ('cos','arsinh','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=coeff_grid(2,1)
           xi2star=xi2lo+(xyz_star(2)-y00)/Ly*(xi2up-xi2lo)
@@ -490,7 +490,7 @@ module Grid
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
           endif
 !
-        case ('cos','arsinh')
+        case ('cos','arsinh','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=coeff_grid(3,1)
           xi3star=xi3lo+(xyz_star(3)-z00)/Lz*(xi3up-xi3lo)
@@ -1233,9 +1233,10 @@ module Grid
         if (.not. present (param)) &
             call fatal_error ('grid_profile', "'cos' needs its parameter.")
 !
+        ! Transition goes from slope 1 (xi < pi/2) to slope param (xi > pi/2).
         m = pi_1 * (param - 1) - 1
         where (xi <= -pi/2.0)
-          g = m * (xi + pi/2.0) + 1
+          g = xi + pi/2.0 + 1
         elsewhere (xi >= pi/2.0)
           g = m * (xi - pi/2.0) + 1 + pi * (1 + m)
         elsewhere
@@ -1266,9 +1267,21 @@ module Grid
 !
         ! Workaround for the F95 standard, which we should leave behind ASAP.
         ! ('asinh' is not present in g95, therefore it is replaced by 'ln'.)
-        g = xi * param * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1)
+        g = param * (xi * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1))
         if (present (gder1)) gder1 = param * log (xi + sqrt (xi**2 + 1))
         if (present (gder2)) gder2 = param / (sqrt (xi**2 + 1))
+!
+      case ('tanh')
+        ! Tanh grid:
+        ! Approximately equidistant at the boundaries, linear in the middle
+        if (.not. present (param)) &
+            call fatal_error ('grid_profile', "'tanh' needs its parameter.")
+!
+        ! Transition goes from slope 1 (xi -> -oo) to slope param (xi -> +oo).
+        m = 0.5 * (param - 1)
+        g = xi * (m + 1) + m * log (cosh (xi))
+        if (present (gder1)) gder1 = m * (1 + tanh (xi)) + 1
+        if (present (gder2)) gder2 = m / cosh (xi)**2
 !
       case ('duct')
         g=sin(xi)
