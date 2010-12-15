@@ -28,9 +28,9 @@ module Grid
   public :: calc_pencils_grid
   public :: initialize_grid
 !
-  interface grid_profile        ! Overload the grid_profile' subroutine
-    module procedure grid_profile_point
-    module procedure grid_profile_1d
+  interface grid_profile
+    module procedure grid_profile_0D
+    module procedure grid_profile_1D
   endinterface
 !
   contains
@@ -75,9 +75,8 @@ module Grid
       real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
       real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
 !
-      real :: a,b,dummy1=0.,dummy2=0.
+      real :: a,b
       integer :: i
-      logical :: err
 !
       lequidist=(grid_func=='linear')
 !
@@ -153,10 +152,6 @@ module Grid
         dx_tilde = 0.
         g1proc=x00
       else
-        ! Test whether grid function is valid
-        call grid_profile(dummy1,grid_func(1),dummy2,err=err)
-        if (err) call &
-            fatal_error('construct_grid','unknown grid_func '//grid_func(1))
 !
         select case (grid_func(1))
 !
@@ -173,6 +168,23 @@ module Grid
 !
           if (lparticles) then
             call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc)
+            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
+          endif
+!
+        case ('cos','arsinh')
+          ! Approximately equidistant at the boundaries, linear in the middle
+          a=coeff_grid(1,1)
+          xi1star=xi1lo+(xyz_star(1)-x00)/Lx*(xi1up-xi1lo)
+          call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=a)
+          call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=a)
+          call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up,param=a)
+!
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+!
+          if (lparticles) then
+            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=a)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
 !
@@ -339,10 +351,6 @@ module Grid
         dy_tilde = 0.
         g2proc=y00
       else
-        ! Test whether grid function is valid
-        call grid_profile(dummy1,grid_func(2),dummy2,err=err)
-        if (err) &
-            call fatal_error('construct_grid','unknown grid_func '//grid_func(2))
 !
         select case (grid_func(2))
 !
@@ -363,6 +371,22 @@ module Grid
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
 !
+        case ('cos','arsinh')
+          ! Approximately equidistant at the boundaries, linear in the middle
+          a=coeff_grid(2,1)
+          xi2star=xi2lo+(xyz_star(2)-y00)/Ly*(xi2up-xi2lo)
+          call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=a)
+          call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=a)
+          call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up,param=a)
+!
+          y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
+          yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
+          yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
+!
+          if (lparticles) then
+            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=a)
+            g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
+          endif
 !
         case ('duct')
 !
@@ -446,10 +470,6 @@ module Grid
         dz_tilde = 0.
         g3proc=z00
       else
-        ! Test whether grid function is valid
-        call grid_profile(dummy1,grid_func(3),dummy2,ERR=err)
-        if (err) &
-            call fatal_error('construct_grid','unknown grid_func '//grid_func(3))
 !
         select case (grid_func(3))
 !
@@ -468,6 +488,23 @@ module Grid
           if (lparticles) then
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
+          endif
+!
+        case ('cos','arsinh')
+          ! Approximately equidistant at the boundaries, linear in the middle
+          a=coeff_grid(3,1)
+          xi3star=xi3lo+(xyz_star(3)-z00)/Lz*(xi3up-xi3lo)
+          call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=a)
+          call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=a)
+          call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up,param=a)
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+          zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+!
+          if (lparticles) then
+            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=a)
+            g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
           endif
 !
         case ('step-linear')
@@ -1117,129 +1154,52 @@ module Grid
 !
     endsubroutine calc_pencils_grid
 !***********************************************************************
-    subroutine grid_profile_point(xi,grid_func,g,gder1,gder2,err, &
-                                  dxyz,xistep,delta)
+    subroutine grid_profile_0D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta)
 !
-!  Specify the functional form of the grid profile function g
-!  and calculate g,g',g''.
-!  Must be in sync with grid_profile_2.
-!  Much nicer as one `elemental subroutine', but some of our compilers
-!  don't speak F95 fluently
+!  Scalar wrapper for the "elemental" subroutine 'grid_profile_1D'.
 !
-!  25-jun-04/tobi+wolf: coded
+!  14-dec-10/Bourdin.KIS: coded
 !
       real              :: xi
       character(len=*)  :: grid_func
       real              :: g
-      real, optional    :: gder1,gder2
-      logical, optional :: err
-      real,optional,dimension(3) :: dxyz
-      real,optional,dimension(2) :: xistep,delta
-      real a1
+      real, optional    :: gder1, gder2
+      real, optional    :: param
+      real, optional, dimension(3) :: dxyz
+      real, optional, dimension(2) :: xistep, delta
 !
-      intent(in)  :: xi,grid_func,dxyz,xistep,delta
-      intent(out) :: g,gder1,gder2,err
+      intent(in)  :: xi, grid_func, param, dxyz, xistep, delta
+      intent(out) :: g, gder1, gder2
 !
-      if (present(err)) err=.false.
+      real, dimension(1) :: tmp_xi, tmp_g, tmp_gder1, tmp_gder2
+      real :: tmp_param
+      real, dimension(3) :: tmp_dxyz
+      real, dimension(2) :: tmp_xistep, tmp_delta
 !
-      select case (grid_func)
 !
-      case ('linear')
-        ! Equidistant grid
-        g=xi
-        if (present(gder1)) gder1=1.0
-        if (present(gder2)) gder2=0.0
+      tmp_param = 0.0
+      if (present (param)) tmp_param = param
+      tmp_dxyz = 0.0
+      if (present (dxyz)) tmp_dxyz = dxyz
+      tmp_xistep = 0.0
+      if (present (xistep)) tmp_xistep = xistep
+      tmp_delta = 0.0
+      if (present (delta)) tmp_delta = delta
 !
-      case ('sinh')
-        ! Sinh grid:
-        ! Approximately equidistant near the middle, but approximately
-        ! exponential near the boundaries
-        g=sinh(xi)
-        if (present(gder1)) gder1=cosh(xi)
-        if (present(gder2)) gder2=sinh(xi)
+      tmp_xi(:) = xi
 !
-      case ('duct')
-        ! Chebyshev-type grid in all Cartesian directions:
-        ! Points are much denser near the boundaries than in the middle
-        g=sin(xi)
-        if (present(gder1)) gder1= cos(xi)
-        if (present(gder2)) gder2=-sin(xi)
+      call grid_profile (tmp_xi, grid_func, tmp_g, tmp_gder1, tmp_gder2, tmp_param, tmp_dxyz, tmp_xistep, tmp_delta)
 !
-      case ('half-duct')
-        ! duct, but only on one boundary:
-        ! Points are much denser near the boundaries than in the middle
-        g=cos(xi)
-        if (present(gder1)) gder1=-sin(xi)
-        if (present(gder2)) gder2=-cos(xi)
+      g = tmp_g(1)
+      if (present (gder1)) gder1 = tmp_gder1(1)
+      if (present (gder2)) gder2 = tmp_gder2(1)
 !
-      case ('squared')
-        ! Grid distance increases linearily
-        g=0.5*xi**2
-        if (present(gder1)) gder1= xi
-        if (present(gder2)) gder2= 0.
-!
-      case ('frozensphere')
-        ! Just like sinh, except set dx constant below a certain radius.
-        a1 = 4.
-        if (xi<0) then
-          g = a1*xi
-        else
-          g=sinh(xi)
-        endif
-        if (present(gder1)) then
-          if (xi<0) then
-            gder1 = a1
-          else
-            gder1=cosh(xi)
-          endif
-        endif
-        if (present(gder2)) then
-          if (xi<0) then
-            gder2 = 0.
-          else
-            gder2=sinh(xi)
-          endif
-        endif
-!
-      case ('step-linear')
-       ! [Document me!
-       ! This is certainly _not_ stepwise linear as the name would suggest]
-       if (present(dxyz) .and. present(xistep) .and. present(delta)) then
-        g=                                                                    &
-         dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
-         dxyz(2)*0.5*(delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
-                         delta(2)*log(cosh(dble((xi-xistep(2))/delta(2))))) + &
-         dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))))
-!
-        if (present(gder1)) then
-         gder1=                                                           &
-            dxyz(1)*0.5*( 1.0 - tanh(dble((xi-xistep(1))/delta(1))) )  +  &
-            dxyz(2)*0.5*( tanh(dble((xi-xistep(1))/delta(1)))  -          &
-                              tanh(dble((xi-xistep(2))/delta(2))) )    +  &
-            dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
-!
-        endif
-        if (present(gder2)) then
-         gder2=                                                                &
-          dxyz(1)*0.5*(-1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 + &
-          dxyz(2)*0.5*((1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 - &
-                      (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+ &
-          dxyz(3)*0.5*( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
-!
-        endif
-       endif
-!
-      case default
-        if (present(err)) err=.true.
-!
-      endselect
-!
-    endsubroutine grid_profile_point
+    endsubroutine grid_profile_0D
 !***********************************************************************
-    subroutine grid_profile_1d(xi,grid_func,g,gder1,gder2,err, &
-                               dxyz,xistep,delta)
+    subroutine grid_profile_1D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta)
 !
-!  Same as grid_profile_1 for 1d arrays as arguments
+!  Specify the functional form of the grid profile function g
+!  and calculate g,g',g''.
 !
 !  25-jun-04/tobi+wolf: coded
 !
@@ -1247,15 +1207,13 @@ module Grid
       character(len=*)                      :: grid_func
       real, dimension(size(xi,1))           :: g
       real, dimension(size(xi,1)), optional :: gder1,gder2
-      logical, optional                     :: err
+      real, optional                        :: param
       real, optional, dimension(3) :: dxyz
       real, optional, dimension(2) :: xistep,delta
-      real a1
+      real :: m
 !
-      intent(in)  :: xi,grid_func,dxyz,xistep,delta
-      intent(out) :: g, gder1,gder2,err
-!
-      if (present(err)) err=.false.
+      intent(in)  :: xi,grid_func,param,dxyz,xistep,delta
+      intent(out) :: g,gder1,gder2
 !
       select case (grid_func)
 !
@@ -1268,6 +1226,47 @@ module Grid
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
+!
+      case ('cos')
+        ! Cos grid:
+        ! Approximately equidistant at the boundaries, linear in the middle
+        if (.not. present (param)) &
+            call fatal_error ('grid_profile', "'cos' needs its parameter.")
+!
+        m = pi_1 * (param - 1) - 1
+        where (xi <= -pi/2.0)
+          g = m * (xi + pi/2.0) + 1
+        elsewhere (xi >= pi/2.0)
+          g = m * (xi - pi/2.0) + 1 + pi * (1 + m)
+        elsewhere
+          g = xi + m * (xi - cos (xi)) + 1 + pi/2.0 * (1 + m)
+        endwhere
+        if (present(gder1)) then
+          where (xi <= -pi/2.0)
+            gder1 = 1.0
+          elsewhere (xi >= pi/2.0)
+            gder1 = m
+          elsewhere
+            gder1 = 1 + 0.5 * (m - 1) * (1 + sin (xi))
+          endwhere
+        endif
+        if (present(gder2)) then
+          where ((xi <= -pi/2.0) .or. (xi >= pi/2.0))
+            gder2 = 0.0
+          elsewhere
+            gder2 = 0.5 * (m - 1) * cos (xi)
+          endwhere
+        endif
+!
+      case ('arsinh')
+        ! Area sinh grid:
+        ! Approximately equidistant at the boundaries, linear in the middle
+        if (.not. present (param)) &
+            call fatal_error ('grid_profile', "'arsinh' needs its parameter.")
+!
+        g = xi * param * asinh (xi) - sqrt (xi**2 + 1)
+        if (present (gder1)) gder1 = param * asinh (xi)
+        if (present (gder2)) gder2 = param / (sqrt (xi**2 + 1))
 !
       case ('duct')
         g=sin(xi)
@@ -1289,15 +1288,15 @@ module Grid
 !
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
-        a1 = 4.
+        m = 4.
         where (xi<0)
-          g = a1*xi
+          g = m*xi
         elsewhere
           g=sinh(xi)
         endwhere
         if (present(gder1)) then
           where (xi<0)
-            gder1 = a1
+            gder1 = m
           elsewhere
             gder1=cosh(xi)
           endwhere
@@ -1311,7 +1310,8 @@ module Grid
         endif
 !
       case ('step-linear')
-       if (present(dxyz) .and. present(xistep) .and. present(delta)) then
+        if (.not. (present(dxyz) .and. present(xistep) .and. present(delta))) &
+            call fatal_error('grid_profile',"'step-linear' needs its parameters.")
         g=                                                                     &
          dxyz(1)*0.5*(xi - delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) +&
          dxyz(2)*0.5*( delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
@@ -1334,14 +1334,13 @@ module Grid
           dxyz(3)*0.5* ( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
 !
         endif
-       endif
 !
       case default
-        if (present(err)) err=.true.
+        call fatal_error('grid_profile','grid function not implemented: '//trim(grid_func))
 !
       endselect
 !
-    endsubroutine grid_profile_1d
+    endsubroutine grid_profile_1D
 !***********************************************************************
     function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func) result (xi_star)
 !
@@ -1362,7 +1361,7 @@ module Grid
       integer :: it
 !
       if (xi_lo>=xi_up) &
-           call fatal_error('find_star','xi1 >= xi2 -- this should not happen')
+          call fatal_error('find_star','xi1 >= xi2 -- this should not happen')
 !
       tol=epsi*(xi_up-xi_lo)
       xi_star= (xi_up+xi_lo)/2
