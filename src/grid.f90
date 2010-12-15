@@ -1265,8 +1265,7 @@ module Grid
         if (.not. present (param)) &
             call fatal_error ('grid_profile', "'arsinh' needs its parameter.")
 !
-        ! Workaround for the F95 standard, which we should leave behind ASAP.
-        ! ('asinh' is not present in g95, therefore it is replaced by 'ln'.)
+        ! ('asinh' is not available in F95, therefore it is replaced by 'ln'.)
         g = param * (xi * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1))
         if (present (gder1)) gder1 = param * log (xi + sqrt (xi**2 + 1))
         if (present (gder2)) gder2 = param / (sqrt (xi**2 + 1))
