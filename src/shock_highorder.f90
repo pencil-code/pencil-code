@@ -35,12 +35,14 @@ module Shock
 !
   integer :: ishock_max=1
   logical :: lgaussian_smooth=.false.
-  logical :: lconserve=.true.
   logical :: lforce_periodic_shockviscosity=.false.
+  logical :: lfixed_Re_mesh=.false.
   real    :: div_threshold=0.
+  real    :: Re_mesh=.95
 !
   namelist /shock_run_pars/ &
-      ishock_max,lgaussian_smooth,lconserve,lforce_periodic_shockviscosity, div_threshold
+      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,div_threshold, &
+      lfixed_Re_mesh, Re_mesh
 ! 
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
@@ -126,11 +128,7 @@ module Shock
         smooth_factor(:,:,+1:+3) = 0.
       endif
 !
-      if (lconserve) then
-        smooth_factor = smooth_factor / sum(smooth_factor)
-      else
-        smooth_factor = smooth_factor / smooth_factor(0,0,0)
-      endif
+      smooth_factor = smooth_factor / sum(smooth_factor)
 !
 !  Check that smooth order is within bounds
 !
@@ -376,16 +374,18 @@ module Shock
 !  17-dec-08/ccyang: add divergence threshold
 !
       use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
-      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
+      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry,mpiallreduce_max
       use sub, only: div
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
+      integer, dimension (3) :: max_loc
       real, dimension (mx,my,mz) :: tmp
       real, dimension (nx) :: penc
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
+      real :: shock_max, a=0.
 !
 !  Compute divergence
 !
@@ -488,9 +488,30 @@ module Shock
 !
       enddo
 !
+!  Scale given a fixed mesh Reynolds number or
+!
+      if (lfixed_Re_mesh) then
+        if (headtt) print *, 'Shock: fix mesh Reynolds number at ', Re_mesh
+        if (lfirst) then
+          max_loc = (/ l1-1, m1-1, n1-1 /) + maxloc(tmp(l1:l2,m1:m2,n1:n2))
+          a = tmp(max_loc(1),max_loc(2),max_loc(3))
+          call mpiallreduce_max(a, shock_max)
+          if (shock_max > 0.) then
+            if (shock_max == a) then
+              a = dxmax * sqrt(sum(f(max_loc(1),max_loc(2),max_loc(3),iux:iuz)**2)) / (Re_mesh * shock_max)
+            else
+              a = 0.
+            endif
+            call mpiallreduce_max(a, a)
+          endif
+        endif
+        f(:,:,:,ishock) = a * tmp
+      else
+!
 !  Scale by dxmax**2
 !
-      f(:,:,:,ishock) = tmp*dxmax**2
+        f(:,:,:,ishock) = tmp*dxmax**2
+      endif
 !
     endsubroutine calc_shock_profile
 !***********************************************************************
