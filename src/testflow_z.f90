@@ -115,7 +115,8 @@ module Testflow
              lsoca_testflow=.true., &
              lkinem_testflow=.false., &
              lburgers_testflow=.false., &
-             lprescribed_velocity=.false.
+             lprescribed_velocity=.false., &
+	     lremove_mean_momenta_testflow=.false.
 !
   character (len=labellen) :: itestflow='W11-W22'
 !
@@ -125,7 +126,8 @@ module Testflow
                                lkinem_testflow,     &    ! flag for kinematic calculation
                                lburgers_testflow,   &    ! flag for disconnecting enthalpy(pressure) from velocity
                                lprescribed_velocity,&    ! flag for prescribed velocity, prescription via p%fcont, only effective if lkinem_testflow=.true.
-                               nutest,              &    ! viscosity in testflow equations
+                               lremove_mean_momenta_testflow, &  ! flag for removing mean momenta in 0-solution
+			       nutest,              &    ! viscosity in testflow equations
                                nutest1,             &    ! reciprocal viscosity
                                itestflow,           &    ! name of used testflow set, legal values
                                                          ! 'W11-W22', 'quadratic', 'quadratic+G', 'none'
@@ -179,7 +181,7 @@ module Testflow
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
-      use Mpicomm
+      use Mpicomm, only: stop_it
       use Sub
 !
       integer :: j
@@ -456,7 +458,7 @@ module Testflow
 !   2-jun-05/axel: adapted from magnetic
 !
       use Cdata
-      use Mpicomm
+      use Mpicomm, only:stop_it
       use Initcond
       use Sub
       use InitialCondition, only: initial_condition_uutest
@@ -657,10 +659,10 @@ module Testflow
       character (len=5) :: ch
       character (len=130) :: file
 
-      if (n==4.and.m==4) then
-      !!print*, 'uumz(1):', uumz(:,1)
-      !!print*, 'guumz(1):', guumz(:,1)
-      endif
+      !if (ldiagnos .and. n==4.and.m==4) then
+      !print*, 'uumz(1):', uumz(:,1)
+      !print*, 'guumz(1):', guumz(:,1)
+      !endif
 !
       if ( iuutest==0 ) return
 
@@ -1039,6 +1041,21 @@ module Testflow
 !
     endsubroutine get_slices_testflow
 !***********************************************************************
+    subroutine testflow_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   15-dec-10/MR: adapted from density
+!
+      use Hydro, only: remove_mean_momenta
+      use Cdata
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call remove_mean_momenta(f,iuutest,lremove=lremove_mean_momenta_testflow)
+!
+    endsubroutine testflow_before_boundary
+!***********************************************************************
     subroutine calc_ltestflow_nonlin_terms(f,df)          ! -> Default interface (as do_prepencilstep or so)
 !
 !  calculates < -u0.grad(u0) + (2nu/cs^2)*grad(h0).Sij(u0) >, < u0.gradh0 >,
@@ -1071,7 +1088,7 @@ module Testflow
       real, dimension (mx,my,mz,mvar),    intent(inout) :: df
 !
       real, dimension (3,0:njtestflow) :: unltestm, unltestm1      ! unltestm1, hnltestm1 local fields for MPI correspondence
-      real, dimension (0:njtestflow) :: hnltestm, hnltestm1
+      real, dimension (  0:njtestflow) :: hnltestm, hnltestm1
 !
       real, dimension (nx,3)   :: uufluct,uutest, uu0, ghfluct, ghtest, gh0, sghtest, unltest, force
       real, dimension (nx,3,3) :: sijtest,uijtest,sij0,uij0
@@ -1263,14 +1280,19 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
 !  do communication for arrays of size 3*njtestflow and njtestflow, resp.
 !
-        if ( .not.lsoca_testflow .or. ldiagnos ) then         ! see above
+        if ( .not.lsoca_testflow .or. ldiagnos ) then	      ! see above
           jtesto=njtestflow
         else
           jtesto=0
         endif
-!
+	  
         if (nprocy>1) then
 
+          !!if (ldiagnos) then 
+          !!print*, 'iproc,n=', iproc, n
+	  !!print*, hnltestm(0)
+	  !!endif
+	  
           call mpiallreduce_sum(unltestm,unltestm1,(/3,jtesto+1/),idir=2)
           unltestm(:,0:jtesto) = unltestm1(:,0:jtesto)
 !
@@ -1280,7 +1302,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         endif
 !
         unltestm(:,0:jtesto)=fac*unltestm(:,0:jtesto)         ! means of nonlinear parts
-        hnltestm(0:jtesto)=fac*hnltestm(0:jtesto)
+        hnltestm(  0:jtesto)=fac*hnltestm(0:jtesto)
 !
 !  means are completely determined -> calculation of the  f l u c t u a t i o n s  of the nonlinear parts
 !
@@ -1319,7 +1341,10 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         !!print*, 'unltestm, hnltestm:', minval(unltestm),maxval(unltestm), minval(hnltestm),maxval(hnltestm)
         !!if (ldiagnos) print*, 'unltestm, hnltestm:', z(n), unltestm(1,1), unltestm(2,1), unltestm(1,2), unltestm(2,2)
 
-        if (ldiagnos) call calc_coeffcients(n,unltestm,hnltestm)
+! calculation of the coefficients
+!
+        if (ldiagnos) &
+	  call calc_coeffcients(n,unltestm,hnltestm)
 !
         lfirstpoint=.false.
 !
@@ -1391,8 +1416,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
     real, dimension (2,2) :: aklam
     integer :: i,j,i3,i4,i5,i6,k
 !
-      Fipq=Fipq/(-wamp*valid_zrange*nzgrid)                               ! as at call Fipq, Qipq have inverted sign yet               
-      Qipq=Qipq/(-wamp*valid_zrange*nzgrid)                               ! factor nzgrid for averaging over z
+      Fipq=Fipq/(-wamp*valid_zrange*nzgrid*nprocy)                               ! as at call Fipq, Qipq have inverted sign yet               
+      Qipq=Qipq/(-wamp*valid_zrange*nzgrid*nprocy)                               ! factor nzgrid for averaging over z
 !
       !!print*,'z,Fipq=', z(indz), Fipq(1:2,3), Fipq(1:2,4)
 !
@@ -1412,13 +1437,17 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
            do k=1,2
 !
-!  calculate gal, aka-lambda and nu tensors
+!  calculate aka-lambda and nu tensors
 !
             if (idiag_aklamij(k,1)/=0) &
-              call surf_mn_name(  cz(indz)*Fipq(k,1)+sz(indz)*Fipq(k,2),     idiag_aklamij(k,1) )      
-
+              call surf_mn_name(    cz(indz)*Fipq(k,1)+  sz(indz)*Fipq(k,2), idiag_aklamij(k,1) )
+	    !if (k==1) then      
+            !print*, 'indz:', indz, 'aklam11, iproc:', iproc
+	    !print*, cz(indz)*Fipq(k,1)+sz(indz)*Fipq(k,2)
+	    !endif
+	    
             if (idiag_aklamij(k,2)/=0) &
-              call surf_mn_name(  cz(indz)*Fipq(k,3)+sz(indz)*Fipq(k,4),     idiag_aklamij(k,2) )      
+              call surf_mn_name(    cz(indz)*Fipq(k,3)+  sz(indz)*Fipq(k,4), idiag_aklamij(k,2) )      
 
             if (idiag_nuij(k,1)/=0) &
               call surf_mn_name( -k1sz(indz)*Fipq(k,3)+k1cz(indz)*Fipq(k,4), idiag_nuij(k,1)    )
@@ -1548,7 +1577,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !        call stop_it('njtestflow is too small if aklam12, aklam22, nu12, or nu22 are needed')
 !      else
 !        if (idiag_aklamij(1,2)/=0) call sum_name(+cz(iz)*Fipq(1,3)+sz(indz)*Fipq(1,4),idiag_aklamij(1,2))
-!
+!      
     endsubroutine calc_coeffcients
 !***********************************************************************
     subroutine set_uutest(uutest,jtest)
