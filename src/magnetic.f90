@@ -208,7 +208,7 @@ module Magnetic
       hall_term, lmeanfield_theory, &
       z_surface, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
-      lcalc_aamean, &
+      lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
