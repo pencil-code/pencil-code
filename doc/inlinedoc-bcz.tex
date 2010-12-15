@@ -32,12 +32,13 @@
   \var{p1D}       & potential field extrapolation in 1D \\
   \var{pot}       & potential magnetic field \\
   \var{pwd}       & a variant of 'pot' for nprocx=1 \\
-  \var{hds}       & hydrostatic equilibrium with \\
-  \var{cT}        & constant temp.
-                     \\
-  \var{cT2}       & constant temp. (keep lnrho)
-                     \\
+  \var{hds}       & hydrostatic equilibrium with a high-frequency filter \\
+  \var{cT}        & constant temp. \\
+  \var{cT2}       & constant temp. (keep lnrho) \\
   \var{hs}        & hydrostatic equilibrium \\
+  \var{hse}       & hydrostatic extrapolation
+                    rho or lnrho is extrapolated linearily and the
+                    temperature is calculated in hydrostatic equilibrium. \\
   \var{cp}        & constant pressure
                      \\
   \var{sT}        & symmetric temp.
@@ -54,6 +55,9 @@
                      \\
   \var{e1}        & extrapolation \\
   \var{e2}        & extrapolation \\
+  \var{ex}        & simple linear extrapolation in first order \\
+  \var{exf}       & simple linear extrapolation in first order \\
+  \var{exd}       & simple linear extrapolation in first order \\
   \var{b1}        & extrapolation with zero value (improved 'a') \\
   \var{b2}        & extrapolation with zero value (improved 'a') \\
   \var{b3}        & extrapolation with zero value (improved 'a') \\
@@ -69,6 +73,7 @@
                     use bc = 'div' for iuz \\
   \var{ovr}       & set boundary value \\
   \var{ouf}       & allow outflow, but no inflow (experimental) \\
+  \var{ubs}       & symmetric outflow, \\
   \var{win}       & forces massflux given as
                     $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$ \\
   \var{cop}       & copy value of last physical point to all ghost cells \\

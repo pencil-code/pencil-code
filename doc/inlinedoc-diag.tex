@@ -385,6 +385,9 @@
   \var{Expt}      & ${\cal E}_x(x_1,y_1,z_1,t)$ \\
   \var{Eypt}      & ${\cal E}_y(x_1,y_1,z_1,t)$ \\
   \var{Ezpt}      & ${\cal E}_z(x_1,y_1,z_1,t)$ \\
+  \var{axpt}      & $A_x(x_1,y_1,z_1,t)$ \\
+  \var{aypt}      & $A_y(x_1,y_1,z_1,t)$ \\
+  \var{azpt}      & $A_z(x_1,y_1,z_1,t)$ \\
   \var{bxp2}      & $B_x(x_2,y_2,z_2,t)$ \\
   \var{byp2}      & $B_y(x_2,y_2,z_2,t)$ \\
   \var{bzp2}      & $B_z(x_2,y_2,z_2,t)$ \\
@@ -394,6 +397,9 @@
   \var{Exp2}      & ${\cal E}_x(x_2,y_2,z_2,t)$ \\
   \var{Eyp2}      & ${\cal E}_y(x_2,y_2,z_2,t)$ \\
   \var{Ezp2}      & ${\cal E}_z(x_2,y_2,z_2,t)$ \\
+  \var{axp2}      & $A_x(x_2,y_2,z_2,t)$ \\
+  \var{ayp2}      & $A_y(x_2,y_2,z_2,t)$ \\
+  \var{azp2}      & $A_z(x_2,y_2,z_2,t)$ \\
   \var{exabot}    & $\int\Ev\times\Av\,dS|_{\rm bot}$ \\
   \var{exatop}    & $\int\Ev\times\Av\,dS|_{\rm top}$ \\
   \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
@@ -547,6 +553,9 @@
   \var{bxbzmxz}   & $\left< B_x B_z \right>_{y}$ \\
   \var{bybzmxz}   & $\left< B_y B_z \right>_{y}$ \\
   \var{jbmxy}     & $\left< \Jv\cdot\Bv \right>_{z}$ \\
+  \var{examxy1}   & $\left< \Ev\times\Av \right>_{z}|_x$ \\
+  \var{examxy2}   & $\left< \Ev\times\Av \right>_{z}|_y$ \\
+  \var{examxy3}   & $\left< \Ev\times\Av \right>_{z}|_z$ \\
   \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
@@ -621,7 +630,7 @@
   \var{eta12}     & $\eta_{12}k$ \\
   \var{eta22}     & $\eta_{22}k$ \\
   \var{alpK}      & $\alpha^K$ \\
-  \var{alpM}      & $\alpha^K$ \\
+  \var{alpM}      & $\alpha^M$ \\
   \var{alpMK}     & $\alpha^{MK}$ \\
   \var{phi11}     & $\phi_{11}$ \\
   \var{phi21}     & $\phi_{21}$ \\
@@ -850,6 +859,8 @@
                     \quad(time step relative to
                     viscous time step;
                     see \S~\ref{time-step}) \\
+  \var{meshRemax} & Mesh Reynolds number \\
+  \var{Reshock}   & Mesh Reynolds number at shock \\
   \var{fviscmz}   & $\left<2\nu\varrho u_i
                     \mathcal{S}_{iz} \right>_{xy}$
                     ($z$-component of viscous flux) \\
