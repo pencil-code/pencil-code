@@ -49,7 +49,7 @@ contains
 !
 !  Initialize any module variables which are parameter dependent.
 !
-!  07-may-09/wlad: coded
+!  14-dec-10/bing: coded
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -61,6 +61,7 @@ contains
           unit_length*unit_temperature**3.5
       write(*,*) "Kperp=",3.47e12 / ((unit_velocity**3*unit_magnetic**2*unit_length)/ &
           (unit_density * sqrt(unit_temperature) ))
+      write(*,*) "hcond_grad=",unit_temperature
       write(*,*) "------------------------------------------------------------------"
     endif
 !

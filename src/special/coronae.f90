@@ -197,6 +197,7 @@ module Special
 !  04-sep-10/bing: coded
 !
     if (Kpara/=0) then
+      lpenc_requested(i_cp1)=.true.      
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bij)=.true.
       lpenc_requested(i_lnTT)=.true.
@@ -482,7 +483,7 @@ module Special
         if (i==j) chi_spitzer=chi_spitzer+vKperp*p%glnTT(:,i)*p%glnTT(:,j)*gT2_1
       enddo
     enddo
-    chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)
+    chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
 !
 !  Calculate gradient of variable diffusion coefficients.
 !
@@ -504,7 +505,7 @@ module Special
     call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
         GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
-    thdiff = thdiff*exp(-p%lnrho-p%lnTT)
+    thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
 !
 !  Add to energy equation.
     if (ltemperature) then
@@ -624,12 +625,12 @@ module Special
       call dot(p%glnTT,bunit,tmpj)
       rhs = rhs*tmpj
 !
-      chi = glnT2*hcond_grad
+      chi = glnT2*hcond_grad*p%cp1
 !
       rhs = hcond_grad*(rhs + glnT2*tmp)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma !*cubic_step(real(t*unit_time),init_time,init_time)
+          rhs*gamma*p%cp1
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -1900,13 +1901,8 @@ module Special
       fvy_r=vy
       fvy_i=0.
 !
-      if (nygrid==1) then
-        call fft_x_parallel(fvx_r(:,m1),fvx_i(:,m1))
-        call fft_x_parallel(fvy_r(:,m1),fvy_i(:,m1))
-      else
-        call fft_xy_parallel(fvx_r,fvx_i)
-        call fft_xy_parallel(fvy_r,fvy_i)
-      endif
+      call fft_xy_parallel(fvx_r,fvx_i)
+      call fft_xy_parallel(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
       k20 = (kx_ny/2.)**2.
@@ -1943,17 +1939,10 @@ module Special
       fdy_r = fdy_r*filter
       fdy_i = fdy_i*filter
 !
-      if (nygrid==1) then
-        call fft_x_parallel(fdx_r(:,m1),fdx_i(:,m1),.true.)
-        call fft_x_parallel(fdy_r(:,m1),fdy_i(:,m1),.true.)
-        call fft_x_parallel(frx_r(:,m1),frx_i(:,m1),.true.)
-        call fft_x_parallel(fry_r(:,m1),fry_i(:,m1),.true.)
-      else
-        call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
-        call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
-        call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
-        call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
-      endif
+      call fft_xy_parallel(fdx_r,fdx_i,linv=.true.,lneed_im=.false.)
+      call fft_xy_parallel(fdy_r,fdy_i,linv=.true.,lneed_im=.false.)
+      call fft_xy_parallel(frx_r,frx_i,linv=.true.,lneed_im=.false.)
+      call fft_xy_parallel(fry_r,fry_i,linv=.true.,lneed_im=.false.)
 !
       vx=fdx_r
       vy=fdy_r
