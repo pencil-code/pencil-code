@@ -707,7 +707,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   call fatal_error('dsolid_dt','No such objectform!')
                   call keep_compiler_quiet(nvec)
                 end if
-!
+!!
 ! Find force in x,y and z direction
 !
                 if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
@@ -924,6 +924,73 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find ghost points based on the mirror interpolation method
 !
       if (interpolation_method=='mirror') then
+!
+!  For fluid points very close to the solid surface the value of the point
+!  is set from interpolation between the value at the closest grid line
+!  and the value at the solid surface.
+!
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+          if (lclose_linear) then
+            if (ba(i,j,k,1)==10) then
+              iobj=ba(i,j,k,4)
+!
+!  Check if we will use the old or the new interpolation method
+!
+              if (objects(iobj)%form=='sphere' .or. &
+                  .not. lclose_quad_rad_inter) then
+                lnew_interpolation_method=.true.
+              else
+                lnew_interpolation_method=.false.
+              endif
+!
+              x_obj=objects(iobj)%x(1)
+              y_obj=objects(iobj)%x(2)
+              z_obj=objects(iobj)%x(3)
+              r_obj=objects(iobj)%r
+              if (objects(iobj)%form=='cylinder') then
+                r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
+              elseif (objects(iobj)%form=='sphere') then
+                r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+              endif
+              dr=r_point-r_obj
+              if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
+                xxp=(/x(i),y(j),z(k)/)
+                if (lnew_interpolation_method) then
+                  call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
+                      lnew_interpolation_method)
+                  f(i,j,k,iux:iuz)=gpp
+                  if (ilnTT > 0) then
+                    call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
+                        .true.,lnew_interpolation_method)
+                    f(i,j,k,ilnTT)=gpp(1)
+                  endif
+                else
+                  call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
+                      lnew_interpolation_method)
+                  f(i,j,k,iux)=gpp(1)
+                  call close_interpolation(f,i,j,k,iobj,iuy,xxp,gpp,.true.,&
+                      lnew_interpolation_method)
+                  f(i,j,k,iuy)=gpp(1)
+                  call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.,&
+                      lnew_interpolation_method)
+                  f(i,j,k,iuz)=gpp(1)
+                  if (ilnTT > 0) then
+                    call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
+                        .true.,lnew_interpolation_method)
+                    f(i,j,k,ilnTT)=gpp(1)
+                  endif
+                endif
+              endif
+            endif
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Find ghost points based on the mirror interpolation method
+!
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
@@ -1080,69 +1147,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   zmirror,ndims,lnew_interpolation_method)
               f(i,j,k,ilnTT)=2*objects(iobj)%T-phi
             endif
-          else
-!
-!  For fluid points very close to the solid surface the value of the point
-!  is set from interpolation between the value at the closest grid line
-!  and the value at the solid surface.
-!
-            if (lclose_linear) then
-              if (ba(i,j,k,1)==10) then
-                iobj=ba(i,j,k,4)
-!
-!  Check if we will use the old or the new interpolation method
-!
-                if (objects(iobj)%form=='sphere' .or. &
-                    .not. lclose_quad_rad_inter) then
-                  lnew_interpolation_method=.true.
-                else
-                  lnew_interpolation_method=.false.
-                endif
-!
-                x_obj=objects(iobj)%x(1)
-                y_obj=objects(iobj)%x(2)
-                z_obj=objects(iobj)%x(3)
-                r_obj=objects(iobj)%r
-                if (objects(iobj)%form=='cylinder') then
-                  r_point=sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
-                elseif (objects(iobj)%form=='sphere') then
-                  r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
-                endif
-                dr=r_point-r_obj
-                if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
-                  xxp=(/x(i),y(j),z(k)/)
-                  if (lnew_interpolation_method) then
-                    call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
-                        lnew_interpolation_method)
-                    f(i,j,k,iux:iuz)=gpp
-                    if (ilnTT > 0) then
-                      call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
-                          .true.,lnew_interpolation_method)
-                      f(i,j,k,ilnTT)=gpp(1)
-                    endif
-                  else
-                    call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
-                        lnew_interpolation_method)
-                    f(i,j,k,iux)=gpp(1)
-                    call close_interpolation(f,i,j,k,iobj,iuy,xxp,gpp,.true.,&
-                        lnew_interpolation_method)
-                    f(i,j,k,iuy)=gpp(1)
-                    call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.,&
-                        lnew_interpolation_method)
-                    f(i,j,k,iuz)=gpp(1)
-                    if (ilnTT > 0) then
-                      call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
-                          .true.,lnew_interpolation_method)
-                      f(i,j,k,ilnTT)=gpp(1)
-                    endif
-                  endif
-                endif
-              endif
-            endif
           endif
         enddo
-        enddo
-        enddo
+      enddo
+    enddo
+
 !
 !  Find ghost points based on the staircase interpolation method
 !
