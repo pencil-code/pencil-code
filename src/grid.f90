@@ -1241,7 +1241,7 @@ module Grid
         elsewhere
           g = xi + m * (xi - cos (xi)) + 1 + pi/2.0 * (1 + m)
         endwhere
-        if (present(gder1)) then
+        if (present (gder1)) then
           where (xi <= -pi/2.0)
             gder1 = 1.0
           elsewhere (xi >= pi/2.0)
@@ -1250,7 +1250,7 @@ module Grid
             gder1 = 1 + 0.5 * (m - 1) * (1 + sin (xi))
           endwhere
         endif
-        if (present(gder2)) then
+        if (present (gder2)) then
           where ((xi <= -pi/2.0) .or. (xi >= pi/2.0))
             gder2 = 0.0
           elsewhere
@@ -1264,8 +1264,10 @@ module Grid
         if (.not. present (param)) &
             call fatal_error ('grid_profile', "'arsinh' needs its parameter.")
 !
-        g = xi * param * asinh (xi) - sqrt (xi**2 + 1)
-        if (present (gder1)) gder1 = param * asinh (xi)
+        ! Workaround for the F95 standard, which we should leave behind ASAP.
+        ! ('asinh' is not present in g95, therefore it is replaced by 'ln'.)
+        g = xi * param * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1)
+        if (present (gder1)) gder1 = param * log (xi + sqrt (xi**2 + 1))
         if (present (gder2)) gder2 = param / (sqrt (xi**2 + 1))
 !
       case ('duct')
