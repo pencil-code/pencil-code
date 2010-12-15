@@ -287,8 +287,8 @@ module Diagnostics
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
 !
-      real, dimension(nlname), intent(inout) :: vname
       integer,                 intent(in)    :: nlname
+      real, dimension(nlname), intent(inout) :: vname
 
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
