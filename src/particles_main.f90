@@ -199,11 +199,11 @@ module Particles_main
 !
       intent (out) :: f
 !
+      if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
+      if (lparticles_number) call init_particles_number(f,fp)
       if (lparticles_mass)   call init_particles_mass(f,fp)
       call init_particles(f,fp,ineargrid)
-      if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
       if (lparticles_spin)   call init_particles_spin(f,fp)
-      if (lparticles_number) call init_particles_number(f,fp)
       if (lparticles_nbody)  call init_particles_nbody(f,fp)
 !
     endsubroutine particles_init
