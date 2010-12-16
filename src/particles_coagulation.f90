@@ -31,6 +31,7 @@ module Particles_coagulation
   real :: cdtpcoag=0.2, cdtpcoag1=5.0
   real :: kernel_cst=1.0, kernel_lin=1.0, kernel_pro=1.0
   real :: four_pi_rhopmat_over_three2=0.0
+  real :: three_over_four_pi_rhopmat=0.0
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
@@ -74,9 +75,10 @@ module Particles_coagulation
       lkernel_test=lconstant_kernel_test.or.llinear_kernel_test.or. &
           lproduct_kernel_test
 !
-!  Squared volume factor needed for product kernel test.
+!  Calculate squared and inverse volume factor.
 !
       four_pi_rhopmat_over_three2=four_pi_rhopmat_over_three**2
+      three_over_four_pi_rhopmat=1/four_pi_rhopmat_over_three
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -366,7 +368,7 @@ module Particles_coagulation
                           rhopsma=mpsma*npsma
                           rhopbig=mpbig*npbig
                           mpnew=mpbig+rhopsma/npbig
-                          apnew=(mpnew/four_pi_rhopmat_over_three)**(1.0/3.0)
+                          apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
                           npnew=0.5*(rhopsma+rhopbig)/mpnew
                           if (npnew*dx*dy*dz<1.0) then
 !
