@@ -1632,8 +1632,6 @@ module Hydro
 !
 !   15-dec-10/MR: adapted from density for homogeneity
 !
-      use Cdata
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !  Remove mean x-momentum if desired.

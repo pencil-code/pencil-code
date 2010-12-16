@@ -15,6 +15,7 @@
   public :: hydro_clean_up
   public :: traceless_strain, coriolis_cartesian
   public :: kinematic_random_phase
+  public :: hydro_before_boundary
 !
 ! variables
   public :: uumz, guumz, lcalc_uumean, lupw_uu
