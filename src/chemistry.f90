@@ -492,7 +492,7 @@ module Chemistry
 !  Reinitialize if required
 !
       if (reinitialize_chemistry) then
-        print*,'Reinitializing chemistry.'
+        if(lroot) print*,'Reinitializing chemistry.'
         call init_chemistry(f)
       endif
 !
@@ -910,7 +910,7 @@ module Chemistry
                   +species_constants(k,iaa2(ii4))*p%TT_3/3 &
                   +species_constants(k,iaa2(ii5))*p%TT_4/4 &
                   +species_constants(k,iaa2(ii7))
-              elsewhere (T_mid <= p%TT .and. p%TT <= T_up)
+              elsewhere (T_mid <= T_loc .and. T_loc <= T_up)
                 p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
                   +species_constants(k,iaa1(ii2))*T_loc &
                   +species_constants(k,iaa1(ii3))*p%TT_2/2 &
@@ -2461,157 +2461,6 @@ module Chemistry
 !
     endsubroutine astrobiology_data
 !***********************************************************************
-    subroutine chemkin_data(f)
-!
-!  if the file with chemkin data exists
-!  reading the Chemkin data
-!
-!  06/21/2010:julien: Reading lewis.dat file to collect constant Lewis numbers
-!                     for each species
-!
-      character (len=20) :: input_file='chem.inp'
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: stat,k,i
-      character (len=20) :: input_file2="./data/stoich.out"
-      integer :: file_id=123
-!
-!
-      inquire(file='tran.dat',exist=tran_exist)
-      inquire(file='lewis.dat',exist=lew_exist)
-      if (lew_exist) ldiff_fick=.true.
-!
-!  Allocate binary diffusion coefficient array
-!
-      if (.not.lreloading) then
-        if (.not. lfix_Sc .and. (.not. lDiff_simple)) then
-!NILS: Since Bin_diff_coeff is such a huge array we must check if it
-!NILS: required to define it for the full domain!!!!!!
-          allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
-          if (stat>0) call stop_it("Couldn't allocate memory "//&
-              "for binary diffusion coefficients")
-!
-          allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
-          allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-          if (stat>0) call stop_it("Couldn't allocate memory "//&
-              "for binary diffusion coefficients")
-!
-        endif
-      endif
-!
-      if (tran_exist) then
-        if (lroot) then
-          print*,'tran.dat file with transport data is found.'
-        endif
-        call read_transport_data
-      else if (lew_exist) then
-        if (lroot) then
-          print*,'lewis.dat file with transport data is found.'
-          print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
-        endif
-        call read_Lewis
-      else
-        if (lroot) then
-          print*,'tran.dat file with transport data is not found.'
-          print*,'lewis.dat file with Lewis numbers is not found.'
-          print*,'Now diffusion coefficients is ',chem_diff
-          print*,'Now species viscosity is ',nu_spec
-        endif
-        Bin_Diff_coef=chem_diff/(unit_length*unit_length/unit_time)
-        do k=1,nchemspec
-          species_viscosity(:,:,:,k)=nu_spec(k)/&
-              (unit_mass/unit_length/unit_time)
-        enddo
-      endif
-!
-!  Find number of ractions
-!
-      call read_reactions(input_file,NrOfReactions=mreactions)
-      if (lroot) print*,'Number of reactions=',mreactions
-      if (lroot) print*,'Number of species=',nchemspec
-      nreactions=mreactions
-!
-!  Allocate reaction arrays
-!
-      if (.not.lreloading) then
-        allocate(stoichio(nchemspec,mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
-        allocate(Sijm(nchemspec,mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
-        allocate(Sijp(nchemspec,mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
-        allocate(reaction_name(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
-        allocate(B_n(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for B_n")
-        B_n=0.
-        allocate(alpha_n(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
-        alpha_n=0.
-        allocate(E_an(mreactions),STAT=stat)
-        if (stat>0) call stop_it("Couldn't allocate memory for E_an")
-        E_an=0.
-!
-        allocate(low_coeff(3,nreactions),STAT=stat)
-        low_coeff=0.
-        if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
-        allocate(high_coeff(3,nreactions),STAT=stat)
-        high_coeff=0.
-        if (stat>0) call stop_it("Couldn't allocate memory for high_coeff")
-        allocate(troe_coeff(3,nreactions),STAT=stat)
-        troe_coeff=0.
-        if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
-        allocate(a_k4(nchemspec,nreactions),STAT=stat)
-        a_k4=impossible
-        if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
-        allocate(Mplus_case (nreactions),STAT=stat)
-        Mplus_case=.false.
-        allocate(photochem_case (nreactions),STAT=stat)
-        photochem_case=.false.
-        if (stat>0) call stop_it("Couldn't allocate memory for photochem_case")
-      endif
-!
-!  Initialize data
-!
-      Sijp=0
-      Sijm=0
-!
-!  read chemistry data
-!
-      call read_reactions(input_file)
-      call write_reactions()
-!
-!  calculate stoichio and nreactions
-!
-      stoichio=Sijp-Sijm
-!
-!  print input data for verification
-!
-      if (lroot .and. nreactions>0) then
-!
-        open(file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
-         write(file_id,*) 'STOICHIOMETRIC MATRIX'
-!
-         write(file_id,*),'Sijm'
-         do i=1,nreactions
-          write(file_id,100),i,Sijm(:,i)
-         enddo
-         write(file_id,*),'Sijp:'
-         do i=1,nreactions
-          write(file_id,100),i,Sijp(:,i)
-         enddo
-         write(file_id,*),'stoichio='
-         do i=1,nreactions
-          write(file_id,100),stoichio(:,i)
-         enddo
-        close(file_id)
-      endif
-!
-100   format(16i4)
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine chemkin_data
-!***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -3463,6 +3312,278 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
+!***********************************************************************
+    subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
+!
+!  calculation of the stoichoimetric matrix
+!
+!  10-mar-08/nils: coded
+!
+      integer, intent(in) :: StartInd,StopInd,k
+      character (len=*), intent(in) :: ChemInpLine
+      logical, intent(in) :: product
+      integer :: StartSpecie,ind_glob,ind_chem,stoi
+      logical :: found_specie
+!
+      if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
+          .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" )) then
+        StartSpecie=verify(ChemInpLine(StartInd:StopInd),&
+            "1234567890")+StartInd-1
+        call find_species_index(ChemInpLine(StartSpecie:StopInd),&
+            ind_glob,ind_chem,found_specie)
+!
+        if (.not. found_specie) then
+          print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
+          print*,'ind_glob,ind_chem=',ind_glob,ind_chem
+!          if (.not. lpencil_check_small) then
+!          if (.not. lpencil_check) then
+            call stop_it("build_stoich_matrix: Did not find species!")
+!          endif
+!          endif
+        endif
+!        if (found_specie) then
+        if (StartSpecie==StartInd) then
+          stoi=1
+        else
+          read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi
+        endif
+        if (product) then
+          Sijm(ind_chem,k)=Sijm(ind_chem,k)+stoi
+        else
+          Sijp(ind_chem,k)=Sijp(ind_chem,k)+stoi
+        endif
+!        endif
+      endif
+!
+    endsubroutine build_stoich_matrix
+!***********************************************************************
+    subroutine write_reactions()
+!
+!  write reaction coefficient in the output file
+!
+!  11-mar-08/nils: coded
+!
+      use General, only: chn
+!
+      integer :: reac,spec
+      character (len=80) :: reac_string,product_string,output_string
+      character (len=5)  :: Sijp_string,Sijm_string
+      character (len=1)  :: separatorp,separatorm
+      character (len=20) :: input_file="./data/chem.out"
+      integer :: file_id=123
+!
+      open(file_id,file=input_file,POSITION='APPEND',FORM='FORMATTED')
+      write(file_id,*) 'REACTIONS'
+      !open(file_id,file=input_file)
+!
+      do reac=1,mreactions
+        reac_string=''
+        product_string=''
+        separatorp=''
+        separatorm=''
+!
+        do spec=1,nchemspec
+          if (Sijp(spec,reac)>0) then
+            Sijp_string=''
+            if (Sijp(spec,reac)>1) call chn(Sijp(spec,reac),Sijp_string)
+            reac_string=trim(reac_string)//trim(separatorp)//&
+                trim(Sijp_string)//trim(varname(ichemspec(spec)))
+            separatorp='+'
+          endif
+          if (Sijm(spec,reac)>0) then
+            Sijm_string=''
+            if (Sijm(spec,reac)>1) call chn(Sijm(spec,reac),Sijm_string)
+            product_string=trim(product_string)//trim(separatorm)//&
+                trim(Sijm_string)//trim(varname(ichemspec(spec)))
+            separatorm='+'
+          endif
+        enddo
+!
+        output_string=trim(reac_string)//'='//trim(product_string)
+!
+       if (.not. photochem_case(reac)) then
+        write(unit=output_string(30:45),fmt='(E14.4)') B_n(reac)
+        write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
+        write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
+       endif
+        write(file_id,*) trim(output_string)
+       if (.not. photochem_case(reac)) then
+        if (maxval(abs(low_coeff(:,reac))) > 0.) then
+          write(file_id,*) 'LOW/',low_coeff(:,reac)
+        elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
+          write(file_id,*) 'HIGH/',high_coeff(:,reac)
+        endif
+        if (maxval(abs(troe_coeff(:,reac))) > 0.) then
+          write(file_id,*) 'TROE/',troe_coeff(:,reac)
+        endif
+        if (minval(a_k4(:,reac))<impossible) then
+          write(file_id,*) a_k4(:,reac)
+        endif
+       else
+         write(file_id,*) ' min lambda=',lamb_low,' max lambda=',lamb_up
+       endif
+!
+      enddo
+!
+      write(file_id,*) 'END'
+      write(file_id,*) '(M+) case: ',Mplus_case
+      write(file_id,*) 'photochemical case: ',photochem_case
+!
+      close(file_id)
+!
+    endsubroutine write_reactions
+!***********************************************************************
+    subroutine chemkin_data(f)
+!
+!  if the file with chemkin data exists
+!  reading the Chemkin data
+!
+!  06/21/2010:julien: Reading lewis.dat file to collect constant Lewis numbers
+!                     for each species
+!
+      character (len=20) :: input_file='chem.inp'
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: stat,k,i
+      character (len=20) :: input_file2="./data/stoich.out"
+      integer :: file_id=123
+!
+!
+      inquire(file='tran.dat',exist=tran_exist)
+      inquire(file='lewis.dat',exist=lew_exist)
+      if (lew_exist) ldiff_fick=.true.
+!
+!  Allocate binary diffusion coefficient array
+!
+      if (.not.lreloading) then
+        if (.not. lfix_Sc .and. (.not. lDiff_simple)) then
+!NILS: Since Bin_diff_coeff is such a huge array we must check if it
+!NILS: required to define it for the full domain!!!!!!
+          allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory "//&
+              "for binary diffusion coefficients")
+!
+          allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
+          allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
+          if (stat>0) call stop_it("Couldn't allocate memory "//&
+              "for binary diffusion coefficients")
+!
+        endif
+      endif
+!
+      if (tran_exist) then
+        if (lroot) then
+          print*,'tran.dat file with transport data is found.'
+        endif
+        call read_transport_data
+      else if (lew_exist) then
+        if (lroot) then
+          print*,'lewis.dat file with transport data is found.'
+          print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
+        endif
+        call read_Lewis
+      else
+        if (lroot) then
+          print*,'tran.dat file with transport data is not found.'
+          print*,'lewis.dat file with Lewis numbers is not found.'
+          print*,'Now diffusion coefficients is ',chem_diff
+          print*,'Now species viscosity is ',nu_spec
+        endif
+        Bin_Diff_coef=chem_diff/(unit_length*unit_length/unit_time)
+        do k=1,nchemspec
+          species_viscosity(:,:,:,k)=nu_spec(k)/&
+              (unit_mass/unit_length/unit_time)
+        enddo
+      endif
+!
+!  Find number of ractions
+!
+      call read_reactions(input_file,NrOfReactions=mreactions)
+      if (lroot) print*,'Number of reactions=',mreactions
+      if (lroot) print*,'Number of species=',nchemspec
+      nreactions=mreactions
+!
+!  Allocate reaction arrays
+!
+      if (.not.lreloading) then
+        allocate(stoichio(nchemspec,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for stoichio")
+        allocate(Sijm(nchemspec,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for Sijm")
+        allocate(Sijp(nchemspec,mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
+        allocate(reaction_name(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+        allocate(B_n(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for B_n")
+        B_n=0.
+        allocate(alpha_n(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for alpha_n")
+        alpha_n=0.
+        allocate(E_an(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for E_an")
+        E_an=0.
+!
+        allocate(low_coeff(3,nreactions),STAT=stat)
+        low_coeff=0.
+        if (stat>0) call stop_it("Couldn't allocate memory for low_coeff")
+        allocate(high_coeff(3,nreactions),STAT=stat)
+        high_coeff=0.
+        if (stat>0) call stop_it("Couldn't allocate memory for high_coeff")
+        allocate(troe_coeff(3,nreactions),STAT=stat)
+        troe_coeff=0.
+        if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+        allocate(a_k4(nchemspec,nreactions),STAT=stat)
+        a_k4=impossible
+        if (stat>0) call stop_it("Couldn't allocate memory for troe_coeff")
+        allocate(Mplus_case (nreactions),STAT=stat)
+        Mplus_case=.false.
+        allocate(photochem_case (nreactions),STAT=stat)
+        photochem_case=.false.
+        if (stat>0) call stop_it("Couldn't allocate memory for photochem_case")
+      endif
+!
+!  Initialize data
+!
+      Sijp=0
+      Sijm=0
+!
+!  read chemistry data
+!
+      call read_reactions(input_file)
+      call write_reactions()
+!
+!  calculate stoichio and nreactions
+!
+      stoichio=Sijp-Sijm
+!
+!  print input data for verification
+!
+      if (lroot .and. nreactions>0) then
+!
+        open(file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
+         write(file_id,*) 'STOICHIOMETRIC MATRIX'
+!
+         write(file_id,*),'Sijm'
+         do i=1,nreactions
+          write(file_id,100),i,Sijm(:,i)
+         enddo
+         write(file_id,*),'Sijp:'
+         do i=1,nreactions
+          write(file_id,100),i,Sijp(:,i)
+         enddo
+         write(file_id,*),'stoichio='
+         do i=1,nreactions
+          write(file_id,100),stoichio(:,i)
+         enddo
+        close(file_id)
+      endif
+!
+100   format(16i4)
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine chemkin_data
+!***********************************************************************
     subroutine read_reactions(input_file,NrOfReactions)
 !
 !  This subroutine reads all reaction information from chem.inp
@@ -3840,127 +3961,6 @@ module Chemistry
 !
     endsubroutine read_reactions
 !***********************************************************************
-!***********************************************************************
-    subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
-!
-!  calculation of the stoichoimetric matrix
-!
-!  10-mar-08/nils: coded
-!
-      integer, intent(in) :: StartInd,StopInd,k
-      character (len=*), intent(in) :: ChemInpLine
-      logical, intent(in) :: product
-      integer :: StartSpecie,ind_glob,ind_chem,stoi
-      logical :: found_specie
-!
-      if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
-          .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" )) then
-        StartSpecie=verify(ChemInpLine(StartInd:StopInd),&
-            "1234567890")+StartInd-1
-        call find_species_index(ChemInpLine(StartSpecie:StopInd),&
-            ind_glob,ind_chem,found_specie)
-!
-        if (.not. found_specie) then
-          print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
-          print*,'ind_glob,ind_chem=',ind_glob,ind_chem
-!          if (.not. lpencil_check_small) then
-!          if (.not. lpencil_check) then
-            call stop_it("build_stoich_matrix: Did not find species!")
-!          endif
-!          endif
-        endif
-!        if (found_specie) then
-        if (StartSpecie==StartInd) then
-          stoi=1
-        else
-          read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi
-        endif
-        if (product) then
-          Sijm(ind_chem,k)=Sijm(ind_chem,k)+stoi
-        else
-          Sijp(ind_chem,k)=Sijp(ind_chem,k)+stoi
-        endif
-!        endif
-      endif
-!
-    endsubroutine build_stoich_matrix
-!***********************************************************************
-    subroutine write_reactions()
-!
-!  write reaction coefficient in the output file
-!
-!  11-mar-08/nils: coded
-!
-      use General, only: chn
-!
-      integer :: reac,spec
-      character (len=80) :: reac_string,product_string,output_string
-      character (len=5)  :: Sijp_string,Sijm_string
-      character (len=1)  :: separatorp,separatorm
-      character (len=20) :: input_file="./data/chem.out"
-      integer :: file_id=123
-!
-      open(file_id,file=input_file,POSITION='APPEND',FORM='FORMATTED')
-      write(file_id,*) 'REACTIONS'
-      !open(file_id,file=input_file)
-!
-      do reac=1,mreactions
-        reac_string=''
-        product_string=''
-        separatorp=''
-        separatorm=''
-!
-        do spec=1,nchemspec
-          if (Sijp(spec,reac)>0) then
-            Sijp_string=''
-            if (Sijp(spec,reac)>1) call chn(Sijp(spec,reac),Sijp_string)
-            reac_string=trim(reac_string)//trim(separatorp)//&
-                trim(Sijp_string)//trim(varname(ichemspec(spec)))
-            separatorp='+'
-          endif
-          if (Sijm(spec,reac)>0) then
-            Sijm_string=''
-            if (Sijm(spec,reac)>1) call chn(Sijm(spec,reac),Sijm_string)
-            product_string=trim(product_string)//trim(separatorm)//&
-                trim(Sijm_string)//trim(varname(ichemspec(spec)))
-            separatorm='+'
-          endif
-        enddo
-!
-        output_string=trim(reac_string)//'='//trim(product_string)
-!
-       if (.not. photochem_case(reac)) then
-        write(unit=output_string(30:45),fmt='(E14.4)') B_n(reac)
-        write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
-        write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
-       endif
-        write(file_id,*) trim(output_string)
-       if (.not. photochem_case(reac)) then
-        if (maxval(abs(low_coeff(:,reac))) > 0.) then
-          write(file_id,*) 'LOW/',low_coeff(:,reac)
-        elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
-          write(file_id,*) 'HIGH/',high_coeff(:,reac)
-        endif
-        if (maxval(abs(troe_coeff(:,reac))) > 0.) then
-          write(file_id,*) 'TROE/',troe_coeff(:,reac)
-        endif
-        if (minval(a_k4(:,reac))<impossible) then
-          write(file_id,*) a_k4(:,reac)
-        endif
-       else
-         write(file_id,*) ' min lambda=',lamb_low,' max lambda=',lamb_up
-       endif
-!
-      enddo
-!
-      write(file_id,*) 'END'
-      write(file_id,*) '(M+) case: ',Mplus_case
-      write(file_id,*) 'photochemical case: ',photochem_case
-!
-      close(file_id)
-!
-    endsubroutine write_reactions
-!***********************************************************************
     subroutine get_reaction_rate(f,vreact_p,vreact_m,p)
 !
 !  This subroutine calculates forward and reverse reaction rates,
@@ -3981,15 +3981,13 @@ module Chemistry
       real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc
       real, dimension (nx) :: prod1,prod2
       real, dimension (nx) :: kf=0., kr=0.
-      real, dimension (nx) :: rho_cgs
-      real :: Rcal
+      real, dimension (nx) :: rho_cgs,p_atm
       integer :: k , reac, i
-      real  :: sum_tmp=0., T_low, T_mid, T_up,  ddd 
-      real  :: Rcal1, lnRgas, l10, lnp_atm
+      real  :: sum_tmp=0., T_low, T_mid, T_up, ddd 
+      real  :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical,save :: lwrite=.true., lwrite_first=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
-      integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii7=7
       real :: B_n_0,alpha_n_0,E_an_0
       real, dimension (nx) :: kf_0,Pr,sum_sp
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
@@ -4003,7 +4001,7 @@ module Chemistry
 ! While this problem is not resolved
 ! I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
 !
-      TT1_loc=exp(-p%lnTT)
+      TT1_loc=exp(-f(l1:l2,m,n,ilnTT))
 !
       if (lwrite_first)  open(file_id,file=input_file)
 !
@@ -4013,17 +4011,26 @@ module Chemistry
       Rcal1=1./Rcal
       lnRgas=log(Rgas)
       l10=log(10.)
-!
       rho_cgs=p%rho*unit_mass/unit_length**3
       lnp_atm=log(1e6*unit_length**3/unit_energy)
-      if (lwrite)  write(file_id,*)'T= ',   p%TT
-      if (lwrite)  write(file_id,*)'lnp_atm= ',   lnp_atm
+      p_atm=1e6*(unit_length**3)/unit_energy
+!
+!  16-Dec-10/Julien:
+!  Is that necessary to write those quantities in an output file?
+!  The file is not opened with an explicit name so that a fort.123
+!  file is created instead, which can be really heavy in large
+!  simulations. Plus, I noticed that the following two lines make
+!  huge cases crash. I have thus commented all the "write" commands
+!  relative to file_id in this routine.
+!  
+!      if (lwrite)  write(file_id,*)'T= ',   p%TT
+!      if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
 !  calculation of the reaction rate
 !
-      if (lwrite_first) write(file_id,*)'**************************'
-      if (lwrite_first) write(file_id,*)'Reaction rates'
-      if (lwrite_first) write(file_id,*)'**************************'
+!      if (lwrite_first) write(file_id,*)'**************************'
+!      if (lwrite_first) write(file_id,*)'Reaction rates'
+!      if (lwrite_first) write(file_id,*)'**************************'
 !
       do reac=1,nreactions
 !
@@ -4073,6 +4080,7 @@ module Chemistry
             endif
           else
             kf=B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
+          endif
 !
 !  Find backward rate constant for reaction 'reac'
 !
@@ -4091,7 +4099,6 @@ module Chemistry
             else
               Kc=Kp+sum_tmp*(lnp_atm-p%lnTT-lnRgas)
             endif
-          endif
 !
 !  Multiply by third body reaction term
 !
@@ -4196,27 +4203,27 @@ module Chemistry
 !
 ! Write some data to file
 !
-        if (lwrite_first) write(file_id,*) &
-            'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
-        if (lwrite_first) write(file_id,*) &
-            'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
-        if (lwrite_first) write(file_id,*)  &
-            'Nreact= ',reac,  'kf= ', kf(1), minval(kf)
-        if (lwrite_first) write(file_id,*)  &
-            'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
-        if (lwrite_first) write(file_id,*)  &
-            'Nreact= ',reac,  'kr= ', kr(1), minval(kr)
-        if (lwrite_first) write(file_id,*)'**************************'
+!        if (lwrite_first) write(file_id,*) &
+!            'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
+!        if (lwrite_first) write(file_id,*) &
+!            'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
+!        if (lwrite_first) write(file_id,*)  &
+!            'Nreact= ',reac,  'kf= ', kf(1), minval(kf)
+!        if (lwrite_first) write(file_id,*)  &
+!            'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
+!        if (lwrite_first) write(file_id,*)  &
+!            'Nreact= ',reac,  'kr= ', kr(1), minval(kr)
+!        if (lwrite_first) write(file_id,*)'**************************'
       enddo
 !
 !  Finalize writing to file
 !
-        if (lwrite_first) write(file_id,*) ''
-        if (lwrite_first) write(file_id,*) '*******************'
-        if (lwrite_first) print*,'get_reaction_rate: writing react.out file'
-        if (lwrite_first) close(file_id)
+!        if (lwrite_first) write(file_id,*) ''
+!        if (lwrite_first) write(file_id,*) '*******************'
+        if (lwrite_first.and.lroot) print*,'get_reaction_rate: writing react.out file'
+!        if (lwrite_first) close(file_id)
       ! lwrite=.false.
-       lwrite_first=.false.
+        lwrite_first=.false.
 !
     endsubroutine get_reaction_rate
 !***********************************************************************
@@ -5713,7 +5720,7 @@ module Chemistry
 ! Read dimension of the array stored in the FlameMaster initial file
 !
       open(1,FILE=trim(file_name))
-      print*, 'Reading initial conditions in file ', trim(file_name)
+      if(lroot) print*, 'Reading initial conditions in file ', trim(file_name)
       do while (car10 /= 'FlameThick')
         read(1,*) car10
       enddo
