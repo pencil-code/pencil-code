@@ -1052,7 +1052,7 @@ module Testflow
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call remove_mean_momenta(f,iuutest,lremove=lremove_mean_momenta_testflow)
+      call remove_mean_momenta(f,iuutest)
 !
     endsubroutine testflow_before_boundary
 !***********************************************************************
