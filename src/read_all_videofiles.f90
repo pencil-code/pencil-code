@@ -70,36 +70,6 @@
         STOP 1
       endif
 !
-      stat=0
-      sindex=1
-!
-      do while (stat==0)
-        if (sindex==1) then
-          read(lun_video,*,iostat=stat) cfield
-!
-!  read stride from internal reader!
-!
-          isep1=index(cfield,' ')
-          field2=cfield(1:isep1)
-          field=''
-        endif
-!
-!  In case of a vector slice loop over the indices.
-        if (field2=='uu'.or.field2=='oo'.or.field2=='uud'.or. &
-            field2=='jj'.or.field2=='bb'.or.field2=='poynting'.or. &
-            field2=='aa'.or.field2=='Frad'.or.field2=='bb1'.or. &
-            field2=='bb11'.or.field2=='uu11') then
-          call chn(sindex,nindex)
-          call safe_character_assign(field,trim(field2)//trim(nindex))
-!
-          if (sindex<3) then
-            sindex=sindex+1
-          else
-            sindex=1
-          endif
-        else
-          field=field2
-        endif
 !
 !  Loop over aller processors to find the positions of the slices.
 !  Therefore read all procN/slice_postions.dat
@@ -136,6 +106,38 @@
             enddo
           enddo
         enddo
+!
+      stat=0
+      sindex=1
+!
+      do while (stat==0)
+        if (sindex==1) then
+          read(lun_video,*,iostat=stat) cfield
+!
+!  read stride from internal reader!
+!
+          isep1=index(cfield,' ')
+          field2=cfield(1:isep1)
+          field=''
+        endif
+!
+!  In case of a vector slice loop over the indices.
+        if (field2=='uu'.or.field2=='oo'.or.field2=='uud'.or. &
+            field2=='jj'.or.field2=='bb'.or.field2=='poynting'.or. &
+            field2=='aa'.or.field2=='Frad'.or.field2=='bb1'.or. &
+            field2=='bb11'.or.field2=='uu11') then
+          call chn(sindex,nindex)
+          call safe_character_assign(field,trim(field2)//trim(nindex))
+!
+          if (sindex<3) then
+            sindex=sindex+1
+          else
+            sindex=1
+          endif
+        else
+          field=field2
+        endif
+        write(*,*) "Reading next: ",field
 !
 !  loop through all times
 !  reset error to false at each time step
@@ -332,10 +334,12 @@
             close(lun_w5)
             close(lun_w6)            
           endif
+
         enddo
-      enddo
 !
-998   continue
+998     continue
+!
+      enddo
 !
       close(lun_video)
 !
