@@ -1165,13 +1165,13 @@ module Hydro
 !  Transformation-reflection x -> -x and ux -> -ux
           if (lreflecteddy) then
            do iz=1,mz; do iy=1,my;do ix=1, mx/2
-              tmpvec = f(mx-ix+1,iy,iz,iux:iuz) 
+              tmpvec = f(mx-ix+1,iy,iz,iux:iuz)
               f(mx-ix+1,iy,iz,iux)= -f(ix,iy,iz,iux)
-              f(ix,iy,iz,iux)=-tmpvec(1) 
+              f(ix,iy,iz,iux)=-tmpvec(1)
               f(mx-ix+1,iy,iz,iuy)= f(ix,iy,iz,iuy)
-              f(ix,iy,iz,iuy)=tmpvec(2) 
+              f(ix,iy,iz,iuy)=tmpvec(2)
               f(mx-ix+1,iy,iz,iuz)= f(ix,iy,iz,iuz)
-              f(ix,iy,iz,iuz)=tmpvec(3) 
+              f(ix,iy,iz,iuz)=tmpvec(3)
             enddo; enddo; enddo
           endif
           close(15)
@@ -4101,8 +4101,8 @@ module Hydro
 !
 !   5-mar-10/axel: adapted from calc_umbmz
 !
-      use Diagnostics, only:save_name
-      use Magnetic, only: idiag_axmz,idiag_aymz
+      use Diagnostics, only: save_name
+      use Magnetic, only: idiag_axmz, idiag_aymz
 !
       logical,save :: first=.true.
       real :: umamz
@@ -4213,13 +4213,13 @@ module Hydro
 !
 !  15-nov-06/tobi: coded
 !  15-dec-10/MR  : added parameters indux, indrho to make routine applicable
-!                  to other velocities/densities 
+!                  to other velocities/densities
 !
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout)        :: f
-      integer,  			  intent(in)	       :: indux
-      integer,  			  intent(in), optional :: indrho
+      integer,                            intent(in)           :: indux
+      integer,                            intent(in), optional :: indrho
 !
       real, dimension (nx) :: rho,rho1,mm
       real :: fac
@@ -4235,17 +4235,17 @@ module Hydro
         if (present(indrho)) then
           indrhol = indrho
         else if (indux==iux) then
-        
+!
           if (ldensity_nolog) then
-      	    indrhol = irho
-      	  else
-      	    indrhol = ilnrho
-      	  endif
-
+            indrhol = irho
+          else
+            indrhol = ilnrho
+          endif
+!
         else
           indrhol = indux+3
         endif
-
+!
         rum = 0.0
         fac = 1.0/nwgrid
 !
@@ -4295,8 +4295,8 @@ module Hydro
         enddo
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
-        call remove_mean_flow(f,iux)	     ! as this is equivalent to remove
-        				     ! mean momenta for constant density
+        call remove_mean_flow(f,iux)         ! as this is equivalent to remove
+                                             ! mean momenta for constant density
       endif
     endsubroutine remove_mean_momenta
 !***********************************************************************
@@ -4309,7 +4309,7 @@ module Hydro
 !
 !  22-may-07/axel: adapted from remove_mean_momenta
 !  15-dec-10/MR  : added parameters indux to make routine applicable
-!                  to other velocities 
+!                  to other velocities
 !
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -4355,7 +4355,7 @@ module Hydro
           enddo
         enddo
         enddo
-	
+!
         if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
 !
     endsubroutine remove_mean_flow
