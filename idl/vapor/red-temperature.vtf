@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+<TransferFunction Type="ParamsBase" >
+<OpacityComposition Type="Long">
+  0 
+</OpacityComposition>
+<LeftBound Type="Double">
+  -0.0648234337568 
+</LeftBound>
+<RightBound Type="Double">
+  0.0522545278072 
+</RightBound>
+<OpacityMap Enabled="1"  Freq="5"  MaxValue="1"  Mean="0.5"  MinValue="0"  Phase="6.28319"  SSq="0.1"  Type="0" >
+<OpacityMapControlPoint Opacity="0.025641"  Value="0.0329659" >
+</OpacityMapControlPoint>
+<OpacityMapControlPoint Opacity="0.333"  Value="0.333" >
+</OpacityMapControlPoint>
+<OpacityMapControlPoint Opacity="0.667"  Value="0.667" >
+</OpacityMapControlPoint>
+<OpacityMapControlPoint Opacity="1"  Value="1" >
+</OpacityMapControlPoint>
+</OpacityMap>
+<Colormap MaxValue="1"  MinValue="0" >
+<ColorMapControlPoint HSV="0 1 0.0823529"  Value="0" >
+</ColorMapControlPoint>
+<ColorMapControlPoint HSV="0 1 0.360784"  Value="0.330658" >
+</ColorMapControlPoint>
+<ColorMapControlPoint HSV="0.0861111 0.988235 1"  Value="0.666345" >
+</ColorMapControlPoint>
+<ColorMapControlPoint HSV="-0.00277778 0 1"  Value="1" >
+</ColorMapControlPoint>
+</Colormap>
+</TransferFunction>
