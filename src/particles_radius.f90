@@ -161,9 +161,12 @@ module Particles_radius
 !
         case ('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
+          ind=1
           do k=npar_low,npar_high
-            call random_number_wrapper(radius_fraction)
-            ind=ceiling(npart_radii*radius_fraction)
+            if (npart_radii>1) then
+              call random_number_wrapper(radius_fraction)
+              ind=ceiling(npart_radii*radius_fraction)
+            endif
             fp(k,iap)=ap0(ind)
           enddo
 !
