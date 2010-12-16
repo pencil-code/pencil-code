@@ -1574,9 +1574,10 @@ module Particles_map
 !
 !  04-nov-09/anders: dummy
 !
+      integer :: marray
       real, dimension (mx,my,mz,marray) :: a
       real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
-      integer :: marray, ivar
+      integer :: ivar
 !
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(ab(1,1,1,1,0))
@@ -1591,9 +1592,10 @@ module Particles_map
 !
 !  04-nov-09/anders: dummy
 !
+      integer :: marray
       real, dimension (mx,my,mz,marray) :: a
       real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
-      integer :: marray, ivar
+      integer :: ivar
 !
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(ab(1,1,1,1,0))
