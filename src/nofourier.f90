@@ -611,10 +611,11 @@ module Fourier
 !
 !   1-jul-08/axel: dummy routine
 !
+      integer, intent(in) :: na
       real, dimension(na) :: a
-      integer, intent(in) :: na,ifirst_fft
+      integer, intent(in) :: ifirst_fft
       logical, optional :: linv
-      real, dimension(2*na+15),optional :: wsavex_temp
+      real, dimension(2*na+15), optional :: wsavex_temp
 !
       call fatal_error('fourier_transform_real_1', &
           'this sub is not available in nofourier.f90!')
