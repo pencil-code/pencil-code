@@ -1626,6 +1626,27 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************
+    subroutine hydro_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   15-dec-10/MR: adapted from density for homogeneity
+!
+      use Cdata
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  Remove mean x-momentum if desired.
+!  Useful to avoid unphysical winds, for example in shearing box simulations.
+!
+      if (lremove_mean_momenta) then
+        call remove_mean_momenta(f,iux)
+      else
+        if (lremove_mean_flow) call remove_mean_flow(f,iux)
+      endif
+!
+    endsubroutine hydro_before_boundary
+!***********************************************************************
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution
@@ -2364,7 +2385,7 @@ module Hydro
 !     real, dimension (nz*nprocz*3) :: uumz2,uumz3
       real, dimension (3) :: OO, dOO
       real :: c,s,sinalp,cosalp,OO2,alpha_precession_rad
-      integer :: l,m,i,j
+      integer :: l,m,i,j, nnz
       real :: fact
       real, dimension (mz,3) :: temp
       real, dimension (mx,3) :: tempx
@@ -2415,9 +2436,9 @@ module Hydro
       if (lcalc_uumean) then
         fact=1./nxy
         uumz = 0.
-        do n=1,mz
+        do nnz=1,mz
           do j=1,3
-            uumz(n,j)=fact*sum(f(l1:l2,m1:m2,n,iux+j-1))
+            uumz(nnz,j)=fact*sum(f(l1:l2,m1:m2,nnz,iux+j-1))
           enddo
         enddo
 !
@@ -4185,7 +4206,7 @@ module Hydro
 !
     endsubroutine calc_umxbmz
 !***********************************************************************
-    subroutine remove_mean_momenta(f)
+    subroutine remove_mean_momenta(f,indux,indrho)
 !
 !  Substract mean x-momentum over density from the x-velocity field.
 !  Useful to avoid unphysical winds in shearing box simulations.
@@ -4193,90 +4214,95 @@ module Hydro
 !  then epicyclic motions don't usually grow catastrophically.
 !
 !  15-nov-06/tobi: coded
+!  15-dec-10/MR  : added parameters indux, indrho to make routine applicable
+!                  to other velocities/densities 
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout)        :: f
+      integer,  			  intent(in)	       :: indux
+      integer,  			  intent(in), optional :: indrho
 !
-      real, dimension (nx) :: rho,rho1,uu
-      real :: fac,fsum_tmp,fsum
-      real, dimension (iux:iuz) :: rum
-      integer :: m,n,j
+      real, dimension (nx) :: rho,rho1,mm
+      real :: fac
+      real, dimension (indux:indux+2) :: rum, rum_tmp
+      integer :: m,n,j,indrhol
 !
-!  Check whether lremove_mean_momenta is true.
-!  If not, there is the alternative possibility of lremove_mean_flow.
-!  Also check if ldensity=T. Otherwise stop.
+!  check if ldensity=T. Otherwise switch to remove_mean_flow.
 !
-      if (lremove_mean_momenta) then
-        if (ldensity) then
+      if (ldensity) then
 !
-!  inititialize mean momentum, rum, to zero
+!  initialize mean momentum, rum, to zero
 !
-          rum = 0.0
-          fac = 1.0/nwgrid
+        if (present(indrho)) then
+          indrhol = indrho
+        else if (indux==iux) then
+        
+          if (ldensity_nolog) then
+      	    indrhol = irho
+      	  else
+      	    indrhol = ilnrho
+      	  endif
+
+        else
+          indrhol = indux+3
+        endif
+
+        rum = 0.0
+        fac = 1.0/nwgrid
 !
 !  Go through all pencils.
 !
-          do n = n1,n2
-          do m = m1,m2
+        do n = n1,n2
+        do m = m1,m2
 !
 !  Compute density from the f-array.
 !
-            if (ldensity_nolog) then
-              rho = f(l1:l2,m,n,irho)
-            else
-              rho = exp(f(l1:l2,m,n,ilnrho))
-            endif
+          if (ldensity_nolog) then
+            rho = f(l1:l2,m,n,indrhol)
+          else
+            rho = exp(f(l1:l2,m,n,indrhol))
+          endif
 !
 !  Compute mean momentum in each of the 3 directions.
 !
-            do j=iux,iuz
-              uu = f(l1:l2,m,n,j)
-              rum(j) = rum(j) + fac*sum(rho*uu)
-            enddo
+          do j=indux,indux+2
+            mm = rho*f(l1:l2,m,n,j)
+            rum(j) = rum(j) + fac*sum(mm)
           enddo
-          enddo
+        enddo
+        enddo
 !
 !  Compute total sum for all processors
 !
-          do j=iux,iuz
-            fsum_tmp = rum(j)
-            call mpiallreduce_sum(fsum_tmp,fsum)
-            rum(j) = fsum
-          enddo
+        call mpiallreduce_sum(rum,rum_tmp,3)
+        rum = rum_tmp
 !
 !  Compute inverse density, rho1.
 !
-          do n = n1,n2
-          do m = m1,m2
-            if (ldensity_nolog) then
-              rho1 = 1.0/f(l1:l2,m,n,irho)
-            else
-              rho1 = exp(-f(l1:l2,m,n,ilnrho))
-            endif
+        do n = n1,n2
+        do m = m1,m2
+          if (ldensity_nolog) then
+            rho1 = 1.0/f(l1:l2,m,n,indrhol)
+          else
+            rho1 = exp(-f(l1:l2,m,n,indrhol))
+          endif
 !
 !  Subtract out the mean momentum separately for each direction.
 !
-            do j=iux,iuz
-              f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - rho1*rum(j)
-            enddo
+          do j=indux,indux+2
+            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - rho1*rum(j)
           enddo
-          enddo
-          if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
-        else
-          call fatal_error('remove_mean_momenta', &
-            'use remove_mean_flow, because ldensity=F')
-        endif
-!
-!  Check for alternative possibility of lremove_mean_flow.
-!
-      elseif (lremove_mean_flow) then
-        call remove_mean_flow(f)
+        enddo
+        enddo
+        if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
+      else
+        call remove_mean_flow(f,iux)	     ! as this is equivalent to remove
+        				     ! mean momenta for constant density
       endif
-!
     endsubroutine remove_mean_momenta
 !***********************************************************************
-    subroutine remove_mean_flow(f)
+    subroutine remove_mean_flow(f,indux)
 !
 !  Substract mean x-flow from the x-velocity field.
 !  Useful to avoid unphysical winds in shearing box simulations.
@@ -4284,17 +4310,18 @@ module Hydro
 !  then epicyclic motions don't usually grow catastrophically.
 !
 !  22-may-07/axel: adapted from remove_mean_momenta
+!  15-dec-10/MR  : added parameters indux to make routine applicable
+!                  to other velocities 
 !
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer,                            intent (in)    :: indux
 !
       real, dimension (nx) :: uu
-      real :: fac,fsum_tmp,fsum
-      real, dimension (iux:iuz) :: um
+      real, dimension (indux:indux+2)  :: um, um_tmp
       integer :: m,n,j
-!
-      if (lremove_mean_flow) then
+      real    :: fac
 !
 !  initialize um and compute normalization factor fac
 !
@@ -4308,7 +4335,7 @@ module Hydro
 !
 !  Compute mean momentum in each of the 3 directions.
 !
-          do j=iux,iuz
+          do j=indux,indux+2
             uu = f(l1:l2,m,n,j)
             um(j) = um(j) + fac*sum(uu)
           enddo
@@ -4317,25 +4344,21 @@ module Hydro
 !
 !  Compute total sum for all processors
 !
-        do j=iux,iuz
-          fsum_tmp = um(j)
-          call mpiallreduce_sum(fsum_tmp,fsum)
-          um(j) = fsum
-        enddo
+        call mpiallreduce_sum(um,um_tmp,3)
+        um = um_tmp
 !
 !  Go through all pencils and subtract out the mean flow
 !  separately for each direction.
 !
         do n = n1,n2
         do m = m1,m2
-          do j=iux,iuz
+          do j=indux,indux+2
             f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - um(j)
           enddo
         enddo
         enddo
+	
         if (lroot.and.ip<6) print*,'remove_mean_flow: um=',um
-!
-      endif
 !
     endsubroutine remove_mean_flow
 !***********************************************************************
