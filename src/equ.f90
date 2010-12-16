@@ -168,13 +168,6 @@ module Equ
 !
       call calc_selfpotential(f)
 !
-!  Remove mean x-momentum if desired.
-!  Useful to avoid unphysical winds, for example in shearing box simulations.
-!  (This is only done if lremove_mean_momenta=T,
-!  to be set in hydro_run_pars).
-!
-      call remove_mean_momenta(f)
-!
 !  Remove mean emf in the radial direction if desired.
 !  Useful as a simple way to remove the large scale 
 !  contribution from uphi x Bz from global disk simulations. 
@@ -187,7 +180,6 @@ module Equ
 !  (should consider having possibility for all modules to fiddle with the
 !   f array before boundary conditions are sent)
 !
-
       if (.not. lchemistry) then
         if (ldustdensity) call null_dust_vars(f)
         if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
@@ -197,10 +189,12 @@ module Equ
 !
       if (linterstellar) call interstellar_before_boundary(f)
       if (ldensity)      call density_before_boundary(f)
+      if (lhydro)        call hydro_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
       if (lparticles)    call particles_before_boundary(f)
+      if (ltestflow)     call testflow_before_boundary(f)
 !
 !  Fetch fp to the special module
 !
