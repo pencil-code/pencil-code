@@ -157,8 +157,8 @@ module Particles_coagulation
 !
 !  Time-step for physical kernel.
 !
-                  deltavjk=sqrt(sum((vpk-vpj)**2))
                   if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+                    deltavjk=sqrt(sum((vpk-vpj)**2))
                     dt1_coag_par=dt1_coag_par+ &
                         pi*(fp(k,iap)+fp(k,iap))**2*deltavjk* &
                         min(npswarmj,npswarmk)
