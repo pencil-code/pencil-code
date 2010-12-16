@@ -5387,6 +5387,74 @@ nameloop: do
 !
     endsubroutine gij_psi_etc
 !***********************************************************************
+    subroutine xlocation(xpos,ixpos,lproc)
+!
+!  If xpos lies within this processor, then lproc=T and xpos=x(ixpos).
+!  Otherwise lproc=F and ixpos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  03-dec-09/MR: moved here from module slices
+!  16-dec-10/joern: adapted from zlocation
+!
+      real :: xpos
+      integer :: ixpos,l
+      logical :: lproc
+!
+!  Run through all x positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do l=l1,l2
+        if (x(l)<=xpos.and.x(l+1)>xpos) then
+          ixpos=l
+          lproc=.true.
+          exit
+        else
+        endif
+      enddo
+!
+!  If nothing is found, we set lproc=.false. and and put ixpos=1
+!
+      ixpos=1
+      lproc=.false.
+!
+!
+    endsubroutine xlocation
+!***********************************************************************
+    subroutine ylocation(ypos,iypos,lproc)
+!
+!  If ypos lies within this processor, then lproc=T and ypos=y(iypos).
+!  Otherwise lproc=F and iypos=1.
+!
+!  18-nov-06/axel: coded
+!  14-oct-08/ccyang: use half-closed interval and include the top-most plane
+!  03-dec-09/MR: adapted from module slices
+!  16-dec-10/joern: took it from zlocation
+!
+      real :: ypos
+      integer :: iypos,m
+      logical :: lproc
+!
+!  Run through all y positions until we hit the right interval.
+!  If the right interval is found, jump out of the loop.
+!
+      do m=m1,m2
+        if (y(m)<=ypos.and.y(m+1)>ypos) then
+          iypos=m
+          lproc=.true.
+          exit
+        else
+        endif
+      enddo
+!
+!  If nothing is found, we set lproc=.false. and and put iypos=1
+!
+      iypos=1
+      lproc=.false.
+!
+!
+    endsubroutine ylocation
+!***********************************************************************
     subroutine zlocation(zpos,izpos,lproc)
 !
 !  If zpos lies within this processor, then lproc=T and zpos=z(izpos).
@@ -5407,7 +5475,7 @@ nameloop: do
         if (z(n)<=zpos.and.z(n+1)>zpos) then
           izpos=n
           lproc=.true.
-          goto 900
+          exit
         else
         endif
       enddo
@@ -5417,7 +5485,6 @@ nameloop: do
       izpos=1
       lproc=.false.
 !
-900   continue
 !
     endsubroutine zlocation
 !***********************************************************************
