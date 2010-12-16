@@ -74,7 +74,7 @@ module Hydro
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
-      ampl_kinflow, & 
+      ampl_kinflow, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasez_uukin, &
@@ -368,10 +368,10 @@ module Hydro
         ck_rsqr = x(l1:l2)*x(l1:l2)
         if (lpencil(i_uu)) then
           if (headtt) print*,'Chandrasekhar-Kendall flow'
-          p%uu(:,1)=ampl_kinflow*Pl(m)*(  &  
-             (ell*(ell+1)/(Balpha*ck_rsqr))*Zl(l1:l2) & 
+          p%uu(:,1)=ampl_kinflow*Pl(m)*(  &
+             (ell*(ell+1)/(Balpha*ck_rsqr))*Zl(l1:l2) &
             -(2./(Balpha*ck_r))*dZldr(l1:l2)  )
-          p%uu(:,2)=ampl_kinflow*( & 
+          p%uu(:,2)=ampl_kinflow*( &
              dZldr(l1:l2)/Balpha- Zl(l1:l2)/(Balpha*ck_r) &
                        )*dPldtheta(m)
           p%uu(:,3)=-ampl_kinflow*Zl(l1:l2)*dPldtheta(m)
@@ -953,6 +953,18 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_hydro
+!***********************************************************************
+    subroutine hydro_before_boundary(f)
+!
+!  Dummy routine
+!
+!   16-dec-10/bing: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine hydro_before_boundary
 !***********************************************************************
     subroutine duu_dt(f,df,p)
 !
