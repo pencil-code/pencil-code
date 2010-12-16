@@ -618,7 +618,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  nov-2010/kragset: updated to include spheres
 !
     use viscosity, only: getnu
-    use Sub, only: dot2
+    use Sub, only: dot2, dot
 !    
     real, dimension (mx,my,mz,mfarray), intent(in):: f
     real, dimension (mx,my,mz,mvar), intent(in)   :: df
@@ -738,8 +738,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Local heat flux
 !
                 if (idiag_Nusselt /= 0) then
-                  call dot2(p%gTT(ix0-nghost,:),fp_gradT)
-                  fp_gradT=sqrt(fp_gradT)
+                !  call dot2(p%gTT(ix0-nghost,:),fp_gradT)
+                !  fp_gradT=sqrt(fp_gradT)
+
+                  call dot(p%gTT(ix0-nghost,:),-nvec,fp_gradT)
+
                   fp_tcond=p%tcond(ix0-nghost)
                   heat_flux=(fp_gradT*fp_tcond)  * surfaceelement * 2 * robj
                   Tobj=objects(iobj)%T
@@ -914,11 +917,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer :: i,j,k,idir,xind,yind,zind,iobj
       
       real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
-      real :: xmirror, ymirror, zmirror, phi, dr, cos_phi, sin_phi
+      real :: xmirror, ymirror, zmirror, dr, cos_phi, sin_phi
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
       integer :: lower_k, upper_k, ndims
       logical :: bax, bay, baz, lnew_interpolation_method 
-      real, dimension(3) :: xxp,gpp
+      real, dimension(3) :: xxp,gpp, phi
       character(len=10) :: form
 !
 !  Find ghost points based on the mirror interpolation method
@@ -1123,29 +1126,48 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             elseif (objects(iobj)%form=='sphere') then
               ndims=3
             endif
-            call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                lnew_interpolation_method)
-            f(i,j,k,iux)=-phi
-            call interpolate_mirror_point(f,phi,iuy,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                lnew_interpolation_method)
-            f(i,j,k,iuy)=-phi
-            call interpolate_mirror_point(f,phi,iuz,lower_i,upper_i,lower_j,&
-                upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                lnew_interpolation_method)
-            f(i,j,k,iuz)=-phi
-            if (ilnrho>0) then
-              call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
-                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                  zmirror,ndims,lnew_interpolation_method)
-              f(i,j,k,ilnrho)=phi
-            endif
-            if (ilnTT>0) then
-              call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
-                  lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                  zmirror,ndims,lnew_interpolation_method)
-              f(i,j,k,ilnTT)=2*objects(iobj)%T-phi
+            if (lnew_interpolation_method) then
+              call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                  lnew_interpolation_method)
+              f(i,j,k,iux:iuz)=-phi
+              if (ilnrho>0) then
+                call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
+                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                    zmirror,ndims,lnew_interpolation_method)
+                f(i,j,k,ilnrho)=phi(1)
+              endif
+              if (ilnTT>0) then
+                call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
+                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                    zmirror,ndims,lnew_interpolation_method)
+                f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
+              endif
+            else
+              call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                  lnew_interpolation_method)
+              f(i,j,k,iux)=-phi(1)
+              call interpolate_mirror_point(f,phi,iuy,lower_i,upper_i,lower_j,&
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                  lnew_interpolation_method)
+              f(i,j,k,iuy)=-phi(1)
+              call interpolate_mirror_point(f,phi,iuz,lower_i,upper_i,lower_j,&
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+                  lnew_interpolation_method)
+              f(i,j,k,iuz)=-phi(1)
+              if (ilnrho>0) then
+                call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
+                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                    zmirror,ndims,lnew_interpolation_method)
+                f(i,j,k,ilnrho)=phi(1)
+              endif
+              if (ilnTT>0) then
+                call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
+                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                    zmirror,ndims,lnew_interpolation_method)
+                f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
+              endif
             endif
           endif
         enddo
@@ -1172,7 +1194,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 zind=k-ba_shift(i,j,k,idir)
               else
                 print*,'No such idir!...exiting!'
-                stop
+                call fatal_error('update_solid_cells','No such idir!')
               endif
 !                
 !  Only update the solid cell "ghost points" if all indeces are non-zero.
@@ -1212,26 +1234,37 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, intent(in) :: lower_i,upper_i,lower_j,upper_j,ivar
       integer, intent(in) :: lower_k,upper_k
       real,    intent(in) :: xmirror,ymirror,zmirror
-      real,    intent(out):: phi_
+      real,dimension(3), intent(out):: phi_
       logical, intent(in) :: lnew_interpolation_method
 !
       real, dimension(3) :: xxp, phi
-      real, dimension(1) :: gp
+      real, dimension(3) :: gp
       integer, dimension(3) :: inear
 !
       xxp=(/xmirror,ymirror,zmirror/)
       inear=(/lower_i,lower_j,lower_k/)
-      call linear_interpolate(f,ivar,ivar,xxp,gp,inear,.false.)
-      phi_=gp(1)
+      if (lnew_interpolation_method .and. ivar==iux) then
+        call linear_interpolate(f,iux,iuz,xxp,gp,inear,.false.)
+        phi_=gp
+      else
+        call linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.)
+        phi_(1)=gp(1)
+      endif
 !
 !  If the mirror point is very close to the surface of the object 
 !  some special treatment is required.
 !
-      if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then 
-        phi(1)=phi_
-        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
-            phi,.false.,lnew_interpolation_method)
-        phi_=phi(1)
+      if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then
+        phi=phi_
+        if (lnew_interpolation_method .and. ivar==iux) then
+          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
+              phi,.false.,lnew_interpolation_method)
+          phi_=phi
+        else
+          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
+              phi,.false.,lnew_interpolation_method)
+          phi_(1)=phi(1)
+        endif
       endif
 !
     endsubroutine interpolate_mirror_point
@@ -1334,7 +1367,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           enddo
 !
 !  We want special treatment if at least one of the corner points are 
-!  inside the solid geometry, of if this is a fluid point.
+!  inside the solid geometry, or if this is a fluid point.
 !
         if ((minval(rij) < rs) .or. fluid_point) then
 !
