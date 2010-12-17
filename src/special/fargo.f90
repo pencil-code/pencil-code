@@ -687,7 +687,7 @@ endsubroutine read_special_run_pars
       real, dimension (nx,ny) :: faux,tmp2
       real, dimension (nx,nygrid) :: tmp
 !
-      integer :: ivar,ng,ig,mshift,cellshift,i
+      integer :: ivar,ng,ig,mshift,cellshift,i,mserial
 !
       integer, dimension (nx,nz) :: shift_intg
       real, dimension (nx,nz) :: shift_total,shift_frac
@@ -721,13 +721,14 @@ endsubroutine read_special_run_pars
           ig=i-l1+1
           cellshift=shift_intg(ig,ng)
 !
-          do m=1,nygrid
-            mshift=m-cellshift
+          do m=1,ny
+            mserial=m+ipy*ny
+            mshift=mserial-cellshift
             if (mshift .lt. 1 )     mshift = mshift + nygrid
             if (mshift .gt. nygrid) mshift = mshift - nygrid
 !          
             do ivar=1,mvar
-              faux_remap_shift(ig,m,ivar) = faux_remap(ig,mshift,ivar)
+              faux_remap_shift(ig,mserial,ivar) = faux_remap(ig,mshift,ivar)
             enddo
           enddo
         enddo
