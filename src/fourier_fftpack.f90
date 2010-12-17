@@ -1809,7 +1809,8 @@ module Fourier
 !
       real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
-      real, dimension (nxgrid), optional :: shift_y
+      real, optional :: shift_y
+      real :: dshift_y
 !
       real, dimension (:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: stat
@@ -1830,14 +1831,14 @@ module Fourier
       if (size (a_re, 1) /= size (a_im, 1)) &
           call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
 !
-      if (lshear) call fatal_error ('fft_y_parallel_1D', 'Shearing is not possible for 1D data!', lfirst_proc_y)
-      if (lshift) call fatal_error ('fft_y_parallel_1D', 'Shifting is not possible for 1D data!', lfirst_proc_y)
-!
       ! Allocate memory for large arrays.
       allocate (p_re(nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p_re', .true.)
       allocate (p_im(nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p_im', .true.)
+!
+      if (lshear) call fatal_error ('fft_y_parallel_1D', 'Shearing is not implemented for 1D data!', lfirst_proc_y)
+      if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
 !
@@ -1856,6 +1857,7 @@ module Fourier
         ! Transform y-direction.
         ay = cmplx (p_re, p_im)
         call cfftf (nygrid, ay, wsavey)
+        if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y))        
         p_re = real (ay)
         p_im = aimag (ay)
 !
@@ -1908,13 +1910,13 @@ module Fourier
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
-      real, dimension (nxgrid), optional :: shift_y
+      real, dimension (nx), optional :: shift_y
 !
       real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
       real, dimension (nx) :: deltay_x
       real, dimension (nx) :: dshift_y
 !
-      integer :: l, stat, x_offset
+      integer :: l, stat
       logical :: lforward, lcompute_im, lshift
 !
       lforward = .true.
@@ -1933,15 +1935,8 @@ module Fourier
       allocate (p_im(nx,nygrid), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate memory for p_im', .true.)
 !
-      if (lshear) then
-        x_offset = 1 + ipx*nx
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+nx-1) - (x0+Lx/2))/Lx
-      endif
-!
-      if (lshift) then
-        x_offset = 1 + ipx*nx
-        dshift_y = shift_y(x_offset:x_offset+nx-1)
-      endif
+      if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
 !
@@ -2019,14 +2014,14 @@ module Fourier
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
-      real, dimension (nxgrid), optional :: shift_y
+      real, dimension (nx), optional :: shift_y
 !
       real, dimension (:,:,:), allocatable :: p_re, p_im   ! data in pencil shape
       integer :: inz ! size of the third dimension
       real, dimension (nx) :: deltay_x
       real, dimension (nx) :: dshift_y
 !
-      integer :: l, stat, pos_z, x_offset
+      integer :: l, stat, pos_z
       logical :: lforward, lcompute_im, lshift
 !
       lforward = .true.
@@ -2055,15 +2050,8 @@ module Fourier
       allocate (p_im(nx,nygrid,inz), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate memory for p_im', .true.)
 !
-      if (lshear) then
-        x_offset = 1 + ipx*nx
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+nx-1) - (x0+Lx/2))/Lx
-      endif
-!
-      if (lshift) then
-        x_offset = 1 + ipx*nx
-        dshift_y = shift_y(x_offset:x_offset+nx-1)
-      endif
+      if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
 !
@@ -2145,14 +2133,14 @@ module Fourier
 !
       real, dimension (:,:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
-      real, dimension (nxgrid), optional :: shift_y
+      real, dimension (nx), optional :: shift_y
 !
       real, dimension (:,:,:,:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: inz, ina ! size of the third and fourth dimension
       real, dimension (nx) :: deltay_x
       real, dimension (nx) :: dshift_y
 !
-      integer :: l, stat, pos_z, pos_a, x_offset
+      integer :: l, stat, pos_z, pos_a
       logical :: lforward, lcompute_im, lshift
 !
       lforward = .true.
@@ -2184,15 +2172,8 @@ module Fourier
       allocate (p_im(nx,nygrid,inz,ina), stat=stat)
       if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate memory for p_im', .true.)
 !
-      if (lshear) then
-        x_offset = 1 + ipx*nx
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+nx-1) - (x0+Lx/2))/Lx
-      endif
-!
-      if (lshift) then
-        x_offset = 1 + ipx*nx
-        dshift_y = shift_y(x_offset:x_offset+nx-1)
-      endif
+      if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshift) dshift_y = shift_y
 !
       call cffti (nygrid, wsavey)
 !
@@ -2731,7 +2712,7 @@ module Fourier
       ! Check for degenerate cases.
       if (nxgrid == 1) then
         if (lshift) then
-          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y)
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y(1))
         else
           call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im)
         endif
