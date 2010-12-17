@@ -156,7 +156,7 @@ module Grid
         select case (grid_func(1))
 !
         case ('linear','sinh')
-          a=coeff_grid(1,1)*dx
+          a=coeff_grid(1)*dx
           xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
@@ -171,20 +171,49 @@ module Grid
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
 !
-        case ('cos','arsinh','tanh')
+        case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
-          a=coeff_grid(1,1)
-          xi1star=xi1lo+(xyz_star(1)-x00)/Lx*(xi1up-xi1lo)
-          call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=a)
-          call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=a)
-          call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up,param=a)
+          a=pi*Lx/((xi1up-xi1lo)*coeff_grid(1))
+          b=dxi_fact(1)
+          xi1star=xi1lo+(xyz_star(1)+coeff_grid(1)-x00)/Lx*b/2.0*(xi1up-xi1lo)
+          call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=b)
+          call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=b)
+          call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up,param=b)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
           if (lparticles) then
-            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=a)
+            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
+            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
+          endif
+!
+        case ('arsinh')
+          ! Approximately linear in infinity, linear in the middle
+          a=pi*Lx/((xi1up-xi1lo)*coeff_grid(1))
+          b=dxi_fact(1)
+          xi1star=xi1lo+(xyz_star(1)+coeff_grid(1)-x00)/Lx*b/2.0*(xi1up-xi1lo)
+          call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=b)
+          call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=b)
+          call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up,param=b)
+!
+          ! Slope should be 1 at the minimum:
+          b = minval (g1der1)
+          if (b < 1.0) then
+            g1der1 = g1der1 + 1.0 - b
+            g1     = g1   + (1.0 - b) * a * (xi1   - xi1star)
+            g1lo   = g1lo + (1.0 - b) * a * (xi1lo - xi1star)
+            g1up   = g1up + (1.0 - b) * a * (xi1up - xi1star)
+          endif
+!
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+!
+          if (lparticles) then
+             b=dxi_fact(3)
+           call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
 !
@@ -312,7 +341,7 @@ module Grid
         case ('frozensphere')
           ! Just like sinh, except set dx constant below a certain radius, and
           ! constant for top ghost points.
-          a=coeff_grid(1,1)*dx
+          a=coeff_grid(1)*dx
           xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,0.8*xyz_star(1),grid_func(1))/a
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
@@ -356,7 +385,7 @@ module Grid
 !
         case ('linear','sinh')
 !
-          a=coeff_grid(2,1)*dy
+          a=coeff_grid(2)*dy
           xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
@@ -371,20 +400,49 @@ module Grid
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
 !
-        case ('cos','arsinh','tanh')
+        case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
-          a=coeff_grid(2,1)
-          xi2star=xi2lo+(xyz_star(2)-y00)/Ly*(xi2up-xi2lo)
-          call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=a)
-          call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=a)
-          call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up,param=a)
+          a=pi*Ly/((xi2up-xi2lo)*coeff_grid(2))
+          b=dxi_fact(2)
+          xi2star=xi2lo+(xyz_star(2)+coeff_grid(2)-y00)/Ly*b/2.0*(xi2up-xi2lo)
+          call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
+          call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=b)
+          call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up,param=b)
 !
           y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 !
           if (lparticles) then
-            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=a)
+            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
+            g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
+          endif
+!
+        case ('arsinh')
+          ! Approximately linear in infinity, linear in the middle
+          a=pi*Ly/((xi2up-xi2lo)*coeff_grid(2))
+          b=dxi_fact(2)
+          xi2star=xi2lo+(xyz_star(2)+coeff_grid(2)-y00)/Ly*b/2.0*(xi2up-xi2lo)
+          call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
+          call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=b)
+          call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up,param=b)
+!
+          ! Slope should be 1 at the minimum:
+          b = minval (g2der1)
+          if (b < 1.0) then
+            g2der1 = g2der1 + 1.0 - b
+            g2     = g2   + (1.0 - b) * a * (xi2   - xi2star)
+            g2lo   = g2lo + (1.0 - b) * a * (xi2lo - xi2star)
+            g2up   = g2up + (1.0 - b) * a * (xi2up - xi2star)
+          endif
+!
+          y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
+          yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
+          yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
+!
+          if (lparticles) then
+            b=dxi_fact(3)
+            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
 !
@@ -475,7 +533,7 @@ module Grid
 !
         case ('linear','sinh')
 !
-          a=coeff_grid(3,1)*dz
+          a=coeff_grid(3)*dz
           xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
@@ -490,20 +548,49 @@ module Grid
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
           endif
 !
-        case ('cos','arsinh','tanh')
+        case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
-          a=coeff_grid(3,1)
-          xi3star=xi3lo+(xyz_star(3)-z00)/Lz*(xi3up-xi3lo)
-          call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=a)
-          call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=a)
-          call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up,param=a)
+          a=pi*Lz/((xi3up-xi3lo)*coeff_grid(3))
+          b=dxi_fact(3)
+          xi3star=xi3lo+(xyz_star(3)+coeff_grid(3)-z00)/Lz*b/2.0*(xi3up-xi3lo)
+          call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=b)
+          call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=b)
+          call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up,param=b)
 !
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
           if (lparticles) then
-            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=a)
+            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
+            g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
+          endif
+!
+        case ('arsinh')
+          ! Approximately linear in infinity, linear in the middle
+          a=pi*Lz/((xi3up-xi3lo)*coeff_grid(3))
+          b=dxi_fact(3)
+          xi3star=xi3lo+(xyz_star(3)+coeff_grid(3)-z00)/Lz*b/2.0*(xi3up-xi3lo)
+          call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=b)
+          call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=b)
+          call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up,param=b)
+!
+          ! Slope should be 1 at the minimum:
+          b = minval (g3der1)
+          if ((grid_func(3) == 'arsinh') .and. (b < 1.0)) then
+            g3der1 = g3der1 + 1.0 - b
+            g3     = g3   + (1.0 - b) * a * (xi3   - xi3star)
+            g3lo   = g3lo + (1.0 - b) * a * (xi3lo - xi3star)
+            g3up   = g3up + (1.0 - b) * a * (xi3up - xi3star)
+          endif
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+          zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+!
+          if (lparticles) then
+            b=dxi_fact(3)
+            call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
             g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
           endif
 !
@@ -1234,11 +1321,11 @@ module Grid
             call fatal_error ('grid_profile', "'cos' needs its parameter.")
 !
         ! Transition goes from slope 1 (xi < pi/2) to slope param (xi > pi/2).
-        m = pi_1 * (param - 1) - 1
+        m = 0.5 * (param - 1)
         where (xi <= -pi/2.0)
           g = xi + pi/2.0 + 1
         elsewhere (xi >= pi/2.0)
-          g = m * (xi - pi/2.0) + 1 + pi * (1 + m)
+          g = param * (xi - pi/2.0) + pi/2.0 + m * pi/2.0 + 1 + pi/2.0 * (1 + m)
         elsewhere
           g = xi + m * (xi - cos (xi)) + 1 + pi/2.0 * (1 + m)
         endwhere
@@ -1246,7 +1333,7 @@ module Grid
           where (xi <= -pi/2.0)
             gder1 = 1.0
           elsewhere (xi >= pi/2.0)
-            gder1 = m
+            gder1 = param
           elsewhere
             gder1 = 1 + 0.5 * (m - 1) * (1 + sin (xi))
           endwhere
@@ -1266,8 +1353,8 @@ module Grid
             call fatal_error ('grid_profile', "'arsinh' needs its parameter.")
 !
         ! ('asinh' is not available in F95, therefore it is replaced by 'ln'.)
-        g = param * (xi * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1))
-        if (present (gder1)) gder1 = param * log (xi + sqrt (xi**2 + 1))
+        g = xi + param * (xi * log (xi + sqrt (xi**2 + 1)) - sqrt (xi**2 + 1))
+        if (present (gder1)) gder1 = 1.0 + param * log (xi + sqrt (xi**2 + 1))
         if (present (gder2)) gder2 = param / (sqrt (xi**2 + 1))
 !
       case ('tanh')
@@ -1280,7 +1367,7 @@ module Grid
         m = 0.5 * (param - 1)
         g = xi * (m + 1) + m * log (cosh (xi))
         if (present (gder1)) gder1 = m * (1 + tanh (xi)) + 1
-        if (present (gder2)) gder2 = m / cosh (xi)**2
+        if (present (gder2)) gder2 = m * (1 - tanh (xi)**2)
 !
       case ('duct')
         g=sin(xi)

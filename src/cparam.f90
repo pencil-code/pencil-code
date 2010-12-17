@@ -71,7 +71,8 @@ module Cparam
 !             value for NaN. Anyways, 1.E-45 should be pretty unique, too.
 !             (Bourdin.KIS)
 !
-  integer(KIND=ikind8), parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
+!  integer(KIND=ikind8), parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
+  integer(KIND=ikind8), parameter :: NaN_bits=12
   real, parameter :: NaN=transfer(NaN_bits,0.0)
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
