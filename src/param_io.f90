@@ -77,8 +77,7 @@ module Param_IO
       tstart, fbcx1, fbcx2, fbcx1_2, fbcx2_2, fbcy1, fbcy2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
-      !xyz_step, xi_step_frac, xi_step_width, dxi_fact, niter_poisson, &
-      xyz_step, xi_step_frac, xi_step_width, niter_poisson, &
+      xyz_step, xi_step_frac, xi_step_width, dxi_fact, niter_poisson, &
       lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, border_frac_x, border_frac_y, border_frac_z, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
