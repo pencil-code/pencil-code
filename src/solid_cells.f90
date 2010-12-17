@@ -196,15 +196,19 @@ module Solid_Cells
       if (fbcz1(3) > 0) flow_dir= 3
       if (fbcz2(3) < 0) flow_dir=-3
       if (flow_dir > 0) then
-        print*,'By using fbc[x,y,z] I found the flow direction to be in the ',&
-            flow_dir,' direction.'
+        if (lroot) then
+          print*,'By using fbc[x,y,z] I found the flow direction to be in the ',&
+              flow_dir,' direction.'
+        endif
       else
         do i=1,3
           if (lperi(i)) then
             if (.not. lperi(mod(i,3)+1) .and. .not. lperi(mod(i+1,3)+1)) then
               flow_dir=i
+              if (lroot) then
               print*,'By using lperi I found the flow direction to be in the ',&
                   flow_dir,' direction.'
+              endif
             endif
           endif
         enddo
@@ -914,6 +918,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  19-nov-2008/nils: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mvar) :: f_tmp
       integer :: i,j,k,idir,xind,yind,zind,iobj
       
       real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
@@ -923,6 +928,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       logical :: bax, bay, baz, lnew_interpolation_method 
       real, dimension(3) :: xxp,gpp, phi
       character(len=10) :: form
+
+      real :: rho0, rho1, T0, T1
+
 !
 !  Find ghost points based on the mirror interpolation method
 !
@@ -967,7 +975,17 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   if (ilnTT > 0) then
                     call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
                         .true.,lnew_interpolation_method)
+                    T0=f(i,j,k,ilnTT)
+                    rho0=f(i,j,k,ilnrho)
+                    if (.not. ldensity_nolog) rho0=exp(rho0)
+                    if (.not. ltemperature_nolog) T0=exp(T0)
                     f(i,j,k,ilnTT)=gpp(1)
+                    ! Update density in order to avoid pressure peaks
+                    T1=f(i,j,k,ilnTT)
+                    if (.not. ltemperature_nolog) T1=exp(T1)
+                    rho1=rho0*T0/T1
+                    f(i,j,k,ilnrho)=rho1
+                    if (.not. ldensity_nolog) f(i,j,k,ilnrho)=log(f(i,j,k,ilnrho))
                   endif
                 else
                   call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
@@ -1127,22 +1145,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               ndims=3
             endif
             if (lnew_interpolation_method) then
-              call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
+
+              
+              call interpolate_mirror_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
-              f(i,j,k,iux:iuz)=-phi
-              if (ilnrho>0) then
-                call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
-                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims,lnew_interpolation_method)
-                f(i,j,k,ilnrho)=phi(1)
-              endif
-              if (ilnTT>0) then
-                call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
-                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims,lnew_interpolation_method)
-                f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
-              endif
+              f(i,j,k,1:mvar)=f_tmp
+
+
+             
             else
               call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
@@ -1268,6 +1279,82 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       endif
 !
     endsubroutine interpolate_mirror_point
+!***********************************************************************  
+    subroutine interpolate_mirror_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
+        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
+        lnew_interpolation_method)
+!
+!  Interpolate value in a mirror point from the eight corner values
+!
+!  23-dec-2008/nils: coded
+!  22-apr-2009/nils: added special treatment close to the solid surface
+!
+      use General, only: linear_interpolate
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mvar), intent(out) :: f_tmp
+      integer, intent(in) :: iobj,ndims
+      integer, intent(in) :: lower_i,upper_i,lower_j,upper_j
+      integer, intent(in) :: lower_k,upper_k
+      real,    intent(in) :: xmirror,ymirror,zmirror
+      logical, intent(in) :: lnew_interpolation_method
+!
+      real, dimension(3) :: xxp
+      integer, dimension(3) :: inear
+      real :: rho_ghost_point,rho_fluid_point,T_fluid_point,T_ghost_point
+!
+!  Linear interploation (use the eight corner points of the cube), same
+! method as used in the particle module
+!
+      xxp=(/xmirror,ymirror,zmirror/)
+      inear=(/lower_i,lower_j,lower_k/)
+      call linear_interpolate(f,iux,mvar,xxp,f_tmp,inear,.false.)
+!
+!  If the mirror point is very close to the surface of the object 
+!  some special treatment is required.
+!
+      if (lclose_interpolation) then
+        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,iux,xxp,&
+            f_tmp(1:3),.false.,lnew_interpolation_method)
+        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ilnTT,xxp,&
+            f_tmp(ilnTT),.false.,lnew_interpolation_method)
+      endif
+!
+!  For the temperature boundaries being antisymmetric relative to the 
+!  object temperature are used
+!
+      if (ilnTT>0) then
+        T_fluid_point=f_tmp(ilnTT)
+        if (.not. ltemperature_nolog) T_fluid_point=exp(T_fluid_point)
+        T_ghost_point=2*objects(iobj)%T-T_fluid_point
+        if (.not. ltemperature_nolog) then
+          f_tmp(ilnTT)=log(T_ghost_point)
+        else
+          f_tmp(ilnTT)=T_ghost_point
+        endif
+      endif
+!
+!  The gradient of the pressure should be zero at the fluid-solid intereface.
+!  For isothermal cases this means that the density gradient is zero
+!              
+      rho_fluid_point=f_tmp(ilnrho)
+      if (.not. ldensity_nolog) rho_fluid_point=exp(rho_fluid_point) 
+      if (ilnTT>0) then
+        rho_ghost_point=rho_fluid_point*T_fluid_point/T_ghost_point
+      else
+        rho_ghost_point=rho_fluid_point
+      endif
+      if (.not. ldensity_nolog) then
+        f_tmp(ilnrho)=log(rho_ghost_point)
+      else
+        f_tmp(ilnrho)=rho_ghost_point
+      endif
+!
+!  Antisymmetric boundaries are used for the velocity vector
+!
+      f_tmp(1:3)=-f_tmp(1:3)
+!
+    endsubroutine interpolate_mirror_point_new
 !***********************************************************************  
     subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,ivar1,xxp,gpp,&
         fluid_point,lnew_interpolation_method)
