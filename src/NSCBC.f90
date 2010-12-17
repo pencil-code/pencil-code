@@ -388,9 +388,10 @@ include 'NSCBC.h'
       real, optional :: u_t, T_t
       real, optional, dimension(nchemspec) :: YYk
       real :: Mach,KK,nu, cs0_average
-      integer, dimension(32) :: stat
+      integer, dimension(33) :: stat
       integer lll,k,ngridpoints,imin,imax,jmin,jmax,i
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
+      integer :: imass=1
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:,:) :: dui_dxj
       real, allocatable, dimension(:,:,:) :: &
@@ -401,6 +402,7 @@ include 'NSCBC.h'
           cs2,gamma,dY_dx,scalar_profile
       real, allocatable, dimension(:,:,:) :: L_k, dYk_dx
       real, allocatable, dimension(:,:,:) :: YYk_full
+      real, allocatable, dimension(:,:)   :: sum_Lk
 !
       intent(inout) :: f
       intent(inout) :: df
@@ -481,9 +483,10 @@ include 'NSCBC.h'
       allocate(  grad_P(igrid,jgrid,3),      STAT=stat(27))
       allocate( dui_dxj(igrid,jgrid,3,3),    STAT=stat(28))
       if (lpscalar_nolog) allocate(scalar_profile(igrid,jgrid),STAT=stat(29))
-      allocate(L_k(igrid,jgrid,nchemspec),   STAT=stat(29))
-      allocate(YYk_full(igrid,jgrid,nchemspec), STAT=stat(30))
-      allocate(dY_dx(igrid,jgrid),           STAT=stat(31))
+      allocate(L_k(igrid,jgrid,nchemspec),   STAT=stat(30))
+      allocate(YYk_full(igrid,jgrid,nchemspec), STAT=stat(31))
+      allocate(dY_dx(igrid,jgrid),           STAT=stat(32))
+      allocate(sum_Lk(igrid,jgrid),          STAT=stat(33))
 !
       if (maxval(stat) > 0) &
           call stop_it("Couldn't allocate memory for all vars in bc_nscbc_prf")
@@ -542,7 +545,7 @@ include 'NSCBC.h'
 !
 !  We will need the transversal terms of the waves entering the domain
 !
-      call transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,P0,gamma,&
+      call transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,cs,&
           fslice,grad_rho,grad_P,dui_dxj,dir1,dir2,dir3)
 !
       if (llinlet) then
@@ -574,15 +577,15 @@ include 'NSCBC.h'
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
 !
-        L_1 = (fslice(:,:,dir1) - sgn*cs)&
-            *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (non_reflecting_inlet) then
+          L_1 = (fslice(:,:,dir1) - sgn*cs)&
+              *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
           if (ilnTT>0) then
-            L_2=nscbc_sigma_in*(TT-T_t)&
-              *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
+!            L_2=nscbc_sigma_in*(TT-T_t)&
+!              *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
 !  Julien: The above formula seems erroneous which could explain the following
 !          remark from Nils. The following correction is proposed but needs
-!          some tests (that's why it's still commented)
+!          some tests
 !  Corrected according to Yoo et al. (Combustion Theory and Modelling, 2005)
 !           L_2 = nscbc_sigma_in*(TT-T_t)&
 !                *rho0*Rgas/(cs*Lxyz(dir1))-(cs2*T_1-T_5)
@@ -628,7 +631,7 @@ include 'NSCBC.h'
 !  Find the L_i's.
 !
         cs0_average=sum(cs)/ngridpoints
-        KK=nscbc_sigma_out*(1-Mach**2)*cs0_average/Lxyz(dir1)
+        KK=nscbc_sigma_out*(1.-Mach**2)*cs0_average/Lxyz(dir1)
         L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)
         if (ilnTT > 0) then
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
@@ -637,8 +640,7 @@ include 'NSCBC.h'
         endif
         L_3 = fslice(:,:,dir1)*dui_dxj(:,:,dir2,dir1)
         L_4 = fslice(:,:,dir1)*dui_dxj(:,:,dir3,dir1)
-        L_5 = (fslice(:,:,dir1) - sgn*cs)*&
-             (grad_P(:,:,dir1)&
+        L_5 = (fslice(:,:,dir1) - sgn*cs)*(grad_P(:,:,dir1)&
              - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (ichemspec(1)>0) then
           do k = 1, nchemspec
@@ -675,8 +677,14 @@ include 'NSCBC.h'
 !
       dfslice(:,:,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
       if (ilnTT>0) then
-        dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1))*TT&
-            +TT*(T_1/rho0-T_5/P0)
+        sum_Lk=0.
+        if (ichemspec(1)>0) then
+          do k = 1,nchemspec
+            sum_Lk = sum_Lk + (rho0*cs2)/(species_constants(k,imass)*mu1)*L_k(:,:,k)
+          enddo
+        endif
+        dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1)&
+                             - sum_Lk)*TT + TT*(T_1/rho0-T_5/P0)
       endif
       dfslice(:,:,dir2) = -L_3-T_3
       dfslice(:,:,dir3) = -L_4-T_4
@@ -1536,7 +1544,7 @@ include 'NSCBC.h'
 !
       end subroutine derivate_boundary
 !***********************************************************************
-      subroutine transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,P0,gamma,&
+      subroutine transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,cs,&
           fslice,grad_rho,grad_P,dui_dxj,dir1,dir2,dir3)
 !
 !  Find the transversal terms.
@@ -1546,7 +1554,7 @@ include 'NSCBC.h'
 !
         integer,                  intent(in) :: dir1,dir2,dir3
         real, dimension(:,:),     intent(out):: T_1, T_2, T_3, T_4, T_5
-        real, dimension(:,:),     intent(in) :: rho0,P0,gamma
+        real, dimension(:,:),     intent(in) :: rho0,cs
         real, dimension(:,:,:),   intent(in) :: fslice,grad_rho,grad_P
         real, dimension(:,:,:,:), intent(in) :: dui_dxj
 !
@@ -1565,7 +1573,7 @@ include 'NSCBC.h'
               +grad_P(:,:,dir3)/rho0
           T_5= fslice(:,:,dir2)*grad_P(:,:,dir2)&
               +fslice(:,:,dir3)*grad_P(:,:,dir3)&
-              +gamma*P0*(dui_dxj(:,:,dir2,dir2)+dui_dxj(:,:,dir3,dir3))
+              +rho0*cs*cs*(dui_dxj(:,:,dir2,dir2)+dui_dxj(:,:,dir3,dir3))
         else
           T_1=0
           T_2=0
@@ -2010,8 +2018,6 @@ include 'NSCBC.h'
          else
           TT0=exp(f(lll,:,:,ilnTT))
          endif
-
-
 
         if (ldensity_nolog) then
           rho_full = f(:,:,:,irho)
