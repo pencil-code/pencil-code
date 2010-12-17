@@ -27,7 +27,7 @@
       integer :: ipx,ipy,ipz,iproc,it,nt=999999
       integer :: ipy1,ipx1,ipz1,ipz2,ipz3,ipz4
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
-      integer :: itdebug=1,nevery=1
+      integer :: itdebug=1,nevery=1,nproc_tot
       integer :: isep1=0,isep2=0,idummy
       logical :: eof=.false.,slice_position_ok=.false.
       logical :: err=.false.,err_timestep=.false.
@@ -127,6 +127,30 @@
           enddo
         enddo
       enddo
+!
+!  Need to reset
+      if (ipz1/=-1) lread_slice_xy=.true.
+      if (ipz2/=-1) lread_slice_xy2=.true.
+      if (ipz3/=-1) lread_slice_xy3=.true.
+      if (ipz4/=-1) lread_slice_xy4=.true.
+      if (ipy1/=-1) lread_slice_xz=.true.
+      if (ipx1/=-1) lread_slice_yz=.true.
+!
+      nproc_tot=0
+      if (lread_slice_xy) nproc_tot=nproc_tot+nprocx*nprocy
+      if (lread_slice_xy2) nproc_tot=nproc_tot+nprocx*nprocy
+      if (lread_slice_xy3) nproc_tot=nproc_tot+nprocx*nprocy
+      if (lread_slice_xy4) nproc_tot=nproc_tot+nprocx*nprocy
+      if (lread_slice_xz)  nproc_tot=nproc_tot+nprocx*nprocz
+      if (lread_slice_yz)  nproc_tot=nproc_tot+nprocy*nprocz
+!      
+      if (nproc_tot>89) then
+        write(*,*) 'Maximum file unit number will be exceeded.'
+        write(*,*) 'Please use src/read_all_videofiles.x instead.'
+        STOP 1
+      else
+        write(*,*) 'Number of file units which will be used',nproc_tot
+      endif
 !
 !  loop through all times
 !  reset error to false at each time step
