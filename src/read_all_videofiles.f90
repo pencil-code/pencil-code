@@ -8,7 +8,7 @@
 !  rvid_box.pro.Adapated from read_videosslices.f90 but reads
 !  all files without wating for a user input.
 !
-!  17-dez-10/bing: coded 
+!  17-dez-10/bing: coded
 !
       use Cparam
       use General
@@ -25,6 +25,7 @@
       integer :: ipx,ipy,ipz,iproc,it
       integer :: ipy1,ipx1,ipz1,ipz2,ipz3,ipz4
       integer :: lun_pos=33, lun_video=34, i
+      integer :: lun_read=11,lun_write=22
       integer :: iostat=0,stat=0,videostat=0
       integer :: isep1=0,idummy,sindex
       logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
@@ -62,7 +63,7 @@
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
             call chn(iproc,chproc,'directory_names')
             call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
-! check for existence first 
+! check for existence first
             inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
             if (.not.exists) then
               print*,'slice_position.dat for iproc=',iproc,'not found!'
@@ -75,7 +76,7 @@
             read(lun_pos,'(l5,i5)') lread_slice_xy4,idummy
             read(lun_pos,'(l5,i5)') lread_slice_xz,idummy
             read(lun_pos,'(l5,i5)') lread_slice_yz,idummy
-            close(lun_pos)            
+            close(lun_pos)
             if (lread_slice_xy) ipz1=ipz
             if (lread_slice_xy2) ipz2=ipz
             if (lread_slice_xy3) ipz3=ipz
@@ -148,22 +149,22 @@
             !
             it = 0
             iostat=0
-            open(10,file=trim(fullname),status='old',form='unformatted')
+            open(lun_read,file=trim(fullname),status='old',form='unformatted')
             do while (iostat==0)
-              read(10,iostat=iostat) xy_loc,t,slice_pos 
+              read(lun_read,iostat=iostat) xy_loc,t,slice_pos
               if (iostat==0) it=it+1
             enddo
-            close(10)
-            !      
-            allocate(t_array(it),stat=iostat)      
+            close(lun_read)
+            !
+            allocate(t_array(it),stat=iostat)
             lfirst_slice=.false.
           endif
 !
-!  First xy plane 
-! 
+!  First xy plane
+!
       if (lread_slice_xy) then
         allocate(xy_t(nxgrid,nygrid,it),stat=stat)
-        if (stat==0) then 
+        if (stat==0) then
           ipz=ipz1
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
@@ -177,21 +178,22 @@
                 write (*,*) 'WARNING: FILE DOES NOT EXIST'
                 STOP 1
               else
-                open(10,file=trim(fullname),status='old',form='unformatted')
-                do i=1,it 
-                  read(10,iostat=iostat) xy_loc,t,slice_pos
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
                 enddo
-                close(10)
+                close(lun_read)
               endif
             enddo
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
-          open(10,file=trim(wfile),form='unformatted')
-          do i=1,it 
-            write(10,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
+          close(lun_write)
         else
           write(*,*) 'Could not allocate memory to read slices'
           STOP 1
@@ -199,12 +201,12 @@
         if (allocated(xy_t)) deallocate(xy_t)
       endif
 !
-!  Second xy plane 
-! 
+!  Second xy plane
+!
       if (lread_slice_xy2) then
         allocate(xy_t(nxgrid,nygrid,it),stat=stat)
-        if (stat==0) then 
-          ipz=ipz1
+        if (stat==0) then
+          ipz=ipz2
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
@@ -217,21 +219,22 @@
                 write (*,*) 'WARNING: FILE DOES NOT EXIST'
                 STOP 1
               else
-                open(10,file=trim(fullname),status='old',form='unformatted')
-                do i=1,it 
-                  read(10,iostat=iostat) xy_loc,t,slice_pos
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
                 enddo
-                close(10)
+                close(lun_read)
               endif
             enddo
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
-          open(10,file=trim(wfile),form='unformatted')
-          do i=1,it 
-            write(10,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
+          close(lun_write)
         else
           write(*,*) 'Could not allocate memory to read slices'
           STOP 1
@@ -239,12 +242,12 @@
         if (allocated(xy_t)) deallocate(xy_t)
       endif
 !
-!  Third xy plane 
-! 
+!  Third xy plane
+!
       if (lread_slice_xy3) then
         allocate(xy_t(nxgrid,nygrid,it),stat=stat)
-        if (stat==0) then 
-          ipz=ipz1
+        if (stat==0) then
+          ipz=ipz3
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
@@ -257,21 +260,22 @@
                 write (*,*) 'WARNING: FILE DOES NOT EXIST'
                 STOP 1
               else
-                open(10,file=trim(fullname),status='old',form='unformatted')
-                do i=1,it 
-                  read(10,iostat=iostat) xy_loc,t,slice_pos
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
                 enddo
-                close(10)
+                close(lun_read)
               endif
             enddo
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
-          open(10,file=trim(wfile),form='unformatted')
-          do i=1,it 
-            write(10,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
+          close(lun_write)
         else
           write(*,*) 'Could not allocate memory to read slices'
           STOP 1
@@ -279,12 +283,12 @@
         if (allocated(xy_t)) deallocate(xy_t)
       endif
 !
-!  Fourth xy plane 
-! 
+!  Fourth xy plane
+!
       if (lread_slice_xy4) then
         allocate(xy_t(nxgrid,nygrid,it),stat=stat)
-        if (stat==0) then 
-          ipz=ipz1
+        if (stat==0) then
+          ipz=ipz4
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
@@ -297,21 +301,22 @@
                 write (*,*) 'WARNING: FILE DOES NOT EXIST'
                 STOP 1
               else
-                open(10,file=trim(fullname),status='old',form='unformatted')
-                do i=1,it 
-                  read(10,iostat=iostat) xy_loc,t,slice_pos
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) xy_loc,t,slice_pos
                   xy_t(1+ipx*nx:nx+ipx*nx,1+ipy*ny:ny+ipy*ny,i)=xy_loc
                   t_array(i) = t
                 enddo
-                close(10)
+                close(lun_read)
               endif
             enddo
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
-          open(10,file=trim(wfile),form='unformatted')
-          do i=1,it 
-            write(10,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) xy_t(:,:,i),t_array(i),slice_pos
           enddo
+          close(lun_write)
         else
           write(*,*) 'Could not allocate memory to read slices'
           STOP 1
@@ -319,11 +324,11 @@
         if (allocated(xy_t)) deallocate(xy_t)
       endif
 !
-!  First xz plane 
-! 
+!  First xz plane
+!
       if (lread_slice_xz) then
         allocate(xz_t(nxgrid,nzgrid,it),stat=stat)
-        if (stat==0) then 
+        if (stat==0) then
           ipy=ipy1
           do ipz=0,nprocz-1
             do ipx=0,nprocx-1
@@ -337,21 +342,22 @@
                 write (*,*) 'WARNING: FILE DOES NOT EXIST'
                 STOP 1
               else
-                open(10,file=trim(fullname),status='old',form='unformatted')
-                do i=1,it 
-                  read(10,iostat=iostat) xz_loc,t,slice_pos
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) xz_loc,t,slice_pos
                   xz_t(1+ipx*nx:nx+ipx*nx,1+ipz*nz:nz+ipz*nz,i)=xz_loc
                   t_array(i) = t
                 enddo
-                close(10)
+                close(lun_read)
               endif
             enddo
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
-          open(10,file=trim(wfile),form='unformatted')
-          do i=1,it 
-            write(10,iostat=iostat) xz_t(:,:,i),t_array(i),slice_pos
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) xz_t(:,:,i),t_array(i),slice_pos
           enddo
+          close(lun_write)
         else
           write(*,*) 'Could not allocate memory to read slices'
           STOP 1
@@ -360,11 +366,11 @@
       endif
 !
 !
-!  First yz plane 
-! 
-      if (lread_slice_yz) then        
+!  First yz plane
+!
+      if (lread_slice_yz) then
         allocate(yz_t(nygrid,nzgrid,it),stat=stat)
-        if (stat==0) then 
+        if (stat==0) then
           ipx=ipx1
           do ipy=0,nprocy-1
             do ipz=0,nprocz-1
@@ -378,21 +384,22 @@
                 write (*,*) 'WARNING: FILE DOES NOT EXIST'
                 STOP 1
               else
-                open(10,file=trim(fullname),status='old',form='unformatted')
-                do i=1,it 
-                  read(10,iostat=iostat) yz_loc,t,slice_pos
+                open(lun_read,file=trim(fullname),status='old',form='unformatted')
+                do i=1,it
+                  read(lun_read,iostat=iostat) yz_loc,t,slice_pos
                   yz_t(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz,i)=yz_loc
                   t_array(i) = t
                 enddo
-                close(10)
+                close(lun_read)
               endif
             enddo
           enddo
           call safe_character_assign(wfile,trim(datadir)//trim(file))
-          open(10,file=trim(wfile),form='unformatted')
-          do i=1,it 
-            write(10,iostat=iostat) yz_t(:,:,i),t_array(i),slice_pos
+          open(lun_write,file=trim(wfile),form='unformatted')
+          do i=1,it
+            write(lun_write,iostat=iostat) yz_t(:,:,i),t_array(i),slice_pos
           enddo
+          close(lun_write)
         else
           write(*,*) 'Could not allocate memory to read slices'
           STOP 1
@@ -403,7 +410,7 @@
     enddo
 !
     if (allocated(t_array)) deallocate(t_array)
-    write(*,*) 'Wrote number of timesteps: ', it 
+    write(*,*) 'Wrote number of timesteps: ', it
 !
     endprogram rvid_box
 !***********************************************************************
