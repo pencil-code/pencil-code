@@ -213,9 +213,9 @@ module Particles_main
       character (len=*) :: snap_directory
 !
       call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
-      if (lparticles_nbody) & 
+      if (lparticles_nbody) &
            call particles_nbody_read_snapshot(&
-           trim(snap_directory)//'/spvar.dat')       
+           trim(snap_directory)//'/spvar.dat')
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
@@ -223,10 +223,10 @@ module Particles_main
 !
       character (len=*) :: datadir
 !
-      call particles_write_pdim(trim(datadir)//'/pdim.dat')                
-      call particles_write_block(trim(datadir)//'/bdim.dat')     
+      call particles_write_pdim(trim(datadir)//'/pdim.dat')
+      call particles_write_block(trim(datadir)//'/bdim.dat')
       if (lparticles_nbody) &
-          call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')    
+          call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
 !
     endsubroutine write_dim_particles
 !***********************************************************************
@@ -238,7 +238,7 @@ module Particles_main
 !
       character (len=*) :: filename
 !
-      call input_particles(filename,fp,ipar)  
+      call input_particles(filename,fp,ipar)
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
@@ -253,7 +253,7 @@ module Particles_main
 !
       character (len=5) :: ch
 !
-      if (present(snapnum)) then 
+      if (present(snapnum)) then
         call chn(snapnum,ch)
         call particles_write_snapshot(trim(snap_directory)//'/PVAR'//ch,f, &
             enum=.false.)
@@ -261,7 +261,7 @@ module Particles_main
         if (lparticles_nbody) call particles_nbody_write_snapshot(&
             trim(snap_directory)//'/SPVAR'//ch,enum=.false.)
 !
-      elseif (enum) then 
+      elseif (enum) then
         call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
             ENUM=.true.,FLIST='pvarN.list')
 !
@@ -270,13 +270,13 @@ module Particles_main
       else
         call particles_write_snapshot( &
             trim(snap_directory)//'/pvar.dat',f,enum=.false.)
-!        
+!
         if (lparticles_nbody.and.lroot) then
-          call particles_nbody_write_snapshot( & 
-              trim(snap_directory)//'/spvar.dat',enum=.false.)  
+          call particles_nbody_write_snapshot( &
+              trim(snap_directory)//'/spvar.dat',enum=.false.)
         endif
       endif
-!      
+!
     endsubroutine write_snapshot_particles
 !***********************************************************************
     subroutine particles_write_snapshot(chsnap,f,enum,flist)
@@ -499,7 +499,6 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real :: rhs_poisson_const
       logical :: lcontinued
 !
       call calc_selfpotential_particles(f,rhs_poisson,lcontinued)
@@ -515,9 +514,9 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  Calculate the summed gravity due to the massive particles. 
-!  Needed because it is too slow to calculate the gravity at the 
-!  position of all dust particles. So we calculate the gravity 
+!  Calculate the summed gravity due to the massive particles.
+!  Needed because it is too slow to calculate the gravity at the
+!  position of all dust particles. So we calculate the gravity
 !  for the grid and interpolate to the position of the particles.
 !
       if (lparticles_nbody)     call calc_nbodygravity_particles(f)
@@ -724,7 +723,7 @@ module Particles_main
       endif
 !
     endsubroutine particles_pde_blocks
-!***********************************************************************    
+!***********************************************************************
     subroutine correct_curvilinear
 !
 !  Curvilinear corrections to acceleration only.
@@ -778,7 +777,7 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_radius) then 
+      if (lparticles_radius) then
         call read_particles_rad_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
@@ -796,7 +795,7 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_number) then 
+      if (lparticles_number) then
         call read_particles_num_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
@@ -805,7 +804,7 @@ module Particles_main
         endif
       endif
 !
-      if (lparticles_mass) then 
+      if (lparticles_mass) then
         call read_particles_mass_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
@@ -945,8 +944,8 @@ module Particles_main
           call samplepar_runpars('particles_run_pars',iostat); return
         endif
       endif
-!      
-      if (lparticles_radius) then 
+!
+      if (lparticles_radius) then
         call read_particles_rad_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
