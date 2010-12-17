@@ -63,6 +63,7 @@ module Special
   logical :: lfargoadvection_as_shift=.false.
 !
   real, dimension (nxgrid) :: xgrid1
+  real :: nygrid1
 !
   namelist /special_init_pars/ dummy
 !   
@@ -129,6 +130,7 @@ module Special
 !  Stuff that is only calculated once
 !
       xgrid1=1./xgrid
+      nygrid1=1./nygrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -538,7 +540,6 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,nz) :: fsum_tmp
       real, dimension (nx) :: uphi
-      real :: nygrid1
       integer :: nnghost
 !
 !  Just needs to the calculated at the first sub-timestep
@@ -547,7 +548,6 @@ endsubroutine read_special_run_pars
 !
 !  Pre-calculate the average large scale speed of the flow
 !
-        nygrid1=1.0/nygrid
         fsum_tmp=0.
 !
         do n=n1,n2;do m=m1,m2
@@ -609,41 +609,15 @@ endsubroutine read_special_run_pars
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny) :: a_re,a_im
-      real, dimension (nxgrid) :: phidot_serial
+      real, dimension (nx) :: phidot
       integer :: ivar,nnghost
-!
-      integer :: ixdo,ixup,izdo,izup,iproc_recv,jx,jz,iz_serial
-      real, dimension (nx,nz) :: uu_average_recv
-      real, dimension (nxgrid,nzgrid) :: uu_average_allprocs
-!
-      uu_average_recv=1.
-      if (iproc/=root) then
-        if (ipy==0) call mpisend_real(uu_average,(/nx,nz/),root,222)
-      else
-        do jx=0,nprocx-1 
-          do jz=0,nprocz-1
-            !iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            iproc_recv=jx+nprocx*nprocy*jz
-            if (iproc_recv/=root) then
-              call mpirecv_real(uu_average_recv,(/nx,nz/),iproc_recv,222)
-            else
-              uu_average_recv=uu_average
-            endif
-            ixdo= jx   *nx + 1 ; izdo= jz   *nz + 1 
-            ixup=(jx+1)*nx     ; izup=(jz+1)*nz
-            uu_average_allprocs(ixdo:ixup,izdo:izup)=uu_average_recv
-          enddo
-        enddo
-      endif
-      call mpibcast_real(uu_average_allprocs,(/nxgrid,nzgrid/))
 !
 !  Pencil uses linear velocity. Fargo will shift based on 
 !  angular velocity. Get phidot from uphi. 
 !
       do n=n1,n2
         nnghost=n-n1+1
-        iz_serial=ipz*nz + nnghost
-        phidot_serial=uu_average_allprocs(:,iz_serial)*xgrid1
+        phidot=uu_average(:,nnghost)*rcyl_mn1
 !
         do ivar=1,mvar
 !
@@ -653,7 +627,7 @@ endsubroutine read_special_run_pars
 !  The transform is just a shift in y, so no need to compute 
 !  the x-transform either. 
 !
-          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot_serial*dt,lneed_im=.false.)
+          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt,lneed_im=.false.)
 !
 !  Inverse transform of the shifted array back into real space. 
 !  No need again for either imaginary part of x-transform. 
