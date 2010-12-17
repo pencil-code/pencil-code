@@ -48,6 +48,7 @@ module Particles_map
       integer :: ivar1, ivar2
       real, dimension (3) :: xxp, gpp
       real, dimension (ivar2-ivar1+1) :: gp
+      real, dimension (mvar) :: f_tmp
       integer, dimension (3) :: inear
       integer :: iblock, ipar
 !
@@ -148,12 +149,12 @@ module Particles_map
 
       if (lsolid_cells) then
         do ivar=ivar1,ivar2
-          if (ivar < 4) then
-            gpp(1)=gp(ivar-ivar1+1)
-            call close_interpolation(f,ix0,iy0,iz0,icyl,ivar,xxp,&
-                gpp,.false.,.false.)
-            gp(ivar-ivar1+1)=gpp(1)
-          endif
+          f_tmp(ivar)=gp(ivar-ivar1+1)
+        enddo
+        call close_interpolation(f,ix0,iy0,iz0,icyl,xxp,&
+            f_tmp,.false.,.false.)
+        do ivar=ivar1,ivar2
+          gp(ivar-ivar1+1)=f_tmp(ivar)
         enddo
       endif
 !

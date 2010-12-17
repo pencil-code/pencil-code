@@ -969,38 +969,39 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                 xxp=(/x(i),y(j),z(k)/)
                 if (lnew_interpolation_method) then
-                  call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
+                  call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
                       lnew_interpolation_method)
-                  f(i,j,k,iux:iuz)=gpp
+                  f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
+!
+!  For non-isothermal cases make sure the pressure is not changed when 
+!  the temperature is changed. This is done by adjusting the density.
+!
                   if (ilnTT > 0) then
-                    call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
-                        .true.,lnew_interpolation_method)
                     T0=f(i,j,k,ilnTT)
                     rho0=f(i,j,k,ilnrho)
                     if (.not. ldensity_nolog) rho0=exp(rho0)
                     if (.not. ltemperature_nolog) T0=exp(T0)
-                    f(i,j,k,ilnTT)=gpp(1)
-                    ! Update density in order to avoid pressure peaks
-                    T1=f(i,j,k,ilnTT)
-                    if (.not. ltemperature_nolog) T1=exp(T1)
+                    T1=f_tmp(ilnTT)
+                    if (.not. ltemperature_nolog) then
+                      f(i,j,k,ilnTT)=log(T1)
+                    else
+                      f(i,j,k,ilnTT)=T1
+                    endif
+                    ! Update density in order to avoid pressure peaks due to
+                    ! the changed temperature
                     rho1=rho0*T0/T1
-                    f(i,j,k,ilnrho)=rho1
-                    if (.not. ldensity_nolog) f(i,j,k,ilnrho)=log(f(i,j,k,ilnrho))
+                    if (.not. ldensity_nolog) then
+                      f(i,j,k,ilnrho)=log(rho0)
+                    else
+                      f(i,j,k,ilnrho)=rho1
+                    endif
                   endif
                 else
-                  call close_interpolation(f,i,j,k,iobj,iux,xxp,gpp,.true.,&
+                  call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
                       lnew_interpolation_method)
-                  f(i,j,k,iux)=gpp(1)
-                  call close_interpolation(f,i,j,k,iobj,iuy,xxp,gpp,.true.,&
-                      lnew_interpolation_method)
-                  f(i,j,k,iuy)=gpp(1)
-                  call close_interpolation(f,i,j,k,iobj,iuz,xxp,gpp,.true.,&
-                      lnew_interpolation_method)
-                  f(i,j,k,iuz)=gpp(1)
+                  f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
                   if (ilnTT > 0) then
-                    call close_interpolation(f,i,j,k,iobj,ilnTT,xxp,gpp,&
-                        .true.,lnew_interpolation_method)
-                    f(i,j,k,ilnTT)=gpp(1)
+                    f(i,j,k,ilnTT)=f_tmp(ilnTT)
                   endif
                 endif
               endif
@@ -1241,6 +1242,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       use General, only: linear_interpolate
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mvar) :: f_tmp
       integer, intent(in) :: iobj,ndims
       integer, intent(in) :: lower_i,upper_i,lower_j,upper_j,ivar
       integer, intent(in) :: lower_k,upper_k
@@ -1266,15 +1268,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  some special treatment is required.
 !
       if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then
-        phi=phi_
         if (lnew_interpolation_method .and. ivar==iux) then
-          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
-              phi,.false.,lnew_interpolation_method)
-          phi_=phi
+          f_tmp(iux:iuz)=phi_
+          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
+              f_tmp,.false.,lnew_interpolation_method)
+          phi_=f_tmp(iux:iuz)
         else
-          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ivar,xxp,&
-              phi,.false.,lnew_interpolation_method)
-          phi_(1)=phi(1)
+          f_tmp(ivar)=phi_(1)
+          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
+              f_tmp,.false.,lnew_interpolation_method)
+          phi_(1)=f_tmp(ivar)
         endif
       endif
 !
@@ -1314,10 +1317,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  some special treatment is required.
 !
       if (lclose_interpolation) then
-        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,iux,xxp,&
-            f_tmp(1:3),.false.,lnew_interpolation_method)
-        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,ilnTT,xxp,&
-            f_tmp(ilnTT),.false.,lnew_interpolation_method)
+        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
+            f_tmp,.false.,lnew_interpolation_method)
       endif
 !
 !  For the temperature boundaries being antisymmetric relative to the 
@@ -1356,7 +1357,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine interpolate_mirror_point_new
 !***********************************************************************  
-    subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,ivar1,xxp,gpp,&
+    subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,xxp,f_tmp,&
         fluid_point,lnew_interpolation_method)
 !
 !  20-mar-2009/nils: coded
@@ -1403,12 +1404,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       logical, intent(in) :: lnew_interpolation_method
-      integer, intent(in) :: ix0_,iy0_,iz0_,ivar1, iobj
-      real, dimension(3), intent(inout) :: gpp
+      integer, intent(in) :: ix0_,iy0_,iz0_, iobj
+      real, dimension(mvar), intent(inout) :: f_tmp
       real, dimension(3), intent(in) :: xxp
       logical, intent(in) :: fluid_point
 !
-      real, dimension(3) :: p_local,p_global,o_global
+      real, dimension(3) :: p_local,p_global,o_global, gpp
       real :: rs, rp, smallx
       real, dimension(2,2,2) :: rij
       real, dimension(3,2) :: cornervalue
@@ -1420,13 +1421,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       if ((.not. fluid_point .and. lclose_interpolation) &
           .or. ( fluid_point .and. lclose_linear)) then
-!
-!  This subrutine is not working (and should never be used) with other
-!  variables than the velocity or the temperature.
-!
-        if (ivar1.ne.iux.and.ivar1.ne.iuy.and.ivar1.ne.iuz.and.ivar1.ne.ilnTT) &
-            call fatal_error('close_interpolation',&
-            'This subroutine should never be called for anything but velocity!')
 !
 !  Define some help variables
 !
@@ -1480,11 +1474,28 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           if (lnew_interpolation_method) then
             call close_inter_new(f,gpp,p_local,p_global,o_global,rs,rp,&
-                cornervalue,cornerindex, fluid_point,ivar1,iobj)
+                cornervalue,cornerindex, fluid_point,iux,iobj)
+            f_tmp(1:3)=gpp
+            call close_inter_new(f,gpp,p_local,p_global,o_global,rs,rp,&
+                cornervalue,cornerindex, fluid_point,ilnTT,iobj)
+            f_tmp(ilnTT)=gpp(1)
           else
             call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
                 iobj, cornervalue, &
-                cornerindex,p_local, ivar1, rs, rp)
+                cornerindex,p_local, iux, rs, rp)
+            f_tmp(iux)=gpp(1)
+            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
+                iobj, cornervalue, &
+                cornerindex,p_local, iuy, rs, rp)
+            f_tmp(iuy)=gpp(1)
+            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
+                iobj, cornervalue, &
+                cornerindex,p_local, iuz, rs, rp)
+            f_tmp(iuz)=gpp(1)
+            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
+                iobj, cornervalue, &
+                cornerindex,p_local, ilnTT, rs, rp)
+            f_tmp(ilnTT)=gpp(1)
           endif
         endif
       endif
