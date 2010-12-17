@@ -261,6 +261,18 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************
+    subroutine hydro_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set, dummy routine.
+!
+!   17-dec-2010/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine hydro_before_boundary
+!***********************************************************************
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution, dummy routine
