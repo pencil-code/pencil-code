@@ -174,7 +174,7 @@ module Grid
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=pi*Lx/((xi1up-xi1lo)*coeff_grid(1))
-          b=dxi_fact(1)
+          !b=dxi_fact(1)
           xi1star=xi1lo+(xyz_star(1)+coeff_grid(1)-x00)/Lx*b/2.0*(xi1up-xi1lo)
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=b)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=b)
@@ -192,7 +192,7 @@ module Grid
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
           a=pi*Lx/((xi1up-xi1lo)*coeff_grid(1))
-          b=dxi_fact(1)
+          !b=dxi_fact(1)
           xi1star=xi1lo+(xyz_star(1)+coeff_grid(1)-x00)/Lx*b/2.0*(xi1up-xi1lo)
           call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2,param=b)
           call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo,param=b)
@@ -212,7 +212,7 @@ module Grid
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
           if (lparticles) then
-             b=dxi_fact(3)
+             !b=dxi_fact(3)
            call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
@@ -403,7 +403,7 @@ module Grid
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=pi*Ly/((xi2up-xi2lo)*coeff_grid(2))
-          b=dxi_fact(2)
+          !b=dxi_fact(2)
           xi2star=xi2lo+(xyz_star(2)+coeff_grid(2)-y00)/Ly*b/2.0*(xi2up-xi2lo)
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=b)
@@ -421,7 +421,7 @@ module Grid
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
           a=pi*Ly/((xi2up-xi2lo)*coeff_grid(2))
-          b=dxi_fact(2)
+          !b=dxi_fact(2)
           xi2star=xi2lo+(xyz_star(2)+coeff_grid(2)-y00)/Ly*b/2.0*(xi2up-xi2lo)
           call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
           call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo,param=b)
@@ -441,7 +441,7 @@ module Grid
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 !
           if (lparticles) then
-            b=dxi_fact(3)
+            !b=dxi_fact(3)
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
@@ -551,7 +551,7 @@ module Grid
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=pi*Lz/((xi3up-xi3lo)*coeff_grid(3))
-          b=dxi_fact(3)
+          !b=dxi_fact(3)
           xi3star=xi3lo+(xyz_star(3)+coeff_grid(3)-z00)/Lz*b/2.0*(xi3up-xi3lo)
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=b)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=b)
@@ -569,7 +569,7 @@ module Grid
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
           a=pi*Lz/((xi3up-xi3lo)*coeff_grid(3))
-          b=dxi_fact(3)
+          !b=dxi_fact(3)
           xi3star=xi3lo+(xyz_star(3)+coeff_grid(3)-z00)/Lz*b/2.0*(xi3up-xi3lo)
           call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2,param=b)
           call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo,param=b)
@@ -589,7 +589,7 @@ module Grid
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
           if (lparticles) then
-            b=dxi_fact(3)
+            !b=dxi_fact(3)
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
             g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
           endif
