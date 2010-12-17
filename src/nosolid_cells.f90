@@ -194,7 +194,7 @@ module Solid_Cells
 !
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************
-    subroutine close_interpolation(f,ix0,iy0,iz0,icyl,xxp,gpp,&
+    subroutine close_interpolation(f,ix0,iy0,iz0,icyl,xxp,f_tmp,&
         fluid_point,lnew_interpolation_method)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
