@@ -928,9 +928,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       logical :: bax, bay, baz, lnew_interpolation_method 
       real, dimension(3) :: xxp,gpp, phi
       character(len=10) :: form
-
-      real :: rho0, rho1, T0, T1
-
 !
 !  Find ghost points based on the mirror interpolation method
 !
@@ -972,30 +969,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
                       lnew_interpolation_method)
                   f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
-!
-!  For non-isothermal cases make sure the pressure is not changed when 
-!  the temperature is changed. This is done by adjusting the density.
-!
-                  if (ilnTT > 0) then
-                    T0=f(i,j,k,ilnTT)
-                    rho0=f(i,j,k,ilnrho)
-                    if (.not. ldensity_nolog) rho0=exp(rho0)
-                    if (.not. ltemperature_nolog) T0=exp(T0)
-                    T1=f_tmp(ilnTT)
-                    if (.not. ltemperature_nolog) then
-                      f(i,j,k,ilnTT)=log(T1)
-                    else
-                      f(i,j,k,ilnTT)=T1
-                    endif
-                    ! Update density in order to avoid pressure peaks due to
-                    ! the changed temperature
-                    rho1=rho0*T0/T1
-                    if (.not. ldensity_nolog) then
-                      f(i,j,k,ilnrho)=log(rho0)
-                    else
-                      f(i,j,k,ilnrho)=rho1
-                    endif
-                  endif
+                  if (ilnTT > 0) f(i,j,k,ilnTT)=f_tmp(ilnTT)
                 else
                   call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
                       lnew_interpolation_method)
@@ -1180,7 +1154,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         enddo
       enddo
     enddo
-
 !
 !  Find ghost points based on the staircase interpolation method
 !
@@ -1470,10 +1443,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           if (lnew_interpolation_method) then
             call close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp,&
                 cornervalue,cornerindex, fluid_point,iobj)
-!!$            f_tmp(1:3)=gpp
-!!$            call close_inter_new(f,gpp,p_local,p_global,o_global,rs,rp,&
-!!$                cornervalue,cornerindex, fluid_point,ilnTT,iobj)
-!!$            f_tmp(ilnTT)=gpp(1)
           else
             call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
                 iobj, cornervalue, &
@@ -1723,7 +1692,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
         ntheta_hat=(/-sin(theta),cos(theta),0./)
 !
-!  Having found the unit vectors in all three directions we can now
+!  Having found the unit vectors in the r, theta and phi directions we can now
 !  find the velocities in the same three directions at point "g".
 !
         call dot(nr_hat    ,fvar,vg_r)
@@ -1742,7 +1711,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
         f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
       else
-        f_tmp(iux:iuz)=(fvar(1:3)*r_sp+surf_val*r_pg)/r_sg
+        f_tmp(iux:iuz)=(fvar(iux:iuz)*r_sp+surf_val*r_pg)/r_sg
       endif
 !
     end subroutine close_inter_new
