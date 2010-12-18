@@ -1456,10 +1456,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 iobj, cornervalue, &
                 cornerindex,p_local, iuz, rs, rp)
             f_tmp(iuz)=gpp(1)
-            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
-                iobj, cornervalue, &
-                cornerindex,p_local, ilnTT, rs, rp)
-            f_tmp(ilnTT)=gpp(1)
+            if (ilnTT>0) then
+              call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point,&
+                  iobj, cornervalue, &
+                  cornerindex,p_local, ilnTT, rs, rp)
+              f_tmp(ilnTT)=gpp(1)
+            endif
           endif
         endif
       endif
