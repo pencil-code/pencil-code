@@ -8,5 +8,5 @@
   public :: get_slices_testflow
   public :: init_uutest, duutest_dt
   public :: pencil_criteria_testflow, pencil_interdep_testflow
-  public :: calc_ltestflow_nonlin_terms
+  public :: calc_ltestflow_nonlin_terms,testflow_before_boundary
 

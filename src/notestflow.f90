@@ -161,4 +161,14 @@ module Testflow
 !
     endsubroutine rprint_testflow
 !***********************************************************************
+    subroutine testflow_before_boundary(f)
+!  
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+! 
+    endsubroutine testflow_before_boundary
+!***********************************************************************
 endmodule Testflow
