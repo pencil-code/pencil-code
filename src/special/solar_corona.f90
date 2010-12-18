@@ -370,7 +370,7 @@ module Special
           call warning ("setup_profiles", "overriding manual lnrho0 setting")
         endif
         lnrho0 = lnrho_init_z(n1)
-        if ((rho0 /= 0.0) .and. (rho0 /= exp (lnrho0))) then
+        if ((rho0 /= 1.0) .and. (rho0 /= exp (lnrho0))) then
           if (lroot) print *,'setup_profiles: WARNING: ', &
               'rho0 set to ', exp (lnrho0), ' - was before ', rho0
           call warning ("setup_profiles", "overriding manual rho0 setting")
@@ -534,17 +534,22 @@ module Special
       integer :: n_data
       real, dimension (mz) :: profile
 !
-      integer :: i, j
+      integer :: i, j, num_over, num_below
+      character (len=12) :: num
 !
 !
       ! linear interpolation of data
+      num_below = 0
+      num_over = 0
       do j = 1, mz
         if (z(j) < data_z(1) ) then
-          call warning ("interpolate_profile", "used constant value below bottom")
-          profile(j) = data(1)
+          ! extrapolate linarily below bottom
+          num_below = num_below + 1
+          profile(j) = data(1) + (data(2)-data(1))/(data_z(2)-data_z(1)) * (z(j)-data_z(1))
         elseif (z(j) >= data_z(n_data)) then
-          call warning ("interpolate_profile", "used constant value over top")
-          profile(j) = data(n_data)
+          ! extrapolate linarily over top
+          num_over = num_over + 1
+          profile(j) = data(n_data) + (data(n_data)-data(n_data-1))/(data_z(n_data)-data_z(n_data-1)) * (z(j)-data_z(n_data))
         else
           do i = 1, n_data-1
             if ((z(j) >= data_z(i)) .and. (z(j) < data_z(i+1))) then
@@ -555,6 +560,15 @@ module Special
           enddo
         endif
       enddo
+!
+      if (num_below > 0) then
+        write (num, *) num_below
+        call warning ("interpolate_profile", "extrapolated "//trim (adjustl (num))//" grid points below bottom")
+      endif
+      if (num_over > 0) then
+        write (num, *) num_over
+        call warning ("interpolate_profile", "extrapolated "//trim (adjustl (num))//" grid points over top")
+      endif
 !
     endsubroutine interpolate_profile
 !***********************************************************************
