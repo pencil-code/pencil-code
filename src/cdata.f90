@@ -63,6 +63,7 @@ module Cdata
 !
   real, dimension(3) :: coeff_grid=1.0
   real, dimension(3) :: dxi_fact=1.0
+  real, dimension(3) :: trans_width=0.0
   real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
   real :: zeta_grid0=0.
   real :: xbot_slice=0.,xtop_slice=1.
