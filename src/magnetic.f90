@@ -2943,21 +2943,22 @@ module Magnetic
 
 !
 ! Magnetic field components at one point (=pt) written out in sound.dat
-!
- if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_bxpt/=0) call save_name_sound(p%bb(lpoint-nghost,1),idiag_bxpt)
-          if (idiag_bypt/=0) call save_name_sound(p%bb(lpoint-nghost,2),idiag_bypt)
-          if (idiag_bzpt/=0) call save_name_sound(p%bb(lpoint-nghost,3),idiag_bzpt)
-          if (idiag_jxpt/=0) call save_name_sound(p%jj(lpoint-nghost,1),idiag_jxpt)
-          if (idiag_jypt/=0) call save_name_sound(p%jj(lpoint-nghost,2),idiag_jypt)
-          if (idiag_jzpt/=0) call save_name_sound(p%jj(lpoint-nghost,3),idiag_jzpt)
-          if (idiag_Expt/=0) call save_name_sound(uxbb(lpoint-nghost,1),idiag_Expt)
-          if (idiag_Eypt/=0) call save_name_sound(uxbb(lpoint-nghost,2),idiag_Eypt)
-          if (idiag_Ezpt/=0) call save_name_sound(uxbb(lpoint-nghost,3),idiag_Ezpt)
-          if (idiag_axpt/=0) call save_name_sound(float(lpoint),idiag_axpt) !test
-          if (idiag_aypt/=0) call save_name_sound(float(m),idiag_aypt) !test
-          if (idiag_azpt/=0) call save_name_sound(float(n),idiag_azpt) !test
-        endif
+! DM: commented out the following as sound files are not yet ready. 
+! This is to fix auto-tests. I am looking deeper into this.  
+! if (lroot.and.m==mpoint.and.n==npoint) then
+!          if (idiag_bxpt/=0) call save_name_sound(p%bb(lpoint-nghost,1),idiag_bxpt)
+!          if (idiag_bypt/=0) call save_name_sound(p%bb(lpoint-nghost,2),idiag_bypt)
+!          if (idiag_bzpt/=0) call save_name_sound(p%bb(lpoint-nghost,3),idiag_bzpt)
+!          if (idiag_jxpt/=0) call save_name_sound(p%jj(lpoint-nghost,1),idiag_jxpt)
+!          if (idiag_jypt/=0) call save_name_sound(p%jj(lpoint-nghost,2),idiag_jypt)
+!          if (idiag_jzpt/=0) call save_name_sound(p%jj(lpoint-nghost,3),idiag_jzpt)
+!          if (idiag_Expt/=0) call save_name_sound(uxbb(lpoint-nghost,1),idiag_Expt)
+!          if (idiag_Eypt/=0) call save_name_sound(uxbb(lpoint-nghost,2),idiag_Eypt)
+!          if (idiag_Ezpt/=0) call save_name_sound(uxbb(lpoint-nghost,3),idiag_Ezpt)
+!          if (idiag_axpt/=0) call save_name_sound(float(lpoint),idiag_axpt) !test
+!          if (idiag_aypt/=0) call save_name_sound(float(m),idiag_aypt) !test
+!          if (idiag_azpt/=0) call save_name_sound(float(n),idiag_azpt) !test
+!        endif
 !
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
