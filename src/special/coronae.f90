@@ -29,6 +29,7 @@ module Special
   real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: dampuu=0.,wdampuu,pdampuu
+  real :: limiter_tensordiff=3
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -42,7 +43,7 @@ module Special
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
-      hcond_grad_iso
+      hcond_grad_iso,limiter_tensordiff
 !
 ! variables for print.in
 !
@@ -63,7 +64,10 @@ module Special
   real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
   real, target, dimension (nx,nz) :: rtv_xz
   real, target, dimension (ny,nz) :: rtv_yz
-!
+  real, target, dimension (nx,ny) :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
+  real, target, dimension (nx,nz) :: hgrad_xz
+  real, target, dimension (ny,nz) :: hgrad_yz
+!!
 !  variables for granulation driver
 !
   TYPE point
@@ -324,6 +328,15 @@ module Special
       if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
       slices%ready=.true.
 !
+    case ('hgrad')
+      slices%yz =>hgrad_yz
+      slices%xz =>hgrad_xz
+      slices%xy =>hgrad_xy
+      slices%xy2=>hgrad_xy2
+      if (lwrite_slice_xy3) slices%xy3=>hgrad_xy3
+      if (lwrite_slice_xy4) slices%xy4=>hgrad_xy4
+      slices%ready=.true.
+!
     endselect
 !
     call keep_compiler_quiet(f)
@@ -449,7 +462,7 @@ module Special
 !
     use Diagnostics,     only : max_mn_name
     use EquationOfState, only: gamma
-    use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
+    use Sub, only: dot2_mn, multsv_mn
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -502,7 +515,7 @@ module Special
 !  Calculate diffusion term.
 !
     thdiff = 0.
-    call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
+    call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
         GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
     thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
@@ -542,6 +555,121 @@ module Special
 !
   endsubroutine calc_heatcond_spitzer
 !***********************************************************************
+    subroutine tensor_diffusion(gecr,ecr_ij,bij,bb,vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
+!
+      use Sub, only: dot2_mn, dot, dot_mn, multsv_mn, multmv_mn
+!
+!  Calculates tensor diffusion with variable tensor (or constant tensor).
+!  Calculates parts common to both variable and constant tensor first.
+!
+!  Note: ecr=lnecr in the below comment
+!
+!  Write diffusion tensor as K_ij = Kpara*ni*nj + (Kperp-Kpara)*del_ij.
+!
+!  vKperp*del2ecr + d_i(vKperp)d_i(ecr) + (vKpara-vKperp) d_i(n_i*n_j*d_j ecr)
+!      + n_i*n_j*d_i(ecr)d_j(vKpara-vKperp)
+!
+!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij)
+!      + ni*nj*Gi*(vKpara_j - vKperp_j),
+!  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
+!  diffusion coefficients.
+!
+!  Calculates (K.gecr).gecr
+!  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
+!
+!  Adds both parts into decr/dt.
+!
+!  10-oct-03/axel: adapted from pscalar
+!  30-nov-03/snod: adapted from tensor_diff without variable diffusion
+!  04-dec-03/snod: converted for evolution of lnecr (=ecr)
+!   9-apr-04/axel: adapted for general purpose tensor diffusion
+!  25-jun-05/bing:
+!
+      real, dimension (nx,3,3) :: ecr_ij,bij
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
+      real, dimension (nx) :: abs_b,b1,del2ecr,gecr2,vKperp,vKpara
+      real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
+      integer :: i,j,k
+      logical, optional :: llog
+      real, optional, dimension (nx,3) :: gvKperp,gvKpara
+!
+      intent(in) :: bb,bij,gecr,ecr_ij
+      intent(out) :: rhs
+!
+!  Calculate unit vector of bb.
+!
+!     call dot2_mn(bb,abs_b,PRECISE_SQRT=.true.)
+      call dot2_mn(bb,abs_b,FAST_SQRT=.true.)
+      b1=1./max(tini,abs_b)
+      call multsv_mn(b1,bb,bunit)
+!
+!  Calculate first H_i.
+!
+      del2ecr=0.
+      do i=1,3
+        del2ecr=del2ecr+ecr_ij(:,i,i)
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv_mn(b1,hhh,tmpv)
+!
+!  Limit the length of H such that dxmin*H < 1, so we also multiply
+!  by 1/sqrt(1.+dxmin^2*H^2).
+!  And dot H with ecr gradient.
+!
+!     call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
+      call dot2_mn(tmpv,hhh2,FAST_SQRT=.true.)
+      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
+      call multsv_mn(quenchfactor,tmpv,hhh)
+      call dot_mn(hhh,gecr,tmp)
+!
+!  Dot Hessian matrix of ecr with bi*bj, and add into tmp.
+!
+      call multmv_mn(ecr_ij,bunit,hhh)
+      call dot_mn(hhh,bunit,tmpj)
+      tmp = tmp+tmpj
+!
+!  Calculate (Gi*ni)^2 needed for lnecr form; also add into tmp.
+!
+      gecr2=0.
+      if (present(llog)) then
+        call dot_mn(gecr,bunit,tmpi)
+        tmp=tmp+tmpi**2
+!
+!  Calculate gecr2 - needed for lnecr form.
+!
+        call dot2_mn(gecr,gecr2)
+      endif
+!
+!  If variable tensor, add extra terms and add result into decr/dt.
+!
+!  Set gvKpara, gvKperp.
+!
+     if (present(gvKpara)) then; gvKpara1=gvKpara; else; gvKpara1=0.; endif
+     if (present(gvKperp)) then; gvKperp1=gvKperp; else; gvKperp1=0.; endif
+!
+!  Put d_i ecr d_i vKperp into tmpj.
+!
+      call dot_mn(gvKperp1,gecr,tmpj)
+!
+!  Nonuniform conductivities, add terms into tmpj.
+!
+      call dot(bunit,gvKpara1-gvKperp1,tmpi)
+      call dot(bunit,gecr,tmpk)
+      tmpj = tmpj+tmpi*tmpk
+!
+!  Calculate rhs.
+!
+      rhs=vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
+!
+    endsubroutine tensor_diffusion
+!**********************************************************************
     subroutine calc_heatcond_glnTT(df,p)
 !
 !  L = Div( Grad(lnT)^2  rho b*(b*Grad(T)))
@@ -627,10 +755,20 @@ module Special
 !
       chi = glnT2*hcond_grad*p%cp1
 !
-      rhs = hcond_grad*(rhs + glnT2*tmp)
+      rhs = hcond_grad*(rhs + glnT2*tmp)*gamma*p%cp1
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*p%cp1
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) +rhs
+!
+      if (lvideo) then
+!
+! slices
+        hgrad_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
+        if (m==iy_loc)  hgrad_xz(:,n-n1+1)= rhs
+        if (n==iz_loc)  hgrad_xy(:,m-m1+1)= rhs
+        if (n==iz2_loc) hgrad_xy2(:,m-m1+1)= rhs
+        if (n==iz3_loc) hgrad_xy3(:,m-m1+1)= rhs
+        if (n==iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
+      endif
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
