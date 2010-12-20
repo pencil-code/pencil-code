@@ -409,7 +409,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     integer           :: iobj,iforcepoint, ipoint, inearest, icoord(8,3)
     integer           :: ilong,ilat
     integer           :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
-    real              :: robj, xobj, yobj, zobj,fpx, fpy, fpz, rforce
+    real              :: robj, xobj, yobj, zobj,fpx, fpy, fpz
     real              :: dx1, dy1, dz1, longitude, latitude
     real              :: dist_to_fp2(8), dist_to_cent2(8), twopi,dlong,dlat
     logical           :: interiorpoint
@@ -424,8 +424,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Loop over all objects 
     do iobj=1,nobjects
       robj = objects(iobj)%r
-!  Assume a minimum radius for the forcepoints
-      rforce = robj+dxmin*ineargridshift
       xobj = objects(iobj)%x(1)
       yobj = objects(iobj)%x(2)
       objectform = objects(iobj)%form
@@ -436,11 +434,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         zobj  = objects(iobj)%x(3)
         dlong = twopi/nlong
         dlat  = pi/(nlat+1)
+!  Assume a minimum radius for the forcepoints
+      robj = robj+dxmin*ineargridshift
       else
         print*, "Warning: Subroutine fp_nearest_grid not implemented ", &
             "for this objectform."
       end if
-
+!
 !
 !  Loop over all forcepoints on each object, iobj
       do iforcepoint=1,nforcepoints
@@ -453,8 +453,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  in order to avoid problems with autotesting
         if (objectform == 'cylinder') then
           longitude = (iforcepoint-theta_shift)*dlong
-          fpx = xobj - rforce * sin(longitude)
-          fpy = yobj - rforce * cos(longitude)
+          fpx = xobj - robj * sin(longitude)
+          fpy = yobj - robj * cos(longitude)
           fpz = z(n1)
         elseif (objectform == 'sphere') then
 !  Note definition of lines of longitude: ilong = [0,..,nlong-1]
@@ -463,9 +463,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           ilat   = int((iforcepoint-1)/nlong)
           longitude = (ilong+.5-theta_shift)*dlong
           latitude  = (ilat+.5)*dlat
-          fpx = xobj - rforce*sin(longitude)*sin(latitude)
-          fpy = yobj - rforce*cos(longitude)*sin(latitude)
-          fpz = zobj + rforce*cos(latitude)
+          fpx = xobj - robj*sin(longitude)*sin(latitude)
+          fpy = yobj - robj*cos(longitude)*sin(latitude)
+          fpz = zobj + robj*cos(latitude)
         end if
 !
 !  Find nearest grid point in x-direction
@@ -576,14 +576,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           dist_to_fp2(6) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
           dist_to_fp2(7) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
           dist_to_fp2(8) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
-          dist_to_cent2(1) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-xobj)**2 
-          dist_to_cent2(2) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-xobj)**2 
-          dist_to_cent2(3) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-xobj)**2 
-          dist_to_cent2(4) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-xobj)**2 
-          dist_to_cent2(5) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-xobj)**2 
-          dist_to_cent2(6) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-xobj)**2 
-          dist_to_cent2(7) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-xobj)**2 
-          dist_to_cent2(8) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-xobj)**2 
+          dist_to_cent2(1) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-zobj)**2 
+          dist_to_cent2(2) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-zobj)**2 
+          dist_to_cent2(3) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-zobj)**2 
+          dist_to_cent2(4) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-zobj)**2 
+          dist_to_cent2(5) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-zobj)**2 
+          dist_to_cent2(6) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-zobj)**2 
+          dist_to_cent2(7) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-zobj)**2 
+          dist_to_cent2(8) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-zobj)**2 
           icoord(1,:) = (/ixl,iyl,izl/)
           icoord(2,:) = (/ixu,iyl,izl/)
           icoord(3,:) = (/ixu,iyu,izl/)
@@ -595,10 +595,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           inearest=0
           do ipoint=1,8 
 !  Test if we are in a fluid cell, i.e.
-!  that forcepoints are outside rforce.
-            if (dist_to_cent2(ipoint) .gt. rforce**2 .and. inearest == 0) then
+!  that forcepoints are outside robj.
+            if (dist_to_cent2(ipoint) .gt. robj**2 .and. inearest == 0) then
               inearest=ipoint
-            else if (dist_to_cent2(ipoint) .gt. rforce**2) then
+            else if (dist_to_cent2(ipoint) .gt. robj**2) then
               if (dist_to_fp2(ipoint) <= dist_to_fp2(inearest)) then
                 inearest=ipoint
               endif
