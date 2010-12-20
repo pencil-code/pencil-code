@@ -81,7 +81,7 @@ module Sub
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
   public :: xlocation, ylocation, zlocation
-
+!
   public :: fourier_single_mode
 !
   interface poly                ! Overload the `poly' function
@@ -987,7 +987,7 @@ module Sub
     subroutine multsv_add_mn(a,b,c,d)
 !
 !  Multiply scalar with a vector and subtract from another vector.
-
+!
 !  29-oct-97/axel: coded
 !
       real, dimension (nx,3) :: a,c,d
@@ -3137,7 +3137,7 @@ module Sub
 !
 !  Horner's scheme for polynomial evaluation.
 !  Version for 1d array.
-
+!
 !  17-jan-02/wolf: coded
 !
       real, dimension(:) :: coef
@@ -5401,6 +5401,10 @@ nameloop: do
       integer :: ixpos,l
       logical :: lproc
 !
+!  Use ixpos for testing if position is found.
+!
+      ixpos=-1
+!
 !  Run through all x positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
 !
@@ -5409,14 +5413,15 @@ nameloop: do
           ixpos=l
           lproc=.true.
           exit
-        else
         endif
       enddo
 !
 !  If nothing is found, we set lproc=.false. and and put ixpos=1
 !
-      ixpos=1
-      lproc=.false.
+      if (ixpos==-1) then
+        ixpos=1
+        lproc=.false.
+      endif
 !
     endsubroutine xlocation
 !***********************************************************************
@@ -5434,6 +5439,10 @@ nameloop: do
       integer :: iypos,m
       logical :: lproc
 !
+!  Use iypos for testing if position is found.
+!
+      iypos=-1
+!
 !  Run through all y positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
 !
@@ -5442,14 +5451,15 @@ nameloop: do
           iypos=m
           lproc=.true.
           exit
-        else
         endif
       enddo
 !
 !  If nothing is found, we set lproc=.false. and and put iypos=1
 !
-      iypos=1
-      lproc=.false.
+      if (iypos==-1) then
+        iypos=1
+        lproc=.false.
+      endif
 !
     endsubroutine ylocation
 !***********************************************************************
@@ -5466,6 +5476,10 @@ nameloop: do
       integer :: izpos,n
       logical :: lproc
 !
+!  Use izpos for testing if position is found.
+!
+      izpos=-1
+!
 !  Run through all z positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
 !
@@ -5474,72 +5488,73 @@ nameloop: do
           izpos=n
           lproc=.true.
           exit
-        else
         endif
       enddo
 !
 !  If nothing is found, we set lproc=.false. and and put izpos=1
 !
-      izpos=1
-      lproc=.false.
+      if (izpos==-1) then
+        izpos=1
+        lproc=.false.
+      endif
 !
     endsubroutine zlocation
 !***********************************************************************
   subroutine fourier_single_mode(arr,idims,k,idir,amps,l2nd)
-
+!
 ! no parallelization in x allowed here
-
+!
   use mpicomm, only: mpireduce_sum
-
+!
   implicit none
-
+!
   integer, dimension(2)             , intent(in)  :: idims
   real, dimension(idims(1),idims(2)), intent(in)  :: arr
   real                              , intent(in)  :: k
   integer                           , intent(in)  :: idir
   real   , dimension(2,*)           , intent(out) :: amps
   logical                , optional , intent(in)  :: l2nd
-
+!
   integer :: n,i,idim
   real, dimension(:)  , allocatable :: cg,sg
   real, dimension(:,:), allocatable :: buffer
   real :: fac
   logical :: l2ndl
-  
+!
   if (present(l2nd)) then
     l2ndl=l2nd
   else
     l2ndl=.false.
   endif
-
+!
   if (l2ndl) then
-    idim=idims(1) 
+    idim=idims(1)
   else
     idim=idims(2)
   endif
-
+!
   select case (idir)
     case (1)    ; n=nxgrid
     case (2)    ; n=ny
     case (3)    ; n=nz
     case default; n=nxgrid
   end select
-
+!
   if (idims(1)+idims(2)-idim/=n) then
     amps(:,1:idim)=0.
     return
   endif
-
+!
   allocate(cg(n),sg(n))
-
+!
   select case (idir)
     case (1)    ; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
     case (2)    ; cg=cos(k*y(m1:m2));sg=sin(k*y(m1:m2)); fac=dy
     case (3)    ; cg=cos(k*z(n1:n2));sg=sin(k*z(n1:n2)); fac=dz
     case default; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
   end select
-
-  
+!
+!
   do i=1,idim
     if (l2ndl) then
       amps(:,i) = fac*(/ sum(arr(i,:)*cg), sum(arr(i,:)*sg) /)
@@ -5547,7 +5562,7 @@ nameloop: do
       amps(:,i) = fac*(/ sum(arr(:,i)*cg), sum(arr(:,i)*sg) /)
     endif
   enddo
-
+!
   if (ncpus>1) then
     allocate(buffer(2,idim))
     select case (idir)
@@ -5564,9 +5579,9 @@ nameloop: do
     end select
     deallocate(buffer)
   endif
-
+!
   deallocate(cg,sg)
-
+!
   endsubroutine fourier_single_mode
 !***********************************************************************
 endmodule Sub
