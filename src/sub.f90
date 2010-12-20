@@ -80,7 +80,7 @@ module Sub
 !
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
-  public :: zlocation
+  public :: xlocation, ylocation, zlocation
 
   public :: fourier_single_mode
 !
@@ -5418,7 +5418,6 @@ nameloop: do
       ixpos=1
       lproc=.false.
 !
-!
     endsubroutine xlocation
 !***********************************************************************
     subroutine ylocation(ypos,iypos,lproc)
@@ -5452,7 +5451,6 @@ nameloop: do
       iypos=1
       lproc=.false.
 !
-!
     endsubroutine ylocation
 !***********************************************************************
     subroutine zlocation(zpos,izpos,lproc)
@@ -5484,7 +5482,6 @@ nameloop: do
 !
       izpos=1
       lproc=.false.
-!
 !
     endsubroutine zlocation
 !***********************************************************************
