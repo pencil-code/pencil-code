@@ -379,10 +379,11 @@ if (iplot eq -1) then begin
   t=zero
 ;
   for ip=0,n_elements(filename)-1 do begin
+    if (not quiet) then print, 'Loading chunk ', strtrim(ip+1,2), ' of ', $
+        strtrim(n_elements(filename),2), ' (', filename[ip], ')'
     ipx=ipxarray[ip]
     ipy=ipyarray[ip]
     get_lun, filelun
-    print, ip, filelun
     close, filelun
     openr, filelun, filename[ip], /f77, swap_endian=swap_endian
     it=0
