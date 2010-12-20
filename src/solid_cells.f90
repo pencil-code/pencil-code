@@ -42,6 +42,7 @@ module Solid_Cells
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
+  real                          :: ineargridshift=3
 !
   type solid_object
     character(len=10) :: form
@@ -57,12 +58,12 @@ module Solid_Cells
        ampl_noise,interpolation_method, nforcepoints,object_skin,&
        lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
        nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos,sphere_temp,&
-       lclose_quad_rad_inter
+       lclose_quad_rad_inter,ineargridshift
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
        limit_close_linear,lnointerception,nforcepoints,lcheck_ba,&
-       lclose_quad_rad_inter
+       lclose_quad_rad_inter,ineargridshift
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -408,7 +409,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     integer           :: iobj,iforcepoint, ipoint, inearest, icoord(8,3)
     integer           :: ilong,ilat
     integer           :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
-    real              :: robj, xobj, yobj, zobj,fpx, fpy, fpz
+    real              :: robj, xobj, yobj, zobj,fpx, fpy, fpz, rforce
     real              :: dx1, dy1, dz1, longitude, latitude
     real              :: dist_to_fp2(8), dist_to_cent2(8), twopi,dlong,dlat
     logical           :: interiorpoint
@@ -423,6 +424,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Loop over all objects 
     do iobj=1,nobjects
       robj = objects(iobj)%r
+!  Assume a minimum radius for the forcepoints
+      rforce = robj+dxmin*ineargridshift
       xobj = objects(iobj)%x(1)
       yobj = objects(iobj)%x(2)
       objectform = objects(iobj)%form
@@ -450,8 +453,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  in order to avoid problems with autotesting
         if (objectform == 'cylinder') then
           longitude = (iforcepoint-theta_shift)*dlong
-          fpx = xobj - robj * sin(longitude)
-          fpy = yobj - robj * cos(longitude)
+          fpx = xobj - rforce * sin(longitude)
+          fpy = yobj - rforce * cos(longitude)
           fpz = z(n1)
         elseif (objectform == 'sphere') then
 !  Note definition of lines of longitude: ilong = [0,..,nlong-1]
@@ -460,9 +463,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           ilat   = int((iforcepoint-1)/nlong)
           longitude = (ilong+.5-theta_shift)*dlong
           latitude  = (ilat+.5)*dlat
-          fpx = xobj - robj*sin(longitude)*sin(latitude)
-          fpy = yobj - robj*cos(longitude)*sin(latitude)
-          fpz = zobj + robj*cos(latitude)
+          fpx = xobj - rforce*sin(longitude)*sin(latitude)
+          fpy = yobj - rforce*cos(longitude)*sin(latitude)
+          fpz = zobj + rforce*cos(latitude)
         end if
 !
 !  Find nearest grid point in x-direction
@@ -573,6 +576,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           dist_to_fp2(6) = (x(ixu)-fpx)**2+(y(iyl)-fpy)**2+(z(izu)-fpz)**2 
           dist_to_fp2(7) = (x(ixu)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
           dist_to_fp2(8) = (x(ixl)-fpx)**2+(y(iyu)-fpy)**2+(z(izu)-fpz)**2 
+          dist_to_cent2(1) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-xobj)**2 
+          dist_to_cent2(2) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-xobj)**2 
+          dist_to_cent2(3) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-xobj)**2 
+          dist_to_cent2(4) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-xobj)**2 
+          dist_to_cent2(5) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-xobj)**2 
+          dist_to_cent2(6) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-xobj)**2 
+          dist_to_cent2(7) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-xobj)**2 
+          dist_to_cent2(8) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-xobj)**2 
           icoord(1,:) = (/ixl,iyl,izl/)
           icoord(2,:) = (/ixu,iyl,izl/)
           icoord(3,:) = (/ixu,iyu,izl/)
@@ -584,13 +595,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           inearest=0
           do ipoint=1,8 
 !  Test if we are in a fluid cell, i.e.
-!  that mod(ba(ix,iy,iz,1),10) = 0 
-            if (mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
-                == 0 .and. inearest == 0) then
+!  that forcepoints are outside rforce.
+            if (dist_to_cent2(ipoint) .gt. rforce**2 .and. inearest == 0) then
               inearest=ipoint
-            else if ( &
-                mod(ba(icoord(ipoint,1),icoord(ipoint,2),icoord(ipoint,3),1),10)&
-                == 0 ) then
+            else if (dist_to_cent2(ipoint) .gt. rforce**2) then
               if (dist_to_fp2(ipoint) <= dist_to_fp2(inearest)) then
                 inearest=ipoint
               endif
@@ -631,7 +639,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     real    :: fp_pressure, fp_tcond, fp_gradT
     real    :: fp_stress(3,3)
     integer :: iobj, ifp, ix0, iy0, iz0, i, ilong, ilat
-    real    :: nu, twonu, longitude, latitude, dlong, dlat, robj
+    real    :: nu, twonu, longitude, latitude, dlong, dlat, robj, rforce
     real    :: force_x, force_y, force_z, loc_Nus, heat_flux
     real    :: twopi, nvec(3), surfaceelement,surfacecoeff
     real    :: deltaT,Tobj
@@ -662,6 +670,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
         do iobj=1,nobjects
           robj = objects(iobj)%r
+!  Integrating at radius rforce (for spheres)
+          rforce = robj+dxmin*ineargridshift
           objectform = objects(iobj)%form
           if (objectform=='cylinder') then
             dlong = twopi/nforcepoints
@@ -669,7 +679,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           else if (objectform=='sphere') then
             dlong = twopi/nlong
             dlat  = pi/(nlat+1)
-            surfacecoeff = 2.*dlong*dlat/pi
+!  Surface term, normalized by the squared radius of the object. 
+!  Additional normalizing factors can be found in subroutine 
+!  dsolid_dt_integrate.
+            surfacecoeff = 2.*dlong*dlat/pi*rforce**2/robj**2
           else
             print*, "Warning: Subroutine dsolid_dt not implemented ", &
                 "for this objectform."
@@ -687,12 +700,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (ix0 >= l1 .and. ix0 <= l2) then
 !
 !  Acquire pressure and stress from grid point (ix0,iy0,iz0).
-!  Shifting the location of the forcpoints in the thetal direction
+!  Shifting the location of the forcpoints in the theta direction
 !  in order to avoid problems with autotesting
 !
-                fp_pressure=p%pp(ix0-nghost)
-                fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
-!                
                 if (objectform=='cylinder') then
                   longitude = (ifp-theta_shift)*dlong
                   nvec(1) = -sin(longitude)
@@ -711,33 +721,32 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   call fatal_error('dsolid_dt','No such objectform!')
                   call keep_compiler_quiet(nvec)
                 end if
-!!
+!
 ! Find force in x,y and z direction
 !
                 if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
                     idiag_c_dragz /= 0) then
+                  fp_pressure=p%pp(ix0-nghost)
+                  fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
 !
-!  Force in x direction
+!  Force in x-,y-, and z-directions
 !
                   force_x = (-fp_pressure*nvec(1) &
                       + fp_stress(1,1)*nvec(1) &
                       + fp_stress(1,2)*nvec(2) & 
                       + fp_stress(1,3)*nvec(3)) * surfaceelement
-!                
-!  Force in y direction
 !
                   force_y = (-fp_pressure*nvec(2) &
                       + fp_stress(2,1)*nvec(1) &
                       + fp_stress(2,2)*nvec(2) & 
                       + fp_stress(2,3)*nvec(3)) * surfaceelement
-!                
-!  Force in z direction
 !
                   force_z = (-fp_pressure*nvec(3) &
                       + fp_stress(3,1)*nvec(1) &
                       + fp_stress(3,2)*nvec(2) & 
                       + fp_stress(3,3)*nvec(3)) * surfaceelement
-                endif
+!
+                end if
 !                
 !  Local heat flux
 !
