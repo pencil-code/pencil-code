@@ -307,6 +307,9 @@ module Hydro
   integer :: idiag_ux2mxz=0     ! DIAG_DOC: $\left< u_x^2 \right>_{y}$
   integer :: idiag_uy2mxz=0     ! DIAG_DOC: $\left< u_y^2 \right>_{y}$
   integer :: idiag_uz2mxz=0     ! DIAG_DOC: $\left< u_z^2 \right>_{y}$
+  integer :: idiag_uxuymxz=0    ! DIAG_DOC: $\left< u_x u_y \right>_{y}$
+  integer :: idiag_uxuzmxz=0    ! DIAG_DOC: $\left< u_x u_z \right>_{y}$
+  integer :: idiag_uyuzmxz=0    ! DIAG_DOC: $\left< u_y u_z \right>_{y}$
   integer :: idiag_uxmx=0       ! DIAG_DOC: $\left< u_x \right>_{yz}$
   integer :: idiag_uymx=0       ! DIAG_DOC: $\left< u_y \right>_{yz}$
   integer :: idiag_uzmx=0       ! DIAG_DOC: $\left< u_z \right>_{yz}$
@@ -2225,6 +2228,12 @@ module Hydro
             call ysum_mn_name_xz(p%uu(:,2)**2,idiag_uy2mxz)
         if (idiag_uz2mxz/=0) &
             call ysum_mn_name_xz(p%uu(:,3)**2,idiag_uz2mxz)
+        if (idiag_uxuymxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,2),idiag_uxuymxz)
+        if (idiag_uxuzmxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
+        if (idiag_uyuzmxz/=0) &
+            call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
         if (idiag_oumxz/=0) &
             call ysum_mn_name_xz(p%ou,idiag_oumxz)
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
@@ -3401,6 +3410,9 @@ module Hydro
         idiag_ux2mxz=0
         idiag_uy2mxz=0
         idiag_uz2mxz=0
+        idiag_uxuymxz=0
+        idiag_uxuzmxz=0
+        idiag_uyuzmxz=0
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
@@ -3780,6 +3792,9 @@ module Hydro
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'ux2mxz',idiag_ux2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uy2mxz',idiag_uy2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uz2mxz',idiag_uz2mxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uxuymxz',idiag_uxuymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uxuzmxz',idiag_uxuzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'uyuzmxz',idiag_uyuzmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'oumxz',idiag_oumxz)
       enddo
 !
