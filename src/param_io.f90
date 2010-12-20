@@ -530,7 +530,6 @@ module Param_IO
 
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
-      use Slices, only: setup_slices
       use Sub, only: parse_bc
 !
       logical, optional :: print,file
