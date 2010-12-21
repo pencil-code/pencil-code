@@ -36,7 +36,7 @@ module Entropy
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real, target :: chi=0.0
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_th=0.0, chi_rho=0.0
-  real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0
+  real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
   real :: pp_const=0.0
@@ -92,6 +92,7 @@ module Entropy
   logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
   logical :: lfpres_from_pressure=.false.
   logical :: lconvection_gravx=.false.
+  logical :: ltau_cool_variable=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -135,9 +136,9 @@ module Entropy
       lcalc_ss_volaverage, lcalc_ssmean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
       TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
-      xtop, tau_cool2, tau_cool_ss, &
-      tau_diff, lfpres_from_pressure, chit_aniso, &
-      lchit_aniso_simplified, lconvection_gravx
+      xtop, tau_cool2, tau_cool_ss, tau_diff, lfpres_from_pressure, &
+      chit_aniso, lchit_aniso_simplified, lconvection_gravx, &
+      ltau_cool_variable, TT_powerlaw
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -3744,8 +3745,13 @@ module Entropy
 !
 !  Add cooling with constant time-scale to TTref_cool.
 !
-      if (tau_cool/=0.0) &
+      if (tau_cool/=0.0) then
+        if (.not.ltau_cool_variable) then 
           heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+        else
+          call calc_heat_cool_variable(heat,p)
+        endif
+      endif
       if (tau_cool2/=0.0) &
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
 !
@@ -3781,6 +3787,26 @@ module Entropy
       endif
 !
     endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine calc_heat_cool_variable(heat,p)        
+!
+! Thermal relaxation for radially stratified global Keplerian disks
+!
+      real, dimension(nx), intent(inout) :: heat
+      real, dimension (nx) :: period,rr1
+      type (pencil_case) :: p
+!      
+      if (lcartesian_coords.or.lcylindrical_coords) then
+        rr1=p%rcyl_mn1
+      elseif (lspherical_coords) then
+        rr1=p%r_mn1
+      endif
+!
+      period=2*pi*rr1**(-1.5)
+      heat=heat-p%rho*p%cp*gamma_inv*&
+           (p%TT-TTref_cool*rr1**TT_powerlaw)/(tau_cool*period)
+!
+    endsubroutine calc_heat_cool_variable
 !***********************************************************************
     subroutine get_heat_cool_general(heat,p)
 !
