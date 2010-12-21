@@ -244,11 +244,14 @@ module Density
         case ('hyper3')
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)rho'
           ldiff_hyper3=.true.
-        case ('hyper3lnrho')
+        case ('hyper3lnrho','hyper3-lnrho')
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnrho'
           ldiff_hyper3lnrho=.true.
        case ('hyper3_aniso','hyper3-aniso')
-          if (lroot) print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
+          if (lroot.and.ldensity_nolog) &
+               print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)rho'
+          if (lroot.and..not.ldensity_nolog) &
+               print*,'diffusion: (Dx*d^6/dx^6 + Dy*d^6/dy^6 + Dz*d^6/dz^6)lnrho'
           ldiff_hyper3_aniso=.true.
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
@@ -1771,7 +1774,6 @@ module Density
       endif
 !
       if (ldiff_hyper3_aniso) then
-         if (ldensity_nolog) then
             call del6fj(f,diffrho_hyper3_aniso,ilnrho,tmp)
             fdiff = fdiff + tmp
 !  Must divide by dxyz_6 here, because it is multiplied on later.
@@ -1781,9 +1783,6 @@ module Density
                   diffrho_hyper3_aniso(3)*dz_1(  n  )**6)/dxyz_6
             if (headtt) &
                  print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
-         else
-            call stop_it("anisotropic hyperdiffusion not implemented for lnrho")
-         endif
       endif
 !
       if (ldiff_hyper3lnrho) then
