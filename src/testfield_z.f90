@@ -572,7 +572,7 @@ module Testfield
       if (present(iostat)) then
         read(unit,NML=testfield_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=testfield_init_pars,ERR=99)
+        read(unit,NML=testfield_init_pars,ERR=99,END=99)
       endif
 
 99    return
