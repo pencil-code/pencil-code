@@ -135,6 +135,18 @@ module Testflow
 !
     endsubroutine get_slices_testflow
 !***********************************************************************
+    subroutine testflow_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!   15-dec-10/MR: adapted from density
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine testflow_before_boundary
+!***********************************************************************
     subroutine calc_ltestflow_nonlin_terms(f,df)
 !
 !  Dummy routine
@@ -161,14 +173,4 @@ module Testflow
 !
     endsubroutine rprint_testflow
 !***********************************************************************
-    subroutine testflow_before_boundary(f)
-!  
-!  Dummy routine
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-! 
-    endsubroutine testflow_before_boundary
-!***********************************************************************
-endmodule Testflow
+endmodule Testflow 
