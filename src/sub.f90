@@ -80,7 +80,7 @@ module Sub
 !
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
-  public :: xlocation, ylocation, zlocation
+  public :: xlocation, ylocation, zlocation, location_in_proc
 !
   public :: fourier_single_mode
 !
@@ -5386,6 +5386,22 @@ nameloop: do
       endif
 !
     endsubroutine gij_psi_etc
+!***********************************************************************
+    subroutine location_in_proc(xpos,ypos,zpos,lpos,mpos,npos,lin)
+! 
+! finds out if a points belongs to the location in the processor.
+! If yes the also returns the nearest grid location of this point. 
+      real :: xpos,ypos,zpos
+      integer :: lpos,mpos,npos
+      logical :: lin,linx,liny,linz
+! dhruba
+!
+      call xlocation(xpos,lpos,linx)
+      call ylocation(ypos,mpos,liny)
+      call zlocation(zpos,npos,linz)
+      lin = linx.and.liny.and.linz
+!
+        endsubroutine location_in_proc
 !***********************************************************************
     subroutine xlocation(xpos,ixpos,lproc)
 !

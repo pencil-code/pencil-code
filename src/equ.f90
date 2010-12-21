@@ -94,7 +94,6 @@ module Equ
 !  Do diagnostics only in the first of the 3 (=itorder) substeps.
 !
       ldiagnos   =lfirst.and.lout
-      ldiagnos_sound=lfirst.and.lout_sound
       l1davgfirst=lfirst.and.l1davg
       l2davgfirst=lfirst.and.l2davg
 !
@@ -1029,7 +1028,7 @@ module Equ
 !  Diagnostics.
 !
       if (ldiagnos) call diagnostic(fname,nname)
-      if (ldiagnos_sound) call diagnostic(fname_sound,nname_sound)
+!      if (ldiagnos_sound) call diagnostic(fname_sound,nname_sound)
 !
 !  1-D diagnostics.
 !

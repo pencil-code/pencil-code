@@ -205,57 +205,7 @@ module Diagnostics
 !
 !   3-dec-10/dhruba+joern: coded
 !
-      use General, only: safe_character_append
-      use Sub, only: noform
-!
-      logical,save :: first=.true.
-      character (len=640) :: fform,line
-      character (len=1), parameter :: comma=','
-      integer :: iname,index_d,index_a
-!
-!      if (lroot) then
-!        if (idiag_t/=0)   call save_name_sound(tdiagnos,idiag_t)
-!      endif
-!
-      if (lroot) then
-!
-!  Produce the format.
-!  Must set cform(1) explicitly, and then do iname>=2 in loop.
-!
-        fform = '(f10.3' 
-        do iname=1,nname_sound
-          call safe_character_append(fform,  comma // cform_sound(iname))
-        enddo
-        call safe_character_append(fform, ')')
-!
-!  Put output line into a string and remove spurious dots.
-!
-        if (ldebug) write(*,*) 'bef. writing prints'
-        write(line,trim(fform)) tdiagnos, fname_sound(1:nname_sound)
-        index_d=index(line,'. ')
-        if (index_d >= 1) then
-          line(index_d:index_d)=' '
-        endif
-!
-!  If the line contains unreadable characters, then comment out line.
-!
-        index_a=(index(line,'***') +  index(line,'???'))
-        if (index_a > 0) then
-          line(1:1)=comment_char
-        endif
-!
-!  Append to diagnostics file.
-!
-        open(1,file=trim(datadir)//'/sound.dat',position='append')
-        write(1,'(a)') trim(line)
-        close(1)
-!
-      endif                     ! (lroot)
-!
-      if (ldebug) write(*,*) 'exit prints'
-      first = .false.
-!
-      fname_sound(1:nname_sound)=0.0
+      call fatal_error('write_sound','not coded yet')
 !
     endsubroutine write_sound
 !***********************************************************************
@@ -975,19 +925,19 @@ module Diagnostics
 !
    endsubroutine save_name
 !***********************************************************************
-    subroutine save_name_sound(a,iname)
+    subroutine save_name_sound(a,iname,iscoord)
 !
 !  Lists the value of a (must be treated as real) in fname array
 !
 !  3-Dec-10 dhruba+joern: adapted from max_mn_name
 !
       real :: a
-      integer :: iname
+      integer :: iname,iscoord
 !
 !  Set corresponding entry in itype_name
 !  This routine is to be called only once per step
 !
-      fname_sound(iname)=a
+      fname_sound(iname,iscoord)=a
       itype_name(iname)=ilabel_save
 !
    endsubroutine save_name_sound
@@ -1905,33 +1855,76 @@ module Diagnostics
 !
     endfunction get_from_fname
 !***********************************************************************
-    subroutine allocate_sound
+    subroutine allocate_sound (sound_coord_file)
 !
 !  Allocate the variables needed for "sound" 
 !
 !   3-Dec-10 dhruba+joern
 !
-      integer :: stat
+      use Cdata
+      use Sub, only : location_in_proc
+      character (LEN=*), intent(in) :: sound_coord_file
+      integer :: stat=0,isound
+      integer :: unit=1
+      integer :: msound_coords
+      logical :: llocation
+      integer, allocatable, dimension (:,:) :: temp_sound_coords 
+      real :: xsound,ysound,zsound
+      integer :: lsound,msound,nsound
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
 !  averages, and only evaluates its output for special purposes
 !  such as computing mean field energies in calc_bmz, for example,
 !
-      allocate(fname_sound(nname_sound),stat=stat)
-      fname_sound=0.
-!
-      if (stat>0) then
-        call fatal_error('allocate_sound', &
-            'Could not allocate memory for sound variables', .true.)
-      else
-        if (lroot) print*, 'allocate_sound: allocated memory for '// &
-            'fname_sound  with nname_sound  =', nname_sound
+      msound_coords = parallel_count_lines(sound_coord_file)
+      allocate(temp_sound_coords(msound_coords,3),stat=stat)
+      if (stat>0) call fatal_error('allocate_sound', &
+            'Could not allocate memory for temp_sound_coords')
+      lwrite_sound=.false.
+      nsound_coords=0
+      call parallel_open(unit,file=sound_coord_file)
+      do isound=1,msound_coords
+        read(unit,*) xsound,ysound,zsound
+        call location_in_proc(xsound,ysound,zsound,lsound,msound,nsound,llocation)
+        if(llocation) then
+          nsound_coords=nsound_coords+1
+          lwrite_sound = .true.
+          temp_sound_coords(isound,1) = lsound
+          temp_sound_coords(isound,2) = msound
+          temp_sound_coords(isound,3) = nsound
+        endif
+      enddo
+      if(lwrite_sound) then
+        if (.not. allocated(sound_coords_list)) &
+            allocate(sound_coords_list(nsound_coords,3),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            'Could not allocate memory for sound_coords_list')
+        sound_coords_list = temp_sound_coords(1:nsound_coords,:)
+        if (.not. allocated(fname_sound)) &
+            allocate(fname_sound(nname_sound,nsound_coords),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            'Could not allocate memory for fname_sound')
+        fname_sound=0.
+        if (.not. allocated(cname_sound)) &
+            allocate(cname_sound(nname_sound),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            'Could not allocate memory for nname_sound')
       endif
-
-     allocate(cname_sound(nname_sound),cform_sound(nname_sound))
+!
+! Now deallocate the temporary memory
+!
+      deallocate(temp_sound_coords)
 !
     endsubroutine allocate_sound
+!***********************************************************************
+    subroutine sound_clean_up
+! frees up the memory allocated for sound 
+! dhruba
+      if (allocated(sound_coords_list)) deallocate(sound_coords_list)
+      if (allocated(fname_sound)) deallocate(fname_sound)
+      if (allocated(cname_sound)) deallocate(cname_sound)
+    endsubroutine sound_clean_up
 !***********************************************************************
     subroutine allocate_vnames
 !
@@ -2124,17 +2117,6 @@ module Diagnostics
       if (allocated(cnamev)) deallocate(cnamev)
 !
     endsubroutine vnames_clean_up
-!***********************************************************************
-    subroutine sound_clean_up
-!
-!  Deallocate space needed for reading the video.in file.
-!
-!   
-!
-      if (allocated(cname_sound)) deallocate(cname_sound)
-      if (allocated(fname_sound)) deallocate(fname_sound)
-!
-    endsubroutine sound_clean_up
 !***********************************************************************
     subroutine xyaverages_clean_up
 !

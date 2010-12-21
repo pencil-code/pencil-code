@@ -160,7 +160,7 @@ module Cdata
 !
   real :: Omega=0.0, theta=0.0, qshear=0.0, Sshear=impossible, deltay=0.0
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
-! coordinate. This should be taken cared of by 'shared variables' if in future
+! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro. 
 !
 !  Random numbers.
@@ -299,13 +299,14 @@ module Cdata
   integer :: it1=10,it1d=impossible_int
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
-  integer :: nname_sound=0
+  integer :: nname_sound=0, nsound_coords=0
   integer :: nr_directions=1
   real :: tdiagnos,t1ddiagnos,t2davgfirst
   integer, parameter :: mname=100,mnamev=100
   integer, dimension (mname) :: itype_name=0
   real, dimension (mname) :: fname=0.0, fweight=0.0
-  real, dimension (:), allocatable :: fname_sound
+  real, dimension (:,:), allocatable :: fname_sound
+  integer, dimension (:,:), allocatable :: sound_coords_list
   real, dimension (nz,nprocz) :: z_allprocs=0.0
   real, dimension (:,:,:), allocatable :: fnamex, fnamey, fnamez
   real, dimension (:,:), allocatable :: fnamer
@@ -323,7 +324,7 @@ module Cdata
   character (len=30), allocatable :: cnamer(:),cformr(:)
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lout_sound=.false.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
-  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,ldiagnos_sound=.false.
+  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
   logical :: lwrite_phizaverages=.true.
