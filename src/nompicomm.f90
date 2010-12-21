@@ -1945,48 +1945,65 @@ module Mpicomm
 !
     endfunction
 !***********************************************************************
-  subroutine mpigather_xy( sendbuf, recvbuf, lpz )
-  
-  real, dimension(nxgrid,ny)     :: sendbuf
-  real, dimension(nxgrid,nygrid) :: recvbuf
-  integer                        :: lpz
-
-  recvbuf = sendbuf
-  
-  endsubroutine mpigather_xy
+    subroutine mpigather_xy( sendbuf, recvbuf, lpz )
+!
+!  21-dec-10/MR: coded
+!
+      real, dimension(nxgrid,ny)     :: sendbuf
+      real, dimension(nxgrid,nygrid) :: recvbuf
+      integer                        :: lpz
+!
+      recvbuf = sendbuf
+!
+      if (NO_WARN) print*,lpz
+!
+    endsubroutine mpigather_xy
 !***********************************************************************
-  subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
-
-  real, dimension(nxgrid,ny)     :: sendbuf
-  real, dimension(nxgrid,nygrid) :: recvbuf
-  integer                        :: n1
-  integer, optional              :: lproc
-
-  recvbuf = sendbuf
-
-  endsubroutine mpigather_z
+    subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
+!
+!  21-dec-10/MR: coded
+!
+      real, dimension(nxgrid,ny)     :: sendbuf
+      real, dimension(nxgrid,nygrid) :: recvbuf
+      integer                        :: n1
+      integer, optional              :: lproc
+!
+      recvbuf = sendbuf
+!
+      if (NO_WARN) print*,n1,present(lproc)
+!
+    endsubroutine mpigather_z
 !***********************************************************************
-  subroutine mpigather_and_out( sendbuf, unit, ltransp )
-          
-  ! here no parallelization in x allowed
-  
-  implicit none
-  
-  real, dimension(nxgrid,ny,nz), intent(in) :: sendbuf   ! nx=nxgrid !
-  integer,                       intent(in) :: unit
-  logical, optional,             intent(in) :: ltransp
-  
-  write(1,'(1p,8e10.2)') sendbuf
-  
-  endsubroutine mpigather_and_out
+    subroutine mpigather_and_out( sendbuf, unit, ltransp )
+!
+!  21-dec-10/MR: coded
+!
+! here no parallelization in x allowed
+!
+      implicit none
+!
+      real, dimension(nxgrid,ny,nz), intent(in) :: sendbuf   ! nx=nxgrid !
+      integer,                       intent(in) :: unit
+      logical, optional,             intent(in) :: ltransp
+!
+      write(1,'(1p,8e10.2)') sendbuf
+!
+      if (NO_WARN) print*,unit,present(ltransp)
+!
+    endsubroutine mpigather_and_out
 !***********************************************************************
-  subroutine mpimerge_1d(vector,nk,idir)
- 
-  real, dimension(nk), intent(inout) :: vector
-  integer,             intent(in)    :: nk
-  integer, optional,   intent(in)    :: idir
-
-  return
+    subroutine mpimerge_1d(vector,nk,idir)
+!
+!  21-dec-10/MR: coded
+!
+      real, dimension(nk), intent(inout) :: vector
+      integer,             intent(in)    :: nk
+      integer, optional,   intent(in)    :: idir
+!
+      if (NO_WARN) print*,vector,nk,present(idir)
+!
+      return
+!
   endsubroutine mpimerge_1d
 !***********************************************************************
 endmodule Mpicomm
