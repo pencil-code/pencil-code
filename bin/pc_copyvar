@@ -21,6 +21,7 @@
 #
 #  Abbreviations:
 #    v, var       - var.dat
+#    p, pvar      - pvar.dat
 #    naked number - VAR*
 #
 set data=data/
@@ -81,6 +82,12 @@ if ( $var1 =~ "v" || $var1 =~ "var") then
 endif
 if ( $var2 =~ "v" || $var2 =~ "var") then
   set var2='var.dat'
+endif
+if ( $var1 =~ "p" || $var1 =~ "pvar") then
+  set var1='pvar.dat'
+endif
+if ( $var2 =~ "p" || $var2 =~ "pvar") then
+  set var2='pvar.dat'
 endif
 #
 #  Naked integers get 'VAR' in front.
