@@ -277,6 +277,15 @@ program run
 !
   if (lini_t_eq_zero) t=0.0
 !
+!  Set last tsound output time
+!
+  if (lwrite_sound) then
+    if ( isnan(tsound) ) then
+      tsound=t                          ! if sound output starts anew
+      lout_sound=.true.                 ! output initial values
+    endif
+  endif
+!
 !  Read coordinates.
 !
   if (ip<=6.and.lroot) print*, 'reading grid coordinates'
@@ -354,10 +363,6 @@ program run
 !
   if (dspec/=impossible) call powersnap(f)
 !
-!  Save soundfile
-!
-!  lout_sound = (t-tsnap) >= dsound
-!
 !  Initialize pencils in the pencil_case.
 !
   if (lpencil_init) call initialize_pencils(p,0.0)
@@ -399,9 +404,16 @@ program run
 !
   Time_loop: do while (it<=nt)
 !
-    lout  =mod(it-1,it1) ==0
-    l1davg=mod(it-1,it1d)==0
+    lout   = mod(it-1,it1) ==0
+    l1davg = mod(it-1,it1d)==0
 !
+    if (lwrite_sound) then
+      if ( .not.lout_sound .and. abs( t-tsound - dsound )>= soundeps ) then
+        lout_sound = .true.
+        tsound = t
+      endif
+    endif
+    
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
@@ -523,10 +535,13 @@ program run
     if (lout) then
       call prints()
       if (lchemistry_diag) call write_net_reaction
-     endif
-    if (l1davg) call write_1daverages()
-    if (l2davg) call write_2daverages()
-    if (lwrite_sound) call write_sound()
+    endif
+    if (l1davg    ) call write_1daverages()
+    if (l2davg    ) call write_2daverages()   
+    if (lout_sound) then
+      call write_sound(tsound)
+      lout_sound = .false.
+    endif
 !
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
