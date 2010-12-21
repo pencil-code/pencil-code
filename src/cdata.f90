@@ -125,7 +125,7 @@ module Cdata
 !
   character (len=120) :: datadir='data'
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
-  real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0.
+  real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
@@ -322,9 +322,9 @@ module Cdata
   character (len=30), allocatable :: cnamey(:),cformy(:)
   character (len=30), allocatable :: cnamex(:),cformx(:)
   character (len=30), allocatable :: cnamer(:),cformr(:)
-  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.,lout_sound=.false.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
-  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.
+  logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,ldiagnos_sound=.false.,lout_sound=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
   logical :: lwrite_phizaverages=.true.
