@@ -33,7 +33,7 @@ if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){
     }
 
   }
-elsif ($host =~ /riologin/ or $host =~ /pia/){   # SGE
+elsif ($host =~ /riologin/ or $host =~ /pia/ or $host =~ /theo/){   # SGE
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
