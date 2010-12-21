@@ -539,7 +539,7 @@ program run
     if (l1davg    ) call write_1daverages()
     if (l2davg    ) call write_2daverages()   
     if (lout_sound) then
-      call write_sound(tsound)
+!     call write_sound(tsound)
       lout_sound = .false.
     endif
 !
