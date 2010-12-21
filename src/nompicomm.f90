@@ -428,7 +428,7 @@ module Mpicomm
     subroutine mpirecv_real_arr2(bcast_array,nbcast_array,proc_src,tag_id)
 !
       integer, dimension(2) :: nbcast_array
-      real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      real, dimension(nbcast_array(1), nbcast_array(2)) :: bcast_array
       integer :: proc_src, tag_id
 !
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
@@ -547,9 +547,8 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
-      integer :: nbcast_array
       logical :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: nbcast_array, proc
 !
       if (NO_WARN) print*, lbcast_array, nbcast_array, proc
 !
@@ -577,11 +576,10 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
 !
-      integer :: nbcast_array
       integer :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, ibcast_array, nbcast_array, proc
+      if (NO_WARN) print*, ibcast_array,nbcast_array,proc
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
@@ -597,11 +595,10 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
 !
-      integer :: nbcast_array
       real :: bcast_array
-      integer, optional :: proc
+      integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+      if (NO_WARN) print*, bcast_array,nbcast_array, proc
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
@@ -637,11 +634,10 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !
-      integer :: nbcast_array
       double precision :: bcast_array
-      integer, optional :: proc
+      integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+      if (NO_WARN) print*, bcast_array,nbcast_array,proc
 !
     endsubroutine mpibcast_double_scl
 !***********************************************************************
@@ -655,13 +651,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
-    subroutine mpibcast_char_scl(cbcast_array,nbcast_array,proc)
+    subroutine mpibcast_char_scl(cbcast_array,proc)
 !
-      integer :: nbcast_array
       character :: cbcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, cbcast_array, nbcast_array, proc
+      if (NO_WARN) print*, cbcast_array,proc
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -1949,5 +1944,49 @@ module Mpicomm
       parallel_file_exists = file_exists(file,delete)
 !
     endfunction
+!***********************************************************************
+  subroutine mpigather_xy( sendbuf, recvbuf, lpz )
+  
+  real, dimension(nxgrid,ny)     :: sendbuf
+  real, dimension(nxgrid,nygrid) :: recvbuf
+  integer                        :: lpz
+
+  recvbuf = sendbuf
+  
+  endsubroutine mpigather_xy
+!***********************************************************************
+  subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
+
+  real, dimension(nxgrid,ny)     :: sendbuf
+  real, dimension(nxgrid,nygrid) :: recvbuf
+  integer                        :: n1
+  integer, optional              :: lproc
+
+  recvbuf = sendbuf
+
+  endsubroutine mpigather_z
+!***********************************************************************
+  subroutine mpigather_and_out( sendbuf, unit, ltransp )
+          
+  ! here no parallelization in x allowed
+  
+  implicit none
+  
+  real, dimension(nxgrid,ny,nz), intent(in) :: sendbuf   ! nx=nxgrid !
+  integer,                       intent(in) :: unit
+  logical, optional,             intent(in) :: ltransp
+  
+  write(1,'(1p,8e10.2)') sendbuf
+  
+  endsubroutine mpigather_and_out
+!***********************************************************************
+  subroutine mpimerge_1d(vector,nk,idir)
+ 
+  real, dimension(nk), intent(inout) :: vector
+  integer,             intent(in)    :: nk
+  integer, optional,   intent(in)    :: idir
+
+  return
+  endsubroutine mpimerge_1d
 !***********************************************************************
 endmodule Mpicomm
