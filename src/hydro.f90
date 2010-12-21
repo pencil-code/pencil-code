@@ -1636,7 +1636,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-!  Remove mean x-momentum if desired.
+!  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
 !
       if (lremove_mean_momenta) then
