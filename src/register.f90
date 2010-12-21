@@ -662,6 +662,7 @@ module Register
 !   3-may-01/axel: coded
 !
       use Cdata
+      use Cparam,          only: rnan
       use Param_IO
       use Sub,             only: numeric_precision
       use Diagnostics
@@ -700,7 +701,7 @@ module Register
       integer :: iname,inamev,inamez,inamey,inamex,inamer
       integer :: iname_sound
       integer :: inamexy,inamexz,inamerz
-      integer :: iname_tmp,ierr,iadd
+      integer :: iname_tmp,ierr,iadd,ios
       integer :: unit=1
       logical :: lreset
 !
@@ -763,7 +764,7 @@ module Register
 !  Read in the list of variables for "sound".
 !
       nname_sound = parallel_count_lines(sound_in_file)
-      if ((dsound/=0.0) .and. (nname_sound>0)) then
+      if ( dsound/=0.0 .and. nname_sound>0 ) then
 !
 ! Allocate the relevant arrays and read the list of coordinates into arrays.
 ! nsound_location and lwrite_sound are set to their relevant values inside
@@ -776,6 +777,16 @@ module Register
           read(unit,*,iostat=ierr) cname_sound(iname_sound)
         enddo
         call parallel_close(unit)
+!
+!  Read the last sound output time from a soundfile, set to starttime otherwise
+!      
+        tsound=rnan 
+        open(1,file=trim(directory)//'/sound.dat',position='append',status='old',iostat=ios) 
+        if (ios==0) then      
+          backspace(1)
+          read(1,*) tsound
+        endif
+        close(1)
       endif
       if (lroot .and. (ip<14)) print*, 'sound_print_list: nname_sound=', nname_sound
 !
