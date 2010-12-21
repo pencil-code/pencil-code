@@ -96,7 +96,7 @@ module Register
         open(15,FILE=trim(datadir)//'/def_var.pro',IOSTAT=ierr)
         if (ierr /= 0) call stop_it("Cannot open "//trim(datadir)// &
             "/def_var.pro for writing -- is "//trim(datadir)//" visible from root node?")
-        print *, 'Creating ' // trim(datadir) // '/variables.pro'
+        if (ldebug) print *, 'Creating ' // trim(datadir) // '/variables.pro'
         open(4,FILE=trim(datadir)//'/variables.pro',IOSTAT=ierr)
         if (ierr /= 0) call stop_it("Cannot open "//trim(datadir)// &
             "/variables.pro for writing -- is "//trim(datadir)//" visible from root node?")
