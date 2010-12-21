@@ -46,7 +46,7 @@ module Particles_map
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
-      real, dimension (3) :: xxp, gpp
+      real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       real, dimension (mvar) :: f_tmp
       integer, dimension (3) :: inear
