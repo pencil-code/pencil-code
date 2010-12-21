@@ -1687,7 +1687,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_real_arr3(bcast_array,nb,proc)
 !
-!  Communicate real array(:,:) to other processor.
+!  Communicate real array(:,:,:) to other processor.
 !
 !  25-fev-08/wlad: adapted
 !
