@@ -103,8 +103,8 @@ module Equ
 !
 !  Record times for diagnostic and 2d average output.
 !
-      if (ldiagnos)    tdiagnos=t    ! (diagnostics are for THIS time)
-      if (l1davgfirst) t1ddiagnos=t  ! (1-D averages are for THIS time)
+      if (ldiagnos   ) tdiagnos   =t ! (diagnostics are for THIS time)
+      if (l1davgfirst) t1ddiagnos =t ! (1-D averages are for THIS time)
       if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
 !
 !  Grid spacing. For non equidistant grid or non-cartesian coordinates 
