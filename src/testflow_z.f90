@@ -116,7 +116,8 @@ module Testflow
              lkinem_testflow=.false., &
              lburgers_testflow=.false., &
              lprescribed_velocity=.false., &
-	     lremove_mean_momenta_testflow=.false.
+	     lremove_mean_momenta_testflow=.false., &
+	     lremove_mean_enthalpy_z=.false.
 !
   character (len=labellen) :: itestflow='W11-W22'
 !
@@ -127,6 +128,7 @@ module Testflow
                                lburgers_testflow,   &    ! flag for disconnecting enthalpy(pressure) from velocity
                                lprescribed_velocity,&    ! flag for prescribed velocity, prescription via p%fcont, only effective if lkinem_testflow=.true.
                                lremove_mean_momenta_testflow, &  ! flag for removing mean momenta in 0-solution
+			       lremove_mean_enthalpy_z,&   ! flag for removing xy-mean of enthalpy in 0-solution
 			       nutest,              &    ! viscosity in testflow equations
                                nutest1,             &    ! reciprocal viscosity
                                itestflow,           &    ! name of used testflow set, legal values
@@ -1049,12 +1051,53 @@ module Testflow
 !
       use Hydro, only: remove_mean_momenta
       use Cdata
+      use Mpicomm
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call remove_mean_momenta(f,iuutest)
+      if (lremove_mean_momenta_testflow) &
+        call remove_mean_momenta(f,iuutest)
+	
+      if (lremove_mean_enthalpy_z) &
+        call remove_mean_enthalpy_z(f)
 !
     endsubroutine testflow_before_boundary
+!***********************************************************************
+    subroutine remove_mean_enthalpy_z(f)
+!
+!  removes xy average of enthaply in 0 solution.
+!
+!   15-dec-10/MR: coded
+!
+      use Cdata
+      use Mpicomm, only: mpiallreduce_sum
+      
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      
+      real    :: hm, hm1, fac
+      integer :: ihhtest,i,j
+      
+      fac = 1./(nxgrid*nygrid)
+      
+      ihhtest = iuutest+3
+!      
+      do i=n1,n2
+      
+        hm = 0.
+        do j=m1,m2
+          hm = hm + sum(f(:,j,i,ihhtest))
+        enddo
+	
+	if (nprocy>1) then                       ! no x parallelization allowed
+	  call mpiallreduce_sum(hm,hm1,idir=12)
+	  hm=hm1
+	endif
+
+	f(:,:,i,ihhtest) = f(:,:,i,ihhtest) - fac*hm
+	  
+      enddo
+!
+    endsubroutine remove_mean_enthalpy_z
 !***********************************************************************
     subroutine calc_ltestflow_nonlin_terms(f,df)          ! -> Default interface (as do_prepencilstep or so)
 !
