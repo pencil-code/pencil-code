@@ -689,7 +689,6 @@ module Param_IO
 !  Set debug logical (easier to use than the combination of ip and lroot).
 !
       ldebug=lroot.and.(ip<7)
-      if (lroot) print*,'ldebug,ip=',ldebug,ip
 !
 !  Give online feedback if called with the PRINT optional argument.
 !  Note: Some compiler's [like Compaq's] code crashes with the more

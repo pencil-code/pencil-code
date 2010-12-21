@@ -146,6 +146,10 @@ program run
   call register_modules()
   if (lparticles) call particles_register_modules()
 !
+!  Inform about verbose level.
+!
+  if (lroot) print*, 'The verbose level is ip=', ip, ' (ldebug=', ldebug, ')'
+!
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !
   call rprint_list(LRESET=.false.)
