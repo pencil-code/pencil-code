@@ -182,7 +182,7 @@ module Param_IO
         close(unit)
         if (len(trim(tdir)) > 0) call parse_shell(tdir,dir)
       endif
-      if (lroot.and.ip<20) print*,'get_snapdir: dir=',trim(dir)
+      if (ip<10) print*,'get_snapdir: dir=',trim(dir)
 !
     endsubroutine get_snapdir
 !***********************************************************************
