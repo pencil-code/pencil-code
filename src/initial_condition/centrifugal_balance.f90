@@ -408,9 +408,11 @@ module InitialCondition
 !
       call correct_for_selfgravity(f)
 !
-!  Set the thermodynamical variable
+!  Set noise in low wavelengths only
 !
       if (llowk_noise) call lowk_noise_gaussian_rprof(f)
+!
+!  Set the thermodynamical variable
 !
       if (llocal_iso) then
         call set_thermodynamical_quantities&
