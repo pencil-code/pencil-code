@@ -1520,10 +1520,10 @@ module Mpicomm
 !
       if (present(nbcast_array)) then
         nbcast_arrayl=nbcast_array
-      else 
+      else
         nbcast_arrayl=1
       endif
-      
+
       call MPI_BCAST(lbcast_array,nbcast_arrayl,MPI_LOGICAL,ibcast_proc, &
           MPI_COMM_WORLD,mpierr)
 !
@@ -1588,10 +1588,10 @@ module Mpicomm
 !
       if (present(nbcast_array)) then
         nbcast_arrayl=nbcast_array
-      else 
+      else
         nbcast_arrayl=1
       endif
-      
+
       call MPI_BCAST(ibcast_array,nbcast_arrayl,MPI_INTEGER,ibcast_proc, &
           MPI_COMM_WORLD,mpierr)
 !
@@ -1633,10 +1633,10 @@ module Mpicomm
 !
       if (present(nbcast_array)) then
         nbcast_arrayl=nbcast_array
-      else 
+      else
         nbcast_arrayl=1
       endif
-      
+
       call MPI_BCAST(bcast_array,nbcast_arrayl,MPI_REAL,ibcast_proc, &
           MPI_COMM_WORLD,mpierr)
 !
@@ -1724,7 +1724,7 @@ module Mpicomm
 !
       if (present(nbcast_array)) then
         nbcast_arrayl=nbcast_array
-      else 
+      else
         nbcast_arrayl=1
       endif
 
@@ -1807,7 +1807,7 @@ module Mpicomm
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
 !
       if (present(idir)) then
-        mpiprocs=mpigetcomm(idir) 
+        mpiprocs=mpigetcomm(idir)
       else
         mpiprocs=MPI_COMM_WORLD
       endif
@@ -1827,7 +1827,7 @@ module Mpicomm
       integer :: mpiprocs
 !
       if (present(idir)) then
-        mpiprocs=mpigetcomm(idir) 
+        mpiprocs=mpigetcomm(idir)
       else
         mpiprocs=MPI_COMM_WORLD
       endif
@@ -1850,7 +1850,7 @@ module Mpicomm
       integer :: mpiprocs
 !
       if (present(idir)) then
-        mpiprocs=mpigetcomm(idir) 
+        mpiprocs=mpigetcomm(idir)
       else
         mpiprocs=MPI_COMM_WORLD
       endif
@@ -1873,7 +1873,7 @@ module Mpicomm
       integer :: mpiprocs
 !
       if (present(idir)) then
-        mpiprocs=mpigetcomm(idir) 
+        mpiprocs=mpigetcomm(idir)
       else
         mpiprocs=MPI_COMM_WORLD
       endif
@@ -2084,7 +2084,7 @@ module Mpicomm
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
 !
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir) 
+          mpiprocs=mpigetcomm(idir)
         else
           mpiprocs=MPI_COMM_WORLD
         endif
@@ -2111,7 +2111,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir) 
+          mpiprocs=mpigetcomm(idir)
         else
           mpiprocs=MPI_COMM_WORLD
         endif
@@ -2138,7 +2138,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir) 
+          mpiprocs=mpigetcomm(idir)
         else
           mpiprocs=MPI_COMM_WORLD
         endif
@@ -2165,7 +2165,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir) 
+          mpiprocs=mpigetcomm(idir)
         else
           mpiprocs=MPI_COMM_WORLD
         endif
@@ -2192,7 +2192,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
         if (present(idir)) then
-          mpiprocs=mpigetcomm(idir) 
+          mpiprocs=mpigetcomm(idir)
         else
           mpiprocs=MPI_COMM_WORLD
         endif
@@ -5061,7 +5061,7 @@ module Mpicomm
 !***********************************************************************
     subroutine parallel_open(unit,file,form)
 !
-!  Choose between two reading methods. 
+!  Choose between two reading methods.
 !
 !  19-nov-10/dhruba.mitra: implemented
 !
@@ -5069,7 +5069,7 @@ module Mpicomm
       character (len=*) :: file
       character (len=*), optional :: form
 !
-      if (lfake_parallel_io) then 
+      if (lfake_parallel_io) then
         call fake_parallel_open(unit,file,form)
       else
         call true_parallel_open(unit,file,form)
@@ -5223,7 +5223,7 @@ module Mpicomm
 !
       integer :: unit
 !
-      if(lfake_parallel_io) then 
+      if(lfake_parallel_io) then
         call fake_parallel_close(unit)
       else
          call true_parallel_close(unit)
@@ -5306,243 +5306,243 @@ module Mpicomm
     endfunction
 !***********************************************************************
   subroutine mpigather_xy( sendbuf, recvbuf, lpz )
-             
+
 !  18-nov-10/MR: coded
 !
 !  gathers the chunks of a 2D array from each processor of the z-layer lpz in a big array at the root of the layer
 !  if lpz not present this is done for all layers (not checked)
 
   ! here no parallelization in x allowed
-  
+
   implicit none
-  
+
   real, dimension(nxgrid,ny)     :: sendbuf   ! nx=nxgrid !
   real, dimension(nxgrid,nygrid) :: recvbuf
   integer, optional, intent(in)  :: lpz
-  
+
   integer :: ncnt
   logical :: cond
-  
+
   if (present(lpz)) then
     cond = ipz==lpz
   else
     cond = .true.
   endif
-  
+
   ncnt = nxgrid*ny
-      
+
   if (cond) &
     call MPI_GATHER(sendbuf, ncnt, MPI_REAL, recvbuf, ncnt, MPI_REAL, root, MPI_COMM_XYPLANE, mpierr)
-  
+
   endsubroutine mpigather_xy
 !***********************************************************************
   subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
-  
+
 !  25-nov-10/MR: coded
 !
 !  gathers the chunks of a 2D array from each processor along a z-beam at position, defined by lproc at root of the beam
 
   implicit none
-  
-  real, dimension(n1,nz)    , intent(in)  :: sendbuf   
-  real, dimension(n1,nzgrid), intent(out) :: recvbuf 
+
+  real, dimension(n1,nz)    , intent(in)  :: sendbuf
+  real, dimension(n1,nzgrid), intent(out) :: recvbuf
   integer, optional,          intent(in)  :: lproc
   integer,                    intent(in)  :: n1
-  
+
   integer lpx, lpy
-  
-  if (present(lproc)) then 
+
+  if (present(lproc)) then
     lpy = lproc/nprocx
     lpx = mod(lproc,nprocx)
   else
     lpy=0; lpx=0
   endif
-  
+
   if ( ipx==lpx .and. ipy==lpy ) &
-    call MPI_GATHER(sendbuf, n1*nz, MPI_REAL, recvbuf, n1*nz, MPI_REAL, root, MPI_COMM_ZBEAM, mpierr)   
-  
-  endsubroutine mpigather_z  
+    call MPI_GATHER(sendbuf, n1*nz, MPI_REAL, recvbuf, n1*nz, MPI_REAL, root, MPI_COMM_ZBEAM, mpierr)
+
+  endsubroutine mpigather_z
 !***********************************************************************
   subroutine mpigather( sendbuf, recvbuf )
-             
+
 !  19-nov-10/MR: coded
 !
 !  gathers the chunks of a 3D array from each processor in a big array at root
 
   ! here no parallelization in x allowed
-  
+
   implicit none
-  
+
   real, dimension(nxgrid,ny,nz)         :: sendbuf   ! nx=nxgrid !
   real, dimension(nxgrid,nygrid,nzgrid) :: recvbuf
-  
+
   integer :: ncnt, nshift, nlayer, i
   integer, dimension(ncpus) :: counts, shifts
-  
+
   ncnt = nxgrid*ny
- 
+
   if (lroot) then
-  
+
     counts = ncnt
     nlayer = nz*nxgrid*nygrid
-    
+
     shifts(1) = 0
     nshift = nlayer
-    
+
     do i=2,ncpus
-    
+
       if ( mod(i,nprocy)==1 ) then
         shifts(i) = nshift
-	nshift = nshift+nlayer
+        nshift = nshift+nlayer
       else
         shifts(i) = shifts(i-1)+ncnt
       endif
-	
+
     enddo
-    
+
   endif
-   
-  do i=1,nz 
+
+  do i=1,nz
     call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, shifts, &
-                     MPI_REAL, root, MPI_COMM_WORLD, mpierr)   
+                     MPI_REAL, root, MPI_COMM_WORLD, mpierr)
   enddo
-    
+
   endsubroutine mpigather
 !***********************************************************************
   subroutine mpigather_and_out( sendbuf, unit, ltransp )
-          
+
 !  22-nov-10/MR: coded
 !
 !  transfers the chunks of a 3D array from each processor to root
 !  and writes them out in right order
-!  
+!
   ! here no parallelization in x allowed
-  
+
   implicit none
-  
+
   real, dimension(nxgrid,ny,nz), intent(inout) :: sendbuf   ! nx=nxgrid !
   integer,                       intent(in   ) :: unit
   logical, optional,             intent(in   ) :: ltransp   ! if true, transposition x <-> y
-  
+
   integer :: i,j,np,iproca,iproce,nprocxy,nxy,tag,ix,n8,fcnt
   integer, dimension(MPI_STATUS_SIZE) :: status
   logical :: ltrans
   real, allocatable :: rowbuf(:)
-  
+
   if ( .not.present(ltransp) ) then
     ltrans=.false.
   else
     ltrans=ltransp
   endif
-  
+
   if (ltrans) allocate( rowbuf(ny) )
-  
+
   nprocxy = nprocx*nprocy                             ! nprocx=1
   nxy = nxgrid*ny
-   
+
   iproca=1; iproce=-1
 
   do np=1,nprocz
-  
-    iproce = iproce + nprocxy
-    
-    do j=1,nz
-    
-      if (ltrans) then 
-      
-	fcnt=0
-		
-        do ix=1,nxgrid
-	
-          if (lroot .and. np==1) then
-	    
-	    if (fcnt>0) &                                                                 ! this coding guarantees that
-      	      write(1,'(1p,'//intochar(8-fcnt)//'(e10.2))') sendbuf(ix,1:8-fcnt,j)        !             .
-	      
-	    fcnt=update_cnt(fcnt,8,n8)                                                    !             . 
-	    if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
-	    if (fcnt>0) write(1,'(1p,'//intochar(ny-n8)//'(e10.2)$)') sendbuf(ix,n8+1:,j) ! all lines in the output have 8 entries
-	    
-          endif
-	  
-          do i=iproca,iproce  
-               
-      	    tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid 
-	    
-      	    if (lroot) then
-	      call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr) 
-	      
-	      if (fcnt>0) &
-      	        write(1,'(1p,'//intochar(8-fcnt)//'(e10.2))') rowbuf(1:8-fcnt)
 
-	      fcnt=update_cnt(fcnt,8,n8)
-	      if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
-	      if (fcnt>0) write(1,'(1p,'//intochar(ny-n8)//'(e10.2)$)') rowbuf(n8+1:)
-	      
+    iproce = iproce + nprocxy
+
+    do j=1,nz
+
+      if (ltrans) then
+
+        fcnt=0
+
+        do ix=1,nxgrid
+
+          if (lroot .and. np==1) then
+
+            if (fcnt>0) &                                                                 ! this coding guarantees that
+              write(1,'(1p,'//intochar(8-fcnt)//'(e10.2))') sendbuf(ix,1:8-fcnt,j)        !             .
+
+            fcnt=update_cnt(fcnt,8,n8)                                                    !             .
+            if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
+            if (fcnt>0) write(1,'(1p,'//intochar(ny-n8)//'(e10.2)$)') sendbuf(ix,n8+1:,j) ! all lines in the output have 8 entries
+
+          endif
+
+          do i=iproca,iproce
+
+            tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid
+
+            if (lroot) then
+              call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+
+              if (fcnt>0) &
+                write(1,'(1p,'//intochar(8-fcnt)//'(e10.2))') rowbuf(1:8-fcnt)
+
+              fcnt=update_cnt(fcnt,8,n8)
+              if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
+              if (fcnt>0) write(1,'(1p,'//intochar(ny-n8)//'(e10.2)$)') rowbuf(n8+1:)
+
             else if ( iproc==i ) then
-	      rowbuf=sendbuf(ix,:,j)
-      	      call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+              rowbuf=sendbuf(ix,:,j)
+              call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
             endif
 
           enddo
-	
-	enddo
-	
-	call mpibarrier()         ! necessary ?
-	
+
+        enddo
+
+        call mpibarrier()         ! necessary ?
+
       else
         if (lroot .and. np==1) &
-  	  write(1,'(1p,8e10.2)') sendbuf(:,:,j)
+          write(1,'(1p,8e10.2)') sendbuf(:,:,j)
 
-        do i=iproca,iproce  
-             
-      	  tag = nprocxy*j+i-iproca
-      	  if (lroot) then
-      	    call MPI_RECV(sendbuf(1,1,j), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr) 
-      	    write(1,'(1p,8e10.2)') sendbuf(:,:,j)
+        do i=iproca,iproce
+
+          tag = nprocxy*j+i-iproca
+          if (lroot) then
+            call MPI_RECV(sendbuf(1,1,j), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+            write(1,'(1p,8e10.2)') sendbuf(:,:,j)
           else if ( iproc==i ) then
-      	    call MPI_SEND(sendbuf(1,1,j), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
-      	    !print*, 'SEND:', j, i, tag, sendbuf(4,2,j)
+            call MPI_SEND(sendbuf(1,1,j), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+            !print*, 'SEND:', j, i, tag, sendbuf(4,2,j)
           endif
 
         enddo
       endif
-      
-    enddo    
+
+    enddo
     iproca = iproce+1
-    
+
   enddo
 
   if (ltrans) deallocate(rowbuf)
 
   contains
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -     
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   character function intochar(i)                      ! internal function
-  
+
   integer, intent(in) :: i
-  
+
   write(intochar,'(i1)') i
-    
+
   endfunction intochar
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -   
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   integer function update_cnt(fcnt,len,nl)            ! internal function
-  
+
   integer, intent(in ) :: fcnt,len
   integer, intent(out) :: nl
-  
+
   integer :: nr
-  
+
   if (fcnt>0) then
     nr=ny-(len-fcnt)
   else
     nr=ny
   endif
-	
+
   update_cnt=mod(nr,len)
   nl=nr-update_cnt
-	    
+
   endfunction update_cnt
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -   
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   endsubroutine mpigather_and_out
 !***********************************************************************
   subroutine merge_1d( vec1, vec2, n, type )
@@ -5564,25 +5564,25 @@ module Mpicomm
 !  22-nov-10/MR: coded
 !
 ! merges vectors of processors along idir by filling invalid values (NaN
-!  
+!
   real, dimension(nk), intent(inout) :: vector
   integer,             intent(in)    :: nk
   integer, optional,   intent(in)    :: idir
-  
+
   integer                            :: i,mpiprocs,size,rank,merge
   real, dimension(nk)                :: recvbuf
-  integer, dimension(MPI_STATUS_SIZE):: status 
-  
-  if (present(idir)) then  
+  integer, dimension(MPI_STATUS_SIZE):: status
+
+  if (present(idir)) then
     mpiprocs=mpigetcomm(idir)
   else
     mpiprocs=MPI_COMM_WORLD
   endif
-  
-  call MPI_OP_CREATE( merge_1d, .false., merge, mpierr ) 
+
+  call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
   call MPI_REDUCE(vector, recvbuf, nk, MPI_REAL, merge, root, mpiprocs, mpierr)
   vector = recvbuf
-  
+
   endsubroutine mpimerge_1d
 !***********************************************************************
   integer function mpigetcomm(idir)

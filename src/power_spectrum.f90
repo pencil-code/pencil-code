@@ -268,7 +268,7 @@ module power_spectrum
   endsubroutine power_2d
 !***********************************************************************
     subroutine power_xy(f,sp)
-!   
+!
 !  Calculate power spectra (on circles) of the variable
 !  specified by `sp'.
 !  Since this routine is only used at the end of a time step,
@@ -284,7 +284,7 @@ module power_spectrum
    use Cparam, only: rnan
 !
   implicit none
-  
+
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 
   integer :: i,k,ikx,iky,ikz,im,in,ivec,nk
@@ -292,77 +292,77 @@ module power_spectrum
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
   real, allocatable, dimension(:)     :: spectrum1,spectrum1_sum, kshell
-  real, allocatable, dimension(:,:)   :: spectrum2,spectrum2_sum,spectrum2_global 
+  real, allocatable, dimension(:,:)   :: spectrum2,spectrum2_sum,spectrum2_global
   real, allocatable, dimension(:,:,:) :: spectrum3
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   character (len=1)  :: sp
   character (len=80) :: title
   character (len=128) :: filename
-  logical            :: lfirstout=.true.              ! saved across calls            
-  save lfirstout 
+  logical            :: lfirstout=.true.              ! saved across calls
+  save lfirstout
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
-  ! 
+  !
   if (lintegrate_shell) then
-  
+
     title = 'Shell-integrated '
-    nk=nint( sqrt( ((nxgrid+1)*pi/Lx)**2+((nygrid+1)*pi/Ly)**2)/(2*pi/Lx) )+1   
+    nk=nint( sqrt( ((nxgrid+1)*pi/Lx)**2+((nygrid+1)*pi/Ly)**2)/(2*pi/Lx) )+1
     allocate( kshell(nk) )
     kshell = rnan
-    
+
     if (lintegrate_z) then
-    
+
       title = title(1:len_trim(title))//' and z-integrated'
       allocate( spectrum1(nk), spectrum1_sum(nk) )
-      
+
       spectrum1=0.
       spectrum1_sum=0.
-      
+
     else
-    
+
       title = title(1:len_trim(title))//' and z-dependent'
       allocate( spectrum2(nk,nz), spectrum2_sum(nk,nz) )
-      
+
       if (lroot) then
         allocate( spectrum2_global(nk,nzgrid) )
       else
         allocate( spectrum2_global(1,1) )                  ! only a dummy
       endif
-       
+
       spectrum2=0.
       spectrum2_sum=0.
-      
+
     endif
-    
+
   else if (lintegrate_z) then
-  
+
     title = 'z-integrated'
     allocate( spectrum2(nx,ny), spectrum2_sum(nx,ny) )
-    
+
     if (lroot) then
       allocate( spectrum2_global(nxgrid,nygrid) )
     else
-      allocate( spectrum2_global(1,1) )                  ! only a dummy    
+      allocate( spectrum2_global(1,1) )                  ! only a dummy
     endif
-     
+
     spectrum2=0.
     spectrum2_sum=0.
-    
+
   else
-  
+
     title = 'z-dependent'
     allocate( spectrum3(nx,ny,nz) )
-    
+
     spectrum3=0.
-   
+
   endif
-  
+
   title = title(1:len_trim(title))//' power spectrum w.r.t. x and y'
-  ! 
+  !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
@@ -390,9 +390,9 @@ module power_spectrum
         a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
      else
         print*,'power_xy: Warning - There are no such sp=',sp
-	return
+        return
      endif
-     
+
      b1=0
 !
 !  Doing the Fourier transform
@@ -409,99 +409,99 @@ module power_spectrum
 !
      do ikz=1,nz
        if (lintegrate_shell) then
-       
+
          do iky=1,ny
            do ikx=1,nx
-	   
+
              !!k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2))
-             k=nint( sqrt( (kx(ikx)*2*pi/Lx)**2+(ky(iky+ipy*ny)*2*pi/Ly)**2 )/(2*pi/Lx) )        ! i.e. wavenumber index k is |\vec{k}|/(2*pi/Lx) 
-	     
-	     kshell(k+1) = k*2*pi/Lx      
-	     
+             k=nint( sqrt( (kx(ikx)*2*pi/Lx)**2+(ky(iky+ipy*ny)*2*pi/Ly)**2 )/(2*pi/Lx) )        ! i.e. wavenumber index k is |\vec{k}|/(2*pi/Lx)
+
+             kshell(k+1) = k*2*pi/Lx
+
              if (k>=0 .and. k<=(nk-1)) then
                if (lintegrate_z) then
                  spectrum1(k+1) = spectrum1(k+1)+0.5*(a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2)*dz  ! equidistant grid required
                else
                  spectrum2(k+1,ikz) = spectrum2(k+1,ikz) &
-         	                     +0.5*(a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2)
+                                     +0.5*(a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2)
                endif
-	     endif
+             endif
            enddo
          enddo
-	 
+
        else if (lintegrate_z) then
          spectrum2(:,:)=spectrum2(:,:)+0.5*(a1(:,:,ikz)**2+b1(:,:,ikz)**2)*dz                    ! equidistant grid required
        else
-         spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*(a1(:,:,ikz)**2+b1(:,:,ikz)**2)               ! summation over components 
+         spectrum3(:,:,ikz)=spectrum3(:,:,ikz)+0.5*(a1(:,:,ikz)**2+b1(:,:,ikz)**2)               ! summation over components
        endif
-       
+
      enddo
      !
   enddo !(of loop over ivec)
 
   if (lintegrate_shell .and. lfirstout .and. ipz==0) &              ! filling of the shell-wavenumber vector
     call mpimerge_1d(kshell,nk,12)
-    
+
   if (lroot) then
-  !  
+  !
   !  on root processor, append global result to diagnostics file "power<field>_xy.dat"
   !  append to diagnostics file
-  !  
+  !
     filename=trim(datadir)//'/power'//trim(sp)//'_xy.dat'
-    
+
     if (ip<10) print*,'Writing power spectra of variable',sp &
-	 ,'to ',filename
+         ,'to ',filename
 
     open(1,file=filename,position='append')
-    
+
     if (lfirstout) then
-    
-      write(1,*) title      
+
+      write(1,*) title
       write(1,'(a)') 'Wavenumbers k_x and k_y:'
       write(1,'(1p,8e15.7)') kx*2*pi/Lx
       write(1,'(1p,8e15.7)') ky*2*pi/Ly
-      
+
       if (lintegrate_shell) then
         write(1,'(a)') 'Shell-wavenumbers k:'
         write(1,'(1p,8e15.7)') kshell
       endif
-      	        
+
     endif
     write(1,*) t
-    
+
   endif
   lfirstout = .false.
-  
+
   if (lintegrate_shell) then
-  
+
     if (lintegrate_z) then
       call mpireduce_sum(spectrum1,spectrum1_sum,nk)
     else
       call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
       call mpigather_z(spectrum2_sum,spectrum2_global,nk)
     endif
-    
+
   else if (lintegrate_z) then
-         call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)   
+         call mpireduce_sum(spectrum2,spectrum2_sum,(/nx,ny/),3)
          call mpigather_xy( spectrum2_sum, spectrum2_global, 0 )
-	 !print*,'spectrum2_global: ', spectrum2_global(:,1)
+         !print*,'spectrum2_global: ', spectrum2_global(:,1)
        else
          call mpigather_and_out(spectrum3,1,.true.)                  ! transposing output, as in fourier_transform_xy
-                                                                     ! an unreverted transposition is performed 
+                                                                     ! an unreverted transposition is performed
        endif
   !
-  if (lroot) then    
-    
+  if (lroot) then
+
     if (lintegrate_shell) then
-    
+
       if (lintegrate_z) then
-	write(1,'(1p,8e15.7)') spectrum1_sum
+        write(1,'(1p,8e15.7)') spectrum1_sum
       else
-	write(1,'(1p,8e15.7)') spectrum2_global
+        write(1,'(1p,8e15.7)') spectrum2_global
       endif
-      
+
     else
-    
+
       if (lintegrate_z) &
         write(1,'(1p,8e15.7)') (spectrum2_global(i,:), i=1,nxgrid)   ! transposed output, as in fourier_transform_xy
                                                                      ! an unreverted transposition is performed
@@ -513,14 +513,14 @@ module power_spectrum
   call mpibarrier()          ! necessary ?
   !
   if (lintegrate_shell) then
-  
+
     deallocate(kshell)
     if (lintegrate_z) then
       deallocate(spectrum1,spectrum1_sum)
     else
       deallocate(spectrum2,spectrum2_sum,spectrum2_global)
     endif
-    
+
   else if (lintegrate_z) then
     deallocate(spectrum2,spectrum2_sum,spectrum2_global)
   else

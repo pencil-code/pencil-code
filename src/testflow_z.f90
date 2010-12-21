@@ -116,8 +116,8 @@ module Testflow
              lkinem_testflow=.false., &
              lburgers_testflow=.false., &
              lprescribed_velocity=.false., &
-	     lremove_mean_momenta_testflow=.false., &
-	     lremove_mean_enthalpy_z=.false.
+             lremove_mean_momenta_testflow=.false., &
+             lremove_mean_enthalpy_z=.false.
 !
   character (len=labellen) :: itestflow='W11-W22'
 !
@@ -128,8 +128,8 @@ module Testflow
                                lburgers_testflow,   &    ! flag for disconnecting enthalpy(pressure) from velocity
                                lprescribed_velocity,&    ! flag for prescribed velocity, prescription via p%fcont, only effective if lkinem_testflow=.true.
                                lremove_mean_momenta_testflow, &  ! flag for removing mean momenta in 0-solution
-			       lremove_mean_enthalpy_z,&   ! flag for removing xy-mean of enthalpy in 0-solution
-			       nutest,              &    ! viscosity in testflow equations
+                               lremove_mean_enthalpy_z,&   ! flag for removing xy-mean of enthalpy in 0-solution
+                               nutest,              &    ! viscosity in testflow equations
                                nutest1,             &    ! reciprocal viscosity
                                itestflow,           &    ! name of used testflow set, legal values
                                                          ! 'W11-W22', 'quadratic', 'quadratic+G', 'none'
@@ -141,7 +141,7 @@ module Testflow
 !
   ! diagnostic variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients,     couple  $\overline F$ and $\overline U$ 
+  integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients,     couple  $\overline F$ and $\overline U$
   integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,         couples $\overline F$ and $\partial^2 \overline U/\partial z^2$
   integer :: idiag_aklam=0                          ! DIAG_DOC: AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W$
   integer :: idiag_xi=0                             ! DIAG_DOC: $\chi$-vector,        couples $\overline F$ and ${\overline G}_z$
@@ -390,7 +390,7 @@ module Testflow
 
          endif
 
- !!        print*, 'zrange, ca, cl, cq:', xyz0(3), xyz1(3), zrange, ca, cl, cq 
+ !!        print*, 'zrange, ca, cl, cq:', xyz0(3), xyz1(3), zrange, ca, cl, cq
         else
          zrange(1) = z(n1)-.01
          zrange(2) = z(n2)+.01
@@ -794,7 +794,7 @@ module Testflow
 !
         if (jtest>0) then
 !
-          call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers    no upwinding!    
+          call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers    no upwinding!
 
           !!call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)!!!MR: still wrong, because under ilnrho and not hhfluct!!
                           !!!ilnrho
@@ -888,7 +888,7 @@ module Testflow
               print'(14(e12.6,","))', del2utest(:,1)
               print'(14(e12.6,","))',f(l1:l2,m,n,iuxtest)
               print*, '================'
-            endif 
+            endif
             df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
                                             + nutest*(del2utest+(1./3.)*graddivutest)
 
@@ -952,7 +952,7 @@ module Testflow
 !
             call dot2(f(l1:l2,m,n,iuxtest:iuztest),upq2)
             !!if (m==5 .and. n==5.and.jtest==1) &
-              !!print*, 'upq,jtest,iuxtest,iuztest:', &    
+              !!print*, 'upq,jtest,iuxtest,iuztest:', &
                   !!jtest,iuxtest,iuztest,minval(f(l1:l2,m,n,iuxtest:iuztest)),maxval(f(l1:l2,m,n,iuxtest:iuztest))
 !
             call sum_mn_name(upq2,idiag_upqrms(jtest),lsqrt=.true.)
@@ -1057,7 +1057,7 @@ module Testflow
 !
       if (lremove_mean_momenta_testflow) &
         call remove_mean_momenta(f,iuutest)
-	
+
       if (lremove_mean_enthalpy_z) &
         call remove_mean_enthalpy_z(f)
 !
@@ -1071,30 +1071,30 @@ module Testflow
 !
       use Cdata
       use Mpicomm, only: mpiallreduce_sum
-      
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      
+
       real    :: hm, hm1, fac
       integer :: ihhtest,i,j
-      
+
       fac = 1./(nxgrid*nygrid)
-      
+
       ihhtest = iuutest+3
-!      
+!
       do i=n1,n2
-      
+
         hm = 0.
         do j=m1,m2
           hm = hm + sum(f(:,j,i,ihhtest))
         enddo
-	
-	if (nprocy>1) then                       ! no x parallelization allowed
-	  call mpiallreduce_sum(hm,hm1,idir=12)
-	  hm=hm1
-	endif
 
-	f(:,:,i,ihhtest) = f(:,:,i,ihhtest) - fac*hm
-	  
+        if (nprocy>1) then                       ! no x parallelization allowed
+          call mpiallreduce_sum(hm,hm1,idir=12)
+          hm=hm1
+        endif
+
+        f(:,:,i,ihhtest) = f(:,:,i,ihhtest) - fac*hm
+
       enddo
 !
     endsubroutine remove_mean_enthalpy_z
@@ -1127,7 +1127,7 @@ module Testflow
       use Mpicomm, only: mpiallreduce_sum
       use Forcing, only:forcing_cont
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f 
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar),    intent(inout) :: df
 !
       real, dimension (3,0:njtestflow) :: unltestm, unltestm1      ! unltestm1, hnltestm1 local fields for MPI correspondence
@@ -1265,10 +1265,10 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
               if ( jtest==0 ) then
 !
                 if (.not.lprescribed_velocity) &
-                  call multmv(sijtest,ghtest,sghtest)                          ! S(u0).grad(h0) 
+                  call multmv(sijtest,ghtest,sghtest)                          ! S(u0).grad(h0)
 
               else
-                
+
                 call multmv(sijtest,ghfluct,sghtest)                           ! S(utest).grad(h)
                 call multmv(sij0   ,ghtest ,sghtest,.true.)                    ! S(u0).grad(htest)
 !
@@ -1283,9 +1283,9 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
 !  unless SOCA or other things, incrementing df with unltest
 !
-            if ( jtest==0.and..not.lprescribed_velocity .or. jtest>0.and..not.lsoca_testflow ) then        
- 
-              df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-unltest      ! nonlinear parts stored in df 
+            if ( jtest==0.and..not.lprescribed_velocity .or. jtest>0.and..not.lsoca_testflow ) then
+
+              df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest)-unltest      ! nonlinear parts stored in df
 !
               if ( .not.lburgers_testflow ) &
                 df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-hnltest
@@ -1323,19 +1323,19 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
 !  do communication for arrays of size 3*njtestflow and njtestflow, resp.
 !
-        if ( .not.lsoca_testflow .or. ldiagnos ) then	      ! see above
+        if ( .not.lsoca_testflow .or. ldiagnos ) then         ! see above
           jtesto=njtestflow
         else
           jtesto=0
         endif
-	  
+
         if (nprocy>1) then
 
-          !!if (ldiagnos) then 
+          !!if (ldiagnos) then
           !!print*, 'iproc,n=', iproc, n
-	  !!print*, hnltestm(0)
-	  !!endif
-	  
+          !!print*, hnltestm(0)
+          !!endif
+
           call mpiallreduce_sum(unltestm,unltestm1,(/3,jtesto+1/),idir=2)
           unltestm(:,0:jtesto) = unltestm1(:,0:jtesto)
 !
@@ -1387,7 +1387,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 ! calculation of the coefficients
 !
         if (ldiagnos) &
-	  call calc_coeffcients(n,unltestm,hnltestm)
+          call calc_coeffcients(n,unltestm,hnltestm)
 !
         lfirstpoint=.false.
 !
@@ -1407,7 +1407,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
             select case (itestflow)
 
-            case('quadratic','quasi-periodic') 
+            case('quadratic','quasi-periodic')
 !
               if (idiag_aklamij(k,1)/=0) &
                   call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
@@ -1422,7 +1422,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           enddo
 !
           if ( itestflow=='quadratic' .or. itestflow=='quasi-periodic' ) then
-   
+
             aklam1 = get_from_fname(idiag_aklamij(k,1))
             aklam2 = get_from_fname(idiag_aklamij(k,2))
 !
@@ -1459,7 +1459,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
     real, dimension (2,2) :: aklam
     integer :: i,j,i3,i4,i5,i6,k
 !
-      Fipq=Fipq/(-wamp*valid_zrange*nzgrid*nprocy)                               ! as at call Fipq, Qipq have inverted sign yet               
+      Fipq=Fipq/(-wamp*valid_zrange*nzgrid*nprocy)                               ! as at call Fipq, Qipq have inverted sign yet
       Qipq=Qipq/(-wamp*valid_zrange*nzgrid*nprocy)                               ! factor nzgrid for averaging over z
 !
       !!print*,'z,Fipq=', z(indz), Fipq(1:2,3), Fipq(1:2,4)
@@ -1473,9 +1473,9 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         if (idiag_Qpq(j)/=0) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
 !
       enddo
-! 
-      select case (itestflow)   
-        
+!
+      select case (itestflow)
+
          case ('W11-W22')
 !
            do k=1,2
@@ -1484,13 +1484,13 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
             if (idiag_aklamij(k,1)/=0) &
               call surf_mn_name(    cz(indz)*Fipq(k,1)+  sz(indz)*Fipq(k,2), idiag_aklamij(k,1) )
-	    !if (k==1) then      
+            !if (k==1) then
             !print*, 'indz:', indz, 'aklam11, iproc:', iproc
-	    !print*, cz(indz)*Fipq(k,1)+sz(indz)*Fipq(k,2)
-	    !endif
-	    
+            !print*, cz(indz)*Fipq(k,1)+sz(indz)*Fipq(k,2)
+            !endif
+
             if (idiag_aklamij(k,2)/=0) &
-              call surf_mn_name(    cz(indz)*Fipq(k,3)+  sz(indz)*Fipq(k,4), idiag_aklamij(k,2) )      
+              call surf_mn_name(    cz(indz)*Fipq(k,3)+  sz(indz)*Fipq(k,4), idiag_aklamij(k,2) )
 
             if (idiag_nuij(k,1)/=0) &
               call surf_mn_name( -k1sz(indz)*Fipq(k,3)+k1cz(indz)*Fipq(k,4), idiag_nuij(k,1)    )
@@ -1620,7 +1620,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !        call stop_it('njtestflow is too small if aklam12, aklam22, nu12, or nu22 are needed')
 !      else
 !        if (idiag_aklamij(1,2)/=0) call sum_name(+cz(iz)*Fipq(1,3)+sz(indz)*Fipq(1,4),idiag_aklamij(1,2))
-!      
+!
     endsubroutine calc_coeffcients
 !***********************************************************************
     subroutine set_uutest(uutest,jtest)
@@ -1757,7 +1757,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !       gU0test(:,1)=wamp-...; gU0test(:,2)=0.; gU0test(:,3)=0.
 !
         comp=jtest-P1Q2+1
-  
+
         if ( z(n)<zrange(1) ) then
           indx=1
         else if ( z(n)>zrange(2) ) then
@@ -1794,7 +1794,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       case(P1Q3,P2Q3)
 
         comp=jtest-P1Q3+1
-  
+
         if ( z(n)<zrange(1) ) then
           indx=1
         else if ( z(n)>zrange(2) ) then
@@ -2122,7 +2122,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
             write(3,*) 'idiag_nu'//cind2//'=',idiag_nuij(i,j)
 !
           enddo
- 
+
           cind1 = gen_ind(i)
 
           write(3,*) 'idiag_xi'//cind1//'=',idiag_xii(i)
@@ -2215,7 +2215,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       do i=1,2
       do j=1,2
 
-        ind = indices(i,j)       
+        ind = indices(i,j)
         if ( ind /= 0 ) then
 !
           call del_elem( carray, idiag_map(ind), leng )
