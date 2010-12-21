@@ -38,7 +38,7 @@ module Solid_Cells
   logical :: lclose_interpolation=.false., lclose_linear=.false.
   logical :: lnointerception=.false.,lcheck_ba=.false.
   logical :: lclose_quad_rad_inter=.true.
-  real                          :: rhosum,ksum,flow_dir,T0
+  real                          :: rhosum,flow_dir,T0
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
@@ -640,9 +640,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     real    :: fp_stress(3,3)
     integer :: iobj, ifp, ix0, iy0, iz0, i, ilong, ilat
     real    :: nu, twonu, longitude, latitude, dlong, dlat, robj, rforce
-    real    :: force_x, force_y, force_z, loc_Nus, heat_flux
+    real    :: force_x, force_y, force_z, loc_Nus
     real    :: twopi, nvec(3), surfaceelement,surfacecoeff
-    real    :: deltaT,Tobj
+    real    :: deltaT,Tobj, drag_norm, nusselt_norm
     character(len=10) :: objectform
 !
     if (ldiagnos) then
@@ -661,7 +661,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           if (idiag_Nusselt /= 0) Nusselt=0.
           rhosum=0
           irhocount=0
-          if (idiag_Nusselt /= 0) ksum=0
         endif
 !
         call getnu(nu)
@@ -675,14 +674,17 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           objectform = objects(iobj)%form
           if (objectform=='cylinder') then
             dlong = twopi/nforcepoints
-            surfaceelement = dlong
+            surfaceelement = dlong*rforce
+            drag_norm=1./(2*robj)
           else if (objectform=='sphere') then
             dlong = twopi/nlong
             dlat  = pi/(nlat+1)
 !  Surface term, normalized by the squared radius of the object. 
 !  Additional normalizing factors can be found in subroutine 
 !  dsolid_dt_integrate.
-            surfacecoeff = 2.*dlong*dlat/pi*rforce**2/robj**2
+            surfacecoeff = dlong*dlat*rforce**2
+            drag_norm=1./(pi*robj**2)
+            nusselt_norm=1./(4*pi*robj**2)
           else
             print*, "Warning: Subroutine dsolid_dt not implemented ", &
                 "for this objectform."
@@ -748,29 +750,24 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
                 end if
 !                
-!  Local heat flux
+!  Local Nusselt number
 !
                 if (idiag_Nusselt /= 0) then
-                !  call dot2(p%gTT(ix0-nghost,:),fp_gradT)
-                !  fp_gradT=sqrt(fp_gradT)
-
                   call dot(p%gTT(ix0-nghost,:),-nvec,fp_gradT)
-
-                  fp_tcond=p%tcond(ix0-nghost)
-                  heat_flux=(fp_gradT*fp_tcond)  * surfaceelement * 2 * robj
                   Tobj=objects(iobj)%T
                   if (.not. ltemperature_nolog) Tobj=exp(Tobj) 
                   deltaT=Tobj-T0
-                  loc_Nus=heat_flux*robj*2./deltaT
+                  loc_Nus=fp_gradT*rforce*2./deltaT * surfaceelement
                 endif
 !
                 if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
                     idiag_c_dragz /= 0) then
-                  c_dragx(iobj) = c_dragx(iobj) + force_x
-                  c_dragy(iobj) = c_dragy(iobj) + force_y
-                  c_dragz(iobj) = c_dragz(iobj) + force_z
+                  c_dragx(iobj) = c_dragx(iobj) + force_x * drag_norm
+                  c_dragy(iobj) = c_dragy(iobj) + force_y * drag_norm
+                  c_dragz(iobj) = c_dragz(iobj) + force_z * drag_norm
                 endif
-                if (idiag_Nusselt /= 0) Nusselt(iobj) = Nusselt(iobj) + loc_Nus
+                if (idiag_Nusselt /= 0) Nusselt(iobj) = Nusselt(iobj) &
+                    + loc_Nus * nusselt_norm
               endif
             endif
           enddo
@@ -782,7 +779,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           if (mod(ba(i,m,n,1),10) == 0) then
             rhosum = rhosum + p%rho(i-nghost)
             irhocount = irhocount+1
-            if (idiag_Nusselt /= 0) ksum=ksum+p%tcond(i-nghost)
           endif
         enddo
       endif
@@ -807,7 +803,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     real    :: rhosum_all, c_dragx_all(nobjects), c_dragy_all(nobjects)
     real    :: c_dragz_all(nobjects), Nusselt_all(nobjects)
     integer :: irhocount_all,iobj
-    real    :: norm, refrho0, ksum_all, refk0,  norm_nus
+    real    :: norm, refrho0
     character*50  :: numberstring
     character*500 :: solid_cell_drag
 !    
@@ -825,7 +821,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           call mpireduce_sum(c_dragz,c_dragz_all,nobjects)
         endif
         if (idiag_Nusselt /= 0) call mpireduce_sum(Nusselt,Nusselt_all,nobjects)
-        if (idiag_Nusselt /= 0) call mpireduce_sum(ksum,ksum_all)
 !        
         if (lroot) then          
           refrho0 = rhosum_all / irhocount_all
@@ -835,7 +830,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
               idiag_c_dragz /= 0) then
 !  Normalizing factor. Additional factors was included in subroutine dsolid_dt.
-            norm = 1. / (refrho0*init_uu**2)
+            norm = 2. / (refrho0*init_uu**2)
             c_dragx = c_dragx_all * norm
             c_dragy = c_dragy_all * norm
             c_dragz = c_dragz_all * norm
@@ -859,10 +854,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Find Nusselt number
 !
           if (idiag_Nusselt /= 0) then
-            refk0   = ksum_all / irhocount_all
-!  Normalizing factor. Additional factors was included in subroutine dsolid_dt.
-            norm_nus=1. / refk0
-            Nusselt = Nusselt_all * norm_nus
+            Nusselt = Nusselt_all
           endif
         endif
       endif
