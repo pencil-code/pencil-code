@@ -5048,7 +5048,7 @@ module Chemistry
 !
 !  Stop if air.dat is empty
 !
-      if (emptyFile)  call stop_it('The input file tran.dat was empty!')
+      if (emptyFile)  call stop_it('The input file air.dat was empty!')
       air_mass=1./air_mass
 !
       do j=1,k-1
