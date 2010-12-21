@@ -496,7 +496,6 @@ module Hydro
 !  Writing files for use with IDL.
 !
       if (lroot) then
-        write(*,*) 'PC:mvar, nvar',mvar,nvar
         if (maux == 0) then
           if (nvar < mvar) write(4,*) ',uu $'
           if (nvar == mvar) write(4,*) ',uu'
