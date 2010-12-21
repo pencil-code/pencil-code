@@ -780,7 +780,7 @@ module Register
 !
 !  Read the last sound output time from a soundfile, set to starttime otherwise
 !      
-        tsound=rnan 
+        tsound=impossible
         open(1,file=trim(directory)//'/sound.dat',position='append',status='old',iostat=ios) 
         if (ios==0) then      
           backspace(1)

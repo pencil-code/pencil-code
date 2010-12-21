@@ -280,7 +280,7 @@ program run
 !  Set last tsound output time
 !
   if (lwrite_sound) then
-    if ( isnan(tsound) ) then
+    if (tsound==impossible) then
       tsound=t                          ! if sound output starts anew
       lout_sound=.true.                 ! output initial values
     endif
