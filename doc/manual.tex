@@ -9179,8 +9179,8 @@ should always be weaker than the advective Courant criterion.
 \index{Bidiagonal scheme}
 \label{Bidiagonal}
 
-The default scheme used for cross-derivatives of type
-$\partial^2/(\partial x \partial y)$ reads as follows:
+The {\em old} default scheme used for cross-derivatives of type
+$\partial^2/(\partial x \partial y)$ used to read as follows:
 \begin{verbatim}
       df=fac*( &
                   270.*( f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k)  &
