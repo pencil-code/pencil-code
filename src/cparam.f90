@@ -81,14 +81,17 @@ module Cparam
 !        This will require many changes in many files. Any current usage of
 !        '...=-impossible' must be replaced eg. by '...=-max_int'.
 !        (Bourdin.KIS)
+!  22-dez-10/bing: isnan is not available on all compilers
 !
   real, parameter :: impossible=3.9085e37
   integer, parameter :: impossible_int=max_int/100
 !
-  real    :: rnan                                     ! defines signalling NaN
-  integer :: inan
-  equivalence(rnan,inan)
-  data inan /X'7FC00100'/
+! Following expample for the NaN handling does not work:
+! defines signalling NaN
+!  real    :: rnan     
+!  integer :: inan
+!  equivalence(rnan,inan)
+!  data inan /X'7FC00100'/
 !
 !  Diagnostic variable types.
 !

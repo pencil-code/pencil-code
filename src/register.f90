@@ -662,7 +662,6 @@ module Register
 !   3-may-01/axel: coded
 !
       use Cdata
-      use Cparam,          only: rnan
       use Param_IO
       use Sub,             only: numeric_precision
       use Diagnostics

@@ -281,7 +281,6 @@ module power_spectrum
    use Fourier, only: fourier_transform_xy
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out, mpimerge_1d, ipz, mpibarrier, mpigather_z
    use Sub, only: curli
-   use Cparam, only: rnan
 !
   implicit none
 
@@ -312,7 +311,7 @@ module power_spectrum
     title = 'Shell-integrated '
     nk=nint( sqrt( ((nxgrid+1)*pi/Lx)**2+((nygrid+1)*pi/Ly)**2)/(2*pi/Lx) )+1
     allocate( kshell(nk) )
-    kshell = rnan
+    kshell = impossible
 
     if (lintegrate_z) then
 
