@@ -2723,8 +2723,8 @@ module Entropy
 !
         do l=1,mx
           do m=1,my
-            cs2mxy(l,m)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
-                -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+            cs2mxy(l,m)=fact*sum(cs20*exp(gamma_m1*(f(l,m,n1:n2,ilnrho) &
+                -lnrho0)+cv1*f(l,m,n1:n2,iss)))
           enddo
         enddo
 !
