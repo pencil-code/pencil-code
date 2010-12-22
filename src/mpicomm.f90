@@ -106,6 +106,7 @@ module Mpicomm
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
     module procedure mpibcast_real_arr3
+    module procedure mpibcast_real_arr4
   endinterface
 !
   interface mpibcast_double
@@ -1707,6 +1708,29 @@ module Mpicomm
           MPI_COMM_WORLD,mpierr)
 !
     endsubroutine mpibcast_real_arr3
+!***********************************************************************
+    subroutine mpibcast_real_arr4(bcast_array,nb,proc)
+!
+!  Communicate real array(:,:,:,:) to other processor.
+!
+!  21-dec-10/ccyang: adapted
+!
+      integer, dimension(4) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc,nbcast
+!
+      nbcast=nb(1)*nb(2)*nb(3)*nb(4)
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array, nbcast, MPI_REAL, ibcast_proc, &
+          MPI_COMM_WORLD,mpierr)
+!
+    endsubroutine mpibcast_real_arr4
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !

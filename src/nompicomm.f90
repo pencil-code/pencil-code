@@ -62,6 +62,7 @@ module Mpicomm
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
     module procedure mpibcast_real_arr3
+    module procedure mpibcast_real_arr4
   endinterface
 !
   interface mpibcast_double
@@ -631,6 +632,16 @@ module Mpicomm
       if (NO_WARN) print*, bcast_array, nb, proc
 !
     endsubroutine mpibcast_real_arr3
+!***********************************************************************
+    subroutine mpibcast_real_arr4(bcast_array,nb,proc)
+!
+      integer, dimension(4) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
+      integer, optional :: proc
+!
+      if (NO_WARN) print*, bcast_array, nb, proc
+!
+    endsubroutine mpibcast_real_arr4
 !***********************************************************************
     subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
 !
