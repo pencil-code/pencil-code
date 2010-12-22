@@ -32,6 +32,7 @@ module Entropy
 !
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, zcool=0.0, rcool=0.0, wcool=0.1
+  real :: rcool1=0.0, rcool2=0.0, deltaT=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real, target :: chi=0.0
@@ -84,6 +85,7 @@ module Entropy
   logical :: lcooling_general=.false., lcooling_average=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
+  logical :: lcalc_cs2mean=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
@@ -105,6 +107,8 @@ module Entropy
   real, dimension (mz) :: ssmz
   real, dimension (nz,3) :: gssmz
   real, dimension (nz) :: del2ssmz
+  real, dimension (mx) :: cs2mx
+  real, dimension (mx,my) :: cs2mxy
 !
 !  Input parameters.
 !
@@ -125,6 +129,7 @@ module Entropy
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
+      rcool1, rcool2, deltaT, &
       wcool, Fbot, lcooling_general, lcooling_average, &
       ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
@@ -133,7 +138,7 @@ module Entropy
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
-      lcalc_ss_volaverage, lcalc_ssmean, &
+      lcalc_ss_volaverage, lcalc_ssmean, lcalc_cs2mean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
       TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
       xtop, tau_cool2, tau_cool_ss, tau_diff, lfpres_from_pressure, &
@@ -2658,12 +2663,16 @@ module Entropy
 !
       use Deriv, only: der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
+      use EquationOfState, only : lnrho0, cs20, get_cv1
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: nxy=nxgrid*nygrid
-      integer :: n
-      real :: fact
+      integer :: nyz=nygrid*nzgrid
+      integer :: l,m,n
+      real :: fact, cv1
       real, dimension (mz) :: ssmz1_tmp
+      real, dimension (mx) :: cs2mx_tmp
+      real, dimension (mx,my) :: cs2mxy_tmp
 !
       intent(inout) :: f
 !
@@ -2688,6 +2697,44 @@ module Entropy
         gssmz(:,1:2)=0.
         call der_z(ssmz,gssmz(:,3))
         call der2_z(ssmz,del2ssmz)
+      endif
+!
+!  Compute average sound speed cs2(x) and cs2(x,y)
+!
+      if (lcalc_cs2mean) then
+        call get_cv1(cv1)
+        fact=1./nyz
+        do l=1,mx
+          cs2mx(l)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
+              -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+        enddo
+!
+!  Communication over all processors in the yz plane.
+!
+        if (nprocy>1.or.nprocz>1) then
+          call mpiallreduce_sum(cs2mx,cs2mx_tmp,mx,idir=23)
+          cs2mx=cs2mx_tmp
+        endif
+!
+!  Do 2D averages at the same time
+!
+        fact=1./nzgrid
+        cs2mxy = 0.
+!
+        do l=1,mx
+          do m=1,my
+            cs2mxy(l,m)=fact*sum(cs20*exp(gamma_m1*(f(l,m1:m2,n1:n2,ilnrho) &
+                -lnrho0)+cv1*f(l,m1:m2,n1:n2,iss)))
+          enddo
+        enddo
+!
+        if (nprocz>1) then
+!
+          call mpiallreduce_sum(cs2mxy,cs2mxy_tmp,(/mx,my/),idir=3)
+          cs2mxy = cs2mxy_tmp
+!
+        endif
+!
       endif
 !
 !  Compute volume average of entropy.
@@ -4012,7 +4059,8 @@ module Entropy
 !
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: heat,prof
+      real, dimension (nx) :: heat,prof,prof2
+      real :: prof1
 !
       intent(in) :: p
 !
@@ -4049,6 +4097,28 @@ module Entropy
         if (rcool==0.0) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+!
+!  Latitude dependent heating/cooling: imposes a latitudinal variation
+!  of temperature proportional to cos(theta) at each depth. deltaT gives
+!  the amplitude of the variation between theta_0 and the equator.
+!
+      case ('latheat')
+        if (rcool==0.0) rcool=r_ext
+        prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
+        prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
+        heat = heat - cool*prof*(cs2mxy(l1:l2,m)-prof1*cs2mx(l1:l2))
+!
+!  Latitude dependent heating/cooling (see above) plus additional cooling 
+!  layer on top.
+!
+      case ('shell+latheat')
+        if (rcool==0.0) rcool=r_ext
+        prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
+        prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
+        heat = heat - cool*prof*(cs2mxy(l1:l2,m)-prof1*cs2mx(l1:l2))
+!
+        prof2= step(x(l1:l2),rcool,wcool)
+        heat = heat - cool*prof2*(p%cs2-cs2cool)/cs2cool
       case default
         write(unit=errormsg,fmt=*) &
             'calc_heat_cool: No such value for cooltype: ', trim(cooltype)

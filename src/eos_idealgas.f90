@@ -999,6 +999,18 @@ module EquationOfState
 !
     endsubroutine get_cp1
 !***********************************************************************
+    subroutine get_cv1(cv1_)
+!
+!  22-dec-10/PJK: adapted from get_cp1
+!
+!  return the value of cv1 to outside modules
+!
+      real, intent(out) :: cv1_
+!
+      cv1_=cv1
+!
+    endsubroutine get_cv1
+!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde

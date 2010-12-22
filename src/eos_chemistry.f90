@@ -673,8 +673,19 @@ module EquationOfState
       call fatal_error('get_cp1','SHOULD NOT BE CALLED WITH eos_chemistry')
       cp1_=impossible
 !
-!
     endsubroutine get_cp1
+!***********************************************************************
+    subroutine get_cv1(cv1_)
+!
+!  22-dec-10/PJK: adapted from get_cp1
+!
+!  return the value of cv1 to outside modules
+!
+      real, intent(out) :: cv1_
+      call fatal_error('get_cv1','SHOULD NOT BE CALLED WITH eos_chemistry')
+      cv1_=impossible
+!
+    endsubroutine get_cv1
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
