@@ -15,7 +15,6 @@
 !
       implicit none
 !
-!
       real, dimension (nxgrid,nygrid) :: xy,xy2,xy3,xy4
       real, dimension (nxgrid,nzgrid) :: xz
       real, dimension (nygrid,nzgrid) :: yz
@@ -29,7 +28,7 @@
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4,lun5=5,lun6=6
       integer :: itdebug=1,nevery=1,nproc_tot
       integer :: isep1=0,isep2=0,idummy
-      logical :: eof=.false.,slice_position_ok=.false.
+      logical :: eof=.false.
       logical :: err=.false.,err_timestep=.false.
       logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
       logical :: lread_slice_xy4,lread_slice_xz,lread_slice_yz
@@ -41,7 +40,6 @@
       character (len=120) :: datadir='data',path='',cfield=''
       character (len=5) :: chproc=''
       character (len=20) :: field='lnrho'
-      character (len=1) :: slice_position='p'
 !
       logical :: exists, lwritten_something=.false.,lwrite=.true.
 !
@@ -71,27 +69,6 @@
       field=cfield(1:isep1)
       if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) nevery
 !
-!  periphery or middle of the box?
-!  This information is now written in a file.
-!  If file doesn't exist, read from the input line.
-!
-      inquire(FILE='data/slice_position.dat',EXIST=exists)
-      if (.not.exists) then
-        print*,"Slice position data not found"
-        goto 999
-      endif
-      open(1,file='data/slice_position.dat',err=998)
-      read(1,*) slice_position
-      close(1)
-      slice_position_ok=.true.
-      write(*,*) 'slice position (from file) is: ',slice_position_ok
-998   continue
-!
-      if (.not.slice_position_ok) then
-        write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box, equator (e)? '
-        read*,slice_position
-      endif
-!
 ! loop over aller processors to find the positions of the slices.
 ! Therefore read all slice_postions.dat
 !
@@ -104,7 +81,7 @@
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
             call chn(iproc,chproc,'directory_names')
             call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
-! check for existence first 
+! check for existence first
             inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
             if (.not.exists) then
               print*,'slice_position.dat for iproc=',iproc,'not found!'
@@ -117,7 +94,7 @@
             read(1,'(l5,i5)') lread_slice_xy4,idummy
             read(1,'(l5,i5)') lread_slice_xz,idummy
             read(1,'(l5,i5)') lread_slice_yz,idummy
-            close(1)            
+            close(1)
             if (lread_slice_xy) ipz1=ipz
             if (lread_slice_xy2) ipz2=ipz
             if (lread_slice_xy3) ipz3=ipz
@@ -143,7 +120,7 @@
       if (lread_slice_xy4) nproc_tot=nproc_tot+nprocx*nprocy
       if (lread_slice_xz)  nproc_tot=nproc_tot+nprocx*nprocz
       if (lread_slice_yz)  nproc_tot=nproc_tot+nprocy*nprocz
-!      
+!
       if (nproc_tot>89) then
         write(*,*) 'Maximum file unit number will be exceeded.'
         write(*,*) 'Please use src/read_all_videofiles.x instead.'
@@ -271,7 +248,7 @@
 !
 !  First yz-plane:
 !
-      if (ipx1/=-1) then 
+      if (ipx1/=-1) then
         ipx=ipx1
         do ipz=0,nprocz-1
           do ipy=0,nprocy-1
@@ -387,15 +364,12 @@
         print*,'last file read: ',trim(fullname)
         print*,'-------------------------------------------------'
         print*,'minimum and maximum values:'
-        print*,'xy-plane:',min_xy_loc,max_xy_loc
-        print*,'xy2-plane:',min_xy2_loc,max_xy2_loc
-        print*,'xz-plane:',min_xz_loc,max_xz_loc
-        if (slice_position=='w') then
-          print*,'xy3-plane:',min_xy3_loc,max_xy3_loc
-          print*,'xy4-plane:',min_xy4_loc,max_xy4_loc
-        else
-          print*,'yz-plane:',min_yz_loc,max_yz_loc
-        endif
+        if (ipz1/=-1) print*,'xy-plane:',min_xy_loc,max_xy_loc
+        if (ipz2/=-1) print*,'xy2-plane:',min_xy2_loc,max_xy2_loc
+        if (ipy1/=-1) print*,'xz-plane:',min_xz_loc,max_xz_loc
+        if (ipz3/=-1) print*,'xy3-plane:',min_xy3_loc,max_xy3_loc
+        if (ipz4/=-1) print*,'xy4-plane:',min_xy4_loc,max_xy4_loc
+        if (ipx1/=-1) print*,'yz-plane:',min_yz_loc,max_yz_loc
         print*,'-------------------------------------------------'
         print*,'finished OK'
       endif
