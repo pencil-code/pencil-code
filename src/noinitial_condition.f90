@@ -17,6 +17,9 @@
 !   Initial condition for density             | initial_condition_lnrho
 !   Initial condition for entropy             | initial_condition_ss
 !   Initial condition for magnetic potential  | initial_condition_aa
+!                                             |
+!   Initial condition for all in one call     | initial_condition_all
+!     (called last)                           |
 !
 !   And a similar subroutine for each module with an "init_XXX" call.
 !   The subroutines are organized IN THE SAME ORDER THAT THEY ARE CALLED.
@@ -107,6 +110,20 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
+!***********************************************************************
+    subroutine initial_condition_all(f)
+!
+!  Initializes all the f arrays in one call.  This subroutine is called last.
+!
+!  21-dec-10/ccyang: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  SAMPLE IMPLEMENTATION
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initial_condition_all
 !***********************************************************************
     subroutine initial_condition_uu(f)
 !

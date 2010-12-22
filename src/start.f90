@@ -66,6 +66,7 @@ program start
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
   use Initcond
+  use InitialCondition, only: initial_condition_all
   use Interstellar,     only: init_interstellar
   use IO
   use Lorenz_gauge,     only: init_lorenz_gauge
@@ -377,6 +378,10 @@ program start
   enddo
 !
   if (lparticles) call particles_init(f)
+!
+!  If desired, the f array can be initialized in one call.
+!
+  if (linitial_condition) call initial_condition_all(f)
 !
 !  If requested, write original stratification to file.
 !

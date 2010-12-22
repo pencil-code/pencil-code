@@ -3,6 +3,7 @@
 
   public ::  register_initial_condition
   public ::  initialize_initial_condition
+  public ::  initial_condition_all
   public ::  initial_condition_uu
   public ::  initial_condition_lnrho
   public ::  initial_condition_ss

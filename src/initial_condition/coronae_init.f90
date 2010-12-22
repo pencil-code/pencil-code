@@ -96,6 +96,20 @@ contains
 !
   endsubroutine write_initial_condition_pars
 !***********************************************************************
+    subroutine initial_condition_all(f)
+!
+!  Initializes all the f arrays in one call.  This subroutine is called last.
+!
+!  21-dec-10/ccyang: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  SAMPLE IMPLEMENTATION
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initial_condition_all
+!***********************************************************************
   subroutine initial_condition_lnrho(f)
 !
 !  Initialize logarithmic density.
