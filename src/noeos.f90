@@ -270,6 +270,20 @@ module EquationOfState
 !
     endsubroutine get_cp1
 !***********************************************************************
+    subroutine get_cv1(cv1_)
+!
+!  23-dec-10/bing: dummy routine
+!
+!  return the value of cv1 to outside modules
+!
+      real, intent(out) :: cv1_
+!
+      call fatal_error('get_cv1','cv1 is not defined with noeos.f90')
+!
+      cv1_=0.
+!
+    endsubroutine get_cv1
+!***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   02-apr-04/tony: dummy
