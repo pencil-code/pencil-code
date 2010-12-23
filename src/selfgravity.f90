@@ -51,7 +51,7 @@ module Selfgravity
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
   integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0
-  integer :: idiag_jeanslength=0
+  integer :: idiag_jeanslength=0, idiag_ljeans2d=0
 !
   contains
 !***********************************************************************
@@ -236,7 +236,7 @@ module Selfgravity
         lpenc_diagnos(i_phiy)=.true.
       endif
 !
-      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_jeanslength/=0) then 
+      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then 
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
       endif
@@ -414,6 +414,7 @@ module Selfgravity
         if (idiag_qtoomremin/=0) & 
              call max_mn_name(-kappa*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/(gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
+        if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/(gravitational_const*p%rho),idiag_ljeans2d,lneg=.true.)
       endif
 !
 !  1-D averages.
@@ -538,7 +539,7 @@ module Selfgravity
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
         idiag_qtoomre=0; idiag_qtoomremin=0
-        idiag_jeanslength=0
+        idiag_jeanslength=0; idiag_ljeans2d=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -569,6 +570,7 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomre)
         call parse_name(iname,cname(iname),cform(iname),'qtoomremin',idiag_qtoomremin)
         call parse_name(iname,cname(iname),cform(iname),'jeanslength',idiag_jeanslength)
+        call parse_name(iname,cname(iname),cform(iname),'ljeans2d',idiag_ljeans2d)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
