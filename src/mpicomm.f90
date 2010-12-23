@@ -788,9 +788,9 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
         do j=ivar1,ivar2
           if (bcy2(j)=='pp') &
-              f(l1:l2,m2+1:my,n1:n2,j)=npbufyi(:,:,:,j)
+              f(l1:l2,m2+1:my,n1:n2,j)=spbufyi(:,:,:,j)
           if (bcy2(j)=='ap') &
-              f(l1:l2,m2+1:my,n1:n2,j)=-npbufyi(:,:,:,j)
+              f(l1:l2,m2+1:my,n1:n2,j)=-spbufyi(:,:,:,j)
         enddo
         call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
       endif

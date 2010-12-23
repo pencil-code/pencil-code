@@ -36,7 +36,7 @@ module Viscosity
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
   real :: rzero_lambda=impossible,wlambda=0.,rmax_lambda=impossible
   real :: offamp_lambda=1.,r1_lambda=impossible,r2_lambda=impossible
-  real :: lambda_jump=0.
+  real :: lambda_jump=0.,roffset_lambda=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real, dimension(:), pointer :: etat_z
@@ -84,7 +84,8 @@ module Viscosity
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
-      offamp_lambda,lambda_jump,lmeanfield_nu,meanfield_nuB,PrM_turb
+      offamp_lambda,lambda_jump,lmeanfield_nu,meanfield_nuB,PrM_turb,&
+      roffset_lambda
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -414,6 +415,19 @@ module Viscosity
         der_LV0_rprof=der_step(x,rzero_lambda,wlambda)
         der_LV1_rprof=der_step(x,rzero_lambda,wlambda)
         der_LH1_rprof=der_step(x,rzero_lambda,wlambda)
+      case ('top_hat')
+        if (lroot) print*,'lambda profile top_hat, rzero_lambda, rmax_lambda,roffset_lambda, wlambda:',&
+            rzero_lambda,rmax_lambda,roffset_lambda,wlambda
+        LV0_rprof=step(x,rzero_lambda+roffset_lambda,wlambda) &
+            -step(x,rmax_lambda+roffset_lambda,wlambda)
+        LV1_rprof=step(x,rzero_lambda,wlambda)-step(x,rmax_lambda,wlambda)
+        LH1_rprof=step(x,rzero_lambda,wlambda)-step(x,rmax_lambda,wlambda)
+        der_LV0_rprof=der_step(x,rzero_lambda+roffset_lambda,wlambda) &
+            -der_step(x,rmax_lambda+roffset_lambda,wlambda)
+        der_LV1_rprof=der_step(x,rzero_lambda,wlambda) &
+            -der_step(x,rmax_lambda,wlambda)
+        der_LH1_rprof=der_step(x,rzero_lambda,wlambda) &
+            -der_step(x,rmax_lambda,wlambda)
       case ('V1H1_roff')
         LV0_rprof=1.;der_LV0_rprof=0.
         LV1_rprof=1.+offamp_lambda*stepdown(x,rmax_lambda,wlambda)
@@ -1543,30 +1557,33 @@ module Viscosity
 !
 !  20-apr-10/dhruba: coded
 !
-  use cdata, only: Omega
-  real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta,lver,lhor,&
-    dlver_dr,dlhor_dtheta
-  type (pencil_case) :: p
+      use cdata, only: Omega
+!
+      real,dimension(nx) :: div_lambda,lomega,dlomega_dr,dlomega_dtheta, &
+          lver,lhor,dlver_dr,dlhor_dtheta
+      type (pencil_case) :: p
 !
       lomega=p%uu(:,3)/(sinth(m)*x(l1:l2))+Omega
-      dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/(sinth(m)*x(l1:l2)*x(l1:l2))
-      dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/(sinth(m)*x(l1:l2)*x(l1:l2))
-!DM there was a mistake in sign. 
-      lver = -(Lambda_V0*LV0_rprof(l1:l2)+Lambda_V1*sinth(m)*sinth(m)*LV1_rprof(l1:l2) ) 
-      lhor = -Lambda_H1*sinth(m)*sinth(m)*LH1_rprof(l1:l2)
-      dlver_dr = -(Lambda_V0*der_LV0_rprof(l1:l2) +Lambda_V1*sinth(m)*sinth(m)*der_LV1_rprof(l1:l2))
-      dlhor_dtheta = -Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2)&
-                      -Lambda_H1*sinth(m)*sinth(m)*der_LH1_rprof(l1:l2)
 !
-      div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1)  &
-                         +3.*sinth(m)*lomega/x(l1:l2)   &
-                         +sinth(m)*dlomega_dr)  &
-                  +lomega*sinth(m)*dlver_dr   &
-                  +lhor*(costh(m)*lomega*p%glnrho(:,2)  &
-                         -sinth(m)*lomega/x(l1:l2)  &
-                         +2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
-                         +costh(m)*dlomega_dtheta ) &
-                   +lomega*costh(m)*dlhor_dtheta
+      dlomega_dr=(x(l1:l2)*p%uij(:,3,1)-p%uu(:,3))/ &
+          (sinth(m)*x(l1:l2)*x(l1:l2))
+      dlomega_dtheta=(p%uij(:,3,2)*x(l1:l2)-p%uu(:,3)*cotth(m))/ &
+          (sinth(m)*x(l1:l2)*x(l1:l2))
+!
+      lver = -(Lambda_V0*LV0_rprof(l1:l2)+Lambda_V1*sinth(m)*sinth(m) &
+          *LV1_rprof(l1:l2) ) 
+      lhor = -Lambda_H1*sinth(m)*sinth(m)*LH1_rprof(l1:l2)
+!
+      dlver_dr = -(Lambda_V0*der_LV0_rprof(l1:l2)+Lambda_V1 &
+          *sinth(m)*sinth(m)*der_LV1_rprof(l1:l2))
+      dlhor_dtheta = -Lambda_H1*2.*costh(m)*sinth(m)/x(l1:l2) &
+          -Lambda_H1*sinth(m)*sinth(m)*der_LH1_rprof(l1:l2)
+!
+      div_lambda = lver*(sinth(m)*lomega*p%glnrho(:,1) &
+          +3.*sinth(m)*lomega/x(l1:l2) + sinth(m)*dlomega_dr) &
+          +lomega*sinth(m)*dlver_dr + lhor*(costh(m)*lomega*p%glnrho(:,2) &
+          -sinth(m)*lomega/x(l1:l2) + 2.*cotth(m)*costh(m)*lomega/x(l1:l2) &
+          +costh(m)*dlomega_dtheta) + lomega*costh(m)*dlhor_dtheta
 !
     endsubroutine calc_lambda
 !***********************************************************************
