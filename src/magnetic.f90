@@ -15,12 +15,12 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; uxb(3); exa(3)
-! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3)
+! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); beta; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
-! PENCILS PROVIDED jij(3,3); sj; ss12
+! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
 ! PENCILS PROVIDED etava; etaj; etaj2; etajrho
 ! PENCILS PROVIDED cosjb; jparallel; jperp
 ! PENCILS PROVIDED cosub
@@ -109,7 +109,7 @@ module Magnetic
   real :: taareset=0.0, daareset=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
-  real :: eta_jump=0.0
+  real :: eta_jump=0.0, damp=0., two_step_factor=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mix_factor=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
@@ -164,7 +164,7 @@ module Magnetic
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
-      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor
+      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor
 !
 ! Run parameters
 !
@@ -228,7 +228,7 @@ module Magnetic
       lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump,&
-      lrun_initaa
+      lrun_initaa,two_step_factor
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -442,12 +442,19 @@ module Magnetic
   integer :: idiag_by2rmz=0     ! DIAG_DOC: $\left< B_y^2/\varrho \right>_{xy}$
   integer :: idiag_bz2rmz=0     ! DIAG_DOC: $\left< B_z^2/\varrho \right>_{xy}$
   integer :: idiag_jbmz=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>|_{xy}$
+  integer :: idiag_d6abmz=0     ! DIAG_DOC: $\left<\nabla^6 \Av\cdot\Bv\right>|_{xy}$
+  integer :: idiag_d6amz1=0     ! DIAG_DOC: $\left<\nabla^6 \Av \right>_{xy}|_x$
+  integer :: idiag_d6amz2=0     ! DIAG_DOC: $\left<\nabla^6 \Av \right>_{xy}|_y$
+  integer :: idiag_d6amz3=0     ! DIAG_DOC: $\left<\nabla^6 \Av \right>_{xy}|_z$
   integer :: idiag_abmz=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>|_{xy}$
   integer :: idiag_ubmz=0       ! DIAG_DOC: $\left<\uv\cdot\Bv\right>|_{xy}$
   integer :: idiag_uamz=0       ! DIAG_DOC: $\left<\uv\cdot\Av\right>|_{xy}$
   integer :: idiag_examz1=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_x$
   integer :: idiag_examz2=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_y$
   integer :: idiag_examz3=0     ! DIAG_DOC: $\left<\Ev\times\Av\right>_{xy}|_z$
+  integer :: idiag_e3xamz1=0    ! DIAG_DOC: $\left<\Ev_{hyper3}\times\Av\right>_{xy}|_x$
+  integer :: idiag_e3xamz2=0    ! DIAG_DOC: $\left<\Ev_{hyper3}\times\Av\right>_{xy}|_y$
+  integer :: idiag_e3xamz3=0    ! DIAG_DOC: $\left<\Ev_{hyper3}\times\Av\right>_{xy}|_z$
   integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{xy}$
   integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{xy}$
   integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{xy}$
@@ -1514,7 +1521,8 @@ module Magnetic
 !
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0 .or. &
           idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
-          idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
+          idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 .or. &
+          idiag_e3xamz1/=0 .or. idiag_e3xamz2/=0 .or. idiag_e3xamz3/=0 &
          ) lpenc_diagnos(i_aa)=.true.
 !
       if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
@@ -1543,7 +1551,8 @@ module Magnetic
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
           .or. idiag_jbrms/=0 &
          ) lpenc_diagnos(i_jb)=.true.
-!
+      if (idiag_d6abmz/=0) lpenc_diagnos(i_d6ab)=.true.
+      if (idiag_d6amz1/=0 .or. idiag_d6amz2 /=0 .or. idiag_d6amz3/=0) lpenc_diagnos(i_del6a)=.true.
       if (idiag_hjbm/=0 ) lpenc_diagnos(i_hjb)=.true.
       if (idiag_jbmphi/=0 .or. idiag_jbmxy/=0) lpenc_diagnos2d(i_jb)=.true.
       if (idiag_vArms/=0 .or. idiag_vAmax/=0 .or. idiag_vA2m/=0) lpenc_diagnos(i_va2)=.true.
@@ -1575,6 +1584,8 @@ module Magnetic
 !
       if (idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_exa)=.true.
+      if (idiag_e3xamz1/=0 .or. idiag_e3xamz2/=0 .or. idiag_e3xamz3/=0 &
+         ) lpenc_diagnos(i_e3xa)=.true.
 !
       if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
          ) lpenc_diagnos2d(i_exa)=.true.
@@ -1816,6 +1827,7 @@ module Magnetic
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
       endif
+      if (lpencil_in(i_d6ab) .or. lpencil_in(i_e3xa)) lpencil_in(i_del6a)=.true.
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !
@@ -2132,6 +2144,10 @@ module Magnetic
       endif
 ! del6a
       if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
+! e3xa
+      if (lpencil(i_e3xa)) then
+        call cross_mn(-p%uxb+eta_hyper3*p%del6a,p%aa,p%e3xa)
+      endif
 ! oxj
       if (lpencil(i_oxj)) call cross_mn(p%oo,p%jj,p%oxJ)
 ! jij
@@ -2142,6 +2158,8 @@ module Magnetic
           enddo
         enddo
       endif
+! d6ab
+      if (lpencil(i_d6ab)) call dot_mn(p%del6a,p%bb,p%d6ab)
 ! sj
       if (lpencil(i_sj)) call multmm_sc(p%sij,p%jij,p%sj)
 ! ss12
@@ -3291,6 +3309,10 @@ module Magnetic
         if (idiag_by2rmz/=0) call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rmz)
         if (idiag_bz2rmz/=0) call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rmz)
         if (idiag_jbmz/=0)   call xysum_mn_name_z(p%jb,idiag_jbmz)
+        if (idiag_d6abmz/=0) call xysum_mn_name_z(p%d6ab,idiag_d6abmz)
+        if (idiag_d6amz1/=0) call xysum_mn_name_z(p%del6a(:,1),idiag_d6amz1)
+        if (idiag_d6amz2/=0) call xysum_mn_name_z(p%del6a(:,2),idiag_d6amz2)
+        if (idiag_d6amz3/=0) call xysum_mn_name_z(p%del6a(:,3),idiag_d6amz3)
         if (idiag_abmz/=0)   call xysum_mn_name_z(p%ab,idiag_abmz)
         if (idiag_ubmz/=0)   call xysum_mn_name_z(p%ub,idiag_ubmz)
         if (idiag_uamz/=0)   call xysum_mn_name_z(p%ua,idiag_uamz)
@@ -3302,6 +3324,11 @@ module Magnetic
         if (idiag_examz1/=0) call xysum_mn_name_z(p%exa(:,1),idiag_examz1)
         if (idiag_examz2/=0) call xysum_mn_name_z(p%exa(:,2),idiag_examz2)
         if (idiag_examz3/=0) call xysum_mn_name_z(p%exa(:,3),idiag_examz3)
+!
+!
+        if (idiag_e3xamz1/=0) call xysum_mn_name_z(p%e3xa(:,1),idiag_e3xamz1)
+        if (idiag_e3xamz2/=0) call xysum_mn_name_z(p%e3xa(:,2),idiag_e3xamz2)
+        if (idiag_e3xamz3/=0) call xysum_mn_name_z(p%e3xa(:,3),idiag_e3xamz3)
 !
 !  Maxwell stress components.
 !
@@ -5834,7 +5861,7 @@ module Magnetic
 !  Default to spread gradient over ~5 grid cells,
 !
            if (eta_width == 0.) eta_width = 5.*dz
-           eta_z = eta*eta_jump-eta*(eta_jump-1.)* &
+           eta_z = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
              (step(z,eta_z0,eta_width)-step(z,eta_z1,eta_width))
 !
 !  ... and its gradient. Note that the sign of the second term enters
@@ -5842,7 +5869,7 @@ module Magnetic
 !
            geta_z(:,1) = 0.
            geta_z(:,2) = 0.
-           geta_z(:,3) = eta*(eta_jump-1.)*( &
+           geta_z(:,3) = eta*(eta_jump-two_step_factor)*( &
              der_step(z,eta_z0,-eta_width)+der_step(z,eta_z1,eta_width))
 !
       endselect
@@ -6274,7 +6301,8 @@ module Magnetic
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0
-        idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_uamz=0
+        idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_uamz=0; idiag_d6abmz=0
+        idiag_d6amz3=0; idiag_d6amz2=0; idiag_d6amz1=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_axmz=0; idiag_aymz=0; idiag_azmz=0; idiag_bxmz=0; idiag_bymz=0
         idiag_abuxmz=0; idiag_abuymz=0; idiag_abuzmz=0
@@ -6301,6 +6329,7 @@ module Magnetic
         idiag_uxbcmx=0; idiag_uxbsmx=0
         idiag_uxbcmy=0; idiag_uxbsmy=0; idiag_examz1=0; idiag_examz2=0
         idiag_examz3=0; idiag_examx=0; idiag_examy=0; idiag_examz=0
+        idiag_e3xamz1=0; idiag_e3xamz2=0; idiag_e3xamz3=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
@@ -6658,12 +6687,19 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'mflux_z',idiag_mflux_z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'jbmz',idiag_jbmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'d6abmz',idiag_d6abmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'d6amz1',idiag_d6amz1)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'d6amz2',idiag_d6amz2)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'d6amz3',idiag_d6amz3)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'abmz',idiag_abmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ubmz',idiag_ubmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uamz',idiag_uamz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz1',idiag_examz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz2',idiag_examz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'examz3',idiag_examz3)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz1',idiag_e3xamz1)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz2',idiag_e3xamz2)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz3',idiag_e3xamz3)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'etatotalmz',idiag_etatotalmz)
       enddo
