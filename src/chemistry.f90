@@ -996,7 +996,7 @@ module Chemistry
 !
       if (lpencil(i_ppwater)) then
         if (index_H2O>0) then
-         p%ppwater=p%rho*Rgas*p%TT*p%mu1*f(l1:l2,m,n,ichemspec(index_H2O))
+         p%ppwater=p%rho*Rgas*p%TT/18.*f(l1:l2,m,n,ichemspec(index_H2O))
         endif
       endif
       if (lpencil(i_Ywater)) then
@@ -2669,6 +2669,8 @@ module Chemistry
               + p%ccondens
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
               - 2.5e6/1005.*p%ccondens*p%TT1
+
+!print*,'Nat',exp(f(l1:l2,m,n,ilnTT)),df(l1:l2,m,n,ilnTT),2.5e6/1005.*p%ccondens*dt
 
 !
 ! this is for debuging purposes: one check that the sum of all mass fractions is 1

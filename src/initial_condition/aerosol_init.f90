@@ -408,7 +408,7 @@ module InitialCondition
              endif
            enddo
          else
-           f(:,:,:,ichemspec(index_H2O))=psat/PP*dYw
+           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass/18.)!*dYw
          endif
 !         index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
@@ -434,6 +434,8 @@ module InitialCondition
 !          enddo
          enddo
          air_mass_ar=1./air_mass_ar
+         f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
