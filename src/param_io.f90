@@ -87,7 +87,7 @@ module Param_IO
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
-      uxy_spec, bxy_spec, &
+      uxy_spec, bxy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, ab_spec, ub_spec, vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, isaveglobal, lr_spec, r2u_spec, &

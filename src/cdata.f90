@@ -435,7 +435,7 @@ module Cdata
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
-  logical :: j_spec=.false.,jb_spec=.false.
+  logical :: j_spec=.false.,jb_spec=.false.,oo_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false.
   logical :: EP_spec=.false.

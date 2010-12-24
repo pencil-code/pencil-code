@@ -67,7 +67,7 @@ module power_spectrum
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
-  real, dimension(nx) :: bb
+  real, dimension(nx) :: bb,oo
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -102,6 +102,15 @@ module power_spectrum
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
      elseif (trim(sp)=='r3u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/3.)
+     elseif (trim(sp)=='o') then
+        do n=n1,n2
+           do m=m1,m2
+              call curli(f,iuu,oo,ivec)
+              im=m-nghost
+              in=n-nghost
+              a1(:,im,in)=oo
+           enddo
+        enddo
      elseif (trim(sp)=='b') then
         do n=n1,n2
            do m=m1,m2
@@ -810,8 +819,16 @@ module power_spectrum
   !
   if (sp=='ro') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+  !
+  !  spectrum of lnrho (or normalized enthalpy).
+  !  Need to take log if we work with linear density.
+  !
   elseif (sp=='lr') then
-    a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
+    if (ldensity_nolog) then
+      a_re=alog(f(l1:l2,m1:m2,n1:n2,irho))
+    else
+      a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
+    endif
   elseif (sp=='TT') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
   elseif (sp=='ss') then
