@@ -93,12 +93,12 @@ module InitialCondition
   real :: rho_rms=0.05
   integer :: xmodes=10,ymodes=10,zmodes=0
   logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
-  real :: xmid=1.5
+  real :: xmid=1.5,border1,border2,Lxn
 !
   namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
        xmodes,ymodes,zmodes,rho_rms,llowk_noise,xmid,&
-       lgaussian_distributed_noise
+       lgaussian_distributed_noise,border1,border2
 !
   contains
 !***********************************************************************
@@ -121,23 +121,11 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      Lxn=Lx-2*(border1+border2)
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
-!***********************************************************************
-    subroutine initial_condition_all(f)
-!
-!  Initializes all the f arrays in one call.  This subroutine is called last.
-!
-!  21-dec-10/ccyang: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-!  SAMPLE IMPLEMENTATION
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initial_condition_all
 !***********************************************************************
     subroutine initial_condition_uu(f)
 !
@@ -932,8 +920,12 @@ module InitialCondition
           mm1=m+m1-1 ; yi=y(mm1)
           nn1=n+n1-1 ; zi=z(nn1)
 !
-          lump_of_sines(i,m,n)=lump_of_sines(i,m,n) + &
-             sin(2*pi*(ll*xi/Lx + mm*yi/Ly + nn*zi/Lz+ phase))
+! Exclude the border
+!
+          if ((xi.gt.xyz0(1)+2*border1).and.(xi.lt.xyz1(1)-2*border2)) then
+            lump_of_sines(i,m,n)=lump_of_sines(i,m,n) + &
+                 sin(2*pi*(ll*xi/Lxn + mm*yi/Ly + nn*zi/Lz+ phase))
+          endif
 !
         enddo;enddo;enddo !end grid loop
       enddo;enddo;enddo !end modes loop
