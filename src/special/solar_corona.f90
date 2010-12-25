@@ -39,12 +39,12 @@ module Special
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
   character (len=labellen) :: prof_type='nothing'
-  real, dimension (mz) :: lnTT_init_z, lnrho_init_z
-  logical :: linit_lnrho=.false., linit_lnTT=.false.
+  real, dimension (mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
+  logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
 ! input parameters
   namelist /special_init_pars/ &
-       linit_lnrho,linit_lnTT,prof_type
+       linit_uu,linit_lnrho,linit_lnTT,prof_type
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -171,6 +171,13 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
 !
       integer :: j
+!
+      if (linit_uu) then
+        ! set initial vertical velocity profile values
+        do j = 1, mz
+          f(:,:,j,iuz) = uu_init_z(j)
+        enddo
+      endif
 !
       if (linit_lnrho) then
         ! set initial density profile values
@@ -332,9 +339,11 @@ module Special
     subroutine setup_profiles()
 !
 !  Read and set vertical profiles for initial temperature and density.
-!  Initial temperature profile is given in ln(T) [K] over z [Mm]
-!  Initial density profile is given in ln(rho) [kg/m^3] over z [Mm]
-!  When using 'prof_ln*.dat' files, z is expected to be in SI units [m].
+!  Initial vertical velocity profile is given in [m/s] over z.
+!  Initial density profile is given in ln(rho) [kg/m^3] over z.
+!  Initial temperature profile is given in ln(T) [K] over z.
+!  When using 'prof_ln*.dat' files, z is expected to be in SI units [m],
+!  when using the 'stratification.dat' file, z is expected to be in [Mm].
 !
 !  25-aug-2010/Bourdin.KIS: coded
 !
@@ -347,7 +356,7 @@ module Special
 !
       if (.not. (ltemperature .or. lentropy)) return
       lnewton_cooling = (tdown/=0) .or. (tdownr/=0)
-      if (.not. (linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
+      if (.not. (linit_uu .or. linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
       ! default: read 'stratification.dat' with density and temperature
       if (prof_type == 'nothing') prof_type = 'lnrho_lnTT'
@@ -382,7 +391,7 @@ module Special
 !***********************************************************************
     subroutine read_profiles()
 !
-!  Read profiles for temperature and/or density stratification.
+!  Read profiles for temperature, velocity, and/or density stratification.
 !
 !  21-oct-2010/Bourdin.KIS: coded
 !
@@ -393,18 +402,20 @@ module Special
       integer, parameter :: unit=12, lnrho_tag=368, lnTT_tag=369
       real :: var0, var1, var2
       real, dimension (:), allocatable :: prof_lnrho, prof_lnTT
-      logical :: lread_prof_lnTT, lread_prof_lnrho
+      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT
 !
       ! file location settings
       character (len=*), parameter :: stratification_dat = 'stratification.dat'
       character (len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
       character (len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
+      character (len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
 !
 !
 ! Check which stratification file should be used:
 !
-      lread_prof_lnTT = (prof_type=='prof_lnTT') .or. (prof_type=='prof_lnrho_lnTT')
-      lread_prof_lnrho = (prof_type=='prof_lnrho') .or. (prof_type=='prof_lnrho_lnTT')
+      lread_prof_uu    = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_uu') > 0)
+      lread_prof_lnrho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnrho') > 0)
+      lread_prof_lnTT  = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
 !
       if (prof_type=='lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
@@ -436,15 +447,19 @@ module Special
         if (allocated (prof_lnTT)) deallocate (prof_lnTT)
         if (allocated (prof_lnrho)) deallocate (prof_lnrho)
 !
-      elseif (lread_prof_lnTT .or. lread_prof_lnrho) then
+      elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT) then
 !
-        ! read logarithmic temperature profile
-        if (lread_prof_lnTT) &
-            call read_profile (lnT_dat, lnTT_init_z, unit_temperature)
+        ! read vertical velocity profile for interpolation
+        if (lread_prof_uu) &
+            call read_profile (uz_dat, uu_init_z, unit_velocity, .false.)
 !
         ! read logarithmic density profile for interpolation
         if (lread_prof_lnrho) &
-            call read_profile (lnrho_dat, lnrho_init_z, unit_density)
+            call read_profile (lnrho_dat, lnrho_init_z, unit_density, .true.)
+!
+        ! read logarithmic temperature profile
+        if (lread_prof_lnTT) &
+            call read_profile (lnT_dat, lnTT_init_z, unit_temperature, .true.)
 !
       elseif (index (prof_type, 'internal_') == 1) then
         call warning ('read_profiles', "using internal profile '"//trim(prof_type)//"'.")
@@ -456,7 +471,7 @@ module Special
 !
     endsubroutine read_profiles
 !***********************************************************************
-    subroutine read_profile(filename,profile,data_unit)
+    subroutine read_profile(filename,profile,data_unit,llog)
 !
 !  Read vertical profile data.
 !  Values are expected in SI units.
@@ -469,6 +484,7 @@ module Special
       character (len=*), intent (in) :: filename
       real, dimension (mz), intent (out) :: profile
       real, intent (in) :: data_unit
+      logical, intent (in) :: llog
 !
       real, dimension (:), allocatable :: data, data_z
       integer :: n_data
@@ -504,8 +520,13 @@ module Special
             'Error reading profile data in "'//trim(filename)//'"')
         close (unit)
 !
-        ! convert data from logarithmic SI to logarithmic Pencil units
-        data = data - alog (data_unit)
+        if (llog) then
+          ! convert data from logarithmic SI to logarithmic Pencil units
+          data = data - alog (data_unit)
+        else
+          ! convert data from SI to Pencil units
+          data = data / data_unit
+        endif
 !
         ! convert z coordinates from SI to Pencil units
         data_z = data_z / unit_length
