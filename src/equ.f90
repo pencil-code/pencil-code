@@ -289,6 +289,7 @@ module Equ
       call timing('pde','before calc_lhydro_pars')
 !DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
 ! hydro_after_boundary etc. 
+!AB: yes, we should rename these step by step
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
       if (lentropy)               call calc_lentropy_pars(f)
@@ -345,7 +346,7 @@ module Equ
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
-          if (lhydro) then
+          if (lhydro.or.lhydro_kinematic) then
             advec_uu=0.0
           endif
           if (ldensity) then
@@ -632,7 +633,8 @@ module Equ
           maxdiffus=0.0
           maxdiffus2=0.0
           maxdiffus3=0.0
-          if (lhydro) maxadvec=maxadvec+advec_uu
+!--       if (lhydro) maxadvec=maxadvec+advec_uu
+          if (lhydro.or.lhydro_kinematic) maxadvec=maxadvec+advec_uu
           if (lshear) maxadvec=maxadvec+advec_shear
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
           if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
