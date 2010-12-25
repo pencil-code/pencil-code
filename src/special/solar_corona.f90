@@ -379,7 +379,7 @@ module Special
           call warning ("setup_profiles", "overriding manual lnrho0 setting")
         endif
         lnrho0 = lnrho_init_z(n1)
-        if ((rho0 /= 1.0) .and. (rho0 /= exp (lnrho0))) then
+        if ((rho0 /= 1.0) .and. (abs (rho0 / exp (lnrho0) - 1.0) > 1.e-6)) then
           if (lroot) print *,'setup_profiles: WARNING: ', &
               'rho0 set to ', exp (lnrho0), ' - was before ', rho0
           call warning ("setup_profiles", "overriding manual rho0 setting")
