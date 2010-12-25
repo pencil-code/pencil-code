@@ -153,8 +153,10 @@ module Particles_number
 !
 !  21-nov-06/anders: coded
 !
-      lpenc_requested(i_rho1)=.true.
-      lpenc_requested(i_cc1)=.true.
+      if (lfragmentation_par) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cc1)=.true.
+      endif
 !
     endsubroutine pencil_criteria_par_number
 !***********************************************************************
