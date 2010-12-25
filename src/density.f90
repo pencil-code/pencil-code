@@ -197,6 +197,14 @@ module Density
         diffrho=cdiffrho*dxmin*cs0
       endif
 !
+!  Turn off continuity equation if we are not using hydrodynamics.
+!
+      if (.not.lhydro .and. .not.lhydro_kinematic) then
+        lcontinuity_gas=.false.
+        if (lroot) print*, &
+             'initialize_density: no hydro, turned off continuity equation'
+      endif
+!
 !  Turn off continuity equation term for 0-D runs.
 !
       if (nxgrid*nygrid*nzgrid==1) then
@@ -210,7 +218,7 @@ module Density
       if (lfargo_advection) then
         lcontinuity_gas=.false.
         if (lroot) print*,& 
-             'initialize_density: fargo used. turned off continuity equation'
+             'initialize_density: fargo used, turned off continuity equation'
       endif
 !
 !  Check if there exists constant background advection.
