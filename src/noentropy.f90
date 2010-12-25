@@ -157,7 +157,7 @@ module Entropy
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
-      if (leos.and.ldensity.and.ldt) lpenc_requested(i_cs2)=.true.
+      if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
@@ -265,9 +265,9 @@ module Entropy
       intent(in) :: f,p
       intent(out) :: df
 !
-!  ``cs2/dx^2'' for timestep
+!  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
 !
-      if (leos.and.ldensity) then ! no sound waves without equation of state
+      if (leos.and.ldensity.and.lhydro) then
         if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) &
             print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
