@@ -207,7 +207,7 @@ module Magnetic
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
       B_ext, omega_Bz_ext, u0_advec, nu_ni, &
       hall_term, lmeanfield_theory, &
-      z_surface, &
+      z_surface, eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
       lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &

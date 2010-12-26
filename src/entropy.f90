@@ -138,7 +138,7 @@ module Entropy
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
-      chi_hyper3, lturbulent_heat, deltaT_poleq, tdown, allp, &
+      chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
       lcalc_ss_volaverage, lcalc_ssmean, lcalc_cs2mean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &

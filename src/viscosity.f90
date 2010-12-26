@@ -84,7 +84,7 @@ module Viscosity
   namelist /viscosity_run_pars/ &
       nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
-      pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1,&
+      pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
       offamp_lambda,lambda_jump,lmeanfield_nu,meanfield_nuB,PrM_turb,&
       roffset_lambda
