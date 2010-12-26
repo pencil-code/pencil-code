@@ -845,7 +845,7 @@ module Entropy
           thdiff = thdiff + chi_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
         enddo
         if (lfirst.and.ldt) &
-            diffus_chi3=chi_hyper3_mesh*pi5_1*dx_1(l1:l2)
+            advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
         if (headtt) print*,'dss_dt: chi_hyper3_mesh=', chi_hyper3_mesh
       endif
 !
