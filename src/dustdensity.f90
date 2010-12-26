@@ -2142,58 +2142,58 @@ module Dustdensity
       integer :: k, i, i1=1,i2=2,i3=3, ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
 !
-
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
 !
-       if (ndustspec<3) then
-         call fatal_error('droplet_redistr', &
-          'Number of dust species is smaller than 3')
-       endif
+      if (ndustspec<3) then
+        call fatal_error('droplet_redistr', &
+            'Number of dust species is smaller than 3')
+        return
+      endif
 !
-       do k=1,ndustspec
-         if (any(p%pp==0.0) .or. (dsize(k)==0.)) then
-           call fatal_error('droplet_redistr', &
-                'p%pp or dsize  has zero value(s)')
-         else
+      do k=1,ndustspec
+        if (any(p%pp==0.0) .or. (dsize(k)==0.)) then
+          call fatal_error('droplet_redistr', &
+              'p%pp or dsize  has zero value(s)')
+        else
 !           ff_tmp(:,k)=f(l1:l2,m,n,ind(k))/dsize(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
 !           ff_tmp0(:,k)=init_distr(k)/dsize(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
            ff_tmp(:,k)=f(l1:l2,m,n,ind(k))*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
            ff_tmp0(:,k)=init_distr(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
-         endif
-       enddo
+        endif
+      enddo
 !
-         rr1=dsize(i1)
-         rr2=dsize(i2)
-         rr3=dsize(i3)
+      rr1=dsize(i1)
+      rr2=dsize(i2)
+      rr3=dsize(i3)
 !
-        dndr_dr(:,i1) = ff_tmp0(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
-                      - ff_tmp0(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                      + ff_tmp0(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
-
-        dndr_dr(:,i1) = (dndr_dr(:,i1)/dsize(i1)-ff_tmp0(:,i1)/dsize(i1)**2)*0.
+      dndr_dr(:,i1) = ff_tmp0(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
+                    - ff_tmp0(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                    + ff_tmp0(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
+!
+      dndr_dr(:,i1) = (dndr_dr(:,i1)/dsize(i1)-ff_tmp0(:,i1)/dsize(i1)**2)*0.
 !
 !print*,i1,dndr_dr(:,i1),p%ppwater/p%ppsat-p%ppsf(:,i1)/p%ppsat
-        do k=2,ndustspec-1
+      do k=2,ndustspec-1
 !
-          rr1=dsize(k-1)
-          rr2=dsize(k)
-          rr3=dsize(k+1)
+        rr1=dsize(k-1)
+        rr2=dsize(k)
+        rr3=dsize(k+1)
 !
-          dndr_dr(:,k) = ff_tmp(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                         +ff_tmp(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
-                         +ff_tmp(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
-          dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2
+        dndr_dr(:,k) = ff_tmp(:,k-1)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                      +ff_tmp(:,k  )*(2*rr2-rr1-rr3)/((rr2-rr1)*(rr2-rr3)) &
+                      +ff_tmp(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
+        dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2
 !
 !print*,'NAt2',k,dndr_dr(:,k),p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat!,p%ppwater/p%ppsat,p%ppsf(:,k)/p%ppsat
-           enddo
+      enddo
 !
-        dndr_dr(:,ndustspec)=-ff_tmp(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
-                             +ff_tmp(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                             -ff_tmp(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
-
-        dndr_dr(:,ndustspec) = dndr_dr(:,ndustspec)/dsize(ndustspec)  &
-           -ff_tmp(:,ii1)/dsize(ndustspec)**2
+      dndr_dr(:,ndustspec)=-ff_tmp(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
+                           +ff_tmp(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
+                           -ff_tmp(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
+!
+      dndr_dr(:,ndustspec) = dndr_dr(:,ndustspec)/dsize(ndustspec)  &
+          -ff_tmp(:,ii1)/dsize(ndustspec)**2
 !
     endsubroutine droplet_redistr
 !***********************************************************************
