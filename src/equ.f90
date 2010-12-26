@@ -73,7 +73,8 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: df_iuu_pencil
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec,advec2,maxdiffus,maxdiffus2,maxdiffus3
+      real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
+      real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1) :: mass_per_proc
       integer :: iv
@@ -347,17 +348,17 @@ module Equ
 !
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
           if (lhydro.or.lhydro_kinematic) then
-            advec_uu=0.0
+            advec_uu=0.0; advec_hypermesh_uu=0.0
           endif
           if (ldensity) then
-            diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_lnrho=0.0
+            diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_hypermesh_rho=0.0
             if (leos) advec_cs2=0.0
           endif
-          if (lentropy .or. ltemperature .or. lthermal_energy) then
-            diffus_chi=0.0; diffus_chi3=0.0
+          if (lenergy) then
+            diffus_chi=0.0; diffus_chi3=0.0; advec_hypermesh_ss=0.0 
           endif
           if (lmagnetic) then
-            advec_va2=0.0; advec_hall=0.0
+            advec_va2=0.0; advec_hall=0.0; advec_hypermesh_aa=0.0
             diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
           endif
           if (ltestfield) then
@@ -639,48 +640,52 @@ module Equ
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
           if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity) then
             advec2=0.0
-            if (ldensity) advec2=advec2+advec_cs2+advec_lnrho**2
+            if (ldensity) advec2=advec2+advec_cs2
             if (lmagnetic) advec2=advec2+advec_va2
             if (lradiation) advec2=advec2+advec_crad2
             if (lneutralvelocity) advec2=advec2+advec_csn2
             maxadvec=maxadvec+sqrt(advec2)
           endif
+          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) then
+            advec2_hypermesh=0.0
+            if (ldensity)  advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
+            if (lhydro)    advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
+            if (lmagnetic) advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
+            if (lenergy)   advec2_hypermesh=advec2_hypermesh+advec_hypermesh_ss**2
+            maxadvec=maxadvec+sqrt(advec2_hypermesh)
+          endif
 !
 !  Time step constraints from each module.
 !  (At the moment, magnetic and testfield use the same variable.)
 !
-          if (lviscosity) maxdiffus=max(diffus_nu,maxdiffus)
-          if (ldensity) maxdiffus=max(diffus_diffrho,maxdiffus)
-          if (lentropy) maxdiffus=max(diffus_chi,maxdiffus)
-          if (ltemperature) maxdiffus=max(diffus_chi,maxdiffus)
-          if (lthermal_energy) maxdiffus=max(diffus_chi,maxdiffus)
-          if (lmagnetic) maxdiffus=max(diffus_eta,maxdiffus)
-          if (ltestfield) maxdiffus=max(diffus_eta,maxdiffus)
-          if (ltestscalar) maxdiffus=max(diffus_eta,maxdiffus)
-          if (lpscalar) maxdiffus=max(diffus_pscalar,maxdiffus)
-          if (lcosmicray) maxdiffus=max(diffus_cr,maxdiffus)
-          if (ldustvelocity) maxdiffus=max(diffus_nud,maxdiffus)
-          if (ldustdensity) maxdiffus=max(diffus_diffnd,maxdiffus)
-          if (lchiral) maxdiffus=max(diffus_chiral,maxdiffus)
-          if (lchemistry) maxdiffus=max(diffus_chem,maxdiffus)
-          if (lneutralvelocity) maxdiffus=max(diffus_nun,maxdiffus)
-          if (lneutraldensity) maxdiffus=max(diffus_diffrhon,maxdiffus)
+          if (lviscosity)       maxdiffus=max(maxdiffus,diffus_nu)
+          if (ldensity)         maxdiffus=max(maxdiffus,diffus_diffrho)
+          if (lenergy)          maxdiffus=max(maxdiffus,diffus_chi)
+          if (lmagnetic)        maxdiffus=max(maxdiffus,diffus_eta)
+          if (ltestfield)       maxdiffus=max(maxdiffus,diffus_eta)
+          if (ltestscalar)      maxdiffus=max(maxdiffus,diffus_eta)
+          if (lpscalar)         maxdiffus=max(maxdiffus,diffus_pscalar)
+          if (lcosmicray)       maxdiffus=max(maxdiffus,diffus_cr)
+          if (ldustvelocity)    maxdiffus=max(maxdiffus,diffus_nud)
+          if (ldustdensity)     maxdiffus=max(maxdiffus,diffus_diffnd)
+          if (lchiral)          maxdiffus=max(maxdiffus,diffus_chiral)
+          if (lchemistry)       maxdiffus=max(maxdiffus,diffus_chem)
+          if (lneutralvelocity) maxdiffus=max(maxdiffus,diffus_nun)
+          if (lneutraldensity)  maxdiffus=max(maxdiffus,diffus_diffrhon)
 !
-          if (lviscosity) maxdiffus2=max(diffus_nu2,maxdiffus2)
-          if (lmagnetic) maxdiffus2=max(diffus_eta2,maxdiffus2)
+          if (lviscosity)       maxdiffus2=max(maxdiffus2,diffus_nu2)
+          if (lmagnetic)        maxdiffus2=max(maxdiffus2,diffus_eta2)
 !
-          if (lviscosity) maxdiffus3=max(diffus_nu3,maxdiffus3)
-          if (ldensity) maxdiffus3=max(diffus_diffrho3,maxdiffus3)
-          if (lmagnetic) maxdiffus3=max(diffus_eta3,maxdiffus3)
-          if (ltestfield) maxdiffus3=max(diffus_eta3,maxdiffus3)
-          if (lentropy) maxdiffus3=max(diffus_chi3,maxdiffus3)
-          if (ltemperature) maxdiffus3=max(diffus_chi3,maxdiffus3)
-          if (lthermal_energy) maxdiffus3=max(diffus_chi3,maxdiffus3)
-          if (ldustvelocity) maxdiffus3=max(diffus_nud3,maxdiffus3)
-          if (ldustdensity) maxdiffus3=max(diffus_diffnd3,maxdiffus3)
-          if (lpscalar) maxdiffus3=max(diffus_pscalar3,maxdiffus3)
-          if (lneutralvelocity) maxdiffus3=max(diffus_nun3,maxdiffus3)
-          if (lneutraldensity) maxdiffus3=max(diffus_diffrhon3,maxdiffus3)
+          if (lviscosity)       maxdiffus3=max(maxdiffus3,diffus_nu3)
+          if (ldensity)         maxdiffus3=max(maxdiffus3,diffus_diffrho3)
+          if (lmagnetic)        maxdiffus3=max(maxdiffus3,diffus_eta3)
+          if (ltestfield)       maxdiffus3=max(maxdiffus3,diffus_eta3)
+          if (lenergy)          maxdiffus3=max(maxdiffus3,diffus_chi3)
+          if (ldustvelocity)    maxdiffus3=max(maxdiffus3,diffus_nud3)
+          if (ldustdensity)     maxdiffus3=max(maxdiffus3,diffus_diffnd3)
+          if (lpscalar)         maxdiffus3=max(maxdiffus3,diffus_pscalar3)
+          if (lneutralvelocity) maxdiffus3=max(maxdiffus3,diffus_nun3)
+          if (lneutraldensity)  maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
 !
 !  Exclude the frozen zones from the time-step calculation.
 !
