@@ -36,7 +36,8 @@ module Entropy
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real, target :: chi=0.0
-  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_th=0.0, chi_rho=0.0
+  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: chi_hyper3_mesh=5.0, chi_th=0.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
@@ -82,6 +83,7 @@ module Entropy
   logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
+  logical :: lheatc_hyper3ss_mesh=.false.
   logical :: lcooling_general=.false., lcooling_average=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
@@ -588,6 +590,7 @@ module Entropy
       lheatc_shock=.false.
       lheatc_hyper3ss=.false.
       lheatc_hyper3ss_polar=.false.
+      lheatc_hyper3ss_mesh=.false.
       lheatc_hyper3ss_aniso=.false.
 !
       lnothing=.false.
@@ -637,6 +640,9 @@ module Entropy
         case ('hyper3_cyl','hyper3-cyl','hyper3-sph','hyper3_sph')
           lheatc_hyper3ss_polar=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
+        case ('hyper3-mesh','hyper3_mesh')
+          lheatc_hyper3ss_mesh=.true.
+          if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -673,12 +679,12 @@ module Entropy
       if ((lheatc_spitzer.or.lheatc_corona) .and. (Kgpara==0.0 .or. Kgperp==0.0) ) then
         call warning('initialize_entropy','Kgperp or Kgpara is zero!')
       endif
-      if (lheatc_hyper3ss .and. chi_hyper3==0.0) then
-        call warning('initialize_entropy','chi_hyper3 is zero!')
-      endif
-      if (lheatc_hyper3ss_polar .and. chi_hyper3==0.0) then
-        call warning('initialize_entropy','chi_hyper3 is zero!')
-      endif
+      if (lheatc_hyper3ss .and. chi_hyper3==0.0) &
+           call warning('initialize_entropy','chi_hyper3 is zero!')
+      if (lheatc_hyper3ss_polar .and. chi_hyper3==0.0) &
+           call warning('initialize_entropy','chi_hyper3 is zero!')
+      if (lheatc_hyper3ss_mesh .and. chi_hyper3_mesh==0.0) &
+           call warning('initialize_entropy','chi_hyper3_mesh is zero!')
       if ( (lheatc_hyper3ss_aniso) .and.  &
            ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
             (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
@@ -2485,6 +2491,7 @@ module Entropy
       endif
       if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
+      if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 !
 !  Explicit heating/cooling terms.
@@ -3147,6 +3154,41 @@ module Entropy
           diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxyz_2
 !
     endsubroutine calc_heatcond_hyper3_polar
+!***********************************************************************
+    subroutine calc_heatcond_hyper3_mesh(f,df)
+!
+!  Naive resolution-independent hyperdiffusivity of entropy
+!
+!  25-dec-10/wlad: coded
+!
+      use Deriv, only: der6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: tmp
+      integer :: j
+!
+      real, dimension (nx) :: thdiff
+!
+      intent(in)  :: f
+      intent(out) :: df
+!
+      if (headtt) print*, 'calc_heatcond_hyper3: chi_hyper3=', chi_hyper3
+!
+      thdiff=0.
+      do j=1,3
+        call der6(f,iss,tmp,j,IGNOREDX=.true.)
+        thdiff = thdiff + chi_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
+      enddo
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
+!
+      if (lfirst.and.ldt) &
+          advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+!
+    endsubroutine calc_heatcond_hyper3_mesh
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
 !

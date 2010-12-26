@@ -124,6 +124,7 @@ module Magnetic
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
   logical :: lresi_hyper3_polar=.false.
+  logical :: lresi_hyper3_mesh=.false.
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep=.false., lresi_dust=.false., lresi_xydep=.false.
   logical :: lresi_hyper3_aniso=.false.
@@ -168,8 +169,8 @@ module Magnetic
 !
 ! Run parameters
 !
-  real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0, eta_anom=0.0
-  real :: eta_spitzer=0.
+  real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
+  real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0
   real :: z_surface=0.0
@@ -724,6 +725,7 @@ module Magnetic
       lresi_hyper2=.false.
       lresi_hyper3=.false.
       lresi_hyper3_polar=.false.
+      lresi_hyper3_mesh=.false.
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
@@ -757,6 +759,9 @@ module Magnetic
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*, 'resistivity: hyper3 curvilinear'
           lresi_hyper3_polar=.true.
+        case ('hyper3-mesh','hyper3_mesh')
+          if (lroot) print*, 'resistivity: hyper3 resolution-invariant'
+          lresi_hyper3_mesh=.true.
         case ('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
@@ -844,6 +849,9 @@ module Magnetic
         if (lresi_hyper3_polar.and.eta_hyper3==0.0) &
              call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
+        if (lresi_hyper3_mesh.and.eta_hyper3_mesh==0.0) &
+             call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_hyper3_mesh is zero!')
         if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
@@ -2351,6 +2359,18 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) &
              diffus_eta3=diffus_eta3+eta_hyper3*pi4_1/dxyz_4
+      endif
+!
+      if (lresi_hyper3_mesh) then
+        do j=1,3
+          ju=j+iaa-1
+          do i=1,3
+            call der6(f,ju,tmp1,i,IGNOREDX=.true.)
+            fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1*tmp1*dline_1(:,i)
+          enddo
+        enddo
+        if (lfirst.and.ldt) &
+             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
       endif
 !
       if (lresi_hyper3_strict) then

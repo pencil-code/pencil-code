@@ -30,7 +30,8 @@ module Viscosity
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
-  real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0, nu_shock=0.0
+  real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
+  real :: nu_hyper3_mesh=5.0, nu_shock=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
@@ -62,6 +63,7 @@ module Viscosity
   logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_polar=.false.
+  logical :: lvisc_hyper3_mesh=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
   logical :: lvisc_hyper3_nu_const_strict=.false.
@@ -159,6 +161,7 @@ module Viscosity
       lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_polar=.false.
+      lvisc_hyper3_mesh=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
       lvisc_hyper3_mu_const_strict=.false.
@@ -224,8 +227,11 @@ module Viscosity
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           lvisc_hyper3_simplified=.true.
         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
-          if (lroot) print*,'viscous force: nu_hyper/pi^4 *(Deltav)^6/Deltaq^2'
+          if (lroot) print*,'viscous force: nu_hyper3/pi^4 *(Deltav)^6/Deltaq^2'
           lvisc_hyper3_polar=.true.
+        case ('hyper3-mesh','hyper3_mesh')
+          if (lroot) print*,'viscous force: nu_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
+          lvisc_hyper3_mesh=.true.
         case ('hyper3-rho-nu-const','hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
@@ -309,6 +315,9 @@ module Viscosity
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
+        if (lvisc_hyper3_mesh.and.nu_hyper3_mesh==0.0) & 
+             call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_hyper3_mesh is zero!')
         if ( (lvisc_hyper3_rho_nu_const_aniso.or.lvisc_hyper3_nu_const_aniso).and.&
              ((nu_aniso_hyper3(1)==0. .and. nxgrid/=1 ).or. &
               (nu_aniso_hyper3(2)==0. .and. nygrid/=1 ).or. &
@@ -1057,6 +1066,27 @@ module Viscosity
           endif
           if (lfirst.and.ldt) &
                p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1/dxyz_4
+        enddo
+      endif
+!
+      if (lvisc_hyper3_mesh) then
+!
+! Following Axel's hyper3_mesh for density
+!
+        do j=1,3
+          ju=j+iuu-1
+          do i=1,3
+            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
+            p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*pi5_1*tmp3*dline_1(:,i)
+          enddo
+          if (lpencil(i_visc_heat)) then
+            if (headtt) then
+              call warning('calc_pencils_viscosity', 'viscous heating term '//&
+                   'is not implemented for lvisc_hyper3_mesh')
+            endif
+          endif
+          if (lfirst.and.ldt) &
+               advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
         enddo
       endif
 !
