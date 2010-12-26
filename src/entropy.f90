@@ -3779,6 +3779,7 @@ module Entropy
 !
       intent(in) :: p
       intent(out) :: df
+      intent(inout) :: Hmax
 !
       if (pretend_lnTT) call fatal_error('calc_heat_cool', &
           'not implemented when pretend_lnTT = T')
@@ -3835,7 +3836,7 @@ module Entropy
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) then
-        if (.not.ltau_cool_variable) then 
+        if (.not.ltau_cool_variable) then
           heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
         else
           call calc_heat_cool_variable(heat,p)
@@ -3877,14 +3878,14 @@ module Entropy
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
-    subroutine calc_heat_cool_variable(heat,p)        
+    subroutine calc_heat_cool_variable(heat,p)
 !
 ! Thermal relaxation for radially stratified global Keplerian disks
 !
       real, dimension(nx), intent(inout) :: heat
       real, dimension (nx) :: period,rr1
-      type (pencil_case) :: p
-!      
+      type (pencil_case), intent(in) :: p
+!
       if (lcartesian_coords.or.lcylindrical_coords) then
         rr1=p%rcyl_mn1
       elseif (lspherical_coords) then
@@ -4150,7 +4151,7 @@ module Entropy
         prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
         heat = heat - cool*prof*(cs2mxy(l1:l2,m)-prof1*cs2mx(l1:l2))
 !
-!  Latitude dependent heating/cooling (see above) plus additional cooling 
+!  Latitude dependent heating/cooling (see above) plus additional cooling
 !  layer on top.
 !
       case ('shell+latheat')
