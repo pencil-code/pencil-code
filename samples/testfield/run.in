@@ -2,6 +2,7 @@
   cvsid='$Id$',
   nt=10, it1=3, cdtv=.3 isave=0, itorder=3
   dsnap=2., d2davg=2., dvid=200., ialive=1
+  dt=.077106  !(to reproduce old data, after having added kinematic u to timestep constraint)
 /
 &hydro_run_pars
   kinematic_flow='poshel-roberts'
