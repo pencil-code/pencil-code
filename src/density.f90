@@ -1767,8 +1767,11 @@ module Density
 !
 !  Mesh-hyperdiffusion. The parameter diffrho_hyper3_mesh has currently the
 !  unit of velocity and should later be changed to maxadvec (to be checked as
-!  disgnostics). A good value for diffrho_hyper3_mesh is 5 (which is currently
+!  diagnostics). A good value for diffrho_hyper3_mesh is 5 (which is currently
 !  the default). This method should also work in all coordinate systems.
+!
+!WL: Why should diffrho_hyper3_mesh be 5? An explanation should go in the manual. 
+!
 !
       if (ldiff_hyper3_mesh) then
         do j=1,3
@@ -1777,8 +1780,9 @@ module Density
           fdiff = fdiff + diffrho_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
         enddo
         if (lfirst.and.ldt) &
-            advec_lnrho=diffrho_hyper3_mesh*pi5_1*dx_1(l1:l2)
-        if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
+            advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+        if (headtt) print*,'dlnrho_dt: diffrho_hyper3_mesh=', &
+             diffrho_hyper3_mesh
       endif
 !
       if (ldiff_hyper3_aniso) then
