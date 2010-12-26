@@ -955,7 +955,7 @@ module Dustdensity
 !
       real, dimension (nx) :: tmp,fcloud_tmp, Imr
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (nx,ndustspec) :: dndr_tmp,cion
+      real, dimension (nx,ndustspec) :: dndr_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
 !      logical :: zero_ppsf=.false.
       integer :: i,k,mm,nn
@@ -2139,7 +2139,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp, ff_tmp0
-      integer :: k, i, i1=1,i2=2,i3=3, ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
+      integer :: k, i1=1,i2=2,i3=3
+      integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
 !
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
