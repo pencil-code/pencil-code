@@ -1594,7 +1594,7 @@ module Density
       real                   :: ptlaw,cp1,rmid,lat,g0
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: i,ics2
-      logical                :: lheader,lenergy,lpresent_zed
+      logical                :: lheader,lpresent_zed
 !
       real, dimension(nx,3)  :: gpotself
       real, dimension(nx)    :: usg
@@ -1602,8 +1602,6 @@ module Density
       if (lroot) print*,&
            'local isothermal_density: locally isothermal approximation'
       if (lroot) print*,'Radial stratification with power law=',plaw
-!
-      lenergy=ltemperature.or.lentropy
 !
 !  Set the sound speed
 !
@@ -1770,13 +1768,11 @@ module Density
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
       integer                :: i,ics2
-      logical                :: lheader,lenergy
+      logical                :: lheader
       real                   :: cp1,ptlaw
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
-!
-      lenergy=ltemperature.or.lentropy
 !
       do m=m1,m2
         do n=n1,n2

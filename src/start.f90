@@ -161,6 +161,10 @@ program start
 !
   headtt=lroot
 !
+!  Define the lenergy logical
+!
+  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+!
 !  Initialize start time.
 !
   t=tstart

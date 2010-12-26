@@ -255,13 +255,11 @@ module InitialCondition
       real                   :: rmid,lat
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: ics2
-      logical                :: lheader,lenergy,lpresent_zed
+      logical                :: lheader,lpresent_zed
 !
       if (lroot) print*,&
            'initial_condition_lnrho: locally isothermal approximation'
       if (lroot) print*,'Radial stratification with power law=',plaw
-!
-      lenergy=ltemperature.or.lentropy
 !
       if (lenergy.and.llocal_iso) then
         if (lroot) then
@@ -471,13 +469,11 @@ module InitialCondition
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
       integer                :: i,ics2
-      logical                :: lheader,lenergy
+      logical                :: lheader
       real :: ptlaw
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
-!
-      lenergy=ltemperature.or.lentropy
 !
       do m=m1,m2
       do n=n1,n2
@@ -736,14 +732,11 @@ module InitialCondition
       real :: cp1,ptlaw
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
-      logical :: lenergy
 !
       intent(in)  :: ptlaw
       intent(out) :: f
 !
 !  Break if llocal_iso is used with entropy or temperature
-!
-      lenergy=ltemperature.or.lentropy
 !
       if (lenergy.and.llocal_iso) &
            call fatal_error('set_thermodynamical_quantities','You are '//&

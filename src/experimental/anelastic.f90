@@ -1062,13 +1062,11 @@ module Density
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
       integer                :: i,ics2
-      logical                :: lheader,lenergy
+      logical                :: lheader
       real                   :: cp1,ptlaw
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
-!
-      lenergy=ltemperature.or.lentropy
 !
       do m=m1,m2
         do n=n1,n2
