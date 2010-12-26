@@ -146,6 +146,10 @@ program run
   call register_modules()
   if (lparticles) call particles_register_modules()
 !
+!  Define the lenergy logical
+!
+  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+!
 !  Inform about verbose level.
 !
   if (lroot) print*, 'The verbose level is ip=', ip, ' (ldebug=', ldebug, ')'
