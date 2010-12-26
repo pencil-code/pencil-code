@@ -43,7 +43,7 @@ module Magnetic_meanfield
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
-  real :: alpha_eps=0.0
+  real :: alpha_eps=0.0, z_surface=0.
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
@@ -73,6 +73,7 @@ module Magnetic_meanfield
   namelist /magnetic_mf_run_pars/ &
       alpha_effect, alpha_quenching, &
       alpha_eps, lmeanfield_noalpm, alpha_profile, &
+      z_surface, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
@@ -305,7 +306,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb,exa_meanfield
-      real :: kx,fact,z_surface=0.
+      real :: kx,fact
       integer :: i,j,ix
 !
       intent(inout) :: f,p

@@ -173,7 +173,6 @@ module Magnetic
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0
-  real :: z_surface=0.0
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: alphaSSm=0.0
@@ -207,7 +206,7 @@ module Magnetic
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
       B_ext, omega_Bz_ext, u0_advec, nu_ni, &
       hall_term, lmeanfield_theory, &
-      z_surface, eta_hyper3_mesh, &
+      eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
       lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
