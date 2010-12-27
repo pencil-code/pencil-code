@@ -743,9 +743,30 @@ module Boundcond
               case ('ovr')
                 ! BCZ_DOC: set boundary value
                 call bc_overshoot_z(f,fbcz12,topbot,j)
+              case ('inf')
+                ! BCZ_DOC: allow inflow, but no outflow
+                call bc_inflow_z(f,topbot,j)
               case ('ouf')
-                ! BCZ_DOC: allow outflow, but no inflow (experimental)
+                ! BCZ_DOC: allow outflow, but no inflow
                 call bc_outflow_z(f,topbot,j)
+              case ('in')
+                ! BCZ_DOC: allow inflow, but no outflow
+                ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+                call bc_inflow_z(f,topbot,j,.true.)
+              case ('out')
+                ! BCZ_DOC: allow outflow, but no inflow
+                ! BCZ_DOC: forces ghost cells and boundary to not point inwards
+                call bc_outflow_z(f,topbot,j,.true.)
+              case ('in0')
+                ! BCZ_DOC: allow inflow, but no outflow
+                ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+                ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
+                call bc_inflow_zero_deriv_z(f,topbot,j)
+              case ('ou0')
+                ! BCZ_DOC: allow outflow, but no inflow
+                ! BCZ_DOC: forces ghost cells and boundary to not point inwards
+                ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
+                call bc_outflow_zero_deriv_z(f,topbot,j)
               case ('ubs')
                 ! BCZ_DOC: symmetric outflow, 
                 ! but match boundary inflow (experimental)
@@ -4754,20 +4775,95 @@ module Boundcond
 !
     endsubroutine bc_zero_z
 !***********************************************************************
-    subroutine bc_outflow_z(f,topbot,j)
+    subroutine bc_inflow_z(f,topbot,j,lforce_ghost)
+!
+!  Inflow boundary conditions.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to 'a'.
+!  If 'lforce_ghost' is true, the boundary and ghost cell values are forced
+!  to not point outwards. Otherwise the boundary value is forced to be 0.
+!
+!  25-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_z'
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+      logical, optional :: lforce_ghost
+!
+      integer :: i, ix, iy
+      logical :: lforce
+!
+      lforce = .false.
+      if (present (lforce_ghost)) lforce = lforce_ghost
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do iy=1,my; do ix=1,mx
+          if (f(ix,iy,n1,j)>0.0) then  ! 's'
+            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
+            f(ix,iy,n1,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(ix,iy,n1-i,j) < 0.0) f(ix,iy,n1-i,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do iy=1,my; do ix=1,mx
+          if (f(ix,iy,n2,j)<0.0) then  ! 's'
+            do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(ix,iy,n2+i,j)=-f(ix,iy,n2-i,j); enddo
+            f(ix,iy,n2,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(ix,iy,n2+i,j) > 0.0) f(ix,iy,n2+i,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_inflow_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_inflow_z
+!***********************************************************************
+    subroutine bc_outflow_z(f,topbot,j,lforce_ghost)
 !
 !  Outflow boundary conditions.
 !
 !  If the velocity vector points out of the box, the velocity boundary
 !  condition is set to 's', otherwise it is set to 'a'.
+!  If 'lforce_ghost' is true, the boundary and ghost cell values are forced
+!  to not point inwards. Otherwise the boundary value is forced to be 0.
 !
 !  12-aug-2007/anders: implemented
+!  25-dec-2010/Bourdin.KIS: added forcing of boundary and ghost cell values
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
+      logical, optional :: lforce_ghost
 !
       integer :: i, ix, iy
+      logical :: lforce
+!
+      lforce = .false.
+      if (present (lforce_ghost)) lforce = lforce_ghost
 !
       select case (topbot)
 !
@@ -4781,6 +4877,11 @@ module Boundcond
             do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
             f(ix,iy,n1,j)=0.0
           endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(ix,iy,n1-i,j) > 0.0) f(ix,iy,n1-i,j) = 0.0
+            enddo
+          endif
         enddo; enddo
 !
 !  Top boundary.
@@ -4793,6 +4894,11 @@ module Boundcond
             do i=1,nghost; f(ix,iy,n2+i,j)=-f(ix,iy,n2-i,j); enddo
             f(ix,iy,n2,j)=0.0
           endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(ix,iy,n2+i,j) < 0.0) f(ix,iy,n2+i,j) = 0.0
+            enddo
+          endif
         enddo; enddo
 !
 !  Default.
@@ -4803,6 +4909,140 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_z
+!***********************************************************************
+    subroutine bc_inflow_zero_deriv_z(f,topbot,j)
+!
+!  Inflow boundary condition, tries to create zero 1st derivative at boundary.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to relax to zero derivative.
+!  The boundary and ghost cell values are forced to not point outwards.
+!
+!  27-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_const_deriv_z'
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, ix, iy, num
+!
+      select case (topbot)
+!
+      ! bottom boundary
+      case ('bot')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition
+            do i = 1, nghost
+              f(ix,iy,n1-i,j) = f(ix,iy,n1+i,j)
+            enddo
+            ! force inflow
+            num = 0
+            do i = 0, nghost
+              if (f(ix,iy,n1-i,j) < 0.0) then
+                f(ix,iy,n1-i,j) = 0.0
+                if (i > 0) num = num + 1
+              endif
+            enddo
+            ! special case for strong outflows, avoids asymmetric shape
+            if ((f(ix,iy,n1,j) > 0.0) .and. (num == 3)) f(ix,iy,n1,j) = 0.0
+          enddo
+        enddo
+!
+      ! top boundary
+      case ('top')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition
+            do i = 1, nghost
+              f(ix,iy,n2+i,j) = f(ix,iy,n2-i,j)
+            enddo
+            ! force inflow
+            num = 0
+            do i = 0, nghost
+              if (f(ix,iy,n2+i,j) > 0.0) then
+                f(ix,iy,n2+i,j) = 0.0
+                if (i > 0) num = num + 1
+              endif
+            enddo
+            ! special case for strong outflows, avoids asymmetric shape
+            if ((f(ix,iy,n2,j) < 0.0) .and. (num == 3)) f(ix,iy,n2,j) = 0.0
+          enddo
+        enddo
+!
+      case default
+        print*, "bc_inflow_zero_deriv_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_inflow_zero_deriv_z
+!***********************************************************************
+    subroutine bc_outflow_zero_deriv_z(f,topbot,j)
+!
+!  Outflow boundary condition, tries to create zero 1st derivative at boundary.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to relax to zero derivative.
+!  The boundary and ghost cell values are forced to not point inwards.
+!
+!  27-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_z'
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, ix, iy, num
+!
+      select case (topbot)
+!
+      ! bottom boundary
+      case ('bot')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition
+            do i = 1, nghost
+              f(ix,iy,n1-i,j) = f(ix,iy,n1+i,j)
+            enddo
+            ! force outflow
+            num = 0
+            do i = 0, nghost
+              if (f(ix,iy,n1-i,j) > 0.0) then
+                f(ix,iy,n1-i,j) = 0.0
+                if (i > 0) num = num + 1
+              endif
+            enddo
+            ! special case against strong inflows, avoids asymmetric shape
+            if ((f(ix,iy,n1,j) < 0.0) .and. (num == 3)) f(ix,iy,n1,j) = 0.0
+          enddo
+        enddo
+!
+      ! top boundary
+      case ('top')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition
+            do i = 1, nghost
+              f(ix,iy,n2+i,j) = f(ix,iy,n2-i,j)
+            enddo
+            ! force outflow
+            num = 0
+            do i = 0, nghost
+              if (f(ix,iy,n2+i,j) < 0.0) then
+                f(ix,iy,n2+i,j) = 0.0
+                if (i > 0) num = num + 1
+              endif
+            enddo
+            ! special case against strong inflows, avoids asymmetric shape
+            if ((f(ix,iy,n2,j) > 0.0) .and. (num == 3)) f(ix,iy,n2,j) = 0.0
+          enddo
+        enddo
+!
+      case default
+        print*, "bc_outflow_zero_deriv_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_outflow_zero_deriv_z
 !***********************************************************************
     subroutine bc_steady_z(f,topbot,j)
 !
