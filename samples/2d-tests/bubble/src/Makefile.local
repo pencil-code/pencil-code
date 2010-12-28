@@ -9,9 +9,4 @@ HYDRO     =   hydro
 DENSITY   =   density
 ENTROPY   =   entropy
 MAGNETIC  = nomagnetic
-RADIATION = noradiation
-PSCALAR   = nopscalar
-
 GRAVITY   =   gravity_simple
-FORCING   = noforcing
-SHEAR     = noshear
