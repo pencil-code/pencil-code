@@ -202,23 +202,25 @@ module Testfield
       cz=cos(ktestfield_z*(z(n1:n2)+zz0))
       sz=sin(ktestfield_z*(z(n1:n2)+zz0))
 
-      c2x=cos(2*ktestfield_x*(x(l1:l2)+xx0))
-      c2z=cos(2*ktestfield_z*(z(n1:n2)+zz0))
+      !c2x=cos(2*ktestfield_x*(x(l1:l2)+xx0))
+      !c2z=cos(2*ktestfield_z*(z(n1:n2)+zz0))
 
-      cx1=1/cx
-      cz1=1/cz
+      cx1=1./cx
+      cz1=1./cz
 
       do i=1,nx
       do j=1,nz
-        Minv(i,j,1,:) = (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx(i)*cz1(j), sz(j)*cx1(i) /)
-        Minv(i,j,2,:) = (/                     -sx(i)*cz1(j), cx(i)*cz1(j),            0 /)
-        Minv(i,j,3,:) = (/                     -sz(j)*cx1(i),            0, cz(j)*cx1(i) /) 
+
+!        Minv(i,j,1,:) = (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
+        Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
+        Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /)
+        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /) 
 !
-!        Minv(i,j,:,:) = RESHAPE (  (/  &
-!                                     (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j), sx(i)*cz1(j), sz(j)*cx1(i) /), &
-!                                     (/                     -sx(i)*cz1(j), cx(i)*cz1(j),            0 /), &
-!                                     (/                     -sz(j)*cx1(i),            0, cz(j)*cx1(i) /) &
-!                                   /), (/3,3/), ORDER=(/ 2, 1 /))
+!        Minv(i,j,:,:) = RESHAPE((/  &
+!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),		 sz(j)*cx1(i) /),&
+!                                  (/		   -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,		   0. /),&
+!                                  (/		   -sz(j)*cx1(i)/ktestfield_z,  		0., cz(j)*cx1(i)/ktestfield_z /) &
+!                                /), (/3,3/), ORDER=(/ 2, 1 /))
       enddo
       enddo
 !
@@ -230,7 +232,7 @@ module Testfield
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
         write(1,'(a,i2)') 'itestfield=',itestfield
-        write(1,'(a,f3.0)') 'ktestfield_x,z=', ktestfield_x, ktestfield_z
+        write(1,'(a,2(f3.0))') 'ktestfield_x,z=', ktestfield_x, ktestfield_z
         close(1)
       endif
 !
@@ -598,7 +600,7 @@ module Testfield
 !
     allocate(temp_array(nx,nz,count))
 !
-    select case (itestfield)
+     select case (itestfield)
     case (1)
 
       do n=1,nz
@@ -1366,7 +1368,6 @@ module Testfield
 !
 ! 2d-dependences
 !
-    needed2d_2d=.false.
     twod_need_2d=.false.
 !
     if (idiag_alp11xz/=0) &
@@ -1427,11 +1428,10 @@ module Testfield
     if (idiag_eta332xz/=0) &
         twod_need_2d(27)=.true.
 !
-    if (any(twod_need_2d)) needed2d_2d=.true.
+    needed2d_2d = any(twod_need_2d)
 !
 !  2d dependencies of 0 or 1-d averages
 !
-    needed2d_1d=.false.
     twod_need_1d=.false.
 !
     if (idiag_alp11/=0) &
@@ -1492,7 +1492,7 @@ module Testfield
     if (idiag_eta332/=0) &
         twod_need_1d(27)=.true.
 !
-    if (any(twod_need_1d)) needed2d_1d=.true.
+    needed2d_1d=any(twod_need_1d)
 !
   endsubroutine diagnos_interdep
 !***********************************************************************
