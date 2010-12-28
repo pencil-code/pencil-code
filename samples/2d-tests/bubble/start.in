@@ -7,8 +7,8 @@
   cvsid='$Id$',
   lwrite_ic = T,              ! write the initial condition VAR0
   lwrite_2d = T,              ! write 2-D snapshots
-  xyz0  = -1., -1., 0.,       ! first corner of box
-  xyz1  =  1.,  1., 1.,       ! second corner of box
+  xyz0  = -1., 0., 0.,        ! first corner of box
+  xyz1  =  1., 0., 1.,        ! second corner of box
   lperi =  T ,  T ,  F,       ! periodic direction?
   bcz   = 's','s','a','hs','hs'  ! (ux,uy,uz,lnrho,ss)
 /
