@@ -2832,7 +2832,7 @@ module Special
       allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
       allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
 !
-      if (ierr>0) call stop_it_if_any(.true.,'uu_driver: '// &
+      if (ierr>0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
           'Could not allocate memory for all variable, please check')
 !
 !  Read the time table
