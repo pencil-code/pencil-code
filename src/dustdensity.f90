@@ -1677,12 +1677,20 @@ module Dustdensity
                 deltavd_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
               elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
                 deltavd_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
+              else
+                deltavd_turbu=0.
+                call fatal_error('coag_kernel','This should never happen')
               endif
             endif
 !
 !  Add all speed contributions quadratically
 !
-            deltavd = sqrt(deltavd_drift**2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
+!  28-dec-10/bing: what is the default value of deltavd_therm?
+!                  if ldeltavd_thermal=F then the variable is not set.
+            
+            call fatal_error('COAG_KERNEL','deltavd_therm may be used unitialized please check')
+            deltavd = sqrt(deltavd_drift**2+deltavd_therm**2+ &
+                deltavd_turbu**2+deltavd_imposed**2)
 !
 !  Stick only when relative speed is below sticking speed
 !
