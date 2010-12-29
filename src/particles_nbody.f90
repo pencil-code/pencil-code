@@ -1140,6 +1140,7 @@ module Particles_nbody
       elseif (coord_system=='spherical') then
         call stop_it("integrate_selfgravity: "//&
              " not yet implemented for spherical polars")
+        dqx=0.;dqy=0.;dqz=0.
       else
         call fatal_error("integrate_selfgravity: ",&
             "wrong coord_system")
