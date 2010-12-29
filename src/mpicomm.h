@@ -31,7 +31,7 @@
   public :: transp, transp_xy, transp_xy_other, transp_other
   public :: transp_xz, transp_zx
 
-  public :: communicate_bc_aa_pot, fill_zghostzones_3vec
+  public :: communicate_vect_field_ghosts, fill_zghostzones_3vec
 
   public :: distribute_to_pencil_xy, collect_from_pencil_xy
   public :: remap_to_pencil_x, unmap_from_pencil_x

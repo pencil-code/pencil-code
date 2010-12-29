@@ -1327,7 +1327,7 @@ module Mpicomm
 !
     endsubroutine fill_zghostzones_3vec
 !***********************************************************************
-    subroutine communicate_bc_aa_pot(f,topbot)
+    subroutine communicate_vect_field_ghosts(f,topbot,start_index)
 !
 !  Helper routine for bc_aa_pot in Magnetic.
 !  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
@@ -1336,8 +1336,13 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
+      integer, optional :: start_index
 !
-      integer :: nn1,nn2
+      integer :: nn1,nn2,is,ie
+!
+      is = iax
+      if (present (start_index)) is = start_index
+      ie = is + 2
 !
       nn1=-1
       nn2=-1
@@ -1345,21 +1350,21 @@ module Mpicomm
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
-        case default; call stop_it("communicate_bc_aa_pot: "//topbot//&
+        case default; call stop_it("communicate_vect_field_ghosts: "//topbot//&
                                    " should be either `top' or `bot'")
       end select
 !
 !  Periodic boundaries in y
 !
-      f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = f(l1:l2,m2i:m2 ,nn1:nn2,iax:iaz)
-      f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = f(l1:l2, m1:m1i,nn1:nn2,iax:iaz)
+      f(l1:l2,   1:m1-1,nn1:nn2,is:ie) = f(l1:l2,m2i:m2 ,nn1:nn2,is:ie)
+      f(l1:l2,m2+1:my  ,nn1:nn2,is:ie) = f(l1:l2, m1:m1i,nn1:nn2,is:ie)
 !
 !  Periodic boundaries in x
 !
-      f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
-      f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
+      f(   1:l1-1,:,nn1:nn2,is:ie) = f(l2i:l2 ,:,nn1:nn2,is:ie)
+      f(l2+1:mx  ,:,nn1:nn2,is:ie) = f( l1:l1i,:,nn1:nn2,is:ie)
 !
-    endsubroutine communicate_bc_aa_pot
+    endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out)
 !

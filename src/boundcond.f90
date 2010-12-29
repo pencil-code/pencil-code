@@ -4177,19 +4177,27 @@ module Boundcond
 !  25-jul-10/Bourdin.KIS: parallelized
 !
       use Fourier, only : field_extrapol_z_parallel
-      use Mpicomm, only : mpisend_real, mpirecv_real
+      use Mpicomm, only : mpisend_real, mpirecv_real, mpibcast_logical
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, save :: t_l=0., t_r=0., delta_t=0.
       integer :: ierr, lend, frame, stat, rec_l, rec_r
+      integer :: rec_vxl, rec_vxr, rec_vyl, rec_vyr ! l- and r-record position if file
       integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
       integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
-      integer :: py, partner
+      integer :: px, py, partner
       integer, parameter :: tag_l=208, tag_r=209, tag_dt=210
+      logical, save :: luse_vel_field = .false., first_run = .true.
       logical :: ex
 !
+      ! temporal storage for frames before (l) and after (r) current time step:
       real, dimension (:,:), allocatable, save :: Bz0_l, Bz0_r
-      real, dimension (:,:), allocatable :: Bz0 ! current magnetic field z-component
+      real, dimension (:,:), allocatable, save :: vx_l, vx_r, vy_l, vy_r
+      real, dimension (:,:), allocatable :: vx_tmp, vy_tmp
+      ! current magnetic field z-component (interpolated between l and r):
+      real, dimension (:,:), allocatable :: Bz0
+      ! current velocity x- and y-component (interpolated between l and r):
+      real, dimension (:,:), allocatable, save :: vx, vy
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact ! exponential factor
       real, dimension (:,:), allocatable :: k_2 ! wave vector length
@@ -4197,36 +4205,58 @@ module Boundcond
       real :: delta_z
       real, parameter :: reduce_factor=0.25, enhance_factor=1.0
 !
-      real :: mu0_SI,u_b,time_SI
+      real :: mu0_SI, u_b, time_SI
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
+      character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
-     if (.not. lequidist(1) .or. .not. lequidist(2)) &
-          call fatal_error('bc_force_aa_time','not yet implemented for non-equidistant grids', lfirst_proc_xy)
+      if (first_run) then
 !
-      if (mod (nygrid, nprocxy) /= 0) &
-          call fatal_error ('bc_force_aa_time', &
-              'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+        ! check for consistency:
+        if ((.not. lequidist(1)) .or. (.not. lequidist(2))) &
+            call fatal_error ('bc_force_aa_time', 'not yet implemented for non-equidistant grids', lfirst_proc_xy)
+        if (mod (nygrid, nprocxy) /= 0) &
+            call fatal_error ('bc_force_aa_time', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+        if (mod (nxgrid, nprocxy) /= 0) &
+            call fatal_error ('bc_force_aa_time', 'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-      if (mod (nxgrid, nprocxy) /= 0) &
-          call fatal_error ('bc_force_aa_time', &
-              'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+        ! check for existence of necessary driver files:
+        if (lfirst_proc_xy) then
+          inquire (file=mag_field_dat, exist=ex)
+          if (.not. ex) call fatal_error ('bc_force_aa_time', 'File does not exists: '//trim(mag_field_dat), .true.)
+          inquire (file=mag_times_dat, exist=ex)
+          if (.not. ex) call fatal_error ('bc_force_aa_time', 'File does not exists: '//trim(mag_times_dat), .true.)
+          inquire (file=mag_vel_field_dat, exist=ex)
+          if (ex) then
+            luse_vel_field = .true.
+            print *, 'bc_aa_force_time: using time dependant magnetogram _with_ corresponding horizontal velocities.'
+          else
+            print *, 'bc_aa_force_time: using time dependant magnetogram _without_ corresponding horizontal velocities.'
+          endif
+        endif
 !
-      if (lfirst_proc_xy) then
-        inquire (file=mag_field_dat,exist=ex)
-        if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: '//trim(mag_field_dat),.true.)
-        inquire (file=mag_times_dat,exist=ex)
-        if (.not. ex) call fatal_error('bc_force_aa_time','File does not exists: '//trim(mag_times_dat),.true.)
-      endif
+        call mpibcast_logical (luse_vel_field, 1)
 !
-      if (.not. allocated(Bz0_l)) then
+        ! initialization of magnetograms and velocity fields
         allocate(Bz0_l(bnx,bny),stat=stat)
         if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_l',.true.)
-      endif
-      if (.not. allocated(Bz0_r)) then
         allocate(Bz0_r(bnx,bny),stat=stat)
         if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_r',.true.)
+        allocate(vx_l(nx,ny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_l',.true.)
+        allocate(vx_r(nx,ny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_r',.true.)
+        allocate(vy_l(nx,ny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_l',.true.)
+        allocate(vy_r(nx,ny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_r',.true.)
+        allocate(vx(nx,ny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx',.true.)
+        allocate(vy(nx,ny),stat=stat)
+        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy',.true.)
+        first_run = .false.
+!
       endif
 !
       allocate(Bz0(bnx,bny),stat=stat)
@@ -4239,7 +4269,7 @@ module Boundcond
         if (lfirst_proc_xy) then
           ! read and distribute Bz data (in pencil shape)
 !
-          inquire(IOLENGTH=lend) t_l
+          inquire (IOLENGTH=lend) t_l
           open (10,file=mag_times_dat,form='unformatted',status='unknown', &
               recl=lend,access='direct')
 !
@@ -4259,10 +4289,66 @@ module Boundcond
               ierr=-1
             else
               ! test, if correct time step is reached
-              if (t_l+delta_t < time_SI .and. t_r+delta_t > time_SI) ierr=-1
+              if ((t_l+delta_t < time_SI) .and. (t_r+delta_t > time_SI)) ierr = -1
             endif
           enddo
           close (10)
+!
+          if (luse_vel_field) then
+            allocate (vx_tmp(nxgrid,nygrid), stat=stat)
+            if (stat>0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for vx_tmp', .true.)
+            allocate (vy_tmp(nxgrid,nygrid), stat=stat)
+            if (stat>0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for vy_tmp', .true.)
+            open (10, file=mag_vel_field_dat, form='unformatted', status='unknown', &
+                recl=lend*nxgrid*nygrid, access='direct')
+!
+            rec_vxl = 1 + (frame-1)*nprocxy*2
+            rec_vxr = 1 + frame*nprocxy*2
+            rec_vyl = rec_vxl + frame*nprocxy
+            rec_vyr = rec_vxr + frame*nprocxy
+!
+            ! read _l data in the order of occurence in file
+            read (10,rec=rec_vxl) vx_l
+            read (10,rec=rec_vyl) vy_l
+!
+            ! send _l data to remote
+            do py = 1, nprocy
+              do px = 1, nprocx
+                partner = px + py*nprocx + ipz*nprocxy
+                if (partner == iproc) cycle
+                vx_l = vx_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
+                vy_l = vy_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
+                call mpisend_real (vx_l, (/ nx, ny /), partner, tag_l)
+                call mpisend_real (vy_l, (/ nx, ny /), partner, tag_r)
+              enddo
+            enddo
+            ! read local _l data
+            vx_l = vx_tmp(1:nprocx,1:nprocy)
+            vy_l = vy_tmp(1:nprocx,1:nprocy)
+!
+            ! read _r data in the order of occurence in file
+            read (10,rec=rec_vxr) vx_r
+            read (10,rec=rec_vyr) vy_r
+!
+            ! send _r data to remote
+            do py = 1, nprocy
+              do px = 1, nprocx
+                partner = px + py*nprocx + ipz*nprocxy
+                if (partner == iproc) cycle
+                vx_r = vx_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
+                vy_r = vy_tmp(1+(px-1)*nprocx:px*nprocx,1+(py-1)*nprocy:py*nprocy)
+                call mpisend_real (vx_r, (/ nx, ny /), partner, tag_l)
+                call mpisend_real (vy_r, (/ nx, ny /), partner, tag_r)
+              enddo
+            enddo
+            ! read local _r data
+            vx_r = vx_tmp(1:nprocx,1:nprocy)
+            vy_r = vy_tmp(1:nprocx,1:nprocy)
+!
+            close (10)
+            if (allocated (vx_tmp)) deallocate (vx_tmp)
+            if (allocated (vy_tmp)) deallocate (vy_tmp)
+          endif
 !
           open (10,file=mag_field_dat,form='unformatted',status='unknown', &
               recl=lend*bnx*bny,access='direct')
@@ -4287,6 +4373,14 @@ module Boundcond
 !
         else
 !
+          if (luse_vel_field) then
+            ! wait for vx and vy data from root processor
+            call mpirecv_real (vx_l, (/ nx, ny /), ipz*nprocxy, tag_l)
+            call mpirecv_real (vy_l, (/ nx, ny /), ipz*nprocxy, tag_r)
+            call mpirecv_real (vx_r, (/ nx, ny /), ipz*nprocxy, tag_l)
+            call mpirecv_real (vy_r, (/ nx, ny /), ipz*nprocxy, tag_r)
+          endif
+!
           ! wait for Bz data from root processor
           call mpirecv_real (Bz0_l, (/ bnx, bny /), ipz*nprocxy, tag_l)
           call mpirecv_real (Bz0_r, (/ bnx, bny /), ipz*nprocxy, tag_r)
@@ -4300,12 +4394,24 @@ module Boundcond
         mu0_SI = 4.*pi*1.e-7
         u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
-        Bz0_l = Bz0_l *  1e-4 / u_b
-        Bz0_r = Bz0_r *  1e-4 / u_b
+        Bz0_l = Bz0_l * 1e-4 / u_b
+        Bz0_r = Bz0_r * 1e-4 / u_b
+!
+        if (luse_vel_field) then
+          vx_l = vx_l / unit_velocity
+          vy_l = vy_l / unit_velocity
+          vx_r = vx_r / unit_velocity
+          vy_r = vy_r / unit_velocity
+        endif
 !
       endif
 !
-      Bz0  = (time_SI - (t_l+delta_t)) * (Bz0_r - Bz0_l) / (t_r - t_l) + Bz0_l
+      Bz0 = (time_SI - (t_l+delta_t)) * (Bz0_r - Bz0_l) / (t_r - t_l) + Bz0_l
+!
+      if (luse_vel_field) then
+        vx = (time_SI - (t_l+delta_t)) * (vx_r - vx_l) / (t_r - t_l) + vx_l
+        vy = (time_SI - (t_l+delta_t)) * (vy_r - vy_l) / (t_r - t_l) + vy_l
+      endif
 !
 !  Fourier Transform of Bz0:
 !
@@ -4339,7 +4445,8 @@ module Boundcond
       endif
 !
       call field_extrapol_z_parallel (Bz0, f(l1:l2,m1:m2,n1-nghost:n1,iax:iay), exp_fact)
-      call communicate_bc_aa_pot (f, 'bot')
+      call communicate_vect_field_ghosts (f, 'bot')
+      if (luse_vel_field) call communicate_vect_field_ghosts (f, 'bot', iux)
 !
       if (allocated(Bz0)) deallocate(Bz0)
 !
@@ -5394,7 +5501,7 @@ module Boundcond
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
-      call communicate_bc_aa_pot(f,topbot)
+      call communicate_vect_field_ghosts(f,topbot)
 !
     endsubroutine bc_aa_pot_field_extrapol
 !***********************************************************************
@@ -5515,7 +5622,7 @@ module Boundcond
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
-      call communicate_bc_aa_pot(f,topbot)
+      call communicate_vect_field_ghosts(f,topbot)
 !
 !  Deallocate large arrays.
 !
@@ -5655,7 +5762,7 @@ module Boundcond
 !
 !  The vector potential needs to be known outside of (l1:l2,m1:m2) as well
 !
-        call communicate_bc_aa_pot(f,topbot)
+        call communicate_vect_field_ghosts(f,topbot)
 !
 !  Deallocate large arrays.
 !
@@ -5743,7 +5850,7 @@ module Boundcond
         call fatal_error('bc_aa_pot', 'invalid argument', lfirst_proc_xy)
       endselect
 !
-      call communicate_bc_aa_pot(f,topbot)
+      call communicate_vect_field_ghosts(f,topbot)
 !
 !  Deallocate large arrays.
 !

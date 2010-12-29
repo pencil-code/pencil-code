@@ -3254,33 +3254,40 @@ module Mpicomm
 !
     endsubroutine transp_zx
 !***********************************************************************
-    subroutine communicate_bc_aa_pot(f,topbot)
+    subroutine communicate_vect_field_ghosts(f,topbot,start_index)
 !
-!  Helper routine for bc_aa_pot in Magnetic.
-!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!  Helper routine for communication of ghost cell values of a vector field.
+!  Needed by potential field extrapolations, which only compute nx*ny arrays.
+!  Can also be used for synchronization of changed uu values with ghost cells.
 !
 !   8-oct-2006/tobi: Coded
+!  28-dec-2010/Bourdin.KIS: extended to work for any 3D vector field data.
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
+      integer, optional :: start_index
 !
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
       real, dimension (nghost,ny+2*nghost,nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
-      integer :: nbufx,nbufy,nn1,nn2
+      integer :: nbufx,nbufy,nn1,nn2,is,ie
+!
+      is = iax
+      if (present (start_index)) is = start_index
+      ie = is + 2
 !
       nn1=-1; nn2=-1
       select case (topbot)
         case ('bot'); nn1=1;  nn2=n1
         case ('top'); nn1=n2; nn2=mz
-        case default; call stop_it_if_any(.true.,"communicate_bc_aa_pot: "//topbot//" should be either `top' or `bot'")
+        case default; call stop_it_if_any(.true.,"communicate_vect_field_ghosts: "//topbot//" should be either `top' or `bot'")
       end select
 !
 !  Periodic boundaries in y -- communicate along y if necessary
 !
       if (nprocy>1) then
 !
-        lbufyo = f(l1:l2, m1:m1i,nn1:nn2,iax:iaz)
-        ubufyo = f(l1:l2,m2i:m2 ,nn1:nn2,iax:iaz)
+        lbufyo = f(l1:l2, m1:m1i,nn1:nn2,is:ie)
+        ubufyo = f(l1:l2,m2i:m2 ,nn1:nn2,is:ie)
 !
         nbufy=nx*nghost*(nghost+1)*3
 !
@@ -3296,16 +3303,16 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
 !
-        f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = lbufyi
-        f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = ubufyi
+        f(l1:l2,   1:m1-1,nn1:nn2,is:ie) = lbufyi
+        f(l1:l2,m2+1:my  ,nn1:nn2,is:ie) = ubufyi
 !
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
 !
       else
 !
-        f(l1:l2,   1:m1-1,nn1:nn2,iax:iaz) = f(l1:l2,m2i:m2 ,nn1:nn2,iax:iaz)
-        f(l1:l2,m2+1:my  ,nn1:nn2,iax:iaz) = f(l1:l2, m1:m1i,nn1:nn2,iax:iaz)
+        f(l1:l2,   1:m1-1,nn1:nn2,is:ie) = f(l1:l2,m2i:m2 ,nn1:nn2,is:ie)
+        f(l1:l2,m2+1:my  ,nn1:nn2,is:ie) = f(l1:l2, m1:m1i,nn1:nn2,is:ie)
 !
       endif
 !
@@ -3313,8 +3320,8 @@ module Mpicomm
 !
       if (nprocx>1) then
 !
-        lbufxo = f( l1:l1i,:,nn1:nn2,iax:iaz)
-        ubufxo = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
+        lbufxo = f( l1:l1i,:,nn1:nn2,is:ie)
+        ubufxo = f(l2i:l2 ,:,nn1:nn2,is:ie)
 !
         nbufx=nghost*(ny+2*nghost)*(nghost+1)*3
 !
@@ -3330,20 +3337,20 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
 !
-        f(   1:l1-1,:,nn1:nn2,iax:iaz) = lbufxi
-        f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = ubufxi
+        f(   1:l1-1,:,nn1:nn2,is:ie) = lbufxi
+        f(l2+1:mx  ,:,nn1:nn2,is:ie) = ubufxi
 !
         call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
 !
       else
 !
-        f(   1:l1-1,:,nn1:nn2,iax:iaz) = f(l2i:l2 ,:,nn1:nn2,iax:iaz)
-        f(l2+1:mx  ,:,nn1:nn2,iax:iaz) = f( l1:l1i,:,nn1:nn2,iax:iaz)
+        f(   1:l1-1,:,nn1:nn2,is:ie) = f(l2i:l2 ,:,nn1:nn2,is:ie)
+        f(l2+1:mx  ,:,nn1:nn2,is:ie) = f( l1:l1i,:,nn1:nn2,is:ie)
 !
       endif
 !
-    endsubroutine communicate_bc_aa_pot
+    endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
     subroutine fill_zghostzones_3vec(vec,ivar)
 !
