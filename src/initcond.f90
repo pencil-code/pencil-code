@@ -2866,10 +2866,10 @@ module Initcond
 !  check whether vector or scalar
 !
           if (i1==i2) then
-            if (lroot) print*,'htube2: set scalar'
+            if (lroot .and. n==n1 .and. m==m1) print*,'htube2: set scalar'
             f(l1:l2,m,n,i1)=tmp
           elseif (i1+2==i2) then
-            if (lroot) print*,'htube2: set vector'
+            if (lroot .and. n==n1 .and. m==m1) print*,'htube2: set vector'
             f(l1:l2,m,n,i1 )=+z(n)*tmp
             f(l1:l2,m,n,i1+1)=0.
             f(l1:l2,m,n,i1+2)=-x(l1:l2)*tmp
@@ -3860,11 +3860,13 @@ module Initcond
             call fourier_transform(u_re,u_im,linv=.true.)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
 !
-            if (lroot .and. (cutoff==0)) then
-              print*,'powern: k^',initpower,' spectrum : var  i=',i
-            else
-              print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
-                     initpower,', k0 =',cutoff,' : var  i=',i
+            if (lroot) then 
+              if (cutoff==0) then
+                print*,'powern: k^',initpower,' spectrum : var  i=',i
+              else
+                print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
+                    initpower,', k0 =',cutoff,' : var  i=',i
+              endif
             endif
           enddo !i
         endif !(initpower/=2.).or.(cutoff/=0.)
@@ -3976,11 +3978,13 @@ module Initcond
           ! back to real space
           call fourier_transform(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
-          if (lroot .and. (cutoff==0)) then
-            print*,'powern: k^',initpower,' spectrum : var  i=',i
-          else
-            print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
-                   initpower,', k0 =',cutoff,' : var  i=',i
+          if (lroot) then
+            if (cutoff==0) then
+              print*,'powern: k^',initpower,' spectrum : var  i=',i
+            else
+              print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
+                  initpower,', k0 =',cutoff,' : var  i=',i
+            endif
           endif
         enddo !i
 !
