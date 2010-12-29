@@ -483,6 +483,7 @@ module Particles_radius
                 if (lroot) print*, 'dap_dt_condensation_pencil: '// &
                     'invalid condensation coefficient type'
                 call fatal_error('dap_dt_condensation_pencil','')
+                 alpha_cond_par=0.
             endselect
 !
 !  Radius increase by condensation or decrease by evaporation.
