@@ -1660,8 +1660,16 @@ module Dustdensity
 !
 !  Relative thermal speed is only important for very light particles
 !
-            if (ldeltavd_thermal) deltavd_therm = &
+            if (ldeltavd_thermal) then
+              deltavd_therm = &
                 sqrt( 8*k_B/(pi*TT1(l))*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
+            else
+!  28-dec-10/bing: what is the default value of deltavd_therm?
+!                  if ldeltavd_thermal=F then the variable is not set.
+            
+              call fatal_error('COAG_KERNEL', &
+                  'deltavd_therm may be used unitialized please check')
+            endif
 !
 !  Relative turbulent speed depends on stopping time regimes
 !
@@ -1685,10 +1693,6 @@ module Dustdensity
 !
 !  Add all speed contributions quadratically
 !
-!  28-dec-10/bing: what is the default value of deltavd_therm?
-!                  if ldeltavd_thermal=F then the variable is not set.
-            
-            call fatal_error('COAG_KERNEL','deltavd_therm may be used unitialized please check')
             deltavd = sqrt(deltavd_drift**2+deltavd_therm**2+ &
                 deltavd_turbu**2+deltavd_imposed**2)
 !
