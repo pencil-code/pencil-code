@@ -2747,7 +2747,7 @@ module Entropy
 !  Compute volume average of entropy.
 !
       if (lcalc_ss_volaverage) then
-        ss_volaverage_tmp=sum(f(l1:l2,m1:m2,n,iss))/nwgrid
+        ss_volaverage_tmp=sum(f(l1:l2,m1:m2,n1:n2,iss))/nwgrid
         call mpiallreduce_sum(ss_volaverage_tmp,ss_volaverage)
       endif
 !
