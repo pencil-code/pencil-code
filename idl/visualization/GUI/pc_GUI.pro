@@ -80,12 +80,12 @@ if (not pc_GUI_loaded) then BEGIN
 	pc_units, obj=unit
 
 	procdir = datadir+"/proc0/"
-	file_struct = file_info (procdir+"var.dat")
+	file_struct = file_info (procdir+varfile)
 	if (file_struct.exists eq 0) then begin
 		procdir = datadir+"/allprocs/"
-		file_struct = file_info (procdir+"var.dat")
+		file_struct = file_info (procdir+varfile)
 		if (file_struct.exists eq 0) then begin
-			print, "No 'var.dat' file found."
+			print, "No '"+varfile+"' file found."
 			stop
 		endif
 	endif
