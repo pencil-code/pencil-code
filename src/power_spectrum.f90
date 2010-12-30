@@ -1244,7 +1244,6 @@ endsubroutine pdf
       use Mpicomm, only: stop_it, z2x
       use Fourier, only: fourier_transform_real_1
 !
-  integer, parameter :: nk=nz/2
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1
@@ -1358,7 +1357,6 @@ endsubroutine pdf
     use Mpicomm, only: z2x, stop_it
     use Sub, only: curli
 !
-  integer, parameter :: nk=nz/2
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
