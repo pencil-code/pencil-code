@@ -72,7 +72,18 @@
   \var{div}       & set the divergence of $\uv$ to a given value
                     use bc = 'div' for iuz \\
   \var{ovr}       & set boundary value \\
-  \var{ouf}       & allow outflow, but no inflow (experimental) \\
+  \var{inf}       & allow inflow, but no outflow \\
+  \var{ouf}       & allow outflow, but no inflow \\
+  \var{in}        & allow inflow, but no outflow
+                    forces ghost cells and boundary to not point outwards \\
+  \var{out}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards \\
+  \var{in0}       & allow inflow, but no outflow
+                    forces ghost cells and boundary to not point outwards
+                    relaxes to vanishing 1st derivative at boundary \\
+  \var{ou0}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards
+                    relaxes to vanishing 1st derivative at boundary \\
   \var{ubs}       & symmetric outflow, \\
   \var{win}       & forces massflux given as
                     $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$ \\

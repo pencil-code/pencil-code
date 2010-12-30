@@ -9002,6 +9002,81 @@ horizontal sections for time $t=50$.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
+\subsection{Magnetic helicity in the shearing sheet}
+
+To test magnetic helicity evolution in the shearing shear, we can choose
+as initial condition \code{initaa='Beltrami-y'} with \code{amplaa=1.}
+in \code{magnetic_init_pars} together with \code{Sshear=-1.} in
+\code{shear_run_pars}.
+
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.75\textwidth,height=0.65\textheight,keepaspectratio]%
+    {pcomp}
+  \caption{Wind-up of the magnetic field leads to a linear increase
+    in the rms magnetic field strength until Ohmic diffusion begins
+    to become important (top panel).
+    During this time the magnetic helicity is conserved.
+    With Ohmic diffusion, the decay of $\langle\Av\cdot\Bv\rangle$
+    is well described by integrating $-2\eta\langle\Jv\cdot\Bv\rangle$
+    (indicated by ``from rhs'' in the second panel).
+  }
+  \label{Fig-pcomp}
+\end{figure}
+
+Thus, in \file{src/Makefile.local} we just use
+\begin{verbatim}
+  MAGNETIC=magnetic
+  HYDRO=nohydro
+  EOS=noeos
+  DENSITY=nodensity
+  SHEAR=shear
+  VISCOSITY=noviscosity
+\end{verbatim}
+and put
+\begin{verbatim}
+&init_pars
+  cvsid='$Id$',
+/
+&magnetic_init_pars
+  initaa='Beltrami-y', amplaa=1.
+/
+&shear_init_pars
+/
+\end{verbatim}
+in \file{start.in} and, for example,
+\begin{verbatim}
+&run_pars
+  cvsid='$Id$'
+  nt=150000, it1=10, cdt=0.9, isave=50, itorder=3
+  dsnap=100. dvid=5., ialive=1
+/
+&magnetic_run_pars
+  eta=0.
+/
+&shear_run_pars
+  Sshear=-1.
+/
+\end{verbatim}
+in \file{run.in}.
+The output includes, among other things
+\begin{verbatim}
+  arms(f10.7)
+  brms(f12.7)
+  jrms(f14.7)
+  abm(f14.11)
+  jbm(f14.7)
+\end{verbatim}
+
+The result is shown in Figure~\ref{Fig-pcomp}, where we show the
+wind-up of the magnetic field, which leads to a linear increase
+in the rms magnetic field strength until Ohmic diffusion begins
+to become important (top panel).
+During this time the magnetic helicity is conserved.
+With Ohmic diffusion, the decay of $\langle\Av\cdot\Bv\rangle$
+is well described by integrating $-2\eta\langle\Jv\cdot\Bv\rangle$
+(indicated by ``from rhs'' in the second panel).
 
 % ====================================================================== %
 
