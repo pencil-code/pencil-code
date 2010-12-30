@@ -35,7 +35,7 @@ module Particles_collisions
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
   logical :: ltauc_from_tauf=.false.
-  character (len=labellen) :: icoll='random-angle'
+  character (len=labellen) :: icoll='big-ball'
 !
   integer :: idiag_ncollpm=0, idiag_npartpm=0
 !
