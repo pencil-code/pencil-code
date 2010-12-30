@@ -173,7 +173,7 @@ contains
       real :: dummy
       integer :: lend,ierr
       integer :: i,j
-      integer, parameter :: unit=12,lnrho_tag=368,lnTT_tag=369
+      integer, parameter :: unit=12
 !
 ! file location settings
       character (len=*), parameter :: lnrho_dat = 'prof_lnrho.dat'
