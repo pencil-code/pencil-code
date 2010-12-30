@@ -5185,7 +5185,7 @@ module Entropy
 !
 !  Luminosity and gravity radial profiles.
 !
-    lumi(1)=0. ; g(i)=0.
+    lumi(1)=0. ; g(1)=0.
     do i=2,nr
       u=r(i)/sqrt(2.)/wheat
       if (nzgrid == 1) then
