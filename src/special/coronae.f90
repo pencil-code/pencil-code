@@ -14,7 +14,7 @@
 module Special
 !
   use Cdata
-  use Messages
+  use Messages, only: fatal_error, warning, svn_id
   use Sub, only: keep_compiler_quiet, cubic_step
 !
   implicit none
@@ -131,6 +131,7 @@ module Special
     logical :: exists
 !
     call keep_compiler_quiet(f)
+    call keep_compiler_quiet(ztmp)
 !
     inquire(IOLENGTH=lend) dummy
 !
@@ -593,7 +594,8 @@ module Special
       logical, optional :: llog
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
 !
-      intent(in) :: bb,bij,gecr,ecr_ij
+      intent(in) :: bb,bij,gecr,ecr_ij,vKperp,vKpara,llog
+      intent(in) :: gvKperp,gvKpara
       intent(out) :: rhs
 !
 !  Calculate unit vector of bb.
@@ -1079,6 +1081,9 @@ module Special
         granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
       elseif  (unit_system.eq.'cgs') then
         granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
+      else
+        granr=0.
+        call fatal_error('set_driver_params','No valid unit system')
       endif
 !
 ! Fractional difference in granule power
@@ -1107,6 +1112,9 @@ module Special
         ampl=sqrt(dxdy2)/granr*0.28e4/unit_velocity
       elseif (unit_system.eq.'cgs') then
         ampl=sqrt(dxdy2)/granr*0.28e6/unit_velocity
+      else
+        ampl=0.
+        call fatal_error('set_driver_params','No valid unit system')
       endif
 !
 ! fraction of current amplitude to maximum amplitude to the beginning
@@ -1585,7 +1593,7 @@ module Special
       real :: dist0,tmp,ampl,granr
       integer :: xrange,yrange
       integer :: xpos,ypos
-      logical :: loverlapp
+!      logical :: loverlapp
 !
       xrange=xrange_arr(level)
       yrange=yrange_arr(level)
@@ -1598,7 +1606,7 @@ module Special
 !
       xpos = int(current%data(1)+ipx*nx)
 !
-      loverlapp = .false.
+!      loverlapp = .false.
 !
       do ii=xpos-xrange,xpos+xrange
 !
@@ -1641,7 +1649,7 @@ module Special
                   vx(il,jl)=vv*xdist/dist
                   vy(il,jl)=vv*ydist/dist
                   w(il,jl) =wtmp
-                  loverlapp = .true.
+!                  loverlapp = .true.
                 else
                   ! intergranular area
                   vx(il,jl)=vx(il,jl)+vv*xdist/dist
