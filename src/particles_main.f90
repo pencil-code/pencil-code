@@ -19,6 +19,7 @@ module Particles_main
   use Particles_spin
   use Particles_selfgravity
   use Particles_stalker
+  use Particles_stirring
   use Particles_sub
   use Particles_viscosity
   use Sub, only: keep_compiler_quiet
@@ -379,6 +380,10 @@ module Particles_main
 !  Discrete particle collisions.
 !
 !  13-nov-09/anders: coded
+!
+      if ( lparticles_stirring .and. (itsub==itorder) ) then
+        call particle_stirring(fp,ineargrid)
+      endif
 !
       if ( (lparticles_collisions.or.lparticles_coagulation) .and. &
           (itsub==itorder) ) then
@@ -1026,6 +1031,15 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_stirring) then
+        call read_particles_stirring_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_stirring_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
       if (lparticles_stalker) then
         call read_pstalker_run_pars(unit,iostat)
         if (present(iostat)) then
@@ -1057,6 +1071,7 @@ module Particles_main
         if (lparticles_viscosity)   print*,'&particles_visc_run_pars    /'
         if (lparticles_coagulation) print*,'&particles_coag_run_pars    /'
         if (lparticles_collisions)  print*,'&particles_coll_run_pars    /'
+        if (lparticles_stirring)    print*,'&particles_stirring_run_pars/'
         if (lparticles_stalker)     print*,'&particles_stalker_run_pars /'
         print*,'------END sample particle namelist -------'
         print*
@@ -1085,6 +1100,7 @@ module Particles_main
       if (lparticles_viscosity)   call write_particles_visc_run_pars(unit)
       if (lparticles_coagulation) call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)  call write_particles_coll_run_pars(unit)
+      if (lparticles_stirring)    call write_particles_stirring_run_pars(unit)
       if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
     endsubroutine particles_wparam2
