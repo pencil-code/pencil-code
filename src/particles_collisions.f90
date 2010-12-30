@@ -639,13 +639,13 @@ module Particles_collisions
 !
 !  Multiply unit vector by length of velocity vector.
 !
-      vvkcmnew=vvkcmnew* &
-          sqrt(vvkcm(1)**2+vvkcm(2)**2+vvkcm(3)**2)
+        vvkcmnew=vvkcmnew* &
+            sqrt(vvkcm(1)**2+vvkcm(2)**2+vvkcm(3)**2)
 !
 !  Dissipate some of the relative energy.
 !
-      if (coeff_restitution/=1.0) &
-          vvkcmnew=vvkcmnew*coeff_restitution
+        if (coeff_restitution/=1.0) &
+            vvkcmnew=vvkcmnew*coeff_restitution
 !
 !  Change velocity vectors in normal frame.
 !
