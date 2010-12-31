@@ -1032,7 +1032,7 @@ module Particles_main
       endif
 !
       if (lparticles_stirring) then
-        call read_particles_stirring_run_pars(unit,iostat)
+        call read_particles_stir_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
             call samplepar_runpars('particles_stirring_run_pars',iostat); return
@@ -1100,7 +1100,7 @@ module Particles_main
       if (lparticles_viscosity)   call write_particles_visc_run_pars(unit)
       if (lparticles_coagulation) call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)  call write_particles_coll_run_pars(unit)
-      if (lparticles_stirring)    call write_particles_stirring_run_pars(unit)
+      if (lparticles_stirring)    call write_particles_stir_run_pars(unit)
       if (lparticles_stalker)     call write_pstalker_run_pars(unit)
 !
     endsubroutine particles_wparam2

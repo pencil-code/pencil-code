@@ -37,7 +37,7 @@ module Particles_stirring
 !
     endsubroutine particle_stirring
 !***********************************************************************
-    subroutine read_particles_stirring_run_pars(unit,iostat)
+    subroutine read_particles_stir_run_pars(unit,iostat)
 !
 !  30-dec-10/anders+michiel: dummy
 !
@@ -47,9 +47,9 @@ module Particles_stirring
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_stirring_run_pars
+    endsubroutine read_particles_stir_run_pars
 !***********************************************************************
-    subroutine write_particles_stirring_run_pars(unit)
+    subroutine write_particles_stir_run_pars(unit)
 !
 !  30-dec-10/anders+michiel: dummy
 !
@@ -57,6 +57,6 @@ module Particles_stirring
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_stirring_run_pars
+    endsubroutine write_particles_stir_run_pars
 !***********************************************************************
 endmodule Particles_stirring

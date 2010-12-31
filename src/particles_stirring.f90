@@ -64,7 +64,7 @@ module Particles_stirring
 !
     endsubroutine particle_stirring
 !***********************************************************************
-    subroutine read_particles_stirring_run_pars(unit,iostat)
+    subroutine read_particles_stir_run_pars(unit,iostat)
 !
 !  Read run parameters from run.in.
 !
@@ -81,9 +81,9 @@ module Particles_stirring
 !
 99    return
 !
-    endsubroutine read_particles_stirring_run_pars
+    endsubroutine read_particles_stir_run_pars
 !***********************************************************************
-    subroutine write_particles_stirring_run_pars(unit)
+    subroutine write_particles_stir_run_pars(unit)
 !
 !  Write run parameters to param.nml.
 !
@@ -93,6 +93,6 @@ module Particles_stirring
 !
       write(unit,NML=particles_stirring_run_pars)
 !
-    endsubroutine write_particles_stirring_run_pars
+    endsubroutine write_particles_stir_run_pars
 !***********************************************************************
 endmodule Particles_stirring
