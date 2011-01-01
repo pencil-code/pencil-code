@@ -35,6 +35,7 @@ module Particles
   real, target, dimension (npar_species) :: tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
+  real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -125,7 +126,8 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
-      rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1
+      rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1, &
+      xp2, yp2, zp2, vpx2, vpy2, vpz2
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -601,6 +603,17 @@ module Particles
               fp(k,ixp)=xp1
               fp(k,iyp)=yp1
               fp(k,izp)=zp1
+            endif
+          enddo
+!
+        case ('constant-2')
+          if (lroot) &
+              print*, 'init_particles: Particle 2 at x,y,z=', xp2, yp2, zp2
+          do k=1,npar_loc
+            if (ipar(k)==2) then
+              fp(k,ixp)=xp2
+              fp(k,iyp)=yp2
+              fp(k,izp)=zp2
             endif
           enddo
 !
@@ -2440,6 +2453,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Exclude the massive nbody particles from the drag calculations
 !
             lnbody=any(ipar(k)==ipar_nbody)
+            lnbody=.false.
             if (.not.lnbody) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
