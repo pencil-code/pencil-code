@@ -3491,20 +3491,21 @@ module Entropy
 !
       if (nzgrid==1) then
         tau = 0.5*kappa*p%rho
-      else
-        call fatal_error('calc_heat_hubeny', &
-            'opacity not yet implemented for 3D')
-      endif
 !
 !  Analytical gray description of Hubeny (1990).
 !  a1 is the optically thick contribution,
 !  a3 the optically thin one.
 !
-      a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
+        a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
 !
-      cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)
+        cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)
 !
-      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
+!
+      else
+        call fatal_error('calc_heat_hubeny', &
+            'opacity not yet implemented for 3D')
+      endif
 !
     endsubroutine calc_heatcond_hubeny
 !***********************************************************************

@@ -45,7 +45,7 @@ module Viscosity
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mz,3) :: gnut_z
   real, dimension(mz) :: nut_z
-  real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof, & 
+  real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof, &
                          der_LH1_rprof
 !
   logical :: lvisc_first=.false.
@@ -109,10 +109,10 @@ module Viscosity
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
-  integer :: idiag_fviscmz=0    ! DIAG_DOC: $\left<2\nu\varrho u_i 
+  integer :: idiag_fviscmz=0    ! DIAG_DOC: $\left<2\nu\varrho u_i
                                 ! DIAG_DOC: \mathcal{S}_{iz} \right>_{xy}$
                                 ! DIAG_DOC: ($z$-component of viscous flux)
-  integer :: idiag_fviscmxy=0   ! DIAG_DOC: $\left<2\nu\varrho u_i 
+  integer :: idiag_fviscmxy=0   ! DIAG_DOC: $\left<2\nu\varrho u_i
                                 ! DIAG_DOC: \mathcal{S}_{ix} \right>_{z}$
                                 ! DIAG_DOC: ($x$-xomponent of viscous flux)
 !
@@ -315,7 +315,7 @@ module Viscosity
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
-        if (lvisc_hyper3_mesh.and.nu_hyper3_mesh==0.0) & 
+        if (lvisc_hyper3_mesh.and.nu_hyper3_mesh==0.0) &
              call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3_mesh is zero!')
         if ( (lvisc_hyper3_rho_nu_const_aniso.or.lvisc_hyper3_nu_const_aniso).and.&
@@ -358,14 +358,14 @@ module Viscosity
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
-! DM Note: 
-! initialization of lambda should come after sharing the llambda_effect 
-! variable because even if there is no lambda_effect that has to be 
+! DM Note:
+! initialization of lambda should come after sharing the llambda_effect
+! variable because even if there is no lambda_effect that has to be
 ! communicated to the boundary conditions too. In case llambda_effect is true
-! more variables are shared inside initialize_lambda. 
+! more variables are shared inside initialize_lambda.
 ! initialize lambda effect.
 !
-      if (llambda_effect) call initialize_lambda 
+      if (llambda_effect) call initialize_lambda
 !
 !  Check for possibility of getting etat  profile from magnetic
 !
@@ -405,7 +405,7 @@ module Viscosity
             'Lambda effect: V_zero=0 but V1 or H1 nonzero')
 !
 ! Select the profile of Lambda, default is uniform. At present (May 2010) the
-! only other coded profile is radial step. 
+! only other coded profile is radial step.
 !
       select case (lambda_profile)
       case ('radial_step_V0')
@@ -537,7 +537,7 @@ module Viscosity
         idiag_meshRemax=0
         idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
-        idiag_fviscmz=0; idiag_fviscmxy=0 
+        idiag_fviscmz=0; idiag_fviscmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1560,12 +1560,13 @@ module Viscosity
 ! this is really surface density, though
 !
       if (nzgrid==1) then
-         diss = 9./4.*nu*OO2
-      else
-         call fatal_error("calc_visc_heat_ppd","dissipation only implemented for 2d-disk")
-      endif
+        diss = 9./4.*nu*OO2
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*diss
+      else
+        call fatal_error("calc_visc_heat_ppd", &
+            "dissipation only implemented for 2d-disk")
+      endif
 !
     endsubroutine calc_visc_heat_ppd
 !***********************************************************************
@@ -1601,7 +1602,7 @@ module Viscosity
           (sinth(m)*x(l1:l2)*x(l1:l2))
 !
       lver = -(Lambda_V0*LV0_rprof(l1:l2)+Lambda_V1*sinth(m)*sinth(m) &
-          *LV1_rprof(l1:l2) ) 
+          *LV1_rprof(l1:l2) )
       lhor = -Lambda_H1*sinth(m)*sinth(m)*LH1_rprof(l1:l2)
 !
       dlver_dr = -(Lambda_V0*der_LV0_rprof(l1:l2)+Lambda_V1 &
