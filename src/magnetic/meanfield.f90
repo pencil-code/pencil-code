@@ -43,7 +43,7 @@ module Magnetic_meanfield
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
-  real :: alpha_eps=0.0, z_surface=0.
+  real :: alpha_eps=0.0, x_surface=0., z_surface=0.
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
@@ -63,17 +63,20 @@ module Magnetic_meanfield
   real :: meanfield_molecular_eta=0.0
   real :: alpha_rmax=0.0, alpha_width=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
+  real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
+  real, dimension(nx) :: rhs_term
   real, dimension(mz) :: etat_z
   real, dimension(mz,3) :: getat_z
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false.
   logical :: ldelta_profile=.false.
+  logical :: lrhs_term=.false.
 !
   namelist /magnetic_mf_run_pars/ &
       alpha_effect, alpha_quenching, &
-      alpha_eps, lmeanfield_noalpm, alpha_profile, &
-      z_surface, &
+      alpha_eps, alpha_width, lmeanfield_noalpm, alpha_profile, &
+      x_surface, z_surface, &
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
@@ -133,6 +136,15 @@ module Magnetic_meanfield
 !         print*,z(n),eta_z(n)
 !       enddo
 !     endif
+!
+!  Possibility of adding a coskx term to the rhs of the dAz/dt equation.
+!
+      if (lrhs_term) then
+        !rhs_term=(rhs_term_ampl/rhs_term_kx)*cos(rhs_term_kx*x(l1:l2))
+        !rhs_term=rhs_term_ampl*(.25*x(l1:l2)**2-.0625*x(l1:l2)**4)
+        rhs_term=rhs_term_ampl*(1.-x(l1:l2)**2)
+        !rhs_term=rhs_term_ampl
+      endif
 !
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
@@ -379,10 +391,12 @@ module Magnetic_meanfield
         case ('cos(z/2)'); alpha_tmp=cos(.5*z(n))
         case ('cos(z/2)_with_halo'); alpha_tmp=max(cos(.5*z(n)),0.)
         case ('z'); alpha_tmp=z(n)
+        case ('1-tanhz'); alpha_tmp=.5*(1.-tanh(z(n)/alpha_width))
         case ('z/H'); alpha_tmp=z(n)/xyz1(3)
         case ('z/H_0'); alpha_tmp=z(n)/xyz1(3); if (z(n)==xyz1(3)) alpha_tmp=0.
         case ('y/H'); alpha_tmp=y(m)/xyz1(3)
         case ('cosy'); alpha_tmp=cos(y(m))
+        case ('surface_x*cosy'); alpha_tmp=0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
         case ('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case ('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
         case ('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
@@ -540,7 +554,6 @@ module Magnetic_meanfield
 !  27-jul-10/axel: coded
 !
       use Diagnostics
-!     use Special, only: special_calc_magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -581,6 +594,10 @@ module Magnetic_meanfield
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         if (lOmega_effect) call Omega_effect(f,df,p)
       endif
+!
+!  Impose a By(x)=B0*sinkx field by adding a dAz/dt= ... + (B/tau*k)*coskx term.
+!
+      if (lrhs_term) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+rhs_term
 !
 !  Calculate diagnostic quantities.
 !  Diagnostic output for mean field dynamos.
