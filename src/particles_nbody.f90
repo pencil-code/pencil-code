@@ -29,23 +29,24 @@ module Particles_nbody
   real, dimension(nspar) :: pmass=0.0, r_smooth=0.0, pmass1
   real, dimension(nspar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
   real :: delta_vsp0=1.0, totmass, totmass1
-  real :: create_jeans_constant=0.25 ,GNewton1
-  real :: GNewton=impossible,prhs_cte
+  real :: create_jeans_constant=0.25, GNewton1
+  real :: GNewton=impossible, prhs_cte
+  real :: cdtpnbody=0.1
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5, mspar_orig=1
   integer :: iglobal_ggp=0, istar=1, imass=0
   integer :: maxsink=10*nspar, icreate=100
+  logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
+  logical, dimension(nspar) :: lfollow_particle=.false., laccretion=.false.
+  logical, dimension(nspar) :: ladd_mass=.false.
   logical :: lcalc_orbit=.true., lbackreaction=.false., lnorm=.true.
   logical :: lreset_cm=.false., lnogravz_star=.false., lexclude_frozen=.false.
   logical :: lnoselfgrav_star=.true.
   logical :: lramp=.false., lcreate_sinks=.false., lcreate_gas=.true.
-  logical :: lcreate_dust=.true.
+  logical :: ldt_nbody=.false., lcreate_dust=.true.
   logical :: linterpolate_gravity=.false., linterpolate_linear=.true.
   logical :: linterpolate_quadratic_spline=.false.
   logical :: laccrete_when_create=.true.
-  logical, dimension(nspar) :: lcylindrical_gravity_nbody=.false.
-  logical, dimension(nspar) :: lfollow_particle=.false., laccretion=.false.
-  logical, dimension(nspar) :: ladd_mass=.false.
   logical :: ldust=.false.
   character (len=labellen) :: initxxsp='random', initvvsp='nothing'
 !
@@ -55,7 +56,7 @@ module Particles_nbody
       bcspx, bcspy, bcspz, ramp_orbits, lramp, final_ramped_mass, prhs_cte, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, maxsink, lcreate_sinks, icreate, lcreate_gas, &
-      lcreate_dust, ladd_mass, laccrete_when_create
+      lcreate_dust, ladd_mass, laccrete_when_create, ldt_nbody, cdtpnbody
 !
   namelist /particles_nbody_run_pars/ &
       dsnap_par_minor, linterp_reality_check, lcalc_orbit, lreset_cm, &
@@ -63,7 +64,7 @@ module Particles_nbody
       GNewton, bcspx, bcspy, bcspz,prhs_cte, lnoselfgrav_star, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       maxsink, lcreate_sinks, icreate, lcreate_gas, lcreate_dust, ladd_mass, &
-      laccrete_when_create
+      laccrete_when_create, ldt_nbody, cdtpnbody
 !
   integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
   integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
@@ -365,15 +366,15 @@ module Particles_nbody
       case ('origin')
         if (lroot) then
           print*, 'init_particles_nbody: All nbody particles at origin'
-          fp(1:mspar,ixp:izp)=0.
+          fp(1:mspar,ixp:izp)=0.0
         endif
 !
       case ('constant')
         if (lroot) &
-            print*, 'init_particles_nbody: All nbody particles at x,y,z=', xsp0, ysp0, zsp0
+            print*, 'init_particles_nbody: Place nbody particles at x,y,z=', &
+            xsp0, ysp0, zsp0
         do k=1,npar_loc
-          if (ipar(k) <= mspar) &
-              fp(k,ixp:izp)=position(ipar(k),1:3)
+          if (ipar(k)<=mspar) fp(k,ixp:izp)=position(ipar(k),1:3)
         enddo
 !
       case ('random')
@@ -906,7 +907,7 @@ module Particles_nbody
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: evr
-      real :: r2_ij, rs2, invr3_ij
+      real :: r2_ij, rs2, invr3_ij, v_ij
       integer :: ks
 !
       intent(inout) :: fp, dfp
@@ -945,6 +946,19 @@ module Particles_nbody
 !
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 GNewton*pmass(ks)*invr3_ij*evr(1:3)
+!
+!  Time-step constraint from N-body particles. We use both the criterion
+!  that the distance to the N-body particle must not change too much in
+!  one time-step and additionally we use the free-fall time-scale.
+!
+            if (lfirst.and.ldt.and.ldt_nbody) then
+              v_ij=sqrt(sum((fp(k,ivpx:ivpz)-fp(ks,ivpx:ivpz))**2))
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost),v_ij/sqrt(r2_ij)/cdtpnbody)
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost), &
+                  sqrt(GNewton*pmass(ks)*invr3_ij)/cdtpnbody)
+            endif
 !
           endif !if accretion
 !
