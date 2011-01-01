@@ -178,6 +178,7 @@ module Particles
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
+  integer :: idiag_vpyfull2m=0
 !
   contains
 !***********************************************************************
@@ -1039,6 +1040,18 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpx)=vpx1
               fp(k,ivpy)=vpy1
               fp(k,ivpz)=vpz1
+            endif
+          enddo
+!
+        case ('constant-2')
+          if (lroot) &
+              print*, 'init_particles: Particle 2 velocity vx,vy,vz=', &
+              vpx2, vpy2, vpz2
+          do k=1,npar_loc
+            if (ipar(k)==2) then
+              fp(k,ivpx)=vpx2
+              fp(k,ivpy)=vpy2
+              fp(k,ivpz)=vpz2
             endif
           enddo
 !
@@ -2235,6 +2248,9 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_vpyfull2m/=0) &
+            call sum_par_name((fp(1:npar_loc,ivpy)- &
+            qshear*Omega*fp(1:npar_loc,ixp))**2,idiag_vpyfull2m)
         if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
             sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
         if (idiag_epotpm/=0) call sum_par_name( &
@@ -4013,7 +4029,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
-        idiag_npargone=0
+        idiag_npargone=0; idiag_vpyfull2m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -4084,6 +4100,8 @@ k_loop:   do while (.not. (k>npar_loc))
             'epotpm',idiag_epotpm)
         call parse_name(iname,cname(iname),cform(iname), &
             'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'vpyfull2m',idiag_vpyfull2m)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
