@@ -635,13 +635,12 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Add gravity from the particles to the gas
-!  and the backreaction from the gas onto the particles
+!  Add gravity from the particles to the gas and the backreaction from the
+!  gas onto the particles.
 !
-!  Adding the gravity on the dust component via the grid
-!  is less accurate, but much faster than looping through all 
-!  npar_loc particle and add the gravity of all massive partgicles 
-!  to it.
+!  Adding the gravity on the dust component via the grid is less accurate,
+!  but much faster than looping through all npar_loc particle and add the
+!  gravity of all massive particles to it.
 !
 !  07-sep-06/wlad: coded
 !
@@ -651,20 +650,21 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (nx,mspar) :: rp_mn,rpcyl_mn
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (nx,mspar) :: rp_mn, rpcyl_mn
       real, dimension (mx,3) :: ggt
       real, dimension (nx) :: pot_energy
       real, dimension (3) :: xxpar,accg
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: ks,k
-      logical :: lintegrate,lparticle_out
+      integer :: ks, k
+      logical :: lintegrate, lparticle_out
 !
       intent (in) :: f, p, fp, ineargrid
-      intent (inout) :: df,dfp
+      intent (inout) :: df, dfp
 !
-!  Get the total gravity field. In the case of dust,
-!  it is already pre-calculated
+!  Get the total gravity field. In the case of dust, it is already
+!  pre-calculated
 !
       if (linterpolate_gravity) then
 !
@@ -721,12 +721,11 @@ module Particles_nbody
           endif
           lintegrate=lbackreaction.or.lparticle_out
 !
-!  Sometimes making the star feel the selfgravity of the disk
-!  leads to numerical troubles as the star is too close to the 
-!  origin (in cylindrical coordinates).
+!  Sometimes making the star feel the selfgravity of the disk leads to
+!  numerical troubles as the star is too close to the origin (in cylindrical
+!  coordinates).
 !
-          if ((ks==istar).and.lnoselfgrav_star) &
-               lintegrate=.false.
+          if ((ks==istar).and.lnoselfgrav_star) lintegrate=.false.
 !
           if (lintegrate) then
 !
@@ -752,7 +751,7 @@ module Particles_nbody
 !  Diagnostic
 !
           if (ldiagnos) then
-            if (idiag_totenergy/=0) pot_energy=0.
+            if (idiag_totenergy/=0) pot_energy=0.0
             call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
                 E1_=fsp(ks,ixp),E2_=fsp(ks,iyp),E3_=fsp(ks,izp))
 !
@@ -793,10 +792,10 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of nbody and dust particles velocities due to
-!  particle-particle interaction only. 
+!  Evolution of nbody and dust particles velocities due to particle-particle
+!  interaction only. 
 !
-!  Coriolis and shear already added in particles_dust
+!  Coriolis and shear are already added in particles_dust.
 !
 !  27-aug-06/wlad: coded
 !
@@ -809,12 +808,11 @@ module Particles_nbody
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(mspar) :: sq_hills
-      real :: rr,w2,sma2
-!
+      real :: rr, w2, sma2
       integer :: k, ks, j, jpos, jvel
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) ::     f,  ineargrid
+      intent (in) :: f, ineargrid
       intent (inout) :: fp, df, dfp
 !
 !  Print out header information in first time step.
@@ -823,11 +821,11 @@ module Particles_nbody
 !
 !  Identify module.
 !
-      if (lheader) print*,'dvvp_dt_nbody: Calculate dvvp_dt_nbody'
+      if (lheader) print*, 'dvvp_dt_nbody: Calculate dvvp_dt_nbody'
 !
-!  Evolve massive particle positions due to the gravity of other 
-!  massive particles. The gravity of the massive particles on the 
-!  dust will be added inside the pencil in dvvp_dt_nbody_pencil
+!  Evolve massive particle positions due to the gravity of other massive
+!  particles. The gravity of the massive particles on the dust will be added
+!  inside the pencil in dvvp_dt_nbody_pencil.
 !
       if (lramp) call get_ramped_mass
 !
@@ -836,15 +834,15 @@ module Particles_nbody
       do ks=1,mspar 
         if (laccretion(ks).and.(ks/=istar)) then 
           if (lcartesian_coords) then
-            rr= sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
+            rr=sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
           elseif (lcylindrical_coords) then 
-            rr= fsp(ks,ixp)
+            rr=fsp(ks,ixp)
             if (nzgrid/=1) rr=sqrt(fsp(ks,ixp)**2+fsp(ks,izp)**2)
           elseif (lspherical_coords) then
-            rr= fsp(ks,ixp)
+            rr=fsp(ks,ixp)
           else
-            call fatal_error("dvvp_dt_nbody","wrong coord system")
-            rr=0.
+            call fatal_error('dvvp_dt_nbody','wrong coord system')
+            rr=0.0
           endif
           !particle velocities are non-coordinate (linear)
           w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
@@ -917,19 +915,18 @@ module Particles_nbody
       do ks=1,mspar
         if (ipar(k)/=ks) then
 !
-          call get_particles_interdistance(&
-              fp(k,ixp:izp),fsp(ks,ixp:izp),&
+          call get_particles_interdistance(fp(k,ixp:izp),fsp(ks,ixp:izp), &
               VECTOR=evr,DISTANCE=r2_ij,lsquare=.true.)
 !
 !  Particles relative distance from each other:
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
+!
 !  invr3_ij = r_ij**(-3)
 !
           rs2=(accrete_hills_frac(ks)**2)*sq_hills(ks)
 !
-!  If there is accretion, remove the accreted particles from the 
-!  simulation.
+!  If there is accretion, remove the accreted particles from the simulation.
 !
           if (laccretion(ks).and.(r2_ij<=rs2)) then
             call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
@@ -941,6 +938,7 @@ module Particles_nbody
             invr3_ij = r2_ij**(-1.5)
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
+!
 !  The acceleration is in non-coordinate basis (all have dimension of length). 
 !  The main dxx_dt of particle_dust takes care of transforming the linear
 !  velocities to angular changes in position.
@@ -961,6 +959,7 @@ module Particles_nbody
     subroutine point_par_name(a,iname)
 !
 !  Register a, a simple scalar, as diagnostic.
+!
 !  Works for individual particle diagnostics. 
 !
 !  07-mar-08/wlad: adapted from sum_par_name
