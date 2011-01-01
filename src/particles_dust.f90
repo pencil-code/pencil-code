@@ -2340,19 +2340,16 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lfirst.and.ldt.and.ldt_adv_par) then
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then 
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
-              if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
-              else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
-              endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
-              dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
-                   sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
+            if (lshear) then
+              dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
+            else
+              dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
             endif
+            dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
+                 sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
           enddo
         endif
       endif
