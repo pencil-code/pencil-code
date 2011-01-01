@@ -3111,6 +3111,7 @@ module Hydro
             elseif (tau <= 0.5) then
               fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
             else
+              fade_fact=impossible
               call fatal_error("UDAMPING","Never got here.")
             endif
           endif

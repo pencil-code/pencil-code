@@ -284,6 +284,7 @@ module Forcing
         elseif (height_ff<0) then
           zstar=xyz1(3)
         else
+          zstar=impossible
           call fatal_error('must have height_ff/=0','forcing')
         endif
         profz_ampl=(1.+(z-zstar)/height_ff)**nexp_ff
