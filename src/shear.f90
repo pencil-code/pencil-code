@@ -272,7 +272,8 @@ module Shear
 !
 !  Take shear into account for calculating time step.
 !
-      if (lfirst.and.ldt.and.(.not.lshearadvection_as_shift)) &
+      if (lfirst.and.ldt.and.(lhydro.or.ldensity).and. &
+          (.not.lshearadvection_as_shift)) &
           advec_shear=abs(uy0*dy_1(m))
 !
 !  Calculate shearing related diagnostics.
