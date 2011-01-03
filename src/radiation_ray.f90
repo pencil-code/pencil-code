@@ -1220,8 +1220,14 @@ module Radiation
 !  Incoming intensity from a layer of constant temperature TT_top.
 !
       if (bc_ray_z=='c') then
-        if (nrad<0) Irad_xy=arad*TT_top**4*(1-exp(tau_top/mu(idir)))
-        if (nrad>0) Irad_xy=arad*TT_bot**4*(1-exp(tau_bot/mu(idir)))
+        if (nrad<0) then
+          Irad_xy=arad*TT_top**4*(1-exp(tau_top/mu(idir)))
+        elseif (nrad>0) then 
+          Irad_xy=arad*TT_bot**4*(1-exp(tau_bot/mu(idir)))
+        else 
+          call fatal_error('radboundary_xy_set','nrad=0 should not happen')
+          Irad_xy=impossible
+        endif
         Qrad0_xy=Irad_xy-Srad(:,:,nnstart-nrad)
       endif
 !
