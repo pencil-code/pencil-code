@@ -841,7 +841,7 @@ module EquationOfState
         ! numbers up to ~ 1e4 avoids overflow:
         !
         exponent = min(exponent,log(huge1)-5.)
-        kapparho = exp(exponent) * (yH_+yMetals)*(1-yH_)*kappa0
+        kapparho = exp(exponent + alog(yH_+yMetals))*(1-yH_)*kappa0
       endif
 !
     endsubroutine eoscalc_farray

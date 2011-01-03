@@ -750,7 +750,7 @@ module EquationOfState
       if (present(kapparho)) then
         TT1 = exp(-lnTT_)
         tmp = 2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1
-        kapparho = (yH_+yMetals)*(1-yH_)*kappa0*exp(min(tmp,log(huge1)))
+        kapparho = (1-yH_)*kappa0*exp(min(tmp,log(huge1))+alog(yH_+yMetals))
       endif
 !
     endsubroutine eoscalc_farray
