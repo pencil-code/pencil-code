@@ -109,6 +109,9 @@ module Particles_mass
           endif
           fp(1:npar_loc,irhopswarm)=rhop_swarm0
 !
+        case ('constant-rhop')
+          fp(1:npar_loc,irhopswarm)=rhop_swarm0/(float(npar)/nwgrid)
+!
         case ('constant-1')
           if (lroot) then
             print*, 'init_particles_mass: set particle 1 mass density'
