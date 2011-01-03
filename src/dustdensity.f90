@@ -51,7 +51,7 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
   real :: rho_w=1.0, rho_s=3., Aconst=1.0e-6, Dwater=22.0784e-2, r0, delta
-  real :: Rgas, Rgas_unit_sys,Nion=0., m_w=18., m_s=60., Ntot, AA=0.66e-4, BB=1.5*1e-16!1.5e-16
+  real :: Rgas=8.31e7, Rgas_unit_sys,Nion=0., m_w=18., m_s=60., Ntot, AA=0.66e-4, BB=1.5*1e-16!1.5e-16
   real :: nd_reuni
   integer :: ind_extra
   integer :: iglobal_nd=0
@@ -306,7 +306,7 @@ module Dustdensity
           do k=1,ndustspec
 !            init_distr(k)=nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
              init_distr(k)=1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
-               *exp(-(lnds(k)-alog(r0))**2/(2.*(alog(delta))**2))
+               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
           enddo
           if (ndustspec>4) then
             Ntot_tmp=spline_integral(dsize,init_distr)
@@ -1190,14 +1190,16 @@ module Dustdensity
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat or p%ppsf has zero value(s)')
           else
-           Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+           Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
            do i=1,nx
             if (lnoaerosol) then
               p%ccondens(i)=0.
             else
               do k=1,ndustspec
-                ff_tmp(k)=p%nd(i,k)*dsize(k)  &
-                  *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)) 
+                if (p%ppsat(i) /= 0.) then
+                  ff_tmp(k)=p%nd(i,k)*dsize(k)  &
+                    *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)) 
+                endif
               enddo
                 if (any(dsize==0.0)) then
                 else
@@ -1302,9 +1304,8 @@ module Dustdensity
           if (k==1) then 
             df(l1:l2,m,n,ind(k)) = 0.
           else 
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k) &
-                 +p%dndr(:,k)
-!print*,'f',f(l1:l2,m,n,ind(k)),p%dndr(:,k)*dt
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k) &
+               +p%dndr(:,k)
             do i=1,mx
               if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
                 df(i,m,n,ind(k))=1e-25*dt
@@ -2158,17 +2159,17 @@ module Dustdensity
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
 !
-      if (ndustspec<3) then
-        call fatal_error('droplet_redistr', &
-            'Number of dust species is smaller than 3')
-        return
-      endif
+       if (ndustspec<3) then
+         call fatal_error('droplet_redistr', &
+          'Number of dust species is smaller than 3')
+       else
 !
-      do k=1,ndustspec
-        if (any(p%pp==0.0) .or. (dsize(k)==0.)) then
-          call fatal_error('droplet_redistr', &
-              'p%pp or dsize  has zero value(s)')
-        else
+       do k=1,ndustspec
+         if (any(p%ppsat==0.0) .or. (dsize(k)==0.)) then
+           call fatal_error('droplet_redistr', &
+                'p%pp or dsize  has zero value(s)')
+         else
+
 !           ff_tmp(:,k)=f(l1:l2,m,n,ind(k))/dsize(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
 !           ff_tmp0(:,k)=init_distr(k)/dsize(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
            ff_tmp(:,k)=f(l1:l2,m,n,ind(k))*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
@@ -2184,9 +2185,6 @@ module Dustdensity
                     - ff_tmp0(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
                     + ff_tmp0(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
 !
-      dndr_dr(:,i1) = (dndr_dr(:,i1)/dsize(i1)-ff_tmp0(:,i1)/dsize(i1)**2)*0.
-!
-!print*,i1,dndr_dr(:,i1),p%ppwater/p%ppsat-p%ppsf(:,i1)/p%ppsat
       do k=2,ndustspec-1
 !
         rr1=dsize(k-1)
@@ -2198,12 +2196,12 @@ module Dustdensity
                       +ff_tmp(:,k+1)*(2*rr2-rr1-rr2)/((rr3-rr1)*(rr3-rr2))
         dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2
 !
-!print*,'NAt2',k,dndr_dr(:,k),p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat!,p%ppwater/p%ppsat,p%ppsf(:,k)/p%ppsat
       enddo
 !
       dndr_dr(:,ndustspec)=-ff_tmp(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                            +ff_tmp(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
                            -ff_tmp(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
+       endif
 !
       dndr_dr(:,ndustspec) = dndr_dr(:,ndustspec)/dsize(ndustspec)  &
           -ff_tmp(:,ii1)/dsize(ndustspec)**2
@@ -2286,7 +2284,9 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (ndustspec) :: ff_tmp, ttt
       integer :: k,i1,i2,i3
+      character (len=20) :: output_file="./data/nd.out"
       character (len=20) :: output_file2="./data/nd2.out"
+      character (len=20) :: output_file3="./data/nd3.out"
       integer :: file_id=123
 
       do i1=l1,l2
@@ -2309,21 +2309,38 @@ module Dustdensity
 ! now it is written here. Later it will be removed.
 !
       if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
-      if ((abs(t-dt*10)<1e-10)) then
-        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-        print*,ttt(ndustspec) 
-      endif
-      if ((abs(t-dt*(nt-3))<1e-10) ) then
-        open(file_id,file=output_file2)
+      if (it == 1) then
+        open(file_id,file=output_file)
             write(file_id,'(7E12.4)') t
           do k=1,ndustspec
             if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-!            write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
              write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
           enddo
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-        print*,ttt(ndustspec)
+!        print*,ttt(ndustspec) 
+      endif
+      if (it == 20000) then
+        open(file_id,file=output_file2)
+            write(file_id,'(7E12.4)') t
+          do k=1,ndustspec
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+             write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+          enddo
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec)
+      endif
+      if (it == 40000) then
+        open(file_id,file=output_file3)
+            write(file_id,'(7E12.4)') t
+          do k=1,ndustspec
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+             write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+          enddo
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec)
       endif
       endif
 
