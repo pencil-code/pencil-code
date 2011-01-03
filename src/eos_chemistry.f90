@@ -391,6 +391,20 @@ module EquationOfState
           if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
           if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
           slices%ready=.true.
+        case ('pp')
+          if (ldensity_nolog .or. ltemperature_nolog) &
+              call fatal_error('get_slices_eos',&
+              'pp not implemented for ldensity_nolot .or. ltemperature_nolog')
+          slices%yz =Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho))&
+              *mu1_full(ix_loc,m1:m2,n1:n2)
+          slices%xz =Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho))&
+              *mu1_full(l1:l2,iy_loc,n1:n2)
+          slices%xy =Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho))&
+              *mu1_full(l1:l2,m1:m2,iz_loc)
+          if (lwrite_slice_xy4) slices%xy3 =Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)&
+              +f(l1:l2,m1:m2,iz3_loc,ilnrho))*mu1_full(l1:l2,m1:m2,iz3_loc)
+          if (lwrite_slice_xy3) slices%xy4 =Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)&
+              +f(l1:l2,m1:m2,iz4_loc,ilnrho))*mu1_full(l1:l2,m1:m2,iz4_loc)
 !
       endselect
 !
