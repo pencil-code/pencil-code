@@ -1810,8 +1810,8 @@ module Density
       if (ldiff_shock) then
         if (ldensity_nolog) then
           call dot_mn(p%gshock,p%grho,gshockgrho)
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
-              diffrho_shock*p%shock*p%del2rho + diffrho_shock*gshockgrho
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + &
+              diffrho_shock*(p%shock*p%del2rho + gshockgrho)
         else
           if (ldiffusion_nolog) then
             call dot_mn(p%gshock,p%grho,gshockgrho)
