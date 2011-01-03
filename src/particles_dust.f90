@@ -1216,6 +1216,22 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
           enddo
 !
+        case ('init_equi_gas')
+!
+!  Equilibrium motion gas (with coriolis included)
+!
+          if (lroot) then
+            print*, 'init_particles: equilibrium gas'
+            print*, 'init_particles: Deltauy_gas_friction=', Deltauy_gas_friction
+          endif
+!  Set particle velocity field.
+          do k=1,npar_loc
+            fp(k,ivpx) = fp(k,ivpx) - &
+                (2*Deltauy_gas_friction)/(Omega*tausp+1/(Omega*tausp))
+            fp(k,ivpy) = fp(k,ivpy) - &
+                Deltauy_gas_friction/(1.0+1/(Omega*tausp)**2)
+          enddo
+!
        case ('Keplerian','keplerian')
 !
 !  Keplerian velocity based on gravr.
