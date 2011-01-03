@@ -265,17 +265,21 @@ module Magnetic
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_dubrms=0     ! DIAG_DOC: $\left<(\uv-\Bv)^2\right>^{1/2}$
-  integer :: idiag_dobrms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}-\Bv)^2\right>^{1/2}$
+  integer :: idiag_dobrms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}-\Bv)^2
+                                ! DIAG_DOC: \right>^{1/2}$
   integer :: idiag_uxbxm=0      ! DIAG_DOC: $\left<u_xB_x\right>$
   integer :: idiag_uybym=0      ! DIAG_DOC: $\left<u_yB_y\right>$
   integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
-  integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)\right>$
+  integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
+                                ! DIAG_DOC: \right>$
   integer :: idiag_uam=0        ! DIAG_DOC: $\left<\uv\cdot\Av\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
-  integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD} (\vec{J}\times\vec{B})^2\right>$ (heating by ion-neutrals friction)
+  integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD}
+                                ! DIAG_DOC: (\vec{J}\times\vec{B})^2\right>$ 
+                                ! DIAG_DOC: (heating by ion-neutrals friction)
   integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_1,y_1,z_1,t)$
   integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_1,y_1,z_1,t)$
   integer :: idiag_bzpt=0       ! DIAG_DOC: $B_z(x_1,y_1,z_1,t)$
@@ -316,7 +320,7 @@ module Magnetic
   integer :: idiag_bymax=0      ! DIAG_DOC: $\max(|B_y|)$
   integer :: idiag_bzmax=0      ! DIAG_DOC: $\max(|B_z|)$
   integer :: idiag_jrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
-  integer :: idiag_hjrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
+  integer :: idiag_hjrms=0      ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_jmax=0       ! DIAG_DOC: $\max(|\jv|)$
   integer :: idiag_vArms=0      ! DIAG_DOC: $\left<\Bv^2/\varrho\right>^{1/2}$
   integer :: idiag_vAmax=0      ! DIAG_DOC: $\max(\Bv^2/\varrho)^{1/2}$
