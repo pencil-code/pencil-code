@@ -86,12 +86,12 @@ module Special
     Type(point), pointer,save :: thirdlev
 !
     integer :: xrange,yrange,pow
-    real, dimension(nxgrid,nygrid) :: w,vx,vy
-    real, dimension(nxgrid,nygrid) :: Ux,Uy
-    real, dimension(nxgrid,nygrid) :: Ux_ext,Uy_ext
-    real, dimension(nxgrid,nygrid) :: BB2
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
-    integer, dimension(nxgrid,nygrid) :: avoidarr
+    real, dimension(:,:), allocatable :: w,vx,vy
+    real, dimension(:,:), allocatable :: Ux,Uy
+    real, dimension(:,:), allocatable :: Ux_ext,Uy_ext
+    real, dimension(:,:), allocatable :: BB2
+    integer, dimension(:,:), allocatable :: avoidarr
     real, save :: tsnap_uu=0.,thresh
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
@@ -130,21 +130,19 @@ module Special
       real :: zref
       integer :: i
 !
-      if (lgranulation.and.iproc<=nprocxy+4) then
+      if (lgranulation .and. (iproc<=nprocxy+4)) then
         call setdrparams()
-!
-! if irefz is not set choose z=0 or irefz=n1
-        if (irefz .eq. 0) then
+        ! if irefz is not set, choose z=0 or irefz=n1
+        if (irefz == 0) then
           zref = minval(abs(z(n1:n2)))
           irefz = n1
           do i=n1,n2
-            if (abs(z(i)).eq.zref) irefz=i; exit
+            if (abs(z(i)) == zref) irefz=i; exit
           enddo
-!
         endif
       endif
 !
-      if (.not.lreloading .and. .not.lstarting) nano_seed = 0.
+      if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
 !
       call setup_magnetic()
       call setup_profiles()
@@ -222,7 +220,7 @@ module Special
       real, dimension(:), allocatable :: kxp, kyp
 !
       real :: dummy
-      integer :: idx2,idy2,lend,ierr
+      integer :: idx2,idy2,lend,ierr,alloc_err
       integer :: i,px,py
       integer, parameter :: unit=12,Ax_tag=366,Ay_tag=367
 !
@@ -242,11 +240,15 @@ module Special
       else
         ! Magnetic field is set only in the bottom layer
         if (lroot) then
-          allocate(kx(nxgrid,nygrid), ky(nxgrid,nygrid), k2(nxgrid,nygrid))
-          allocate(Bz0_i(nxgrid,nygrid), Bz0_r(nxgrid,nygrid))
-          allocate(Ax_i(nxgrid,nygrid), Ay_i(nxgrid,nygrid))
-          allocate(Ax_r(nxgrid,nygrid), Ay_r(nxgrid,nygrid))
-          allocate(kxp(nxgrid), kyp(nygrid))
+          allocate(kx(nxgrid,nygrid), ky(nxgrid,nygrid), k2(nxgrid,nygrid), kxp(nxgrid), kyp(nygrid), stat=alloc_err)
+          if (alloc_err > 0) call stop_it_if_any (.true., 'setup_magnetic: '// &
+              'Could not allocate memory for wave vector variables')
+          allocate(Bz0_r(nxgrid,nygrid), Bz0_i(nxgrid,nygrid), stat=alloc_err)
+          if (alloc_err > 0) call stop_it_if_any (.true., 'setup_magnetic: '// &
+              'Could not allocate memory for vertical magnetic field variables')
+          allocate(Ax_r(nxgrid,nygrid), Ay_r(nxgrid,nygrid), Ax_i(nxgrid,nygrid), Ay_i(nxgrid,nygrid), stat=alloc_err)
+          if (alloc_err > 0) call stop_it_if_any (.true., 'setup_magnetic: '// &
+              'Could not allocate memory for vector potential A variables')
           ! Auxiliary quantities:
           ! idx2 and idy2 are essentially =2, but this makes compilers
           ! complain if nygrid=1 (in which case this is highly unlikely to be
@@ -301,9 +303,7 @@ module Special
             Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
           endwhere
 !
-          deallocate(kx, ky, k2)
-          deallocate(Bz0_i, Bz0_r)
-          deallocate(kxp, kyp)
+          deallocate(kx, ky, k2, kxp, kyp, Bz0_i, Bz0_r)
 !
           call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
           call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
@@ -322,8 +322,7 @@ module Special
           A_init_x = Ax_r(1:nx,1:ny)
           A_init_y = Ay_r(1:nx,1:ny)
 !
-          deallocate(Ax_i, Ay_i)
-          deallocate(Ax_r, Ay_r)
+          deallocate(Ax_r, Ay_r, Ax_i, Ay_i)
 !
         else
           ! Receive initial A data
@@ -419,7 +418,7 @@ module Special
 !
       if (prof_type=='lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
-        if (ierr > 0) call stop_it_if_any (.true.,'setup_profiles: '// &
+        if (ierr > 0) call stop_it_if_any (.true., 'setup_profiles: '// &
             'Could not allocate memory for stratification variables')
 !
         ! read stratification file only on the MPI root rank
@@ -444,8 +443,7 @@ module Special
         lnTT_init_z(n1:n2) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
         lnrho_init_z(n1:n2) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
 !
-        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-        if (allocated (prof_lnrho)) deallocate (prof_lnrho)
+        deallocate (prof_lnTT, prof_lnrho)
 !
       elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT) then
 !
@@ -540,8 +538,7 @@ module Special
       ! interpolate logarthmic data to Pencil grid profile
       call interpolate_profile (data, data_z, n_data, profile)
 !
-      if (allocated (data)) deallocate (data)
-      if (allocated (data_z)) deallocate (data_z)
+      deallocate (data, data_z)
 !
     endsubroutine read_profile
 !***********************************************************************
@@ -1983,10 +1980,8 @@ module Special
 !
 ! Compute granular velocities. We use three levels.
 !
-      if ((lgran_parallel.and.iproc>=nprocxy.and.iproc<=nprocxy+2) &
-          .or.(iproc==0 .and..not.lgran_parallel)) then
-        Ux=0.0
-        Uy=0.0
+      if ((lgran_parallel .and. ((iproc>=nprocxy) .and. (iproc<=nprocxy+2))) &
+          .or. (lroot .and. (.not. lgran_parallel))) then
 !
 ! Either root processor or three procs with ipz>0 compute
 ! velocities for different levels in driver3().
@@ -2155,7 +2150,7 @@ module Special
       xrange=xrangearr(k)
       yrange=yrangearr(k)
 !
-      if (iproc==nprocxy-1+k.or.iproc==0) call drive3(k)
+      if (iproc==nprocxy-1+k .or. lroot) call drive3(k)
 !
       select case (k)
       case (1)
@@ -2244,10 +2239,22 @@ module Special
 !
 ! 12-aug-10/bing: coded
 !
-      w(:,:)=0.0
-      vx(:,:)=0.0
-      vy(:,:)=0.0
-      avoidarr(:,:)=0.0
+      Use Mpicomm, only: stop_it_if_any
+!
+      integer :: alloc_err
+!
+      if (.not. allocated (w)) then
+        allocate (w(nxgrid,nygrid), vx(nxgrid,nygrid), vy(nxgrid,nygrid), &
+            avoidarr(nxgrid,nygrid), Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
+        if (alloc_err > 0) call stop_it_if_any (.true., 'resetarr: Could not allocate memory')
+      endif
+!
+      w(:,:) = 0.0
+      vx(:,:) = 0.0
+      vy(:,:) = 0.0
+      avoidarr(:,:) = 0
+      Ux = 0.0
+      Uy = 0.0
 !
     endsubroutine resetarr
 !***********************************************************************
@@ -2680,12 +2687,12 @@ module Special
 !***********************************************************************
     subroutine set_B2(f,BB2_local)
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,ny) :: bbx,bby,bbz
       real, dimension(nx,ny) :: fac,BB2_local,tmp
-      integer :: i,j,ipt
+      integer :: px,py,partner,alloc_err
       integer, dimension(2) :: dims=(/nx,ny/)
       real :: temp
 !
@@ -2749,17 +2756,21 @@ module Special
 !
 ! communicate to root processor
 !
-      if (iproc.eq.0) then
+      if (lroot) then
+        if (.not. allocated (BB2)) then
+          allocate (BB2(nxgrid,nygrid), stat=alloc_err)
+          if (alloc_err > 0) call stop_it_if_any (.true., 'set_B2: Could not allocate memory')
+          BB2 = 0.0
+        endif
         BB2(1:nx,1:ny) = BB2_local
-        do i=0,nprocx-1
-          do j=0,nprocy-1
-            ipt = i+nprocx*j
-            if (ipt.ne.0) then
-              call mpirecv_real(tmp,dims,ipt,555+ipt)
-              BB2(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)  = tmp
-              call mpirecv_real(temp,1,ipt,556+ipt)
-              Bzflux = Bzflux+temp
-            endif
+        do px=0,nprocx-1
+          do py=0,nprocy-1
+            partner = px + py*nprocx
+            if (partner == 0) cycle
+            call mpirecv_real(tmp,dims,partner,555+partner)
+            BB2(px*nx+1:px*nx+nx,py*ny+1:py*ny+ny) = tmp
+            call mpirecv_real(temp,1,partner,556+partner)
+            Bzflux = Bzflux+temp
           enddo
         enddo
       else
@@ -2813,33 +2824,36 @@ module Special
       real, dimension (:,:), allocatable :: tmpl,tmpr
       integer, parameter :: tag_x=321,tag_y=322
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
-      integer :: lend=0,ierr,i,stat,px,py
+      integer :: lend=0,ierr,i,alloc_err,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
       character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
       character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
       integer :: unit=1
 !
-      ierr = 0
-      stat = 0
-      if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=ierr)
-      if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
-      ierr = max(stat,ierr)
-      if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
-      ierr = max(stat,ierr)
-      if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
-      ierr = max(stat,ierr)
-      allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-      allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+      if (.not. allocated (uxl)) then
+        allocate (uxl(nx,ny), uxr(nx,ny), uyl(nx,ny), uyr(nx,ny), stat=alloc_err)
+        if (alloc_err > 0) call stop_it_if_any (.true., 'read_ext_vel_field: '// &
+            'Could not allocate memory for velocity field variables')
+      endif
 !
-      if (ierr>0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
-          'Could not allocate memory for all variable, please check')
+      allocate (tmpl(nxgrid,nygrid), tmpr(nxgrid,nygrid), stat=alloc_err)
+      if (alloc_err > 0) call stop_it_if_any (.true., 'read_ext_vel_field: '// &
+          'Could not allocate memory for tmp variables, please check')
 !
 !  Read the time table
 !
       if ((t*unit_time<tl+delta_t) .or. (t*unit_time>=tr+delta_t)) then
-        !
+!
         if (lroot) then
+!
+          if (.not. allocated (Ux_ext)) then
+            allocate (Ux_ext(nxgrid,nygrid), Uy_ext(nxgrid,nygrid), stat=alloc_err)
+            if (alloc_err > 0) call stop_it_if_any (.true., 'read_ext_vel_field: Could not allocate memory')
+            Ux_ext = 0.0
+            Uy_ext = 0.0
+          endif
+!
           inquire(IOLENGTH=lend) tl
           open (unit,file=vel_times_dat,form='unformatted',status='unknown',recl=lend,access='direct')
 !
@@ -2879,7 +2893,7 @@ module Special
           read (unit,rec=2*i-1) tmpl
           read (unit,rec=2*i+1) tmpr
           if (tr /= tl) then
-            Ux_ext  = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
+            Ux_ext = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
           else
             Ux_ext = tmpr
           endif
@@ -2888,7 +2902,7 @@ module Special
           read (unit,rec=2*i)   tmpl
           read (unit,rec=2*i+2) tmpr
           if (tr /= tl) then
-            Uy_ext  = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
+            Uy_ext = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
           else
             Uy_ext = tmpr
           endif
@@ -2920,8 +2934,7 @@ module Special
 !
       endif
 !
-      if (allocated(tmpl)) deallocate(tmpl)
-      if (allocated(tmpr)) deallocate(tmpr)
+      deallocate (tmpl, tmpr)
 !
     endsubroutine read_ext_vel_field
 !***********************************************************************
