@@ -264,7 +264,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt, cos_kdotxwt, sin_kdotxwt
-      real, dimension(nx) :: gcs_omega
+      real, dimension(nx) :: local_Omega
       real, dimension(nx) :: wind_prof,div_uprof,der6_uprof
       real, dimension(nx) :: div_vel_prof
       real, dimension(nx) :: vel_prof
@@ -749,7 +749,17 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
 !              (1+stepdown(x(l1:l2),uphi_rmax,uphi_step_width))
         endif
 !
-! U_phi aped from
+!  U_phi = r*sin(theta)*Omega(r) with Omega(r)=1-r
+!
+      elseif (kinflow=='(1-x)*x*siny') then
+        if (headtt) print*,'Omega=Omega0*(1-r), Omega0=',ampl_kinflow
+        local_Omega=ampl_kinflow*(1.-x(l1:l2))
+        p%uu(:,1)=0.
+        p%uu(:,2)=0.
+        p%uu(:,3)=local_Omega*x(l1:l2)*sinth(m)
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  U_phi adapted from
 !  Ghizaru-Charbonneau-Smolarkiewicz (ApJL 715:L133-L137, 2010)
 !
       elseif (kinflow=='gcs') then
@@ -757,9 +767,9 @@ if (ip==11.and.m==4.and.n==4) write(21,*) t,kx_uukin
         fac=ampl_kinflow
         p%uu(:,1)=0.
         p%uu(:,2)=0.
-        gcs_omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- &
+        local_Omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- &
                  ((pi/2-y(m))/gcs_psizero**2))
-        p%uu(:,3)= gcs_omega*x(l1:l2)*sinth(m)
+        p%uu(:,3)= local_Omega*x(l1:l2)*sinth(m)
 
         if (lpencil(i_divu)) p%divu=0.
 !
