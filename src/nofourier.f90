@@ -320,7 +320,7 @@ module Fourier
 !
       real, dimension (nx,ny), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
-      real, dimension(nxgrid), optional :: shift_y
+      real, dimension(nx), optional :: shift_y
 !
       call fatal_error('fft_y_parallel_2D', &
           'this sub is not available in nofourier.f90!')
