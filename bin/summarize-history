@@ -31,7 +31,7 @@ if ($has_filetmp) { import File::Temp qw/tempfile/ };
 my $parfile = "data/params.log"; # Default parameter file
 #my $diff = "diff";              # Shell `diff' function to use
 my $diff = "sdiff";             # Shell `diff' function to use
-my @diff_opts = qw/-s -w78/;    # Options for $diff
+my @diff_opts = qw/-s -w78 -a/;    # Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $need_cleanup = 0;
 my ($tmp1,$tmp2,$tmpname1,$tmpname2) = ('fh01', 'fh02');
