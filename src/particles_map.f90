@@ -924,14 +924,14 @@ module Particles_map
               if (nygrid/=1) iyy1=iyy0+1
               if (nzgrid/=1) izz1=izz0+1
 !
-              if (lparticles_radius.and.lparticles_number) then
+              if (lparticles_mass) then
+                weight0=fp(k,irhopswarm)
+              elseif (lparticles_radius.and.lparticles_number) then
                 weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
               elseif (lparticles_radius) then
                 weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
               elseif (lparticles_number) then
                 weight0=mp_swarm*fp(k,inpswarm)
-              elseif (lparticles_mass) then
-                weight0=fp(k,irhopswarm)
               else
                 weight0=1.0
               endif
@@ -979,14 +979,14 @@ module Particles_map
                 izz0=iz0  ; izz1=iz0
               endif
 !
-              if (lparticles_radius.and.lparticles_number) then
+              if (lparticles_mass) then
+                weight0=fp(k,irhopswarm)
+              elseif (lparticles_radius.and.lparticles_number) then
                 weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
               elseif (lparticles_radius) then
                 weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
               elseif (lparticles_number) then
                 weight0=mp_swarm*fp(k,inpswarm)
-              elseif (lparticles_mass) then
-                weight0=fp(k,irhopswarm)
               else
                 weight0=1.0
               endif
@@ -1039,14 +1039,14 @@ module Particles_map
               if (.not.lnbody) then 
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
-                if (lparticles_radius.and.lparticles_number) then
+                if (lparticles_mass) then
+                  weight0=fp(k,irhopswarm)
+                elseif (lparticles_radius.and.lparticles_number) then
                   weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
                 elseif (lparticles_radius) then
                   weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                 elseif (lparticles_number) then
                   weight0=mp_swarm*fp(k,inpswarm)
-                elseif (lparticles_mass) then
-                  weight0=fp(k,irhopswarm)
                 endif
 !
                 f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
