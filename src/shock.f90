@@ -37,7 +37,6 @@ module Shock
 !
   logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
-  logical :: lmax_smooth=.false.
   logical :: ldivu_perp=.false.
   logical :: lgauss_integral=.false.
   logical :: lgauss_integral_comm_uu=.false.
@@ -48,7 +47,7 @@ module Shock
 !
   namelist /shock_run_pars/ &
       lshock_first, lshock_max5, div_threshold, div_scaling, &
-      lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
+      lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
       lshock_max3_interp, lforce_periodic_shockviscosity
 !
   integer :: idiag_shockmax=0
@@ -140,8 +139,6 @@ module Shock
       smooth_factor=smooth_factor/sum(smooth_factor)
 !
       if (div_threshold/=0.) lwith_extreme_div=.true.
-!
-      if (.not.lgauss_integral) lmax_smooth=.true.
 !
 !  Die if periodic boundary condition for shock viscosity, but not for
 !  velocity field. It can lead to subtle numerical errors near non-
@@ -244,7 +241,6 @@ module Shock
       if (lreset) then
         idiag_shockmax=0
         lwith_extreme_div=.false.
-        lmax_smooth=.false.
         lgauss_integral=.false.
         lgauss_integral_comm_uu=.false.
       endif
