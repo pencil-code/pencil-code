@@ -146,7 +146,6 @@ module Chemistry
 !
     real, allocatable, dimension(:,:) :: net_react_m, net_react_p
     logical :: lchemistry_diag=.false.
-
 !
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -691,7 +690,7 @@ module Chemistry
            lpenc_requested(i_lambda)=.true.
            lpenc_requested(i_glambda)=.true.
          endif
-
+!
          if (latmchem .or. lcloud) then
            lpenc_requested(i_ppwater)=.true.
            lpenc_requested(i_Ywater)=.true.
@@ -988,7 +987,7 @@ module Chemistry
        if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
       endif
       endif
-
+!
       if (lpencil(i_cs2) .and. lcheminp) then
         if (any(p%cv==0.0)) then
         else
@@ -1072,7 +1071,7 @@ module Chemistry
         final_massfrac_CO2=init_CO2
       else
         init_CO2=0
-        final_massfrac_CO2=init_CO2      
+        final_massfrac_CO2=init_CO2
       endif
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
@@ -1260,11 +1259,11 @@ module Chemistry
       integer :: i,j,k
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
-      real :: log_inlet_density, del
+      real :: del
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
       integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
-      real :: initial_mu1, final_massfrac_O2,final_massfrac_CH4, &
+      real :: final_massfrac_O2,final_massfrac_CH4, &
               final_massfrac_H2O,final_massfrac_CO2
       real :: init_H2,init_O2,init_N2,init_H2O,init_CO2,init_CH4
       real :: beta
@@ -1759,7 +1758,6 @@ module Chemistry
     subroutine flame_blob(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
       integer :: j1,j2,j3
 !
       real :: mO2, mH2, mN2, mH2O
@@ -1899,10 +1897,9 @@ module Chemistry
 !  nilshau: 2010.01.03 (adapted from flame_blob)
 !
 !  Set up two oppositely directed flame fronts in the x-direction.
-!  The two fronts have fresh gas between them. 
+!  The two fronts have fresh gas between them.
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: mu1
       integer :: j1,j2,j3
 !
       real :: mO2, mH2, mN2, mH2O, lower,upper
@@ -1910,9 +1907,7 @@ module Chemistry
       real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
 !
-      real :: Rad, sz1,sz2
-!
-     lflame_front=.true.
+      lflame_front=.true.
 !
       call air_field(f)
 !
@@ -2106,7 +2101,6 @@ module Chemistry
                    call fatal_error('calc_for_chem_mixture',&
                        'TT_full(:,j2,j3) is outside range')
                  endif
-
 !
 ! Find cp and cv for the mixture for the full domain
 !
@@ -2215,7 +2209,7 @@ module Chemistry
                do k=1,nchemspec
                  Diff_full_add(:,j2,j3,k)=lambda_full(:,j2,j3)/&
                      (rho_full(:,j2,j3)*cp_full(:,j2,j3)*Lewis_coef(k))
-
+!
                enddo
              endif
            enddo
@@ -2303,7 +2297,7 @@ module Chemistry
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: sum_Y
       integer :: k
-
+!
       sum_Y=0.
       do k=1,nchemspec
         sum_Y=sum_Y+f(:,:,:,ichemspec(k))
@@ -2311,7 +2305,7 @@ module Chemistry
       do k=1,nchemspec
         f(:,:,:,ichemspec(k))=f(:,:,:,ichemspec(k))/sum_Y
       enddo
-
+!
     endsubroutine chemspec_normalization
 !***********************************************************************
     subroutine astrobiology_data(f)
@@ -2370,7 +2364,6 @@ module Chemistry
       if (lroot) print*,'Number of compounds=',nchemspectemp
       if (nchemspectemp>nchemspec) call &
           stop_it("Too many chemicals! Change NCHEMSPEC in src/cparam.local")
-
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
@@ -2591,11 +2584,11 @@ module Chemistry
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
       if (headtt.or.ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
-
+!
 !  Interface for your personal subroutines calls
 !
       if (lspecial) call special_calc_chemistry(f,df,p)
-
+!
 !     !if (headtt) call identify_bcs('ss',iss)
 !
 !  loop over all chemicals
@@ -2717,7 +2710,7 @@ module Chemistry
 !
         endif
         enddo
-
+!
 !
 ! If the correction velocity is added
 !
@@ -2757,9 +2750,9 @@ module Chemistry
               + p%ccondens
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
               - 2.5e6/1005.*p%ccondens*p%TT1
-
+!
 !print*,'Nat',exp(f(l1:l2,m,n,ilnTT)),df(l1:l2,m,n,ilnTT),2.5e6/1005.*p%ccondens*dt
-
+!
 !
 ! this is for debuging purposes: one check that the sum of all mass fractions is 1
 !
@@ -3748,7 +3741,7 @@ module Chemistry
                photochemInd=index(ChemInpLine(StartInd:),'hv')
                if (photochemInd>0) then
                  photochem_case (k)=.true.
-
+!
                ParanthesisInd=index(ChemInpLine(photochemInd:),'(') &
                              +photochemInd-1
 !
@@ -4073,9 +4066,9 @@ module Chemistry
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
       integer :: k , reac, i
-      real  :: sum_tmp=0., T_low, T_mid, T_up, ddd 
+      real  :: sum_tmp=0., ddd
       real  :: Rcal, Rcal1, lnRgas, l10, lnp_atm
-      logical,save :: lwrite=.true., lwrite_first=.true.
+      logical, save :: lwrite_first=.true.
       character (len=20) :: input_file="./data/react.out"
       integer :: file_id=123
       real :: B_n_0,alpha_n_0,E_an_0
@@ -4112,7 +4105,7 @@ module Chemistry
 !  simulations. Plus, I noticed that the following two lines make
 !  huge cases crash. I have thus commented all the "write" commands
 !  relative to file_id in this routine.
-!  
+!
 !      if (lwrite)  write(file_id,*)'T= ',   p%TT
 !      if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
 !
@@ -4381,8 +4374,8 @@ module Chemistry
 !
 !  Calculate production rate for all species k (called \dot(\omega)_k
 !  in the chemkin manual)
-! 
-      xdot=0. 
+!
+      xdot=0.
       do k=1,nchemspec
         do j=1,nreactions
           xdot(:,k)=xdot(:,k)-stoichio(k,j)*vreactions(:,j)*molm(:,k)
@@ -5052,7 +5045,7 @@ module Chemistry
     subroutine air_field(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y, psat
+      real, dimension (mx,my,mz) :: sum_Y
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -5060,7 +5053,7 @@ module Chemistry
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: i,j,k=1,index_YY
+      integer :: i,j,k=1
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
@@ -5213,7 +5206,6 @@ module Chemistry
       if (lroot) print*, 'R', k_B_cgs/m_u_cgs
 !
       close(file_id)
-
 !
 ! this part will be removed later. Now it is in the aerosol_init.f90
 !
@@ -5309,14 +5301,14 @@ module Chemistry
        sz_l_z=int(del*nzgrid)+n1
        ll1=l1
        ll2=l2
-
+!
        if (nxgrid/=1) then
 !
         if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
                   'you should increase nxgrid!')
 !
         do j=1,2
-
+!
          if (j==1) then
           ll1=sz_r_x
           ll2=l2
@@ -5340,7 +5332,7 @@ module Chemistry
 !
         enddo
        endif
-
+!
        if (nygrid/=1) then
 !
        if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
@@ -5353,7 +5345,7 @@ module Chemistry
         func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3
         lzone_y=.true.
        endif
-
+!
        if (lzone_y) then
         df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
            -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
@@ -5372,7 +5364,7 @@ module Chemistry
       if (nzgrid/=1) then
         if (sz_r_z<=n1) call fatal_error('to use ldamp_zone_NSCBC',&
                   'you should increase nzgrid!')
-
+!
       if ((n<=sz_l_z) .and. (n>=n1)) then
         func_z=(z(n)-z(sz_l_z))**3/(z(n1)-z(sz_l_z))**3
         lzone_z=.true.
@@ -5380,7 +5372,7 @@ module Chemistry
         func_z= (z(n)-z(sz_r_z))**3/(z(n2)-z(sz_r_z))**3
         lzone_z=.true.
        endif
-
+!
        if (lzone_z) then
         df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
            -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
