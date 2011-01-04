@@ -2365,7 +2365,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       integer :: k, ix0, iy0, iz0
       real :: dt1_advpx, dt1_advpy, dt1_advpz
-      logical :: lnbody
 !
 !  Contribution of dust particles to time step.
 !
