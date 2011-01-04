@@ -130,6 +130,50 @@ link_special_files()
 }
 #
 #-----------------------------------------------------------------------------
+make_pre_and_post_processing_dir()
+{
+## pre- and post-processing subdirectory
+  [ -h $src/pre_and_post_processing ] && rm $src/pre_and_post_processing
+  if [ ! -d $src/pre_and_post_processing ]; then
+    echo "No pre_and_post_processing directory found: creating new one (`pwd`/src/pre_and_post_processing)."
+    mkdir $src/pre_and_post_processing
+  fi
+}
+#
+link_pre_and_post_processing_files()
+{
+#
+#  LINK all *.f90 files to the local src directory
+#
+  echo "Linking files in '$src/pre_and_post_processing'."
+  old_dir="`pwd`"
+  cd $src/pre_and_post_processing
+  n=0
+  to_link=
+  for file in $srcdir/pre_and_post_processing/*.f90
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+        to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+        to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+#
+#-----------------------------------------------------------------------------
 make_inactive_dir()
 {
 ## src subdirectory
@@ -445,6 +489,8 @@ make_src_dir
 link_src_files
 make_special_dir
 link_special_files
+make_pre_and_post_processing_dir
+link_pre_and_post_processing_files
 make_magnetic_dir
 link_magnetic_files
 make_inactive_dir
