@@ -2713,7 +2713,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  If ba is non-zero find the shift matrix
 !
-          if (ba(i,j,k,idir)/=0 .and. ba(i,j,k,idir)/=9) then
+          if (ba(i,j,k,idir)/=0 .and. ba(i,j,k,idir)/=9.) then
             sgn=-ba(i,j,k,idir)/abs(ba(i,j,k,idir))
             ba_shift(i,j,k,idir)=2*ba(i,j,k,idir)+sgn
             ba_shift(i,j,k,4)=ba(i,j,k,4)
