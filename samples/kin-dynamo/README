@@ -80,5 +80,12 @@ and the 8^3 run is accurate within 6.5%.
       eta1=5.52, lam=0.00010496959
       eta1=5.5174, lam=7e-17
 
+32^3, eta1=5.52, lam=-8.8257953e-05
+      eta1=5.54, lam=0.000713429
+      eta1=5.522, lam=0
+
 So the 16^3 run with 2nd order derivatives is accurate to 0.07%.
 and the 8^3 run is accurate within 5.6%.
+
+10th-order
+32^3, eta1=5.52, lam=-5.6851997e-05
