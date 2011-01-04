@@ -405,6 +405,7 @@ module EquationOfState
               +f(l1:l2,m1:m2,iz3_loc,ilnrho))*mu1_full(l1:l2,m1:m2,iz3_loc)
           if (lwrite_slice_xy3) slices%xy4 =Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)&
               +f(l1:l2,m1:m2,iz4_loc,ilnrho))*mu1_full(l1:l2,m1:m2,iz4_loc)
+          slices%ready=.true.
 !
       endselect
 !
@@ -1448,14 +1449,14 @@ module EquationOfState
               if (StopInd==StartInd) then
                 StartInd=StartInd+1
               else
-                varname(ichemspec(k))=trim(ChemInpLine(StartInd:StopInd-1))
-                StartInd=StopInd
-                k=k+1
-                if (k>nvar) then
+                if (k>nchemspec) then
                   print*,'nchemspec=',nchemspec
                   call stop_it("There were too many species, "//&
                       "please increase nchemspec!")
                 endif
+                varname(ichemspec(k))=trim(ChemInpLine(StartInd:StopInd-1))
+                StartInd=StopInd
+                k=k+1
               endif
               if (StartInd==80) exit
             enddo stringloop
@@ -1466,6 +1467,15 @@ module EquationOfState
 !  Stop if chem.inp is empty
 !
 1000  if (emptyFile)  call stop_it('The input file chem.inp was empty!')
+!
+!  Check if nchemspec where not too large
+!
+      if (k<nchemspec-1) then
+        print*,'nchemspec=',nchemspec
+        call stop_it("There were too few species, "//&
+            "please decrease nchemspec!")
+      endif
+!
       close(file_id)
 !
     endsubroutine read_species
