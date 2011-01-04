@@ -623,6 +623,8 @@ module Chemistry
           call flame(f)
         case ('flame_blob')
           call flame_blob(f)
+        case ('opposite_flames')
+          call opposite_flames(f)
         case ('prerun_1D')
           call prerun_1D(f,prerun_directory)
         case ('prerun_1D_opp')
@@ -1829,13 +1831,13 @@ module Chemistry
        !  if (Rad<0.2) then
 !          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.06-Rad)/0.06)**2)
           ! f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
-           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/0.04)**2)+init_TT1)
+           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/init_x2)**2)+init_TT1)
        !  else
        !   f(j1,j2,j3,ilnTT)=log(init_TT1)
        !  endif
 !
          ! f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-((0.2-Rad)/0.2)**2)+init_TT1)
-          mu1(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
+          mu1_full(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
               +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
 !
          f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
@@ -1891,6 +1893,92 @@ module Chemistry
       if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine flame_blob
+!***********************************************************************
+    subroutine opposite_flames(f)
+!
+!  nilshau: 2010.01.03 (adapted from flame_blob)
+!
+!  Set up two oppositely directed flame fronts in the x-direction.
+!  The two fronts have fresh gas between them. 
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: mu1
+      integer :: j1,j2,j3
+!
+      real :: mO2, mH2, mN2, mH2O, lower,upper
+      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      real :: initial_mu1, final_massfrac_O2
+      logical :: found_specie
+!
+      real :: Rad, sz1,sz2
+!
+     lflame_front=.true.
+!
+      call air_field(f)
+!
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
+      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      mO2 =species_constants(ichem_O2 ,imass)
+      mH2 =species_constants(ichem_H2 ,imass)
+      mH2O=species_constants(ichem_H2O,imass)
+      mN2 =species_constants(ichem_N2 ,imass)
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+      final_massfrac_O2&
+          =(initial_massfractions(ichem_O2)/mO2&
+          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+!
+!  Initialize temperature and species in air_field(f)
+!
+      if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas=Rgas_unit_sys/unit_energy
+      endif
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1&
+          =initial_massfractions(ichem_H2)/(mH2)&
+          +initial_massfractions(ichem_O2)/(mO2)&
+          +initial_massfractions(ichem_H2O)/(mH2O)&
+          +initial_massfractions(ichem_N2)/(mN2)
+!
+       call getmu_array(f,mu1_full)
+       if (ltemperature_nolog) call fatal_error('','')
+!
+       do j3=1,mz
+       do j2=1,my
+       do j1=1,mx
+!
+!  First define the distance from the lower and upper domain boundary.
+!
+         lower=x(j1)-xyz0(1)
+         upper=xyz1(1)-x(j1)
+!
+!  Find temperature and density based on distance from boundaries.
+!
+         f(j1,j2,j3,ilnTT)=log(&
+             (init_TT2-init_TT1)*exp(-(lower/init_x2)**2)+&
+             (init_TT2-init_TT1)*exp(-(upper/init_x2)**2)+&
+             init_TT1)
+         mu1_full(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
+             +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
+         f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
+             -log(mu1_full(j1,j2,j3))
+       enddo
+       enddo
+       enddo
+!
+!  Check if we want nolog of density
+!
+      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+!
+    endsubroutine opposite_flames
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
