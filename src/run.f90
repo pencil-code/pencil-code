@@ -316,16 +316,24 @@ program run
 !
   call setup_slices()
 !
-!  Write parameters to log file (done after reading var.dat, since we
-!  want to output time t.
-!
-  call print_runpars(FILE=trim(datadir)//'/params.log',ANNOTATION='Running')
-!
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_modules(f,LSTARTING=.false.)
+!
+  if (it1d==impossible_int) then
+    it1d=it1
+  else
+    if (it1d<it1) then
+      if (lroot) call stop_it_if_any(.true.,'run: it1d smaller than it1')
+    endif
+  endif
+!
+!  Write parameters to log file (done after reading var.dat, since we
+!  want to output time t.
+!
+  call print_runpars(FILE=trim(datadir)//'/params.log',ANNOTATION='Running')
 !
 !  Initialize ionization array.
 !
@@ -390,14 +398,8 @@ program run
     it_last_diagnostic=icount
   endif
 !
-  if (it1d==impossible_int) then
-    it1d=it1
-  else
-    if (it1d<it1) then
-      if (lroot) call stop_it_if_any(.true.,'run: it1d smaller than it1')
-    endif
-  endif
-  ! globally catch eventual 'stop_it_if_any' call from single MPI ranks
+!  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
+!
   call stop_it_if_any(.false.,'')
 !
 !  Prepare signal catching
