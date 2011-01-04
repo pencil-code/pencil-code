@@ -34,6 +34,7 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
+  real :: ap1=1.0 
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -45,7 +46,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar
+      aplow, aphigh, mbar, ap1
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -156,8 +157,7 @@ module Particles_radius
         select case (initap(j))
 !
         case ('nothing')
-          if (initial.and.lroot.and.j==1) &
-              print*, 'set_particles_radius: nothing'
+          if (initial.and.lroot.and.j==1)  print*, 'set_particles_radius: nothing'
 !
         case ('constant')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
@@ -168,6 +168,12 @@ module Particles_radius
               ind=ceiling(npart_radii*radius_fraction)
             endif
             fp(k,iap)=ap0(ind)
+          enddo
+!
+        case ('constant-1')
+          if (initial.and.lroot) print*, 'set_particles_radius: set particle 1 radius'
+          do k=npar_low,npar_high
+            if (ipar(k)==1) fp(k,iap)=ap1
           enddo
 !
         case ('random')
