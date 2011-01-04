@@ -6,7 +6,7 @@ pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   findmax=findmax,left_max=max_left,right_max=max_right, csection=csection, $
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
   log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
-  xstyle=xstyle,ystyle=ystyle
+  xstyle=xstyle,ystyle=ystyle,fluct=fluct
 ;
 ; $Id$
 ;
@@ -191,6 +191,7 @@ while (not eof(1)) do begin
   if (keyword_set(squared)) then axz=axz^2
   if (keyword_set(exsquared)) then axz=exp(axz)^2
   if (keyword_set(nsmooth)) then axz=smooth(axz,nsmooth)
+  if (keyword_set(fluct)) then axz=axz-mean(axz)
   if (keyword_set(func)) then begin
     value=axz
     res=execute('axz='+func,1)
