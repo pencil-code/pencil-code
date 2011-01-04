@@ -1158,10 +1158,13 @@ include 'NSCBC.h'
       real, dimension(igrid) :: dim
       integer :: i_CH4=0, i_O2=0, i_N2=0
       integer :: ichem_CH4=0, ichem_O2=0, ichem_N2=0
-      integer :: i,kkk,jj,k
+      integer :: i,jj,k
       logical :: lO2, lN2, lCH4
 !
 ! Define composition profile at inlet
+!
+      call keep_compiler_quiet(jmin)
+      call keep_compiler_quiet(jmax)
 !
         do jj=1,ninit
           select case (zz_profile(jj))
