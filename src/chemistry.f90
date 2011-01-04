@@ -5173,7 +5173,7 @@ module Chemistry
           f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3)
         endif
-        f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
       endif
       endif
 !
