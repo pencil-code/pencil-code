@@ -1780,8 +1780,8 @@ read_vectorfiles.x: read_vectorfiles.o cparam.o cdata.o general.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_vectorfiles.x
 #
 write_driver.o: $(physics) $(technical) $(DIAGNOSTICS_OBJ) $(EQU_OBJ) $(FARRAY_OBJ) Makefile.local
-write_driver: write_driver.o
-	$(LD) $(LDFLAGS) write_driver.o $(physics) $(technical) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o write_driver.x
+write_driver: pre_and_post_processing/write_driver.o
+	$(LD) $(LDFLAGS) pre_and_post_processing/write_driver.o $(physics) $(technical) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o pre_and_post_processing/write_driver.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
@@ -1988,7 +1988,8 @@ TAGS: $(TAG_SOURCE)
 clean:
 	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
 	rm -f special/*.o special/*.mod
-	rm -f initial_condition/*.o initial_condition/*.mod	
+	rm -f initial_condition/*.o initial_condition/*.mod
+	rm -f pre_and_post_processing/*.o pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
@@ -2011,7 +2012,7 @@ cleanall: cleann
 #
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
-	rm -rf special initial_condition Makefile Makefile.inc Makefile.depend
+	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.

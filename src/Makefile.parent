@@ -49,9 +49,9 @@ debug:
 # Compile (only on request) velocity filed generator code
 write_driver: Makefile_inc
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src write_driver && \
-	  $(MAKE) FROM_PARENT=src/ \
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src write_driver \
 	)
+# # && \	  $(MAKE) FROM_PARENT=src/ \
 
 # Clean up files produced by common queuing systems:
 qoutclean:
