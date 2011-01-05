@@ -165,6 +165,7 @@ module Special
       logical :: lstarting
       integer :: k,i
       real :: ddsize
+      real, dimension (ndustspec) ::  lnds
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -187,14 +188,14 @@ module Special
       enddo
 !    
       if (dsize_max/=0.0) then
-          ddsize=(dsize_max-dsize_min)/(ndustspec-1)
+ 
+         ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
           do i=0,(ndustspec-1)
-            dsize(i+1)=dsize_min+i*ddsize
+            lnds(i+1)=alog(dsize_min)+i*ddsize
+            dsize(i+1)=exp(lnds(i+1))
           enddo
-        endif
-
-
-        do k=1,ndustspec
+!
+          do k=1,ndustspec
           if ((k>1) .and. (k<ndustspec)) then
             dds(k)=(dsize(k+1)-dsize(k-1))/2.
           elseif (k==1) then
@@ -202,8 +203,8 @@ module Special
           elseif (k==ndustspec) then
             dds(k)=dsize(k)-dsize(k-1)
           endif
-        enddo
-
+          enddo
+      endif
 !
    !   print*,'cloud index', ind_cloud
       print*,'water index', ind_H2O
@@ -884,8 +885,10 @@ module Special
 ! bottom boundary
         if (vr==iuud(1)+3) then 
           do k=1,ndustspec
-            f(l1,m1:m2,n1:n2,ind(k))=nd0  &
-                           *exp(-((dsize(k)-r0)/delta)**2)
+            f(l1,m1:m2,n1:n2,ind(k))= &
+!                           nd0*exp(-((dsize(k)-r0)/delta)**2)
+            1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
+               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
@@ -904,7 +907,8 @@ module Special
 !          do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
 !       endif
 
-!      if (vr==iuud(1)+3) then 
+
+!      if (vr==iuud(1)+3) then
 !        f(l1-1,:,:,ind)=0.2*(9*f(l1,:,:,ind)-4*f(l1+2,:,:,ind)  &
 !                       -3*f(l1+3,:,:,ind)+3*f(l1+4,:,:,ind))
 !        f(l1-2,:,:,ind)=0.2*(15*f(l1,:,:,ind)-2*f(l1+1,:,:,ind)  &
@@ -912,7 +916,7 @@ module Special
 !        f(l1-3,:,:,ind)=1./35.*(157*f(l1,:,:,ind)-33*f(l1+1,:,:,ind)-108*f(l1+2,:,:,ind)  &
 !                     -68*f(l1+3,:,:,ind)+87*f(l1+4,:,:,ind))
 !      endif
-!      if (vr==iuud(1)+4) then 
+!      if (vr==iuud(1)+4) then
 !        f(l1-1,:,:,imd)=0.2*(  9*f(l1,:,:,imd)-4*f(l1+2,:,:,imd)-3*f(l1+3,:,:,imd)  &
 !                       +3*f(l1+4,:,:,imd))
 !        f(l1-2,:,:,imd)=0.2*( 15*f(l1,:,:,imd)-2*f(l1+1,:,:,imd)  &

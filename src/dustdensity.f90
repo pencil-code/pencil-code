@@ -1140,7 +1140,7 @@ module Dustdensity
 ! udrop
         if (lpencil(i_udrop)) then
           p%udrop(:,:,k)=p%uu(:,:)
-          p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2*0.
+          p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2
         endif
 ! udropgnd
         if (lpencil(i_udropgnd)) then

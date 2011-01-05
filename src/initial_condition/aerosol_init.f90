@@ -378,16 +378,16 @@ module InitialCondition
          elseif ((init_x1/=0.) .or. (init_x2/=0.)) then
            do i=1,mx
              if (x(i)<=init_x1) then
-               init_water1_(i,:,:)=psat(i,:,:)/PP*dYw1
+               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw1
                f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
              endif
              if (x(i)>=init_x2) then
-               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw2
+               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw2
                f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
              endif
              if (x(i)>init_x1 .and. x(i)<init_x2) then
-               init_water1_(i,:,:)=psat(i,:,:)/PP*dYw1
-               init_water2_(i,:,:)=psat(i,:,:)/PP*dYw2
+               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw1
+               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw2
                f(i,:,:,ichemspec(index_H2O))=&
                  (x(i)-init_x1)/(init_x2-init_x1) &
                  *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
@@ -396,7 +396,6 @@ module InitialCondition
          else
            f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass/18.)!*dYw
          endif
-!         index_YY=int(maxval(ichemspec(:)))
          sum_Y=0.
          do k=1,nchemspec
            if (ichemspec(k)/=ichemspec(index_N2)) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
@@ -406,29 +405,34 @@ module InitialCondition
          do k=1,nchemspec
            air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
                    /species_constants(k,imass)
-!          do i3=1,mz
-!          do i2=1,my
-!          do i1=1,mx
-!           air_mass_ar(i1,i2,i3)=0.
-!           do k=1,nchemspec
-!               air_mass_ar(i1,i2,i3)=air_mass_ar(i1,i2,i3)+f(i1,i2,i3,ichemspec(k)) &
-!                  /species_constants(k,imass)
-!            if (air_mass_ar(i1,i2,i3)<0.)  print*,air_mass_ar(i1,i1,i3), &
-!             k,i1,i2,i3,species_constants(k,imass), f(i1,i2,i3,ichemspec(k)) 
-!           enddo
-!          enddo
-!          enddo
          enddo
          air_mass_ar=1./air_mass_ar
-         f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+         if ((init_x1/=0.) .or. (init_x2/=0.)) then
+           do i=1,mx
+             if (x(i)<=init_x1) then
+               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw1
+               f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
+             endif
+             if (x(i)>=init_x2) then
+               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw2
+               f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
+             endif
+             if (x(i)>init_x1 .and. x(i)<init_x2) then
+               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw1
+               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw2
+               f(i,:,:,ichemspec(index_H2O))=&
+                 (x(i)-init_x1)/(init_x2-init_x1) &
+                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
+             endif
+           enddo
+         else
+           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+         endif
 
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
          else
-
-!         print*,minval(air_mass_ar)
-
            f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs) &
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
          endif
