@@ -325,9 +325,7 @@ program run
   if (it1d==impossible_int) then
     it1d=it1
   else
-    if (it1d<it1) then
-      if (lroot) call stop_it_if_any(.true.,'run: it1d smaller than it1')
-    endif
+    if (it1d<it1) call stop_it_if_any(lroot,'run: it1d smaller than it1')
   endif
 !
 !  Write parameters to log file (done after reading var.dat, since we
