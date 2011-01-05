@@ -800,8 +800,8 @@ module Register
           do inamez=1,nnamez
             read(unit,*,iostat=ierr) cnamez(inamez)
           enddo
+          call parallel_close(unit)
         endif
-        call parallel_close(unit)
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
