@@ -28,7 +28,7 @@ module Special
   real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
-  integer :: irefz=0,nglevel=3,cool_type=2
+  integer :: irefz=n1,nglevel=3,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
@@ -127,19 +127,8 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      real :: zref
-      integer :: i
-!
       if (lgranulation .and. (iproc<=nprocxy+4)) then
         call setdrparams()
-        ! if irefz is not set, choose z=0 or irefz=n1
-        if (irefz == 0) then
-          zref = minval(abs(z(n1:n2)))
-          irefz = n1
-          do i=n1,n2
-            if (abs(z(i)) == zref) irefz=i; exit
-          enddo
-        endif
       endif
 !
       if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
