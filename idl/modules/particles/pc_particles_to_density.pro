@@ -7,7 +7,7 @@
 ;;
 function pc_particles_to_density, xxp, x, y, z, $
     cic=cic, tsc=tsc, fine=fine, ghost=ghost, normalize=normalize, $
-    datadir=datadir, quiet=quiet
+    density=density, datadir=datadir, quiet=quiet
 COMMON pc_precision, zero, one
 ;;
 ;;  Set default values.
@@ -17,11 +17,16 @@ default, tsc, 0
 default, fine, 1
 default, ghost, 0
 default, normalize, 0
+default, density, 1
 default, quiet, 0
 ;;
 ;;  Set real precision.
 ;;
-pc_set_precision, datadir=datadir
+pc_set_precision, datadir=datadir, /quiet
+;;
+;;  Read rhopswarm from data directory.
+;;
+pc_read_const, obj=cst, datadir=datadir, /quiet
 ;
 npar=0L
 npar=n_elements(xxp[*,0])
@@ -291,10 +296,13 @@ y=y[m1:m2]
 z=z[n1:n2]
 np=np[l1:l2,m1:m2,n1:n2]
 ;;
+;;  Convert from count to density.
+;;
+if (density) then np=np*cst.rhop_swarm
+;;
 ;;  Normalize the density to have an average of one.
 ;;
-if (normalize) then $
-    np[l1:l2,m1:m2,n1:n2]=np[l1:l2,m1:m2,n1:n2]/mean(np[l1:l2,m1:m2,n1:n2])
+if (normalize) then np=np/mean(np)
 ;;
 ;;  Purge missing directions from np before returning it.
 ;;
