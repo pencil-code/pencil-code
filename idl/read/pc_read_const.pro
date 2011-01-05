@@ -43,6 +43,7 @@ get_lun, file
 openr, file, datadir+'/'+varfile
   readf, file, array
 close, file
+free_lun, file
 ;
 ;  Split lines into variable name and associate value.
 ;
