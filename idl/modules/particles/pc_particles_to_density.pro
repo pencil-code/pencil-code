@@ -20,6 +20,10 @@ default, normalize, 0
 default, density, 1
 default, quiet, 0
 ;;
+;;  Read parameters.
+;;
+pc_read_param, obj=param, datadir=datadir, /quiet
+;;
 ;;  Set real precision.
 ;;
 pc_set_precision, datadir=datadir, /quiet
@@ -80,10 +84,8 @@ endelse
 ;;
 if (fine gt 1) then begin
 ;
-  pc_read_param, obj=par, datadir=datadir, /quiet
-;
-  x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
-  x1=par.xyz1[0] & y1=par.xyz1[1] & z1=par.xyz1[2]
+  x0=param.xyz0[0] & y0=param.xyz0[1] & z0=param.xyz0[2]
+  x1=param.xyz1[0] & y1=param.xyz1[1] & z1=param.xyz1[2]
 ;
   if (nx gt 1) then begin
     nx=fine*nx
@@ -268,6 +270,11 @@ endcase
 ;;  Fold density from ghost cells into main array.
 ;;
 if (cic or tsc) then begin
+;
+  if (param.lshear) then begin
+    print, 'pc_particles_to_density: folding not implemented for shear (yet)'
+    stop
+  endif
 ;
   if (nz ne 1) then begin
     np[l1-1:l2+1,m1-1:m2+1,n1]= $
