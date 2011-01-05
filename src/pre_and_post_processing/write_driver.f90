@@ -220,6 +220,12 @@ program write_driver
 !
   call initialize_modules(f,LSTARTING=.false.)
 !
+  if (it1d==impossible_int) then
+    it1d=it1
+  else
+    if (it1d<it1) call stop_it_if_any(lroot,'run: it1d smaller than it1')
+  endif
+!
 !  Possible debug output (can only be done after "directory" is set).
 !  Check whether mn array is correct.
 !
@@ -255,14 +261,8 @@ program write_driver
     it_last_diagnostic=icount
   endif
 !
-  if (it1d==impossible_int) then
-    it1d=it1
-  else
-    if (it1d<it1) then
-      if (lroot) call stop_it_if_any(.true.,'run: it1d smaller than it1')
-    endif
-  endif
-  ! globally catch eventual 'stop_it_if_any' call from single MPI ranks
+!  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
+!
   call stop_it_if_any(.false.,'')
 !
 !  Prepare signal catching
