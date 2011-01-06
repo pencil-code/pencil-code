@@ -3485,14 +3485,18 @@ module Chemistry
         output_string=trim(reac_string)//'='//trim(product_string)
 !
        if (.not. photochem_case(reac)) then
-        write(unit=output_string(30:45),fmt='(E14.4)') B_n(reac)
+!
+!  Note that since the B_n term is in logarithmic form within the code
+!  the exponential must be used for output.
+!         
+        write(unit=output_string(30:45),fmt='(E14.4)') exp(B_n(reac))
         write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
         write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
        endif
         write(file_id,*) trim(output_string)
        if (.not. photochem_case(reac)) then
         if (maxval(abs(low_coeff(:,reac))) > 0.) then
-          write(file_id,*) 'LOW/',low_coeff(:,reac)
+          write(file_id,*) 'LOW/',exp(low_coeff(1,reac)),low_coeff(2:,reac)
         elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
           write(file_id,*) 'HIGH/',high_coeff(:,reac)
         endif
