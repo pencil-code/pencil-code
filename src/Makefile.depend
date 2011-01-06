@@ -171,7 +171,7 @@ $(POWER_OBJ): power_spectrum.h $(POWER_SRC) $(COMMON_DEPS) $(GENERAL_OBJ) $(FOUR
 #
 $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OBJ)
 #
-$(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ)
+$(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ)  $(VISCOSITY_OBJ)
 #
 $(PARTICLES_CDATA_OBJ): $(PARTICLES_CDATA_SRC) $(CDATA_OBJ)
 #
