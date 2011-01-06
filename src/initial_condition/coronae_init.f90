@@ -494,7 +494,7 @@ contains
     endif
 !
     do i=n1+1,n2+nghost
-      int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i)+1/TT(i+1)))
+      int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i-1)+1/TT(i))) 
       f(:,:,i,ilnrho)=f(:,:,i-1,ilnrho)-lnTT(i)+ &
           lnTT(i-1)+konst*int
     enddo
@@ -694,19 +694,27 @@ contains
   subroutine setup_tanh(f)
 !    
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension (mz) :: TT,lnTT,z_SI
+    real, dimension (mz) :: TT,z_SI,TT_var
     integer :: i,j
 !
     z_SI = z*unit_length
 !
     TT = (T1-T0)*(0.5*tanh((z_SI-z0_tanh)/width_tanh)+0.5)+T0
-    TT = TT / unit_temperature
     
-    lnTT = alog(TT)
+    if (ltemperature) then 
+      if (ltemperature_nolog) then
+        TT_var = TT / unit_temperature
+      else
+        TT_var = alog(TT / unit_temperature)
+      endif
+    else
+      TT_var = impossible
+      call fatal_error('setup_tanh','only works for ltemperature=T')
+    endif
 !
     do i=1,mx
       do j=1,my
-        f(i,j,:,ilnTT) = lnTT
+        f(i,j,:,ilnTT) = TT_var
       enddo
     enddo
 !
