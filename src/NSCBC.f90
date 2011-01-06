@@ -387,7 +387,7 @@ include 'NSCBC.h'
       logical :: llinlet, non_reflecting_inlet
       real, optional :: u_t, T_t
       real, optional, dimension(nchemspec) :: YYk
-      real :: Mach,KK,nu, cs0_average
+      real :: Mach,KK,cs0_average
       integer, dimension(33) :: stat
       integer lll,k,ngridpoints,imin,imax,jmin,jmax,i
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
@@ -523,7 +523,7 @@ include 'NSCBC.h'
 !  This includes values and gradients of; density, temperature, pressure
 !  In addition also speed of sound, gamma and mu1 is found.
 !
-      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,nu,&
+      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,&
           grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t,llinlet,&
           imin,imax,jmin,jmax)
 !
@@ -1282,7 +1282,7 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_z
 !***********************************************************************
-      subroutine get_thermodynamics(mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,nu,&
+      subroutine get_thermodynamics(mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,&
           grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t,llinlet,&
           imin,imax,jmin,jmax)
 !
@@ -1299,7 +1299,6 @@ include 'NSCBC.h'
         real, dimension(:,:), intent(out)  :: rho0,TT,P0
         real, dimension(:,:,:), intent(inout)  :: grad_rho,grad_T,grad_P
         real, dimension(:,:,:), intent(in) :: fslice
-        real, intent(out) :: nu
         real, intent(inout) :: T_t
         logical :: llinlet
 !
@@ -1321,10 +1320,6 @@ include 'NSCBC.h'
         TT = exp(fslice(:,:,ilnTT))
         if (llinlet) T_t=exp(T_t)
       endif
-!
-!  Get viscoity
-!
-      call getnu(nu)
 !
 !  Find mu1, grad_mu1 and gamma
 !
