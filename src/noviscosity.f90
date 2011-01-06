@@ -186,15 +186,15 @@ module Viscosity
 !
     endsubroutine calc_visc_heat_ppd
 !***********************************************************************
-    subroutine getnu(nu_input,nu_pencil,ivisc)
+    subroutine getnu(nu_input,nu_pencil,ivis)
 !
       real, optional, intent(out) :: nu_input
       real, dimension(nx), optional, intent(out) :: nu_pencil
-      character (len=labellen), optional :: ivisc
+      character (len=labellen), optional :: ivis
 !
       if (present(nu_input))  nu_input=0.0
       if (present(nu_pencil)) nu_pencil=0.0
-      if (present(ivisc))     ivisc='zero'
+      if (present(ivis))     ivis='zero'
 !
     endsubroutine getnu
 !***********************************************************************
