@@ -42,7 +42,7 @@ module Solid_Cells
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
-  real                          :: ineargridshift=3
+  real                          :: ineargridshift=1
 !
   type solid_object
     character(len=10) :: form
