@@ -216,7 +216,7 @@ module Particles_spin
       intent (in) :: f,df,fp,ineargrid
       intent (inout) :: dfp
 !
-      call getnu(nu)
+      call getnu(nu_imput=nu)
 !
 !  Print out header information in first time step.
 !
@@ -397,7 +397,7 @@ module Particles_spin
 !
       real :: csaff,dia,beta,oo,nu
 !
-      call getnu(nu)
+      call getnu(nu_imput=nu)
 !
       if (.not.lparticles_radius) then
         print*,'calc_saffman_liftforce: Particle_radius module must be enabled!'
@@ -451,7 +451,7 @@ module Particles_spin
         call fatal_error('calc_magnus_liftforce','')
       endif
 !
-      call getnu(nu)
+      call getnu(nu_imput=nu)
 !
 !  Projected area of the particle
 !

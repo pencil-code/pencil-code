@@ -3193,7 +3193,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
           kx=k1_ff; ky=k1_ff
           kf=sqrt(kx*kx+ky*ky)
-          call getnu(nu)
+          call getnu(nu_input=nu)
           fact=ampl_ff*kf*kf*nu
           fact2=ampl_ff*ampl_ff*kx*ky
 !

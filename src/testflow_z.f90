@@ -262,7 +262,7 @@ module Testflow
 ! Set nutest from the value uf nu in Hydro, if not specified here
 !
       if ( nutest==0. .and. nutest1==0. ) &
-        call getnu(nutest)
+        call getnu(nu_input=nutest)
 !
 !  Precalculate nutest if 1/nutest (==nutest1) is given instead
 !

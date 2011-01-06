@@ -53,6 +53,7 @@ module Viscosity
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_sqrtrho_nu_const=.false.
   logical :: lvisc_nu_therm=.false.
+  logical :: lvisc_mu_therm=.false.
   logical :: lvisc_nu_const=.false.
   logical :: lvisc_nu_prof=.false.
   logical :: lvisc_nu_profx=.false.
@@ -151,6 +152,7 @@ module Viscosity
       lvisc_rho_nu_const=.false.
       lvisc_sqrtrho_nu_const=.false.
       lvisc_nu_therm=.false.
+      lvisc_mu_therm=.false.
       lvisc_nu_const=.false.
       lvisc_nu_prof=.false.
       lvisc_nu_profx=.false.
@@ -190,6 +192,10 @@ module Viscosity
           if (lroot) print*,'viscous force: mu*sqrt(TT)*(del2u+graddivu/3)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_therm=.true.
+        case ('mu-therm')
+          if (lroot) print*,'viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3)'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_mu_therm=.true.
         case ('nu-const')
           if (lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
@@ -299,7 +305,7 @@ module Viscosity
       if (lrun) then
         if ( (lvisc_simplified.or.lvisc_rho_nu_const.or.&
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or.&
-             lvisc_nu_therm) &
+             lvisc_nu_therm.or.lvisc_mu_therm) &
             .and.nu==0.0) &
             call warning('initialize_viscosity', &
             'Viscosity coefficient nu is zero!')
@@ -593,18 +599,18 @@ module Viscosity
            lvisc_nu_const .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
-           lvisc_nut_from_magnetic))&
+           lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_sqrtrho_nu_const .or. &
           lvisc_nu_const .or. lvisc_nu_therm .or.&
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
-          lvisc_nut_from_magnetic) then
+          lvisc_nut_from_magnetic .or. lvisc_mu_therm) then
         if ((lentropy.or.ltemperature).and.lviscosity_heat) &
             lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
-      if ((lentropy.or.ltemperature).and.lvisc_nu_therm)&
+      if ((lentropy.or.ltemperature).and.(lvisc_nu_therm.or.lvisc_mu_therm))&
           lpenc_requested(i_lnTT)=.true.
       if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_graddivu)=.true.
@@ -626,7 +632,7 @@ module Viscosity
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
-          lvisc_nut_from_magnetic .or. lvisc_nu_therm) &
+          lvisc_nut_from_magnetic .or. lvisc_nu_therm .or. lvisc_mu_therm) &
           lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
@@ -646,12 +652,13 @@ module Viscosity
           lvisc_hyper3_rho_nu_const_aniso .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm .or. &
-          lvisc_hyper3_mu_const_strict) lpenc_requested(i_rho1)=.true.
+          lvisc_hyper3_mu_const_strict .or. lvisc_mu_therm) &
+          lpenc_requested(i_rho1)=.true.
 !
       if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
-          lvisc_nut_from_magnetic.or.lvisc_nu_therm) &
+          lvisc_nut_from_magnetic.or.lvisc_nu_therm .or. lvisc_mu_therm) &
           lpenc_requested(i_sglnrho)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
       if (ldensity.and.lvisc_nu_shock) then
@@ -802,16 +809,31 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+murho1
       endif
 !
+      if (lvisc_mu_therm) then
+!
+!  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+2S.glnrho)
+!  -- the correct expression for rho*nu=const
+!
+        muTT=nu*p%rho1*sqrt(exp(p%lnTT)) 
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i) + &
+              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
+              + 2*muTT*p%sglnrho(:,i)
+        enddo
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+muTT
+      endif
+!
       if (lvisc_nu_therm) then
 !
 !  viscous force: nu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)
 !  -- for numerical stability viscous force propto soundspeed in interstellar run
 !
-      muTT=nu*sqrt(exp(p%lnTT))
-!      muTT=max(nu*sqrt(exp(p%lnTT)),dxmax*0.5)
+        muTT=nu*sqrt(exp(p%lnTT))
         if (ldensity) then
           do i=1,3
-            p%fvisc(:,i) = p%fvisc(:,i) + 2*muTT*p%sglnrho(:,i)+muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i))
+            p%fvisc(:,i) = p%fvisc(:,i) + 2*muTT*p%sglnrho(:,i)&
+                +muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i))
           enddo
           ! Tobi: This is not quite the full story in the presence of linear
           ! shear. In this case the rate-of-strain tensor S has xy and yx
@@ -825,12 +847,14 @@ module Viscosity
         else
           if (lmeanfield_nu) then
             if (meanfield_nuB/=0.) then
-                call multsv_mn(muTT,p%del2u+1./3.*p%graddivu,tmp)
-                call multsv_mn_add(1./sqrt(1.+p%b2/meanfield_nuB**2),p%fvisc+tmp,p%fvisc)
+              call multsv_mn(muTT,p%del2u+1./3.*p%graddivu,tmp)
+              call multsv_mn_add(1./sqrt(1.+p%b2/meanfield_nuB**2),&
+                  p%fvisc+tmp,p%fvisc)
             endif
           else
             do i=1,3
-              p%fvisc(:,i)=p%fvisc(:,i)+muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
+              p%fvisc(:,i)=p%fvisc(:,i)+muTT*(p%del2u(:,i)&
+                  +1.0/3.0*p%graddivu(:,i))
             enddo
           endif
         endif
@@ -1474,6 +1498,7 @@ module Viscosity
         if (idiag_epsK/=0) then
           if (lvisc_nu_const)     call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
           if (lvisc_nu_therm)     call sum_mn_name(2*nu*sqrt(exp(p%lnTT))*p%rho*p%sij2,idiag_epsK)
+          if (lvisc_mu_therm)    call sum_mn_name(2*nu*sqrt(exp(p%lnTT))*p%sij2,idiag_epsK)
           if (lvisc_rho_nu_const) call sum_mn_name(2*nu*p%sij2,idiag_epsK)
           if (lvisc_sqrtrho_nu_const) call sum_mn_name(2*nu*sqrt(p%rho)*p%sij2,idiag_epsK)
           if (lvisc_nu_shock) &  ! Heating from shock viscosity.
@@ -1570,15 +1595,38 @@ module Viscosity
 !
     endsubroutine calc_visc_heat_ppd
 !***********************************************************************
-    subroutine getnu(nu_)
+    subroutine getnu(p,nu_input,nu_pencil,ivis)
 !
 !  Return the viscosity (by value)
 !
 !  14-aug-08/kapelrud: coded
 !
-      real,intent(out) :: nu_
+      type (pencil_case), optional :: p
+      real, optional, intent(out) :: nu_input
+      real, dimension(nx), optional, intent(out) :: nu_pencil
+      character (len=labellen), optional :: ivis
 !
-      nu_=nu
+      if (present(nu_input)) nu_input=nu
+      if (present(ivis))     ivis=ivisc(1)
+      if (present(nu_pencil)) then
+        if (.not. present(p)) then
+          call fatal_error('getnu',&
+              'p must be present in call to getnu when nu_pencil is present!')
+        endif
+        if (lvisc_simplified) then
+          nu_pencil=nu
+        elseif (lvisc_rho_nu_const) then
+          nu_pencil=nu*p%rho1
+        elseif (lvisc_nu_therm) then    
+          nu_pencil=nu*sqrt(exp(p%lnTT))
+        elseif (lvisc_mu_therm) then
+          nu_pencil=nu*sqrt(exp(p%lnTT))*p%rho1
+        elseif (lvisc_nu_const) then
+          nu_pencil=nu
+        else
+          call fatal_error('getnu','No such ivisc implemented!')
+        endif
+      endif
 !
     endsubroutine getnu
 !***********************************************************************

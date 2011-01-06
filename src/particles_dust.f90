@@ -2149,6 +2149,10 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
                 nu_epicycle2*fp(1:npar_loc,izp)
 !
+          case ('plain')
+            if (lheader) print*, 'dvvp_dt: Plain gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - gravz
+!
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
@@ -3785,26 +3789,36 @@ k_loop:   do while (.not. (k>npar_loc))
       use Viscosity, only: getnu
 !
       real,dimension(mpar_loc,mpvar) :: fp
-      real,dimension(k1_imn(imn):k2_imn(imn)) :: rep
+      real,dimension(k1_imn(imn):k2_imn(imn)) :: rep,nu
+      character (len=labellen) :: ivis=''
       intent(in) :: fp
       intent(inout) :: rep
 !
-      real :: nu
+      real :: nu_
       integer :: k
 !
-      call getnu(nu)
+      call getnu(nu_input=nu_,IVIS=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='rho-nu-const') then 
+        nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
+      elseif (ivis=='sqrtrho-nu-const') then 
+        nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
 !
       if (.not.lparticles_radius) then
         print*,'calc_pencil_rep: particle_radius module needs to be '// &
           'enabled to calculate the particles Reynolds numbers.'
         call fatal_error('calc_pencil_rep','')
-      elseif (nu==0.0) then
+      elseif (maxval(nu)==0.0) then
         print*,'calc_pencil_rep: nu (kinematic visc.) must be non-zero!'
         call fatal_error('calc_pencil_rep','')
       endif
 !
       do k=k1_imn(imn),k2_imn(imn)
-        rep(k)=2.0*fp(k,iap)*sqrt(sum((interp_uu(k,:)-fp(k,ivpx:ivpz))**2))/nu
+        rep(k)=2.0*fp(k,iap)*sqrt(sum((interp_uu(k,:)-fp(k,ivpx:ivpz))**2))/nu(k)
       enddo
 !
     endsubroutine calc_pencil_rep
@@ -3848,13 +3862,25 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(mpar_loc,mpvar) :: fp
       integer :: k
       real :: rep, stocunn, tausp1_par
+      character (len=labellen) :: ivis=''
 !
       intent(in) :: fp,k,rep,stocunn
       intent(out) :: tausp1_par
 !
-      real :: cdrag,dia,nu
+      real :: cdrag,dia,nu,nu_
 !
-      call getnu(nu)
+!  Find the kinematic viscosity
+!
+      call getnu(nu_input=nu_,ivis=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='rho-nu-const') then 
+        nu=nu_/interp_rho(k)
+      elseif (ivis=='sqrtrho-nu-const') then 
+        nu=nu_/sqrt(interp_rho(k))
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
 !
 !  Particle diameter
 !
@@ -3894,14 +3920,26 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension(mpar_loc,mpvar) :: fp
       real, dimension(3), intent(out) :: force
+      character (len=labellen) :: ivis=''
       integer :: k
       real :: stocunn
 !
       intent(in) :: fp,k
 !
-      real :: Szero,dia,TT,nu
+      real :: Szero,dia,TT,nu,nu_
 !
-      call getnu(nu)
+!  Find kinematic viscosity
+!
+      call getnu(nu_input=nu_,ivis=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='rho-nu-const') then 
+        nu=nu_/interp_rho(k)
+      elseif (ivis=='sqrtrho-nu-const') then 
+        nu=nu_/sqrt(interp_rho(k))
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
 !
 !  Particle diameter:
 !

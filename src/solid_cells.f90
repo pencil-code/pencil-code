@@ -639,7 +639,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     real    :: fp_pressure, fp_gradT
     real    :: fp_stress(3,3)
     integer :: iobj, ifp, ix0, iy0, iz0, i, ilong, ilat
-    real    :: nu, twonu, longitude, latitude, dlong, dlat, robj, rforce
+    real    :: longitude, latitude, dlong, dlat, robj, rforce
+    real, dimension(nx) :: nu, twonu
     real    :: force_x, force_y, force_z, loc_Nus
     real    :: twopi, nvec(3), surfaceelement,surfacecoeff
     real    :: deltaT,Tobj, drag_norm, nusselt_norm
@@ -663,7 +664,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           irhocount=0
         endif
 !
-        call getnu(nu)
+        call getnu(nu_pencil=nu,p=p)
         twopi=2.*pi
         twonu=2.*nu
 !
@@ -729,7 +730,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
                     idiag_c_dragz /= 0) then
                   fp_pressure=p%pp(ix0-nghost)
-                  fp_stress(:,:)=twonu*p%rho(ix0-nghost)*p%sij(ix0-nghost,:,:)
+                  fp_stress(:,:)=twonu(ix0-nghost)*p%rho(ix0-nghost)&
+                      *p%sij(ix0-nghost,:,:)
 !
 !  Force in x-,y-, and z-directions
 !
