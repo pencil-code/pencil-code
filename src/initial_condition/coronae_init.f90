@@ -54,7 +54,7 @@ contains
     real, dimension (mx,my,mz,mfarray) :: f
 !
     if (iproc==0) then
-      write(*,*) "----------------------------------------------------------------"
+      write(*,*) "-------------------------------------------------------------"
       write(*,*) "Parameters to be set in run.in:"
       write(*,*)
       write(*,*) "Kpara=",2e-11 /unit_density/unit_velocity**3./ &
@@ -62,7 +62,7 @@ contains
       write(*,*) "Kperp=",3.47e12/((unit_velocity**3*unit_magnetic**2 &
           *unit_length)/(unit_density * sqrt(unit_temperature)))
       write(*,*) "hcond_grad=",1e9*dxmax**3*unit_temperature/unit_velocity**3
-      write(*,*) "----------------------------------------------------------------"
+      write(*,*) "-------------------------------------------------------------"
     endif
 !
     call keep_compiler_quiet(f)
@@ -136,22 +136,6 @@ contains
           'no such value for lnTT_init')
     endselect
 !
-!    if (stratitype=='nothing') then
-      !   call warning('initial_condition_lnrho','Nothing to do')
-    ! elseif (stratitype=='hydrostatic') then
-    !   if (direction=='z') then
-    !     call hydrostatic_z(f)
-    !   elseif (direction=='x') then
-    !     call hydrostatic_x(f)
-    !   endif
-    ! else (stratitype=='hydrostatic_lnTT')
-
-    ! else
-    !   call setup_vert_profiles(f)
-    ! endif
-!
-! save to file stratification.dat
-!
     call write_stratification_dat(f)
 !
   endsubroutine initial_condition_lnrho
@@ -204,7 +188,8 @@ contains
         allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
 !
         if (lroot) then
-          open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          open (unit,file=lnT_dat,form='unformatted',status='unknown', &
+              recl=lend*prof_nz)
           read (unit,iostat=ierr) prof_lnTT
           read (unit,iostat=ierr) prof_z
           if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
@@ -227,10 +212,8 @@ contains
         if (direction=='z') then
           do j = n1-nghost, n2+nghost
             if (z(j) < prof_z(1) ) then
-              !call warning("setup_special","extrapolated lnT below bottom of initial profile")
               f(:,:,j,ilnTT) = prof_lnTT(1)
             elseif (z(j) >= prof_z(prof_nz)) then
-              !call warning("setup_special","extrapolated lnT over top of initial profile")
               f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -246,10 +229,8 @@ contains
         else if (direction=='x') then
           do j = l1-nghost, l2+nghost
             if (x(j) < prof_z(1) ) then
-              !call warning("setup_special","extrapolated lnT below bottom of initial profile")
               f(j,:,:,ilnTT) = prof_lnTT(1)
             elseif (x(j) >= prof_z(prof_nz)) then
-              !call warning("setup_special","extrapolated lnT over top of initial profile")
               f(j,:,:,ilnTT) = prof_lnTT(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -285,7 +266,8 @@ contains
         allocate (prof_z(prof_nz), prof_lnrho(prof_nz), stat=ierr)
 !
         if (lroot) then
-          open (unit,file=lnrho_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+          open (unit,file=lnrho_dat,form='unformatted',status='unknown', &
+              recl=lend*prof_nz)
           read (unit,iostat=ierr) prof_lnrho
           read (unit,iostat=ierr) prof_z
           if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
@@ -307,10 +289,8 @@ contains
         if (direction=='z') then
           do j = n1-nghost, n2+nghost
             if (z(j) < prof_z(1) ) then
-              !call warning("setup_special","extrapolated density below bottom of initial profile")
               f(:,:,j,ilnrho) = prof_lnrho(1)
             elseif (z(j) >= prof_z(prof_nz)) then
-              !call warning("setup_special","extrapolated density over top of initial profile")
               f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -326,10 +306,8 @@ contains
         elseif (direction=='x') then
           do j = l1-nghost, l2+nghost
             if (x(j) < prof_z(1) ) then
-              !call warning("setup_special","extrapolated density below bottom of initial profile")
               f(j,:,:,ilnrho) = prof_lnrho(1)
             elseif (x(j) >= prof_z(prof_nz)) then
-              !call warning("setup_special","extrapolated density over top of initial profile")
               f(j,:,:,ilnrho) = prof_lnrho(prof_nz)
             else
               do i = 1, prof_nz-1
@@ -377,7 +355,7 @@ contains
     character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
     inquire(IOLENGTH=lend) lnrho_0
-
+!
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
@@ -401,7 +379,8 @@ contains
         'Could not allocate memory for z coordinate or lnTT profile')
 !
     if (lroot) then
-      open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
+      open (unit,file=lnT_dat,form='unformatted',status='unknown', &
+          recl=lend*prof_nz)
       read (unit,iostat=ierr) prof_lnTT
       read (unit,iostat=ierr) prof_z
       if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
@@ -446,14 +425,15 @@ contains
 !  get T at new z
         do i=1,prof_nz-1
           if (tmp_z >= prof_z(i)  .and. tmp_z < prof_z(i+1) ) then
-            tmpdT = (prof_lnTT(i+1)-prof_lnTT(i))/(prof_z(i+1)-prof_z(i)) * (tmp_z-prof_z(i)) + prof_lnTT(i) -tmp_lnT
+            tmpdT = (prof_lnTT(i+1)-prof_lnTT(i))/(prof_z(i+1)-prof_z(i)) * &
+                (tmp_z-prof_z(i)) + prof_lnTT(i) -tmp_lnT
             tmp_lnT = tmp_lnT + tmpdT
           elseif (tmp_z >= prof_z(prof_nz)) then
             tmpdT = prof_lnTT(prof_nz) - tmp_lnT
             tmp_lnT = tmp_lnT + tmpdT
           endif
         enddo
-        tmp_lnrho = tmp_lnrho - tmpdT + gamma/(gamma-1.)*gravz*exp(-tmp_lnT) * dz_step
+        tmp_lnrho=tmp_lnrho-tmpdT+gamma/(gamma-1.)*gravz*exp(-tmp_lnT)*dz_step
       enddo
     enddo
 !
@@ -494,14 +474,14 @@ contains
     endif
 !
     do i=n1+1,n2+nghost
-      int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i-1)+1/TT(i))) 
+      int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i-1)+1/TT(i)))
       f(:,:,i,ilnrho)=f(:,:,i-1,ilnrho)-lnTT(i)+ &
           lnTT(i-1)+konst*int
     enddo
 !
     do i=0,nprocz-2
       ipt = nprocxy*i
-      if (iproc==ipt) then 
+      if (iproc==ipt) then
         do j=0,nprocx-1
           do k=0,nprocy-1
             ipt=j + nprocx*k+nprocxy*(ipz+1)
@@ -511,7 +491,7 @@ contains
       endif
     enddo
 !
-    if (ipz>0) then 
+    if (ipz>0) then
       call mpirecv_real(lnrho_0,1,nprocxy*(ipz-1),100*(ipz-1)+ipx*ipy)
       f(:,:,:,ilnrho) =  f(:,:,:,ilnrho)+lnrho_0
     endif
@@ -548,7 +528,7 @@ contains
     call get_xgravity(xgrav)
 !
     inquire(IOLENGTH=lend) lnrho_0
-
+!
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
@@ -572,7 +552,8 @@ contains
         'Could not allocate memory for x coordinate or lnTT profile')
 !
     if (lroot) then
-      open (unit,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nx)
+      open (unit,file=lnT_dat,form='unformatted',status='unknown', &
+          recl=lend*prof_nx)
       read (unit,iostat=ierr) prof_lnTT
       read (unit,iostat=ierr) prof_x
       if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
@@ -596,7 +577,8 @@ contains
         if ( ztmp .lt. prof_x(1) )  then
           lnTT_loop(i) = prof_lnTT(1)
         elseif( ztmp .ge. prof_x(j) .and.  ztmp .lt. prof_x(j+1)) then
-          lnTT_loop(i) = lin_inpol(prof_lnTT(j+1),prof_lnTT(j),prof_x(j+1),prof_x(j),ztmp)
+          lnTT_loop(i) = lin_inpol(prof_lnTT(j+1),prof_lnTT(j), &
+                                   prof_x(j+1),prof_x(j),ztmp)
         elseif  ( ztmp .ge. prof_x(prof_nx) )  then
           lnTT_loop(i) = prof_lnTT(prof_nx)
         endif
@@ -613,7 +595,7 @@ contains
 !
       integrand = 0.5*(x(j)-x(j-1))*(xgrav(j)*exp(-lnTT_loop(j)) + &
           xgrav(j-1)*exp(-lnTT_loop(j-1)) )
-
+!
       tmp_lnrho = f(j-1,m1,n1,ilnrho)+ lnTT_loop(j-1)-lnTT_loop(j)+ &
           gamma/(gamma-1.)*cp1*integrand
 !
@@ -683,7 +665,7 @@ contains
   endsubroutine write_stratification_dat
 !***********************************************************************
   function lin_inpol(f2,f1,x2,x1,yn)
-
+!
     real :: f2,f1,x2,x1,yn
     real :: lin_inpol
 !
@@ -692,7 +674,7 @@ contains
   endfunction lin_inpol
 !***********************************************************************\
   subroutine setup_tanh(f)
-!    
+!
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     real, dimension (mz) :: TT,z_SI,TT_var
     integer :: i,j
@@ -700,8 +682,8 @@ contains
     z_SI = z*unit_length
 !
     TT = (T1-T0)*(0.5*tanh((z_SI-z0_tanh)/width_tanh)+0.5)+T0
-    
-    if (ltemperature) then 
+!
+    if (ltemperature) then
       if (ltemperature_nolog) then
         TT_var = TT / unit_temperature
       else
@@ -721,7 +703,7 @@ contains
   endsubroutine setup_tanh
 !***********************************************************************
   subroutine piecewice_poly(f)
-!    
+!
     use EquationOfState, only: gamma, gamma_m1, get_cp1
     use Gravity, only: gravz
 !
@@ -796,9 +778,9 @@ contains
           f(:,:,i,ilnrho)=lnrho2+mpoly_special(4)*log(Temp/T2)
 !
         endif
-!        
+!
       enddo
-!    
+!
   endsubroutine piecewice_poly
 !***********************************************************************
 !
