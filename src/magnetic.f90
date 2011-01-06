@@ -644,6 +644,10 @@ module Magnetic
         write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
       endif
 !
+!  register the mean-field module
+!
+      if (lmeanfield_theory) call register_magnetic_mf()
+!
     endsubroutine register_magnetic
 !***********************************************************************
     subroutine initialize_magnetic(f,lstarting)
@@ -1038,9 +1042,10 @@ module Magnetic
         if (lupw_aa) call fatal_error('initialize_magnetic', 'upwind version of constant background advection is not implemented')
       endif
 !
-!  Initialize individual modules.
+!  Initialize individual modules, but need to do this only if
+!  lmeanfield_theory is true.
 !
-      call initialize_magnetic_mf (f,lstarting)
+      if (lmeanfield_theory) call initialize_magnetic_mf(f,lstarting)
 !
       if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)
@@ -1055,7 +1060,7 @@ module Magnetic
       if (ierr/=0) call fatal_error('initialize_magnetic',&
            'there was a problem when sharing lfrozen_bb_top')
 !
-!  calculate cosz and sinz for calculating the phase of a Beltrami field
+!  Calculate cosz and sinz for calculating the phase of a Beltrami field
 !  The choice to use k1_ff may not be optimal, but keep it for now.
 !
       if (idiag_bsinphz/=0 .or. idiag_bcosphz/=0 &
@@ -1287,22 +1292,27 @@ module Magnetic
 !
         case default
 !
-!  Catch unknown values
+!  Catch unknown values.
 !
           call fatal_error('init_aa', &
               'init_aa value "' // trim(initaa(j)) // '" not recognised')
 !
         endselect
 !
-!  End loop over initial conditions
+!  End loop over initial conditions.
 !
       enddo
 !
-!  Interface for user's own initial condition
+!  Initialize individual modules, but need to do this only if
+!  lmeanfield_theory is true.
+!
+      if (lmeanfield_theory) call init_aa_mf(f)
+!
+!  Interface for user's own initial condition.
 !
       if (linitial_condition) call initial_condition_aa(f)
 !
-!  allow for pressure equilibrium (for isothermal tube)
+!  Allow for pressure equilibrium (for isothermal tube)
 !  assume that ghost zones have already been set.
 !  corrected expression below for gamma /= 1 case.
 !  The beq2 expression for 2*mu0*p is not general yet.
@@ -3348,6 +3358,7 @@ module Magnetic
         if (idiag_examz2/=0) call xysum_mn_name_z(p%exa(:,2),idiag_examz2)
         if (idiag_examz3/=0) call xysum_mn_name_z(p%exa(:,3),idiag_examz3)
 !
+!  Calculate magnetic helicity flux for n=3 hyperdiffusion (E^{(3)}xA contribution).
 !
         if (idiag_e3xamz1/=0) call xysum_mn_name_z(p%e3xa(:,1),idiag_e3xamz1)
         if (idiag_e3xamz2/=0) call xysum_mn_name_z(p%e3xa(:,2),idiag_e3xamz2)

@@ -19,6 +19,7 @@ module Magnetic_meanfield
 !
   use Cdata
   use Cparam
+  use Magnetic_meanfield_demfdt
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use Sub, only: keep_compiler_quiet
 !
@@ -49,14 +50,14 @@ module Magnetic_meanfield
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
-  real :: dummy=0.0
+  logical :: ldemfdt=.false.
   logical :: lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical, pointer :: lmeanfield_theory
 !
   namelist /magnetic_mf_init_pars/ &
-      dummy
+      ldemfdt
 !
 ! Run parameters
 !
@@ -87,7 +88,7 @@ module Magnetic_meanfield
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lOmega_effect, Omega_profile, Omega_ampl, &
-      llarge_scale_velocity, EMF_profile, lEMF_profile, &
+      llarge_scale_velocity, EMF_profile, lEMF_profile, ldemfdt, &
       Omega_rmax,Omega_rwidth
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -104,6 +105,24 @@ module Magnetic_meanfield
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
 !
   contains
+!***********************************************************************
+    subroutine register_magnetic_mf()
+!
+!  No additional variables to be initialized here, but other mean-field
+!  modules that are being called from here may need additional variables.
+!
+!  6-jan-11/axel: adapted from magnetic
+!
+!  Identify version number.
+!
+      if (lroot) call svn_id( &
+          "$Id$")
+!
+!  Register secondary mean-field modules.
+!
+      if (ldemfdt) call register_magnetic_mf_demfdt()
+!
+    endsubroutine register_magnetic_mf
 !***********************************************************************
     subroutine initialize_magnetic_mf(f,lstarting)
 !
@@ -186,13 +205,32 @@ module Magnetic_meanfield
         endif
       endif
 !
-      call keep_compiler_quiet(lstarting)
+!  initialize secondary mean-field modules
+!
+      if (ldemfdt) call initialize_magnetic_mf_demfdt(f,lstarting)
 !
     endsubroutine initialize_magnetic_mf
 !***********************************************************************
+    subroutine init_aa_mf(f)
+!
+!  Initialise mean-field related magnetic field; called from magnetic.f90
+!  At the moment, no own initial conditions are allowed, but we need this
+!  to call secondary modules
+!
+!   6-jan-2011/axel: adapted from magnetic
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+!  Initialize secondary mean-field modules.
+!
+      if (ldemfdt) call init_aa_mf_demfdt(f)
+!
+    endsubroutine init_aa_mf
+!***********************************************************************
     subroutine pencil_criteria_magnetic_mf()
 !
-!   All pencils that the Magnetic mean-field module depends on are specified here.
+!   All pencils that the magnetic mean-field module depends on
+!   are specified here.
 !
 !  28-jul-10/axel: adapted from magnetic
 !
@@ -231,7 +269,9 @@ module Magnetic_meanfield
 !
       if (idiag_EMFdotBm/=0.or.idiag_EMFdotB_int/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
 !
-!  Check whether right variables are set for half-box calculations.
+!  Pencil criteria for secondary modules
+!
+      if (ldemfdt) call pencil_criteria_magnetic_mf_demfdt()
 !
     endsubroutine pencil_criteria_magnetic_mf
 !***********************************************************************
@@ -290,6 +330,10 @@ module Magnetic_meanfield
 !
       if (lpencil_in(i_jxbr_mf)) lpencil_in(i_jxb_mf)=.true.
       if (lpencil_in(i_jxb_mf)) lpencil_in(i_jxb)=.true.
+!
+!  Pencil criteria for secondary modules
+!
+      if (ldemfdt) call pencil_interdep_magnetic_mf_demfdt(lpencil_in)
 !
     endsubroutine pencil_interdep_magnetic_mf
 !***********************************************************************
@@ -633,11 +677,15 @@ module Magnetic_meanfield
 !       endif
 !     endif
 !
+!  Time-advance of secondary mean-field modules.
+!
+      if (ldemfdt) call demf_dt_meanfield(f,df,p)
+!
     endsubroutine daa_dt_meanfield
 !***********************************************************************
     subroutine Omega_effect(f,df,p)
 !
-!  Omega effect coded (normally used in context of mean field theory)
+!  Omega effect coded (normally used in context of mean-field theory)
 !  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
 !  In most cases the Omega effect can be modeled using hydro_kinematic,
 !  but this is not possible when the flow varies in a direction that
@@ -705,6 +753,10 @@ module Magnetic_meanfield
         read(unit,NML=magnetic_mf_init_pars,ERR=99)
       endif
 !
+!  read namelist for secondary modules in mean-field theory (if invoked)
+!
+      if (ldemfdt) call read_magnetic_mf_demfdt_init_pars(unit,iostat)
+!
 99    return
 !
     endsubroutine read_magnetic_mf_init_pars
@@ -714,6 +766,10 @@ module Magnetic_meanfield
       integer, intent(in) :: unit
 !
       write(unit,NML=magnetic_mf_init_pars)
+!
+!  write namelist for secondary modules in mean-field theory (if invoked)
+!
+      if (ldemfdt) call write_magnetic_mf_demfdt_init_pars(unit)
 !
     endsubroutine write_magnetic_mf_init_pars
 !***********************************************************************
@@ -728,6 +784,10 @@ module Magnetic_meanfield
         read(unit,NML=magnetic_mf_run_pars,ERR=99)
       endif
 !
+!  read namelist for secondary modules in mean-field theory (if invoked)
+!
+      if (ldemfdt) call read_magnetic_mf_demfdt_run_pars(unit,iostat)
+!
 99    return
 !
     endsubroutine read_magnetic_mf_run_pars
@@ -737,6 +797,10 @@ module Magnetic_meanfield
       integer, intent(in) :: unit
 !
       write(unit,NML=magnetic_mf_run_pars)
+!
+!  write namelist for secondary modules in mean-field theory (if invoked)
+!
+      if (ldemfdt) call write_magnetic_mf_demfdt_run_pars(unit)
 !
     endsubroutine write_magnetic_mf_run_pars
 !***********************************************************************
