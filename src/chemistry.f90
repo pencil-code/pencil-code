@@ -1012,10 +1012,10 @@ module Chemistry
 !***********************************************************************
       subroutine flame_front(f)
 !
-! 06.05.2009/Nils Erland L. Haugen: adapted from similar
+!  05-jun-09/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
-! 06.24.2010/Julien Savre: Modifications for lean methane/air combustion
-! This routine set up the initial profiles used in 1D flame speed measurments
+!  24-jun-10/Julien Savre: Modifications for lean methane/air combustion
+!  This routine set up the initial profiles used in 1D flame speed measurments
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i,j,k
@@ -1255,7 +1255,7 @@ module Chemistry
 !***********************************************************************
       subroutine triple_flame(f)
 !
-! 26.07.2010/Julien Savre: Copy from the flame_front case
+! 26-jul-10/Julien Savre: Copy from the flame_front case
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i,j,k
@@ -1537,7 +1537,7 @@ module Chemistry
 !***********************************************************************
       subroutine flame(f)
 !
-! 06.05.2009/Nils Erland L. Haugen: adapted from similar
+! 05-jun-09/Nils Erland L. Haugen: adapted from similar
 !                                   routine in special/chem_stream.f90
 ! This routine set up the initial profiles used in 1D flame speed measurments
 ! NILS: This routine is essentially the samw as flame_front, but I leave
@@ -1896,17 +1896,17 @@ module Chemistry
 !***********************************************************************
     subroutine opposite_flames(f)
 !
-!  nilshau: 2010.01.03 (adapted from opposite_ignitions)
+!  03-jan-10/nilshau: adapted from opposite_ignitions
 !
 !  Set up two oppositely directed flame fronts in the x-direction.
-!  The two fronts have fresh gas between them. 
+!  The two fronts have fresh gas between them.
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: j1,j2,j3
 !
       real :: mO2, mH2, mN2, mH2O, lower,upper
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: initial_mu1, final_massfrac_O2, mu1, phi
+      real :: final_massfrac_O2, mu1, phi
       logical :: found_specie
 !
      lflame_front=.true.
@@ -1948,9 +1948,9 @@ module Chemistry
 !
          phi=exp(-(lower/init_x2)**2)+exp(-(upper/init_x2)**2)
          if (phi>1.0) phi=1.0
-
+!
 !  Find temperature, species and density based on progress variable
-
+!
          f(j1,j2,j3,ilnTT)=log(init_TT1+phi*(init_TT2-init_TT1))
          f(j1,j2,j3,i_H2)=(1-phi)*initial_massfractions(ichem_H2)
          f(j1,j2,j3,i_O2)=(1-phi)*(initial_massfractions(ichem_O2)&
@@ -1973,7 +1973,7 @@ module Chemistry
 !***********************************************************************
     subroutine opposite_ignitions(f)
 !
-!  nilshau: 2010.01.03 (adapted from flame_blob)
+!  03-jan-10/nilshau: adapted from flame_blob
 !
 !  Set up two oppositely directed flame fronts in the x-direction.
 !  The two fronts have fresh gas between them.
@@ -2058,7 +2058,7 @@ module Chemistry
 !
 !  Calculate quantities for a mixture
 !
-!  06/22/2010:julien: Added evaluation of diffusion coefficients using constant
+!  22-jun-10/julien: Added evaluation of diffusion coefficients using constant
 !                     Lewis numers Di = lambda/(rho*Cp*Lei)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3567,7 +3567,7 @@ module Chemistry
 !
 !  Note that since the B_n term is in logarithmic form within the code
 !  the exponential must be used for output.
-!         
+!
         write(unit=output_string(30:45),fmt='(E14.4)') exp(B_n(reac))
         write(unit=output_string(47:62),fmt='(E14.4)') alpha_n(reac)
         write(unit=output_string(64:79),fmt='(E14.4)') E_an(reac)
@@ -3604,7 +3604,7 @@ module Chemistry
 !  if the file with chemkin data exists
 !  reading the Chemkin data
 !
-!  06/21/2010:julien: Reading lewis.dat file to collect constant Lewis numbers
+!  21-jul-10/julien: Reading lewis.dat file to collect constant Lewis numbers
 !                     for each species
 !
       character (len=20) :: input_file='chem.inp'
@@ -4858,7 +4858,7 @@ module Chemistry
 !
 !  Calculate diffusion term, p%DYDt_diff
 !
-!  06/22/2010:julien: Evaluation of mass diffusion fluxes using Fick's law for simplified
+!  22-jun-10/julien: Evaluation of mass diffusion fluxes using Fick's law for simplified
 !                     diffusion using constant Lewis numbers
 !
       use Sub, only: del2,grad,dot_mn
@@ -5067,7 +5067,7 @@ module Chemistry
 !
 ! Find a slice of the speed of sound
 !
-! 2009.12.10: Nils Erland L. Haugen (coded)
+! 10-dez-09/nils: coded
 !
       real, dimension (:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
@@ -5108,7 +5108,7 @@ module Chemistry
 !
 !  Get a 2D slice of gamma
 !
-!  2009.12.10: Nils Erland L. Haugen (coded)
+!  10-dez-09/Nils Erland L. Haugen: coded
 !
       real, dimension (:,:), intent(out)  :: slice
       integer, intent(in) :: index, dir
@@ -5563,7 +5563,7 @@ module Chemistry
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
 !
-! 2009.12.10: Nils Erland L. Haugen (coded)
+!  10-dez-09/Nils Erland L. Haugen: coded
 !
       use Deriv, only: der_onesided_4_slice_other
 !
