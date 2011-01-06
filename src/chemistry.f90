@@ -624,6 +624,8 @@ module Chemistry
           call flame_blob(f)
         case ('opposite_flames')
           call opposite_flames(f)
+        case ('opposite_ignitions')
+          call opposite_ignitions(f)
         case ('prerun_1D')
           call prerun_1D(f,prerun_directory)
         case ('prerun_1D_opp')
@@ -1894,6 +1896,83 @@ module Chemistry
 !***********************************************************************
     subroutine opposite_flames(f)
 !
+!  nilshau: 2010.01.03 (adapted from opposite_ignitions)
+!
+!  Set up two oppositely directed flame fronts in the x-direction.
+!  The two fronts have fresh gas between them. 
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j1,j2,j3
+!
+      real :: mO2, mH2, mN2, mH2O, lower,upper
+      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
+      real :: initial_mu1, final_massfrac_O2, mu1, phi
+      logical :: found_specie
+!
+     lflame_front=.true.
+!
+      call air_field(f)
+!
+! Initialize some indexes
+!
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
+      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
+      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
+      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      mO2 =species_constants(ichem_O2 ,imass)
+      mH2 =species_constants(ichem_H2 ,imass)
+      mH2O=species_constants(ichem_H2O,imass)
+      mN2 =species_constants(ichem_N2 ,imass)
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+!
+      final_massfrac_O2&
+          =(initial_massfractions(ichem_O2)/mO2&
+          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+!
+       if (ltemperature_nolog) call fatal_error('opposite_flames',&
+           'only implemented for ltemperature_nolog=F')
+!
+!  Loop over all grid points
+!
+       do j3=1,mz
+       do j2=1,my
+       do j1=1,mx
+!
+!  First define the distance from the lower and upper domain boundary.
+!
+         lower=x(j1)-xyz0(1)
+         upper=xyz1(1)-x(j1)
+!
+!  Find progress variable phi based on distance from boundaries.
+!
+         phi=exp(-(lower/init_x2)**2)+exp(-(upper/init_x2)**2)
+         if (phi>1.0) phi=1.0
+
+!  Find temperature, species and density based on progress variable
+
+         f(j1,j2,j3,ilnTT)=log(init_TT1+phi*(init_TT2-init_TT1))
+         f(j1,j2,j3,i_H2)=(1-phi)*initial_massfractions(ichem_H2)
+         f(j1,j2,j3,i_O2)=(1-phi)*(initial_massfractions(ichem_O2)&
+             -final_massfrac_O2)+final_massfrac_O2
+         f(j1,j2,j3,i_H2O)=phi*initial_massfractions(ichem_H2)*mH2O/mH2
+         mu1=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
+             +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
+         f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
+             -log(mu1)
+       enddo
+       enddo
+       enddo
+!
+!  Check if we want nolog of density
+!
+      if (ldensity_nolog)     f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+      if (ltemperature_nolog) f(:,:,:,iTT) =exp(f(:,:,:,ilnTT))
+!
+    endsubroutine opposite_flames
+!***********************************************************************
+    subroutine opposite_ignitions(f)
+!
 !  nilshau: 2010.01.03 (adapted from flame_blob)
 !
 !  Set up two oppositely directed flame fronts in the x-direction.
@@ -1973,7 +2052,7 @@ module Chemistry
 !
       if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
-    endsubroutine opposite_flames
+    endsubroutine opposite_ignitions
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
