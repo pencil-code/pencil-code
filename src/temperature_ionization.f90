@@ -66,7 +66,7 @@ module Entropy
   integer :: idiag_ethm=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
   integer :: idiag_dtchi=0,idiag_dtc=0
   integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
-  integer :: idiag_mum=0
+  integer :: idiag_mum=0,idiag_ppmax=0,idiag_ppmin=0
 !
   contains
 !***********************************************************************
@@ -406,6 +406,8 @@ module Entropy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_ppmax/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_ppmin/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_mum/=0) lpenc_diagnos(i_mu1)=.true.
 !
     endsubroutine pencil_criteria_entropy
@@ -585,6 +587,8 @@ module Entropy
         endif
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_ppmax/=0) call max_mn_name(p%pp,idiag_ppmax)
+        if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
       endif
@@ -722,7 +726,7 @@ module Entropy
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0
+        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
         idiag_mum=0
       endif
 !
@@ -743,6 +747,8 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
+        call parse_name(iname,cname(iname),cform(iname),'ppmax',idiag_ppmax)
+        call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'mum',idiag_mum)
       enddo
