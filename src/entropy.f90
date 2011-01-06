@@ -87,7 +87,7 @@ module Entropy
   logical :: lcooling_general=.false., lcooling_average=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
-  logical :: lcalc_cs2mean=.false.
+  logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
@@ -106,7 +106,7 @@ module Entropy
 !
 !  xy-averaged field
 !
-  real, dimension (mz) :: ssmz
+  real, dimension (mz) :: ssmz,cs2mz
   real, dimension (nz,3) :: gssmz
   real, dimension (nz) :: del2ssmz
   real, dimension (mx) :: cs2mx
@@ -140,7 +140,7 @@ module Entropy
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
-      lcalc_ss_volaverage, lcalc_ssmean, lcalc_cs2mean, &
+      lcalc_ss_volaverage, lcalc_ssmean, lcalc_cs2mean, lcalc_cs2mz_mean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
       TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
       xtop, tau_cool2, tau_cool_ss, tau_diff, lfpres_from_pressure, &
@@ -2677,7 +2677,7 @@ module Entropy
       integer :: nyz=nygrid*nzgrid
       integer :: l,m,n
       real :: fact, cv1
-      real, dimension (mz) :: ssmz1_tmp
+      real, dimension (mz) :: cs2mz_tmp, ssmz1_tmp
       real, dimension (mx) :: cs2mx_tmp
       real, dimension (mx,my) :: cs2mxy_tmp
 !
@@ -2742,6 +2742,31 @@ module Entropy
 !
         endif
 !
+      endif
+!
+!  Compute average sound speed cs2(z)
+!
+      if (lcalc_cs2mz_mean) then
+        fact=1./nxy
+        cs2mz=0.
+        if (ldensity_nolog) then
+          do n=1,mz
+            cs2mz(n)=fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho)) &
+                -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
+          enddo
+        else
+          do n=1,mz
+            cs2mz(n)=fact*sum(cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho) &
+                -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
+          enddo
+        endif
+!
+!  communicate over x and y directions
+!
+        if (nprocx>1.or.nprocy>1) then
+          call mpiallreduce_sum(cs2mz,cs2mz_tmp,mz,idir=12)
+          cs2mz=cs2mz_tmp
+        endif
       endif
 !
 !  Compute volume average of entropy.
@@ -3843,8 +3868,23 @@ module Entropy
           call calc_heat_cool_variable(heat,p)
         endif
       endif
-      if (tau_cool2/=0.0) &
+!
+!  Cooling/heating with respect to cs2mz(n)-cs2cool.
+!  There is also the possibility to do cooling with respect to
+!  the horizontal mean of cs2, cs2mz(n), but that has led to
+!  secular instabilities for reasons that are not yet well understood.
+!  A test directory is in axel/forced/BruntVaisala/tst.
+!
+      if (tau_cool2/=0.0) then
+        if (lcalc_cs2mz_mean) then
+          heat=heat-p%rho*(cs2mz(n)-cs2cool)/tau_cool2
+          if (ip<12) then
+            if (m==m1.and.n==50) print*,n,cs2mz(n),p%cs2(1),cs2cool
+          endif
+        else
           heat=heat-p%rho*(p%cs2-cs2cool)/tau_cool2
+        endif
+      endif
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !
