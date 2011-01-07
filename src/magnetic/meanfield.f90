@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lmagnetic_mf = .true.
+! CPARAM logical, parameter :: lmagn_mf = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -56,7 +56,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical, pointer :: lmeanfield_theory
 !
-  namelist /magnetic_mf_init_pars/ &
+  namelist /magn_mf_init_pars/ &
       ldemfdt
 !
 ! Run parameters
@@ -74,7 +74,7 @@ module Magnetic_meanfield
   logical :: ldelta_profile=.false.
   logical :: lrhs_term=.false.
 !
-  namelist /magnetic_mf_run_pars/ &
+  namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, &
       alpha_eps, alpha_width, lmeanfield_noalpm, alpha_profile, &
       x_surface, z_surface, &
@@ -106,7 +106,7 @@ module Magnetic_meanfield
 !
   contains
 !***********************************************************************
-    subroutine register_magnetic_mf()
+    subroutine register_magn_mf()
 !
 !  No additional variables to be initialized here, but other mean-field
 !  modules that are being called from here may need additional variables.
@@ -120,11 +120,11 @@ module Magnetic_meanfield
 !
 !  Register secondary mean-field modules.
 !
-      if (ldemfdt) call register_magnetic_mf_demfdt()
+      if (ldemfdt) call register_magn_mf_demfdt()
 !
-    endsubroutine register_magnetic_mf
+    endsubroutine register_magn_mf
 !***********************************************************************
-    subroutine initialize_magnetic_mf(f,lstarting)
+    subroutine initialize_magn_mf(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -169,7 +169,7 @@ module Magnetic_meanfield
 !  other subroutines
 !
       call get_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
-      if (ierr/=0) call fatal_error("initialize_magnetic_mf: ", &
+      if (ierr/=0) call fatal_error("initialize_magn_mf: ", &
               "cannot get shared variable lmeanfield_theory")
       if (lmeanfield_theory) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
@@ -207,9 +207,9 @@ module Magnetic_meanfield
 !
 !  initialize secondary mean-field modules
 !
-      if (ldemfdt) call initialize_magnetic_mf_demfdt(f,lstarting)
+      if (ldemfdt) call initialize_magn_mf_demfdt(f,lstarting)
 !
-    endsubroutine initialize_magnetic_mf
+    endsubroutine initialize_magn_mf
 !***********************************************************************
     subroutine init_aa_mf(f)
 !
@@ -227,7 +227,7 @@ module Magnetic_meanfield
 !
     endsubroutine init_aa_mf
 !***********************************************************************
-    subroutine pencil_criteria_magnetic_mf()
+    subroutine pencil_criteria_magn_mf()
 !
 !   All pencils that the magnetic mean-field module depends on
 !   are specified here.
@@ -271,11 +271,11 @@ module Magnetic_meanfield
 !
 !  Pencil criteria for secondary modules
 !
-      if (ldemfdt) call pencil_criteria_magnetic_mf_demfdt()
+      if (ldemfdt) call pencil_criteria_magn_mf_demfdt()
 !
-    endsubroutine pencil_criteria_magnetic_mf
+    endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
-    subroutine pencil_interdep_magnetic_mf(lpencil_in)
+    subroutine pencil_interdep_magn_mf(lpencil_in)
 !
 !  Interdependency among pencils from the Magnetic module is specified here.
 !
@@ -333,11 +333,11 @@ module Magnetic_meanfield
 !
 !  Pencil criteria for secondary modules
 !
-      if (ldemfdt) call pencil_interdep_magnetic_mf_demfdt(lpencil_in)
+      if (ldemfdt) call pencil_interdep_magn_mf_demfdt(lpencil_in)
 !
-    endsubroutine pencil_interdep_magnetic_mf
+    endsubroutine pencil_interdep_magn_mf
 !***********************************************************************
-    subroutine calc_pencils_magnetic_mf(f,p)
+    subroutine calc_pencils_magn_mf(f,p)
 !
 !  Calculate Magnetic mean-field pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -589,7 +589,7 @@ module Magnetic_meanfield
         if (idiag_qem/=0) call sum_mn_name(meanfield_qe_func,idiag_qem)
       endif
 !
-    endsubroutine calc_pencils_magnetic_mf
+    endsubroutine calc_pencils_magn_mf
 !***********************************************************************
     subroutine daa_dt_meanfield(f,df,p)
 !
@@ -750,69 +750,69 @@ module Magnetic_meanfield
 !
     endsubroutine Omega_effect
 !***********************************************************************
-    subroutine read_magnetic_mf_init_pars(unit,iostat)
+    subroutine read_magn_mf_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=magnetic_mf_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=magn_mf_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=magnetic_mf_init_pars,ERR=99)
+        read(unit,NML=magn_mf_init_pars,ERR=99)
       endif
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call read_magnetic_mf_demfdt_init_pars(unit,iostat)
+      if (ldemfdt) call read_magn_mf_demfdt_init_pars(unit,iostat)
 !
 99    return
 !
-    endsubroutine read_magnetic_mf_init_pars
+    endsubroutine read_magn_mf_init_pars
 !***********************************************************************
-    subroutine write_magnetic_mf_init_pars(unit)
+    subroutine write_magn_mf_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_mf_init_pars)
+      write(unit,NML=magn_mf_init_pars)
 !
 !  write namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call write_magnetic_mf_demfdt_init_pars(unit)
+      if (ldemfdt) call write_magn_mf_demfdt_init_pars(unit)
 !
-    endsubroutine write_magnetic_mf_init_pars
+    endsubroutine write_magn_mf_init_pars
 !***********************************************************************
-    subroutine read_magnetic_mf_run_pars(unit,iostat)
+    subroutine read_magn_mf_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=magnetic_mf_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=magn_mf_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=magnetic_mf_run_pars,ERR=99)
+        read(unit,NML=magn_mf_run_pars,ERR=99)
       endif
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call read_magnetic_mf_demfdt_run_pars(unit,iostat)
+      if (ldemfdt) call read_magn_mf_demfdt_run_pars(unit,iostat)
 !
 99    return
 !
-    endsubroutine read_magnetic_mf_run_pars
+    endsubroutine read_magn_mf_run_pars
 !***********************************************************************
-    subroutine write_magnetic_mf_run_pars(unit)
+    subroutine write_magn_mf_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_mf_run_pars)
+      write(unit,NML=magn_mf_run_pars)
 !
 !  write namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call write_magnetic_mf_demfdt_run_pars(unit)
+      if (ldemfdt) call write_magn_mf_demfdt_run_pars(unit)
 !
-    endsubroutine write_magnetic_mf_run_pars
+    endsubroutine write_magn_mf_run_pars
 !***********************************************************************
-    subroutine rprint_magnetic_mf(lreset,lwrite)
+    subroutine rprint_magn_mf(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant for magnetic fields.
 !
@@ -887,7 +887,7 @@ module Magnetic_meanfield
       if (lwr) then
       endif
 !
-    endsubroutine rprint_magnetic_mf
+    endsubroutine rprint_magn_mf
 !***********************************************************************
 endmodule Magnetic_meanfield
 

@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lmagnetic_mf_demfdt = .true.
+! CPARAM logical, parameter :: ldemfdt = .true.
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
@@ -36,13 +36,13 @@ module Magnetic_meanfield_demfdt
   real, dimension (ninit) :: amplemf=0.
   real :: tau_emf=0., tau1_emf=0., eta_emf=0.
 !
-  namelist /magnetic_mf_demfdt_init_pars/ &
+  namelist /magn_mf_demfdt_init_pars/ &
       tau_emf, tau1_emf, eta_emf, &
       initemf
 !
 ! Run parameters
 !
-  namelist /magnetic_mf_demfdt_run_pars/ &
+  namelist /magn_mf_demfdt_run_pars/ &
       tau_emf, tau1_emf, eta_emf
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -53,7 +53,7 @@ module Magnetic_meanfield_demfdt
 !
   contains
 !***********************************************************************
-    subroutine register_magnetic_mf_demfdt()
+    subroutine register_magn_mf_demfdt()
 !
 !  Initialise additional variables
 !
@@ -81,9 +81,9 @@ module Magnetic_meanfield_demfdt
         write(15,*) 'emf = fltarr(mx,my,mz,3)*one'
       endif
 !
-    endsubroutine register_magnetic_mf_demfdt
+    endsubroutine register_magn_mf_demfdt
 !***********************************************************************
-    subroutine initialize_magnetic_mf_demfdt(f,lstarting)
+    subroutine initialize_magn_mf_demfdt(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -102,11 +102,11 @@ module Magnetic_meanfield_demfdt
       if (tau_emf/=0.) then
         tau1_emf=1./tau_emf
       endif
-      if (lroot) print*,'initialize_magnetic_mf_demfdt: tau1_emf=',tau1_emf
+      if (lroot) print*,'initialize_magn_mf_demfdt: tau1_emf=',tau1_emf
 !
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_magnetic_mf_demfdt
+    endsubroutine initialize_magn_mf_demfdt
 !***********************************************************************
     subroutine init_aa_mf_demfdt(f)
 !
@@ -138,7 +138,7 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine init_aa_mf_demfdt
 !***********************************************************************
-    subroutine pencil_criteria_magnetic_mf_demfdt()
+    subroutine pencil_criteria_magn_mf_demfdt()
 !
 !  Pencils that are connected with the time advance of the EMF
 !
@@ -146,9 +146,9 @@ module Magnetic_meanfield_demfdt
 !
       use Mpicomm, only: stop_it
 !
-    endsubroutine pencil_criteria_magnetic_mf_demfdt
+    endsubroutine pencil_criteria_magn_mf_demfdt
 !***********************************************************************
-    subroutine pencil_interdep_magnetic_mf_demfdt(lpencil_in)
+    subroutine pencil_interdep_magn_mf_demfdt(lpencil_in)
 !
 !  Interdependency among pencils from the Magnetic module is specified here.
 !
@@ -156,9 +156,9 @@ module Magnetic_meanfield_demfdt
 !
       logical, dimension(npencils) :: lpencil_in
 !
-    endsubroutine pencil_interdep_magnetic_mf_demfdt
+    endsubroutine pencil_interdep_magn_mf_demfdt
 !***********************************************************************
-    subroutine calc_pencils_magnetic_mf_demfdt(f,p)
+    subroutine calc_pencils_magn_mf_demfdt(f,p)
 !
 !  Calculate secondary magnetic mean-field pencils.
 !
@@ -172,7 +172,7 @@ module Magnetic_meanfield_demfdt
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_pencils_magnetic_mf_demfdt
+    endsubroutine calc_pencils_magn_mf_demfdt
 !***********************************************************************
     subroutine demf_dt_meanfield(f,df,p)
 !
@@ -224,53 +224,53 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine demf_dt_meanfield
 !***********************************************************************
-    subroutine read_magnetic_mf_demfdt_init_pars(unit,iostat)
+    subroutine read_magn_mf_demfdt_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=magnetic_mf_demfdt_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=magn_mf_demfdt_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=magnetic_mf_demfdt_init_pars,ERR=99)
+        read(unit,NML=magn_mf_demfdt_init_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_magnetic_mf_demfdt_init_pars
+    endsubroutine read_magn_mf_demfdt_init_pars
 !***********************************************************************
-    subroutine write_magnetic_mf_demfdt_init_pars(unit)
+    subroutine write_magn_mf_demfdt_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_mf_demfdt_init_pars)
+      write(unit,NML=magn_mf_demfdt_init_pars)
 !
-    endsubroutine write_magnetic_mf_demfdt_init_pars
+    endsubroutine write_magn_mf_demfdt_init_pars
 !***********************************************************************
-    subroutine read_magnetic_mf_demfdt_run_pars(unit,iostat)
+    subroutine read_magn_mf_demfdt_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
       if (present(iostat)) then
-        read(unit,NML=magnetic_mf_demfdt_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=magn_mf_demfdt_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=magnetic_mf_demfdt_run_pars,ERR=99)
+        read(unit,NML=magn_mf_demfdt_run_pars,ERR=99)
       endif
 !
 99    return
 !
-    endsubroutine read_magnetic_mf_demfdt_run_pars
+    endsubroutine read_magn_mf_demfdt_run_pars
 !***********************************************************************
-    subroutine write_magnetic_mf_demfdt_run_pars(unit)
+    subroutine write_magn_mf_demfdt_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit,NML=magnetic_mf_demfdt_run_pars)
+      write(unit,NML=magn_mf_demfdt_run_pars)
 !
-    endsubroutine write_magnetic_mf_demfdt_run_pars
+    endsubroutine write_magn_mf_demfdt_run_pars
 !***********************************************************************
-    subroutine rprint_magnetic_mf_demfdt(lreset,lwrite)
+    subroutine rprint_magn_mf_demfdt(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant for magnetic fields.
 !
@@ -300,6 +300,6 @@ module Magnetic_meanfield_demfdt
         call parse_name(iname,cname(iname),cform(iname),'EMFmin',idiag_EMFmin)
       enddo
 !
-    endsubroutine rprint_magnetic_mf_demfdt
+    endsubroutine rprint_magn_mf_demfdt
 !***********************************************************************
 endmodule Magnetic_meanfield_demfdt

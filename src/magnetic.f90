@@ -646,7 +646,7 @@ module Magnetic
 !
 !  register the mean-field module
 !
-      if (lmeanfield_theory) call register_magnetic_mf()
+      if (lmeanfield_theory) call register_magn_mf()
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -657,7 +657,7 @@ module Magnetic
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !
-      use Magnetic_meanfield, only: initialize_magnetic_mf
+      use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: put_shared_variable
@@ -1045,7 +1045,7 @@ module Magnetic
 !  Initialize individual modules, but need to do this only if
 !  lmeanfield_theory is true.
 !
-      if (lmeanfield_theory) call initialize_magnetic_mf(f,lstarting)
+      if (lmeanfield_theory) call initialize_magn_mf(f,lstarting)
 !
       if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)
@@ -1655,9 +1655,9 @@ module Magnetic
       else
       endif
 !
-!  check for pencil_criteria_magnetic_mf
+!  check for pencil_criteria_magn_mf
 !
-      if (lmeanfield_theory) call pencil_criteria_magnetic_mf()
+      if (lmeanfield_theory) call pencil_criteria_magn_mf()
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1852,9 +1852,9 @@ module Magnetic
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !
-!  check for pencil_interdep_magnetic_mf
+!  check for pencil_interdep_magn_mf
 !
-      if (lmeanfield_theory) call pencil_interdep_magnetic_mf(lpencil_in)
+      if (lmeanfield_theory) call pencil_interdep_magn_mf(lpencil_in)
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -2196,7 +2196,7 @@ module Magnetic
 !  Calculate magnetic mean-field pencils.
 !  This should always be done after calculating magnetic pencils.
 !
-      if (lmeanfield_theory) call calc_pencils_magnetic_mf(f,p)
+      if (lmeanfield_theory) call calc_pencils_magn_mf(f,p)
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
@@ -4066,7 +4066,7 @@ module Magnetic
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call read_magnetic_mf_init_pars(unit,iostat)
+      if (lmeanfield_theory) call read_magn_mf_init_pars(unit,iostat)
 !
 99    return
 !
@@ -4080,7 +4080,7 @@ module Magnetic
 !
 !  write namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call write_magnetic_mf_init_pars(unit)
+      if (lmeanfield_theory) call write_magn_mf_init_pars(unit)
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
@@ -4097,7 +4097,7 @@ module Magnetic
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call read_magnetic_mf_run_pars(unit,iostat)
+      if (lmeanfield_theory) call read_magn_mf_run_pars(unit,iostat)
 !
 99    return
 !
@@ -4111,7 +4111,7 @@ module Magnetic
 !
 !  write namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call write_magnetic_mf_run_pars(unit)
+      if (lmeanfield_theory) call write_magn_mf_run_pars(unit)
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
@@ -6841,7 +6841,7 @@ module Magnetic
 !
 !  call corresponding mean-field routine
 !
-      call rprint_magnetic_mf(lreset,lwrite)
+      call rprint_magn_mf(lreset,lwrite)
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
