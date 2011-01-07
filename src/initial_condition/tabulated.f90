@@ -3,7 +3,7 @@
 !  This module loads an existing snapshot and interpolates it to the current
 !  grid as the initial condition.  The snapshot should be saved as a global
 !  snapshot in a single file (default name: tabulated.dat) under the run
-!  directory.  The user should specify its dimensions using mxtab, mytab, and mztab.
+!  directory.  The user should specify its dimensions using nxtab, nytab, and nztab.
 !  The number of variables in the snapshot must be consistent with the current
 !  mfarray.
 !
