@@ -120,6 +120,7 @@ my %tests = (
                           interlocked-fluxrings
                           conv-slab-flat
                           corona
+                          spherical-convection
                           testfield
                           testfield_nonlin_z
                      )],
