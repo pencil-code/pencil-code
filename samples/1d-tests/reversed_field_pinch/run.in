@@ -12,7 +12,7 @@
   lmeanfield_theory=T
   eta=1e-2
 /
-&magnetic_mf_run_pars
+&magn_mf_run_pars
   meanfield_etat=1.
 /
 &special_run_pars
