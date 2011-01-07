@@ -10,10 +10,10 @@
 &magnetic_run_pars
   eta=0.
 /
-&magnetic_mf_run_pars
+&magn_mf_run_pars
   meanfield_etat=1.
   alpha_effect=1.2
 /
-&magnetic_mf_demfdt_run_pars
+&magn_mf_demfdt_run_pars
   tau1_emf=.1, eta_emf=.0
 /
