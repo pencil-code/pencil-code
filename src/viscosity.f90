@@ -1541,7 +1541,7 @@ module Viscosity
 !
       if (l1davgfirst) then
         if (idiag_fviscmz/=0) &
-            call xysum_mn_name_z(2.*p%rho*nu*( &
+            call xysum_mn_name_z(-2.*p%rho*nu*( &
                 p%uu(:,1)*p%sij(:,1,3)+ &
                 p%uu(:,2)*p%sij(:,2,3)+ &
                 p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
@@ -1550,7 +1550,7 @@ module Viscosity
 !  2D-averages.
 !
       if (l2davgfirst) then
-        if (idiag_fviscmxy/=0) call zsum_mn_name_xy(2.*p%rho*nu*( &
+        if (idiag_fviscmxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
       endif
