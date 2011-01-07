@@ -1815,13 +1815,12 @@ module Density
         else
           if (ldiffusion_nolog) then
             call dot_mn(p%gshock,p%grho,gshockgrho)
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + p%rho1*( &
-              diffrho_shock*p%shock*p%del2rho + diffrho_shock*gshockgrho )
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + p%rho1* &
+              diffrho_shock*(p%shock*p%del2rho + gshockgrho)
           else
             call dot_mn(p%gshock,p%glnrho,gshockglnrho)
             df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
-                diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
-                diffrho_shock*gshockglnrho
+                diffrho_shock*(p%shock*(p%del2lnrho+p%glnrho2) + gshockglnrho)
 !
 !  Counteract the shock diffusion of the mean stratification. Must set
 !  lwrite_stratification=T in start.in for this to work.
