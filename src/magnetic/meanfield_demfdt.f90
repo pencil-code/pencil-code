@@ -142,7 +142,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Pencils that are connected with the time advance of the EMF
 !
-!   6-jan-11/axel: adapted from magnetic_mf
+!   6-jan-11/axel: adapted from magn_mf
 !
       use Mpicomm, only: stop_it
 !
@@ -152,7 +152,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Interdependency among pencils from the Magnetic module is specified here.
 !
-!   6-jan-10/axel: adapted from magnetic_mf
+!   6-jan-10/axel: adapted from magn_mf
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -162,7 +162,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Calculate secondary magnetic mean-field pencils.
 !
-!   6-jan-11/axel: adapted from magnetic_mf
+!   6-jan-11/axel: adapted from magn_mf
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -274,7 +274,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Reads and registers print parameters relevant for magnetic fields.
 !
-!   6-jan-11/axel: adapted from rprint_magnetic_mf
+!   6-jan-11/axel: adapted from rprint_magn_mf
 !
       use Diagnostics
 !

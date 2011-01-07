@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lmagnetic_mf = .false.
+! CPARAM logical, parameter :: lmagn_mf = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -26,13 +26,13 @@ module Magnetic_meanfield
 !
   contains
 !***********************************************************************
-    subroutine register_magnetic_mf()
+    subroutine register_magn_mf()
 !
 !  Dummy routine
 !
-    endsubroutine register_magnetic_mf
+    endsubroutine register_magn_mf
 !***********************************************************************
-    subroutine initialize_magnetic_mf(f,lstarting)
+    subroutine initialize_magn_mf(f,lstarting)
 !
 !  Dummy routine
 !
@@ -42,7 +42,7 @@ module Magnetic_meanfield
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_magnetic_mf
+    endsubroutine initialize_magn_mf
 !***********************************************************************
     subroutine init_aa_mf(f)
 !
@@ -54,13 +54,13 @@ module Magnetic_meanfield
 !
     endsubroutine init_aa_mf
 !***********************************************************************
-    subroutine pencil_criteria_magnetic_mf()
+    subroutine pencil_criteria_magn_mf()
 !
 !  Dummy routine
 !
-    endsubroutine pencil_criteria_magnetic_mf
+    endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
-    subroutine pencil_interdep_magnetic_mf(lpencil_in)
+    subroutine pencil_interdep_magn_mf(lpencil_in)
 !
 !  Dummy routine
 !
@@ -68,9 +68,9 @@ module Magnetic_meanfield
 !
       call keep_compiler_quiet(lpencil_in)
 !
-    endsubroutine pencil_interdep_magnetic_mf
+    endsubroutine pencil_interdep_magn_mf
 !***********************************************************************
-    subroutine calc_pencils_magnetic_mf(f,p)
+    subroutine calc_pencils_magn_mf(f,p)
 !
 !  Dummy routine
 !
@@ -81,7 +81,7 @@ module Magnetic_meanfield
       if (lpencil(i_mf_EMFdotB)) p%mf_EMFdotB=0.0
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_magnetic_mf
+    endsubroutine calc_pencils_magn_mf
 !***********************************************************************
     subroutine daa_dt_meanfield(f,df,p)
 !
@@ -98,7 +98,7 @@ module Magnetic_meanfield
 !
     endsubroutine daa_dt_meanfield
 !***********************************************************************
-    subroutine read_magnetic_mf_init_pars(unit,iostat)
+    subroutine read_magn_mf_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -106,17 +106,17 @@ module Magnetic_meanfield
       call keep_compiler_quiet(unit)
       call keep_compiler_quiet(present(iostat))
 !
-    endsubroutine read_magnetic_mf_init_pars
+    endsubroutine read_magn_mf_init_pars
 !***********************************************************************
-    subroutine write_magnetic_mf_init_pars(unit)
+    subroutine write_magn_mf_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_magnetic_mf_init_pars
+    endsubroutine write_magn_mf_init_pars
 !***********************************************************************
-    subroutine read_magnetic_mf_run_pars(unit,iostat)
+    subroutine read_magn_mf_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -124,17 +124,17 @@ module Magnetic_meanfield
       call keep_compiler_quiet(unit)
       call keep_compiler_quiet(present(iostat))
 !
-    endsubroutine read_magnetic_mf_run_pars
+    endsubroutine read_magn_mf_run_pars
 !***********************************************************************
-    subroutine write_magnetic_mf_run_pars(unit)
+    subroutine write_magn_mf_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_magnetic_mf_run_pars
+    endsubroutine write_magn_mf_run_pars
 !***********************************************************************
-    subroutine rprint_magnetic_mf(lreset,lwrite)
+    subroutine rprint_magn_mf(lreset,lwrite)
 !
 !  Dummy routine
 !
@@ -144,7 +144,7 @@ module Magnetic_meanfield
       call keep_compiler_quiet(lreset)
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
 !
-    endsubroutine rprint_magnetic_mf
+    endsubroutine rprint_magn_mf
 !***********************************************************************
 endmodule Magnetic_meanfield
 
