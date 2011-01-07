@@ -1,0 +1,16 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = nompicomm
+HYDRO     = nohydro
+DENSITY   = nodensity
+EOS       = noeos
+VISCOSITY = noviscosity
+MAGNETIC  =   magnetic
+MAGNETIC_MEANFIELD=magnetic/meanfield
+MAGNETIC_MEANFIELD_DEMFDT=magnetic/meanfield_demfdt
+
+#SHEAR     =   shear
+#SPECIAL   =   special/meanfield_alpm

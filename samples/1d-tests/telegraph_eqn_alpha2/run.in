@@ -1,0 +1,19 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  1-D mean-field dynamo with EMF obeying the telegraph equation
+!
+&run_pars
+  nt=10000, it1=500, isave=100, itorder=3
+  dsnap=500., dvid=500.
+  lpencil_check=T
+/
+&magnetic_run_pars
+  eta=0.
+/
+&magnetic_mf_run_pars
+  meanfield_etat=1.
+  alpha_effect=1.2
+/
+&magnetic_mf_demfdt_run_pars
+  tau1_emf=.1, eta_emf=.0
+/

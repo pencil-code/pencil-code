@@ -1,0 +1,28 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/telegraph_eqn_alpha2
+SVN Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+     7-Jan-2011
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    32x1x1 for eta=0 is fine.
+References:
+    The formalism is close to that used in:
+    Brandenburg, A., Käpylä, P., & Mohammed, A.: 2004, ``Non-Fickian
+    diffusion and tau-approximation from numerical turbulence,''
+    Phys. Fluids 16, 1020-1027, astro-ph/0306521
+
+Comments:
+The equations solved are dA/dt=EMF, and dEMF/dt = (alpha*B-etat*J-EMF)/tau.
+The dispersion relation is (lam+eta*k2)*(1+lam*tau)=+/-alp*k-etat*k^2.
+Solutions for alp=1.2, etat=1, in a domain of length 2pi are:
+
+  1/tau   lam
+   1.0   0.171
+   0.5   0.153
+   0.2   0.124
+   0.1   0.100
