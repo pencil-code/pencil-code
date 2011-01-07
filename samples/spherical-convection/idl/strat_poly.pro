@@ -65,7 +65,8 @@ endfor
 ; Thermal conductivity
 ;
 kappa=-Luminosity/(4.*!pi*r^2*dTdrc) ; Heat conductivity
-dlogkappa=deriv(r,kappa)             ; Gradient of heat conductivity
+dlogkappa=fltarr(nr,3)
+dlogkappa(*,0)=deriv(r,kappa)        ; Gradient of heat conductivity
 Fbot=-kappa(0)*dTdr(0)               ; Energy flux at the base
 Ftop=-kappa(nr-1)*dTdrc(nr-1)        ; Energy flux at the surface
 ;
@@ -93,7 +94,7 @@ close,1
 ;
 print,'Writing hcond_glhc.dat...'
 openw,1,'hcond_glhc.dat'
-for i=0,nr-1 do printf,1,kappa(i),dlogkappa(i)
+for i=0,nr-1 do printf,1,kappa(i),dlogkappa(i,0),dlogkappa(i,1),dlogkappa(i,2)
 close,1
 print,''
 print,'Place the files stratification.dat and hcond_glhc.dat in the run'
