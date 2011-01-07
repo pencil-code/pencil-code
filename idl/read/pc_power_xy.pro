@@ -1,3 +1,93 @@
+FUNCTION gen_exinds, vec
+
+;  7-jan-11/MR: coded
+
+; determines the indices of the local extrema in the vector vec
+  
+  if vec(1) ge vec(0) then $
+    grows=-1 $
+  else $
+    grows=1
+    
+  imax=n_elements(vec)-1
+  imin=0
+  s0=1
+  
+  while imin lt imax do begin
+
+    ind = (where(grows*(vec(imin:imax-1)-vec(imin+1:imax)) lt 0.))(0)
+    
+    if ind ne -1 then begin
+    
+      ind = ind+imin
+      if s0 then begin
+  	exinds = [ind] 
+  	s0 = 0
+      endif else $
+  	exinds = [exinds, ind]
+  	
+      imin = ind
+      grows = -grows
+      
+    endif else $
+      imin = imax
+    
+  endwhile
+	
+  return, exinds
+  
+END
+
+PRO plot_segs, x, y, seginds, styles=styles, colors=colors, overplot=overplot, _extra=extra
+
+;  7-jan-11/MR: coded
+
+;  plots y vs x with segemented coloring/linestyling according to the indices of the segment boundaries seginds
+
+  if not keyword_set(colors) then $
+    colors = [!p.color,!p.color] $
+  else if n_elements(colors) eq 1 then begin
+    if colors(0) eq 250 then $
+      colors = [colors, !p.color] $
+    else $
+      colors = [colors, 250]
+  endif
+
+  if not keyword_set(styles) then begin
+    if colors(0) eq colors(1) then $
+      styles = [0,3] $
+    else $
+      styles = [0,0]
+  endif else if n_elements(styles) eq 1 then begin
+    if styles(0) eq 3 then $
+      styles = [styles, 0] $
+    else $
+      styles = [styles, 3]
+  endif
+      
+  np = n_elements(x) < n_elements(y)
+  
+  if np le 1 then return
+  
+  if not keyword_set(overplot) then $
+    plot, x(0:np-1), y(0:np-1), /nodata, _extra=extra
+  
+  ia = 0
+  toggle = 0
+  
+  for i=0,n_elements(seginds)-1 do begin
+  
+    ie = seginds(i)
+    oplot, x(ia:ie), y(ia:ie), lines=styles(toggle), color=colors(toggle)
+    ia = ie
+    toggle = 1-toggle
+    
+  endfor
+  
+  if ia lt np-1 then oplot, x(ia:np-1), y(ia:np-1), lines=styles(toggle), color=colors(toggle)
+
+END
+
 PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
@@ -377,44 +467,23 @@ endif
   if not lint_shell then begin
     if lint_z then begin
   
-      ;goto, loop1
+      goto, loop1
       
       for it=0,n_elements(tt)-1 do begin 
         contour, spec1(*,*,it),kxs,kys, nlevels=30, /fill, c_colors=8.*indgen(30), xrange=[-5.,5.], yr=[-8.,8.], xtitle='kx', ytitle='ky'  & xyouts, 4., 10.1, string(tt(it))
         wait, .1 
       endfor
-      stop
-      goto, loop2;
+      ;goto, loop2;
 loop1:
+      ;stop
       ikx1=31 & ikx2=33
-      itmin=70 & itmax=n_elements(tt)-1
       
       for ikx=ikx1,ikx2,2 do begin
       
-        grows=-1
-        s0=1
-        while itmin lt itmax do begin
-	
-          ind = (where(grows*(spec1(ikx,37,itmin:itmax-1)-spec1(ikx,37,itmin+1:itmax)) lt 0))(0)
-	  ;stop
-      	  if ind ne -1 then begin
-	  
-	    ind = ind+itmin
-      	    if s0 then begin
-      	      exinds = [ind] 
-	      s0 = 0
-      	    endif else $
-      	      exinds = [exinds, ind]
-      	      
-      	    itmin = ind
-      	    grows = -grows
-	    
-	  endif else $
-	    itmin = itmax
-      	  
-        endwhile
-        
-        if ikx eq ikx1 then exinds1 = exinds
+        if ikx eq ikx1 then $
+	  exinds1 = gen_exinds(spec1(ikx,37,*)) $
+	else $
+	  exinds = gen_exinds(spec1(ikx,37,*))
       
       endfor 
 loop2:     
@@ -424,9 +493,11 @@ loop2:
         read, itmin, prompt='itmin= (>0)'
         read, itmax, prompt='itmax= (<'+string(n_elements(tt), format='(i4)')+')'
 	
-        plot , tt(itmin:itmax), spec1(33,37,itmin:itmax), /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
+	plot_segs, tt(itmin:itmax), spec1(33,37,itmin:itmax), exinds, colors=[!p.color], /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
+        ;plot , tt(itmin:itmax), spec1(33,37,itmin:itmax), /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
         ;oplot, tt(itmin:itmax), spec1(31,27,itmin:itmax), linest=3, color=250
-        oplot, tt(itmin:itmax), spec1(31,37,itmin:itmax)	   
+	plot_segs, tt(itmin:itmax), spec1(31,37,itmin:itmax), exinds1, colors=[!p.color], /overplot
+        ;oplot, tt(itmin:itmax), spec1(31,37,itmin:itmax)	   
         ;oplot, tt(itmin:itmax), spec1(33,27,itmin:itmax), linest=3, color=250
 	
 	xyouts, .8*tt(itmax), 2.*spec1(33,37,0.8*itmax), '++'
@@ -476,3 +547,4 @@ close,2
 !y.range=''
 
 END
+
