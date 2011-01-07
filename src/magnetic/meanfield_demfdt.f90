@@ -34,16 +34,16 @@ module Magnetic_meanfield_demfdt
 !
   character (len=labellen), dimension(ninit) :: initemf='nothing'
   real, dimension (ninit) :: amplemf=0.
+  real :: tau_emf=0., tau1_emf=0., eta_emf=0.
 !
   namelist /magnetic_mf_demfdt_init_pars/ &
+      tau_emf, tau1_emf, eta_emf, &
       initemf
 !
 ! Run parameters
 !
-  real :: tau_emf, tau1_emf, eta_emf
-!
   namelist /magnetic_mf_demfdt_run_pars/ &
-      tau_emf, eta_emf
+      tau_emf, tau1_emf, eta_emf
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 ! 
@@ -96,6 +96,13 @@ module Magnetic_meanfield_demfdt
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       integer :: i,ierr
+!
+!  Precalculate tau1_emf if tau_emf is given instead
+!
+      if (tau_emf/=0.) then
+        tau1_emf=1./tau_emf
+      endif
+      if (lroot) print*,'initialize_magnetic_mf_demfdt: tau1_emf=',tau1_emf
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -193,7 +200,7 @@ module Magnetic_meanfield_demfdt
 !  Note that the first part, alp*B-etat*J, is here obtained as p%mf_EMF.
 !
       emf=f(l1:l2,m,n,iemfx:iemfz)
-      df(l1:l2,m,n,iemfx:iemfz)=tau1_emf*(p%mf_EMF-emf)
+      df(l1:l2,m,n,iemfx:iemfz)=df(l1:l2,m,n,iemfx:iemfz)+tau1_emf*(p%mf_EMF-emf)
 !
 !  Spatial diffusion part, if eta_emf/=0.
 !
@@ -201,6 +208,10 @@ module Magnetic_meanfield_demfdt
         call del2v(f,iemf,del2emf)
         df(l1:l2,m,n,iemfx:iemfz)=df(l1:l2,m,n,iemfx:iemfz)+eta_emf*del2emf
       endif
+!
+!  Apply EMF to dA/dt (was turned off in meanfield.f90 because ldemfdt=T
+!
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+f(l1:l2,m,n,iemfx:iemfz)
 !
 !  Calculate diagnostic quantities.
 !  Diagnostic output for mean field dynamos.

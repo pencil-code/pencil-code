@@ -163,7 +163,7 @@ module Magnetic
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
-      lneutralion_heat, center1_x, center1_y, center1_z, &
+      lmeanfield_theory, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
       lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor
 !

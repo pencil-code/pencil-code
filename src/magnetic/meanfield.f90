@@ -635,7 +635,15 @@ module Magnetic_meanfield
       if (lmeanfield_theory.and. &
         (meanfield_etat/=0.0 .or. ietat/=0 .or. &
         alpha_effect/=0.0.or.delta_effect/=0.0)) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
+!
+!  Apply p%mf_EMF only if .not.ldemfdt; otherwise postpone.
+!
+        if (.not.ldemfdt) then
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
+        endif
+!
+!  Apply Omega effect.
+!
         if (lOmega_effect) call Omega_effect(f,df,p)
       endif
 !
