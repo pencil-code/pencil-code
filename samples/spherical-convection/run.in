@@ -4,9 +4,10 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2010-06-29 08:00:04 pkapyla Exp $',
-  nt=10, it1=1, isave=100, itorder=3
+  nt=11, it1=2, isave=100, itorder=3
   dsnap=50., dvid=1, ialive=1,
   cdtv=0.30, cdt=0.40
+  lpencil_check=T
 /
 &eos_run_pars
 /
