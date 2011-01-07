@@ -1,0 +1,35 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2010-06-29 08:00:04 pkapyla Exp $',
+  nt=10, it1=1, isave=100, itorder=3
+  dsnap=50., dvid=1, ialive=1,
+  cdtv=0.30, cdt=0.40
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+  Omega=0.
+/
+&density_run_pars
+  lupw_lnrho=T
+  cs2top=0.316192
+/
+&grav_run_pars
+  gravx_profile='kepler',gravx=3.,
+/
+&entropy_run_pars
+  Fbot=0.00893644
+  iheatcond='K-profile',hcond0=1e-8 ! not used but needed to get 
+				    ! into calc_heatcond
+  lupw_ss=T
+  lhcond_global=T
+  cooltype='shell', rcool=0.98, wcool=0.02, cool=0.3, cs2cool=0.316192
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=3e-4
+/

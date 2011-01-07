@@ -1,0 +1,22 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-convection
+SVN Id:
+    $Id$
+Maintainer:
+    Petri Käpylä <petri.kapyla/helsinki[dot]fi>
+Added:
+    07-Jan-2011
+Status:
+    introduced in January 2011
+Recommended resolution:
+    128x256x128 (nu=eta=5e-5)
+Comments:
+    Convection in a spherical wedge spanning 150 degrees in latitude
+    and 90 degrees in longitude. Stratification is piecewise
+    polytropic with a cooling layer on top, similarly as in the
+    conv-slab sample. The stratification is read in from an ASCII
+    file which is produced by the supplied IDL-script.
+References:
+    Käpylä, P. J., Korpi, M. J., Brandenburg, A., Mitra, D. &
+    Tavakol, R.: 2010, ``Convective dynamos in spherical wedge 
+    geometry,'' Astron. Nachr., 331, 73-81
