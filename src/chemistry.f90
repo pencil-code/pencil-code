@@ -1083,20 +1083,20 @@ module Chemistry
 !
       final_massfrac_O2=0.
       if (lH2.and..not.lCH4) then
-      final_massfrac_H2O = &
-                mH2O/mH2 * init_H2
-      final_massfrac_O2 = &
-                1. - final_massfrac_H2O- init_N2
-     else if (lCH4) then
-      final_massfrac_CH4=0.
-      final_massfrac_H2O = &
-                2.*mH2O/mCH4 * init_CH4
-      final_massfrac_CO2 = &
-                mCO2/mCH4 * init_CH4
-      final_massfrac_O2 = &
-              1. - final_massfrac_CO2 - final_massfrac_H2O  &
-              - init_N2
-     endif
+        final_massfrac_H2O = &
+            mH2O/mH2 * init_H2
+        final_massfrac_O2 = &
+            1. - final_massfrac_H2O- init_N2
+      else if (lCH4) then
+        final_massfrac_CH4=0.
+        final_massfrac_H2O = &
+            2.*mH2O/mCH4 * init_CH4
+        final_massfrac_CO2 = &
+            mCO2/mCH4 * init_CH4
+        final_massfrac_O2 = &
+            1. - final_massfrac_CO2 - final_massfrac_H2O  &
+            - init_N2
+      endif
 !
      if (final_massfrac_O2<0.) final_massfrac_O2=0.
      if (lroot) then
@@ -1120,17 +1120,11 @@ module Chemistry
               +((init_TT2-init_TT1)*0.5)  &
               *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
         else
-          if (x(k)<=init_x1) then
-            f(k,:,:,ilnTT)=log(init_TT1)
-          endif
-          if (x(k)>=init_x2) then
-            f(k,:,:,ilnTT)=log(init_TT2)
-          endif
-          if (x(k)>init_x1 .and. x(k)<init_x2) then
-            f(k,:,:,ilnTT)=&
-                log((x(k)-init_x1)/(init_x2-init_x1) &
-                *(init_TT2-init_TT1)+init_TT1)
-          endif
+          if (x(k)<=init_x1) f(k,:,:,ilnTT)=log(init_TT1)
+          if (x(k)>=init_x2) f(k,:,:,ilnTT)=log(init_TT2)
+          if (x(k)>init_x1 .and. x(k)<init_x2) &
+              f(k,:,:,ilnTT)=log((x(k)-init_x1)/(init_x2-init_x1)&
+              *(init_TT2-init_TT1)+init_TT1)
         endif
 !
 !  Initialize fuel
@@ -1138,9 +1132,8 @@ module Chemistry
         if (lT_tanh) then
           if (lH2.and..not.lCH4) then
             del=(init_x2-init_x1)
-            f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5  &
-                 +(0.-f(l1,:,:,i_H2))*0.5  &
-                 *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
+            f(k,:,:,i_H2)=(0.+f(l1,:,:,i_H2))*0.5+(0.-f(l1,:,:,i_H2))*0.5  &
+                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
           endif
           if (lCH4) then
             if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
@@ -1148,14 +1141,10 @@ module Chemistry
 !
         else
           if (x(k)>init_x1) then
-            if (lH2.and..not.lCH4) then
-              f(k,:,:,i_H2)=init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-            if (lCH4) then
-              f(k,:,:,i_CH4)=init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
+            if (lH2.and..not.lCH4) f(k,:,:,i_H2)=init_H2*&
+                (exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
+            if (lCH4) f(k,:,:,i_CH4)=init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                /(init_TT1-init_TT2)
           endif
         endif
 !
@@ -1210,8 +1199,8 @@ module Chemistry
 !
 !  Find logaritm of density at inlet
 !
-         initial_mu1&
-             =initial_massfractions(ichem_O2)/(mO2)&
+         initial_mu1=&
+             initial_massfractions(ichem_O2)/(mO2)&
              +initial_massfractions(ichem_H2O)/(mH2O)&
              +initial_massfractions(ichem_N2)/(mN2)
          if (lH2.and..not.lCH4) initial_mu1=initial_mu1+ &
@@ -1229,9 +1218,9 @@ module Chemistry
 !
 !  Initialize velocity
 !
-      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
-          * (f(l1:l2,m1:m2,n1:n2,iux)+init_ux)
-!      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
+!          * (f(l1:l2,m1:m2,n1:n2,iux)+init_ux)
+      f(l1:l2,m1:m2,n1:n2,iux)=f(l1:l2,m1:m2,n1:n2,iux)+init_ux
 !
 !  Check if we want nolog of density or nolog of temperature
 !
@@ -4689,7 +4678,7 @@ module Chemistry
                     +0.19*delta_jk_star*delta_jk_star/(TT_full(ll1:ll2,j2,j3)/eps_jk)
                if (j/=k) then
                 Bin_Diff_coef(ll1:ll2,j2,j3,k,j)=prefactor(ll1:ll2,j2,j3)/mu1_full(ll1:ll2,j2,j3)&
-                    /(sqrt(m_jk)*sigma_jk*sigma_jk*2*Omega_kl(ll1:ll2,j2,j3))
+                    /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))
                else
                 Bin_Diff_coef(ll1:ll2,j2,j3,k,j)=prefactor(ll1:ll2,j2,j3)&
                     /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))*species_constants(k,imass)
