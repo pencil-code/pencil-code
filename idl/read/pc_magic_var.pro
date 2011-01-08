@@ -161,7 +161,10 @@ pro pc_magic_var, variables, tags, $
   lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
   lentropy = safe_get_tag(param,'lentropy',default=safe_get_tag(param,'lentropy',default=0)) 
 ;
-  if (param.ldensity_nolog) then density_var='rho' else density_var='lnrho' 
+;  Check for param.ldensity_nolog, but only if param.ldensity=T
+;
+   density_var='lnrho' 
+   if (param.ldensity) then if (param.ldensity_nolog) then density_var='rho'
 ;
   for iv=0,n_elements(variables)-1 do begin
 ; x Coordinate
@@ -317,11 +320,11 @@ pro pc_magic_var, variables, tags, $
       tags[iv]=variables[iv]
       variables[iv]='gij(uu)'
 ; Gas Density 
-    endif else if ((not(param.ldensity_nolog)) and (variables[iv] eq 'rho')) then begin
+    endif else if (density_var eq 'lnrho' and variables[iv] eq 'rho') then begin
       tags[iv]=variables[iv]
       variables[iv]='exp(lnrho)'
 ; Logarithmic gas Density 
-    endif else if (param.ldensity_nolog and (variables[iv] eq 'lnrho')) then begin
+    endif else if (density_var eq 'rho' and variables[iv] eq 'lnrho') then begin
       tags[iv]=variables[iv]
       variables[iv]='alog(rho)'
 ; Velocity advection
