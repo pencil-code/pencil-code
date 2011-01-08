@@ -7,10 +7,8 @@
 /
 &magnetic_init_pars
   initaa='gaussian-noise', amplaa=1e-4
-  lmeanfield_theory=T
 /
 &magn_mf_init_pars
-  ldemfdt=T
 /
 &magn_mf_demfdt_init_pars
 /
