@@ -167,7 +167,17 @@ module Particles_sub
 !  xp < x0
             if (fp(k,ixp)< xyz0(1)) then
               fp(k,ixp)=fp(k,ixp)+Lxyz(1)
-              if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)-deltay
+              if (lshear.and.nygrid/=1) then
+                fp(k,iyp)=fp(k,iyp)-deltay
+!
+!  Keep track of energy gain or lose from shearing boundaries.
+!
+                if (energy_gain_shear_bcs/=impossible) &
+                    energy_gain_shear_bcs=energy_gain_shear_bcs + &
+                    (1.0/6.0)*Sshear**2*Omega**2*Lx**2 + &
+                    Sshear*(fp(k,ivpy)+Sshear*fp(k,ixp))*Lx - &
+                    (4.0/3.0)*Sshear**2*fp(k,ixp)*Lx
+              endif
 !  Particle position must never need more than one addition of Lx to get back
 !  in the box. Often a NaN or Inf in the particle position will show up as a
 !  problem here.
@@ -182,7 +192,17 @@ module Particles_sub
 !  xp > x1
             if (fp(k,ixp)>=xyz1(1)) then
               fp(k,ixp)=fp(k,ixp)-Lxyz(1)
-              if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)+deltay
+              if (lshear.and.nygrid/=1) then
+                fp(k,iyp)=fp(k,iyp)+deltay
+!
+!  Keep track of energy gain or lose from shearing boundaries.
+!
+                if (energy_gain_shear_bcs/=impossible) &
+                    energy_gain_shear_bcs=energy_gain_shear_bcs + &
+                    (1.0/6.0)*Sshear**2*Omega**2*Lx**2 - &
+                    Sshear*(fp(k,ivpy)+Sshear*fp(k,ixp))*Lx + &
+                    (4.0/3.0)*Sshear**2*fp(k,ixp)*Lx
+              endif
               if (fp(k,ixp)>=xyz1(1)) then
                 print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
                      ' was further than Lx outside the simulation box!'

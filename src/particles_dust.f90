@@ -161,6 +161,7 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
+  integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_mpvpxm=0, idiag_mpvpym=0, idiag_mpvpzm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
@@ -178,7 +179,7 @@ module Particles
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
-  integer :: idiag_vpyfull2m=0
+  integer :: idiag_vpyfull2m=0, idiag_deshearbcs=0
 !
   contains
 !***********************************************************************
@@ -432,6 +433,10 @@ module Particles
              'approximation for all particle sizes'
         endif
       endif
+!
+!  Initialize storage of energy gain released by shearing boundaries.
+!
+      if (idiag_deshearbcs/=0) energy_gain_shear_bcs=0.0
 !
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
@@ -2244,6 +2249,12 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
         if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
         if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
+        if (idiag_vpxvpym/=0) call sum_par_name( &
+            fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpy),idiag_vpxvpym)
+        if (idiag_vpxvpzm/=0) call sum_par_name( &
+            fp(1:npar_loc,ivpx)*fp(1:npar_loc,ivpz),idiag_vpxvpzm)
+        if (idiag_vpyvpzm/=0) call sum_par_name( &
+            fp(1:npar_loc,ivpy)*fp(1:npar_loc,ivpz),idiag_vpyvpzm)
         if (idiag_lpxm/=0) call sum_par_name( &
             fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
             fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy),idiag_lpxm)
@@ -2344,6 +2355,9 @@ k_loop:   do while (.not. (k>npar_loc))
           call count_particles(ipar,npar_found)
           if (idiag_npargone/=0) &
               call save_name(float(npar-npar_found),idiag_npargone)
+        endif
+        if (idiag_deshearbcs/=0) then
+          call save_name(energy_gain_shear_bcs/npar,idiag_deshearbcs)
         endif
       endif
 !
@@ -4064,6 +4078,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
+        idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
         idiag_mpvpxm=0; idiag_mpvpym=0; idiag_mpvpzm=0
@@ -4082,7 +4097,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
-        idiag_npargone=0; idiag_vpyfull2m=0
+        idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcs=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -4103,6 +4118,9 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
         call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
         call parse_name(iname,cname(iname),cform(iname),'vpzm',idiag_vpzm)
+        call parse_name(iname,cname(iname),cform(iname),'vpxvpym',idiag_vpxvpym)
+        call parse_name(iname,cname(iname),cform(iname),'vpxvpzm',idiag_vpxvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'vpyvpzm',idiag_vpyvpzm)
         call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
         call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
         call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
@@ -4155,6 +4173,8 @@ k_loop:   do while (.not. (k>npar_loc))
             'npargone',idiag_npargone)
         call parse_name(iname,cname(iname),cform(iname), &
             'vpyfull2m',idiag_vpyfull2m)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'deshearbcs',idiag_deshearbcs)
       enddo
 !
 !  Check for those quantities for which we want x-averages.

@@ -10,17 +10,18 @@ module Particles_cdata
 !
   public
 !
-  real, parameter :: npar_per_cell=npar/(1.*nwgrid)
   integer, parameter :: mspvar=mpvar+1 
 !
-  real :: rp_int=-impossible,rp_ext=-impossible
+  real, parameter :: npar_per_cell=npar/(1.0*nwgrid)
+  real :: rp_int=-impossible, rp_ext=-impossible
   real :: dsnap_par_minor=0.0, dsnap_par=0.0
   real :: rhopmat=1.0, rhopmat1=1.0
   real :: mp_swarm=0.0, np_swarm=0.0, rhop_swarm=0.0
   real :: four_pi_rhopmat_over_three
   real :: np_const=0.0, rhop_const=0.0
+  real :: energy_gain_shear_bcs=impossible
   integer, dimension (mpar_loc) :: ipar
-  integer, dimension (nspar)    :: ipar_nbody
+  integer, dimension (nspar) :: ipar_nbody
   integer, dimension (npar_species) :: ipar_fence_species=0
 !
   integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
@@ -38,8 +39,8 @@ module Particles_cdata
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
   logical :: lmigration_real_check=.true.
   logical :: lcheck_exact_frontier=.false.
-  character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
-  character (len=2*bclen+1) :: bcspx='p',bcspy='p',bcspz='p'
+  character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
+  character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
 !
   logical :: lshepherd_neighbour=.false.
   logical :: lrandom_particle_pencils=.false., lrandom_particle_blocks=.false.
@@ -51,7 +52,7 @@ module Particles_cdata
 !
 !  Interpolation toggles:
 !
-    logical :: luu,loo,lTT,lrho
+    logical :: luu, loo, lTT, lrho
 !
 !  Interpolation policies:
 !
