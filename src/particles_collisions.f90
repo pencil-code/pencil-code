@@ -31,13 +31,14 @@ module Particles_collisions
   real, pointer, dimension (:) :: tausp_species, tausp1_species
   real, pointer :: gravr
   real :: lambda_mfp_single=1.0, coeff_restitution=1.0
+  real :: energy_gain_inelastic=0.0
   integer :: ncoll_max_par=-1, npart_max_par=-1
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
   logical :: ltauc_from_tauf=.false.
   character (len=labellen) :: icoll='big-ball'
 !
-  integer :: idiag_ncollpm=0, idiag_npartpm=0
+  integer :: idiag_ncollpm=0, idiag_npartpm=0, idiag_decollpm=0
 !
   namelist /particles_coll_run_pars/ &
       lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp, &
@@ -325,6 +326,8 @@ module Particles_collisions
                     call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
                 if (idiag_npartpm/=0) &
                     call sum_par_name((/float(npart_par)/),idiag_npartpm)
+                if (idiag_decollpm/=0) &
+                    call save_name(energy_gain_inelastic/npar,idiag_decollpm)
               endif
 !
             enddo
@@ -344,6 +347,7 @@ module Particles_collisions
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncollpm)
           if (idiag_npartpm/=0) &
               call sum_par_name(fp(1:npar_loc,ixp),idiag_npartpm)
+          if (idiag_decollpm/=0) call save_name(0.0,idiag_decollpm)
         endif
       endif
 !
@@ -555,6 +559,8 @@ module Particles_collisions
                     call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
                 if (idiag_npartpm/=0) &
                     call sum_par_name((/float(npart_par)/),idiag_npartpm)
+                if (idiag_decollpm/=0) &
+                    call save_name(energy_gain_inelastic/npar,idiag_decollpm)
               endif
 !
             enddo
@@ -574,6 +580,7 @@ module Particles_collisions
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncollpm)
           if (idiag_npartpm/=0) &
               call sum_par_name(fp(1:npar_loc,ixp),idiag_npartpm)
+          if (idiag_decollpm/=0) call save_name(0.0,idiag_decollpm)
         endif
       endif
 !
@@ -642,10 +649,14 @@ module Particles_collisions
         vvkcmnew=vvkcmnew* &
             sqrt(vvkcm(1)**2+vvkcm(2)**2+vvkcm(3)**2)
 !
-!  Dissipate some of the relative energy.
+!  Inelastic collision leads to energy loss of both particles.
 !
-        if (coeff_restitution/=1.0) &
-            vvkcmnew=vvkcmnew*coeff_restitution
+        if (coeff_restitution/=1.0) then
+          if (energy_gain_inelastic/=impossible) &
+              energy_gain_inelastic=energy_gain_inelastic- &
+              (1.0-coeff_restitution**2)*sum(vvkcm_normal**2)
+          vvkcmnew=vvkcmnew*coeff_restitution
+        endif
 !
 !  Change velocity vectors in normal frame.
 !
@@ -673,8 +684,15 @@ module Particles_collisions
           print*, '  ', vvkcm_normal
           print*, '  ', vvkcm_parall
         endif
-        if (coeff_restitution/=1.0) &
-            vvkcm_normal=vvkcm_normal*coeff_restitution
+!
+!  Inelastic collision leads to energy loss of both particles.
+!
+        if (coeff_restitution/=1.0) then
+          if (energy_gain_inelastic/=impossible) &
+              energy_gain_inelastic=energy_gain_inelastic- &
+              (1.0-coeff_restitution**2)*sum(vvkcm_normal**2)
+          vvkcm_normal=vvkcm_normal*coeff_restitution
+        endif
         vpk=vvcm+vvkcm_parall-vvkcm_normal
         vpj=vvcm-vvkcm_parall+vvkcm_normal
       endif
@@ -742,12 +760,14 @@ module Particles_collisions
       integer :: iname
 !
       if (lreset) then
-        idiag_ncollpm=0; idiag_npartpm=0
+        idiag_ncollpm=0; idiag_npartpm=0; idiag_decollpm=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ncollpm',idiag_ncollpm)
         call parse_name(iname,cname(iname),cform(iname),'npartpm',idiag_npartpm)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'decollpm',idiag_decollpm)
       enddo
 !
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
