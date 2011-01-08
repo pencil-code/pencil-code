@@ -218,11 +218,11 @@ default, ntestfield, 0
 varcontent[iaatest].variable   = 'Testfield vector potential (aatest)'
 varcontent[iaatest].idlvar     = 'aatest'
 ;This allows pc_read_var to read var.dat without giving initialising errors
-;varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
-varcontent[iaatest].idlinit    = INIT_3VECTOR
+varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
+;varcontent[iaatest].idlinit    = INIT_3VECTOR
 varcontent[iaatest].idlvarloc  = 'aatest_loc'
-;varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
-varcontent[iaatest].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
+;varcontent[iaatest].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iaatest].skip       = ntestfield-1
 ;
 default, iuutest, 0
@@ -236,6 +236,7 @@ varcontent[iuutest].skip       = ntestflow-1
 ;
 default, icctest, 0
 default, ntestscalar, 0
+;print, '====> ntestscalar=', ntestscalar
 varcontent[icctest].variable   = 'Testflow (cctest)'
 varcontent[icctest].idlvar     = 'cctest'
 varcontent[icctest].idlinit    = 'fltarr(mx,my,mz,ntestscalar)*one'
@@ -330,6 +331,13 @@ varcontent[iphi].idlvar     = 'phi'
 varcontent[iphi].idlinit    = INIT_SCALAR
 varcontent[iphi].idlvarloc  = 'phi_loc'
 varcontent[iphi].idlinitloc = INIT_SCALAR_LOC
+;
+default, iLam, 0
+varcontent[iLam].variable   = 'Gauge potential (Lam)'
+varcontent[iLam].idlvar     = 'Lam'
+varcontent[iLam].idlinit    = INIT_SCALAR
+varcontent[iLam].idlvarloc  = 'Lam_loc'
+varcontent[iLam].idlinitloc = INIT_SCALAR_LOC
 ;
 default, iecr, 0
 varcontent[iecr].variable   = 'Cosmic ray energy density (ecr)'
