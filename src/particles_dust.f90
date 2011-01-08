@@ -179,7 +179,7 @@ module Particles
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
-  integer :: idiag_vpyfull2m=0, idiag_deshearbcs=0
+  integer :: idiag_vpyfull2m=0, idiag_deshearbcsm=0
 !
   contains
 !***********************************************************************
@@ -436,7 +436,7 @@ module Particles
 !
 !  Initialize storage of energy gain released by shearing boundaries.
 !
-      if (idiag_deshearbcs/=0) energy_gain_shear_bcs=0.0
+      if (idiag_deshearbcsm/=0) energy_gain_shear_bcs=0.0
 !
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
@@ -2356,8 +2356,8 @@ k_loop:   do while (.not. (k>npar_loc))
           if (idiag_npargone/=0) &
               call save_name(float(npar-npar_found),idiag_npargone)
         endif
-        if (idiag_deshearbcs/=0) then
-          call save_name(energy_gain_shear_bcs/npar,idiag_deshearbcs)
+        if (idiag_deshearbcsm/=0) then
+          call save_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
         endif
       endif
 !
@@ -4097,7 +4097,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
-        idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcs=0
+        idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -4174,7 +4174,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname), &
             'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname), &
-            'deshearbcs',idiag_deshearbcs)
+            'deshearbcsm',idiag_deshearbcsm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
