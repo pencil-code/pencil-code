@@ -237,16 +237,16 @@ module Diagnostics
 !   2-sep-01/axel: coded
 !  14-aug-03/axel: began adding surface integrals
 !
-      integer,                 intent(in)    :: nlname
       real, dimension(nlname), intent(inout) :: vname
-
+      integer,                 intent(in)    :: nlname
+!
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
-      integer :: iname,imax_count,isum_count,nmax_count,nsum_count
+      integer :: iname, imax_count, isum_count, nmax_count, nsum_count
       logical :: lweight_comm
       logical, save :: first=.true.
       real, save :: dVol_rel1
-      real :: intdr_rel,intdtheta_rel,intdphi_rel,intdz_rel
+      real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
 !
 !  Calculate relative volume integral.
 !
@@ -259,9 +259,9 @@ module Diagnostics
 !  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
 !
-          if (nx==1) intdr_rel=1.
-          if (ny==1) intdtheta_rel=1.
-          if (nz==1) intdphi_rel=1.
+          if (nx==1) intdr_rel=1.0
+          if (ny==1) intdtheta_rel=1.0
+          if (nz==1) intdphi_rel=1.0
           dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
         elseif (lcylindrical_coords) then
           intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
@@ -270,9 +270,9 @@ module Diagnostics
 !
 !  Prevent zeros from less than 3-dimensional runs.
 !
-          if (nx==1) intdr_rel=1.
-          if (ny==1) intdphi_rel=1.
-          if (nz==1) intdz_rel=1.
+          if (nx==1) intdr_rel=1.0
+          if (ny==1) intdphi_rel=1.0
+          if (nz==1) intdz_rel=1.0
           dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
         else
           dVol_rel1=1./(nw*ncpus)
@@ -1181,7 +1181,7 @@ module Diagnostics
 !  To calculate averages over half the size of box, useful for simulations
 !  which includes equator (either cartesian or spherical).
 !
-!  dhruba : aped from sum_mn_name
+!  ??-???-??/dhruba: aped from sum_mn_name
 !
       real, dimension (nx) :: a
       real :: sum_name
@@ -1292,7 +1292,7 @@ module Diagnostics
 !  Succesively calculate the weighted sum of a. The result is divided by the
 !  total weight in the diagnostics subroutine.
 !
-!  17-apr-06/anders : coded
+!  17-apr-06/anders: coded
 !
       real, dimension (:) :: a, weight
       integer :: iname
@@ -1857,13 +1857,14 @@ module Diagnostics
 !***********************************************************************
     subroutine allocate_sound (sound_coord_file)
 !
-!  Allocate the variables needed for "sound" 
+!  Allocate the variables needed for "sound".
 !
-!   3-Dec-10 dhruba+joern
+!   3-Dec-10/dhruba+joern: coded
 !
-      use Cdata
-      use Sub, only : location_in_proc
-      character (LEN=*), intent(in) :: sound_coord_file
+      use Sub, only: location_in_proc
+!
+      character (len=*), intent(in) :: sound_coord_file
+!
       integer :: stat=0,isound
       integer :: unit=1
       integer :: msound_coords
@@ -1883,11 +1884,13 @@ module Diagnostics
             'Could not allocate memory for temp_sound_coords')
       lwrite_sound=.false.
       nsound_coords=0
+!
       call parallel_open(unit,file=sound_coord_file)
+!
       do isound=1,msound_coords
         read(unit,*) xsound,ysound,zsound
         call location_in_proc(xsound,ysound,zsound,lsound,msound,nsound,llocation)
-        if(llocation) then
+        if (llocation) then
           nsound_coords=nsound_coords+1
           lwrite_sound = .true.
           temp_sound_coords(isound,1) = lsound
@@ -1895,7 +1898,8 @@ module Diagnostics
           temp_sound_coords(isound,3) = nsound
         endif
       enddo
-      if(lwrite_sound) then
+!
+      if (lwrite_sound) then
         if (.not. allocated(sound_coords_list)) &
             allocate(sound_coords_list(nsound_coords,3),stat=stat)
         if (stat>0) call fatal_error('allocate_sound', &
@@ -1905,25 +1909,29 @@ module Diagnostics
             allocate(fname_sound(nname_sound,nsound_coords),stat=stat)
         if (stat>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for fname_sound')
-        fname_sound=0.
+        fname_sound=0.0
         if (.not. allocated(cname_sound)) &
             allocate(cname_sound(nname_sound),stat=stat)
         if (stat>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for nname_sound')
       endif
 !
-! Now deallocate the temporary memory
+!  Now deallocate the temporary memory.
 !
       deallocate(temp_sound_coords)
 !
     endsubroutine allocate_sound
 !***********************************************************************
     subroutine sound_clean_up
-! frees up the memory allocated for sound 
-! dhruba
+!
+!  Frees up the memory allocated for sound.
+!
+!  ??-???-??/dhruba: coded
+!
       if (allocated(sound_coords_list)) deallocate(sound_coords_list)
       if (allocated(fname_sound)) deallocate(fname_sound)
       if (allocated(cname_sound)) deallocate(cname_sound)
+!
     endsubroutine sound_clean_up
 !***********************************************************************
     subroutine allocate_vnames
@@ -1961,7 +1969,7 @@ module Diagnostics
 !  such as computing mean field energies in calc_bmz, for example,
 !
       allocate(fnamez(nz,nprocz,nnamez),stat=stat)
-      fnamez=0.
+      fnamez=0.0
 !
       if (stat>0) then
         call fatal_error('allocate_xyaverages', &
