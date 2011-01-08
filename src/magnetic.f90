@@ -146,7 +146,6 @@ module Magnetic
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lmeanfield_theory=.false.
   logical :: lgauss=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
@@ -163,7 +162,7 @@ module Magnetic
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
       zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
-      lmeanfield_theory, lneutralion_heat, center1_x, center1_y, center1_z, &
+      lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
       lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor
 !
@@ -205,7 +204,7 @@ module Magnetic
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
       B_ext, omega_Bz_ext, u0_advec, nu_ni, &
-      hall_term, lmeanfield_theory, &
+      hall_term, &
       eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
       lcalc_aamean,lohmic_heat, &
@@ -646,7 +645,7 @@ module Magnetic
 !
 !  register the mean-field module
 !
-      if (lmeanfield_theory) call register_magn_mf()
+      if (lmagn_mf) call register_magn_mf()
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -923,8 +922,7 @@ module Magnetic
 !
 !  if meanfield theory is invoked, we need to tell the other routines
 !
-      call put_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
-      if (lmeanfield_theory.or.lspecial) then
+      if (lmagn_mf .or. lspecial) then
         call put_shared_variable('eta',eta,ierr)
         if (ierr/=0) call fatal_error('initialize_magnetic',&
             'there was a problem when sharing eta')
@@ -1043,9 +1041,9 @@ module Magnetic
       endif
 !
 !  Initialize individual modules, but need to do this only if
-!  lmeanfield_theory is true.
+!  lmagn_mf is true.
 !
-      if (lmeanfield_theory) call initialize_magn_mf(f,lstarting)
+      if (lmagn_mf) call initialize_magn_mf(f,lstarting)
 !
       if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)
@@ -1304,9 +1302,9 @@ module Magnetic
       enddo
 !
 !  Initialize individual modules, but need to do this only if
-!  lmeanfield_theory is true.
+!  lmagn_mf is true.
 !
-      if (lmeanfield_theory) call init_aa_mf(f)
+      if (lmagn_mf) call init_aa_mf(f)
 !
 !  Interface for user's own initial condition.
 !
@@ -1657,7 +1655,7 @@ module Magnetic
 !
 !  check for pencil_criteria_magn_mf
 !
-      if (lmeanfield_theory) call pencil_criteria_magn_mf()
+      if (lmagn_mf) call pencil_criteria_magn_mf()
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -1854,7 +1852,7 @@ module Magnetic
 !
 !  check for pencil_interdep_magn_mf
 !
-      if (lmeanfield_theory) call pencil_interdep_magn_mf(lpencil_in)
+      if (lmagn_mf) call pencil_interdep_magn_mf(lpencil_in)
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -2196,7 +2194,7 @@ module Magnetic
 !  Calculate magnetic mean-field pencils.
 !  This should always be done after calculating magnetic pencils.
 !
-      if (lmeanfield_theory) call calc_pencils_magn_mf(f,p)
+      if (lmagn_mf) call calc_pencils_magn_mf(f,p)
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
@@ -2798,7 +2796,7 @@ module Magnetic
 !
 !  Call right-hand side for mean-field stuff (do this just before ldiagnos)
 !
-      if (lmeanfield_theory) call daa_dt_meanfield(f,df,p)
+      if (lmagn_mf) call daa_dt_meanfield(f,df,p)
 !
 !  Calculate diagnostic quantities.
 !
@@ -4066,7 +4064,7 @@ module Magnetic
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call read_magn_mf_init_pars(unit,iostat)
+      if (lmagn_mf) call read_magn_mf_init_pars(unit,iostat)
 !
 99    return
 !
@@ -4080,7 +4078,7 @@ module Magnetic
 !
 !  write namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call write_magn_mf_init_pars(unit)
+      if (lmagn_mf) call write_magn_mf_init_pars(unit)
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
@@ -4097,7 +4095,7 @@ module Magnetic
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call read_magn_mf_run_pars(unit,iostat)
+      if (lmagn_mf) call read_magn_mf_run_pars(unit,iostat)
 !
 99    return
 !
@@ -4111,7 +4109,7 @@ module Magnetic
 !
 !  write namelist for mean-field theory (if invoked)
 !
-      if (lmeanfield_theory) call write_magn_mf_run_pars(unit)
+      if (lmagn_mf) call write_magn_mf_run_pars(unit)
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
@@ -6841,7 +6839,7 @@ module Magnetic
 !
 !  call corresponding mean-field routine
 !
-      call rprint_magn_mf(lreset,lwrite)
+      if (lmagn_mf) call rprint_magn_mf(lreset,lwrite)
 !
     endsubroutine rprint_magnetic
 !***********************************************************************

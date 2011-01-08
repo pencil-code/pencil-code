@@ -55,7 +55,6 @@ module Special
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0
   integer :: idiag_alpmmz=0, idiag_galpmmz3=0
 !
-  logical, pointer :: lmeanfield_theory
   real, pointer :: meanfield_etat,eta
 !
   contains
@@ -200,13 +199,9 @@ module Special
       if (headtt) call identify_bcs('alpm',ialpm)
 !
 !  get meanfield_etat and eta. Leave df(l1:l2,m,n,ialpm) unchanged
-!  if lmeanfield_theory is false.
+!  if lmagn_mf is false.
 !
-      call get_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
-      if (ierr/=0) &
-          call fatal_error("dspecial_dt: ", &
-              "cannot get shared var lmeanfield_theory")
-      if (lmeanfield_theory) then
+      if (lmagn_mf) then
         call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
         if (ierr/=0) &
             call fatal_error("dspecial_dt: ", &

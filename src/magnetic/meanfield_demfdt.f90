@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: ldemfdt = .true.
+! CPARAM logical, parameter :: lmagn_mf_demfdt = .true.
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
@@ -209,7 +209,7 @@ module Magnetic_meanfield_demfdt
         df(l1:l2,m,n,iemfx:iemfz)=df(l1:l2,m,n,iemfx:iemfz)+eta_emf*del2emf
       endif
 !
-!  Apply EMF to dA/dt (was turned off in meanfield.f90 because ldemfdt=T
+!  Apply EMF to dA/dt (was turned off in meanfield.f90 because lmagn_mf_demfdt=T
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+f(l1:l2,m,n,iemfx:iemfz)
 !

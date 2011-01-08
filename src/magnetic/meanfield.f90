@@ -40,7 +40,7 @@ module Magnetic_meanfield
 !
 ! Input parameters
 !
-  real :: Omega_ampl=0.0
+  real :: Omega_ampl=0.0, dummy=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
@@ -50,14 +50,12 @@ module Magnetic_meanfield
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
-  logical :: ldemfdt=.false.
   logical :: lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
-  logical, pointer :: lmeanfield_theory
 !
   namelist /magn_mf_init_pars/ &
-      ldemfdt
+      dummy
 !
 ! Run parameters
 !
@@ -88,7 +86,7 @@ module Magnetic_meanfield
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lOmega_effect, Omega_profile, Omega_ampl, &
-      llarge_scale_velocity, EMF_profile, lEMF_profile, ldemfdt, &
+      llarge_scale_velocity, EMF_profile, lEMF_profile, &
       Omega_rmax,Omega_rwidth
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -120,7 +118,7 @@ module Magnetic_meanfield
 !
 !  Register secondary mean-field modules.
 !
-      if (ldemfdt) call register_magn_mf_demfdt()
+      if (lmagn_mf_demfdt) call register_magn_mf_demfdt()
 !
     endsubroutine register_magn_mf
 !***********************************************************************
@@ -168,10 +166,7 @@ module Magnetic_meanfield
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
 !
-      call get_shared_variable('lmeanfield_theory',lmeanfield_theory,ierr)
-      if (ierr/=0) call fatal_error("initialize_magn_mf: ", &
-              "cannot get shared variable lmeanfield_theory")
-      if (lmeanfield_theory) then
+      if (lmagn_mf) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
       endif
 !
@@ -207,7 +202,7 @@ module Magnetic_meanfield
 !
 !  initialize secondary mean-field modules
 !
-      if (ldemfdt) call initialize_magn_mf_demfdt(f,lstarting)
+      if (lmagn_mf_demfdt) call initialize_magn_mf_demfdt(f,lstarting)
 !
     endsubroutine initialize_magn_mf
 !***********************************************************************
@@ -223,7 +218,7 @@ module Magnetic_meanfield
 !
 !  Initialize secondary mean-field modules.
 !
-      if (ldemfdt) call init_aa_mf_demfdt(f)
+      if (lmagn_mf_demfdt) call init_aa_mf_demfdt(f)
 !
     endsubroutine init_aa_mf
 !***********************************************************************
@@ -271,7 +266,7 @@ module Magnetic_meanfield
 !
 !  Pencil criteria for secondary modules
 !
-      if (ldemfdt) call pencil_criteria_magn_mf_demfdt()
+      if (lmagn_mf_demfdt) call pencil_criteria_magn_mf_demfdt()
 !
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
@@ -333,7 +328,7 @@ module Magnetic_meanfield
 !
 !  Pencil criteria for secondary modules
 !
-      if (ldemfdt) call pencil_interdep_magn_mf_demfdt(lpencil_in)
+      if (lmagn_mf_demfdt) call pencil_interdep_magn_mf_demfdt(lpencil_in)
 !
     endsubroutine pencil_interdep_magn_mf
 !***********************************************************************
@@ -571,7 +566,7 @@ module Magnetic_meanfield
 !  fully assembled.
 !
       if (lpencil(i_exa)) then
-        if (lmeanfield_theory) then
+        if (lmagn_mf) then
           call cross_mn(-p%mf_EMF,p%aa,exa_meanfield)
           p%exa=p%exa+exa_meanfield
         endif
@@ -632,13 +627,13 @@ module Magnetic_meanfield
 !  Alpha effect.
 !  Additional terms if Mean Field Theory is included.
 !
-      if (lmeanfield_theory.and. &
+      if (lmagn_mf .and. &
         (meanfield_etat/=0.0 .or. ietat/=0 .or. &
         alpha_effect/=0.0.or.delta_effect/=0.0)) then
 !
-!  Apply p%mf_EMF only if .not.ldemfdt; otherwise postpone.
+!  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !
-        if (.not.ldemfdt) then
+        if (.not.lmagn_mf_demfdt) then
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         endif
 !
@@ -687,7 +682,7 @@ module Magnetic_meanfield
 !
 !  Time-advance of secondary mean-field modules.
 !
-      if (ldemfdt) call demf_dt_meanfield(f,df,p)
+      if (lmagn_mf_demfdt) call demf_dt_meanfield(f,df,p)
 !
     endsubroutine daa_dt_meanfield
 !***********************************************************************
@@ -703,7 +698,8 @@ module Magnetic_meanfield
 !
 !  30-apr-05/axel: coded
 !
-  use Sub, only: stepdown
+      use Sub, only: stepdown
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -763,7 +759,7 @@ module Magnetic_meanfield
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call read_magn_mf_demfdt_init_pars(unit,iostat)
+      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_init_pars(unit,iostat)
 !
 99    return
 !
@@ -777,7 +773,7 @@ module Magnetic_meanfield
 !
 !  write namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call write_magn_mf_demfdt_init_pars(unit)
+      if (lmagn_mf_demfdt) call write_magn_mf_demfdt_init_pars(unit)
 !
     endsubroutine write_magn_mf_init_pars
 !***********************************************************************
@@ -794,7 +790,7 @@ module Magnetic_meanfield
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call read_magn_mf_demfdt_run_pars(unit,iostat)
+      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_run_pars(unit,iostat)
 !
 99    return
 !
@@ -808,7 +804,7 @@ module Magnetic_meanfield
 !
 !  write namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (ldemfdt) call write_magn_mf_demfdt_run_pars(unit)
+      if (lmagn_mf_demfdt) call write_magn_mf_demfdt_run_pars(unit)
 !
     endsubroutine write_magn_mf_run_pars
 !***********************************************************************
