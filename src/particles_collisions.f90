@@ -288,7 +288,7 @@ module Particles_collisions
 !  Increase collision rate artificially for fewer collisions.
 !
                   if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                    tau_coll1=tau_coll1*np_point/npart_max_par
+                    tau_coll1=0.5*tau_coll1*np_point/npart_max_par
                   endif
 !
                   if (tau_coll1/=0.0) then
@@ -521,7 +521,7 @@ module Particles_collisions
 !  Increase collision rate artificially for fewer collisions.
 !
                   if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                    tau_coll1=tau_coll1*np_point/npart_max_par
+                    tau_coll1=0.5*tau_coll1*np_point/npart_max_par
                   endif
 !
                   if (tau_coll1/=0.0) then
