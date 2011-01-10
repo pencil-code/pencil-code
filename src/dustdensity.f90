@@ -2201,10 +2201,11 @@ module Dustdensity
       dndr_dr(:,ndustspec)=-ff_tmp(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                            +ff_tmp(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
                            -ff_tmp(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
-       endif
+      
 !
       dndr_dr(:,ndustspec) = dndr_dr(:,ndustspec)/dsize(ndustspec)  &
           -ff_tmp(:,ii1)/dsize(ndustspec)**2
+      endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************
