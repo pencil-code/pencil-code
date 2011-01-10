@@ -48,6 +48,7 @@ module Chemistry
      real :: Cp_const=impossible
      real :: Cv_const=impossible
      logical :: lfix_Sc=.false., lfix_Pr=.false., reinitialize_chemistry=.false.
+     character (len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
      real :: init_x1=-0.2,init_x2=0.2
      real :: init_y1=-0.2,init_y2=0.2
@@ -157,7 +158,8 @@ module Chemistry
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory,&
       lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2,&
-      file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos
+      file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos,&
+      reac_rate_method
 !
 !
 ! run parameters
@@ -168,7 +170,7 @@ module Chemistry
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
       visc_const,cp_const,reinitialize_chemistry,lfilter_strict, &
       init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
-      ldiff_corr, ldiff_fick, lreac_as_aux
+      ldiff_corr, ldiff_fick, lreac_as_aux, reac_rate_method
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -1895,8 +1897,9 @@ module Chemistry
 !
       real :: mO2, mH2, mN2, mH2O, lower,upper
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: final_massfrac_O2, mu1, phi
-      logical :: found_specie
+      integer :: i_C3H8, ichem_C3H8, i_CO2, ichem_CO2
+      real :: final_massfrac_O2, mu1, phi, delta_O2, mC3H8, mCO2
+      logical :: found_specie, lH2, lCO2, lC3H8
 !
      lflame_front=.true.
 !
@@ -1904,20 +1907,35 @@ module Chemistry
 !
 ! Initialize some indexes
 !
-      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
+      call find_species_index('H2' ,i_H2 ,ichem_H2 ,lH2)
       call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
       call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
       call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)      
+      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
       mO2 =species_constants(ichem_O2 ,imass)
-      mH2 =species_constants(ichem_H2 ,imass)
       mH2O=species_constants(ichem_H2O,imass)
       mN2 =species_constants(ichem_N2 ,imass)
+      if (lC3H8) mC3H8 =species_constants(ichem_C3H8 ,imass)
+      if (lH2)   mH2   =species_constants(ichem_H2 ,imass)
+      if (lCO2)  mCO2 =species_constants(ichem_CO2 ,imass)
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
 !
-      final_massfrac_O2&
-          =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
+      final_massfrac_O2=initial_massfractions(ichem_O2)
+      if (lH2) then
+        delta_O2=initial_massfractions(ichem_H2)/(2*mH2)*mO2
+      else
+        delta_O2=0.
+      endif
+      final_massfrac_O2=final_massfrac_O2-delta_O2
+
+      if (lC3H8) then
+        delta_O2=5*initial_massfractions(ichem_C3H8)/mC3H8*mO2
+      else
+        delta_O2=0.
+      endif
+      final_massfrac_O2=final_massfrac_O2-delta_O2
 !
        if (ltemperature_nolog) call fatal_error('opposite_flames',&
            'only implemented for ltemperature_nolog=F')
@@ -1941,12 +1959,24 @@ module Chemistry
 !  Find temperature, species and density based on progress variable
 !
          f(j1,j2,j3,ilnTT)=log(init_TT1+phi*(init_TT2-init_TT1))
-         f(j1,j2,j3,i_H2)=(1-phi)*initial_massfractions(ichem_H2)
+         if (lH2) then
+           f(j1,j2,j3,i_H2)=(1-phi)*initial_massfractions(ichem_H2)
+           f(j1,j2,j3,i_H2O)=phi*initial_massfractions(ichem_H2)*mH2O/mH2
+         endif
+         if (lC3H8) then
+           f(j1,j2,j3,i_C3H8)=(1-phi)*initial_massfractions(ichem_C3H8)
+           f(j1,j2,j3,i_H2O)=4*phi*initial_massfractions(ichem_C3H8)*mH2O/mC3H8
+           f(j1,j2,j3,i_CO2)=3*phi*initial_massfractions(ichem_C3H8)*mCO2/mC3H8
+         endif
          f(j1,j2,j3,i_O2)=(1-phi)*(initial_massfractions(ichem_O2)&
              -final_massfrac_O2)+final_massfrac_O2
-         f(j1,j2,j3,i_H2O)=phi*initial_massfractions(ichem_H2)*mH2O/mH2
-         mu1=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
-             +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
+         mu1&
+             =f(j1,j2,j3,i_O2 )/mO2 &
+             +f(j1,j2,j3,i_H2O)/mH2O&
+             +f(j1,j2,j3,i_N2 )/mN2 
+         if (lH2)   mu1=mu1+f(j1,j2,j3,i_H2  )/(2.*mH2)
+         if (lCO2)  mu1=mu1+f(j1,j2,j3,i_CO2 )/(2.*mCO2)
+         if (lC3H8) mu1=mu1+f(j1,j2,j3,i_C3H8)/(2.*mC3H8)
          f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
              -log(mu1)
        enddo
@@ -4126,7 +4156,8 @@ module Chemistry
 !  NILS: so one should maybe put some effort into optimizing it more.
 !
 !  17-mar-08/natalia: coded
-!  11-nov-10/julien: optimized, reaction rates are calculated under a logarithmic form
+!  11-nov-10/julien: optimized, reaction rates are calculated under a 
+!                    logarithmic form
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
@@ -4148,53 +4179,42 @@ module Chemistry
       real, dimension (nx) :: Fcent, ccc, nnn, lnPr, FF,tmpF
       real, dimension (nx) :: TT1_loc
 !
-! Natalia:pencil_check
-! the same problem as in calculation of p%H0_RT:
-! if lpencil_check and full compiler settings then
-! the problem appears for TT1_loc= p%TT1
-! Does anybody know why it is so?
-! While this problem is not resolved
-! I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
+!  Check which reactions rate method we will use
 !
-      TT1_loc=exp(-f(l1:l2,m,n,ilnTT))
+      if (reac_rate_method == 'chemkin') then
 !
-      if (lwrite_first)  open(file_id,file=input_file)
+!  Natalia:pencil_check
+!  the same problem as in calculation of p%H0_RT:
+!  if lpencil_check and full compiler settings then
+!  the problem appears for TT1_loc= p%TT1
+!  Does anybody know why it is so?
+!  While this problem is not resolved
+!  I use TT1_loc=exp(f(l1:l2,m,n,ilnTT))**(-1)
+!
+        TT1_loc=exp(-f(l1:l2,m,n,ilnTT))
+!
+        if (lwrite_first)  open(file_id,file=input_file)
 !
 !  p is in atm units; atm/bar=1./10.13
 !
-      Rcal=Rgas_unit_sys/4.14*1e-7
-      Rcal1=1./Rcal
-      lnRgas=log(Rgas)
-      l10=log(10.)
-      rho_cgs=p%rho*unit_mass/unit_length**3
-      lnp_atm=log(1e6*unit_length**3/unit_energy)
-      p_atm=1e6*(unit_length**3)/unit_energy
-!
-!  16-Dec-10/Julien:
-!  Is that necessary to write those quantities in an output file?
-!  The file is not opened with an explicit name so that a fort.123
-!  file is created instead, which can be really heavy in large
-!  simulations. Plus, I noticed that the following two lines make
-!  huge cases crash. I have thus commented all the "write" commands
-!  relative to file_id in this routine.
-!
-!      if (lwrite)  write(file_id,*)'T= ',   p%TT
-!      if (lwrite)  write(file_id,*)'p_atm= ',   p_atm
+        Rcal=Rgas_unit_sys/4.14*1e-7
+        Rcal1=1./Rcal
+        lnRgas=log(Rgas)
+        l10=log(10.)
+        rho_cgs=p%rho*unit_mass/unit_length**3
+        lnp_atm=log(1e6*unit_length**3/unit_energy)
+        p_atm=1e6*(unit_length**3)/unit_energy
 !
 !  calculation of the reaction rate
 !
-!      if (lwrite_first) write(file_id,*)'**************************'
-!      if (lwrite_first) write(file_id,*)'Reaction rates'
-!      if (lwrite_first) write(file_id,*)'**************************'
-!
-      do reac=1,nreactions
+        do reac=1,nreactions
 !
 !  Find the product of the species molar consentrations (where
 !  each molar consentration is taken to the power of the number)
 !
-        prod1=1.
-        prod2=1.
-        do k=1,nchemspec
+          prod1=1.
+          prod2=1.
+          do k=1,nchemspec
             if(abs(Sijp(k,reac))==1) then
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))
@@ -4206,26 +4226,26 @@ module Chemistry
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))**Sijp(k,reac)
             endif
-        enddo
-        do k=1,nchemspec
+          enddo
+          do k=1,nchemspec
             if(abs(Sijm(k,reac))==1) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-                 /species_constants(k,imass))
+                  /species_constants(k,imass))
             else if(abs(Sijm(k,reac))==2) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-                 /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
-                 *rho_cgs(:)/species_constants(k,imass))
+                  /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
+                  *rho_cgs(:)/species_constants(k,imass))
             else if (abs(Sijm(k,reac))>0) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
-                 /species_constants(k,imass))**Sijm(k,reac)
+                  /species_constants(k,imass))**Sijm(k,reac)
             endif
-        enddo
+          enddo
 !
 !  Find forward rate constant for reaction 'reac'
 !
           if(latmchem) then
             if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
-                 .and. (E_an(reac)==0.)) then
+                .and. (E_an(reac)==0.)) then
               do i=1,nx
                 call calc_extra_react(f,reac,kf(i),i,m,n,p)
               enddo
@@ -4239,148 +4259,235 @@ module Chemistry
 !
 !  Find backward rate constant for reaction 'reac'
 !
-            dSR=0.
-            dHRT=0.
-            sum_tmp=0.
-            do k=1,nchemspec
-              dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(:,k)
-              dHRT=dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
-              sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
-            enddo
-            Kp=dSR-dHRT
+          dSR=0.
+          dHRT=0.
+          sum_tmp=0.
+          do k=1,nchemspec
+            dSR =dSR+(Sijm(k,reac) -Sijp(k,reac))*p%S0_R(:,k)
+            dHRT=dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
+            sum_tmp=sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
+          enddo
+          Kp=dSR-dHRT
 !
-            if (sum_tmp==0.) then
-              Kc=Kp
-            else
-              Kc=Kp+sum_tmp*(lnp_atm-p%lnTT-lnRgas)
-            endif
+          if (sum_tmp==0.) then
+            Kc=Kp
+          else
+            Kc=Kp+sum_tmp*(lnp_atm-p%lnTT-lnRgas)
+          endif
 !
 !  Multiply by third body reaction term
 !
-        if (minval(a_k4(:,reac))<impossible) then
-          sum_sp=0.
-          do k=1,nchemspec
-!            if (species_constants(k,imass)>0.) then
+          if (minval(a_k4(:,reac))<impossible) then
+            sum_sp=0.
+            do k=1,nchemspec
               sum_sp=sum_sp+a_k4(k,reac)*f(l1:l2,m,n,ichemspec(k))  &
                   *rho_cgs(:)/species_constants(k,imass)
-!            endif
-          enddo
-          mix_conc=sum_sp
-        else
-          sum_sp=1.
-          mix_conc=rho_cgs(:)*p%mu1(:)/unit_mass
-        endif
+            enddo
+            mix_conc=sum_sp
+          else
+            sum_sp=1.
+            mix_conc=rho_cgs(:)*p%mu1(:)/unit_mass
+          endif
 !
 !  The Lindeman approach to the fall of reactions
 !
-        if (maxval(abs(low_coeff(:,reac))) > 0.) then
-          B_n_0=low_coeff(1,reac)
-          alpha_n_0=low_coeff(2,reac)
-          E_an_0=low_coeff(3,reac)
-          kf_0(:)=B_n_0+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
-          Pr=exp(kf_0-kf)*mix_conc
-          kf=kf+log(Pr/(1.+Pr))
-        elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
-          B_n_0=high_coeff(1,reac)
-          alpha_n_0=high_coeff(2,reac)
-          E_an_0=high_coeff(3,reac)
-          kf_0(:)=B_n_0+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
-          Pr=exp(kf_0-kf)*mix_conc
-          kf=kf-log(1.+Pr)
-        endif
+          if (maxval(abs(low_coeff(:,reac))) > 0.) then
+            B_n_0=low_coeff(1,reac)
+            alpha_n_0=low_coeff(2,reac)
+            E_an_0=low_coeff(3,reac)
+            kf_0(:)=B_n_0+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+            Pr=exp(kf_0-kf)*mix_conc
+            kf=kf+log(Pr/(1.+Pr))
+          elseif (maxval(abs(high_coeff(:,reac))) > 0.) then
+            B_n_0=high_coeff(1,reac)
+            alpha_n_0=high_coeff(2,reac)
+            E_an_0=high_coeff(3,reac)
+            kf_0(:)=B_n_0+alpha_n_0*p%lnTT(:)-E_an_0*Rcal1*TT1_loc(:)
+            Pr=exp(kf_0-kf)*mix_conc
+            kf=kf-log(1.+Pr)
+          endif
 !
 ! The Troe approach
 !
-        if (maxval(abs(troe_coeff(:,reac))) > 0.) then
-         Fcent=(1.-troe_coeff(1,reac))*exp(-p%TT(:)/troe_coeff(2,reac)) &
-             +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
-         ccc=-0.4-0.67*log10(Fcent)
-         nnn=0.75-1.27*log10(Fcent)
-         ddd=0.14
-         lnPr=log10(Pr)
-         tmpF=((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
-         tmpF=1./(1.+tmpF)
-         FF=tmpF*log10(Fcent)
-         FF=FF*l10
-         kf=kf+FF
-        endif
+          if (maxval(abs(troe_coeff(:,reac))) > 0.) then
+            Fcent=(1.-troe_coeff(1,reac))*exp(-p%TT(:)/troe_coeff(2,reac)) &
+                +troe_coeff(1,reac)*exp(-p%TT(:)/troe_coeff(3,reac))
+            ccc=-0.4-0.67*log10(Fcent)
+            nnn=0.75-1.27*log10(Fcent)
+            ddd=0.14
+            lnPr=log10(Pr)
+            tmpF=((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
+            tmpF=1./(1.+tmpF)
+            FF=tmpF*log10(Fcent)
+            FF=FF*l10
+            kf=kf+FF
+          endif
 !
 !  Find forward (vreact_p) and backward (vreact_m) rate of
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-        if (latmchem) then
-          kr=kf
-        else
-          kr=kf-Kc
-        endif
+          if (latmchem) then
+            kr=kf
+          else
+            kr=kf-Kc
+          endif
 !
-        if (Mplus_case (reac)) then
-          where (prod1 > 0.)
-            vreact_p(:,reac)=prod1*exp(kf)
-          elsewhere
-            vreact_p(:,reac)=0.
-          endwhere
-          where (prod2 > 0.)
-            vreact_m(:,reac)=prod2*exp(kr)
-          elsewhere
-            vreact_m(:,reac)=0.
-          endwhere
+          if (Mplus_case (reac)) then
+            where (prod1 > 0.)
+              vreact_p(:,reac)=prod1*exp(kf)
+            elsewhere
+              vreact_p(:,reac)=0.
+            endwhere
+            where (prod2 > 0.)
+              vreact_m(:,reac)=prod2*exp(kr)
+            elsewhere
+              vreact_m(:,reac)=0.
+            endwhere
 !
-        else
-          where (prod1 > 0.)
-            vreact_p(:,reac)=prod1*exp(kf)*sum_sp
-          elsewhere
-            vreact_p(:,reac)=0.
-          endwhere
-          where (prod2 > 0.)
-            vreact_m(:,reac)=prod2*exp(kr)*sum_sp
-          elsewhere
-            vreact_m(:,reac)=0.
-          endwhere
-        endif
+          else
+            where (prod1 > 0.)
+              vreact_p(:,reac)=prod1*exp(kf)*sum_sp
+            elsewhere
+              vreact_p(:,reac)=0.
+            endwhere
+            where (prod2 > 0.)
+              vreact_m(:,reac)=prod2*exp(kr)*sum_sp
+            elsewhere
+              vreact_m(:,reac)=0.
+            endwhere
+          endif
+        enddo
 !
 ! This part calculates forward and reverse reaction rates
 ! for the test case R->P
 ! For more details see Doom, et al., J. Comp. Phys., 226, 2007
 !
-        if (l1step_test) then
-          do i=1,nx
-            if (p%TT(i) > Tc) then
-              vreact_p(i,reac)=f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
-                  /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
-            else
-              vreact_p(i,reac)=0.
-            endif
-          enddo
-          vreact_m(:,reac)=0.
-        endif
+      elseif (reac_rate_method == '1step_test') then
+        do i=1,nx
+          if (p%TT(i) > Tc) then
+            vreact_p(i,reac)=f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
+                /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
+          else
+            vreact_p(i,reac)=0.
+          endif
+        enddo
+        vreact_m(:,reac)=0.      
 !
-! Write some data to file
+!  Add alternative method for finding the reaction rates based on work by
+!  Roux et al. (2009)
+!  NILS: Should split the different methods for calculating the reaction
+!  NILS: rates into different subroutines at some point.  
 !
-!        if (lwrite_first) write(file_id,*) &
-!            'Nreact= ',reac,'dSR= ', maxval(dSR), minval(dSR)
-!        if (lwrite_first) write(file_id,*) &
-!            'Nreact= ',reac,'dHRT= ', maxval(dHRT), minval(dHRT)
-!        if (lwrite_first) write(file_id,*)  &
-!            'Nreact= ',reac,  'kf= ', kf(1), minval(kf)
-!        if (lwrite_first) write(file_id,*)  &
-!            'Nreact= ',reac,  'Kc= ', maxval(Kc), minval(Kc)
-!        if (lwrite_first) write(file_id,*)  &
-!            'Nreact= ',reac,  'kr= ', kr(1), minval(kr)
-!        if (lwrite_first) write(file_id,*)'**************************'
-      enddo
+      elseif (reac_rate_method == 'roux') then
+        call roux(f,p,vreact_p,vreact_m)
+      endif
 !
-!  Finalize writing to file
-!
-!        if (lwrite_first) write(file_id,*) ''
-!        if (lwrite_first) write(file_id,*) '*******************'
-        if (lwrite_first.and.lroot) print*,'get_reaction_rate: writing react.out file'
-!        if (lwrite_first) close(file_id)
-      ! lwrite=.false.
-        lwrite_first=.false.
+      if (lwrite_first.and.lroot) &
+          print*,'get_reaction_rate: writing react.out file'
+      lwrite_first=.false.
 !
     endsubroutine get_reaction_rate
+!***********************************************************************
+    subroutine roux(f,p,vreact_p,vreact_m)
+!
+!  nilshau: 2011.01.11 (coded)
+!
+!  Calculate reaction rates based on the method of Roux et al. (2009).
+!  This is a single step reaction mechanism for propane:
+!
+!  C3H8 + 5O2 +XN2 -> 3CO2 + 4H2O + XN2
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
+      type (pencil_case) :: p
+!
+      real :: phi, mC3H8, mO2, Rcal, f_phi, E_a 
+      real, save :: init_C3H8, init_O2
+      integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
+      logical :: lO2, lC3H8
+      logical, save :: lfirsttime=.true.
+      real, dimension (nx) :: activation_energy, pre_exp, term1, term2
+!
+      if (nreactions .ne. 1) &
+          call fatal_error('roux','nreactions should always be 1.')
+!
+      Rcal=Rgas_unit_sys/4.14*1e-7
+!
+!  Find indecees for oxygen and propane
+!
+      call find_species_index('O2',i_O2,ichem_O2,lO2)
+      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
+!
+!  Check that oxygen and propane exist and find their molar masses
+!
+      if (lO2) then
+        mO2 =species_constants(ichem_O2 ,imass)
+      else
+        call fatal_error('roux','O2 is not defined!')
+      endif
+      if (lC3H8) then
+        mC3H8 =species_constants(ichem_C3H8 ,imass)
+      else
+        call fatal_error('roux','C3H8 is not defined!')
+      endif
+!
+!  Find initial mass fractions
+!
+      if (lfirsttime) then
+        do j=1,nchemspec
+          initial_massfractions(j)=f(l1,m1,n1,ichemspec(j))
+          print*,'initial_massfractions=',initial_massfractions
+        enddo
+        init_O2=initial_massfractions(ichem_O2)
+        init_C3H8=initial_massfractions(ichem_C3H8)
+      endif
+!
+!  Find equivalence ratio phi
+!
+      phi=5*(init_C3H8/init_O2)*(mO2/mC3H8)
+!
+!  Find Laminar flame speed corrector based on equivalence ratio phi
+!
+      f_phi&
+          =0.5*(1+tanh((0.8-phi)/1.5))&
+          +2.11/4*(1+tanh((phi-0.11)/0.2))&
+          *(1+tanh((1.355-phi)/0.24))
+!
+!  Find the classical Arrhenius terms
+!
+      E_a=31126
+      activation_energy=exp(-E_a*p%TT1/Rcal)
+      pre_exp=3.2916e10
+!
+!  Find density and mass fraction dependent terms
+!
+      term1=(f(l1:l2,m,n,i_C3H8)*p%rho&
+          /species_constants(i_C3H8,imass))**0.856
+      term2=(f(l1:l2,m,n,i_O2)*p%rho&
+          /species_constants(i_O2,imass))**0.503
+!
+!  Use the above to find reaction terms
+!
+      vreact_p(:,1)=f_phi*pre_exp*term1*term2*activation_energy  
+      where (f(l1:l2,m,n,i_C3H8)<1e-17)
+        vreact_p(:,1)=0.
+      end where
+      vreact_m(:,1)=0.
+!
+!  Print debugging output
+!
+      if (ip<3 .or. lfirsttime) then
+        print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=',&
+            i_O2, i_C3H8, ichem_O2, ichem_C3H8
+        print*,'lO2, lC3H8=',lO2, lC3H8        
+        print*,'phi=',phi
+        print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
+      endif
+!
+      if (lfirsttime) lfirsttime=.false.
+!
+      end subroutine roux
 !***********************************************************************
     subroutine calc_reaction_term(f,p)
 !
