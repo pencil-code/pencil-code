@@ -32,7 +32,7 @@ module Particles_collisions
   real, pointer :: gravr
   real :: lambda_mfp_single=1.0, coeff_restitution=1.0
   real :: energy_gain_inelastic=0.0
-  integer :: ncoll_max_par=-1, npart_max_par=-1
+  integer :: ncoll_max_par=-1, npart_max_par=-1, npart_max_par_2=0
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
   logical :: ltauc_from_tauf=.false.
@@ -103,6 +103,13 @@ module Particles_collisions
         call get_shared_variable('tausp1_species',tausp1_species)
       endif
 !
+      if (npart_max_par/=-1) then
+        if (mod(npart_max_par,2)/=0) &
+            call fatal_error('initialize_particles_collisions', &
+            'npart_par_max must be an even number')
+        npart_max_par_2=npart_max_par/2
+      endif
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -145,7 +152,7 @@ module Particles_collisions
       real :: espec, asemi, omega_orbit
       real :: tausp_j, tausp_k, tausp1_j, tausp1_k
       integer, dimension (nx) :: np_pencil
-      integer :: l, j, k, np_point, ncoll, ncoll_par, npart_par
+      integer :: l, j, k, npart_point, ncoll, ncoll_par, npart_par
       integer :: jspec, kspec
 !
       intent (in) :: ineargrid
@@ -185,7 +192,7 @@ module Particles_collisions
         do l=l1,l2
           k=kshepherd(l-nghost)
           if (k>0) then
-            np_point=np_pencil(l-nghost)
+            if (npart_max_par/=-1) npart_point=np_pencil(l-nghost)-1
             do while (k/=0)
               j=k
               if (ltauc_from_tauf) then
@@ -198,7 +205,7 @@ module Particles_collisions
               do while (.true.)
                 j=kneighbour(j)
                 if (j==0) then
-                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
+                  if (npart_max_par/=-1 .and. npart_max_par<npart_point) then
                     j=kshepherd(l-nghost)
                   else
                     exit
@@ -287,8 +294,8 @@ module Particles_collisions
 !
 !  Increase collision rate artificially for fewer collisions.
 !
-                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                    tau_coll1=0.5*tau_coll1*np_point/npart_max_par
+                  if (npart_max_par/=-1 .and. npart_max_par<npart_point) then
+                    tau_coll1=tau_coll1*npart_point/npart_max_par
                   endif
 !
                   if (tau_coll1/=0.0) then
@@ -312,7 +319,7 @@ module Particles_collisions
                 endif
                 npart_par=npart_par+1
                 if (ncoll_max_par/=-1 .and. ncoll_par==ncoll_max_par) exit
-                if (npart_max_par/=-1 .and. npart_par==npart_max_par) exit
+                if (npart_max_par/=-1 .and. npart_par==npart_max_par_2) exit
               enddo
               k=kneighbour(k)
 !
@@ -377,7 +384,7 @@ module Particles_collisions
       real :: tausp_j, tausp_k, tausp1_j, tausp1_k
       integer, dimension (nxb,nyb,nzb) :: kshepherdb, np_block
       integer :: ix, iy, iz, iblock, ix0, iy0, iz0
-      integer :: j, k, np_point, ncoll, ncoll_par, npart_par
+      integer :: j, k, npart_point, ncoll, ncoll_par, npart_par
       integer :: jspec, kspec
 !
       intent (in) :: ineargrid
@@ -418,7 +425,8 @@ module Particles_collisions
         do iz=n1b,n2b; do iy=m1b,m2b; do ix=l1b,l2b
           k=kshepherdb(ix-nghostb,iy-nghostb,iz-nghostb)
           if (k>0) then
-            np_point=np_block(ix-nghostb,iy-nghostb,iz-nghostb)
+            if (npart_max_par/=-1) &
+                npart_point=np_block(ix-nghostb,iy-nghostb,iz-nghostb)-1
             do while (k/=0)
               j=k
               if (ltauc_from_tauf) then
@@ -431,7 +439,7 @@ module Particles_collisions
               do while (.true.)
                 j=kneighbour(j)
                 if (j==0) then
-                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
+                  if (npart_max_par/=-1 .and. npart_max_par<npart_point) then
                     j=kshepherdb(ix-nghostb,iy-nghostb,iz-nghostb)
                   else
                     exit
@@ -520,8 +528,8 @@ module Particles_collisions
 !
 !  Increase collision rate artificially for fewer collisions.
 !
-                  if (npart_max_par/=-1 .and. npart_max_par<np_point) then
-                    tau_coll1=0.5*tau_coll1*np_point/npart_max_par
+                  if (npart_max_par/=-1 .and. npart_max_par<npart_point) then
+                    tau_coll1=tau_coll1*npart_point/npart_max_par
                   endif
 !
                   if (tau_coll1/=0.0) then
@@ -545,7 +553,7 @@ module Particles_collisions
                 endif
                 npart_par=npart_par+1
                 if (ncoll_max_par/=-1 .and. ncoll_par==ncoll_max_par) exit
-                if (npart_max_par/=-1 .and. npart_par==npart_max_par) exit
+                if (npart_max_par/=-1 .and. npart_par==npart_max_par_2) exit
               enddo
               k=kneighbour(k)
 !
