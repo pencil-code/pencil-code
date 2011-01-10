@@ -561,7 +561,7 @@ module Testfield
           call mpiallreduce_sum(uxbtestm(:,:,:,jtest),uxbtestm1,(/nx,nz,3/),idir=2)
 !         or
 !         call mpiallreduce_sum_arr(uxbtestm(1,1,1,jtest),uxbtestm1,nx*nz*3,idir=2)       !avoids copy
-          uxbtestm(:,:,:,jtest)=uxbtestm1
+          uxbtestm(:,:,:,jtest)=uxbtestm1/nprocy
 !
         endif
       enddo
