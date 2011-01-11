@@ -101,6 +101,7 @@ module Special
     logical :: lgran_parallel=.false.
 !
     integer, save, dimension(mseed) :: nano_seed
+    integer :: alloc_err
 !
   contains
 !
@@ -129,6 +130,16 @@ module Special
 !
       if (lgranulation .and. (iproc<=nprocxy+4)) then
         call setdrparams()
+        if (allocated(Ux)) then
+          allocate(Ux(nxgrid,nygrid),stat=alloc_err)
+          if (alloc_err>0) call fatal_error('initialize_special', &
+              'could not allocate Ux')
+        endif
+        if (allocated(Uy)) then
+          allocate(Uy(nxgrid,nygrid),stat=alloc_err)
+          if (alloc_err>0) call fatal_error('initialize_special', &
+              'could not allocate Uy')
+        endif
       endif
 !
       if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
@@ -209,7 +220,7 @@ module Special
       real, dimension(:), allocatable :: kxp, kyp
 !
       real :: dummy
-      integer :: idx2,idy2,lend,ierr,alloc_err
+      integer :: idx2,idy2,lend,ierr
       integer :: i,px,py
       integer, parameter :: unit=12,Ax_tag=366,Ay_tag=367
 !
