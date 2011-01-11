@@ -1494,7 +1494,7 @@ module Special
       if (n==iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
 !
 !     add to temperature equation
-!      
+!
       if (ltemperature) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       else
@@ -1709,7 +1709,7 @@ module Special
 !
           heat_flux=heat_flux + heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
               (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
-
+!
           if (headtt) print*,'Flux for exp2 heating: ', &
               heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
               (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
@@ -1741,7 +1741,7 @@ module Special
           ! LOAD NANO_SEED
           call random_seed_wrapper(GET=global_rstate)
           call random_seed_wrapper(PUT=nano_seed)
-
+!
           if (nano_start .eq. 0.) then
             ! If 0 roll to see if a nanoflare occurs
             call random_number_wrapper(nano_start)
@@ -1968,7 +1968,7 @@ module Special
 !
 ! Get magnetic field energy for footpoint quenching.
 ! The lower level prozessor have to take part
-      if (ipz == 0) then
+      if (lroot.or.(lgran_parallel.and.iproc<=nprocxy+2)) then
         call set_B2(f,BB2_local)
 !
 ! Set sum(abs(Bz)) to  a given flux.
@@ -2052,7 +2052,7 @@ module Special
 !
       call get_cp1(cp1)
 !
-      if (lquench) then
+      if (lquench.and.ipz==0) then
         if (ltemperature.and..not.ltemperature_nolog) then
           if (ldensity_nolog) then
             call fatal_error('solar_corona', &
@@ -2088,6 +2088,8 @@ module Special
 ! restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
+!
+      if (allocated(uu_buffer)) deallocate(uu_buffer)
 !
     endsubroutine uudriver
 !***********************************************************************
@@ -2709,7 +2711,7 @@ module Special
       real, dimension(nx,ny) :: bbx,bby,bbz
       real, dimension(nx,ny) :: fac,BB2_local,tmp
       integer :: px,py,partner,alloc_err
-      integer, dimension(2) :: dims=(/nx,ny/)
+      integer, dimension(2) :: dims
       real :: temp
 !
       intent(in) :: f
@@ -2773,6 +2775,7 @@ module Special
 ! communicate to root processor
 !
       if (lroot) then
+        dims=(/nx,ny/)
         if (.not. allocated (BB2)) then
           allocate (BB2(nxgrid,nygrid), stat=alloc_err)
           if (alloc_err > 0) call stop_it_if_any (.true., 'set_B2: Could not allocate memory')
@@ -2789,9 +2792,25 @@ module Special
             Bzflux = Bzflux+temp
           enddo
         enddo
-      else
+      elseif (ipz==0) then
         call mpisend_real(BB2_local,dims,0,555+iproc)
         call mpisend_real(Bzflux,1,0,556+iproc)
+      endif
+!
+      if (lgran_parallel) then
+        dims=(/nxgrid,nygrid/)
+        if (lroot) then
+          call mpisend_real(BB2,dims,nprocxy,nprocxy)
+          call mpisend_real(BB2,dims,nprocxy+1,nprocxy+1)
+          call mpisend_real(BB2,dims,nprocxy+2,nprocxy+2)
+        elseif (iproc>=nprocxy.and.iproc<=nprocxy+2) then
+          if (.not. allocated (BB2)) then
+            allocate (BB2(nxgrid,nygrid), stat=alloc_err)
+            if (alloc_err>0) call stop_it_if_any(.true., &
+                'set_B2: Could not allocate memory')
+          endif
+          call mpirecv_real(BB2,dims,0,iproc)
+        endif
       endif
 !
     endsubroutine set_B2
