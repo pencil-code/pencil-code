@@ -3,6 +3,7 @@ special
 initial_condition
 experimental
 inactive
+pre_and_post_processing
 makefile Makefile
 magnetic
 *.d
@@ -18,3 +19,4 @@ mpicomm_double_.f90
 .buildtime
 .build-history
 .current-precision
+*_genmod.f90
