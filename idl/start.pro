@@ -59,13 +59,13 @@ default, maxtags, 120
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
-mx=0L & my=0L & mz=0L & nvar=0L & naux=0L
+mx=0L & my=0L & mz=0L & nvar=0L & naux=0L & nglobal=0L
 prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 ;
 close,1
 openr,1,datadir+'/'+dimfile
-readf,1,mx,my,mz,nvar,naux
+readf,1,mx,my,mz,nvar,naux,nglobal
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz
 close,1
