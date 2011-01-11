@@ -130,12 +130,12 @@ module Special
 !
       if (lgranulation .and. (iproc<=nprocxy+4)) then
         call setdrparams()
-        if (allocated(Ux)) then
+        if (.not.allocated(Ux)) then
           allocate(Ux(nxgrid,nygrid),stat=alloc_err)
           if (alloc_err>0) call fatal_error('initialize_special', &
               'could not allocate Ux')
         endif
-        if (allocated(Uy)) then
+        if (.not.allocated(Uy)) then
           allocate(Uy(nxgrid,nygrid),stat=alloc_err)
           if (alloc_err>0) call fatal_error('initialize_special', &
               'could not allocate Uy')
@@ -1942,13 +1942,20 @@ module Special
       use Mpicomm, only: mpisend_real, mpirecv_real
       use Sub, only: cubic_step
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(:,:), allocatable :: uu_buffer
       integer :: i,j,ipt,main_proc
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
       real :: cp1=1.,dA
       integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
+!
+      if (.not.allocated(uu_buffer)) then
+        allocate(uu_buffer(nxgrid,nygrid),stat=alloc_err)
+        if (alloc_err>0) call fatal_error('uudriver', &
+            'could not allocate memory for uu_buffer')
+      endif
 !
 ! Update velocity field only every dt_gran after the first iteration
       if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
@@ -1993,7 +2000,16 @@ module Special
             call mpisend_real(Ux,(/nxgrid,nygrid/),nprocxy,iproc)
           else
             do i=1,2
-              call mpirecv_real(Ux,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
+              call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
+              Ux = Ux + uu_buffer
+            enddo
+          endif
+          if (iproc>nprocxy) then
+            call mpisend_real(Uy,(/nxgrid,nygrid/),nprocxy,iproc)
+          else
+            do i=1,2
+              call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
+              Uy = Uy + uu_buffer
             enddo
           endif
         endif
