@@ -5387,21 +5387,26 @@ nameloop: do
 !
     endsubroutine gij_psi_etc
 !***********************************************************************
-    subroutine location_in_proc(xpos,ypos,zpos,lpos,mpos,npos,lin)
+    logical function location_in_proc(xpos,ypos,zpos,lpos,mpos,npos)
 ! 
 ! finds out if a points belongs to the location in the processor.
 ! If yes the also returns the nearest grid location of this point. 
-      real :: xpos,ypos,zpos
-      integer :: lpos,mpos,npos
-      logical :: lin,linx,liny,linz
-! dhruba
+!
+!  -dec-10/dhruba: coded
+!  28-dec-10/MR: changed into function
+!
+      real,    intent(in)  :: xpos,ypos,zpos
+      integer, intent(out) :: lpos,mpos,npos
+!
+      logical :: linx,liny,linz
 !
       call xlocation(xpos,lpos,linx)
       call ylocation(ypos,mpos,liny)
       call zlocation(zpos,npos,linz)
-      lin = linx.and.liny.and.linz
 !
-        endsubroutine location_in_proc
+      location_in_proc = linx.and.liny.and.linz
+!
+    endfunction location_in_proc
 !***********************************************************************
     subroutine xlocation(xpos,ixpos,lproc)
 !
