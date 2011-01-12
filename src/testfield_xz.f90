@@ -42,7 +42,8 @@ module Testfield
   logical :: xextent=.true.,zextent=.true.,lsoca=.false.,lset_bbtest2=.false.
   logical :: linit_aatest=.false.
   integer :: itestfield=1
-  real :: ktestfield_x=1.,  ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.,kanalyze_z=-1.
+  real :: ktestfield_x=1., ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.
+  real :: kanalyze_z=-1.
 !  integer, parameter :: njtest=9, mtestfield=3*njtest
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
@@ -55,7 +56,8 @@ module Testfield
   real, dimension(njtest) :: rescale_aatest=0.
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,xextent,zextent,lsoca, &
-       lset_bbtest2,etatest,itestfield,ktestfield_x, ktestfield_z,xx0,zz0,kanalyze_x,kanalyze_z,daainit, &
+       lset_bbtest2,etatest,itestfield,ktestfield_x, &
+       ktestfield_z,xx0,zz0,kanalyze_x,kanalyze_z,daainit, &
        linit_aatest, &
        rescale_aatest
 
@@ -214,12 +216,12 @@ module Testfield
 !        Minv(i,j,1,:) = (/ 0.5*(c2x(i)+c2z(j))*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
         Minv(i,j,1,:) = (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),              sx(i)*cz1(j),              sz(j)*cx1(i) /)
         Minv(i,j,2,:) = (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                        0. /)
-        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /) 
+        Minv(i,j,3,:) = (/              -sz(j)*cx1(i)/ktestfield_z,                        0., cz(j)*cx1(i)/ktestfield_z /)
 !
 !        Minv(i,j,:,:) = RESHAPE((/  &
-!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),		 sz(j)*cx1(i) /),&
-!                                  (/		   -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,		   0. /),&
-!                                  (/		   -sz(j)*cx1(i)/ktestfield_z,  		0., cz(j)*cx1(i)/ktestfield_z /) &
+!                                  (/ (1.- sx(i)**2 - sz(j)**2)*cx1(i)*cz1(j),        sx(i)*cz1(j),              sz(j)*cx1(i) /),&
+!                                  (/              -sx(i)*cz1(j)/ktestfield_x, cx(i)*cz1(j)/ktestfield_x,                  0. /),&
+!                                  (/              -sz(j)*cx1(i)/ktestfield_z,                  0., cz(j)*cx1(i)/ktestfield_z /) &
 !                                /), (/3,3/), ORDER=(/ 2, 1 /))
       enddo
       enddo
@@ -502,7 +504,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: calc_pencils_hydro
-      use Mpicomm, only: stop_it,mpiallreduce_sum              !,mpiallreduce_sum_arr
+      use Mpicomm, only: stop_it,mpiallreduce_sum     !,mpiallreduce_sum_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -522,7 +524,8 @@ module Testfield
 !
       headtt_save=headtt
       fac=1./ny
-      if ((ldiagnos .and. needed2d_1d) .or. (l2davgfirst .and. needed2d_2d)) then
+      if ((ldiagnos .and. needed2d_1d) .or. &
+          (l2davgfirst .and. needed2d_2d)) then
         need_output=.true. ; else ; need_output=.false. ; endif
 !
 !  do each of the 9 test fields at a time
