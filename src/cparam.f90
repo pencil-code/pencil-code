@@ -86,12 +86,10 @@ module Cparam
   real, parameter :: impossible=3.9085e37
   integer, parameter :: impossible_int=max_int/100
 !
-! Following expample for the NaN handling does not work:
-! defines signalling NaN
-!  real    :: rnan     
-!  integer :: inan
-!  equivalence(rnan,inan)
-!  data inan /X'7FC00100'/
+  real    :: rnan     
+  integer :: inan
+  equivalence(rnan,inan)
+  data inan /X'7FC00100'/
 !
 !  Diagnostic variable types.
 !
