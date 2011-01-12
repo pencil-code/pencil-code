@@ -302,22 +302,21 @@ module Cdata
   integer :: it1=10,it1d=impossible_int
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
-  integer :: nname_sound=0, nsound_coords=0
+  integer :: nname_sound=0, ncoords_sound=0
   integer :: nr_directions=1
   real :: tdiagnos,t1ddiagnos,t2davgfirst
-  integer, parameter :: mname=100,mnamev=100
+  integer, parameter :: mname=100
   integer, dimension (mname) :: itype_name=0
-  real, dimension (mname) :: fname=0.0, fweight=0.0
-  real, dimension (:,:), allocatable :: fname_sound
+  real, dimension (mname) :: fweight=0.0
+  real, dimension(:)      , allocatable :: fname
+  real, dimension(:,:)    , allocatable :: fnamer,fname_sound
+  real, dimension(:,:,:)  , allocatable :: fnamex, fnamey, fnamez,fnamexy, fnamexz
+  real, dimension(:,:,:,:), allocatable :: fnamerz
   integer, dimension (:,:), allocatable :: sound_coords_list
   real, dimension (nz,nprocz) :: z_allprocs=0.0
-  real, dimension (:,:,:), allocatable :: fnamex, fnamey, fnamez
-  real, dimension (:,:), allocatable :: fnamer
-  real, dimension(:,:,:), allocatable :: fnamexy, fnamexz
-  real, dimension(:,:,:,:), allocatable :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  character (len=30) :: cname(mname),cform(mname)
-  character (len=30), allocatable, dimension(:) :: cnamev,cname_sound,cform_sound
+  character (len=30), allocatable :: cname(:),cform(:)
+  character (len=30), allocatable :: cnamev(:),cname_sound(:),cform_sound(:)
   character (len=30), allocatable :: cnamexy(:),cformxy(:)
   character (len=30), allocatable :: cnamexz(:),cformxz(:)
   character (len=30), allocatable :: cnamerz(:),cformrz(:)
