@@ -277,7 +277,7 @@ module Magnetic
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
   integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
   integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD}
-                                ! DIAG_DOC: (\vec{J}\times\vec{B})^2\right>$ 
+                                ! DIAG_DOC: (\vec{J}\times\vec{B})^2\right>$
                                 ! DIAG_DOC: (heating by ion-neutrals friction)
   integer :: idiag_bxpt=0       ! DIAG_DOC: $B_x(x_1,y_1,z_1,t)$
   integer :: idiag_bypt=0       ! DIAG_DOC: $B_y(x_1,y_1,z_1,t)$
@@ -1599,7 +1599,7 @@ module Magnetic
          ) lpenc_diagnos(i_jj)=.true.
 !
        if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
-         ) lpenc_diagnos2d(i_jj)=.true.   
+         ) lpenc_diagnos2d(i_jj)=.true.
 !
       if (idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 &
          ) lpenc_diagnos(i_exa)=.true.
@@ -3239,29 +3239,29 @@ module Magnetic
 !
           if ((m==mspoint).and.(n==nspoint)) then
             if (idiag_axpt/=0) &
-        	call save_name_sound(p%aa(lspoint-nghost,1),idiag_axpt,isound)
+                call save_name_sound(p%aa(lspoint-nghost,1),idiag_axpt,isound)
             if (idiag_aypt/=0) &
-        	call save_name_sound(p%aa(lspoint-nghost,2),idiag_aypt,isound)
+                call save_name_sound(p%aa(lspoint-nghost,2),idiag_aypt,isound)
             if (idiag_azpt/=0) &
-        	call save_name_sound(p%aa(lspoint-nghost,3),idiag_azpt,isound)
+                call save_name_sound(p%aa(lspoint-nghost,3),idiag_azpt,isound)
             if (idiag_bxpt/=0) &
-        	call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
+                call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
             if (idiag_bypt/=0) &
-        	call save_name_sound(p%bb(lspoint-nghost,2),idiag_bypt,isound)
+                call save_name_sound(p%bb(lspoint-nghost,2),idiag_bypt,isound)
             if (idiag_bzpt/=0) &
-        	call save_name_sound(p%bb(lspoint-nghost,3),idiag_bzpt,isound)
+                call save_name_sound(p%bb(lspoint-nghost,3),idiag_bzpt,isound)
             if (idiag_jxpt/=0) &
-        	call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
+                call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
             if (idiag_jypt/=0) &
-        	call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
+                call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
             if (idiag_jzpt/=0) &
-        	call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
+                call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
             if (idiag_Expt/=0) &
-        	call save_name_sound(uxbb(lspoint-nghost,1),idiag_Expt,isound)
+                call save_name_sound(uxbb(lspoint-nghost,1),idiag_Expt,isound)
             if (idiag_Eypt/=0) &
-        	call save_name_sound(uxbb(lspoint-nghost,2),idiag_Eypt,isound)
+                call save_name_sound(uxbb(lspoint-nghost,2),idiag_Eypt,isound)
             if (idiag_Ezpt/=0) &
-        	call save_name_sound(uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
+                call save_name_sound(uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
           endif
         enddo
       endif
