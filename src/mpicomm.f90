@@ -5489,38 +5489,38 @@ module Mpicomm
         do ix=1,nxgrid
 !
           if (lroot .and. np==1) then
-	    
-	    if (fcnt>0) then                                                              ! this coding guarantees that
+
+            if (fcnt>0) then                                                              ! this coding guarantees that
               call chn(8-fcnt,ch8)                                                        !             .
-      	      write(1,'(1p,'//ch8//'(e10.2))') sendbuf(ix,1:8-fcnt,j)                     !             .
-	    endif                                                                         !             .
-            fcnt=update_cnt(fcnt,8,n8)                                                    !             . 
-	    if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
-	    if (fcnt>0) then                                                              !
+              write(1,'(1p,'//ch8//'(e10.2))') sendbuf(ix,1:8-fcnt,j)                     !             .
+            endif                                                                         !             .
+            fcnt=update_cnt(fcnt,8,n8)                                                    !             .
+            if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
+            if (fcnt>0) then                                                              !
               call chn(ny-n8,chy)                                                         !
               write(1,'(1p,'//chy//'(e10.2)$)') sendbuf(ix,n8+1:,j)                       ! all lines in the output have 8 entries
-	    endif
+            endif
 !
           endif
-	  
-          do i=iproca,iproce  
+
+          do i=iproca,iproce
 !
-      	    tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid 
-	    
-      	    if (lroot) then
-	      call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr) 
-	      
-	      if (fcnt>0) then
+            tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid
+
+            if (lroot) then
+              call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+
+              if (fcnt>0) then
                 call chn(8-fcnt,ch8)
-      	        write(1,'(1p,'//ch8//'(e10.2))') rowbuf(1:8-fcnt)
+                write(1,'(1p,'//ch8//'(e10.2))') rowbuf(1:8-fcnt)
               endif
 !
-	      fcnt=update_cnt(fcnt,8,n8)
-	      if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
-	      if (fcnt>0) then
+              fcnt=update_cnt(fcnt,8,n8)
+              if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
+              if (fcnt>0) then
                 call chn(ny-n8,chy)
                 write(1,'(1p,'//chy//'(e10.2)$)') rowbuf(n8+1:)
-	      endif
+              endif
 !
             else if ( iproc==i ) then
               rowbuf=sendbuf(ix,:,j)
