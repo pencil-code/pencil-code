@@ -52,6 +52,7 @@ program run
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
   use Equ,             only: debug_imn_arrays,initialize_pencils
+  use Emulated,        only: isnan
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
   use Filter
@@ -140,6 +141,15 @@ program run
   xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
   xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
   xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
+!
+!  Set up directory names `directory' and `directory_snap'.
+!
+  call directory_names()
+!
+!  Read coordinates.
+!
+  if (ip<=6.and.lroot) print*, 'reading grid coordinates'
+  call rgrid(trim(directory)//'/grid.dat')
 !
 !  Register physics modules.
 !
@@ -244,10 +254,6 @@ program run
     cdtvDim=cdtv/max(dimensionality,1)
   endif
 !
-!  Set up directory names `directory' and `directory_snap'.
-!
-  call directory_names()
-!
 !  Get state length of random number generator.
 !
   call get_nseed(nseed)
@@ -284,16 +290,11 @@ program run
 !  Set last tsound output time
 !
   if (lwrite_sound) then
-    if (tsound==impossible) then
+    if (isnan(tsound)) then
       tsound=t                          ! if sound output starts anew
       lout_sound=.true.                 ! output initial values
     endif
   endif
-!
-!  Read coordinates.
-!
-  if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-  call rgrid(trim(directory)//'/grid.dat')
 !
 !  Read processor boundaries.
 !
@@ -540,10 +541,11 @@ program run
       call prints()
       if (lchemistry_diag) call write_net_reaction
     endif
-    if (l1davg    ) call write_1daverages()
-    if (l2davg    ) call write_2daverages()   
+    if (l1davg) call write_1daverages()
+    if (l2davg) call write_2daverages()  
+! 
     if (lout_sound) then
-!     call write_sound(tsound)
+      call write_sound(tsound)
       lout_sound = .false.
     endif
 !
@@ -765,6 +767,7 @@ program run
   call sharedvars_clean_up()
   call chemistry_clean_up()
   call NSCBC_clean_up()
+  call fnames_clean_up()
   call vnames_clean_up()
   call xyaverages_clean_up()
   call xzaverages_clean_up()
