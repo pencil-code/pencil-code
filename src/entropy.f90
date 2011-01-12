@@ -3624,7 +3624,6 @@ module Entropy
 !
         chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-!       glnThcond = p%glnTT + glhc*spread(1./hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         if (pretend_lnTT) then
           thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
