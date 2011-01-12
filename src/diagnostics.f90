@@ -1869,9 +1869,9 @@ module Diagnostics
       integer :: unit=1
       integer :: msound_coords
       logical :: llocation
-      integer, allocatable, dimension (:,:) :: temp_sound_coords 
+      integer, allocatable, dimension (:,:) :: temp_sound_coords
       real :: xsound,ysound,zsound
-      integer :: lsound,msound,nsound
+      integer :: lsound,msound,nsound,nsound_coords
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -1889,7 +1889,7 @@ module Diagnostics
 !
       do isound=1,msound_coords
         read(unit,*) xsound,ysound,zsound
-        call location_in_proc(xsound,ysound,zsound,lsound,msound,nsound,llocation)
+        llocation=location_in_proc(xsound,ysound,zsound,lsound,msound,nsound)
         if (llocation) then
           nsound_coords=nsound_coords+1
           lwrite_sound = .true.
