@@ -2957,78 +2957,6 @@ module Magnetic
 !
         if (idiag_bcosphz/=0) call sum_mn_name(+p%bbb(:,1)*coskz(n)+p%bbb(:,2)*sinkz(n),idiag_bcosphz)
 !
-!  Magnetic field components at one point (=pt).
-!
-        if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
-          if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
-          if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
-          if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
-          if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
-          if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
-          if (idiag_Expt/=0) call save_name(uxbb(lpoint-nghost,1),idiag_Expt)
-          if (idiag_Eypt/=0) call save_name(uxbb(lpoint-nghost,2),idiag_Eypt)
-          if (idiag_Ezpt/=0) call save_name(uxbb(lpoint-nghost,3),idiag_Ezpt)
-          if (idiag_axpt/=0) call save_name(p%aa(lpoint-nghost,1),idiag_axpt)
-          if (idiag_aypt/=0) call save_name(p%aa(lpoint-nghost,2),idiag_aypt)
-          if (idiag_azpt/=0) call save_name(p%aa(lpoint-nghost,3),idiag_azpt)
-        endif
-!
-!  Magnetic field components at point 2 (=p2).
-!
-        if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_bxp2/=0) call save_name(p%bb(lpoint2-nghost,1),idiag_bxp2)
-          if (idiag_byp2/=0) call save_name(p%bb(lpoint2-nghost,2),idiag_byp2)
-          if (idiag_bzp2/=0) call save_name(p%bb(lpoint2-nghost,3),idiag_bzp2)
-          if (idiag_jxp2/=0) call save_name(p%jj(lpoint2-nghost,1),idiag_jxp2)
-          if (idiag_jyp2/=0) call save_name(p%jj(lpoint2-nghost,2),idiag_jyp2)
-          if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
-          if (idiag_Exp2/=0) call save_name(uxbb(lpoint2-nghost,1),idiag_Exp2)
-          if (idiag_Eyp2/=0) call save_name(uxbb(lpoint2-nghost,2),idiag_Eyp2)
-          if (idiag_Ezp2/=0) call save_name(uxbb(lpoint2-nghost,3),idiag_Ezp2)
-          if (idiag_axp2/=0) call save_name(p%aa(lpoint-nghost,1),idiag_axp2)
-          if (idiag_ayp2/=0) call save_name(p%aa(lpoint-nghost,2),idiag_ayp2)
-          if (idiag_azp2/=0) call save_name(p%aa(lpoint-nghost,3),idiag_azp2)
-        endif
-!
-! Magnetic field components at the list of points written out in sound.dat
-! lwrite_sound is false if either no sound output is required, or if none of
-!  the desired sound output location occur in the subdomain in this processor.
-        if (lwrite_sound.and.lout_sound) then
-! go through the list of lpoints and mpoints 
-          do isound=1,nsound_coords
-            lspoint=sound_coords_list(isound,1)
-            mspoint=sound_coords_list(isound,2)
-            nspoint=sound_coords_list(isound,3)
-            if((m==mspoint).and.(n==nspoint)) then
-              if (idiag_axpt/=0) & 
-                  call save_name_sound(p%aa(lpoint-nghost,1),idiag_axpt,isound) 
-              if (idiag_aypt/=0) & 
-                  call save_name_sound(p%aa(lpoint-nghost,2),idiag_aypt,isound) 
-              if (idiag_azpt/=0) & 
-                  call save_name_sound(p%aa(lpoint-nghost,3),idiag_azpt,isound)  
-             if (idiag_bxpt/=0) & 
-                 call save_name_sound(p%bb(lpoint-nghost,1),idiag_bxpt,isound)
-              if (idiag_bypt/=0) & 
-                  call save_name_sound(p%bb(lpoint-nghost,2),idiag_bypt,isound)
-              if (idiag_bzpt/=0) & 
-                  call save_name_sound(p%bb(lpoint-nghost,3),idiag_bzpt,isound)
-              if (idiag_jxpt/=0) & 
-                  call save_name_sound(p%jj(lpoint-nghost,1),idiag_jxpt,isound)
-              if (idiag_jypt/=0) & 
-                  call save_name_sound(p%jj(lpoint-nghost,2),idiag_jypt,isound)
-              if (idiag_jzpt/=0) & 
-                  call save_name_sound(p%jj(lpoint-nghost,3),idiag_jzpt,isound)
-              if (idiag_Expt/=0) & 
-                  call save_name_sound(uxbb(lpoint-nghost,1),idiag_Expt,isound)
-              if (idiag_Eypt/=0) & 
-                  call save_name_sound(uxbb(lpoint-nghost,2),idiag_Eypt,isound)
-              if (idiag_Ezpt/=0) & 
-                  call save_name_sound(uxbb(lpoint-nghost,3),idiag_Ezpt,isound)
-            endif
-          enddo
-        endif
-!
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
         if (idiag_vA2m/=0)  call sum_mn_name(p%va2,idiag_vA2m)
@@ -3294,6 +3222,50 @@ module Magnetic
         endif
 !
       endif ! endif (ldiagnos)
+!
+! Magnetic field components at the list of points written out in sound.dat
+! lwrite_sound is false if either no sound output is required, or if none of
+! the desired sound output location occur in the subdomain in this processor.
+!
+      if (lwrite_sound.and.lout_sound) then
+!
+! go through the list of lpoints and mpoints
+!
+        do isound=1,ncoords_sound
+
+          lspoint=sound_coords_list(isound,1)
+          mspoint=sound_coords_list(isound,2)
+          nspoint=sound_coords_list(isound,3)
+!
+          if ((m==mspoint).and.(n==nspoint)) then
+            if (idiag_axpt/=0) &
+        	call save_name_sound(p%aa(lspoint-nghost,1),idiag_axpt,isound)
+            if (idiag_aypt/=0) &
+        	call save_name_sound(p%aa(lspoint-nghost,2),idiag_aypt,isound)
+            if (idiag_azpt/=0) &
+        	call save_name_sound(p%aa(lspoint-nghost,3),idiag_azpt,isound)
+            if (idiag_bxpt/=0) &
+        	call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
+            if (idiag_bypt/=0) &
+        	call save_name_sound(p%bb(lspoint-nghost,2),idiag_bypt,isound)
+            if (idiag_bzpt/=0) &
+        	call save_name_sound(p%bb(lspoint-nghost,3),idiag_bzpt,isound)
+            if (idiag_jxpt/=0) &
+        	call save_name_sound(p%jj(lspoint-nghost,1),idiag_jxpt,isound)
+            if (idiag_jypt/=0) &
+        	call save_name_sound(p%jj(lspoint-nghost,2),idiag_jypt,isound)
+            if (idiag_jzpt/=0) &
+        	call save_name_sound(p%jj(lspoint-nghost,3),idiag_jzpt,isound)
+            if (idiag_Expt/=0) &
+        	call save_name_sound(uxbb(lspoint-nghost,1),idiag_Expt,isound)
+            if (idiag_Eypt/=0) &
+        	call save_name_sound(uxbb(lspoint-nghost,2),idiag_Eypt,isound)
+            if (idiag_Ezpt/=0) &
+        	call save_name_sound(uxbb(lspoint-nghost,3),idiag_Ezpt,isound)
+          endif
+        enddo
+      endif
+
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
