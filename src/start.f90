@@ -45,6 +45,7 @@
 !***********************************************************************
 program start
 !
+  use General
   use Boundcond,        only: update_ghosts
   use Cdata
   use Chemistry,        only: init_chemistry
@@ -59,7 +60,6 @@ program start
   use EquationOfState
   use FArrayManager,    only: farray_clean_up
   use Filter
-  use General
   use Gravity,          only: init_gg
   use Grid
   use Hydro,            only: init_uu
@@ -498,11 +498,15 @@ program start
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
+  call fnames_clean_up()
   call xyaverages_clean_up()
   call xzaverages_clean_up()
   call yzaverages_clean_up()
-  if (lwrite_yaverages)   call yaverages_clean_up() 
-  if (lwrite_zaverages)   call zaverages_clean_up() 
-  if (lwrite_phiaverages) call phiaverages_clean_up()
+  if (lwrite_yaverages)    call yaverages_clean_up() 
+  if (lwrite_zaverages)    call zaverages_clean_up() 
+  if (lwrite_phiaverages)  call phiaverages_clean_up()
+  if (lwrite_phizaverages) call phizaverages_clean_up()
+  if (lwrite_phiaverages)  call phiaverages_clean_up()
+  if (lwrite_sound)        call sound_clean_up()
 !
 endprogram
