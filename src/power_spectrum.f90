@@ -286,7 +286,8 @@ module power_spectrum
 !   11-nov-10/MR: extended to arbitrary combinations of shell/2d and z dependent/integrated spectra
 !                 additional information about kind of spectrum + wavenumber vectors in output file;
 !                 extended shell-integrated spectra to anisotropic boxes, extended k range to k_x,max^2 + k_y,max^2
-
+!
+   use Cparam, only: rnan
    use Fourier, only: fourier_transform_xy
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out, mpimerge_1d, ipz, mpibarrier, mpigather_z
    use Sub, only: curli
@@ -320,7 +321,7 @@ module power_spectrum
     title = 'Shell-integrated '
     nk=nint( sqrt( ((nxgrid+1)*pi/Lx)**2+((nygrid+1)*pi/Ly)**2)/(2*pi/Lx) )+1
     allocate( kshell(nk) )
-    kshell = impossible
+    kshell =  rnan
 
     if (lintegrate_z) then
 
