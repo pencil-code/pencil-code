@@ -5,13 +5,12 @@
 module General
 !
   use Cparam
-  use Messages
 !
   implicit none
 !
   private
 !
-  public :: safe_character_assign,safe_character_append, chn
+  public :: safe_character_assign,safe_character_append
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
@@ -24,6 +23,7 @@ module General
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
+  public :: chn
 !
   include 'record_types.h'
 !
@@ -464,7 +464,7 @@ module General
 !  Take care of numbers that have less than 4 digits.
 !
 !  30-sep-97/axel: coded
-!
+
       character (len=5) :: ch
       character (len=*), optional :: label
       integer :: n
@@ -1518,6 +1518,7 @@ module General
 !  04-nov-10/nils: moved from particles_map to general
 !
       use Cdata
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
