@@ -5447,7 +5447,7 @@ module Mpicomm
 !  transfers the chunks of a 3D array from each processor to root
 !  and writes them out in right order
 !
-  ! here no parallelization in x allowed
+! here no parallelization in x allowed
 !
   implicit none
 !
@@ -5459,6 +5459,7 @@ module Mpicomm
   integer, dimension(MPI_STATUS_SIZE) :: status
   logical :: ltrans
   real, allocatable :: rowbuf(:)
+  character(len=5) :: ch8, chy
 !
   if (NO_WARN) print*,unit
 !
@@ -5488,29 +5489,38 @@ module Mpicomm
         do ix=1,nxgrid
 !
           if (lroot .and. np==1) then
-!
-            if (fcnt>0) &                                                                 ! this coding guarantees that
-              write(1,'(1p,'//intochar(8-fcnt)//'(e10.2))') sendbuf(ix,1:8-fcnt,j)        !             .
-!
-            fcnt=update_cnt(fcnt,8,n8)                                                    !             .
-            if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
-            if (fcnt>0) write(1,'(1p,'//intochar(ny-n8)//'(e10.2)$)') sendbuf(ix,n8+1:,j) ! all lines in the output have 8 entries
+	    
+	    if (fcnt>0) then                                                              ! this coding guarantees that
+              call chn(8-fcnt,ch8)                                                        !             .
+      	      write(1,'(1p,'//ch8//'(e10.2))') sendbuf(ix,1:8-fcnt,j)                     !             .
+	    endif                                                                         !             .
+            fcnt=update_cnt(fcnt,8,n8)                                                    !             . 
+	    if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
+	    if (fcnt>0) then                                                              !
+              call chn(ny-n8,chy)                                                         !
+              write(1,'(1p,'//chy//'(e10.2)$)') sendbuf(ix,n8+1:,j)                       ! all lines in the output have 8 entries
+	    endif
 !
           endif
+	  
+          do i=iproca,iproce  
 !
-          do i=iproca,iproce
+      	    tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid 
+	    
+      	    if (lroot) then
+	      call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr) 
+	      
+	      if (fcnt>0) then
+                call chn(8-fcnt,ch8)
+      	        write(1,'(1p,'//ch8//'(e10.2))') rowbuf(1:8-fcnt)
+              endif
 !
-            tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid
-!
-            if (lroot) then
-              call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-!
-              if (fcnt>0) &
-                write(1,'(1p,'//intochar(8-fcnt)//'(e10.2))') rowbuf(1:8-fcnt)
-!
-              fcnt=update_cnt(fcnt,8,n8)
-              if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
-              if (fcnt>0) write(1,'(1p,'//intochar(ny-n8)//'(e10.2)$)') rowbuf(n8+1:)
+	      fcnt=update_cnt(fcnt,8,n8)
+	      if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
+	      if (fcnt>0) then
+                call chn(ny-n8,chy)
+                write(1,'(1p,'//chy//'(e10.2)$)') rowbuf(n8+1:)
+	      endif
 !
             else if ( iproc==i ) then
               rowbuf=sendbuf(ix,:,j)
@@ -5550,6 +5560,12 @@ module Mpicomm
 !
   contains
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  subroutine chn(n,ch)                                ! internal subroutine
+    character ch
+    integer n
+    ch = intochar(n)
+  endsubroutine chn
+!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   character function intochar(i)                      ! internal function
 !
   integer, intent(in) :: i
@@ -5584,11 +5600,13 @@ module Mpicomm
 !
 ! helper function for  mpimerge_1d
 !
+    use Emulated, only: isnan
+!
     real, dimension(n), intent(inout) :: vec2
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
-    where( vec2==impossible.and.vec1/=impossible) vec2=vec1    ! merging
+    where( isnan(vec2) .and. .not.isnan(vec1) ) vec2=vec1    ! merging
 !
     if (NO_WARN) print*,type
 !
@@ -5625,6 +5643,8 @@ module Mpicomm
   integer function mpigetcomm(idir)
 !
 !  23-nov-10/MR: coded
+!
+!  derives communicator from index idir
 !
   integer, intent(in) :: idir
 !
