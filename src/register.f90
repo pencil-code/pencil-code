@@ -339,7 +339,7 @@ module Register
 !  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
 !  Note that ldt will not change unless you RELOAD parameters.
 !
-!  Note that this should this should not be moved to timestep.f90 as
+!  Note that this should not be moved to timestep.f90 as
 !  run_hooks_timestep(), because maybe not, because initialize_modules
 !  can also be run from start.f90, which has no knowledge of timestep.f90
 !
@@ -655,14 +655,82 @@ module Register
 !
     endsubroutine pencil_interdep
 !***********************************************************************
+    logical function read_name_format(in_file,cnamel,nnamel,allocator)
+!
+!   11-jan-11/MR: coded
+!
+!   unifies reading of *.in files which contain requests for diagnostic output
+!   in the form <name>(<format>);
+!   returns number of items read properly from file 'in_file' (comment lines excluded)
+!           in 'nnamel';
+!   returns items in cnamel, which is allocated, if necessary, with the
+!           length <number of lines in 'in_file' + initial value of 'nnamel'>;
+!   further allocations done in subroutine argument 'allocator' which takes
+!   same length as its parameter;
+!
+!   return value is nnamel>0
+!
+      use Mpicomm, only: parallel_count_lines, parallel_open, parallel_close
+!
+      character (len=*),               intent(in)    :: in_file
+      character (len=30), allocatable, intent(out)   :: cnamel(:)
+      integer,                         intent(inout) :: nnamel
+!     external function                              :: allocator    don't uncomment!
+
+      character (len=30) :: cname_tmp
+      integer            :: iname, mname, istat
+      integer, parameter :: unit=1
+
+      mname  = parallel_count_lines(in_file)
+!
+      if ( mname>0 ) then
+!
+! Allocate the relevant arrays if necessary 
+!
+        if (.not. allocated(cnamel)) then
+          allocate(cnamel(nnamel+mname),stat=istat)
+          if (istat>0) &
+            call fatal_error('read_name_format', &
+              'Could not allocate memory for cnamel for reading from ' &
+              //trim(in_file))
+        endif
+
+        cnamel=char(0)  !? necessary?
+
+        call allocator(nnamel+mname)
+!
+        call parallel_open(unit,FILE=trim(in_file))
+!
+! read names and formats
+!
+        nnamel = 0
+        do iname=1,mname
+          read(unit,*,end=99) cname_tmp
+          if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/='#')) then
+            nnamel=nnamel+1
+            cnamel(nnamel)=cname_tmp
+          endif
+        enddo
+!
+99      call parallel_close(unit)
+!        
+        read_name_format = nnamel>0
+      else
+        read_name_format = .false.
+      endif
+  
+    endfunction read_name_format
+!***********************************************************************
     subroutine rprint_list(lreset)
 !
 !  Read variables to print and to calculate averages of from control files.
 !
 !   3-may-01/axel: coded
+!  11-jan-11/MR: introduced read_name_format calls for each of the lists for homogeneity
+!
+!  All numbers like nname etc. need to be initialized to zero in cdata!
 !
       use Cdata
-      use Param_IO
       use Sub,             only: numeric_precision
       use Diagnostics
       use Hydro,           only: rprint_hydro
@@ -695,20 +763,18 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
-      use Mpicomm
+      use Mpicomm,         only: parallel_file_exists, parallel_count_lines, &
+                                 parallel_open, parallel_close
 !
-      integer :: iname,inamev,inamez,inamey,inamex,inamer
-      integer :: iname_sound
-      integer :: inamexy,inamexz,inamerz
-      integer :: iname_tmp,ierr,iadd,ios
       integer :: unit=1
-      logical :: lreset
+      integer :: ierr,iadd,ios
+      logical :: lreset, ldummy
+      character (len=30) :: cname_tmp
 !
-      character (LEN=30) :: cname_tmp
-      character (LEN=30) :: print_in_file
+      character (LEN=15)           :: print_in_file 
       character (LEN=*), parameter :: video_in_file    = 'video.in'
       character (LEN=*), parameter :: sound_in_file    = 'sound.in'
-      character (LEN=*), parameter :: sound_coordinate_file    = 'sound.coords'
+      character (LEN=*), parameter :: sound_coordinate_file = 'sound.coords'
       character (LEN=*), parameter :: xyaver_in_file   = 'xyaver.in'
       character (LEN=*), parameter :: xzaver_in_file   = 'xzaver.in'
       character (LEN=*), parameter :: yzaver_in_file   = 'yzaver.in'
@@ -717,177 +783,94 @@ module Register
       character (LEN=*), parameter :: zaver_in_file    = 'zaver.in'
       character (LEN=*), parameter :: phiaver_in_file  = 'phiaver.in'
 !
+!  In all lists:  recognize "!" and "#" as comments.
+!
 !  Read print.in.double if applicable, else print.in.
 !  Read in the list of variables to be printed.
-!  Recognize "!" and "#" as comments.
 !
       print_in_file = 'print.in'
       if (numeric_precision() == 'D') then
         if (parallel_file_exists(trim(print_in_file)//'.double')) &
             print_in_file = trim(print_in_file)//'.double'
       endif
-      if (.not. parallel_file_exists(trim(print_in_file))) &
-          call fatal_error('rprint_list','You must have a "'// &
-          trim(print_in_file)//'" file in the run directory!')
+!
       if (lroot) print*, 'Reading print formats from '//trim(print_in_file)
 !
-      call parallel_open(unit,FILE=trim(print_in_file))
-      iname=0
-      do iname_tmp=1,mname
-        read(unit,*,end=99) cname_tmp
-        if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/='#')) then
-          iname=iname+1
-          cname(iname)=cname_tmp
-        endif
-      enddo
-99    nname=iname
-      call parallel_close(unit)
+      allocate(cname(100),fname(100),cform(100))
+      if ( .not. read_name_format(print_in_file,cname,nname,allocate_fnames) ) &
+          call fatal_error('rprint_list','You must have a "'//trim(print_in_file) &
+          //'" file in the run directory with valid print requests!')
+
       if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
 !
 !  Read in the list of variables for video slices.
 !
-      nnamev = parallel_count_lines(video_in_file)
-      if ((dvid/=0.0) .and. (nnamev>0)) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_vnames()
-        lwrite_slices=.true.
-        call parallel_open(unit,file=video_in_file)
-        do inamev=1, nnamev
-          read(unit,*,iostat=ierr) cnamev(inamev)
-        enddo
-        call parallel_close(unit)
+      if ( dvid/=0.0 ) then
+        if ( .not. read_name_format(video_in_file,cnamev,nnamev,allocate_vnames) ) &
+          dvid=0.0
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
 !
 !  Read in the list of variables for "sound".
 !
-      nname_sound = parallel_count_lines(sound_in_file)
-      if ( dsound/=0.0 .and. nname_sound>0 ) then
+! In allocate_sound the relevant arrays are allocated and the list of coordinates sound_coords_list is read in.
+! nsound_location and lwrite_sound are set there, too.
 !
-! Allocate the relevant arrays and read the list of coordinates into arrays.
-! nsound_location and lwrite_sound are set to their relevant values inside
-! the allocate_sound subroutine. The same subroutine also fills up the
-! array sound_coords_list. 
+      if ( dsound/=0.0 & 
+           .and. read_name_format(sound_in_file,cname_sound,nname_sound,allocate_sound) &
+           .and. lwrite_sound ) then
 !
-        call allocate_sound(sound_coordinate_file)
-        call parallel_open(unit,file=sound_in_file)
-        do iname_sound=1,nname_sound
-          read(unit,*,iostat=ierr) cname_sound(iname_sound)
-        enddo
-        call parallel_close(unit)
-!
-!  Read the last sound output time from a soundfile, set to starttime otherwise
+!  Read the last sound output time from a soundfile, will be set to starttime otherwise
 !      
-        tsound=impossible
-        open(1,file=trim(directory)//'/sound.dat',position='append',status='old',iostat=ios) 
+        tsound=rnan
+        open(1,file=trim(directory)//'/sound.dat',position='append',status='old', &
+             iostat=ios) 
         if (ios==0) then      
           backspace(1)
           read(1,*) tsound
         endif
         close(1)
+!
+      else
+        nname_sound = 0
       endif
       if (lroot .and. (ip<14)) print*, 'sound_print_list: nname_sound=', nname_sound
 !
 !  Read in the list of variables for xy-averages.
 !
-      if (parallel_file_exists(xyaver_in_file)) then
-        nnamez = parallel_count_lines(xyaver_in_file)
-        if (nnamez>0) then
-          ! Allocate the relevant arrays and read into these arrays
-          call allocate_xyaverages()
-          call parallel_open(unit,file=xyaver_in_file)
-          do inamez=1,nnamez
-            read(unit,*,iostat=ierr) cnamez(inamez)
-          enddo
-          call parallel_close(unit)
-        endif
-      endif
+      ldummy = read_name_format(xyaver_in_file,cnamez,nnamez,allocate_xyaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
 !  Read in the list of variables for xz-averages.
 !
-      if (parallel_file_exists(xzaver_in_file)) then
-        nnamey = parallel_count_lines(xzaver_in_file)
-        if (nnamey>0) then
-          ! Allocate the relevant arrays and read into these arrays
-          call allocate_xzaverages()
-          call parallel_open(unit, xzaver_in_file)
-          do inamey=1,nnamey
-            read(unit,*,iostat=ierr) cnamey(inamey)
-          enddo
-          call parallel_close(unit)
-        endif
-      endif
+      ldummy = read_name_format(xzaver_in_file,cnamey,nnamey,allocate_xzaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
-      if (parallel_file_exists(yzaver_in_file)) then
-        nnamex = parallel_count_lines(yzaver_in_file)
-        if (nnamex>0) then
-          ! Allocate the relevant arrays and read into these arrays
-          call allocate_yzaverages()
-          call parallel_open(unit,file=yzaver_in_file)
-          do inamex=1,nnamex
-            read(unit,*,iostat=ierr) cnamex(inamex)
-          enddo
-          call parallel_close(unit)
-        endif
-      endif
+      ldummy = read_name_format(yzaver_in_file,cnamex,nnamex,allocate_yzaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.
 !
-      nnamer = parallel_count_lines(phizaver_in_file)
-      if (nnamer>0) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_phizaverages()
-        call parallel_open(unit,file=phizaver_in_file)
-        do inamer=1,nnamer
-          read(unit,*,iostat=ierr) cnamer(inamer)
-        enddo
-        call parallel_close(unit)
-      else
-        ! switch phizaverages off
-        lwrite_phizaverages=.false.
-      endif
+      lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer, &
+                                             allocate_phizaverages)
+      print*, 'lwrite_phizaverages:', lwrite_phizaverages
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamer=', nnamer
 !
 !  2-D averages:
 !
 !  Read in the list of variables for y-averages.
 !
-      nnamexz = parallel_count_lines(yaver_in_file)
-      if (nnamexz>0) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_yaverages()
-        call parallel_open(unit,file=yaver_in_file)
-        do inamexz=1,nnamexz
-          read(unit,*,iostat=ierr) cnamexz(inamexz)
-        enddo
-        call parallel_close(unit)
-      else
-        ! switch yaverages off
-        lwrite_yaverages = .false.
-      endif
+      lwrite_yaverages = read_name_format(yaver_in_file,cnamexz,nnamexz, &
+                                          allocate_yaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexz=', nnamexz
 !
 !  Read in the list of variables for z-averages.
 !
-      nnamexy = parallel_count_lines(zaver_in_file)
-      if (nnamexy>0) then
-        ! Allocate the relevant arrays and read into these arrays
-        call allocate_zaverages()
-        call parallel_open(unit,file=zaver_in_file)
-        do inamexy=1,nnamexy
-          read(unit,*,iostat=ierr) cnamexy(inamexy)
-        enddo
-        call parallel_close(unit)
-      else
-        ! switch zaverages off
-        lwrite_zaverages = .false.
-      endif
+      lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy, &
+                                          allocate_zaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy
 !
 !  Read in the list of variables for phi-averages.
@@ -895,30 +878,29 @@ module Register
       if (parallel_file_exists(phiaver_in_file)) then
         ! Count the number of lines in it first.
         call parallel_open(unit,file=phiaver_in_file)
-        nnamerz=0; ierr=0 ; iadd=0
-        do while (ierr==0)
+        iadd=0
+!
+        do 
           read(unit,*,iostat=ierr) cname_tmp
-          if (ierr==0) nnamerz=nnamerz+1
-          if (cname_tmp=='uumphi')  iadd=iadd+2
-          if (cname_tmp=='uusphmphi')  iadd=iadd+2
-          if (cname_tmp=='bbmphi')  iadd=iadd+2
-          if (cname_tmp=='bbsphmphi')  iadd=iadd+2
-          if (cname_tmp=='uxbmphi') iadd=iadd+2
-          if (cname_tmp=='jxbmphi') iadd=iadd+2
+          if (ierr==0) then
+            nnamerz=nnamerz+1
+            if ( cname_tmp=='uumphi' .or. cname_tmp=='uusphmphi' .or.  &
+                 cname_tmp=='bbmphi' .or. cname_tmp=='bbsphmphi' .or.  &
+                 cname_tmp=='uxbmphi'.or. cname_tmp=='jxbmphi'       ) &
+              iadd=iadd+2
+          else
+            exit
+          endif
         enddo
         call parallel_close(unit)
+!
         if (nnamerz > 0) then
-          ! Allocate the relevant arrays and read into these arrays
-          call allocate_phiaverages(iadd)
-          call parallel_open(unit,file=phiaver_in_file)
-          do inamerz=1,nnamerz
-            read(unit,*,iostat=ierr) cnamerz(inamerz)
-          enddo
-          call parallel_close(unit)
+          nnamerz = iadd
+          lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz,nnamerz, &
+                                                allocate_phiaverages)
+        else
+          lwrite_phiaverages = .false.
         endif
-      else
-        ! switch phiaverages off
-        lwrite_phiaverages = .false.
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
 !
@@ -932,6 +914,7 @@ module Register
 !  the f-array and the time_series.dat files are written to data/index.pro.
 !
       if (lroot) open(3,file=trim(datadir)//'/index.pro',position='append')
+!
       call rprint_general         (lreset,LWRITE=lroot)
       call rprint_hydro           (lreset,LWRITE=lroot)
       call rprint_density         (lreset,LWRITE=lroot)
