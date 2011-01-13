@@ -6793,6 +6793,12 @@ module Magnetic
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'axpt',idiag_axpt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'aypt',idiag_aypt)
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'azpt',idiag_azpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'jxpt',idiag_jxpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'jypt',idiag_jypt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'jzpt',idiag_jzpt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'Expt',idiag_Expt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'Eypt',idiag_Eypt)
+        call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'Ezpt',idiag_Ezpt)
       enddo
 !
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
