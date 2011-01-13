@@ -527,7 +527,7 @@ module Param_IO
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !  12-nov-10/MR: added read and write calls for namelist power_spectrum_run_pars
-
+!
       use Dustvelocity, only: copy_bcs_dust
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: parse_bc
@@ -675,7 +675,7 @@ module Param_IO
       call particles_read_runpars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
       rewind(unit)
-
+!
       call read_power_spectrum_runpars(unit,IOSTAT=ierr)
       !if (ierr/=0) call sample_runpars('power_spectrum_run_pars_wrap',ierr)
       rewind(unit)
