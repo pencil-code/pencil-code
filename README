@@ -35,3 +35,11 @@ export PENCIL_HOME=$HOME/pencil-code
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 #source $PENCIL_HOME/sourceme.sh
 
+
+and in .bash_profile, add:
+
+alias pc='cd ~/pencil-code/'
+
+export PENCIL_HOME=$HOME/pencil-code
+_sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
+
