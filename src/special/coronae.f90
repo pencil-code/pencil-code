@@ -28,7 +28,7 @@ module Special
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
-  real :: dampuu=0.,wdampuu,pdampuu
+  real :: dampuu=0.,wdampuu,pdampuu,init_time2=huge1
   real :: limiter_tensordiff=3
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -37,7 +37,7 @@ module Special
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      Kpara,Kperp, &
+      Kpara,Kperp,init_time2, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
@@ -61,6 +61,9 @@ module Special
   real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
   real, target, dimension (nx,nz) :: spitzer_xz
   real, target, dimension (ny,nz) :: spitzer_yz
+  real, target, dimension (nx,ny) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
+  real, target, dimension (nx,nz) :: newton_xz
+  real, target, dimension (ny,nz) :: newton_yz
   real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
   real, target, dimension (nx,nz) :: rtv_xz
   real, target, dimension (ny,nz) :: rtv_yz
@@ -202,7 +205,7 @@ module Special
 !  04-sep-10/bing: coded
 !
     if (Kpara/=0) then
-      lpenc_requested(i_cp1)=.true.      
+      lpenc_requested(i_cp1)=.true.
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bij)=.true.
       lpenc_requested(i_lnTT)=.true.
@@ -318,6 +321,15 @@ module Special
       slices%xy2=>spitzer_xy2
       if (lwrite_slice_xy3) slices%xy3=>spitzer_xy3
       if (lwrite_slice_xy4) slices%xy4=>spitzer_xy4
+      slices%ready=.true.
+!
+    case ('newton')
+      slices%yz =>newton_yz
+      slices%xz =>newton_xz
+      slices%xy =>newton_xy
+      slices%xy2=>newton_xy2
+      if (lwrite_slice_xy3) slices%xy3=>newton_xy3
+      if (lwrite_slice_xy4) slices%xy4=>newton_xy4
       slices%ready=.true.
 !
     case ('rtv')
@@ -473,7 +485,7 @@ module Special
     real, dimension (nx) :: vKpara,vKperp
     real, dimension (nx) :: gT2_1,gT2,b2,b2_1
 !
-    integer ::i,j
+    integer :: i,j
 !
 !  Calculate variable diffusion coefficients along pencils.
 !
@@ -481,10 +493,12 @@ module Special
     b2_1=1./max(tini,b2)
 !
     vKpara = Kpara * exp(p%lnTT*3.5)
-    vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
+!    vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
+    vKperp = Kperp * b2_1*exp(p%lnrho)
 !
 !  For time step limitiation we have to find the effective heat flux:
 !  abs(K) = [K1.delta_ij + (K0-K1).bi.bj].ei.ej
+!  where K0=vKpara and K1=vKperp.
 !
     call dot2_mn(p%glnTT,gT2)
     gT2_1=1./max(tini,gT2)
@@ -510,7 +524,8 @@ module Special
       enddo
     enddo
     call multsv_mn(2.*b2_1,tmpv,tmpv2)
-    tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
+!    tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
+    tmpv=p%glnrho-tmpv2
     call multsv_mn(vKperp,tmpv,gvKperp)
 !
 !  Calculate diffusion term.
@@ -580,11 +595,7 @@ module Special
 !
 !  Adds both parts into decr/dt.
 !
-!  10-oct-03/axel: adapted from pscalar
-!  30-nov-03/snod: adapted from tensor_diff without variable diffusion
-!  04-dec-03/snod: converted for evolution of lnecr (=ecr)
-!   9-apr-04/axel: adapted for general purpose tensor diffusion
-!  25-jun-05/bing:
+!  06-jan-10/bing: copied from sub.f90
 !
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
@@ -600,7 +611,6 @@ module Special
 !
 !  Calculate unit vector of bb.
 !
-!     call dot2_mn(bb,abs_b,PRECISE_SQRT=.true.)
       call dot2_mn(bb,abs_b,FAST_SQRT=.true.)
       b1=1./max(tini,abs_b)
       call multsv_mn(b1,bb,bunit)
@@ -1040,16 +1050,27 @@ module Special
       elseif (gauss_newton/=0) then
         tau_inv_tmp = tau_inv_newton * &
             exp(-(z(n)-gauss_newton)**2/width_newton)
+      else
+        if (headtt) call warning("calc_heat_cool_newton", &
+            "newton cooling acts everywhere")
+        tau_inv_tmp = tau_inv_newton
       endif
-!
-!  Adjust time scale by the initialization time
-      tau_inv_tmp = tau_inv_tmp * cubic_step(real(t),init_time,init_width)
 !
       newton  = newton * tau_inv_tmp
 !
 !  Add newton cooling term to entropy
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+      if (lvideo) then
+!
+! slices
+        newton_yz(m-m1+1,n-n1+1)=newton(ix_loc-l1+1)
+        if (m==iy_loc)  newton_xz(:,n-n1+1)= newton
+        if (n==iz_loc)  newton_xy(:,m-m1+1)= newton
+        if (n==iz2_loc) newton_xy2(:,m-m1+1)= newton
+        if (n==iz3_loc) newton_xy3(:,m-m1+1)= newton
+        if (n==iz4_loc) newton_xy4(:,m-m1+1)= newton
+      endif
 !
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,tau_inv_tmp/cdts)
