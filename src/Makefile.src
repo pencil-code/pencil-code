@@ -1529,21 +1529,20 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##FFLAGS=-xO3 -xarch=ssse3 -xcache=16/64/8:1024/64/8 -xchip=pentium4 -xdepend=yes -dalign -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr -fsimple=0 -I/usr/lib/openmpi/include #(dunhuang)
 ##FFLAGS_DOUBLE= -fprecision=double #(dunhuang|couette|maurice)
 ##LD_MPI=-L/usr/lib/openmpi/lib -lmpi -lmpi_f77 -lmpi_f90 -lopen-rte -lopen-pal -ldl -lnsl -lutil -lm #(dunhuang|couette|maurice)
-#
+##
 ## Jan's laptop
 ##
 #FC=g95 #(cleio)
 #FFLAGS=-O3#(cleio)
 #CFLAGS=-DFUNDERSC=2 #(cleio)
 #FFLAGS_DOUBLE = -r8 #(cleio)
-#
-
-
+##
 ## Darwin:
 ## Power Macintosh
-##FC=gfortran
-##F77=$(FC)
-##FFLAGS=-O1 -I/usr/local/src/openmpi-1.3.3/ompi/include
+##
+#FC=g95
+#F77=$(FC)
+#FFLAGS=-O3
 #CFLAGS=-DFUNDERSC=2
 #LD_MPI=
 ##
@@ -1585,13 +1584,10 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## norosx52 (Mac Pro, 8 cores)
 ##
-##FC=gfortran   #/opt/ompi/bin/mpif90 #(norosx52)
-#FFLAGS= -O1 -fno-second-underscore       #-I/usr/local/src/openmpi-1.3.3/ompi/include  #(norosx52)
-##LD_MPI= -L/usr/lib/openmpi -lmpi -lmpi_cxx -lopen-rte -lopen-pal -ldl -lutil -lm
 #FC=/opt/ompi/bin/mpif90 #(norosx52)
-##FFLAGS= -O3 -fno-second-underscore #(norosx52)
+#FFLAGS= -O3 -fno-second-underscore #(norosx52)
 #CFLAGS=-DFUNDERSC=1 -m32  -I/opt/local/include#(norosx52)
-##LD_GSL = -lgsl -lgslcblas -L/opt/local/lib/#(norosx52)
+#LD_GSL = -lgsl -lgslcblas -L/opt/local/lib/#(norosx52)
 ##
 ## Dhruba's laptop 
 ##
