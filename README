@@ -26,20 +26,18 @@ from the URL above).
 
 =============================================================================
 
-If you are using bas, insert the following into your .bashrc file:
+If you are using bash, insert the following into your .bashrc file:
 
-#
-#  path for pencil code
-#
-export PENCIL_HOME=$HOME/pencil-code
-_sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
-#source $PENCIL_HOME/sourceme.sh
-
+  #
+  #  path for pencil code 
+  #
+  export PENCIL_HOME=$HOME/pencil-code
+  _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet 
 
 and in .bash_profile, add:
 
-alias pc='cd ~/pencil-code/'
+  export PENCIL_HOME=$HOME/pencil-code
+  _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 
-export PENCIL_HOME=$HOME/pencil-code
-_sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
+  alias pc='cd $PENCIL_HOME'
 
