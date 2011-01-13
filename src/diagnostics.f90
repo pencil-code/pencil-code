@@ -109,6 +109,7 @@ module Diagnostics
 !
       use General, only: safe_character_append
       use Sub, only: noform
+      use Cparam, only: max_col_width
 !
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
@@ -121,7 +122,7 @@ module Diagnostics
 !  point or double precision.
 !
       if (lroot) then
-        if (idiag_t/=0)   call save_name(tdiagnos,idiag_t)
+        if (idiag_t /=0)  call save_name(tdiagnos,idiag_t)
         if (idiag_dt/=0)  call save_name(dt,idiag_dt)
         if (idiag_it/=0)  call save_name(one_real*(it-1),idiag_it)
       endif
@@ -204,35 +205,109 @@ module Diagnostics
 !  modules and marked in `sound.in'.
 !
 !   3-dec-10/dhruba+joern: coded
+!  10-jan-11/MR: modified
 !
-      use General, only: chn, safe_character_append
+      use General, only: chn, safe_character_append, safe_character_prepend
+      use Sub    , only: noform
 !
       implicit none
 !
       real, intent(in) :: tout
+!
       logical,save :: lfirst=.true.
       logical :: ldata
-      character (len=640) :: fform,line
+      character (len=640) :: fform,legend,sublegend,coorlegend,line
       character (len=1), parameter :: comma=','
       character (len=5) :: str
       character (len=6), parameter :: tform='(f10.4'
-      integer :: iname,index_d,index_a
+      integer, parameter :: ltform=10
+      character (len=ltform) :: scoor
+      character (len=3*ncoords_sound*max_col_width) :: item
+      real    :: coor
+      integer :: iname,index_d,index_a,leng,nc,nch,lleg,lcoor,lsub,idim,icoor
 !
 !  Produce the format.
 !
-        fform = tform//','
-        if ( ncoords_sound>1 ) then
-          call chn(ncoords_sound,str)
-          call safe_character_append(fform, str//'(')
+      fform = tform//','
+      if ( ncoords_sound>1 ) then
+        call chn(ncoords_sound,str)
+        call safe_character_append(fform, str//'(')
+      endif
+!   
+      if (lfirst) then
+        legend = noform('t'//tform//')')
+      else
+        legend = ''
+      endif
+!
+      if (lfirst) then
+!
+        if (dimensionality>0) then
+!
+          coorlegend = ' Points:   '
+          lleg = len_trim(coorlegend)+3
+
+          do icoor=1,ncoords_sound
+!
+            call chn(icoor,str)
+            
+            coorlegend(lleg+1:) = trim(adjustl(str))//' = '
+            lleg = len_trim(coorlegend)+1
+!
+            item = '('
+            do idim=1,dimensionality
+              select case (idim)
+              case (1); coor=x(sound_coords_list(icoor,1))
+              case (2); coor=y(sound_coords_list(icoor,2))
+              case (3); coor=z(sound_coords_list(icoor,3))
+              case default
+              end select
+              write(scoor,tform//')') coor
+              call safe_character_append(item,trim(adjustl(scoor))//',')
+            enddo
+            coorlegend(lleg+1:) = item(1:len_trim(item)-1)//'),   '
+            lleg = len_trim(coorlegend)+4
+!          
+          enddo
+          coorlegend(lleg-4:lleg)=' '
         endif
 !
-        ldata = .false.
-        do iname=1,nname_sound
-          if (cform_sound(iname)/=' ') then
-            ldata=.true.
-            call safe_character_append(fform, trim(cform_sound(iname))//comma)
+        lsub = len_trim(legend)
+!
+      endif
+
+      ldata = .false.
+      sublegend = ''
+
+      do iname=1,nname_sound
+!
+        if (cform_sound(iname)/=' ') then
+          ldata=.true.
+          if (lfirst) then
+!
+            item = noform(cname_sound(iname))
+            if ( ncoords_sound>1 ) then
+!
+              leng = len_trim(item)
+              nc  = leng*(ncoords_sound-1) ; nch = nc/2
+              if (nch>0) call safe_character_prepend(item,repeat('-',nch) )
+              call safe_character_append(item,repeat('-',nc-nch) )
+!
+              nch = (leng-2)/2
+              do icoor=1,ncoords_sound
+                write(sublegend(lsub+nch+1:lsub+nch+2),'(i2)') icoor
+                lsub = lsub+leng
+              enddo
+            endif 
+            call safe_character_append(legend, item)
+!
+            lsub = len_trim(legend)
+!
           endif
-        enddo
+          call safe_character_append(fform, trim(cform_sound(iname))//comma)
+        endif
+!
+      enddo
 !
 !  Put output line into a string and remove spurious dots.
 !
@@ -259,6 +334,16 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         open(1,file=trim(directory)//'/sound.dat',position='append')
+	if (lfirst) then
+!
+          write(1,'(a)') trim(legend)
+          if (dimensionality>0) then
+            write(1,'(a)') trim(coorlegend)
+            if ( ncoords_sound>1 ) write(1,'(a)') trim(sublegend)
+            write(1,'(a)') repeat('-',len_trim(legend))
+          endif
+        endif
+!
         write(1,'(a)') trim(line)
         close(1)
 !
@@ -1952,8 +2037,15 @@ module Diagnostics
 !
       do isound=1,mcoords_sound
 !
-        read(unit,*,iostat=istat) xsound,ysound,zsound
-        if (istat /= 0)  exit
+        select case (dimensionality)
+        case (1); read(unit,*,iostat=istat) xsound
+                  if (istat /= 0)  exit
+        case (2); read(unit,*,iostat=istat) xsound,ysound
+                  if (istat /= 0)  exit
+        case (3); read(unit,*,iostat=istat) xsound,ysound,zsound
+                  if (istat /= 0)  exit
+        case default
+        end select
 !
         if ( location_in_proc(xsound,ysound,zsound,lsound,msound,nsound) ) then
 !
