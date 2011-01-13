@@ -47,9 +47,11 @@ module Cparam
 !          - labels a la initss, initaa,
 !          - lines to be read in
 !          - date-and-time string
+!          - maximum width of a diagnostic column
 !
   integer, parameter :: fnlen=128,bclen=3,labellen=25,linelen=256,datelen=30
   integer, parameter :: nscbc_len=24
+  integer, parameter :: max_col_width=30
 !
 !  Number of slots in initlnrho etc.
 !
