@@ -206,9 +206,9 @@ module Diagnostics
 !   3-dec-10/dhruba+joern: coded
 !
       use General, only: chn, safe_character_append
-
+!
       implicit none
-
+!
       real, intent(in) :: tout
       logical,save :: lfirst=.true.
       logical :: ldata
@@ -225,7 +225,7 @@ module Diagnostics
           call chn(ncoords_sound,str)
           call safe_character_append(fform, str//'(')
         endif
-
+!
         ldata = .false.
         do iname=1,nname_sound
           if (cform_sound(iname)/=' ') then
@@ -1925,7 +1925,7 @@ module Diagnostics
 !
       use Cdata
       use Sub, only : location_in_proc
-
+!
       integer, intent(in) :: nnamel
 !
       character (LEN=*), parameter :: sound_coord_file = 'sound.coords'
@@ -1952,12 +1952,12 @@ module Diagnostics
       call parallel_open(unit,file=sound_coord_file)
 !
       do isound=1,mcoords_sound
-
+!
         read(unit,*,iostat=istat) xsound,ysound,zsound
         if (istat /= 0)  exit
 !
         if ( location_in_proc(xsound,ysound,zsound,lsound,msound,nsound) ) then
-
+!
           lval=.true.
           do il=1,ncoords_sound
             if ( temp_sound_coords(il,1) == lsound .and. &
@@ -1967,7 +1967,7 @@ module Diagnostics
               exit
             endif
           enddo
-
+!
           if (lval) then
             ncoords_sound=ncoords_sound+1
             lwrite_sound = .true.
@@ -1985,23 +1985,23 @@ module Diagnostics
         if (stat>0) call fatal_error('allocate_sound', &
             ' ') !!!'Could not allocate memory for sound_coords_list')
         sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
-
+!
         if (.not. allocated(fname_sound)) &
             allocate(fname_sound(nnamel,ncoords_sound),stat=stat)
         if (stat>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for fname_sound')
         if (lroot) print*, 'allocate_sound: allocated memory for '// &
             'fname_sound  with nname_sound  =', nnamel
-
+!
         fname_sound=0.
         ! print*, 'nname_sound,ncoords_sound:', nnamel,ncoords_sound
-
+!
         if (.not. allocated(cform_sound)) &
             allocate(cform_sound(nnamel),stat=stat)
         if (stat>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for cform_sound')
         cform_sound=' '
-
+!
       endif
 !
 !  Now deallocate the temporary memory.
