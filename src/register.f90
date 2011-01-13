@@ -817,7 +817,7 @@ module Register
 ! In allocate_sound the relevant arrays are allocated and the list of coordinates sound_coords_list is read in.
 ! nsound_location and lwrite_sound are set there, too.
 !
-      if ( dsound/=0.0 & 
+      if ( dimensionality>0 .and. dsound/=0.0 & 
            .and. read_name_format(sound_in_file,cname_sound,nname_sound,allocate_sound) &
            .and. lwrite_sound ) then
 !
