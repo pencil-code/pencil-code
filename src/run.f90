@@ -151,6 +151,10 @@ program run
   if (ip<=6.and.lroot) print*, 'reading grid coordinates'
   call rgrid(trim(directory)//'/grid.dat')
 !
+! Calculate dimensionality
+!
+  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+!
 !  Register physics modules.
 !
   call register_modules()
@@ -237,7 +241,6 @@ program run
 !
 !  Print resolution and dimension of the simulation.
 !
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
   if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
   if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
