@@ -950,6 +950,15 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-autodouble #(nl6)
 ##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
 ##
+## Giuseppe on giuseppe-desktop (gfortran)
+##
+#FC=gfortran #(giuseppe-desktop)
+#FFLAGS= -O3 #(giuseppe-desktop)
+#CC=gcc #(giuseppe-desktop)
+#CFLAGS=-O3 -DFUNDERSC=1 #(giuseppe-desktop)
+#LD_MPI= #(giuseppe-desktop)
+#LIBMPISUFFIX= #(giuseppe-desktop)
+##
 ## Axel on warp.hpc1.cs.cmu.edu (gfortran)
 ##
 #FC=mpif90 #(warp.hpc1.cs.cmu.edu*)
