@@ -675,7 +675,7 @@ module Register
       character (len=*),               intent(in)    :: in_file
       character (len=30), allocatable, intent(out)   :: cnamel(:)
       integer,                         intent(inout) :: nnamel
-!     external function                              :: allocator    don't uncomment!
+      external                                       :: allocator 
 
       character (len=30) :: cname_tmp
       integer            :: iname, mname, istat
