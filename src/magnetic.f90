@@ -3239,11 +3239,11 @@ module Magnetic
 !
           if ((m==mspoint).and.(n==nspoint)) then
             if (idiag_axpt/=0) &
-                call save_name_sound(p%aa(lspoint-nghost,1),idiag_axpt,isound)
+                call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound) 
             if (idiag_aypt/=0) &
-                call save_name_sound(p%aa(lspoint-nghost,2),idiag_aypt,isound)
+                call save_name_sound(f(lspoint,mspoint,nspoint,iay),idiag_aypt,isound)
             if (idiag_azpt/=0) &
-                call save_name_sound(p%aa(lspoint-nghost,3),idiag_azpt,isound)
+                call save_name_sound(f(lspoint,mspoint,nspoint,iaz),idiag_azpt,isound)
             if (idiag_bxpt/=0) &
                 call save_name_sound(p%bb(lspoint-nghost,1),idiag_bxpt,isound)
             if (idiag_bypt/=0) &
