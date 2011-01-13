@@ -10,7 +10,7 @@ module General
 !
   private
 !
-  public :: safe_character_assign,safe_character_append
+  public :: safe_character_assign,safe_character_append,safe_character_prepend
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
@@ -36,6 +36,10 @@ module General
   interface safe_character_append
     module procedure safe_character_append_2
     module procedure safe_character_append_3
+  endinterface
+!
+  interface safe_character_prepend
+    module procedure safe_character_prepend_2
   endinterface
 !
 !  State and default generator of random numbers.
@@ -561,6 +565,11 @@ module General
       character (len=*), intent(in):: str2
 !
       call safe_character_assign(str1, trim(str1) // str2)
+      return
+!
+      entry safe_character_prepend_2(str1,str2)
+
+      call safe_character_assign(str1, trim(str2) // trim(str1))
 !
     endsubroutine safe_character_append_2
 !***********************************************************************
