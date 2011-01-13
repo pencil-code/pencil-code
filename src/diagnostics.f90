@@ -225,7 +225,7 @@ module Diagnostics
           call chn(ncoords_sound,str)
           call safe_character_append(fform, str//'(')
         endif
-   
+
         ldata = .false.
         do iname=1,nname_sound
           if (cform_sound(iname)/=' ') then
@@ -1935,7 +1935,7 @@ module Diagnostics
       integer :: mcoords_sound
       integer, allocatable, dimension (:,:) :: temp_sound_coords
       real    :: xsound,ysound,zsound
-      integer :: lsound,msound,nsound,nsound_coords
+      integer :: lsound,msound,nsound
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -1946,27 +1946,27 @@ module Diagnostics
       allocate(temp_sound_coords(mcoords_sound,3),stat=stat)
       if (stat>0) call fatal_error('allocate_sound', &
             'Could not allocate memory for temp_sound_coords')
-! 
+!
       ncoords_sound=0
 !
       call parallel_open(unit,file=sound_coord_file)
 !
       do isound=1,mcoords_sound
-      
+
         read(unit,*,iostat=istat) xsound,ysound,zsound
         if (istat /= 0)  exit
 !
         if ( location_in_proc(xsound,ysound,zsound,lsound,msound,nsound) ) then
-	  
+
           lval=.true.
-	  do il=1,ncoords_sound
+          do il=1,ncoords_sound
             if ( temp_sound_coords(il,1) == lsound .and. &
                  temp_sound_coords(il,2) == msound .and. &
                  temp_sound_coords(il,3) == nsound      )  then
               lval = .false.
               exit
             endif
-	  enddo
+          enddo
 
           if (lval) then
             ncoords_sound=ncoords_sound+1
@@ -1977,7 +1977,7 @@ module Diagnostics
           endif
         endif
       enddo
-! 
+!
       if (lwrite_sound) then
 !
         if (.not. allocated(sound_coords_list)) &
@@ -2233,7 +2233,7 @@ module Diagnostics
 !  Allocate the variables needed for phi-averages.
 !
 !   24-nov-09/anders: copied from allocate_zaverages
-!   11-jan-11/MR: parameter nnamel=iadd+nnamerz instead of nnamerz 
+!   11-jan-11/MR: parameter nnamel=iadd+nnamerz instead of nnamerz
 !
       integer, intent(in) :: nnamel
 !
