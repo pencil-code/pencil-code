@@ -3040,7 +3040,8 @@ module Sub
 !
 !  22-jun-02/axel: coded
 !
-      integer, parameter :: max_col_width=30
+      use Cparam, only: max_col_width
+!      
       character (len=*) :: cname
       character (len=max_col_width) :: noform,cform,cnumber,dashes
       integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
@@ -5394,16 +5395,28 @@ nameloop: do
 !
 !  -dec-10/dhruba: coded
 !  28-dec-10/MR: changed into function
+!  13-jan-11/MR: made dependent on dimensionality,
+!                irrelevant position indices set to 1
 !
       real,    intent(in)  :: xpos,ypos,zpos
       integer, intent(out) :: lpos,mpos,npos
 !
       logical :: linx,liny,linz
 !
-      call xlocation(xpos,lpos,linx)
-      call ylocation(ypos,mpos,liny)
-      call zlocation(zpos,npos,linz)
+      lpos=1 ; mpos=1 ; npos=1
+      linx=.true. ; liny=.true. ; linz=.true.
+
+      if (dimensionality>0) then 
+        call xlocation(xpos,lpos,linx)
 !
+        if (dimensionality>1) then
+          call ylocation(ypos,mpos,liny)
+!
+          if (dimensionality>2) &
+            call zlocation(zpos,npos,linz)
+        endif
+      endif
+
       location_in_proc = linx.and.liny.and.linz
 !
     endfunction location_in_proc
