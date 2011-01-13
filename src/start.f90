@@ -138,6 +138,10 @@ program start
   lequidist    =(/.true. ,.true. ,.true. /)   ! all directions equidistant grid
   lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
 !
+!  Calculate dimensionality of the run.
+!
+  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+!
 !  Read parameters from start.in.
 !
   call read_startpars(FILE=.true.)
@@ -241,10 +245,6 @@ program start
   xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
   xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
   xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
-!
-!  Calculate dimensionality of the run.
-!
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
 !
 !  Check consistency.
 !
