@@ -279,6 +279,9 @@ EQU_SRC=equ.f90
 FARRAY_OBJ=farray.o
 FARRAY_SRC=farray.f90
 #
+EMULATED_OBJ=emulated.o
+EMULATED_SRC=emulated.f90
+#
 FILTER_OBJ=filter.o
 FILTER_SRC=filter.f90
 #
@@ -1538,9 +1541,9 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 
 ## Darwin:
 ## Power Macintosh
-#FC=g95
-#F77=$(FC)
-#FFLAGS=-O3
+##FC=gfortran
+##F77=$(FC)
+##FFLAGS=-O1 -I/usr/local/src/openmpi-1.3.3/ompi/include
 #CFLAGS=-DFUNDERSC=2
 #LD_MPI=
 ##
@@ -1582,10 +1585,13 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## norosx52 (Mac Pro, 8 cores)
 ##
+##FC=gfortran   #/opt/ompi/bin/mpif90 #(norosx52)
+#FFLAGS= -O1 -fno-second-underscore       #-I/usr/local/src/openmpi-1.3.3/ompi/include  #(norosx52)
+##LD_MPI= -L/usr/lib/openmpi -lmpi -lmpi_cxx -lopen-rte -lopen-pal -ldl -lutil -lm
 #FC=/opt/ompi/bin/mpif90 #(norosx52)
-#FFLAGS= -O3 -fno-second-underscore #(norosx52)
+##FFLAGS= -O3 -fno-second-underscore #(norosx52)
 #CFLAGS=-DFUNDERSC=1 -m32  -I/opt/local/include#(norosx52)
-#LD_GSL = -lgsl -lgslcblas -L/opt/local/lib/#(norosx52)
+##LD_GSL = -lgsl -lgslcblas -L/opt/local/lib/#(norosx52)
 ##
 ## Dhruba's laptop 
 ##
@@ -1745,7 +1751,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(GENERAL_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
+technical= $(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(EMULATED_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -1767,25 +1773,24 @@ run.x: run.o
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-combine_videofiles.o: cparam.o cdata.o general.o
-combine_videofiles.x: combine_videofiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) combine_videofiles.o cparam.o cdata.o general.o messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o combine_videofiles.x
-# 
-read_videofiles.o: cparam.o cdata.o general.o
-read_videofiles.x: read_videofiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) read_videofiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_videofiles.x
+basics=cparam.o cdata.o general.o emulated.o
+utilities=messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o
 #
-read_all_videofiles.o: cparam.o cdata.o general.o
-read_all_videofiles.x: read_all_videofiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) read_all_videofiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_all_videofiles.x
-# 
-read_vectorfiles.o: cparam.o cdata.o general.o
-read_vectorfiles.x: read_vectorfiles.o cparam.o cdata.o general.o
-	$(LD) $(LDFLAGS) read_vectorfiles.o cparam.o cdata.o general.o  messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(LD_MPI) -o read_vectorfiles.x
+combine_videofiles.o: $(basics)
+combine_videofiles.x: combine_videofiles.o
+	$(LD) $(LDFLAGS) combine_videofiles.o $(basics) $(utilities) $(LD_MPI) -o combine_videofiles.x
 #
-write_driver.o: $(physics) $(technical) $(DIAGNOSTICS_OBJ) $(EQU_OBJ) $(FARRAY_OBJ) Makefile.local
-write_driver: pre_and_post_processing/write_driver.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/write_driver.o $(physics) $(technical) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o pre_and_post_processing/write_driver.x
+read_videofiles.o: $(basics)
+read_videofiles.x: read_videofiles.o
+	$(LD) $(LDFLAGS) read_videofiles.o $(basics) $(utilities) $(LD_MPI) -o read_videofiles.x
+#
+read_all_videofiles.o: $(basics)
+read_all_videofiles.x: read_all_videofiles.o
+	$(LD) $(LDFLAGS) read_all_videofiles.o $(basics) $(utilities) $(LD_MPI) -o read_all_videofiles.x
+#
+read_vectorfiles.o: $(basics)
+read_vectorfiles.x: read_vectorfiles.o
+	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(utilities) $(LD_MPI) -o read_vectorfiles.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
