@@ -1923,8 +1923,7 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use Cdata
-      use Sub, only : location_in_proc
+      use Sub, only: location_in_proc
 !
       integer, intent(in) :: nnamel
 !
@@ -2029,8 +2028,6 @@ module Diagnostics
 !
 !   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
-!
-      use Cdata
 !
       integer, intent(in) :: nnamel
       integer :: stat=0
