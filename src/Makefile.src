@@ -1536,6 +1536,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=-O3#(cleio)
 #CFLAGS=-DFUNDERSC=2 #(cleio)
 #FFLAGS_DOUBLE = -r8 #(cleio)
+
+##AB: keep the empty line above!!
 ##
 ## Darwin:
 ## Power Macintosh
