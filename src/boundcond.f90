@@ -768,7 +768,7 @@ module Boundcond
                 ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
                 call bc_outflow_zero_deriv_z(f,topbot,j)
               case ('ubs')
-                ! BCZ_DOC: symmetric outflow, 
+                ! BCZ_DOC: symmetric outflow,
                 ! but match boundary inflow (experimental)
                 call bc_steady_z(f,topbot,j)
               case ('win')
@@ -4177,7 +4177,8 @@ module Boundcond
 !  25-jul-10/Bourdin.KIS: parallelized
 !
       use Fourier, only : field_extrapol_z_parallel
-      use Mpicomm, only : mpisend_real, mpirecv_real, mpibcast_logical
+      use Mpicomm, only : mpisend_real, mpirecv_real, &
+                          mpisend_logical, mpirecv_logical
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, save :: t_l=0., t_r=0., delta_t=0.
@@ -4201,7 +4202,7 @@ module Boundcond
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact ! exponential factor
       real, dimension (:,:), allocatable :: k_2 ! wave vector length
-      integer :: kx_start, pos_z
+      integer :: kx_start, pos_z, i
       real :: delta_z
       real, parameter :: reduce_factor=0.25, enhance_factor=1.0
 !
@@ -4213,7 +4214,7 @@ module Boundcond
 !
       if (first_run) then
 !
-        ! check for consistency:
+!  Check for consistency:
         if ((.not. lequidist(1)) .or. (.not. lequidist(2))) &
             call fatal_error ('bc_force_aa_time', 'not yet implemented for non-equidistant grids', lfirst_proc_xy)
         if (mod (nygrid, nprocxy) /= 0) &
@@ -4221,7 +4222,7 @@ module Boundcond
         if (mod (nxgrid, nprocxy) /= 0) &
             call fatal_error ('bc_force_aa_time', 'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
-        ! check for existence of necessary driver files:
+!  Check for existence of necessary driver files:
         if (lfirst_proc_xy) then
           inquire (file=mag_field_dat, exist=ex)
           if (.not. ex) call fatal_error ('bc_force_aa_time', 'File does not exists: '//trim(mag_field_dat), .true.)
@@ -4236,25 +4237,34 @@ module Boundcond
           endif
         endif
 !
-        call mpibcast_logical (luse_vel_field, 1)
+        do i=1,nprocxy-1
+          if (lroot) then
+            call mpisend_logical(luse_vel_field,1,i,i)
+          elseif (iproc==i) then
+            call mpirecv_logical(luse_vel_field,1,0,iproc)
+          endif
+        enddo
 !
-        ! initialization of magnetograms and velocity fields
+!  Initialization of magnetograms and velocity fields.
         allocate(Bz0_l(bnx,bny),stat=stat)
         if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_l',.true.)
         allocate(Bz0_r(bnx,bny),stat=stat)
         if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for Bz0_r',.true.)
-        allocate(vx_l(nx,ny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_l',.true.)
-        allocate(vx_r(nx,ny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_r',.true.)
-        allocate(vy_l(nx,ny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_l',.true.)
-        allocate(vy_r(nx,ny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_r',.true.)
-        allocate(vx(nx,ny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx',.true.)
-        allocate(vy(nx,ny),stat=stat)
-        if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy',.true.)
+        if (luse_vel_field) then
+          allocate(vx_l(nx,ny),stat=stat)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_l',.true.)
+          allocate(vx_r(nx,ny),stat=stat)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx_r',.true.)
+          allocate(vy_l(nx,ny),stat=stat)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_l',.true.)
+          allocate(vy_r(nx,ny),stat=stat)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy_r',.true.)
+          allocate(vx(nx,ny),stat=stat)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vx',.true.)
+          allocate(vy(nx,ny),stat=stat)
+          if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate memory for vy',.true.)
+        endif
+!
         first_run = .false.
 !
       endif
@@ -4267,7 +4277,7 @@ module Boundcond
       if (t_r+delta_t <= time_SI) then
 !
         if (lfirst_proc_xy) then
-          ! read and distribute Bz data (in pencil shape)
+!  Read and distribute Bz data (in pencil shape)
 !
           inquire (IOLENGTH=lend) t_l
           open (10,file=mag_times_dat,form='unformatted',status='unknown', &
