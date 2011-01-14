@@ -1955,7 +1955,7 @@ module Chemistry
 !
 !  Find progress variable phi based on distance from boundaries.
 !
-         flat_range=init_x2*1.
+         flat_range=init_x2*0.1
          phi&
              =exp(-((lower-flat_range)/init_x2)**2)&
              +exp(-((upper-flat_range)/init_x2)**2)
