@@ -1,9 +1,10 @@
+! $Id$
 !
 !  Module containing emulating not universally available intrinsics.
 !
-module Emulated 
+module Emulated
 !
-  use Cparam
+  use Cparam, only: inan
 !
   implicit none
 !
