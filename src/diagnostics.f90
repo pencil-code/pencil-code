@@ -224,7 +224,7 @@ module Diagnostics
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,index_d,index_a,leng,nc,nch,lleg,lcoor,lsub,idim,icoor
+      integer :: iname,index_d,index_a,leng,nc,nch,lleg,lsub,idim,icoor
 !
 !  Produce the format.
 !
@@ -233,7 +233,7 @@ module Diagnostics
         call chn(ncoords_sound,str)
         call safe_character_append(fform, str//'(')
       endif
-!   
+!
       if (lfirst) then
         legend = noform('t'//tform//')')
       else
@@ -246,11 +246,11 @@ module Diagnostics
 !
           coorlegend = ' Points:   '
           lleg = len_trim(coorlegend)+3
-
+!
           do icoor=1,ncoords_sound
 !
             call chn(icoor,str)
-            
+!
             coorlegend(lleg+1:) = trim(adjustl(str))//' = '
             lleg = len_trim(coorlegend)+1
 !
@@ -267,7 +267,7 @@ module Diagnostics
             enddo
             coorlegend(lleg+1:) = item(1:len_trim(item)-1)//'),   '
             lleg = len_trim(coorlegend)+4
-!          
+!
           enddo
           coorlegend(lleg-4:lleg)=' '
         endif
@@ -275,10 +275,10 @@ module Diagnostics
         lsub = len_trim(legend)
 !
       endif
-
+!
       ldata = .false.
       sublegend = ''
-
+!
       do iname=1,nname_sound
 !
         if (cform_sound(iname)/=' ') then
@@ -298,7 +298,7 @@ module Diagnostics
                 write(sublegend(lsub+nch+1:lsub+nch+2),'(i2)') icoor
                 lsub = lsub+leng
               enddo
-            endif 
+            endif
             call safe_character_append(legend, item)
 !
             lsub = len_trim(legend)
@@ -334,7 +334,7 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         open(1,file=trim(directory)//'/sound.dat',position='append')
-	if (lfirst) then
+        if (lfirst) then
 !
           write(1,'(a)') trim(legend)
           if (dimensionality>0) then
