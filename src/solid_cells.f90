@@ -759,7 +759,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   Tobj=objects(iobj)%T
                   if (.not. ltemperature_nolog) Tobj=exp(Tobj)
                   deltaT=Tobj-T0
-                  loc_Nus=fp_gradT*rforce*2./deltaT * surfaceelement
+                  loc_Nus=fp_gradT*robj*2./deltaT * surfaceelement
                 endif
 !
                 if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
