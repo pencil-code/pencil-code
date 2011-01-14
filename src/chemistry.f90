@@ -60,6 +60,7 @@ module Chemistry
      real :: init_rho=1.
      real :: str_thick=0.02
      real :: init_pressure=10.13e5
+     real :: global_phi=impossible
 !
      logical :: lone_spec=.false., lfilter_strict=.false.
 !
@@ -159,7 +160,7 @@ module Chemistry
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory,&
       lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2,&
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos,&
-      reac_rate_method
+      reac_rate_method,global_phi
 !
 !
 ! run parameters
@@ -170,7 +171,7 @@ module Chemistry
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
       visc_const,cp_const,reinitialize_chemistry,lfilter_strict, &
       init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
-      ldiff_corr, ldiff_fick, lreac_as_aux, reac_rate_method
+      ldiff_corr, ldiff_fick, lreac_as_aux, reac_rate_method,global_phi
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -1899,7 +1900,8 @@ module Chemistry
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
       integer :: i_C3H8, ichem_C3H8, i_CO2, ichem_CO2
       real :: final_massfrac_O2, mu1, phi, delta_O2, mC3H8, mCO2
-      logical :: found_specie, lH2, lCO2, lC3H8
+      logical :: found_specie, lH2, lCO2, lC3H8, lH2O
+      real :: norm, flat_range
 !
      lflame_front=.true.
 !
@@ -1910,7 +1912,7 @@ module Chemistry
       call find_species_index('H2' ,i_H2 ,ichem_H2 ,lH2)
       call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
       call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
       call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)      
       call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
       mO2 =species_constants(ichem_O2 ,imass)
@@ -1953,8 +1955,13 @@ module Chemistry
 !
 !  Find progress variable phi based on distance from boundaries.
 !
-         phi=exp(-(lower/init_x2)**2)+exp(-(upper/init_x2)**2)
-         if (phi>1.0) phi=1.0
+         flat_range=init_x2*1.
+         phi&
+             =exp(-((lower-flat_range)/init_x2)**2)&
+             +exp(-((upper-flat_range)/init_x2)**2)
+         if (phi>1.0) phi=1.
+         if (flat_range>lower) phi=1.
+         if (flat_range>upper) phi=1.
 !
 !  Find temperature, species and density based on progress variable
 !
@@ -1970,13 +1977,26 @@ module Chemistry
          endif
          f(j1,j2,j3,i_O2)=(1-phi)*(initial_massfractions(ichem_O2)&
              -final_massfrac_O2)+final_massfrac_O2
+!
+!  Re-normalize mass fractions
+!
+         norm=f(j1,j2,j3,i_O2)+f(j1,j2,j3,i_N2)
+         if (lC3H8) norm = norm + f(j1,j2,j3,i_C3H8)
+         if (lCO2)  norm = norm + f(j1,j2,j3,i_CO2)
+         if (lH2O)  norm = norm + f(j1,j2,j3,i_H2O)
+         if (lH2)   norm = norm + f(j1,j2,j3,i_H2)
+         f(j1,j2,j3,minval(ichemspec):maxval(ichemspec))&
+             =f(j1,j2,j3,minval(ichemspec):maxval(ichemspec))/norm
+!
+!  Find mean molecular weight and density
+!
          mu1&
              =f(j1,j2,j3,i_O2 )/mO2 &
              +f(j1,j2,j3,i_H2O)/mH2O&
              +f(j1,j2,j3,i_N2 )/mN2 
-         if (lH2)   mu1=mu1+f(j1,j2,j3,i_H2  )/(2.*mH2)
-         if (lCO2)  mu1=mu1+f(j1,j2,j3,i_CO2 )/(2.*mCO2)
-         if (lC3H8) mu1=mu1+f(j1,j2,j3,i_C3H8)/(2.*mC3H8)
+         if (lH2)   mu1=mu1+f(j1,j2,j3,i_H2  )/mH2
+         if (lCO2)  mu1=mu1+f(j1,j2,j3,i_CO2 )/mCO2
+         if (lC3H8) mu1=mu1+f(j1,j2,j3,i_C3H8)/mC3H8
          f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
              -log(mu1)
        enddo
@@ -2002,8 +2022,8 @@ module Chemistry
 !
       real :: mO2, mH2, mN2, mH2O, lower,upper
       integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: initial_mu1, final_massfrac_O2
       logical :: found_specie
+      real :: T0, T1, rho0, rho1
 !
       lflame_front=.true.
 !
@@ -2011,42 +2031,9 @@ module Chemistry
 !
 ! Initialize some indexes
 !
-      call find_species_index('H2' ,i_H2 ,ichem_H2 ,found_specie)
-      call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
-      call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
-      mO2 =species_constants(ichem_O2 ,imass)
-      mH2 =species_constants(ichem_H2 ,imass)
-      mH2O=species_constants(ichem_H2O,imass)
-      mN2 =species_constants(ichem_N2 ,imass)
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2&
-          =(initial_massfractions(ichem_O2)/mO2&
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
-!
-!  Initialize temperature and species in air_field(f)
-!
-      if (unit_system == 'cgs') then
-          Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas=Rgas_unit_sys/unit_energy
-      endif
-!
-!  Find logaritm of density at inlet
-!
-      initial_mu1&
-          =initial_massfractions(ichem_H2)/(mH2)&
-          +initial_massfractions(ichem_O2)/(mO2)&
-          +initial_massfractions(ichem_H2O)/(mH2O)&
-          +initial_massfractions(ichem_N2)/(mN2)
-!
-       call getmu_array(f,mu1_full)
-       if (ltemperature_nolog) call fatal_error('','')
-!
-       do j3=1,mz
-       do j2=1,my
-       do j1=1,mx
+       do j3=n1,n2
+       do j2=m1,m2
+       do j1=l1,l2
 !
 !  First define the distance from the lower and upper domain boundary.
 !
@@ -2055,21 +2042,34 @@ module Chemistry
 !
 !  Find temperature and density based on distance from boundaries.
 !
-         f(j1,j2,j3,ilnTT)=log(&
+         if (ltemperature_nolog) then
+           T0=f(j1,j2,j3,ilnTT)
+         else
+           T0=exp(f(j1,j2,j3,ilnTT))
+         endif
+         if (ldensity_nolog) then
+           rho0=f(j1,j2,j3,ilnrho)
+         else
+           rho0=exp(f(j1,j2,j3,ilnrho))
+         endif
+         T1=&
              (init_TT2-init_TT1)*exp(-(lower/init_x2)**2)+&
              (init_TT2-init_TT1)*exp(-(upper/init_x2)**2)+&
-             init_TT1)
-         mu1_full(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
-             +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
-         f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
-             -log(mu1_full(j1,j2,j3))
+             init_TT1
+         if (ltemperature_nolog) then
+           f(j1,j2,j3,ilnTT)=T1
+         else
+           f(j1,j2,j3,ilnTT)=log(T1)
+         endif
+         rho1=rho0*T0/T1
+         if (ldensity_nolog) then
+           f(j1,j2,j3,ilnrho)=rho1
+         else
+           f(j1,j2,j3,ilnrho)=log(rho1)
+         endif
        enddo
        enddo
        enddo
-!
-!  Check if we want nolog of density
-!
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
 !
     endsubroutine opposite_ignitions
 !***********************************************************************
@@ -4412,6 +4412,11 @@ module Chemistry
       if (nreactions .ne. 1) &
           call fatal_error('roux','nreactions should always be 1.')
 !
+!  Check that a global equivalence ratio is given at input
+!
+      if (global_phi==impossible) call fatal_error('roux',&
+          'global_phi must be given as input')
+!
       Rcal=Rgas_unit_sys/4.14*1e-7
 !
 !  Find indecees for oxygen and propane
@@ -4437,7 +4442,7 @@ module Chemistry
       if (lfirsttime) then
         do j=1,nchemspec
           initial_massfractions(j)=f(l1,m1,n1,ichemspec(j))
-          print*,'initial_massfractions=',initial_massfractions
+          if (lroot) print*,'initial_massfractions=',initial_massfractions
         enddo
         init_O2=initial_massfractions(ichem_O2)
         init_C3H8=initial_massfractions(ichem_C3H8)
@@ -4445,14 +4450,14 @@ module Chemistry
 !
 !  Find equivalence ratio phi
 !
-      phi=5*(init_C3H8/init_O2)*(mO2/mC3H8)
+!      phi=5*(init_C3H8/init_O2)*(mO2/mC3H8)
 !
 !  Find Laminar flame speed corrector based on equivalence ratio phi
 !
       f_phi&
-          =0.5*(1+tanh((0.8-phi)/1.5))&
-          +2.11/4*(1+tanh((phi-0.11)/0.2))&
-          *(1+tanh((1.355-phi)/0.24))
+          =0.5*(1+tanh((0.8-global_phi)/1.5))&
+          +2.11/4*(1+tanh((global_phi-0.11)/0.2))&
+          *(1+tanh((1.355-global_phi)/0.24))
 !
 !  Find the classical Arrhenius terms
 !
@@ -4470,14 +4475,21 @@ module Chemistry
 !  Use the above to find reaction terms
 !
       vreact_p(:,1)=f_phi*pre_exp*term1*term2*activation_energy  
-      where (f(l1:l2,m,n,i_C3H8)<1e-17)
+!
+!  Set reaction rate to zero when mass fractions of propane of oxygen is 
+!  very close to zero.
+!
+      where (f(l1:l2,m,n,i_C3H8)<1e-12)
+        vreact_p(:,1)=0.
+      end where
+      where (f(l1:l2,m,n,i_O2)<1e-12)
         vreact_p(:,1)=0.
       end where
       vreact_m(:,1)=0.
 !
 !  Print debugging output
 !
-      if (ip<3 .or. lfirsttime) then
+      if (lfirsttime .and. lroot) then
         print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=',&
             i_O2, i_C3H8, ichem_O2, ichem_C3H8
         print*,'lO2, lC3H8=',lO2, lC3H8        
