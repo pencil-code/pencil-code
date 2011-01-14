@@ -385,7 +385,7 @@ module Shock
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
-      real :: shock_max, a=0.
+      real :: shock_max, a=0., a1
 !
 !  Compute divergence
 !
@@ -494,15 +494,15 @@ module Shock
         if (headtt) print *, 'Shock: fix mesh Reynolds number at ', Re_mesh
         if (lfirst) then
           max_loc = (/ l1-1, m1-1, n1-1 /) + maxloc(tmp(l1:l2,m1:m2,n1:n2))
-          a = tmp(max_loc(1),max_loc(2),max_loc(3))
-          call mpiallreduce_max(a, shock_max)
+          a1 = tmp(max_loc(1),max_loc(2),max_loc(3))
+          call mpiallreduce_max(a1, shock_max)
           if (shock_max > 0.) then
-            if (shock_max == a) then
-              a = dxmax * sqrt(sum(f(max_loc(1),max_loc(2),max_loc(3),iux:iuz)**2)) / (Re_mesh * shock_max)
+            if (shock_max == a1) then
+              a1 = dxmax * sqrt(sum(f(max_loc(1),max_loc(2),max_loc(3),iux:iuz)**2)) / (Re_mesh * shock_max)
             else
-              a = 0.
+              a1 = 0.
             endif
-            call mpiallreduce_max(a, a)
+            call mpiallreduce_max(a1, a)
           endif
         endif
         f(:,:,:,ishock) = a * tmp
