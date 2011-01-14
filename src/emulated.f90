@@ -4,7 +4,7 @@
 !
 module Emulated
 !
-  use Cparam, only: inan
+  use Cparam
 !
   implicit none
 !
