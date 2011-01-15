@@ -103,6 +103,21 @@ program start
 !
   call mpicomm_init
 !
+!  Check if it make parallelization and choosen grid number make sense
+  if ((nprocx>1.and.nxgrid==1).or. &
+      (nprocy>1.and.nygrid==1).or. &
+      (nprocz>1.and.nzgrid==1)) then
+    call fatal_error('start', &
+        'parallelization in a dimension with ngrid>1 does not work')
+  endif
+  if (mod(nxgrid,nprocx)/=0.or. &
+      mod(nygrid,nprocy)/=0.or. &
+      mod(nzgrid,nprocz)/=0) then
+    call fatal_error('start', &
+        'in each dimension the number of grid points has to be '// &
+        'devidable by the number of processors.')
+  endif
+!
 !  Identify version.
 !
   if (lroot) call svn_id( &
