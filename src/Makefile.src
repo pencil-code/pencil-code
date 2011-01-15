@@ -177,23 +177,10 @@ ifeq ($(FOURIER),fourier_fftpack)
   FFLAGS_FOURIER =
   LD_FOURIER     = fftpack.o
 endif
-##ifeq ($(FOURIER),fourier_fftw2)
-##  CFLAGS_FOURIER = $(CFLAGS_FFTW2)
-##  FFLAGS_FOURIER = $(FFLAGS_FFTW2)
-##  LD_FOURIER     = $(LD_FFTW2)
-##endif
-##ifeq ($(FOURIER),fourier_fftw3)
-##  CFLAGS_FOURIER = $(CFLAGS_FFTW3)
-##  FFLAGS_FOURIER = $(FFLAGS_FFTW3)
-##  LD_FOURIER     = $(LD_FFTW3)
-##endif
 # 
 # For gsl library.
 #
 ifeq ($(GSL),gsl_wrapper)
-  LD_GSL = -lgsl -lgslcblas
-endif
-ifeq ($(GSL),gsl_wrapper_r8)
   LD_GSL = -lgsl -lgslcblas
 endif
 # 
@@ -804,6 +791,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC=mpif90 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 #CC=icc -ipo #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 #AR=xiar #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
+##FFLAGS=-xT -ipo -O3 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 #FFLAGS=-xsse4.2 -axsse4.2 -ipo -O3 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 #FFLAGS_DOUBLE=-r8 #(juropa|jj28l0[1-8]|juropa.fz-juelich.de)
 ##For single processor runs on the JUGENE frontend:
@@ -1880,10 +1868,10 @@ cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
 # 
 cparam.o:  cparam.f90 cparam.local cparam.inc
 	if [ "" ]; then \
-		 rm -f cparam.inc; \
-		 rm -f cparam_pencils.inc; \
-	     ln -s cparam.inc cparam.inc;\
-	     ln -s cparam_pencils.inc cparam_pencils.inc;\
+		rm -f cparam.inc; \
+		rm -f cparam_pencils.inc; \
+		ln -s cparam.inc cparam.inc; \
+		ln -s cparam_pencils.inc cparam_pencils.inc; \
 	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
 # 
