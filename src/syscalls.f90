@@ -9,6 +9,11 @@ module Syscalls
   external file_size_c
   external get_pid_c
   external get_env_var_c
+  external is_nan_c
+!
+  interface is_nan
+     module procedure is_nan_0D
+  endinterface
 !
   contains
 !***********************************************************************
@@ -170,5 +175,29 @@ module Syscalls
       write (get_tmp_prefix,'(A,A,I0,A)') trim(tmp_dir), '/pencil-', get_PID(), '-'
 !
     endfunction get_tmp_prefix
+!***********************************************************************
+    function is_nan_0D(value)
+!
+!  Determines if value is not a number (NaN).
+!
+!  Returns:
+!  * true, if value is not a number (NaN)
+!  * false, otherwise
+!
+!  14-jan-2011/Bourdin.KIS: coded
+!
+      logical :: is_nan_0D
+      real :: value
+!
+      integer :: result
+!
+      call is_nan_c (value, result)
+      if (result == -1) then
+        print *, 'is_nan_0D: serious failure in is_nan_c'
+        stop
+      endif
+      is_nan_0D = (result == 1)
+!
+    endfunction is_nan_0D
 !***********************************************************************
 endmodule Syscalls

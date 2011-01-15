@@ -266,9 +266,6 @@ EQU_SRC=equ.f90
 FARRAY_OBJ=farray.o
 FARRAY_SRC=farray.f90
 #
-EMULATED_OBJ=emulated.o
-EMULATED_SRC=emulated.f90
-#
 FILTER_OBJ=filter.o
 FILTER_SRC=filter.f90
 #
@@ -1746,7 +1743,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical= $(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(EMULATED_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
+technical= $(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -1768,8 +1765,8 @@ run.x: run.o
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-basics=cparam.o cdata.o general.o emulated.o
-utilities=messages.o $(MPICOMM_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o
+basics=cparam.o cdata.o general.o $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o
+utilities=messages.o $(MPICOMM_OBJ)
 #
 combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o

@@ -136,6 +136,14 @@ module Mpicomm
     module procedure mpireduce_and_arr
   endinterface
 !
+  interface distribute_global_xy
+    module procedure distribute_global_xy_2D
+  endinterface
+!
+  interface collect_global_xy
+    module procedure collect_global_xy_2D
+  endinterface
+!
   interface distribute_to_pencil_xy
     module procedure distribute_to_pencil_xy_2D
   endinterface
@@ -1366,6 +1374,32 @@ module Mpicomm
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
+    subroutine distribute_global_xy_2D (in, out)
+!
+!  This routine divides global 2D data and distributes it in the xy-plane.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine distribute_global_xy_2D
+!***********************************************************************
+    subroutine collect_global_xy_2D (in, out)
+!
+!  Collect 2D data from several processors and combine into global shape.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine collect_global_xy_2D
+!***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out)
 !
 !  Distribute 2D data to several processors and reform into pencil shape.
@@ -1382,7 +1416,7 @@ module Mpicomm
 !***********************************************************************
     subroutine collect_from_pencil_xy_2D (in, out)
 !
-!  Gather 2D data from several processors and combine into global shape.
+!  Collect 2D data from several processors and combine into global shape.
 !  This routine collects 2D pencil shaped data distributed in the xy-plane.
 !
 !  22-jul-2010/Bourdin.KIS: coded

@@ -180,6 +180,14 @@ module Mpicomm
     module procedure mpireduce_sum_double_arr4
   endinterface
 !
+  interface distribute_global_xy
+    module procedure distribute_global_xy_2D
+  endinterface
+!
+  interface collect_global_xy
+    module procedure collect_global_xy_2D
+  endinterface
+!
   interface distribute_to_pencil_xy
     module procedure distribute_to_pencil_xy_2D
   endinterface
@@ -3419,6 +3427,126 @@ module Mpicomm
 !
     endsubroutine fill_zghostzones_3vec
 !***********************************************************************
+    subroutine distribute_global_xy_2D (in, out, broadcaster)
+!
+!  This routine divides global data and distributes it in the xy-plane.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+      integer, intent(in) :: broadcaster
+!
+      integer :: bnx, bny ! transfer box sizes
+      integer :: px, py, partner, nbox, alloc_stat
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: buffer
+!
+!
+      if ((nprocx == 1) .and. (nprocy == 1)) then
+        out = in
+        return
+      endif
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      nbox = bnx*bny
+!
+      allocate (buffer(bnx,bny), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_fatal ('distribute_global_xy_2D: not enough memory for buffer!', .true.)
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_global_xy_2D', 'input x dim must be nprocx*output', .true.)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_global_xy_2D', 'input y dim must be nprocy*output', .true.)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
+            else
+              ! send to partner
+              buffer = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
+              call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        out = buffer
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine distribute_global_xy_2D
+!***********************************************************************
+    subroutine collect_global_xy_2D (in, out, collector)
+!
+!  Collect 2D data from several processors and combine into global shape.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out) :: out
+      integer, intent(in) :: collector
+!
+      integer :: bnx, bny ! transfer box sizes
+      integer :: px, py, partner, nbox, alloc_stat
+      integer, parameter :: ytag=116
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:), allocatable :: buffer
+!
+!
+      if ((nprocx == 1) .and. (nprocy == 1)) then
+        out = in
+        return
+      endif
+!
+      bnx = size (in, 1)
+      bny = size (in, 2)
+      nbox = bnx*bny
+!
+      allocate (buffer(bnx,bny), stat=alloc_stat)
+      if (alloc_stat > 0) call stop_fatal ('collect_global_xy_2D: not enough memory for buffer!', .true.)
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (bnx * nprocx /= size (out, 1)) &
+            call stop_fatal ('collect_global_xy_2D', 'output x dim must be nprocx*input', .true.)
+        if (bny * nprocy /= size (out, 2)) &
+            call stop_fatal ('collect_global_xy_2D', 'output y dim must be nprocy*input', .true.)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = in
+            else
+              ! receive from partner
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = buffer
+            endif
+          enddo
+        enddo
+      else
+        ! send to collector
+        buffer = in
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine collect_global_xy_2D
+!***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out, broadcaster)
 !
 !  Distribute data to several processors and reform into pencil shape.
@@ -3470,17 +3598,17 @@ module Mpicomm
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
         out = buffer
       endif
 !
-      if (allocated (buffer)) deallocate (buffer)
+      deallocate (buffer)
 !
     endsubroutine distribute_to_pencil_xy_2D
 !***********************************************************************
     subroutine collect_from_pencil_xy_2D (in, out, collector)
 !
-!  Gather 2D data from several processors and combine into global shape.
+!  Collect 2D data from several processors and combine into global shape.
 !  This routine collects 2D pencil shaped data distributed in the xy-plane.
 !
 !  22-jul-2010/Bourdin.KIS: coded
@@ -3530,10 +3658,10 @@ module Mpicomm
       else
         ! send to collector
         buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
       endif
 !
-      if (allocated (buffer)) deallocate (buffer)
+      deallocate (buffer)
 !
     endsubroutine collect_from_pencil_xy_2D
 !***********************************************************************
@@ -3773,7 +3901,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (recv_buf)
 !
     endsubroutine remap_to_pencil_y_4D
 !***********************************************************************
@@ -3922,7 +4050,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (recv_buf)
 !
     endsubroutine remap_to_pencil_z_2D
 !***********************************************************************
@@ -3978,7 +4106,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (recv_buf)
 !
     endsubroutine remap_to_pencil_z_3D
 !***********************************************************************
@@ -4037,7 +4165,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (recv_buf)
 !
     endsubroutine remap_to_pencil_z_4D
 !***********************************************************************
@@ -4160,8 +4288,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine remap_to_pencil_xy_2D
 !***********************************************************************
@@ -4229,8 +4356,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine remap_to_pencil_xy_3D
 !***********************************************************************
@@ -4302,8 +4428,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine remap_to_pencil_xy_4D
 !***********************************************************************
@@ -4366,8 +4491,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_xy_2D
 !***********************************************************************
@@ -4435,8 +4559,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_xy_3D
 !***********************************************************************
@@ -4508,8 +4631,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_xy_4D
 !***********************************************************************
@@ -4573,8 +4695,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine transp_pencil_xy_2D
 !***********************************************************************
@@ -4646,8 +4767,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine transp_pencil_xy_3D
 !***********************************************************************
@@ -4727,8 +4847,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine transp_pencil_xy_4D
 !***********************************************************************
@@ -4796,8 +4915,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine remap_to_pencil_yz_3D
 !***********************************************************************
@@ -4869,8 +4987,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine remap_to_pencil_yz_4D
 !***********************************************************************
@@ -4938,8 +5055,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_yz_3D
 !***********************************************************************
@@ -5011,8 +5127,7 @@ module Mpicomm
         endif
       enddo
 !
-      if (allocated (send_buf)) deallocate (send_buf)
-      if (allocated (recv_buf)) deallocate (recv_buf)
+      deallocate (send_buf, recv_buf)
 !
     endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
@@ -5600,15 +5715,16 @@ module Mpicomm
 !
 ! helper function for  mpimerge_1d
 !
-    use Emulated, only: isnan
+    use Syscalls, only: is_nan
 !
     real, dimension(n), intent(inout) :: vec2
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
-    where( isnan(vec2) .and. .not.isnan(vec1) ) vec2=vec1    ! merging
+    ! merging
+    where (is_nan(vec2) .and. .not. is_nan(vec1)) vec2=vec1
 !
-    if (NO_WARN) print*,type
+    if (NO_WARN) print *,type
 !
   endsubroutine merge_1d
 !***********************************************************************

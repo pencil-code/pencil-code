@@ -823,11 +823,11 @@ module Register
 !
 !  Read the last sound output time from a soundfile, will be set to starttime
 !  otherwise.
-!      
-        tsound=rnan
+!
+        tsound=-1.0
         open(1,file=trim(directory)//'/sound.dat',position='append', &
-            status='old',iostat=ios) 
-        if (ios==0) then      
+            status='old',iostat=ios)
+        if (ios==0) then
           backspace(1)
           read(1,*) tsound
         endif

@@ -52,7 +52,6 @@ program run
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
   use Equ,             only: debug_imn_arrays,initialize_pencils
-  use Emulated,        only: isnan
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
   use Filter
@@ -75,6 +74,7 @@ program run
   use Snapshot
   use Solid_Cells,     only: solid_cells_clean_up
   use Sub
+  use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
@@ -293,9 +293,11 @@ program run
 !  Set last tsound output time
 !
   if (lwrite_sound) then
-    if (isnan(tsound)) then
-      tsound=t                          ! if sound output starts anew
-      lout_sound=.true.                 ! output initial values
+    if (tsound<0.0) then
+      ! if sound output starts new
+      tsound=t
+      ! output initial values
+      lout_sound=.true.
     endif
   endif
 !

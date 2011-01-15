@@ -22,8 +22,8 @@ void FTNIZE(file_size_c)
    * -1 if retrieving the file size failed
 */
 {
-  *bytes=-1;
-  printf("NoSysCalls: file_size_c is not available\n");
+  *bytes = -1;
+  printf ("NoSysCalls: file_size_c is not available\n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -36,8 +36,8 @@ void FTNIZE(get_pid_c)
    * -1 if retrieving the PID failed
 */
 {
-  *pid=-1;
-  printf("NoSysCalls: get_pid_c is not available\n");
+  *pid = -1;
+  printf ("NoSysCalls: get_pid_c is not available\n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -49,7 +49,21 @@ void FTNIZE(get_env_var_c)
    * unchanged input string, if retrieving the environment variable failed
 */
 {
-  printf("NoSysCalls: get_env_var_c is not available\n");
+  printf ("NoSysCalls: get_env_var_c is not available\n");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FTNIZE(is_nan_c)
+     (REAL *value, FINT *result)
+/* Determine if value is not a number.
+   Returns:
+   * 1, if value is not a number
+   * -1 on failure
+*/
+{
+  *result = 1;
+  printf ("NoSysCalls: is_nan_c is not available\n");
 }
 
 /* ---------------------------------------------------------------------- */

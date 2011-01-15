@@ -32,17 +32,17 @@ void FTNIZE(file_size_c)
 */
 {
   struct stat fileStat;
-  int file=-1;
+  int file = -1;
 
-  *bytes=-2;
-  file=open(filename, O_RDONLY);
+  *bytes = -2;
+  file = open (filename, O_RDONLY);
   if(file == -1) return;
 
-  *bytes=-1;
-  if(fstat(file, &fileStat) < 0) { close (file); return; }
+  *bytes = -1;
+  if(fstat (file, &fileStat) < 0) { close (file); return; }
   close (file);
 
-  *bytes=fileStat.st_size;
+  *bytes = fileStat.st_size;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -76,6 +76,22 @@ void FTNIZE(get_env_var_c)
 
   env_var = getenv (name);
   if (env_var) strncpy (value, env_var, strlen (env_var));
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FTNIZE(is_nan_c)
+     (REAL *value, FINT *result)
+/* Determine if value is not a number.
+   Returns:
+   * 1, if value is not a number
+   * -1 on failure
+*/
+{
+  *result = -1;
+
+  if (sizeof (*value) == sizeof (double)) *result = isnan ((double) *value);
+  if (sizeof (*value) == sizeof (float)) *result = isnanf ((float) *value);
 }
 
 /* ---------------------------------------------------------------------- */

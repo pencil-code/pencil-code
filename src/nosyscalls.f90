@@ -6,6 +6,10 @@ module Syscalls
 !
   implicit none
 !
+  interface is_nan
+     module procedure is_nan_0D
+  endinterface
+!
   contains
 !***********************************************************************
     function file_exists(file, delete)
@@ -189,5 +193,26 @@ module Syscalls
       get_tmp_prefix = '/tmp/pencil-'
 !
     endfunction get_tmp_prefix
+!***********************************************************************
+    function is_nan_0D(value)
+!
+!  Determines if value is not a number (NaN).
+!  This function is a trick to circumvent the lack of isnan in F95.
+!
+!  Usage of the syscalls module is highly recommended, because there,
+!  the implementation if is_nan is made with ANSI standard routines.
+!
+!  Returns:
+!  * true, if value is not a number (NaN)
+!  * false, otherwise
+!
+!  14-jan-2011/Bourdin.KIS: coded
+!
+      logical :: is_nan_0D
+      real, intent(in) :: value
+!
+      is_nan_0D = .not. (abs (value) <= huge (value))
+!
+    endfunction is_nan_0D
 !***********************************************************************
 endmodule Syscalls
