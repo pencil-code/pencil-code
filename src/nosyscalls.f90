@@ -8,6 +8,10 @@ module Syscalls
 !
   interface is_nan
      module procedure is_nan_0D
+     module procedure is_nan_1D
+     module procedure is_nan_2D
+     module procedure is_nan_3D
+     module procedure is_nan_4D
   endinterface
 !
   contains
@@ -214,5 +218,89 @@ module Syscalls
       is_nan_0D = .not. (abs (value) <= huge (value))
 !
     endfunction is_nan_0D
+!***********************************************************************
+    function is_nan_1D(value)
+!
+!  Determines if value is not a number (NaN).
+!  This function is a trick to circumvent the lack of isnan in F95.
+!
+!  Usage of the syscalls module is highly recommended, because there,
+!  the implementation if is_nan is made with ANSI standard routines.
+!
+!  Returns:
+!  * true, if value is not a number (NaN)
+!  * false, otherwise
+!
+!  15-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:), intent(in) :: value
+      logical, dimension(size (value, 1)) :: is_nan_1D
+!
+      is_nan_1D = .not. (abs (value) <= huge (value))
+!
+    endfunction is_nan_1D
+!***********************************************************************
+    function is_nan_2D(value)
+!
+!  Determines if value is not a number (NaN).
+!  This function is a trick to circumvent the lack of isnan in F95.
+!
+!  Usage of the syscalls module is highly recommended, because there,
+!  the implementation if is_nan is made with ANSI standard routines.
+!
+!  Returns:
+!  * true, if value is not a number (NaN)
+!  * false, otherwise
+!
+!  15-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: value
+      logical, dimension(size (value, 1),size (value, 2)) :: is_nan_2D
+!
+      is_nan_2D = .not. (abs (value) <= huge (value))
+!
+    endfunction is_nan_2D
+!***********************************************************************
+    function is_nan_3D(value)
+!
+!  Determines if value is not a number (NaN).
+!  This function is a trick to circumvent the lack of isnan in F95.
+!
+!  Usage of the syscalls module is highly recommended, because there,
+!  the implementation if is_nan is made with ANSI standard routines.
+!
+!  Returns:
+!  * true, if value is not a number (NaN)
+!  * false, otherwise
+!
+!  15-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: value
+      logical, dimension(size (value, 1),size (value, 2),size (value, 3)) :: is_nan_3D
+!
+      is_nan_3D = .not. (abs (value) <= huge (value))
+!
+    endfunction is_nan_3D
+!***********************************************************************
+    function is_nan_4D(value)
+!
+!  Determines if value is not a number (NaN).
+!  This function is a trick to circumvent the lack of isnan in F95.
+!
+!  Usage of the syscalls module is highly recommended, because there,
+!  the implementation if is_nan is made with ANSI standard routines.
+!
+!  Returns:
+!  * true, if value is not a number (NaN)
+!  * false, otherwise
+!
+!  15-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: value
+      logical, dimension(size (value, 1),size (value, 2),size (value, 3),size (value, 4)) :: is_nan_4D
+!
+      is_nan_4D = .not. (abs (value) <= huge (value))
+!
+    endfunction is_nan_4D
 !***********************************************************************
 endmodule Syscalls

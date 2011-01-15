@@ -5721,12 +5721,8 @@ module Mpicomm
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
-    integer :: pos
-!
     ! merging
-    do pos=1, n
-      if (is_nan(vec2(pos)) .and. .not. is_nan(vec1(pos))) vec2(pos)=vec1(pos)
-    enddo
+    where (is_nan(vec2) .and. .not. is_nan(vec1)) vec2=vec1
 !
     if (NO_WARN) print *,type
 !
