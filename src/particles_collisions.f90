@@ -35,14 +35,16 @@ module Particles_collisions
   integer :: ncoll_max_par=-1, npart_max_par=-1, npart_max_par_2=0
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
   logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
-  logical :: ltauc_from_tauf=.false.
+  logical :: ltauc_from_tauf=.false., lapproaching_collisions=.false.
+  logical :: lstop_at_first_collision=.false.
   character (len=labellen) :: icoll='big-ball'
 !
   integer :: idiag_ncollpm=0, idiag_npartpm=0, idiag_decollpm=0
 !
   namelist /particles_coll_run_pars/ &
       lambda_mfp_single, coeff_restitution, icoll, lshear_in_vp, &
-      ncoll_max_par, npart_max_par, lkeplerian_flat, ltauc_from_tauf
+      ncoll_max_par, npart_max_par, lkeplerian_flat, ltauc_from_tauf, &
+      lapproaching_collisions, lstop_at_first_collision
 !
   contains
 !***********************************************************************
@@ -237,9 +239,10 @@ module Particles_collisions
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
-!  Only consider collisions between particles approaching each other.
+!  Only consider collisions between particles approaching each other?
 !
-                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+                if ((.not.lapproaching_collisions) .or. &
+                    sum((vpk-vpj)*(xpk-xpj))<0.0) then
 !
 !  For Keplerian particle discs, where the scale height of the particles is
 !  given by their velocity dispersion Hp~vrms/OmegaK, we can use the 2-D
@@ -471,9 +474,10 @@ module Particles_collisions
                 vpj=fp(j,ivpx:ivpz)
                 if (lshear .and. lshear_in_vp) vpj(2)=vpj(2)-qshear*Omega*xpj(1)
 !
-!  Only consider collisions between particles approaching each other.
+!  Only consider collisions between particles approaching each other?
 !
-                if (sum((vpk-vpj)*(xpk-xpj))<0.0) then
+                if ((.not.lapproaching_collisions) .or. &
+                    sum((vpk-vpj)*(xpk-xpj))<0.0) then
 !
 !  For Keplerian particle discs, where the scale height of the particles is
 !  given by their velocity dispersion Hp~vrms/OmegaK, we can use the 2-D
@@ -612,6 +616,7 @@ module Particles_collisions
 !  13-nov-09/anders: coded
 !
       use General
+      use Mpicomm
       use Sub
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
@@ -731,6 +736,10 @@ module Particles_collisions
         print*, '  ', tmp2
         print*, '  ', tmp1+tmp2
       endif
+!
+!  Stop after one collision (for testing purposes).
+!
+      if (lstop_at_first_collision) call die_gracefully
 !
     endsubroutine particle_collision
 !***********************************************************************
