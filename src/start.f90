@@ -103,7 +103,7 @@ program start
 !
   call mpicomm_init
 !
-!  Check if it make parallelization and choosen grid number make sense
+!  Check if parallelization and choosen grid numbers make sense.
   if ((nprocx>1.and.nxgrid==1).or. &
       (nprocy>1.and.nygrid==1).or. &
       (nprocz>1.and.nzgrid==1)) then
