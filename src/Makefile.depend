@@ -9,23 +9,17 @@
 #
 $(DEBUG_OBJ): debug_c.c Makefile.src Makefile.local
 #
-nodebug.o: nodebug.f90 $(CDATA_OBJ) 
+nodebug.o: nodebug.f90 $(CDATA_OBJ) Makefile.src Makefile.local
 #
-fft.o: fft.f Makefile.src
+fft.o: fft.f Makefile.src Makefile.local
 #
-gsl_wrapper.o: gsl_wrapper.c
-	$(CC) $(CFLAGS) -c gsl_wrapper.c
+gsl_wrapper.o: gsl_wrapper.c Makefile.src Makefile.local
 #
-gsl_wrapper_r8.o: gsl_wrapper_r8.c
-	$(CC) $(CFLAGS) -c gsl_wrapper_r8.c
-#
-nogsl.o: nogsl.c
-	$(CC) $(CFLAGS) -c nogsl.c
+nogsl.o: nogsl.c Makefile.src Makefile.local
 #
 $(SYSCALLS_OBJ): $(SYSCALLS)_ansi.o $(CPARAM_OBJ) Makefile.src Makefile.local
 #
 $(SYSCALLS)_ansi.o: $(SYSCALLS)_ansi.c Makefile.src Makefile.local
-	$(CC) $(CFLAGS) -c $(SYSCALLS)_ansi.c
 #
 # Explicit dependencies for the different infrastructure modules.
 #
