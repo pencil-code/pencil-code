@@ -452,17 +452,13 @@ contains
     real, dimension (mx,my,mz,mfarray) :: f
     real :: konst,cp1=1.,lnrho_0,int
     real, dimension(mz) :: TT,lnTT
-    integer :: i,j,k,ipt
+    integer :: i,j,k,ipt,ii
 !
     if (leos) call get_cp1(cp1)
 !
     konst = gamma*cp1/gamma_m1
 !
-    if (lroot) then
-      lnrho_0=alog(rho_init)
-    else
-      lnrho_0=0.
-    endif
+    lnrho_0=alog(rho_init)
     f(:,:,n1,ilnrho)= lnrho_0
 !
     if (ltemperature_nolog) then
@@ -473,29 +469,38 @@ contains
       lnTT = f(l1,m1,:,ilnTT)
     endif
 !
-    do i=n1+1,n2+nghost
-      int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i-1)+1/TT(i)))
-      f(:,:,i,ilnrho)=f(:,:,i-1,ilnrho)-lnTT(i)+ &
-          lnTT(i-1)+konst*int
-    enddo
-!
-    do i=0,nprocz-2
-      ipt = nprocxy*i
-      if (iproc==ipt) then
-        do j=0,nprocx-1
-          do k=0,nprocy-1
-            ipt=j + nprocx*k+nprocxy*(ipz+1)
-            call mpisend_real(f(l1,m1,n2+1,ilnrho),1,ipt,100*ipz+j*k)
-          enddo
+    do ii=0,nprocz-1
+      if (ipz==ii) then
+        do i=n1+1,n2+nghost
+          int = 0.5 * (z(i)-z(i-1)) * (gravz*(1/TT(i-1)+1/TT(i)))
+          f(:,:,i,ilnrho)=f(:,:,i-1,ilnrho)-lnTT(i)+ &
+              lnTT(i-1)+konst*int
         enddo
+        if (lfirst_proc_xy.and.ii<nprocz-1) then
+          do j=0,nprocx-1
+            do k=0,nprocy-1
+              ipt=j + nprocx*k+nprocxy*(ii+1)
+              call mpisend_real(f(l1,m1,n2+1,ilnrho),1,ipt,ipt)
+            enddo
+          enddo
+        endif
+      elseif (ipz==ii+1.and.ii<nprocz-1) then
+        call mpirecv_real(lnrho_0,1,nprocxy*(ipz-1),iproc)
+        f(:,:,n1,ilnrho) = lnrho_0
       endif
     enddo
 !
-    if (ipz>0) then
-      call mpirecv_real(lnrho_0,1,nprocxy*(ipz-1),100*(ipz-1)+ipx*ipy)
-      f(:,:,:,ilnrho) =  f(:,:,:,ilnrho)+lnrho_0
-    endif
+!  Fill the lower most ghost celĺs. Can be overriden by standard
+!  boundary conditions.
 !
+    if (ipz==0) then
+      do i=n1-1,1,-1
+        int = 0.5 * (z(i)-z(i+1)) * (gravz*(1/TT(i+1)+1/TT(i)))
+        f(:,:,i,ilnrho)=f(:,:,i+1,ilnrho)-lnTT(i)+ &
+            lnTT(i+1)+konst*int
+      enddo
+    endif
+
   endsubroutine hydrostatic_lnTT
 !***********************************************************************
   subroutine hydrostatic_x(f)
