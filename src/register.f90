@@ -657,18 +657,17 @@ module Register
 !***********************************************************************
     logical function read_name_format(in_file,cnamel,nnamel,allocator)
 !
+!  Unifies reading of *.in files which contain requests for diagnostic
+!  output in the form <name>(<format>); returns number of items read !
+!  properly from file 'in_file' (comment lines excluded) in
+!  'nnamel'; returns items in cnamel, which is allocated, if necessary, with
+!  the length <number of lines in 'in_file' + initial value of
+!  'nnamel'>; further allocations done in subroutine argument 'allocator' which
+!  takes same length as its parameter;
+!
+!  Return value is nnamel>0.
+!
 !   11-jan-11/MR: coded
-!
-!   unifies reading of *.in files which contain requests for diagnostic output
-!   in the form <name>(<format>);
-!   returns number of items read properly from file 'in_file' (comment lines excluded)
-!           in 'nnamel';
-!   returns items in cnamel, which is allocated, if necessary, with the
-!           length <number of lines in 'in_file' + initial value of 'nnamel'>;
-!   further allocations done in subroutine argument 'allocator' which takes
-!   same length as its parameter;
-!
-!   return value is nnamel>0
 !
       use Mpicomm, only: parallel_count_lines, parallel_open, parallel_close
 !
@@ -676,32 +675,31 @@ module Register
       character (len=30), allocatable, intent(out)   :: cnamel(:)
       integer,                         intent(inout) :: nnamel
       external                                       :: allocator 
-
+!
       character (len=30) :: cname_tmp
       integer            :: iname, mname, istat
       integer, parameter :: unit=1
-
+!
       mname  = parallel_count_lines(in_file)
 !
-      if ( mname>0 ) then
+      if (mname>0) then
 !
-! Allocate the relevant arrays if necessary 
+!  Allocate the relevant arrays if necessary  
 !
         if (.not. allocated(cnamel)) then
           allocate(cnamel(nnamel+mname),stat=istat)
-          if (istat>0) &
-            call fatal_error('read_name_format', &
+          if (istat>0) call fatal_error('read_name_format', &
               'Could not allocate memory for cnamel for reading from ' &
               //trim(in_file))
         endif
-
+!
         cnamel=char(0)  !? necessary?
-
+!
         call allocator(nnamel+mname)
 !
         call parallel_open(unit,FILE=trim(in_file))
 !
-! read names and formats
+!  Read names and formats.
 !
         nnamel = 0
         do iname=1,mname
@@ -718,7 +716,7 @@ module Register
       else
         read_name_format = .false.
       endif
-  
+!  
     endfunction read_name_format
 !***********************************************************************
     subroutine rprint_list(lreset)
