@@ -92,6 +92,15 @@ module Particles_collisions
         endif
       endif
 !
+!  The maximum number of collision partners must be an even number.
+!
+      if (npart_max_par/=-1) then
+        if (mod(npart_max_par,2)/=0) &
+            call fatal_error('initialize_particles_collisions', &
+            'npart_par_max must be an even number')
+        npart_max_par_2=npart_max_par/2
+      endif
+!
 !  Get radial gravity from gravity module.
 !
       if (lkeplerian_flat) call get_shared_variable('gravr',gravr)
@@ -103,11 +112,13 @@ module Particles_collisions
         call get_shared_variable('tausp1_species',tausp1_species)
       endif
 !
-      if (npart_max_par/=-1) then
-        if (mod(npart_max_par,2)/=0) &
-            call fatal_error('initialize_particles_collisions', &
-            'npart_par_max must be an even number')
-        npart_max_par_2=npart_max_par/2
+!  Friction time must be set when calculating collision time from friction
+!  time.
+!
+      if (ltauc_from_tauf) then
+        if (npar_species==1 .and. tausp1_species(1)==0.0) call fatal_error( &
+            'initialize_particles_collisions', 'tausp must be set when '// &
+            'calculating collision time from friction time')
       endif
 !
       call keep_compiler_quiet(f)
