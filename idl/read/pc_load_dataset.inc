@@ -1,6 +1,13 @@
 ;
-;  Philippe will document this program soon.
+;  Loads a varfile dataset, including dim, grid and units.
+;  The nx, ny, nz, and lmn12 variables are set.
 ;
+;  This file is intended to be included from scripts.
+;  Please refer to 'pc_load_dataset.pro' to see an example.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Default settings:
 default, varfile, 'var.dat'
 default, datadir, pc_get_datadir()
 ;
