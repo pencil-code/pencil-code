@@ -796,18 +796,20 @@ module Register
 !
       allocate(cname(100),fname(100),cform(100))
       if ( .not. read_name_format(print_in_file,cname,nname,allocate_fnames) ) &
-          call fatal_error('rprint_list','You must have a "'//trim(print_in_file) &
-          //'" file in the run directory with valid print requests!')
-
+          call fatal_error('rprint_list','You must have a "'// &
+          trim(print_in_file)// &
+          '" file in the run directory with valid print requests!')
+!
       if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
 !
 !  Read in the list of variables for video slices.
 !
       if ( dvid/=0.0 ) then
-        if ( .not. read_name_format(video_in_file,cnamev,nnamev,allocate_vnames) ) &
-          dvid=0.0
+        if ( .not. read_name_format(video_in_file,cnamev,nnamev, &
+            allocate_vnames) ) dvid=0.0
       endif
-      if (lroot .and. (ip<14)) print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
+      if (lroot .and. (ip<14)) &
+          print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
 !
 !  Read in the list of variables for "sound".
@@ -815,15 +817,16 @@ module Register
 ! In allocate_sound the relevant arrays are allocated and the list of coordinates sound_coords_list is read in.
 ! nsound_location and lwrite_sound are set there, too.
 !
-      if ( dimensionality>0 .and. dsound/=0.0 & 
-           .and. read_name_format(sound_in_file,cname_sound,nname_sound,allocate_sound) &
-           .and. lwrite_sound ) then
+      if ( dimensionality>0 .and. dsound/=0.0 .and. read_name_format( &
+          sound_in_file,cname_sound,nname_sound,allocate_sound) .and. &
+          lwrite_sound ) then
 !
-!  Read the last sound output time from a soundfile, will be set to starttime otherwise
+!  Read the last sound output time from a soundfile, will be set to starttime
+!  otherwise.
 !      
         tsound=rnan
-        open(1,file=trim(directory)//'/sound.dat',position='append',status='old', &
-             iostat=ios) 
+        open(1,file=trim(directory)//'/sound.dat',position='append', &
+            status='old',iostat=ios) 
         if (ios==0) then      
           backspace(1)
           read(1,*) tsound
@@ -831,30 +834,33 @@ module Register
         close(1)
 !
       else
-        nname_sound = 0
+        nname_sound=0
       endif
-      if (lroot .and. (ip<14)) print*, 'sound_print_list: nname_sound=', nname_sound
+      if (lroot .and. (ip<14)) &
+          print*, 'sound_print_list: nname_sound=', nname_sound
 !
 !  Read in the list of variables for xy-averages.
 !
-      ldummy = read_name_format(xyaver_in_file,cnamez,nnamez,allocate_xyaverages)
+      ldummy = read_name_format(xyaver_in_file,cnamez,nnamez, &
+          allocate_xyaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
 !  Read in the list of variables for xz-averages.
 !
-      ldummy = read_name_format(xzaver_in_file,cnamey,nnamey,allocate_xzaverages)
+      ldummy = read_name_format(xzaver_in_file,cnamey,nnamey, &
+          allocate_xzaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
 !  Read in the list of variables for yz-averages.
 !
-      ldummy = read_name_format(yzaver_in_file,cnamex,nnamex,allocate_yzaverages)
+      ldummy = read_name_format(yzaver_in_file,cnamex,nnamex, &
+          allocate_yzaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.
 !
       lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer, &
-                                             allocate_phizaverages)
-      print*, 'lwrite_phizaverages:', lwrite_phizaverages
+          allocate_phizaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamer=', nnamer
 !
 !  2-D averages:
@@ -862,19 +868,19 @@ module Register
 !  Read in the list of variables for y-averages.
 !
       lwrite_yaverages = read_name_format(yaver_in_file,cnamexz,nnamexz, &
-                                          allocate_yaverages)
+          allocate_yaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexz=', nnamexz
 !
 !  Read in the list of variables for z-averages.
 !
       lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy, &
-                                          allocate_zaverages)
+          allocate_zaverages)
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy
 !
 !  Read in the list of variables for phi-averages.
 !
       if (parallel_file_exists(phiaver_in_file)) then
-        ! Count the number of lines in it first.
+!
         call parallel_open(unit,file=phiaver_in_file)
         iadd=0
 !
@@ -894,11 +900,13 @@ module Register
 !
         if (nnamerz > 0) then
           nnamerz = iadd
-          lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz,nnamerz, &
-                                                allocate_phiaverages)
+          lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz, &
+              nnamerz,allocate_phiaverages)
         else
           lwrite_phiaverages = .false.
         endif
+      else
+        lwrite_phiaverages=.false.
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
 !
