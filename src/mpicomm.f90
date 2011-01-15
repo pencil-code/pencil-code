@@ -3460,9 +3460,9 @@ module Mpicomm
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_global_xy_2D', 'input x dim must be nprocx*output', .true.)
+            call stop_fatal ('distribute_global_xy_2D: input x dim must be nprocx*output', .true.)
         if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_global_xy_2D', 'input y dim must be nprocy*output', .true.)
+            call stop_fatal ('distribute_global_xy_2D: input y dim must be nprocy*output', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3520,9 +3520,9 @@ module Mpicomm
       if (iproc == collector) then
         ! collect the data
         if (bnx * nprocx /= size (out, 1)) &
-            call stop_fatal ('collect_global_xy_2D', 'output x dim must be nprocx*input', .true.)
+            call stop_fatal ('collect_global_xy_2D: output x dim must be nprocx*input', .true.)
         if (bny * nprocy /= size (out, 2)) &
-            call stop_fatal ('collect_global_xy_2D', 'output y dim must be nprocy*input', .true.)
+            call stop_fatal ('collect_global_xy_2D: output y dim must be nprocy*input', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -5721,8 +5721,12 @@ module Mpicomm
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
+    integer :: pos
+!
     ! merging
-    where (is_nan(vec2) .and. .not. is_nan(vec1)) vec2=vec1
+    do pos=1, n
+      if (is_nan(vec2(pos)) .and. .not. is_nan(vec1(pos))) vec2(pos)=vec1(pos)
+    enddo
 !
     if (NO_WARN) print *,type
 !
