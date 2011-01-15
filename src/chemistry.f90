@@ -1931,7 +1931,7 @@ module Chemistry
         delta_O2=0.
       endif
       final_massfrac_O2=final_massfrac_O2-delta_O2
-
+!
       if (lC3H8) then
         delta_O2=5*initial_massfractions(ichem_C3H8)/mC3H8*mO2
       else
@@ -2020,9 +2020,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: j1,j2,j3
 !
-      real :: mO2, mH2, mN2, mH2O, lower,upper
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      logical :: found_specie
+      real :: lower,upper
       real :: T0, T1, rho0, rho1
 !
       lflame_front=.true.
@@ -3492,7 +3490,6 @@ module Chemistry
       endselect
 !
     endsubroutine get_slices_chemistry
-!***********************************************************************
 !***********************************************************************
     subroutine build_stoich_matrix(StartInd,StopInd,k,ChemInpLine,product)
 !
