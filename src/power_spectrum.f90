@@ -324,7 +324,7 @@ module power_spectrum
 !
 ! Please set uninitialized variables to NaN by using a compiler flag.
 ! ATTENTION: The following line, might brake g95 autotests: (Bourdin.KIS)
-    kshell = NaN
+!    kshell = NaN
 
     if (lintegrate_z) then
 
