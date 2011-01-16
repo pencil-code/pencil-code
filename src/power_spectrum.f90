@@ -323,7 +323,8 @@ module power_spectrum
     allocate( kshell(nk) )
 !
 ! Please set uninitialized variables to NaN by using a compiler flag.
-! ATTENTION: The following line, might brake g95 autotests: (Bourdin.KIS)
+! ATTENTION: The following line, might break g95 autotests: (Bourdin.KIS)
+! So it is not portable and should be removed altogether.
 !    kshell = NaN
 
     if (lintegrate_z) then
