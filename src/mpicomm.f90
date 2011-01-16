@@ -5715,14 +5715,12 @@ module Mpicomm
 !
 ! helper function for  mpimerge_1d
 !
-    use Syscalls, only: is_nan
-!
     real, dimension(n), intent(inout) :: vec2
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
     ! merging
-    where (is_nan(vec2) .and. .not. is_nan(vec1)) vec2=vec1
+    where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
 !
     if (NO_WARN) print *,type
 !

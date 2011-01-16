@@ -287,7 +287,6 @@ module power_spectrum
 !                 additional information about kind of spectrum + wavenumber vectors in output file;
 !                 extended shell-integrated spectra to anisotropic boxes, extended k range to k_x,max^2 + k_y,max^2
 !
-   use Cparam, only: NaN
    use Fourier, only: fourier_transform_xy
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out, mpimerge_1d, ipz, mpibarrier, mpigather_z
    use Sub, only: curli
@@ -308,8 +307,7 @@ module power_spectrum
   character (len=1)  :: sp
   character (len=80) :: title
   character (len=128) :: filename
-  logical            :: lfirstout=.true.              ! saved across calls
-  save lfirstout
+  logical, save :: lfirstout=.true.
   !
   !  identify version
   !
@@ -322,10 +320,9 @@ module power_spectrum
     nk=nint( sqrt( ((nxgrid+1)*pi/Lx)**2+((nygrid+1)*pi/Ly)**2)/(2*pi/Lx) )+1
     allocate( kshell(nk) )
 !
-! Please set uninitialized variables to NaN by using a compiler flag.
-! ATTENTION: The following line, might break g95 autotests: (Bourdin.KIS)
-! So it is not portable and should be removed altogether.
-!    kshell = NaN
+! To initialize variables with NaN, please only use compiler flags.
+! In this case, using a negative value does the job, too: (Bourdin.KIS)
+    kshell = -1.0
 
     if (lintegrate_z) then
 
