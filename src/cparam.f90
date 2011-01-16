@@ -69,7 +69,9 @@ module Cparam
   real, parameter :: max_real=huge(0.0)
 !
 !  Predefine NaN (works with 4- and 8-byte floating point numbers).
-!  ATTENTION g95 users: Please check, if you have a working compiler version.
+!  ATTENTION: the author of the following lines expectes them to
+!  not work with some compilers. If you find this to be true, please
+!  revert to what we had before.
 !
   integer(KIND=ikind8), parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
   real, parameter :: NaN=transfer(NaN_bits,0.0)
