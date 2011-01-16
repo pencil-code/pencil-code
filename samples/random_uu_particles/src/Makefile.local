@@ -24,5 +24,3 @@ PARTICLES            =   particles_dust
 PARTICLES_COLLISIONS =   particles_collisions
 
 REAL_PRECISION = double
-
-SYSCALLS = nosyscalls
