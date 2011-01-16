@@ -338,13 +338,16 @@ else if ($hn =~ *.hpc2n.umu.se ) then
   echo "Always use  multiple of 8 no. of processors .."
   echo "..for multiprecossor jobs. "
   echo " ******************************"
-  cd $PBS_O_WORKDIR
-  module add openmpi/psc
-  setenv PENCIL_HOME $HOME/pfs/pencil-code/
-  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
-#  set mpirun='mpiexec'
-  set $mpirun='mpirun'
-#  set mpirunops= '-pernode'
+  module load openmpi/psc
+  #
+  limit stacksize 524288
+  setenv OMP_NUM_THREADS 1
+  echo "limit stacksize 524288"
+  echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
+  #
+  setenv PENCIL_HOME $HOME/nobackup/pencil-code/
+  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  set $mpirun=mpirun
 #------------------------------------------------
 else if ($hn =~ norlx51) then
   echo "******************************"
