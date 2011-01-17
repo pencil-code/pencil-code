@@ -22,13 +22,15 @@ module Special
 !
   include '../special.h'
 !
+  real, parameter :: max_gran_levels=3
+!
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
-  integer :: irefz=n1,nglevel=3,cool_type=2
+  integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
 !
   real, dimension (nx,ny) :: A_init_x, A_init_y
@@ -138,6 +140,8 @@ module Special
 ! This condition should be enough, but needs Sven to check it: (Bourdin.KIS)
         if ((lgran_parallel .and. ((iproc>=nprocxy) .and. (iproc<=nprocxy+2))) &
             .or. (lroot .and. (.not. lgran_parallel))) call setdrparams()
+        if ((nglevel < 1) .or. (nglevel > max_gran_levels)) &
+            call fatal_error ('initialize_special', 'nglevel is invalid')
         if (.not.allocated(Ux)) then
           allocate(Ux(nxgrid,nygrid),stat=alloc_err)
           if (alloc_err>0) call fatal_error('initialize_special', &
@@ -2099,10 +2103,9 @@ module Special
 !***********************************************************************
   subroutine multi_drive3
 !
-    integer, parameter :: gg=3
     real, parameter :: ldif=2.0
-    real, dimension(gg), save :: amplarr,granrarr,life_tarr
-    integer, dimension(gg), save :: xrangearr,yrangearr
+    real, dimension(max_gran_levels), save :: amplarr,granrarr,life_tarr
+    integer, dimension(max_gran_levels), save :: xrangearr,yrangearr
     integer :: k
 !
     if (.not.associated(firstlev)) then
