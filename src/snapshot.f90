@@ -287,8 +287,9 @@ module Snapshot
 !
 !  xy power spectra
 !
-        if (uxy_spec) call power_xy(f,'u')
-        if (bxy_spec) call power_xy(f,'b')
+        if (uxy_spec  ) call power_xy(f,'u')
+        if (bxy_spec  ) call power_xy(f,'b')
+        if (jxbxy_spec) call power_xy(f,'jxb')
 !
 !  phi power spectra (in spherical or cylindrical coordinates)
 !
