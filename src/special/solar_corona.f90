@@ -28,8 +28,8 @@ module Special
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
-  logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
-  logical :: luse_ext_vel_field=.false.,lmassflux=.false.
+  logical :: lgranulation=.false.,lrotin=.true.,lgran_proc=.false.
+  logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
 !
@@ -130,27 +130,34 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-! For only one granulation level, computation on lroot is more efficient.
-      if (nglevel == 1) lgran_parallel = .false.
+      if (lgranulation) then
 !
-! If not at least 3 procs above the ipz=0 plane are available,
-! computing of granular velocities has to be done non-parallel.
-      if ((nprocz-1)*nprocxy < 3) lgran_parallel = .false.
+! Consistency checks:
 !
-      if (lgranulation .and. (iproc<=nprocxy+2)) then
-        if ((lgran_parallel .and. ((iproc>=nprocxy) .and. (iproc<=nprocxy+2))) &
-            .or. (lroot .and. (.not. lgran_parallel))) call setdrparams()
         if ((nglevel < 1) .or. (nglevel > max_gran_levels)) &
-            call fatal_error ('initialize_special', 'nglevel is invalid')
-        if (.not.allocated(Ux)) then
-          allocate(Ux(nxgrid,nygrid),stat=alloc_err)
-          if (alloc_err>0) call fatal_error('initialize_special', &
-              'could not allocate Ux')
-        endif
-        if (.not.allocated(Uy)) then
-          allocate(Uy(nxgrid,nygrid),stat=alloc_err)
-          if (alloc_err>0) call fatal_error('initialize_special', &
-              'could not allocate Uy')
+            call fatal_error ('initialize_special', 'nglevel is too large!')
+        ! For only one granulation level, no parallelization is required.
+        if (lgran_parallel .and. (nglevel == 1)) &
+            call fatal_error ('initialize_special', &
+                'if nglevel is 1, lgran_parallel should be set to false.')
+        ! If not at least 3 procs above the ipz=0 plane are available,
+        ! computing of granular velocities has to be done non-parallel.
+        if (lgran_parallel .and. (nprocz-1)*nprocxy < 3) &
+            call fatal_error ('initialize_special', &
+                'you have not enough processors to activate lgran_parallel.')
+!
+! Define and initialize the processors that are computing the granulation:
+!
+        lgran_proc = (lroot .and. .not. lgran_parallel) .or. &
+            (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
+!
+        if (lroot .or. lgran_proc) then
+          call setdrparams()
+          if (.not. allocated(Ux)) then
+            allocate(Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
+            if (alloc_err>0) call fatal_error('initialize_special', &
+                'could not allocate Ux/Uy')
+          endif
         endif
       endif
 !
@@ -1975,8 +1982,8 @@ module Special
       call random_seed_wrapper(PUT=points_rstate)
 !
 ! Get magnetic field energy for footpoint quenching.
-! The lower level prozessor have to take part
-      if (lroot.or.(lgran_parallel.and.iproc<=nprocxy+2)) then
+! The processors from the ipz=0 plane have to take part, too.
+      if (lgran_proc .or. lfirst_proc_z) then
         call set_B2(f,BB2_local)
 !
 ! Set sum(abs(Bz)) to  a given flux.
@@ -1995,37 +2002,28 @@ module Special
 !
 ! Compute granular velocities. We use three levels.
 !
-      if ((lgran_parallel .and. ((iproc>=nprocxy) .and. (iproc<=nprocxy+2))) &
-          .or. (lroot .and. (.not. lgran_parallel))) then
 !
 ! Either root processor or three procs with ipz>0 compute
 ! velocities for different levels in driver3().
-        call multi_drive3()
+      if (lgran_proc) call multi_drive3()
 !
-! One proc has to collect the levels.
-        if (lgran_parallel) then
-          if (iproc>nprocxy) then
-            call mpisend_real(Ux,(/nxgrid,nygrid/),nprocxy,iproc)
-          else
-            do i=1,2
-              call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
-              Ux = Ux + uu_buffer
-            enddo
-          endif
-          if (iproc>nprocxy) then
-            call mpisend_real(Uy,(/nxgrid,nygrid/),nprocxy,iproc)
-          else
-            do i=1,2
-              call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
-              Uy = Uy + uu_buffer
-            enddo
-          endif
+! In the parallel case, one proc has to sum up the levels.
+      if (lgran_parallel .and. lgran_proc) then
+        if ((iproc > nprocxy) .and. (iproc < nprocxy+nglevel)) then
+          call mpisend_real(Ux,(/nxgrid,nygrid/),nprocxy,iproc)
+          call mpisend_real(Uy,(/nxgrid,nygrid/),nprocxy,iproc)
+        elseif (nglevel > 1) then
+          do i=1, nglevel-1
+            call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
+            Ux = Ux + uu_buffer
+            call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
+            Uy = Uy + uu_buffer
+          enddo
         endif
+      endif
 !
 ! Increase vorticity and normalize to given vrms.
-        if (lgran_parallel.and.iproc==nprocxy &
-            .or.iproc==0.and..not.lgran_parallel) call enhance_vorticity()
-      endif
+      if (lgran_proc .and. lfirst_proc_xy) call enhance_vorticity()
 !
 ! Distribute results, first select the proc which collected the data.
 !
@@ -2040,27 +2038,25 @@ module Special
         do i=0,nprocx-1
           do j=0,nprocy-1
             ipt = i+nprocx*j
-            if (ipt.ne.main_proc) then
-              call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
-              call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
-            else
+            if (ipt == main_proc) then
               ux_local = Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
               uy_local = Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
+            else
+              call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
+              call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
             endif
           enddo
         enddo
-      else
-        if (ipz==0) then
-          call mpirecv_real(ux_local,dims,main_proc,312+iproc)
-          call mpirecv_real(uy_local,dims,main_proc,313+iproc)
-        endif
+      elseif (lfirst_proc_z) then
+        call mpirecv_real(ux_local,dims,main_proc,312+iproc)
+        call mpirecv_real(uy_local,dims,main_proc,313+iproc)
       endif
 !
 ! for footpoint quenching compute pressure
 !
       call get_cp1(cp1)
 !
-      if (lquench.and.ipz==0) then
+      if (lquench.and.lfirst_proc_z) then
         if (ltemperature.and..not.ltemperature_nolog) then
           if (ldensity_nolog) then
             call fatal_error('solar_corona', &
@@ -2175,7 +2171,7 @@ module Special
       xrange=xrangearr(k)
       yrange=yrangearr(k)
 !
-      if (iproc==nprocxy-1+k .or. lroot) call drive3(k)
+      if ((iproc==nprocxy-1+k) .or. lroot) call drive3(k)
 !
       select case (k)
       case (1)
@@ -2798,7 +2794,7 @@ module Special
             Bzflux = Bzflux+temp
           enddo
         enddo
-      elseif (ipz==0) then
+      elseif (lfirst_proc_z) then
         call mpisend_real(BB2_local,dims,0,555+iproc)
         call mpisend_real(Bzflux,1,0,556+iproc)
       endif
@@ -2809,7 +2805,7 @@ module Special
           call mpisend_real(BB2,dims,nprocxy,nprocxy)
           call mpisend_real(BB2,dims,nprocxy+1,nprocxy+1)
           call mpisend_real(BB2,dims,nprocxy+2,nprocxy+2)
-        elseif (iproc>=nprocxy.and.iproc<=nprocxy+2) then
+        elseif (lgran_proc) then
           if (.not. allocated (BB2)) then
             allocate (BB2(nxgrid,nygrid), stat=alloc_err)
             if (alloc_err>0) call stop_it_if_any(.true., &
