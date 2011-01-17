@@ -130,6 +130,9 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+! For only one granulation level, computation on lroot is more efficient.
+      if (nglevel == 1) lgran_parallel = .false.
+!
 ! If not at least 4 procs above the ipz=0 plane are available,
 ! computing of granular velocities has to be done non-parallel.
       if ((nprocz-1)*nprocxy < 4) lgran_parallel = .false.
