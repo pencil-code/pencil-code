@@ -24,7 +24,7 @@ module Special
   real :: hyper3_chi=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: width_newton=0.,gauss_newton=0.
-  logical :: lgranulation=.false.,luse_ext_vel_field
+  logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
@@ -43,7 +43,7 @@ module Special
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
-      hcond_grad_iso,limiter_tensordiff
+      hcond_grad_iso,limiter_tensordiff,lmag_time_bound
 !
 ! variables for print.in
 !
@@ -420,6 +420,9 @@ module Special
         endif
 !
       endif
+!
+!  Read time dependent magnetic lower boundary
+      if (lmag_time_bound.and.ipz==0) call mag_time_bound(f) 
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1081,6 +1084,149 @@ module Special
       endif
 !
     endsubroutine calc_heat_cool_newton
+!***********************************************************************
+    subroutine mag_time_bound(f)
+!
+!  Read from file the time dependent magnetic boundary and
+!  converts into the vector potential.
+!
+!  15-jan-11/bing: coded
+!
+      use Syscalls, only: file_exists
+      use Fourier, only : fourier_transform_other
+      use Mpicomm, only : mpibcast_real, stop_it_if_any
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, save :: tl=0.,tr=0.,delta_t=0.
+      integer :: ierr,lend,i,idx2,idy2,stat
+      logical :: ex
+!
+      real, dimension (:,:), allocatable, save :: Bz0l,Bz0r
+      real, dimension (:,:), allocatable :: Bz0_i,Bz0_r
+      real, dimension (:,:), allocatable :: A_i,A_r
+!
+      real, dimension (:,:), allocatable :: kx,ky,k2
+!
+      real :: mu0_SI,u_b,time_SI
+!
+      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+      character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
+!
+      ierr = 0
+      stat = 0
+      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=ierr)
+      if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+      allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
+      allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
+      allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+      allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+      allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+!
+      if (ierr>0) call fatal_error('bc_force_aa_time', &
+          'Could not allocate memory for all variables, please check')
+!
+      inquire (file=mag_field_dat,exist=ex)
+      if (.not. ex) call stop_it_if_any(.true., &
+          'bc_force_aa_time: File does not exists: '//trim(mag_field_dat))
+      inquire (file=mag_times_dat,exist=ex)
+      if (.not. ex) call stop_it_if_any(.true., &
+          'bc_force_aa_time: File does not exists: '//trim(mag_times_dat))
+!
+      time_SI = t*unit_time
+!
+      idx2 = min(2,nxgrid)
+      idy2 = min(2,nygrid)
+!
+      kx =spread(kx_fft,2,nygrid)
+      ky =spread(ky_fft,1,nxgrid)
+      k2 = kx*kx + ky*ky
+!
+      if (tr+delta_t <= time_SI) then
+        !
+        inquire(IOLENGTH=lend) tl
+        open (10,file=mag_times_dat,form='unformatted',status='unknown', &
+            recl=lend,access='direct')
+        !
+        ierr = 0
+        tl = 0.
+        i=0
+        do while (ierr == 0)
+          i=i+1
+          read (10,rec=i,iostat=ierr) tl
+          read (10,rec=i+1,iostat=ierr) tr
+          if (ierr /= 0) then
+            delta_t = time_SI                  ! EOF is reached => read again
+            i=1
+            read (10,rec=i,iostat=ierr) tl
+            read (10,rec=i+1,iostat=ierr) tr
+            ierr=-1
+          else
+            if (tl+delta_t < time_SI .and. tr+delta_t>time_SI ) ierr=-1
+            ! correct time step is reached
+          endif
+        enddo
+        close (10)
+!
+        open (10,file=mag_field_dat,form='unformatted',status='unknown', &
+            recl=lend*nxgrid*nygrid,access='direct')
+        read (10,rec=i) Bz0l
+        read (10,rec=i+1) Bz0r
+        close (10)
+!
+        mu0_SI = 4.*pi*1.e-7
+        u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+!
+        Bz0l = Bz0l *  1e-4 / u_b
+        Bz0r = Bz0r *  1e-4 / u_b
+!
+      endif
+      !
+      Bz0_r  = (time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l
+      !
+      Bz0_i = 0.
+      !
+      ! Fourier Transform of Bz0:
+      !
+      call fourier_transform_other(Bz0_r,Bz0_i)
+      !
+      ! First the Ax component:
+      where (k2 /= 0 )
+        A_r = -Bz0_i*ky/k2
+        A_i =  Bz0_r*ky/k2
+        !
+      elsewhere
+        A_r = -Bz0_i*ky/ky(1,idy2)
+        A_i =  Bz0_r*ky/ky(1,idy2)
+      endwhere
+      !
+      call fourier_transform_other(A_r,A_i,linv=.true.)
+      f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+      !
+      !  then Ay component:
+      where (k2 /= 0 )
+        A_r =  Bz0_i*kx/k2
+        A_i = -Bz0_r*kx/k2
+      elsewhere
+        A_r =  Bz0_i*kx/kx(idx2,1)
+        A_i = -Bz0_r*kx/kx(idx2,1)
+      endwhere
+      !
+      call fourier_transform_other(A_r,A_i,linv=.true.)
+      f(l1:l2,m1:m2,n1,iay) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+      !
+      if (allocated(Bz0_r)) deallocate(Bz0_r)
+      if (allocated(Bz0_i)) deallocate(Bz0_i)
+      if (allocated(A_r)) deallocate(A_r)
+      if (allocated(A_i)) deallocate(A_i)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(k2)) deallocate(k2)
+!
+    endsubroutine mag_time_bound
 !***********************************************************************
     subroutine set_driver_params()
 !
