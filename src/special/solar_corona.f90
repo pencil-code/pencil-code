@@ -133,14 +133,11 @@ module Special
 ! For only one granulation level, computation on lroot is more efficient.
       if (nglevel == 1) lgran_parallel = .false.
 !
-! If not at least 4 procs above the ipz=0 plane are available,
+! If not at least 3 procs above the ipz=0 plane are available,
 ! computing of granular velocities has to be done non-parallel.
-      if ((nprocz-1)*nprocxy < 4) lgran_parallel = .false.
+      if ((nprocz-1)*nprocxy < 3) lgran_parallel = .false.
 !
-! Is the "+4" here really correct? Shouldn't it be "+2"? (Bourdin.KIS)
-      if (lgranulation .and. (iproc<=nprocxy+4)) then
-! In parallel case, setdrparams needs to be called only by the participants.
-! This condition should be enough, but needs Sven to check it: (Bourdin.KIS)
+      if (lgranulation .and. (iproc<=nprocxy+2)) then
         if ((lgran_parallel .and. ((iproc>=nprocxy) .and. (iproc<=nprocxy+2))) &
             .or. (lroot .and. (.not. lgran_parallel))) call setdrparams()
         if ((nglevel < 1) .or. (nglevel > max_gran_levels)) &
