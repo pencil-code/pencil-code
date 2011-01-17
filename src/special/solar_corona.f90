@@ -25,7 +25,7 @@ module Special
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
-  real :: Bavoid=huge1,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
+  real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lrotin=.true.,lquench=.false.
   logical :: luse_ext_vel_field=.false.,lmassflux=.false.
   integer :: irefz=n1,nglevel=3,cool_type=2
@@ -2197,7 +2197,7 @@ module Special
       logical :: lstop=.false.
 !
       call resetarr
-      if (Bavoid/=0) call fill_B_avoidarr
+      if (Bavoid > 0.) call fill_B_avoidarr
 !
       if (.not.associated(current%next)) then
         call rdpoints(level)
@@ -2218,7 +2218,7 @@ module Special
           endif
         enddo
         do
-          if (minval(avoidarr).eq.1) exit
+          if (minval(avoidarr) == 1) exit
           call addpoint
           call make_newpoint
           call drawupdate
@@ -2238,16 +2238,15 @@ module Special
 !
       if (t >= tsnap_uu) then
         call wrpoints(level,isnap)
-        if (level.eq.nglevel) then
+        if (level == nglevel) then
           tsnap_uu = tsnap_uu + dsnap
           isnap  = isnap + 1
         endif
       endif
-      if (itsub .eq. 3) &
+      if (itsub == 3) &
           lstop = file_exists('STOP')
-      if (lstop.or.t>=tmax .or. it.eq.nt.or. &
-          mod(it,isave).eq.0.or.dt<dtmin) &
-          call wrpoints(level)
+      if (lstop .or. (t>=tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
+          (mod(it,isave) == 0)) call wrpoints(level)
 !
     endsubroutine drive3
 !***********************************************************************
@@ -2834,15 +2833,13 @@ module Special
 !
       do i=1,nxgrid
         do j=1,nygrid
-          if (BB2(i,j).gt.(Bavoid/unit_magnetic)**2) then
+          if (BB2(i,j) > (Bavoid/unit_magnetic)**2) then
             il=max(1,i-itmp); ir=min(nxgrid,i+itmp)
             jl=max(1,j-jtmp); jr=min(nygrid,j+jtmp)
 !
             do ii=il,ir
               do jj=jl,jr
-                if ((ii-i)**2+(jj-j)**2.lt.itmp**2+jtmp**2) then
-                  avoidarr(ii,jj)=1
-                endif
+                if ((ii-i)**2+(jj-j)**2 < itmp**2+jtmp**2) avoidarr(ii,jj)=1
               enddo
             enddo
           endif
