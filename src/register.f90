@@ -731,7 +731,6 @@ module Register
       use Cdata
       use Sub,             only: numeric_precision
       use Diagnostics
-      use Emulated,        only: rnan, isnan
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
