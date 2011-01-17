@@ -225,7 +225,8 @@ module Cdata
   integer :: iox=0,ioy=0,ioz=0
   integer :: ispecialvar=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
-  integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0
+  integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0, &
+             ijxb, ijxbx, ijxby, ijxbz
   integer :: igg=0,igx=0,igy=0,igz=0,ipotself=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ispx=0,ispy=0,ispz=0
@@ -237,7 +238,7 @@ module Cdata
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
-  integer :: iuxb=0,ijxb=0,iugu=0,iugh=0
+  integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky
@@ -329,8 +330,8 @@ module Cdata
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,ldiagnos_sound=.false.,lout_sound=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
-  logical :: lwrite_phizaverages=.true.
-  logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
+  logical :: lwrite_phizaverages=.false.
+  logical :: lwrite_yaverages=.false.,lwrite_zaverages=.false.,lwrite_phiaverages=.false.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: ltime_integrals=.false.
   character (len=1) :: slice_position='p'
@@ -439,7 +440,7 @@ module Cdata
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
   logical :: j_spec=.false.,jb_spec=.false.,oo_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
-  logical :: uxy_spec=.false., bxy_spec=.false.
+  logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: lr_spec=.false.,r2u_spec=.false.,r3u_spec=.false.
