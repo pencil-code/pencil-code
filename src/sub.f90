@@ -81,7 +81,7 @@ module Sub
   public :: ludcmp, lubksb
   public :: gij_psi, gij_psi_etc
   public :: xlocation, ylocation, zlocation, location_in_proc
-!
+  public :: register_report_aux
   public :: fourier_single_mode
 !
   interface poly                ! Overload the `poly' function
@@ -5617,5 +5617,80 @@ nameloop: do
   deallocate(cg,sg)
 !
   endsubroutine fourier_single_mode
+!***********************************************************************
+    subroutine register_report_aux(name,index,ind_aux1,ind_aux2,ind_aux3)
+!
+!  Registers aux variable named 'name' if not already registered (i.e. if index==0)
+!  Variable is scalar if ind_aux1,ind_aux2,ind_aux3 are missing,
+!              vector with number of components equal to number of present ind_aux* parameters
+!  Index of variable and its components (if any) are returned in index,ind_aux1,ind_aux2,ind_aux3
+!  If already registered: outputs indices in index.pro
+!
+!  13-jan-11/MR: coded
+!
+      use FarrayManager, only: farray_register_auxiliary
+!
+      implicit none
+!
+      integer,           intent(inout) :: index
+      integer, optional, intent(inout) :: ind_aux1,ind_aux2,ind_aux3
+      character (LEN=*), intent(in)    :: name 
+!
+      integer   :: vec
+      character :: ch
+      character (LEN=len(name)-2) :: tail
+!
+      vec=-1
+!
+      if ( present(ind_aux1) ) then
+        vec=1
+        if ( present(ind_aux2) ) then
+          if ( present(ind_aux3) ) then
+	    vec=3
+	  else
+	    vec=2
+	  endif
+	endif
+      endif
+!
+      if (index==0) then
+!
+        call farray_register_auxiliary(trim(name),index,vector=abs(vec))
+!
+	if (vec>=1) then
+	  ind_aux1=index
+	  if (vec>=2) then
+            ind_aux2=index+1
+            if (vec==3) ind_aux3=index+2
+	  endif
+	endif
+!
+      endif
+!
+      if (index/=0.and.lroot) then
+!
+        print*, 'initialize_magnetic: i'//trim(name)//' = ', index
+        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+        write(3,*) 'i'//trim(name)//'=',index
+!
+	if ( vec>=1 ) then
+	  tail='='
+	  if ( name(1:1)==name(2:2) ) then
+	    ch = name(1:1)
+	    if ( len_trim(name)>2 ) tail = trim(name(3:))//'='
+          endif 
+!
+          write(3,*) 'i'//ch//'x'//tail,ind_aux1
+	  if ( vec>=2 ) then
+            write(3,*) 'i'//ch//'y'//tail,ind_aux2
+            if ( vec==3 ) write(3,*) 'i'//ch//'z'//tail,ind_aux3
+	  endif
+        endif
+!
+        close(3)
+!
+      endif
+!
+    endsubroutine register_report_aux
 !***********************************************************************
 endmodule Sub
