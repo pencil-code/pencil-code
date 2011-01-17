@@ -130,11 +130,14 @@ module Special
 !
 ! If not at least 4 procs above the ipz=0 plane are available,
 ! computing of granular velocities has to be done non-parallel.
-      if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .false.
+      if ((nprocz-1)*nprocxy < 4) lgran_parallel = .false.
 !
 ! Is the "+4" here really correct? Shouldn't it be "+2"? (Bourdin.KIS)
       if (lgranulation .and. (iproc<=nprocxy+4)) then
-        call setdrparams()
+! In parallel case, setdrparams needs to be called only by the participants.
+! This condition should be enough, but needs Sven to check it: (Bourdin.KIS)
+        if ((lgran_parallel .and. ((iproc>=nprocxy) .and. (iproc<=nprocxy+2))) &
+            .or. (lroot .and. (.not. lgran_parallel))) call setdrparams()
         if (.not.allocated(Ux)) then
           allocate(Ux(nxgrid,nygrid),stat=alloc_err)
           if (alloc_err>0) call fatal_error('initialize_special', &
@@ -1896,7 +1899,7 @@ module Special
       xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
       yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
 !
-      if (lroot) then
+      if (lfirst_proc_xy) then
         print*,'| solar_corona: settings for granules'
         print*,'-----------------------------------'
         print*,'| radius [Mm]:',granr*unit_length*1e-6
