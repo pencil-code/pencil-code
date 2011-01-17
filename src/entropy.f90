@@ -197,6 +197,7 @@ module Entropy
   integer :: idiag_fconvyxy=0   ! DIAG_DOC: $\left<\varrho u_y T \right>_{z}$
   integer :: idiag_fconvzxy=0   ! DIAG_DOC: $\left<\varrho u_z T \right>_{z}$
   integer :: idiag_dcoolz=0     ! DIAG_DOC: surface cooling flux
+  integer :: idiag_dcoolxy=0    ! DIAG_DOC: surface cooling flux
   integer :: idiag_fradz=0      ! DIAG_DOC: $F_{\rm rad}$
   integer :: idiag_fradz_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kprof)
   integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, from Kprof)
@@ -4137,6 +4138,7 @@ module Entropy
 !
 !   1-sep-08/dhruba: coded
 !
+      use Diagnostics, only: sum_mn_name, zsum_mn_name_xy
       use IO, only: output_pencil
       use Sub, only: step
 !
@@ -4207,6 +4209,12 @@ module Entropy
             'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
         call fatal_error('calc_heat_cool',errormsg)
       endselect
+!
+!  Write divergence of cooling flux.
+!
+      if (l2davgfirst) then
+        if (idiag_dcoolxy/=0) call zsum_mn_name_xy(heat,idiag_dcoolxy)
+      endif
 !
     endsubroutine get_heat_cool_gravx_spherical
 !***********************************************************************
@@ -4456,7 +4464,7 @@ module Entropy
         idiag_uyTTmxy=0; idiag_uzTTmxy=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
         idiag_fradxy_Kprof=0; idiag_fconvxy=0;
-        idiag_fconvyxy=0; idiag_fconvzxy=0
+        idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -4544,6 +4552,7 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvxy',idiag_fconvxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvyxy',idiag_fconvyxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvzxy',idiag_fconvzxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'dcoolxy',idiag_dcoolxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
