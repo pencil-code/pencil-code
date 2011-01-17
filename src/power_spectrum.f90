@@ -287,16 +287,19 @@ module power_spectrum
 !                 additional information about kind of spectrum + wavenumber vectors in output file;
 !                 extended shell-integrated spectra to anisotropic boxes, extended k range to k_x,max^2 + k_y,max^2
 !
-   use Fourier, only: fourier_transform_xy
-   use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out, mpimerge_1d, ipz, mpibarrier, mpigather_z
-   use Sub, only: curli
+!   use Emulated, only: rnan
+   use Fourier,  only: fourier_transform_xy
+   use Mpicomm,  only: mpireduce_sum, mpigather_xy, mpigather_and_out, mpimerge_1d, ipz, mpibarrier, mpigather_z
+   use Sub,      only: curli
 !
   implicit none
+
+  real, dimension(mx,my,mz,mfarray), intent(in) :: f
+  character (len=*),                 intent(in) :: sp
 
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 
   integer :: i,k,ikx,iky,ikz,im,in,ivec,nk
-  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
   real, allocatable, dimension(:)     :: spectrum1,spectrum1_sum, kshell
@@ -304,7 +307,6 @@ module power_spectrum
   real, allocatable, dimension(:,:,:) :: spectrum3
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
-  character (len=1)  :: sp
   character (len=80) :: title
   character (len=128) :: filename
   logical, save :: lfirstout=.true.
@@ -398,6 +400,8 @@ module power_spectrum
         enddo
      elseif (sp=='a') then
         a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+     elseif (sp=='jxb') then
+        a1=f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
      else
         print*,'power_xy: Warning - There are no such sp=',sp
         return
