@@ -3041,7 +3041,7 @@ module Sub
 !  22-jun-02/axel: coded
 !
       use Cparam, only: max_col_width
-!      
+!
       character (len=*) :: cname
       character (len=max_col_width) :: noform,cform,cnumber,dashes
       integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
@@ -5389,9 +5389,9 @@ nameloop: do
     endsubroutine gij_psi_etc
 !***********************************************************************
     logical function location_in_proc(xpos,ypos,zpos,lpos,mpos,npos)
-! 
+!
 ! finds out if a points belongs to the location in the processor.
-! If yes the also returns the nearest grid location of this point. 
+! If yes the also returns the nearest grid location of this point.
 !
 !  -dec-10/dhruba: coded
 !  28-dec-10/MR: changed into function
@@ -5406,7 +5406,7 @@ nameloop: do
       lpos=1 ; mpos=1 ; npos=1
       linx=.true. ; liny=.true. ; linz=.true.
 
-      if (dimensionality>0) then 
+      if (dimensionality>0) then
         call xlocation(xpos,lpos,linx)
 !
         if (dimensionality>1) then
@@ -5534,107 +5534,108 @@ nameloop: do
 !
     endsubroutine zlocation
 !***********************************************************************
-  subroutine fourier_single_mode(arr,idims,k,idir,amps,l2nd)
+    subroutine fourier_single_mode(arr,idims,k,idir,amps,l2nd)
 !
-! no parallelization in x allowed here
+!  No parallelization in x allowed here
 !
-  use mpicomm, only: mpireduce_sum
+!  08-dec-10/MR: coded
+      use mpicomm, only: mpireduce_sum
 !
-  implicit none
+      implicit none
 !
-  integer, dimension(2)             , intent(in)  :: idims
-  real, dimension(idims(1),idims(2)), intent(in)  :: arr
-  real                              , intent(in)  :: k
-  integer                           , intent(in)  :: idir
-  real   , dimension(2,*)           , intent(out) :: amps
-  logical                , optional , intent(in)  :: l2nd
+      integer, dimension(2)             , intent(in)  :: idims
+      real, dimension(idims(1),idims(2)), intent(in)  :: arr
+      real                              , intent(in)  :: k
+      integer                           , intent(in)  :: idir
+      real   , dimension(2,*)           , intent(out) :: amps
+      logical                , optional , intent(in)  :: l2nd
 !
-  integer :: n,i,idim
-  real, dimension(:)  , allocatable :: cg,sg
-  real, dimension(:,:), allocatable :: buffer
-  real :: fac
-  logical :: l2ndl
+      integer :: n,i,idim
+      real, dimension(:)  , allocatable :: cg,sg
+      real, dimension(:,:), allocatable :: buffer
+      real :: fac
+      logical :: l2ndl
 !
-  if (present(l2nd)) then
-    l2ndl=l2nd
-  else
-    l2ndl=.false.
-  endif
+      if (present(l2nd)) then
+        l2ndl=l2nd
+      else
+        l2ndl=.false.
+      endif
 !
-  if (l2ndl) then
-    idim=idims(1)
-  else
-    idim=idims(2)
-  endif
+      if (l2ndl) then
+        idim=idims(1)
+      else
+        idim=idims(2)
+      endif
 !
-  select case (idir)
-    case (1)    ; n=nxgrid
-    case (2)    ; n=ny
-    case (3)    ; n=nz
-    case default; n=nxgrid
-  end select
+      select case (idir)
+      case (1)    ; n=nxgrid
+      case (2)    ; n=ny
+      case (3)    ; n=nz
+      case default; n=nxgrid
+      end select
 !
-  if (idims(1)+idims(2)-idim/=n) then
-    amps(:,1:idim)=0.
-    return
-  endif
+      if (idims(1)+idims(2)-idim/=n) then
+        amps(:,1:idim)=0.
+        return
+      endif
 !
-  allocate(cg(n),sg(n))
+      allocate(cg(n),sg(n))
 !
-  select case (idir)
-    case (1)    ; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
-    case (2)    ; cg=cos(k*y(m1:m2));sg=sin(k*y(m1:m2)); fac=dy
-    case (3)    ; cg=cos(k*z(n1:n2));sg=sin(k*z(n1:n2)); fac=dz
-    case default; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
-  end select
+      select case (idir)
+      case (1)    ; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
+      case (2)    ; cg=cos(k*y(m1:m2));sg=sin(k*y(m1:m2)); fac=dy
+      case (3)    ; cg=cos(k*z(n1:n2));sg=sin(k*z(n1:n2)); fac=dz
+      case default; cg=cos(k*xgrid)   ;sg=sin(k*xgrid)   ; fac=dx
+      end select
 !
-!
-  do i=1,idim
-    if (l2ndl) then
-      amps(:,i) = fac*(/ sum(arr(i,:)*cg), sum(arr(i,:)*sg) /)
-    else
-      amps(:,i) = fac*(/ sum(arr(:,i)*cg), sum(arr(:,i)*sg) /)
-    endif
-  enddo
-!
-  if (ncpus>1) then
-    allocate(buffer(2,idim))
-    select case (idir)
-      case (2)
-        if (nprocy>1) then
-          call mpireduce_sum(amps,buffer,(/2,idim/),idir=2)
-          if (ipy==0) amps(:,1:idim)=buffer                               !result is in root of y-beams
+      do i=1,idim
+        if (l2ndl) then
+          amps(:,i) = fac*(/ sum(arr(i,:)*cg), sum(arr(i,:)*sg) /)
+        else
+          amps(:,i) = fac*(/ sum(arr(:,i)*cg), sum(arr(:,i)*sg) /)
         endif
-      case (3)
-        if (nprocz>1) then
-          call mpireduce_sum(amps,buffer,(/2,idim/),idir=3)
-          if (ipz==0) amps(:,1:idim)=buffer                               !result is in root of z-beams
-        endif
-    end select
-    deallocate(buffer)
-  endif
+      enddo
 !
-  deallocate(cg,sg)
+      if (ncpus>1) then
+        allocate(buffer(2,idim))
+        select case (idir)
+        case (2)
+          if (nprocy>1) then
+            call mpireduce_sum(amps,buffer,(/2,idim/),idir=2)
+            if (ipy==0) amps(:,1:idim)=buffer      !result is in root of y-beams
+          endif
+        case (3)
+          if (nprocz>1) then
+            call mpireduce_sum(amps,buffer,(/2,idim/),idir=3)
+            if (ipz==0) amps(:,1:idim)=buffer      !result is in root of z-beams
+          endif
+        end select
+        deallocate(buffer)
+      endif
 !
-  endsubroutine fourier_single_mode
+      deallocate(cg,sg)
+!
+    endsubroutine fourier_single_mode
 !***********************************************************************
     subroutine register_report_aux(name,index,ind_aux1,ind_aux2,ind_aux3)
 !
-!  Registers aux variable named 'name' if not already registered (i.e. if index==0)
-!  Variable is scalar if ind_aux1,ind_aux2,ind_aux3 are missing,
-!              vector with number of components equal to number of present ind_aux* parameters
-!  Index of variable and its components (if any) are returned in index,ind_aux1,ind_aux2,ind_aux3
+!  Registers aux variable named 'name' if not already registered
+!  (i.e. if index==0). Variable is scalar if ind_aux1,ind_aux2,
+!  ind_aux3 are missing, vector with number of components equal to
+!  number of present ind_aux* parameters. Index of variable and its
+!  components (if any) are returned in index,ind_aux1,ind_aux2,ind_aux3
 !  If already registered: outputs indices in index.pro
 !
 !  13-jan-11/MR: coded
 !
-      use FarrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary
 !
       implicit none
 !
       integer,           intent(inout) :: index
       integer, optional, intent(inout) :: ind_aux1,ind_aux2,ind_aux3
-      character (LEN=*), intent(in)    :: name 
+      character (LEN=*), intent(in)    :: name
 !
       integer   :: vec
       character :: ch
@@ -5678,7 +5679,7 @@ nameloop: do
           if ( name(1:1)==name(2:2) ) then
             ch = name(1:1)
             if ( len_trim(name)>2 ) tail = trim(name(3:))//'='
-          endif 
+          endif
 !
           write(3,*) 'i'//ch//'x'//tail,ind_aux1
           if ( vec>=2 ) then
