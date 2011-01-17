@@ -731,6 +731,7 @@ module Register
       use Cdata
       use Sub,             only: numeric_precision
       use Diagnostics
+      use Emulated,        only: rnan, isnan
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
@@ -821,9 +822,9 @@ module Register
           sound_in_file,cname_sound,nname_sound,allocate_sound) .and. &
           lwrite_sound ) then
 !
-!  Read the last sound output time from a soundfile, will be set to starttime
-!  otherwise.
-!
+!  Read the last sound output time from a soundfile, will be set to starttime otherwise
+!      
+!        tsound=rnan
         tsound=-1.0
         open(1,file=trim(directory)//'/sound.dat',position='append', &
             status='old',iostat=ios)
@@ -859,28 +860,27 @@ module Register
 !
 !  Read in the list of variables for phi-z-averages.
 !
-      lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer, &
-          allocate_phizaverages)
+      lwrite_phizaverages = read_name_format( phizaver_in_file,cnamer,nnamer, &
+                                              allocate_phizaverages )
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamer=', nnamer
 !
 !  2-D averages:
 !
 !  Read in the list of variables for y-averages.
 !
-      lwrite_yaverages = read_name_format(yaver_in_file,cnamexz,nnamexz, &
-          allocate_yaverages)
+      lwrite_yaverages = read_name_format( yaver_in_file,cnamexz,nnamexz, &
+                                           allocate_yaverages )
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexz=', nnamexz
 !
 !  Read in the list of variables for z-averages.
 !
-      lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy, &
-          allocate_zaverages)
+      lwrite_zaverages = read_name_format( zaver_in_file,cnamexy,nnamexy, &
+                                           allocate_zaverages )
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy
 !
 !  Read in the list of variables for phi-averages.
 !
       if (parallel_file_exists(phiaver_in_file)) then
-!
         call parallel_open(unit,file=phiaver_in_file)
         iadd=0
 !
@@ -902,11 +902,7 @@ module Register
           nnamerz = iadd
           lwrite_phiaverages = read_name_format(phiaver_in_file,cnamerz, &
               nnamerz,allocate_phiaverages)
-        else
-          lwrite_phiaverages = .false.
         endif
-      else
-        lwrite_phiaverages=.false.
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamerz=', nnamerz
 !
