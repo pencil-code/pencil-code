@@ -147,7 +147,7 @@ module Magnetic
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
   logical :: lgauss=.false.
-  logical :: lbb_as_aux=.false., ljj_as_aux=.false.
+  logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
@@ -160,7 +160,7 @@ module Magnetic
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
-      zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
+      zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, ljxb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
@@ -223,7 +223,7 @@ module Magnetic
       eta_z0, eta_z1,eta_spitzer, &
       borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
-      lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
+      lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump,&
@@ -655,7 +655,9 @@ module Magnetic
 !
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
+!  13-jan-11/MR: calls to new subroutine 'register_report_aux' instead of repeated code
 !
+      use Sub, only: register_report_aux
       use Magnetic_meanfield, only: initialize_magn_mf
       use BorderProfiles, only: request_border_driving
       use FArrayManager
@@ -943,94 +945,17 @@ module Magnetic
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (lbb_as_aux) then
-        if (ibb==0) then
-          call farray_register_auxiliary('bb',ibb,vector=3)
-          ibx=ibb
-          iby=ibb+1
-          ibz=ibb+2
-        endif
-        if (ibb/=0.and.lroot) then
-          print*, 'initialize_magnetic: ibb = ', ibb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ibb=',ibb
-          write(3,*) 'ibx=',ibx
-          write(3,*) 'iby=',iby
-          write(3,*) 'ibz=',ibz
-          close(3)
-        endif
-      endif
+      if (lbb_as_aux ) call register_report_aux('bb',ibb,ibx,iby,ibz)
 !
-!  do the same for jj (current density)
+      if (ljj_as_aux ) call register_report_aux('jj',ijj,ijx,ijy,ijz)
 !
-      if (ljj_as_aux) then
-        if (ijj==0) then
-          call farray_register_auxiliary('jj',ijj,vector=3)
-          ijx=ijj
-          ijy=ijj+1
-          ijz=ijj+2
-        endif
-        if (ijj/=0.and.lroot) then
-          print*, 'initialize_magnetic: ijj = ', ijj
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijj=',ijj
-          write(3,*) 'ijx=',ijx
-          write(3,*) 'ijy=',ijy
-          write(3,*) 'ijz=',ijz
-          close(3)
-        endif
-      endif
+      if (lbbt_as_aux) call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
 !
-!  After a reload, we need to rewrite index.pro, but the auxiliary
-!  arrays are already allocated and must not be allocated again.
+      if (ljjt_as_aux) call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
 !
-      if (lbbt_as_aux) then
-        if (ibbt==0) then
-          call farray_register_auxiliary('bbt',ibbt,vector=3)
-          ibxt=ibbt
-          ibyt=ibbt+1
-          ibzt=ibbt+2
-        endif
-        if (ibbt/=0.and.lroot) then
-          print*, 'initialize_velocity: ibbt = ', ibbt
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ibbt=',ibbt
-          write(3,*) 'ibxt=',ibxt
-          write(3,*) 'ibyt=',ibyt
-          write(3,*) 'ibzt=',ibzt
-          close(3)
-        endif
-      endif
+      if (lua_as_aux ) call register_report_aux('ua',iua)
 !
-      if (ljjt_as_aux) then
-        if (ijjt==0) then
-          call farray_register_auxiliary('jjt',ijjt,vector=3)
-          ijxt=ijjt
-          ijyt=ijjt+1
-          ijzt=ijjt+2
-        endif
-        if (ijjt/=0.and.lroot) then
-          print*, 'initialize_velocity: ijjt = ', ijjt
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijjt=',ijjt
-          write(3,*) 'ijxt=',ijxt
-          write(3,*) 'ijyt=',ijyt
-          write(3,*) 'ijzt=',ijzt
-          close(3)
-        endif
-      endif
-!
-      if (lua_as_aux) then
-        if (iua==0) then
-          call farray_register_auxiliary('ua',iua,vector=1)
-        endif
-        if (iua/=0.and.lroot) then
-          print*, 'initialize_velocity: iua = ', iua
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iua=',iua
-          close(3)
-        endif
-      endif
+      if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
 !
 !  Check if constant background advection needs to be turned on.
 !
@@ -1829,7 +1754,7 @@ module Magnetic
       endif
 !
       if (lpencil_in(i_jij)) lpencil_in(i_bij)=.true.
-
+!
       if (lpencil_in(i_sj)) then
         lpencil_in(i_sij)=.true.
         lpencil_in(i_jij)=.true.
@@ -2026,7 +1951,7 @@ module Magnetic
       if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)
 ! jb
       if (lpencil(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
-
+!
 ! va2
       if (lpencil(i_va2)) then
         p%va2=p%b2*mu01*p%rho1
@@ -2188,8 +2113,9 @@ module Magnetic
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
-     if (lbb_as_aux) f(l1:l2,m,n,ibx:ibz)=p%bb
-     if (ljj_as_aux) f(l1:l2,m,n,ijx:ijz)=p%jj
+     if (lbb_as_aux ) f(l1:l2,m,n,ibx  :ibz  )=p%bb
+     if (ljj_as_aux ) f(l1:l2,m,n,ijx  :ijz  )=p%jj
+     if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
 !
 !  Calculate magnetic mean-field pencils.
 !  This should always be done after calculating magnetic pencils.
@@ -3232,7 +3158,7 @@ module Magnetic
 ! go through the list of lpoints and mpoints
 !
         do isound=1,ncoords_sound
-
+!
           lspoint=sound_coords_list(isound,1)
           mspoint=sound_coords_list(isound,2)
           nspoint=sound_coords_list(isound,3)
@@ -3265,7 +3191,7 @@ module Magnetic
           endif
         enddo
       endif
-
+!
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
