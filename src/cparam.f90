@@ -68,14 +68,6 @@ module Cparam
   integer, parameter :: max_int=huge(0)
   real, parameter :: max_real=huge(0.0)
 !
-!  Predefine NaN (works with 4- and 8-byte floating point numbers).
-!  ATTENTION: the author of the following lines expectes them to
-!  not work with some compilers. If you find this to be true, please
-!  revert to what we had before.
-!
-  integer(KIND=ikind8), parameter :: NaN_bits=B'111111111111111111111111111111111111111111111111111111111111111'
-  real, parameter :: NaN=transfer(NaN_bits,0.0)
-!
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use the highest possible number.
 !  TODO: 'impossible' should be deleted. Initialization with NaNs should be
