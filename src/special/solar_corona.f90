@@ -128,6 +128,11 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+! If not at least 4 procs above the ipz=0 plane are available,
+! computing of granular velocities has to be done non-parallel.
+      if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .false.
+!
+! Is the "+4" here really correct? Shouldn't it be "+2"? (Bourdin.KIS)
       if (lgranulation .and. (iproc<=nprocxy+4)) then
         call setdrparams()
         if (.not.allocated(Ux)) then
@@ -149,10 +154,6 @@ module Special
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
-!
-! We need at least 4 procs above the ipz=0 for computing
-! granular velocities in parallel.
-      if ((nprocz-1)*nprocxy >= 4) lgran_parallel = .true.
 !
     endsubroutine initialize_special
 !***********************************************************************
