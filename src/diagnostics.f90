@@ -114,7 +114,7 @@ module Diagnostics
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
       character (len=1), parameter :: comma=','
-      integer :: iname,index_d,index_a
+      integer :: iname
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after rk_2n, so the best
@@ -166,21 +166,12 @@ module Diagnostics
           close(1)
         endif
 !
-!  Put output line into a string and remove spurious dots.
+!  Put output line into a string.
 !
         if (ldebug) write(*,*) 'bef. writing prints'
         write(line,trim(fform)) fname(1:nname)
-        index_d=index(line,'. ')
-        if (index_d >= 1) then
-          line(index_d:index_d)=' '
-        endif
-!
-!  If the line contains unreadable characters, then comment out line.
-!
-        index_a=(index(line,'***') +  index(line,'???'))
-        if (index_a > 0) then
-          line(1:1)=comment_char
-        endif
+
+        call clean_line(line)
 !
 !  Append to diagnostics file.
 !
@@ -198,6 +189,27 @@ module Diagnostics
       fname(1:nname)=0.0
 !
     endsubroutine prints
+!***********************************************************************
+    subroutine clean_line(line)
+!
+!  removes spurious dots from line, makes it to comment line if unreadable
+!
+!  14-jan-11/MR: outsourced from prints
+!
+    character (LEN=*), intent(inout) :: line
+    integer :: ind
+!
+!  If line contains spurious dots, remove them.
+!
+      ind=index(line,'. ')
+      if (ind >= 1) line(ind:ind)=' '
+!
+!  If the line contains unreadable characters, then comment out line.
+!
+      ind=index(line,'***') + index(line,'???')
+      if (ind > 0) line(1:1)=comment_char
+!
+    endsubroutine clean_line
 !***********************************************************************
     subroutine write_sound(tout)
 !
@@ -224,7 +236,7 @@ module Diagnostics
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,index_d,index_a,leng,nc,nch,lleg,lsub,idim,icoor
+      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor
 !
 !  Produce the format.
 !
@@ -245,14 +257,14 @@ module Diagnostics
         if (dimensionality>0) then
 !
           coorlegend = ' Points:   '
-          lleg = len_trim(coorlegend)+3
+          nleg = len_trim(coorlegend)+3
 !
           do icoor=1,ncoords_sound
 !
             call chn(icoor,str)
 !
-            coorlegend(lleg+1:) = trim(adjustl(str))//' = '
-            lleg = len_trim(coorlegend)+1
+            coorlegend(nleg+1:) = trim(adjustl(str))//' = '
+            nleg = len_trim(coorlegend)+1
 !
             item = '('
             do idim=1,dimensionality
@@ -265,14 +277,14 @@ module Diagnostics
               write(scoor,tform//')') coor
               call safe_character_append(item,trim(adjustl(scoor))//',')
             enddo
-            coorlegend(lleg+1:) = item(1:len_trim(item)-1)//'),   '
-            lleg = len_trim(coorlegend)+4
+            coorlegend(nleg+1:) = item(1:len_trim(item)-1)//'),   '
+            nleg = len_trim(coorlegend)+4
 !
           enddo
-          coorlegend(lleg-4:lleg)=' '
+          coorlegend(nleg-4:nleg)=' '
         endif
 !
-        lsub = len_trim(legend)
+        nsub = len_trim(legend)
 !
       endif
 !
@@ -295,13 +307,13 @@ module Diagnostics
 !
               nch = (leng-2)/2
               do icoor=1,ncoords_sound
-                write(sublegend(lsub+nch+1:lsub+nch+2),'(i2)') icoor
-                lsub = lsub+leng
+                write(sublegend(nsub+nch+1:nsub+nch+2),'(i2)') icoor
+                nsub = nsub+leng
               enddo
             endif
             call safe_character_append(legend, item)
 !
-            lsub = len_trim(legend)
+            nsub = len_trim(legend)
 !
           endif
           call safe_character_append(fform, trim(cform_sound(iname))//comma)
@@ -309,7 +321,7 @@ module Diagnostics
 !
       enddo
 !
-!  Put output line into a string and remove spurious dots.
+!  Put output line into a string. 
 !
         if (ldata) then
           fform = fform(1:len_trim(fform)-1)
@@ -318,18 +330,8 @@ module Diagnostics
         else
           write(line,tform//')') tout
         endif
-!
-        index_d=index(line,'. ')
-        if (index_d >= 1) then
-          line(index_d:index_d)=' '
-        endif
-!
-!  If the line contains unreadable characters, then comment out line.
-!
-        index_a=(index(line,'***') +  index(line,'???'))
-        if (index_a > 0) then
-          line(1:1)=comment_char
-        endif
+! 
+        call clean_line(line)
 !
 !  Append to diagnostics file.
 !
@@ -369,8 +371,8 @@ module Diagnostics
 !
 !  The result is present everywhere
 !
-!       average_density=mass(1)/box_volume
-       average_density=mass(1)/(nxgrid*nygrid*nzgrid)
+!     average_density=mass(1)/box_volume
+      average_density=mass(1)/(nxgrid*nygrid*nzgrid)
       call mpibcast_real(average_density,1)
 !
     endsubroutine get_average_density
