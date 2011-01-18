@@ -49,13 +49,15 @@ module power_spectrum
 !
     endsubroutine power_2d
 !***********************************************************************
-    subroutine power_xy(f,sp)
+    subroutine power_xy(f,sp,sp2)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=1) :: sp
+      character (len=1), optional :: sp2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
+      call keep_compiler_quiet(sp2)
 !
     endsubroutine power_xy
 !***********************************************************************
