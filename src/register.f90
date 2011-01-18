@@ -772,7 +772,6 @@ module Register
       character (LEN=15)           :: print_in_file 
       character (LEN=*), parameter :: video_in_file    = 'video.in'
       character (LEN=*), parameter :: sound_in_file    = 'sound.in'
-      character (LEN=*), parameter :: sound_coordinate_file = 'sound.coords'
       character (LEN=*), parameter :: xyaver_in_file   = 'xyaver.in'
       character (LEN=*), parameter :: xzaver_in_file   = 'xzaver.in'
       character (LEN=*), parameter :: yzaver_in_file   = 'yzaver.in'

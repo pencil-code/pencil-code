@@ -5430,6 +5430,7 @@ nameloop: do
 !  14-oct-08/ccyang: use half-closed interval and include the top-most plane
 !  03-dec-09/MR: moved here from module slices
 !  16-dec-10/joern: adapted from zlocation
+!  18-jan-11/axel+joern: choose between l and l+1 depending on sign of x
 !
       real :: xpos
       integer :: ixpos,l
@@ -5441,10 +5442,16 @@ nameloop: do
 !
 !  Run through all x positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
+!  To make the output symmetric about zero, we must swap upper
+!  and lower boundaries depending on the sign of x.
 !
       do l=l1,l2
         if (x(l)<=xpos.and.x(l+1)>xpos) then
-          ixpos=l
+          if (x(l)<0) then
+            ixpos=l+1
+          else
+            ixpos=l
+          endif
           lproc=.true.
           exit
         endif
@@ -5468,6 +5475,7 @@ nameloop: do
 !  14-oct-08/ccyang: use half-closed interval and include the top-most plane
 !  03-dec-09/MR: adapted from module slices
 !  16-dec-10/joern: took it from zlocation
+!  18-jan-11/axel+joern: choose between m and m+1 depending on sign of y
 !
       real :: ypos
       integer :: iypos,m
@@ -5479,10 +5487,16 @@ nameloop: do
 !
 !  Run through all y positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
+!  To make the output symmetric about zero, we must swap upper
+!  and lower boundaries depending on the sign of y.
 !
       do m=m1,m2
         if (y(m)<=ypos.and.y(m+1)>ypos) then
-          iypos=m
+          if (y(m)<0) then
+            iypos=m+1
+          else
+            iypos=m
+          endif
           lproc=.true.
           exit
         endif
@@ -5505,6 +5519,7 @@ nameloop: do
 !  18-nov-06/axel: coded
 !  14-oct-08/ccyang: use half-closed interval and include the top-most plane
 !  03-dec-09/MR: moved here from module slices
+!  18-jan-11/axel+joern: choose between n and n+1 depending on sign of z
 !
       real :: zpos
       integer :: izpos,n
@@ -5516,10 +5531,17 @@ nameloop: do
 !
 !  Run through all z positions until we hit the right interval.
 !  If the right interval is found, jump out of the loop.
+!  To make the output symmetric about zero, we must swap upper
+!  and lower boundaries depending on the sign of z.
 !
       do n=n1,n2
         if (z(n)<=zpos.and.z(n+1)>zpos) then
-          izpos=n
+          if (z(n)<0) then
+            izpos=n+1
+          else
+            izpos=n
+          endif
+!AB: old  izpos=n
           lproc=.true.
           exit
         endif

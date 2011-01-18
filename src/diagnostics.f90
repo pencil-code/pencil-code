@@ -326,7 +326,7 @@ module Diagnostics
         if (ldata) then
           fform = fform(1:len_trim(fform)-1)
           if ( ncoords_sound>1 ) call safe_character_append(fform, ')')
-          write(line,trim(fform)//')') tout, fname_sound(1:nname_sound,1:ncoords_sound)
+          write(line,trim(fform)//')') tout, fname_sound !(1:nname_sound,1:ncoords_sound)
         else
           write(line,tform//')') tout
         endif
