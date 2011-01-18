@@ -5574,7 +5574,7 @@ module Mpicomm
   integer, dimension(MPI_STATUS_SIZE) :: status
   logical :: ltrans
   real, allocatable :: rowbuf(:)
-  character(len=5) :: ch8, chy
+  character (LEN=1) :: ch8, chy
 !
   if (NO_WARN) print*,unit
 !
@@ -5676,7 +5676,7 @@ module Mpicomm
   contains
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   subroutine chn(n,ch)                                ! internal subroutine
-    character ch
+    character ch                                      ! needs to be extended to longer ch
     integer n
     ch = intochar(n)
   endsubroutine chn
@@ -5719,7 +5719,8 @@ module Mpicomm
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
-    ! merging
+! merging
+!
     where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
 !
     if (NO_WARN) print *,type
