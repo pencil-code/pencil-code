@@ -302,9 +302,9 @@ sub print_footer {
     my $date = scalar localtime();
     if ($html) {
         print <<"END_FOOT";
-<p>
-$date
 </pre>
+$date
+</p>
 </body>
 </html>
 END_FOOT
