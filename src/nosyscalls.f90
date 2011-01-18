@@ -225,7 +225,7 @@ module Syscalls
       logical :: is_nan_0D
       real, intent(in) :: value
 !
-      is_nan_0D = .not. ((abs (value) <= huge (value)) .or. (abs (value) == PosInf32) .or. (abs (value) == PosInf64))
+      is_nan_0D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
 !
     endfunction is_nan_0D
 !***********************************************************************
@@ -246,7 +246,7 @@ module Syscalls
       real, dimension(:), intent(in) :: value
       logical, dimension(size (value, 1)) :: is_nan_1D
 !
-      is_nan_1D = .not. ((abs (value) <= huge (value)) .or. (abs (value) == PosInf32) .or. (abs (value) == PosInf64))
+      is_nan_1D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
 !
     endfunction is_nan_1D
 !***********************************************************************
@@ -267,7 +267,7 @@ module Syscalls
       real, dimension(:,:), intent(in) :: value
       logical, dimension(size (value, 1),size (value, 2)) :: is_nan_2D
 !
-      is_nan_2D = .not. ((abs (value) <= huge (value)) .or. (abs (value) == PosInf32) .or. (abs (value) == PosInf64))
+      is_nan_2D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
 !
     endfunction is_nan_2D
 !***********************************************************************
@@ -288,7 +288,7 @@ module Syscalls
       real, dimension(:,:,:), intent(in) :: value
       logical, dimension(size (value, 1),size (value, 2),size (value, 3)) :: is_nan_3D
 !
-      is_nan_3D = .not. ((abs (value) <= huge (value)) .or. (abs (value) == PosInf32) .or. (abs (value) == PosInf64))
+      is_nan_3D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
 !
     endfunction is_nan_3D
 !***********************************************************************
@@ -309,7 +309,7 @@ module Syscalls
       real, dimension(:,:,:,:), intent(in) :: value
       logical, dimension(size (value, 1),size (value, 2),size (value, 3),size (value, 4)) :: is_nan_4D
 !
-      is_nan_4D = .not. ((abs (value) <= huge (value)) .or. (abs (value) == PosInf32) .or. (abs (value) == PosInf64))
+      is_nan_4D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
 !
     endfunction is_nan_4D
 !***********************************************************************
