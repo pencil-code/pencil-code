@@ -209,11 +209,11 @@ module Snapshot
 !
       real, dimension (:,:,:), allocatable :: b_vec
       character (len=135) :: file
-      character (len=5) :: ch
+      character (len=5) :: ch,sp1,sp2
       logical :: lspec,llwrite_only=.false.,ldo_all
       integer, save :: ifirst=0,nspec
       real, save :: tspec
-      integer :: ivec,im,in,stat
+      integer :: ivec,im,in,stat,ipos
       real, dimension (nx) :: bb
 !
 !  Allocate memory for b_vec at run time.
@@ -290,6 +290,20 @@ module Snapshot
         if (uxy_spec  ) call power_xy(f,'u')
         if (bxy_spec  ) call power_xy(f,'b')
         if (jxbxy_spec) call power_xy(f,'jxb')
+        
+        if ( xy_spec/='' ) then
+          ipos = index(xy_spec, '.'); sp1=''; sp2=''
+          if ( ipos>1 ) then
+            sp1 = xy_spec(1:ipos-1)
+            if ( ipos<len_trim(xy_spec)-1 ) sp2=xy_spec(ipos+1:)
+          endif
+
+          if ( sp1=='' .or. sp2=='' ) then
+            print*, 'powersnap: Warning - '//trim(xy_spec)//' no valid identifier !'
+          else
+            call power_xy(f,sp1,sp2)
+          endif
+        endif
 !
 !  phi power spectra (in spherical or cylindrical coordinates)
 !
