@@ -223,7 +223,8 @@ module Entropy
   integer :: idiag_ssmr=0       ! DIAG_DOC:
   integer :: idiag_TTmx=0       ! DIAG_DOC:
   integer :: idiag_TTmy=0       ! DIAG_DOC:
-  integer :: idiag_TTmz=0       ! DIAG_DOC:
+  integer :: idiag_TTmz=0       ! DIAG_DOC: $\left< T \right>_{xy}$
+  integer :: idiag_TT2mz=0      ! DIAG_DOC: $\left< T^2 \right>_{xy}$
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
@@ -2255,7 +2256,7 @@ module Entropy
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
-          idiag_uzTTmz/=0) &
+          idiag_uzTTmz/=0 .or. idiag_TT2mz/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0 .or. &
           idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0) &
@@ -2630,6 +2631,7 @@ module Entropy
         if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
+        if (idiag_TT2mz/=0)  call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
         if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
         if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
         if (idiag_uxTTmz/=0) &
@@ -4461,7 +4463,7 @@ module Entropy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
-        idiag_uyTTmxy=0; idiag_uzTTmxy=0;
+        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
         idiag_fradxy_Kprof=0; idiag_fconvxy=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
@@ -4526,6 +4528,7 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2mz',idiag_TT2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTTmz',idiag_uyTTmz)
