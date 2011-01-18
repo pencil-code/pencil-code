@@ -34,6 +34,8 @@ FUNCTION gen_exinds, vec
     
   endwhile
 	
+  if n_elements(exinds) eq 0 then exinds = -1
+  
   return, exinds
   
 END
@@ -77,7 +79,7 @@ PRO plot_segs, x, y, seginds, styles=styles, colors=colors, overplot=overplot, _
   
   for i=0,n_elements(seginds)-1 do begin
   
-    ie = seginds(i)
+    ie = seginds(i) > 0
     oplot, x(ia:ie), y(ia:ie), lines=styles(toggle), color=colors(toggle)
     ia = ie
     toggle = 1-toggle
@@ -92,7 +94,7 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2,datatopdir=datatopdir, $ 
-	  lint_shell=lint_shell, lint_z=lint_z
+	  lint_shell=lint_shell, lint_z=lint_z, print=prnt
 ;
 ;  $Id$
 ;
@@ -126,11 +128,15 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
 ;  png   : to write png file for making a movie
 ;  yrange: y-range for plot
 ;  compensate: exponent for compensating power spectrum (default=0)
+;  lint_shell: shell-integrated spectrum (default=1)
+;  lint_z    : z-integrated spectrum (default=0)
+;  print     : flag for print into PS file (default=0)
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
-;  29-nov-10/MR  : adaptions to different types of spectra, 
-;                  keyword parameters lint_shell (default TRUE) and lint_z (default FALSE) added
+;  29-nov-10/MR  : adaptions to different types of spectra (with/without headers), 
+;                  keyword parameters lint_shell, lint_z and print added
+;
 default,var1,'u'
 default,var2,'b'
 default,last,1
@@ -146,6 +152,7 @@ default,compensate,compensate1
 default,datatopdir,'data'
 default,lint_shell,1
 default,lint_z,0
+default, prnt, 0
 ;
 ;  This is done to make the code backward compatible.
 ;
@@ -254,6 +261,7 @@ close,1
 
 openr,1, datatopdir+'/'+file1
 
+  point_lun, -1, pos0
   headline = ''
   readf, 1, headline
   witheader=strpos(headline,'power spectrum') ne -1 
@@ -261,15 +269,11 @@ openr,1, datatopdir+'/'+file1
   if witheader then begin
   
     readf, 1, headline
-    readf, 1, kxs, kys
     
-    kxs = shift(kxs,nx/2)
-    kys = shift(kys,ny/2)
-    
-    if (lint_shell) then begin
-      readf, 1, headline
-      readf, 1, kshell
-    endif
+    if (lint_shell) then $
+      readf, 1, kshell $
+    else $ 
+      readf, 1, kxs, kys
     
     point_lun, -1, pos 
    
@@ -292,18 +296,35 @@ openr,1, datatopdir+'/'+file1
     
   globalmin=1e12
   globalmax=1e-30
-  nt=0L
+  nt=0L & time=0.
   
   while not eof(1) do begin
   
-    readf,1,time
+    if witheader then begin
+      
+      point_lun, -1, pos
+      readf,1,headline
+    
+      if strpos(headline,'power spectrum') eq -1 then $
+        point_lun, 1, pos $
+      else begin
+        readf,1,headline
+        readf,1, kxs, kys
+      endelse
+ 
+      readf,1,time
+     
+    endif else $
+      readf,1,time
+      
     readf,1,spectrum1
+    
     if (max(spectrum1(1:*,*)) gt globalmax) then globalmax=max(spectrum1(1:*,*))
     if (min(spectrum1(1:*,*)) lt globalmin) then globalmin=min(spectrum1(1:*,*))
     nt=nt+1L
   
   endwhile
- 
+  
 ; end first reading
  
 if lint_shell then begin
@@ -339,25 +360,26 @@ endif
 ;;
 ;  check whether we want png files (for movies)
 ;
-if keyword_set(png) then begin
-
-  set_plot, 'z'                   ; switch to Z buffer
-  device, SET_RESOLUTION=[!d.x_size,!d.y_size] ; set window size
-  itpng=0 ;(image counter)
-  ;
-  ;  set character size to bigger values
-  ;
-  !p.charsize=2
-  !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
-  
-endif else if (!d.name eq 'PS') then begin
-    set_plot, 'PS'
-endif else begin
-    set_plot, 'x'   
-endelse
-;
 if lint_shell then begin
 
+  if keyword_set(png) then begin
+  
+    set_plot, 'z'                   ; switch to Z buffer
+    device, SET_RESOLUTION=[!d.x_size,!d.y_size] ; set window size
+    itpng=0 ;(image counter)
+    ;
+    ;  set character size to bigger values
+    ;
+    !p.charsize=2
+    !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
+  
+  endif else if prnt then begin
+      set_plot, 'PS'
+      device, file='power.ps'
+  endif else begin
+      set_plot, 'x'   
+  endelse
+  
   !x.title='!8k!3'
   fo='(f4.2)'
   if compensate eq 0. then !y.title='!8E!3(!8k!3)' else !y.title='!8k!6!u'+string(compensate,fo=fo)+' !8E!3(!8k!3)'
@@ -365,12 +387,26 @@ if lint_shell then begin
 
 endif
 
-  point_lun, 1, pos 
   i=0L
-  
+  point_lun, 1, pos0
   while not eof(1) do begin 
+ 
+    if witheader then begin
+      
+      point_lun, -1, pos
+      readf,1,headline
+    
+      if strpos(headline,'power spectrum') eq -1 then $
+        point_lun, 1, pos $
+      else begin
+        readf,1,headline
+        readf,1, kxs, kys
+      endelse
+      readf,1,time
+      
+    endif else $
+      readf,1,time
   
-    readf,1,time
     readf,1,spectrum1
     tt(i)=time
     
@@ -463,27 +499,54 @@ endif
     endif
     ;
   endwhile
-    
+  
+  if witheader then begin
+    kxs = shift(kxs,nx/2)
+    kys = shift(kys,ny/2)  
+  endif
+   
   if not lint_shell then begin
     if lint_z then begin
   
-      goto, loop1
+      ;goto, loop1
+      
+      set_plot, 'X'
       
       for it=0,n_elements(tt)-1 do begin 
-        contour, spec1(*,*,it),kxs,kys, nlevels=30, /fill, c_colors=8.*indgen(30), xrange=[-5.,5.], yr=[-8.,8.], xtitle='kx', ytitle='ky'  & xyouts, 4., 10.1, string(tt(it))
+        contour, spec1(*,*,it),kxs,kys, nlevels=30, /fill, c_colors=8.*indgen(30), xrange=[-15.,15.], yr=[-5.,5.], xtitle='kx', ytitle='ky' 
+        xyouts, 15.1, 4., string(tt(it))
         wait, .1 
       endfor
       ;goto, loop2;
 loop1:
-      ;stop
-      ikx1=31 & ikx2=33
+  
+      if keyword_set(png) then begin
       
-      for ikx=ikx1,ikx2,2 do begin
+        set_plot, 'z'                   ; switch to Z buffer
+        device, SET_RESOLUTION=[!d.x_size,!d.y_size] ; set window size
+        itpng=0 ;(image counter)
+        ;
+        ;  set character size to bigger values
+        ;
+        !p.charsize=2
+        !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
       
+      endif else if prnt then begin
+        set_plot, 'PS'
+        device, file='power.ps'
+      endif else begin
+        set_plot, 'x'   
+      endelse
+  
+      ikx1=12 & ikx2=20                      ;ikx1=31 & ikx2=33
+      iky1=15 & iky2=17
+      
+      for ikx=ikx1,ikx2,8 do begin
+        
         if ikx eq ikx1 then $
-	  exinds1 = gen_exinds(spec1(ikx,37,*)) $
+	  exinds1 = gen_exinds(spec1(ikx,17,*)) $
 	else $
-	  exinds = gen_exinds(spec1(ikx,37,*))
+	  exinds = gen_exinds(spec1(ikx,17,*))
       
       endfor 
 loop2:     
@@ -491,20 +554,21 @@ loop2:
       while itmax ge 0 do begin
       
         read, itmin, prompt='itmin= (>0)'
-        read, itmax, prompt='itmax= (<'+string(n_elements(tt), format='(i4)')+')'
+        read, itmax, prompt='itmax= (<'+string(n_elements(tt), format='(i4)')+', Stop by negative itmax)'
 	
-	plot_segs, tt(itmin:itmax), spec1(33,37,itmin:itmax), exinds, colors=[!p.color], /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
-        ;plot , tt(itmin:itmax), spec1(33,37,itmin:itmax), /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
-        ;oplot, tt(itmin:itmax), spec1(31,27,itmin:itmax), linest=3, color=250
-	plot_segs, tt(itmin:itmax), spec1(31,37,itmin:itmax), exinds1, colors=[!p.color], /overplot
-        ;oplot, tt(itmin:itmax), spec1(31,37,itmin:itmax)	   
-        ;oplot, tt(itmin:itmax), spec1(33,27,itmin:itmax), linest=3, color=250
+	plot_segs, tt(itmin:itmax), spec1(ikx2,iky2,itmin:itmax), exinds-itmin, colors=[!p.color], /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
+        ;plot , tt(itmin:itmax), spec1(ikx2,iky2,itmin:itmax), /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
+        ;oplot, tt(itmin:itmax), spec1(ikx1,iky1,itmin:itmax), linest=3, color=250
+        
+	plot_segs, tt(itmin:itmax), spec1(ikx1,iky2,itmin:itmax), exinds1-itmin, colors=[!p.color], /overplot
+        ;oplot, tt(itmin:itmax), spec1(ikx1,iky2,itmin:itmax)	   
+        ;oplot, tt(itmin:itmax), spec1(ikx2,iky1,itmin:itmax), linest=3, color=250
 	
-	xyouts, .8*tt(itmax), 2.*spec1(33,37,0.8*itmax), '++'
-	xyouts, .8*tt(itmax), 0.5*spec1(33,27,0.8*itmax), '+-'
+	xyouts, .5*tt(itmax), 0.5*spec1(ikx2,iky2,0.5*itmax), '++'
+	xyouts, .5*tt(itmax),  3.*spec1(ikx2,iky1,0.5*itmax), '+-'
 	
-        xyouts, .8*tt(itmax), 1.e-10, '!7k!D!8x!N!3='+string(2.*!pi/kxs(33)/Lx, format='(f4.1)')+'!8L!Dx!N!3'
-        xyouts, .8*tt(itmax), 1.e-11, '!7k!D!8y!N!3='+string(2.*!pi/kys(37)/Ly, format='(f4.1)')+'!8L!Dy!N!3'
+        xyouts, .8*tt(itmax), 1.e-10, '!7k!D!8x!N!3='+string(2.*!pi/kxs(ikx2)/Lx, format='(f4.1)')+'!8L!Dx!N!3'
+        xyouts, .8*tt(itmax), 1.e-11, '!7k!D!8y!N!3='+string(2.*!pi/kys(iky2)/Ly, format='(f4.1)')+'!8L!Dy!N!3'
 
       endwhile
       
@@ -539,6 +603,8 @@ cont1:
 cont:
 close,1
 close,2
+
+if !d.name eq 'PS' then device, /close
 
 !x.title='' 
 !y.title=''
