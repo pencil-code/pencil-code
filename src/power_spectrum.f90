@@ -346,7 +346,7 @@ module power_spectrum
 !
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 !
-  integer :: i,k,ikx,iky,ikz,im,in,ivec,nk
+  integer :: i,k,ikx,iky,ikz,ivec,nk
   real, dimension(nx,ny,nz) :: ar,ai
   real, dimension(:,:,:), allocatable :: br,bi
   real, allocatable, dimension(:)     :: spectrum1,spectrum1_sum, kshell
