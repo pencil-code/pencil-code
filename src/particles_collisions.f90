@@ -34,7 +34,7 @@ module Particles_collisions
   real :: energy_gain_inelastic=0.0
   integer :: ncoll_max_par=-1, npart_max_par=-1, npart_max_par_2=0
   logical :: lcollision_random_angle=.false., lcollision_big_ball=.false.
-  logical :: lshear_in_vp=.true., lkeplerian_flat=.false.
+  logical :: lshear_in_vp=.false., lkeplerian_flat=.false.
   logical :: ltauc_from_tauf=.false., lapproaching_collisions=.false.
   logical :: lstop_at_first_collision=.false.
   character (len=labellen) :: icoll='big-ball'
