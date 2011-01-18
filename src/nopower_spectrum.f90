@@ -57,7 +57,7 @@ module power_spectrum
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
-      call keep_compiler_quiet(sp2)
+      call keep_compiler_quiet(present(sp2))
 !
     endsubroutine power_xy
 !***********************************************************************
