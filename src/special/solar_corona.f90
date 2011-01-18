@@ -22,7 +22,7 @@ module Special
 !
   include '../special.h'
 !
-  real, parameter :: max_gran_levels=3
+  integer, parameter :: max_gran_levels=3
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
