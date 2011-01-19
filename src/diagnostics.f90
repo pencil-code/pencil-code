@@ -247,16 +247,12 @@ module Diagnostics
       endif
 !
       if (lfirst) then
-        legend = noform('t'//tform//')')
-      else
-        legend = ''
-      endif
 !
-      if (lfirst) then
-!
+        legend = comment_char//noform('t'//tform//')')
+
         if (dimensionality>0) then
 !
-          coorlegend = ' Points:   '
+          coorlegend = comment_char//' Points:   '
           nleg = len_trim(coorlegend)+3
 !
           do icoor=1,ncoords_sound
@@ -289,7 +285,7 @@ module Diagnostics
       endif
 !
       ldata = .false.
-      sublegend = ''
+      sublegend = comment_char
 !
       do iname=1,nname_sound
 !
@@ -342,7 +338,7 @@ module Diagnostics
           if (dimensionality>0) then
             write(1,'(a)') trim(coorlegend)
             if ( ncoords_sound>1 ) write(1,'(a)') trim(sublegend)
-            write(1,'(a)') repeat('-',len_trim(legend))
+            write(1,'(a)') comment_char//repeat('-',len_trim(legend)-1)
           endif
         endif
 !
