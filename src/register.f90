@@ -674,7 +674,7 @@ module Register
       character (len=*),               intent(in)    :: in_file
       character (len=30), allocatable, intent(out)   :: cnamel(:)
       integer,                         intent(inout) :: nnamel
-      external                                       :: allocator 
+      external                                       :: allocator
 !
       character (len=30) :: cname_tmp
       integer            :: iname, mname, istat
@@ -684,7 +684,7 @@ module Register
 !
       if (mname>0) then
 !
-!  Allocate the relevant arrays if necessary  
+!  Allocate the relevant arrays if necessary
 !
         if (.not. allocated(cnamel)) then
           allocate(cnamel(nnamel+mname),stat=istat)
@@ -711,20 +711,21 @@ module Register
         enddo
 !
 99      call parallel_close(unit)
-!        
+!
         read_name_format = nnamel>0
       else
         read_name_format = .false.
       endif
-!  
+!
     endfunction read_name_format
 !***********************************************************************
     subroutine rprint_list(lreset)
 !
 !  Read variables to print and to calculate averages of from control files.
 !
-!   3-may-01/axel: coded
-!  11-jan-11/MR: introduced read_name_format calls for each of the lists for homogeneity
+!  3-may-01/axel: coded
+!  11-jan-11/MR: introduced read_name_format calls for each of the lists
+!                for homogeneity
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -765,11 +766,11 @@ module Register
                                  parallel_open, parallel_close
 !
       integer :: unit=1
-      integer :: ierr,iadd,ios
+      integer :: ierr,iadd,ios,istat
       logical :: lreset, ldummy
       character (len=30) :: cname_tmp
 !
-      character (LEN=15)           :: print_in_file 
+      character (LEN=15)           :: print_in_file
       character (LEN=*), parameter :: video_in_file    = 'video.in'
       character (LEN=*), parameter :: sound_in_file    = 'sound.in'
       character (LEN=*), parameter :: xyaver_in_file   = 'xyaver.in'
@@ -793,7 +794,25 @@ module Register
 !
       if (lroot) print*, 'Reading print formats from '//trim(print_in_file)
 !
-      allocate(cname(100),fname(100),cform(100))
+      if (.not.allocated(cname)) then
+        allocate(cname(100),stat=istat)
+        if (istat>0) call fatal_error('rprint_list', &
+            'Could not allocate memory for cname for reading from ' &
+            //trim(print_in_file))
+      endif
+      if (.not.allocated(fname)) then
+        allocate(fname(100),stat=istat)
+        if (istat>0) call fatal_error('rprint_list', &
+            'Could not allocate memory for fname for reading from ' &
+            //trim(print_in_file))
+      endif
+      if (.not.allocated(cform)) then
+        allocate(cform(100),stat=istat)
+        if (istat>0) call fatal_error('rprint_list', &
+            'Could not allocate memory for cform for reading from ' &
+            //trim(print_in_file))
+      endif
+!
       if ( .not. read_name_format(print_in_file,cname,nname,allocate_fnames) ) &
           call fatal_error('rprint_list','You must have a "'// &
           trim(print_in_file)// &
@@ -813,15 +832,17 @@ module Register
 !
 !  Read in the list of variables for "sound".
 !
-! In allocate_sound the relevant arrays are allocated and the list of coordinates sound_coords_list is read in.
-! nsound_location and lwrite_sound are set there, too.
+!  In allocate_sound the relevant arrays are allocated and the list of
+!  coordinates sound_coords_list is read in.
+!  nsound_location and lwrite_sound are set there, too.
 !
       if ( dimensionality>0 .and. dsound/=0.0 .and. read_name_format( &
           sound_in_file,cname_sound,nname_sound,allocate_sound) .and. &
           lwrite_sound ) then
 !
-!  Read the last sound output time from a soundfile, will be set to starttime otherwise
-!      
+!  Read the last sound output time from a soundfile, will be set to
+!  starttime otherwise
+!
 !        tsound=rnan
         tsound=-1.0
         open(1,file=trim(directory)//'/sound.dat',position='append', &
@@ -882,7 +903,7 @@ module Register
         call parallel_open(unit,file=phiaver_in_file)
         iadd=0
 !
-        do 
+        do
           read(unit,*,iostat=ierr) cname_tmp
           if (ierr==0) then
             nnamerz=nnamerz+1
@@ -1025,7 +1046,7 @@ module Register
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
 !
-!  Output in phiavg.list the list of fields after the taking into 
+!  Output in phiavg.list the list of fields after the taking into
 !  account of possible shorthands in phiaver.in
 !
         if (lroot) then
