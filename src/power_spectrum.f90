@@ -1041,12 +1041,16 @@ module power_spectrum
         call fatal_error('power_1d','')
       endif
     elseif (sp=='p') then
-      if (ivar>0) then
-        a1=f(l1:l2,m1:m2,n1:n2,ivar)
+      if (present(ivar)) then
+        if (ivar>0) then
+          a1=f(l1:l2,m1:m2,n1:n2,ivar)
+        else
+          if (lroot) &
+              print*, 'power_1d: ivar must be >0, ivar=', ivar
+          call fatal_error('power_1d','')
+        endif
       else
-        if (lroot) &
-            print*, 'power_1d: ivar must be >0, ivar=', ivar
-        call fatal_error('power_1d','')
+        call fatal_error('power_1d','ivar not set')
       endif
     else
       if (lroot) print*,'There is no such spectra variable: sp=',sp
