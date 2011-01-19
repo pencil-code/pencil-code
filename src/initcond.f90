@@ -4342,7 +4342,7 @@ module Initcond
 !
       call fourier_transform_other(Bz0_r,Bz0_i)
 !
-      do i=n1,n2
+      do i=1,mz
 !
 !  Calculate transformed vector potential for every z layer
 !
