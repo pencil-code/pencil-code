@@ -76,9 +76,11 @@ module Forcing
 !  continuous forcing variables
 !
   logical :: lembed=.false.,lshearing_adjust_old=.false.
+  logical :: lgentle=.false.
   character (len=labellen) :: iforcing_cont='ABC'
   real :: ampl_ff=1.,width_fcont=1.,x1_fcont=0.,x2_fcont=0.
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
+  real :: tgentle=0.
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -110,7 +112,8 @@ module Forcing
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
-       lforce_peri,lforce_cuty
+       lforce_peri,lforce_cuty, &
+       tgentle
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -434,6 +437,12 @@ module Forcing
           sinx=embedx*sinx; cosx=embedx*cosx
           siny=embedy*siny; cosy=embedy*cosy
           cosz=embedz*cosz
+        endif
+      elseif (iforcing_cont=='sinx') then
+        sinx=sin(k1_ff*x)
+        if (tgentle > 0.) then
+          lgentle=.true.
+          if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
         endif
       endif
 !
@@ -3256,6 +3265,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=gravx*ampl_ff*cos(omega_ff*t)
           force(:,2)=0
           force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+        elseif (iforcing_cont=='sinx') then
+          if (lgentle.and.t<tgentle) then
+            fact=.5*ampl_ff*(1.-cos(pi*t/tgentle))
+          else
+            fact=ampl_ff
+          endif
+          force(:,1)=fact*sinx(l1:l2)
+          force(:,2)=0.
+          force(:,3)=0.
         else
           call stop_it("forcing: no continuous iforcing_cont specified")
         endif
