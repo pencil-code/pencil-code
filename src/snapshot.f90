@@ -295,9 +295,9 @@ module Snapshot
           ipos = index(xy_spec, '.'); sp1=''; sp2=''
           if ( ipos>1 ) then
             sp1 = xy_spec(1:ipos-1)
-            if ( ipos<len_trim(xy_spec)-1 ) sp2=xy_spec(ipos+1:)
+            if ( ipos<=len_trim(xy_spec)-1 ) sp2=xy_spec(ipos+1:)
           endif
-
+          
           if ( sp1=='' .or. sp2=='' ) then
             print*, 'powersnap: Warning - '//trim(xy_spec)//' no valid identifier !'
           else
