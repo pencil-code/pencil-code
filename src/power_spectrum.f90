@@ -275,7 +275,7 @@ module power_spectrum
   !
   endsubroutine power_2d
 !***********************************************************************
-  subroutine get_comp_spectrum( f, sp, ivec, ar, ai )
+  subroutine comp_spectrum_xy( f, sp, ivec, ar, ai )
 !
 ! generates xy-spectrum of the component ivec of the vector field, selected by sp
 !
@@ -299,20 +299,24 @@ module power_spectrum
     integer :: m,n
 !    
     if (sp=='u') then
+       if (iuu==0) goto 1
        ar=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
     elseif (sp=='b') then
-       do n=n1-nghost,n2-nghost
+        if (iaa==0) goto 1
+        do n=n1-nghost,n2-nghost
           do m=m1-nghost,m2-nghost
              call curli(f,iaa,bb,ivec)
              ar(:,m,n)=bb
           enddo
        enddo
     elseif (sp=='a') then
+       if (iaa==0) goto 1
        ar=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
     elseif (sp=='jxb') then
+       if (ijxb==0) goto 1
        ar=f(l1:l2,m1:m2,n1:n2,ijxbx+ivec-1)
     else
-       print*,'power_xy: Warning - There is no such sp=',sp
+       print*,'comp_spectrum_xy: Warning - There is no such sp=',sp
        return
     endif
 !
@@ -321,8 +325,12 @@ module power_spectrum
 !  Doing the Fourier transform
 !
     call fourier_transform_xy(ar,ai)
+
+   return
 !
-   endsubroutine get_comp_spectrum  
+ 1 call fatal_error('get_comp_spectrum','variable '//trim(sp)//' not existent')  ! Perhaps only warning
+
+   endsubroutine comp_spectrum_xy  
 !***********************************************************************
    subroutine power_xy(f,sp,sp2)
 !
@@ -444,8 +452,8 @@ module power_spectrum
   !
   do ivec=1,3
 !
-    call get_comp_spectrum( f, sp, ivec, ar, ai )
-    if (l2nd) call get_comp_spectrum( f, sp2, ivec, br, bi ) 
+    call comp_spectrum_xy( f, sp, ivec, ar, ai )
+    if (l2nd) call comp_spectrum_xy( f, sp2, ivec, br, bi ) 
 !
 !  integration over shells
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
