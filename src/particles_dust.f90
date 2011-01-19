@@ -176,7 +176,7 @@ module Particles
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
-  integer :: idiag_rhopmxz=0, idiag_nparpmax=0
+  integer :: idiag_rhopmxz=0, idiag_nparpmax=0, idiag_npmxy=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vpyfull2m=0, idiag_deshearbcsm=0
@@ -1893,9 +1893,9 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
       endif
+      if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0) &
           lpenc_diagnos(i_epsp)=.true.
-      if (idiag_rhopmxy/=0 .or. idiag_rhopmxz/=0) lpenc_diagnos2d(i_rhop)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -2858,6 +2858,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       if (l2davgfirst) then
+        if (idiag_npmxy/=0)    call zsum_mn_name_xy(p%np,idiag_npmxy)
         if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
         if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
         if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
@@ -4098,6 +4099,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
+        idiag_npmxy=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -4204,6 +4206,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Check for those quantities for which we want xy-averages.
 !
       do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'npmxy',idiag_npmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
       enddo
 !
