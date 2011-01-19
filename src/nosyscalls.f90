@@ -14,16 +14,6 @@ module Syscalls
      module procedure is_nan_4D
   endinterface
 !
-  integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
-!
-!  Predefine +Inf and -Inf (works with 4- and 8-byte floating point numbers).
-!  ATTENTION g95 users: Please check, if you have a working compiler version.
-!
-  integer(KIND=ikind8), parameter :: PosInf_32bits=B'01111111100000000000000000000000'
-  integer(KIND=ikind8), parameter :: PosInf_64bits=B'0111111111110000000000000000000000000000000000000000000000000000'
-  real, parameter :: PosInf32=transfer(PosInf_32bits,0.0)
-  real, parameter :: PosInf64=transfer(PosInf_64bits,0.0)
-!
   contains
 !***********************************************************************
     function file_exists(file, delete)
@@ -225,7 +215,7 @@ module Syscalls
       logical :: is_nan_0D
       real, intent(in) :: value
 !
-      is_nan_0D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
+      is_nan_0D = .not. ((value <= huge (value)) .or. (value > huge (0.0)))
 !
     endfunction is_nan_0D
 !***********************************************************************
@@ -246,7 +236,7 @@ module Syscalls
       real, dimension(:), intent(in) :: value
       logical, dimension(size (value, 1)) :: is_nan_1D
 !
-      is_nan_1D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
+      is_nan_1D = .not. ((value <= huge (value)) .or. (value > huge (0.0)))
 !
     endfunction is_nan_1D
 !***********************************************************************
@@ -267,7 +257,7 @@ module Syscalls
       real, dimension(:,:), intent(in) :: value
       logical, dimension(size (value, 1),size (value, 2)) :: is_nan_2D
 !
-      is_nan_2D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
+      is_nan_2D = .not. ((value <= huge (value)) .or. (value > huge (0.0)))
 !
     endfunction is_nan_2D
 !***********************************************************************
@@ -288,7 +278,7 @@ module Syscalls
       real, dimension(:,:,:), intent(in) :: value
       logical, dimension(size (value, 1),size (value, 2),size (value, 3)) :: is_nan_3D
 !
-      is_nan_3D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
+      is_nan_3D = .not. ((value <= huge (value)) .or. (value > huge (0.0)))
 !
     endfunction is_nan_3D
 !***********************************************************************
@@ -309,7 +299,7 @@ module Syscalls
       real, dimension(:,:,:,:), intent(in) :: value
       logical, dimension(size (value, 1),size (value, 2),size (value, 3),size (value, 4)) :: is_nan_4D
 !
-      is_nan_4D = .not. ((value <= huge (value)) .or. (value == PosInf32) .or. (value == PosInf64))
+      is_nan_4D = .not. ((value <= huge (value)) .or. (value > huge (0.0)))
 !
     endfunction is_nan_4D
 !***********************************************************************
