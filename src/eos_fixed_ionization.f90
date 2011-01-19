@@ -178,7 +178,7 @@ module EquationOfState
       gamma_inv=1./gamma
       nabla_ad=gamma_m1/gamma
       kappa0=sigmaH_/m_H/mu1yHxHe/4.0
-      Srad0=sigmaSB*TT_ion**4/pi
+      Srad0=sigmaSB*TT_ion**4.0D0/pi
 !
       if (lroot) then
         print*,'initialize_eos: reference values for ionization'
