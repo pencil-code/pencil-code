@@ -236,7 +236,7 @@ module Diagnostics
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor
+      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j
 !
 !  Produce the format.
 !
@@ -322,7 +322,7 @@ module Diagnostics
         if (ldata) then
           fform = fform(1:len_trim(fform)-1)
           if ( ncoords_sound>1 ) call safe_character_append(fform, ')')
-          write(line,trim(fform)//')') tout, fname_sound !(1:nname_sound,1:ncoords_sound)
+          write(line,trim(fform)//')') tout, ((fname_sound(i,j), j=1,ncoords_sound), i=1,nname_sound) !(1:nname_sound,1:ncoords_sound)
         else
           write(line,tform//')') tout
         endif
