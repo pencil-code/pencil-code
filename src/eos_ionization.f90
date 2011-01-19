@@ -158,7 +158,7 @@ module EquationOfState
       ss_ion1=1/ss_ion
       ee_ion=ss_ion*TT_ion
       kappa0=sigmaH_/m_H/mu1yHxHe/4.0
-      Srad0=sigmaSB*TT_ion**4/pi
+      Srad0=sigmaSB*TT_ion**4.0D0/pi
 !
       if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
