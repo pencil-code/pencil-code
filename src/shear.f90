@@ -22,19 +22,21 @@ module Shear
 !
   implicit none
 !
-  real :: x0_shear=0.0
+  real :: x0_shear=0.0, qshear0=0.0, sini=0.
+  real :: Sshear1=0., Sshear_sini=0.
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
+  logical :: lmagnetic_tilt=.false.
 !
   include 'shear.h'
 !
   namelist /shear_init_pars/ &
-      qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear
+      qshear,qshear0,Sshear,Sshear1,deltay,Omega,lshearadvection_as_shift, &
+      lmagnetic_stretching,lrandomx0,x0_shear,sini
 !
   namelist /shear_run_pars/ &
-      qshear,Sshear,deltay,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear
+      qshear,qshear0,Sshear,Sshear1,deltay,Omega,lshearadvection_as_shift, &
+      lmagnetic_stretching,lrandomx0,x0_shear,sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
@@ -57,12 +59,41 @@ module Shear
 !  21-nov-02/tony: coded
 !  08-jul-04/anders: Sshear calculated whenever qshear /= 0
 !
-!  Calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
-!  is calculated. Otherwise Sshear keeps its value from the input list.
+!  Calculate shear flow velocity; if qshear is given, then
+!    Sshear=-(qshear-qshear0)*Omega  (shear in advection and magnetic stretching)
+!    Sshear1=-qshear*Omega           (Lagrangian shear)
+!  are calculated. Otherwise Sshear and Sshear1 keep their values from the input
+!  list.
 !
-      if (qshear/=0.0) Sshear=-qshear*Omega
-      if (lroot .and. ip<=12) &
-          print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
+!  Definitions:
+!    qshear = -(R / Omega) d Omega / dR,
+!    qshear0 = 1 - Omega_p / Omega,
+!  where Omega_p is the angular speed at which the shearing box revolves about
+!  the central host.  If Omega_p = Omega, the usual shearing approximation is
+!  recovered.
+!
+      if (qshear/=0.0) then
+        Sshear=-(qshear-qshear0)*Omega
+        Sshear1=-qshear*Omega
+      else if (Sshear/=0.0.and.Sshear1==0.0) then
+        Sshear1=Sshear
+      endif
+!
+      if (lroot .and. ip<=12) then
+        print*, 'initialize_shear: Sshear,Sshear1=', Sshear, Sshear1
+        print*, 'initialize_shear: qshear,qshear0=', qshear, qshear0
+      endif
+!
+!  Turn on tilt of magnetic stretching if requested.
+!
+      if (sini /= 0.) then
+        lmagnetic_tilt=.true.
+        if (lroot) then
+          print*, 'initialize_shear: turn on tilt of magnetic stretching with sini = ', sini
+          if (abs(sini) > .1) print*, 'Warning: current formulation only allows for small sini. '
+        endif
+        Sshear_sini=Sshear*sini
+      endif
 !
     endsubroutine initialize_shear
 !***********************************************************************
@@ -213,9 +244,12 @@ module Shear
 !
 !  Print identifier.
 !
-      if (headtt.or.ldebug) print*, 'shearing: Sshear,qshear=', Sshear, qshear
+      if (headtt.or.ldebug) then
+        print*, 'shearing: Sshear,Sshear1=', Sshear, Sshear1
+        print*, 'shearing: qshear,qshear0=', qshear, qshear0
+      endif
 !
-!  Add shear term, -uy0*df/dy, for all variables.
+!  Add shear (advection) term, -uy0*df/dy, for all variables.
 !
       uy0=Sshear*(x(l1:l2)-x0_shear)
 !
@@ -228,25 +262,29 @@ module Shear
         enddo
       endif
 !
-!  Advection of background velocity profile. Appears like a correction
+!  Lagrangian shear of background velocity profile. Appears like a correction
 !  to the Coriolis force, but is actually not related to the Coriolis
 !  force.
 !
-      if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*p%uu(:,1)
+      if (lhydro) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear1*p%uu(:,1)
 !
-!  Add shear term for all dust species.
+!  Add (Lagrangian) shear term for all dust species.
 !
       if (ldustvelocity) then
         do k=1,ndustspec
           df(l1:l2,m,n,iudy(k))=df(l1:l2,m,n,iudy(k)) &
-            -Sshear*f(l1:l2,m,n,iudx(k))
+            -Sshear1*f(l1:l2,m,n,iudx(k))
         enddo
       endif
 !
-!  Magnetic stretching term (can be turned off for debugging purposes).
+!  Magnetic stretching and tilt terms (can be turned off for debugging purposes).
 !
       if (lmagnetic .and. lmagnetic_stretching) then
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*p%aa(:,2)
+        if (lmagnetic_tilt) then
+          df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear_sini*p%aa(:,1)
+          df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+Sshear_sini*p%aa(:,2)
+        endif
       endif
 !
 !  Testfield stretching term.
