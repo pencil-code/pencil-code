@@ -1368,10 +1368,8 @@ module Fourier
           call fatal_error ('fft_x_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nxgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nxgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nxgrid), p_im(nxgrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_1D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_x_parallel_1D', 'Shearing is not implemented!', lfirst_proc_x)
 !
@@ -1423,9 +1421,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_x_parallel_1D
 !***********************************************************************
@@ -1468,14 +1464,8 @@ module Fourier
           call fatal_error ('fft_x_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_2D', 'Could not allocate memory for p/t', .true.)
 !
       if (lshear) call fatal_error ('fft_x_parallel_2D', 'Shearing is not implemented!', lfirst_proc_x)
 !
@@ -1531,11 +1521,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (p_re, p_im, t_re, t_im)
 !
     endsubroutine fft_x_parallel_2D
 !***********************************************************************
@@ -1588,14 +1574,8 @@ module Fourier
           call fatal_error ('fft_x_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny,inz), p_im(pnx,pny,inz), t_re(tnx,tny,inz), t_im(tnx,tny,inz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_3D', 'Could not allocate memory for p/t', .true.)
 !
       if (lshear) call fatal_error ('fft_x_parallel_3D', 'Shearing is not implemented!', lfirst_proc_x)
 !
@@ -1655,11 +1635,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (p_re, p_im, t_re, t_im)
 !
     endsubroutine fft_x_parallel_3D
 !***********************************************************************
@@ -1715,14 +1691,8 @@ module Fourier
           call fatal_error ('fft_x_parallel_4D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_x)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny,inz,ina), p_im(pnx,pny,inz,ina), t_re(tnx,tny,inz,ina), t_im(tnx,tny,inz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_x_parallel_4D', 'Could not allocate memory for p/t', .true.)
 !
       if (lshear) call fatal_error ('fft_x_parallel_4D', 'Shearing is not implemented!', lfirst_proc_x)
 !
@@ -1786,11 +1756,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (p_re, p_im, t_re, t_im)
 !
     endsubroutine fft_x_parallel_4D
 !***********************************************************************
@@ -1832,10 +1798,8 @@ module Fourier
           call fatal_error ('fft_y_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nygrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nygrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nygrid), p_im(nygrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_1D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_y_parallel_1D', 'Shearing is not implemented for 1D data!', lfirst_proc_y)
       if (lshift) dshift_y = shift_y
@@ -1889,9 +1853,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_y_parallel_1D
 !***********************************************************************
@@ -1930,10 +1892,8 @@ module Fourier
 !
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nx,nygrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nx,nygrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nx,nygrid), p_im(nx,nygrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_2D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
@@ -1993,9 +1953,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_y_parallel_2D
 !***********************************************************************
@@ -2045,10 +2003,8 @@ module Fourier
           call fatal_error ('fft_y_parallel_3D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nx,nygrid,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nx,nygrid,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nx,nygrid,inz), p_im(nx,nygrid,inz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_3D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
@@ -2112,9 +2068,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_y_parallel_3D
 !***********************************************************************
@@ -2167,10 +2121,8 @@ module Fourier
           call fatal_error ('fft_y_parallel_4D', 'imaginary array size mismatch /= nx,ny', lfirst_proc_y)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nx,nygrid,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nx,nygrid,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nx,nygrid,inz,ina), p_im(nx,nygrid,inz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_y_parallel_4D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
       if (lshift) dshift_y = shift_y
@@ -2238,9 +2190,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_y_parallel_4D
 !***********************************************************************
@@ -2277,10 +2227,8 @@ module Fourier
           call fatal_error ('fft_z_parallel_1D', 'size differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nzgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nzgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nzgrid), p_im(nzgrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_z_parallel_1D', 'Shearing is not implemented!', lfirst_proc_z)
 !
@@ -2332,9 +2280,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_z_parallel_1D
 !***********************************************************************
@@ -2379,10 +2325,8 @@ module Fourier
           call fatal_error ('fft_z_parallel_2D', 'second dimension differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nzgrid,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nzgrid,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nzgrid,ina), p_im(nzgrid,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_z_parallel_2D', 'Shearing is not implemented!', lfirst_proc_z)
 !
@@ -2438,9 +2382,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_z_parallel_2D
 !***********************************************************************
@@ -2484,10 +2426,8 @@ module Fourier
           call fatal_error ('fft_z_parallel_3D', 'third dimension must be the z-coordinate (nz)', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(inx,iny,nzgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(inx,iny,nzgrid), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(inx,iny,nzgrid), p_im(inx,iny,nzgrid), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_3D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
 !
@@ -2547,9 +2487,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_z_parallel_3D
 !***********************************************************************
@@ -2596,10 +2534,8 @@ module Fourier
           call fatal_error ('fft_z_parallel_4D', 'fourth dimension differs for real and imaginary part', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(inx,iny,nzgrid,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(inx,iny,nzgrid,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(inx,iny,nzgrid,ina), p_im(inx,iny,nzgrid,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_z_parallel_4D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_z_parallel_3D', 'Shearing is not implemented!', lfirst_proc_z)
 !
@@ -2663,9 +2599,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_z_parallel_4D
 !***********************************************************************
@@ -2729,14 +2663,8 @@ module Fourier
           call fatal_error ('fft_xy_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p/t', .true.)
 !
       if (lshear) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -2832,11 +2760,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (p_re, p_im, t_re, t_im)
 !
     endsubroutine fft_xy_parallel_2D
 !***********************************************************************
@@ -2906,14 +2830,8 @@ module Fourier
           call fatal_error ('fft_xy_parallel_3D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny,inz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny,inz), p_im(pnx,pny,inz), t_re(tnx,tny,inz), t_im(tnx,tny,inz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_3D', 'Could not allocate memory for p/t', .true.)
 !
       if (lshear) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -3017,11 +2935,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (p_re, p_im, t_re, t_im)
 !
     endsubroutine fft_xy_parallel_3D
 !***********************************************************************
@@ -3094,14 +3008,8 @@ module Fourier
           call fatal_error ('fft_xy_parallel_4D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny,inz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny,inz,ina), p_im(pnx,pny,inz,ina), t_re(tnx,tny,inz,ina), t_im(tnx,tny,inz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_4D', 'Could not allocate memory for p/t', .true.)
 !
       if (lshear) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
@@ -3213,11 +3121,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (p_re, p_im, t_re, t_im)
 !
     endsubroutine fft_xy_parallel_4D
 !***********************************************************************
@@ -3278,10 +3182,8 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_3D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nx,pny,pnz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nx,pny,pnz), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nx,pny,pnz), p_im(nx,pny,pnz), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xyz_parallel_3D', 'Could not allocate memory for p', .true.)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -3347,9 +3249,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_xyz_parallel_3D
 !***********************************************************************
@@ -3414,10 +3314,8 @@ module Fourier
           call fatal_error ('fft_xyz_parallel_4D', 'nygrid needs to be an integer multiple of nprocy*nprocz', lroot)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(nx,pny,pnz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(nx,pny,pnz,ina), stat=stat)
-      if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate memory for p_im', .true.)
+      allocate (p_re(nx,pny,pnz,ina), p_im(nx,pny,pnz,ina), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xyz_parallel_4D', 'Could not allocate memory for p', .true.)
 !
       call cffti (nzgrid, wsavez)
 !
@@ -3487,9 +3385,7 @@ module Fourier
 !
       endif
 !
-      ! Deallocate large arrays.
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
     endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
@@ -3553,14 +3449,8 @@ module Fourier
           'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny,ona), p_im(pnx,pny,ona), t_re(tnx,tny,ona), t_im(tnx,tny,ona), stat=stat)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for p/t', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -3582,13 +3472,10 @@ module Fourier
       call transp_pencil_xy (p_re, t_re)
       call transp_pencil_xy (p_im, t_im)
 !
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
-      allocate (e_re(tnx,tny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for e_re', .true.)
-      allocate (e_im(tnx,tny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for e_im', .true.)
+      allocate (e_re(tnx,tny,onz,ona), e_im(tnx,tny,onz,ona), stat=stat)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for e', .true.)
 !
       do pos_a = 1, ona
         do l = 1, tny
@@ -3606,19 +3493,15 @@ module Fourier
         enddo
       enddo
 !
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (t_re, t_im)
 !
-      allocate (b_re(pnx,pny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for b_re', .true.)
-      allocate (b_im(pnx,pny,onz,ona), stat=stat)
-      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for b_im', .true.)
+      allocate (b_re(pnx,pny,onz,ona), b_im(pnx,pny,onz,ona), stat=stat)
+      if (stat > 0) call fatal_error ('vect_pot_extrapol_z_parallel', 'Could not allocate memory for b', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
-      if (allocated (e_re)) deallocate (e_re)
-      if (allocated (e_im)) deallocate (e_im)
+      deallocate (e_re, e_im)
 !
       ! Transform x-direction back in each z layer.
       do pos_a = 1, ona
@@ -3634,8 +3517,7 @@ module Fourier
       ! Distribute the results back in normal shape.
       call unmap_from_pencil_xy (b_re, out)
 !
-      if (allocated (b_re)) deallocate (b_re)
-      if (allocated (b_im)) deallocate (b_im)
+      deallocate (b_re, b_im)
 !
     endsubroutine vect_pot_extrapol_z_parallel
 !***********************************************************************
@@ -3699,14 +3581,8 @@ module Fourier
           'shearing is not implemented in this routine!', lfirst_proc_xy)
 !
       ! Allocate memory for large arrays.
-      allocate (p_re(pnx,pny), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p_re', .true.)
-      allocate (p_im(pnx,pny), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p_im', .true.)
-      allocate (t_re(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for t_re', .true.)
-      allocate (t_im(tnx,tny), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for t_im', .true.)
+      allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for p/t', .true.)
 !
       call cffti (nxgrid, wsavex)
       call cffti (nygrid, wsavey)
@@ -3726,13 +3602,10 @@ module Fourier
       call transp_pencil_xy (p_re, t_re)
       call transp_pencil_xy (p_im, t_im)
 !
-      if (allocated (p_re)) deallocate (p_re)
-      if (allocated (p_im)) deallocate (p_im)
+      deallocate (p_re, p_im)
 !
-      allocate (e_re(tnx,tny,onz,2), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e_re', .true.)
-      allocate (e_im(tnx,tny,onz,2), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e_im', .true.)
+      allocate (e_re(tnx,tny,onz,2), e_im(tnx,tny,onz,2), stat=stat)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for e', .true.)
 !
       do l = 1, tny
         ! Transform y-direction.
@@ -3755,19 +3628,15 @@ module Fourier
         enddo
       enddo
 !
-      if (allocated (t_re)) deallocate (t_re)
-      if (allocated (t_im)) deallocate (t_im)
+      deallocate (t_re, t_im)
 !
-      allocate (b_re(pnx,pny,onz,2), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b_re', .true.)
-      allocate (b_im(pnx,pny,onz,2), stat=stat)
-      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b_im', .true.)
+      allocate (b_re(pnx,pny,onz,2), b_im(pnx,pny,onz,2), stat=stat)
+      if (stat > 0) call fatal_error ('field_extrapol_z_parallel', 'Could not allocate memory for b', .true.)
 !
       call transp_pencil_xy (e_re, b_re)
       call transp_pencil_xy (e_im, b_im)
 !
-      if (allocated (e_re)) deallocate (e_re)
-      if (allocated (e_im)) deallocate (e_im)
+      deallocate (e_re, e_im)
 !
       ! Transform x-direction back.
       do pos_z = 1, onz
@@ -3786,8 +3655,7 @@ module Fourier
       ! Distribute the results.
       call unmap_from_pencil_xy (b_re, out)
 !
-      if (allocated (b_re)) deallocate (b_re)
-      if (allocated (b_im)) deallocate (b_im)
+      deallocate (b_re, b_im)
 !
     endsubroutine field_extrapol_z_parallel
 !***********************************************************************
