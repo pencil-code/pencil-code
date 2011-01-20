@@ -241,7 +241,7 @@ module Boundcond
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
                 case ('hat')
-                  !BCX_DOC: top hat jet profile in spherical coordinate.
+                  ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
                   call bc_set_jethat_x(f,j,topbot,fbcx12,fbcx2_12)
                 case ('spd')
@@ -260,7 +260,7 @@ module Boundcond
                   ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
                   call bc_set_sa2_x(f,topbot,j)
                 case ('pfc')
-                  !BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ .
+                  ! BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ .
                   call bc_set_pfc_x(f,topbot,j)
                  case ('fix')
                   ! BCX_DOC: set boundary value [really??]
@@ -280,9 +280,10 @@ module Boundcond
                   ! BCX_DOC: set to given value(s) or function
                   call bc_force_x(f, -1, topbot, j)
                 case ('nil')
+                  ! BCX_DOC: do nothing; assume that everything is set
                 case ('ioc')
-                  !BCX_DOC: inlet/outlet on western/eastern hemisphere
-                  !BCX_DOC: in cylindrical coordinates
+                  ! BCX_DOC: inlet/outlet on western/eastern hemisphere
+                  ! BCX_DOC: in cylindrical coordinates
                   call bc_inlet_outlet_cyl(f,topbot,j,fbcx12)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
@@ -470,8 +471,8 @@ module Boundcond
               case ('pfc')
                 !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
                 call bc_set_pfc_y(f,topbot,j)
-              case ('')
-                ! do nothing; assume that everything is set
+              case ('nil','')
+                ! BCY_DOC: do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
@@ -783,7 +784,7 @@ module Boundcond
                 ! BCZ_DOC: copy value of last physical point to all ghost cells
                 call bc_copy_z(f,topbot,j)
               case ('nil')
-                ! do nothing; assume that everything is set
+                ! BCZ_DOC: do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j
