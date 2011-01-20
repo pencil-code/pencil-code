@@ -83,6 +83,7 @@ module Magnetic
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
+  real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(3) :: u0_advec=0.
   real, dimension(nx,3) :: uxbb
@@ -143,7 +144,7 @@ module Magnetic
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
   logical :: lohmic_heat=.true., lneutralion_heat=.true.
   logical :: reinitialize_aa=.false.
-  logical :: lB_ext_pot=.false.
+  logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
   logical :: lgauss=.false.
@@ -154,7 +155,7 @@ module Magnetic
   logical :: lconst_advection=.false.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
+      B_ext, J_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       by_left, by_right, bz_left, bz_right, &
       relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
@@ -203,7 +204,7 @@ module Magnetic
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
-      B_ext, omega_Bz_ext, u0_advec, nu_ni, &
+      B_ext, J_ext, omega_Bz_ext, u0_advec, nu_ni, &
       hall_term, &
       eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
@@ -667,6 +668,7 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       integer :: i,ierr
+      real :: J_ext2
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
@@ -709,6 +711,11 @@ module Magnetic
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
       B_ext_inv=B_ext*B_ext21
+!
+!  calculate lJ_ext (true if any of the 3 components in true)
+!
+      J_ext2=J_ext(1)**2+J_ext(2)**2+J_ext(3)**2
+      lJ_ext=(J_ext2/=0)
 !
 !  rescale magnetic field by a factor reinitialize_aa
 !
@@ -1942,6 +1949,14 @@ module Magnetic
         if (iglobal_jx_ext/=0) p%jj(:,1)=p%jj(:,1)+f(l1:l2,m,n,iglobal_jx_ext)
         if (iglobal_jy_ext/=0) p%jj(:,2)=p%jj(:,2)+f(l1:l2,m,n,iglobal_jy_ext)
         if (iglobal_jz_ext/=0) p%jj(:,3)=p%jj(:,3)+f(l1:l2,m,n,iglobal_jz_ext)
+!
+!  Add an external J-field (for the Bell instability).
+!
+        if (lJ_ext) then
+          p%jj(:,1)=p%jj(:,1)+J_ext(1)
+          p%jj(:,2)=p%jj(:,2)+J_ext(2)
+          p%jj(:,3)=p%jj(:,3)+J_ext(3)
+        endif
       endif
 ! exa
       if (lpencil(i_exa)) then

@@ -188,6 +188,8 @@ module Magnetic_meanfield_demfdt
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: emf, del2emf
+      real, dimension (nx,3) :: graddivemf
+      real, dimension (nx,3,3) :: emfij,demfij
 !
       intent(inout)  :: f,p
       intent(inout)  :: df
@@ -205,7 +207,9 @@ module Magnetic_meanfield_demfdt
 !  Spatial diffusion part, if eta_emf/=0.
 !
       if (eta_emf/=0.) then
-        call del2v(f,iemf,del2emf)
+!--     call del2v(f,iemf,del2emf)
+        call gij(f,iemf,emfij,1)
+        call gij_etc(f,iemf,emf,emfij,demfij,del2emf,graddivemf)
         df(l1:l2,m,n,iemfx:iemfz)=df(l1:l2,m,n,iemfx:iemfz)+eta_emf*del2emf
       endif
 !

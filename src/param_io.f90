@@ -418,6 +418,7 @@ module Param_IO
         if (ltemperature      ) print*,'&entropy_init_pars         /'
         if (lmagnetic         ) print*,'&magnetic_init_pars        /'
         if (lmagn_mf          ) print*,'&magn_mf_init_pars         /'
+        if (lmagn_mf_demfdt   ) print*,'&magn_mf_demfdt_init_pars  /'
         if (llorenz_gauge     ) print*,'&lorenz_gauge_init_pars    /'
         if (ltestscalar       ) print*,'&testscalar_init_pars      /'
         if (ltestfield        ) print*,'&testfield_init_pars       /'
