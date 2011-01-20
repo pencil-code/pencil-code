@@ -5460,9 +5460,14 @@ module Boundcond
       real, dimension (:,:,:), allocatable, save :: exp_fact_top, exp_fact_bot
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
       integer :: kx_start, stat, pos_z
-      real :: delta_z,reduce_factor=1.
+      real :: delta_z, reduce_factor=1.
 !
-      if (fbcz_bot(iaa)/=0.) reduce_factor=fbcz_bot(iaa)
+      ! reduce_factor reduces the structure increase at the bottom boundary
+      ! to help numerically resolving the strong gradients in the ghost cells.
+      ! Set reduce_factor to [0,1] by using fbcz_bot(iaa) in run_pars.
+      ! A value of 1 (default) switches this reducing-mechanism off.
+      ! A value of 0 just clones the vector field A from the n1-layer.
+      if (fbcz_bot(iaa) /= 0.) reduce_factor = fbcz_bot(iaa)
 !
       if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
           call fatal_error ('bc_aa_pot_field_extrapol', 'Only implemented for topmost or downmost z-layer.', lfirst_proc_xy)
@@ -5483,7 +5488,8 @@ module Boundcond
           exp_fact_bot = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
                                             spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
           do pos_z = 1, nghost
-            delta_z = reduce_factor*(z(n1) - z(n1-nghost+pos_z-1)) ! dz is positive => increase
+            ! dz is positive => enhance structures or contrast
+            delta_z = reduce_factor * (z(n1) - z(n1-nghost+pos_z-1))
             ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
             exp_fact_bot(:,:,pos_z) = exp_fact_bot(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
@@ -5500,7 +5506,8 @@ module Boundcond
           exp_fact_top = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
                                             spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
           do pos_z = 1, nghost
-            delta_z = z(n2) - z(n2+pos_z) ! dz is negative => decay
+            ! dz is negative => decay of structures
+            delta_z = z(n2) - z(n2+pos_z)
             ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
             exp_fact_top(:,:,pos_z) = exp_fact_top(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
