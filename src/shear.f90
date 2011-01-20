@@ -17,8 +17,8 @@
 module Shear
 !
   use Cdata
-  use Messages
-  use Sub
+  use Messages, only: svn_id
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -157,8 +157,8 @@ module Shear
 !
 !   1-may-08/anders: coded
 !
-      use General
-      use Mpicomm
+      use General, only: random_number_wrapper
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -196,8 +196,8 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      use Sub, only: keep_compiler_quiet
       logical, dimension(npencils) :: lpencil_in
+!
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_shear
@@ -209,7 +209,6 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      use Sub, only: keep_compiler_quiet
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -229,9 +228,8 @@ module Shear
 ! 16-aug-02/axel: use now Sshear which is calculated in param_io.f90
 ! 20-aug-02/axel: added magnetic stretching term
 !
-      use Deriv
-      use Diagnostics
-      use Fourier, only: fourier_shift_yz_y
+      use Deriv, only: der
+      use Diagnostics, only: max_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -331,9 +329,8 @@ module Shear
 !
 !  18-aug-02/axel: incorporated from nompicomm.f90
 !
-      use Diagnostics
+      use Diagnostics, only: save_name
       use Fourier, only: fourier_shift_y
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -455,7 +452,7 @@ module Shear
 !
 !   2-jul-04/tobi: adapted from entropy
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr
