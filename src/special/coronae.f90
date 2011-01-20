@@ -1287,15 +1287,14 @@ module Special
 ! fraction of current amplitude to maximum amplitude to the beginning
 ! and when the granule disapears
       thresh=0.78
-      xrange=min(nint(1.5*granr*(1+ig)/dx),nint(nxgrid/2.0)-1)
-      yrange=min(nint(1.5*granr*(1+ig)/dy),nint(nygrid/2.0)-1)
+      xrange=min(nint(1.5*granr*(1+ig)*dx_1(1)),nint(nxgrid/2.0)-1)
+      yrange=min(nint(1.5*granr*(1+ig)*dy_1(1)),nint(nygrid/2.0)-1)
 !
       if (lroot) then
         print*,'| solar_corona: settings for granules'
         print*,'-----------------------------------'
         print*,'| radius [Mm]:',granr*unit_length*1e-6
         print*,'| lifetime [min]',life_time*unit_time/60.
-!        print*,'| update interval [s]',dt_gran*unit_time
         print*,'-----------------------------------'
       endif
 !
@@ -1347,11 +1346,11 @@ module Special
       lifet_arr(3)=ldif**4*life_time
 !
       xrange_arr(1)=xrange
-      xrange_arr(2)=min(nint(ldif*xrange),nint(nxgrid/2.-1.))
-      xrange_arr(3)=min(nint(ldif*ldif*xrange),nint(nxgrid/2.-1.))
+      xrange_arr(2)=nint(ldif*xrange)
+      xrange_arr(3)=nint(ldif*ldif*xrange)
       yrange_arr(1)=yrange
-      yrange_arr(2)=min(nint(ldif*yrange),nint(nygrid/2-1.))
-      yrange_arr(3)=min(nint(ldif*ldif*yrange),nint(nygrid/2-1.))
+      yrange_arr(2)=nint(ldif*yrange)
+      yrange_arr(3)=nint(ldif*ldif*yrange)
 !
     endsubroutine set_driver_params
 !***********************************************************************
@@ -1899,7 +1898,8 @@ module Special
       inquire(file=trim(directory_snap)//trim(filename),exist=ex)
 !
       if (ex) then
-        open(unit,file=trim(directory_snap)//trim(filename),access="direct",recl=6*lend)
+        open(unit,file=trim(directory_snap)//trim(filename), &
+            access="direct",recl=6*lend)
 !
         rn=1
         do
@@ -1939,7 +1939,7 @@ module Special
           endif
         endif
       else
-        print*,'No points lists were found, creating new driver points'
+        print*,'No points lists found, creating points for level:',level
       endif
 !
     endsubroutine read_points
