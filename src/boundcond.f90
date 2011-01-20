@@ -5460,8 +5460,9 @@ module Boundcond
       real, dimension (:,:,:), allocatable, save :: exp_fact_top, exp_fact_bot
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
       integer :: kx_start, stat, pos_z
-      real :: delta_z
+      real :: delta_z,reduce_factor=1.
 !
+      if (fbcz_bot(iaa)/=0.) reduce_factor=fbcz_bot(iaa)
 !
       if (.not. ((lfirst_proc_z .and. (topbot == 'bot')) .or. (llast_proc_z .and. (topbot == 'top')))) &
           call fatal_error ('bc_aa_pot_field_extrapol', 'Only implemented for topmost or downmost z-layer.', lfirst_proc_xy)
@@ -5482,7 +5483,7 @@ module Boundcond
           exp_fact_bot = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
                                             spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
           do pos_z = 1, nghost
-            delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
+            delta_z = reduce_factor*(z(n1) - z(n1-nghost+pos_z-1)) ! dz is positive => increase
             ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
             exp_fact_bot(:,:,pos_z) = exp_fact_bot(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
@@ -6452,13 +6453,15 @@ module Boundcond
 !
       if (iproc==0) then
         iay_global(1:nx) = f(l1:l2,m1,ipos,iay)
-        do j=1,nprocx-1
-          call mpirecv_real(iay_global(j*nx+1:(j+1)*nx),nx,j,j*100)
-        enddo
+        if (nprocx>1) then
+          do j=1,nprocx-1
+            call mpirecv_real(iay_global(j*nx+1:(j+1)*nx),nx,j,j*100)
+          enddo
+        endif
         fft_az_r=iay_global
         call fourier_transform_other(fft_az_r,fft_az_i)
       else
-        call mpisend_real(f(l1:l2,m1,ipos,iay),nx,0,iproc*100)
+        if (nprocx>1) call mpisend_real(f(l1:l2,m1,ipos,iay),nx,0,iproc*100)
       endif
 !
       do i=1,nghost
@@ -6472,11 +6475,14 @@ module Boundcond
           call fourier_transform_other(A_r,A_i,linv=.true.)
 !
           f(l1:l2,m1,ipos+dir*i,iay) = A_r(1:nx)
-          do j=1,nprocx-1
-            call mpisend_real(A_r(j*nx+1:(j+1)*nx),nx,j,j*100)
-          enddo
+!
+          if (nprocx>1) then
+            do j=1,nprocx-1
+              call mpisend_real(A_r(j*nx+1:(j+1)*nx),nx,j,j*100)
+            enddo
+          endif
         else
-          call mpirecv_real(f(l1:l2,m1,ipos+dir*i,iay),nx,0,iproc*100)
+          if (nprocx>1) call mpirecv_real(f(l1:l2,m1,ipos+dir*i,iay),nx,0,iproc*100)
         endif
 !
       enddo
