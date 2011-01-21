@@ -4253,7 +4253,7 @@ module Initcond
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       logical, intent (in) :: periodic
-      real :: mu0_SI,u_b,zref
+      real :: mu0_SI,u_b,zref,Bzflux
       logical :: exists
       integer :: i,j,idx2,idy2,stat,iostat,lend
       integer :: nxinit,nyinit
@@ -4263,8 +4263,8 @@ module Initcond
 !
 !  Allocate memory for arrays.
 !
-      if (.not.lequidist(1).or..not.lequidist(2)) &
-          call fatal_error('mag_init','not yet implemented for non-equidistant grids')
+      if (.not.lequidist(1).or..not.lequidist(2)) call fatal_error('mag_init', &
+          'not yet implemented for non-equidistant grids')
 !
       iostat = 0
       if (periodic) then
@@ -4315,7 +4315,8 @@ module Initcond
 !
       if (lroot) then
         inquire(file=mag_field_dat,exist=exists)
-        call stop_it_if_any(.not.exists, 'mdi_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
+        call stop_it_if_any(.not.exists, &
+            'mdi_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
         inquire(IOLENGTH=lend) u_b
         open (11,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
@@ -4334,6 +4335,19 @@ module Initcond
         call stop_it_if_any(.false.,'')
       endif
       call mpibcast_real(Bz0_r,(/nxinit,nyinit/))
+!
+      if (lroot) then
+        if (nxgrid==1.and.nygrid/=1) then
+          Bzflux =  sum(abs(Bz0_r * 1e-4))*dy*unit_length
+          write (*,*) 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
+        elseif (nxgrid/=1.and.nygrid==1) then
+          Bzflux =  sum(abs(Bz0_r * 1e-4))*dx*unit_length
+          write (*,*) 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
+        elseif (nxgrid/=1.and.nygrid/=1) then
+          Bzflux =  sum(abs(Bz0_r * 1e-4))*dx*unit_length*dy*unit_length
+          write (*,*) 'Bz flux sum(|B|)*dA [Tm^2] :',Bzflux
+        endif
+      endif
 !
       Bz0_i = 0.
       Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla and SI to PENCIL units
@@ -4385,6 +4399,7 @@ module Initcond
 !
 !  Deallocate arrays.
 !
+      write (*,*) 'cleaning up mdi_init'
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(k2)) deallocate(k2)
