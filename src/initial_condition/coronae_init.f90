@@ -61,7 +61,10 @@ contains
           unit_length*unit_temperature**3.5
       write(*,*) "Kperp=",3.47e12/((unit_velocity**3*unit_magnetic**2 &
           *unit_length)/(unit_density * sqrt(unit_temperature)))
+      write(*,*) "Kperp2=",3.47e12*1e-23/sqrt(1e6)/  &
+          (unit_velocity**3*unit_magnetic**2*unit_length)
       write(*,*) "hcond_grad=",1e9*dxmax**3*unit_temperature/unit_velocity**3
+      write(*,*) dxmax,dx,dz
       write(*,*) "-------------------------------------------------------------"
     endif
 !

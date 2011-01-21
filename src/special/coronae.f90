@@ -23,6 +23,7 @@ module Special
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
+  real :: tau_inv_top=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=huge1
@@ -43,7 +44,7 @@ module Special
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
-      hcond_grad_iso,limiter_tensordiff,lmag_time_bound
+      hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top
 !
 ! variables for print.in
 !
@@ -497,7 +498,8 @@ module Special
 !
     vKpara = Kpara * exp(p%lnTT*3.5)
 !    vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
-    vKperp = Kperp * b2_1*exp(p%lnrho)
+!    vKperp = Kperp * b2_1*exp(p%lnrho)
+    vKperp = Kperp * exp(p%lnrho)
 !
 !  For time step limitiation we have to find the effective heat flux:
 !  abs(K) = [K1.delta_ij + (K0-K1).bi.bj].ei.ej
@@ -528,7 +530,8 @@ module Special
     enddo
     call multsv_mn(2.*b2_1,tmpv,tmpv2)
 !    tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
-    tmpv=p%glnrho-tmpv2
+!    tmpv=p%glnrho-tmpv2
+    tmpv=p%glnrho !-tmpv2
     call multsv_mn(vKperp,tmpv,gvKperp)
 !
 !  Calculate diffusion term.
@@ -1064,6 +1067,13 @@ module Special
 !  Add newton cooling term to entropy
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+!
+      if (ipz==nprocz-1.and.n==n2.and.tau_inv_top/=0) then
+        newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton*tau_inv_top
+        tau_inv_tmp=max(tau_inv_tmp,tau_inv_top)
+      endif
+!
       if (lvideo) then
 !
 ! slices
@@ -2386,6 +2396,8 @@ module Special
 !
       if (allocated(tmpl)) deallocate(tmpl)
       if (allocated(tmpr)) deallocate(tmpr)
+      if (allocated(ux_ext_global)) deallocate(ux_ext_global)
+      if (allocated(uy_ext_global)) deallocate(uy_ext_global)
 !
     endsubroutine read_ext_vel_field
 !***********************************************************************
