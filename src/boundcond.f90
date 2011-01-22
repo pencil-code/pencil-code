@@ -4232,9 +4232,9 @@ module Boundcond
           inquire (file=mag_vel_field_dat, exist=ex)
           if (ex) then
             luse_vel_field = .true.
-            print *, 'bc_aa_force_time: using time dependant magnetogram _with_ corresponding horizontal velocities.'
+            print *, 'bc_force_aa_time: using time dependant magnetogram _with_ corresponding horizontal velocities.'
           else
-            print *, 'bc_aa_force_time: using time dependant magnetogram _without_ corresponding horizontal velocities.'
+            print *, 'bc_force_aa_time: using time dependant magnetogram _without_ corresponding horizontal velocities.'
           endif
         endif
 !
