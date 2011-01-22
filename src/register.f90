@@ -671,10 +671,10 @@ module Register
 !
       use Mpicomm, only: parallel_count_lines, parallel_open, parallel_close
 !
-      character (len=*),               intent(in)    :: in_file
-      character (len=30), allocatable, intent(out)   :: cnamel(:)
-      integer,                         intent(inout) :: nnamel
-      external                                       :: allocator
+      character (len=*),                             intent(in)    :: in_file
+      character (len=30), dimension(:), allocatable, intent(out)   :: cnamel
+      integer,                                       intent(inout) :: nnamel
+      external                                                     :: allocator
 !
       character (len=30) :: cname_tmp
       integer            :: iname, mname, istat
