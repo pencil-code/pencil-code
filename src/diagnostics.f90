@@ -2079,6 +2079,14 @@ module Diagnostics
 !
   1   if (lwrite_sound) then
 !
+        if (.not. allocated(cname_sound)) then
+          allocate(cname_sound(nnamel),stat=istat)
+          if (istat>0) call fatal_error('allocate_sound', &
+              ' ') !!!'Could not allocate memory for cname_sound')
+        endif
+
+
+
         if (.not. allocated(sound_coords_list)) then
           allocate(sound_coords_list(ncoords_sound,3),stat=stat)
           if (stat>0) call fatal_error('allocate_sound', &
@@ -2132,8 +2140,15 @@ module Diagnostics
 !   11-jan-11/MR: parameter nnamel added
 !
       integer, intent(in) :: nnamel
+
       integer :: stat
 !
+      if (.not. allocated(cname)) then
+        allocate(cname(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cname')
+      endif
+   
       if ( .not.allocated(fname) ) then
         allocate(fname(nnamel),stat=stat)
 !
@@ -2164,7 +2179,15 @@ module Diagnostics
 !   11-jan-11/MR: parameter nnamel added
 !
       integer, intent(in) :: nnamel
+
+      integer :: stat
 !
+      if (.not. allocated(cnamev)) then
+        allocate(cnamev(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamev')
+      endif
+
       if (lroot) print*, 'allocate_vnames: allocated memory for '// &
             'cnamev  with nnamev  =', nnamel
 !
@@ -2186,6 +2209,12 @@ module Diagnostics
 !  averages, and only evaluates its output for special purposes
 !  such as computing mean field energies in calc_bmz, for example,
 !
+      if (.not. allocated(cnamez)) then
+        allocate(cnamez(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamez')
+      endif
+
       if ( .not.allocated(fnamez) ) then
         allocate(fnamez(nz,nprocz,nnamel),stat=stat)
 !
@@ -2218,6 +2247,12 @@ module Diagnostics
 !
       integer :: stat
 !
+      if (.not. allocated(cnamey)) then
+        allocate(cnamey(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamey')
+      endif
+
       if ( .not.allocated(fnamey) ) then
         allocate(fnamey(ny,nprocy,nnamel),stat=stat)
 !
@@ -2250,6 +2285,12 @@ module Diagnostics
 !
       integer :: stat
 !
+      if (.not. allocated(cnamex)) then
+        allocate(cnamex(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamex')
+      endif
+
       if ( .not.allocated(fnamex) ) then
         allocate(fnamex(nx,nprocx,nnamel),stat=stat)
 !
@@ -2283,6 +2324,12 @@ module Diagnostics
 !
       integer :: stat
 !
+      if (.not. allocated(cnamer)) then
+        allocate(cnamer(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamer')
+      endif
+
       mnamer=nnamel+1
       if ( .not.allocated(fnamer) ) then
         allocate(fnamer(nrcyl,mnamer),stat=stat)
@@ -2315,6 +2362,12 @@ module Diagnostics
 !
       integer :: stat
 !     
+      if (.not. allocated(cnamexz)) then
+        allocate(cnamexz(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamexz')
+      endif
+!
       if ( .not.allocated(fnamexz) ) then
         allocate(fnamexz(nx,nz,nnamel),stat=stat)
 !
@@ -2348,6 +2401,12 @@ module Diagnostics
 !
       integer :: stat
 !
+      if (.not. allocated(cnamexy)) then
+        allocate(cnamexy(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamexy')
+      endif
+
       if ( .not.allocated(fnamexy) ) then
         allocate(fnamexy(nx,ny,nnamel),stat=stat)
 !
@@ -2380,6 +2439,12 @@ module Diagnostics
 !
       integer :: stat
 !
+      if (.not. allocated(cnamerz)) then
+        allocate(cnamerz(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_sound', &
+            ' ') !!!'Could not allocate memory for cnamerz')
+      endif
+
       if ( .not.allocated(fnamerz) ) then
         allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
 !
