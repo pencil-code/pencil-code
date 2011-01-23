@@ -316,15 +316,12 @@ module Cdata
   integer, dimension (:,:), allocatable :: sound_coords_list
   real, dimension (nz,nprocz) :: z_allprocs=0.0
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
-  character (len=30), allocatable :: cname(:),cform(:)
-  character (len=30), allocatable :: cnamev(:),cname_sound(:),cform_sound(:)
-  character (len=30), allocatable :: cnamexy(:),cformxy(:)
-  character (len=30), allocatable :: cnamexz(:),cformxz(:)
-  character (len=30), allocatable :: cnamerz(:),cformrz(:)
-  character (len=30), allocatable :: cnamez(:),cformz(:)
-  character (len=30), allocatable :: cnamey(:),cformy(:)
-  character (len=30), allocatable :: cnamex(:),cformx(:)
-  character (len=30), allocatable :: cnamer(:),cformr(:)
+  character (len=30), allocatable :: cform(:),cform_sound(:), &
+                                     cformxy(:),cformxz(:),cformrz(:), &
+                                     cformz(:),cformy(:),cformx(:),cformr(:)
+  character (len=30), allocatable :: cname(:),cnamev(:),cname_sound(:), &
+                                     cnamexy(:),cnamexz(:),cnamerz(:), &
+                                     cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,ldiagnos_sound=.false.,lout_sound=.false.
