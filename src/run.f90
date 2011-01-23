@@ -463,6 +463,7 @@ program run
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
+                                 call vnames_clean_up()
                                  call xyaverages_clean_up()
                                  call xzaverages_clean_up()
                                  call yzaverages_clean_up()
@@ -470,6 +471,7 @@ program run
         if (lwrite_yaverages)    call yaverages_clean_up()
         if (lwrite_zaverages)    call zaverages_clean_up()
         if (lwrite_phiaverages)  call phiaverages_clean_up()
+        if (lwrite_sound)        call sound_clean_up()
         if (lforcing)            call forcing_clean_up()
         if (lhydro_kinematic)    call hydro_clean_up()
         if (lsolid_cells)        call solid_cells_clean_up()
