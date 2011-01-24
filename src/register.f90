@@ -749,7 +749,7 @@ module Register
                                  parallel_open, parallel_close
 !
       integer :: unit=1
-      integer :: ierr,iadd,ios,istat
+      integer :: ierr,iadd,ios
       logical :: lreset, ldummy
       character (len=30) :: cname_tmp
 !
