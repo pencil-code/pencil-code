@@ -4253,7 +4253,7 @@ module Initcond
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       logical, intent (in) :: periodic
-      real :: mu0_SI,u_b,zref,Bzflux
+      real :: zref,Bzflux
       logical :: exists
       integer :: i,j,idx2,idy2,stat,iostat,lend
       integer :: nxinit,nyinit
@@ -4294,11 +4294,6 @@ module Initcond
       idx2 = min(2,nxinit)
       idy2 = min(2,nyinit)
 !
-!  Magnetic field strength unit [B] = u_b
-!
-      mu0_SI = 4.*pi*1.e-7
-      u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-!
       if (periodic) then
         kx = spread(kx_fft,2,nyinit)
         ky = spread(ky_fft,1,nxinit)
@@ -4317,7 +4312,7 @@ module Initcond
         inquire(file=mag_field_dat,exist=exists)
         call stop_it_if_any(.not.exists, &
             'mdi_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
-        inquire(IOLENGTH=lend) u_b
+        inquire(IOLENGTH=lend) unit_magnetic
         open (11,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
         read (11,rec=1) Bz0_r(1:nxgrid,1:nygrid)
@@ -4350,7 +4345,7 @@ module Initcond
       endif
 !
       Bz0_i = 0.
-      Bz0_r = Bz0_r * 1e-4 / u_b ! Gauss to Tesla and SI to PENCIL units
+      Bz0_r = Bz0_r * 1e-4 / unit_magnetic ! Gauss to Tesla and SI to PENCIL units
 !
 !  Fourier Transform of Bz0:
 !
