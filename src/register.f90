@@ -674,9 +674,9 @@ module Register
 !
       use Mpicomm, only: parallel_open, parallel_close
 !
-      character (len=*) ,               intent(in)  :: in_file
-      character (len=30), dimension(*), intent(out) :: cnamel
-      integer,                          intent(out) :: nnamel
+      character (len=*) ,               intent(in)    :: in_file
+      character (len=30), dimension(*), intent(out)   :: cnamel
+      integer,                          intent(inout) :: nnamel
 !
       character (len=30) :: cname_tmp
       integer            :: iname, mname
