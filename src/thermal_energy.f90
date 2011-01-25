@@ -30,14 +30,14 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: eth_left, eth_right, widtheth
+  real :: eth_left, eth_right, widtheth, eth_const=1.0
   logical :: lviscosity_heat=.true.
   character (len=labellen), dimension(ninit) :: initeth='nothing'
 !
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initeth, eth_left, eth_right, widtheth
+      initeth, eth_left, eth_right, widtheth, eth_const
 !
 !  Run parameters.
 !
@@ -153,14 +153,18 @@ module Entropy
 !  Select between various initial conditions.
 !
           select case (initeth(j))
-          case ('zero', '0'); f(:,:,:,ilnTT) = 0.
+!
+          case ('zero', '0'); f(:,:,:,ieth) = 0.0
+!
           case ('xjump'); call jump(f,ieth,eth_left,eth_right,widtheth,'x')
+!
+          case ('const_eth'); f(:,:,:,ieth)=f(:,:,:,ieth)+eth_const
 !
           case default
 !
 !  Catch unknown values.
 !
-            write(unit=errormsg,fmt=*) 'No such value for initss(' &
+            write(unit=errormsg,fmt=*) 'No such value for initeth(' &
                 //trim(iinit_str)//'): ',trim(initeth(j))
             call fatal_error('init_ss',errormsg)
 !
@@ -291,6 +295,10 @@ module Entropy
       if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 !
 !  Diagnostics.
+!
+      if (ldiagnos) then
+        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
+      endif
 !
       if (l1davgfirst) then
         if (idiag_ppmx/=0) call yzsum_mn_name_x(p%pp,idiag_ppmx)
