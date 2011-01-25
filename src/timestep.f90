@@ -61,13 +61,12 @@ module Timestep
 !  Set up df and ds for each time sub.
 !
       do itsub=1,itorder
+        lfirst=(itsub==1)
         llast=(itsub==itorder)
-        if (itsub==1) then
-          lfirst=.true.
+        if (lfirst) then
           df=0.
           ds=0.
         else
-          lfirst=.false.
           df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
           ds=alpha_ts(itsub)*ds
         endif

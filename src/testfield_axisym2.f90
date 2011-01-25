@@ -836,7 +836,7 @@ module Testfield
 !  But do this only when we are on the last time step
 !
           if (ltestfield_taver) then
-            if (itsub==itorder) then
+            if (llast) then
               fac2=1./(nuxb(jtest)+1.)
               fac1=1.-fac2
             endif
@@ -856,7 +856,7 @@ module Testfield
               call cross_mn(p%uu,bbtest,uxbtest)
               juxb=iuxb+3*(jtest-1)
               if (ltestfield_taver) then
-                if (itsub==itorder) then
+                if (llast) then
                   if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)= &
                           fac1*f(l1:l2,m,n,juxb:juxb+2)+fac2*uxbtest
                 endif
@@ -876,7 +876,7 @@ module Testfield
 !  update counter, but only when we are on the last substep
 !
           if (ltestfield_taver) then
-            if (itsub==itorder) then
+            if (llast) then
               nuxb(jtest)=nuxb(jtest)+1
             endif
           endif

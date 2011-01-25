@@ -165,7 +165,7 @@ module Shear
 !  Possible to shear around a random position in x, to let all points
 !  be subjected to shear in a statistically equal way.
 !
-      if (itsub==1) then
+      if (lfirst) then
         if (lrandomx0) then
           if (lroot) then
             call random_number_wrapper(x0_shear)
@@ -367,7 +367,7 @@ module Shear
           call fourier_shift_y(tmp,uy0*dt_shear)
           f(l1:l2,m1:m2,n1:n2,ivar)=tmp
         enddo
-        if (itsub/=itorder) then
+        if (.not. llast) then
           do ivar=1,mvar
             tmp=df(l1:l2,m1:m2,n1:n2,ivar)
             call fourier_shift_y(tmp,uy0*dt_shear)

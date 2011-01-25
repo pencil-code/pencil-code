@@ -240,7 +240,7 @@ module BorderProfiles
       real, dimension (nx), intent(out) :: tmp
       integer,intent(in) :: ivar
 !
-      if (itsub==1.and.it==1) then
+      if (lfirst .and. it==1) then
         fsave_init(:,m-m1+1,ivar)=f(l1:l2,m,npoint,ivar)
         if (headtt.and.ip <= 6) &
              print*,'saving initial condition for ivar=',ivar
@@ -263,7 +263,7 @@ module BorderProfiles
       real, dimension (nx), intent(out) :: tmp
       integer,intent(in) :: ivar
 !
-      if (itsub==1.and.it==1) then
+      if (lfirst .and. it==1) then
          fsave_init(:,n-n1+1,ivar)=f(l1:l2,mpoint,n,ivar)
          if (headtt.and.ip <= 6) &
               print*,'saving initial condition for ivar=',ivar

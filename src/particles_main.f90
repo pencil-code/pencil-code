@@ -353,7 +353,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      if (itsub==1) then
+      if (lfirst) then
         dfp(1:npar_loc,:)=0.0
       else
         dfp(1:npar_loc,:)=alpha_ts(itsub)*dfp(1:npar_loc,:)
@@ -381,12 +381,11 @@ module Particles_main
 !
 !  13-nov-09/anders: coded
 !
-      if ( lparticles_stirring .and. (itsub==itorder) ) then
+      if ( lparticles_stirring .and. llast ) then
         call particle_stirring(fp,ineargrid)
       endif
 !
-      if ( (lparticles_collisions.or.lparticles_coagulation) .and. &
-          (itsub==itorder) ) then
+      if ( (lparticles_collisions.or.lparticles_coagulation) .and. llast ) then
 !
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
@@ -603,7 +602,7 @@ module Particles_main
 !
 !  Write information about local particle environment to file.
 !
-      if (itsub==1 .and. (.not.lpencil_check_at_work)) &
+      if (lfirst .and. (.not.lpencil_check_at_work)) &
           call particles_stalker_sub(f,fp,ineargrid)
 !
 !  Dynamical equations.

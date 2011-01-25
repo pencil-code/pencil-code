@@ -128,7 +128,7 @@ module Equ
 !  time-step. Useful for smearing out possible x-dependent numerical
 !  diffusion, e.g. in a linear shear flow.
 !
-      if (itsub==1 .and. lshift_datacube_x) then
+      if (lfirst .and. lshift_datacube_x) then
         call boundconds_x(f)
         do  n=n1,n2; do m=m1,m2
           f(:,m,n,:)=cshift(f(:,m,n,:),1,1)
@@ -182,7 +182,7 @@ module Equ
 !
       if (.not. lchemistry) then
         if (ldustdensity) call null_dust_vars(f)
-        if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
+        if (ldustdensity .and. lmdvar .and. lfirst) call redist_mdbins(f)
       endif
 !
 !  Call "before_boundary" hooks (for f array precalculation)
@@ -608,7 +608,7 @@ module Equ
 !  Do the vorticity integration here, before the omega pencil is overwritten.
 !
         if (ltime_integrals) then
-          if (itsub==itorder) then
+          if (llast) then
             if (lhydro)    call time_integrals_hydro(f,p)
             if (lmagnetic) call time_integrals_magnetic(f,p)
           endif
@@ -1122,7 +1122,7 @@ module Equ
       character (len=10) :: filename
       character (len=1) :: icrash_string
 !
-      if ( (it>1) .and. (itsub==1) .and. (dt<=crash_file_dtmin_factor*dtmin) ) then
+      if ( (it>1) .and. lfirst .and. (dt<=crash_file_dtmin_factor*dtmin) ) then
         write(icrash_string, fmt='(i1)') icrash
         filename='crash'//icrash_string//'.dat'
         call wsnap(trim(directory_snap)//'/'//filename,f,mvar_io,ENUM=.false.)

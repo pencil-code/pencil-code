@@ -771,7 +771,7 @@ module Particles_mpicomm
 !
 !  Create list of processors that we allow migration to and from.
 !
-      if (lshear .or. (it==1 .and. itsub==1)) then
+      if (lshear .or. (it==1 .and. lfirst)) then
         iproc_comm=-1; nproc_comm=0
         do dipx=-1,1; do dipy=-1,1; do dipz=-1,1
           ipx_rec=ipx+dipx
