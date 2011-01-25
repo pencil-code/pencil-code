@@ -280,8 +280,6 @@ module Diagnostics
           coorlegend(nleg-4:nleg)=' '
         endif
 !
-        nsub = len_trim(legend)
-!
       endif
 !
       ldata = .false.
@@ -296,6 +294,7 @@ module Diagnostics
             item = noform(cname_sound(iname))
             if ( ncoords_sound>1 ) then
 !
+              nsub = len_trim(legend)
               leng = len_trim(item)
               nc  = leng*(ncoords_sound-1) ; nch = nc/2
               if (nch>0) call safe_character_prepend(item,repeat('-',nch) )
@@ -308,8 +307,6 @@ module Diagnostics
               enddo
             endif
             call safe_character_append(legend, item)
-!
-            nsub = len_trim(legend)
 !
           endif
           call safe_character_append(fform, trim(cform_sound(iname))//comma)
