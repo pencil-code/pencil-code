@@ -327,7 +327,8 @@ module Cdata
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,ldiagnos_sound=.false.,lout_sound=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
-  logical :: lwrite_phizaverages=.false.
+  logical :: lwrite_xyaverages=.false.,lwrite_xzaverages=.false.,lwrite_yzaverages=.false., &
+             lwrite_phizaverages=.false.
   logical :: lwrite_yaverages=.false.,lwrite_zaverages=.false.,lwrite_phiaverages=.false.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: ltime_integrals=.false.

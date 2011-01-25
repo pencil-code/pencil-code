@@ -777,7 +777,7 @@ module Register
 !
       if (lroot) print*, 'Reading print formats from '//trim(print_in_file)
 !
-      nname = parallel_count_lines(print_in_file)
+      nname = max(0,parallel_count_lines(print_in_file))
 !
       if (nname>0) then
         call allocate_fnames(100)
@@ -794,7 +794,7 @@ module Register
 !
       if ( dvid/=0.0 ) then
 
-        nnamev = parallel_count_lines(video_in_file)
+        nnamev = max(0,parallel_count_lines(video_in_file))
 !
         if (nnamev>0) then
           call allocate_vnames(nnamev)
@@ -814,7 +814,7 @@ module Register
 !
       if ( dimensionality>0 .and. dsound/=0.0 ) then
         
-        nname_sound = parallel_count_lines(sound_in_file)
+        nname_sound = max(0,parallel_count_lines(sound_in_file))
 !       
         if (nname_sound>0) then
           call allocate_sound(nname_sound)
@@ -835,10 +835,9 @@ module Register
             endif
             close(1)
 !
+          else
+            nname_sound=0
           endif
-!
-        else
-          nname_sound=0
         endif
       endif
       if (lroot .and. (ip<14)) &
@@ -850,7 +849,7 @@ module Register
 !
       if (nnamez>0) then
         call allocate_xyaverages(nnamez)
-        ldummy = read_name_format(xyaver_in_file,cnamez,nnamez)
+        lwrite_xyaverages = read_name_format(xyaver_in_file,cnamez,nnamez)
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamez=', nnamez
 !
@@ -860,7 +859,7 @@ module Register
 !
       if (nnamey>0) then
         call allocate_xzaverages(nnamey)
-        ldummy = read_name_format(xyaver_in_file,cnamey,nnamey)
+        lwrite_xzaverages = read_name_format(xzaver_in_file,cnamey,nnamey)
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamey=', nnamey
 !
@@ -870,18 +869,18 @@ module Register
 !
       if (nnamex>0) then
         call allocate_yzaverages(nnamex)
-        ldummy = read_name_format(yzaver_in_file,cnamex,nnamex)
+        lwrite_yzaverages = read_name_format(yzaver_in_file,cnamex,nnamex)
       endif
 
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamex=', nnamex
 !
 !  Read in the list of variables for phi-z-averages.
 !
-      nnamer = parallel_count_lines(phizaver_in_file)
+      nnamer = max(0,parallel_count_lines(phizaver_in_file))
 !
       if (nnamer>0) then
         call allocate_phizaverages(nnamer)
-        ldummy = read_name_format(phizaver_in_file,cnamer,nnamer)
+        lwrite_phizaverages = read_name_format(phizaver_in_file,cnamer,nnamer)
       endif
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamer=', nnamer
 !

@@ -1030,6 +1030,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##  Buenos Aires
 ##
 #FC=mpif90 #(caps.iafe.uba.ar)
+##FFLAGS= -g -pg		#-O3 #(caps.iafe.uba.ar)
 #FFLAGS= -O3 #(caps.iafe.uba.ar)
 #CC=mpicc #(caps.iafe.uba.ar)
 #CFLAGS=-O3 -DFUNDERSC=1 #(caps.iafe.uba.ar)

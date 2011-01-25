@@ -1035,14 +1035,14 @@ module Equ
 !  Diagnostics.
 !
       if (ldiagnos) call diagnostic(fname,nname)
-!      if (ldiagnos_sound) call diagnostic(fname_sound,nname_sound)
+      if (ldiagnos_sound) call diagnostic(fname_sound,nname_sound)
 !
 !  1-D diagnostics.
 !
       if (l1davgfirst) then
-        call xyaverages_z
-        call xzaverages_y
-        call yzaverages_x
+        if (lwrite_xyaverages) call xyaverages_z
+        if (lwrite_xzaverages) call xzaverages_y
+        if (lwrite_yzaverages) call yzaverages_x
       endif
       if (l1dphiavg) call phizaverages_r
 !
