@@ -3712,6 +3712,29 @@ Other options are documented in the source code of the files.
 
 For some examples on how to use these routines, see Sect.~\ref{S-GDL}.
 
+\subsubsection{Python}
+\label{Python}
+
+Pencil also supports visualization using \name{python}. A number of scripts 
+for such are placed in the subfolder \file{\$PENCIL_HOME/python}. A 
+README file placed under that subfolder contains the information 
+needed to read Pencil output data into python. 
+
+To start rapidly under Python:
+
+\begin{enumerate}
+
+\item you must install the matplotlib library (a package often called
+   python-matplotlib)
+\item normally, numpy is installed as a dependency
+\item the PYTHONPATH is initialised when sourcing 'sourceme.*'
+\item for us, the best practical way to use Python is to start the ipython
+   shell so its installation is a good idea
+\item you must load all of the Python pencil modules using 'import pencil
+   as pc'
+\item you run a module using 'pc.read_ts()' and so on...
+
+\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
