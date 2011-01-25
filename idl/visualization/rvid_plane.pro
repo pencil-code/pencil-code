@@ -33,7 +33,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     nsmooth=nsmooth, textsize=textsize, _extra=_extra, polar=polar, $
     anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
-    doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,log=log
+    doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log
 ;
 COMMON pc_precision, zero, one
 ;
@@ -76,6 +76,7 @@ default,anglecoord,'z'
 default,style_polar,'fill'
 default,wsx,640
 default,wsy,480
+default,title,'rvid_plane'
 default,nlevels,30
 ;
 tini=1e-30 ; a small number
@@ -83,11 +84,12 @@ tini=1e-30 ; a small number
 ;  Set up a window for double buffering.
 ;
 if(keyword_set(doublebuffer)) then begin
-  base=widget_base()
+  base=widget_base(title=title)
   draw=widget_draw(base,xsize=wsx,ysize=wsy)
   widget_control,/realize,base
   widget_control,draw,get_value=windex
-endif
+endif else window, /free, xsize=wsx, ysize=wsy, title=title
+
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
