@@ -316,16 +316,16 @@ program write_driver
       write (*,*) 'Uy: ', minval (f(l1:l2,m1:m2,n1,iuy)), maxval (f(l1:l2,m1:m2,n1,iuy))
 !
       open (17, file='driver/vel_field.dat', status='unknown', form='unformatted', recl=nxgrid*nygrid*rn, access='direct')
-      write (17, rec=isnap*2+1) f(l1:l2,m1:m2,n1,iux)
-      write (17, rec=isnap*2+2) f(l1:l2,m1:m2,n1,iuy)
+      write (17, rec=isnap*2+1) f(l1:l2,m1:m2,n1,iux) * unit_velocity
+      write (17, rec=isnap*2+2) f(l1:l2,m1:m2,n1,iuy) * unit_velocity
       close (17)
 !
       open (2, file='driver/vel_times.dat', status='unknown', form='unformatted', recl=rn, access='direct')
-      write (2, rec=isnap+1) t
+      write (2, rec=isnap+1) t * unit_time
       close (2)
 !
       isnap = isnap + 1
-      next_snapshot = isnap * cadence * unit_time
+      next_snapshot = isnap * cadence / unit_time
     endif
 !
 !  Check wall clock time, for diagnostics and for user supplied simulation time
@@ -374,7 +374,7 @@ program write_driver
 !
 !  Time advance.
 !
-    t = t + unit_time
+    t = t + cadence / unit_time
 !
     it = it + 1
     headt = .false.
