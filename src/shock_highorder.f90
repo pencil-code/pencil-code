@@ -144,7 +144,7 @@ module Shock
 !  periodic boundaries if the shock viscosity is assumed periodic.
 !
       if (.not. lstarting .and. .not. lforce_periodic_shockviscosity) then
-        if (bcx(ishock)=='p' .and. .not. all((/bcx(iux:iuz)/)=='p')) then
+        if (bcx(ishock)=='p' .and. .not. all(bcx(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -155,7 +155,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcy(ishock)=='p' .and. .not. all((/bcy(iux:iuz)/)=='p')) then
+        if (bcy(ishock)=='p' .and. .not. all(bcy(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -166,7 +166,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcz(ishock)=='p' .and. .not. all((/bcz(iux:iuz)/)=='p')) then
+        if (bcz(ishock)=='p' .and. .not. all(bcz(iux:iuz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
