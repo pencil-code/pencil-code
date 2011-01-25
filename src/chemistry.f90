@@ -4399,7 +4399,7 @@ module Chemistry
       real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
       type (pencil_case) :: p
 !
-      real :: phi, mC3H8, mO2, Rcal, f_phi, E_a 
+      real :: mC3H8, mO2, Rcal, f_phi, E_a 
       real, save :: init_C3H8, init_O2
       integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
       logical :: lO2, lC3H8
@@ -4445,10 +4445,6 @@ module Chemistry
         init_C3H8=initial_massfractions(ichem_C3H8)
       endif
 !
-!  Find equivalence ratio phi
-!
-!      phi=5*(init_C3H8/init_O2)*(mO2/mC3H8)
-!
 !  Find Laminar flame speed corrector based on equivalence ratio phi
 !
       f_phi&
@@ -4490,7 +4486,6 @@ module Chemistry
         print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=',&
             i_O2, i_C3H8, ichem_O2, ichem_C3H8
         print*,'lO2, lC3H8=',lO2, lC3H8        
-        print*,'phi=',phi
         print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
       endif
 !
