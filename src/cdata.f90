@@ -123,6 +123,15 @@ module Cdata
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   character (len=20) :: timestep_scaling(mvar)='cons_err'
 !
+!  Use of LSODE to solve the chemistry in a separate step
+!  By default, sequential splitting method (1st order)
+!  if lsplit_second, Strang splitting procedure (2nd order)
+!
+  logical :: llsode=.false.
+  logical :: lstep1=.true.
+  logical :: lchemonly=.false.
+  logical :: lsplit_second=.false.
+!
 !  Input/output of data.
 !
   character (len=120) :: datadir='data'
@@ -141,7 +150,6 @@ module Cdata
   logical :: ltec=.false.
   logical :: lformat=.false.
   logical :: lread_less=.false.
-  real :: vel_corr=0.
 !
 !  Units (need to be in double precision).
 !
