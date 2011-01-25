@@ -3111,20 +3111,16 @@ module Hydro
             elseif (tau <= 0.5) then
               fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
             else
-              fade_fact=impossible
-              call fatal_error("UDAMPING","Never got here.")
+              call fatal_error("udamping","tau is invalid (tau > 0.5).")
             endif
           endif
 !
-          if (dampu > 0) then
+          if (dampu > 0.0) then
             ! absolute damping
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                                     - fade_fact*dampu*f(l1:l2,m,n,iux:iuz)
           else
             ! damping relative to time step (dampu < 0)
-            if (dt <= 0) &
-                call fatal_error("UDAMPING","dt <= 0 -- timestep is invalid")
-            ! dt known and good
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                                     + fade_fact*dampu/dt*f(l1:l2,m,n,iux:iuz)
           endif
@@ -3133,16 +3129,16 @@ module Hydro
 !  2. damp motions for p%r_mn > rdampext or r_ext AND p%r_mn < rdampint or r_int
 !
         if (dampuext > 0.0 .and. rdampext /= impossible) then
-          pdamp = step(p%r_mn,rdampext,wdamp) ! outer damping profile
+          ! outer damping profile
+          pdamp = step(p%r_mn,rdampext,wdamp)
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
           enddo
         endif
 !
         if (dampuint > 0.0 .and. rdampint /= impossible) then
-!         x0=abs(z(n))
-!         pdamp = step(x(l1:l2), x0, wdamp)
-          pdamp = 1 - step(p%r_mn,rdampint,wdamp) ! inner damping profile
+          ! inner damping profile
+          pdamp = 1 - step(p%r_mn,rdampint,wdamp)
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
           enddo
