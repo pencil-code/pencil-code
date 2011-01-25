@@ -2216,7 +2216,7 @@ module Chemistry
            call calc_diff_visc_coef(f)
          endif
 !
-        if (visc_const>impossible) then
+        if (visc_const==impossible) then
         do j3=nn1,nn2
         do j2=mm1,mm2
 !
