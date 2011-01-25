@@ -42,18 +42,18 @@ module InitialCondition
   include '../initial_condition.h'
 !
      real :: init_ux=0.,init_uy=0.,init_uz=0.
-     integer :: imass=1
+     integer :: imass=1, spot_number=0
      integer :: index_H2O=3
      integer :: index_N2=4
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.
      real :: X_wind=impossible
-     logical :: lreinit_water=.false.
+     logical :: lreinit_water=.false.,lwet_spots=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water, dYw,dYw1, dYw2, X_wind
+     lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, lwet_spots
 !
   contains
 !***********************************************************************
@@ -247,10 +247,11 @@ module InitialCondition
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: i,j,k=1,index_YY
+      integer :: i,j,k=1,index_YY, j1,j2,j3
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
+      logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat, i1,i2,i3
@@ -355,47 +356,24 @@ module InitialCondition
       close(file_id)
 
        if (lreinit_water) then
-!       if ((index_H2O>0) .and. (ldustdensity)) then
-!         if (linit_temperature) then
-           psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
-!         else
-!           psat=6.035e12*exp(-5938./TT)
-!         endif
-         if ((init_water1/=0.) .or. (init_water2/=0.)) then
-           do i=1,mx
-             if (x(i)<=init_x1) then
-                 f(i,:,:,ichemspec(index_H2O))=init_water1
-             endif
-             if (x(i)>=init_x2) then
-               f(i,:,:,ichemspec(index_H2O))=init_water2
-             endif
-             if (x(i)>init_x1 .and. x(i)<init_x2) then
-               f(i,:,:,ichemspec(index_H2O))=&
-                 (x(i)-init_x1)/(init_x2-init_x1) &
-                 *(init_water2-init_water1)+init_water1
-             endif
-           enddo
-         elseif ((init_x1/=0.) .or. (init_x2/=0.)) then
-           do i=1,mx
-             if (x(i)<=init_x1) then
-               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw1
-               f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
-             endif
-             if (x(i)>=init_x2) then
-               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw2
-               f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
-             endif
-             if (x(i)>init_x1 .and. x(i)<init_x2) then
-               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw1
-               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass/18.)*dYw2
-               f(i,:,:,ichemspec(index_H2O))=&
-                 (x(i)-init_x1)/(init_x2-init_x1) &
-                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
-             endif
-           enddo
-         else
-           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass/18.)!*dYw
+         psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
+         air_mass_ar=air_mass
+!
+         if ((init_water1/=0.) .or. (init_water2/=0.)) lline_profile=.true.
+         if ((init_x1/=0.) .or. (init_x2/=0.)) lline_profile=.true.
+!     
+         if (lline_profile) then
+           call line_profile(f,PP,psat,air_mass_ar, &
+                            init_water1,init_water2,init_x1,init_x2)
+         elseif (.not. lwet_spots) then
+           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+         elseif (lwet_spots) then
+           lmake_spot=.true.
+           call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
          endif
+!
+!  Recalculation of air_mass becuase of changing of N2
+!
          sum_Y=0.
          do k=1,nchemspec
            if (ichemspec(k)/=ichemspec(index_N2)) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
@@ -407,28 +385,19 @@ module InitialCondition
                    /species_constants(k,imass)
          enddo
          air_mass_ar=1./air_mass_ar
-         if ((init_x1/=0.) .or. (init_x2/=0.)) then
-           do i=1,mx
-             if (x(i)<=init_x1) then
-               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw1
-               f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
-             endif
-             if (x(i)>=init_x2) then
-               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw2
-               f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
-             endif
-             if (x(i)>init_x1 .and. x(i)<init_x2) then
-               init_water1_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw1
-               init_water2_(i,:,:)=psat(i,:,:)/(PP*air_mass_ar(i,:,:)/18.)*dYw2
-               f(i,:,:,ichemspec(index_H2O))=&
-                 (x(i)-init_x1)/(init_x2-init_x1) &
-                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
-             endif
-           enddo
-         else
+!
+!  end of recalculation
+!
+         if (lline_profile) then
+           call line_profile(f,PP,psat,air_mass_ar, &
+                            init_water1,init_water2,init_x1,init_x2)
+         elseif (.not. lwet_spots) then
            f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+         elseif (lwet_spots) then
+           lmake_spot=.false.
+           call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
          endif
-
+!
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
@@ -436,7 +405,7 @@ module InitialCondition
            f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs) &
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
          endif
-       
+!       
          if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
          if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
          if (lroot) print*, 'New Air density, g/cm^3:'
@@ -445,6 +414,127 @@ module InitialCondition
        endif
 !
     endsubroutine air_field_local
+!***********************************************************************
+    subroutine line_profile(f,PP_,psat_,air_mass_ar_, &
+                     init_water1__,init_water2__,init_x1__,init_x2__)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+      real :: PP_, init_water1__,init_water2__,init_x1__,init_x2__
+      real, dimension (mx,my,mz) :: air_mass_ar_, psat_
+      real, dimension (mx,my,mz) :: init_water1_,init_water2_
+
+         if ((init_water1__/=0.) .or. (init_water2__/=0.)) then
+           do i=1,mx
+             if (x(i)<=init_x1__) then
+                 f(i,:,:,ichemspec(index_H2O))=init_water1__
+             endif
+             if (x(i)>=init_x2__) then
+               f(i,:,:,ichemspec(index_H2O))=init_water2__
+             endif
+             if (x(i)>init_x1__ .and. x(i)<init_x2__) then
+               f(i,:,:,ichemspec(index_H2O))=&
+                 (x(i)-init_x1__)/(init_x2__-init_x1__) &
+                 *(init_water2__-init_water1__)+init_water1__
+             endif
+           enddo
+         elseif ((init_x1__/=0.) .or. (init_x2__/=0.)) then
+           do i=1,mx
+             if (x(i)<=init_x1__) then
+               init_water1_(i,:,:)= &
+                 psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw1
+               f(i,:,:,ichemspec(index_H2O))=init_water1_(i,:,:)
+             endif
+             if (x(i)>=init_x2__) then
+               init_water2_(i,:,:)= &
+                 psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw2
+               f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
+             endif
+             if (x(i)>init_x1__ .and. x(i)<init_x2__) then
+               init_water1_(i,:,:)= &
+                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw1
+               init_water2_(i,:,:)= &
+                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw2
+               f(i,:,:,ichemspec(index_H2O))=&
+                 (x(i)-init_x1__)/(init_x2__-init_x1__) &
+                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
+             endif
+           enddo
+         endif
+
+    endsubroutine line_profile
+!***********************************************************************
+    subroutine spot_init(f,PP_,air_mass_ar_,psat_, lmake_spot_)
+!
+!  Initialization of the dust spot positions and dust distribution
+!
+!  10-may-10/Natalia: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: k, j, j1,j2,j3, lx=0,ly=0,lz=0
+      real :: spot_size=3., RR, PP_
+      real, dimension (3,spot_number) :: spot_posit
+      real, dimension (mx,my,mz) :: air_mass_ar_, psat_
+      logical :: spot_exist=.true., lmake_spot_
+! 
+       f(:,:,:,ichemspec(index_H2O)) = &
+           psat_/(PP_*air_mass_ar_/18.)*dYw1
+!
+      if (lmake_spot_) spot_posit(:,:)=0.0
+      do j=1,spot_number
+        spot_exist=.true.
+        lx=0;ly=0; lz=0
+          if (nxgrid/=1) then
+          lx=1
+          if (lmake_spot_) then
+            call random_number_wrapper(spot_posit(1,j))
+            spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
+          endif
+          if ((spot_posit(1,j)-1.5*spot_size<xyz0(1)) .or. &
+            (spot_posit(1,j)+1.5*spot_size>xyz0(1)+Lxyz(1)))  &
+            spot_exist=.false.
+            print*,'positx',spot_posit(1,j),spot_exist
+          endif
+        if (nygrid/=1) then
+          ly=1
+          if (lmake_spot_) then
+            call random_number_wrapper(spot_posit(2,j))
+            spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
+          endif
+          if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
+            (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
+            spot_exist=.false.
+            print*,'posity',spot_posit(2,j),spot_exist
+          endif
+        if (nzgrid/=1) then
+          lz=1
+          if (lmake_spot_) then
+            call random_number_wrapper(spot_posit(3,j))
+            spot_posit(3,j)=spot_posit(3,j)*Lxyz(3)
+          endif
+          if ((spot_posit(3,j)-1.5*spot_size<xyz0(3)) .or. &
+           (spot_posit(3,j)+1.5*spot_size>xyz0(3)+Lxyz(3)))  &
+           spot_exist=.false.
+        endif
+             do j1=1,mx; do j2=1,my; do j3=1,mz
+               RR= (lx*x(j1)-spot_posit(1,j))**2 &
+                   +ly*(y(j2)-spot_posit(2,j))**2 &
+                   +lz*(z(j3)-spot_posit(3,j))**2
+               RR=sqrt(RR)
+!
+               if ((RR<spot_size) .and. (spot_exist)) then
+                f(j1,j2,j3,ichemspec(index_H2O)) = &
+                  psat_(j1,j2,j3)/(PP_*air_mass_ar_(j1,j2,j3)/18.)*dYw2
+               endif
+             enddo; enddo; enddo
+      enddo
+!
+    endsubroutine spot_init
+!***********************************************************************
+
+
 !***********************************************************************
 !
 !********************************************************************
