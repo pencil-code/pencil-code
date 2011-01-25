@@ -673,6 +673,7 @@ module Register
 !   24-jan-11/MR: removed allocation
 !
       use Mpicomm, only: parallel_open, parallel_close
+      use Cdata  , only: comment_char
 !
       character (len=*) ,               intent(in)    :: in_file
       character (len=30), dimension(*), intent(out)   :: cnamel
@@ -690,7 +691,7 @@ module Register
       nnamel = 0
       do iname=1,mname
         read(unit,*,end=99) cname_tmp
-        if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/='#')) then
+        if ((cname_tmp(1:1)/='!') .and. (cname_tmp(1:1)/=comment_char)) then
           nnamel=nnamel+1
           cnamel(nnamel)=cname_tmp
         endif
@@ -798,10 +799,11 @@ module Register
 !
         if (nnamev>0) then
           call allocate_vnames(nnamev)
-          if ( .not.read_name_format(video_in_file,cnamev,nnamev) ) &
-            dvid=0.0
+          lwrite_slices = read_name_format(video_in_file,cnamev,nnamev)
+          if ( .not.lwrite_slices ) dvid=0.0
         endif
       endif
+     
       if (lroot .and. (ip<14)) &
           print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
