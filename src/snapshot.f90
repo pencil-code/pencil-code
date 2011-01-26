@@ -685,11 +685,6 @@ module Snapshot
       endif
       endif
       write(lun_output+2,*) ' DATAPACKING=BLOCK'
-      car= 'DOUBLE'
-      do i = 1, nv+nd-1
-        car = trim(car)//' DOUBLE '
-      enddo
-      write(lun_output+2,*) ' DT=('//trim(car)//')'
 !
 !  Write data
 !
