@@ -889,7 +889,8 @@ module Special
       if (headtt) call warning("calc_heat_cool_RTV","cool acts everywhere")
     endif
 !
-    rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
+    if (init_time/=0) &
+        rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
 !
 !     add to temperature equation
 !
@@ -1006,7 +1007,8 @@ module Special
         endselect
       enddo
 !
-      heatinput=heatinput*cubic_step(real(t),init_time,init_width)
+      if (init_time/=0) &
+          heatinput=heatinput*cubic_step(real(t),init_time,init_width)
 !
       rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
 !

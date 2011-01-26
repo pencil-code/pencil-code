@@ -503,7 +503,7 @@ contains
             lnTT(i+1)+konst*int
       enddo
     endif
-
+!
   endsubroutine hydrostatic_lnTT
 !***********************************************************************
   subroutine hydrostatic_x(f)
