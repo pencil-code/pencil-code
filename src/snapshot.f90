@@ -290,14 +290,14 @@ module Snapshot
         if (uxy_spec  ) call power_xy(f,'u')
         if (bxy_spec  ) call power_xy(f,'b')
         if (jxbxy_spec) call power_xy(f,'jxb')
-        
+!
         if ( xy_spec/='' ) then
           ipos = index(xy_spec, '.'); sp1=''; sp2=''
           if ( ipos>1 ) then
             sp1 = xy_spec(1:ipos-1)
             if ( ipos<=len_trim(xy_spec)-1 ) sp2=xy_spec(ipos+1:)
           endif
-          
+!
           if ( sp1=='' .or. sp2=='' ) then
             print*, 'powersnap: Warning - '//trim(xy_spec)//' no valid identifier !'
           else
@@ -622,8 +622,7 @@ module Snapshot
       real, dimension (mx,my,mz,nv) :: a
       real, dimension (nx*ny*nz) :: xx, yy, zz
       character (len=*) :: file
-      character (len=300) :: car
-      character(len=2) :: car2
+      character(len=2) :: car
       character (len=8), dimension (nv) :: name
 !
       open(lun_output+2,FILE=file//'.tec')
@@ -667,8 +666,8 @@ module Snapshot
       endif
       endif
       do i = 1, nv
-        write(car2,'(i2)') i
-        name(i) = 'VAR_'//adjustl(car2)
+        write(car,'(i2)') i
+        name(i) = 'VAR_'//adjustl(car)
         write(lun_output+2,*) '"'//trim(name(i))//'"'
       enddo
 !
