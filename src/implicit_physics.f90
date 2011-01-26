@@ -169,7 +169,7 @@ module ImplicitPhysics
 !  term comes from the explicit advance.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, mpoly0
-      use Gravity, only: gravz
+      use Boundcond, only: update_ghosts
 !
       implicit none
 !
@@ -179,6 +179,10 @@ module ImplicitPhysics
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta, tmp_flux
+!
+!  first update all the ghost zones in the f-array
+!
+      call update_ghosts(f)
 !
       TT=f(:,4,:,iTTold)
       source=(f(:,4,:,ilnTT)-TT)/dt
@@ -195,27 +199,9 @@ module ImplicitPhysics
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
-!
-        if (j==n1) then
-          if (bcz1(ilnTT)=='cT') then
-            !constant temperature: T(j-1)=2*T(j)-T(j+1)
-            rhsx=TT(l1:l2,j)+dt/2.*source(l1:l2,j)
-          else
-            !imposed flux: T(j-1)=T(j+1)-2*dz*tmp_flux with tmp_flux=-Fbot/hcond0
-            Fbot=-gamma/(gamma-1.)*hcond0*gravz/(mpoly0+1.)
-            tmp_flux=-Fbot/hcond0
-            rhsx=TT(l1:l2,j)+wx*dz_2/2.*                            &
-                (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j+1)-2.*dz*tmp_flux) &
-                +dt/2.*source(l1:l2,j)
-          endif
-        elseif (j==n2) then
-          !constant temperature: T(j+1)=2*T(j)-T(j-1)
-          rhsx=TT(l1:l2,j)+dt/2.*source(l1:l2,j)
-        else
-          rhsx=TT(l1:l2,j)+wx*dz_2/2.*                         &
-              (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))             &
-               +dt/2.*source(l1:l2,j)
-        endif
+        rhsx=TT(l1:l2,j)+wx*dz_2/2.*                         &
+             (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))    &
+             +dt/2.*source(l1:l2,j)
 !
 ! x boundary conditions: periodic
 !
@@ -224,6 +210,11 @@ module ImplicitPhysics
         finter(l1:l2,j)=workx
       enddo
 !
+! finter must be periodic in the x-direction
+!
+      finter(1:l1-1,:)=finter(l2i:l2,:)
+      finter(l2+1:mx,:)=finter(l1:l1i,:)
+!
 !  columns dealt implicitly
 !
       do i=l1,l2
@@ -231,20 +222,9 @@ module ImplicitPhysics
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
-!
-        if (i==l1) then
-          rhsz=finter(i,n1:n2)+wz*dx_2/2.*                       &
-              (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(l2,n1:n2))    &
-              +dt/2.*source(i,n1:n2)
-        elseif (i==l2) then
-          rhsz=finter(i,n1:n2)+wz*dx_2/2.*                       &
-              (finter(l1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))     &
-              +dt/2.*source(i,n1:n2)
-        else
-          rhsz=finter(i,n1:n2)+wz*dx_2/2.*                       &
-              (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))   &
-              +dt/2.*source(i,n1:n2)
-        endif
+        rhsz=finter(i,n1:n2)+wz*dx_2/2.*                               &
+             (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))  &
+             +dt/2.*source(i,n1:n2)
         !
         ! z boundary conditions
         ! Always constant temperature at the top
