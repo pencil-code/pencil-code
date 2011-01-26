@@ -752,68 +752,68 @@ module Deriv
       if (present(ignoredx)) then
         igndx = ignoredx
       else
+        if (.not. lequidist(j)) then
+          call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
+        endif
         igndx = .false.
       endif
+!
       if (present(upwind)) then
         upwnd = upwind
       else
         upwnd = .false.
-        if (.not. lequidist(j)) then
-          call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
-        endif
         if ((.not.lcartesian_coords).and.(.not.igndx)) then
           call fatal_error('der6','in non-cartesian coordinates '//&
                'just works if upwinding is used')
         endif
-     endif
-!
+      endif
 !
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/840
           else if (upwnd) then
             fac=(1.0/840)*dx_1(l1:l2)
           else
-            fac=1/dx**6
+            fac=dx_1(l1:l2)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m,n,k) &
-                  + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+              + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+              -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+              +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.0
+            fac=1.0/840
           else if (upwnd) then
             fac=(1.0/840)*dy_1(m)
           else
-            fac=1/dy**6
+            fac=dy_1(m)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
-                  + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-         else
+              + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+              -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+              +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+        else
           df=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0/840
           else if (upwnd) then
             fac=(1.0/840)*dz_1(n)
           else
-            fac=1/dz**6
+            fac=dz_1(n)**6
           endif
           df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
-                  + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-         else
+              + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+              -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+              +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+        else
           df=0.
         endif
       endif
