@@ -178,7 +178,7 @@ module ImplicitPhysics
       real, dimension(mx,mz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
-      real    :: aalpha, bbeta, tmp_flux
+      real    :: aalpha, bbeta
 !
 !  first update all the ghost zones in the f-array
 !
