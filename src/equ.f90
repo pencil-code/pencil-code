@@ -1035,7 +1035,6 @@ module Equ
 !  Diagnostics.
 !
       if (ldiagnos) call diagnostic(fname,nname)
-      if (ldiagnos_sound) call diagnostic(fname_sound,nname_sound)
 !
 !  1-D diagnostics.
 !
