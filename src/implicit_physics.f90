@@ -175,75 +175,75 @@ module ImplicitPhysics
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,nz) :: finter, source, rho, TT
+      real, dimension(mx,mz) :: finter, source, rho, TT
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta, tmp_flux
 !
-      TT=f(l1:l2,4,n1:n2,iTTold)
-      source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
+      TT=f(:,4,:,iTTold)
+      source=(f(:,4,:,ilnTT)-TT)/dt
       if (ldensity) then
-        rho=exp(f(l1:l2,4,n1:n2,ilnrho))
+        rho=exp(f(:,4,:,ilnrho))
       else
         rho=1.
       endif
 !
 !  row dealt implicitly
 !
-      do j=1,nz
-        wx=dt*gamma*hcond0*cp1/rho(:,j)
+      do j=n1,n2
+        wx=dt*gamma*hcond0*cp1/rho(l1:l2,j)
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
 !
-        if (j==1) then
+        if (j==n1) then
           if (bcz1(ilnTT)=='cT') then
             !constant temperature: T(j-1)=2*T(j)-T(j+1)
-            rhsx=TT(:,j)+dt/2.*source(:,j)
+            rhsx=TT(l1:l2,j)+dt/2.*source(l1:l2,j)
           else
             !imposed flux: T(j-1)=T(j+1)-2*dz*tmp_flux with tmp_flux=-Fbot/hcond0
             Fbot=-gamma/(gamma-1.)*hcond0*gravz/(mpoly0+1.)
             tmp_flux=-Fbot/hcond0
-            rhsx=TT(:,j)+wx*dz_2/2.*                            &
-                (TT(:,j+1)-2.*TT(:,j)+TT(:,j+1)-2.*dz*tmp_flux) &
-                +dt/2.*source(:,j)
+            rhsx=TT(l1:l2,j)+wx*dz_2/2.*                            &
+                (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j+1)-2.*dz*tmp_flux) &
+                +dt/2.*source(l1:l2,j)
           endif
-        elseif (j==nz) then
+        elseif (j==n2) then
           !constant temperature: T(j+1)=2*T(j)-T(j-1)
-          rhsx=TT(:,j)+dt/2.*source(:,j)
+          rhsx=TT(l1:l2,j)+dt/2.*source(l1:l2,j)
         else
-          rhsx=TT(:,j)+wx*dz_2/2.*                         &
-              (TT(:,j+1)-2.*TT(:,j)+TT(:,j-1))             &
-               +dt/2.*source(:,j)
+          rhsx=TT(l1:l2,j)+wx*dz_2/2.*                         &
+              (TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))             &
+               +dt/2.*source(l1:l2,j)
         endif
 !
 ! x boundary conditions: periodic
 !
         aalpha=cx(nx) ; bbeta=ax(1)
         call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
-        finter(:,j)=workx
+        finter(l1:l2,j)=workx
       enddo
 !
 !  columns dealt implicitly
 !
-      do i=1,nx
-        wz=dt*gamma*hcond0*cp1/rho(i,:)
+      do i=l1,l2
+        wz=dt*gamma*hcond0*cp1/rho(i,n1:n2)
         az=-wz*dz_2/2.
         bz=1.+wz*dz_2
         cz=az
 !
-        if (i==1) then
-          rhsz=finter(i,:)+wz*dx_2/2.*                       &
-              (finter(i+1,:)-2.*finter(i,:)+finter(nx,:))    &
-              +dt/2.*source(i,:)
-        elseif (i==nx) then
-          rhsz=finter(i,:)+wz*dx_2/2.*                       &
-              (finter(1,:)-2.*finter(i,:)+finter(i-1,:))     &
-              +dt/2.*source(i,:)
+        if (i==l1) then
+          rhsz=finter(i,n1:n2)+wz*dx_2/2.*                       &
+              (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(l2,n1:n2))    &
+              +dt/2.*source(i,n1:n2)
+        elseif (i==l2) then
+          rhsz=finter(i,n1:n2)+wz*dx_2/2.*                       &
+              (finter(l1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))     &
+              +dt/2.*source(i,n1:n2)
         else
-          rhsz=finter(i,:)+wz*dx_2/2.*                       &
-              (finter(i+1,:)-2.*finter(i,:)+finter(i-1,:))   &
-              +dt/2.*source(i,:)
+          rhsz=finter(i,n1:n2)+wz*dx_2/2.*                       &
+              (finter(i+1,n1:n2)-2.*finter(i,n1:n2)+finter(i-1,n1:n2))   &
+              +dt/2.*source(i,n1:n2)
         endif
         !
         ! z boundary conditions
@@ -258,20 +258,20 @@ module ImplicitPhysics
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
           case ('c1')
-!           bz(1)=1.   ; cz(1)=-1
-!           rhsz(1)=dz*Fbot/hcond0
+            bz(1)=1.   ; cz(1)=-1
+            rhsz(1)=dz*Fbot/hcond0
 ! we can use here the second-order relation for the first derivative: 
 ! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
 ! and insert this expression in the difference relation to eliminate T_{j-1}:
 ! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
-            cz(1)=cz(1)+az(1)
-            rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
+!           cz(1)=cz(1)+az(1)
+!           rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
           case default 
            call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
         endselect
 !
         call tridag(az, bz, cz, rhsz, workz)
-        f(i+nghost,4,n1:n2,ilnTT)=workz
+        f(i,4,n1:n2,ilnTT)=workz
       enddo
 !
     endsubroutine ADI_Kconst
