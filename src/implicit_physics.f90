@@ -701,97 +701,66 @@ module ImplicitPhysics
 !  parallel version of the ADI scheme for the K=cte case
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
-      use Mpicomm, only: transp_xz, transp_zx, MPI_adi_x, MPI_adi_z
+      use Mpicomm, only: transp_xz, transp_zx
+      use Boundcond, only: update_ghosts
 !
       implicit none
 !
-      integer :: i,j
       integer, parameter :: nxt=nx/nprocz
+      integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
+      integer, parameter :: mzt=nzgrid+2*nghost
+      integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,nz)  :: finter, source, rho, TT
-      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
-      real, dimension(nzgrid,nxt) :: fintert, rhot, sourcet, wtmp
-      real, dimension(nx)     :: tmpx1, tmpx2, send_bufx1, send_bufx2
-      real, dimension(nzgrid) :: tmpz1, tmpz2, send_bufz1, send_bufz2
+      real, dimension(mx,mz)   :: finter, source, rho, TT
+      real, dimension(mzt,nxt) :: fintert, rhot, sourcet, wtmp
+      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
       real  :: aalpha, bbeta
 !
-      TT=f(l1:l2,4,n1:n2,iTTold)
-      source=(f(l1:l2,4,n1:n2,ilnTT)-TT)/dt
+      call update_ghosts(f)
+!
+      TT=f(:,4,:,iTTold)
+      source=(f(:,4,:,ilnTT)-TT)/dt
       if (ldensity) then
-        rho=exp(f(l1:l2,4,n1:n2,ilnrho))
+        rho=exp(f(:,4,:,ilnrho))
       else
         rho=1.
       endif
 !
-! Communicate the first and last pencils of size nx
-!
-      send_bufx1=TT(:,1)
-      send_bufx2=TT(:,nz)
-      call MPI_adi_x(tmpx1, tmpx2, send_bufx1, send_bufx2)
-!
 ! Rows dealt implicitly
 !
-      do j=1,nz
-        wx=dt*gamma*hcond0*cp1/rho(:,j)
+      do j=n1,n2
+        wx=dt*gamma*hcond0*cp1/rho(l1:l2,j)
         ax=-wx*dx_2/2
         bx=1.+wx*dx_2
         cx=ax
-!
-        if (j==1) then
-          rhsx=TT(:,j)+wx*dz_2/2*          &
-               (TT(:,j+1)-2*TT(:,j)+tmpx2) &
-               +dt/2*source(:,j)
-        elseif (j==nz) then
-          rhsx=TT(:,j)+wx*dz_2/2*          &
-               (tmpx1-2*TT(:,j)+TT(:,j-1)) &
-               +dt/2*source(:,j)
-        else
-          rhsx=TT(:,j)+wx*dz_2/2*             &
-              (TT(:,j+1)-2*TT(:,j)+TT(:,j-1)) &
-               +dt/2*source(:,j)
-        endif
+        rhsx=TT(l1:l2,j)+wx*dz_2/2*                      &
+             (TT(l1:l2,j+1)-2*TT(l1:l2,j)+TT(l1:l2,j-1)) &
+             +dt/2*source(l1:l2,j)
 !
 ! x boundary conditions: periodic
 !
         aalpha=cx(nx) ; bbeta=ax(1)
         call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
-        finter(:,j)=workx
+        finter(l1:l2,j)=workx(1:nx)
       enddo
 !
 ! Do the transpositions x <--> z
 !
-!      call transp_xz(finter, fintert)
-!      call transp_xz(rho, rhot)
-!      call transp_xz(source, sourcet)
-!
-! Communicate the first and last pencils of size nzgrid
-!
-      send_bufz1=fintert(:,1)
-      send_bufz2=fintert(:,nxt)
-      call MPI_adi_z(tmpz1, tmpz2, send_bufz1, send_bufz2)
+       call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,:))
+       call transp_xz(rho(l1:l2,n1:n2), rhot(n1t:n2t,:))
+       call transp_xz(source(l1:l2,n1:n2), sourcet(n1t:n2t,:))
 !
 ! Columns dealt implicitly
 !
       do i=1,nxt
-        wz=dt*gamma*hcond0*cp1/rhot(:,i)
+        wz=dt*gamma*hcond0*cp1/rhot(n1t:n2t,i)
         az=-wz*dz_2/2
         bz=1.+wz*dz_2
         cz=az
-!
-        if (i==1) then
-          rhsz=fintert(:,i)+wz*dx_2/2*               &
-              (fintert(:,i+1)-2*fintert(:,i)+tmpz2)  &
-              +dt/2*sourcet(:,i)
-        elseif (i==nxt) then
-          rhsz=fintert(:,i)+wz*dx_2/2*               &
-              (tmpz1-2*fintert(:,i)+fintert(:,i-1))  &
-              +dt/2*sourcet(:,i)
-        else
-          rhsz=fintert(:,i)+wz*dx_2/2*                        &
-              (fintert(:,i+1)-2*fintert(:,i)+fintert(:,i-1))  &
-              +dt/2*sourcet(:,i)
-        endif
+        rhsz=fintert(n1t:n2t,i)+wz*dx_2/2*                        &
+          (fintert(n1t:n2t,i+1)-2*fintert(n1t:n2t,i)+fintert(n1t:n2t,i-1))  &
+          +dt/2*sourcet(n1t:n2t,i)
         !
         ! z boundary conditions
         ! Always constant temperature at the top
@@ -805,23 +774,23 @@ module ImplicitPhysics
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom
           case ('c1')
-!           bz(1)=1.   ; cz(1)=-1
-!           rhsz(1)=dz*Fbot/hcond0
+            bz(1)=1.   ; cz(1)=-1
+            rhsz(1)=dz*Fbot/hcond0
 ! we can use here the second-order relation for the first derivative: 
 ! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
 ! and insert this expression in the difference relation to eliminate T_{j-1}:
 ! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
 !
-            cz(1)=cz(1)+az(1)
-            rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
+!           cz(1)=cz(1)+az(1)
+!           rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
           case default 
            call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
         endselect
 !
         call tridag(az, bz, cz, rhsz, workz)
-        wtmp(:,i)=workz
+        wtmp(n1t:n2t,i)=workz(1:nzgrid)
       enddo
-      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
+      call transp_zx(wtmp(n1t:n2t,:), f(l1:l2,4,n1:n2,ilnTT))
 !
     endsubroutine ADI_Kconst_MPI
 !***********************************************************************
