@@ -486,8 +486,8 @@ module Special
 !
     real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
     real, dimension (nx) :: thdiff,chi_spitzer
-    real, dimension (nx) :: vKpara,vKperp
-    real, dimension (nx) :: gT2_1,gT2,b2,b2_1
+    real, dimension (nx) :: vKpara,vKperp,tmp
+    real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
 !
     integer :: i,j
 !
@@ -505,15 +505,17 @@ module Special
 !  abs(K) = [K1.delta_ij + (K0-K1).bi.bj].ei.ej
 !  where K0=vKpara and K1=vKperp.
 !
-    call dot2_mn(p%glnTT,gT2)
-    gT2_1=1./max(tini,gT2)
+    call dot2_mn(p%glnTT,glnT2)
+    glnT2_1=1./max(tini,glnT2)
 !
     chi_spitzer=0.
     do i=1,3
       do j=1,3
-        chi_spitzer=chi_spitzer+ &
-            (vKpara-vKperp)*p%bb(:,i)*p%bb(:,j)*p%glnTT(:,i)*p%glnTT(:,j)*b2_1*gT2_1
-        if (i==j) chi_spitzer=chi_spitzer+vKperp*p%glnTT(:,i)*p%glnTT(:,j)*gT2_1
+        tmp =       p%glnTT(:,i)*glnT2_1*p%glnTT(:,j)
+        tmp = tmp * p%bb(:,i)*b2_1*p%bb(:,j)
+        tmp = tmp * (vKpara-vKperp)
+        chi_spitzer=chi_spitzer+ tmp
+        if (i==j) chi_spitzer=chi_spitzer+vKperp*glnT2_1*p%glnTT(:,i)*p%glnTT(:,j)
       enddo
     enddo
     chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
