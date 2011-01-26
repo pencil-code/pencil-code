@@ -1133,7 +1133,7 @@ module ImplicitPhysics
 !    (1-dt/2*Lamba_x)*T^(n+1/2) = Lambda_x(T^n) + Lambda_z(T^n) + source
 !    (1-dt/2*Lamba_z)*T^(n+1)   = T^(n+1/2)
 !
-!  where Lambda_x and Lambda_y denote diffusion operators and the source
+!  where Lambda_x and Lambda_z denote diffusion operators and the source
 !  term comes from the explicit advance.
 !  Note: this form is more adapted for a parallelisation compared the 
 !  Peaceman & Rachford one.
