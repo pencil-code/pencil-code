@@ -91,16 +91,17 @@ module Cdata
 !
 !  Time integration parameters.
 !
-  integer :: nt=10000000,it=1,itorder=3,itsub,it_timing=0
-  real :: tmax=1e33, tstart=0.
+  integer :: nt=10000000, it=1, itorder=3, itsub=0, it_timing=0
+  real :: tmax=1e33, tstart=0.0
   real :: max_walltime=0.0  ! in seconds
   double precision :: t
   real :: dt=0.0
-  real :: cdt=0.4,cdts=1.,cdtr=1.,cdtc=1.,cdtv=0.25,cdtv2=0.03,cdtv3=0.01
+  real :: cdt=0.4, cdts=1.0, cdtr=1.0, cdtc=1.0
+  real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtvDim, eps_rkf=1e-8, eps_stiff=1e-6
-  real :: ddt=0.
-  real :: dt1_last=0.
-  real :: dtmin=1.0e-6,dtmax=1.0e37
+  real :: ddt=0.0
+  real :: dt1_last=0.0
+  real :: dtmin=1.0e-6, dtmax=1.0e37
   logical :: lini_t_eq_zero=.false.
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
