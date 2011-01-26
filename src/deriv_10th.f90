@@ -11,7 +11,6 @@ module Deriv
 !
   use Cdata
   use Messages, only: fatal_error, warning
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -1703,8 +1702,8 @@ module Deriv
 !
       call fatal_error("deriv_10t","der_z not implemented yet")
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+! To avoid compiler warnings:
+      df=f(n1:n2)
 !
     endsubroutine der_z
 !***********************************************************************
@@ -1717,8 +1716,8 @@ module Deriv
 !
       call fatal_error("deriv_10th","der2_z not implemented yet")
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df2)
+! To avoid xcompiler warnings:
+      df2=f(n1:n2)
 !
     endsubroutine der2_z
 !***********************************************************************
