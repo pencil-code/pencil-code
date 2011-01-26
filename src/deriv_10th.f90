@@ -9,8 +9,9 @@
 !***************************************************************
 module Deriv
 !
-  use Messages, only: fatal_error, warning
   use Cdata
+  use Messages, only: fatal_error, warning
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -33,7 +34,7 @@ module Deriv
 !debug  integer, parameter :: icount_derij = 6         !DERCOUNT
 !debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
 !debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
-
+!
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
     module procedure der_other  ! derivative of another field
@@ -48,23 +49,18 @@ module Deriv
     module procedure derij_main   ! derivative of an 'mvar' variable
     module procedure derij_other  ! derivative of another field
   endinterface
-
+!
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
     module procedure  der_onesided_4_slice_other ! derivative of another field
   endinterface
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine initialize_deriv()
 !
 !  Initialize stencil coefficients
-!
-      use Cdata
-      use Messages
-!
-      real :: border_width, lborder, uborder
 !
       select case (der2_type)
 !
@@ -79,7 +75,7 @@ module Deriv
 !
       case default
         write(unit=errormsg,fmt=*) &
-             "der2_type doesn't exist"
+            "der2_type doesn't exist"
         call fatal_error('initialize_deriv',errormsg)
 !
       endselect
@@ -99,7 +95,6 @@ module Deriv
 !  25-aug-09/axel: adapted from deriv
 !  12-dec-10/axel: adapted also y and z derivatives
 !
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -165,8 +160,6 @@ module Deriv
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  25-aug-09/axel: adapted from deriv
 !  12-dec-10/axel: adapted also y and z derivatives
-
-      use Cdata
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -227,8 +220,6 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der
 !  25-aug-09/axel: adapted from deriv
-!
-      use Cdata
 !
       real, dimension (:) :: pencil,df
       integer :: j
@@ -291,8 +282,6 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: adapted from deriv
 !  12-dec-10/axel: adapted also y and z derivatives
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
@@ -370,8 +359,6 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: adapted from deriv
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j
@@ -429,7 +416,7 @@ module Deriv
           df2=0.
         endif
       endif
-
+!
 !
     endsubroutine der2_other
 !***********************************************************************
@@ -439,8 +426,6 @@ module Deriv
 !
 !  01-nov-07/anders: adapted from der2
 !  25-aug-09/axel: adapted from deriv
-!
-      use Cdata
 !
       real, dimension (:) :: pencil,df2
       integer :: j
@@ -497,8 +482,6 @@ module Deriv
 !  10-feb-06/anders: adapted from der5
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -516,7 +499,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
 !
@@ -580,8 +563,6 @@ module Deriv
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
 !  25-aug-09/axel: copied from deriv, but not adapted yet
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
@@ -674,8 +655,6 @@ module Deriv
 !  29-oct-04/anders: adapted from der6
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -693,7 +672,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
@@ -757,8 +736,6 @@ module Deriv
 !
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -857,8 +834,6 @@ module Deriv
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: j
@@ -951,8 +926,6 @@ module Deriv
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !  25-aug-09/axel: adapted from deriv
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
@@ -1025,7 +998,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1149,8 +1122,6 @@ module Deriv
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !  25-aug-09/axel: adapted from deriv
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j
@@ -1211,7 +1182,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1330,8 +1301,6 @@ module Deriv
 !
 !  05-dec-06/anders: adapted from derij
 !  25-aug-09/axel: copied from deriv, but not adapted yet
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -1541,8 +1510,6 @@ module Deriv
 !
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
@@ -1604,7 +1571,6 @@ module Deriv
     endsubroutine der_upwind1st
 !***********************************************************************
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
-      use Cdata
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
@@ -1626,7 +1592,7 @@ module Deriv
 !
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1667,7 +1633,6 @@ module Deriv
     endsubroutine
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
-      use Cdata
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
@@ -1685,11 +1650,11 @@ module Deriv
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df
       real :: fac
-      integer :: pos,k,sgn,j
+      integer :: pos,sgn,j
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1731,29 +1696,29 @@ module Deriv
 !***********************************************************************
     subroutine der_z(f,df)
 !
-! dummy routine
-!
-      use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
+! Dummy routine.
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call stop_it("deriv_10th: der_z not implemented yet")
+      call fatal_error("deriv_10t","der_z not implemented yet")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
 !
     endsubroutine der_z
 !***********************************************************************
     subroutine der2_z(f,df2)
 !
-! dummy routine
-!
-      use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
+! Dummy routine.
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
 !
-      call stop_it("deriv_10th: der2_z not implemented yet")
+      call fatal_error("deriv_10th","der2_z not implemented yet")
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df2)
 !
     endsubroutine der2_z
 !***********************************************************************
