@@ -47,7 +47,8 @@ module Chemistry
      real :: Sc_number=0.7, Pr_number=0.7
      real :: Cp_const=impossible
      real :: Cv_const=impossible
-     logical :: lfix_Sc=.false., lfix_Pr=.false., reinitialize_chemistry=.false.
+     logical :: lfix_Sc=.false., lfix_Pr=.false. 
+     logical :: init_from_file, reinitialize_chemistry=.false.
      character (len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
      real :: init_x1=-0.2,init_x2=0.2
@@ -169,7 +170,7 @@ module Chemistry
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
-      visc_const,cp_const,reinitialize_chemistry,lfilter_strict, &
+      visc_const,cp_const,reinitialize_chemistry,init_from_file,lfilter_strict, &
       init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
       ldiff_corr, ldiff_fick, lreac_as_aux, reac_rate_method,global_phi
 !
@@ -965,9 +966,9 @@ module Chemistry
       endif
 !
       if (latmchem) then
-      RHS_Y_full(l1:l2,m,n,:)=p%DYDt_diff
+        RHS_Y_full(l1:l2,m,n,:)=p%DYDt_diff
       else
-      RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
+        RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
       endif
 !
 ! Calculate the thermal diffusivity
@@ -5238,6 +5239,7 @@ module Chemistry
       character (len=1)  :: tmp_string
       integer :: i,j,k=1
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
+      real :: velx=0.
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
 !
@@ -5282,6 +5284,17 @@ module Chemistry
 !
           read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
           if (lroot) print*, ' Pressure, Pa   ', PP
+!
+        elseif (tmp_string == 'V') then
+!
+          StartInd=1; StopInd =0
+!
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+          StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+          StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+!
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), velx
+          if (lroot) print*, ' Velocity, cm/s   ', velx
 !
         else
 !
@@ -5351,6 +5364,36 @@ module Chemistry
         endif
         if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
       endif
+      endif
+!
+      if (init_from_file) then
+        if (lroot) print*, 'Velocity field read from file, initialization &
+            of density and temperature'
+        if (ldensity_nolog) then
+          f(:,:,:,ilnrho)=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+        else
+          f(:,:,:,ilnrho)=alog(f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3)
+        endif
+        if (ltemperature_nolog) then
+          if (ldensity_nolog) then
+            f(:,:,:,iTT)=(PP/(k_B_cgs/m_u_cgs)*&
+                air_mass/f(:,:,:,ilnrho))/unit_mass*unit_length**3
+          else
+            f(:,:,:,iTT)=(PP/(k_B_cgs/m_u_cgs)*&
+                air_mass/exp(f(:,:,:,ilnrho)))/unit_mass*unit_length**3
+          endif
+        else
+          if (ldensity_nolog) then
+            f(:,:,:,ilnTT)=alog((PP/(k_B_cgs/m_u_cgs)*&
+                air_mass/f(:,:,:,ilnrho))/unit_mass*unit_length**3)!+f(:,:,:,ilnTT)
+          else
+            f(:,:,:,ilnTT)=alog((PP/(k_B_cgs/m_u_cgs)*&
+                air_mass/exp(f(:,:,:,ilnrho)))/unit_mass*unit_length**3)!+f(:,:,:,ilnTT)
+          endif
+        endif
+        if (velx/=0.) f(:,:,:,iux)=f(:,:,:,iux)+velx
       endif
 !
       if (linit_temperature) then
@@ -5453,123 +5496,133 @@ module Chemistry
     subroutine damp_zone_for_NSCBC(f,df)
 !
 !   16-jul-06/natalia: coded
+!   24-jan-11/julien: modified
 !    buffer zone to damp the acustic waves!!!!!!!!!!!
 !    important for NSCBC
+!    Most of this routine is still hard-coded
+!    Should contain more tests to detect boundaries and set the reference conditions
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (mx) :: func_x
-      integer :: j,  sz_l_x,sz_r_x,  sz_l_y,sz_r_y, sz_l_z,sz_r_z,ll1,ll2
-      real :: dt1, func_y,func_z, ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref
+      integer :: j,  sz_x, sz_y, sz_z, ll1, ll2, i
+      integer :: sz_r_x, sz_l_x, sz_r_y, sz_l_y, sz_r_z, sz_l_z
+      real :: dt1, func_x,func_y,func_z 
+      real :: ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref,gamma,cs
       real :: del
       logical :: lzone_y=.false.,lzone_z=.false.
-!
-       dt1=1./dt
-       del=0.1
+      logical :: dir_damp1=.true., dir_damp2=.false., dir_damp3=.false.
 !
        ux_ref=0.
        uy_ref=0.
        uz_ref=0.
 !      lnTT_ref=6.39693
        lnTT_ref=log(init_TT1)
+       lnrho_ref=&
+          log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1))
+       gamma=1.4
+       cs=sqrt(gamma*init_pressure/exp(lnrho_ref))
 !
-      lnrho_ref=&
-         log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1))
+!  The characteristic time scale is taken of the order of a CFL time scale
 !
-       sz_r_x=l2-int(del*nxgrid)
-       sz_l_x=int(del*nxgrid)+l1
-       sz_r_y=m2-int(del*nygrid)
-       sz_l_y=int(del*nygrid)+m1
-       sz_r_z=n2-int(del*nzgrid)
-       sz_l_z=int(del*nzgrid)+n1
+       dt1=0.25*(ux_ref+cs)/(Lxyz(1)/nxgrid)
+       del=0.1
+!
+       sz_x=int(del*nxgrid)
+       sz_y=int(del*nygrid)
+       sz_z=int(del*nzgrid)
        ll1=l1
        ll2=l2
 !
-       if (nxgrid/=1) then
+       if (nxgrid/=1 .and. dir_damp1) then
 !
-        if (sz_r_x<=l1) call fatal_error('to use ldamp_zone_NSCBC',&
-                  'you should increase nxgrid!')
+!  On the right side
 !
-        do j=1,2
+         ll1=nxgrid-sz_x
+         ll2=nxgrid
+         do i = l1,l2
+          if (x(i) >= xgrid(ll1)) then
+            func_x=(x(i)-xgrid(ll1))**3/(xgrid(ll2)-xgrid(ll1))**3
+            df(i,m,n,iux)=df(i,m,n,iux)-func_x*(f(i,m,n,iux)-ux_ref)*dt1
+            df(i,m,n,iuy)=df(i,m,n,iuy)-func_x*(f(i,m,n,iuy)-uy_ref)*dt1
+            df(i,m,n,iuz)=df(i,m,n,iuz)-func_x*(f(i,m,n,iuz)-uz_ref)*dt1
+            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
+            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
+          endif
+         enddo
 !
-         if (j==1) then
-          ll1=sz_r_x
-          ll2=l2
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll1))**3/(x(ll2)-x(ll1))**3
-         elseif (j==2) then
-          ll1=l1+1
-          ll2=sz_l_x
-          func_x(ll1:ll2)=(x(ll1:ll2)-x(ll2))**3/(x(ll1)-x(ll2))**3
-         endif
+!  On the left side
 !
-          df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iux)-ux_ref)*dt1
-          df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
-          df(ll1:ll2,m,n,iuz)=df(ll1:ll2,m,n,iuz)&
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,iuz)-uz_ref)*dt1
-          df(ll1:ll2,m,n,ilnrho)=df(ll1:ll2,m,n,ilnrho)&
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnrho)-lnrho_ref)*dt1
-          df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
-            -func_x(ll1:ll2)*(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
+         ll1=1
+         ll2=sz_x
+         do i = l1,l2
+          if (x(i) <= xgrid(ll2)) then
+            func_x=(x(i)-xgrid(ll2))**3/(xgrid(ll1)-xgrid(ll2))**3
+            df(i,m,n,iux)=df(i,m,n,iux)-func_x*(f(i,m,n,iux)-ux_ref)*dt1
+            df(i,m,n,iuy)=df(i,m,n,iuy)-func_x*(f(i,m,n,iuy)-uy_ref)*dt1
+            df(i,m,n,iuz)=df(i,m,n,iuz)-func_x*(f(i,m,n,iuz)-uz_ref)*dt1
+            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
+            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
+          endif
+         enddo         
 !
-        enddo
        endif
 !
-       if (nygrid/=1) then
+!  The following should be replaced to generalize the formula
 !
-       if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
-                  'you should increase nygrid!')
+!       if (nygrid/=1 .and. dir_damp2) then
 !
-       if ((m<=sz_l_y) .and. (m>=m1)) then
-        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3
-        lzone_y=.true.
-       elseif ((m>=sz_r_y) .and. (m<=m2)) then
-        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3
-        lzone_y=.true.
-       endif
+!       if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
+!                  'you should increase nygrid!')
 !
-       if (lzone_y) then
-        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
-           -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&
-           -func_y*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&
-           -func_y*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
-           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&
-           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
-        lzone_y=.false.
-       endif
-       endif
+!       if ((m<=sz_l_y) .and. (m>=m1)) then
+!        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3
+!        lzone_y=.true.
+!       elseif ((m>=sz_r_y) .and. (m<=m2)) then
+!        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3
+!        lzone_y=.true.
+!       endif
 !
-      if (nzgrid/=1) then
-        if (sz_r_z<=n1) call fatal_error('to use ldamp_zone_NSCBC',&
-                  'you should increase nzgrid!')
+!       if (lzone_y) then
+!        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
+!           -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&
+!           -func_y*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&
+!           -func_y*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
+!           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&
+!           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
+!        lzone_y=.false.
+!       endif
+!       endif
 !
-      if ((n<=sz_l_z) .and. (n>=n1)) then
-        func_z=(z(n)-z(sz_l_z))**3/(z(n1)-z(sz_l_z))**3
-        lzone_z=.true.
-       elseif ((n>=sz_r_z) .and. (n<=n2)) then
-        func_z= (z(n)-z(sz_r_z))**3/(z(n2)-z(sz_r_z))**3
-        lzone_z=.true.
-       endif
+!      if (nzgrid/=1 .and. dir_damp3) then
+!        if (sz_r_z<=n1) call fatal_error('to use ldamp_zone_NSCBC',&
+!                  'you should increase nzgrid!')
 !
-       if (lzone_z) then
-        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
-           -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&
-           -func_z*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&
-           -func_z*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
-           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
-        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&
-           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
-        lzone_z=.false.
-       endif
-       endif
+!      if ((n<=sz_l_z) .and. (n>=n1)) then
+!        func_z=(z(n)-z(sz_l_z))**3/(z(n1)-z(sz_l_z))**3
+!        lzone_z=.true.
+!       elseif ((n>=sz_r_z) .and. (n<=n2)) then
+!        func_z= (z(n)-z(sz_r_z))**3/(z(n2)-z(sz_r_z))**3
+!        lzone_z=.true.
+!       endif
+!
+!       if (lzone_z) then
+!        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
+!           -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&
+!           -func_z*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&
+!           -func_z*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
+!           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
+!        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&
+!           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
+!        lzone_z=.false.
+!       endif
+!       endif
 !
      endsubroutine damp_zone_for_NSCBC
 !***********************************************************************
