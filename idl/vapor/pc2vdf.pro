@@ -9,7 +9,7 @@ pro pc2vdf,tinit=tinit,tend=tend,rhof=rhof,sph=sph,variables=variables,beq=beq
 ; KEYWORD RHOF: COMPUTES DENSITY PERTURBATIONS INSTEAD OF DENSITY 
 ; KEYWORD SPH: READ PC VARFILES IN SPHERICAL COORDS.
 ; KEYWORD BEQ: DEFINES A NORMALIZATION VALUE FOR THE MAGNETIC FIELD
-;e.g.:pc2vdf,tinit=2,tend=2,variables=['uu','bb','lnrho'],/rhof,beq=0.26
+;e.g.:pc2vdf,tinit=2,tend=2,variebles=['uu','bb','lnrho'],/rhof,beq=0.26
 
 default, tinit, '0'
 default, tend, '1'
@@ -49,7 +49,7 @@ cd, readpath
       ;
       OPENR,1, readpath+'data/proc0/'+varfile1, ERROR = err
       close,1
-      pc_read_grid,o=g,/trimxyz
+      pc_read_grid,o=g,/trimxyz,/quiet
 ;
 cd, writepath
 ;	$Id: WriteVDF.pro,v 1.6 2008/09/03 20:51:55 clynejp Exp $
@@ -158,15 +158,16 @@ vdf_destroy, mfd
 ;
 itt = 0
 for it = tinit,tend do begin
+vars = variables
 fac=1
- varfile = 'VAR'+strtrim(string(format="(i3)",it),1)  
+ varfile = 'VAR'+strtrim(string(format="(i2)",it),1)  
  OPENR,1, readpath+'data/proc0/'+varfile, ERROR = err
       close,1
   cd, readpath
-     print,'Reading:   ',varfile
-     pc_read_var,variables=variables,varfile=varfile, $
-       /magic,obj=test,/quiet,/trimall
-   
+     print,'Reading: ',varfile
+     print,'vars = ',vars
+     pc_read_var,varfile=varfile,obj=test,/trimall,variables=vars,/magic,/quiet
+
      rho=exp(test.lnrho)
 ;
     if (keyword_set(rhof)) then begin
@@ -249,6 +250,7 @@ fac=1
       vdc_closevar, dfd
    endfor
   itt++
+
 endfor
 ;	Destroy the "buffered write" data transformation object. 
 ;	We're done with it.
