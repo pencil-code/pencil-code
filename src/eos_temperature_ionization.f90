@@ -689,7 +689,8 @@ module EquationOfState
 !   Calculate thermodynamical quantities
 !
 !   04-apr-06/tobi: Adapted for this EOS module
-!
+!   27-jan-11/MR: caught zero in calculation of kapparho
+
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -699,7 +700,7 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 !
       real, dimension(psize) :: lnrho_,lnTT_,yH_
-      real, dimension(psize) :: TT1,tmp
+      real, dimension(psize) :: TT1,tmp,tmpy
 !
       select case (psize)
 !
@@ -748,9 +749,15 @@ module EquationOfState
       endif
 !
       if (present(kapparho)) then
-        TT1 = exp(-lnTT_)
-        tmp = 2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1
-        kapparho = (1-yH_)*kappa0*exp(min(tmp,log(huge1))+alog(yH_+yMetals))
+!
+        tmpy = yH_+yMetals
+        if ( maxval(abs(tmpy))==0. ) then
+          kapparho=0.
+        else
+          TT1 = exp(-lnTT_)
+          tmp = 2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1
+          kapparho = (1-yH_)*kappa0*exp(min(tmp,log(huge1))+alog(tmpy))
+        endif
       endif
 !
     endsubroutine eoscalc_farray
