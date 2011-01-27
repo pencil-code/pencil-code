@@ -22,4 +22,5 @@
 /
 &dustdensity_init_pars
   initnd='kernel_lin', nd0=0.01, dkern_cst=1.0, mdave0=100.0
+  lmdvar=T
 /
