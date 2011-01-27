@@ -104,6 +104,8 @@ module ImplicitPhysics
         hcondADI=spread(Kmax, 1, mx)
       endif
 !
+! variables that are needed everywhere in this module
+!
       call get_cp1(cp1)
       dx_2=1./dx**2
       dz_2=1./dz**2
@@ -683,7 +685,8 @@ module ImplicitPhysics
     subroutine ADI_Kconst_MPI(f)
 !
 !  04-sep-2009/dintrans: coded
-!  parallel version of the ADI scheme for the K=cte case
+!  Parallel version of the ADI scheme for the K=cte case.
+!  Note: this is the parallelisation of the Yakonov form *only*.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
       use Mpicomm, only: transp_xz, transp_zx
@@ -692,15 +695,13 @@ module ImplicitPhysics
       implicit none
 !
       integer, parameter :: nxt=nx/nprocz
-      integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
-      integer, parameter :: mzt=nzgrid+2*nghost
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)   :: finter, source, rho, TT
-      real, dimension(mzt,nxt) :: fintert, rhot, sourcet, wtmp
-      real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
-      real  :: aalpha, bbeta
+      real, dimension(mx,mz)      :: finter, source, rho, TT
+      real, dimension(nzgrid,nxt) :: fintert, rhot, wtmp
+      real, dimension(nx)         :: ax, bx, cx, wx, rhsx, workx
+      real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz, workz
+      real :: aalpha, bbeta
 !
       call update_ghosts(f)
 !
@@ -719,9 +720,11 @@ module ImplicitPhysics
         ax=-wx*dx_2/2
         bx=1.+wx*dx_2
         cx=ax
-        rhsx=TT(l1:l2,j)+wx*dz_2/2*                      &
-             (TT(l1:l2,j+1)-2*TT(l1:l2,j)+TT(l1:l2,j-1)) &
-             +dt/2*source(l1:l2,j)
+        rhsx=TT(l1:l2,j)+ &  
+             wx*dz_2/2.*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
+        rhsx=rhsx+wx*dx_2/2.*                                 &
+             (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
+             +dt*source(l1:l2,j)
 !
 ! x boundary conditions: periodic
 !
@@ -732,20 +735,17 @@ module ImplicitPhysics
 !
 ! Do the transpositions x <--> z
 !
-       call transp_xz(finter(l1:l2,n1:n2), fintert(n1t:n2t,:))
-       call transp_xz(rho(l1:l2,n1:n2), rhot(n1t:n2t,:))
-       call transp_xz(source(l1:l2,n1:n2), sourcet(n1t:n2t,:))
+      call transp_xz(finter(l1:l2,n1:n2), fintert)
+      call transp_xz(rho(l1:l2,n1:n2), rhot)
 !
 ! Columns dealt implicitly
 !
       do i=1,nxt
-        wz=dt*gamma*hcond0*cp1/rhot(n1t:n2t,i)
+        wz=dt*gamma*hcond0*cp1/rhot(:,i)
         az=-wz*dz_2/2
         bz=1.+wz*dz_2
         cz=az
-        rhsz=fintert(n1t:n2t,i)+wz*dx_2/2*                        &
-          (fintert(n1t:n2t,i+1)-2*fintert(n1t:n2t,i)+fintert(n1t:n2t,i-1))  &
-          +dt/2*sourcet(n1t:n2t,i)
+        rhsz=fintert(:,i)
         !
         ! z boundary conditions
         ! Always constant temperature at the top
@@ -761,21 +761,14 @@ module ImplicitPhysics
           case ('c1')
             bz(1)=1.   ; cz(1)=-1
             rhsz(1)=dz*Fbot/hcond0
-! we can use here the second-order relation for the first derivative: 
-! (T_{j+1}-T_{j_1})/2dz = dT/dz --> T_{j-1} = T_{j+1} - 2*dz*dT/dz 
-! and insert this expression in the difference relation to eliminate T_{j-1}:
-! a_{j-1}*T_{j-1} + b_j T_j + c_{j+1}*T_{j+1} = RHS
-!
-!           cz(1)=cz(1)+az(1)
-!           rhsz(1)=rhsz(1)-2.*az(1)*dz*Fbot/hcond0
           case default 
-           call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
+            call fatal_error('ADI_Kconst_MPI','bcz on TT must be cT or c1')
         endselect
 !
         call tridag(az, bz, cz, rhsz, workz)
-        wtmp(n1t:n2t,i)=workz(1:nzgrid)
+        wtmp(:,i)=workz
       enddo
-      call transp_zx(wtmp(n1t:n2t,:), f(l1:l2,4,n1:n2,ilnTT))
+      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
 !
     endsubroutine ADI_Kconst_MPI
 !***********************************************************************
