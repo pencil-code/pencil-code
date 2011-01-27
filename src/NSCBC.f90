@@ -389,7 +389,7 @@ include 'NSCBC.h'
       real, optional, dimension(nchemspec) :: YYk
       real :: Mach,KK,cs0_average
       integer, dimension(33) :: stat
-      integer lll,k,ngridpoints,imin,imax,jmin,jmax,i
+      integer lll,k,ngridpoints,imin,imax,jmin,jmax,i,ngrid
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
       integer :: imass=1
       logical :: non_zero_transveral_velo
@@ -403,6 +403,7 @@ include 'NSCBC.h'
       real, allocatable, dimension(:,:,:) :: L_k, dYk_dx
       real, allocatable, dimension(:,:,:) :: YYk_full
       real, allocatable, dimension(:,:)   :: sum_Lk
+      real, dimension(3) :: u_tslice
 !
       intent(inout) :: f
       intent(inout) :: df
@@ -434,17 +435,17 @@ include 'NSCBC.h'
 !
       if (dir==1) then
         dir1=1; dir2=2; dir3=3
-        igrid=ny; jgrid=nz
+        igrid=ny; jgrid=nz; ngrid=nxgrid
         imin=m1; imax=m2
         jmin=n1; jmax=n2
       elseif (dir==2) then
         dir1=2; dir2=1; dir3=3
-        igrid=nx; jgrid=nz
+        igrid=nx; jgrid=nz; ngrid=nygrid
         imin=l1; imax=l2
         jmin=n1; jmax=n2
      elseif (dir==3) then
         dir1=3; dir2=1; dir3=2
-        igrid=nx; jgrid=ny
+        igrid=nx; jgrid=ny; ngrid=nzgrid
         imin=l1; imax=l2
         jmin=m1; jmax=m2
       else
@@ -505,6 +506,11 @@ include 'NSCBC.h'
       else
         call fatal_error('bc_nscbc_prf','No such dir!')
       endif
+!
+      u_tslice(1) = sum(fslice(:,:,dir1))
+      u_tslice(2) = sum(fslice(:,:,dir2))
+      u_tslice(3) = sum(fslice(:,:,dir3))
+      u_tslice = u_tslice/(igrid*jgrid)
 !
       if (ichemspec(1)>0) then
         i = 1
@@ -573,28 +579,36 @@ include 'NSCBC.h'
           print*,'bc_nscbc_prf: Finalized reading velocity and composition profiles at the inlet.'
         endif
 !
-!
 !  Having found the velocity at the inlet we are now ready to start
 !  defining the L's, which are really the Lodi equations.
 !
+        L_1 = (fslice(:,:,dir1) - sgn*cs)&
+            *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
+!
+!  If the inlet is non-reflecting
+!
         if (non_reflecting_inlet) then
-          L_1 = (fslice(:,:,dir1) - sgn*cs)&
-              *(grad_P(:,:,dir1) - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
-          if (ilnTT>0) then
+!
+           if (ilnTT>0) then
+!
 !            L_2=nscbc_sigma_in*(TT-T_t)&
 !              *cs*rho0*Rgas/Lxyz(dir1)-(cs2*T_1-T_5)
-!  Julien: The above formula seems erroneous which could explain the following
-!          remark from Nils. The following correction is proposed but needs
-!          some tests
-!  Corrected according to Yoo et al. (Combustion Theory and Modelling, 2005)
-!           L_2 = nscbc_sigma_in*(TT-T_t)&
-!                *rho0*Rgas/(cs*Lxyz(dir1))-(cs2*T_1-T_5)
 !
 !  NILS: There seems to be something wrong with the calculation of L_2, as the
 !  NILS: coded crashes with the version above. For now L_2 is therefore
 !  NILS: set to zero. This must be fixed!!!!!!!
 !
-            L_2=0
+!            L_2=0
+!
+!  Julien: compared to the above relation that doesn't work, Rgas was multiplied
+!          by mu1 to respect the unities of L_2. There is actually a mistake
+!          in the reference paper of Yoo et al. (CTM 2006) from where the LODI 
+!          relations were copied.
+!          In addition, the relation for L_2 given by Yoo et al. was modified
+!          according to new developments using different hypotheses.
+!
+            L_2=nscbc_sigma_in*cs*rho0*Rgas*mu1*(gamma-1.)*(1-Mach**2) &
+                *(TT-T_t)/Lxyz(dir1) - (cs2*T_1-T_5)
           else
             L_2=0
           endif
@@ -604,35 +618,40 @@ include 'NSCBC.h'
 !  away from the target velocity u_t. This problem should be overcome by
 !  setting a small but non-zero nscbc_sigma_in.
 !
-          L_3=nscbc_sigma_in*(fslice(:,:,dir2)-u_in(:,:,dir2))&
+          L_3=nscbc_sigma_in*(fslice(:,:,dir2)-u_in(:,:,dir2)) &
               *cs/Lxyz(dir1)-T_3
-          L_4=nscbc_sigma_in*(fslice(:,:,dir3)-u_in(:,:,dir3))&
+          L_4=nscbc_sigma_in*(fslice(:,:,dir3)-u_in(:,:,dir3)) &
               *cs/Lxyz(dir1)-T_4
-          L_5 = nscbc_sigma_in*cs2*rho0&
-              *sgn*(fslice(:,:,dir1)-u_in(:,:,dir1))*(1-Mach**2)/Lxyz(dir1)&
+          L_5=nscbc_sigma_in*cs2*rho0*sgn&
+              *(fslice(:,:,dir1)-u_in(:,:,dir1))*(1-Mach**2)/Lxyz(dir1) &
               -(T_5+sgn*rho0*cs*T_2)
           if (ichemspec(1)>0) then
             do k = 1, nchemspec
-              L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))-YYk_full(:,:,k))&
+              L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))-YYk_full(:,:,k)) &
                   *cs/Lxyz(dir1)
             enddo
           else
             L_k=0.
           endif
+!
+!  If the inlet is perfectly reflecting
+!
         else
           L_3=0
           L_4=0
           L_5 = L_1
-          L_2=0.5*(gamma-1)*(L_5+L_1)
+          L_2=(gamma-1)*L_1
           L_k=0.
         endif
-      else
 !
-!  Find the L_i's.
+!  The following refers to outlets
+!
+      else
 !
         cs0_average=sum(cs)/ngridpoints
         KK=nscbc_sigma_out*(1.-Mach**2)*cs0_average/Lxyz(dir1)
-        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)
+!
+        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)  
         if (ilnTT > 0) then
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
         else
@@ -641,7 +660,7 @@ include 'NSCBC.h'
         L_3 = fslice(:,:,dir1)*dui_dxj(:,:,dir2,dir1)
         L_4 = fslice(:,:,dir1)*dui_dxj(:,:,dir3,dir1)
         L_5 = (fslice(:,:,dir1) - sgn*cs)*(grad_P(:,:,dir1)&
-             - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
+            - sgn*rho0*cs*dui_dxj(:,:,dir1,dir1))
         if (ichemspec(1)>0) then
           do k = 1, nchemspec
             L_k(:,:,k)=fslice(:,:,dir1)*dYk_dx(:,:,k)
@@ -669,23 +688,22 @@ include 'NSCBC.h'
         if (llinlet) then
           dfslice(:,:,dir1) = prefac2*( L_1 - L_5)+T_2
         else
-          dfslice(:,:,dir1) = prefac2*(-L_1 + L_5)-T_2
+          dfslice(:,:,dir1) = prefac2*( L_5 - L_1)-T_2
         endif
       endselect
 !
 !  Find the evolution equation for the other variables at the boundary
 !
       dfslice(:,:,ilnrho) = prefac1*(2*L_2 + L_1 + L_5)-T_1
-      if (ilnTT>0) then
-        sum_Lk=0.
-        if (ichemspec(1)>0) then
-          do k = 1,nchemspec
-            sum_Lk = sum_Lk + (rho0*cs2)/(species_constants(k,imass)*mu1)*L_k(:,:,k)
-          enddo
-        endif
-        dfslice(:,:,ilnTT) = -1./(rho0*cs2)*(-L_2+0.5*(gamma-1.)*(L_5+L_1)&
-                             - sum_Lk)*TT + TT*(T_1/rho0-T_5/P0)
+      sum_Lk=0.
+      if (ichemspec(1)>0) then
+        do k = 1,nchemspec
+          sum_Lk = sum_Lk + (rho0*cs2)/(species_constants(k,imass)*mu1)*L_k(:,:,k)
+        enddo
       endif
+      if (ilnTT>0) &
+          dfslice(:,:,ilnTT) = prefac1/rho0*(-2*L_2+(gamma-1.)*(L_5+L_1)&
+              - sum_Lk)*TT + TT*(T_1/rho0-T_5/P0)
       dfslice(:,:,dir2) = -L_3-T_3
       dfslice(:,:,dir3) = -L_4-T_4
       if (ichemspec(1)>0) then
@@ -1100,8 +1118,8 @@ include 'NSCBC.h'
           iround=int(round)
           shift=round-iround
           grid_shift=shift*grid_points
-          lowergrid=l1_in+int(grid_shift)
-          uppergrid=lowergrid+1
+          lowergrid=l2_in-int(grid_shift) 
+          uppergrid=uppergrid-1
           weight=grid_shift-int(grid_shift)
 !
 !  Do we want a smooth start
@@ -1115,13 +1133,13 @@ include 'NSCBC.h'
 !  Set the turbulent inlet velocity
 !
           if (dir==1) then
-            call turbulent_vel_x(u_turb,lowergrid,imin_turb,imax_turb,&
+            call turbulent_vel_x(u_turb,lowergrid,uppergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           elseif (dir==2) then
-            call turbulent_vel_y(u_turb,lowergrid,imin_turb,imax_turb,&
+            call turbulent_vel_y(u_turb,lowergrid,uppergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           elseif (dir==3) then
-            call turbulent_vel_z(u_turb,lowergrid,imin_turb,imax_turb,&
+            call turbulent_vel_z(u_turb,lowergrid,uppergrid,imin_turb,imax_turb,&
                 jmin_turb,jmax_turb,weight,smooth)
           endif
 !
@@ -1234,51 +1252,51 @@ include 'NSCBC.h'
 !
       end subroutine find_composition_at_inlet
 !***********************************************************************
-      subroutine turbulent_vel_x(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_x(u_turb,lowergrid,uppergrid,imin,imax,jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
         real, dimension(ny,nz,3), intent(out) :: u_turb
-        integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
+        integer, intent(in) :: lowergrid,uppergrid,imin,imax,jmin,jmax
         real, intent(in) :: weight,smooth
 !
         u_turb(:,:,:)&
-            =(f_in(lowergrid,imin:imax,jmin:jmax,iux:iuz)*(1-weight)&
-            +f_in(lowergrid+1,imin:imax,jmin:jmax,iux:iuz)*weight)*smooth
+            =(f_in(uppergrid,imin:imax,jmin:jmax,iux:iuz)*(1-weight)&
+            +f_in(lowergrid,imin:imax,jmin:jmax,iux:iuz)*weight)*smooth
 !
       end subroutine turbulent_vel_x
 !***********************************************************************
-      subroutine turbulent_vel_y(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_y(u_turb,lowergrid,uppergrid,imin,imax,jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
         real, dimension(nx,nz,3), intent(out) :: u_turb
-        integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
+        integer, intent(in) :: lowergrid,uppergrid,imin,imax,jmin,jmax
         real, intent(in) :: weight,smooth
 !
         u_turb(:,:,:)&
-            =(f_in(imin:imax,lowergrid,jmin:jmax,iux:iuz)*(1-weight)&
-            +f_in(imin:imax,lowergrid+1,jmin:jmax,iux:iuz)*weight)*smooth
+            =(f_in(imin:imax,uppergrid,jmin:jmax,iux:iuz)*(1-weight)&
+            +f_in(imin:imax,lowergrid,jmin:jmax,iux:iuz)*weight)*smooth
 !
       end subroutine turbulent_vel_y
 !***********************************************************************
-      subroutine turbulent_vel_z(u_turb,lowergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_z(u_turb,lowergrid,uppergrid,imin,imax,jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
         real, dimension(nx,ny,3), intent(out) :: u_turb
-        integer, intent(in) :: lowergrid,imin,imax,jmin,jmax
+        integer, intent(in) :: lowergrid,uppergrid,imin,imax,jmin,jmax
         real, intent(in) :: weight,smooth
 !
         u_turb(:,:,:)&
-            =(f_in(imin:imax,jmin:jmax,lowergrid,iux:iuz)*(1-weight)&
-            +f_in(imin:imax,jmin:jmax,lowergrid+1,iux:iuz)*weight)*smooth
+            =(f_in(imin:imax,jmin:jmax,uppergrid,iux:iuz)*(1-weight)&
+            +f_in(imin:imax,jmin:jmax,lowergrid,iux:iuz)*weight)*smooth
 !
       end subroutine turbulent_vel_z
 !***********************************************************************
