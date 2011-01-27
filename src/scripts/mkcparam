@@ -87,8 +87,6 @@ use Getopt::Long;
 my $line;
 my $dust_string='1*4';
 my $chem_string='1';
-my $lmdvar='.false.';
-my $lmice ='.false.';
 my ($maux,$maux_com,$mvar,$mglobal,$mscratch,$mpvar,$ndustspec,$nchemspec,$mvar_per_dust,$mvar_per_chem) = (0) x 10;
 my @pencil_names=();
 my @pencil_sizes=();
@@ -206,22 +204,13 @@ my $npencils=$#pencil_names+1;
 # More processing of dust information
 #
 ($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
-# NB: if ($ndustspec >= 1) {
 if ($ndustspec >= 1) {
-if ($mvar_per_dust > 1) {
-  $mvar = $mvar - 4;
-  $mvar = $mvar + $ndustspec*$mvar_per_dust;
-  if ($mvar_per_dust >= 5) {$lmdvar = '.true.';}
-  if ($mvar_per_dust == 6) {$lmice  = '.true.';}
-  }
- else
- {
-  $mvar = $mvar  - 1;
-  $mvar = $mvar + $ndustspec*$mvar_per_dust;
-  $lmdvar = '.false.';
-  $lmice  = '.false.';
-  }
-}
+  if ($mvar_per_dust > 1) {
+    $mvar = $mvar - 4;
+    $mvar = $mvar + $ndustspec*$mvar_per_dust; }
+  else {
+    $mvar = $mvar  - 1;
+    $mvar = $mvar + $ndustspec*$mvar_per_dust; } }
 #
 # More processing of chemistry information
 # The -1 below (and the -4 above) look ready crazy (but are correct!)
@@ -230,8 +219,7 @@ if ($mvar_per_dust > 1) {
 ($nchemspec,$mvar_per_chem) = split /\*/, $chem_string;
 if ($nchemspec >= 1) {
   $mvar = $mvar - 1;
-  $mvar = $mvar + $nchemspec;
-  }
+  $mvar = $mvar + $nchemspec; }
 #
 # Write to cparam.inc, cparam_pencils.inc and pencil_init.inc.
 #
@@ -253,7 +241,6 @@ integer, parameter :: mscratch=$mscratch
 integer, parameter :: mpvar=$mpvar
 integer, parameter :: ndustspec=$ndustspec
 integer, parameter :: nchemspec=$nchemspec
-logical, parameter :: lmdvar=$lmdvar, lmice=$lmice
 
 EOF
 
