@@ -24,7 +24,7 @@ Wolfgang Dobler,  wdobler/gmail.com,       +49 33201 43791,   +49 1520 4056 762,
 Thomas Gastine,   gastine/mps.mpg.de,      +49 5556 979 456
 Fred A. Gent,     f.a.gent/newcastle.ac.uk +44 7779 364 893
 Gustavo Guerrero, tavo.buk/gmail.com,      +468 5537 8718,    +46 76 089 1432
-Anders Johansen,  anders/astro.lu.se,      +46 46 22 21589,   +45 736 84 96 98
+Anders Johansen,  anders/astro.lu.se,      +46 46 22 21589,   +46 736 84 96 98
 Nils E.L. Haugen  Nils.E.Haugen/sintef.no  +47 73 55 06 75    +47 986 086 83, +47 72878737 (home)
 Tobias Heinemann  tobias.heinemann/gmail.com  +1 609 734 8298 
 Alexander Hubbard, alex.i.hubbard/gmail.com,  +468 5537 8573, +46 70 924 2713
