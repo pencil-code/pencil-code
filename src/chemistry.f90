@@ -5367,8 +5367,8 @@ module Chemistry
       endif
 !
       if (init_from_file) then
-        if (lroot) print*, 'Velocity field read from file, initialization &
-            of density and temperature'
+        if (lroot) print*, 'Velocity field read from file, initialization' //&
+            'of density and temperature'
         if (ldensity_nolog) then
           f(:,:,:,ilnrho)=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
