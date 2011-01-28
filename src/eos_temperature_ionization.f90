@@ -750,14 +750,15 @@ module EquationOfState
 !
       if (present(kapparho)) then
 !
+        TT1 = exp(-lnTT_)
+        tmp = 2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1
         tmpy = yH_+yMetals
-        if ( maxval(abs(tmpy))==0. ) then
+!
+        where ( tmpy==0. )              ! assumes that tmpy >= 0
           kapparho=0.
-        else
-          TT1 = exp(-lnTT_)
-          tmp = 2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1
+        elsewhere
           kapparho = (1-yH_)*kappa0*exp(min(tmp,log(huge1))+alog(tmpy))
-        endif
+        endwhere
       endif
 !
     endsubroutine eoscalc_farray
