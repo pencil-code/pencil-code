@@ -201,25 +201,23 @@ line: while (defined($line=<INPUT>)) {
 #
 my $npencils=$#pencil_names+1;
 #
-# More processing of dust information
+# More processing of dust information.
 #
 ($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
 if ($ndustspec >= 1) {
   if ($mvar_per_dust > 1) {
-    $mvar = $mvar - 4;
-    $mvar = $mvar + $ndustspec*$mvar_per_dust; }
+    if ($mvar_per_dust == 2 || $mvar_per_dust == 5) {
+      $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust + 1; }
+    else {
+      $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } }
   else {
-    $mvar = $mvar  - 1;
-    $mvar = $mvar + $ndustspec*$mvar_per_dust; } }
+    $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } }
 #
-# More processing of chemistry information
-# The -1 below (and the -4 above) look ready crazy (but are correct!)
-#AB: Anders, what do you think?
+# More processing of chemistry information.
 #
 ($nchemspec,$mvar_per_chem) = split /\*/, $chem_string;
 if ($nchemspec >= 1) {
-  $mvar = $mvar - 1;
-  $mvar = $mvar + $nchemspec; }
+  $mvar = $mvar + $nchemspec - 1; }
 #
 # Write to cparam.inc, cparam_pencils.inc and pencil_init.inc.
 #
