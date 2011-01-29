@@ -2082,6 +2082,7 @@ module Particles_nbody
 !
 !  13-mar-08/wlad: coded
 !
+      integer, intent(in)  :: nc
       real,    dimension(maxsink,mspvar) :: fcsp
       real,    dimension(nspar,mspvar)   :: fleft
       integer, dimension(nc,nc)          :: clusters 
@@ -2089,10 +2090,9 @@ module Particles_nbody
       logical, dimension(nc)             :: lchecked
       real, dimension(mspvar)            :: particle
       
-      integer :: ks,nc,kf,nclusters,nf,i,nfinal
+      integer :: ks,kf,nclusters,nf,i,nfinal
       integer :: min_number_members,kpar
 
-      intent(in)  :: nc
       intent(out) :: nfinal,fleft
 !
       min_number_members=3
@@ -2160,11 +2160,12 @@ module Particles_nbody
 !  of friends are checked into the cluster.
 !
 !  13-mar-08/wlad: coded
-!  
+!
+      integer, intent(in) :: nc
       real,    dimension(maxsink,mspvar)   :: fcsp
       integer, intent(inout), dimension(nc) :: cluster 
       logical, intent(inout), dimension(nc) :: lchecked
-      integer, intent(in)  :: ks,nc
+      integer, intent(in)  :: ks
       integer, intent(out) :: nf
 !
       integer :: ic
@@ -2191,11 +2192,12 @@ module Particles_nbody
 !
 !  13-mar-08/wlad : coded
 !
+      integer, intent(in) :: nc
       real,    dimension(maxsink,mspvar)   :: fcsp
       integer, intent(inout), dimension(nc) :: cluster 
       logical, intent(inout), dimension(nc) :: lchecked
       integer, intent(inout) :: ic
-      integer, intent(in) :: k,nc
+      integer, intent(in) :: k
 !
 !  Add the particle to the cluster
 !
@@ -2219,11 +2221,12 @@ module Particles_nbody
 !
 !  13-mar-08/wlad: coded
 !
+      integer, intent(in)                   :: nc
       real,    dimension(maxsink,mspvar)   :: fcsp
       logical, intent(inout), dimension(nc) :: lchecked
       integer, intent(inout), dimension(nc) :: cluster
       integer, intent(inout)                :: ic
-      integer, intent(in)                   :: par,nc
+      integer, intent(in)                   :: par
 !
       real    :: dist,link_length
       integer :: k      
@@ -2260,15 +2263,15 @@ module Particles_nbody
 !
 !  13-mar-08/wlad: coded
 !
+      integer, intent(in) :: nf
       real,    dimension(maxsink,mspvar)   :: fcsp
       integer, intent(inout), dimension(nf) :: cluster
       real, dimension(mspvar) :: particle
-      integer :: ic,nf,k
+      integer :: ic,k
 !
       real :: mass,xcm,ycm,vxcm,vycm
       real, dimension(3) :: position,velocity,xxp,vvp
 !
-      intent(in) :: nf
       intent(out):: particle
 !
       mass=0;position=0;velocity=0

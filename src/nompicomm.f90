@@ -2046,8 +2046,8 @@ module Mpicomm
 !
 !  21-dec-10/MR: coded
 !
-      real, dimension(nk), intent(inout) :: vector
       integer,             intent(in)    :: nk
+      real, dimension(nk), intent(inout) :: vector
       integer, optional,   intent(in)    :: idir
 !
       if (NO_WARN) print*,vector,nk,present(idir)
