@@ -1967,6 +1967,13 @@ fftpack.o: fftpack.f90
 	    -o fftpack.o -c fftpack.f90; \
 	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
 	    -o fftpack.o -c fftpack.f90
+param_io.o: param_io.f90
+	@fflags="$(FFLAGS_SLOPPY)"; \
+	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
+	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
+	    -o param_io.o -c param_io.f90; \
+	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
+	    -o param_io.o -c param_io.f90
 # 
 #  Remove all build files, but keep executables (misleading name..)
 #
