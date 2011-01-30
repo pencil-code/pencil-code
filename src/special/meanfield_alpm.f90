@@ -100,11 +100,20 @@ module Special
 !
 !  24-nov-02/tony: coded
 !
+      use SharedVariables, only : get_shared_variable
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
+      integer :: ierr
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
+      if (lmagn_mf .and. lrun) then
+        call get_shared_variable('eta',eta,ierr)
+        if (ierr/=0) &
+            call fatal_error("initialize_special: ", "cannot get shared var eta")
+        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
+        if (ierr/=0) &
+            call fatal_error("initialize_special: ", &
+                "cannot get shared var meanfield_etat")
+      endif  
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -202,13 +211,13 @@ module Special
 !  if lmagn_mf is false.
 !
       if (lmagn_mf) then
-        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
-        if (ierr/=0) &
-            call fatal_error("dspecial_dt: ", &
-                "cannot get shared var meanfield_etat")
-        call get_shared_variable('eta',eta,ierr)
-        if (ierr/=0) &
-            call fatal_error("dspecial_dt: ", "cannot get shared var eta")
+!        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
+!        if (ierr/=0) &
+!            call fatal_error("dspecial_dt: ", &
+!                "cannot get shared var meanfield_etat")
+!        call get_shared_variable('eta',eta,ierr)
+!        if (ierr/=0) &
+!            call fatal_error("dspecial_dt: ", "cannot get shared var eta")
 !
 !  Abbreviations
 !

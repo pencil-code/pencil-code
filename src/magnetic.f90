@@ -910,6 +910,14 @@ module Magnetic
             call warning('initialize_magnetic', &
             '4th & 6th order hyperdiffusion are both set. ' // &
             'Timestep is currently only sensitive to fourth order.')
+!
+!  if meanfield theory is invoked, we need to tell the other routines
+!
+        if (lmagn_mf .or. lspecial) then
+          call put_shared_variable('eta',eta,ierr)
+          if (ierr/=0) call fatal_error('initialize_magnetic',&
+              'there was a problem when sharing eta')
+        endif
       endif
 !
 !  write profile (uncomment for debugging)
@@ -933,14 +941,6 @@ module Magnetic
       if (ltestfield) then
         call put_shared_variable('eta_z',eta_z,ierr)
         call put_shared_variable('geta_z',geta_z,ierr)
-      endif
-!
-!  if meanfield theory is invoked, we need to tell the other routines
-!
-      if (lmagn_mf .or. lspecial) then
-        call put_shared_variable('eta',eta,ierr)
-        if (ierr/=0) call fatal_error('initialize_magnetic',&
-            'there was a problem when sharing eta')
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
@@ -981,7 +981,7 @@ module Magnetic
 !  Initialize individual modules, but need to do this only if
 !  lmagn_mf is true.
 !
-      if (lmagn_mf) call initialize_magn_mf(f,lstarting)
+      if (lmagn_mf)  call initialize_magn_mf(f,lstarting)
 !
       if (any(initaa=='Alfven-zconst')) then
         call put_shared_variable('zmode',zmode,ierr)

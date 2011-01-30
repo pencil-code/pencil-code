@@ -73,7 +73,7 @@ module Magnetic_meanfield
   logical :: lrhs_term=.false.
 !
   namelist /magn_mf_run_pars/ &
-      alpha_effect, alpha_quenching, &
+      alpha_effect, alpha_quenching, alpha_rmax, &
       alpha_eps, alpha_width, lmeanfield_noalpm, alpha_profile, &
       x_surface, z_surface, &
       ldelta_profile, delta_effect, delta_profile, &
@@ -88,6 +88,7 @@ module Magnetic_meanfield
       lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
       Omega_rmax,Omega_rwidth
+!
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 ! 
@@ -166,7 +167,7 @@ module Magnetic_meanfield
 !  if meanfield theory is invoked, we want to send meanfield_etat to
 !  other subroutines
 !
-      if (lmagn_mf) then
+      if (lmagn_mf .and. lrun) then
         call put_shared_variable('meanfield_etat',meanfield_etat,ierr)
       endif
 !
