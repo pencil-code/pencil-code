@@ -1946,34 +1946,16 @@ linkonly:
 #
 mpicomm_.f90: mpicomm.f90
 # 
-#  Use sloppier compiler for MPICOMM and fftpack if specified:
-#  If set, FFLAGS_SLOPPY overrides '$(FFLAGS) $(F90FLAGS)'. Use like this:
-#    FFLAGS_SLOPPY=-O4 -Wall
-#    F90FLAGS=$(FFLAGS_SLOPPY) -Werror
-#    F77FLAGS=$(FFLAGS_SLOPPY)
-#  to restrict `-Werror' to F90 files other than MPICOMM.
+#  Use sloppier compiler for a few files that use F77 syntax.
+#  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
+#  accept open(..., DELIM=...); this looks like a compiler bug.
 #
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	@fflags="$(FFLAGS_SLOPPY)"; \
-	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
-	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90; \
-	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 fftpack.o: fftpack.f90
-	@fflags="$(FFLAGS_SLOPPY)"; \
-	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
-	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o fftpack.o -c fftpack.f90; \
-	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o fftpack.o -c fftpack.f90
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
-	@fflags="$(FFLAGS_SLOPPY)"; \
-	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
-	echo $(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o param_io.o -c param_io.f90; \
-	$(FC) $(FFLAGS_GENERAL) $$fflags $(FFLAGS_FOURIER) \
-	    -o param_io.o -c param_io.f90
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o param_io.o -c param_io.f90
 # 
 #  Remove all build files, but keep executables (misleading name..)
 #
