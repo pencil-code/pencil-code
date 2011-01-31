@@ -634,6 +634,22 @@ include 'NSCBC.h'
             L_k=0.
           endif
 !
+!  Julien: If an input velocity file is employed with NSCBC boundary conditions, the
+!          LODI relations are modified to fix the fluctuating inlet velocity as prescribed
+!          in the data file with a fast relaxation time scale. 
+!
+          if (inlet_from_file) then 
+            L_3 = nscbc_sigma_in*(u_tslice(dir2)-0.)*cs/Lxyz(dir1)
+            L_3 = L_3 + nscbc_sigma_in*u_in(:,:,dir1)*(fslice(:,:,dir2)-u_in(:,:,dir2))&
+                *ngrid/Lxyz(dir1)
+            L_4 = nscbc_sigma_in*(u_tslice(dir3)-0.)*cs/Lxyz(dir1)
+            L_4 = L_4 + nscbc_sigma_in*u_in(:,:,dir1)*(fslice(:,:,dir3)-u_in(:,:,dir3))&
+                *ngrid/Lxyz(dir1)  
+            L_5 = nscbc_sigma_in*cs2*rho0*sgn*(u_tslice(dir1)-u_t)*(1-Mach**2)/Lxyz(dir1)
+            L_5 = L_5 + nscbc_sigma_in*sgn*rho0*cs*(cs+u_in(:,:,dir1))* &
+                (fslice(:,:,dir1)-u_in(:,:,dir1))*ngrid/Lxyz(dir1)
+          endif
+!
 !  If the inlet is perfectly reflecting
 !
         else
@@ -1118,8 +1134,8 @@ include 'NSCBC.h'
           iround=int(round)
           shift=round-iround
           grid_shift=shift*grid_points
-          lowergrid=l2_in-int(grid_shift) 
-          uppergrid=uppergrid-1
+          uppergrid=l2_in-int(grid_shift) 
+          lowergrid=uppergrid-1
           weight=grid_shift-int(grid_shift)
 !
 !  Do we want a smooth start
