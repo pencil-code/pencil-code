@@ -636,8 +636,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=-O3 -I/home/ajohan/mpich/include #(hamlet)
 #LD_MPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
 #include $(PENCIL_HOME)/src/Makefile_ifort.incl #(opto[1-4]|pia*)
-#FFLAGS=-O3 -check bounds #(opto[1-4])
-#FFLAGS_SLOPPY=$(FFLAGS) -I/home/johansen/mpich/include/ #(opto[1-4])
+#FC_SLOPPY=ifort
+#FFLAGS=-O3 -I/home/johansen/mpich/include #(opto[1-4])
 #LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 #FC=/afs/ipp/amd64_sles9/soft/mvapich/mvapich2-0.9.8-opteron-x/f95i.9.1/bin/mpif90 #(rio*|pia*)
 ##FFLAGS=-convert big_endian #(rio*|pia*)
