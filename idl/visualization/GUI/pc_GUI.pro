@@ -75,7 +75,6 @@ if (not pc_GUI_loaded) then BEGIN
 	nx = dim.mx - 2*nghost_x
 	ny = dim.my - 2*nghost_y
 	nz = dim.mz - 2*nghost_z
-	lmn12 = nghost_x+spread(indgen(nx),[1,2],[ny,nz]) + dim.mx*(nghost_y+spread(indgen(ny),[0,2],[nx,nz])) + dim.mx*dim.my*(nghost_z+spread(indgen(nz),[0,1],[nx,ny]))
 
 	pc_units, obj=unit
 
@@ -241,7 +240,7 @@ default, scaling, fix (256.0 / max ([dim.nx, dim.ny, dim.nz]))
 if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
-cmp_cslice_cache, quantities, lmn12, scaling=scaling, overplots=overplot_quantities
+cmp_cslice_cache, quantities, limits, scaling=scaling, overplots=overplot_quantities
 
 window, 0, xsize=8, ysize=8, retain=2
 !P.MULTI = [0, 1, 1]

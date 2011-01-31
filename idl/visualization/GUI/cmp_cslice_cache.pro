@@ -492,7 +492,7 @@ pro prepare_cube, last_index, update_slider
 
 	; get selected cube from set
 	tag = set.(selected_cube)
-	res = execute ("cube = varsets[selected_snapshot]."+tag+"[cut]")
+	res = execute ("cube = reform (varsets[selected_snapshot]."+tag+"[cut], num_x, num_y, num_z)")
 	if (not res) then begin
 		print, "Could not select dataset!"
 		stop
@@ -716,7 +716,19 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (n_elements (scaling) eq 0) then scaling = 1
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
 
-	cut = limits
+	; setup limits, if necessary
+	if (n_elements (limits) eq 0) then begin
+		dims = size (varsets.(0))
+		nghost_x = (dims[1] - (size (coord.x))[1]) / 2
+		nghost_y = (dims[2] - (size (coord.y))[1]) / 2
+		nghost_z = (dims[3] - (size (coord.z))[1]) / 2
+		num_x = dims[1] - 2*nghost_x
+		num_y = dims[2] - 2*nghost_y
+		num_z = dims[3] - 2*nghost_z
+		limits = reform (nghost_x+spread(indgen(num_x),[1,2],[num_y,num_z]) + dims[1]*(nghost_y+spread(indgen(num_y),[0,2],[num_x,num_z])) + dims[1]*dims[2]*(nghost_z+spread(indgen(num_z),[0,1],[num_x,num_y])), num_x, num_y, num_z)
+	end
+
+	cut = reform (limits, (size (limits))[1], (size (limits))[2], (size (limits))[3])
 
 	wimg_yz = !d.window
 	wimg_xz = !d.window
