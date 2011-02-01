@@ -618,7 +618,6 @@ module Magnetic
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$ 
  integer :: idiag_etatotalmx=0 ! DIAG_DOC: $\left<\eta\right>_{yz}$
   integer :: idiag_etatotalmz=0 ! DIAG_DOC: $\left<\eta\right>_{xy}$
-  integer :: idiag_satolevine=0 ! DIAG_DOC: $W=\int\left(GF-2\phi^{2}AB\right) d^{3}x$
                                 ! DIAG_DOC: $G=
 !
   contains
