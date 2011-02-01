@@ -33,7 +33,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     nsmooth=nsmooth, textsize=textsize, _extra=_extra, polar=polar, $
     anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
-    doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log
+    doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
+    newwindow=newwindow
 ;
 COMMON pc_precision, zero, one
 ;
@@ -88,8 +89,9 @@ if(keyword_set(doublebuffer)) then begin
   draw=widget_draw(base,xsize=wsx,ysize=wsy)
   widget_control,/realize,base
   widget_control,draw,get_value=windex
-endif else window, /free, xsize=wsx, ysize=wsy, title=title
-
+endif else if (keyword_set(newwindow)) then begin
+   window, /free, xsize=wsx, ysize=wsy, title=title
+endif
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
