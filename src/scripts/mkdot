@@ -15,7 +15,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #! /Good_Path/perl -w 
 # line 17
 
-# Name:   mkcparam
+# Name:   mkdot
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
 # CVS: $Id$
@@ -156,4 +156,4 @@ sub usage {
 }
 # ---------------------------------------------------------------------- #
 
-# End of file mkcparam
+# End of file mkdot
