@@ -210,16 +210,6 @@ module Dustvelocity
           mmon  = mumon*1.6733e-24
           unit_md = mmon
 
-        case ('aerosol')
-!
-          mumon = 18.
-          mmon  = mumon*1.6733e-24
-          unit_md = mmon
-
-         if (lroot) print*, &
-              'initialize_dustvelocity: mmon, surfmon = ', mmon, surfmon
-
-
         case default
           call fatal_error &
               ('initialize_dustvelocity','No valid dust chemistry specified.')
@@ -877,7 +867,6 @@ module Dustvelocity
         call identify_bcs('udz',iudz(1))
       endif
 
-      if (.not. lchemistry) then
 !
 !  Loop over dust species.
 !
@@ -1080,7 +1069,6 @@ module Dustvelocity
 !  End loop over dust species
 !
       enddo
-      endif
 !
 !  Calculate diagnostic variables
 !

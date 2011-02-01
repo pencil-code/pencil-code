@@ -142,8 +142,6 @@ module Chemistry
      logical :: latmchem=.false.
      logical :: lcloud=.false.
      integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
-!     logical :: lreinit_water=.false.
- !    real :: dYw=1., init_water1=0., init_water2=0.
 !
 !   Diagnostics
 !
@@ -2848,20 +2846,17 @@ module Chemistry
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
               - 2.5e6/1005.*p%ccondens*p%TT1
 !
-!print*,'Nat',exp(f(l1:l2,m,n,ilnTT)),df(l1:l2,m,n,ilnTT),2.5e6/1005.*p%ccondens*dt
-!
-!
 ! this is for debuging purposes: one check that the sum of all mass fractions is 1
 !
-        sum_Y=0.
-        do k=1,nchemspec
-        sum_Y=sum_Y+f(l1:l2,m,n,ichemspec(k))
-        enddo
-        if (maxval(abs(sum_Y(:)-1))>1e-10)  then
-          print*,sum_Y(:)
-            call fatal_error('dchemistry_dt',&
-                  'sum_Y is not unity')
-        endif
+!        sum_Y=0.
+!        do k=1,nchemspec
+!        sum_Y=sum_Y+f(l1:l2,m,n,ichemspec(k))
+!        enddo
+!        if (maxval(abs(sum_Y(:)-1))>1e-10)  then
+!          print*,sum_Y(:)
+!            call fatal_error('dchemistry_dt',&
+!                  'sum_Y is not unity')
+!        endif
 !
         do i=1,mx
             if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)>=1. ) &
@@ -2875,8 +2870,6 @@ module Chemistry
 !
 !
       if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
-!      if (ldamp_zone_NSCBCy) call damp_zone_for_NSCBC(f,df,2)
-!      if (ldamp_zone_NSCBCz) call damp_zone_for_NSCBC(f,df,3)
 !
 !  For the timestep calculation, need maximum diffusion
 !
@@ -5112,11 +5105,6 @@ module Chemistry
 !
 !  Add heat conduction to RHS of temperature equation
 !
-    !  if (l1step_test) then
-    !   tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
-    !  else
-    !   tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlnlambda)*p%cv1/p%rho(:)
-    !  endif
       if (l1step_test) then
        tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
@@ -5432,62 +5420,6 @@ module Chemistry
       if (lroot) print*, 'R', k_B_cgs/m_u_cgs
 !
       close(file_id)
-!
-! this part will be removed later. Now it is in the aerosol_init.f90
-!
-!  Testing for the atmospheric case
-!
-!       if (lreinit_water) then
-!       if ((index_H2O>0) .and. (ldustdensity)) then
-!         if (linit_temperature) then
-!           psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
-!         else
-!           psat=6.035e12*exp(-5938./TT)
-!         endif
-!         if ((init_water1/=0.) .or. (init_water2/=0.)) then
-!           do i=1,mx
-!             if (x(i)<=init_x1) then
-!               f(i,:,:,ichemspec(index_H2O))=init_water1
-!             endif
-!             if (x(i)>=init_x2) then
-!               f(i,:,:,ichemspec(index_H2O))=init_water2
-!             endif
-!             if (x(i)>init_x1 .and. x(i)<init_x2) then
-!               f(i,:,:,ichemspec(index_H2O))=&
-!                 (x(i)-init_x1)/(init_x2-init_x1) &
-!                 *(init_water2-init_water1)+init_water1
-!             endif
-!           enddo
-!         else
-!           f(:,:,:,ichemspec(index_H2O))=psat/PP*dYw
-!         endif
-!         index_YY=int(maxval(ichemspec(:)))
-!         sum_Y=0.
-!         do k=1,nchemspec
-!           if (ichemspec(k)/=index_YY) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-!         enddo
-!           f(:,:,:,index_YY)=1.-sum_Y
-!         air_mass=0.
-!         do k=1,nchemspec
-!           air_mass=air_mass+maxval(f(:,:,:,ichemspec(k))) &
-!                   /species_constants(k,imass)
-!         enddo
-!         air_mass=1./air_mass
-!         if (ldensity_nolog) then
-!           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
-!         else
-!           f(:,:,:,ilnrho)=log((PP/(k_B_cgs/m_u_cgs)*&
-!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
-!         endif
-!
-!         if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
-!         if (lroot) print*, ' saturated water mass fraction', maxval(psat)/PP
-!         if (lroot) print*, 'New Air density, g/cm^3:'
-!         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*air_mass/TT
-!         if (lroot) print*, 'New Air mean weight, g/mol', air_mass
-!       endif
-!       endif
 !
     endsubroutine air_field
 !***********************************************************************
