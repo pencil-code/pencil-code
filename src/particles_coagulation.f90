@@ -32,17 +32,21 @@ module Particles_coagulation
   real :: kernel_cst=1.0, kernel_lin=1.0, kernel_pro=1.0
   real :: four_pi_rhopmat_over_three2=0.0
   real :: three_over_four_pi_rhopmat=0.0
+  real :: GNewton=6.67428e-11, deltav_grav_floor=0.0
+  real, pointer :: rhs_poisson_const
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
+  logical :: lgravitational_cross_section=.false.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
-      kernel_pro, lnoselfcollision
+      kernel_pro, lnoselfcollision, lgravitational_cross_section, &
+      GNewton, deltav_grav_floor
 !
   contains
 !***********************************************************************
@@ -52,6 +56,8 @@ module Particles_coagulation
 !  parameters.
 !
 !  24-nov-10/anders: coded
+!
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, intent(in) :: lstarting
@@ -65,6 +71,13 @@ module Particles_coagulation
 !  Allocate neighbour array necessary for identifying collisions.
 !
       if (.not.allocated(kneighbour)) allocate(kneighbour(mpar_loc))
+!
+!  Get the gravity constant from the Selfgravity module.
+!
+      if (lselfgravity) then
+        call get_shared_variable('rhs_poisson_const',rhs_poisson_const)
+        GNewton=rhs_poisson_const/(4*pi)
+      endif
 !
 !  Precalculate inverse of coagulation time-step parameter.
 !
@@ -333,6 +346,12 @@ module Particles_coagulation
                   else
                     tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                         min(npswarmj,npswarmk)
+                    if (lgravitational_cross_section) then
+                      tau_coll1=tau_coll1*(1.0+2*GNewton* &
+                          four_pi_rhopmat_over_three* &
+                          (fp(j,iap)**3+fp(k,iap)**3)/((fp(k,iap)+fp(k,iap))* &
+                          (deltavjk+deltav_grav_floor)**2))
+                    endif
                   endif
 !
                   if (tau_coll1/=0.0) then
