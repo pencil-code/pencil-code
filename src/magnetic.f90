@@ -50,12 +50,12 @@ module Magnetic
   real, target, dimension (nx,nz,3) :: bb_xz, jj_xz, poynting_xz
   real, target, dimension (ny,nz,3) :: bb_yz, jj_yz, poynting_yz
 !
-  real, target, dimension (nx,ny) :: b2_xy, jb_xy, j2_xy
-  real, target, dimension (nx,ny) :: b2_xy2,jb_xy2,j2_xy2
-  real, target, dimension (nx,ny) :: b2_xy3,jb_xy3,j2_xy3
-  real, target, dimension (nx,ny) :: b2_xy4,jb_xy4,j2_xy4
-  real, target, dimension (ny,nz) :: b2_yz, jb_yz, j2_yz
-  real, target, dimension (nx,nz) :: b2_xz, jb_xz, j2_xz
+  real, target, dimension (nx,ny) :: b2_xy, jb_xy, j2_xy,  ab_xy
+  real, target, dimension (nx,ny) :: b2_xy2,jb_xy2,j2_xy2, ab_xy2
+  real, target, dimension (nx,ny) :: b2_xy3,jb_xy3,j2_xy3, ab_xy3
+  real, target, dimension (nx,ny) :: b2_xy4,jb_xy4,j2_xy4, ab_xy4
+  real, target, dimension (ny,nz) :: b2_yz, jb_yz, j2_yz,  ab_yz
+  real, target, dimension (nx,nz) :: b2_xz, jb_xz, j2_xz,  ab_xz
 !
   real, target, dimension (nx,ny) :: beta_xy
   real, target, dimension (nx,ny) :: beta_xy2
@@ -618,6 +618,8 @@ module Magnetic
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$ 
  integer :: idiag_etatotalmx=0 ! DIAG_DOC: $\left<\eta\right>_{yz}$
   integer :: idiag_etatotalmz=0 ! DIAG_DOC: $\left<\eta\right>_{xy}$
+  integer :: idiag_satolevine=0 ! DIAG_DOC: $W=\int\left(GF-2\phi^{2}AB\right) d^{3}x$
+                                ! DIAG_DOC: $G=
 !
   contains
 !***********************************************************************
@@ -1325,6 +1327,7 @@ module Magnetic
         lpenc_video(i_bb)=.true.
         lpenc_video(i_uxb)=.true.
         lpenc_video(i_jxb)=.true.
+        lpenc_video(i_ab)=.true.
       endif
 !
 !  jj pencil always needed when in Weyl gauge
@@ -3486,6 +3489,13 @@ module Magnetic
           if (n==iz4_loc) poynting_xy4(:,m-m1+1,j)=poynting(:,j)
         enddo
 !
+        ab_yz(m-m1+1,n-n1+1)=p%ab(ix_loc-l1+1)
+        if (m==iy_loc)  ab_xz(:,n-n1+1)=p%ab
+        if (n==iz_loc)  ab_xy(:,m-m1+1)=p%ab
+        if (n==iz2_loc) ab_xy2(:,m-m1+1)=p%ab
+        if (n==iz3_loc) ab_xy3(:,m-m1+1)=p%ab
+        if (n==iz4_loc) ab_xy4(:,m-m1+1)=p%ab
+!
       endif
       call timing('daa_dt','finished',mnloop=.true.)
 !
@@ -4273,6 +4283,17 @@ module Magnetic
             if (lwrite_slice_xy4) slices%xy4=>poynting_xy4(:,:,slices%index)
             if (slices%index<=3) slices%ready=.true.
           endif
+!
+!  Magnetic helicity density
+!
+        case ('ab')
+          slices%yz =>ab_yz
+          slices%xz =>ab_xz
+          slices%xy =>ab_xy
+          slices%xy2=>ab_xy2
+          if (lwrite_slice_xy3) slices%xy3=>ab_xy3
+          if (lwrite_slice_xy4) slices%xy4=>ab_xy4
+          slices%ready=.true.
 !
       endselect
 !
