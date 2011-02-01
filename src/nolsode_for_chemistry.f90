@@ -37,8 +37,10 @@ module LsodeForChemistry
 !   
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df  
+      real :: t1, t2
 !
       call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(t1,t2)
 !
    end subroutine lsode_fc
 !***********************************************************************
