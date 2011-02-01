@@ -624,6 +624,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=-O3 -I /home/ajohan/local/openmpi/include/ #(dintel|student10)
 #CFLAGS=-DFUNDERSC=1 #(dintel|student10)
 #LD_MPI=-L /home/ajohan/local/openmpi/lib -lmpi -lmpi_f77 #(dintel|student10)
+#FC=ifort #(opto[1-4])
 #FC_SLOPPY=ifort #(opto[1-4])
 #FFLAGS=-O3 -I/home/johansen/mpich/include #(opto[1-4])
 #LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
