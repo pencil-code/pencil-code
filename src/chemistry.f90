@@ -758,6 +758,7 @@ module Chemistry
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   13-aug-07/steveb: coded
+!   10-jan-11/julien: adapted for the case where chemistry is solved by LSODE 
 !
       use Sub, only : grad
 !
@@ -772,20 +773,23 @@ module Chemistry
       real :: T_low,T_up, T_mid
       real, dimension(nx) :: T_loc
 !
+      logical :: ldiffusion2
+      ldiffusion2=ldiffusion .and. (.not.lchemonly) 
+!
 !  Mass fraction YY
 !
 !      if (lpencil(i_YY) .and. lreactions ) then
 !        do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
 !      endif
 !
-      if (lpencil(i_gYYk) .and. ldiffusion) then
+      if (lpencil(i_gYYk) .and. ldiffusion2) then
        do k=1,nchemspec
          call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
          do i=1,3; p%gYYk(:,i,k)=gXX_tmp(:,i); enddo
        enddo
       endif
 !
-      if (lpencil(i_gXXk) .and. ldiffusion) then
+      if (lpencil(i_gXXk) .and. ldiffusion2) then
        do k=1,nchemspec
          call grad(XX_full(:,:,:,k),gXX_tmp)
          do i=1,3; p%gXXk(:,i,k)=gXX_tmp(:,i); enddo
@@ -811,7 +815,7 @@ module Chemistry
 !
 !  Viscosity of a mixture
 !
-         if (lpencil(i_nu)) then
+         if (lpencil(i_nu).and.(.not.lchemonly)) then
           if (visc_const<impossible) then
            p%nu=visc_const
           else
@@ -831,8 +835,6 @@ module Chemistry
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
         if (lpencil(i_H0_RT)) then
-!         if (.not. lT_const) then
-!AB: Natalia, maybe we should ask earlier for lentropy?
           if ((.not. lT_const).and.(ilnTT/=0)) then
             do k=1,nchemspec
               T_low=species_constants(k,iTemp1)
@@ -863,7 +865,6 @@ module Chemistry
                     +species_constants(k,iaa1(ii6))/T_loc
               endwhere
             enddo
-          endif
 !
 !  Enthalpy flux
 !
@@ -876,7 +877,7 @@ module Chemistry
             enddo
           endif
 !
-          if (lpencil(i_ghhk) .and. lreactions) then
+          if (lpencil(i_ghhk) .and. lreactions .and. (.not.lchemonly)) then
             do k=1,nchemspec
               if (species_constants(k,imass)>0.)  then
                 !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
@@ -888,11 +889,11 @@ module Chemistry
             enddo
           endif
         endif
+      endif
 !
 !  Find the entropy by using fifth order temperature fitting function
 !
-      if (lpencil(i_S0_R)) then
-        if (.not. lT_const) then
+      if (lpencil(i_S0_R .and. (.not.llsode .or. lchemonly))) then
 !AB: Natalia, maybe we should ask earlier for lentropy?
           if ((.not. lT_const).and.(ilnTT/=0)) then
             do k=1,nchemspec
@@ -925,13 +926,16 @@ module Chemistry
                endwhere
              enddo
            endif
-         endif
        endif
 !
 ! Calculate the reaction term and the corresponding pencil
 !
       if (lreactions .and. lpencil(i_DYDt_reac)) then
-        call calc_reaction_term(f,p)
+        if (.not.llsode .or. lchemonly) then
+          call calc_reaction_term(f,p)
+        else
+          p%DYDt_reac=0.
+        endif
       else
         p%DYDt_reac=0.
       endif
@@ -942,7 +946,7 @@ module Chemistry
 ! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
 ! 2) the case of the constant diffusion coefficient
 !
-       if (ldiffusion .and. lpencil(i_Diff_penc_add)) then
+       if (ldiffusion2 .and. lpencil(i_Diff_penc_add)) then
        if  ((Diff_coef_const<impossible) .or. (lDiff_simple) ) then
          if (lDiff_simple) then
            if (Diff_coef_const==impossible)  Diff_coef_const=10.
@@ -957,8 +961,12 @@ module Chemistry
       endif
       endif
 !
-      if (ldiffusion .and. lpencil(i_DYDt_diff)) then
-        call calc_diffusion_term(f,p)
+      if (ldiffusion2 .and. lpencil(i_DYDt_diff)) then
+        if (.not.lchemonly) then
+          call calc_diffusion_term(f,p)
+        else
+          p%DYDt_diff=0.
+        endif
       else
         p%DYDt_diff=0.
       endif
@@ -971,7 +979,7 @@ module Chemistry
 !
 ! Calculate the thermal diffusivity
 !
-      if (lpencil(i_lambda) .and. lheatc_chemistry) then
+      if (ldiffusion2 .and. lpencil(i_lambda) .and. lheatc_chemistry) then
       if ((lThCond_simple) .or. (lambda_const<impossible))then
         if (lThCond_simple) then
           if (lambda_const==impossible) lambda_const=1e4
@@ -999,12 +1007,12 @@ module Chemistry
         endif
       endif
 !
-      if (lpencil(i_ppwater)) then
+      if (lpencil(i_ppwater) .and. .not.lchemonly) then
         if (index_H2O>0) then
          p%ppwater=p%rho*Rgas*p%TT/18.*f(l1:l2,m,n,ichemspec(index_H2O))
         endif
       endif
-      if (lpencil(i_Ywater)) then
+      if (lpencil(i_Ywater) .and. .not.lchemonly) then
         if (index_H2O>0) then
          p%Ywater=f(l1:l2,m,n,ichemspec(index_H2O))
         endif
@@ -2076,6 +2084,7 @@ module Chemistry
 !
 !  22-jun-10/julien: Added evaluation of diffusion coefficients using constant
 !                     Lewis numers Di = lambda/(rho*Cp*Lei)
+!  10-jan-11/julien: Modified for a resolution with LSODE
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) ::  tmp_sum,tmp_sum2, nu_dyn,nuk_nuj,Phi
@@ -2209,11 +2218,16 @@ module Chemistry
            enddo
          endif
 !
+!  All the transport properties are calculated only if we are not using LSODE
+!  to solve chemistry or during the transport substep
+!
+       if (.not.lchemonly) then
+!
 !  Viscosity of a mixture
 !
-         if (tran_exist) then
-           call calc_diff_visc_coef(f)
-         endif
+        if (tran_exist) then
+          call calc_diff_visc_coef(f)
+        endif
 !
         if (visc_const==impossible) then
         do j3=nn1,nn2
@@ -2316,6 +2330,8 @@ module Chemistry
         if (lheatc_chemistry .and. (.not.lThCond_simple)) then
           call calc_therm_diffus_coef(f)
         endif
+        endif
+!
         else
           call stop_it('This case works only for cgs units system!')
         endif
@@ -2353,6 +2369,7 @@ module Chemistry
         write(file_id,*) 'gamma,max,min'
         write(file_id,'(7E12.4)') cp_full(l1,m1,n1)/cv_full(l1,m1,n1),&
             cp_full(l2,m2,n2)/cv_full(l2,m2,n2)
+        if (.not.lchemonly) then
         write(file_id,*) ''
         write(file_id,*) 'Species viscosity, g/cm/s,'
         do k=1,nchemspec
@@ -2373,6 +2390,7 @@ module Chemistry
                 Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
                 Diff_full(l2,m2,n2,k)*unit_length**2/unit_time
           enddo
+        endif
         endif
         write(file_id,*) ''
         if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
@@ -2653,6 +2671,7 @@ module Chemistry
 !    8-jan-08/natalia: included advection/diffusion
 !   20-feb-08/axel: included reactions
 !   22-jun-10/julien: modified evaluation of enthalpy fluxes with constant Lewis numbers
+!   10-jan-11/julien: modified to solve chemistry with LSODE
 !
       use Diagnostics
       use Sub, only: grad,dot_mn
@@ -2675,6 +2694,9 @@ module Chemistry
       intent(in) :: p,f
       intent(inout) :: df
 !
+      logical :: ldiffusion2
+      ldiffusion2=ldiffusion .and. (.not.lchemonly)
+!
 !  identify module and boundary conditions
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
@@ -2688,12 +2710,11 @@ module Chemistry
 !
 !  loop over all chemicals
 !
-!
       do k=1,nchemspec
 !
 !  advection terms
 !
-        if (lhydro.and.ladvection) then
+        if (lhydro.and.ladvection.and.(.not.lchemonly)) then
           call grad(f,ichemspec(k),gchemspec)
           call dot_mn(p%uu,gchemspec,ugchemspec)
           if (lmobility) ugchemspec=ugchemspec*mobility(k)
@@ -2706,7 +2727,7 @@ module Chemistry
 !  further one should check the existence of a file with
 !  binary diffusion coefficients!
 !
-        if (ldiffusion) then
+        if (ldiffusion2) then
           df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+&
               p%DYDt_diff(:,k)
         endif
@@ -2716,8 +2737,14 @@ module Chemistry
 !  d/dt(x_i) = S_ij v_j
 !
         if (lreactions) then
-          df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+&
-              p%DYDt_reac(:,k)
+           if (lchemonly) then
+!  If chemistry is solved in a separate step, we want df to contain only the
+!  chemical contribution, that's why no sum is required
+            df(l1:l2,m,n,ichemspec(k))=p%DYDt_reac(:,k)
+          else
+            df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+&
+                p%DYDt_reac(:,k)
+          endif          
         endif
 !
 !  Add filter for negative concentrations
@@ -2746,11 +2773,12 @@ module Chemistry
 !
     enddo
 !
-    if (lreactions .and. ireac /= 0) call get_reac_rate(f,p)
+    if (lreactions .and. ireac /= 0 .and. ((.not.llsode).or.lchemonly)) &
+        call get_reac_rate(f,p)
 !
-      if (ldensity .and. lcheminp) then
+    if (ldensity .and. lcheminp) then
 !
-       if (l1step_test) then
+      if (l1step_test) then
         sum_DYDt=0.
         do i=1,nx
 !
@@ -2766,7 +2794,7 @@ module Chemistry
       !   endif
         enddo
 !
-       else
+      else
         sum_DYDt=0.
         sum_hhk_DYDt_reac=0.
         sum_dk_ghk=0.
@@ -2779,66 +2807,77 @@ module Chemistry
             sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
           endif
 !
-         if (ldiffusion) then
-          if (lDiff_simple) then
-           do i=1,3
-            dk_D(:,i)=(p%gXXk(:,i,k) &
-             +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
-             *p%Diff_penc_add(:,k)
-           enddo
-          else if (ldiff_fick) then
-            call grad(f,ichemspec(k),gchemspec)
-            do i=1,3
-              dk_D(:,i)=gchemspec(:,i)*Diff_full_add(l1:l2,m,n,k)
-            enddo
-          else
-           do i=1,3
-            dk_D(:,i)=(p%gXXk(:,i,k) &
-             +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
-             *Diff_full_add(l1:l2,m,n,k)
-           enddo
+          if (ldiffusion2) then
+            if (lDiff_simple) then
+              do i=1,3
+                dk_D(:,i)=(p%gXXk(:,i,k) &
+                    +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
+                    *p%Diff_penc_add(:,k)
+              enddo
+            else if (ldiff_fick) then
+              call grad(f,ichemspec(k),gchemspec)
+              do i=1,3
+                dk_D(:,i)=gchemspec(:,i)*Diff_full_add(l1:l2,m,n,k)
+              enddo
+            else
+              do i=1,3
+                dk_D(:,i)=(p%gXXk(:,i,k) &
+                    +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
+                    *Diff_full_add(l1:l2,m,n,k)
+              enddo
+            endif
+!
+            call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
+            sum_dk_ghk=sum_dk_ghk+dk_dhhk
+            if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
           endif
-           call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
-           sum_dk_ghk=sum_dk_ghk+dk_dhhk
-           if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
-         endif
 !
         endif
         enddo
 !
-!
 ! If the correction velocity is added
 !
-        if (ldiff_corr.and.ldiffusion) then
-         do k=1,nchemspec
-          call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
-          sum_dk_ghk(:)=sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
-         enddo
+        if (ldiff_corr.and.ldiffusion2) then
+          do k=1,nchemspec
+            call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
+            sum_dk_ghk(:)=sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
+          enddo
         endif
-       endif
+      endif
 !
-        if (l1step_test) then
-          RHS_T_full=sum_DYDt(:)
+      if (l1step_test) then
+        RHS_T_full=sum_DYDt(:)
+      else
+        if (ltemperature_nolog) then
+          call stop_it('ltemperature_nolog case does not work now!')
         else
-          if (ltemperature_nolog) then
-           call stop_it('ltemperature_nolog case does not work now!')
+          if (lchemonly) then
+            RHS_T_full=(sum_DYDt(:)+sum_hhk_DYDt_reac*p%TT1(:))*p%cv1
           else
             RHS_T_full=(sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
-             +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
+                +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
           endif
         endif
-!
-        if (.not. lT_const) then
-         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full
-        endif
-!
-        if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
-!
       endif
+!
+      if (.not. lT_const) then
+        if (lchemonly) then
+!  If chemistry is solved in a separate step, we want df to contain only the
+!  chemical contribution, that's why no sum is required
+          df(l1:l2,m,n,ilnTT) = RHS_T_full
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full
+        endif
+      endif
+!
+      if (lheatc_chemistry.and.(.not.lchemonly)) &
+          call calc_heatcond_chemistry(f,df,p)
+!
+    endif
 !
 !  Atmosphere case
 !
-      if (lcloud) then
+      if (lcloud.and.(.not.lchemonly)) then
 !
 !
         df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
@@ -2850,12 +2889,11 @@ module Chemistry
 !
 !        sum_Y=0.
 !        do k=1,nchemspec
-!        sum_Y=sum_Y+f(l1:l2,m,n,ichemspec(k))
+!          sum_Y=sum_Y+f(l1:l2,m,n,ichemspec(k))
 !        enddo
 !        if (maxval(abs(sum_Y(:)-1))>1e-10)  then
 !          print*,sum_Y(:)
-!            call fatal_error('dchemistry_dt',&
-!                  'sum_Y is not unity')
+!            call fatal_error('dchemistry_dt','sum_Y is not unity')
 !        endif
 !
         do i=1,mx
@@ -2868,12 +2906,11 @@ module Chemistry
 !
 ! this damping zone is needed in a case of NSCBC
 !
-!
       if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (lfirst.and. ldt) then
+      if (lfirst .and. ldt .and. (.not.lchemonly)) then
         if (.not. lcheminp) then
           diffus_chem=chem_diff*maxval(chem_diff_prefactor)*dxyz_2
         else
@@ -2896,7 +2933,7 @@ module Chemistry
 ! NB: it should be discussed
 !
       if (lfirst .and. ldt) then
-        if (lreactions) then
+        if (lreactions.and.(.not.llsode.or.lchemonly)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,
 !  or maximum of absolute rate, if growing.
@@ -6033,7 +6070,8 @@ module Chemistry
             do ii = 2, npts-1
               if (x(i) > grid(ii)-(grid(imid)-grid(ipos)) .and. x(i) &
                   <= grid(ii+1)-(grid(imid)-grid(ipos))) then
-                f(i,j,k,iux)=f(i,j,k,iux)+a(ii,1)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+                if (.not.init_from_file) &
+                    f(i,j,k,iux)=f(i,j,k,iux)+a(ii,1)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
                              (a(ii+1,1)-a(ii,1)) / (grid(ii+1)-grid(ii))
                 f(i,j,k,iuz+2)=a(ii,3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
                              (a(ii+1,3)-a(ii,3)) / (grid(ii+1)-grid(ii))
@@ -6050,7 +6088,8 @@ module Chemistry
                 enddo
 !
               else if (x(i) <= grid(2)-(grid(imid)-grid(ipos))) then
-                f(i,j,k,iux)=f(i,j,k,iux)+a(1,1)
+                if (.not.init_from_file) &
+                    f(i,j,k,iux)=f(i,j,k,iux)+a(1,1)
                 f(i,j,k,iuz+2)=a(1,3)
                 f(i,j,k,iuz+1)=a(1,2)
                 do is = 1, nsp
@@ -6064,7 +6103,8 @@ module Chemistry
                 exit
 !
               else if (x(i) >= grid(npts)-(grid(imid)-grid(ipos))) then
-                f(i,j,k,iux)=f(i,j,k,iux)+a(npts,1)
+                if (.not.init_from_file) &
+                    f(i,j,k,iux)=f(i,j,k,iux)+a(npts,1)
                 f(i,j,k,iuz+2)=a(npts,3)
                 f(i,j,k,iuz+1)=a(npts,2)
                 do is = 1, nsp
