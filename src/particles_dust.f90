@@ -2330,18 +2330,30 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx), &
                 idiag_mpvpxm)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                fp(1:npar_loc,ivpx), idiag_mpvpxm)
           endif
         endif
         if (idiag_mpvpym/=0) then
           if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz), &
                 idiag_mpvpym)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                fp(1:npar_loc,ivpy), idiag_mpvpym)
           endif
         endif
         if (idiag_mpvpzm/=0) then
           if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
                 idiag_mpvpzm)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                fp(1:npar_loc,ivpz), idiag_mpvpzm)
           endif
         endif
         if (idiag_mpt/=0) then
