@@ -821,7 +821,7 @@ module Particles_main
         call read_particles_selfg_init_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_startpars('particles_selfg_init_pars',iostat); return
+            call samplepar_startpars('particles_selfgrav_init_pars',iostat); return
           endif
         endif
       endif
@@ -989,7 +989,7 @@ module Particles_main
         call read_particles_selfg_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
-            call samplepar_runpars('particles_selfg_run_pars',iostat); return
+            call samplepar_runpars('particles_selfgrav_run_pars',iostat); return
           endif
         endif
       endif
