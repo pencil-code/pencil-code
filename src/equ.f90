@@ -102,6 +102,10 @@ module Equ
 !
       l1dphiavg=lcylinder_in_a_box.and.l1davgfirst
 !
+!  For chemistry with LSODE
+!
+      lchemonly=llsode.and.(.not.lstep1)
+!
 !  Record times for diagnostic and 2d average output.
 !
       if (ldiagnos   ) tdiagnos   =t ! (diagnostics are for THIS time)
@@ -725,7 +729,7 @@ module Equ
 !
 !  time step constraint from speed of chemical reactions
 !
-          if (lchemistry) then
+          if (lchemistry .and. .not.llsode) then
             dt1_reac = reac_chem/cdtc
             dt1_max = max(dt1_max,dt1_reac)
           endif
