@@ -126,7 +126,7 @@ module Boundcond
 ! the following condition is used. But this place should be modifyed somehow
 ! Any ideas?
 !
-            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
+!            if ((bc12(j)=='p') .and. lchemistry .and. ldustdensity) bc12(j)=''
 !
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ip_ok) then

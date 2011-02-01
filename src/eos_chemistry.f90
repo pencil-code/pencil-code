@@ -524,11 +524,6 @@ module EquationOfState
            p%TT=exp(f(l1:l2,m,n,ilnTT))
          endif
        endif
-
-!if ((m==4) .and. (n==4)) then
-!if (p%TT(10)<300)  print*,'NAtalia', p%TT(10),exp(f(l1+10-1,m,n,ilnTT)),m,n,lpencil(i_TT)
-!endif
-
 !
        if (lpencil(i_TT_2)) p%TT_2=p%TT*p%TT
        if (lpencil(i_TT_3)) p%TT_3=p%TT_2*p%TT

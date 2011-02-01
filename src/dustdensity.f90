@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
-! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp: mu1
+! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp; mu1
 !
 !***************************************************************
 module Dustdensity
@@ -51,8 +51,8 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
   real :: rho_w=1.0, rho_s=3., Aconst=1.0e-6, Dwater=22.0784e-2, r0, delta
-  real :: Rgas=8.31e7, Rgas_unit_sys,Nion=0., m_w=18., m_s=60., Ntot, AA=0.66e-4, BB=1.5*1e-16!1.5e-16
-  real :: nd_reuni
+  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot, AA=0.66e-4, BB=1.5*1e-16!1.5e-16
+  real :: nd_reuni,nd00=1.
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
@@ -71,12 +71,12 @@ module Dustdensity
   logical :: lnoaerosol=.false.
 !
   namelist /dustdensity_init_pars/ &
-      rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
+      rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, nd00, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
-      dsize_min, dsize_max, latm_chemistry, spot_number, Nion, lnoaerosol, &
+      dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
       r0, delta, lmdvar, lmice
 !
   namelist /dustdensity_run_pars/ &
@@ -305,7 +305,7 @@ module Dustdensity
           enddo
           do k=1,ndustspec
 !            init_distr(k)=nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
-             init_distr(k)=1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
+             init_distr(k)=nd00*1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
                *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
           enddo
           if (ndustspec>4) then
@@ -1269,6 +1269,24 @@ module Dustdensity
           if (lmice)  df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - p%udgmi(:,k)
         enddo
       elseif (latm_chemistry) then
+!
+!  Beginning of the atmospheric case
+!
+!  Redistribution over the size in the atmospheric physics case
+!
+        do k=1,ndustspec
+          if (k==1) then 
+            df(l1:l2,m,n,ind(k)) = 0.
+          else 
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k) &
+               +p%dndr(:,k)
+            do i=1,mx
+              if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
+                df(i,m,n,ind(k))=1e-25*dt
+            enddo
+          endif
+        enddo
+!
         do k=1,ndustspec
           if (lmdvar) then
               df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
@@ -1281,7 +1299,9 @@ module Dustdensity
             endif
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo
-!print*,maxval(df(l1,m1,n1,imd(:)))
+!
+!   End of atmospheric case
+!
       endif
 !
 !  Calculate kernel of coagulation equation
@@ -1296,25 +1316,8 @@ module Dustdensity
 !
       if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
 !
-!  Redistribution over the size in the atmospheric physics case
-!
-      if (latm_chemistry) then
-!
-        do k=1,ndustspec
-          if (k==1) then 
-            df(l1:l2,m,n,ind(k)) = 0.
-          else 
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k) &
-               +p%dndr(:,k)
-            do i=1,mx
-              if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
-                df(i,m,n,ind(k))=1e-25*dt
-            enddo
-          endif
-        enddo
-      endif
-!
 !  Loop over dust layers
+!  this is a non-atmospheric case (for latm_chemistry=F)
 !
       if (.not. latm_chemistry) then
       do k=1,ndustspec
@@ -2230,7 +2233,7 @@ module Dustdensity
         if (nxgrid/=1) then
           call random_number_wrapper(spot_posit(1,j))
           spot_posit(1,j)=spot_posit(1,j)*Lxyz(1)
-!          print*,'posit',spot_posit(1,j),xyz0(1)+Lxyz(1)
+          print*,'positx',spot_posit(1,j),xyz0(1),Lxyz(1)
           if ((spot_posit(1,j)-1.5*spot_size<xyz0(1)) .or. &
             (spot_posit(1,j)+1.5*spot_size>xyz0(1)+Lxyz(1)))  &
             spot_exist=.false.
@@ -2238,6 +2241,7 @@ module Dustdensity
         if (nygrid/=1) then
           call random_number_wrapper(spot_posit(2,j))
           spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
+         print*,'posity',spot_posit(2,j),xyz0(2),Lxyz(2)
           if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
            (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
            spot_exist=.false.

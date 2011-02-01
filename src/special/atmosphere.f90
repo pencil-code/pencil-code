@@ -66,11 +66,10 @@ module Special
   character (len=labellen) :: initstream='default'
   real, dimension(ndustspec) :: dsize, dds
   real :: Rgas, Rgas_unit_sys=1.
-  integer :: ind_water=0!, ind_cloud=0
+  integer :: ind_H2O, ind_N2! ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
-  integer :: ind_H2O=0, ind_N2
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.
@@ -81,7 +80,7 @@ module Special
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
-      TT2,TT1,ind_H2O, ind_N2,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
+      TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
       nd0, r0, delta,lbuffer_zone_uy,uy_ref
          
 ! run parameters
@@ -442,13 +441,13 @@ module Special
       if (lbuoyancy_z) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              + gg*((p%TT(:)-TT0)/TT0 &
-             + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
+             + eps*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:) &
             )
       elseif (lbuoyancy_x) then
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
              + gg*((p%TT(:)-TT0)/TT0 &
-             + eps*(f(l1:l2,m,n,ichemspec(ind_water))-qwater0) &
+             + eps*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:) &
             )
       endif
@@ -883,7 +882,7 @@ module Special
 !
       if (bc%location==iBC_X_BOT) then
 ! bottom boundary
-        if (vr==iuud(1)+3) then 
+        if (vr==ind(1)) then 
           do k=1,ndustspec
             f(l1,m1:m2,n1:n2,ind(k))= &
 !                           nd0*exp(-((dsize(k)-r0)/delta)**2)
@@ -892,7 +891,7 @@ module Special
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
-        if (vr==iuud(1)+4) then 
+        if (vr==imd(1)) then 
    !      f(l1,m1:m2,n1:n2,imd)=value1
           do k=1,ndustspec
            f(l1,m1:m2,n1:n2,imd(k))=4./3.*PI*dsize(k)**3*rho_w &

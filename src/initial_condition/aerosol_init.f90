@@ -46,14 +46,16 @@ module InitialCondition
      integer :: index_H2O=3
      integer :: index_N2=4
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
-     real :: init_x1=0.,init_x2=0.
-     real :: X_wind=impossible
+     real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
+     real :: X_wind=impossible, spot_size=1.
      logical :: lreinit_water=.false.,lwet_spots=.false.
+     logical :: linit_temperature=.false.!, linit_density=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, lwet_spots
+     lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
+     linit_temperature, init_TT1, init_TT2
 !
   contains
 !***********************************************************************
@@ -345,6 +347,26 @@ module InitialCondition
       if (mvar < 5) then
         call fatal_error("air_field", "I can only set existing fields")
       endif
+!
+
+!!!!!
+
+
+    
+        if (ltemperature_nolog) then
+          f(:,:,:,iTT)=TT
+        else
+          f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
+        endif
+        if (ldensity_nolog) then
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+        else
+          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3)
+        endif
+        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
+!
 
       if (lroot) print*, 'local:Air temperature, K', TT
       if (lroot) print*, 'local:Air pressure, dyn', PP
@@ -354,7 +376,34 @@ module InitialCondition
       if (lroot) print*, 'local:R', k_B_cgs/m_u_cgs
 !
       close(file_id)
-
+!
+!  Reinitialization of T, water => rho
+!
+      if (linit_temperature) then
+        do i=1,mx
+        if (x(i)<=init_x1) then
+          f(i,:,:,ilnTT)=alog(init_TT1)
+        endif
+        if (x(i)>=init_x2) then
+          f(i,:,:,ilnTT)=alog(init_TT2)
+        endif
+        if (x(i)>init_x1 .and. x(i)<init_x2) then
+          if (init_x1 /= init_x2) then
+            f(i,:,:,ilnTT)=&
+               alog((x(i)-init_x1)/(init_x2-init_x1) &
+               *(init_TT2-init_TT1)+init_TT1)
+          endif
+        endif
+        enddo
+        if (ldensity_nolog) then
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+        else
+          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+        endif
+      endif
+!
        if (lreinit_water) then
          psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
          air_mass_ar=air_mass
@@ -365,11 +414,14 @@ module InitialCondition
          if (lline_profile) then
            call line_profile(f,PP,psat,air_mass_ar, &
                             init_water1,init_water2,init_x1,init_x2)
-         elseif (.not. lwet_spots) then
-           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
          elseif (lwet_spots) then
            lmake_spot=.true.
            call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
+         elseif (.not. lwet_spots) then
+!
+! Initial conditions for the  0dcase: cond_evap
+!
+           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
          endif
 !
 !  Recalculation of air_mass becuase of changing of N2
@@ -474,7 +526,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: k, j, j1,j2,j3, lx=0,ly=0,lz=0
-      real :: spot_size=3., RR, PP_
+      real ::  RR, PP_
       real, dimension (3,spot_number) :: spot_posit
       real, dimension (mx,my,mz) :: air_mass_ar_, psat_
       logical :: spot_exist=.true., lmake_spot_
@@ -486,7 +538,7 @@ module InitialCondition
       do j=1,spot_number
         spot_exist=.true.
         lx=0;ly=0; lz=0
-          if (nxgrid/=1) then
+        if (nxgrid/=1) then
           lx=1
           if (lmake_spot_) then
             call random_number_wrapper(spot_posit(1,j))
@@ -496,18 +548,21 @@ module InitialCondition
             (spot_posit(1,j)+1.5*spot_size>xyz0(1)+Lxyz(1)))  &
             spot_exist=.false.
             print*,'positx',spot_posit(1,j),spot_exist
-          endif
+!          if ((spot_posit(1,j)-1.5*spot_size<xyz0(1)) )  &
+!            spot_exist=.false.
+!            print*,'positx',spot_posit(1,j),spot_exist
+        endif
         if (nygrid/=1) then
           ly=1
           if (lmake_spot_) then
             call random_number_wrapper(spot_posit(2,j))
             spot_posit(2,j)=spot_posit(2,j)*Lxyz(2)
           endif
-          if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
-            (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
-            spot_exist=.false.
-            print*,'posity',spot_posit(2,j),spot_exist
-          endif
+!          if ((spot_posit(2,j)-1.5*spot_size<xyz0(2)) .or. &
+!            (spot_posit(2,j)+1.5*spot_size>xyz0(2)+Lxyz(2)))  &
+!            spot_exist=.false.
+!            print*,'posity',spot_posit(2,j),spot_exist
+        endif
         if (nzgrid/=1) then
           lz=1
           if (lmake_spot_) then
