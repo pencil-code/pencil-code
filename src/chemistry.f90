@@ -896,7 +896,7 @@ print*,'NATA'
 !
 !  Find the entropy by using fifth order temperature fitting function
 !
-      if (lpencil(i_S0_R .and. (.not.llsode .or. lchemonly))) then
+      if (lpencil(i_S0_R) .and. (.not.llsode .or. lchemonly)) then
 !AB: Natalia, maybe we should ask earlier for lentropy?
           if ((.not. lT_const).and.(ilnTT/=0)) then
             do k=1,nchemspec
