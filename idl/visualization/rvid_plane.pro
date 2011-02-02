@@ -89,9 +89,9 @@ if(keyword_set(doublebuffer)) then begin
   draw=widget_draw(base,xsize=wsx,ysize=wsy)
   widget_control,/realize,base
   widget_control,draw,get_value=windex
-endif else if (keyword_set(newwindow)) then begin
-   window, /free, xsize=wsx, ysize=wsy, title=title
-endif
+endif else $
+if (keyword_set(newwindow)) then window, /free, xsize=wsx, ysize=wsy, title=title $
+                            else window, xsize=wsx, ysize=wsy, title=title
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
