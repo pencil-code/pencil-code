@@ -1198,7 +1198,7 @@ module ImplicitPhysics
             bz(1)=1.   ; cz(1)=-1
             rhsz(1)=dz*Fbot/hcond0
           case default 
-            call fatal_error('ADI_Kprof_yakonov','bcz on TT must be cT or c1')
+            call fatal_error('ADI_Kconst_yakonov','bcz on TT must be cT or c1')
         endselect
 !
         call tridag(az,bz,cz,rhsz,workz)
