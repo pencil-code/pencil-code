@@ -6,8 +6,8 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 3
+! COMMUNICATED AUXILIARIES 3
 !
 !***************************************************************
 !
@@ -31,6 +31,8 @@ module Special
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=huge1
   real :: limiter_tensordiff=3
+  logical :: luse_spitz_aux=.false.
+  real :: Kpa_pen=0., Kpa_SI=2e-11
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -44,7 +46,8 @@ module Special
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
-      hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top
+      hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
+      luse_spitz_aux,Kpa_SI
 !
 ! variables for print.in
 !
@@ -113,6 +116,12 @@ module Special
 !
 !  10-sep-10/bing: coded
 !
+    use FArrayManager, only: farray_register_auxiliary
+!
+    call farray_register_auxiliary('ispitzerx',ispitzerx,communicated=.true.)
+    call farray_register_auxiliary('ispitzery',ispitzery,communicated=.true.)
+    call farray_register_auxiliary('ispitzerz',ispitzerz,communicated=.true.)
+!
     if (lroot) call svn_id( &
         "$Id$")
 !
@@ -169,6 +178,9 @@ module Special
               ('initialize_special','granulation only works for lhydro=T')
       endif
     endif
+!
+    Kpa_pen = Kpa_SI/unit_density/unit_velocity**3. &
+        /unit_length*unit_temperature**3.5
 !
   endsubroutine initialize_special
 !***********************************************************************
@@ -249,6 +261,15 @@ module Special
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_cp1)=.true.
+    endif
+!
+    if (luse_spitz_aux) then
+      lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_rho1)=.true.
+      lpenc_requested(i_lnTT)=.true.
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_bb)=.true.
     endif
 !
   endsubroutine pencil_criteria_special
@@ -423,7 +444,7 @@ module Special
       endif
 !
 !  Read time dependent magnetic lower boundary
-      if (lmag_time_bound.and.ipz==0) call mag_time_bound(f) 
+      if (lmag_time_bound.and.ipz==0) call mag_time_bound(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -464,6 +485,11 @@ module Special
 !
       if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
           + hyper3_chi
+    endif
+!
+    if (luse_spitz_aux) then
+      call grad_spitzer_vector(f,df,p)
+      call fill_spitzer_vector(f,p)
     endif
 !
   endsubroutine special_calc_entropy
@@ -2404,6 +2430,83 @@ module Special
       if (allocated(uy_ext_global)) deallocate(uy_ext_global)
 !
     endsubroutine read_ext_vel_field
+!***********************************************************************
+    subroutine fill_spitzer_vector(f,p)
+!
+!  Routine to fill the auxiliary slots for the spitzer heat conduction
+!
+!  01-feb-11/bing: coded
+!
+      use EquationOfState, only: gamma
+      use Diagnostics,     only : max_mn_name
+      use Sub, only: dot, dot2
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: b2,b2_1,b_glnT,tmp
+      real, dimension (nx) :: chi_spitzer
+!
+      call dot2(p%bb,b2)
+      call dot(p%bb,p%glnTT,b_glnT)
+!
+      b2_1 = 1./max(tini,b2)
+!
+      tmp = Kpa_pen * b2_1 * b_glnT * exp(3.5*p%lnTT)
+!
+      f(l1:l2,m,n,ispitzerx)=p%bb(:,1)*tmp
+      f(l1:l2,m,n,ispitzery)=p%bb(:,2)*tmp
+      f(l1:l2,m,n,ispitzerz)=p%bb(:,3)*tmp
+!
+      chi_spitzer =  Kpa_pen *exp(2.5*p%lnTT) *p%rho1 *p%cp1
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine fill_spitzer_vector
+!***********************************************************************
+    subroutine grad_spitzer_vector(f,df,p)
+!
+!  Routine to compute the spitzer heat conduction
+!  using the auxiliary slots
+!
+!  01-feb-11/bing: coded
+!
+      use EquationOfState, only: gamma
+      use Deriv, only: der
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: tmpx,tmpy,tmpz
+      real, dimension (nx) :: rhs
+!
+      call der(f,ispitzerx,tmpx,1)
+      call der(f,ispitzery,tmpy,2)
+      call der(f,ispitzerz,tmpz,3)
+!
+      rhs = tmpx+tmpy+tmpz
+      rhs = gamma * p%cp1 * p%rho*p%TT1 *rhs
+!
+      df(l1:l2,m,n1,ilnTT) = rhs
+!
+    if (lvideo) then
+!
+! slices
+      spitzer_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
+      if (m==iy_loc)  spitzer_xz(:,n-n1+1)= rhs
+      if (n==iz_loc)  spitzer_xy(:,m-m1+1)= rhs
+      if (n==iz2_loc) spitzer_xy2(:,m-m1+1)= rhs
+      if (n==iz3_loc) spitzer_xy3(:,m-m1+1)= rhs
+      if (n==iz4_loc) spitzer_xy4(:,m-m1+1)= rhs
+    endif
+!
+    endsubroutine grad_spitzer_vector
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
