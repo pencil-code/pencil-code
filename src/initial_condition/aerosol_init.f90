@@ -249,7 +249,7 @@ module InitialCondition
       character (len=80) :: ChemInpLine
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
-      integer :: i,j,k=1,index_YY, j1,j2,j3
+      integer :: i,j,k=1,index_YY, j1,j2,j3, iter
       real :: YY_k, air_mass, TT=300., PP=1.013e6 ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
@@ -347,12 +347,20 @@ module InitialCondition
       if (mvar < 5) then
         call fatal_error("air_field", "I can only set existing fields")
       endif
+        if (ltemperature_nolog) then
+          f(:,:,:,iTT)=TT
+        else
+          f(:,:,:,ilnTT)=alog(TT)!+f(:,:,:,ilnTT)
+        endif
+        if (ldensity_nolog) then
+          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+        else
+          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3)
+        endif
+        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
 !
-
-!!!!!
-
-
-    
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
         else
@@ -406,53 +414,47 @@ module InitialCondition
 !
        if (lreinit_water) then
          psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
-         air_mass_ar=air_mass
-!
          if ((init_water1/=0.) .or. (init_water2/=0.)) lline_profile=.true.
          if ((init_x1/=0.) .or. (init_x2/=0.)) lline_profile=.true.
 !     
-         if (lline_profile) then
-           call line_profile(f,PP,psat,air_mass_ar, &
-                            init_water1,init_water2,init_x1,init_x2)
-         elseif (lwet_spots) then
-           lmake_spot=.true.
-           call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
-         elseif (.not. lwet_spots) then
-!
-! Initial conditions for the  0dcase: cond_evap
-!
-           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
-         endif
-!
+         do iter=1,2
+           if (iter==1) then
+             lmake_spot=.true.
+             air_mass_ar=air_mass
+           elseif (iter==2) then
+             lmake_spot=.false.
+             if (iter==2) then
 !  Recalculation of air_mass becuase of changing of N2
+               sum_Y=0.
+               do k=1,nchemspec
+                 if (ichemspec(k)/=ichemspec(index_N2)) &
+                   sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+               enddo
+                 f(:,:,:,ichemspec(index_N2))=1.-sum_Y
+                 air_mass_ar=0.
+               do k=1,nchemspec
+                 air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
+                    /species_constants(k,imass)
+               enddo
+                 air_mass_ar=1./air_mass_ar
+             endif
+           endif 
 !
-         sum_Y=0.
-         do k=1,nchemspec
-           if (ichemspec(k)/=ichemspec(index_N2)) sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-         enddo
-           f(:,:,:,ichemspec(index_N2))=1.-sum_Y
-           air_mass_ar=0.
-         do k=1,nchemspec
-           air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
-                   /species_constants(k,imass)
-         enddo
-         air_mass_ar=1./air_mass_ar
-!
-!  end of recalculation
-!
-         if (lline_profile) then
-           call line_profile(f,PP,psat,air_mass_ar, &
+           if (lline_profile) then
+             call line_profile(f,PP,psat,air_mass_ar, &
                             init_water1,init_water2,init_x1,init_x2)
-         elseif (.not. lwet_spots) then
-           f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
-         elseif (lwet_spots) then
-           lmake_spot=.false.
-           call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
-         endif
+           elseif (lwet_spots) then
+             call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
+           elseif (.not. lwet_spots) then
+! Initial conditions for the  0dcase: cond_evap
+             f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+           endif
+! end of loot do iter=1,2
+         enddo
 !
          if (ldensity_nolog) then
-           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
+            *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
          else
            f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs) &
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
