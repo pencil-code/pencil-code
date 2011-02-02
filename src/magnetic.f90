@@ -615,10 +615,9 @@ module Magnetic
   integer :: idiag_Ezmxz=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{y}$
   integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
   integer :: idiag_Eymxy=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{z}$
-  integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$ 
- integer :: idiag_etatotalmx=0 ! DIAG_DOC: $\left<\eta\right>_{yz}$
+  integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$
+  integer :: idiag_etatotalmx=0 ! DIAG_DOC: $\left<\eta\right>_{yz}$
   integer :: idiag_etatotalmz=0 ! DIAG_DOC: $\left<\eta\right>_{xy}$
-                                ! DIAG_DOC: $G=
 !
   contains
 !***********************************************************************
@@ -3189,7 +3188,7 @@ module Magnetic
 !
           if ((m==mspoint).and.(n==nspoint)) then
             if (idiag_axpt/=0) &
-                call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound) 
+                call save_name_sound(f(lspoint,mspoint,nspoint,iax),idiag_axpt,isound)
             if (idiag_aypt/=0) &
                 call save_name_sound(f(lspoint,mspoint,nspoint,iay),idiag_aypt,isound)
             if (idiag_azpt/=0) &
