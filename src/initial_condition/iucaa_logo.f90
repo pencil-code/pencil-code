@@ -25,16 +25,17 @@ module InitialCondition
 ! width_ring = width of the flux tube
 ! C = offset from the center of the knot, should be > 1
 ! D = extention coefficient for the z direction
+! phase = relative phase of the z-variation
 ! [xyz]scale = scale in each dimension
 ! [xyz]shift = shift in each dimension in a 2*pi box
 
-  real :: ampl=1.0,width_ring=0.3, C=2.0, D=1.5
+  real :: ampl=1.0,width_ring=0.3, C=2.0, D=1.5, phase=4./3.
   real :: xscale = 1.0, yscale = 1.0, zscale = 1.0
   real :: xshift = 0.2, yshift = 0.5, zshift = 0.0
   character (len=labellen) :: prof='constant'
 !
   namelist /initial_condition_pars/ &
-      ampl,width_ring,prof,C,D,xscale,yscale,zscale,xshift,yshift,zshift
+      ampl,width_ring,prof,C,D,xscale,yscale,zscale,xshift,yshift,zshift,phase
 !
   contains
 !***********************************************************************
@@ -124,7 +125,7 @@ module InitialCondition
         if (knot_param .gt. 2.*pi) exit
         knot_pos(1) = (C+sin(knot_param*4))*sin(knot_param*3)
         knot_pos(2) = (C+sin(knot_param*4))*cos(knot_param*3)
-        knot_pos(3) = D*cos(8*(knot_param-pi/6))
+        knot_pos(3) = D*cos(8.*knot_param-phase*pi)
         tangent(1) = 4*cos(knot_param*4)*sin(knot_param*3)+&
                3*(C+sin(knot_param*4))*cos(knot_param*(4-1))
         tangent(2) = 4*cos(knot_param*4)*cos(knot_param*3)-&
