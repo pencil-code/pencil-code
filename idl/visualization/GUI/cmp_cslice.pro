@@ -14,7 +14,7 @@ pro cmp_cslice, sets, limits, units=units, scaling=scaling
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 
-	resolve_routine, "analyse_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
+	resolve_routine, "pc_GUI_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 	set_names = tag_names (sets)
 	num_names = n_elements (set_names)
@@ -49,7 +49,7 @@ pro cmp_cslice, sets, limits, units=units, scaling=scaling
 	; setup limits, if necessary
 	if (n_elements (limits) eq 0) then begin
 		dims = size (varsets.(0))
-		limits = lindgen (dims[1], dims[2], dims[3])
+		limits = reform (lindgen (dims[1], dims[2], dims[3]), num_x, num_y, num_z)
 	end
 
 	cmp_cslice_cache, set, limits, units=units, coords=coords, scaling=scaling
