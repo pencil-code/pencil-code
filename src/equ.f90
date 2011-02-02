@@ -104,7 +104,7 @@ module Equ
 !
 !  For chemistry with LSODE
 !
-      lchemonly=llsode.and.(.not.lstep1)
+      lchemonly=.false.
 !
 !  Record times for diagnostic and 2d average output.
 !
