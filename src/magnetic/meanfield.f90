@@ -265,6 +265,10 @@ module Magnetic_meanfield
 !
       if (idiag_EMFdotBm/=0.or.idiag_EMFdotB_int/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
 !
+! If large_scale_velocity is included we need this pencil 
+!
+      if (llarge_scale_velocity) lpenc_requested(i_uxb)=.true.
+!
 !  Pencil criteria for secondary modules
 !
       if (lmagn_mf_demfdt) call pencil_criteria_magn_mf_demfdt()

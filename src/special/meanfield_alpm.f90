@@ -108,7 +108,7 @@ module Special
       integer :: ierr
 !
       if (lmagn_mf) then
-        if(lrun) then
+        if (lrun) then
           call get_shared_variable('eta',eta,ierr)
           if (ierr/=0) &
               call fatal_error("initialize_special: ", "cannot get shared var eta")

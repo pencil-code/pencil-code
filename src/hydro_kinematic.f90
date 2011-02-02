@@ -162,6 +162,8 @@ module Hydro
           iuy=iuu+1
           iuz=iuu+2
         endif
+! set the initial velocity to zero
+        f(:,:,:,iux:iuz) = 0.
         if (iuu/=0.and.lroot) then
           print*, 'initialize_velocity: iuu = ', iuu
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
@@ -173,7 +175,6 @@ module Hydro
         endif
       endif
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_hydro
@@ -841,8 +842,9 @@ module Hydro
           p%uu(:,2)=0.
 !          omega0=uphi_at_rmax/uphi_rmax
 !          shear = arctanh(omega0)/(uphi_rmax-x(l1))
-          p%uu(:,3)=0.*x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
-          write(*,*)'DM',m,n,p%uu(:,3)
+          p%uu(:,3)=0.01*x(l1:l2)*sinth(m)
+!*tanh(10.*(x(l1:l2)-x(l1)))
+!          write(*,*)'DM',m,n,p%uu(:,3)
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
@@ -1025,8 +1027,8 @@ module Hydro
         enddo
         if (lpencil(i_divu))  p%divu = 0.
 !
-! default select should go here DM
-! uu
+! no kinematic flow.
+!
       case ('none')
         if (headtt) print*,'kinflow = none'
         if (lpencil(i_uu)) p%uu=0.
@@ -1104,7 +1106,7 @@ module Hydro
       if (kinflow/='') then
         if (lfirst.and.ldt) then
           uu=p%uu
-          if (lspherical_coords) then
+           if (lspherical_coords) then
             advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
                 abs(uu(:,2))*dy_1(  m  )*r1_mn+ &
                 abs(uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
