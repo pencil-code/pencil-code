@@ -670,7 +670,8 @@ print*,'NATA'
 !
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_gYYk)=.true.
-      if (lreactions) lpenc_requested(i_ghhk)=.true.
+!      if (lreactions) 
+        lpenc_requested(i_ghhk)=.true.
 !
       if (lreactions) lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
@@ -684,13 +685,16 @@ print*,'NATA'
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cv1)=.true.
-         if (lreactions) lpenc_requested(i_H0_RT)=.true.
-         if (lreactions) lpenc_requested(i_S0_R)=.true.
+!         if (lreactions)
+          lpenc_requested(i_H0_RT)=.true.
+!         if (lreactions) 
+            lpenc_requested(i_S0_R)=.true.
          lpenc_requested(i_nu)=.true.
          lpenc_requested(i_gradnu)=.true.
          lpenc_requested(i_cs2)=.true.
 !
-         if (lreactions) lpenc_requested(i_hhk_full)=.true.
+!         if (lreactions)
+             lpenc_requested(i_hhk_full)=.true.
          if (lThCond_simple) lpenc_requested(i_glncp)=.true.
 !
          if (lheatc_chemistry) then
@@ -871,7 +875,8 @@ print*,'NATA'
 !
 !  Enthalpy flux
 !
-          if (lpencil(i_hhk_full) .and.lreactions) then
+          if (lpencil(i_hhk_full) ) then
+!          if (lpencil(i_hhk_full) .and.lreactions) then
             do k=1,nchemspec
               if (species_constants(k,imass)>0.)  then
                 p%hhk_full(:,k)=p%H0_RT(:,k)*Rgas*T_loc&
@@ -880,7 +885,8 @@ print*,'NATA'
             enddo
           endif
 !
-          if (lpencil(i_ghhk) .and. lreactions .and. (.not.lchemonly)) then
+!          if (lpencil(i_ghhk) .and. lreactions .and. (.not.lchemonly)) then
+          if (lpencil(i_ghhk)  .and. (.not.lchemonly)) then
             do k=1,nchemspec
               if (species_constants(k,imass)>0.)  then
                 !  call grad(hhk_full(:,:,:,k),ghhk_tmp)

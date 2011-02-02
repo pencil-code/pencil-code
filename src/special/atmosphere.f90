@@ -926,25 +926,17 @@ module Special
 
       elseif (bc%location==iBC_X_TOP) then
 ! top boundary
-!        if (vr==iuud(1)+3) then 
-!          do k=1,ndustspec
-!            f(l2,m1:m2,n1:n2,ind(k))=value2  &
-!            *exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/2e-5)**2)
-!          enddo
-!          do i=0,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)-f(l2-i,:,:,vr); enddo
-!        endif
-!        if (vr==iuud(1)+4) then 
-!         f(l2,m1:m2,n1:n2,imd)=value2
-!        endif
-        if (vr>=iuud(1)+3) then 
-        f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
-                       - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))
-        f(l2+2,:,:,ind)=0.2   *( 15*f(l2,:,:,ind)- 2*f(l2-1,:,:,ind)  &
-                 -  9*f(l2-2,:,:,ind)- 6*f(l2-3,:,:,ind)+ 7*f(l2-4,:,:,ind))
-        f(l2+3,:,:,ind)=1./35.*(157*f(l2,:,:,ind)-33*f(l2-1,:,:,ind)  &
-                       -108*f(l2-2,:,:,ind) -68*f(l2-3,:,:,ind)+87*f(l2-4,:,:,ind))
+        if (vr==ind(1)) then 
+!        f(l2+1,:,:,ind)=0.2   *(  9*f(l2,:,:,ind)-  4*f(l2-2,:,:,ind) &
+!                       - 3*f(l2-3,:,:,ind)+ 3*f(l2-4,:,:,ind))
+!        f(l2+2,:,:,ind)=0.2   *( 15*f(l2,:,:,ind)- 2*f(l2-1,:,:,ind)  &
+!                 -  9*f(l2-2,:,:,ind)- 6*f(l2-3,:,:,ind)+ 7*f(l2-4,:,:,ind))
+!        f(l2+3,:,:,ind)=1./35.*(157*f(l2,:,:,ind)-33*f(l2-1,:,:,ind)  &
+!                       -108*f(l2-2,:,:,ind) -68*f(l2-3,:,:,ind)+87*f(l2-4,:,:,ind))
+
+        do i=1,nghost; f(l2+i,:,:,ind)=2*f(l2,:,:,ind)-f(l2-i,:,:,ind); enddo
         endif
-        if (vr==iuud(1)+4) then 
+        if (vr==imd(1)) then 
         f(l2+1,:,:,imd)=0.2   *(  9*f(l2,:,:,imd)-  4*f(l2-2,:,:,imd) &
                        - 3*f(l2-3,:,:,imd)+ 3*f(l2-4,:,:,imd))
         f(l2+2,:,:,imd)=0.2   *( 15*f(l2,:,:,imd)- 2*f(l2-1,:,:,imd)  &

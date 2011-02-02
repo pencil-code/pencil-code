@@ -181,6 +181,8 @@ module Dustdensity
       integer :: i,j,k
       real :: ddsize
       logical :: lnothing
+
+      if (.not. ldustvelocity) call copy_bcs_dust_short
 !
 !  Set ind requal to ilnnd if we are considering non-logarithmic density.
 !
@@ -1139,8 +1141,12 @@ module Dustdensity
             call dot_mn(p%glnnd(:,:,k),p%glnrho(:,:),p%glnndglnrho(:,k))
 ! udrop
         if (lpencil(i_udrop)) then
-          p%udrop(:,:,k)=p%uu(:,:)
-          p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2
+          if (lnoaerosol) then
+            p%udrop=0.
+          else
+            p%udrop(:,:,k)=p%uu(:,:)
+            p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2
+          endif
         endif
 ! udropgnd
         if (lpencil(i_udropgnd)) then
@@ -2350,5 +2356,45 @@ module Dustdensity
       endif
 
     endsubroutine dustspec_normalization
+!***********************************************************************
+!***********************************************************************
+    subroutine copy_bcs_dust_short
+!
+!  Copy boundary conditions on first dust species to all others
+!
+! made from copy_bcs_dust. It is used if nodustvelocity
+!
+      if (ndustspec>1) then
+         bcx(ind)  =  bcx(ind(1))
+        bcx1(ind)  = bcx1(ind(1))
+        bcx2(ind)  = bcx2(ind(1))
+        if (lmdvar) then
+           bcx(imd) =  bcx(imd(1))
+          bcx1(imd) = bcx1(imd(1))
+          bcx2(imd) = bcx2(imd(1))
+        endif
+!
+         bcy(ind)  =  bcy(ind(1))
+        bcy1(ind)  = bcy1(ind(1))
+        bcy2(ind)  = bcy2(ind(1))
+        if (lmdvar) then
+           bcy(imd) =  bcy(imd(1))
+          bcy1(imd) = bcy1(imd(1))
+          bcy2(imd) = bcy2(imd(1))
+        endif
+!
+         bcz(ind)  =  bcz(ind(1))
+        bcz1(ind)  = bcz1(ind(1))
+        bcz2(ind)  = bcz2(ind(1))
+        if (lmdvar) then
+           bcz(imd) =  bcz(imd(1))
+          bcz1(imd) = bcz1(imd(1))
+          bcz2(imd) = bcz2(imd(1))
+        endif
+        if (lroot) print*, 'copy_bcs_dust: '// &
+            'Copied bcs on first dust species to all others'
+      endif
+!
+    endsubroutine copy_bcs_dust_short
 !***********************************************************************
 endmodule Dustdensity
