@@ -44,11 +44,13 @@ module Special
 !
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.,deltat_alpm=1.
-  logical :: ladvect_alpm=.false.,lupw_alpm=.false.
+  logical :: ladvect_alpm=.false.,lupw_alpm=.false.,&
+      lflux_from_Omega=.false.
 !
   namelist /special_run_pars/ &
        kf_alpm,ladvect_alpm,alpmdiff, &
-       VC_Omega_profile,VC_Omega_ampl,lupw_alpm,deltat_alpm
+       VC_Omega_profile,VC_Omega_ampl,lupw_alpm,deltat_alpm,&
+       lflux_from_Omega
 !
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0, idiag_gatop=0, idiag_gabot=0
@@ -105,15 +107,24 @@ module Special
       logical :: lstarting
       integer :: ierr
 !
-      if (lmagn_mf .and. lrun) then
-        call get_shared_variable('eta',eta,ierr)
-        if (ierr/=0) &
-            call fatal_error("initialize_special: ", "cannot get shared var eta")
-        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
-        if (ierr/=0) &
-            call fatal_error("initialize_special: ", &
-                "cannot get shared var meanfield_etat")
-      endif  
+      if (lmagn_mf) then
+        if(lrun) then
+          call get_shared_variable('eta',eta,ierr)
+          if (ierr/=0) &
+              call fatal_error("initialize_special: ", "cannot get shared var eta")
+          call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
+          if (ierr/=0) &
+              call fatal_error("initialize_special: ", &
+              "cannot get shared var meanfield_etat")
+        endif
+        else
+          call fatal_error('init_special','You must turn on magn_mf to use this module')
+      endif
+! Also check the consistency between flux from Omega effect and inclusion
+! of Omega effect itself
+      if(lroot.and.(VC_Omega_ampl.ne.0).and.(.not.lflux_from_Omega)) &
+          call warning('root:initialize_special', & 
+            'Omega effect included but flux is not')
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -146,8 +157,10 @@ module Special
         lpenc_requested(i_mf_EMFdotB)=.true.
         if (VC_Omega_profile/='nothing') lpenc_requested(i_bij)=.true.
       endif
-      if (ladvect_alpm) lpenc_requested(i_divu)=.true.
-      if (ladvect_alpm) lpenc_requested(i_uu)=.true.
+      if (ladvect_alpm) then
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_divu)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -210,7 +223,12 @@ module Special
 !  get meanfield_etat and eta. Leave df(l1:l2,m,n,ialpm) unchanged
 !  if lmagn_mf is false.
 !
-      if (lmagn_mf) then
+!DM: It seems to be that one cannot solve for alpm without simultaniously
+! solving the mean field equations. Hence I have put a fatal error in
+! the initialization part and removed the if condition from below. 
+!      if (lmagn_mf) then
+! The sharing of variables is now done in the initialization part. 
+! These commendted lines will be removed in a month from now(Feb 2011)
 !        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
 !        if (ierr/=0) &
 !            call fatal_error("dspecial_dt: ", &
@@ -226,18 +244,17 @@ module Special
 !  dynamical quenching equation
 !  with advection flux proportional to uu
 !
-        if (lmagnetic) then
+      if (lmagnetic) then
+        df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
+            -2*meanfield_etat*kf_alpm**2*p%mf_EMFdotB &
+            -2*eta*kf_alpm**2*alpm
+        if(lflux_from_Omega) then
           call divflux_from_Omega_effect(p,divflux)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
-             -2*meanfield_etat*kf_alpm**2*p%mf_EMFdotB &
-             -2*eta*kf_alpm**2*alpm-meanfield_etat*divflux
+              -meanfield_etat*divflux
           if (ladvect_alpm) then
             call grad(f,ialpm,galpm)
-!             if(lupw_alpm) then
-!               call nou_dot_grad_scl(galpm,p%uu,ugalpm,p%der6u,upwind=lupw_alpm)
-!             else
-                call dot_mn(p%uu,galpm,ugalpm)
-!             endif
+            call dot_mn(p%uu,galpm,ugalpm)
             alpm_divu=alpm*p%divu
             df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
           endif
@@ -250,15 +267,15 @@ module Special
 !
 ! reset everything to zero if time is divisible by deltat_alpm
 !
-     if((deltat_alpm/=1.) .and. (t .gt. 1.)) then
-       dtalpm_double=dble(deltat_alpm)
-       modulot=modulo(t,dtalpm_double)
-       if(modulot.eq.0) then
-            f(l1:l2,m,n,ialpm)=0
-            df(l1:l2,m,n,ialpm)=0
-            alpm=f(l1:l2,m,n,ialpm)
-       endif
-     endif
+      if((deltat_alpm/=1.) .and. (t .gt. 1.)) then
+        dtalpm_double=dble(deltat_alpm)
+        modulot=modulo(t,dtalpm_double)
+        if(modulot.eq.0) then
+          f(l1:l2,m,n,ialpm)=0
+          df(l1:l2,m,n,ialpm)=0
+          alpm=f(l1:l2,m,n,ialpm)
+        endif
+      endif
 !
 !  diagnostics for 1-D averages
 !
