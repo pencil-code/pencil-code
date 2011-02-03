@@ -32,9 +32,10 @@ module Special
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=huge1
   real :: limiter_tensordiff=3
   logical :: luse_spitz_aux=.false.
-  real :: Kpa_pen=0., Kpa_SI=2e-11
+  real :: Kpa_pen=0., Kpa_SI=2e-11,flux_delim
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
+  real, dimension(1) :: heat_par_b2=0.
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
@@ -47,7 +48,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      luse_spitz_aux,Kpa_SI
+      luse_spitz_aux,Kpa_SI,flux_delim,heat_par_b2
 !
 ! variables for print.in
 !
@@ -182,6 +183,10 @@ module Special
     Kpa_pen = Kpa_SI/unit_density/unit_velocity**3. &
         /unit_length*unit_temperature**3.5
 !
+    write (*,*) "SPITZER HEATCONDCTION"
+    write (*,*) "K _SI,K_pe",Kpa_SI,Kpa_pen
+    write (*,*) "Fd_SI,FD_pe",flux_delim*unit_density*unit_velocity**3.,flux_delim
+
   endsubroutine initialize_special
 !***********************************************************************
   subroutine read_special_run_pars(unit,iostat)
@@ -261,6 +266,7 @@ module Special
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_bb)=.true.
     endif
 !
     if (luse_spitz_aux) then
@@ -384,6 +390,7 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
+      use Boundcond, only: update_ghosts
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -446,6 +453,9 @@ module Special
 !  Read time dependent magnetic lower boundary
       if (lmag_time_bound.and.ipz==0) call mag_time_bound(f)
 !
+!      call update_ghosts(f)
+      call fill_spitzer_vector(f)
+!
     endsubroutine special_before_boundary
 !***********************************************************************
   subroutine special_calc_entropy(f,df,p)
@@ -489,7 +499,6 @@ module Special
 !
     if (luse_spitz_aux) then
       call grad_spitzer_vector(f,df,p)
-      call fill_spitzer_vector(f,p)
     endif
 !
   endsubroutine special_calc_entropy
@@ -1000,9 +1009,10 @@ module Special
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: gamma
+      use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
-      real, dimension (nx) :: heatinput,rhs
+      real, dimension (nx) :: heatinput,rhs,b2
       type (pencil_case), intent(in) :: p
       integer :: i
 !
@@ -1030,6 +1040,11 @@ module Special
           endif
           heatinput=heatinput + &
               heat_par_exp2(1)*exp(-z(n)/heat_par_exp2(2))
+        case ('b2')
+          if (headtt) print*,'Heating proportional to B^2'
+          call dot2(p%bb,b2)
+          heatinput=heatinput + &
+              heat_par_b2(1) * b2
         case default
           call fatal_error('calc_artif_heating','no valid heating function')
         endselect
@@ -2431,41 +2446,107 @@ module Special
 !
     endsubroutine read_ext_vel_field
 !***********************************************************************
-    subroutine fill_spitzer_vector(f,p)
+    subroutine fill_spitzer_vector(f)
 !
 !  Routine to fill the auxiliary slots for the spitzer heat conduction
 !
 !  01-feb-11/bing: coded
 !
       use EquationOfState, only: gamma
-      use Diagnostics,     only : max_mn_name
+      use Deriv, only: der
+      use Io
       use Sub, only: dot, dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: b2,b2_1,b_glnT,tmp
-      real, dimension (nx) :: chi_spitzer
+!      real, dimension (nx) :: chi_spitzer
 !
-      call dot2(p%bb,b2)
-      call dot(p%bb,p%glnTT,b_glnT)
+      real, dimension (nx) :: ax_y,ax_z,ay_x,ay_z,az_x,az_y
+      real, dimension (nx) :: bx,by,bz
+      real, dimension (nx) :: lnT_x, lnT_y, lnT_z
+      real, dimension (nx) :: facx
+      real :: facy,facz
 !
-      b2_1 = 1./max(tini,b2)
+      integer :: i,j,lend
 !
-      tmp = Kpa_pen * b2_1 * b_glnT * exp(3.5*p%lnTT)
+      inquire(IOLENGTH=lend) flux_delim
+          
+!      flux_delim = 100./unit_density/unit_velocity**3.
 !
-      f(l1:l2,m,n,ispitzerx)=p%bb(:,1)*tmp
-      f(l1:l2,m,n,ispitzery)=p%bb(:,2)*tmp
-      f(l1:l2,m,n,ispitzerz)=p%bb(:,3)*tmp
+      facx=(1./60)*dx_1(l1:l2)
 !
-      chi_spitzer =  Kpa_pen *exp(2.5*p%lnTT) *p%rho1 *p%cp1
+      do i=m1,m2
+        do j=n1,n2
 !
-      if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
-        if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
-        endif
-      endif
+          facy=(1./60)*dy_1(i)
+          facz=(1./60)*dz_1(j)
+!
+          ax_z=facz*(+ 45.0*(f(l1:l2,i,j+1,iax)-f(l1:l2,i,j-1,iax)) &
+                     -  9.0*(f(l1:l2,i,j+2,iax)-f(l1:l2,i,j-2,iax)) &
+                     +      (f(l1:l2,i,j+3,iax)-f(l1:l2,i,j-3,iax)))
+!
+          ay_z=facz*(+ 45.0*(f(l1:l2,i,j+1,iay)-f(l1:l2,i,j-1,iay)) &
+                     -  9.0*(f(l1:l2,i,j+2,iay)-f(l1:l2,i,j-2,iay)) &
+                     +      (f(l1:l2,i,j+3,iay)-f(l1:l2,i,j-3,iay)))
+!
+          ax_y=facy*(+ 45.0*(f(l1:l2,i+1,j,iax)-f(l1:l2,i-1,j,iax)) &
+                     -  9.0*(f(l1:l2,i+2,j,iax)-f(l1:l2,i-2,j,iax)) &
+                     +      (f(l1:l2,i+3,j,iax)-f(l1:l2,i-3,j,iax)))
+!
+          az_y=facy*(+ 45.0*(f(l1:l2,i+1,j,iaz)-f(l1:l2,i-1,j,iaz)) &
+                     -  9.0*(f(l1:l2,i+2,j,iaz)-f(l1:l2,i-2,j,iaz)) &
+                     +      (f(l1:l2,i+3,j,iaz)-f(l1:l2,i-3,j,iaz)))
+!
+          ay_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,iay)-f(l1-1:l2-1,i,j,iay)) &
+                     -  9.0*(f(l1+2:l2+2,i,j,iay)-f(l1-2:l2-2,i,j,iay)) &
+                     +      (f(l1+3:l2+3,i,j,iay)-f(l1-3:l2-3,i,j,iay)))
+!
+          az_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,iaz)-f(l1-1:l2-1,i,j,iaz)) &
+                     -  9.0*(f(l1+2:l2+2,i,j,iaz)-f(l1-2:l2-2,i,j,iaz)) &
+                     +      (f(l1+3:l2+3,i,j,iaz)-f(l1-3:l2-3,i,j,iaz)))
+!
+          bx = az_y - ay_z
+          by = ax_z - az_x
+          bz = ay_x - ax_y
+!
+          b2 = bx*bx + by*by + bz*bz
+!
+          lnT_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,ilnTT)-f(l1-1:l2-1,i,j,ilnTT)) &
+                      -  9.0*(f(l1+2:l2+2,i,j,ilnTT)-f(l1-2:l2-2,i,j,ilnTT)) &
+                      +      (f(l1+3:l2+3,i,j,ilnTT)-f(l1-3:l2-3,i,j,ilnTT)))
+!
+          lnT_y=facy*(+ 45.0*(f(l1:l2,i+1,j,ilnTT)-f(l1:l2,i-1,j,ilnTT)) &
+                      -  9.0*(f(l1:l2,i+2,j,ilnTT)-f(l1:l2,i-2,j,ilnTT)) &
+                      +      (f(l1:l2,i+3,j,ilnTT)-f(l1:l2,i-3,j,ilnTT)))
+!
+          lnT_z=facz*(+ 45.0*(f(l1:l2,i,j+1,ilnTT)-f(l1:l2,i,j-1,ilnTT)) &
+                      -  9.0*(f(l1:l2,i,j+2,ilnTT)-f(l1:l2,i,j-2,ilnTT)) &
+                      +      (f(l1:l2,i,j+3,ilnTT)-f(l1:l2,i,j-3,ilnTT)))
+!
+          b_glnT = bx*lnT_x + by*lnT_y + bz*lnT_z
+!
+          b2_1 = 1./max(tini,b2)
+!
+          tmp = Kpa_pen * b2_1 * b_glnT * exp(3.5*f(l1:l2,i,j,ilnTT))
+!
+          tmp = min(flux_delim,tmp)
+          tmp = max(-flux_delim,tmp)
+
+          f(l1:l2,i,j,ispitzerx)=bx*tmp
+          f(l1:l2,i,j,ispitzery)=by*tmp
+          f(l1:l2,i,j,ispitzerz)=bz*tmp
+        enddo
+      enddo
+!
+      ! open (77,file='test.file',form='unformatted', &
+      !     status='unknown',recl=lend*nxgrid*nzgrid,access='direct')
+      ! write(77,rec=1) f(l1:l2,m1,n1:n2,ispitzerx)
+      ! write(77,rec=2) f(l1:l2,m1,n1:n2,ispitzery)
+      ! write(77,rec=3) f(l1:l2,m1,n1:n2,ispitzerz)
+      ! close(77)
+      ! stop
+!
 !
     endsubroutine fill_spitzer_vector
 !***********************************************************************
@@ -2478,6 +2559,8 @@ module Special
 !
       use EquationOfState, only: gamma
       use Deriv, only: der
+      use Diagnostics, only: max_mn_name
+      use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -2491,20 +2574,29 @@ module Special
       call der(f,ispitzerz,tmpz,3)
 !
       rhs = tmpx+tmpy+tmpz
-      rhs = gamma * p%cp1 * p%rho*p%TT1 *rhs
+      rhs = gamma * p%cp1 * p%rho1*p%TT1 *rhs
 !
       df(l1:l2,m,n1,ilnTT) = rhs
 !
-    if (lvideo) then
+      if (lfirst.and.ldt) then
+        if (ldiagnos.and.idiag_dtnewt/=0) then
+          itype_name(idiag_dtnewt)=ilabel_max_dt
+          call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
+        endif
+        dt1_max=max(dt1_max,rhs/cdts)
+      endif
+!
+      if (lvideo) then
 !
 ! slices
-      spitzer_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-      if (m==iy_loc)  spitzer_xz(:,n-n1+1)= rhs
-      if (n==iz_loc)  spitzer_xy(:,m-m1+1)= rhs
-      if (n==iz2_loc) spitzer_xy2(:,m-m1+1)= rhs
-      if (n==iz3_loc) spitzer_xy3(:,m-m1+1)= rhs
-      if (n==iz4_loc) spitzer_xy4(:,m-m1+1)= rhs
-    endif
+!
+        spitzer_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
+        if (m==iy_loc)  spitzer_xz(:,n-n1+1)= rhs
+        if (n==iz_loc)  spitzer_xy(:,m-m1+1)= rhs
+        if (n==iz2_loc) spitzer_xy2(:,m-m1+1)= rhs
+        if (n==iz3_loc) spitzer_xy3(:,m-m1+1)= rhs
+        if (n==iz4_loc) spitzer_xy4(:,m-m1+1)= rhs
+      endif
 !
     endsubroutine grad_spitzer_vector
 !***********************************************************************
