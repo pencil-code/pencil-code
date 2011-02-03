@@ -33,6 +33,8 @@ module Particles_coagulation
   real :: four_pi_rhopmat_over_three2=0.0
   real :: three_over_four_pi_rhopmat=0.0
   real :: GNewton=6.67428e-11, deltav_grav_floor=0.0
+  real :: critical_mass_ratio_sticking=1.0
+  real :: minimum_particle_mass=0.0, minimum_particle_radius=0.0
   real, pointer :: rhs_poisson_const
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
@@ -46,7 +48,8 @@ module Particles_coagulation
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
       kernel_pro, lnoselfcollision, lgravitational_cross_section, &
-      GNewton, deltav_grav_floor
+      GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
+      minimum_particle_mass, minimum_particle_radius
 !
   contains
 !***********************************************************************
@@ -92,6 +95,22 @@ module Particles_coagulation
 !
       four_pi_rhopmat_over_three2=four_pi_rhopmat_over_three**2
       three_over_four_pi_rhopmat=1/four_pi_rhopmat_over_three
+!
+!  Define the minimum particle mass or radius that will be allowed. Small
+!  particles may form by erosion and fragmentation.
+!
+      if (minimum_particle_mass/=0.0 .and. minimum_particle_radius/=0.0) then
+        call fatal_error('initialize_particles_coag', &
+            'not allowed to set both minimum_particle_mass and '// &
+            'minimum_particle_radius')
+      endif
+      if (minimum_particle_mass/=0.0) then
+        minimum_particle_radius = &
+            (minimum_particle_mass*three_over_four_pi_rhopmat)**(1.0/3.0)
+      elseif (minimum_particle_radius/=0.0) then
+        minimum_particle_mass = &
+            four_pi_rhopmat_over_three*minimum_particle_radius**3
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -360,7 +379,7 @@ module Particles_coagulation
                     call random_number_wrapper(r)
                     if (r<=prob) then
 !
-                      call coagulation_fragmentation(fp,j,k)
+                      call coagulation_fragmentation(fp,j,k,deltavjk)
 !
                       if (lparticles_number) then
                         npswarmk=fp(k,inpswarm)
@@ -458,7 +477,7 @@ module Particles_coagulation
 !
     endsubroutine particles_coagulation_blocks
 !***********************************************************************
-    subroutine coagulation_fragmentation(fp,j,k)
+    subroutine coagulation_fragmentation(fp,j,k,deltavjk)
 !
 !  Change the particle size to the new size, but keep the total mass in the
 !  particle swarm the same.
@@ -472,16 +491,21 @@ module Particles_coagulation
 !  24-nov-10/anders: coded
 !
       real, dimension (mpar_loc,mpvar) :: fp
+      integer :: j, k
+      real :: deltavjk
 !
       real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
       real :: rhopsma, rhopbig
-      integer :: j, k
 !
       if (lparticles_number) then
 !
 !  Physical particles in the two swarms collide simultaneously.
 !
         if (lcoag_simultaneous) then
+!
+!  Define mpsma, npsma, rhopsma for the superparticle with smaller particles.
+!  Define mpbig, npbig, rhopbig for the superparticle with bigger particles.
+!
           if (fp(j,iap)<fp(k,iap)) then
             mpsma = four_pi_rhopmat_over_three*fp(j,iap)**3
             npsma = fp(j,inpswarm)
@@ -495,7 +519,23 @@ module Particles_coagulation
           endif
           rhopsma=mpsma*npsma
           rhopbig=mpbig*npbig
-          mpnew=mpbig+rhopsma/npbig
+!
+!  Particles stick when the mass ratio between large and small particles is
+!  sufficiently high. Otherwise they fragment.
+!
+          if (mpbig/mpsma>critical_mass_ratio_sticking) then
+            mpnew=mpbig+rhopsma/npbig
+          else
+            if (mpsma>2*minimum_particle_mass) then
+              mpnew=0.5*mpsma
+            else
+              mpnew=minimum_particle_mass
+            endif
+          endif
+!
+!  The new radius is defined from the new particle mass, while the new
+!  particle number in each superparticle comes from total mass conservation.
+!
           apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
           npnew=0.5*(rhopsma+rhopbig)/mpnew
 !
