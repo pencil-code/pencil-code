@@ -91,7 +91,7 @@ module Magnetic_meanfield
 !
 !
 ! Diagnostic variables (need to be consistent with reset list below)
-! 
+!
   integer :: idiag_qsm=0        ! DIAG_DOC: $\left<q_p(\overline{B})\right>$
   integer :: idiag_qpm=0        ! DIAG_DOC: $\left<q_p(\overline{B})\right>$
   integer :: idiag_qem=0        ! DIAG_DOC: $\left<q_e(\overline{B})\right>$
@@ -136,7 +136,7 @@ module Magnetic_meanfield
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: i,ierr
+      integer :: ierr
 !
 !  check for alpha profile
 !
@@ -265,7 +265,7 @@ module Magnetic_meanfield
 !
       if (idiag_EMFdotBm/=0.or.idiag_EMFdotB_int/=0) lpenc_diagnos(i_mf_EMFdotB)=.true.
 !
-! If large_scale_velocity is included we need this pencil 
+! If large_scale_velocity is included we need this pencil
 !
       if (llarge_scale_velocity) lpenc_requested(i_uxb)=.true.
 !
@@ -314,7 +314,7 @@ module Magnetic_meanfield
 !         endif
         endif
       endif
-!  
+!
 !  oxJ effect
 !
         if (lpencil_in(i_oxJ)) lpencil_in(i_jj)=.true.
@@ -355,7 +355,6 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_etat_tmp, meanfield_detatdz_tmp
       real, dimension (nx) :: alpha_tmp, delta_tmp
       real, dimension (nx) :: EMF_prof
-      real, dimension (nx) :: jcrossb2
       real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
@@ -363,7 +362,6 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb,exa_meanfield
       real :: kx,fact
-      integer :: i,j,ix
 !
       intent(inout) :: f,p
 !
@@ -822,7 +820,8 @@ module Magnetic_meanfield
 !
       use Diagnostics
 !
-      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half
+      integer :: iname,inamey,inamez,ixy,ixz,irz,inamer
+!      integer :: inamex
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -891,4 +890,3 @@ module Magnetic_meanfield
     endsubroutine rprint_magn_mf
 !***********************************************************************
 endmodule Magnetic_meanfield
-
