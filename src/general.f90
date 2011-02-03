@@ -468,7 +468,7 @@ module General
 !  Take care of numbers that have less than 4 digits.
 !
 !  30-sep-97/axel: coded
-
+!
       character (len=5) :: ch
       character (len=*), optional :: label
       integer :: n
@@ -568,7 +568,7 @@ module General
       return
 !
       entry safe_character_prepend_2(str1,str2)
-
+!
       call safe_character_assign(str1, trim(str2) // trim(str1))
 !
     endsubroutine safe_character_append_2
