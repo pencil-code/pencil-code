@@ -47,7 +47,7 @@ module Chemistry
      real :: Sc_number=0.7, Pr_number=0.7
      real :: Cp_const=impossible
      real :: Cv_const=impossible
-     logical :: lfix_Sc=.false., lfix_Pr=.false. 
+     logical :: lfix_Sc=.false., lfix_Pr=.false.
      logical :: init_from_file, reinitialize_chemistry=.false.
      character (len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
@@ -649,7 +649,7 @@ module Chemistry
 !
 !
 print*,'NATA'
-
+!
       if (linitial_condition) call initial_condition_chemistry(f)
 !
 !
@@ -670,7 +670,7 @@ print*,'NATA'
 !
       lpenc_requested(i_gXXk)=.true.
       lpenc_requested(i_gYYk)=.true.
-!      if (lreactions) 
+!      if (lreactions)
         lpenc_requested(i_ghhk)=.true.
 !
       if (lreactions) lpenc_requested(i_DYDt_reac)=.true.
@@ -687,7 +687,7 @@ print*,'NATA'
          lpenc_requested(i_cv1)=.true.
 !         if (lreactions)
           lpenc_requested(i_H0_RT)=.true.
-!         if (lreactions) 
+!         if (lreactions)
             lpenc_requested(i_S0_R)=.true.
          lpenc_requested(i_nu)=.true.
          lpenc_requested(i_gradnu)=.true.
@@ -765,7 +765,7 @@ print*,'NATA'
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   13-aug-07/steveb: coded
-!   10-jan-11/julien: adapted for the case where chemistry is solved by LSODE 
+!   10-jan-11/julien: adapted for the case where chemistry is solved by LSODE
 !
       use Sub, only : grad
 !
@@ -781,7 +781,7 @@ print*,'NATA'
       real, dimension(nx) :: T_loc
 !
       logical :: ldiffusion2
-      ldiffusion2=ldiffusion .and. (.not.lchemonly) 
+      ldiffusion2=ldiffusion .and. (.not.lchemonly)
 !
 !  Mass fraction YY
 !
@@ -1929,7 +1929,7 @@ print*,'NATA'
       call find_species_index('O2' ,i_O2 ,ichem_O2 ,found_specie)
       call find_species_index('N2' ,i_N2 ,ichem_N2 ,found_specie)
       call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
-      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)      
+      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
       call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
       mO2 =species_constants(ichem_O2 ,imass)
       mH2O=species_constants(ichem_H2O,imass)
@@ -2009,7 +2009,7 @@ print*,'NATA'
          mu1&
              =f(j1,j2,j3,i_O2 )/mO2 &
              +f(j1,j2,j3,i_H2O)/mH2O&
-             +f(j1,j2,j3,i_N2 )/mN2 
+             +f(j1,j2,j3,i_N2 )/mN2
          if (lH2)   mu1=mu1+f(j1,j2,j3,i_H2  )/mH2
          if (lCO2)  mu1=mu1+f(j1,j2,j3,i_CO2 )/mCO2
          if (lC3H8) mu1=mu1+f(j1,j2,j3,i_C3H8)/mC3H8
@@ -2692,7 +2692,7 @@ print*,'NATA'
       real, dimension (nx) :: ugchemspec, sum_DYDT, sum_dhhk=0.
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
-      real, dimension (nx) :: RHS_T_full, sum_Y
+      real, dimension (nx) :: RHS_T_full  !, sum_Y
 !
 !  indices
 !
@@ -2753,7 +2753,7 @@ print*,'NATA'
           else
             df(l1:l2,m,n,ichemspec(k))=df(l1:l2,m,n,ichemspec(k))+&
                 p%DYDt_reac(:,k)
-          endif          
+          endif
         endif
 !
 !  Add filter for negative concentrations
@@ -4193,7 +4193,7 @@ print*,'NATA'
 !  NILS: so one should maybe put some effort into optimizing it more.
 !
 !  17-mar-08/natalia: coded
-!  11-nov-10/julien: optimized, reaction rates are calculated under a 
+!  11-nov-10/julien: optimized, reaction rates are calculated under a
 !                    logarithmic form
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -4409,12 +4409,12 @@ print*,'NATA'
             vreact_p(i,reac)=0.
           endif
         enddo
-        vreact_m(:,reac)=0.      
+        vreact_m(:,reac)=0.
 !
 !  Add alternative method for finding the reaction rates based on work by
 !  Roux et al. (2009)
 !  NILS: Should split the different methods for calculating the reaction
-!  NILS: rates into different subroutines at some point.  
+!  NILS: rates into different subroutines at some point.
 !
       elseif (reac_rate_method == 'roux') then
         call roux(f,p,vreact_p,vreact_m)
@@ -4439,7 +4439,7 @@ print*,'NATA'
       real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
       type (pencil_case) :: p
 !
-      real :: mC3H8, mO2, Rcal, f_phi, E_a 
+      real :: mC3H8, mO2, Rcal, f_phi, E_a
       real, save :: init_C3H8, init_O2
       integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
       logical :: lO2, lC3H8
@@ -4507,9 +4507,9 @@ print*,'NATA'
 !
 !  Use the above to find reaction terms
 !
-      vreact_p(:,1)=f_phi*pre_exp*term1*term2*activation_energy  
+      vreact_p(:,1)=f_phi*pre_exp*term1*term2*activation_energy
 !
-!  Set reaction rate to zero when mass fractions of propane of oxygen is 
+!  Set reaction rate to zero when mass fractions of propane of oxygen is
 !  very close to zero.
 !
       where (f(l1:l2,m,n,i_C3H8)<1e-12)
@@ -4525,7 +4525,7 @@ print*,'NATA'
       if (lfirsttime .and. lroot) then
         print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=',&
             i_O2, i_C3H8, ichem_O2, ichem_C3H8
-        print*,'lO2, lC3H8=',lO2, lC3H8        
+        print*,'lO2, lC3H8=',lO2, lC3H8
         print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
       endif
 !
@@ -5482,13 +5482,13 @@ print*,'NATA'
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      integer :: j,  sz_x, sz_y, sz_z, ll1, ll2, i
-      integer :: sz_r_x, sz_l_x, sz_r_y, sz_l_y, sz_r_z, sz_l_z
-      real :: dt1, func_x,func_y,func_z 
+      integer :: sz_x, sz_y, sz_z, ll1, ll2, i
+!      integer :: sz_r_x, sz_l_x, sz_r_y, sz_l_y, sz_r_z, sz_l_z
+      real :: dt1, func_x !,func_y,func_z
       real :: ux_ref,uy_ref,uz_ref,lnTT_ref,lnrho_ref,gamma,cs
       real :: del
-      logical :: lzone_y=.false.,lzone_z=.false.
-      logical :: dir_damp1=.true., dir_damp2=.false., dir_damp3=.false.
+!      logical :: lzone_y=.false.,lzone_z=.false.
+      logical :: dir_damp1=.true. !, dir_damp2=.false., dir_damp3=.false.
 !
        ux_ref=0.
        uy_ref=0.
@@ -5541,7 +5541,7 @@ print*,'NATA'
             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
             df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
           endif
-         enddo         
+         enddo
 !
        endif
 !
