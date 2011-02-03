@@ -218,8 +218,6 @@ module Particles_coagulation
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: lambda_mfp1, deltavjk, tau_coll1, prob, r, kernel
       real :: npswarmj, npswarmk
-      real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
-      real :: rhopsma, rhopbig
       integer :: l, j, k, ncoll, ncoll_par, npart_par
 !
       intent (in) :: ineargrid
@@ -362,84 +360,13 @@ module Particles_coagulation
                     call random_number_wrapper(r)
                     if (r<=prob) then
 !
-!  Change the particle size to the new size, but keep the total mass in the
-!  particle swarm the same.
-!
-!  A representative particle k colliding with a swarm of larger particles j
-!  simply obtains the new mass m_k -> m_k + m_j.
-!
-!  A representative particle k colliding with a swarm of smaller particles j
-!  obtains the new mass m_k -> 2*m_k.
-!
-                      if (lparticles_number) then
-                        if (lcoag_simultaneous) then
-                          if (fp(j,iap)<fp(k,iap)) then
-                            mpsma = four_pi_rhopmat_over_three*fp(j,iap)**3
-                            npsma = fp(j,inpswarm)
-                            mpbig = four_pi_rhopmat_over_three*fp(k,iap)**3
-                            npbig = fp(k,inpswarm)
-                          else
-                            mpsma = four_pi_rhopmat_over_three*fp(k,iap)**3
-                            npsma = fp(k,inpswarm)
-                            mpbig = four_pi_rhopmat_over_three*fp(j,iap)**3
-                            npbig = fp(j,inpswarm)
-                          endif
-                          rhopsma=mpsma*npsma
-                          rhopbig=mpbig*npbig
-                          mpnew=mpbig+rhopsma/npbig
-                          apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-                          npnew=0.5*(rhopsma+rhopbig)/mpnew
-!
-!  Turn into sink particle if number of physical particles is less than one.
-!
-                          if (npnew*dx*dy*dz<1.0) then
-                            if (fp(j,iap)<fp(k,iap)) then
-                              fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
-                                  rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
-                            else
-                              fp(k,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
-                                  rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
-                            endif
-!
-!  Tag particle for removal by making the radius negative.
-!
-                            fp(j,iap)=-fp(j,iap)
-                            fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
-                                four_pi_rhopmat_over_three)**(1.0/3.0)
-                            fp(k,inpswarm)=1/(dx*dy*dz)
-                          else
-                            fp(j,iap)=apnew
-                            fp(k,iap)=apnew
-                            fp(j,inpswarm)=npnew
-                            fp(k,inpswarm)=npnew
-                          endif
-                        else
-                          if (fp(k,iap)<fp(j,iap)) then
-                            fp(k,inpswarm)=fp(k,inpswarm)* &
-                                 (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
-                            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
-                          else
-                            fp(k,inpswarm)=0.5*fp(k,inpswarm)
-                            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
-                          endif
-                        endif
-                      else
-                        if (lcoag_simultaneous) then
-                          fp(j,iap)=2**(1.0/3.0)*max(fp(j,iap),fp(k,iap))
-                          fp(k,iap)=fp(j,iap)
-                        else
-                          if (fp(k,iap)<fp(j,iap)) then
-                            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
-                          else
-                            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
-                          endif
-                        endif
-                      endif
+                      call coagulation_fragmentation(fp,j,k)
 !
                       if (lparticles_number) then
                         npswarmk=fp(k,inpswarm)
                       else
-                        npswarmk=rhop_swarm/(four_pi_rhopmat_over_three*fp(k,iap)**3)
+                        npswarmk=rhop_swarm/(four_pi_rhopmat_over_three* &
+                            fp(k,iap)**3)
                       endif
 !
                       ncoll=ncoll+1
@@ -530,6 +457,102 @@ module Particles_coagulation
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine particles_coagulation_blocks
+!***********************************************************************
+    subroutine coagulation_fragmentation(fp,j,k)
+!
+!  Change the particle size to the new size, but keep the total mass in the
+!  particle swarm the same.
+!
+!  A representative particle k colliding with a swarm of larger particles j
+!  simply obtains the new mass m_k -> m_k + m_j.
+!
+!  A representative particle k colliding with a swarm of smaller particles j
+!  obtains the new mass m_k -> 2*m_k.
+!
+!  24-nov-10/anders: coded
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+!
+      real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
+      real :: rhopsma, rhopbig
+      integer :: j, k
+!
+      if (lparticles_number) then
+!
+!  Physical particles in the two swarms collide simultaneously.
+!
+        if (lcoag_simultaneous) then
+          if (fp(j,iap)<fp(k,iap)) then
+            mpsma = four_pi_rhopmat_over_three*fp(j,iap)**3
+            npsma = fp(j,inpswarm)
+            mpbig = four_pi_rhopmat_over_three*fp(k,iap)**3
+            npbig = fp(k,inpswarm)
+          else
+            mpsma = four_pi_rhopmat_over_three*fp(k,iap)**3
+            npsma = fp(k,inpswarm)
+            mpbig = four_pi_rhopmat_over_three*fp(j,iap)**3
+            npbig = fp(j,inpswarm)
+          endif
+          rhopsma=mpsma*npsma
+          rhopbig=mpbig*npbig
+          mpnew=mpbig+rhopsma/npbig
+          apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+          npnew=0.5*(rhopsma+rhopbig)/mpnew
+!
+!  Turn into sink particle if number of physical particles is less than one.
+!
+          if (npnew*dx*dy*dz<1.0) then
+            if (fp(j,iap)<fp(k,iap)) then
+              fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
+                  rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+            else
+              fp(k,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
+                  rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+            endif
+!
+!  Tag particle for removal by making the radius negative.
+!
+            fp(j,iap)=-fp(j,iap)
+            fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
+                four_pi_rhopmat_over_three)**(1.0/3.0)
+            fp(k,inpswarm)=1/(dx*dy*dz)
+          else
+            fp(j,iap)=apnew
+            fp(k,iap)=apnew
+            fp(j,inpswarm)=npnew
+            fp(k,inpswarm)=npnew
+          endif
+        else
+!
+!  Physical particles in the two swarms collide asymmetrically.
+!
+          if (fp(k,iap)<fp(j,iap)) then
+            fp(k,inpswarm)=fp(k,inpswarm)* &
+                 (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
+            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+          else
+            fp(k,inpswarm)=0.5*fp(k,inpswarm)
+            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+          endif
+        endif
+      else
+!
+!  In case we only evolve the particle radius, number their number.
+!  We assume that the mass represented by each superparticle is the same.
+!
+        if (lcoag_simultaneous) then
+          fp(j,iap)=2**(1.0/3.0)*max(fp(j,iap),fp(k,iap))
+          fp(k,iap)=fp(j,iap)
+        else
+          if (fp(k,iap)<fp(j,iap)) then
+            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+          else
+            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+          endif
+        endif
+      endif
+!
+    endsubroutine coagulation_fragmentation
 !***********************************************************************
     subroutine read_particles_coag_run_pars(unit,iostat)
 !
