@@ -24,6 +24,8 @@
 /
 &magnetic_run_pars
 /
+&magn_mf_run_pars
+/
 &testfield_run_pars
 /
 &radiation_run_pars

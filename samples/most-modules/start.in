@@ -23,6 +23,8 @@
 /
 &magnetic_init_pars
 /
+&magn_mf_init_pars
+/
 &testfield_init_pars
 /
 &radiation_init_pars

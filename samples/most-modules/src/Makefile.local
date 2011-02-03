@@ -13,6 +13,7 @@ SHOCK                 =   shock
 DENSITY               =   density
 ENTROPY               =   entropy
 MAGNETIC              =   magnetic
+MAGNETIC_MEANFIELD    =   magnetic/meanfield
 RADIATION             =   radiation_ray
 PSCALAR               =   pscalar
 CHIRAL                =   chiral
