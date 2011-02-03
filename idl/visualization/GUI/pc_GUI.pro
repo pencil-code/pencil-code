@@ -47,6 +47,8 @@ default_velocity      = 1.e3
 default_velocity_str  = 'km/s'
 default_density       = 1.0
 default_density_str   = 'kg/m^3'
+default_mass          = 1.0
+default_mass_str      = 'kg'
 
 
 ; Initial varfile
@@ -171,7 +173,7 @@ if (not pc_GUI_loaded) then BEGIN
 	print, ""
 
 
-	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str }
+	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density/unit.length^3, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str }
 	pc_read_grid, obj=grid, /trim, /quiet
 	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
 

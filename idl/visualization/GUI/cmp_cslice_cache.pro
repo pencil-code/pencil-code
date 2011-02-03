@@ -255,7 +255,7 @@ pro cslice_event, event
 				prepare_set, i
 				prepare_cube, -1, 0
 				draw_images, 1, 1, 1
-				wait, min_wait_time[dimensionality]
+				wait, min_wait_time[dimensionality-1]
 			end
 		end
 		prepare_set, previous_snapshot
@@ -418,11 +418,11 @@ pro draw_averages, number
 	tags = tag_names (varsets[number])
 
 	if (tags eq ['cube']) then begin
-		window, 2, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
+		window, 13, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 1, 1]
 		vert_prof, varsets[number].cube[cut], coord=coord.z, title = 'horizontal averages'
 	end else begin
-		window, 2, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
+		window, 13, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
 		max_subplots = 4
 		num_subplots = 0

@@ -195,15 +195,12 @@ pro show_timeseries, ts, tags, unit, start_time=start_time
 		add_title = ''
 		if (start_time > 0) then add_title = ' (starting at the frist selected snapshot)'
 
-		window, 1, xsize=1000, ysize=800, title='time series analysis'+add_title, retain=2
-		!P.MULTI = [0, 2, 2]
+		window, 11, xsize=1000, ysize=400, title='timestep analysis'+add_title, retain=2
+		!P.MULTI = [0, 2, 1]
 
-		max_subplots = 4
-		num_subplots = 0
 		print, "starting values:"
 		print, "dt    :", ts.dt[0]
 		plot, ts.dt, title = 'dt', /yl
-		num_subplots += 1
 
 		tags = tag_names (ts)
 		x_minmax = minmax (ts.t > start_time)
@@ -223,7 +220,6 @@ pro show_timeseries, ts, tags, unit, start_time=start_time
 		y_minmax *= unit.time
 
 		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
-		num_subplots += 1
 		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
 			oplot, ts.t, ts.dtu*unit.time, linestyle=2, color=11061000
 			print, "dtu   :", ts.dtu[0]
@@ -255,6 +251,21 @@ pro show_timeseries, ts, tags, unit, start_time=start_time
 		if (any (strcmp (tags, 'dtchi2', /fold_case))) then begin
 			oplot, ts.t, ts.dtchi2*unit.time, linestyle=3, color=41215
 			print, "dtchi2:", ts.dtchi2[0]
+		end
+
+		window, 12, xsize=1000, ysize=800, title='time series analysis'+add_title, retain=2
+		!P.MULTI = [0, 2, 2]
+
+		max_subplots = 4
+		num_subplots = 0
+
+		if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ethm', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			mass = ts.totmass * unit.mass / unit.default_mass
+			energy = (ts.eem + ts.ekintot/ts.totmass) * unit.mass / unit.velocity^2
+			plot, ts.t, energy, title = 'Mass and energy conservation', xrange=x_minmax, xtitle='mean energy [J]', /xs
+			oplot, ts.t, mass*mean (energy)/mean (mass)
+			axis, yaxis=1, yrange=!Y.CRANGE*mean (energy)/mean (mass), /ys, ytitle='total mass ['+unit.default_mass_str+']'
 		end
 		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
