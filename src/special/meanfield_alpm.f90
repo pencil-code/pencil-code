@@ -103,9 +103,13 @@ module Special
 !  24-nov-02/tony: coded
 !
       use SharedVariables, only : get_shared_variable
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
       integer :: ierr
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       if (lmagn_mf) then
         if (lrun) then
@@ -123,7 +127,7 @@ module Special
 ! Also check the consistency between flux from Omega effect and inclusion
 ! of Omega effect itself
       if(lroot.and.(VC_Omega_ampl.ne.0).and.(.not.lflux_from_Omega)) &
-          call warning('root:initialize_special', & 
+          call warning('root:initialize_special', &
             'Omega effect included but flux is not')
 !
     endsubroutine initialize_special
@@ -211,7 +215,9 @@ module Special
       real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
       double precision :: dtalpm_double
       type (pencil_case) :: p
-      integer :: ierr,modulot
+      integer :: modulot
+!     integer :: ierr
+!
 ! next line commented out temporarily
 !      intent(in)  :: f
       intent(out) :: df
@@ -225,9 +231,9 @@ module Special
 !
 !DM: It seems to be that one cannot solve for alpm without simultaniously
 ! solving the mean field equations. Hence I have put a fatal error in
-! the initialization part and removed the if condition from below. 
+! the initialization part and removed the if condition from below.
 !      if (lmagn_mf) then
-! The sharing of variables is now done in the initialization part. 
+! The sharing of variables is now done in the initialization part.
 ! These commendted lines will be removed in a month from now(Feb 2011)
 !        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
 !        if (ierr/=0) &
