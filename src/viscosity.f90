@@ -610,6 +610,7 @@ module Viscosity
             lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
+      if (lthermal_energy.and.lviscosity_heat) lpenc_requested(i_rho)=.true.
       if ((lentropy.or.ltemperature).and.(lvisc_nu_therm.or.lvisc_mu_therm))&
           lpenc_requested(i_lnTT)=.true.
       if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
@@ -1424,7 +1425,7 @@ module Viscosity
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
         endif
       else if (lthermal_energy) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + p%visc_heat
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + p%rho*p%visc_heat
       endif
 !
 !  Calculate maximum heating (for time step constraint), so it is
