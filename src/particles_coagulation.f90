@@ -373,7 +373,7 @@ module Particles_coagulation
 !
                       if (lparticles_number) then
                         if (lcoag_simultaneous) then
-                          if (fp(j,iap) < fp(k,iap)) then
+                          if (fp(j,iap)<fp(k,iap)) then
                             mpsma = four_pi_rhopmat_over_three*fp(j,iap)**3
                             npsma = fp(j,inpswarm)
                             mpbig = four_pi_rhopmat_over_three*fp(k,iap)**3
@@ -389,7 +389,17 @@ module Particles_coagulation
                           mpnew=mpbig+rhopsma/npbig
                           apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
                           npnew=0.5*(rhopsma+rhopbig)/mpnew
+!
+!  Turn into sink particle if number of physical particles is less than one.
+!
                           if (npnew*dx*dy*dz<1.0) then
+                            if (fp(j,iap)<fp(k,iap)) then
+                              fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
+                                  rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+                            else
+                              fp(k,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
+                                  rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+                            endif
 !
 !  Tag particle for removal by making the radius negative.
 !
