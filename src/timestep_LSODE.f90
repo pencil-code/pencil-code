@@ -46,14 +46,13 @@ module Timestep
 !
       if (lroot .and. headt .and. llsode) print*, 'timestep_LSODE: '// &
           'Chemistry is solved using LSODE'
+      if (lroot .and. headt .and. lsplit_second) print*, 'timestep_LSODE: '// &
+          'Second order symmetric splitting procedure (Strang splitting)'  
 !
 !  First step of the splitting procedure: chemistry
 !  (only if second order symmetric splitting activated)
 !
-      if (llsode .and. lsplit_second) then
-        if (lroot .and. headt) print*, 'timestep_LSODE: '// &
-            'This is the first step of the second order splitting scheme'     
-!
+      if (llsode .and. lsplit_second .and. .not.headt) then
         lstep1=.false.
         t0=t
         t1=t+dt/2.
@@ -171,12 +170,8 @@ module Timestep
         lstep1=.false.
         t0=t
         if (lsplit_second) then
-          if (lroot .and. headt) print*, 'timestep_LSODE: '// &
-              'This is the second step of the second order splitting procedure'
           t1=t+dt/2.
         else
-          if (lroot .and. headt) print*, 'timestep_LSODE: '// &
-              'Chemistry step of the first order splitting procedure'
           t1=t+dt
         endif
 !
