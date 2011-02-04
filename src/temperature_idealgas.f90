@@ -46,6 +46,7 @@ module Entropy
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
+  real :: luminosity=0.0, wheat=0.1
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
@@ -71,7 +72,9 @@ module Entropy
       initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, &
       lnTT_const, TT_const, center1_x, center1_y, &
       center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, Tbump, Kmin, Kmax, &
-      hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0
+      hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0, &
+      luminosity, wheat
+ 
 !
 !  Run parameters.
 !
@@ -494,6 +497,9 @@ module Entropy
               f(:,:,n,ilnrho)=lnrho0+ &
                   (1.+expo)*log((1.+alpha/beta)/(z(n)+alpha/beta))
             enddo
+!
+          case ('star_heat')
+            call star_heat(f)  
 !
           case default
 !
@@ -1730,5 +1736,134 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine fill_farray_pressure
+!***********************************************************************
+    subroutine star_heat(f)
+!
+!  Initialize entropy for two superposed polytropes with a central heating
+!
+!  04-fev-2011/dintrans: coded
+!
+      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, &
+                                 ilnrho_TT, gamma, gamma_m1
+      use Sub, only: step, interp1, erfunc
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer, parameter   :: nr=100
+      integer              :: i,l,iter
+      real, dimension (nr) :: r, lnrho, temp, lumi, g, hcond
+      real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,dr,dtemp,dlnrho
+      real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
+!
+!  Define the radial grid r=[0,r_max], luminosity and gravity
+!
+      r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
+      r(1)=0. ; lumi(1)=0. ; g(1)=0.
+      do i=2,nr
+        r(i)=r_max*float(i-1)/(nr-1)
+        u=r(i)/sqrt(2.)/wheat
+        lumi(i)=luminosity*(1.-exp(-u**2))
+        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
+      enddo
+!
+      hcond = 1. + (hcond1-1.)*step(r,r_bcz,-widthlnTT) &
+                 + (hcond2-1.)*step(r,r_ext,widthlnTT)
+      hcond = hcond0*hcond
+!
+      rbot=rho0
+      rt_old=0.01*rbot
+      rt_new=0.012*rbot
+      rhotop=rt_old
+      call strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
+      print*, 'find rhobot=', rhobot
+      rb_old=rhobot
+!
+      rhotop=rt_new
+      call strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
+      print*, 'find rhobot=', rhobot
+      rb_new=rhobot
+!
+      do 10 iter=1,10
+        rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
+!
+        crit=abs(rhotop/rt_new-1.)
+        if (crit<=1e-4) goto 20
+        call strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
+!
+!  Update new estimates.
+!
+        rt_old=rt_new
+        rb_old=rb_new
+        rt_new=rhotop
+        rb_new=rhobot
+ 10 continue
+ 20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        do l=l1,l2
+          r_mn=sqrt(x(l)**2+y(m)**2+z(n)**2)
+          lnrho_r=interp1(r,lnrho,nr,r_mn)
+          temp_r=interp1(r,temp,nr,r_mn)
+          f(l,m,n,ilnrho)=lnrho_r
+          f(l,m,n,ilnTT)=temp_r
+        enddo
+      enddo
+!
+      if (lroot) then
+        print*,'--> writing initial setup to data/proc0/setup.dat'
+        open(unit=11,file=trim(directory)//'/setup.dat')
+        write(11,'(a1,a5,6a12)') '#','r','rho','ss','cs2','grav', &
+          'lumi','hcond'
+        do i=nr,1,-1
+          u=r(i)/sqrt(2.)/wheat
+          call get_soundspeed(log(temp(i)),cs2)
+          call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
+          write(11,'(f6.3,6e12.3)') r(i),exp(lnrho(i)),ss,cs2,g(i), &
+            lumi(i), hcond(i)
+        enddo
+        close(11)
+      endif
+!
+    endsubroutine star_heat
+!***********************************************************************
+    subroutine strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
+!
+      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, &
+                                 ilnrho_TT, gamma, gamma_m1, cs20
+      use Sub, only: interp1
+!
+      integer              :: nr, i,l,iter
+      real, dimension (nr) :: r, lnrho, temp, lumi, g, hcond
+      real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,dr,dtemp,dlnrho
+      real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max,lnrhobot
+!
+      temp(nr)=cs20/gamma_m1 ; lnrho(nr)=alog(rhotop)
+      dr=r(2)
+      do i=nr-1,1,-1
+        if (r(i+1) > r_ext) then
+          ! Isothermal exterior: mpoly2 but force T=cte
+          dtemp=0.
+          dlnrho=-gamma*g(i+1)/cs20
+        elseif (r(i+1) > r_bcz) then
+          ! Convection zone: mpoly0
+! adiabatic stratification
+!          dtemp=-g(i+1)
+!          dlnrho=3./2.*dtemp/temp(i+1)
+          dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+          dlnrho=mpoly0*dtemp/temp(i+1)
+        else
+          ! Radiative zone: mpoly1
+          dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
+          dlnrho=mpoly1*dtemp/temp(i+1)
+        endif
+        temp(i)=temp(i+1)+dtemp*dr
+        lnrho(i)=lnrho(i+1)+dlnrho*dr
+      enddo
+!
+      lnrhobot=interp1(r,lnrho,nr,r_ext)
+      rhobot=exp(lnrhobot)
+!
+    endsubroutine strat_heat
 !***********************************************************************
 endmodule Entropy
