@@ -636,7 +636,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI=-L /home/ajohan/local/openmpi/lib -lmpi -lmpi_f77 #(dintel|student10)
 ##
 #FC=ifort #(opto[1-4])
-#FC_SLOPPY=ifort #(opto[1-4])
 #FFLAGS=-O3 -I/home/johansen/mpich/include #(opto[1-4])
 #LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 #FC=/afs/@cell/common/soft/intel/Compiler/11.1/c/bin/intel64/bin/ifort #(aims*)
@@ -900,7 +899,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-O3 -DFUNDERSC=2 #(p-bc9901.hpc2n.umu.se)
 #LD_MPI= #(p-bc9901.hpc2n.umu.se)
 #LIBMPISUFFIX=#(p-bc9901.hpc2n.umu.se)
-#FC_SLOPPY=$(FC) #(p-bc9901.hpc2n.umu.se)
 ##
 ## Axel on Sanssouci (ifc 9.1)
 ##
@@ -1683,9 +1681,18 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI= #(p690*)
 ## -bmaxdata:0x7000000
 
-
 ### End machine dependent
 
+#
+#  FC_SLOPPY is used for necessary non-strict compilation of some modules.
+#  Default value of FC_SLOPPY is equal to FC.
+#
+ifeq ($(FC_SLOPPY),)
+  FC_SLOPPY=$(FC)
+endif
+#
+#  Linker and compiler are the same.
+#
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 # 
