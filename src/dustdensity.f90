@@ -1180,6 +1180,8 @@ module Dustdensity
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
             if (dsize(k)>0.) then
+!              p%ppsf(:,k)=p%ppsat &
+!                *exp(AA*p%TT1/2./dsize(k)-BB(k)/(8.*(dsize(k)**3-8e-6**3)))
               p%ppsf(:,k)=p%ppsat &
                 *exp(AA*p%TT1/2./dsize(k)-BB(k) &
                 /(8.*dsize(k)**3-0.*8.*dsize0(k)**3))
