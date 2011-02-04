@@ -1798,6 +1798,13 @@ module Entropy
  10 continue
  20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
+!  One needs to refresh rho0 and lnrho0 because the density top value 
+!  has changed --> important for the future EOS calculations (ss, ...)
+!
+      lnrho0=lnrho(nr)
+      rho0=exp(lnrho0)
+      print*,'new values for lnrho0 and rho0:', lnrho0, rho0
+!
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
