@@ -187,13 +187,16 @@ end
 
 
 ; Show timeseries analysis window
-pro show_timeseries, ts, tags, unit, start_time=start_time
+pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
 
 	if (n_elements (ts) gt 0) then begin
 
 		default, start_time, 0
+		default, end_time, 0
 		add_title = ''
 		if (start_time > 0) then add_title = ' (starting at the frist selected snapshot)'
+		if (end_time > 0) then add_title = ' (ending at the last selected snapshot)'
+		if ((start_time > 0) and (end_time > 0)) then add_title = ' (showing only selected snapshots)'
 
 		window, 11, xsize=1000, ysize=400, title='timestep analysis'+add_title, retain=2
 		!P.MULTI = [0, 2, 1]
@@ -204,6 +207,7 @@ pro show_timeseries, ts, tags, unit, start_time=start_time
 
 		tags = tag_names (ts)
 		x_minmax = minmax (ts.t > start_time)
+		if (end_time > 0) then x_minmax = minmax (x_minmax < end_time)
 		y_minmax = minmax (ts.dt)
 		if (any (strcmp (tags, 'dtu', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtu])
 		if (any (strcmp (tags, 'dtv', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtv])
@@ -219,7 +223,7 @@ pro show_timeseries, ts, tags, unit, start_time=start_time
 		x_minmax *= unit.time
 		y_minmax *= unit.time
 
-		plot, ts.t, ts.dt, title = 'dt(tt) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
+		plot, ts.t, ts.dt, title = 'dt(t) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
 		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
 			oplot, ts.t, ts.dtu*unit.time, linestyle=2, color=11061000
 			print, "dtu   :", ts.dtu[0]
@@ -263,8 +267,9 @@ pro show_timeseries, ts, tags, unit, start_time=start_time
 			num_subplots += 1
 			mass = ts.totmass * unit.mass / unit.default_mass
 			energy = (ts.eem + ts.ekintot/ts.totmass) * unit.mass / unit.velocity^2
-			plot, ts.t, energy, title = 'Mass and energy conservation', xrange=x_minmax, xtitle='mean energy [J]', /xs
-			oplot, ts.t, mass*mean (energy)/mean (mass)
+			plot, ts.t, energy, linestyle=2, title = 'Mass {.r} and energy {-w} conservation', xrange=x_minmax, /xs, ys=8
+			oplot, ts.t, mass*mean (energy)/mean (mass), linestyle=1, color=200
+			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='mean energy [J]'
 			axis, yaxis=1, yrange=!Y.CRANGE*mean (energy)/mean (mass), /ys, ytitle='total mass ['+unit.default_mass_str+']'
 		end
 		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin

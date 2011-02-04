@@ -222,12 +222,19 @@ if (not pc_GUI_loaded) then BEGIN
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
 		precalc, num_selected, varfile=snapshots[skipping], vars=vars
-		show_timeseries, ts, tags, units, start_time=vars.t
+		time_start = vars.t
+		if (skipping ge 1) then show_timeseries, ts, tags, units, start_time=time_start
 		if (num_selected gt 1) then begin
-			for i = 2, num_selected do begin
-				; Precalculate selected timesteps
-				pos = skipping + (i-1)*stepping
-				precalc, num_selected+1-i, varfile=snapshots[pos]
+			; Precalculate last selected timestep
+			precalc, 1, varfile=snapshots[skipping + (num_selected-1)*stepping]
+			time_end = vars.t
+			if (ignore_end ge 1) then show_timeseries, ts, tags, units, start_time=time_start, end_time=time_end
+			if (num_selected gt 2) then begin
+				for i = 2, num_selected-1 do begin
+					; Precalculate selected timesteps
+					pos = skipping + (i-1)*stepping
+					precalc, num_selected+1-i, varfile=snapshots[pos]
+				end
 			end
 		end
 	end
