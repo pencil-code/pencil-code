@@ -1638,14 +1638,22 @@ module Entropy
 !  Adapted from single_polytrope.
 !
 !  19-jan-10/bing: coded
+!  The layout is the same than in entropy.f90:
+!  ------------ ztop Ttop
+!     mpoly2
+!  ------------ z2   T2, lnrho2
+!     mpoly0
+!  ------------ z1   T1, lnrho1
+!     mpoly1
+!  ------------ zbot
 !
       use Gravity, only: gravz, z1, z2
       use EquationOfState, only: cs2top, cs2bot, gamma, gamma_m1, lnrho0, &
                                  get_cp1
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: Ttop, T1, T0, beta0, beta1, beta2, cp1, temp
-      real :: lnrhotop, lnrho1, lnrho_0, ztop
+      real :: Ttop, T1, T2, beta0, beta1, beta2, cp1, temp
+      real :: lnrhotop, lnrho1, lnrho2, ztop
       integer :: i
 !
       call get_cp1(cp1)
@@ -1662,16 +1670,16 @@ module Entropy
       beta1 =-cp1*gravz/(mpoly1+1.)*gamma/gamma_m1
       beta2 =-cp1*gravz/(mpoly2+1.)*gamma/gamma_m1
 !
-      T1 = Ttop + beta2*(ztop-z2)
-      T0 = T1   + beta1*(z2-z1)
+      T2 = Ttop + beta2*(ztop-z2)
+      T1 = T2   + beta0*(z2-z1)
 !
-      lnrho1 =  lnrhotop+mpoly2*log(T1/Ttop)
-      lnrho_0 = lnrho1  +mpoly1*log(T0/T1)
+      lnrho2 = lnrhotop+mpoly2*log(T2/Ttop)
+      lnrho1 = lnrho2  +mpoly0*log(T1/T2)
 !
       do  i=n2,n1,-1
         if (z(i) >= z2)                 temp = Ttop + beta2*(ztop-z(i))
-        if (z(i) < z2 .and. z(i) >= z1) temp = T1   + beta1*(z2-z(i))
-        if (z(i) < z1)                  temp = T0   + beta0*(z1-z(i))
+        if (z(i) < z2 .and. z(i) >= z1) temp = T2   + beta0*(z2-z(i))
+        if (z(i) < z1)                  temp = T1   + beta1*(z1-z(i))
 !
         if (ltemperature_nolog) then
           f(:,:,i,iTT)  =temp
@@ -1681,13 +1689,13 @@ module Entropy
 !
         if (z(i) >= z2) f(:,:,i,ilnrho)=lnrhotop+mpoly2*log(temp/Ttop)
         if (z(i) < z2 .and. z(i) >= z1 ) &
-            f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)
-        if (z(i) < z1) f(:,:,i,ilnrho)=lnrho_0+mpoly0*log(temp/T0)
+            f(:,:,i,ilnrho)=lnrho2+mpoly0*log(temp/T2)
+        if (z(i) < z1) f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)
       enddo
 !
 ! one also needs to refresh cs2bot in case of a 'cT' BC for the temperature
 !
-      cs2bot=gamma_m1*(T0 + beta0*(z1-xyz0(3)))
+      cs2bot=gamma_m1*(T1 + beta1*(z1-xyz0(3)))
 !
     endsubroutine piecew_poly
 !***********************************************************************
