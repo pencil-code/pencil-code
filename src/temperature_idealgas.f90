@@ -1625,12 +1625,13 @@ module Entropy
     subroutine piecew_poly(f)
 !
 !  Computes piecewice polytropic and hydrostatic atmosphere.
-!  Adapted from singel_polytrope.
+!  Adapted from single_polytrope.
 !
 !  19-jan-10/bing: coded
 !
       use Gravity, only: gravz, z1, z2
-      use EquationOfState, only: cs2top, gamma, gamma_m1, lnrho0, get_cp1
+      use EquationOfState, only: cs2top, cs2bot, gamma, gamma_m1, lnrho0, &
+                                 get_cp1
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real :: Ttop, T1, T0, beta0, beta1, beta2, cp1, temp
@@ -1673,6 +1674,10 @@ module Entropy
             f(:,:,i,ilnrho)=lnrho1+mpoly1*log(temp/T1)
         if (z(i) < z1) f(:,:,i,ilnrho)=lnrho_0+mpoly0*log(temp/T0)
       enddo
+!
+! one also needs to refresh cs2bot in case of a 'cT' BC for the temperature
+!
+      cs2bot=gamma_m1*(T0 + beta0*(z1-xyz0(3)))
 !
     endsubroutine piecew_poly
 !***********************************************************************
