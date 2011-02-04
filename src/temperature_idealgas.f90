@@ -571,9 +571,14 @@ module Entropy
 !
       if (lheatc_Kprof) then
         lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
+        if (ltemperature_nolog) then
+          lpenc_requested(i_gTT)=.true.
+          lpenc_requested(i_del2TT)=.true.
+        else
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
+        endif
         if (lgravz) lpenc_requested(i_z_mn)=.true.
       endif
 !
@@ -1278,8 +1283,9 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  calculate gamma*K/rho*cp*div(T*grad lnTT)=
-!              gamma*K/rho*cp*(gradlnTT.gradln(hcond*TT) + del2ln TT)
+!  Calculate the radiative diffusion term for a variable K:
+!    ivar=lnTT --> 1/(rho*cv*T)*div(K*grad TT)
+!    ivar=TT   --> 1/(rho*cv)*div(K*grad TT)
 !
 !  12-Mar-07/dintrans: coded
 !
@@ -1294,9 +1300,6 @@ module Entropy
 !
       real, dimension(nx) :: g2,hcond,chix
       real, dimension (nx,3) :: glhc=0.,glnThcond
-      integer :: i
-      logical :: lwrite_hcond=.true.
-      save :: lwrite_hcond
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -1318,20 +1321,21 @@ module Entropy
           glhc(:,1) = hcond0*(hcond1-1.)*der_step(rcyl_mn,r_bcz,-widthlnTT)
         endif
       endif
-      if (lroot .and. lwrite_hcond) then
-        open(1,file=trim(directory)//'/hcond.dat',position='append')
-        write(1,'(3e14.5)') (rcyl_mn(i),hcond(i),glhc(i,1),i=1,nx)
-        close(1)
-        lwrite_hcond=.false.
-      endif
 !
-      glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-      call dot(p%glnTT,glnThcond,g2)
+      if (ltemperature_nolog) then
+        glnThcond = glhc/spread(hcond,2,3)              ! grad ln(hcond)
+        call dot(p%gTT,glnThcond,g2)
+        g2 = g2 + p%del2TT
+      else
+        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        call dot(p%glnTT,glnThcond,g2)
+        g2 = g2 + p%del2lnTT
+      endif
 !
 !  Add heat conduction to RHS of temperature equation.
 !
       chix=p%rho1*hcond*p%cp1
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*g2
 !
 !  Check maximum diffusion from thermal diffusion.
 !
@@ -1634,7 +1638,7 @@ module Entropy
 !***********************************************************************
     subroutine piecew_poly(f)
 !
-!  Computes piecewice polytropic and hydrostatic atmosphere.
+!  Computes piecewise polytropic and hydrostatic atmosphere.
 !  Adapted from single_polytrope.
 !
 !  19-jan-10/bing: coded
