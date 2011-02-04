@@ -552,8 +552,13 @@ module Entropy
       endif
 !
       if (lheatc_chiconst) then
-        lpenc_requested(i_del2lnTT)=.true.
-        lpenc_requested(i_glnTT)=.true.
+        if (ltemperature_nolog) then
+          lpenc_requested(i_del2TT)=.true.
+          lpenc_requested(i_gTT)=.true.
+        else
+          lpenc_requested(i_del2lnTT)=.true.
+          lpenc_requested(i_glnTT)=.true.
+        endif
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
@@ -1160,14 +1165,16 @@ module Entropy
       intent(inout) :: df
 !
       if (ltemperature_nolog) then
-        call dot(p%glnrho,p%glnTT,g2)
+        call dot(p%glnrho,p%gTT,g2)
+        g2=g2+p%del2TT
       else
         call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+        g2=g2+p%del2lnTT
       endif
 !
 !  Add heat conduction to RHS of temperature equation.
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(g2 + p%del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*g2
 !
 !  Check maximum diffusion from thermal diffusion.
 !
