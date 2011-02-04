@@ -436,7 +436,7 @@ module Entropy
 !
           case ('single_polytrope'); call single_polytrope(f)
 !
-          case ('piecew_poly'); call piecew_poly(f)
+          case ('piecew-poly'); call piecew_poly(f)
 !
           case ('gaussian')
             do n=n1,n2
