@@ -150,7 +150,7 @@ module Special
     inquire(IOLENGTH=lend) dummy
 !
     if (.not.lstarting.and.tau_inv_newton/=0) then
-
+!
       inquire(FILE=trim(directory_snap)//filename,EXIST=exists)
       if (exists) then
         open(unit,file=trim(directory_snap)//filename, &
@@ -186,7 +186,7 @@ module Special
     write (*,*) "SPITZER HEATCONDCTION"
     write (*,*) "K _SI,K_pe",Kpa_SI,Kpa_pen
     write (*,*) "Fd_SI,FD_pe",flux_delim*unit_density*unit_velocity**3.,flux_delim
-
+!
   endsubroutine initialize_special
 !***********************************************************************
   subroutine read_special_run_pars(unit,iostat)
@@ -390,7 +390,6 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
-      use Boundcond, only: update_ghosts
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -453,8 +452,7 @@ module Special
 !  Read time dependent magnetic lower boundary
       if (lmag_time_bound.and.ipz==0) call mag_time_bound(f)
 !
-!      call update_ghosts(f)
-      call fill_spitzer_vector(f)
+      if (luse_spitz_aux) call fill_spitzer_vector(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -2455,6 +2453,7 @@ module Special
       use EquationOfState, only: gamma
       use Deriv, only: der
       use Io
+      use Mpicomm
       use Sub, only: dot, dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2471,7 +2470,7 @@ module Special
       integer :: i,j,lend
 !
       inquire(IOLENGTH=lend) flux_delim
-          
+!
 !      flux_delim = 100./unit_density/unit_velocity**3.
 !
       facx=(1./60)*dx_1(l1:l2)
@@ -2532,7 +2531,7 @@ module Special
 !
           tmp = min(flux_delim,tmp)
           tmp = max(-flux_delim,tmp)
-
+!
           f(l1:l2,i,j,ispitzerx)=bx*tmp
           f(l1:l2,i,j,ispitzery)=by*tmp
           f(l1:l2,i,j,ispitzerz)=bz*tmp
