@@ -1306,11 +1306,11 @@ module Entropy
         glhc(:,1)=f(l1:l2,m,n,iglobal_glhc)
       else
         if (lgravz) then
-          hcond = 1. + (hcond1-1.)*step(p%z_mn,z1,widthlnTT) &
-                     + (hcond2-hcond1)*step(p%z_mn,z2,widthlnTT)
+          hcond = 1. + (hcond1-1.)*step(p%z_mn,z1,-widthlnTT) &
+                     + (hcond2-1.)*step(p%z_mn,z2,widthlnTT)
           hcond = hcond0*hcond
-          glhc(:,3) = (hcond1-1.)*der_step(p%z_mn,z1,widthlnTT) &
-                      + (hcond2-hcond1)*der_step(p%z_mn,z2,widthlnTT)
+          glhc(:,3) = (hcond1-1.)*der_step(p%z_mn,z1,-widthlnTT) &
+                    + (hcond2-1.)*der_step(p%z_mn,z2,widthlnTT)
           glhc(:,3) = hcond0*glhc(:,3)
         elseif (lcylindrical_coords) then
           hcond = 1. + (hcond1-1.)*step(rcyl_mn,r_bcz,-widthlnTT)
