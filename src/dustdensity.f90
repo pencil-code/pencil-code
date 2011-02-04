@@ -39,7 +39,7 @@ module Dustdensity
 !
   integer, parameter :: ndiffd_max=4
   real, dimension(nx,ndustspec,ndustspec) :: dkern
-  real, dimension(ndustspec) :: dsize,dds,init_distr
+  real, dimension(ndustspec) :: dsize,dsize0,dds,init_distr, BB
   real, dimension(0:5) :: coeff_smooth=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0
@@ -51,7 +51,7 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
   real :: rho_w=1.0, rho_s=3., Aconst=1.0e-6, Dwater=22.0784e-2, r0, delta
-  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot, AA=0.66e-4, BB=1.5*1e-16!1.5e-16
+  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot, AA=0.66e-4, BB0=1.5*1e-16!1.5e-16
   real :: nd_reuni,nd00=1.
   integer :: ind_extra
   integer :: iglobal_nd=0
@@ -179,7 +179,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (ndustspec) :: Ntot_tmp, lnds
       integer :: i,j,k
-      real :: ddsize
+      real :: ddsize, ddsize0
       logical :: lnothing
 
       if (.not. ldustvelocity) call copy_bcs_dust_short
@@ -291,9 +291,11 @@ module Dustdensity
       if (latm_chemistry) then
         if (dsize_max/=0.0) then
           ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
+          ddsize0=(alog(6e-6)-alog(1.5e-6))/(ndustspec-1)
           do i=0,(ndustspec-1)
             lnds(i+1)=alog(dsize_min)+i*ddsize
             dsize(i+1)=exp(lnds(i+1))
+            dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
           enddo
 !
           do k=1,ndustspec
@@ -309,6 +311,7 @@ module Dustdensity
 !            init_distr(k)=nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
              init_distr(k)=nd00*1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
                *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+             BB(k)=10.7*dsize0(k)**3
           enddo
           if (ndustspec>4) then
             Ntot_tmp=spline_integral(dsize,init_distr)
@@ -1178,7 +1181,8 @@ module Dustdensity
           do k=1, ndustspec
             if (dsize(k)>0.) then
               p%ppsf(:,k)=p%ppsat &
-                *exp(AA*p%TT1/2./dsize(k)-BB/(8.*(dsize(k)**3-8e-6**3)))
+                *exp(AA*p%TT1/2./dsize(k)-BB(k) &
+                /(8.*dsize(k)**3-0.*8.*dsize0(k)**3))
             endif
           enddo
         endif
@@ -2323,10 +2327,18 @@ module Dustdensity
       if (it == 1) then
         open(file_id,file=output_file)
             write(file_id,'(7E12.4)') t
-          do k=1,ndustspec
-            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-             write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
-          enddo
+          if (lmdvar) then
+            do k=1,ndustspec
+              if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+               write(file_id,'(7E15.8)') dsize(k), &
+                 f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+            enddo
+          else
+            do k=1,ndustspec
+              write(file_id,'(7E15.8)') dsize(k), &
+                f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+            enddo
+          endif
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec) 
@@ -2334,10 +2346,18 @@ module Dustdensity
       if (it == 20000) then
         open(file_id,file=output_file2)
             write(file_id,'(7E12.4)') t
+         if (lmdvar) then
           do k=1,ndustspec
             if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-             write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+             write(file_id,'(7E15.8)') dsize(k), &
+               f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
           enddo
+         else
+           do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+               f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+         endif
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
@@ -2345,10 +2365,18 @@ module Dustdensity
       if (it == 40000) then
         open(file_id,file=output_file3)
             write(file_id,'(7E12.4)') t
+        if (lmdvar) then
           do k=1,ndustspec
             if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
-             write(file_id,'(7E15.8)') dsize(k), f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
           enddo
+        else
+          do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+        endif
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
