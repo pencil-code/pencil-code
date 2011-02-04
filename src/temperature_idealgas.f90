@@ -585,6 +585,7 @@ module Entropy
           lpenc_requested(i_del2lnTT)=.true.
         endif
         if (lgravz) lpenc_requested(i_z_mn)=.true.
+        if (lgravr) lpenc_requested(i_r_mn)=.true.
       endif
 !
       if (lheatc_Karctan) then
@@ -1305,7 +1306,7 @@ module Entropy
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: g2,hcond,chix
+      real, dimension(nx) :: g2, hcond, dhcond, chix
       real, dimension (nx,3) :: glhc=0.,glnThcond
 !
       intent(in) :: f,p
@@ -1326,6 +1327,16 @@ module Entropy
           hcond = 1. + (hcond1-1.)*step(rcyl_mn,r_bcz,-widthlnTT)
           hcond = hcond0*hcond
           glhc(:,1) = hcond0*(hcond1-1.)*der_step(rcyl_mn,r_bcz,-widthlnTT)
+        elseif (lgravr) then
+          hcond = 1. + (hcond1-1.)*step(p%r_mn,r_bcz,-widthlnTT) &
+                     + (hcond2-1.)*step(p%r_mn,r_ext,widthlnTT)
+          hcond = hcond0*hcond
+          dhcond=(hcond1-1.)*der_step(p%r_mn,r_bcz,-widthlnTT) &
+                 + (hcond2-1.)*der_step(p%r_mn,r_ext,widthlnTT)
+          dhcond=hcond0*dhcond
+          glhc(:,1) = x(l1:l2)/p%r_mn*dhcond
+          glhc(:,2) = y(m)/p%r_mn*dhcond
+          glhc(:,3) = z(n)/p%r_mn*dhcond
         endif
       endif
 !
