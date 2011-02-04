@@ -45,7 +45,7 @@ module Entropy
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
-  real :: hcond0=impossible, hcond1=1.0, Fbot=impossible
+  real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
@@ -239,10 +239,9 @@ module Entropy
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
         case ('K-profile')
           lheatc_Kprof=.true.
-!
 !  11-Aug-2008/dintrans: better somewhere else?
-!
           hcond1=(mpoly1+1.)/(mpoly0+1.)
+          hcond2=(mpoly2+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           if (lroot) &
               call information('initialize_entropy',' heat conduction: K=K(r)')
@@ -575,6 +574,7 @@ module Entropy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
+        if (lgravz) lpenc_requested(i_z_mn)=.true.
       endif
 !
       if (lheatc_Karctan) then
@@ -1285,7 +1285,8 @@ module Entropy
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot,step,der_step
+      use Sub, only: dot, step, der_step
+      use Gravity, only: z1, z2
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -1304,9 +1305,18 @@ module Entropy
         hcond=f(l1:l2,m,n,iglobal_hcond)
         glhc(:,1)=f(l1:l2,m,n,iglobal_glhc)
       else
-        hcond = 1. + (hcond1-1.)*step(rcyl_mn,r_bcz,-widthlnTT)
-        hcond = hcond0*hcond
-        glhc(:,1) = hcond0*(hcond1-1.)*der_step(rcyl_mn,r_bcz,-widthlnTT)
+        if (lgravz) then
+          hcond = 1. + (hcond1-1.)*step(p%z_mn,z1,-widthlnTT) &
+                     + (hcond2-1.)*step(p%z_mn,z2,widthlnTT)
+          hcond = hcond0*hcond
+          glhc(:,3) = (hcond1-1.)*der_step(p%z_mn,z1,-widthlnTT) &
+                      + (hcond2-1.)*der_step(p%z_mn,z2,widthlnTT)
+          glhc(:,3) = hcond0*glhc(:,3)
+        elseif (lcylindrical_coords) then
+          hcond = 1. + (hcond1-1.)*step(rcyl_mn,r_bcz,-widthlnTT)
+          hcond = hcond0*hcond
+          glhc(:,1) = hcond0*(hcond1-1.)*der_step(rcyl_mn,r_bcz,-widthlnTT)
+        endif
       endif
       if (lroot .and. lwrite_hcond) then
         open(1,file=trim(directory)//'/hcond.dat',position='append')
