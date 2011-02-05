@@ -20,7 +20,7 @@ module Magnetic_meanfield
   use Cdata
   use Cparam
   use Magnetic_meanfield_demfdt
-  use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
+  use Messages, only: fatal_error,inevitably_fatal_error,svn_id
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -130,8 +130,6 @@ module Magnetic_meanfield
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !
-      use BorderProfiles, only: request_border_driving
-      use FArrayManager
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -229,8 +227,6 @@ module Magnetic_meanfield
 !   are specified here.
 !
 !  28-jul-10/axel: adapted from magnetic
-!
-      use Mpicomm, only: stop_it
 !
       lpenc_requested(i_bb)=.true.
 !
@@ -346,7 +342,6 @@ module Magnetic_meanfield
 !
       use Sub
       use Diagnostics, only: sum_mn_name
-      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -596,7 +591,6 @@ module Magnetic_meanfield
 !  27-jul-10/axel: coded
 !
       use Diagnostics
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -818,7 +812,7 @@ module Magnetic_meanfield
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname,inamey,inamez,ixy,ixz,irz,inamer
 !      integer :: inamex
