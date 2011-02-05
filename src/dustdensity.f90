@@ -290,8 +290,8 @@ module Dustdensity
 !
       if (latm_chemistry) then
         if (dsize_max/=0.0) then
-          ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
-          ddsize0=(alog(6e-6)-alog(1.5e-6))/(ndustspec-1)
+          ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+          ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
           do i=0,(ndustspec-1)
             lnds(i+1)=alog(dsize_min)+i*ddsize
             dsize(i+1)=exp(lnds(i+1))
