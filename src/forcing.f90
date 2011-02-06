@@ -294,6 +294,23 @@ module Forcing
         profz_hel=1.
         if (lroot) print*,'profz_ampl=',profz_ampl
 !
+!  power law with offset
+!
+      elseif (iforce_profile=='1+(z-z0)^n_prof') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        if (height_ff>0) then
+          zstar=xyz0(3)
+        elseif (height_ff<0) then
+          zstar=xyz1(3)
+        else
+          zstar=impossible
+          call fatal_error('must have height_ff/=0','forcing')
+        endif
+        profz_ampl=((1.+(z-zstar)/height_ff)**nexp_ff)*.5*(1.+tanh(20.*cos(.55*z)))
+        profz_hel=1.
+        if (lroot) print*,'profz_ampl=',profz_ampl
+!
 !  exponential law
 !
       elseif (iforce_profile=='exp(z/H)') then

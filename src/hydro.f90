@@ -264,7 +264,8 @@ module Hydro
   integer :: idiag_uxmy=0       ! DIAG_DOC: $\left< u_x \right>_{y}$
   integer :: idiag_uymy=0       ! DIAG_DOC: $\left< u_y \right>_{y}$
   integer :: idiag_uzmy=0       ! DIAG_DOC: $\left< u_z \right>_{y}$
-  integer :: idiag_u2mz=0       ! DIAG_DOC: $\left< \uv^2 \right>_{xy}$
+  integer :: idiag_u2mz=0       ! DIAG_DOC: $\left< \Uv^2 \right>_{xy}$
+  integer :: idiag_o2mz=0       ! DIAG_DOC: $\left< \Wv^2 \right>_{xy}$
   integer :: idiag_omumz=0      ! DIAG_DOC: $\left<\left<\Wv\right>_{xy}
                                 ! DIAG_DOC:   \cdot\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
@@ -1379,7 +1380,7 @@ module Hydro
           idiag_pvzm /=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
-          idiag_ormsh/=0 )  lpenc_diagnos(i_o2)=.true.
+          idiag_ormsh/=0 .or. idiag_o2mz/=0 )  lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
            idiag_oumh/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
@@ -1959,7 +1960,10 @@ module Hydro
           if (idiag_uzp2/=0) call save_name(p%uu(lpoint2-nghost,3),idiag_uzp2)
         endif
 !
+!  mean squared velocity and vorticity
+!
         if (idiag_u2mz/=0)  call xysum_mn_name_z(p%u2,idiag_u2mz)
+        if (idiag_o2mz/=0)  call xysum_mn_name_z(p%o2,idiag_o2mz)
 !
 !  Mean momenta.
 !
@@ -3758,6 +3762,7 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'ekinmz',idiag_ekinmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'u2mz',idiag_u2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'o2mz',idiag_o2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oumz',idiag_oumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'uguxmz',idiag_uguxmz)

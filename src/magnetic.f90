@@ -175,7 +175,7 @@ module Magnetic
   real :: height_eta=0.0, eta_out=0.0
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
-  real :: alphaSSm=0.0
+  real :: alphaSSm=0.0, J_ext_quench=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
@@ -204,7 +204,7 @@ module Magnetic
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
-      B_ext, J_ext, omega_Bz_ext, u0_advec, nu_ni, &
+      B_ext, J_ext, J_ext_quench, omega_Bz_ext, u0_advec, nu_ni, &
       hall_term, &
       eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
@@ -1419,6 +1419,10 @@ module Magnetic
         lpenc_requested(i_rho1)=.true.
       endif
 !
+!  when b2 is needed for quenching factors
+!
+      if (J_ext_quench/=0) lpenc_requested(i_b2)=.true.
+!
 !  Other necessary pencils.
 !
       if (lentropy .or. ltemperature .or. lhydro) lpenc_requested(i_rho1)=.true.
@@ -1811,7 +1815,7 @@ module Magnetic
       type (pencil_case) :: p
 !
 !      real, dimension (nx,3) :: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb
+      real, dimension (nx) :: rho1_jxb, quench
       real :: B2_ext,c,s
       integer :: i,j,ix
 !
@@ -1961,9 +1965,16 @@ module Magnetic
 !  Add an external J-field (for the Bell instability).
 !
         if (lJ_ext) then
-          p%jj(:,1)=p%jj(:,1)+J_ext(1)
-          p%jj(:,2)=p%jj(:,2)+J_ext(2)
-          p%jj(:,3)=p%jj(:,3)+J_ext(3)
+          if (J_ext_quench/=0) then
+            quench=1./(1.+J_ext_quench*p%b2)
+            p%jj(:,1)=p%jj(:,1)+J_ext(1)*quench
+            p%jj(:,2)=p%jj(:,2)+J_ext(2)*quench
+            p%jj(:,3)=p%jj(:,3)+J_ext(3)*quench
+          else
+            p%jj(:,1)=p%jj(:,1)+J_ext(1)
+            p%jj(:,2)=p%jj(:,2)+J_ext(2)
+            p%jj(:,3)=p%jj(:,3)+J_ext(3)
+          endif
         endif
       endif
 ! exa
