@@ -236,7 +236,7 @@ varcontent[iuutest].skip       = ntestflow-1
 ;
 default, icctest, 0
 default, ntestscalar, 0
-;print, '====> ntestscalar=', ntestscalar
+if ntestscalar ne 0 then print, '====> ntestscalar=', ntestscalar
 varcontent[icctest].variable   = 'Testflow (cctest)'
 varcontent[icctest].idlvar     = 'cctest'
 varcontent[icctest].idlinit    = 'fltarr(mx,my,mz,ntestscalar)*one'
