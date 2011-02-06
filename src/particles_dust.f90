@@ -153,7 +153,8 @@ module Particles
       rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction
+      lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
+      loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0

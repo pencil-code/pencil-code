@@ -621,6 +621,11 @@ module Particles_main
 !
       call correct_curvilinear
 !
+!  Output particle size distribution to file.
+!
+      if (lparticles_radius .and. loutput_psize_dist .and. ldiagnos .and. &
+          .not. lpencil_check_at_work) call output_particle_size_dist(fp)
+!
     endsubroutine particles_pde
 !***********************************************************************
     subroutine particles_pde_pencil(f,df,p)

@@ -20,10 +20,14 @@ module Particles_cdata
   real :: four_pi_rhopmat_over_three
   real :: np_const=0.0, rhop_const=0.0
   real :: energy_gain_shear_bcs=impossible
+  real :: log_ap_min_dist=0.0, log_ap_max_dist=6.0
+!
+  integer, dimension (nx) :: kshepherd
+  integer, allocatable, dimension (:) :: kneighbour
   integer, dimension (mpar_loc) :: ipar
   integer, dimension (nspar) :: ipar_nbody
   integer, dimension (npar_species) :: ipar_fence_species=0
-!
+  integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0
   integer :: inpswarm=0, irhopswarm=0
@@ -32,21 +36,21 @@ module Particles_cdata
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
   integer :: inp=0
   integer :: idiag_nmigmax=0, npart_radii=0
-  integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
+  integer :: nbin_ap_dist=100
+!
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
   logical :: lmigration_real_check=.true.
   logical :: lcheck_exact_frontier=.false.
-  character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
-  character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
-!
   logical :: lshepherd_neighbour=.false.
   logical :: lrandom_particle_pencils=.false., lrandom_particle_blocks=.false.
   logical :: linsert_particles_continuously=.false.
-  integer, dimension (nx) :: kshepherd
-  integer, allocatable, dimension (:) :: kneighbour
+  logical :: loutput_psize_dist=.false.
+!
+  character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
+  character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
 !
   type quant_interp_penc
 !

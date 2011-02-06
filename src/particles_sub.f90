@@ -15,11 +15,10 @@ module Particles_sub
 !
   private
 !
-  public :: input_particles, output_particles
-  public :: boundconds_particles
+  public :: input_particles, output_particles, boundconds_particles
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: remove_particle, get_particles_interdistance
-  public :: count_particles
+  public :: count_particles, output_particle_size_dist
 !
   contains
 !***********************************************************************
@@ -758,5 +757,79 @@ module Particles_sub
       call keep_compiler_quiet(ipar)
 !
     endsubroutine count_particles
+!***********************************************************************
+    subroutine output_particle_size_dist(fp)
+!
+!  Calculate size distribution of particles and output to file.
+!
+!   6-feb-11/anders: coded
+!
+      use Mpicomm, only: mpireduce_sum
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+!
+      real, dimension (nbin_ap_dist) :: log_ap_loc
+      real, dimension (nbin_ap_dist) :: log_ap_loc_low, log_ap_loc_high
+      real, dimension (nbin_ap_dist) :: rhop_dist, rhop_dist_sum
+      real, save :: delta_log_ap
+      integer :: i, k
+      logical, save :: lfirstcall=.true.
+      logical :: file_exists
+!
+      intent (in) :: fp
+!
+!  Define the bins for the size distribution and save to file.
+!
+      if (lfirstcall) then
+        delta_log_ap=(log_ap_max_dist-log_ap_min_dist)/nbin_ap_dist
+        do i=1,nbin_ap_dist
+          log_ap_loc_low(i)=log_ap_min_dist+(i-1)*delta_log_ap
+        enddo
+        log_ap_loc_high = log_ap_loc_low + delta_log_ap
+        log_ap_loc      = (log_ap_loc_low + log_ap_loc_high)/2
+        if (lroot) then
+          inquire(file=trim(datadir)//'/particle_size_dist.dat', &
+              exist=file_exists) 
+          if (.not. file_exists) then
+            open(20,file=trim(datadir)//'/particle_size_dist.dat', &
+                status='new')
+            write(20,*) log_ap_min_dist, log_ap_max_dist, nbin_ap_dist
+            write(20,*) log_ap_loc
+            write(20,*) log_ap_loc_low
+            write(20,*) log_ap_loc_high
+            close(20)
+          endif
+        endif
+        lfirstcall=.false.
+      endif
+!
+!  Loop over particles and add their mass to the radius bin.
+!
+      rhop_dist=0.0
+      do k=1,npar_loc
+        i=(alog10(fp(k,iap))-log_ap_min_dist)/delta_log_ap
+        if (i >= 1 .and. i<=nbin_ap_dist) then
+          if (lparticles_number) then
+            rhop_dist(i)=rhop_dist(i)+fp(k,iap)**3*fp(k,inpswarm)
+          else
+            rhop_dist(i)=rhop_dist(i)+rhop_const
+          endif
+        endif
+      enddo
+!
+!  Sum over all processors
+!
+      call mpireduce_sum(rhop_dist,rhop_dist_sum,nbin_ap_dist)
+!
+!  Save size distribution function to file.
+!
+      if (lroot) then
+        open(20,file=trim(datadir)//'/particle_size_dist.dat', &
+            position='append')
+        write(20,*) t, rhop_dist_sum
+        close(20)
+      endif
+!
+    endsubroutine output_particle_size_dist
 !***********************************************************************
 endmodule Particles_sub
