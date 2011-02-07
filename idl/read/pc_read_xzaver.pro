@@ -37,9 +37,9 @@ nvar=n_elements(varnames)
 spawn, 'wc -l '+datadir+'/'+varfile, nlines
 nlines=long(nlines[0])
 nit=nlines/(1+nvar*ny/8)
-
+;
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
-
+;
 for i=0,nvar-1 do begin
   cmd=varnames[i]+'=fltarr(ny,nit)*one'
   if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
@@ -49,7 +49,7 @@ tt =fltarr(nit)*one
 ;;
 ;;  Prepare for read
 ;;
-GET_LUN, file
+get_lun, file
 filename=datadir+'/'+varfile 
 if (not quiet) then print, 'Reading ', filename
 dummy=file_search(filename, COUNT=countfile)
@@ -87,16 +87,19 @@ endif else begin
   ii=lindgen(n_elements(tt))
 endelse
 ;;
+;;  Read y array from file.
+;;
+pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
+;;
 ;;  Put data in structure.
 ;;
-makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
+makeobject="object = CREATE_STRUCT(name=objectname,['t','y'," + $
     arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-    "tt[ii],"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
-
+    "tt[ii],grid.y,"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
+;
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
   undefine,object
 endif
-
-
+;
 end
