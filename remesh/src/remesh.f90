@@ -66,7 +66,7 @@ program remesh
   integer :: cpu_local
   integer :: counx, couny, counz, xstart,xstop, ystart,ystop, zstart, zstop
   integer :: nprocxx, nprocyy, nproczz
-  logical exist
+  logical exist, lshort
 
 print*,'mx,my,mz,mvar=',mx,my,mz,mvar
 
@@ -165,18 +165,33 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
       !
       ! Possibility to jump here from below
       !
-992   continue
       read(1) a
 !
 !  try first to read with deltay, but if that fails then
 !  go to the next possibility without deltay.
 !
+      lshort=.not.lshear
       if (lshear) then
         read(1,err=991) t_sp,x,y,z,dx,dy,dz,deltay
         print*,'read deltay=',deltay
-      else
+        goto 993
+!
+!  this is the end of the program.
+!  The following lines are only to be accessed.
+!  Here we try to read data without deltay.
+!
+991     continue
+        lshort=.true.
+        backspace(1)
+      endif
+!
+!  try again if lshort
+!
+      if (lshort) then
         read(1) t_sp,x,y,z,dx,dy,dz
       endif
+!
+993   continue
       t=t_sp
       close(1)
       !
@@ -449,18 +464,6 @@ print*,'mx,my,mz,mvar=',mx,my,mz,mvar
     print*,'You must answer yes or no!'
   endif
 
-!
-!  this is the end of the program.
-!  The following lines are only to be accessed.
-!  Here we try to read data without deltay.
-!
-      goto 998
-991   continue
-!--   lshear=.false.
-      rewind(1)
-      goto 992
-
-998   continue
 end program remesh
 
 !***********************************************************************
