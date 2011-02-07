@@ -39,8 +39,10 @@ module Special
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
+  real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
+      heat_par_exp3,&    
       Kpara,Kperp,init_time2, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
@@ -1021,7 +1023,7 @@ module Special
       do i=1,3
         select case(iheattype(i))
         case ('nothing')
-          !
+!
         case ('exp')
           if (headtt) then
             print*,'Amplitude1 =',heat_par_exp(1)*unit_density* &
@@ -1030,6 +1032,18 @@ module Special
           endif
           heatinput=heatinput + &
               heat_par_exp(1)*exp(-z(n)/heat_par_exp(2))
+          heatinput=  heatinput/heat_par_exp(2)
+!
+        case ('exp3')
+          if (headtt) then
+            print*,'Amplitude3 =',heat_par_exp3(1),'[Wm^(-2)]'
+            print*,'Scale height1 =',heat_par_exp3(2)*unit_length*1e-6,'[Mm]'
+            print*,'Pivot location: ',heat_par_exp3(3)*unit_length*1e-6,'[Mm]'
+          endif
+          heatinput=heatinput + heat_par_exp3(1)/ &
+              (heat_par_exp3(2)* unit_density*unit_velocity**3 )&
+              *exp(-(z(n)-heat_par_exp3(3))/heat_par_exp3(2))
+!
         case ('exp2')
           if (headtt) then
             print*,'Amplitude2=',heat_par_exp2(1)*unit_density* &
