@@ -46,7 +46,7 @@ module Entropy
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
-  real :: luminosity=0.0, wheat=0.1
+  real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
@@ -74,7 +74,6 @@ module Entropy
       center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0, &
       luminosity, wheat
- 
 !
 !  Run parameters.
 !
@@ -82,9 +81,10 @@ module Entropy
       lupw_lnTT, ladvection_temperature, &
       chi, iheatcond, chi_hyper3_mesh, &
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
-      lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, lhcond_global, &
+      lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
-      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed
+      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, &
+      rcool, wcool, cool
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -178,7 +178,7 @@ module Entropy
 !  21-jul-2002/wolf: coded
 !
       use FArrayManager, only: farray_register_global
-      use Gravity, only: g0, gravz
+      use Gravity, only: g0, gravz, compute_gravity_star
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
       use Sub, only: step,der_step
@@ -192,6 +192,7 @@ module Entropy
       logical :: lnothing
       integer :: i, ierr
       real, dimension(5) :: hole_params
+      real :: star_cte
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !
@@ -332,6 +333,14 @@ module Entropy
         if (Fbot==impossible .and. hcond0==impossible) &
           call fatal_error('temperature_idealgas',  &
               'Both Fbot and hcond0 are unknown')
+      endif
+!
+      if (initlnTT(1)=='star_heat') then
+        if (lroot) print*,'star_heat: compute the gravity profile'
+        ! compute the gravity profile
+        star_cte=(mpoly0+1.)/hcond0*gamma_m1/gamma
+        call compute_gravity_star(f, wheat, luminosity, star_cte)
+        if (rcool==0.) rcool=r_ext
       endif
 !
 !  Now we share several variables.
@@ -555,6 +564,7 @@ module Entropy
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_cv1)=.true.
+        if (lgravr) lpenc_requested(i_r_mn)=.true.
       endif
 !
       if (lheatc_chiconst) then
@@ -1102,46 +1112,57 @@ module Entropy
     subroutine calc_heat_cool(df,p)
 !
       use Diagnostics, only: sum_lim_mn_name
+      use EquationOfState, only: cs20
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: tau,cooling,kappa,a1,a3
-      real :: a2,kappa0,kappa0_cgs
+      real, dimension (nx) :: tau, cooling, kappa, a1, a3, prof, heat
+      real :: a2, kappa0, kappa0_cgs
 !
 !  Initialize
 !
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'enter calc_heat_cool'
+      if (headtt) print*,'enter calc_heat_cool', rcool, wcool, cool, cs20
 !
-      kappa0_cgs=2e-6  !cm2/g
-      kappa0=kappa0_cgs*unit_density*unit_length
-      kappa=kappa0*p%TT**2
+      if (lgravr) then
+        ! 2-D heating/cooling profiles
+        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)
+        heat = luminosity*prof
+        prof = step(p%r_mn,rcool,wcool)
+        heat = heat - cool*prof*(p%cs2-cs20)/cs20
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*heat
+      else
+        kappa0_cgs=2e-6  !cm2/g
+        kappa0=kappa0_cgs*unit_density*unit_length
+        kappa=kappa0*p%TT**2
 !
 !  Optical Depth tau=kappa*rho*H.
 !  If we are using 2D, the pencil value p%rho is actually sigma, the column
 !  density, sigma=rho*2*H
 !
-      if (nzgrid==1) then
-         tau = .5*kappa*p%rho
-      else
-         call fatal_error("calc_heat_cool","opacity not yet implemented for 3D")
-      endif
+        if (nzgrid==1) then
+           tau = .5*kappa*p%rho
+        else
+           call fatal_error("calc_heat_cool","opacity not yet implemented for 3D")
+        endif
 !
 !  Analytical gray description of Hubeny (1990)
 !  a1 is the optically thick contribution,
 !  a3 the optically thin one.
 !
-      a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
+        a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
 !
 !  Cooling for energy: 2*sigmaSB*p%TT**4/(a1+a2+a3)
 !
-      cooling = 2*sigmaSB*p%rho1*p%TT**4/(a1+a2+a3)
+        cooling = 2*sigmaSB*p%rho1*p%TT**4/(a1+a2+a3)
 !
 !  This cooling has dimension of energy over time.
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*p%TT1*cooling
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*p%TT1*cooling
+      endif
 !
       if (ldiagnos) then
          !cooling power - energy radiated away (luminosity)
@@ -1765,6 +1786,8 @@ module Entropy
         g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
       enddo
 !
+      hcond1=(mpoly1+1.)/(mpoly0+1.)
+      hcond2=(mpoly2+1.)/(mpoly0+1.)
       hcond = 1. + (hcond1-1.)*step(r,r_bcz,-widthlnTT) &
                  + (hcond2-1.)*step(r,r_ext,widthlnTT)
       hcond = hcond0*hcond
