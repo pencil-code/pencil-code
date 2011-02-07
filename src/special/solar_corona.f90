@@ -2054,7 +2054,7 @@ module Special
 !
 ! for footpoint quenching compute pressure
 !
-      call get_cp1(cp1)
+      if (leos) call get_cp1(cp1)
 !
       if (lquench.and.lfirst_proc_z) then
         if (ltemperature.and..not.ltemperature_nolog) then
@@ -2263,11 +2263,24 @@ module Special
 !
       integer :: alloc_err
 !
-      if (.not. allocated (w)) then
-        allocate (w(nxgrid,nygrid), vx(nxgrid,nygrid), vy(nxgrid,nygrid), &
-            avoidarr(nxgrid,nygrid), Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
-        if (alloc_err > 0) call stop_it_if_any (.true., 'resetarr: Could not allocate memory')
-      endif
+      if (.not. allocated(w))  allocate (w(nxgrid,nygrid),stat=alloc_err)
+      if (alloc_err > 0) &
+          call stop_it_if_any(.true., 'resetarr: Could not allocate memory w')
+      if (.not. allocated(vx))  allocate (vx(nxgrid,nygrid),stat=alloc_err)
+      if (alloc_err > 0) &
+          call stop_it_if_any(.true., 'resetarr: Could not allocate memory vx')
+      if (.not. allocated(vy))  allocate (vy(nxgrid,nygrid),stat=alloc_err)
+      if (alloc_err > 0) &
+          call stop_it_if_any(.true., 'resetarr: Could not allocate memory vy')
+      if (.not. allocated(avoidarr)) allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
+      if (alloc_err > 0) &
+          call stop_it_if_any(.true., 'resetarr: Could not allocate memory avoidarr')
+      if (.not. allocated(Ux))  allocate (Ux(nxgrid,nygrid),stat=alloc_err)
+      if (alloc_err > 0) &
+          call stop_it_if_any(.true., 'resetarr: Could not allocate memory Ux')
+      if (.not. allocated(Uy))  allocate (Uy(nxgrid,nygrid),stat=alloc_err)
+      if (alloc_err > 0) &
+          call stop_it_if_any(.true., 'resetarr: Could not allocate memory Uy')
 !
       w(:,:) = 0.0
       vx(:,:) = 0.0
