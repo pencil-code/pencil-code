@@ -842,7 +842,7 @@ module Hydro
           p%uu(:,2)=0.
 !          omega0=uphi_at_rmax/uphi_rmax
 !          shear = arctanh(omega0)/(uphi_rmax-x(l1))
-          p%uu(:,3)=0.01*x(l1:l2)*sinth(m)
+          p%uu(:,3)=ampl_kinflow*x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
 !*tanh(10.*(x(l1:l2)-x(l1)))
 !          write(*,*)'DM',m,n,p%uu(:,3)
         endif
