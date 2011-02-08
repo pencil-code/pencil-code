@@ -2136,7 +2136,7 @@ module Special
 !
     if (.not. allocated (Ux)) then
       allocate (Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('resetarr', &
+      if (alloc_err > 0) call fatal_error ('multi_drive3', &
           'Could not allocate memory Ux/Uy', .true.)
     endif
 !
