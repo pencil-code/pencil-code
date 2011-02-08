@@ -67,6 +67,7 @@ module Chemistry
 !
 !  parameters related to chemical reactions, diffusion and advection
 !
+     logical, allocatable, dimension(:) :: back
      logical :: lreactions=.true.
      logical :: ladvection=.true.
      logical :: ldiffusion=.true.
@@ -2510,6 +2511,8 @@ print*,'NATA'
         if (stat>0) call stop_it("Couldn't allocate memory for kreactions_profile_width")
         allocate(kreactions_alpha(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for kreactions_alpha")
+        allocate(back(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for back")
       endif
 !
 !  Initialize data
@@ -2517,6 +2520,7 @@ print*,'NATA'
       kreactions_z=1.
       Sijp=0
       Sijm=0
+      back=.true.
 !
 !  read chemistry data
 !
@@ -3735,6 +3739,8 @@ print*,'NATA'
         if (stat>0) call stop_it("Couldn't allocate memory for Sijp")
         allocate(reaction_name(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for reaction_name")
+        allocate(back(mreactions),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for back")
         allocate(B_n(mreactions),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for B_n")
         B_n=0.
@@ -3768,6 +3774,7 @@ print*,'NATA'
 !
       Sijp=0
       Sijm=0
+      back=.true.
 !
 !  read chemistry data
 !
@@ -3912,6 +3919,7 @@ print*,'NATA'
                 SeparatorInd=index(ChemInpLine(StartInd:),'<=')
                 if (SeparatorInd==0) then
                   SeparatorInd=index(ChemInpLine(StartInd:),'=')
+                  if (index(ChemInpLine(StartInd:),'=>')/=0) back(k)=.false.
                 endif
 !
                 ParanthesisInd=0
@@ -4394,6 +4402,8 @@ print*,'NATA'
               vreact_m(:,reac)=0.
             endwhere
           endif
+!
+          if (.not. back(reac)) vreact_m(:,reac)=0.
         enddo
 !
 ! This part calculates forward and reverse reaction rates
@@ -4539,16 +4549,21 @@ print*,'NATA'
 !
       use Diagnostics, only: sum_mn_name
 !
-      real :: alpha
+      real :: alpha, eps
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-      real, dimension (nx,nchemspec) :: xdot
+      real, dimension (nx,nchemspec) :: xdot,xdot_c,xdot_2
+      real, dimension (nx,mreactions) :: a, beta, tauc1
+      real, dimension (nx,mreactions,mreactions) :: b
+      real, dimension (nx,mreactions,nchemspec) :: jacd, xdot_1
       real, dimension (nx) :: rho1
       real, dimension (nx,nchemspec)  :: molm
       type (pencil_case) :: p
-      integer :: k,j
+      integer :: k,j,i,is
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
       integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
+!
+      eps=sqrt(epsilon(alpha))
 !
       p%DYDt_reac=0.
       rho1=1./p%rho
@@ -4605,6 +4620,53 @@ print*,'NATA'
         enddo
       enddo
       p%DYDt_reac=xdot*unit_time
+!
+!  Julien: Dynamic stiffness removal (UNDER CONSTRUCTION, do not remove).
+!
+!      beta=0.
+!      xdot_2=0.
+!      do j=1,nreactions
+!        do k=1,nchemspec
+!          jacd(:,j,k)=Sijm(k,j)*vreactions_m(:,j)*molm(:,k)/(eps+f(l1:l2,m,n,ichemspec(k)))*unit_time
+!          xdot_1(:,j,k)=Sijp(k,j)*vreactions_p(:,j)-Sijm(k,j)*vreactions_m(:,j)
+!        enddo
+!
+!        do i =1, nx
+!          if (maxval(abs(jacd(i,j,:))) >= 10./dt) then
+!            beta(i,j)=1.
+!          else
+!            do k=1,nchemspec
+!              xdot_2(i,k)=xdot_2(i,k)-stoichio(k,j)*vreactions(i,j)*molm(i,k)
+!            enddo
+!          endif
+!        enddo
+!        if (maxval(beta(:,j)) == 1.) &
+!              print*, 'PE reaction for QSS species:', j
+!      enddo
+!
+!      a=vreactions/dt
+!      b=0.
+!      do j=1,nreactions
+!        do k=1,nchemspec
+!          a(:,j)=a(:,j)+xdot_1(:,j,k)/(eps+f(l1:l2,m,n,ichemspec(k)))*xdot_2(:,k)
+!          do i=1,nreactions
+!            b(:,j,i)=b(:,j,i)-beta(:,i)*stoichio(k,i)*xdot_1(:,j,k)
+!          enddo
+!        enddo
+!      enddo
+!
+!      xdot=0.
+!      do k=1,nchemspec
+!        do j=1,nreactions
+!          where (beta(:,j) == 1)
+!           xdot(:,k)=xdot(:,k)-stoichio(k,j)*tauc1(:,j)*f(l1:l2,m,n,ichemspec(k))
+!             xdot(:,k)=xdot(:,k) 
+!          elsewhere
+!            xdot(:,k)=xdot(:,k)-stoichio(k,j)*vreactions(:,j)*molm(:,k)
+!          endwhere
+!        enddo
+!      enddo
+!      p%DYDt_reac=xdot*unit_time
 !
 !  For diagnostics
 !
@@ -5502,7 +5564,7 @@ print*,'NATA'
 !
 !  The characteristic time scale is taken of the order of a CFL time scale
 !
-       dt1=0.25*(ux_ref+cs)/(Lxyz(1)/nxgrid)
+       dt1=(ux_ref+cs)/(Lxyz(1)/nxgrid)
        del=0.1
 !
        sz_x=int(del*nxgrid)
@@ -5523,8 +5585,8 @@ print*,'NATA'
             df(i,m,n,iux)=df(i,m,n,iux)-func_x*(f(i,m,n,iux)-ux_ref)*dt1
             df(i,m,n,iuy)=df(i,m,n,iuy)-func_x*(f(i,m,n,iuy)-uy_ref)*dt1
             df(i,m,n,iuz)=df(i,m,n,iuz)-func_x*(f(i,m,n,iuz)-uz_ref)*dt1
-            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
-            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
+!            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
+!            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
           endif
          enddo
 !
@@ -5538,8 +5600,8 @@ print*,'NATA'
             df(i,m,n,iux)=df(i,m,n,iux)-func_x*(f(i,m,n,iux)-ux_ref)*dt1
             df(i,m,n,iuy)=df(i,m,n,iuy)-func_x*(f(i,m,n,iuy)-uy_ref)*dt1
             df(i,m,n,iuz)=df(i,m,n,iuz)-func_x*(f(i,m,n,iuz)-uz_ref)*dt1
-            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
-            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
+!            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
+!            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
           endif
          enddo
 !
@@ -6173,6 +6235,7 @@ print*,'NATA'
   if (allocated(photochem_case)) deallocate(photochem_case)
   if (allocated(net_react_m))    deallocate(net_react_m)
   if (allocated(net_react_p))    deallocate(net_react_p)
+  if (allocated(back))           deallocate(back)
 !
   endsubroutine chemistry_clean_up
 !***********************************************************************
