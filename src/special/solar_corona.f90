@@ -2134,6 +2134,12 @@ module Special
       if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
 !
+    if (.not. allocated (Ux)) then
+      allocate (Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('resetarr', &
+          'Could not allocate memory Ux/Uy', .true.)
+    endif
+!
     ! Initialize velocity field
     Ux = 0.0
     Uy = 0.0
@@ -2279,12 +2285,6 @@ module Special
       if (.not. allocated(avoidarr)) allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
       if (alloc_err > 0) &
           call stop_it_if_any(.true., 'resetarr: Could not allocate memory avoidarr')
-      if (.not. allocated(Ux))  allocate (Ux(nxgrid,nygrid),stat=alloc_err)
-      if (alloc_err > 0) &
-          call stop_it_if_any(.true., 'resetarr: Could not allocate memory Ux')
-      if (.not. allocated(Uy))  allocate (Uy(nxgrid,nygrid),stat=alloc_err)
-      if (alloc_err > 0) &
-          call stop_it_if_any(.true., 'resetarr: Could not allocate memory Uy')
 !
       w(:,:) = 0.0
       vx(:,:) = 0.0
