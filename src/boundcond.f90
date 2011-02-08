@@ -2158,8 +2158,8 @@ module Boundcond
             if (Omega==0) then
                do ix=1,mx
                   f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                       (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
-                       *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m1-k))
+                       (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
+                       *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k))
                enddo
             else
               do ix=1,mx
@@ -2167,8 +2167,8 @@ module Boundcond
                    exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
                         -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
                 f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
-                   (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m1+k)) &
-                   *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m1-k)) &
+                   (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
+                   *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
                       +somega
               enddo
             endif
@@ -2186,8 +2186,8 @@ module Boundcond
             if (Omega==0)then
                do ix=1,mx
                   f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
-                   (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
-                  *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m2+k))
+                   (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
+                  *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k))
                enddo
              else
               do ix=1,mx
@@ -2195,8 +2195,8 @@ module Boundcond
                    exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
                         -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
                 f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
-                     (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m2-k)) &
-                    *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m2+k)) &
+                     (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
+                    *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k)) &
                       +somega
               enddo
              endif
