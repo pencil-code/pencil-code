@@ -2134,6 +2134,10 @@ module Special
       if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
 !
+    ! Initialize velocity field
+    Ux = 0.0
+    Uy = 0.0
+!
     do k=1,nglevel
       select case (k)
       case (1)
@@ -2286,8 +2290,6 @@ module Special
       vx(:,:) = 0.0
       vy(:,:) = 0.0
       avoidarr(:,:) = 0
-      Ux = 0.0
-      Uy = 0.0
 !
     endsubroutine resetarr
 !***********************************************************************
