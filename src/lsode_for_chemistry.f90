@@ -44,7 +44,7 @@ module LsodeForChemistry
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-!            
+!
         call calc_pencils_chemistry(f,p)
 !
 !  --------------------------------------------------------
@@ -63,7 +63,7 @@ module LsodeForChemistry
 !
     endsubroutine pde_chemistry
 !***********************************************************************
-    subroutine lsode_fc(t0,t1,f,df) 
+    subroutine lsode_fc(t0,t1,f,df)
 !
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
@@ -124,14 +124,14 @@ module LsodeForChemistry
 !  website. The routines included here are taken from this package but were
 !  translated from fortran 77 to 90 and were adapted to fit in the pencil-code.
 !  All those routines should be considered as black boxes as they were already
-!  optimized and validated many times. 
+!  optimized and validated many times.
 !
 !***********************************************************************
 !
       SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,&
                        ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, MF,&
                        YDOT0)
-     
+!
       EXTERNAL F, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
       DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK, YDOT0
@@ -427,10 +427,10 @@ module LsodeForChemistry
 !     on the interval from t = 0.0 to t = 4.E10, with initial conditions
 !     y1 = 1.0, y2 = y3 = 0. The problem is stiff.
 !
-!     The following coding solves this problem with DLSODE, using 
-!     MF = 21 and printing results at t = .4, 4., ..., 4.E10.  It uses 
-!     ITOL = 2 and ATOL much smaller for y2 than for y1 or y3 because y2 
-!     has much smaller values.  At the end of the run, statistical 
+!     The following coding solves this problem with DLSODE, using
+!     MF = 21 and printing results at t = .4, 4., ..., 4.E10.  It uses
+!     ITOL = 2 and ATOL much smaller for y2 than for y1 or y3 because y2
+!     has much smaller values.  At the end of the run, statistical
 !     quantities of interest are printed.
 !
 !        EXTERNAL  FEX, JEX
@@ -521,7 +521,7 @@ module LsodeForChemistry
 !
 ! *Portability:
 !     Since NEQ is dimensioned inside DLSODE, some compilers may object
-!     to a call to DLSODE with NEQ a scalar variable.  In this event, 
+!     to a call to DLSODE with NEQ a scalar variable.  In this event,
 !     use DIMENSION NEQ(1).  Similar remarks apply to RTOL and ATOL.
 !
 !     Note to Cray users:
@@ -1009,9 +1009,9 @@ module LsodeForChemistry
 !     Optional Outputs
 !     ----------------
 !     As optional additional output from DLSODE, the variables listed
-!     below are quantities related to the performance of DLSODE which 
+!     below are quantities related to the performance of DLSODE which
 !     are available to the user.  These are communicated by way of the
-!     work arrays, but also have internal mnemonic names as shown. 
+!     work arrays, but also have internal mnemonic names as shown.
 !     Except where stated otherwise, all of these outputs are defined on
 !     any successful return from DLSODE, and on any return with ISTATE =
 !     -1, -2, -4, -5, or -6.  On an illegal input return (ISTATE = -3),
@@ -1153,7 +1153,7 @@ module LsodeForChemistry
 !     If DLSODE is to be used in an overlay situation, the user must
 !     declare, in the primary overlay, the variables in:
 !     (1) the call sequence to DLSODE,
-!     (2) the internal COMMON block /DLS001/, of length 255 
+!     (2) the internal COMMON block /DLS001/, of length 255
 !         (218 double precision words followed by 37 integer words).
 !
 !     If DLSODE is used on a system in which the contents of internal
@@ -1289,7 +1289,7 @@ module LsodeForChemistry
 ! 19930723  Changed D1MACH to DUMACH. (FNF)
 ! 19930801  Removed ILLIN and NTREP from Common (affects driver logic);
 !           minor changes to prologue and internal comments;
-!           changed Hollerith strings to quoted strings; 
+!           changed Hollerith strings to quoted strings;
 !           changed internal comments to mixed case;
 !           replaced XERRWD with new version using character type;
 !           changed dummy dimensions from 1 to *. (ACH)
@@ -1779,7 +1779,7 @@ module LsodeForChemistry
 ! Block I.
 ! The following block handles all error returns due to illegal input
 ! (ISTATE = -3), as detected before calling the core integrator.
-! First the error message routine is called.  If the illegal input 
+! First the error message routine is called.  If the illegal input
 ! is a negative ISTATE, the run is aborted (apparent infinite loop).
 !-----------------------------------------------------------------------
  601  MSG = 'DLSODE-  ISTATE (=I1) illegal '
@@ -2269,7 +2269,7 @@ module LsodeForChemistry
         R = MAX(SRUR*ABS(YJ),R0/EWT(J))
         Y(J) = Y(J) + R
         FAC = -HL0/R
-	CALL F (NEQ, YDOT0, FTEM)
+        CALL F (NEQ, YDOT0, FTEM)
         DO 220 I = 1,N
  220      WM(I+J1) = (FTEM(I) - SAVF(I))*FAC
         Y(J) = YJ
@@ -2334,7 +2334,7 @@ module LsodeForChemistry
           YI = Y(I)
           R = MAX(SRUR*ABS(YI),R0/EWT(I))
  530      Y(I) = Y(I) + R
-	CALL F (NEQ, YDOT0, FTEM)
+        CALL F (NEQ, YDOT0, FTEM)
         DO 550 JJ = J,N,MBAND
           Y(JJ) = YH(JJ,1)
           YJJ = Y(JJ)
