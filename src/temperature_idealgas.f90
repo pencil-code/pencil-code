@@ -508,7 +508,7 @@ module Entropy
             enddo
 !
           case ('star_heat')
-            call star_heat(f)  
+            call star_heat(f)
 !
           case default
 !
@@ -1772,8 +1772,9 @@ module Entropy
       integer, parameter   :: nr=100
       integer              :: i,l,iter
       real, dimension (nr) :: r, lnrho, temp, lumi, g, hcond
-      real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,dr,dtemp,dlnrho
-      real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
+      real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss
+      real                 :: rhotop, rbot,rt_old,rt_new,rhobot
+      real                 :: rb_old,rb_new,crit,r_max
 !
 !  Define the radial grid r=[0,r_max], luminosity and gravity
 !
@@ -1821,7 +1822,7 @@ module Entropy
  10 continue
  20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
-!  One needs to refresh rho0 and lnrho0 because the density top value 
+!  One needs to refresh rho0 and lnrho0 because the density top value
 !  has changed --> important for the future EOS calculations (ss, ...)
 !
       lnrho0=lnrho(nr)
@@ -1857,16 +1858,15 @@ module Entropy
 !
     endsubroutine star_heat
 !***********************************************************************
-    subroutine strat_heat(nr, r, lumi, g, hcond, temp, lnrho, rhotop, rhobot)
+    subroutine strat_heat(nr,r,lumi,g,hcond,temp,lnrho,rhotop,rhobot)
 !
-      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, &
-                                 ilnrho_TT, gamma, gamma_m1, cs20
+      use EquationOfState, only: gamma, gamma_m1, cs20
       use Sub, only: interp1
 !
-      integer              :: nr, i,l,iter
+      integer              :: nr, i
       real, dimension (nr) :: r, lnrho, temp, lumi, g, hcond
-      real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,dr,dtemp,dlnrho
-      real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max,lnrhobot
+      real                 :: dr,dtemp,dlnrho
+      real                 :: rhotop,rhobot,lnrhobot
 !
       temp(nr)=cs20/gamma_m1 ; lnrho(nr)=alog(rhotop)
       dr=r(2)
