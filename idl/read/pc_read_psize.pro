@@ -6,7 +6,7 @@
 ;  Author: Anders Johansen (anders@astro.lu.se)
 ;  Date  : 06-feb-11
 ;
-pro pc_read_psize_dist, object=object, datadir=datadir, filename=filename
+pro pc_read_psize, object=object, datadir=datadir, filename=filename
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
