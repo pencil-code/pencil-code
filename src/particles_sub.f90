@@ -807,10 +807,11 @@ module Particles_sub
 !
       rhop_dist=0.0
       do k=1,npar_loc
-        i=(alog10(fp(k,iap))-log_ap_min_dist)/delta_log_ap
-        if (i >= 1 .and. i<=nbin_ap_dist) then
+        i=(alog10(fp(k,iap))-log_ap_min_dist)/delta_log_ap+1
+        if (i>=1 .and. i<=nbin_ap_dist) then
           if (lparticles_number) then
-            rhop_dist(i)=rhop_dist(i)+fp(k,iap)**3*fp(k,inpswarm)
+            rhop_dist(i)=rhop_dist(i)+ &
+                four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
           else
             rhop_dist(i)=rhop_dist(i)+rhop_const
           endif
