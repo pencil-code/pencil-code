@@ -32,7 +32,8 @@ module Special
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=huge1
   real :: limiter_tensordiff=3
   logical :: luse_spitz_aux=.false.
-  real :: Kpa_pen=0., Kpa_SI=2e-11,flux_delim
+  real :: Kpa_pen=0., Kpa_SI=2e-11,flux_delim_SI=0,flux_delim
+  real, dimension(3) :: B_ext_special
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -50,7 +51,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      luse_spitz_aux,Kpa_SI,flux_delim,heat_par_b2
+      luse_spitz_aux,Kpa_SI,flux_delim_SI,heat_par_b2,B_ext_special
 !
 ! variables for print.in
 !
@@ -185,9 +186,15 @@ module Special
     Kpa_pen = Kpa_SI/unit_density/unit_velocity**3. &
         /unit_length*unit_temperature**3.5
 !
+    if (flux_delim_SI/=0) then
+      flux_delim = flux_delim_SI/unit_density/unit_velocity**3.
+    else
+      flux_delim=huge1
+    endif
+!
     write (*,*) "SPITZER HEATCONDCTION"
     write (*,*) "K _SI,K_pe",Kpa_SI,Kpa_pen
-    write (*,*) "Fd_SI,FD_pe",flux_delim*unit_density*unit_velocity**3.,flux_delim
+    write (*,*) "Fd_SI,FD_pe",flux_delim_SI,flux_delim
 !
   endsubroutine initialize_special
 !***********************************************************************
@@ -1032,13 +1039,12 @@ module Special
           endif
           heatinput=heatinput + &
               heat_par_exp(1)*exp(-z(n)/heat_par_exp(2))
-          heatinput=  heatinput/heat_par_exp(2)
 !
         case ('exp3')
           if (headtt) then
-            print*,'Amplitude3 =',heat_par_exp3(1),'[Wm^(-2)]'
-            print*,'Scale height1 =',heat_par_exp3(2)*unit_length*1e-6,'[Mm]'
-            print*,'Pivot location: ',heat_par_exp3(3)*unit_length*1e-6,'[Mm]'
+            print*,'Flux at zref =',heat_par_exp3(1),'[Wm^(-2)]'
+            print*,'Scale height =',heat_par_exp3(2)*unit_length*1e-6,'[Mm]'
+            print*,'zref location =',heat_par_exp3(3)*unit_length*1e-6,'[Mm]'
           endif
           heatinput=heatinput + heat_par_exp3(1)/ &
               (heat_par_exp3(2)* unit_density*unit_velocity**3 )&
@@ -2523,6 +2529,11 @@ module Special
           by = ax_z - az_x
           bz = ay_x - ax_y
 !
+! Add external field
+          bx=B_ext_special(1)
+          by=B_ext_special(2)
+          bz=B_ext_special(3)
+!
           b2 = bx*bx + by*by + bz*bz
 !
           lnT_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,ilnTT)-f(l1-1:l2-1,i,j,ilnTT)) &
@@ -2543,14 +2554,19 @@ module Special
 !
           tmp = Kpa_pen * b2_1 * b_glnT * exp(3.5*f(l1:l2,i,j,ilnTT))
 !
-          tmp = min(flux_delim,tmp)
-          tmp = max(-flux_delim,tmp)
+!          tmp = min(flux_delim,tmp)
+!          tmp = max(-flux_delim,tmp)
 !
           f(l1:l2,i,j,ispitzerx)=bx*tmp
           f(l1:l2,i,j,ispitzery)=by*tmp
           f(l1:l2,i,j,ispitzerz)=bz*tmp
+!          print*,maxval(abs(tmp))
         enddo
       enddo
+     ! print*,maxval(f(l1:l2,m1:m2,n1:n2,ispitzerx))
+     ! print*,maxval(f(l1:l2,m1:m2,n1:n2,ispitzery))
+     ! print*,maxval(f(l1:l2,m1:m2,n1:n2,ispitzerz))
+
 !
       ! open (77,file='test.file',form='unformatted', &
       !     status='unknown',recl=lend*nxgrid*nzgrid,access='direct')
