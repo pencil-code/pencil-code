@@ -391,7 +391,7 @@ include 'NSCBC.h'
       integer, dimension(33) :: stat
       integer lll,k,ngridpoints,imin,imax,jmin,jmax,i,ngrid
       integer sgn,dir,iused,dir1,dir2,dir3,igrid,jgrid
-      integer :: imass=1
+      integer :: imass=1, iadd
       logical :: non_zero_transveral_velo
       real, allocatable, dimension(:,:,:,:) :: dui_dxj
       real, allocatable, dimension(:,:,:) :: &
@@ -781,8 +781,10 @@ include 'NSCBC.h'
 ! Treat all other variables as passive scalars
 !
       iused=max(ilnTT,ilnrho)
+      iadd=1
+      if (lchemistry) iadd=nchemspec+1
       if (mvar>iused) then
-        do k=iused+nchemspec+1,mvar
+        do k=iused+iadd,mvar
           if (llinlet) then
             if (k == icc) then
               fslice(:,:,icc)=scalar_profile
