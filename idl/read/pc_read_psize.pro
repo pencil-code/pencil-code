@@ -6,14 +6,19 @@
 ;  Author: Anders Johansen (anders@astro.lu.se)
 ;  Date  : 06-feb-11
 ;
-pro pc_read_psize, object=object, datadir=datadir, filename=filename
+pro pc_read_psize, object=object, datadir=datadir, filename=filename, $
+    quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
+;
+;  Defaul settings.
+;
+default, quiet, 0
 ;
 ;  Default datadir and filename.
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-filename='particle_size_dist.dat'
+default, filename, 'particle_size_dist.dat'
 ;
 ;  Set the precision.
 ;
@@ -57,6 +62,11 @@ for i=0,nlines-5 do begin
   t[i]=t_tmp
   ap_dist[*,i]=ap_dist_tmp
 endfor
+;
+;  Inform about the size of the arrays.
+;
+if (not quiet) then print, 'Read particle size distribution at ' + $
+    strtrim(n_elements(t),2)+' times'
 ;
 ;  Put data and parameters in object.
 ;
