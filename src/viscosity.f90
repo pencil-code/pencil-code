@@ -96,7 +96,6 @@ module Viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
   integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
-  integer :: idiag_epsK2=0      ! DIAG_DOC:
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
@@ -532,7 +531,6 @@ module Viscosity
         idiag_dtnu=0
         idiag_nu_LES=0
         idiag_epsK=0
-        idiag_epsK2=0
         idiag_epsK_LES=0
         idiag_meshRemax=0
         idiag_Reshock=0
@@ -553,7 +551,6 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
-        call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
         call parse_name(iname,cname(iname),cform(iname),'Reshock',idiag_Reshock)
@@ -685,7 +682,7 @@ module Viscosity
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
-      if (idiag_epsK2/=0) then
+      if (idiag_epsK/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_uu)=.true.
@@ -890,9 +887,7 @@ module Viscosity
 !
       if (lvisc_mixture) then
 !
-!  viscous force: nu*(del2u+graddivu/3+2S.glnrho)+2S.gradnu
-!
-!  sglnrho
+!  Viscous force: nu*(del2u+graddivu/3+2S.glnrho)+2S.gradnu
 !
         if (lpencil(i_sgnu)) call multmv(p%sij,p%gradnu,p%sgnu)
 !
@@ -901,14 +896,11 @@ module Viscosity
             p%fvisc(:,i)=2*p%nu*p%sglnrho(:,i) &
             +p%nu*(p%del2u(:,i)+1./3.*p%graddivu(:,i)) &
             +2*p%sgnu(:,i)
-       !  if (maxval(p%nu)<0) then
-       !    call stop_it("Negative viscosity!")
-       !  endif
 !
           enddo
         endif
 !
-!  viscous heating and time step
+!  Viscous heating and time step.
 !
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+p%nu
@@ -916,7 +908,7 @@ module Viscosity
 !
       if (lvisc_nu_profx.or.lvisc_nu_profr) then
 !
-!  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
+!  Viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on x; nu_jump=nu2/nu1
 !        pnu = nu + nu*(nu_jump-1.)*step(abs(p%x_mn),xnu,widthnu)
         if (lvisc_nu_profx) tmp3=p%x_mn
@@ -957,11 +949,11 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
       endif
 !
-!  radial viscosity profile from power law
+!  Radial viscosity profile from power law.
 !
       if (lvisc_nu_profr_powerlaw) then
 !
-!  viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
+!  Viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on r; nu=nu_0*(r/r0)^(-pnlaw)
 !
         pnu = nu*(p%rcyl_mn/xnu)**(-pnlaw)
@@ -1489,26 +1481,7 @@ module Viscosity
             call max_name(dxmax*sqrt(p%u2(max_loc(1)))/(nu_shock*maxval(p%shock)),idiag_Reshock)
           endif
         endif
-!  Viscous heating as explicit analytical term.
-        if (idiag_epsK/=0) then
-          if (lvisc_nu_const)     call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
-          if (lvisc_nu_therm)     call sum_mn_name(2*nu*sqrt(exp(p%lnTT))*p%rho*p%sij2,idiag_epsK)
-          if (lvisc_mu_therm)    call sum_mn_name(2*nu*sqrt(exp(p%lnTT))*p%sij2,idiag_epsK)
-          if (lvisc_rho_nu_const) call sum_mn_name(2*nu*p%sij2,idiag_epsK)
-          if (lvisc_sqrtrho_nu_const) call sum_mn_name(2*nu*sqrt(p%rho)*p%sij2,idiag_epsK)
-          if (lvisc_nu_shock) &  ! Heating from shock viscosity.
-              call sum_mn_name((nu_shock*p%shock*p%divu**2)*p%rho,idiag_epsK)
-        endif
-!  Viscosity power (per volume):
-!    P = u_i tau_ij,j = d/dx_j(u_i tau_ij) - u_i,j tau_ij
-!  The first term is a kinetic energy flux and the second an energy loss which
-!  is the viscous heating. This can be rewritten as the analytical heating
-!  term in the manual (for nu-const viscosity).
-!  The average of P should, for periodic boundary conditions, equal the
-!  analytical heating term, so that epsK and epsK2 are equals.
-!  However, in strongly random flow, there can be significant difference
-!  between epsK and epsK2, even for periodic boundaries.
-        if (idiag_epsK2/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK2)
+        if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
 !  Viscous heating for Smagorinsky viscosity.
         if (idiag_epsK_LES/=0) then
           if (lvisc_smag_simplified) then
@@ -1523,7 +1496,6 @@ module Viscosity
 !
         if (lmagnetic) then
           if (idiag_nuD2uxbxm/=0.or.idiag_nuD2uxbym/=0.or.idiag_nuD2uxbzm/=0) then
-!           call curl(f,iaa,bb)
             call cross(p%fvisc,p%bb,nuD2uxb)
             call sum_mn_name(nuD2uxb(:,1),idiag_nuD2uxbxm)
             call sum_mn_name(nuD2uxb(:,2),idiag_nuD2uxbym)
@@ -1537,9 +1509,9 @@ module Viscosity
       if (l1davgfirst) then
         if (idiag_fviscmz/=0) &
             call xysum_mn_name_z(-2.*p%rho*nu*( &
-                p%uu(:,1)*p%sij(:,1,3)+ &
-                p%uu(:,2)*p%sij(:,2,3)+ &
-                p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
+            p%uu(:,1)*p%sij(:,1,3)+ &
+            p%uu(:,2)*p%sij(:,2,3)+ &
+            p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
       endif
 !
 !  2D-averages.
