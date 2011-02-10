@@ -164,6 +164,7 @@ module Solid_Cells
 !  Prepare the solid geometry
 !
       call find_solid_cell_boundaries(f)
+      call mirror_points_available
       call calculate_shift_matrix
 !
 !
@@ -914,6 +915,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
   endsubroutine rprint_solid_cells
 !***********************************************************************
     subroutine update_solid_cells(f)
+use mpicomm
 !
 !  Set the boundary values of the solid area such that we get a
 !  correct fluid-solid interface.
@@ -993,9 +995,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
+          iobj=ba(i,j,k,4)
           bax=(ba(i,j,k,1) /= 0).and.(ba(i,j,k,1)/=9).and.(ba(i,j,k,1)/=10)
           bay=(ba(i,j,k,2) /= 0).and.(ba(i,j,k,2)/=9).and.(ba(i,j,k,2)/=10)
-          if (form=='sphere') then
+          if (objects(iobj)%form=='sphere') then
             baz=(ba(i,j,k,3) /= 0).and.(ba(i,j,k,3)/=9).and.(ba(i,j,k,3)/=10)
           else
             baz=.false.
@@ -1009,7 +1012,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find x, y and z values of mirror point
 !
-            iobj=ba(i,j,k,4)
             x_obj=objects(iobj)%x(1)
             y_obj=objects(iobj)%x(2)
             z_obj=objects(iobj)%x(3)
@@ -1038,27 +1040,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (xmirror>xyz1(1) .and. lperi(1)) xmirror=xmirror-Lxyz(1)
               if (ymirror>xyz1(2) .and. lperi(2)) ymirror=ymirror-Lxyz(2)
               if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
-             endif
+            endif
 !
 !  Check if we will use the old or the new interpolation method
 !
-             if (objects(iobj)%form=='sphere' .or. &
+             if (form=='sphere' .or. &
                  .not. lclose_quad_rad_inter) then
                lnew_interpolation_method=.true.
              else
                lnew_interpolation_method=.false.
              endif
-!
-!  Check that we are indeed inside the solid geometry
-!
-            if (r_point>r_obj) then
-              print*,'i,j,k=',i,j,k
-              print*,'x(i),x_obj=',x(i),x_obj
-              print*,'y(j),y_obj=',y(j),y_obj
-              print*,'z(k),z_obj=',z(k),z_obj
-              print*,'r_point,r_new,r_obj=',r_point,r_new,r_obj
-              call fatal_error('update_solid_cells:','r_point>r_obj')
-            endif
 !
 !  Find i, j and k indeces for points to be used during interpolation
 !
@@ -1097,29 +1088,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               upper_k=k
             endif
 !
-!  Issue with domain borders: A mirror point can be outside a
-!  processor's local domain (including ghost points). Some sort
-!  communication has to be implemented!
-!
-            if (lower_i == 0 .or. upper_i == 0) then
-              call fatal_error('update_solid_cells:','lower_i==0 or upper_i==0')
-            endif
-            if (lower_j == 0 .or. upper_j == 0) then
-              call fatal_error('update_solid_cells:','lower_j==0 or upper_j==0')
-            endif
-            if (form=='sphere') then
-              if (lower_k == 0 .or. upper_k == 0) then
-                call fatal_error('update_solid_cells:','lower_k==0 or upper_k==0')
-              endif
-            endif
-!
 !  First we use interpolations to find the value of the mirror point.
 !  Then we use the interpolated value to find the value of the ghost point
 !  by empoying either Dirichlet or Neuman boundary conditions.
 !
-            if (objects(iobj)%form=='cylinder') then
+            if (form=='cylinder') then
               ndims=2
-            elseif (objects(iobj)%form=='sphere') then
+            elseif (form=='sphere') then
               ndims=3
             endif
             if (lnew_interpolation_method) then
@@ -1177,6 +1152,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 zind=k-ba_shift(i,j,k,idir)
               else
                 print*,'No such idir!...exiting!'
+                ! kragset: Probably not good to call fatal_error here:
                 call fatal_error('update_solid_cells','No such idir!')
               endif
 !
@@ -2704,6 +2680,149 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       endif
 !
     endsubroutine find_solid_cell_boundaries
+!***********************************************************************
+    subroutine mirror_points_available
+!
+!  Test if the mirror point is available for the current processor. Sometimes
+!  it happens that a mirror point is located beyond the ghost points of 
+!  the domain, up to 6 grid spacings away from this solid cell ghost point
+!  that will be set according to the mirror point. For now, the program
+!  simply aborts when this happens - but it should be possible to fix.
+!
+!  Use same method as in subroutine update_solid_cells so that tests and
+!  warnings can be removed from there.
+!
+!  10-feb-2011/kragset: coded
+!
+      use mpicomm
+!
+      integer :: i,j,k,iobj
+      real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
+      real :: xmirror, ymirror, zmirror
+      integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
+      integer :: lower_k, upper_k
+      logical :: bax, bay, baz
+      character(len=10) :: form
+      logical :: stop_it_now=.false.
+!
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+          iobj=ba(i,j,k,4)
+          form=objects(iobj)%form
+          bax=(ba(i,j,k,1) /= 0).and.(ba(i,j,k,1)/=9).and.(ba(i,j,k,1)/=10)
+          bay=(ba(i,j,k,2) /= 0).and.(ba(i,j,k,2)/=9).and.(ba(i,j,k,2)/=10)
+          if (form=='sphere') then
+            baz=(ba(i,j,k,3) /= 0).and.(ba(i,j,k,3)/=9).and.(ba(i,j,k,3)/=10)
+          else
+            baz=.false.
+          endif
+!
+!  Check if we are in a point which must be interpolated, i.e. we are inside
+!  a solid geometry AND we are not more than three grid points from the
+!  closest solid-fluid interface
+!
+          if (bax.or.bay.or.baz) then
+!
+!  Find x, y and z values of mirror point
+!
+            x_obj=objects(iobj)%x(1)
+            y_obj=objects(iobj)%x(2)
+            z_obj=objects(iobj)%x(3)
+            r_obj=objects(iobj)%r
+            if (form=='cylinder') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2)
+              r_new=r_obj+(r_obj-r_point)
+              sin_theta=(y(j)-y_obj)/r_point
+              cos_theta=(x(i)-x_obj)/r_point
+              xmirror=cos_theta*r_new+x_obj
+              ymirror=sin_theta*r_new+y_obj
+              zmirror=z(k)
+            elseif (form=='sphere') then
+              r_point=sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+              r_new=r_obj+(r_obj-r_point)
+              xmirror=(x(i)-x_obj)*r_new/r_point+x_obj
+              ymirror=(y(j)-y_obj)*r_new/r_point+y_obj
+              zmirror=(z(k)-z_obj)*r_new/r_point+z_obj
+!
+! Check if mirror point is inside domain
+!
+              if (xmirror<xyz0(1) .and. lperi(1)) xmirror=xmirror+Lxyz(1)
+              if (ymirror<xyz0(2) .and. lperi(2)) ymirror=ymirror+Lxyz(2)
+              if (zmirror<xyz0(3) .and. lperi(3)) zmirror=zmirror+Lxyz(3)
+              if (xmirror>xyz1(1) .and. lperi(1)) xmirror=xmirror-Lxyz(1)
+              if (ymirror>xyz1(2) .and. lperi(2)) ymirror=ymirror-Lxyz(2)
+              if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
+             endif
+!
+!  Check that we are indeed inside the solid geometry
+!
+            if (r_point>r_obj) then
+              stop_it_now=.true.
+            endif
+!
+!  Find i, j and k indeces for points to be used during interpolation
+!
+            lower_i=0
+            upper_i=0
+            do ii=1,mx
+              if (x(ii)>xmirror) then
+                lower_i=ii-1
+                upper_i=ii
+                exit
+              endif
+            enddo
+!
+            lower_j=0
+            upper_j=0
+            do jj=1,my
+              if (y(jj)>ymirror) then
+                lower_j=jj-1
+                upper_j=jj
+                exit
+              endif
+            enddo
+!
+            if (form=='sphere') then
+              lower_k=0
+              upper_k=0
+              do kk=1,mz
+                if (z(kk)>zmirror) then
+                  lower_k=kk-1
+                  upper_k=kk
+                  exit
+                endif
+              enddo
+            else
+              lower_k=k
+              upper_k=k
+            endif
+!
+!  Issue with domain borders: A mirror point can be outside a
+!  processor's local domain (including ghost points). Some sort
+!  communication has to be implemented! Until then, choose a different
+!  configuration of cpu's
+!
+            if (lower_i == 0 .or. upper_i == 0) then
+              stop_it_now=.true.
+            endif
+            if (lower_j == 0 .or. upper_j == 0) then
+              stop_it_now=.true.
+            endif
+            if (form=='sphere') then
+              if (lower_k == 0 .or. upper_k == 0) then
+              stop_it_now=.true.
+              endif
+            endif
+          end if
+        end do
+      end do
+    end do
+!
+! Stop if stop_it_now is true on any processor.
+!
+    call stop_it_if_any(stop_it_now,'In mirror_points_available')
+    endsubroutine mirror_points_available
 !***********************************************************************
     subroutine calculate_shift_matrix
 !
