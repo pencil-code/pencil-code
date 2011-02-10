@@ -359,7 +359,6 @@ module InitialCondition
           f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3)
         endif
-        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
 !
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
@@ -373,7 +372,6 @@ module InitialCondition
           f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3)
         endif
-        if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
 !
 
       if (lroot) print*, 'local:Air temperature, K', TT
@@ -452,12 +450,29 @@ module InitialCondition
 ! end of loot do iter=1,2
          enddo
 !
+         sum_Y=0.
+           do k=1,nchemspec
+             if (ichemspec(k)/=ichemspec(index_N2)) &
+               sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+           enddo
+             f(:,:,:,ichemspec(index_N2))=1.-sum_Y
+             air_mass_ar=0.
+           do k=1,nchemspec
+             air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
+                 /species_constants(k,imass)
+           enddo
+             air_mass_ar=1./air_mass_ar
+!
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
          else
            f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs) &
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
+         endif
+!
+         if (nxgrid>1) then
+            f(:,:,:,iux)=f(:,:,:,iux)+init_ux
          endif
 !       
          if (lroot) print*, ' Saturation Pressure, Pa   ', maxval(psat)
