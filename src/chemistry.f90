@@ -4,8 +4,7 @@
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxiliary variables added by this module
-!
+! variables and auxiliary variables added by this 
 ! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 1
@@ -67,7 +66,6 @@ module Chemistry
 !
 !  parameters related to chemical reactions, diffusion and advection
 !
-     logical, allocatable, dimension(:) :: back
      logical :: lreactions=.true.
      logical :: ladvection=.true.
      logical :: ldiffusion=.true.
@@ -92,6 +90,7 @@ module Chemistry
      integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
      real,    allocatable, dimension(:,:) :: kreactions_z
      real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
+     logical, allocatable, dimension(:) :: back
      character (len=30),allocatable, dimension(:) :: reaction_name
      logical :: lT_tanh=.false.
      logical :: ldamp_zone_for_NSCBC=.false.
@@ -4206,13 +4205,13 @@ print*,'NATA'
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,nreactions), intent(out) :: vreact_p, vreact_m
-      real, dimension (nx):: mix_conc
 !
       type (pencil_case) :: p
       real, dimension (nx) :: dSR=0.,dHRT=0.,Kp,Kc
       real, dimension (nx) :: prod1,prod2
       real, dimension (nx) :: kf=0., kr=0.
       real, dimension (nx) :: rho_cgs,p_atm
+      real, dimension (nx) :: mix_conc
       integer :: k , reac, i
       real  :: sum_tmp=0., ddd
       real  :: Rcal, Rcal1, lnRgas, l10, lnp_atm
@@ -4466,7 +4465,7 @@ print*,'NATA'
 !
       Rcal=Rgas_unit_sys/4.14*1e-7
 !
-!  Find indecees for oxygen and propane
+!  Find indeces for oxygen and propane
 !
       call find_species_index('O2',i_O2,ichem_O2,lO2)
       call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
@@ -4626,13 +4625,14 @@ print*,'NATA'
 !      beta=0.
 !      xdot_2=0.
 !      do j=1,nreactions
+!        if (back(j)) then
 !        do k=1,nchemspec
 !          jacd(:,j,k)=Sijm(k,j)*vreactions_m(:,j)*molm(:,k)/(eps+f(l1:l2,m,n,ichemspec(k)))*unit_time
 !          xdot_1(:,j,k)=Sijp(k,j)*vreactions_p(:,j)-Sijm(k,j)*vreactions_m(:,j)
 !        enddo
 !
 !        do i =1, nx
-!          if (maxval(abs(jacd(i,j,:))) >= 10./dt) then
+!          if (maxval(abs(jacd(i,j,:))) >= 1./dt) then
 !            beta(i,j)=1.
 !          else
 !            do k=1,nchemspec
@@ -4640,8 +4640,9 @@ print*,'NATA'
 !            enddo
 !          endif
 !        enddo
-!        if (maxval(beta(:,j)) == 1.) &
+!        if (maxval(beta(:,j)) /= 0.) &
 !              print*, 'PE reaction for QSS species:', j
+!        endif
 !      enddo
 !
 !      a=vreactions/dt
@@ -6214,6 +6215,22 @@ print*,'NATA'
 !
     endsubroutine FlameMaster_ini
 !***********************************************************************
+   subroutine get_reac_rate(f,p)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,nchemspec) :: ydot
+      integer :: k
+      type (pencil_case) :: p
+!
+      do k = 1,nchemspec
+        ydot(:,k) = p%DYDt_reac(:,k)*p%rho(:)
+      enddo 
+!
+      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))=   &
+          f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
+!
+    endsubroutine get_reac_rate
+!***********************************************************************
   subroutine chemistry_clean_up()
 !
   if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
@@ -6238,15 +6255,5 @@ print*,'NATA'
   if (allocated(back))           deallocate(back)
 !
   endsubroutine chemistry_clean_up
-!***********************************************************************
-   subroutine get_reac_rate(f,p)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))=   &
-          f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+p%DYDt_reac
-!
-    endsubroutine get_reac_rate
 !***********************************************************************
 endmodule Chemistry
