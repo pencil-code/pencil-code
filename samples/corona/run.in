@@ -8,8 +8,7 @@
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
   dsnap=30. 
   !
-  bcz = 'g:s' ,'nil:s' ,'a','set:a2','set:a2','fB:pwd','fB:nil','a2:nil'
-  force_lower_bound='uxy_convection'
+  bcz = 's:a' ,'s:a' ,'a','set:a2','set:a2','pfe','nil','nil'
   fbcz1 = 0.,0.,0.,16.796295,0.78135928
 ! lpencil_check=T
 /
@@ -41,6 +40,8 @@
   allp=1.5     !   and decay 
   cool_rtv=1.  ! Radiative loss
   bmdi = 0.5   ! Refresh magnetogram
+!
+  lgranulation=T
 /
 &shock_run_pars
   lforce_periodic_shockviscosity=T
