@@ -14,7 +14,7 @@ module WENO_transport
 !
   implicit none
 !
-  private 
+  private
 !
   public :: weno_transp
 !
@@ -54,7 +54,6 @@ module WENO_transport
 !
       real, allocatable, dimension(:) :: vsig, dq, fl, fr
       integer :: i, mx, my, mz, nghost
-      logical :: lflag
 !
 !  Possible to multiply transported variable by another variables, e.g. to
 !  transport the momentum rho*u.
@@ -87,7 +86,7 @@ module WENO_transport
       vsig=max( &
           cshift(vsig,-3), cshift(vsig,-2), cshift(vsig,-1), cshift(vsig, 0), &
           cshift(vsig,+1), cshift(vsig,+2), cshift(vsig,+3))
-!      
+!
       do i=-nw-1+1,nw-1
         if (iq1<0) then
           df(i+1,:)=vsig                   *cshift(fq(:,m,n,iq),i)
@@ -95,13 +94,13 @@ module WENO_transport
         else
           df(i+1,:)=vsig                   *cshift(fq(:,m,n,iq)*fq(:,m,n,iq1),i)
           f (i+1,:)=cshift(fq(:,m,n,iux),i)*cshift(fq(:,m,n,iq)*fq(:,m,n,iq1),i)
-        endif 
+        endif
       enddo
 !
       call weno5_1d(fl)
-!   
+!
 !  Time derivative for x-transport.
-!      
+!
       fr = cshift(fl,1)
       dq = -(fl - fr) * dx_1
 !
@@ -123,7 +122,7 @@ module WENO_transport
           f (i+1,:)=fq(:,m+i,n,iuy)*fq(:,m+i,n,iq)*fq(:,m+i,n,iq1)
         endif
       enddo
-!      
+!
       call weno5_1d(fl)
 !
 !  Right fluxes.
@@ -139,9 +138,9 @@ module WENO_transport
       enddo
 !
       call weno5_1d(fr)
-!   
+!
 !  Time derivative for y-transport.
-!      
+!
       dq = dq - (fl - fr) * dy_1(m)
 !
 !  WENO transport in z-direction.
@@ -160,7 +159,7 @@ module WENO_transport
           f (i+1,:)=fq(:,m,n+i,iuz)*fq(:,m,n+i,iq)*fq(:,m,n+i,iq1)
         endif
       enddo
-!      
+!
 !      dl_1=dz_1(n)
 !      call weno5_1d(dq,dl_1)
 !
@@ -173,11 +172,11 @@ module WENO_transport
 !
       if (allocated(vsig)) deallocate(vsig)
       if (allocated(dq))   deallocate(dq)
-      if (allocated(fl))   deallocate(fl) 
+      if (allocated(fl))   deallocate(fl)
       if (allocated(fr))   deallocate(fr)
       if (allocated(f))    deallocate(f)
       if (allocated(df))   deallocate(df)
-!      
+!
     endsubroutine weno5
 !***********************************************************************
     subroutine weno5_1d(flux)
@@ -194,14 +193,13 @@ module WENO_transport
       real, dimension(size(flux)) :: wh1, wh2, wh3, wh
       real, dimension(size(flux)) :: fh1, fh2, fh3
       real :: g1, g2, g3
-      integer :: idx
 !
       f(:,:) = 0.5 * (f(:,:) + df(:,:))
-!      
+!
       b1(:) = &
           13.0/12.0 * (f(-2,:) - 2.0*f(-1,:) +     f(0,:))**2 + &
           1.0 / 4.0 * (f(-2,:) - 4.0*f(-1,:) + 3.0*f(0,:))**2
-!         
+!
       b2(:) = &
           13.0/12.0 * (f(-1,:) - 2.0*f(0,:) + f(+1,:))**2 + &
           1.0 / 4.0 * (f(-1,:)              - f(+1,:))**2
@@ -209,7 +207,7 @@ module WENO_transport
       b3(:) = &
           13.0/12.0 * (    f(0,:) - 2.0*f(+1,:) + f(+2,:))**2 + &
           1.0 / 4.0 * (3.0*f(0,:) - 4.0*f(+1,:) + f(+2,:))**2
-!      
+!
       g1 = 0.1
       g2 = 0.6
       g3 = 0.3
@@ -226,15 +224,15 @@ module WENO_transport
       fh1(:) =  1.0/3.0*f(-2,:) - 7.0/6.0*f(-1,:) + 11.0/6.0*f( 0,:)
       fh2(:) = -1.0/6.0*f(-1,:) + 5.0/6.0*f( 0,:) + 1.0 /3.0*f(+1,:)
       fh3(:) =  1.0/3.0*f( 0,:) + 5.0/6.0*f(+1,:) - 1.0 /6.0*f(+2,:)
-!      
+!
       flux = wh1*fh1 + wh2*fh2 + wh3*fh3
-!      
+!
       f = f - df
-!      
+!
       b1(:) = &
           13.0/12.0 * (f(+3,:) - 2.0*f(+2,:) +     f(+1,:))**2 + &
           1.0 / 4.0 * (f(+3,:) - 4.0*f(+2,:) + 3.0*f(+1,:))**2
-!      
+!
       b2(:) = &
           13.0/12.0 * (f(+2,:) - 2.0*f(+1,:) + f(0,:))**2 + &
           1.0 / 4.0 * (f(+2,:)               - f(0,:))**2
@@ -242,16 +240,16 @@ module WENO_transport
       b3(:) = &
           13.0/12.0 * (    f(+1,:) - 2.0*f(0,:) + f(-1,:))**2 +  &
           1.0 / 4.0 * (3.0*f(+1,:) - 4.0*f(0,:) + f(-1,:))**2
-!      
+!
       wh1 = g1/(WENO_EPS + b1)**WENO_POW
       wh2 = g2/(WENO_EPS + b2)**WENO_POW
       wh3 = g3/(WENO_EPS + b3)**WENO_POW
-!    
+!
       wh  = 1.0/(wh1 + wh2 + wh3)
       wh1 = wh1*wh
       wh2 = wh2*wh
       wh3 = wh3*wh
-!      
+!
       fh1(:) =  1.0/3.0*f(+3,:) - 7.0/6.0*f(+2,:) + 11.0/6.0*f(+1,:)
       fh2(:) = -1.0/6.0*f(+2,:) + 5.0/6.0*f(+1,:) + 1.0/ 3.0*f( 0,:)
       fh3(:) =  1.0/3.0*f(+1,:) + 5.0/6.0*f( 0,:) - 1.0/ 6.0*f(-1,:)
