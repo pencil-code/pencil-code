@@ -857,8 +857,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           call mpireduce_sum(c_dragz_p,c_dragz_p_all,nobjects)
         endif
         if (idiag_Nusselt /= 0) call mpireduce_sum(Nusselt,Nusselt_all,nobjects)
-        if () then
-        endif
 !
         if (lroot) then
           refrho0 = rhosum_all / irhocount_all
