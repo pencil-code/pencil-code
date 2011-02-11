@@ -99,7 +99,10 @@ module Entropy
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      logical :: lstarting
+      logical, intent (in) :: lstarting
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
 !
       call select_eos_variable('eth',ieth)
 !
@@ -243,7 +246,6 @@ module Entropy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0
-      integer :: j
 !
       intent(inout) :: f,p
       intent(out) :: df
@@ -466,6 +468,8 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
 !
 !  Loop over slices
 !
