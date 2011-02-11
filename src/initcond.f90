@@ -4394,7 +4394,6 @@ module Initcond
 !
 !  Deallocate arrays.
 !
-      write (*,*) 'cleaning up mdi_init'
       if (allocated(kx)) deallocate(kx)
       if (allocated(ky)) deallocate(ky)
       if (allocated(k2)) deallocate(k2)

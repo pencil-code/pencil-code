@@ -192,9 +192,11 @@ module Special
       flux_delim=huge1
     endif
 !
-    write (*,*) "SPITZER HEATCONDCTION"
-    write (*,*) "K _SI,K_pe",Kpa_SI,Kpa_pen
-    write (*,*) "Fd_SI,FD_pe",flux_delim_SI,flux_delim
+    if (lroot) then
+      write (*,*) "SPITZER HEATCONDCTION"
+      write (*,*) "K _SI,K_pe",Kpa_SI,Kpa_pen
+      write (*,*) "Fd_SI,FD_pe",flux_delim_SI,flux_delim
+    endif
 !
   endsubroutine initialize_special
 !***********************************************************************
