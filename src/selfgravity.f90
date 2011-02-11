@@ -28,6 +28,8 @@ module Selfgravity
 !
   include 'selfgravity.h'
 !
+!  Init Parameters
+!
   real, target :: rhs_poisson_const=1.0
   real, target :: tstart_selfgrav=0.0
   real :: gravitational_const=0.0
@@ -40,9 +42,18 @@ module Selfgravity
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa
 !
+!  Run Parameters
+!
+  logical :: ljeans_stiffening = .false.
+  integer :: njeans = 8
+  real :: gamma = 5. / 3.
+!
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa
+      lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa, &
+      ljeans_stiffening, njeans, gamma
+!
+!  Diagnostic Indices
 !
   integer :: idiag_potselfm=0, idiag_potself2m=0, idiag_potselfmxy=0
   integer :: idiag_potselfmx=0, idiag_potselfmy=0, idiag_potselfmz=0
@@ -225,6 +236,13 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       lpenc_requested(i_gpotself)=.true.
+!
+      if (ljeans_stiffening) then
+        lpenc_requested(i_fpres)=.true.
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_rho)=.true.
+      endif
+!
       if (idiag_potselfm/=0 .or. idiag_potself2m/=0.0 .or. &
           idiag_potselfmx/=0 .or. idiag_potselfmy/=0 .or. idiag_potselfmz/=0) &
           lpenc_diagnos(i_potself)=.true.
@@ -263,11 +281,17 @@ module Selfgravity
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  15-may-06/anders+jeff: coded
+!  03-feb-11/ccyang: add Jeans stiffening
 !
       use Sub
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
+      logical :: first=.true.
+      real, save :: gm1, c
+      real :: a, a1
 !
       intent(inout) :: f, p
 !
@@ -275,6 +299,25 @@ module Selfgravity
       if (lpencil(i_gpotself)) then
         call grad(f,ipotself,p%gpotself)
         if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
+      endif
+!
+!  Apply Jeans stiffening to the EOS
+!
+      if (ljeans_stiffening) then
+        if (headtt) then
+          print*, 'calc_pencils_selfgravity: stiffening is applied to the EOS with '
+          print*, 'calc_pencils_selfgravity: ', njeans, ' points per Jeans length and adiabatic index ', gamma
+        endif
+        if (first) then
+          gm1 = gamma - 1.
+          if (dimensionality == 2) then
+            c = gravitational_const * real(njeans) * dxmax
+          else
+            c = gravitational_const * (real(njeans) * dxmax)**2 / pi
+          endif
+          first = .false.
+        endif
+        p%fpres = p%fpres * spread(1. + gamma * (c * p%rho / p%cs2)**gm1, 2, 3)
       endif
 !
     endsubroutine calc_pencils_selfgravity
