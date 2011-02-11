@@ -153,11 +153,6 @@ module Special
 !
         if (lroot .or. lgran_proc) then
           call setdrparams()
-          if (.not. allocated(Ux)) then
-            allocate(Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
-            if (alloc_err>0) call fatal_error('initialize_special', &
-                'could not allocate Ux/Uy')
-          endif
         endif
       endif
 !
@@ -1856,6 +1851,10 @@ module Special
 !***********************************************************************
     subroutine setdrparams()
 !
+      Use Mpicomm, only: stop_it_if_any
+!
+      integer :: alloc_err_sum
+!
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain,  x-position, y-position,
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
@@ -1935,6 +1934,23 @@ module Special
         tsnap_uu = (isnap+1) * dsnap
 !
       endif
+!
+      alloc_err=0
+      if (.not. allocated (Ux)) allocate(Ux(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = abs(alloc_err)
+      if (.not. allocated (Uy)) allocate(Uy(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (.not. allocated(w))  allocate (w(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (.not. allocated(vx))  allocate (vx(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (.not. allocated(vy))  allocate (vy(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (.not. allocated(avoidarr)) &
+          allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (alloc_err_sum > 0) call stop_it_if_any(.true., &
+          'setdrparams: Could not allocate memory for the driver')
 !
     endsubroutine setdrparams
 !***********************************************************************
@@ -2133,13 +2149,7 @@ module Special
       allocate(thirdlev)
       if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
-!
-    if (.not. allocated (Ux)) then
-      allocate (Ux(nxgrid,nygrid), Uy(nxgrid,nygrid), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('multi_drive3', &
-          'Could not allocate memory Ux/Uy', .true.)
-    endif
-!
+ !
     ! Initialize velocity field
     Ux = 0.0
     Uy = 0.0
@@ -2268,23 +2278,6 @@ module Special
 ! Reset arrays at the beginning of each call to the levels.
 !
 ! 12-aug-10/bing: coded
-!
-      Use Mpicomm, only: stop_it_if_any
-!
-      integer :: alloc_err
-!
-      if (.not. allocated(w))  allocate (w(nxgrid,nygrid),stat=alloc_err)
-      if (alloc_err > 0) &
-          call stop_it_if_any(.true., 'resetarr: Could not allocate memory w')
-      if (.not. allocated(vx))  allocate (vx(nxgrid,nygrid),stat=alloc_err)
-      if (alloc_err > 0) &
-          call stop_it_if_any(.true., 'resetarr: Could not allocate memory vx')
-      if (.not. allocated(vy))  allocate (vy(nxgrid,nygrid),stat=alloc_err)
-      if (alloc_err > 0) &
-          call stop_it_if_any(.true., 'resetarr: Could not allocate memory vy')
-      if (.not. allocated(avoidarr)) allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
-      if (alloc_err > 0) &
-          call stop_it_if_any(.true., 'resetarr: Could not allocate memory avoidarr')
 !
       w(:,:) = 0.0
       vx(:,:) = 0.0
