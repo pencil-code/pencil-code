@@ -213,6 +213,45 @@ module Chemistry
   integer :: idiag_dY18m=0        ! DIAG_DOC: $\left<dY_18\right>$
   integer :: idiag_dY19m=0        ! DIAG_DOC: $\left<dY_19\right>$
 !
+  integer :: idiag_Y1max=0        ! DIAG_DOC: $\left<Y_1\right>$
+  integer :: idiag_Y2max=0        ! DIAG_DOC: $\left<Y_2\right>$
+  integer :: idiag_Y3max=0        ! DIAG_DOC: $\left<Y_3\right>$
+  integer :: idiag_Y4max=0        ! DIAG_DOC: $\left<Y_4\right>$
+  integer :: idiag_Y5max=0        ! DIAG_DOC: $\left<Y_5\right>$
+  integer :: idiag_Y6max=0        ! DIAG_DOC: $\left<Y_6\right>$
+  integer :: idiag_Y7max=0        ! DIAG_DOC: $\left<Y_7\right>$
+  integer :: idiag_Y8max=0        ! DIAG_DOC: $\left<Y_8\right>$
+  integer :: idiag_Y9max=0        ! DIAG_DOC: $\left<Y_9\right>$
+  integer :: idiag_Y10max=0        ! DIAG_DOC: $\left<Y_10\right>$
+  integer :: idiag_Y11max=0        ! DIAG_DOC: $\left<Y_11\right>$
+  integer :: idiag_Y12max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y13max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y14max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y15max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y16max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y17max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y18max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_Y19max=0        ! DIAG_DOC: $\left<Y_12\right>$
+  integer :: idiag_dY1max=0        ! DIAG_DOC: $\left<dY_1\right>$
+  integer :: idiag_dY2max=0        ! DIAG_DOC: $\left<dY_2\right>$
+  integer :: idiag_dY3max=0        ! DIAG_DOC: $\left<dY_3\right>$
+  integer :: idiag_dY4max=0        ! DIAG_DOC: $\left<dY_4\right>$
+  integer :: idiag_dY5max=0        ! DIAG_DOC: $\left<dY_5\right>$
+  integer :: idiag_dY6max=0        ! DIAG_DOC: $\left<dY_6\right>$
+  integer :: idiag_dY7max=0        ! DIAG_DOC: $\left<dY_7\right>$
+  integer :: idiag_dY8max=0        ! DIAG_DOC: $\left<dY_8\right>$
+  integer :: idiag_dY9max=0        ! DIAG_DOC: $\left<dY_9\right>$
+  integer :: idiag_dY10max=0        ! DIAG_DOC: $\left<dY_10\right>$
+  integer :: idiag_dY11max=0        ! DIAG_DOC: $\left<dY_11\right>$
+  integer :: idiag_dY12max=0        ! DIAG_DOC: $\left<dY_12\right>$
+  integer :: idiag_dY13max=0        ! DIAG_DOC: $\left<dY_13\right>$
+  integer :: idiag_dY14max=0        ! DIAG_DOC: $\left<dY_14\right>$
+  integer :: idiag_dY15max=0        ! DIAG_DOC: $\left<dY_15\right>$
+  integer :: idiag_dY16max=0        ! DIAG_DOC: $\left<dY_16\right>$
+  integer :: idiag_dY17max=0        ! DIAG_DOC: $\left<dY_17\right>$
+  integer :: idiag_dY18max=0        ! DIAG_DOC: $\left<dY_18\right>$
+  integer :: idiag_dY19max=0        ! DIAG_DOC: $\left<dY_19\right>$
+!
   integer :: idiag_Y1mz=0        ! DIAG_DOC: $\left<Y_1\right>_{xy}(z)$
   integer :: idiag_Y2mz=0        ! DIAG_DOC: $\left<Y_2\right>_{xy}(z)$
   integer :: idiag_Y3mz=0        ! DIAG_DOC: $\left<Y_3\right>_{xy}(z)$
@@ -3004,6 +3043,26 @@ print*,'NATA'
         if (idiag_Y18m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i18)),idiag_Y18m)
         if (idiag_Y19m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i19)),idiag_Y19m)
 !
+        if (idiag_Y1max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1max)
+        if (idiag_Y2max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2max)
+        if (idiag_Y3max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i3)),idiag_Y3max)
+        if (idiag_Y4max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i4)),idiag_Y4max)
+        if (idiag_Y5max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i5)),idiag_Y5max)
+        if (idiag_Y6max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i6)),idiag_Y6max)
+        if (idiag_Y7max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7max)
+        if (idiag_Y8max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8max)
+        if (idiag_Y9max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9max)
+        if (idiag_Y10max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i10)),idiag_Y10max)
+        if (idiag_Y11max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i11)),idiag_Y11max)
+        if (idiag_Y12max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i12)),idiag_Y12max)
+        if (idiag_Y13max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i13)),idiag_Y13max)
+        if (idiag_Y14max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i14)),idiag_Y14max)
+        if (idiag_Y15max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i15)),idiag_Y15max)
+        if (idiag_Y16max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i16)),idiag_Y16max)
+        if (idiag_Y17max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i17)),idiag_Y17max)
+        if (idiag_Y18max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i18)),idiag_Y18max)
+        if (idiag_Y19max/=0) call max_mn_name(f(l1:l2,m,n,ichemspec(i19)),idiag_Y19max)
+!
         if (idiag_cpfull/=0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
         if (idiag_cvfull/=0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
 !
@@ -3149,11 +3208,21 @@ print*,'NATA'
         idiag_Y9m=0; idiag_Y10m=0; idiag_Y11m=0; idiag_Y12m=0
         idiag_Y13m=0; idiag_Y14m=0; idiag_Y15m=0; idiag_Y16m=0
         idiag_Y17m=0; idiag_Y18m=0; idiag_Y19m=0
+        idiag_Y1max=0; idiag_Y2max=0; idiag_Y3max=0; idiag_Y4max=0
+        idiag_Y5max=0; idiag_Y6max=0; idiag_Y7max=0; idiag_Y8max=0
+        idiag_Y9max=0; idiag_Y10max=0; idiag_Y11max=0; idiag_Y12max=0
+        idiag_Y13max=0; idiag_Y14max=0; idiag_Y15max=0; idiag_Y16max=0
+        idiag_Y17max=0; idiag_Y18max=0; idiag_Y19max=0
         idiag_dY1m=0; idiag_dY2m=0; idiag_dY3m=0; idiag_dY4m=0
         idiag_dY5m=0; idiag_dY6m=0; idiag_dY7m=0; idiag_dY8m=0
         idiag_dY9m=0; idiag_dY10m=0; idiag_dY11m=0; idiag_dY12m=0
         idiag_dY13m=0; idiag_dY14m=0; idiag_dY15m=0; idiag_dY16m=0
         idiag_dY17m=0; idiag_dY18m=0; idiag_dY19m=0
+        idiag_dY1max=0; idiag_dY2max=0; idiag_dY3max=0; idiag_dY4max=0
+        idiag_dY5max=0; idiag_dY6max=0; idiag_dY7max=0; idiag_dY8max=0
+        idiag_dY9max=0; idiag_dY10max=0; idiag_dY11max=0; idiag_dY12max=0
+        idiag_dY13max=0; idiag_dY14max=0; idiag_dY15max=0; idiag_dY16max=0
+        idiag_dY17max=0; idiag_dY18max=0; idiag_dY19max=0
         idiag_h1m=0; idiag_h2m=0; idiag_h3m=0; idiag_h4m=0;
         idiag_h5m=0; idiag_h6m=0; idiag_h7m=0; idiag_h8m=0;
         idiag_h9m=0; idiag_h10m=0; idiag_h11m=0; idiag_h12m=0;
@@ -3205,6 +3274,25 @@ print*,'NATA'
         call parse_name(iname,cname(iname),cform(iname),'Y17m',idiag_Y17m)
         call parse_name(iname,cname(iname),cform(iname),'Y18m',idiag_Y18m)
         call parse_name(iname,cname(iname),cform(iname),'Y19m',idiag_Y19m)
+        call parse_name(iname,cname(iname),cform(iname),'Y1max',idiag_Y1max)
+        call parse_name(iname,cname(iname),cform(iname),'Y2max',idiag_Y2max)
+        call parse_name(iname,cname(iname),cform(iname),'Y3max',idiag_Y3max)
+        call parse_name(iname,cname(iname),cform(iname),'Y4max',idiag_Y4max)
+        call parse_name(iname,cname(iname),cform(iname),'Y5max',idiag_Y5max)
+        call parse_name(iname,cname(iname),cform(iname),'Y6max',idiag_Y6max)
+        call parse_name(iname,cname(iname),cform(iname),'Y7max',idiag_Y7max)
+        call parse_name(iname,cname(iname),cform(iname),'Y8max',idiag_Y8max)
+        call parse_name(iname,cname(iname),cform(iname),'Y9max',idiag_Y9max)
+        call parse_name(iname,cname(iname),cform(iname),'Y10max',idiag_Y10max)
+        call parse_name(iname,cname(iname),cform(iname),'Y11max',idiag_Y11max)
+        call parse_name(iname,cname(iname),cform(iname),'Y12max',idiag_Y12max)
+        call parse_name(iname,cname(iname),cform(iname),'Y13max',idiag_Y13max)
+        call parse_name(iname,cname(iname),cform(iname),'Y14max',idiag_Y14max)
+        call parse_name(iname,cname(iname),cform(iname),'Y15max',idiag_Y15max)
+        call parse_name(iname,cname(iname),cform(iname),'Y16max',idiag_Y16max)
+        call parse_name(iname,cname(iname),cform(iname),'Y17max',idiag_Y17max)
+        call parse_name(iname,cname(iname),cform(iname),'Y18max',idiag_Y18max)
+        call parse_name(iname,cname(iname),cform(iname),'Y19max',idiag_Y19max)
         call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1m)
         call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2m)
         call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3m)
@@ -3224,6 +3312,25 @@ print*,'NATA'
         call parse_name(iname,cname(iname),cform(iname),'dY17m',idiag_dY17m)
         call parse_name(iname,cname(iname),cform(iname),'dY18m',idiag_dY18m)
         call parse_name(iname,cname(iname),cform(iname),'dY19m',idiag_dY19m)
+        call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1max)
+        call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2max)
+        call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3max)
+        call parse_name(iname,cname(iname),cform(iname),'dY4m',idiag_dY4max)
+        call parse_name(iname,cname(iname),cform(iname),'dY5m',idiag_dY5max)
+        call parse_name(iname,cname(iname),cform(iname),'dY6m',idiag_dY6max)
+        call parse_name(iname,cname(iname),cform(iname),'dY7m',idiag_dY7max)
+        call parse_name(iname,cname(iname),cform(iname),'dY8m',idiag_dY8max)
+        call parse_name(iname,cname(iname),cform(iname),'dY9m',idiag_dY9max)
+        call parse_name(iname,cname(iname),cform(iname),'dY10max',idiag_dY10max)
+        call parse_name(iname,cname(iname),cform(iname),'dY11max',idiag_dY11max)
+        call parse_name(iname,cname(iname),cform(iname),'dY12max',idiag_dY12max)
+        call parse_name(iname,cname(iname),cform(iname),'dY13max',idiag_dY13max)
+        call parse_name(iname,cname(iname),cform(iname),'dY14max',idiag_dY14max)
+        call parse_name(iname,cname(iname),cform(iname),'dY15max',idiag_dY15max)
+        call parse_name(iname,cname(iname),cform(iname),'dY16max',idiag_dY16max)
+        call parse_name(iname,cname(iname),cform(iname),'dY17max',idiag_dY17max)
+        call parse_name(iname,cname(iname),cform(iname),'dY18max',idiag_dY18max)
+        call parse_name(iname,cname(iname),cform(iname),'dY19max',idiag_dY19max)
         call parse_name(iname,cname(iname),cform(iname),'h1m',idiag_h1m)
         call parse_name(iname,cname(iname),cform(iname),'h2m',idiag_h2m)
         call parse_name(iname,cname(iname),cform(iname),'h3m',idiag_h3m)
@@ -4546,15 +4653,15 @@ print*,'NATA'
 !
 !  Calculation of the reaction term
 !
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics, only: sum_mn_name, max_mn_name
 !
       real :: alpha, eps
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-      real, dimension (nx,nchemspec) :: xdot,xdot_c,xdot_2
-      real, dimension (nx,mreactions) :: a, beta, tauc1
+      real, dimension (nx,nchemspec) :: xdot,xdes,xdot_c,xdot_2,jacd,beta
+      real, dimension (nx,mreactions) :: a, tauc1
       real, dimension (nx,mreactions,mreactions) :: b
-      real, dimension (nx,mreactions,nchemspec) :: jacd, xdot_1
+      real, dimension (nx,mreactions,nchemspec) :: xdot_1
       real, dimension (nx) :: rho1
       real, dimension (nx,nchemspec)  :: molm
       type (pencil_case) :: p
@@ -4613,12 +4720,15 @@ print*,'NATA'
 !  in the chemkin manual)
 !
       xdot=0.
+      xdes=0.
       do k=1,nchemspec
         do j=1,nreactions
           xdot(:,k)=xdot(:,k)-stoichio(k,j)*vreactions(:,j)*molm(:,k)
+          xdes(:,k)=xdes(:,k)-stoichio(k,j)*vreactions_m(:,j)*molm(:,k)
         enddo
       enddo
       p%DYDt_reac=xdot*unit_time
+      xdes=xdes*unit_time
 !
 !  Julien: Dynamic stiffness removal (UNDER CONSTRUCTION, do not remove).
 !
@@ -4627,21 +4737,21 @@ print*,'NATA'
 !      do j=1,nreactions
 !        if (back(j)) then
 !        do k=1,nchemspec
-!          jacd(:,j,k)=Sijm(k,j)*vreactions_m(:,j)*molm(:,k)/(eps+f(l1:l2,m,n,ichemspec(k)))*unit_time
+!          jacd(:,k)=xdes(:,k)/(eps+f(l1:l2,m,n,ichemspec(k)))
 !          xdot_1(:,j,k)=Sijp(k,j)*vreactions_p(:,j)-Sijm(k,j)*vreactions_m(:,j)
 !        enddo
 !
 !        do i =1, nx
-!          if (maxval(abs(jacd(i,j,:))) >= 1./dt) then
-!            beta(i,j)=1.
+!          if (maxval(abs(jacd(:,k))) >= 1./dt) then
+!            beta(:,k)=1.
 !          else
 !            do k=1,nchemspec
 !              xdot_2(i,k)=xdot_2(i,k)-stoichio(k,j)*vreactions(i,j)*molm(i,k)
 !            enddo
 !          endif
 !        enddo
-!        if (maxval(beta(:,j)) /= 0.) &
-!              print*, 'PE reaction for QSS species:', j
+!        if (maxval(beta(:,k)) /= 0.) &
+!              print*, 'QSS species:', k
 !        endif
 !      enddo
 !
@@ -4715,6 +4825,27 @@ print*,'NATA'
         if (idiag_dY17m/=0) call sum_mn_name(p%DYDt_reac(:,i17),idiag_dY17m)
         if (idiag_dY18m/=0) call sum_mn_name(p%DYDt_reac(:,i18),idiag_dY18m)
         if (idiag_dY19m/=0) call sum_mn_name(p%DYDt_reac(:,i19),idiag_dY19m)
+!
+        if (idiag_dY1max/=0) call max_mn_name(p%DYDt_reac(:,i1),idiag_dY1max)
+        if (idiag_dY2max/=0) call max_mn_name(p%DYDt_reac(:,i2),idiag_dY2max)
+        if (idiag_dY3max/=0) call max_mn_name(p%DYDt_reac(:,i3),idiag_dY3max)
+        if (idiag_dY4max/=0) call max_mn_name(p%DYDt_reac(:,i4),idiag_dY4max)
+        if (idiag_dY5max/=0) call max_mn_name(p%DYDt_reac(:,i5),idiag_dY5max)
+        if (idiag_dY6max/=0) call max_mn_name(p%DYDt_reac(:,i6),idiag_dY6max)
+        if (idiag_dY7max/=0) call max_mn_name(p%DYDt_reac(:,i7),idiag_dY7max)
+        if (idiag_dY8max/=0) call max_mn_name(p%DYDt_reac(:,i8),idiag_dY8max)
+        if (idiag_dY9max/=0) call max_mn_name(p%DYDt_reac(:,i9),idiag_dY9max)
+        if (idiag_dY10max/=0) call max_mn_name(p%DYDt_reac(:,i10),idiag_dY10max)
+        if (idiag_dY11max/=0) call max_mn_name(p%DYDt_reac(:,i11),idiag_dY11max)
+        if (idiag_dY12max/=0) call max_mn_name(p%DYDt_reac(:,i12),idiag_dY12max)
+        if (idiag_dY13max/=0) call max_mn_name(p%DYDt_reac(:,i13),idiag_dY13max)
+        if (idiag_dY14max/=0) call max_mn_name(p%DYDt_reac(:,i14),idiag_dY14max)
+        if (idiag_dY15max/=0) call max_mn_name(p%DYDt_reac(:,i15),idiag_dY15max)
+        if (idiag_dY16max/=0) call max_mn_name(p%DYDt_reac(:,i16),idiag_dY16max)
+        if (idiag_dY17max/=0) call max_mn_name(p%DYDt_reac(:,i17),idiag_dY17max)
+        if (idiag_dY18max/=0) call max_mn_name(p%DYDt_reac(:,i18),idiag_dY18max)
+        if (idiag_dY19max/=0) call max_mn_name(p%DYDt_reac(:,i19),idiag_dY19max)
+!
         if (idiag_h1m/=0) call sum_mn_name(p%H0_RT(:,i1)*Rgas*&
             p%TT(:)/species_constants(i1,imass),idiag_h1m)
         if (idiag_h2m/=0) call sum_mn_name(p%H0_RT(:,i2)*Rgas*&
