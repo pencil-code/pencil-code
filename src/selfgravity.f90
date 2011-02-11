@@ -104,7 +104,7 @@ module Selfgravity
 !  If gravitational constant was set, re-define rhs_poisson_const.
 !  else define the gravitational constant via rhs_poisson_const
 !
-      if (gravitational_const/=0.0) then 
+      if (gravitational_const/=0.0) then
         rhs_poisson_const=4*pi*gravitational_const
       else
         gravitational_const=rhs_poisson_const/(4*pi)
@@ -152,7 +152,7 @@ module Selfgravity
       endif
 !
 !  Also share rhs_poisson_const.
-!      
+!
       call put_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
       if (ierr/=0) then
         if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
@@ -247,14 +247,14 @@ module Selfgravity
           idiag_potselfmx/=0 .or. idiag_potselfmy/=0 .or. idiag_potselfmz/=0) &
           lpenc_diagnos(i_potself)=.true.
 !
-      if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) then 
+      if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) then
         lpenc_diagnos(i_pomx)=.true.
         lpenc_diagnos(i_pomy)=.true.
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
 !
-      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then 
+      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
       endif
@@ -283,15 +283,13 @@ module Selfgravity
 !  15-may-06/anders+jeff: coded
 !  03-feb-11/ccyang: add Jeans stiffening
 !
-      use Sub
-      use Mpicomm
+      use Sub, only: grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       logical :: first=.true.
       real, save :: gm1, c
-      real :: a, a1
 !
       intent(inout) :: f, p
 !
@@ -335,7 +333,7 @@ module Selfgravity
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
-      if (t>=tstart_selfgrav) then 
+      if (t>=tstart_selfgrav) then
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
@@ -444,7 +442,7 @@ module Selfgravity
             call sum_mn_name(p%gpotself(:,2)**2,idiag_gpotselfy2m)
         if (idiag_gpotselfz2m/=0) &
             call sum_mn_name(p%gpotself(:,3)**2,idiag_gpotselfz2m)
-        if (idiag_gxgym/=0) & 
+        if (idiag_gxgym/=0) &
              call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,2),idiag_gxgym)
         if (idiag_gxgzm/=0) &
              call sum_mn_name(p%gpotself(:,1)*p%gpotself(:,3),idiag_gxgzm)
@@ -452,9 +450,9 @@ module Selfgravity
              call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
-        if (idiag_qtoomre/=0) & 
+        if (idiag_qtoomre/=0) &
              call sum_mn_name(kappa*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomre)
-        if (idiag_qtoomremin/=0) & 
+        if (idiag_qtoomremin/=0) &
              call max_mn_name(-kappa*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/(gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/(gravitational_const*p%rho),idiag_ljeans2d,lneg=.true.)
@@ -484,8 +482,8 @@ module Selfgravity
 !
 !  Calculates cylindrical gravitational stresses in a cartesian box.
 !
-!  01-jul-07/wlad: coded 
-! 
+!  01-jul-07/wlad: coded
+!
       use Diagnostics, only: sum_mn_name
 !
       real, dimension(nx) :: gpotr,gpotp,gpotz
@@ -498,7 +496,7 @@ module Selfgravity
       if (idiag_grgpm/=0) call sum_mn_name(gpotr*gpotp,idiag_grgpm)
       if (idiag_grgzm/=0) call sum_mn_name(gpotr*gpotz,idiag_grgzm)
       if (idiag_gpgzm/=0) call sum_mn_name(gpotp*gpotz,idiag_gpgzm)
-!     
+!
     endsubroutine calc_cylgrav_stresses
 !***********************************************************************
     subroutine read_selfgravity_init_pars(unit,iostat)
