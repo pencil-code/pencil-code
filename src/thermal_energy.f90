@@ -47,44 +47,24 @@ module Entropy
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
-  integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
-  integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
-  integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
-                              ! DIAG_DOC: \quad(radiative flux at the top)
-  integer :: idiag_yHmax=0, idiag_yHmin=0, idiag_yHm=0
-  integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
-                              ! DIAG_DOC:  \left< c_v \rho T \right> $
-                              ! DIAG_DOC: \quad(mean thermal energy)
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
-  integer :: idiag_ssm=0, idiag_thcool=0
-  integer :: idiag_ppm=0, idiag_csm=0
-  integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
-                                ! DIAG_DOC:   /\max c_{\rm s}]$
-                                ! DIAG_DOC:   \quad(time step relative to
-                                ! DIAG_DOC:   acoustic time step;
-                                ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_dtchi=0      ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
-                                ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
-                                ! DIAG_DOC:   \quad(time step relative to time
-                                ! DIAG_DOC:   step based on heat conductivity;
-                                ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_ppmx=0       ! DIAG_DOC:
-  integer :: idiag_ppmy=0       ! DIAG_DOC:
-  integer :: idiag_ppmz=0       ! DIAG_DOC:
-  integer :: idiag_ppuzmz=0     ! DIAG_DOC:
-  integer :: idiag_TTmx=0       ! DIAG_DOC:
-  integer :: idiag_TTmy=0       ! DIAG_DOC:
-  integer :: idiag_TTmz=0       ! DIAG_DOC:
-  integer :: idiag_TTmxy=0      ! DIAG_DOC:
-  integer :: idiag_TTmxz=0      ! DIAG_DOC:
-  integer :: idiag_ethmz=0      ! DIAG_DOC:
-  integer :: idiag_ethuxmx=0    ! DIAG_DOC:
-  integer :: idiag_ethuxmz=0    ! DIAG_DOC:
-  integer :: idiag_ethuymz=0    ! DIAG_DOC:
-  integer :: idiag_ethuzmz=0    ! DIAG_DOC:
+  integer :: idiag_ppm=0
+  integer :: idiag_ppmx=0
+  integer :: idiag_ppmy=0
+  integer :: idiag_ppmz=0
+  integer :: idiag_TTm=0
+  integer :: idiag_TTmx=0
+  integer :: idiag_TTmy=0
+  integer :: idiag_TTmz=0
+  integer :: idiag_TTmxy=0
+  integer :: idiag_TTmxz=0
+  integer :: idiag_pdivum=0
+  integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
+                              ! DIAG_DOC:  \left< c_v \rho T \right> $
+                              ! DIAG_DOC: \quad(mean thermal energy)
 !
   real, dimension(nx,nz) :: pp_xz
   real, dimension(ny,nz) :: pp_yz
@@ -180,14 +160,22 @@ module Entropy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
-    if (lweno_transport) then
-      lpenc_requested(i_transpeth)=.true.
-    endif
-    lpenc_requested(i_divu)=.true.
-    lpenc_requested(i_eth)=.true.
-    lpenc_requested(i_fpres)=.true.
-    if (ldt) lpenc_requested(i_cs2)=.true.
-    if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
+      if (lweno_transport) then
+        lpenc_requested(i_transpeth)=.true.
+      endif
+      lpenc_requested(i_divu)=.true.
+      lpenc_requested(i_eth)=.true.
+      lpenc_requested(i_fpres)=.true.
+      if (ldt) lpenc_requested(i_cs2)=.true.
+      if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
+!
+      if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_pdivum/=0) then
+        lpenc_diagnos(i_pp)=.true.
+        lpenc_diagnos(i_divu)=.true.
+      endif
+      if (idiag_TTm/=0 .or. idiag_TTmin/=0 .or. idiag_TTmax/=0) &
+          lpenc_diagnos(i_TT)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -297,7 +285,11 @@ module Entropy
 !  Diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
+        if (idiag_TTm/=0)    call sum_mn_name(p%TT,idiag_TTm)
+        if (idiag_TTmax/=0)  call max_mn_name(p%TT,idiag_TTmax)
+        if (idiag_TTmin/=0)  call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
+        if (idiag_ethm/=0)   call sum_mn_name(p%eth,idiag_ethm)
+        if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
       endif
 !
       if (l1davgfirst) then
@@ -307,16 +299,6 @@ module Entropy
         if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
         if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
-        if (idiag_ppuzmz/=0)  call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
-        if (idiag_ethmz/=0)   call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
-        if (idiag_ethuxmx/=0) call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1), &
-            idiag_ethuxmx)
-        if (idiag_ethuxmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1), &
-            idiag_ethuxmz)
-        if (idiag_ethuymz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2), &
-            idiag_ethuymz)
-        if (idiag_ethuzmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3), &
-            idiag_ethuzmz)
       endif
 !
 !  2-D averages.
@@ -425,32 +407,20 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
-        idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0; idiag_gTmax=0
-        idiag_ethm=0; idiag_ssm=0; idiag_thcool=0
-        idiag_dtchi=0; idiag_dtc=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0
-        idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0; idiag_ppuzmz=0
-        idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
-        idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
-        idiag_TTmxy=0; idiag_TTmxz=0
+        idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
+        idiag_ethm=0; idiag_pdivum=0; idiag_eem=0; idiag_ppm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
-        call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
-        call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
+        call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
+        call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
-        call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
-        call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
-        call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
-        call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
-        call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
+        call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -458,8 +428,6 @@ module Entropy
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ethuxmx', &
-            idiag_ethuxmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -474,16 +442,6 @@ module Entropy
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppuzmz', &
-            idiag_ppuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethmz', &
-            idiag_ethmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuxmz', &
-            idiag_ethuxmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuymz', &
-            idiag_ethuymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuzmz', &
-            idiag_ethuzmz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
