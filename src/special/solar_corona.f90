@@ -2000,7 +2000,7 @@ module Special
 ! Get magnetic field energy for footpoint quenching.
 ! The processors from the ipz=0 plane have to take part, too.
       if (lgran_proc .or. lfirst_proc_z) then
-        call set_B2(f,BB2_local)
+        if (lmagnetic) call set_B2(f,BB2_local)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux/=0) then
