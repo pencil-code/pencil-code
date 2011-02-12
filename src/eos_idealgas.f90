@@ -664,7 +664,7 @@ module EquationOfState
         if (lpencil_in(i_glnTT).or.lpencil_in(i_gTT)) then
           lpencil_in(i_rho1)=.true.
           lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_geth)=.true.
+!          lpencil_in(i_geth)=.true.
         endif
 !
       case default
@@ -946,7 +946,7 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=gamma*cp1*p%rho1*f(l1:l2,m,n,ieth)
         if (lpencil(i_lnTT)) p%lnTT=alog(gamma*cp1*p%rho1*f(l1:l2,m,n,ieth))
         if (lpencil(i_gTT)) then
-          call grad(f,ieosvar2,p%geth)
+!          call grad(f,ieosvar2,p%geth)
 !          p%gTT=gamma*cp1*p%rho1*(p%geth-f(l1:l2,m,n,ieth)*p%glnrho)
  !         p%glnTT=p%geth/f(l1:l2,m,n,ieth)-p%glnrho
         endif
