@@ -45,6 +45,7 @@ module EquationOfState
   integer, parameter :: ilnrho_lnTT=4, ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12, irho_eth=13
+  integer, parameter :: ilnrho_eth=14
   integer :: iglobal_cs2, iglobal_glnTT
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
@@ -395,6 +396,9 @@ module EquationOfState
         case (ieosvar_rho+ieosvar_eth)
           if (lroot) print*, 'select_eos_variable: Using rho and eth'
           ieosvars=irho_eth
+        case (ieosvar_lnrho+ieosvar_eth)
+          if (lroot) print*, 'select_eos_variable: Using lnrho and eth'
+          ieosvars=ilnrho_eth
         case default
           if (lroot) print*, 'select_eos_variable: '// &
               'Thermodynamic variable combination, ieosvar_selected =', &
@@ -651,6 +655,16 @@ module EquationOfState
       case (irho_eth)
         if (lpencil_in(i_cs2)) then
           lpencil_in(i_rho1)=.true.
+        endif
+!
+      case (ilnrho_eth)
+        if (lpencil_in(i_TT).or.lpencil_in(i_lnTT)) then
+          lpencil_in(i_rho1)=.true.
+        endif
+        if (lpencil_in(i_glnTT).or.lpencil_in(i_gTT)) then
+          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_glnrho)=.true.
+          lpencil_in(i_geth)=.true.
         endif
 !
       case default
@@ -927,6 +941,15 @@ module EquationOfState
       case (irho_eth)
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*f(l1:l2,m,n,ieth)*p%rho1
         if (lpencil(i_pp))  p%pp=gamma_m1*f(l1:l2,m,n,ieth)
+!
+      case (ilnrho_eth)
+        if (lpencil(i_TT)) p%TT=gamma*cp1*p%rho1*f(l1:l2,m,n,ieth)
+        if (lpencil(i_lnTT)) p%lnTT=alog(gamma*cp1*p%rho1*f(l1:l2,m,n,ieth))
+        if (lpencil(i_gTT)) then
+          call grad(f,ieosvar2,p%geth)
+!          p%gTT=gamma*cp1*p%rho1*(p%geth-f(l1:l2,m,n,ieth)*p%glnrho)
+ !         p%glnTT=p%geth/f(l1:l2,m,n,ieth)-p%glnrho
+        endif
 !
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
@@ -1413,7 +1436,7 @@ module EquationOfState
       case (ilnrho_ss,irho_ss)
         if (ivars==ilnrho_ss) then
           lnrho_=var1
-        else 
+        else
           lnrho_=alog(var1)
         endif
         ss_=var2
@@ -3177,13 +3200,13 @@ module EquationOfState
 !
 !  Boundary condition for entropy: adopt boundary value for temperature in
 !  the ghost zone to handle shock profiles in interstellar with steep +ve
-!  1st derivative in cooled remnant shells, followed by steep -ve 1st 
-!  derivative inside remnant. 
-!  s or a2 for temperature both unstable and unphysical as the unshocked 
+!  1st derivative in cooled remnant shells, followed by steep -ve 1st
+!  derivative inside remnant.
+!  s or a2 for temperature both unstable and unphysical as the unshocked
 !  exterior ISM will be comparatively homogeneous, hence allowing the ghost
 !  zone to fluctuate matching the boundary values is a reasonable approx
 !  of the physical flow, whilst avoiding unphysical spikes to wreck the
-!  calculation. 
+!  calculation.
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
@@ -3231,13 +3254,13 @@ module EquationOfState
 !
 !  Boundary condition for entropy: adopt boundary value for temperature in
 !  the ghost zone to handle shock profiles in interstellar with steep +ve
-!  1st derivative in cooled remnant shells, followed by steep -ve 1st 
-!  derivative inside remnant. 
-!  s or a2 for temperature both unstable and unphysical as the unshocked 
+!  1st derivative in cooled remnant shells, followed by steep -ve 1st
+!  derivative inside remnant.
+!  s or a2 for temperature both unstable and unphysical as the unshocked
 !  exterior ISM will be comparatively homogeneous, hence allowing the ghost
 !  zone to fluctuate matching the boundary values is a reasonable approx
 !  of the physical flow, whilst avoiding unphysical spikes to wreck the
-!  calculation. 
+!  calculation.
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
@@ -3285,13 +3308,13 @@ module EquationOfState
 !
 !  Boundary condition for entropy: adopt boundary value for temperature in
 !  the ghost zone to handle shock profiles in interstellar with steep +ve
-!  1st derivative in cooled remnant shells, followed by steep -ve 1st 
-!  derivative inside remnant. 
-!  s or a2 for temperature both unstable and unphysical as the unshocked 
+!  1st derivative in cooled remnant shells, followed by steep -ve 1st
+!  derivative inside remnant.
+!  s or a2 for temperature both unstable and unphysical as the unshocked
 !  exterior ISM will be comparatively homogeneous, hence allowing the ghost
 !  zone to fluctuate matching the boundary values is a reasonable approx
 !  of the physical flow, whilst avoiding unphysical spikes to wreck the
-!  calculation. 
+!  calculation.
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
