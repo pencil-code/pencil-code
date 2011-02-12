@@ -2546,6 +2546,8 @@ module Magnetic
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
                  p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
           endif
+        else if (lthermal_energy) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etatotal*mu0*p%j2          
         endif
       endif
 !
