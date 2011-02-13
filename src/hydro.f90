@@ -2421,15 +2421,19 @@ module Hydro
           ruzm=0.
           fact=1./nwgrid
           do n=n1,n2
-            do m=m1,m2
+          do m=m1,m2
+            if (ldensity_nolog) then
+              rho=f(l1:l2,m,n,irho)
+            else       
               rho=exp(f(l1:l2,m,n,ilnrho))
-              rux=rho*f(l1:l2,m,n,iux)
-              ruy=rho*f(l1:l2,m,n,iuy)
-              ruz=rho*f(l1:l2,m,n,iuz)
-              ruxm=ruxm+fact*sum(rux)
-              ruym=ruym+fact*sum(ruy)
-              ruzm=ruzm+fact*sum(ruz)
-            enddo
+            endif
+            rux=rho*f(l1:l2,m,n,iux)
+            ruy=rho*f(l1:l2,m,n,iuy)
+            ruz=rho*f(l1:l2,m,n,iuz)
+            ruxm=ruxm+fact*sum(rux)
+            ruym=ruym+fact*sum(ruy)
+            ruzm=ruzm+fact*sum(ruz)
+          enddo
           enddo
         endif
 !
