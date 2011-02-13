@@ -2544,41 +2544,63 @@ module Special
 !***********************************************************************
     subroutine find_free_place
 !
-! Find the position of a new point.
+! Find the position of a new granule midpoint.
 !
 ! 12-aug-10/bing: coded
+! 21-jan-2011/Bourdin.KIS: reduced runtime complexity from O(N^2) to O(N).
 !
       use General, only: random_number_wrapper
 !
-      integer :: kfind,count,ipos,jpos,i,j
-      integer,dimension(nxgrid,nygrid) :: k
+      integer :: pos_x, pos_y, find_y, find_x, free_x, free_y
+      integer :: count_x, count_y, num_free_y
+      integer, dimension(nygrid) :: num_free_x
       real :: rand
 !
-      k(:,:)=0; ipos=0; jpos=0
+      free_x = -1
+      free_y = -1
 !
-      where (avoidarr.eq.0) k=1
+      num_free_y = 0
+      do pos_y = 1, nygrid
+        num_free_x(pos_y) = nxgrid - sum (avoidarr(:,pos_y))
+        if (num_free_x(pos_y) > 0) num_free_y = num_free_y + 1
+      enddo
+      if (num_free_y == 0) return
 !
-! Choose and find location of one of them
+! Find possible location for a new granule midpoint.
 !
-      call random_number_wrapper(rand)
-      kfind=int(rand*sum(k))+1
-      count=0
-      do i=1,nxgrid
-        do j=1,nygrid
-          if (k(i,j).eq.1) then
-            count=count+1
-            if (count.eq.kfind) then
-              ipos=i
-              jpos=j
-            endif
+      call random_number_wrapper (rand)
+      find_y = int (rand * num_free_y) + 1
+!
+      count_x = 0
+      count_y = 0
+      do pos_y = 1, nygrid
+        if (num_free_x(pos_y) > 0) then
+          count_y = count_y + 1
+          if (count_y == find_y) then
+!
+            call random_number_wrapper (rand)
+            find_x = int (rand * num_free_x(pos_y)) + 1
+!
+            do pos_x = 1, nxgrid
+              if (avoidarr(pos_x,pos_y) == 0) then
+                count_x = count_x + 1
+                if (count_x == find_x) then
+                  free_x = pos_x
+                  free_y = pos_y
+                  exit
+                endif
+              endif
+            enddo
+!
+            exit
           endif
-        enddo
+        endif
       enddo
 !
-! Create new data for new point
+! Initialize granule properties
 !
-      current%pos_x=ipos
-      current%pos_y=jpos
+      current%pos_x = free_x
+      current%pos_y = free_y
 !
       call random_number_wrapper(rand)
       current%amp_max=ampl*(1+(2*rand-1)*pd)
