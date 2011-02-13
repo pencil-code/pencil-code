@@ -20,13 +20,13 @@
   inituu='nothing'
 /
 &density_init_pars
-  initlnrho='Gressel-hs'
+  initlnrho='thermal-hs'
 /
 &grav_init_pars
   gravz_profile='Ferriere' 
 /
 &entropy_init_pars
-  initss='Gressel-hs'
+  initss='thermal-hs'
 /
 &magnetic_init_pars
   amplaa=0.01
@@ -35,7 +35,7 @@
 &interstellar_init_pars
   lSNII=T
   cooling_select='SSrr'
-  heating_select='Gressel-hs'
+  heating_select='thermal-hs'
 /
 &shear_init_pars
   qshear=1.0
