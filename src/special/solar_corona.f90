@@ -2199,7 +2199,7 @@ module Special
           current => current%next
         enddo
         do while (minval(avoidarr) == 0)
-          call addpoint
+          call add_point
           call make_newpoint
           call drawupdate
         enddo
@@ -2267,7 +2267,7 @@ module Special
         rn=1
         read (10, iostat=iost, rec=rn) tmppoint
         do while (iost == 0)
-          call addpoint
+          call add_point
           current%pos(:) =tmppoint(1:2)
           current%data(:)=tmppoint(3:6)
           call drawupdate
@@ -2344,35 +2344,35 @@ module Special
 !
     endsubroutine wrpoints
 !***********************************************************************
-    subroutine addpoint
+    subroutine add_point
 !
-! Add a new pointer to the list.
+! Add an entry to the list.
 !
-! 12-aug-10/bing: coded
+! 21-jan-2011/Bourdin.KIS: coded
 !
-      type(point), pointer :: newpoint
+      type (point), pointer, save :: new => null()
 !
-      allocate(newpoint)
-      nullify (newpoint%next)
-      nullify (newpoint%previous)
+      allocate (new)
+      nullify (new%next)
+      nullify (new%previous)
 !
       if (associated (first)) then
         ! Insert new entry before the first
-        newpoint%next => first
-        first%previous => newpoint
+        new%next => first
+        first%previous => new
       endif
-      first => newpoint
-      current => first
+      first => new
+      current => new
 !
-    endsubroutine addpoint
+    endsubroutine add_point
 !***********************************************************************
-    subroutine rmpoint
+    subroutine del_point
 !
-! Remove any pointer from the list.
+! Remove an entry from the list.
 !
-! 12-aug-10/bing: coded
+! 21-jan-2011/Bourdin.KIS: coded
 !
-      type (point), pointer :: old
+      type (point), pointer, save :: old => null()
 !
       if (.not. associated (current)) return
 !
@@ -2402,7 +2402,7 @@ module Special
         deallocate (old)
       endif
 !
-    endsubroutine rmpoint
+    endsubroutine del_point
 !***********************************************************************
     subroutine driveinit
 !
@@ -2417,7 +2417,7 @@ module Special
 !
       do while (minval (avoidarr) == 0)
 !
-        call addpoint
+        call add_point
         call make_newpoint
 !
 ! Set randomly some points t0 to the past so they already decay
@@ -2624,7 +2624,7 @@ module Special
 !
 ! remove point if amplitude is less than threshold
         if (current%data(1)/ampl.lt.thresh) then
-          call rmpoint
+          call del_point
         else
           current => current%next
         endif
