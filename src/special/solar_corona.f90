@@ -2262,7 +2262,7 @@ module Special
         enddo
 !
         close (unit)
-        write (*,'(A,I1.1,A)') '=> read ', pos-1, ' granules for level ', level
+        write (*,'(A,I6,A,I1.1)') '=> ', pos-1, ' granules in level ', level
 !
         if (level == nglevel) then
           write (filename,'("driver/seed_",I1.1,".dat")') level
