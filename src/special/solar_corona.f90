@@ -78,14 +78,14 @@ module Special
       real, dimension(2) :: pos
       real, dimension(4) :: data
       type(point),pointer :: next
+      type(point),pointer :: previous
     end TYPE point
 !
-    Type(point), pointer :: first
-    Type(point), pointer :: previous
-    Type(point), pointer :: current
-    Type(point), pointer,save :: firstlev
-    Type(point), pointer,save :: secondlev
-    Type(point), pointer,save :: thirdlev
+    type(point), pointer :: first => null()
+    type(point), pointer :: current => null()
+    type(point), pointer :: firstlev => null()
+    type(point), pointer :: secondlev => null()
+    type(point), pointer :: thirdlev => null()
 !
     integer :: xrange,yrange,pow
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
@@ -843,7 +843,7 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: tmp
 !
-      if (lgranulation) then
+      if (lgranulation .and. (.not. lpencil_check_at_work)) then
         if (n.eq.n1.and.ipz.eq.0) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
               tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
@@ -1921,13 +1921,6 @@ module Special
 ! Don't reset if RELOAD is used
       if (.not.lreloading) then
 !
-        if (associated(first)) nullify(first)
-        if (associated(current)) nullify(current)
-        if (associated(previous)) nullify(previous)
-        if (associated(firstlev)) nullify(firstlev)
-        if (associated(secondlev)) nullify(secondlev)
-        if (associated(thirdlev)) nullify(thirdlev)
-!
         points_rstate(:)=0.
 !
         isnap = nint (t/dsnap)
@@ -2119,8 +2112,10 @@ module Special
     real, dimension(max_gran_levels), save :: amplarr,granrarr,life_tarr
     integer, dimension(max_gran_levels), save :: xrangearr,yrangearr
     integer :: k
+    logical, save :: first_call=.true.
 !
-    if (.not.associated(firstlev)) then
+    if (first_call) then
+!
       granrarr(1)=granr
       granrarr(2)=granr*ldif
       granrarr(3)=granr*ldif*ldif
@@ -2140,14 +2135,8 @@ module Special
       yrangearr(2)=min(nint(ldif*yrange),nint(nygrid/2-1.))
       yrangearr(3)=min(nint(ldif*ldif*yrange),nint(nygrid/2-1.))
 !
-! create first entries of the 3 lists
+      first_call = .false.
 !
-      allocate(firstlev)
-      if (associated(firstlev%next)) nullify(firstlev%next)
-      allocate(secondlev)
-      if (associated(secondlev%next)) nullify(secondlev%next)
-      allocate(thirdlev)
-      if (associated(thirdlev%next)) nullify(thirdlev%next)
     endif
  !
     ! Initialize velocity field
@@ -2157,32 +2146,11 @@ module Special
     do k=1,nglevel
       select case (k)
       case (1)
-        if (associated(first)) nullify(first)
         first => firstlev
-        current => firstlev
-        if (associated(firstlev%next)) then
-          first%next => firstlev%next
-          current%next => firstlev%next
-        endif
-        nullify(previous)
       case (2)
-        if (associated(first)) nullify(first)
         first => secondlev
-        current => secondlev
-        if (associated(secondlev%next)) then
-          first%next => secondlev%next
-          current%next => secondlev%next
-        endif
-        nullify(previous)
       case (3)
-        if (associated(first)) nullify(first)
         first => thirdlev
-        current => thirdlev
-        if (associated(thirdlev%next)) then
-          first%next => thirdlev%next
-          current%next => thirdlev%next
-        endif
-        nullify(previous)
       end select
 !
       ampl=amplarr(k)
@@ -2195,17 +2163,11 @@ module Special
 !
       select case (k)
       case (1)
-        if (.NOT. associated(firstlev,first)) firstlev => first
-        if (.NOT. associated(firstlev%next,first%next)) &
-            firstlev%next=>first%next
+        firstlev => first
       case (2)
-        if (.NOT. associated(secondlev,first)) secondlev => first
-        if (.NOT. associated(secondlev%next,first%next)) &
-            secondlev%next=>first%next
+        secondlev => first
       case (3)
-        if (.NOT. associated(thirdlev,first)) thirdlev => first
-        if (.NOT. associated(thirdlev%next,first%next)) &
-            thirdlev%next=>first%next
+        thirdlev => first
       end select
 !
     enddo
@@ -2222,31 +2184,25 @@ module Special
       call resetarr
       if (Bavoid > 0.) call fill_B_avoidarr
 !
-      if (.not.associated(current%next)) then
+      if (.not.associated(first)) then
         call rdpoints(level)
-        if (.not.associated(current%next)) then
+        if (.not.associated(first)) then
           call driveinit
           call wrpoints(level,0)
           call wrpoints(level)
         endif
       else
         call updatepoints
-        call drawupdate
-        do
-          if (associated(current%next)) then
-            call gtnextpoint
-            call drawupdate
-          else
-            exit
-          endif
+        current => first
+        do while (associated (current))
+          call drawupdate
+          current => current%next
         enddo
-        do
-          if (minval(avoidarr) == 1) exit
+        do while (minval(avoidarr) == 0)
           call addpoint
           call make_newpoint
           call drawupdate
         enddo
-        call reset
       endif
 !
       Ux = Ux + vx
@@ -2309,25 +2265,18 @@ module Special
         iost=0
 !
         rn=1
-        do
-          read(10,iostat=iost,rec=rn) tmppoint
-          if (iost.eq.0) then
-            current%pos(:) =tmppoint(1:2)
-            current%data(:)=tmppoint(3:6)
-            call drawupdate
-            call addpoint
-            rn=rn+1
-          else
-            nullify(previous%next)
-            deallocate(current)
-            current => previous
-            exit
-         endif
+        read (10, iostat=iost, rec=rn) tmppoint
+        do while (iost == 0)
+          call addpoint
+          current%pos(:) =tmppoint(1:2)
+          current%data(:)=tmppoint(3:6)
+          call drawupdate
+          rn=rn+1
+          read (10, iostat=iost, rec=rn) tmppoint
         enddo
 !
         close(10)
         print*,'read ',rn-1,' points'
-        call reset
 !
         if (level==nglevel) then
           write (filename,'("driver/seed_",I1.1,".dat")') level
@@ -2369,14 +2318,14 @@ module Special
       open(10,file=filename,status="replace",access="direct",recl=6*iol)
 !
       rn=1
-      do
+      current => first
+      do while (associated (current))
         posdata(1:2)=current%pos
         posdata(3:6)=current%data
 !
         write(10,rec=rn) posdata
-        if (.not.associated(current%next)) exit
-        call gtnextpoint
         rn=rn+1
+        current => current%next
       enddo
 !
       close(10)
@@ -2393,8 +2342,6 @@ module Special
       write(10,rec=1) points_rstate
       close(10)
 !
-      call reset
-!
     endsubroutine wrpoints
 !***********************************************************************
     subroutine addpoint
@@ -2406,18 +2353,16 @@ module Special
       type(point), pointer :: newpoint
 !
       allocate(newpoint)
+      nullify (newpoint%next)
+      nullify (newpoint%previous)
 !
-! the next after the last is not defined
-      if (associated(newpoint%next)) nullify(newpoint%next)
-!
-! the actual should have the new point as the next in the list
-      current%next => newpoint
-!
-! the current will be the previous
-      previous => current
-!
-! make the new point as the current one
-      current => newpoint
+      if (associated (first)) then
+        ! Insert new entry before the first
+        newpoint%next => first
+        first%previous => newpoint
+      endif
+      first => newpoint
+      current => first
 !
     endsubroutine addpoint
 !***********************************************************************
@@ -2427,54 +2372,37 @@ module Special
 !
 ! 12-aug-10/bing: coded
 !
-      if (associated(current%next)) then
-! current is NOT the last one
-        if (associated(first,current)) then
-! but current is the first point,
-! check which level it is
-          if (associated(firstlev,first)) firstlev => current%next
-          if (associated(secondlev,first)) secondlev => current%next
-          if (associated(thirdlev,first)) thirdlev => current%next
-          first => current%next
-          deallocate(current)
-          current => first
-          nullify(previous)
-        else
-! we are in between
-          previous%next => current%next
-          deallocate(current)
-          current => previous%next
-        endif
+      type (point), pointer :: old
+!
+      if (.not. associated (current)) return
+!
+      if (.not. associated (current%previous) .and. .not. associated (current%next)) then
+        ! Current entry is the only entry
+        deallocate (current)
+        nullify (current)
+        nullify (first)
+      elseif (.not. associated (current%previous)) then
+        ! Current entry is pointing to the first entry
+        first => current%next
+        nullify (first%previous)
+        deallocate (current)
+        current => first
+      elseif (.not. associated (current%next)) then
+        ! Current entry is pointing to the last entry
+        old => current
+        current => current%previous
+        nullify (current%next)
+        deallocate (old)
       else
-! we are at the end
-        deallocate(current)
-        current => previous
-        nullify(current%next)
-        nullify(previous)
-! BE AWARE THAT PREVIOUS IS NOT NOT ALLOCATED TO THE RIGHT POSITION
+        ! Current entry is between first and last entry
+        current%next%previous => current%previous
+        current%previous%next => current%next
+        old => current
+        current => current%next
+        deallocate (old)
       endif
 !
     endsubroutine rmpoint
-!***********************************************************************
-    subroutine gtnextpoint
-!
-! 12-aug-10/bing: coded
-!
-      previous => current
-      current => current%next
-!
-    endsubroutine gtnextpoint
-!***********************************************************************
-    subroutine reset
-!
-! 12-aug-10/bing: coded
-!
-      current => first
-      previous => first
-!
-      if (associated(previous)) nullify(previous)
-!
-    endsubroutine reset
 !***********************************************************************
     subroutine driveinit
 !
@@ -2487,9 +2415,7 @@ module Special
 !
       real :: rand
 !
-      call make_newpoint
-      do
-        if (minval(avoidarr).eq.1) exit
+      do while (minval (avoidarr) == 0)
 !
         call addpoint
         call make_newpoint
@@ -2507,10 +2433,6 @@ module Special
         call drawupdate
 !
       enddo
-!
-! And reset
-!
-      call reset
 !
     endsubroutine driveinit
 !***********************************************************************
@@ -2691,25 +2613,23 @@ module Special
 !
       use Sub, only: notanumber
 !
-      do
+      current => first
+      do while (associated (current))
         if (notanumber(current%data)) &
-            call fatal_error('update points','NaN found')
+            call fatal_error('update points','NaN found',.true.)
 !
 ! update amplitude
         current%data(1)=current%data(2)* &
             exp(-((t-current%data(3))/current%data(4))**pow)
 !
 ! remove point if amplitude is less than threshold
-        if (current%data(1)/ampl.lt.thresh) call rmpoint
+        if (current%data(1)/ampl.lt.thresh) then
+          call rmpoint
+        else
+          current => current%next
+        endif
 !
-! check if last point is reached
-        if (.not. associated(current%next)) exit
-!
-! if not go to next point
-        call gtnextpoint
       end do
-!
-      call reset
 !
     endsubroutine updatepoints
 !***********************************************************************
@@ -3058,7 +2978,8 @@ module Special
 !
       integer :: xpos,ypos
 !
-      do
+      current => first
+      do while (associated (current))
         xpos = int(current%pos(1))
         ypos = int(current%pos(2))
 !
@@ -3071,13 +2992,8 @@ module Special
         if (current%pos(1)>nxgrid+0.5) current%pos(1) = current%pos(1) - nxgrid
         if (current%pos(2)>nygrid+0.5) current%pos(2) = current%pos(2) - nygrid
 !
-        if (associated(current%next)) then
-          call gtnextpoint
-        else
-          exit
-        endif
+        current => current%next
       enddo
-      call reset
 !
     endsubroutine evolve_granules
 !***********************************************************************
