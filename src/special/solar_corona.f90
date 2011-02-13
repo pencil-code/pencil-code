@@ -179,7 +179,6 @@ module Special
 !  27-aug-2010/Bourdin.KIS: coded
 !
       use EquationOfState, only: lnrho0,gamma,gamma_m1,cs20,cs2top,cs2bot
-      use Mpicomm, only: stop_it_if_any
       use Messages, only: warning
 !
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
@@ -201,8 +200,8 @@ module Special
       endif
 !
       if (linit_lnTT) then
-        if (pretend_lnTT) call stop_it_if_any (.true., &
-            "init_special: linit_lnTT=T not implemented for pretend_lnTT=T")
+        if (pretend_lnTT) call fatal_error ('init_special', &
+            "linit_lnTT=T not implemented for pretend_lnTT=T", .true.)
         ! set initial temperaure profile values
         do j = 1, mz
           if (ltemperature) then
@@ -341,13 +340,13 @@ module Special
           deallocate(Ax_r, Ay_r, Ax_i, Ay_i)
 !
         else
+          ! catch eventual 'stop_it_if_any' calls from MPI root rank
+          call stop_it_if_any (.false.,'')
           ! Receive initial A data
           call mpirecv_real (A_init_x, (/ nx, ny /), 0, Ax_tag)
           call mpirecv_real (A_init_y, (/ nx, ny /), 0, Ay_tag)
         endif
       endif
-      ! globally catch eventual 'stop_it_if_any' calls from single MPI ranks
-      call stop_it_if_any (.false.,'')
 !
     endsubroutine setup_magnetic
 !***********************************************************************
@@ -1857,8 +1856,6 @@ module Special
 !***********************************************************************
     subroutine setdrparams()
 !
-      Use Mpicomm, only: stop_it_if_any
-!
       integer :: alloc_err_sum
 !
 ! Every granule has 6 values associated with it: data(1-6).
@@ -1948,8 +1945,8 @@ module Special
       if (.not. allocated(avoidarr)) &
           allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
-      if (alloc_err_sum > 0) call stop_it_if_any(.true., &
-          'setdrparams: Could not allocate memory for the driver')
+      if (alloc_err_sum > 0) call fatal_error ('setdrparams', &
+          'Could not allocate memory for the driver', .true.)
 !
     endsubroutine setdrparams
 !***********************************************************************
@@ -1984,7 +1981,7 @@ module Special
       if (.not.allocated(uu_buffer)) then
         allocate(uu_buffer(nxgrid,nygrid),stat=alloc_err)
         if (alloc_err>0) call fatal_error('uudriver', &
-            'could not allocate memory for uu_buffer')
+            'could not allocate memory for uu_buffer', .true.)
       endif
 !
 ! Update velocity field only every dt_gran after the first iteration
@@ -2642,7 +2639,7 @@ module Special
 !***********************************************************************
     subroutine set_B2(f,BB2_local)
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,ny) :: bbx,bby,bbz
@@ -2715,7 +2712,7 @@ module Special
         dims=(/nx,ny/)
         if (.not. allocated (BB2)) then
           allocate (BB2(nxgrid,nygrid), stat=alloc_err)
-          if (alloc_err > 0) call stop_it_if_any (.true., 'set_B2: Could not allocate memory')
+          if (alloc_err > 0) call fatal_error ('set_B2', 'Could not allocate memory', .true.)
           BB2 = 0.0
         endif
         BB2(1:nx,1:ny) = BB2_local
@@ -2743,8 +2740,7 @@ module Special
         elseif (lgran_proc) then
           if (.not. allocated (BB2)) then
             allocate (BB2(nxgrid,nygrid), stat=alloc_err)
-            if (alloc_err>0) call stop_it_if_any(.true., &
-                'set_B2: Could not allocate memory')
+            if (alloc_err > 0) call fatal_error ('set_B2', 'Could not allocate memory', .true.)
           endif
           call mpirecv_real(BB2,dims,0,iproc)
         endif
@@ -2791,7 +2787,7 @@ module Special
 !***********************************************************************
     subroutine read_ext_vel_field()
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
       real, dimension (:,:), allocatable :: tmpl,tmpr
@@ -2806,13 +2802,13 @@ module Special
 !
       if (.not. allocated (uxl)) then
         allocate (uxl(nx,ny), uxr(nx,ny), uyl(nx,ny), uyr(nx,ny), stat=alloc_err)
-        if (alloc_err > 0) call stop_it_if_any (.true., 'read_ext_vel_field: '// &
-            'Could not allocate memory for velocity field variables')
+        if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
+            'Could not allocate memory for velocity field variables', .true.)
       endif
 !
       allocate (tmpl(nxgrid,nygrid), tmpr(nxgrid,nygrid), stat=alloc_err)
-      if (alloc_err > 0) call stop_it_if_any (.true., 'read_ext_vel_field: '// &
-          'Could not allocate memory for tmp variables, please check')
+      if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
+          'Could not allocate memory for tmp variables, please check', .true.)
 !
 !  Read the time table
 !
@@ -2822,13 +2818,14 @@ module Special
 !
           if (.not. allocated (Ux_ext)) then
             allocate (Ux_ext(nxgrid,nygrid), Uy_ext(nxgrid,nygrid), stat=alloc_err)
-            if (alloc_err > 0) call stop_it_if_any (.true., 'read_ext_vel_field: Could not allocate memory')
+            if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
+                'Could not allocate memory for U_ext', .true.)
             Ux_ext = 0.0
             Uy_ext = 0.0
           endif
 !
           inquire(IOLENGTH=lend) tl
-          open (unit,file=vel_times_dat,form='unformatted',status='unknown',recl=lend,access='direct')
+          open (unit,file=vel_times_dat,form='unformatted',recl=lend,access='direct')
 !
           ierr = 0
           i=0
@@ -2861,7 +2858,7 @@ module Special
 !
 ! Read velocity field
 !
-          open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
+          open (unit,file=vel_field_dat,form='unformatted',recl=lend*nxgrid*nygrid,access='direct')
 !
           read (unit,rec=2*i-1) tmpl
           read (unit,rec=2*i+1) tmpr
