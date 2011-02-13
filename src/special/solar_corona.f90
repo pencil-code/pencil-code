@@ -994,7 +994,7 @@ module Special
 !
 ! Compute photospheric granulation.
       if (lgranulation) then
-        if (.not. lpencil_check_at_work) call uudriver(f)
+        if (.not. lpencil_check_at_work) call gran_driver(f)
       endif
 !
       if (lmassflux) call get_wind_speed_offset(f)
@@ -1945,7 +1945,7 @@ module Special
 !
     endsubroutine set_gran_params
 !***********************************************************************
-    subroutine uudriver(f)
+    subroutine gran_driver(f)
 !
 ! This routine replaces the external computing of granular velocity
 ! pattern initially written by B. Gudiksen (2004)
@@ -1975,7 +1975,7 @@ module Special
 !
       if (.not.allocated(uu_buffer)) then
         allocate(uu_buffer(nxgrid,nygrid),stat=alloc_err)
-        if (alloc_err>0) call fatal_error('uudriver', &
+        if (alloc_err>0) call fatal_error('gran_driver', &
             'could not allocate memory for uu_buffer', .true.)
       endif
 !
@@ -2012,7 +2012,7 @@ module Special
 !
 ! Either root processor or three procs with ipz>0 compute
 ! velocities for different levels in driver3().
-      if (lgran_proc) call multi_drive3()
+      if (lgran_proc) call multi_gran_levels()
 !
 ! In the parallel case, one proc has to sum up the levels.
       if (lgran_parallel .and. lgran_proc) then
@@ -2067,14 +2067,14 @@ module Special
         if (ltemperature.and..not.ltemperature_nolog) then
           if (ldensity_nolog) then
             call fatal_error('solar_corona', &
-                'uudriver only implemented for ltemperature=true')
+                'gran_driver only implemented for ltemperature=true')
           else
             pp_tmp =gamma_m1*gamma_inv/cp1 * &
                 exp(f(l1:l2,m1:m2,irefz,ilnrho)+f(l1:l2,m1:m2,irefz,ilnrho))
           endif
         else
           if (headt.and.lroot) call warning('solar_corona', &
-              'uudriver only implemented for ltemperature=true')
+              'gran_driver only implemented for ltemperature=true')
           pp_tmp=gamma_inv*cs20*exp(lnrho0)
         endif
 !
@@ -2102,9 +2102,9 @@ module Special
 !
       if (allocated(uu_buffer)) deallocate(uu_buffer)
 !
-    endsubroutine uudriver
+    endsubroutine gran_driver
 !***********************************************************************
-    subroutine multi_drive3
+    subroutine multi_gran_levels
 !
       integer :: level
       real, parameter :: ldif=2.0
@@ -2143,16 +2143,16 @@ module Special
           first => gran_list(level)%first
 !
           ! Compute one granulation level
-          call drive3 (level)
+          call compute_gran_level (level)
 !
           ! Store list of granules
           gran_list(level)%first => first
         endif
       enddo
 !
-    endsubroutine multi_drive3
+    endsubroutine multi_gran_levels
 !***********************************************************************
-    subroutine drive3(level)
+    subroutine compute_gran_level(level)
 !
       use Syscalls, only: file_exists
 !
@@ -2213,7 +2213,7 @@ module Special
       if (lstop .or. (t>=tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
           (mod(it,isave) == 0)) call write_points (level)
 !
-    endsubroutine drive3
+    endsubroutine compute_gran_level
 !***********************************************************************
     subroutine read_points(level)
 !
