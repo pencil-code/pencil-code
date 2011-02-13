@@ -158,7 +158,7 @@ module Special
             (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
 !
         if (lroot .or. lgran_proc) then
-          call setdrparams()
+          call set_gran_params()
         endif
       endif
 !
@@ -1854,7 +1854,7 @@ module Special
 !
     endsubroutine calc_artif_heating
 !***********************************************************************
-    subroutine setdrparams()
+    subroutine set_gran_params()
 !
       integer :: alloc_err_sum
 !
@@ -1945,10 +1945,10 @@ module Special
       if (.not. allocated(avoidarr)) &
           allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
-      if (alloc_err_sum > 0) call fatal_error ('setdrparams', &
+      if (alloc_err_sum > 0) call fatal_error ('set_gran_params', &
           'Could not allocate memory for the driver', .true.)
 !
-    endsubroutine setdrparams
+    endsubroutine set_gran_params
 !***********************************************************************
     subroutine uudriver(f)
 !
