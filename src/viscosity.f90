@@ -95,6 +95,7 @@ module Viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
+  integer :: idiag_visc_heatm=0 ! DIAG_DOC:
   integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
@@ -528,12 +529,8 @@ module Viscosity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtnu=0
-        idiag_nu_LES=0
-        idiag_epsK=0
-        idiag_epsK_LES=0
-        idiag_meshRemax=0
-        idiag_Reshock=0
+        idiag_dtnu=0; idiag_nu_LES=0; idiag_epsK=0; idiag_epsK_LES=0
+        idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_fviscmz=0; idiag_fviscmxy=0
       endif
@@ -550,6 +547,8 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
+        call parse_name(iname,cname(iname),cform(iname),'visc_heatm', &
+            idiag_visc_heatm)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
@@ -678,13 +677,13 @@ module Viscosity
       endif
 !
       if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
+      if (idiag_visc_heatm/=0) lpenc_diagnos(i_visc_heat)=.true.
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
       if (idiag_epsK/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
-        lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
       if (lvisc_nu_shock.and.idiag_epsK/=0) then
@@ -1481,6 +1480,7 @@ module Viscosity
             call max_name(dxmax*sqrt(p%u2(max_loc(1)))/(nu_shock*maxval(p%shock)),idiag_Reshock)
           endif
         endif
+        if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
 !  Viscous heating for Smagorinsky viscosity.
         if (idiag_epsK_LES/=0) then
