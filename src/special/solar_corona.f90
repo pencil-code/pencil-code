@@ -1991,7 +1991,7 @@ module Special
 ! Get magnetic field energy for footpoint quenching.
 ! The processors from the ipz=0 plane have to take part, too.
       if (lgran_proc .or. lfirst_proc_z) then
-        if (lmagnetic) call set_B2(f,BB2_local)
+        if (lmagnetic) call set_BB2(f,BB2_local)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux/=0) then
@@ -2632,7 +2632,7 @@ module Special
 !
     endsubroutine update_points
 !***********************************************************************
-    subroutine set_B2(f,BB2_local)
+    subroutine set_BB2(f,BB2_local)
 !
       use Mpicomm, only: collect_xy, sum_xy, mpisend_real, mpirecv_real
 !
@@ -2660,54 +2660,38 @@ module Special
         bbx = 0
         bby = 0
         bbz = 0
-        if (nygrid/=1) then
-          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-          bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
-              -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
-              +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
-        else
-          if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
-        endif
-        if (nzgrid/=1) then
-          fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-          bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
-              -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
-              +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
-        else
-          if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
-        endif
-!
-        if (nzgrid/=1) then
-          fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-          bby= fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
-              -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
-              +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
-        else
-          if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
-        endif
-        if (nxgrid/=1) then
-          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-          bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
+        if (nxgrid /= 1) then
+          fac = (1./60)*spread(dx_1(l1:l2),2,ny)
+          bby = bby-fac*(45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
               -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
               +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
-        else
-          if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
-        endif
-        if (nxgrid/=1) then
-          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-          bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
+          bbz = bbz+fac*(45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
               -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
               +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
         else
-          if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
+          if (ip <= 5) print*, 'set_BB2: Degenerate case in x-direction'
         endif
-        if (nygrid/=1) then
-          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-          bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
+        if (nygrid /= 1) then
+          fac = (1./60)*spread(dy_1(m1:m2),1,nx)
+          bbx = bbx+fac*(45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
+              -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
+              +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
+          bbz = bbz-fac*(45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
               -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
               +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
         else
-          if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
+          if (ip <= 5) print*, 'set_BB2: Degenerate case in y-direction'
+        endif
+        if (nzgrid /= 1) then
+          fac = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
+          bbx = bbx-fac*(45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
+              -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
+              +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
+          bby = bby+fac*(45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
+              -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
+              +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
+        else
+          if (ip <= 5) print*, 'set_BB2: Degenerate case in z-direction'
         endif
 !
 ! Compute |B| and collect as global BB2 on root processor.
@@ -2729,7 +2713,7 @@ module Special
         endif
       endif
 !
-    endsubroutine set_B2
+    endsubroutine set_BB2
 !***********************************************************************
     subroutine fill_B_avoidarr
 !
