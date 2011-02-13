@@ -70,7 +70,7 @@
   heatcool_shock_cutoff=0.0125
   heatcool_shock_cutoff_rate=0.0125
   cooling_select='SSrr'
-  heating_select='Gressel-hs'
+  heating_select='thermal-hs'
   lcooltime_smooth=F
 !  ladd_massflux=T
   SNR_damping=0.0 !any non-zero value ldamping=T value not used
