@@ -985,7 +985,7 @@ module Special
         f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
             dt*bmdi * A_init_y
 !
-        if (bmdi*dt > 1) call stop_it('special before boundary: bmdi*dt > 1 ')
+        if (bmdi*dt > 1) call stop_it('special_before_boundary: bmdi*dt > 1 ')
       endif
 !
 ! Read external velocity file. Has to be read before the granules are
