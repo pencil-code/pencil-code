@@ -225,7 +225,7 @@ module Special
 !  25-mar-10/Bourdin.KIS: coded
 !
       use Fourier, only: fourier_transform_other
-      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
+      use Mpicomm, only: mpisend_real, mpirecv_real
       use Syscalls, only: file_exists
 !
       real, dimension(:,:), allocatable :: kx, ky, k2
@@ -256,14 +256,14 @@ module Special
         ! Magnetic field is set only in the bottom layer
         if (lroot) then
           allocate(kx(nxgrid,nygrid), ky(nxgrid,nygrid), k2(nxgrid,nygrid), kxp(nxgrid), kyp(nygrid), stat=alloc_err)
-          if (alloc_err > 0) call stop_it_if_any (.true., 'setup_magnetic: '// &
-              'Could not allocate memory for wave vector variables')
+          if (alloc_err > 0) call fatal_error ('setup_magnetic', &
+              'Could not allocate memory for wave vector variables', .true.)
           allocate(Bz0_r(nxgrid,nygrid), Bz0_i(nxgrid,nygrid), stat=alloc_err)
-          if (alloc_err > 0) call stop_it_if_any (.true., 'setup_magnetic: '// &
-              'Could not allocate memory for vertical magnetic field variables')
+          if (alloc_err > 0) call fatal_error ('setup_magnetic', &
+              'Could not allocate memory for vertical magnetic field variables', .true.)
           allocate(Ax_r(nxgrid,nygrid), Ay_r(nxgrid,nygrid), Ax_i(nxgrid,nygrid), Ay_i(nxgrid,nygrid), stat=alloc_err)
-          if (alloc_err > 0) call stop_it_if_any (.true., 'setup_magnetic: '// &
-              'Could not allocate memory for vector potential A variables')
+          if (alloc_err > 0) call fatal_error ('setup_magnetic', &
+              'Could not allocate memory for vector potential A variables', .true.)
           ! Auxiliary quantities:
           ! idx2 and idy2 are essentially =2, but this makes compilers
           ! complain if nygrid=1 (in which case this is highly unlikely to be
@@ -283,18 +283,18 @@ module Special
           if (file_exists(mag_field_txt)) then
             open (unit,file=mag_field_txt)
             read (unit,*,iostat=ierr) Bz0_r
-            if (ierr /= 0) call stop_it_if_any(.true.,'setup_magnetic: '// &
-                'Error reading magnetogram file: "'//trim(mag_field_txt)//'"')
+            if (ierr /= 0) call fatal_error ('setup_magnetic', &
+                'Error reading magnetogram file: "'//trim(mag_field_txt)//'"', .true.)
             close (unit)
           elseif (file_exists(mag_field_dat)) then
             open (unit,file=mag_field_dat,form='unformatted',status='unknown', &
                 recl=lend*nxgrid*nygrid,access='direct')
             read (unit,rec=1,iostat=ierr) Bz0_r
-            if (ierr /= 0) call stop_it_if_any(.true.,'setup_magnetic: '// &
-                'Error reading magnetogram file: "'//trim(mag_field_dat)//'"')
+            if (ierr /= 0) call fatal_error ('setup_magnetic', &
+                'Error reading magnetogram file: "'//trim(mag_field_dat)//'"', .true.)
             close (unit)
           else
-            call stop_it_if_any(.true., 'setup_magnetic: No magnetogram file found.')
+            call fatal_error ('setup_magnetic', 'No magnetogram file found.', .true.)
           endif
 !
           ! Gauss to Tesla and SI to PENCIL units
@@ -340,8 +340,6 @@ module Special
           deallocate(Ax_r, Ay_r, Ax_i, Ay_i)
 !
         else
-          ! catch eventual 'stop_it_if_any' calls from MPI root rank
-          call stop_it_if_any (.false.,'')
           ! Receive initial A data
           call mpirecv_real (A_init_x, (/ nx, ny /), 0, Ax_tag)
           call mpirecv_real (A_init_y, (/ nx, ny /), 0, Ay_tag)
@@ -409,7 +407,7 @@ module Special
 !
 !  21-oct-2010/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_real, stop_it_if_any
+      use Mpicomm, only: mpibcast_real
       use Syscalls, only: file_exists
 !
       integer :: i, ierr
@@ -433,24 +431,23 @@ module Special
 !
       if (prof_type=='lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
-        if (ierr > 0) call stop_it_if_any (.true., 'setup_profiles: '// &
-            'Could not allocate memory for stratification variables')
+        if (ierr > 0) call fatal_error ('setup_profiles', &
+            'Could not allocate memory for stratification variables', .true.)
 !
         ! read stratification file only on the MPI root rank
         if (lroot) then
-          if (.not. file_exists (stratification_dat)) call stop_it_if_any ( &
-              .true., 'setup_profiles: Stratification file not found')
+          if (.not. file_exists (stratification_dat)) call fatal_error ( &
+              'setup_profiles', 'Stratification file not found', .true.)
           open (unit,file=stratification_dat)
           do i=1,nzgrid
             read (unit,*,iostat=ierr) var0,var1,var2
-            if (ierr /= 0) call stop_it_if_any (.true., 'setup_profiles: '// &
-                'Error reading stratification file: "'//trim(stratification_dat)//'"')
+            if (ierr /= 0) call fatal_error ('setup_profiles', &
+                'Error reading stratification file: "'//trim(stratification_dat)//'"', .true.)
             prof_lnrho(i)=var1
             prof_lnTT(i) =var2
           enddo
           close(unit)
         endif
-        call stop_it_if_any (.false.,'')
 !
         call mpibcast_real (prof_lnTT,nzgrid)
         call mpibcast_real (prof_lnrho,nzgrid)
@@ -491,7 +488,7 @@ module Special
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
+      use Mpicomm, only: mpibcast_int, mpibcast_real, parallel_file_exists
       use Syscalls, only: file_exists, file_size
 !
       character (len=*), intent (in) :: filename
@@ -509,28 +506,27 @@ module Special
       inquire (IOLENGTH=lend) 1.0
       inquire (IOLENGTH=lend_b8) 1.0d0
 !
+      if (.not. parallel_file_exists (filename)) &
+          call fatal_error ('read_profile', "can't find "//filename)
       ! file access is only done on the MPI root rank
       if (lroot) then
         ! determine the number of data points in the profile
-        if (.not. file_exists (filename)) &
-            call stop_it_if_any (.true., "read_profile: can't find "//filename)
         n_data = (file_size (filename) - 2*2*4) / (lend*8/lend_b8 * 2)
       endif
-      call stop_it_if_any (.false., '')
       call mpibcast_int (n_data, 1)
 !
       ! allocate memory
       allocate (data(n_data), data_z(n_data), stat=ierr)
-      if (ierr > 0) call stop_it_if_any (.true., 'read_profile: '// &
-          'Could not allocate memory for data and its z coordinate')
+      if (ierr > 0) call fatal_error ('read_profile', &
+          'Could not allocate memory for data and its z coordinate', .true.)
 !
       if (lroot) then
         ! read profile
         open (unit, file=filename, form='unformatted', recl=lend*n_data)
         read (unit, iostat=ierr) data
         read (unit, iostat=ierr) data_z
-        if (ierr /= 0) call stop_it_if_any (.true., 'read_profile: '// &
-            'Error reading profile data in "'//trim(filename)//'"')
+        if (ierr /= 0) call fatal_error ('read_profile', &
+            'Error reading profile data in "'//trim(filename)//'"', .true.)
         close (unit)
 !
         if (llog) then
@@ -544,7 +540,6 @@ module Special
         ! convert z coordinates from SI to Pencil units
         data_z = data_z / unit_length
       endif
-      call stop_it_if_any (.false., '')
 !
       ! broadcast profile
       call mpibcast_real (data, n_data)
@@ -2639,110 +2634,98 @@ module Special
 !***********************************************************************
     subroutine set_B2(f,BB2_local)
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Mpicomm, only: collect_xy, sum_xy, mpisend_real, mpirecv_real
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,ny) :: bbx,bby,bbz
-      real, dimension(nx,ny) :: fac,BB2_local,tmp
-      integer :: px,py,partner,alloc_err
-      integer, dimension(2) :: dims
-      real :: temp
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx,ny), intent(out) :: BB2_local
 !
-      intent(in) :: f
-      intent(out) :: BB2_local
+      real, dimension(:,:), allocatable :: fac, bbx, bby, bbz
+      integer :: partner, level
+      integer, parameter :: tag=555
+!
+      if (.not. allocated (BB2) .and. (lroot .or. lgran_proc)) then
+        allocate (BB2(nxgrid,nygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('set_BB2', &
+            'Could not allocate memory for BB2', .true.)
+      endif
+!
+      if (lfirst_proc_z) then
+!
+        allocate (fac(nx,ny), bbx(nx,ny), bby(nx,ny), bbz(nx,ny), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('set_BB2', &
+            'Could not allocate memory for fac and bbx/bby/bbz', .true.)
 !
 ! compute B = curl(A) for irefz layer
 !
-      if (nygrid/=1) then
-        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-        bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
-            -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
-            +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
-      else
-        if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
-      endif
-      if (nzgrid/=1) then
-        fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-        bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
-            -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
-            +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
-      else
-        if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
-      endif
-!
-      if (nzgrid/=1) then
-        fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-        bby= fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
-            -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
-            +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
-      else
-        if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
-      endif
-      if (nxgrid/=1) then
-        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-        bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
-            -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
-            +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
-      else
-        if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
-      endif
-      if (nxgrid/=1) then
-        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-        bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
-            -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
-            +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
-      else
-        if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
-      endif
-      if (nygrid/=1) then
-        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-        bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
-            -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
-            +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
-      else
-        if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
-      endif
-!
-      BB2_local = bbx*bbx + bby*bby + bbz*bbz
-      Bzflux = sum(abs(bbz))
-!
-! communicate to root processor
-!
-      if (lroot) then
-        dims=(/nx,ny/)
-        if (.not. allocated (BB2)) then
-          allocate (BB2(nxgrid,nygrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('set_B2', 'Could not allocate memory', .true.)
-          BB2 = 0.0
+        bbx = 0
+        bby = 0
+        bbz = 0
+        if (nygrid/=1) then
+          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+          bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
+              -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
+              +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
+        else
+          if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
         endif
-        BB2(1:nx,1:ny) = BB2_local
-        do px=0,nprocx-1
-          do py=0,nprocy-1
-            partner = px + py*nprocx
-            if (partner == 0) cycle
-            call mpirecv_real(tmp,dims,partner,555+partner)
-            BB2(px*nx+1:px*nx+nx,py*ny+1:py*ny+ny) = tmp
-            call mpirecv_real(temp,1,partner,556+partner)
-            Bzflux = Bzflux+temp
-          enddo
-        enddo
-      elseif (lfirst_proc_z) then
-        call mpisend_real(BB2_local,dims,0,555+iproc)
-        call mpisend_real(Bzflux,1,0,556+iproc)
-      endif
+        if (nzgrid/=1) then
+          fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
+          bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
+              -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
+              +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
+        else
+          if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
+        endif
 !
+        if (nzgrid/=1) then
+          fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
+          bby= fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
+              -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
+              +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
+        else
+          if (ip<=5) print*, 'set_B2: Degenerate case in z-direction'
+        endif
+        if (nxgrid/=1) then
+          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+          bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
+              -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
+              +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
+        else
+          if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
+        endif
+        if (nxgrid/=1) then
+          fac=(1./60)*spread(dx_1(l1:l2),2,ny)
+          bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
+              -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
+              +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
+        else
+          if (ip<=5) print*, 'set_B2: Degenerate case in x-direction'
+        endif
+        if (nygrid/=1) then
+          fac=(1./60)*spread(dy_1(m1:m2),1,nx)
+          bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
+              -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
+              +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
+        else
+          if (ip<=5) print*, 'set_B2: Degenerate case in y-direction'
+        endif
+!
+! Compute |B| and collect as global BB2 on root processor.
+!
+        BB2_local = bbx*bbx + bby*bby + bbz*bbz
+        deallocate (fac, bbx, bby, bbz)
+        call collect_xy (BB2_local, BB2)
+        if (Bz_flux /= 0.0) call sum_xy (sum (abs (bbz)), Bzflux)
+      endif
       if (lgran_parallel) then
-        dims=(/nxgrid,nygrid/)
+        ! Communicate BB2 to granulation computation processors.
         if (lroot) then
-          call mpisend_real(BB2,dims,nprocxy,nprocxy)
-          call mpisend_real(BB2,dims,nprocxy+1,nprocxy+1)
-          call mpisend_real(BB2,dims,nprocxy+2,nprocxy+2)
+          do level = 1, nglevel
+            partner = nprocxy + level - 1
+            call mpisend_real (BB2, (/nxgrid,nygrid/), partner, tag+partner)
+          enddo
         elseif (lgran_proc) then
-          if (.not. allocated (BB2)) then
-            allocate (BB2(nxgrid,nygrid), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('set_B2', 'Could not allocate memory', .true.)
-          endif
-          call mpirecv_real(BB2,dims,0,iproc)
+          call mpirecv_real (BB2, (/nxgrid,nygrid/), 0, tag+iproc)
         endif
       endif
 !
