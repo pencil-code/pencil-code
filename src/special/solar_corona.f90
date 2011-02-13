@@ -105,7 +105,7 @@ module Special
     integer, save, dimension(mseed) :: points_rstate
     real, dimension(nx,ny), save :: ux_local,uy_local
     real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
-    real :: Bzflux
+    real :: Bz_total_flux
     logical :: lgran_parallel=.false.
 !
     integer, save, dimension(mseed) :: nano_seed
@@ -2003,7 +2003,7 @@ module Special
             dA=dy*unit_length
           endif
           f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
-              Bz_flux/(Bzflux*dA*unit_magnetic)
+              Bz_flux/(Bz_total_flux*dA*unit_magnetic)
         endif
       endif
 !
@@ -2699,7 +2699,7 @@ module Special
         BB2_local = bbx*bbx + bby*bby + bbz*bbz
         deallocate (fac, bbx, bby, bbz)
         call collect_xy (BB2_local, BB2)
-        if (Bz_flux /= 0.0) call sum_xy (sum (abs (bbz)), Bzflux)
+        if (Bz_flux /= 0.0) call sum_xy (sum (abs (bbz)), Bz_total_flux)
       endif
       if (lgran_parallel) then
         ! Communicate BB2 to granulation computation processors.
