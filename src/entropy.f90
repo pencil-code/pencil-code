@@ -905,8 +905,8 @@ module Entropy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          case('Gressel-hs')
-            call gressel_entropy(f)
+          case('thermal-hs')
+            call thermal_hs_equilibrium_ism(f)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1752,7 +1752,7 @@ module Entropy
 !  both in grav_init_pars and in entropy_init_pars to obtain hydrostatic
 !  equilibrium. Constants g_A..D from gravz_profile.
 !
-!  AJ: PLEASE IDENTIFY AUTHOR
+!  12-feb-11/fred: older subroutine now use thermal_hs_equilibrium_ism.
 !
       use EquationOfState , only: eosperturb, getmu
       use Mpicomm, only: mpibcast_real
@@ -1790,7 +1790,11 @@ module Entropy
       do m=m1,m2
         rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
         lnrho=log(rho)
-        f(l1:l2,m,n,ilnrho)=lnrho
+        if (ldensity_nolog) then
+          f(l1:l2,m,n,irho)=rho
+        else
+          f(l1:l2,m,n,ilnrho)=lnrho
+        endif
         if (lentropy) then
 !  Isothermal
           pp=rho*gamma_m1/gamma*T0
@@ -1811,7 +1815,7 @@ module Entropy
 !
     endsubroutine ferriere_hs
 !***********************************************************************
-    subroutine gressel_entropy(f)
+    subroutine thermal_hs_equilibrium_ism(f)
 !
 !  This routine calculates a vertical profile for density for an appropriate
 !  isothermal entropy designed to balance the vertical 'Ferriere' gravity
@@ -1821,7 +1825,7 @@ module Entropy
 !  Lambda*rho(z)=Gamma(z) in interstellar.
 !
 !  Requires gravz_profile='Ferriere' in gravity_simple.f90,
-!  initlnrho='Galactic-hs' in density.f90 and heating_select='Gressel-hs'
+!  initlnrho='Galactic-hs' in density.f90 and heating_select='thermal-hs'
 !  in interstellar.f90. Constants g_A..D from gravz_profile.
 !
 !  22-mar-10/fred: coded
@@ -1843,7 +1847,7 @@ module Entropy
 !
 !  identifier
 !
-      if (headtt) print*,'gressel_entropy: ENTER'
+      if (headtt) print*,'thermal_hs_equilibrium_ism: ENTER'
 !
 !  Set up physical units.
 !
@@ -1858,23 +1862,28 @@ module Entropy
       endif
 !
 !  Obtain vertical density profile and isothermal temperature from
-!  interstellar: gressel_hs
+!  interstellar: thermal_hs
 !
       call get_shared_variable('zrho', zrho, ierr)
-      if (ierr/=0) call fatal_error('gressel_entropy', &
+      if (ierr/=0) call fatal_error('thermal_hs_equilibrium_ism', &
           'there was a problem when getting zrho')
       call get_shared_variable('T0hs', T0hs, ierr)
-      if (ierr/=0) call fatal_error('gressel_entropy', &
+      if (ierr/=0) call fatal_error('thermal_hs_equilibrium_ism', &
           'there was a problem when getting T0hs')
       if (lroot) print*, &
-          'gressel_entropy: zrho received from interstellar, T0hs =',T0hs
+          'thermal_hs_equilibrium_ism: zrho received', &
+          ' from interstellar, T0hs =',T0hs
 !
 !  Allocate density profile to f and derive entropy profile from
 !  temperature and density
 !
       do n=n1,n2
         lnrho=log(zrho(n))
-        f(l1:l2,m1:m2,n,ilnrho)=lnrho
+        if (ldensity_nolog) then
+          f(:,:,n,irho)=exp(lnrho)
+        else
+          f(:,:,n,ilnrho)=lnrho
+        endif
 !
         TT=T0hs/(g_A*g_B)* &
             (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
@@ -1882,11 +1891,11 @@ module Entropy
 !
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
 !
-        f(l1:l2,m1:m2,n,iss)=ss
+        f(:,:,n,iss)=ss
 !
       enddo
 !
-    endsubroutine gressel_entropy
+    endsubroutine thermal_hs_equilibrium_ism
 !***********************************************************************
     subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
 !
@@ -1897,7 +1906,7 @@ module Entropy
 !   equilibrium.
 !
 !   22-jan-10/fred
-!
+!   
       use EquationOfState, only: eosperturb
       use Mpicomm, only: mpibcast_real
 !
@@ -1918,7 +1927,11 @@ module Entropy
 !  Isothermal
           pp=rho*cs0hs**2
           call eosperturb(f,nx,pp=pp)
-          ss=f(l1:l2,m,n,ilnrho)
+          if (ldensity_nolog) then
+            ss=log(f(l1:l2,m,n,irho))
+          else
+            ss=f(l1:l2,m,n,ilnrho)
+          endif
           fmpi1=(/ cs2bot /)
           call mpibcast_real(fmpi1,1,0)
           cs2bot=fmpi1(1)
