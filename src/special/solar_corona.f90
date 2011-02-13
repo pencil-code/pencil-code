@@ -73,19 +73,23 @@ module Special
     real, target, dimension (nx,nz) :: logQ_xz
     real, target, dimension (ny,nz) :: logQ_yz
 !
+  ! Granule midpoint:
+  type point
+    ! X and Y position
+    real :: pos_x, pos_y
+    ! Current and maximum amplitude
+    real :: amp, amp_max
+    ! Time of amplitude maximum and total lifetime
+    real :: t_amp_max, t_life
+    type (point), pointer :: next
+    type (point), pointer :: previous
+  end type point
 !
-    TYPE point
-      real, dimension(2) :: pos
-      real, dimension(4) :: data
-      type(point),pointer :: next
-      type(point),pointer :: previous
-    end TYPE point
-!
-    type(point), pointer :: first => null()
-    type(point), pointer :: current => null()
-    type(point), pointer :: firstlev => null()
-    type(point), pointer :: secondlev => null()
-    type(point), pointer :: thirdlev => null()
+  type (point), pointer :: first => null()
+  type (point), pointer :: current => null()
+  type (point), pointer :: firstlev => null()
+  type (point), pointer :: secondlev => null()
+  type (point), pointer :: thirdlev => null()
 !
     integer :: xrange,yrange,pow
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
@@ -2185,11 +2189,11 @@ module Special
       if (Bavoid > 0.) call fill_B_avoidarr
 !
       if (.not.associated(first)) then
-        call rdpoints(level)
+        call read_points (level)
         if (.not.associated(first)) then
           call driveinit
-          call wrpoints(level,0)
-          call wrpoints(level)
+          call write_points (level, 0)
+          call write_points (level)
         endif
       else
         call updatepoints
@@ -2216,7 +2220,7 @@ module Special
 ! Save granules to file.
 !
       if (t >= tsnap_uu) then
-        call wrpoints(level,isnap)
+        call write_points (level, isnap)
         if (level == nglevel) then
           tsnap_uu = tsnap_uu + dsnap
           isnap  = isnap + 1
@@ -2225,7 +2229,7 @@ module Special
       if (itsub == 3) &
           lstop = file_exists('STOP')
       if (lstop .or. (t>=tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
-          (mod(it,isave) == 0)) call wrpoints(level)
+          (mod(it,isave) == 0)) call write_points (level)
 !
     endsubroutine drive3
 !***********************************************************************
@@ -2242,107 +2246,115 @@ module Special
 !
     endsubroutine resetarr
 !***********************************************************************
-    subroutine rdpoints(level)
+    subroutine read_points(level)
 !
 ! Read in points from file if existing.
 !
 ! 12-aug-10/bing: coded
 !
-      real, dimension(6) :: tmppoint
-      integer :: iost,rn,iol
       integer, intent(in) :: level
+!
+      integer :: ierr, pos, len
       logical :: ex
       character(len=20) :: filename
+      integer, parameter :: unit=10
+      real, dimension(6) :: buffer
 !
-      write (filename,'("driver/pts_",I1.1,".dat")') level
+      write (filename, '("driver/pts_",I1.1,".dat")') level
 !
-      inquire(file=filename,exist=ex)
+      inquire (file=filename, exist=ex)
 !
       if (ex) then
-        inquire(IOLENGTH=iol) dy
-        print*,'Reading granule level ',level,':',filename
-        open(10,file=filename,status="unknown",access="direct",recl=6*iol)
-        iost=0
+        inquire (iolength=len) current%amp
+        write (*,'(A,A)') 'Reading file: ', filename
+        open (unit, file=filename, access="direct", recl=len*6)
 !
-        rn=1
-        read (10, iostat=iost, rec=rn) tmppoint
-        do while (iost == 0)
+        pos = 1
+        read (unit, iostat=ierr, rec=pos) buffer
+        do while (ierr == 0)
           call add_point
-          current%pos(:) =tmppoint(1:2)
-          current%data(:)=tmppoint(3:6)
+          current%pos_x = buffer(1)
+          current%pos_y = buffer(2)
+          current%amp = buffer(3)
+          current%amp_max = buffer(4)
+          current%t_amp_max = buffer(5)
+          current%t_life = buffer(6)
           call drawupdate
-          rn=rn+1
-          read (10, iostat=iost, rec=rn) tmppoint
+          pos = pos + 1
+          read (unit, iostat=ierr, rec=pos) buffer
         enddo
 !
-        close(10)
-        print*,'read ',rn-1,' points'
+        close (unit)
+        write (*,'(A,I1.1,A)') '=> read ', pos-1, ' granules for level ', level
 !
-        if (level==nglevel) then
+        if (level == nglevel) then
           write (filename,'("driver/seed_",I1.1,".dat")') level
-          inquire(file=filename,exist=ex)
-          if (ex) then
-            open(10,file=filename,status="unknown",access="direct",recl=mseed*iol)
-            read(10,rec=1) points_rstate
-            close(10)
-          else
-            call fatal_error('rdpoints','cant find seed list for granules')
-          endif
+          inquire (file=filename, exist=ex)
+          if (.not. ex) call fatal_error ('read_points', &
+              'cant find seed list for granules', .true.)
+          open (unit, file=filename, access="direct", recl=len*mseed)
+          read (unit, rec=1) points_rstate
+          close (unit)
         endif
 !
       endif
 !
-    endsubroutine rdpoints
+    endsubroutine read_points
 !***********************************************************************
-    subroutine wrpoints(level,issnap)
+    subroutine write_points(level,issnap)
 !
 ! Writes positions and amplitudes of granules to files. Also
 ! seed list are stored to be able to reproduce the run.
 !
 ! 12-aug-10/bing: coded
 !
-      integer :: rn,iol
-      integer, optional, intent(in) :: issnap
       integer, intent(in) :: level
-      real, dimension(6) :: posdata
+      integer, optional, intent(in) :: issnap
+!
+      integer :: pos, len
       character(len=22) :: filename
+      integer, parameter :: unit=10
+      real, dimension(6) :: buffer
 !
-      inquire(IOLENGTH=iol) dy
+      inquire (iolength=len) current%amp
 !
-      if (present(issnap)) then
-        write (filename,'("driver/pts_",I1.1,"_",I3.3,".dat")') level,issnap
+      if (present (issnap)) then
+        write (filename,'("driver/pts_",I1.1,"_",I3.3,".dat")') level, issnap
       else
         write (filename,'("driver/pts_",I1.1,".dat")') level
       endif
 !
-      open(10,file=filename,status="replace",access="direct",recl=6*iol)
+      open (unit, file=filename, status="replace", access="direct", recl=len*6)
 !
-      rn=1
+      pos = 1
       current => first
       do while (associated (current))
-        posdata(1:2)=current%pos
-        posdata(3:6)=current%data
-!
-        write(10,rec=rn) posdata
-        rn=rn+1
+        buffer(1) = current%pos_x
+        buffer(2) = current%pos_y
+        buffer(3) = current%amp
+        buffer(4) = current%amp_max
+        buffer(5) = current%t_amp_max
+        buffer(6) = current%t_life
+        write (unit,rec=pos) buffer
+        pos = pos + 1
         current => current%next
       enddo
 !
-      close(10)
+      close (unit)
 !
 ! Save seed list for each level. Is needed if levels are spread over 3 procs.
 !
-      if (present(issnap)) then
-        write (filename,'("driver/seed_",I1.1,"_",I3.3,".dat")') level,issnap
+      if (present (issnap)) then
+        write (filename,'("driver/seed_",I1.1,"_",I3.3,".dat")') level, issnap
       else
         write (filename,'("driver/seed_",I1.1,".dat")') level
       endif
-      !
-      open(10,file=filename,status="replace",access="direct",recl=mseed*iol)
-      write(10,rec=1) points_rstate
-      close(10)
 !
-    endsubroutine wrpoints
+      open (unit, file=filename, status="replace", access="direct", recl=len*mseed)
+      write (unit,rec=1) points_rstate
+      close (unit)
+!
+    endsubroutine write_points
 !***********************************************************************
     subroutine add_point
 !
@@ -2423,10 +2435,10 @@ module Special
 ! Set randomly some points t0 to the past so they already decay
 !
         call random_number_wrapper(rand)
-        current%data(3)=t+(rand*2-1)*current%data(4)* &
-            (-alog(thresh*ampl/current%data(2)))**(1./pow)
+        current%t_amp_max=t+(rand*2-1)*current%t_life* &
+            (-alog(thresh*ampl/current%amp_max))**(1./pow)
 !
-        current%data(1)=current%data(2)*exp(-((t-current%data(3))/current%data(4))**pow)
+        current%amp=current%amp_max*exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
 ! Update arrays with new data
 !
@@ -2516,23 +2528,23 @@ module Special
 !
 ! Update weight and velocity for new granule
 !
-      do jj=int(current%pos(2))-yrange,int(current%pos(2))+yrange
+      do jj=int(current%pos_y)-yrange,int(current%pos_y)+yrange
         j = 1+mod(jj-1+nygrid,nygrid)
-        do ii=int(current%pos(1))-xrange,int(current%pos(1))+xrange
+        do ii=int(current%pos_x)-xrange,int(current%pos_x)+xrange
           i = 1+mod(ii-1+nxgrid,nxgrid)
-          xdist=dx*(ii-current%pos(1))
-          ydist=dy*(jj-current%pos(2))
+          xdist=dx*(ii-current%pos_x)
+          ydist=dy*(jj-current%pos_y)
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
 !
-          if (dist.lt.avoid*granr.and.t.lt.current%data(3)) avoidarr(i,j)=1
+          if (dist.lt.avoid*granr.and.t.lt.current%t_amp_max) avoidarr(i,j)=1
 !
-          wtmp=current%data(1)/dist
+          wtmp=current%amp/dist
 !
           dist0 = 0.53*granr
           tmp = (dist/dist0)**2
 !
-          vv=exp(1.)*current%data(1)*tmp*exp(-tmp)
+          vv=exp(1.)*current%amp*tmp*exp(-tmp)
 !
           if (wtmp.gt.w(i,j)*(1-ig)) then
             if (wtmp.gt.w(i,j)*(1+ig)) then
@@ -2588,20 +2600,20 @@ module Special
 !
 ! Create new data for new point
 !
-      current%pos(1)=ipos
-      current%pos(2)=jpos
+      current%pos_x=ipos
+      current%pos_y=jpos
 !
       call random_number_wrapper(rand)
-      current%data(2)=ampl*(1+(2*rand-1)*pd)
+      current%amp_max=ampl*(1+(2*rand-1)*pd)
 !
       call random_number_wrapper(rand)
-      current%data(4)=life_t*(1+(2*rand-1)/10.)
+      current%t_life=life_t*(1+(2*rand-1)/10.)
 !
-      current%data(3)=t+current%data(4)* &
-          (-alog(thresh*ampl/current%data(2)))**(1./pow)
+      current%t_amp_max=t+current%t_life* &
+          (-alog(thresh*ampl/current%amp_max))**(1./pow)
 !
-      current%data(1)=current%data(2)* &
-          exp(-((t-current%data(3))/current%data(4))**pow)
+      current%amp=current%amp_max* &
+          exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
     endsubroutine make_newpoint
 !***********************************************************************
@@ -2611,19 +2623,15 @@ module Special
 !
 ! 12-aug-10/bing: coded
 !
-      use Sub, only: notanumber
-!
       current => first
       do while (associated (current))
-        if (notanumber(current%data)) &
-            call fatal_error('update points','NaN found',.true.)
 !
 ! update amplitude
-        current%data(1)=current%data(2)* &
-            exp(-((t-current%data(3))/current%data(4))**pow)
+        current%amp=current%amp_max* &
+            exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
 ! remove point if amplitude is less than threshold
-        if (current%data(1)/ampl.lt.thresh) then
+        if (current%amp/ampl.lt.thresh) then
           call del_point
         else
           current => current%next
@@ -2980,17 +2988,17 @@ module Special
 !
       current => first
       do while (associated (current))
-        xpos = int(current%pos(1))
-        ypos = int(current%pos(2))
+        xpos = int(current%pos_x)
+        ypos = int(current%pos_y)
 !
-        current%pos(1) =  current%pos(1) + Ux_ext(xpos,ypos)*dt_gran
-        current%pos(2) =  current%pos(2) + Uy_ext(xpos,ypos)*dt_gran
+        current%pos_x =  current%pos_x + Ux_ext(xpos,ypos)*dt_gran
+        current%pos_y =  current%pos_y + Uy_ext(xpos,ypos)*dt_gran
 !
-        if (current%pos(1)<0.5) current%pos(1) = current%pos(1) + nxgrid
-        if (current%pos(2)<0.5) current%pos(2) = current%pos(2) + nygrid
+        if (current%pos_x<0.5) current%pos_x = current%pos_x + nxgrid
+        if (current%pos_y<0.5) current%pos_y = current%pos_y + nygrid
 !
-        if (current%pos(1)>nxgrid+0.5) current%pos(1) = current%pos(1) - nxgrid
-        if (current%pos(2)>nygrid+0.5) current%pos(2) = current%pos(2) - nygrid
+        if (current%pos_x>nxgrid+0.5) current%pos_x = current%pos_x - nxgrid
+        if (current%pos_y>nygrid+0.5) current%pos_y = current%pos_y - nygrid
 !
         current => current%next
       enddo
