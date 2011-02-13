@@ -2179,24 +2179,24 @@ module Special
         call read_points (level)
         if (.not.associated(first)) then
           ! No snapshot available => initialize driver and draw granules
-          call driveinit
+          call init_gran_driver
           call write_points (level, 0)
           call write_points (level)
         endif
       else
         ! List is filled => update amplitudes and remove dead granules
-        call updatepoints
+        call update_points
         ! Draw old granules to the granulation velocity field
         current => first
         do while (associated (current))
-          call drawupdate
+          call draw_update
           current => current%next
         enddo
         ! Fill free space with new granules and draw them
         do while (minval(avoidarr) == 0)
           call add_point
-          call make_newpoint
-          call drawupdate
+          call find_free_place
+          call draw_update
         enddo
       endif
 !
@@ -2256,7 +2256,7 @@ module Special
           current%amp_max = buffer(4)
           current%t_amp_max = buffer(5)
           current%t_life = buffer(6)
-          call drawupdate
+          call draw_update
           pos = pos + 1
           read (unit, iostat=ierr, rec=pos) buffer
         enddo
@@ -2393,7 +2393,7 @@ module Special
 !
     endsubroutine del_point
 !***********************************************************************
-    subroutine driveinit
+    subroutine init_gran_driver
 !
 ! If no existing files are found initialize points.
 ! The lifetimes are randomly distribute around starting time.
@@ -2407,7 +2407,7 @@ module Special
       do while (minval (avoidarr) == 0)
 !
         call add_point
-        call make_newpoint
+        call find_free_place
 !
 ! Set randomly some points t0 to the past so they already decay
 !
@@ -2419,11 +2419,11 @@ module Special
 !
 ! Update arrays with new data
 !
-        call drawupdate
+        call draw_update
 !
       enddo
 !
-    endsubroutine driveinit
+    endsubroutine init_gran_driver
 !***********************************************************************
     subroutine helmholtz(frx_r,fry_r)
 !
@@ -2493,7 +2493,7 @@ module Special
 !
     endsubroutine helmholtz
 !***********************************************************************
-    subroutine drawupdate
+    subroutine draw_update
 !
 ! Using a point from the list to update the velocity field.
 !
@@ -2540,9 +2540,9 @@ module Special
         enddo
       enddo
 !
-    endsubroutine drawupdate
+    endsubroutine draw_update
 !***********************************************************************
-    subroutine make_newpoint
+    subroutine find_free_place
 !
 ! Find the position of a new point.
 !
@@ -2592,9 +2592,9 @@ module Special
       current%amp=current%amp_max* &
           exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
-    endsubroutine make_newpoint
+    endsubroutine find_free_place
 !***********************************************************************
-    subroutine updatepoints
+    subroutine update_points
 !
 ! Update the amplitude/weight of a point.
 !
@@ -2616,7 +2616,7 @@ module Special
 !
       end do
 !
-    endsubroutine updatepoints
+    endsubroutine update_points
 !***********************************************************************
     subroutine set_B2(f,BB2_local)
 !
