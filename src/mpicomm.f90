@@ -180,12 +180,16 @@ module Mpicomm
     module procedure mpireduce_sum_double_arr4
   endinterface
 !
-  interface distribute_global_xy
-    module procedure distribute_global_xy_2D
+  interface distribute_xy
+    module procedure distribute_xy_2D
+    module procedure distribute_xy_3D
+    module procedure distribute_xy_4D
   endinterface
 !
-  interface collect_global_xy
-    module procedure collect_global_xy_2D
+  interface collect_xy
+    module procedure collect_xy_2D
+    module procedure collect_xy_3D
+    module procedure collect_xy_4D
   endinterface
 !
   interface distribute_to_pencil_xy
@@ -3427,42 +3431,87 @@ module Mpicomm
 !
     endsubroutine fill_zghostzones_3vec
 !***********************************************************************
-    subroutine distribute_global_xy_2D (in, out, broadcaster)
+    subroutine sum_xy (in, out)
 !
-!  This routine divides global data and distributes it in the xy-plane.
+!  Sum up 0D data in the xy-plane and distribute back the sum.
+!  This routine needs only to be called from all processors a the xy-plane.
+!  Several xy-planes can call this routine at once.
+!
+!  19-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: in
+      real, intent(out) :: out
+!
+      real :: buffer
+      integer :: px, py, partner
+      integer, parameter :: tag=114
+!
+!
+      if (lfirst_proc_xy) then
+        ! initialize sum with the local data
+        out = in
+        ! collect and sum up the remote data
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpirecv_real (buffer, 1, partner, tag)
+            out = out + buffer
+          enddo
+        enddo
+        ! distribute back the sum
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_real (out, 1, partner, tag)
+          enddo
+        enddo
+      else
+        ! send data to collector and receive the sum
+        call mpisend_real (in, 1, ipz*nprocxy, tag)
+        call mpirecv_real (out, 1, ipz*nprocxy, tag)
+      endif
+!
+    endsubroutine sum_xy
+!***********************************************************************
+    subroutine distribute_xy_2D (in, out, source_proc)
+!
+!  This routine divides a large array of 2D data on the source processor
+!  and distributes it to all processors in the xy-plane. 
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
-      integer, intent(in) :: broadcaster
+      integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny ! transfer box sizes
-      integer :: px, py, partner, nbox, alloc_stat
+      integer :: px, py, broadcaster, partner, nbox, alloc_err
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: buffer
 !
 !
-      if ((nprocx == 1) .and. (nprocy == 1)) then
-        out = in
-        return
-      endif
-!
       bnx = size (out, 1)
       bny = size (out, 2)
       nbox = bnx*bny
 !
-      allocate (buffer(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('distribute_global_xy_2D: not enough memory for buffer!', .true.)
+      allocate (buffer(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('distribute_xy_2D: not enough memory for buffer!', .true.)
+!
+      broadcaster = ipz * nprocxy
+      if (present (source_proc)) broadcaster = broadcaster + source_proc
 !
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_global_xy_2D: input x dim must be nprocx*output', .true.)
+            call stop_fatal ('distribute_xy_2D: input x dim must be nprocx*output', lfirst_proc_xy)
         if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_global_xy_2D: input y dim must be nprocy*output', .true.)
+            call stop_fatal ('distribute_xy_2D: input y dim must be nprocy*output', lfirst_proc_xy)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3485,44 +3534,176 @@ module Mpicomm
 !
       deallocate (buffer)
 !
-    endsubroutine distribute_global_xy_2D
+    endsubroutine distribute_xy_2D
 !***********************************************************************
-    subroutine collect_global_xy_2D (in, out, collector)
+    subroutine distribute_xy_3D (in, out, source_proc)
 !
-!  Collect 2D data from several processors and combine into global shape.
+!  This routine divides a large array of 3D data on the source processor
+!  and distributes it to all processors in the xy-plane. 
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: px, py, broadcaster, partner, nbox, alloc_err
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      nbox = bnx*bny*bnz
+!
+      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('distribute_xy_3D: not enough memory for buffer!', .true.)
+!
+      broadcaster = ipz * nprocxy
+      if (present (source_proc)) broadcaster = broadcaster + source_proc
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xy_3D: input x dim must be nprocx*output', lfirst_proc_xy)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_xy_3D: input y dim must be nprocy*output', lfirst_proc_xy)
+        if (bnz /= size (in, 3)) &
+            call stop_fatal ('distribute_xy_3D: z dim must equal between in and out', lfirst_proc_xy)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
+            else
+              ! send to partner
+              buffer = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
+              call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        out = buffer
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine distribute_xy_3D
+!***********************************************************************
+    subroutine distribute_xy_4D (in, out, source_proc)
+!
+!  This routine divides a large array of 4D data on the source processor
+!  and distributes it to all processors in the xy-plane. 
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: px, py, broadcaster, partner, nbox, alloc_err
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      bna = size (out, 4)
+      nbox = bnx*bny*bnz*bna
+!
+      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('distribute_xy_4D: not enough memory for buffer!', .true.)
+!
+      broadcaster = ipz * nprocxy
+      if (present (source_proc)) broadcaster = broadcaster + source_proc
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xy_4D: input x dim must be nprocx*output', lfirst_proc_xy)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_xy_4D: input y dim must be nprocy*output', lfirst_proc_xy)
+        if (bnz /= size (in, 3)) &
+            call stop_fatal ('distribute_xy_4D: z dim must equal between in and out', lfirst_proc_xy)
+        if (bna /= size (in, 4)) &
+            call stop_fatal ('distribute_xy_4D: 4th dim must equal between in and out', lfirst_proc_xy)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
+            else
+              ! send to partner
+              buffer = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
+              call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        out = buffer
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine distribute_xy_4D
+!***********************************************************************
+    subroutine collect_xy_2D (in, out, dest_proc)
+!
+!  Collect 2D data from all processors in the xy-plane
+!  and combine it into one large array on one destination processor.
+!  'dest_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
       real, dimension(:,:), intent(in) :: in
-      real, dimension(:,:), intent(out) :: out
-      integer, intent(in) :: collector
+      real, dimension(:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
 !
       integer :: bnx, bny ! transfer box sizes
-      integer :: px, py, partner, nbox, alloc_stat
+      integer :: px, py, collector, partner, nbox, alloc_err
       integer, parameter :: ytag=116
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: buffer
 !
 !
-      if ((nprocx == 1) .and. (nprocy == 1)) then
-        out = in
-        return
-      endif
-!
       bnx = size (in, 1)
       bny = size (in, 2)
       nbox = bnx*bny
 !
-      allocate (buffer(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('collect_global_xy_2D: not enough memory for buffer!', .true.)
+      allocate (buffer(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_xy_2D: not enough memory for buffer!', .true.)
+!
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
         if (bnx * nprocx /= size (out, 1)) &
-            call stop_fatal ('collect_global_xy_2D: output x dim must be nprocx*input', .true.)
+            call stop_fatal ('collect_xy_2D: output x dim must be nprocx*input', lfirst_proc_xy)
         if (bny * nprocy /= size (out, 2)) &
-            call stop_fatal ('collect_global_xy_2D: output y dim must be nprocy*input', .true.)
+            call stop_fatal ('collect_xy_2D: output y dim must be nprocy*input', lfirst_proc_xy)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3545,7 +3726,136 @@ module Mpicomm
 !
       deallocate (buffer)
 !
-    endsubroutine collect_global_xy_2D
+    endsubroutine collect_xy_2D
+!***********************************************************************
+    subroutine collect_xy_3D (in, out, dest_proc)
+!
+!  Collect 3D data from all processors in the xy-plane
+!  and combine it into one large array on one destination processor.
+!  'dest_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: px, py, collector, partner, nbox, alloc_err
+      integer, parameter :: ytag=116
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (in, 1)
+      bny = size (in, 2)
+      bnz = size (in, 3)
+      nbox = bnx*bny*bnz
+!
+      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_xy_3D: not enough memory for buffer!', .true.)
+!
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (bnx * nprocx /= size (out, 1)) &
+            call stop_fatal ('collect_xy_3D: output x dim must be nprocx*input', lfirst_proc_xy)
+        if (bny * nprocy /= size (out, 2)) &
+            call stop_fatal ('collect_xy_3D: output y dim must be nprocy*input', lfirst_proc_xy)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = in
+            else
+              ! receive from partner
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = buffer
+            endif
+          enddo
+        enddo
+      else
+        ! send to collector
+        buffer = in
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine collect_xy_3D
+!***********************************************************************
+    subroutine collect_xy_4D (in, out, dest_proc)
+!
+!  Collect 4D data from all processors in the xy-plane
+!  and combine it into one large array on one destination processor.
+!  'dest_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: px, py, collector, partner, nbox, alloc_err
+      integer, parameter :: ytag=116
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (in, 1)
+      bny = size (in, 2)
+      bnz = size (in, 3)
+      bna = size (in, 4)
+      nbox = bnx*bny*bnz*bna
+!
+      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_xy_4D: not enough memory for buffer!', .true.)
+!
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (bnx * nprocx /= size (out, 1)) &
+            call stop_fatal ('collect_xy_4D: output x dim must be nprocx*input', lfirst_proc_xy)
+        if (bny * nprocy /= size (out, 2)) &
+            call stop_fatal ('collect_xy_4D: output y dim must be nprocy*input', lfirst_proc_xy)
+        if (bnz /= size (out, 3)) &
+            call stop_fatal ('collect_xy_4D: z dim must equal between in and out', lfirst_proc_xy)
+        if (bna /= size (out, 4)) &
+            call stop_fatal ('collect_xy_4D: 4th dim must equal between in and out', lfirst_proc_xy)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = in
+            else
+              ! receive from partner
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = buffer
+            endif
+          enddo
+        enddo
+      else
+        ! send to collector
+        buffer = in
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine collect_xy_4D
 !***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out, broadcaster)
 !
@@ -3559,7 +3869,7 @@ module Mpicomm
       integer, intent(in) :: broadcaster
 !
       integer :: bnx, bny ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=113
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -3581,8 +3891,8 @@ module Mpicomm
       if ((size (out, 1) /= bnx) .or. ((size (out, 2) /= bny))) &
           call stop_fatal ('distribute_to_pencil_xy_2D: output array size mismatch /= bnx,bny', lfirst_proc_xy)
 !
-      allocate (buffer(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('distribute_to_pencil_xy_2D: not enough memory for buffer!', .true.)
+      allocate (buffer(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('distribute_to_pencil_xy_2D: not enough memory for buffer!', .true.)
 !
       if (iproc == broadcaster) then
         do ibox = 0, nprocxy-1
@@ -3618,7 +3928,7 @@ module Mpicomm
       integer, intent(in) :: collector
 !
       integer :: bnx, bny ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=114
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -3640,8 +3950,8 @@ module Mpicomm
       if ((size (in, 1) /= bnx) .or. ((size (in, 2) /= bny))) &
           call stop_fatal ('collect_from_pencil_xy_2D: input array size mismatch /= bnx,bny', lfirst_proc_xy)
 !
-      allocate (buffer(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('collect_from_pencil_xy_2D: not enough memory for buffer!', .true.)
+      allocate (buffer(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_from_pencil_xy_2D: not enough memory for buffer!', .true.)
 !
       if (iproc == collector) then
         do ibox = 0, nprocxy-1
@@ -3800,7 +4110,7 @@ module Mpicomm
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=105
       integer :: inx, inz ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -3821,8 +4131,8 @@ module Mpicomm
       if (size (out, 2) /= nygrid) &
           call stop_fatal ('remap_to_pencil_y_3D: second dimension of output must be nygrid', lfirst_proc_y)
 !
-      allocate (recv_buf(inx,ny,inz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_y_3D: Could not allocate memory for recv_buf', .true.)
+      allocate (recv_buf(inx,ny,inz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_y_3D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocy-1
         partner = ipz*nprocxy + ibox*nprocx + ipx
@@ -3856,7 +4166,7 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=105
       integer :: inx, inz, ina ! size of the first, third, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -3880,8 +4190,8 @@ module Mpicomm
       if (size (out, 2) /= nygrid) &
           call stop_fatal ('remap_to_pencil_y_4D: second dimension of output must be nygrid', lfirst_proc_y)
 !
-      allocate (recv_buf(inx,ny,inz,ina), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_y_4D: Could not allocate memory for recv_buf', .true.)
+      allocate (recv_buf(inx,ny,inz,ina), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_y_4D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocy-1
         partner = ipz*nprocxy + ibox*nprocx + ipx
@@ -4011,7 +4321,7 @@ module Mpicomm
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ztag=106
       integer :: ina ! size of the second dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -4029,8 +4339,8 @@ module Mpicomm
           call stop_fatal ('remap_to_pencil_z_2D: second dimension differs for input and output', lfirst_proc_z)
 !
       ! Allocate memory for large arrays.
-      allocate (recv_buf(nz,ina), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_z_2D: Could not allocate memory for recv_buf', .true.)
+      allocate (recv_buf(nz,ina), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_2D: Could not allocate memory for recv_buf', .true.)
  !
       do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -4064,7 +4374,7 @@ module Mpicomm
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ztag=105
       integer :: inx, iny ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -4085,8 +4395,8 @@ module Mpicomm
       if (size (out, 3) /= nzgrid) &
           call stop_fatal ('remap_to_pencil_z_3D: third dimension of output must be nzgrid', lfirst_proc_y)
 !
-      allocate (recv_buf(inx,iny,nz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_z_3D: Could not allocate memory for recv_buf', .true.)
+      allocate (recv_buf(inx,iny,nz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_3D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -4120,7 +4430,7 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ztag=106
       integer :: inx, iny, ina ! size of the first, second, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -4144,8 +4454,8 @@ module Mpicomm
       if (size (out, 3) /= nzgrid) &
           call stop_fatal ('remap_to_pencil_z_4D: third dimension of output must be nzgrid', lfirst_proc_y)
 !
-      allocate (recv_buf(inx,iny,nz,ina), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_z_4D: Could not allocate memory for recv_buf', .true.)
+      allocate (recv_buf(inx,iny,nz,ina), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_z_4D: Could not allocate memory for recv_buf', .true.)
 !
       do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -4242,7 +4552,7 @@ module Mpicomm
       integer, parameter :: inx=nx, iny=ny
       integer, parameter :: onx=nxgrid, ony=ny/nprocx
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4264,10 +4574,10 @@ module Mpicomm
       if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
           call stop_fatal ('remap_to_pencil_xy_2D: output array size mismatch /= nxgrid,ny/nprocx', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_xy_2D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_xy_2D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_2D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_2D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ipz*nprocxy + ipy*nprocx + ibox
@@ -4306,7 +4616,7 @@ module Mpicomm
       integer, parameter :: onx=nxgrid, ony=ny/nprocx
       integer :: inz, onz ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4332,10 +4642,10 @@ module Mpicomm
       if (inz /= onz) &
           call stop_fatal ('remap_to_pencil_xy_3D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny,onz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_xy_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_xy_3D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_3D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ipz*nprocxy + ipy*nprocx + ibox
@@ -4374,7 +4684,7 @@ module Mpicomm
       integer, parameter :: onx=nxgrid, ony=ny/nprocx
       integer :: inz, ina, onz, ona ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4404,10 +4714,10 @@ module Mpicomm
       if (ina /= ona) &
           call stop_fatal ('remap_to_pencil_xy_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny,onz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_xy_4D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_xy_4D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny,onz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_4D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_xy_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ipz*nprocxy + ipy*nprocx + ibox
@@ -4445,7 +4755,7 @@ module Mpicomm
       integer, parameter :: inx=nxgrid, iny=ny/nprocx
       integer, parameter :: onx=nx, ony=ny
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=106
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4467,10 +4777,10 @@ module Mpicomm
       if ((size (out, 1) /= onx) .or. ((size (out, 2) /= ony))) &
           call stop_fatal ('unmap_from_pencil_xy_2D: output array size mismatch /= nx,ny', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_xy_2D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_xy_2D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_2D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_2D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ipz*nprocxy + ipy*nprocx + ibox
@@ -4509,7 +4819,7 @@ module Mpicomm
       integer, parameter :: onx=nx, ony=ny
       integer :: inz, onz ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=106
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4535,10 +4845,10 @@ module Mpicomm
       if (inz /= onz) &
           call stop_fatal ('unmap_from_pencil_xy_3D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny,onz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_xy_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_xy_3D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_3D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ipz*nprocxy + ipy*nprocx + ibox
@@ -4577,7 +4887,7 @@ module Mpicomm
       integer, parameter :: onx=nx, ony=ny
       integer :: inz, ina, onz, ona ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=106
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4607,10 +4917,10 @@ module Mpicomm
       if (ina /= ona) &
           call stop_fatal ('unmap_from_pencil_xy_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny,onz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_xy_4D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_xy_4D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny,onz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_4D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_xy_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ipz*nprocxy + ipy*nprocx + ibox
@@ -4648,7 +4958,7 @@ module Mpicomm
 !
       integer :: inx, iny, onx, ony ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: ibox, partner, alloc_stat
+      integer :: ibox, partner, alloc_err
       integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4671,10 +4981,10 @@ module Mpicomm
       if ((onx /= bnx*nprocxy) .or. (ony /= bny)) &
           call stop_fatal ('transp_pencil_xy_2D: output array has unmatching size', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('transp_pencil_xy_2D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('transp_pencil_xy_2D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_2D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_2D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocxy-1
         partner = ipz*nprocxy + ibox
@@ -4712,7 +5022,7 @@ module Mpicomm
 !
       integer :: inx, iny, inz, onx, ony, onz ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: ibox, partner, alloc_stat, pos_z
+      integer :: ibox, partner, alloc_err, pos_z
       integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4739,10 +5049,10 @@ module Mpicomm
       if (inz /= onz) &
           call stop_fatal ('transp_pencil_xy_3D: inz/=onz - sizes differ in the z direction', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny,onz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocxy-1
         partner = ipz*nprocxy + ibox
@@ -4784,7 +5094,7 @@ module Mpicomm
 !
       integer :: inx, iny, inz, ina, onx, ony, onz, ona ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: ibox, partner, alloc_stat, pos_z, pos_a
+      integer :: ibox, partner, alloc_err, pos_z, pos_a
       integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4815,10 +5125,10 @@ module Mpicomm
       if (ina /= ona) &
           call stop_fatal ('transp_pencil_xy_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_xy)
 !
-      allocate (send_buf(bnx,bny,onz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('transp_pencil_xy_4D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('transp_pencil_xy_4D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(bnx,bny,onz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_4D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocxy-1
         partner = ipz*nprocxy + ibox
@@ -4865,7 +5175,7 @@ module Mpicomm
       integer, parameter :: ony=ny/nprocz, onz=nzgrid
       integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
       integer :: inx, onx ! sizes of in and out arrays
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=110
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4891,10 +5201,10 @@ module Mpicomm
       if (inx /= onx) &
           call stop_fatal ('remap_to_pencil_yz_3D: inx/=onx - sizes differ in the x direction', lfirst_proc_yz)
 !
-      allocate (send_buf(onx,bny,bnz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(onx,bny,bnz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(onx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(onx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -4933,7 +5243,7 @@ module Mpicomm
       integer, parameter :: ony=ny/nprocz, onz=nzgrid
       integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
       integer :: inx, ina, onx, ona ! sizes of in and out arrays
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=110
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4963,10 +5273,10 @@ module Mpicomm
       if (ina /= ona) &
           call stop_fatal ('remap_to_pencil_yz_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_yz)
 !
-      allocate (send_buf(onx,bny,bnz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_yz_4D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('remap_to_pencil_yz_4D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(onx,bny,bnz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_4D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('remap_to_pencil_yz_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -5005,7 +5315,7 @@ module Mpicomm
       integer, parameter :: ony=ny, onz=nz
       integer :: inx, onx ! sizes of in and out arrays
       integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=111
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -5031,10 +5341,10 @@ module Mpicomm
       if (inx /= onx) &
           call stop_fatal ('unmap_from_pencil_yz_3D: inx/=onx - sizes differ in the x direction', lfirst_proc_yz)
 !
-      allocate (send_buf(onx,bny,bnz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_yz_3D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(onx,bny,bnz), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_yz_3D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(onx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_3D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(onx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_3D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocz-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -5073,7 +5383,7 @@ module Mpicomm
       integer, parameter :: ony=ny, onz=nz
       integer :: inx, ina, onx, ona ! sizes of in and out arrays
       integer, parameter :: bny=ny/nprocz, bnz=nz ! transfer box sizes
-      integer :: ibox, partner, nbox, alloc_stat
+      integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ytag=111
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -5103,10 +5413,10 @@ module Mpicomm
       if (ina /= ona) &
           call stop_fatal ('unmap_from_pencil_yz_4D: ina/=ona - sizes differ in the 4th dimension', lfirst_proc_yz)
 !
-      allocate (send_buf(onx,bny,bnz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_yz_4D: not enough memory for send_buf!', .true.)
-      allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_stat)
-      if (alloc_stat > 0) call stop_fatal ('unmap_from_pencil_yz_4D: not enough memory for recv_buf!', .true.)
+      allocate (send_buf(onx,bny,bnz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_4D: not enough memory for send_buf!', .true.)
+      allocate (recv_buf(onx,bny,bnz,ona), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('unmap_from_pencil_yz_4D: not enough memory for recv_buf!', .true.)
 !
       do ibox = 0, nprocx-1
         partner = ibox*nprocxy + ipy*nprocx + ipx
@@ -5574,7 +5884,7 @@ module Mpicomm
   integer, dimension(MPI_STATUS_SIZE) :: status
   logical :: ltrans
   real, allocatable :: rowbuf(:)
-  character (LEN=1) :: ch8, chy
+  character(len=5) :: ch8, chy
 !
   if (NO_WARN) print*,unit
 !
@@ -5676,7 +5986,7 @@ module Mpicomm
   contains
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   subroutine chn(n,ch)                                ! internal subroutine
-    character ch                                      ! needs to be extended to longer ch
+    character ch
     integer n
     ch = intochar(n)
   endsubroutine chn
@@ -5719,8 +6029,7 @@ module Mpicomm
     real, dimension(n), intent(in)    :: vec1
     integer,            intent(in)    :: n, type
 !
-! merging
-!
+    ! merging
     where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
 !
     if (NO_WARN) print *,type

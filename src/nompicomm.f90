@@ -136,12 +136,16 @@ module Mpicomm
     module procedure mpireduce_and_arr
   endinterface
 !
-  interface distribute_global_xy
-    module procedure distribute_global_xy_2D
+  interface distribute_xy
+    module procedure distribute_xy_2D
+    module procedure distribute_xy_3D
+    module procedure distribute_xy_4D
   endinterface
 !
-  interface collect_global_xy
-    module procedure collect_global_xy_2D
+  interface collect_xy
+    module procedure collect_xy_2D
+    module procedure collect_xy_3D
+    module procedure collect_xy_4D
   endinterface
 !
   interface distribute_to_pencil_xy
@@ -1374,31 +1378,114 @@ module Mpicomm
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
-    subroutine distribute_global_xy_2D (in, out)
+    subroutine sum_xy (in, out)
 !
-!  This routine divides global 2D data and distributes it in the xy-plane.
+!  Sum up 0D data in the xy-plane and distribute back the sum.
 !
-!  08-jan-2011/Bourdin.KIS: coded
+!  19-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:), intent(in) :: in
-      real, dimension(:,:), intent(out) :: out
+      real, intent(in) :: in
+      real, intent(out) :: out
 !
       out = in
 !
-    endsubroutine distribute_global_xy_2D
+    endsubroutine sum_xy
 !***********************************************************************
-    subroutine collect_global_xy_2D (in, out)
+    subroutine distribute_xy_2D (in, out, source_proc)
 !
-!  Collect 2D data from several processors and combine into global shape.
+!  This routine divides a large array of 2D data on the broadcaster processor
+!  and distributes it to all processors in the xy-plane.
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc) .and. (iproc /= source_proc)) return
 !
       out = in
 !
-    endsubroutine collect_global_xy_2D
+    endsubroutine distribute_xy_2D
+!***********************************************************************
+    subroutine distribute_xy_3D (in, out, source_proc)
+!
+!  This routine divides a large array of 3D data on the broadcaster processor
+!  and distributes it to all processors in the xy-plane.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc) .and. (iproc /= source_proc)) return
+!
+      out = in
+!
+    endsubroutine distribute_xy_3D
+!***********************************************************************
+    subroutine distribute_xy_4D (out, in, source_proc)
+!
+!  This routine divides a large array of 4D data on the broadcaster processor
+!  and distributes it to all processors in the xy-plane.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc) .and. (iproc /= source_proc)) return
+!
+      out = in
+!
+    endsubroutine distribute_xy_4D
+!***********************************************************************
+    subroutine collect_xy_2D (in, out, dest_proc)
+!
+!  Collect 2D data from all processors in the xy-plane
+!  and combine it into one large array on the collector processor.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:), intent(in) :: in
+      real, dimension(:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine collect_xy_2D
+!***********************************************************************
+    subroutine collect_xy_3D (in, out, dest_proc)
+!
+!  Collect 3D data from all processors in the xy-plane
+!  and combine it into one large array on the collector processor.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine collect_xy_3D
+!***********************************************************************
+    subroutine collect_xy_4D (in, out, dest_proc)
+!
+!  Collect 4D data from all processors in the xy-plane
+!  and combine it into one large array on the collector processor.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine collect_xy_4D
 !***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out)
 !
