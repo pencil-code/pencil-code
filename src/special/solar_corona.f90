@@ -87,9 +87,11 @@ module Special
 !
   type (point), pointer :: first => null()
   type (point), pointer :: current => null()
-  type (point), pointer :: firstlev => null()
-  type (point), pointer :: secondlev => null()
-  type (point), pointer :: thirdlev => null()
+!
+  ! List of start pointers for each granulation level:
+  type gran_list_start
+    type (point), pointer :: first
+  end type gran_list_start
 !
     integer :: xrange,yrange,pow
     real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
@@ -2110,71 +2112,51 @@ module Special
 !
     endsubroutine uudriver
 !***********************************************************************
-  subroutine multi_drive3
+    subroutine multi_drive3
 !
-    real, parameter :: ldif=2.0
-    real, dimension(max_gran_levels), save :: amplarr,granrarr,life_tarr
-    integer, dimension(max_gran_levels), save :: xrangearr,yrangearr
-    integer :: k
-    logical, save :: first_call=.true.
+      integer :: level
+      real, parameter :: ldif=2.0
+      real, dimension(max_gran_levels), save :: ampl_par, granr_par, life_t_par
+      integer, dimension(max_gran_levels), save :: xrange_par, yrange_par
+      type (gran_list_start), dimension(max_gran_levels), save :: gran_list
+      logical, save :: first_call=.true.
 !
-    if (first_call) then
-!
-      granrarr(1)=granr
-      granrarr(2)=granr*ldif
-      granrarr(3)=granr*ldif*ldif
-!
-      amplarr(1)=ampl
-      amplarr(2)=ampl/ldif
-      amplarr(3)=ampl/(ldif*ldif)
-!
-      life_tarr(1)=life_t
-      life_tarr(2)=ldif**2*life_t
-      life_tarr(3)=ldif**4*life_t
-!
-      xrangearr(1)=xrange
-      xrangearr(2)=min(nint(ldif*xrange),nint(nxgrid/2.-1.))
-      xrangearr(3)=min(nint(ldif*ldif*xrange),nint(nxgrid/2.-1.))
-      yrangearr(1)=yrange
-      yrangearr(2)=min(nint(ldif*yrange),nint(nygrid/2-1.))
-      yrangearr(3)=min(nint(ldif*ldif*yrange),nint(nygrid/2-1.))
-!
-      first_call = .false.
-!
-    endif
+      if (first_call) then
+        do level = 1, nglevel
+          nullify (gran_list(level)%first)
+          granr_par(level) = granr * ldif**(level-1)
+          ampl_par(level) = ampl / ldif**(level-1)
+          life_t_par(level) = life_t * ldif**((level-1)**2)
+          xrange_par(level) = min (nint (xrange * ldif**(level-1)), nint (nxgrid/2.-1))
+          yrange_par(level) = min (nint (yrange * ldif**(level-1)), nint (nygrid/2.-1))
+        enddo
+        first_call = .false.
+      endif
  !
-    ! Initialize velocity field
-    Ux = 0.0
-    Uy = 0.0
+      ! Initialize velocity field
+      Ux = 0.0
+      Uy = 0.0
 !
-    do k=1,nglevel
-      select case (k)
-      case (1)
-        first => firstlev
-      case (2)
-        first => secondlev
-      case (3)
-        first => thirdlev
-      end select
+      ! Compute granulation levels
+      do level = 1, nglevel
+        ! Only let those processors work that are needed
+        if (lgran_proc .and. (lroot .or. (iproc == (nprocxy-1+level)))) then
+          ! Setup parameters
+          ampl = ampl_par(level)
+          granr = granr_par(level)
+          life_t = life_t_par(level)
+          xrange = xrange_par(level)
+          yrange = yrange_par(level)
+          ! Restore list of granules
+          first => gran_list(level)%first
 !
-      ampl=amplarr(k)
-      granr=granrarr(k)
-      life_t=life_tarr(k)
-      xrange=xrangearr(k)
-      yrange=yrangearr(k)
+          ! Compute one granulation level
+          call drive3 (level)
 !
-      if ((iproc==nprocxy-1+k) .or. lroot) call drive3(k)
-!
-      select case (k)
-      case (1)
-        firstlev => first
-      case (2)
-        secondlev => first
-      case (3)
-        thirdlev => first
-      end select
-!
-    enddo
+          ! Store list of granules
+          gran_list(level)%first => first
+        endif
+      enddo
 !
     endsubroutine multi_drive3
 !***********************************************************************
@@ -2185,23 +2167,32 @@ module Special
       integer, intent(in) :: level
       logical :: lstop=.false.
 !
-      call resetarr
-      if (Bavoid > 0.) call fill_B_avoidarr
+      ! Initialize granule weight and velocities arrays
+      w(:,:) = 0.0
+      vx(:,:) = 0.0
+      vy(:,:) = 0.0
+      ! Initialize avoid_gran array to avoid granules at occupied places
+      call fill_B_avoidarr
 !
       if (.not.associated(first)) then
+        ! List is empty => try to read an old snapshot file
         call read_points (level)
         if (.not.associated(first)) then
+          ! No snapshot available => initialize driver and draw granules
           call driveinit
           call write_points (level, 0)
           call write_points (level)
         endif
       else
+        ! List is filled => update amplitudes and remove dead granules
         call updatepoints
+        ! Draw old granules to the granulation velocity field
         current => first
         do while (associated (current))
           call drawupdate
           current => current%next
         enddo
+        ! Fill free space with new granules and draw them
         do while (minval(avoidarr) == 0)
           call add_point
           call make_newpoint
@@ -2212,13 +2203,10 @@ module Special
       Ux = Ux + vx
       Uy = Uy + vy
 !
-! Move granule centers according to external velocity
-! field. Needed to be done for each level
-!
+      ! Evolve granule position by external velocity field, if necessary
       if (luse_ext_vel_field) call evolve_granules()
 !
-! Save granules to file.
-!
+      ! Save regular granule snapshots
       if (t >= tsnap_uu) then
         call write_points (level, isnap)
         if (level == nglevel) then
@@ -2226,25 +2214,14 @@ module Special
           isnap  = isnap + 1
         endif
       endif
+!
+      ! On exit, save final granule snapshot
       if (itsub == 3) &
           lstop = file_exists('STOP')
       if (lstop .or. (t>=tmax) .or. (it == nt) .or. (dt < dtmin) .or. &
           (mod(it,isave) == 0)) call write_points (level)
 !
     endsubroutine drive3
-!***********************************************************************
-    subroutine resetarr
-!
-! Reset arrays at the beginning of each call to the levels.
-!
-! 12-aug-10/bing: coded
-!
-      w(:,:) = 0.0
-      vx(:,:) = 0.0
-      vy(:,:) = 0.0
-      avoidarr(:,:) = 0
-!
-    endsubroutine resetarr
 !***********************************************************************
     subroutine read_points(level)
 !
@@ -2758,6 +2735,9 @@ module Special
       integer :: i,j,itmp,jtmp
       integer :: il,ir,jl,jr
       integer :: ii,jj
+!
+      avoidarr = 0
+      if (Bavoid <= 0.) return
 !
       if (nxgrid==1) then
         itmp = 0
