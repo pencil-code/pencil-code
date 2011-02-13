@@ -898,9 +898,9 @@ module Density
         case ('Galactic-hs')
           call information('init_lnrho', &
               'Galactic hydrostatic equilibrium setup done in entropy')
-        case ('Gressel-hs')
+        case ('thermal-hs')
           if (lroot) call information('init_lnrho', &
-              'Gressel hydrostatic equilibrium setup done in interstellar')
+              'thermal hydrostatic equilibrium setup done in interstellar')
         case ('geo-kws')
 !
 !  Radial hydrostatic profile in shell region only.
