@@ -1199,7 +1199,11 @@ module EquationOfState
       real, dimension(psize) :: lnrho_
 !
       if (psize==nx) then
-        lnrho_=f(l1:l2,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho_=log(f(l1:l2,m,n,irho))
+        else
+          lnrho_=f(l1:l2,m,n,ilnrho)
+        endif
         if (present(ee)) then
           if (pretend_lnTT) then
             f(l1:l2,m,n,iss)=log(cv1*ee)
@@ -1221,7 +1225,11 @@ module EquationOfState
         endif
 !
       elseif (psize==mx) then
-        lnrho_=f(:,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho_=log(f(l1:l2,m,n,irho))
+        else
+          lnrho_=f(l1:l2,m,n,ilnrho)
+        endif
         if (present(ee)) then
           if (pretend_lnTT) then
             f(:,m,n,iss)=log(cv1*ee)
@@ -1550,8 +1558,12 @@ module EquationOfState
 !
       select case (ivars)
 !
-      case (ilnrho_ss)
-        lnrho_=var1
+      case (ilnrho_ss,irho_ss)
+        if (ivars==ilnrho_ss) then
+          lnrho_=var1
+        else
+          lnrho_=alog(var1)
+        endif
         ss_=var2
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
@@ -1706,7 +1718,11 @@ module EquationOfState
 !
       do n=n1,n2
       do m=m1,m2
-        lnrho=f(l1:l2,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho=log(f(l1:l2,m,n,irho))
+        else
+          lnrho=f(l1:l2,m,n,ilnrho)
+        endif
         lnTT=log(T0)
           !+ other terms for sound speed not equal to cs_0
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
