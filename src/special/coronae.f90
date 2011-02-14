@@ -43,7 +43,7 @@ module Special
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      heat_par_exp3,&    
+      heat_par_exp3,&
       Kpara,Kperp,init_time2, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
@@ -918,8 +918,7 @@ module Special
 !
     lnQ   = get_lnQ(lnTT_SI)
 !
-    rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
-    rtv_cool = gamma*p%cp1*exp(rtv_cool)
+    rtv_cool = exp(lnQ-unit_lnQ+lnneni)
 !
     if (exp_RTV/=0) then
       call warning('cool_RTV','exp_RTV not yet implemented')
@@ -938,21 +937,28 @@ module Special
     if (init_time/=0) &
         rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
 !
-!     add to temperature equation
+!     add to the energy equation
 !
     if (ltemperature) then
       if (ltemperature_nolog) then
-        call fatal_error('calc_heat_cool_RTV', &
-            'not implemented for ltemperature_nolog')
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)- &
+            rtv_cool*gamma*p%cp1*exp(-p%lnrho)
       else
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)- &
+            rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
       endif
     else if (lentropy) then
       if (pretend_lnTT) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)- &
+            rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
       else
         call fatal_error('calc_heat_cool_RTV','not implemented for lentropy')
       endif
+    else if (lthermal_energy) then
+      df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth)-rtv_cool
+    else
+      call fatal_error('calc_heat_cool_RTV', &
+          'not implemented current set of thermodynamic variables')
     endif
 !
     if (lvideo) then
