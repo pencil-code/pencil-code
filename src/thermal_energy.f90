@@ -16,7 +16,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; eth; geth(3); fpres(3), transpeth
+! PENCILS PROVIDED Ma2; fpres(3); transpeth
 !
 !***************************************************************
 module Entropy
@@ -200,6 +200,7 @@ module Entropy
     subroutine calc_pencils_entropy(f,p)
 !
 !  Calculate Entropy pencils.
+!  This routine is called after  calc_pencils_eos
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  04-nov-10/anders+evghenii: adapted
@@ -212,10 +213,6 @@ module Entropy
       type (pencil_case) :: p
 !
       integer :: j
-! eth
-      if (lpencil(i_eth)) p%eth=f(l1:l2,m,n,ieth)
-! geth
-      if (lpencil(i_geth)) call grad(f,ieth,p%geth)
 ! fpres
       if (lpencil(i_fpres)) then
         do j=1,3

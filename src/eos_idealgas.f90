@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED TTb; rhop
+! PENCILS PROVIDED TTb; rhop; eth; geth(3)
 !
 !***************************************************************
 module EquationOfState
@@ -939,6 +939,11 @@ module EquationOfState
             'del6ss not available for ilnrho_cs2')
 !
       case (irho_eth,ilnrho_eth)
+! eth
+        if (lpencil(i_eth)) p%eth=f(l1:l2,m,n,ieth)
+! geth
+        if (lpencil(i_geth)) call grad(f,ieosvar2,p%geth)
+!
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*f(l1:l2,m,n,ieth)*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*f(l1:l2,m,n,ieth)
         if (lpencil(i_TT)) p%TT=gamma*cp1*p%rho1*f(l1:l2,m,n,ieth)
