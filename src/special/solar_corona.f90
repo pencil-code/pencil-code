@@ -99,7 +99,7 @@ module Special
     real, dimension(:,:), allocatable :: Ux,Uy
     real, dimension(:,:), allocatable :: Ux_ext,Uy_ext
     real, dimension(:,:), allocatable :: BB2
-    integer, dimension(:,:), allocatable :: avoidarr
+    integer, dimension(:,:), allocatable :: avoid_gran
     real, save :: tsnap_uu=0.,thresh
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
@@ -1937,8 +1937,8 @@ module Special
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
       if (.not. allocated(vy))  allocate (vy(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
-      if (.not. allocated(avoidarr)) &
-          allocate(avoidarr(nxgrid,nygrid),stat=alloc_err)
+      if (.not. allocated(avoid_gran)) &
+          allocate(avoid_gran(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
       if (alloc_err_sum > 0) call fatal_error ('set_gran_params', &
           'Could not allocate memory for the driver', .true.)
@@ -2164,7 +2164,7 @@ module Special
       vx(:,:) = 0.0
       vy(:,:) = 0.0
       ! Initialize avoid_gran array to avoid granules at occupied places
-      call fill_B_avoidarr
+      call fill_avoid_gran
 !
       if (.not.associated(first)) then
         ! List is empty => try to read an old snapshot file
@@ -2185,7 +2185,7 @@ module Special
           current => current%next
         enddo
         ! Fill free space with new granules and draw them
-        do while (minval(avoidarr) == 0)
+        do while (minval(avoid_gran) == 0)
           call add_point
           call find_free_place
           call draw_update
@@ -2396,7 +2396,7 @@ module Special
 !
       real :: rand
 !
-      do while (minval (avoidarr) == 0)
+      do while (minval (avoid_gran) == 0)
 !
         call add_point
         call find_free_place
@@ -2506,7 +2506,7 @@ module Special
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
 !
-          if (dist.lt.avoid*granr.and.t.lt.current%t_amp_max) avoidarr(i,j)=1
+          if (dist.lt.avoid*granr.and.t.lt.current%t_amp_max) avoid_gran(i,j)=1
 !
           wtmp=current%amp/dist
 !
@@ -2528,7 +2528,7 @@ module Special
               w(i,j) =max(w(i,j),wtmp)
             end if
           endif
-          if (w(i,j) .gt. ampl/(granr*(1+ig))) avoidarr(i,j)=1
+          if (w(i,j) .gt. ampl/(granr*(1+ig))) avoid_gran(i,j)=1
         enddo
       enddo
 !
@@ -2553,7 +2553,7 @@ module Special
 !
       num_free_y = 0
       do pos_y = 1, nygrid
-        num_free_x(pos_y) = nxgrid - sum (avoidarr(:,pos_y))
+        num_free_x(pos_y) = nxgrid - sum (avoid_gran(:,pos_y))
         if (num_free_x(pos_y) > 0) num_free_y = num_free_y + 1
       enddo
       if (num_free_y == 0) return
@@ -2574,7 +2574,7 @@ module Special
             find_x = int (rand * num_free_x(pos_y)) + 1
 !
             do pos_x = 1, nxgrid
-              if (avoidarr(pos_x,pos_y) == 0) then
+              if (avoid_gran(pos_x,pos_y) == 0) then
                 count_x = count_x + 1
                 if (count_x == find_x) then
                   free_x = pos_x
@@ -2715,13 +2715,13 @@ module Special
 !
     endsubroutine set_BB2
 !***********************************************************************
-    subroutine fill_B_avoidarr
+    subroutine fill_avoid_gran
 !
       integer :: i,j,itmp,jtmp
       integer :: il,ir,jl,jr
       integer :: ii,jj
 !
-      avoidarr = 0
+      avoid_gran = 0
       if (Bavoid <= 0.) return
 !
       if (nxgrid==1) then
@@ -2743,14 +2743,14 @@ module Special
 !
             do ii=il,ir
               do jj=jl,jr
-                if ((ii-i)**2+(jj-j)**2 < itmp**2+jtmp**2) avoidarr(ii,jj)=1
+                if ((ii-i)**2+(jj-j)**2 < itmp**2+jtmp**2) avoid_gran(ii,jj)=1
               enddo
             enddo
           endif
         enddo
       enddo
 !
-    endsubroutine fill_B_avoidarr
+    endsubroutine fill_avoid_gran
 !***********************************************************************
     subroutine read_ext_vel_field()
 !
