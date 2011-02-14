@@ -148,7 +148,7 @@ module Density
       use FArrayManager
 !
       if (ldensity_nolog) then
-        call farray_register_pde('irho',irho)
+        call farray_register_pde('rho',irho)
         ilnrho=irho
       else
         call farray_register_pde('lnrho',ilnrho)
