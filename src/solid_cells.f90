@@ -787,12 +787,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   c_dragx(iobj) = c_dragx(iobj) + force_x * drag_norm
                   c_dragy(iobj) = c_dragy(iobj) + force_y * drag_norm
                   c_dragz(iobj) = c_dragz(iobj) + force_z * drag_norm
-                  c_dragx_p(iobj) = c_dragx_p(iobj) + &
-                      -fp_pressure*nvec(1) * drag_norm
-                  c_dragy_p(iobj) = c_dragy_p(iobj) + &
-                      -fp_pressure*nvec(2) * drag_norm
-                  c_dragz_p(iobj) = c_dragz_p(iobj) + &
-                      -fp_pressure*nvec(3) * drag_norm
+                  c_dragx_p(iobj) = c_dragx_p(iobj) - &
+                      fp_pressure*nvec(1) * drag_norm
+                  c_dragy_p(iobj) = c_dragy_p(iobj) - &
+                      fp_pressure*nvec(2) * drag_norm
+                  c_dragz_p(iobj) = c_dragz_p(iobj) - &
+                      fp_pressure*nvec(3) * drag_norm
                 endif
                 if (idiag_Nusselt /= 0) Nusselt(iobj) = Nusselt(iobj) &
                     + loc_Nus * nusselt_norm
