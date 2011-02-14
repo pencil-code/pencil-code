@@ -1,4 +1,4 @@
-! $Id: temperature_idealgas.f90 15196 2010-10-19 12:05:00Z nils.e.haugen@gmail.com $
+! $Id$
 !
 !  This module can replace the entropy module by using the thermal energy
 !  eth as dependent variable. For a perfect gas we have
@@ -85,7 +85,7 @@ module Entropy
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-           "$Id: temperature_idealgas.f90 15196 2010-10-19 12:05:00Z nils.e.haugen@gmail.com $")
+           "$Id$")
 !
     endsubroutine register_entropy
 !***********************************************************************
