@@ -28,7 +28,7 @@ module Special
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
-  logical :: lgranulation=.false.,lgran_proc=.false.
+  logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
@@ -52,7 +52,7 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
+       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz, &
        Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
@@ -106,7 +106,6 @@ module Special
     real, dimension(nx,ny), save :: ux_local,uy_local
     real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
     real :: Bz_total_flux
-    logical :: lgran_parallel=.false.
 !
     integer, save, dimension(mseed) :: nano_seed
     integer :: alloc_err
