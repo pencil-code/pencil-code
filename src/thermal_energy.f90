@@ -189,6 +189,7 @@ module Entropy
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  04-nov-10/anders+evghenii: adapted
+!  14-feb-11/bing: update
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -215,9 +216,9 @@ module Entropy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  04-nov-10/anders+evghenii: adapted
+!  14-feb-11/bing: moved eth dependend pecnils to eos_idealgas
 !
       use EquationOfState, only: gamma_m1
-      use Sub, only: grad
       use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
