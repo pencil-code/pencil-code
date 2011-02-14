@@ -25,7 +25,6 @@ module Density
   use Messages
   use EquationOfState
   use Sub, only : keep_compiler_quiet
-  use Special
 !
   implicit none
 !
