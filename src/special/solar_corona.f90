@@ -135,30 +135,36 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (lgranulation) then
-!
 ! Consistency checks:
 !
-        if ((nglevel < 1) .or. (nglevel > max_gran_levels)) &
-            call fatal_error ('initialize_special', 'nglevel is too large!')
-        ! For only one granulation level, no parallelization is required.
-        if (lgran_parallel .and. (nglevel == 1)) &
-            call fatal_error ('initialize_special', &
-                'if nglevel is 1, lgran_parallel should be set to false.')
-        ! If not at least 3 procs above the ipz=0 plane are available,
-        ! computing of granular velocities has to be done non-parallel.
-        if (lgran_parallel .and. (nprocz-1)*nprocxy < 3) &
-            call fatal_error ('initialize_special', &
-                'you have not enough processors to activate lgran_parallel.')
+      if (irefz > max (n1, nz)) &
+          call fatal_error ('solar_corona', &
+              'irefz must lie in the bottom layer of processors.')
+      if (((nglevel < 1) .or. (nglevel > max_gran_levels))) &
+          call fatal_error ('solar_corona/gran_driver', &
+              'nglevel is invalid and/or larger than max_gran_levels.')
+      ! For only one granulation level, no parallelization is required.
+      if (lgran_parallel .and. (nglevel == 1)) &
+          call fatal_error ('solar_corona/gran_driver', &
+              'if nglevel is 1, lgran_parallel should be deactivated.')
+      ! If not at least 3 procs above the ipz=0 plane are available,
+      ! computing of granular velocities has to be done non-parallel.
+      if (lgran_parallel .and. ((nprocz-1)*nprocxy < nglevel)) &
+          call fatal_error ('solar_corona/gran_driver', &
+              'there are not enough processors to activate lgran_parallel.')
+      if (lquench .and. (.not. lmagnetic)) &
+          call fatal_error ('solar_corona', &
+              'quenching needs the magnetic module.')
+      if ((Bavoid > 0.0) .and. (.not. lmagnetic)) &
+          call fatal_error ('solar_corona', &
+              'Bavoid needs the magnetic module.')
 !
 ! Define and initialize the processors that are computing the granulation:
 !
-        lgran_proc = (lroot .and. .not. lgran_parallel) .or. &
+      if (lgranulation) then
+        lgran_proc = ((.not. lgran_parallel) .and. lroot) .or. &
             (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
-!
-        if (lroot .or. lgran_proc) then
-          call set_gran_params()
-        endif
+        if (lroot .or. lgran_proc) call set_gran_params()
       endif
 !
       if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
@@ -1958,23 +1964,16 @@ module Special
 !
       use EquationOfState, only: gamma_inv,get_cp1,gamma_m1,lnrho0,cs20
       use General, only: random_seed_wrapper
-      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real, distribute_xy
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(:,:), allocatable :: uu_buffer
-      integer :: i,j,ipt,main_proc
+      real, dimension(:,:), allocatable :: buffer
+      integer :: i, level, partner
       real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
       real :: cp1=1.,dA
-      integer, dimension(2) :: dims=(/nx,ny/)
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
-!
-      if (.not.allocated(uu_buffer)) then
-        allocate(uu_buffer(nxgrid,nygrid),stat=alloc_err)
-        if (alloc_err>0) call fatal_error('gran_driver', &
-            'could not allocate memory for uu_buffer', .true.)
-      endif
 !
 ! Update velocity field only every dt_gran after the first iteration
       if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
@@ -1987,8 +1986,8 @@ module Special
 !
 ! Get magnetic field energy for footpoint quenching.
 ! The processors from the ipz=0 plane have to take part, too.
-      if (lgran_proc .or. lfirst_proc_z) then
-        if (lmagnetic) call set_BB2(f,BB2_local)
+      if (lmagnetic .and. (lgran_proc .or. lfirst_proc_z)) then
+        call set_BB2(f,BB2_local)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux/=0) then
@@ -2004,56 +2003,39 @@ module Special
         endif
       endif
 !
-! Compute granular velocities. We use three levels.
+! Compute granular velocities.
+      if (lgran_proc) &
+          call multi_gran_levels()
 !
-!
-! Either root processor or three procs with ipz>0 compute
-! velocities for different levels in driver3().
-      if (lgran_proc) call multi_gran_levels()
-!
-! In the parallel case, one proc has to sum up the levels.
-      if (lgran_parallel .and. lgran_proc) then
-        if ((iproc > nprocxy) .and. (iproc < nprocxy+nglevel)) then
-          call mpisend_real(Ux,(/nxgrid,nygrid/),nprocxy,iproc)
-          call mpisend_real(Uy,(/nxgrid,nygrid/),nprocxy,iproc)
-        elseif (nglevel > 1) then
-          do i=1, nglevel-1
-            call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
-            Ux = Ux + uu_buffer
-            call mpirecv_real(uu_buffer,(/nxgrid,nygrid/),nprocxy+i,nprocxy+i)
-            Uy = Uy + uu_buffer
+! In the parallel case, the root rank sums up the levels.
+      if (lgran_parallel) then
+        if (lroot) then
+          allocate (buffer(nxgrid,nygrid), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('gran_driver', &
+              'could not allocate memory for buffer', .true.)
+          Ux = 0.0
+          Uy = 0.0
+          do level = 1, nglevel
+            partner = nprocxy + level - 1
+            call mpirecv_real (buffer, (/nxgrid,nygrid/), partner, partner)
+            Ux = Ux + buffer
+            call mpirecv_real (buffer, (/nxgrid,nygrid/), partner, partner)
+            Uy = Uy + buffer
           enddo
+          deallocate (buffer)
+        elseif (lgran_proc) then
+          call mpisend_real (Ux, (/nxgrid,nygrid/), 0, iproc)
+          call mpisend_real (Uy, (/nxgrid,nygrid/), 0, iproc)
         endif
       endif
 !
 ! Increase vorticity and normalize to given vrms.
-      if (lgran_proc .and. lfirst_proc_xy) call enhance_vorticity()
+      if (lroot) call enhance_vorticity()
 !
-! Distribute results, first select the proc which collected the data.
-!
-      if (lgran_parallel) then
-        main_proc = nprocxy
-      else
-        main_proc = 0
-      endif
-!
-! Then distribute.
-      if (iproc==main_proc) then
-        do i=0,nprocx-1
-          do j=0,nprocy-1
-            ipt = i+nprocx*j
-            if (ipt == main_proc) then
-              ux_local = Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
-              uy_local = Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny)
-            else
-              call mpisend_real(Ux(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,312+ipt)
-              call mpisend_real(Uy(i*nx+1:i*nx+nx,j*ny+1:j*ny+ny),dims,ipt,313+ipt)
-            endif
-          enddo
-        enddo
-      elseif (lfirst_proc_z) then
-        call mpirecv_real(ux_local,dims,main_proc,312+iproc)
-        call mpirecv_real(uy_local,dims,main_proc,313+iproc)
+! Distribute the results in the xy-plane.
+      if (lfirst_proc_z) then
+        call distribute_xy (Ux, Ux_local)
+        call distribute_xy (Uy, Uy_local)
       endif
 !
 ! for footpoint quenching compute pressure
@@ -2096,8 +2078,6 @@ module Special
 ! restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
-!
-      if (allocated(uu_buffer)) deallocate(uu_buffer)
 !
     endsubroutine gran_driver
 !***********************************************************************
