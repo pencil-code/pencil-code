@@ -151,13 +151,14 @@ contains
 !
 !  04-sep-10/bing: coded
 !
+      use EquationOfState, only: get_cp1,gamma
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
       use Syscalls, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: dummy
+      real :: dummy,cp1=1.
       integer :: lend,ierr
       integer :: i,j
       integer, parameter :: unit=12
@@ -168,90 +169,14 @@ contains
 !
       integer :: prof_nz
       real, dimension (:), allocatable :: prof_z, prof_lnrho, prof_lnTT
+      real, dimension (mz) :: profile_z
+      real, dimension (mx) :: profile_x
       logical :: lread_lnrho=.false., lread_lnTT=.false.
 !
       inquire(IOLENGTH=lend) dummy
 !
       lread_lnTT=(lnTT_init=='prof_lnTT')
       lread_lnrho=(lnrho_init=='prof_lnrho')
-!
-! read temperature profile for interpolation
-      if (lread_lnTT.and.ltemperature.and..not.ltemperature_nolog) then
-!
-! file access is only done on the MPI root rank
-        if (lroot) then
-          if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
-              .true., 'setup_special: file not found: '//trim(lnT_dat))
-! find out, how many data points our profile file has
-          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
-        endif
-        call stop_it_if_any(.false.,'')
-        call mpibcast_int(prof_nz,1)
-!
-        allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
-!
-        if (lroot) then
-          open (unit,file=lnT_dat,form='unformatted',status='unknown', &
-              recl=lend*prof_nz)
-          read (unit,iostat=ierr) prof_lnTT
-          read (unit,iostat=ierr) prof_z
-          if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-              'Error reading stratification file: "'//trim(lnT_dat)//'"')
-          close (unit)
-        endif
-        call stop_it_if_any(.false.,'')
-!
-        call mpibcast_real(prof_lnTT,prof_nz)
-        call mpibcast_real(prof_z,prof_nz)
-!
-! convert from logarithmic SI to Pencil units
-        prof_lnTT = prof_lnTT - alog(real(unit_temperature))
-!
-! convert z coordinates from [Mm] to Pencil units
-        prof_z = prof_z / unit_length
-!
-! interpolate temperature profile to Pencil grid
-!
-        if (direction=='z') then
-          do j = n1-nghost, n2+nghost
-            if (z(j) < prof_z(1) ) then
-              f(:,:,j,ilnTT) = prof_lnTT(1)
-            elseif (z(j) >= prof_z(prof_nz)) then
-              f(:,:,j,ilnTT) = prof_lnTT(prof_nz)
-            else
-              do i = 1, prof_nz-1
-                if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
-                  ! linear interpolation: y = m*(x-x1) + y1
-                  f(:,:,j,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
-                      (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
-                  exit
-                endif
-              enddo
-            endif
-          enddo
-        else if (direction=='x') then
-          do j = l1-nghost, l2+nghost
-            if (x(j) < prof_z(1) ) then
-              f(j,:,:,ilnTT) = prof_lnTT(1)
-            elseif (x(j) >= prof_z(prof_nz)) then
-              f(j,:,:,ilnTT) = prof_lnTT(prof_nz)
-            else
-              do i = 1, prof_nz-1
-                if ((x(j) >= prof_z(i)) .and. (x(j) < prof_z(i+1))) then
-                  ! linear interpolation: y = m*(x-x1) + y1
-                  f(j,:,:,ilnTT) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
-                      (prof_z(i+1)-prof_z(i)) * (x(j)-prof_z(i)) + prof_lnTT(i)
-                  exit
-                endif
-              enddo
-            endif
-          enddo
-        endif
-!
-        if (allocated (prof_z)) deallocate (prof_z)
-        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
-!
-      endif
 !
 ! read density profile for interpolation
       if (lread_lnrho) then
@@ -292,14 +217,14 @@ contains
         if (direction=='z') then
           do j = n1-nghost, n2+nghost
             if (z(j) < prof_z(1) ) then
-              f(:,:,j,ilnrho) = prof_lnrho(1)
+              profile_z(j) = prof_lnrho(1)
             elseif (z(j) >= prof_z(prof_nz)) then
-              f(:,:,j,ilnrho) = prof_lnrho(prof_nz)
+              profile_z(j) = prof_lnrho(prof_nz)
             else
               do i = 1, prof_nz-1
                 if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
                   ! linear interpolation: y = m*(x-x1) + y1
-                  f(:,:,j,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
+                  profile_z(j) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
                       (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnrho(i)
                   exit
                 endif
@@ -309,14 +234,14 @@ contains
         elseif (direction=='x') then
           do j = l1-nghost, l2+nghost
             if (x(j) < prof_z(1) ) then
-              f(j,:,:,ilnrho) = prof_lnrho(1)
+              profile_x(j) = prof_lnrho(1)
             elseif (x(j) >= prof_z(prof_nz)) then
-              f(j,:,:,ilnrho) = prof_lnrho(prof_nz)
+              profile_x(j) = prof_lnrho(prof_nz)
             else
               do i = 1, prof_nz-1
                 if ((x(j) >= prof_z(i)) .and. (x(j) < prof_z(i+1))) then
                   ! linear interpolation: y = m*(x-x1) + y1
-                  f(j,:,:,ilnrho) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
+                  profile_x(j) = (prof_lnrho(i+1)-prof_lnrho(i)) / &
                       (prof_z(i+1)-prof_z(i)) * (x(j)-prof_z(i)) + prof_lnrho(i)
                   exit
                 endif
@@ -328,6 +253,112 @@ contains
         if (allocated (prof_z)) deallocate (prof_z)
         if (allocated (prof_lnrho)) deallocate (prof_lnrho)
 !
+        if (ldensity_nolog) then
+          if (direction=='z') f(:,:,:,irho)=spread(spread(exp(profile_z),1,mx),2,my)
+          if (direction=='x') f(:,:,:,irho)=spread(spread(exp(profile_x),2,my),3,mz)
+        else
+          if (direction=='z') f(:,:,:,ilnrho)=spread(spread(profile_z,1,mx),2,my)
+          if (direction=='x') f(:,:,:,ilnrho)=spread(spread(profile_x,2,my),3,mz)
+        endif
+      endif
+!
+! read temperature profile for interpolation
+      if (lread_lnTT) then
+!
+! file access is only done on the MPI root rank
+        if (lroot) then
+          if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
+              .true., 'setup_special: file not found: '//trim(lnT_dat))
+! find out, how many data points our profile file has
+          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+        endif
+        call stop_it_if_any(.false.,'')
+        call mpibcast_int(prof_nz,1)
+!
+        allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
+!
+        if (lroot) then
+          open (unit,file=lnT_dat,form='unformatted',status='unknown', &
+              recl=lend*prof_nz)
+          read (unit,iostat=ierr) prof_lnTT
+          read (unit,iostat=ierr) prof_z
+          if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+              'Error reading stratification file: "'//trim(lnT_dat)//'"')
+          close (unit)
+        endif
+        call stop_it_if_any(.false.,'')
+!
+        call mpibcast_real(prof_lnTT,prof_nz)
+        call mpibcast_real(prof_z,prof_nz)
+!
+! convert from logarithmic SI to Pencil units
+        prof_lnTT = prof_lnTT - alog(real(unit_temperature))
+!
+! convert z coordinates from [Mm] to Pencil units
+        prof_z = prof_z / unit_length
+!
+! interpolate temperature profile to Pencil grid
+!
+        if (direction=='z') then
+          do j = n1-nghost, n2+nghost
+            if (z(j) < prof_z(1) ) then
+              profile_z(j) = prof_lnTT(1)
+            elseif (z(j) >= prof_z(prof_nz)) then
+              profile_z(j) = prof_lnTT(prof_nz)
+            else
+              do i = 1, prof_nz-1
+                if ((z(j) >= prof_z(i)) .and. (z(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  profile_z(j) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (z(j)-prof_z(i)) + prof_lnTT(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        else if (direction=='x') then
+          do j = l1-nghost, l2+nghost
+            if (x(j) < prof_z(1) ) then
+              profile_x(j) = prof_lnTT(1)
+            elseif (x(j) >= prof_z(prof_nz)) then
+              profile_x(j) = prof_lnTT(prof_nz)
+            else
+              do i = 1, prof_nz-1
+                if ((x(j) >= prof_z(i)) .and. (x(j) < prof_z(i+1))) then
+                  ! linear interpolation: y = m*(x-x1) + y1
+                  profile_x(j) = (prof_lnTT(i+1)-prof_lnTT(i)) / &
+                      (prof_z(i+1)-prof_z(i)) * (x(j)-prof_z(i)) + prof_lnTT(i)
+                  exit
+                endif
+              enddo
+            endif
+          enddo
+        endif
+!
+        if (allocated (prof_z)) deallocate (prof_z)
+        if (allocated (prof_lnTT)) deallocate (prof_lnTT)
+!
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            if (direction=='z') f(:,:,:,iTT)=spread(spread(exp(profile_z),1,mx),2,my)
+            if (direction=='x') f(:,:,:,iTT)=spread(spread(exp(profile_x),2,my),3,mz)
+          else
+            if (direction=='z') f(:,:,:,ilnTT)=spread(spread(profile_z,1,mx),2,my)
+            if (direction=='x') f(:,:,:,ilnTT)=spread(spread(profile_x,2,my),3,mz)
+          endif
+        else if (lthermal_energy) then
+          if (leos) call get_cp1(cp1)
+          if (direction=='z') f(:,:,:,ieth)=spread(spread(exp(profile_z),1,mx),2,my)
+          if (direction=='x') f(:,:,:,ieth)=spread(spread(exp(profile_x),2,my),3,mz)
+          if (ldensity_nolog) then
+            f(:,:,:,ieth)=f(:,:,:,ieth)*gamma*cp1*f(:,:,:,irho)
+          else
+            f(:,:,:,ieth)=f(:,:,:,ieth)*gamma*cp1*exp(f(:,:,:,ilnrho))
+          endif
+        else
+          call fatal_error('setup_vert_profiles', &
+              'Not implemented for current set of thermodynamic variables.')
+        endif
       endif
 !
     endsubroutine setup_vert_profiles
