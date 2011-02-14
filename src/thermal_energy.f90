@@ -166,7 +166,9 @@ module Entropy
       if (lweno_transport) then
         lpenc_requested(i_transpeth)=.true.
       endif
+!  In case of advection we need divu
       lpenc_requested(i_divu)=.true.
+!
       lpenc_requested(i_eth)=.true.
       lpenc_requested(i_fpres)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
@@ -194,6 +196,15 @@ module Entropy
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_geth)=.true.
       endif
+!
+      if (lpencil_in(i_cs2).or. &
+          lpencil_in(i_TT).or. &
+          lpencil_in(i_lnTT)) then
+        lpencil_in(i_eth)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
+!
+      if (lpencil_in(i_pp)) lpencil_in(i_eth)=.true.
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
