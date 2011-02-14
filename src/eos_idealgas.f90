@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED TTb; rhop; eth; geth(3)
+! PENCILS PROVIDED TTb; rhop; eth; geth(3); glneth(3)
 !
 !***************************************************************
 module EquationOfState
@@ -944,15 +944,18 @@ module EquationOfState
 ! geth
         if (lpencil(i_geth)) call grad(f,ieosvar2,p%geth)
 !
+        if (lpencil(i_gTT).or.lpencil(i_glnTT)) &
+            call multsv(1./p%eth,p%geth,p%glneth)
+!
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*p%eth
-        if (lpencil(i_TT).or.lpencil(i_lnTT)) p%TT=gamma*cp1*p%rho1*p%eth
-!
+        if (lpencil(i_TT).or.lpencil(i_lnTT).or.lpencil(i_gTT)) &
+            p%TT=gamma*cp1*p%rho1*p%eth
         if (lpencil(i_lnTT)) p%lnTT=alog(p%TT)
-        if (lpencil(i_gTT)) then
-!          call grad(f,ieosvar2,p%geth)
-!          p%gTT=gamma*cp1*p%rho1*(p%geth-f(l1:l2,m,n,ieth)*p%glnrho)
- !         p%glnTT=p%geth/f(l1:l2,m,n,ieth)-p%glnrho
+!
+        if (lpencil(i_glnTT).or.lpencil(i_gTT)) then
+          p%glnTT=p%glneth - p%glnrho
+          if (lpencil(i_gTT)) call multsv(p%TT,p%glnTT,p%gTT)
         endif
 !
       case default
