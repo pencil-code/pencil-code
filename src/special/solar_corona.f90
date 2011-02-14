@@ -28,7 +28,7 @@ module Special
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
-  logical :: lgranulation=.false.,lrotin=.true.,lgran_proc=.false.
+  logical :: lgranulation=.false.,lgran_proc=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
@@ -53,7 +53,7 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,irefz, &
-       Bavoid,nglevel,lrotin,nvor,tau_inv,Bz_flux,init_time, &
+       Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
        iheattype,dt_gran,cool_type
@@ -1952,10 +1952,8 @@ module Special
 !
 ! It is invoked by setting lgranulation=T in run.in
 ! additional parameters are
-!         Bavoid =0.01 : the magn. field strenght in Tesla at which
-!                        no granule is allowed
-!         nvor = 5.    : the strength by which the vorticity is
-!                        enhanced
+! 'Bavoid': the magn. field strenght in Tesla at which no granule is allowed
+! 'nvor': the strength by which the vorticity is enhanced
 !
 !  11-may-10/bing: coded
 !
@@ -2229,7 +2227,7 @@ module Special
       integer, parameter :: unit=10
       real, dimension(6) :: buffer
 !
-      write (filename, '("driver/pts_",I1.1,".dat")') level
+      write (filename,'("driver/pts_",I1.1,".dat")') level
 !
       inquire (file=filename, exist=ex)
 !
@@ -2981,10 +2979,8 @@ module Special
         vy=Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-        if (lrotin) then
+        if (nvor > 0.0) then
           call helmholtz(wscr,wscr2)
-          !* war vorher 5 ; zum testen auf  50
-          ! nvor is now keyword !!!
           vx=(vx+nvor*wscr )
           vy=(vy+nvor*wscr2)
         endif
