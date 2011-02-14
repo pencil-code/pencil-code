@@ -652,19 +652,34 @@ module EquationOfState
           if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
         endif
 !
-      case (irho_eth)
-        if (lpencil_in(i_cs2)) then
-          lpencil_in(i_rho1)=.true.
+      case (irho_eth,ilnrho_eth)
+        if (lpencil_in(i_del2lnTT)) then
+          lpencil_in(i_glnTT)=.true.
+          lpencil_in(i_glnrho)=.true.
+          lpencil_in(i_del2lnrho)=.true.
+          lpencil_in(i_eth)=.true.
         endif
-!
-      case (ilnrho_eth)
-        if (lpencil_in(i_TT).or.lpencil_in(i_lnTT)) then
-          lpencil_in(i_rho1)=.true.
+        if (lpencil_in(i_hlnTT)) then
+          lpencil_in(i_hlnrho)=.true.
+          lpencil_in(i_geth)=.true.
+          lpencil_in(i_glneth)=.true.
         endif
         if (lpencil_in(i_glnTT).or.lpencil_in(i_gTT)) then
-          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_TT)=.true.
           lpencil_in(i_glnrho)=.true.
-!          lpencil_in(i_geth)=.true.
+          lpencil_in(i_glneth)=.true.
+        endif
+        if (lpencil_in(i_cs2).or. &
+            lpencil_in(i_TT).or. &
+            lpencil_in(i_lnTT).or. &
+            lpencil_in(i_TT1)) then
+          lpencil_in(i_eth)=.true.
+          lpencil_in(i_rho1)=.true.
+        endif
+        if (lpencil_in(i_pp)) lpencil_in(i_eth)=.true.
+        if (lpencil_in(i_glneth)) then
+          lpencil_in(i_geth)=.true.
+          lpencil_in(i_eth)=.true.
         endif
 !
       case default
@@ -689,7 +704,8 @@ module EquationOfState
       intent(inout) :: p
 !
       real, dimension(nx) :: tmp
-      integer :: i
+      real, dimension(nx,3,3) :: tmp_m
+      integer :: i,j
 !
 !  THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 !  FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -938,26 +954,39 @@ module EquationOfState
         if (lpencil(i_del6ss)) call fatal_error('calc_pencils_eos', &
             'del6ss not available for ilnrho_cs2')
 !
-      case (irho_eth,ilnrho_eth)
-! eth
-        if (lpencil(i_eth)) p%eth=f(l1:l2,m,n,ieth)
-! geth
-        if (lpencil(i_geth)) call grad(f,ieosvar2,p%geth)
+!  Work out thermodynamic quantities for given lnrho or rho and eth.
 !
-        if (lpencil(i_gTT).or.lpencil(i_glnTT)) &
-            call multsv(1./p%eth,p%geth,p%glneth)
+      case (irho_eth,ilnrho_eth)
+        if (lpencil(i_eth)) p%eth=f(l1:l2,m,n,ieth)
+        if (lpencil(i_geth)) call grad(f,ieosvar2,p%geth)
+        if (lpencil(i_glneth)) call multsv(1./p%eth,p%geth,p%glneth)
 !
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*p%eth
         if (lpencil(i_TT).or.lpencil(i_lnTT).or.lpencil(i_gTT)) &
             p%TT=gamma*cp1*p%rho1*p%eth
         if (lpencil(i_lnTT)) p%lnTT=alog(p%TT)
+        if (lpencil(i_TT1)) p%TT1=1./(gamma*cp1*p%rho1*p%eth)
 !
         if (lpencil(i_glnTT).or.lpencil(i_gTT)) then
           p%glnTT=p%glneth - p%glnrho
           if (lpencil(i_gTT)) call multsv(p%TT,p%glnTT,p%gTT)
         endif
 !
+        if (lpencil(i_hlnTT)) then ! hlnTT is used as a tmp variable
+          call g2ij(f,ieosvar2,p%hlnTT)
+          call multvv_mat(p%geth,p%glneth,tmp_m)
+          p%hlnTT=p%hlnTT-tmp_m
+          do i=1,3; do j=1,3 
+            p%hlnTT(:,i,j)=p%hlnTT(:,i,j)/p%eth
+          enddo; enddo
+          p%hlnTT=p%hlnTT-p%hlnrho
+        endif
+        if (lpencil(i_del2lnTT)) then
+          call del2(f,ieosvar2,p%del2lnTT)
+          call dot2(p%glnTT+p%glnrho,tmp)
+          p%del2lnTT=p%del2lnTT/p%eth-tmp-p%del2lnrho
+        endif
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect

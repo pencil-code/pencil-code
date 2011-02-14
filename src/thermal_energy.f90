@@ -189,7 +189,6 @@ module Entropy
 !  Interdependency among pencils from the Entropy module is specified here.
 !
 !  04-nov-10/anders+evghenii: adapted
-!  14-feb-11/bing: update
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -197,15 +196,6 @@ module Entropy
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_geth)=.true.
       endif
-!
-      if (lpencil_in(i_cs2).or. &
-          lpencil_in(i_TT).or. &
-          lpencil_in(i_lnTT)) then
-        lpencil_in(i_eth)=.true.
-        lpencil_in(i_rho1)=.true.
-      endif
-!
-      if (lpencil_in(i_pp)) lpencil_in(i_eth)=.true.
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
