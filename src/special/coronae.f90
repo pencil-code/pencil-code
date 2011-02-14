@@ -2014,7 +2014,7 @@ module Special
           endif
         endif
       else
-        print*,'No points lists found, creating points for level:',level
+        if (lroot) print*,'No points lists found, creating points for level:',level
       endif
 !
     endsubroutine read_points
