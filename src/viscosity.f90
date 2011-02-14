@@ -596,7 +596,7 @@ module Viscosity
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
           lvisc_nut_from_magnetic .or. lvisc_mu_therm) then
-        if ((lentropy.or.ltemperature).and.lviscosity_heat) &
+        if ((lentropy.or.ltemperature.or.lthermal_energy).and.lviscosity_heat) &
             lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
