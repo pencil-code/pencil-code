@@ -4658,10 +4658,7 @@ print*,'NATA'
       real :: alpha, eps
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,mreactions) :: vreactions,vreactions_p,vreactions_m
-      real, dimension (nx,nchemspec) :: xdot,xdes,xdot_c,xdot_2,jacd,beta
-      real, dimension (nx,mreactions) :: a, tauc1
-      real, dimension (nx,mreactions,mreactions) :: b
-      real, dimension (nx,mreactions,nchemspec) :: xdot_1
+      real, dimension (nx,nchemspec) :: xdot
       real, dimension (nx) :: rho1
       real, dimension (nx,nchemspec)  :: molm
       type (pencil_case) :: p
@@ -4720,64 +4717,12 @@ print*,'NATA'
 !  in the chemkin manual)
 !
       xdot=0.
-      xdes=0.
       do k=1,nchemspec
         do j=1,nreactions
           xdot(:,k)=xdot(:,k)-stoichio(k,j)*vreactions(:,j)*molm(:,k)
-          xdes(:,k)=xdes(:,k)-stoichio(k,j)*vreactions_m(:,j)*molm(:,k)
         enddo
       enddo
       p%DYDt_reac=xdot*unit_time
-      xdes=xdes*unit_time
-!
-!  Julien: Dynamic stiffness removal (UNDER CONSTRUCTION, do not remove).
-!
-!      beta=0.
-!      xdot_2=0.
-!      do j=1,nreactions
-!        if (back(j)) then
-!        do k=1,nchemspec
-!          jacd(:,k)=xdes(:,k)/(eps+f(l1:l2,m,n,ichemspec(k)))
-!          xdot_1(:,j,k)=Sijp(k,j)*vreactions_p(:,j)-Sijm(k,j)*vreactions_m(:,j)
-!        enddo
-!
-!        do i =1, nx
-!          if (maxval(abs(jacd(:,k))) >= 1./dt) then
-!            beta(:,k)=1.
-!          else
-!            do k=1,nchemspec
-!              xdot_2(i,k)=xdot_2(i,k)-stoichio(k,j)*vreactions(i,j)*molm(i,k)
-!            enddo
-!          endif
-!        enddo
-!        if (maxval(beta(:,k)) /= 0.) &
-!              print*, 'QSS species:', k
-!        endif
-!      enddo
-!
-!      a=vreactions/dt
-!      b=0.
-!      do j=1,nreactions
-!        do k=1,nchemspec
-!          a(:,j)=a(:,j)+xdot_1(:,j,k)/(eps+f(l1:l2,m,n,ichemspec(k)))*xdot_2(:,k)
-!          do i=1,nreactions
-!            b(:,j,i)=b(:,j,i)-beta(:,i)*stoichio(k,i)*xdot_1(:,j,k)
-!          enddo
-!        enddo
-!      enddo
-!
-!      xdot=0.
-!      do k=1,nchemspec
-!        do j=1,nreactions
-!          where (beta(:,j) == 1)
-!           xdot(:,k)=xdot(:,k)-stoichio(k,j)*tauc1(:,j)*f(l1:l2,m,n,ichemspec(k))
-!             xdot(:,k)=xdot(:,k) 
-!          elsewhere
-!            xdot(:,k)=xdot(:,k)-stoichio(k,j)*vreactions(:,j)*molm(:,k)
-!          endwhere
-!        enddo
-!      enddo
-!      p%DYDt_reac=xdot*unit_time
 !
 !  For diagnostics
 !
@@ -6204,9 +6149,6 @@ print*,'NATA'
 !
       lFlameMaster=.true.
 !
-! NILS: For the time beeing the prerun simulation can not have been run in parallell
-! NILS: Should fix this soon.
-!
 ! Read dimension of the array stored in the FlameMaster initial file
 !
       open(1,FILE=trim(file_name))
@@ -6274,11 +6216,11 @@ print*,'NATA'
               if (x(i) > grid(ii)-(grid(imid)-grid(ipos)) .and. x(i) &
                   <= grid(ii+1)-(grid(imid)-grid(ipos))) then
                 if (.not.init_from_file) &
-                    f(i,j,k,iux)=f(i,j,k,iux)+a(ii,1)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+                  f(i,j,k,iux)=f(i,j,k,iux)+a(ii,1)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
                              (a(ii+1,1)-a(ii,1)) / (grid(ii+1)-grid(ii))
-                f(i,j,k,iuz+2)=a(ii,3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+                  f(i,j,k,iuz+2)=a(ii,3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
                              (a(ii+1,3)-a(ii,3)) / (grid(ii+1)-grid(ii))
-                f(i,j,k,iuz+1)=a(ii,2)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
+                  f(i,j,k,iuz+1)=a(ii,2)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
                               (a(ii+1,2)-a(ii,2)) / (grid(ii+1)-grid(ii))
                 do is = 1, nsp
                   do js = 1, nchemspec
