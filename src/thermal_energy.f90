@@ -166,8 +166,10 @@ module Entropy
       if (lweno_transport) then
         lpenc_requested(i_transpeth)=.true.
       endif
-!  In case of advection we need divu
+!  In case of advection we need divu and geth
       lpenc_requested(i_divu)=.true.
+      lpenc_requested(i_geth)=.true.
+      lpenc_requested(i_pp)=.true.
 !
       lpenc_requested(i_eth)=.true.
       lpenc_requested(i_fpres)=.true.
@@ -237,14 +239,14 @@ module Entropy
 !
       use Diagnostics
       use EquationOfState, only: gamma_m1
-      use Sub, only: identify_bcs
+      use Sub, only: identify_bcs, dot
       use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0
+      real, dimension (nx) :: Hmax=0.0,ugeth
 !
       intent(inout) :: f,p
       intent(out) :: df
@@ -272,12 +274,13 @@ module Entropy
       if (lweno_transport) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
       else
-        call fatal_error('dss_dt','only implemented for WENO transport')
+        call dot(p%uu,p%geth,ugeth)
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
       endif
 !
 !  Add P*dV work.
 !
-      df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - gamma_m1*p%eth*p%divu
+      df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%pp*p%divu
 !
 !  Calculate viscous contribution to temperature.
 !
