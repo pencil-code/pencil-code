@@ -591,13 +591,12 @@ module Viscosity
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
            lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
-      if (lvisc_rho_nu_const .or. lvisc_sqrtrho_nu_const .or. &
-          lvisc_nu_const .or. lvisc_nu_therm .or.&
-          lvisc_nu_prof .or. lvisc_nu_profx .or. &
-          lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
-          lvisc_nut_from_magnetic .or. lvisc_mu_therm) then
-        if ((lentropy.or.ltemperature.or.lthermal_energy).and.lviscosity_heat) &
-            lpenc_requested(i_sij2)=.true.
+      if (lvisc_rho_nu_const.or.lvisc_sqrtrho_nu_const.or. &
+          lvisc_nu_const.or.lvisc_nu_therm.or.&
+          lvisc_nu_prof.or.lvisc_nu_profx.or. &
+          lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
+          lvisc_nut_from_magnetic.or.lvisc_mu_therm) then
+        if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
       if (lthermal_energy.and.lviscosity_heat) lpenc_requested(i_rho)=.true.
