@@ -938,12 +938,11 @@ module EquationOfState
         if (lpencil(i_del6ss)) call fatal_error('calc_pencils_eos', &
             'del6ss not available for ilnrho_cs2')
 !
-      case (irho_eth)
+      case (irho_eth,ilnrho_eth)
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*f(l1:l2,m,n,ieth)*p%rho1
-        if (lpencil(i_pp))  p%pp=gamma_m1*f(l1:l2,m,n,ieth)
-!
-      case (ilnrho_eth)
+        if (lpencil(i_pp)) p%pp=gamma_m1*f(l1:l2,m,n,ieth)
         if (lpencil(i_TT)) p%TT=gamma*cp1*p%rho1*f(l1:l2,m,n,ieth)
+!
         if (lpencil(i_lnTT)) p%lnTT=alog(gamma*cp1*p%rho1*f(l1:l2,m,n,ieth))
         if (lpencil(i_gTT)) then
 !          call grad(f,ieosvar2,p%geth)
