@@ -1160,7 +1160,7 @@ module Dustdensity
         if (lpencil(i_fcloud)) then
           do i=1, nx
            ff_tmp=p%nd(i,:)*dsize(:)**3
-           ttt= spline_integral(dsize,ff_tmp)
+           if (ndustspec>1) ttt= spline_integral(dsize,ff_tmp)
            p%fcloud(i)=4.0/3.0*pi*rho_w*ttt(ndustspec)
           enddo
 !
