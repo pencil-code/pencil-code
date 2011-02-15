@@ -845,7 +845,7 @@ module Entropy
 !
       if (lcalc_heat_cool)  call calc_heat_cool(df,p)
 !
-!  Thermal conduction: only chi=cte for the moment.
+!  Thermal conduction
 !
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
