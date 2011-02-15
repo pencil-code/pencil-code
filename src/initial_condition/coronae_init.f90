@@ -351,9 +351,9 @@ contains
           if (direction=='z') f(:,:,:,ieth)=spread(spread(exp(profile_z),1,mx),2,my)
           if (direction=='x') f(:,:,:,ieth)=spread(spread(exp(profile_x),2,my),3,mz)
           if (ldensity_nolog) then
-            f(:,:,:,ieth)=f(:,:,:,ieth)*gamma*cp1*f(:,:,:,irho)
+            f(:,:,:,ieth)=f(:,:,:,ieth)*f(:,:,:,irho)/(gamma*cp1)
           else
-            f(:,:,:,ieth)=f(:,:,:,ieth)*gamma*cp1*exp(f(:,:,:,ilnrho))
+            f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
           endif
         else
           call fatal_error('setup_vert_profiles', &
@@ -390,7 +390,7 @@ contains
 !
     inquire(IOLENGTH=lend) lnrho_0
 !
-    if (lentropy.or.ltemperature_nolog) &
+    if (lentropy.or.ltemperature_nolog.or.lthermal_energy.or.ldensity_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
     lnrho_0 = alog(rho_init)
