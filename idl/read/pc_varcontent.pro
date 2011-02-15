@@ -283,11 +283,23 @@ varcontent[ie].idlvarloc  = 'ee_loc'
 varcontent[ie].idlinitloc = INIT_SCALAR_LOC
 ;
 default, icc, 0
-varcontent[icc].variable   = 'Passive scalar (cc)'
-varcontent[icc].idlvar     = 'cc'
-varcontent[icc].idlinit    = INIT_SCALAR
-varcontent[icc].idlvarloc  = 'cc_loc'
-varcontent[icc].idlinitloc = INIT_SCALAR_LOC
+npscalar = n_elements(icc)
+if (npscalar gt 1) then begin
+  for i = 0, npscalar - 1 do begin
+    istr = strcompress(string(i+1),/remove_all) ;(the +1 so we start with CC1)
+    varcontent[icc[i]].variable   = 'Passive Scalar (CC' + istr + ')'
+    varcontent[icc[i]].idlvar     = 'CC' + istr
+    varcontent[icc[i]].idlinit    = INIT_SCALAR
+    varcontent[icc[i]].idlvarloc  = 'CC' + istr + '_loc'
+    varcontent[icc[i]].idlinitloc = INIT_SCALAR_LOC
+  endfor
+endif else begin
+  varcontent[icc].variable   = 'Passive scalar (cc)'
+  varcontent[icc].idlvar     = 'cc'
+  varcontent[icc].idlinit    = INIT_SCALAR
+  varcontent[icc].idlvarloc  = 'cc_loc'
+  varcontent[icc].idlinitloc = INIT_SCALAR_LOC
+endelse
 ;
 default, ilncc, 0
 varcontent[ilncc].variable   = 'Log passive scalar (lncc)'
