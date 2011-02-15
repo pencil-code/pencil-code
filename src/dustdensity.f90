@@ -958,7 +958,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp,fcloud_tmp, Imr
+      real, dimension (nx) :: tmp, Imr
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
@@ -1148,7 +1148,7 @@ module Dustdensity
             p%udrop=0.
           else
             p%udrop(:,:,k)=p%uu(:,:)
-            p%udrop(:,3,k)=p%udrop(:,3,k)-1e5*dsize(k)**2
+            p%udrop(:,3,k)=p%udrop(:,3,k)-1e6*dsize(k)**2
           endif
         endif
 ! udropgnd
@@ -1158,14 +1158,11 @@ module Dustdensity
       enddo
 ! fcloud
         if (lpencil(i_fcloud)) then
-          fcloud_tmp=0.
-          do k=1, ndustspec-1
-           fcloud_tmp=fcloud_tmp  &
-              +0.5*(p%nd(:,k+1)*dsize(k+1)**3*p%md(:,k+1) &
-                 +p%nd(:,k)*dsize(k)**3*p%md(:,k)) &
-              *(dsize(k+1)-dsize(k))
+          do i=1, nx
+           ff_tmp=p%nd(i,:)*dsize(:)**3
+           ttt= spline_integral(dsize,ff_tmp)
+           p%fcloud(i)=4.0/3.0*pi*rho_w*ttt(ndustspec)
           enddo
-          p%fcloud(:)=4.0/3.0*pi*m_w*m_u_cgs*fcloud_tmp(:)
 !
         endif
 !
