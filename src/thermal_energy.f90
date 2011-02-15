@@ -51,16 +51,17 @@ module Entropy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
-  integer :: idiag_ppm=0
+  integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right>
   integer :: idiag_ppmx=0
   integer :: idiag_ppmy=0
   integer :: idiag_ppmz=0
-  integer :: idiag_TTm=0
+  integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>
   integer :: idiag_TTmx=0
   integer :: idiag_TTmy=0
   integer :: idiag_TTmz=0
   integer :: idiag_TTmxy=0
   integer :: idiag_TTmxz=0
+  integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_pdivum=0
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
@@ -176,6 +177,8 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
 !
+!  Diagnostic pencils.
+!
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0) then
         lpenc_diagnos(i_pp)=.true.
@@ -183,6 +186,10 @@ module Entropy
       endif
       if (idiag_TTm/=0 .or. idiag_TTmin/=0 .or. idiag_TTmax/=0) &
           lpenc_diagnos(i_TT)=.true.
+      if (idiag_gTmax/=0) then
+         lpenc_diagnos(i_glnTT) =.true.
+         lpenc_diagnos(i_TT) =.true.
+      endif
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -239,14 +246,15 @@ module Entropy
 !
       use Diagnostics
       use EquationOfState, only: gamma_m1
-      use Sub, only: identify_bcs, dot
+      use Special, only: special_calc_entropy
+      use Sub, only: identify_bcs, dot, dot2
       use Viscosity, only: calc_viscous_heat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0,ugeth
+      real, dimension (nx) :: Hmax=0.0,ugeth,tmp
 !
       intent(inout) :: f,p
       intent(out) :: df
@@ -268,6 +276,11 @@ module Entropy
 !  Add pressure gradient term in momentum equation.
 !
       if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
+!
+!  Entry possibility for "personal" entries.
+!  In that case you'd need to provide your own "special" routine.
+!
+      if (lspecial) call special_calc_entropy(f,df,p)
 !
 !  Add energy transport term.
 !
@@ -294,6 +307,10 @@ module Entropy
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_ethm/=0)   call sum_mn_name(p%eth,idiag_ethm)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
+        if (idiag_gTmax/=0) then
+          call dot2(p%glnTT,tmp)
+          call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
+        endif
       endif
 !
       if (l1davgfirst) then
@@ -411,7 +428,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
+        idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_gTmax=0
         idiag_ethm=0; idiag_pdivum=0; idiag_eem=0; idiag_ppm=0
       endif
 !
@@ -421,6 +438,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
+        call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
