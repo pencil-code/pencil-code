@@ -828,14 +828,16 @@ print*,'NATA'
 !        do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
 !      endif
 !
-      if (lpencil(i_gYYk) .and. ldiffusion2) then
+!      if (lpencil(i_gYYk) .and. ldiffusion2) then
+       if (lpencil(i_gYYk)) then
        do k=1,nchemspec
          call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
          do i=1,3; p%gYYk(:,i,k)=gXX_tmp(:,i); enddo
        enddo
       endif
 !
-      if (lpencil(i_gXXk) .and. ldiffusion2) then
+!      if (lpencil(i_gXXk) .and. ldiffusion2) then
+      if (lpencil(i_gXXk)) then
        do k=1,nchemspec
          call grad(XX_full(:,:,:,k),gXX_tmp)
          do i=1,3; p%gXXk(:,i,k)=gXX_tmp(:,i); enddo
@@ -1027,7 +1029,8 @@ print*,'NATA'
 !
 ! Calculate the thermal diffusivity
 !
-      if (ldiffusion2 .and. lpencil(i_lambda) .and. lheatc_chemistry) then
+!      if (ldiffusion2 .and. lpencil(i_lambda) .and. lheatc_chemistry) then
+      if (lpencil(i_lambda) .and. lheatc_chemistry) then
       if ((lThCond_simple) .or. (lambda_const<impossible))then
         if (lThCond_simple) then
           if (lambda_const==impossible) lambda_const=1e4
