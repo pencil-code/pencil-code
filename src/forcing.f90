@@ -69,6 +69,10 @@ module Forcing
   integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
+! For random forcing in 2d 
+  integer,allocatable, dimension (:,:) :: random2d_kmodes
+  integer :: random2d_nmodes
+  integer :: random2d_kmin,random2d_kmax
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -113,7 +117,7 @@ module Forcing
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty, &
-       tgentle
+       tgentle,random2d_kmin,random2d_kmax
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -493,24 +497,25 @@ module Forcing
 !  calculate and add forcing function
 !
         select case (iforce)
-        case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
+        case ('2drandom_xy');     call forcing_2drandom_xy(f)
+        case ('ABC');             call forcing_ABC(f)
+        case ('blobs');           call forcing_blobs(f)
+        case ('chandra_kendall'); call forcing_chandra_kendall(f)
+        case ('cktest');          call forcing_cktest(f)
+        case ('diffrot');         call forcing_diffrot(f,force)
+        case ('fountain', '3');   call forcing_fountain(f)
+        case ('gaussianpot');     call forcing_gaussianpot(f,force)
+        case ('GP');              call forcing_GP(f)
         case ('irrotational');    call forcing_irro(f,force)
         case ('helical', '2');    call forcing_hel(f)
         case ('helical_both');    call forcing_hel_both(f)
         case ('helical_kprof');   call forcing_hel_kprof(f)
-        case ('GP');              call forcing_GP(f)
-        case ('TG');              call forcing_TG(f)
-        case ('ABC');             call forcing_ABC(f)
-        case ('nocos');           call forcing_nocos(f)
-        case ('fountain', '3');   call forcing_fountain(f)
-        case ('horiz-shear');     call forcing_hshear(f)
-        case ('twist');           call forcing_twist(f)
-        case ('diffrot');         call forcing_diffrot(f,force)
-        case ('blobs');           call forcing_blobs(f)
-        case ('gaussianpot');     call forcing_gaussianpot(f,force)
         case ('hel_smooth');      call forcing_hel_smooth(f)
-        case ('chandra_kendall'); call forcing_chandra_kendall(f)
-        case ('cktest');          call forcing_cktest(f)
+        case ('horiz-shear');     call forcing_hshear(f)
+        case ('nocos');           call forcing_nocos(f)
+        case ('TG');              call forcing_TG(f)
+        case ('twist');           call forcing_twist(f)
+        case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
         case default; if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
@@ -527,13 +532,13 @@ module Forcing
         lfirstforce2=.false.
 !
         select case (iforce2)
-        case ('zero'); if (headtt .and. lroot) print*,'addforce: No additional forcing'
-        case ('irrotational'); call forcing_irro(f,force2)
+        case ('diffrot');      call forcing_diffrot(f,force2)
+        case ('fountain');     call forcing_fountain(f)
         case ('helical');      call forcing_hel(f)
         case ('helical_both'); call forcing_hel_both(f)
-        case ('fountain');     call forcing_fountain(f)
         case ('horiz-shear');  call forcing_hshear(f)
-        case ('diffrot');      call forcing_diffrot(f,force2)
+        case ('irrotational'); call forcing_irro(f,force2)
+        case ('zero'); if (headtt .and. lroot) print*,'addforce: No additional forcing'
         case default; if (lroot) print*,'addforce: No such forcing iforce2=',trim(iforce2)
         endselect
 !
@@ -542,6 +547,124 @@ module Forcing
       call timing('addforce','finished')
 !
     endsubroutine addforce
+!***********************************************************************
+    subroutine forcing_2drandom_xy(f)
+!
+!  Random force in two dimensions (x and y) limited to bands of wave-vector
+!  in space. 
+!  14-feb-2011/ dhruba : coded 
+!
+      use EquationOfState, only: cs0
+      use Diagnostics
+      use General
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, save :: ifirst=0
+      integer :: ik1,ik2,ikmodes,iran1,iran2,kx1,ky1,kx2,ky2
+      real, dimension(nx,3) :: forcing_rhs
+      real, dimension(nx) :: xkx1,xkx2
+      real,dimension(4) :: fran
+      real :: phase1,phase2,pi_over_Lx,force_norm
+!
+      if (ifirst==0) then
+! If this is the first time this routine is being called select a set of 
+! k-vectors in two dimensions according to input parameters:
+        if (lroot) print*,'forcing_2drandom_xy: selecting k vectors'
+        call get_2dmodes (.true.)
+        allocate(random2d_kmodes (2,random2d_nmodes))
+        call get_2dmodes (.false.)
+        if (lroot) then
+! The root processors also write out the forced modes. 
+          open(unit=10,file=trim(datadir)//'2drandomk.out',status='unknown')
+          do ikmodes = 1, random2d_nmodes
+            write(10,*) random2d_kmodes(1,ikmodes),random2d_kmodes(2,ikmodes)
+          enddo
+        endif
+      endif
+      ifirst=ifirst+1
+!
+! force = xhat [ cos (k_1 x + \phi_1 ) + cos (k_2 y + \phi_1) ] + 
+!         yhat [ cos (k_3 x + \phi_2 ) + cos (k_4 y + \phi_2) ]
+! where k_1 -- k_2 and k_3 -- k_4 are two randomly chose pairs in the list
+! random2d_kmodes and  \phi_1 and \phi_2 are two random phases. 
+!
+      call random_number_wrapper(fran)
+      phase1=pi*(2*fran(1)-1.)
+      phase2=pi*(2*fran(2)-1.)
+      iran1=random2d_nmodes*(.9999*fran(3))+1
+      iran2=random2d_nmodes*(.9999*fran(4))+1
+!
+!  normally we want to use the wavevectors as they are,
+!  but in some cases, e.g. when the box is bigger than 2pi,
+!  we want to rescale k so that k=1 now corresponds to a smaller value.
+!
+      if (lscale_kvector_fac) then
+        kx1=random2d_kmodes(1,iran1)*scale_kvectorx
+        ky1=random2d_kmodes(2,iran1)*scale_kvectory
+        kx2=random2d_kmodes(1,iran2)*scale_kvectorx
+        ky2=random2d_kmodes(2,iran2)*scale_kvectory
+        pi_over_Lx=0.5
+      elseif (lscale_kvector_tobox) then
+        kx1=random2d_kmodes(1,iran1)*(2.*pi/Lxyz(1))
+        ky1=random2d_kmodes(2,iran1)*(2.*pi/Lxyz(2))
+        kx2=random2d_kmodes(1,iran2)*(2.*pi/Lxyz(1))
+        ky2=random2d_kmodes(2,iran2)*(2.*pi/Lxyz(2))
+        pi_over_Lx=pi/Lxyz(1)
+      else
+        kx1=random2d_kmodes(1,iran1)
+        ky1=random2d_kmodes(2,iran1)
+        kx2=random2d_kmodes(1,iran2)
+        ky2=random2d_kmodes(2,iran2)
+        pi_over_Lx=0.5
+      endif
+!
+! Now add the forcing
+!
+      force_norm = force*cs0*cs0*sqrt(dt)
+      do n=n1,n2
+        do m=m1,m2
+          xkx1 = x(l1:l2)*kx1+phase1
+          xkx2 = x(l1:l2)*kx2+phase2
+          forcing_rhs(:,1) = force_norm*( cos(xkx1) + cos(y(m)*ky1+phase1) )
+          forcing_rhs(:,2) = force_norm*( cos(xkx2) + cos(y(m)*ky2+phase2) )
+          forcing_rhs(:,3) = 0.
+          if (lhelical_test) then
+            f(l1:l2,m,n,iuu:iuu+2)=forcing_rhs(:,1:3)
+          else
+            f(l1:l2,m,n,iuu:iuu+2)=f(l1:l2,m,n,iuu:iuu+2)+forcing_rhs(:,1:3)
+          endif
+        enddo
+      enddo
+!
+      if (ip<=9) print*,'forcing_2drandom_xy: forcing OK'
+!
+    endsubroutine forcing_2drandom_xy
+!***********************************************************************
+    subroutine get_2dmodes (lonly_total)
+      integer :: ik1,ik2,modk
+      integer :: imode=1
+      logical :: lonly_total
+!
+!   15-feb-2011 : dhruba/coded
+!
+      imode=1
+      do ik1=0,random2d_kmax
+        do ik2 = 0, random2d_kmax
+          modk = nint(sqrt ( float(ik1*ik1) + float (ik2*ik2) ))
+          if ( (modk.le.random2d_kmax).and.(modk.ge.random2d_kmin)) then
+            if (.not.lonly_total) then
+              random2d_kmodes(1,imode) = ik1
+              random2d_kmodes(2,imode) = ik2
+            endif
+            imode=imode+1
+          endif
+        enddo
+      enddo
+      if (lonly_total) random2d_nmodes = imode
+!
+    endsubroutine get_2dmodes
 !***********************************************************************
     subroutine forcing_irro(f,force_ampl)
 !
@@ -1689,7 +1812,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       use EquationOfState, only: cs0
 !      use SpecialFunctions
 !
-      integer, save :: ifirst
+      integer, save :: ifirst=0
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
       real, dimension(nx,3,3) :: psi_ij,Tij
