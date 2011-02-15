@@ -441,13 +441,13 @@ module Special
       if (lbuoyancy_z) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              + gg*((p%TT(:)-TT0)/TT0 &
-             + eps*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
+             + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:) &
             )
       elseif (lbuoyancy_x) then
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
              + gg*((p%TT(:)-TT0)/TT0 &
-             + eps*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
+             + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:) &
             )
       endif
@@ -1033,14 +1033,14 @@ subroutine bc_satur_x(f,bc)
         if (vr==ilnTT) then 
           f(l1,m1:m2,n1:n2,ilnTT)=alog(TT1)
         elseif (vr==ichemspec(ind_H2O)) then 
-         pp_sat(:,:)=6.035e12*exp(-5938./TT1)
+ !        pp_sat(:,:)=6.035e12*exp(-5938./TT1)
  !        f(l1,:,:,ichemspec(ind_H2O))=pp_sat(:,:)/pp_init
         elseif (vr==ichemspec(ind_N2)) then 
-          sum_Y=0.
-          do k=1,nchemspec
-           if (k/=ind_N2) sum_Y=sum_Y+f(l1,:,:,ichemspec(k))
-          enddo
-           f(l1,:,:,ichemspec(ind_N2))=1.-sum_Y
+ !         sum_Y=0.
+ !         do k=1,nchemspec
+ !          if (k/=ind_N2) sum_Y=sum_Y+f(l1,:,:,ichemspec(k))
+ !         enddo
+ !          f(l1,:,:,ichemspec(ind_N2))=1.-sum_Y
         endif
 !
         do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo

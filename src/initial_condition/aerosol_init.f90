@@ -45,17 +45,21 @@ module InitialCondition
      integer :: imass=1, spot_number=0
      integer :: index_H2O=3
      integer :: index_N2=4
-     real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
+     real :: dYw=1.,dYw1=1.,dYw12=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real :: X_wind=impossible, spot_size=1.
+     real :: AA=0.66e-4, BB0=1.5*1e-16
+     real :: dsize_min=0., dsize_max=0., r0=0. 
+     real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false.!, linit_density=.false.
+     
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2
+     lreinit_water, dYw,dYw1, dYw2, dYw12, X_wind, spot_number, spot_size, lwet_spots, &
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0
 !
   contains
 !***********************************************************************
@@ -242,6 +246,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
+      real, dimension (mx,my,mz,ndustspec) :: psf
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -254,6 +259,9 @@ module InitialCondition
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
+      real, dimension (ndustspec) ::  lnds
+      real :: ddsize,ddsize0
+      integer :: ii_max
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat, i1,i2,i3
@@ -411,17 +419,34 @@ module InitialCondition
       endif
 !
        if (lreinit_water) then
-         psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT)))
+!
+          ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+          ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
+          do i=0,(ndustspec-1)
+            lnds(i+1)=alog(dsize_min)+i*ddsize
+            dsize(i+1)=exp(lnds(i+1))
+            dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
+            if (dsize(i+1)>r0) ii_max=i+1
+          enddo
+!
+         psat=6.035e12*exp(-5938./exp(f(:,:,:,ilnTT))) 
+!          
+         do k=1,ndustspec
+           psf(:,:,:,k)=psat(:,:,:) &
+             *exp(AA/exp(f(:,:,:,ilnTT))/2./dsize(k) &
+                 -10.7*dsize0(k)**3/(8.*dsize(k)**3))
+         enddo
+!
          if ((init_water1/=0.) .or. (init_water2/=0.)) lline_profile=.true.
          if ((init_x1/=0.) .or. (init_x2/=0.)) lline_profile=.true.
 !     
-         do iter=1,2
+         do iter=1,3
            if (iter==1) then
              lmake_spot=.true.
              air_mass_ar=air_mass
-           elseif (iter==2) then
+           elseif (iter>1) then
              lmake_spot=.false.
-             if (iter==2) then
+             if (iter>1) then
 !  Recalculation of air_mass becuase of changing of N2
                sum_Y=0.
                do k=1,nchemspec
@@ -438,30 +463,26 @@ module InitialCondition
              endif
            endif 
 !
+           if (iter < 3) then
+!
+!  Different profiles
+!
            if (lline_profile) then
-             call line_profile(f,PP,psat,air_mass_ar, &
+!             call line_profile(f,PP,psat,air_mass_ar, &
+!                            init_water1,init_water2,init_x1,init_x2)
+              call line_profile(f,PP,psf(:,:,:,ii_max),air_mass_ar, &
                             init_water1,init_water2,init_x1,init_x2)
            elseif (lwet_spots) then
-             call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
+!             call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
+              call spot_init(f,PP,air_mass_ar,psf(:,:,:,ii_max),lmake_spot)
+!         
            elseif (.not. lwet_spots) then
 ! Initial conditions for the  0dcase: cond_evap
-             f(:,:,:,ichemspec(index_H2O))=psat/(PP*air_mass_ar/18.)*dYw
+             f(:,:,:,ichemspec(index_H2O))=psf(:,:,:,ii_max)/(PP*air_mass_ar/18.)*dYw
+           endif
            endif
 ! end of loot do iter=1,2
          enddo
-!
-         sum_Y=0.
-           do k=1,nchemspec
-             if (ichemspec(k)/=ichemspec(index_N2)) &
-               sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-           enddo
-             f(:,:,:,ichemspec(index_N2))=1.-sum_Y
-             air_mass_ar=0.
-           do k=1,nchemspec
-             air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
-                 /species_constants(k,imass)
-           enddo
-             air_mass_ar=1./air_mass_ar
 !
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
@@ -520,13 +541,15 @@ module InitialCondition
                f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
              endif
              if (x(i)>init_x1__ .and. x(i)<init_x2__) then
-               init_water1_(i,:,:)= &
-                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw1
-               init_water2_(i,:,:)= &
-                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw2
+!               init_water1_(i,:,:)= &
+!                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw1
+!               init_water2_(i,:,:)= &
+!                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw2
+!               f(i,:,:,ichemspec(index_H2O))=&
+!                 (x(i)-init_x1__)/(init_x2__-init_x1__) &
+!                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
                f(i,:,:,ichemspec(index_H2O))=&
-                 (x(i)-init_x1__)/(init_x2__-init_x1__) &
-                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
+                psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw12
              endif
            enddo
          endif
