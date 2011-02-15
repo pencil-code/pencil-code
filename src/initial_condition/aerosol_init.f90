@@ -96,12 +96,8 @@ module InitialCondition
       integer :: i,j
 !
         if (init_ux /=0.) then
-!        do i=1,mx
-!         f(i,:,:,iux)= &
-!          (x(i)-xyz0(1))/Lxyz(1)*(0.-init_ux)+init_ux
-!        enddo
          do i=1,my
-           f(:,i,:,iux)=sin(2.*PI*y(i)/Lxyz(2))*init_ux
+!           f(:,i,:,iux)=sin(2.*PI*y(i)/Lxyz(2))*init_ux
          enddo
 !
         endif
