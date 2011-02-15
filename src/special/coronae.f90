@@ -6,8 +6,8 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MAUX CONTRIBUTION 3
-! COMMUNICATED AUXILIARIES 3
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
 !
 !***************************************************************
 !
@@ -31,8 +31,6 @@ module Special
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=huge1
   real :: limiter_tensordiff=3
-  logical :: luse_spitz_aux=.false.
-  real :: Kpa_pen=0., Kpa_SI=2e-11,flux_delim_SI=0,flux_delim
   real, dimension(3) :: B_ext_special
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -51,7 +49,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      luse_spitz_aux,Kpa_SI,flux_delim_SI,heat_par_b2,B_ext_special
+      heat_par_b2,B_ext_special
 !
 ! variables for print.in
 !
@@ -120,12 +118,6 @@ module Special
 !
 !  10-sep-10/bing: coded
 !
-    use FArrayManager, only: farray_register_auxiliary
-!
-    call farray_register_auxiliary('ispitzerx',ispitzerx,communicated=.true.)
-    call farray_register_auxiliary('ispitzery',ispitzery,communicated=.true.)
-    call farray_register_auxiliary('ispitzerz',ispitzerz,communicated=.true.)
-!
     if (lroot) call svn_id( &
         "$Id$")
 !
@@ -139,12 +131,13 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
+    use EquationOfState, only: gamma,get_cp1
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     logical, intent(in) :: lstarting
     real, dimension (mz) :: ztmp
     character (len=*), parameter :: filename='/strat.dat'
     integer :: lend,unit=12
-    real :: dummy=1.
+    real :: dummy=1.,cp1=1.
     logical :: exists
 !
     call keep_compiler_quiet(f)
@@ -163,8 +156,27 @@ module Special
         read(unit) lnTT_init_prof
         close(unit)
       else
-        lnrho_init_prof = f(l1,m1,:,ilnrho)
-        lnTT_init_prof = f(l1,m1,:,ilnTT)
+        if (ldensity_nolog) then
+          lnrho_init_prof = alog(f(l1,m1,:,irho))
+        else
+          lnrho_init_prof = f(l1,m1,:,ilnrho)
+        endif
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            lnTT_init_prof = alog(f(l1,m1,:,iTT))
+          else
+            lnTT_init_prof = f(l1,m1,:,ilnTT)
+          endif
+        else if (lentropy.and.pretend_lnTT) then
+          lnTT_init_prof = f(l1,m1,:,ilnTT)
+        else if (lthermal_energy) then
+          if (leos) call get_cp1(cp1)
+          lnTT_init_prof=alog(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
+        else
+          call fatal_error('initialize_special', &
+              'not implemented for current set of thermodynamic variables')
+        endif
+!
         open(unit,file=trim(directory_snap)//filename, &
             form='unformatted',status='unknown',recl=lend*mz)
         write(unit) z(:)
@@ -181,21 +193,6 @@ module Special
         call fatal_error &
               ('initialize_special','granulation only works for lhydro=T')
       endif
-    endif
-!
-    Kpa_pen = Kpa_SI/unit_density/unit_velocity**3. &
-        /unit_length*unit_temperature**3.5
-!
-    if (flux_delim_SI/=0) then
-      flux_delim = flux_delim_SI/unit_density/unit_velocity**3.
-    else
-      flux_delim=huge1
-    endif
-!
-    if (lroot) then
-      write (*,*) "SPITZER HEATCONDCTION"
-      write (*,*) "K _SI,K_pe",Kpa_SI,Kpa_pen
-      write (*,*) "Fd_SI,FD_pe",flux_delim_SI,flux_delim
     endif
 !
   endsubroutine initialize_special
@@ -277,15 +274,6 @@ module Special
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_cp1)=.true.
-      lpenc_requested(i_bb)=.true.
-    endif
-!
-    if (luse_spitz_aux) then
-      lpenc_requested(i_cp1)=.true.
-      lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_rho1)=.true.
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_glnTT)=.true.
       lpenc_requested(i_bb)=.true.
     endif
 !
@@ -463,8 +451,6 @@ module Special
 !  Read time dependent magnetic lower boundary
       if (lmag_time_bound.and.ipz==0) call mag_time_bound(f)
 !
-      if (luse_spitz_aux) call fill_spitzer_vector(f)
-!
     endsubroutine special_before_boundary
 !***********************************************************************
   subroutine special_calc_entropy(f,df,p)
@@ -498,16 +484,16 @@ module Special
       call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
       hc = hc + tmp
       hc = hyper3_chi*hc
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+      if (ltemperature .and. .not. (ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
-      if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-          + hyper3_chi
-    endif
-!
-    if (luse_spitz_aux) then
-      call grad_spitzer_vector(f,df,p)
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
+            + hyper3_chi
+      else
+        call fatal_error('hyper3_chi special','only for ltemperature')
+      endif
     endif
 !
   endsubroutine special_calc_entropy
@@ -586,21 +572,23 @@ module Special
     call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
         GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
-    thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
-!
 !  Add to energy equation.
     if (ltemperature) then
       if (ltemperature_nolog) then
-        call fatal_error('calc_heatcond_spitzer','not implented for ltemperature_nolog')
+        thdiff = thdiff*exp(-p%lnrho)*gamma*p%cp1
+        df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT) + thdiff
       else
+        thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
       endif
-    else if (lentropy) then
-      if (pretend_lnTT) then
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
-      else
-        call fatal_error('calc_heatcond_spitzer','not implented for lentropy and not pretend_lnTT')
-      endif
+    else if (lentropy.and.pretend_lnTT) then
+      thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
+    else if (lthermal_energy) then
+      df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + thdiff
+    else
+      call fatal_error('calc_heatcond_spitzer', &
+          'not implemented for current set of thermodynamic variables')
     endif
 !
     if (lvideo) then
@@ -821,7 +809,11 @@ module Special
 !
       rhs = hcond_grad*(rhs + glnT2*tmp)*gamma*p%cp1
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) +rhs
+      if (ltemperature .and. (.not. ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) +rhs
+      else
+        call fatal_error('calc_heatcond_glnTT','only for ltemperature')
+      endif
 !
       if (lvideo) then
 !
@@ -875,7 +867,11 @@ module Special
 !
       rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad_iso
+      if (ltemperature .and. (.not. ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad_iso
+      else
+        call fatal_error('calc_heatcond_glnTT_iso','only for ltemperature')
+      endif
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -941,24 +937,20 @@ module Special
 !
     if (ltemperature) then
       if (ltemperature_nolog) then
-        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)- &
-            rtv_cool*gamma*p%cp1*exp(-p%lnrho)
+        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnrho)
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)-rtv_cool
       else
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)- &
-            rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       endif
-    else if (lentropy) then
-      if (pretend_lnTT) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)- &
-            rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
-      else
-        call fatal_error('calc_heat_cool_RTV','not implemented for lentropy')
-      endif
+    else if (lentropy.and.pretend_lnTT) then
+      rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
     else if (lthermal_energy) then
       df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth)-rtv_cool
     else
       call fatal_error('calc_heat_cool_RTV', &
-          'not implemented current set of thermodynamic variables')
+          'not implemented for current set of thermodynamic variables')
     endif
 !
     if (lvideo) then
@@ -1079,9 +1071,25 @@ module Special
       if (init_time/=0) &
           heatinput=heatinput*cubic_step(real(t),init_time,init_width)
 !
-      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      if (ltemperature .and. (.not. ltemperature_nolog)) then
+        if (ltemperature_nolog) then
+          rhs = p%rho1*gamma*p%cp1*heatinput
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + rhs
+        else
+          rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+        endif
+      else if (lentropy .and. pretend_lnTT) then
+        rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      else if (lthermal_energy) then
+        rhs = heatinput
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + rhs
+      else
+        call fatal_error('calc_artif_heating', &
+            'not implemented for current set of thermodynamic variables')
+      endif
 !
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,rhs/cdts)
@@ -1137,7 +1145,11 @@ module Special
 !
 !  Add newton cooling term to entropy
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+      if  (ltemperature .and. (.not. ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+      else
+        call fatal_error('calc_heat_cool_newton','only for ltemperature')
+      endif
 !
       if (ipz==nprocz-1.and.n==n2.and.tau_inv_top/=0) then
         newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
@@ -2471,171 +2483,6 @@ module Special
       if (allocated(uy_ext_global)) deallocate(uy_ext_global)
 !
     endsubroutine read_ext_vel_field
-!***********************************************************************
-    subroutine fill_spitzer_vector(f)
-!
-!  Routine to fill the auxiliary slots for the spitzer heat conduction
-!
-!  01-feb-11/bing: coded
-!
-      use EquationOfState, only: gamma
-      use Deriv, only: der
-      use Io
-      use Mpicomm
-      use Sub, only: dot, dot2
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      real, dimension (nx) :: b2,b2_1,b_glnT,tmp
-!      real, dimension (nx) :: chi_spitzer
-!
-      real, dimension (nx) :: ax_y,ax_z,ay_x,ay_z,az_x,az_y
-      real, dimension (nx) :: bx,by,bz
-      real, dimension (nx) :: lnT_x, lnT_y, lnT_z
-      real, dimension (nx) :: facx
-      real :: facy,facz
-!
-      integer :: i,j,lend
-!
-      inquire(IOLENGTH=lend) flux_delim
-!
-!      flux_delim = 100./unit_density/unit_velocity**3.
-!
-      facx=(1./60)*dx_1(l1:l2)
-!
-      do i=m1,m2
-        do j=n1,n2
-!
-          facy=(1./60)*dy_1(i)
-          facz=(1./60)*dz_1(j)
-!
-          ax_z=facz*(+ 45.0*(f(l1:l2,i,j+1,iax)-f(l1:l2,i,j-1,iax)) &
-                     -  9.0*(f(l1:l2,i,j+2,iax)-f(l1:l2,i,j-2,iax)) &
-                     +      (f(l1:l2,i,j+3,iax)-f(l1:l2,i,j-3,iax)))
-!
-          ay_z=facz*(+ 45.0*(f(l1:l2,i,j+1,iay)-f(l1:l2,i,j-1,iay)) &
-                     -  9.0*(f(l1:l2,i,j+2,iay)-f(l1:l2,i,j-2,iay)) &
-                     +      (f(l1:l2,i,j+3,iay)-f(l1:l2,i,j-3,iay)))
-!
-          ax_y=facy*(+ 45.0*(f(l1:l2,i+1,j,iax)-f(l1:l2,i-1,j,iax)) &
-                     -  9.0*(f(l1:l2,i+2,j,iax)-f(l1:l2,i-2,j,iax)) &
-                     +      (f(l1:l2,i+3,j,iax)-f(l1:l2,i-3,j,iax)))
-!
-          az_y=facy*(+ 45.0*(f(l1:l2,i+1,j,iaz)-f(l1:l2,i-1,j,iaz)) &
-                     -  9.0*(f(l1:l2,i+2,j,iaz)-f(l1:l2,i-2,j,iaz)) &
-                     +      (f(l1:l2,i+3,j,iaz)-f(l1:l2,i-3,j,iaz)))
-!
-          ay_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,iay)-f(l1-1:l2-1,i,j,iay)) &
-                     -  9.0*(f(l1+2:l2+2,i,j,iay)-f(l1-2:l2-2,i,j,iay)) &
-                     +      (f(l1+3:l2+3,i,j,iay)-f(l1-3:l2-3,i,j,iay)))
-!
-          az_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,iaz)-f(l1-1:l2-1,i,j,iaz)) &
-                     -  9.0*(f(l1+2:l2+2,i,j,iaz)-f(l1-2:l2-2,i,j,iaz)) &
-                     +      (f(l1+3:l2+3,i,j,iaz)-f(l1-3:l2-3,i,j,iaz)))
-!
-          bx = az_y - ay_z
-          by = ax_z - az_x
-          bz = ay_x - ax_y
-!
-! Add external field
-          bx=B_ext_special(1)
-          by=B_ext_special(2)
-          bz=B_ext_special(3)
-!
-          b2 = bx*bx + by*by + bz*bz
-!
-          lnT_x=facx*(+ 45.0*(f(l1+1:l2+1,i,j,ilnTT)-f(l1-1:l2-1,i,j,ilnTT)) &
-                      -  9.0*(f(l1+2:l2+2,i,j,ilnTT)-f(l1-2:l2-2,i,j,ilnTT)) &
-                      +      (f(l1+3:l2+3,i,j,ilnTT)-f(l1-3:l2-3,i,j,ilnTT)))
-!
-          lnT_y=facy*(+ 45.0*(f(l1:l2,i+1,j,ilnTT)-f(l1:l2,i-1,j,ilnTT)) &
-                      -  9.0*(f(l1:l2,i+2,j,ilnTT)-f(l1:l2,i-2,j,ilnTT)) &
-                      +      (f(l1:l2,i+3,j,ilnTT)-f(l1:l2,i-3,j,ilnTT)))
-!
-          lnT_z=facz*(+ 45.0*(f(l1:l2,i,j+1,ilnTT)-f(l1:l2,i,j-1,ilnTT)) &
-                      -  9.0*(f(l1:l2,i,j+2,ilnTT)-f(l1:l2,i,j-2,ilnTT)) &
-                      +      (f(l1:l2,i,j+3,ilnTT)-f(l1:l2,i,j-3,ilnTT)))
-!
-          b_glnT = bx*lnT_x + by*lnT_y + bz*lnT_z
-!
-          b2_1 = 1./max(tini,b2)
-!
-          tmp = Kpa_pen * b2_1 * b_glnT * exp(3.5*f(l1:l2,i,j,ilnTT))
-!
-!          tmp = min(flux_delim,tmp)
-!          tmp = max(-flux_delim,tmp)
-!
-          f(l1:l2,i,j,ispitzerx)=bx*tmp
-          f(l1:l2,i,j,ispitzery)=by*tmp
-          f(l1:l2,i,j,ispitzerz)=bz*tmp
-!          print*,maxval(abs(tmp))
-        enddo
-      enddo
-     ! print*,maxval(f(l1:l2,m1:m2,n1:n2,ispitzerx))
-     ! print*,maxval(f(l1:l2,m1:m2,n1:n2,ispitzery))
-     ! print*,maxval(f(l1:l2,m1:m2,n1:n2,ispitzerz))
-
-!
-      ! open (77,file='test.file',form='unformatted', &
-      !     status='unknown',recl=lend*nxgrid*nzgrid,access='direct')
-      ! write(77,rec=1) f(l1:l2,m1,n1:n2,ispitzerx)
-      ! write(77,rec=2) f(l1:l2,m1,n1:n2,ispitzery)
-      ! write(77,rec=3) f(l1:l2,m1,n1:n2,ispitzerz)
-      ! close(77)
-      ! stop
-!
-!
-    endsubroutine fill_spitzer_vector
-!***********************************************************************
-    subroutine grad_spitzer_vector(f,df,p)
-!
-!  Routine to compute the spitzer heat conduction
-!  using the auxiliary slots
-!
-!  01-feb-11/bing: coded
-!
-      use EquationOfState, only: gamma
-      use Deriv, only: der
-      use Diagnostics, only: max_mn_name
-      use Sub, only: dot2
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      real, dimension (nx) :: tmpx,tmpy,tmpz
-      real, dimension (nx) :: rhs
-!
-      call der(f,ispitzerx,tmpx,1)
-      call der(f,ispitzery,tmpy,2)
-      call der(f,ispitzerz,tmpz,3)
-!
-      rhs = tmpx+tmpy+tmpz
-      rhs = gamma * p%cp1 * p%rho1*p%TT1 *rhs
-!
-      df(l1:l2,m,n1,ilnTT) = rhs
-!
-      if (lfirst.and.ldt) then
-        if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
-        endif
-        dt1_max=max(dt1_max,rhs/cdts)
-      endif
-!
-      if (lvideo) then
-!
-! slices
-!
-        spitzer_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-        if (m==iy_loc)  spitzer_xz(:,n-n1+1)= rhs
-        if (n==iz_loc)  spitzer_xy(:,m-m1+1)= rhs
-        if (n==iz2_loc) spitzer_xy2(:,m-m1+1)= rhs
-        if (n==iz3_loc) spitzer_xy3(:,m-m1+1)= rhs
-        if (n==iz4_loc) spitzer_xy4(:,m-m1+1)= rhs
-      endif
-!
-    endsubroutine grad_spitzer_vector
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
