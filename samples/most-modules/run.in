@@ -43,6 +43,7 @@
 &cosmicrayflux_run_pars
 /
 &interstellar_run_pars
+  TT_SN_min=0.0
 /
 &shear_run_pars
 /
