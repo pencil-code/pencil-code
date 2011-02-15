@@ -275,17 +275,25 @@ pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
 		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
-			plot, ts.t, Temp_max, title = 'Temp_max(tt) [K]', xrange=x_minmax, /xs, /yl
+			plot, ts.t, Temp_max, title = 'Temp_max(t) [K]', xrange=x_minmax, /xs, /yl
 		end
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			u_max = ts.umax * unit.velocity / unit.default_velocity
-			plot, ts.t, u_max, title = 'u_max(tt) ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
+			plot, ts.t, u_max, title = 'u_max(t){-w} u^2*m{.-b} u_rms{.r} ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
+			if (any (strcmp (tags, 'u2m', /fold_case))) then begin
+				u2m = ts.u2m * unit.velocity / unit.default_velocity
+				oplot, ts.t, u2m, linestyle=3, color=115100200
+			end
+			if (any (strcmp (tags, 'urms', /fold_case))) then begin
+				urms = ts.urms * unit.velocity / unit.default_velocity
+				oplot, ts.t, urms, linestyle=1, color=200
+			end
 		end
 		if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			rho_min = ts.rhomin * unit.density / unit.default_density
-			plot, ts.t, rho_min, title = 'rho_min(tt) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
+			plot, ts.t, rho_min, title = 'rho_min(t) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
 		end
 	end
 end
