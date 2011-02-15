@@ -105,7 +105,6 @@ module Special
     integer, save, dimension(mseed) :: points_rstate
     real, dimension(nx,ny), save :: ux_local,uy_local
     real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
-    real :: Bz_total_flux
 !
     integer, save, dimension(mseed) :: nano_seed
     integer :: alloc_err
@@ -1974,6 +1973,7 @@ module Special
       real :: cp1=1.,dA
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
+      real :: Bz_total_flux
 !
 ! Update velocity field only every dt_gran after the first iteration
       if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
@@ -1987,7 +1987,7 @@ module Special
 ! Get magnetic field energy for footpoint quenching.
 ! The processors from the ipz=0 plane have to take part, too.
       if (lmagnetic .and. (lgran_proc .or. lfirst_proc_z)) then
-        call set_BB2(f,BB2_local)
+        call set_BB2(f,BB2_local,Bz_total_flux)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux/=0) then
@@ -2609,12 +2609,13 @@ module Special
 !
     endsubroutine update_points
 !***********************************************************************
-    subroutine set_BB2(f,BB2_local)
+    subroutine set_BB2(f,BB2_local,Bz_total_flux)
 !
       use Mpicomm, only: collect_xy, sum_xy, mpisend_real, mpirecv_real
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,ny), intent(out) :: BB2_local
+      real, intent(out) :: Bz_total_flux
 !
       real, dimension(:,:), allocatable :: fac, bbx, bby, bbz
       integer :: partner, level
