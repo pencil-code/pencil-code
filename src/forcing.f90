@@ -120,7 +120,7 @@ module Forcing
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty, &
-       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz
+       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -3723,6 +3723,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
     subroutine forcing_cont(force)
 !
 ! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
+! Note: It is not enough to set lforcing_cont = T in input parameters of forcing
+! one must also set lforcing_cont_uu = T in hydro for the continious is time
+! forcing to be added to velocity. 
 !
       use Sub, only: quintic_step, quintic_der_step
       use Mpicomm, only: stop_it
