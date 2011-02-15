@@ -1153,6 +1153,17 @@ else if ($hostname =~ jugene*) then
   setenv SSH "ssh -q -x"
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
+#-------------------------------------------------
+else if ($hn =~ pn*) then
+  echo "Platon cluster at Lunarc in Lund"
+  cd $PBS_O_WORKDIR
+  rm -f run_big_stack.csh
+  echo "#\!/bin/csh" >> run_big_stack.csh
+  echo "" >> run_big_stack.csh
+  echo "limit stacksize 102400" >> run_big_stack.csh
+  echo "./src/run.x" >> run_big_stack.csh
+  chmod 755 run_big_stack.csh
+  set run_x = $PBS_O_WORKDIR/run_big_stack.csh
 #---------------------------------------------------
 else if (($hostname =~ ip237*) || ($hostname =~ groovy.local)) then
   echo "Anders's MacBook Pro"
