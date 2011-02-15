@@ -664,8 +664,11 @@ module EquationOfState
           lpencil_in(i_geth)=.true.
           lpencil_in(i_glneth)=.true.
         endif
-        if (lpencil_in(i_glnTT).or.lpencil_in(i_gTT)) then
+        if (lpencil_in(i_gTT)) then
           lpencil_in(i_TT)=.true.
+          lpencil_in(i_glnTT)=.true.
+        endif
+        if (lpencil_in(i_glnTT)) then
           lpencil_in(i_glnrho)=.true.
           lpencil_in(i_glneth)=.true.
         endif
@@ -703,9 +706,9 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
 !
-      real, dimension(nx) :: tmp
-      real, dimension(nx,3,3) :: tmp_m
-      integer :: i,j
+      real, dimension(nx) :: tmp,del2lneth
+      real, dimension(nx,3,3) :: hlneth
+      integer :: i
 !
 !  THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 !  FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
@@ -963,29 +966,17 @@ module EquationOfState
 !
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*p%eth
-        if (lpencil(i_TT).or.lpencil(i_lnTT).or.lpencil(i_gTT)) &
-            p%TT=gamma*cp1*p%rho1*p%eth
-        if (lpencil(i_lnTT)) p%lnTT=alog(p%TT)
+        if (lpencil(i_TT)) p%TT=gamma*cp1*p%rho1*p%eth
+        if (lpencil(i_lnTT)) p%lnTT=alog(gamma*cp1*p%rho1*p%eth)
         if (lpencil(i_TT1)) p%TT1=1./(gamma*cp1*p%rho1*p%eth)
 !
-        if (lpencil(i_glnTT).or.lpencil(i_gTT)) then
-          p%glnTT=p%glneth - p%glnrho
-          if (lpencil(i_gTT)) call multsv(p%TT,p%glnTT,p%gTT)
-        endif
+        if (lpencil(i_glnTT)) p%glnTT=p%glneth - p%glnrho
+        if (lpencil(i_gTT)) call multsv(p%TT,p%glnTT,p%gTT)
 !
-        if (lpencil(i_hlnTT)) then ! hlnTT is used as a tmp variable
-          call g2ij(f,ieosvar2,p%hlnTT)
-          call multvv_mat(p%geth,p%glneth,tmp_m)
-          p%hlnTT=p%hlnTT-tmp_m
-          do i=1,3; do j=1,3 
-            p%hlnTT(:,i,j)=p%hlnTT(:,i,j)/p%eth
-          enddo; enddo
-          p%hlnTT=p%hlnTT-p%hlnrho
-        endif
-        if (lpencil(i_del2lnTT)) then
-          call del2(f,ieosvar2,p%del2lnTT)
-          call dot2(p%glnTT+p%glnrho,tmp)
-          p%del2lnTT=p%del2lnTT/p%eth-tmp-p%del2lnrho
+        if (lpencil(i_hlnTT).or.lpencil(i_del2lnTT)) then
+          call thermal_energy_hessian(f,ieosvar2,del2lneth,hlneth)
+          p%hlnTT=hlneth-p%hlnrho
+          p%del2lnTT=del2lneth-p%del2lnrho
         endif
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
@@ -1223,6 +1214,38 @@ module EquationOfState
       call keep_compiler_quiet(f)
 !
     endsubroutine temperature_hessian
+!***********************************************************************
+    subroutine thermal_energy_hessian(f,ivar_eth,del2lneth,hlneth)
+!
+      use Sub, only: g2ij,grad,dot2
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: del2lneth,del2eth,geth2,eth_1
+      real, dimension (nx,3,3) :: hlneth,heth
+      real, dimension (nx,3) :: geth
+      integer :: ivar_eth,i,j
+!
+      intent (in) :: f,ivar_eth
+      intent (out) :: del2lneth,hlneth
+!
+      call g2ij(f,ivar_eth,heth)
+      call grad(f,ivar_eth,geth)
+!
+      call dot2(geth,geth2)
+!
+      del2eth = heth(:,1,1) + heth(:,2,2) + heth(:,3,3)
+!
+      eth_1 = 1./f(l1:l2,m,n,ivar_eth)
+!
+      del2lneth = eth_1*del2eth - eth_1*eth_1*geth2
+!
+      do i=1,3
+        do j=1,3
+          hlneth(:,i,j) = eth_1*(heth(:,i,j) - eth_1*geth(:,i)*geth(:,j))
+        enddo
+      enddo
+!
+    endsubroutine thermal_energy_hessian
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
 !
