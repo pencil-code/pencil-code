@@ -69,7 +69,7 @@ module Forcing
   integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
-! For random forcing in 2d 
+! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
   integer :: random2d_kmin,random2d_kmax
@@ -341,19 +341,19 @@ module Forcing
         profz_ampl=.5*(1.+ erfunc((z)/width_ff)) - 0.5*(1.+ erfunc((z-1.)/(2.*width_ff)))
         profz_hel=1.
 !
-!  turn off forcing intensity above x=x0, and 
+!  turn off forcing intensity above x=x0, and
 !  cosy profile of helicity
 !
       elseif (iforce_profile=='surface_x_cosy') then
         profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff))
         profx_hel=1.
-        profy_ampl=1. 
+        profy_ampl=1.
         do m=1,my
           profy_hel(m)=cos(y(m))
         enddo
         profz_ampl=1.; profz_hel=1.
 !
-!  turn off forcing intensity above x=x0, and 
+!  turn off forcing intensity above x=x0, and
 !  stepy profile of helicity
 !
       elseif (iforce_profile=='surface_x_stepy') then
@@ -519,7 +519,8 @@ module Forcing
         case ('TG');              call forcing_TG(f)
         case ('twist');           call forcing_twist(f)
         case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
-        case default; if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
+        case default
+          if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
       endif
 !
@@ -541,8 +542,10 @@ module Forcing
         case ('helical_both'); call forcing_hel_both(f)
         case ('horiz-shear');  call forcing_hshear(f)
         case ('irrotational'); call forcing_irro(f,force2)
-        case ('zero'); if (headtt .and. lroot) print*,'addforce: No additional forcing'
-        case default; if (lroot) print*,'addforce: No such forcing iforce2=',trim(iforce2)
+        case ('zero');
+          if (headtt .and. lroot) print*,'addforce: No additional forcing'
+        case default;
+          if (lroot) print*,'addforce: No such forcing iforce2=',trim(iforce2)
         endselect
 !
         if (headtt.or.ldebug) print*,'addforce: done addforce'
@@ -554,32 +557,30 @@ module Forcing
     subroutine forcing_2drandom_xy(f)
 !
 !  Random force in two dimensions (x and y) limited to bands of wave-vector
-!  in space. 
-!  14-feb-2011/ dhruba : coded 
+!  in space.
+!
+!  14-feb-2011/ dhruba : coded
 !
       use EquationOfState, only: cs0
-      use Diagnostics
-      use General
-      use Mpicomm
-      use Sub
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, save :: ifirst=0
-      integer :: ik1,ik2,ikmodes,iran1,iran2,kx1,ky1,kx2,ky2
+      integer :: ikmodes,iran1,iran2,kx1,ky1,kx2,ky2
       real, dimension(nx,3) :: forcing_rhs
       real, dimension(nx) :: xkx1,xkx2
       real,dimension(4) :: fran
       real :: phase1,phase2,pi_over_Lx,force_norm
 !
       if (ifirst==0) then
-! If this is the first time this routine is being called select a set of 
+! If this is the first time this routine is being called select a set of
 ! k-vectors in two dimensions according to input parameters:
         if (lroot) print*,'forcing_2drandom_xy: selecting k vectors'
         call get_2dmodes (.true.)
         allocate(random2d_kmodes (2,random2d_nmodes))
         call get_2dmodes (.false.)
         if (lroot) then
-! The root processors also write out the forced modes. 
+! The root processors also write out the forced modes.
           open(unit=10,file=trim(datadir)//'2drandomk.out',status='unknown')
           do ikmodes = 1, random2d_nmodes
             write(10,*) random2d_kmodes(1,ikmodes),random2d_kmodes(2,ikmodes)
@@ -588,10 +589,10 @@ module Forcing
       endif
       ifirst=ifirst+1
 !
-! force = xhat [ cos (k_1 x + \phi_1 ) + cos (k_2 y + \phi_1) ] + 
+! force = xhat [ cos (k_1 x + \phi_1 ) + cos (k_2 y + \phi_1) ] +
 !         yhat [ cos (k_3 x + \phi_2 ) + cos (k_4 y + \phi_2) ]
 ! where k_1 -- k_2 and k_3 -- k_4 are two randomly chose pairs in the list
-! random2d_kmodes and  \phi_1 and \phi_2 are two random phases. 
+! random2d_kmodes and  \phi_1 and \phi_2 are two random phases.
 !
       call random_number_wrapper(fran)
       phase1=pi*(2*fran(1)-1.)
@@ -646,6 +647,7 @@ module Forcing
     endsubroutine forcing_2drandom_xy
 !***********************************************************************
     subroutine get_2dmodes (lonly_total)
+!
       integer :: ik1,ik2,modk
       integer :: imode=1
       logical :: lonly_total
@@ -1774,7 +1776,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               jf=j+ifff-1
               if (y(m)>equator)then
                 forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),coef2(j)) &
-                                    *fx(l1:l2)*fy(m)*fz(n))& 
+                                    *fx(l1:l2)*fy(m)*fz(n))&
                         *(1.-step_scalar(y(m),equator-ck_equator_gap,ck_gap_step)+&
                             step_scalar(y(m),equator+ck_equator_gap,ck_gap_step))
               else
@@ -2921,7 +2923,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !-    endif
 !
 !  need to discuss with axel
-!  
+!
 !  possibly multiply forcing by sgn(z) and radial profile
 !
 !      if (r_ff/=0.) then
@@ -3725,7 +3727,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 ! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
 ! Note: It is not enough to set lforcing_cont = T in input parameters of forcing
 ! one must also set lforcing_cont_uu = T in hydro for the continious is time
-! forcing to be added to velocity. 
+! forcing to be added to velocity.
 !
       use Sub, only: quintic_step, quintic_der_step
       use Mpicomm, only: stop_it
@@ -3733,7 +3735,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
 !
-      real, dimension (nx,3), intent(out) :: force 
+      real, dimension (nx,3), intent(out) :: force
 !
       real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu
       real, pointer   :: gravx
@@ -3741,22 +3743,22 @@ call fatal_error('hel_vec','radial profile should be quenched')
       integer :: i2d1=1,i2d2=2,i2d3=3
 !
         select case (iforcing_cont)
-        case('ABC') 
+        case('ABC')
           fact=ampl_ff/sqrt(3.)
           fact2=1.-eps_fcont
           force(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
           force(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
           force(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
-        case ('AKA') 
+        case ('AKA')
           fact=sqrt(2.)*ampl_ff
           force(:,1)=fact*phi1_ff(m    )
           force(:,2)=fact*phi2_ff(l1:l2)
           force(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
-        case ('grav_z') 
+        case ('grav_z')
           force(:,1)=0
           force(:,2)=0
           force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
-        case ('grav_xz') 
+        case ('grav_xz')
           call get_shared_variable('gravx', gravx, ierr)
           if (ierr/=0) call stop_it("forcing: "//&
             "there was a problem when getting gravx")
@@ -3768,28 +3770,28 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0
           force(:,2)=fact*cosx(l1:l2)
           force(:,3)=0
-        case('KolmogorovFlow-z') 
+        case('KolmogorovFlow-z')
           fact=ampl_ff
           force(:,1)=fact*cosz(n)
           force(:,2)=0.
           force(:,3)=0.
-        case ('nocos') 
+        case ('nocos')
           fact=ampl_ff
           force(:,1)=fact*sinz(n)
           force(:,2)=fact*sinx(l1:l2)
           force(:,3)=fact*siny(m)
-        case('RobertsFlow') 
+        case('RobertsFlow')
           fact=ampl_ff
           force(:,1)=-fact*cosx(l1:l2)*siny(m)
           force(:,2)=+fact*sinx(l1:l2)*cosy(m)
           force(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt2
-        case('RobertsFlow2d') 
+        case('RobertsFlow2d')
           fact=ampl_ff
           i2d1=1;i2d2=2;i2d3=3
-          if (l2dxz) then 
+          if (l2dxz) then
             i2d1=2;i2d2=1;i2d3=2
           endif
-          if (l2dyz) then 
+          if (l2dyz) then
             i2d1=3;i2d2=2;i2d3=1
           endif
           force(:,i2d1)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
@@ -3807,7 +3809,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
           force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
 !
-        case ('RobertsFlow-zdep') 
+        case ('RobertsFlow-zdep')
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
           fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
                -quintic_step(z(n),+1.-eps_fcont,eps_fcont)
@@ -3826,7 +3828,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
                 -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
           force(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
 !
-        case ('sinx') 
+        case ('sinx')
           if (lgentle.and.t<tgentle) then
             fact=.5*ampl_ff*(1.-cos(pi*t/tgentle))
           else
@@ -3836,7 +3838,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=0.
           force(:,3)=0.
 !
-        case ('TG') 
+        case ('TG')
           fact=2.*ampl_ff
           force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
           force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
