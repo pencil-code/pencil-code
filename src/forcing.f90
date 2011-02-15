@@ -73,6 +73,9 @@ module Forcing
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
   integer :: random2d_kmin,random2d_kmax
+! continious 2d forcing
+  integer :: k2d
+  logical :: l2dxz,l2dyz
 ! Persistent stuff
   real :: tsforce=-10.
   real, dimension (3) :: location
@@ -117,7 +120,7 @@ module Forcing
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty, &
-       tgentle,random2d_kmin,random2d_kmax
+       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -3732,42 +3735,76 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu
       real, pointer   :: gravx
       integer         :: ierr
+      integer :: i2d1=1,i2d2=2,i2d3=3
 !
-        if (iforcing_cont=='ABC') then
+        select case (iforcing_cont)
+        case('ABC') 
           fact=ampl_ff/sqrt(3.)
           fact2=1.-eps_fcont
           force(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
           force(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
           force(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
-        elseif (iforcing_cont=='RobertsFlow') then
+        case ('AKA') 
+          fact=sqrt(2.)*ampl_ff
+          force(:,1)=fact*phi1_ff(m    )
+          force(:,2)=fact*phi2_ff(l1:l2)
+          force(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
+        case ('grav_z') 
+          force(:,1)=0
+          force(:,2)=0
+          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+        case ('grav_xz') 
+          call get_shared_variable('gravx', gravx, ierr)
+          if (ierr/=0) call stop_it("forcing: "//&
+            "there was a problem when getting gravx")
+          force(:,1)=gravx*ampl_ff*cos(omega_ff*t)
+          force(:,2)=0
+          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
+        case('KolmogorovFlow-x')
+          fact=ampl_ff
+          force(:,1)=0
+          force(:,2)=fact*cosx(l1:l2)
+          force(:,3)=0
+        case('KolmogorovFlow-z') 
+          fact=ampl_ff
+          force(:,1)=fact*cosz(n)
+          force(:,2)=0.
+          force(:,3)=0.
+        case ('nocos') 
+          fact=ampl_ff
+          force(:,1)=fact*sinz(n)
+          force(:,2)=fact*sinx(l1:l2)
+          force(:,3)=fact*siny(m)
+        case('RobertsFlow') 
           fact=ampl_ff
           force(:,1)=-fact*cosx(l1:l2)*siny(m)
           force(:,2)=+fact*sinx(l1:l2)*cosy(m)
           force(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt2
-        elseif (iforcing_cont=='RobertsFlow_exact') then
-!
+        case('RobertsFlow2d') 
+          fact=ampl_ff
+          i2d1=1;i2d2=2;i2d3=3
+          if (l2dxz) then 
+            i2d1=2;i2d2=1;i2d3=2
+          endif
+          if (l2dyz) then 
+            i2d1=3;i2d2=2;i2d3=1
+          endif
+          force(:,i2d1)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
+          force(:,i2d2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
+          force(:,i2d3)= 0.
+        case ('RobertsFlow_exact')
           kx=k1_ff; ky=k1_ff
           kf=sqrt(kx*kx+ky*ky)
           call getnu(nu_input=nu)
           fact=ampl_ff*kf*kf*nu
           fact2=ampl_ff*ampl_ff*kx*ky
 !
-          !!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
+!!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
           force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
           force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
           force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
 !
-        elseif (iforcing_cont=='KolmogorovFlow-x') then
-          fact=ampl_ff
-          force(:,1)=0
-          force(:,2)=fact*cosx(l1:l2)
-          force(:,3)=0
-        elseif (iforcing_cont=='KolmogorovFlow-z') then
-          fact=ampl_ff
-          force(:,1)=fact*cosz(n)
-          force(:,2)=0.
-          force(:,3)=0.
-        elseif (iforcing_cont=='RobertsFlow-zdep') then
+        case ('RobertsFlow-zdep') 
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
           fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
                -quintic_step(z(n),+1.-eps_fcont,eps_fcont)
@@ -3785,33 +3822,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=+ampl_ff*sinx(l1:l2)*cosy(m) &
                 -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
           force(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
-        elseif (iforcing_cont=='nocos') then
-          fact=ampl_ff
-          force(:,1)=fact*sinz(n)
-          force(:,2)=fact*sinx(l1:l2)
-          force(:,3)=fact*siny(m)
-        elseif (iforcing_cont=='TG') then
-          fact=2.*ampl_ff
-          force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
-          force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
-          force(:,3)=0.
-        elseif (iforcing_cont=='AKA') then
-          fact=sqrt(2.)*ampl_ff
-          force(:,1)=fact*phi1_ff(m    )
-          force(:,2)=fact*phi2_ff(l1:l2)
-          force(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
-        elseif (iforcing_cont=='grav_z') then
-          force(:,1)=0
-          force(:,2)=0
-          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
-        elseif (iforcing_cont=='grav_xz') then
-          call get_shared_variable('gravx', gravx, ierr)
-          if (ierr/=0) call stop_it("forcing: "//&
-            "there was a problem when getting gravx")
-          force(:,1)=gravx*ampl_ff*cos(omega_ff*t)
-          force(:,2)=0
-          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
-        elseif (iforcing_cont=='sinx') then
+!
+        case ('sinx') 
           if (lgentle.and.t<tgentle) then
             fact=.5*ampl_ff*(1.-cos(pi*t/tgentle))
           else
@@ -3820,9 +3832,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*sinx(l1:l2)
           force(:,2)=0.
           force(:,3)=0.
-        else
-          call stop_it("forcing: no continuous iforcing_cont specified")
-        endif
+!
+        case ('TG') 
+          fact=2.*ampl_ff
+          force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
+          force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
+          force(:,3)=0.
+        case default
+          call stop_it('forcing: no continuous iforcing_cont specified')
+        endselect
 !
     endsubroutine forcing_cont
 !***********************************************************************
