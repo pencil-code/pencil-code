@@ -399,7 +399,7 @@ module Special
         if ((lgranulation.and.Bavoid<huge1).or.Bz_flux/=0) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
-        if (Bz_flux/=0) then
+        if (Bz_flux/=0.) then
 !
 ! communicate to root processor
 !
