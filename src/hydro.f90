@@ -706,17 +706,17 @@ module Hydro
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
-        if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+        if (ierr/=0) call fatal_error('initialize_hydro:',&
              'failed to get lffree from density')
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree,ierr)
-          if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+          if (ierr/=0) call fatal_error('initialize_hydro:',&
                'failed to get profx_ffree from density')
           call get_shared_variable('profy_ffree',profy_ffree,ierr)
-          if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+          if (ierr/=0) call fatal_error('initialize_hydro:',&
               'failed to get profy_ffree from density')
           call get_shared_variable('profz_ffree',profz_ffree,ierr)
-          if (ierr.ne.0) call fatal_error('initialize_hydro:',&
+          if (ierr/=0) call fatal_error('initialize_hydro:',&
              'failed to get profz_ffree from density')
         endif
       endif
@@ -2424,7 +2424,7 @@ module Hydro
           do m=m1,m2
             if (ldensity_nolog) then
               rho=f(l1:l2,m,n,irho)
-            else       
+            else
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
             rux=rho*f(l1:l2,m,n,iux)
