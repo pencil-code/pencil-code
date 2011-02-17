@@ -371,23 +371,23 @@ module Special
 ! Only read profiles if needed, e.g. for Newton cooling
 !
       if (.not. (ltemperature .or. lentropy)) return
-      lnewton_cooling = (tdown/=0) .or. (tdownr/=0)
+      lnewton_cooling = (tdown > 0.0) .or. (tdownr > 0.0)
       if (.not. (linit_uu .or. linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
       ! default: read 'stratification.dat' with density and temperature
       if (prof_type == 'nothing') prof_type = 'lnrho_lnTT'
 !
       ! check if density profile is read, when needed
-      if ((tdownr /= 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
+      if ((tdownr > 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
         call fatal_error ("setup_profiles", &
             "a density profile must be read to use density based newton cooling")
       endif
 !
-      ! on RELOAD we don't need to read the profiles again
-      if (.not. lreloading) call read_profiles()
+      ! read the profiles
+      call read_profiles()
 !
       ! check if any kind of density profile is in use...
-      if (linit_lnrho .or. (tdownr /= 0.0)) then
+      if (linit_lnrho .or. (tdownr > 0.0)) then
         ! ...and set lnrho0 accordingly to the lower boundary value
         if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
           if (lroot) print *,'setup_profiles: WARNING: ', &
@@ -612,13 +612,13 @@ module Special
 !
       integer :: i
 !
-      if (cool_RTV/=0) then
+      if (cool_RTV/=0.0) then
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
 !
-      if ((tdown/=0.0) .or. (tdownr/=0.0)) then
+      if ((tdown > 0.0) .or. (tdownr > 0.0)) then
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
       endif
@@ -962,7 +962,7 @@ module Special
       if (hcond2/=0) call calc_heatcond_glnTT(df,p)
       if (hcond3/=0) call calc_heatcond_glnTT_iso(df,p)
       if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
-      if (max (tdown, tdownr)/=0.0) call calc_heat_cool_newton(df,p)
+      if (max (tdown, tdownr) > 0.0) call calc_heat_cool_newton(df,p)
       if (K_iso/=0) call calc_heatcond_grad(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
@@ -1027,7 +1027,7 @@ module Special
       tmp_tau = 0.0
 !
       ! Correction of density profile
-      if (tdownr /= 0.0) then
+      if (tdownr > 0.0) then
         ! Get reference density
         newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
         ! allpr is given in [Mm]
@@ -1037,7 +1037,7 @@ module Special
       endif
 !
       ! Newton cooling of temperature profile
-      if (tdown /= 0.0) then
+      if (tdown > 0.0) then
         if (lnrho_ref == -1.0) then
           ! Get reference density
           ref_pos = 1
