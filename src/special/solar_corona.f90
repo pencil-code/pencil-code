@@ -2043,18 +2043,28 @@ module Special
       if (leos) call get_cp1(cp1)
 !
       if (lquench.and.lfirst_proc_z) then
-        if (ltemperature.and..not.ltemperature_nolog) then
-          if (ldensity_nolog) then
-            call fatal_error('solar_corona', &
-                'gran_driver only implemented for ltemperature=true')
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            pp_tmp = gamma_m1*gamma_inv/cp1*f(l1:l2,m1:m2,irefz,iTT)
           else
-            pp_tmp =gamma_m1*gamma_inv/cp1 * &
-                exp(f(l1:l2,m1:m2,irefz,ilnrho)+f(l1:l2,m1:m2,irefz,ilnrho))
+            pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
+          endif
+        else if (lentropy.and.pretend_lnTT) then
+          pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
+        else if (lthermal_energy .or. lentropy) then
+          call fatal_error('gran_driver', &
+              'quenching not for lthermal_energy or lentropy')
+        else
+          pp_tmp = gamma_inv*cs20
+        endif
+        if (ldensity) then
+          if (ldensity_nolog) then
+            pp_tmp = pp_tmp*f(l1:l2,m1:m2,irefz,irho)
+          else
+            pp_tmp = pp_tmp*exp(f(l1:l2,m1:m2,irefz,ilnrho))
           endif
         else
-          if (headt.and.lroot) call warning('solar_corona', &
-              'gran_driver only implemented for ltemperature=true')
-          pp_tmp=gamma_inv*cs20*exp(lnrho0)
+          pp_tmp = pp_tmp*exp(lnrho0)
         endif
 !
         beta =  pp_tmp/max(tini,BB2_local)*2*mu0
