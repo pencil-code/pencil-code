@@ -175,8 +175,8 @@
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE DOES NOT EXIST'
-                STOP 1
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
@@ -216,8 +216,8 @@
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE DOES NOT EXIST'
-                STOP 1
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
@@ -257,8 +257,8 @@
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE DOES NOT EXIST'
-                STOP 1
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
@@ -298,8 +298,8 @@
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE DOES NOT EXIST'
-                STOP 1
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
@@ -339,8 +339,8 @@
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE DOES NOT EXIST'
-                STOP 1
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
@@ -381,8 +381,8 @@
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
               if (.not.exists) then
-                write (*,*) 'WARNING: FILE DOES NOT EXIST'
-                STOP 1
+                write (*,*) 'WARNING: FILE ',fullname,' DOES NOT EXIST'
+                write (*,*) 'Maybe slice was added to video.in after simulation.'
               else
                 open(lun_read,file=trim(fullname),status='old',form='unformatted')
                 do i=1,it
