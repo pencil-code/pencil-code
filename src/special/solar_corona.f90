@@ -2083,7 +2083,7 @@ module Special
         uy_local = uy_local + uy_ext_local
       endif
 !
-      f(l1:l2,m1:m2,irefz,iuz) = 0.
+      if (lfirst_proc_z) f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
 ! Restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
