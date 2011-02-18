@@ -205,6 +205,14 @@ varcontent[ijj].idlvarloc  = 'jj_loc'
 varcontent[ijj].idlinitloc = INIT_3VECTOR_LOC
 varcontent[ijj].skip       = 2
 ;
+default, iemf, 0
+varcontent[iemf].variable   = 'Current density (emf)'
+varcontent[iemf].idlvar     = 'emf'
+varcontent[iemf].idlinit    = INIT_3VECTOR
+varcontent[iemf].idlvarloc  = 'emf_loc'
+varcontent[iemf].idlinitloc = INIT_3VECTOR_LOC
+varcontent[iemf].skip       = 2
+;
 default, iuut, 0
 varcontent[iuut].variable   = 'Integrated velocity (uut)'
 varcontent[iuut].idlvar     = 'uut'
