@@ -625,7 +625,7 @@ module Special
         lpenc_requested(i_lnTT)=.true.
       endif
 !
-      if (hcond1/=0) then
+      if (hcond1/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_lnTT)=.true.
@@ -636,7 +636,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (hcond2/=0) then
+      if (hcond2/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -644,7 +644,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (hcond3/=0) then
+      if (hcond3/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -652,7 +652,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (K_iso/=0) then
+      if (K_iso/=0.0) then
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_lnTT)=.true.
@@ -661,7 +661,7 @@ module Special
         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
-      if (Kgpara/=0) then
+      if (Kgpara/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_TT)=.true.
@@ -672,7 +672,7 @@ module Special
         lpenc_requested(i_rho1)=.true.
       endif
 !
-      if (idiag_dtchi2/=0) then
+      if (idiag_dtchi2/=0.0) then
         lpenc_diagnos(i_rho1)=.true.
         lpenc_diagnos(i_cv1) =.true.
         lpenc_diagnos(i_cs2)=.true.
@@ -741,8 +741,8 @@ module Special
         read(unit,NML=special_run_pars,ERR=99)
       endif
 !
-      if (Kgpara2/=0) then
-        if (K_iso/=0) then
+      if (Kgpara2/=0.0) then
+        if (K_iso/=0.0) then
           call fatal_error('calc_heatcond_grad', &
               'Use only K_iso instead of Kgpara2')
         else
@@ -886,7 +886,7 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff,tmp
 !
-      if (diffrho_hyper3/=0) then
+      if (diffrho_hyper3/=0.0) then
         if (.not. ldensity_nolog) then
           call der6(f,ilnrho,fdiff,1,IGNOREDX=.true.)
           call der6(f,ilnrho,tmp,2,IGNOREDX=.true.)
@@ -926,7 +926,7 @@ module Special
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: hc,tmp
 !
-      if (chi_hyper3/=0) then
+      if (chi_hyper3/=0.0) then
         hc(:) = 0.
         call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
         hc = hc + tmp
@@ -943,7 +943,7 @@ module Special
             + chi_hyper3
       endif
 !
-      if (chi_hyper2/=0) then
+      if (chi_hyper2/=0.0) then
         hc(:) = 0.
         call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
         hc =  hc - chi_hyper2*tmp
@@ -959,13 +959,13 @@ module Special
             + chi_hyper2
       endif
 !
-      if (Kgpara/=0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
-      if (hcond1/=0) call calc_heatcond_constchi(df,p)
-      if (hcond2/=0) call calc_heatcond_glnTT(df,p)
-      if (hcond3/=0) call calc_heatcond_glnTT_iso(df,p)
-      if (cool_RTV/=0) call calc_heat_cool_RTV(df,p)
+      if (Kgpara/=0.0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
+      if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
+      if (hcond2/=0.0) call calc_heatcond_glnTT(df,p)
+      if (hcond3/=0.0) call calc_heatcond_glnTT_iso(df,p)
+      if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
       if (max (tdown, tdownr) > 0.0) call calc_heat_cool_newton(df,p)
-      if (K_iso/=0) call calc_heatcond_grad(df,p)
+      if (K_iso/=0.0) call calc_heatcond_grad(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
     endsubroutine special_calc_entropy
@@ -991,7 +991,7 @@ module Special
         f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
             dt*bmdi * A_init_y
 !
-        if (bmdi*dt > 1) call stop_it('special_before_boundary: bmdi*dt > 1 ')
+        if (bmdi*dt > 1.0) call stop_it('special_before_boundary: bmdi*dt > 1 ')
       endif
 !
 ! Read external velocity file. Has to be read before the granules are
@@ -1992,7 +1992,7 @@ module Special
         call set_BB2(f,BB2_local,Bz_total_flux)
 !
 ! Set sum(abs(Bz)) to  a given flux.
-        if (Bz_flux/=0) then
+        if (Bz_flux/=0.0) then
           if (nxgrid/=1.and.nygrid/=1) then
             dA=dx*dy*unit_length**2
           elseif (nygrid==1) then
