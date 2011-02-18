@@ -2041,10 +2041,8 @@ module Special
       endif
 !
 ! for footpoint quenching compute pressure
-!
-      if (leos) call get_cp1(cp1)
-!
       if (lquench.and.lfirst_proc_z) then
+        if (leos) call get_cp1(cp1)
         if (ltemperature) then
           if (ltemperature_nolog) then
             pp_tmp = gamma_m1*gamma_inv/cp1*f(l1:l2,m1:m2,irefz,iTT)
