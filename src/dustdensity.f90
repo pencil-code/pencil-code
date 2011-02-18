@@ -77,7 +77,7 @@ module Dustdensity
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
-      r0, delta, lmdvar, lmice
+      r0, delta, lmdvar, lmice, BB0
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -311,7 +311,7 @@ module Dustdensity
 !            init_distr(k)=nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
              init_distr(k)=nd00*1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
                *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
-             BB(k)=10.7*dsize0(k)**3
+             BB(k)=BB0!10.7*dsize0(k)**3
           enddo
           if (ndustspec>4) then
             Ntot_tmp=spline_integral(dsize,init_distr)
@@ -1148,7 +1148,7 @@ module Dustdensity
             p%udrop=0.
           else
             p%udrop(:,:,k)=p%uu(:,:)
-            p%udrop(:,3,k)=p%udrop(:,3,k)-1e6*dsize(k)**2
+            p%udrop(:,1,k)=p%udrop(:,1,k)-1e6*dsize(k)**2
           endif
         endif
 ! udropgnd
@@ -2310,10 +2310,11 @@ module Dustdensity
         ff_tmp(k)=f(i1,i2,i3,ind(k)) 
       enddo
         ttt= spline_integral(dsize,ff_tmp)
+!
       do k=1,ndustspec
         f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)  
       enddo
-
+!
       enddo
       enddo  
       enddo

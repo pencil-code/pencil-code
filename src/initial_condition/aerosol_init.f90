@@ -59,7 +59,7 @@ module InitialCondition
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, dYw12, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, BB0
 !
   contains
 !***********************************************************************
@@ -430,7 +430,8 @@ module InitialCondition
          do k=1,ndustspec
            psf(:,:,:,k)=psat(:,:,:) &
              *exp(AA/exp(f(:,:,:,ilnTT))/2./dsize(k) &
-                 -10.7*dsize0(k)**3/(8.*dsize(k)**3))
+!                 -10.7*dsize0(k)**3/(8.*dsize(k)**3))
+                  -BB0/(8.*dsize(k)**3))
          enddo
 !
          if ((init_water1/=0.) .or. (init_water2/=0.)) lline_profile=.true.
