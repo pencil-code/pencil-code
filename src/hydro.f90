@@ -1382,8 +1382,8 @@ module Hydro
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 )  lpenc_diagnos(i_o2)=.true.
-      if (idiag_divu2m /= 0 .or. idiag_divu2mz /= 0 .or. &
-          idiag_divum) lpenc_diagnos(i_divu)=.true.
+      if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. &
+          idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
            idiag_oumh/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
