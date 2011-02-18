@@ -187,7 +187,7 @@ module Special
       endif
     endif
 !
-    if (.not.lstarting.and.lgranulation.and.ipz == 0.) then
+    if (.not.lstarting.and.lgranulation.and.ipz == 0) then
       if (lhydro) then
         call set_driver_params()
       else
@@ -396,18 +396,18 @@ module Special
       integer :: i,j,ipt
       real :: tmp,dA
 !
-      if (ipz == 0.) then
-        if ((lgranulation.and.Bavoid < huge1).or.Bz_flux /= 0) call set_B2(f)
+      if (ipz == 0) then
+        if ((lgranulation.and.Bavoid < huge1).or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
 !
 ! communicate to root processor
 !
-          if (iproc == 0.) then
+          if (iproc == 0) then
             do i=0,nprocx-1;  do j=0,nprocy-1
               ipt = i+nprocx*j
-              if (ipt /= 0.) then
+              if (ipt /= 0) then
                 call mpirecv_real(tmp,1,ipt,556+ipt)
                 Bzflux = Bzflux+tmp
               endif
@@ -416,10 +416,10 @@ module Special
             call mpisend_real(Bzflux,1,0,556+iproc)
           endif
 !  Distribute the result
-          if (iproc == 0.) then
+          if (iproc == 0) then
             do i=0,nprocx-1;  do j=0,nprocy-1
               ipt = i+nprocx*j
-              if (ipt /= 0.) then
+              if (ipt /= 0) then
                 call mpisend_real(Bzflux,1,ipt,556+ipt)
               endif
             enddo; enddo
@@ -427,11 +427,11 @@ module Special
             call mpirecv_real(Bzflux,1,0,556+iproc)
           endif
 !
-          if (nxgrid /= 1. .and. nygrid /= 1.) then
+          if (nxgrid /= 1 .and. nygrid /= 1) then
             dA=dx*dy*unit_length**2
-          elseif (nygrid == 1.) then
+          elseif (nygrid == 1) then
             dA=dx*unit_length
-          elseif (nxgrid == 1.) then
+          elseif (nxgrid == 1) then
             dA=dy*unit_length
           endif
           f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
@@ -442,16 +442,16 @@ module Special
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
 !  Compute photospheric granulation.
-      if (lgranulation .and. (ipz == 0.) .and. &
+      if (lgranulation .and. (ipz == 0) .and. &
           (.not.lpencil_check_at_work)) then
-        if (itsub == 1.) then
+        if (itsub == 1) then
           call granulation_driver(f)
         endif
 !
       endif
 !
 !  Read time dependent magnetic lower boundary
-      if (lmag_time_bound.and. (ipz == 0.)) call mag_time_bound(f)
+      if (lmag_time_bound.and. (ipz == 0)) call mag_time_bound(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -934,7 +934,7 @@ module Special
       if (headtt) call warning("calc_heat_cool_RTV","cool acts everywhere")
     endif
 !
-    if (init_time /= 0) &
+    if (init_time /= 0.) &
         rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
 !
 !     add to the energy equation
@@ -1493,6 +1493,7 @@ module Special
 !
       f(l1:l2,m1:m2,n1,iux) = Ux
       f(l1:l2,m1:m2,n1,iuy) = Uy
+      f(l1:l2,m1:m2,n1,iuz) = 0.      
 !
 ! restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
@@ -1612,7 +1613,7 @@ module Special
         endif
       endif
 !
-      if (itsub == 3.) lstop = file_exists('STOP')
+      if (itsub == 3) lstop = file_exists('STOP')
       if (lstop.or.t >= tmax .or. it >= nt.or. &
           mod(it,isave) == 0.or.dt < dtmin) &
           call write_points(level)
@@ -1721,7 +1722,7 @@ module Special
 !
       integer, intent(in) :: level
       integer :: kfind,count,ipos,jpos,i,j
-      integer,dimension(nx,ny) :: k
+      integer, dimension(nx,ny) :: k
       real :: rand
 !
       k(:,:)=0; ipos=0; jpos=0
@@ -1734,7 +1735,7 @@ module Special
       kfind=int(rand*sum(k))+1
       count=0
       do i=1,nx; do j=1,ny
-        if (k(i,j) == 1.) then
+        if (k(i,j) == 1) then
           count=count+1
           if (count == kfind) then
             ipos=i
@@ -1817,17 +1818,17 @@ module Special
 !
 ! root collects
 !
-      if (minval(avoidarr) /= 1) then
+      if (minval(avoidarr) /= 1.) then
         lnew_point=.true.
       else
         lnew_point=.false.
       endif
 !
-      if (iproc == 0.) then
+      if (iproc == 0) then
         new_points=lnew_point
         do i=0,nprocx-1; do j=0,nprocy-1
           ipt = i+nprocx*j
-          if (ipt /= 0.) then
+          if (ipt /= 0) then
             call mpirecv_logical(ltmp,1,ipt,ipt+222)
             if (ltmp) new_points=.true.
           endif
@@ -1838,10 +1839,10 @@ module Special
 !
 !  root sends
 !
-      if (iproc == 0.) then
+      if (iproc == 0) then
         do i=0,nprocx-1; do j=0,nprocy-1
           ipt = i+nprocx*j
-          if (ipt /= 0.) then
+          if (ipt /= 0) then
             call mpisend_logical(new_points,1,ipt,ipt+222)
           endif
         enddo; enddo
@@ -1881,7 +1882,7 @@ module Special
 ! Shift to iproc positions
         il = i-ipx*nx
 ! Check if there is an overlapp
-        if ((il >= 1.) .and. (il <= nx)) then
+        if ((il >= 1) .and. (il <= nx)) then
 !
           ypos = int(current%data(2)+ipy*ny)
 !
@@ -1890,7 +1891,7 @@ module Special
 ! Following line ensures periodicity in Y of the global field.
             j = 1+mod(jj-1+nygrid,nygrid)
             jl = j-ipy*ny
-            if ((jl >= 1.) .and. (jl <= ny)) then
+            if ((jl >= 1) .and. (jl <= ny)) then
 !
               xdist=dx*(ii-current%data(1)-ipx*nx)
               ydist=dy*(jj-current%data(2)-ipy*ny)
@@ -2007,7 +2008,7 @@ module Special
         rn=1
         do
           read(unit,iostat=iostat,rec=rn) current%data
-          if (iostat == 0.) then
+          if (iostat == 0) then
             call draw_update(level)
             call add_point
             rn=rn+1
