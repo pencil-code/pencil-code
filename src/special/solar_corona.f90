@@ -364,7 +364,7 @@ module Special
 !  25-aug-2010/Bourdin.KIS: coded
 !
       use EquationOfState, only: lnrho0, rho0
-!
+      use Mpicomm, only: mpibcast_real
 !
       logical :: lnewton_cooling=.false.
 !
@@ -386,21 +386,23 @@ module Special
       ! read the profiles
       call read_profiles()
 !
-      ! check if any kind of density profile is in use...
       if (linit_lnrho .or. (tdownr > 0.0)) then
-        ! ...and set lnrho0 accordingly to the lower boundary value
-        if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-          if (lroot) print *,'setup_profiles: WARNING: ', &
-              'lnrho0 set to ', lnrho_init_z(n1), ' - was before ', lnrho0
-          call warning ("setup_profiles", "overriding manual lnrho0 setting")
+        ! some kind of density profile is actually in use,
+        ! set lnrho0 and rho0 accordingly to the lower boundary value
+        if (lroot) then
+          if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
+            write (*,*) 'lnrho0 inconsistent: ', lnrho0, lnrho_init_z(n1)
+            call fatal_error ("setup_profiles", "conflicting manual lnrho0 setting", .true.)
+          endif
+          lnrho0 = lnrho_init_z(n1)
+          if ((rho0 /= 1.0) .and. (abs (rho0 / exp (lnrho0) - 1.0) > 1.e-6)) then
+            write (*,*) 'rho0 inconsistent: ', rho0, exp (lnrho0)
+            call fatal_error ("setup_profiles", "conflicting manual rho0 setting", .true.)
+          endif
+          rho0 = exp (lnrho0)
         endif
-        lnrho0 = lnrho_init_z(n1)
-        if ((rho0 /= 1.0) .and. (abs (rho0 / exp (lnrho0) - 1.0) > 1.e-6)) then
-          if (lroot) print *,'setup_profiles: WARNING: ', &
-              'rho0 set to ', exp (lnrho0), ' - was before ', rho0
-          call warning ("setup_profiles", "overriding manual rho0 setting")
-        endif
-        rho0 = exp (lnrho0)
+        call mpibcast_real (lnrho0, 1)
+        call mpibcast_real (rho0, 1)
       endif
 !
     endsubroutine setup_profiles
