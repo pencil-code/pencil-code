@@ -254,6 +254,7 @@ pro cslice_event, event
 			for i = num_snapshots-1, 1, -1 do begin
 				prepare_set, i
 				prepare_cube, -1, 0
+				prepare_overplot
 				draw_images, 1, 1, 1
 				wait, min_wait_time[dimensionality-1]
 			end
