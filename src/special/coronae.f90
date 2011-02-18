@@ -1147,6 +1147,9 @@ module Special
 !
       newton  = newton * tau_inv_tmp
 !
+      if (init_time2 /= 0.) newton=newton* &
+          (1.-cubic_step(real(t),init_time2,init_width))
+!
 !  Add newton cooling term to entropy
 !
       if  (ltemperature .and. (.not. ltemperature_nolog)) then
