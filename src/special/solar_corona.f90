@@ -2040,8 +2040,8 @@ module Special
         call distribute_xy (Uy, Uy_local)
       endif
 !
-! for footpoint quenching compute pressure
-      if (lquench.and.lfirst_proc_z) then
+! For footpoint quenching compute pressure
+      if (lquench .and. lfirst_proc_z) then
         if (leos) call get_cp1(cp1)
         if (ltemperature) then
           if (ltemperature_nolog) then
@@ -2049,11 +2049,11 @@ module Special
           else
             pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
           endif
-        else if (lentropy.and.pretend_lnTT) then
+        elseif (lentropy .and. pretend_lnTT) then
           pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
-        else if (lthermal_energy .or. lentropy) then
+        elseif (lthermal_energy .or. lentropy) then
           call fatal_error('gran_driver', &
-              'quenching not for lthermal_energy or lentropy')
+              'quenching not implemented for lthermal_energy or lentropy')
         else
           pp_tmp = gamma_inv*cs20
         endif
@@ -2067,9 +2067,9 @@ module Special
           pp_tmp = pp_tmp*exp(lnrho0)
         endif
 !
-        beta =  pp_tmp/max(tini,BB2_local)*2*mu0
+        beta = pp_tmp/max(tini,BB2_local)*2*mu0
 !
-!  quench velocities to one percent of the granule velocities
+! Quench velocities to one percent of the granule velocities
         do i=1,ny
           quench(:,i) = cubic_step(beta(:,i),q0,qw)*(1.-dq)+dq
         enddo
@@ -2085,7 +2085,7 @@ module Special
 !
       f(l1:l2,m1:m2,irefz,iuz) = 0.
 !
-! restore global seed and save seed list of the granulation
+! Restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
 !
