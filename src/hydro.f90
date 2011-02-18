@@ -315,7 +315,7 @@ module Hydro
   integer :: idiag_uxmx=0       ! DIAG_DOC: $\left< u_x \right>_{yz}$
   integer :: idiag_uymx=0       ! DIAG_DOC: $\left< u_y \right>_{yz}$
   integer :: idiag_uzmx=0       ! DIAG_DOC: $\left< u_z \right>_{yz}$
-  integer :: idiag_divum=0      ! DIAG_DOC:$\left<{\rm div}\uv)\right>$
+  integer :: idiag_divum=0      ! DIAG_DOC: $\left<{\rm div}\uv)\right>$
   integer :: idiag_divu2m=0     ! DIAG_DOC: $\left<({\rm div}\uv)^2\right>$
   integer :: idiag_u3u21m=0     ! DIAG_DOC: $\left<u_3 u_{2,1}\right>$
   integer :: idiag_u1u32m=0     ! DIAG_DOC: $\left<u_1 u_{3,2}\right>$
@@ -1382,7 +1382,8 @@ module Hydro
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 )  lpenc_diagnos(i_o2)=.true.
-      if (idiag_divu2m /= 0 .or. idiag_divu2mz /= 0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_divu2m /= 0 .or. idiag_divu2mz /= 0 .or. &
+          idiag_divum) lpenc_diagnos(i_divu)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
            idiag_oumh/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
