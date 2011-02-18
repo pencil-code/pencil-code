@@ -2053,7 +2053,7 @@ module Special
           pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
         elseif (lthermal_energy .or. lentropy) then
           call fatal_error('gran_driver', &
-              'quenching not implemented for lthermal_energy or lentropy')
+              'quenching not implemented for lthermal_energy or lentropy', .true.)
         else
           pp_tmp = gamma_inv*cs20
         endif
