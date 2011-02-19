@@ -1773,10 +1773,6 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(utilities) $(LD_MPI) -o read_vectorfiles.x
 #
-write_driver.o: $(physics) $(technical) $(DIAGNOSTICS_OBJ) $(EQU_OBJ) $(FARRAY_OBJ) Makefile.local
-write_driver: pre_and_post_processing/write_driver.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/write_driver.o $(physics) $(technical) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o pre_and_post_processing/write_driver.x
-#
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # 

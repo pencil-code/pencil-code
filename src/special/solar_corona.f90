@@ -30,6 +30,7 @@ module Special
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
+  logical :: lwrite_driver=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
 !
@@ -56,7 +57,7 @@ module Special
        Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
-       iheattype,dt_gran,cool_type
+       iheattype,dt_gran,cool_type,lwrite_driver
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
@@ -2089,6 +2090,8 @@ module Special
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
 !
+      if (lroot .and. lwrite_driver) call write_driver (t, Ux, Uy)
+!
     endsubroutine gran_driver
 !***********************************************************************
     subroutine multi_gran_levels
@@ -2201,6 +2204,35 @@ module Special
           (mod(it,isave) == 0)) call write_points (level)
 !
     endsubroutine compute_gran_level
+!***********************************************************************
+    subroutine write_driver (time, Ux, Uy)
+!
+! Write granulation driver velocity field to a file.
+!
+! 31-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: time
+      real, dimension(nxgrid,nygrid), intent(in) :: Ux, Uy
+!
+      character (len=*), parameter :: gran_times_dat = 'driver/gran_times.dat'
+      character (len=*), parameter :: gran_field_dat = 'driver/gran_field.dat'
+      integer, save :: gran_frame=0, unit=37
+      integer :: rec_len
+!
+      inquire (iolength=rec_len) time
+      open (unit, file=gran_times_dat, access="direct", recl=rec_len)
+      write (unit, rec=gran_frame+1) time * unit_time
+      close (unit)
+!
+      rec_len = rec_len * nxgrid*nygrid
+      open (unit, file=gran_field_dat, access="direct", recl=rec_len)
+      write (unit, rec=gran_frame*2+1) Ux * unit_velocity
+      write (unit, rec=gran_frame*2+2) Uy * unit_velocity
+      close (unit)
+!
+      gran_frame = gran_frame + 1
+!
+    endsubroutine write_driver
 !***********************************************************************
     subroutine read_points(level)
 !
