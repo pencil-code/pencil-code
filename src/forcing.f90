@@ -275,6 +275,16 @@ module Forcing
           profz_hel(n)=(z(n)-xyz0(3))*(xyz1(3)-z(n))
         enddo
 !
+!  helicity profile proportional to z^3, but vanishing on the boundaries
+!
+      elseif (iforce_profile=='cubic') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)=z(n)*(z(n)-xyz0(3))*(xyz1(3)-z(n))
+        enddo
+!
 !  power law
 !
       elseif (iforce_profile=='(z-z0)^n') then
