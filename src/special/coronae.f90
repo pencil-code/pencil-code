@@ -29,7 +29,7 @@ module Special
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
-  real :: dampuu=0.,wdampuu,pdampuu,init_time2=huge1
+  real :: dampuu=0.,wdampuu,pdampuu,init_time2=0.
   real :: limiter_tensordiff=3
   real, dimension(3) :: B_ext_special
 !
@@ -1147,8 +1147,8 @@ module Special
 !
       newton  = newton * tau_inv_tmp
 !
-      if (init_time2 /= 0.) newton=newton* &
-          (1.-cubic_step(real(t),init_time2,init_width))
+      if (init_time2 /= 0.) &
+          newton=newton*(1.-cubic_step(real(t),init_time2,init_width))
 !
 !  Add newton cooling term to entropy
 !
