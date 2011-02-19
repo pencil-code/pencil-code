@@ -1552,6 +1552,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 #(plasmoid)
 ##
 ##
+## Nobumitsu's laptop
+#FC=mpif90 #(nobyokoi)
+#FFLAGS=-O3 #(nobyokoi)
+#CFLAGS=-DFUNDERSC=1 #(nobyokoi)
+##
+##
 ## norosx52 (Mac Pro, 8 cores)
 ##
 #FC=/opt/ompi/bin/mpif90 #(norosx52)
