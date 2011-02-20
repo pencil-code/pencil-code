@@ -5042,7 +5042,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      integer :: i, ix, iy, num
+      integer :: i, ix, iy
 !
       select case (topbot)
 !
@@ -5055,15 +5055,9 @@ module Boundcond
               f(ix,iy,n1-i,j) = f(ix,iy,n1+i,j)
             enddo
             ! force inflow
-            num = 0
             do i = 0, nghost
-              if (f(ix,iy,n1-i,j) < 0.0) then
-                f(ix,iy,n1-i,j) = 0.0
-                if (i > 0) num = num + 1
-              endif
+              if (f(ix,iy,n1-i,j) < 0.0) f(ix,iy,n1-i,j) = 0.0
             enddo
-            ! special case for strong outflows, avoids asymmetric shape
-            if ((f(ix,iy,n1,j) > 0.0) .and. (num == 3)) f(ix,iy,n1,j) = 0.0
           enddo
         enddo
 !
@@ -5076,15 +5070,9 @@ module Boundcond
               f(ix,iy,n2+i,j) = f(ix,iy,n2-i,j)
             enddo
             ! force inflow
-            num = 0
             do i = 0, nghost
-              if (f(ix,iy,n2+i,j) > 0.0) then
-                f(ix,iy,n2+i,j) = 0.0
-                if (i > 0) num = num + 1
-              endif
+              if (f(ix,iy,n2+i,j) > 0.0) f(ix,iy,n2+i,j) = 0.0
             enddo
-            ! special case for strong outflows, avoids asymmetric shape
-            if ((f(ix,iy,n2,j) < 0.0) .and. (num == 3)) f(ix,iy,n2,j) = 0.0
           enddo
         enddo
 !
@@ -5109,7 +5097,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
-      integer :: i, ix, iy, num
+      integer :: i, ix, iy
 !
       select case (topbot)
 !
@@ -5122,15 +5110,9 @@ module Boundcond
               f(ix,iy,n1-i,j) = f(ix,iy,n1+i,j)
             enddo
             ! force outflow
-            num = 0
             do i = 0, nghost
-              if (f(ix,iy,n1-i,j) > 0.0) then
-                f(ix,iy,n1-i,j) = 0.0
-                if (i > 0) num = num + 1
-              endif
+              if (f(ix,iy,n1-i,j) > 0.0) f(ix,iy,n1-i,j) = 0.0
             enddo
-            ! special case against strong inflows, avoids asymmetric shape
-            if ((f(ix,iy,n1,j) < 0.0) .and. (num == 3)) f(ix,iy,n1,j) = 0.0
           enddo
         enddo
 !
@@ -5143,15 +5125,9 @@ module Boundcond
               f(ix,iy,n2+i,j) = f(ix,iy,n2-i,j)
             enddo
             ! force outflow
-            num = 0
             do i = 0, nghost
-              if (f(ix,iy,n2+i,j) < 0.0) then
-                f(ix,iy,n2+i,j) = 0.0
-                if (i > 0) num = num + 1
-              endif
+              if (f(ix,iy,n2+i,j) < 0.0) f(ix,iy,n2+i,j) = 0.0
             enddo
-            ! special case against strong inflows, avoids asymmetric shape
-            if ((f(ix,iy,n2,j) > 0.0) .and. (num == 3)) f(ix,iy,n2,j) = 0.0
           enddo
         enddo
 !
