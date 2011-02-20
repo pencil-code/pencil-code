@@ -616,7 +616,13 @@ else if ($hn =~ louhi-login*) then
 #----------------------------------------------
 else if ($hn =~ emil-login*.pdc.kth.se*) then
   echo $SHELL
-  source /cfs/emil/pdc/gustavog/cshrc_lindgren
+  if ($USER =~ gustavog) then
+    source /cfs/emil/pdc/gustavog/cshrc_lindgren
+  else if ($USER =~ brandenb) then
+    source /cfs/emil/pdc/brandenb/cshrc_lindgren
+  else
+    source /mnt/lustre_server/pdc/dmitra/pencil-code/dhruba/cshrc_lindgren
+  endif
   echo "*********************************"
   echo " PDC machine Lindgren, Stockholm "
   cd $PBS_O_WORKDIR
