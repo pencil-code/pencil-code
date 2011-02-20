@@ -1397,6 +1397,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
 ##
+## Lindgren - CrayXE6 - (Stockholm)
+## 1516 24-nodes per cabinet 2.1GHz Opterons
+##
+#FC=ftn #(emil*)
+#FC_SLOPPY = $(FC) #(emil*)
+#F90=$(FC) #(emil*)
+#CC=cc #(emil*)
+#FFLAGS=-O3 #(emil*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(emil*)
+##
 ##HP CP4000 BL Proliant supercluster
 ##Vuori - (Espoo, Finland)
 ##
