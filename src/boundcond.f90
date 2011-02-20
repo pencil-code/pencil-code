@@ -3292,21 +3292,21 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: df
+      real, dimension (mx,my) :: m
 !
 !
       select case (topbot)
       case ('bot')
         ! bottom (left end of the domain)
-        df = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        m = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
         do i = 1, nghost
-          f(:,:,n1-i,j) = f(:,:,n1,j) + df * (z(n1-i) - z(n1))
+          f(:,:,n1-i,j) = f(:,:,n1,j) + m * (z(n1-i) - z(n1))
         enddo
       case ('top')
         ! top (right end of the domain)
-        df = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        m = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
         do i = 1, nghost
-          f(:,:,n2+i,j) = f(:,:,n2,j) + df * (z(n2+i) - z(n2))
+          f(:,:,n2+i,j) = f(:,:,n2,j) + m * (z(n2+i) - z(n2))
         enddo
       case default
         call fatal_error ('bcz_extrapol', 'invalid argument', lfirst_proc_xy)
@@ -3326,21 +3326,21 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: df
+      real, dimension (mx,my) :: m
 !
 !
       select case (topbot)
       case ('bot')
         ! bottom (left end of the domain)
-        df = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        m = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
         do i = 2, nghost
-          f(:,:,n1-i,j) = f(:,:,n1-1,j) + df * (z(n1-i) - z(n1-1))
+          f(:,:,n1-i,j) = f(:,:,n1-1,j) + m * (z(n1-i) - z(n1-1))
         enddo
       case ('top')
         ! top (right end of the domain)
-        df = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        m = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
         do i = 2, nghost
-          f(:,:,n2+i,j) = f(:,:,n2+1,j) + df * (z(n2+i) - z(n2+1))
+          f(:,:,n2+i,j) = f(:,:,n2+1,j) + m * (z(n2+i) - z(n2+1))
         enddo
       case default
         call fatal_error ('bcz_extrapol_fixed', 'invalid argument', lfirst_proc_xy)
@@ -3366,7 +3366,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
-      real, dimension (mx,my) :: df
+      real, dimension (mx,my) :: m
       real :: gamma_bot, gamma_top, tau, fade_fact
       real, pointer :: tdamp, tfade_start
       logical, pointer :: ldamp_fade
@@ -3403,20 +3403,20 @@ module Boundcond
       select case (topbot)
       case ('bot')
         ! bottom (left end of the domain)
-        df = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
+        m = (f(:,:,n1+1,j) - f(:,:,n1,j)) / (z(n1+1) - z(n1))
         do i = 1, nghost
-          f(:,:,n1-i,j) = (f(:,:,n1,j) + df * (z(n1-i) - z(n1))) * gamma_bot**i
+          f(:,:,n1-i,j) = (f(:,:,n1,j) + m * (z(n1-i) - z(n1))) * gamma_bot**i
         enddo
-        df = (f(:,:,n1+1,j) - f(:,:,n1-1,j)) / (z(n1+1) - z(n1-1))
-        f(:,:,n1,j) = f(:,:,n1+1,j) + df * (z(n1) - z(n1+1))
+        m = (f(:,:,n1+1,j) - f(:,:,n1-1,j)) / (z(n1+1) - z(n1-1))
+        f(:,:,n1,j) = f(:,:,n1+1,j) + m * (z(n1) - z(n1+1))
       case ('top')
         ! top (right end of the domain)
-        df = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        m = (f(:,:,n2,j) - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
         do i = 1, nghost
-          f(:,:,n2+i,j) = (f(:,:,n2,j) + df * (z(n2+i) - z(n2))) * gamma_top**i
+          f(:,:,n2+i,j) = (f(:,:,n2,j) + m * (z(n2+i) - z(n2))) * gamma_top**i
         enddo
-        df = (f(:,:,n2+1,j) - f(:,:,n2-1,j)) / (z(n2+1) - z(n2-1))
-        f(:,:,n2,j) = f(:,:,n2-1,j) + df * (z(n2) - z(n2-1))
+        m = (f(:,:,n2+1,j) - f(:,:,n2-1,j)) / (z(n2+1) - z(n2-1))
+        f(:,:,n2,j) = f(:,:,n2-1,j) + m * (z(n2) - z(n2-1))
       case default
         call fatal_error ('bcz_extrapol_damped', 'invalid argument', lfirst_proc_xy)
       endselect
