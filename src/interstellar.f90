@@ -1460,7 +1460,7 @@ module Interstellar
 !
       real, dimension (nx), intent(inout) :: Hmax
       real, dimension (nx) :: heat,cool,heatcool
-      real, dimension (nx) :: damp_profile,gsh2,gsh4
+      real, dimension (nx) :: damp_profile,gsh2
       real :: minqty
       integer :: i, iSNR
 !
@@ -1541,8 +1541,9 @@ module Interstellar
 !  shock wave and also drives down the timestep. Fred
 !
       if (lheatcool_shock_cutoff) then
-        call dot2(p%gshock,gsh2);gsh4=gsh2**2
-        damp_profile=exp(-(gsh4*heatcool_shock_cutoff_rate1))
+        call dot2(p%gshock,gsh2)
+! 
+        damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1))
 !
         cool=cool*damp_profile
         heat=heat*damp_profile
@@ -2507,6 +2508,8 @@ module Interstellar
         SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
         SNR%radius=max(SNR%radius,1.25*dxmax)
       endif
+      call get_properties(f,SNR,rhom,ekintot)
+      SNR%rhom=rhom
 !
 !  Calculate effective Sedov evolution time diagnostic and used in damping.
 !
